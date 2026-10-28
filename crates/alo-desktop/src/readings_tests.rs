@@ -16,7 +16,7 @@ use super::*;
 /// nothing in this file depends on where it runs.
 fn written_as_in(region: &str) -> TheirFormats {
     let mut chosen = alo_formats::Chosen::default();
-    chosen.written_as_in(Some(region), "en").unwrap();
+    chosen.written_as_in(Some(region)).unwrap();
     TheirFormats::of(chosen, Some("en")).in_zone(jiff::tz::TimeZone::UTC)
 }
 

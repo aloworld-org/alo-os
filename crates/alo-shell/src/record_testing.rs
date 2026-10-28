@@ -208,7 +208,7 @@ pub(crate) fn ours_alone(path: &Path) {
 /// time, so nothing here depends on where the test runs.
 pub(crate) fn written_as_in(region: &str) -> crate::TheirFormats {
     let mut chosen = alo_formats::Chosen::default();
-    chosen.written_as_in(Some(region), "en").unwrap();
+    chosen.written_as_in(Some(region)).unwrap();
     crate::TheirFormats::of(chosen, Some("en")).in_zone(jiff::tz::TimeZone::UTC)
 }
 

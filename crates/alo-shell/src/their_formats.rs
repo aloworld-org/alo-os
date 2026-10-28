@@ -108,14 +108,22 @@ impl TheirFormats {
         self.zone_not_found.as_ref()
     }
 
-    /// **The language and region their dates and times are written in**:
-    /// what they chose, or the rule in this file's header.
+    /// **The language and region their dates and times are written in**: the
+    /// language they read **now**, in the order of the region they chose — or,
+    /// where they chose none, the rule in this file's header.
+    ///
+    /// The language is never the file's. The owner's decision of 2026-10-28:
+    /// a person in Germany who reads English reads *28 Oct 2026, 17:38*, and the
+    /// day they change to French the month is French and the order is still
+    /// Germany's.
     #[must_use]
     pub fn regionally(&self) -> Regionally {
-        if let Some(chosen) = &self.chosen.regionally {
-            return chosen.clone();
+        let reading =
+            Regionally::reading(self.reading()).unwrap_or_else(|_| Regionally::the_source());
+        match self.chosen.region() {
+            Some(region) => reading.clone().in_region(region).unwrap_or(reading),
+            None => reading,
         }
-        Regionally::reading(self.reading()).unwrap_or_else(|_| Regionally::the_source())
     }
 
     /// The day `at` falls on, where they are.
@@ -200,9 +208,9 @@ mod tests {
         TheirFormats::of(chosen, reading).in_zone(TimeZone::get("Europe/Brussels").unwrap())
     }
 
-    fn in_region(region: &str, reading: &str) -> Chosen {
+    fn in_region(region: &str) -> Chosen {
         let mut chosen = Chosen::default();
-        chosen.written_as_in(Some(region), reading).unwrap();
+        chosen.written_as_in(Some(region)).unwrap();
         chosen
     }
 
@@ -224,8 +232,8 @@ mod tests {
     /// **Choosing a region changes how the same moment is written.**
     #[test]
     fn choosing_a_region_changes_the_time_written() {
-        let american = brussels(in_region("US", "en"), Some("en"));
-        let british = brussels(in_region("GB", "en"), Some("en"));
+        let american = brussels(in_region("US"), Some("en"));
+        let british = brussels(in_region("GB"), Some("en"));
         let at = half_past_five();
         assert_eq!(british.time_of(at).as_deref(), Some("17:38"));
         assert_ne!(american.time_of(at), british.time_of(at));
@@ -234,7 +242,7 @@ mod tests {
     /// **The zone they are in decides the hour**, not universal time.
     #[test]
     fn the_hour_is_the_one_where_they_are() {
-        let british = in_region("GB", "en");
+        let british = in_region("GB");
         let in_brussels = brussels(british.clone(), Some("en"));
         let in_london =
             TheirFormats::of(british, Some("en")).in_zone(TimeZone::get("Europe/London").unwrap());
@@ -253,17 +261,63 @@ mod tests {
     fn a_day_is_today_yesterday_or_a_date_in_the_region_chosen() {
         let now = half_past_five();
         let day = Duration::from_secs(24 * 60 * 60);
-        let german = brussels(in_region("DE", "de"), Some("de"));
+        let german = brussels(in_region("DE"), Some("de"));
         assert_eq!(german.day_of(now, now), Some(TheDay::Today));
         assert_eq!(german.day_of(now - day, now), Some(TheDay::Yesterday));
         assert_eq!(
             german.day_of(now - 3 * day, now),
             Some(TheDay::On("25.10.2026".to_owned()))
         );
-        let american = brussels(in_region("US", "en"), Some("en"));
+        let american = brussels(in_region("US"), Some("en"));
         assert_eq!(
             american.day_of(now - 3 * day, now),
             Some(TheDay::On("Oct 25, 2026".to_owned()))
+        );
+    }
+
+    /// **A region writes in the language read now** — the owner's decision of
+    /// 2026-10-28. Germany chosen by somebody reading English is Germany's
+    /// day-month order and twenty-four-hour clock in English words, and the
+    /// day they change to French the month is French and the order is still
+    /// Germany's. `formats.toml` was not touched between the two.
+    #[test]
+    fn a_region_writes_in_the_language_read_now() {
+        let germany = in_region("DE");
+        let in_english = brussels(germany.clone(), Some("en"));
+        assert_eq!(
+            in_english.time_of(half_past_five()).as_deref(),
+            Some("17:38"),
+            "not Germany's twenty-four-hour clock"
+        );
+        assert_eq!(
+            in_english.regionally().date(2026, 10, 28).as_deref(),
+            Some("28 Oct 2026"),
+            "not day before month, in English"
+        );
+        let in_french = brussels(germany, Some("fr"));
+        assert_eq!(in_french.regionally().language(), "fr");
+        assert_eq!(in_french.regionally().region(), Some("DE"));
+        assert_eq!(
+            in_french.regionally().date(2026, 10, 28).as_deref(),
+            Some("28 oct. 2026"),
+            "the month did not follow the language"
+        );
+    }
+
+    /// **The region, not the language, decides the order**: the same English
+    /// reader, the United States chosen instead, is month first and a
+    /// twelve-hour clock.
+    #[test]
+    fn the_region_not_the_language_decides_the_order() {
+        let american = brussels(in_region("US"), Some("en"));
+        let german = brussels(in_region("DE"), Some("en"));
+        assert_eq!(
+            american.regionally().date(2026, 10, 28).as_deref(),
+            Some("Oct 28, 2026")
+        );
+        assert_ne!(
+            american.time_of(half_past_five()),
+            german.time_of(half_past_five())
         );
     }
 
@@ -271,7 +325,7 @@ mod tests {
     /// 00:30 in Brussels is today, though it is still yesterday in London.
     #[test]
     fn midnight_where_they_are_divides_the_days() {
-        let formats = brussels(in_region("GB", "en"), Some("en"));
+        let formats = brussels(in_region("GB"), Some("en"));
         // 2026-10-28 00:30 in Brussels is 2026-10-27 23:30 universal time.
         let just_after_midnight = half_past_five() - Duration::from_secs((17 * 60 + 8) * 60);
         let just_before = just_after_midnight - Duration::from_secs(60 * 60);
@@ -288,7 +342,7 @@ mod tests {
     /// **A moment after now is a date, never today.**
     #[test]
     fn a_moment_after_today_is_a_date() {
-        let formats = brussels(in_region("GB", "en"), Some("en"));
+        let formats = brussels(in_region("GB"), Some("en"));
         let now = half_past_five();
         let tomorrow = now + Duration::from_secs(24 * 60 * 60);
         assert!(matches!(formats.day_of(tomorrow, now), Some(TheDay::On(_))));

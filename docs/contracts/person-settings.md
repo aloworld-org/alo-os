@@ -87,7 +87,7 @@ declares its shape, at a path that crate is handed, and by nobody else:
 | `keyboards.toml` | `alo_keyboards::keeping` | `1` | `layouts`, `compose`, `input-methods` |
 | `gestures.toml` | `alo_desktops::gesture_files` | `1` | `scroll`, `pinch`, `three-finger-swipe`, `four-finger-swipe`, `scrolling` |
 | `undo.toml` | `alo_letting_go::keeping` | `1` | `window` |
-| `formats.toml` | `alo_formats::keeping` | `1` | `regionally`, `timezone`, `following-the-network` |
+| `formats.toml` | `alo_formats::keeping` | `1` | `region`, `timezone`, `following-the-network` |
 
 **That number is true because a test reads it.** The sentence above said *four*
 from 2026-09-15 until 2026-09-21 while the folder grew to ten, and it was the
@@ -2327,7 +2327,7 @@ has not changed.
 
 | Key | Meaning |
 |---|---|
-| `regionally` | A table: `language`, the language the formats are written in, and `region`, two capital letters (`BE`). |
+| `region` | The region whose order dates and times are written in, as two capital letters (`BE`). Any of the 249 regions ISO 3166-1 assigns, and `XK`, Kosovo — kept on the list by the owner's decision of 2026-10-28. |
 | `timezone` | The zone they are in, as the zone database names it (`Europe/Brussels`). |
 | `following-the-network` | `"yes"` lets the machine ask the network where it is. Not there is `"no"`. |
 
@@ -2337,22 +2337,29 @@ has not changed.
 
 ### What alo OS writes
 
-A region chosen in Settings by somebody who reads Portuguese:
+A region chosen in Settings:
 
 ```toml
 format = 1
-
-[regionally]
-language = "pt"
 region = "BE"
 ```
+
+**The region and never the language.** The words a date is written in are
+those of the language the person reads **now** — the first in `settings.toml`'s
+`[reading]` — in the region's order and with its clock. Somebody who reads
+English and chose Germany reads *28 Oct 2026, 17:38*; the day they change to
+French they read *28 oct. 2026*, and this file has not changed. The owner's
+decision of 2026-10-28. Until that day the file kept a `[regionally]` table
+with the language a region was first chosen in, which left a person's month
+names behind when they changed language; nothing on any machine wrote one, and
+a file that has one is refused as a key nobody declared.
 
 ### Where nothing is chosen
 
 **The language the person reads decides**, with CLDR's own region for it: the
 first language in `settings.toml`'s `[reading]`, or the machine's source
 language, English, where that names none. Choosing *As my language writes
-them* in Settings removes `regionally` from the file. A zone not named is the
+them* in Settings removes `region` from the file. A zone not named is the
 machine's own; a zone named that the zone database does not have is the
 machine's own too, and the session's log says which name it could not find.
 

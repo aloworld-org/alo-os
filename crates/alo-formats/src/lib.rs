@@ -21,7 +21,9 @@
 //! Belgian way, so [`Regionally`] carries the language and the region apart, and
 //! a person changes either without the other. Since 2026-10-28 they change the
 //! region in Settings, from [`the_regions_named_in`], and it is kept in their
-//! own folder by [`keeping`].
+//! own folder by [`keeping`] — **the region alone**: the words are always in the
+//! language they read now, so a person who changes language gets its month
+//! names in the same region's order.
 //!
 //! # One answer for every surface
 //!
@@ -42,15 +44,18 @@
 
 pub mod cannot_reach;
 pub mod keeping;
+pub mod region_code;
 pub mod region_names;
 pub mod regionally;
 pub mod regions;
+pub mod the_machines_language;
 pub mod timezone;
 mod unkept;
 pub mod words;
 
 pub use cannot_reach::{Missing, what_cldr_has_that_this_cannot_reach};
 pub use keeping::Chosen;
+pub use region_code::RegionCode;
 pub use region_names::{NamedRegion, the_regions_named_in};
 pub use regionally::{FirstDay, NotARegion, Regionally, THE_SOURCE_LANGUAGE};
 pub use timezone::{FollowingTheNetwork, Timezone};

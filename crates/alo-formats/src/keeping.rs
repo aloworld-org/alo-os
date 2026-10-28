@@ -12,13 +12,18 @@
 //!
 //! ```toml
 //! format = 1
+//! region = "BE"
 //! timezone = "Europe/Brussels"
 //! following-the-network = "yes"
-//!
-//! [regionally]
-//! language = "pt"
-//! region = "BE"
 //! ```
+//!
+//! **The region and no language.** Which language the dates are written in is
+//! the one the person reads now, asked of their `settings.toml` — so German in
+//! Belgium's order becomes French in Belgium's order the moment they change
+//! language. Until 2026-10-28 the file kept a `[regionally]` table with the
+//! language a region was first chosen in, and a later change of language left
+//! the month names behind; no machine held one, because the change that wrote
+//! it had not landed.
 //!
 //! **This crate does not know where the folder is.** It is handed the path of
 //! the file, by whoever starts the session.
@@ -40,7 +45,8 @@ use std::path::Path;
 use alo_kept::{Kept, Unread, Unwritten};
 use serde::{Deserialize, Serialize};
 
-use crate::regionally::{NotARegion, Regionally};
+use crate::region_code::RegionCode;
+use crate::regionally::NotARegion;
 use crate::timezone::{FollowingTheNetwork, Timezone};
 use crate::unkept::{FileNotRead, FileNotWritten};
 
@@ -57,9 +63,9 @@ pub const FORMAT: i64 = 1;
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Chosen {
-    /// The language and region their formats follow, where they said.
+    /// The region whose order their dates and times follow, where they said.
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub regionally: Option<Regionally>,
+    pub region: Option<RegionCode>,
     /// Where they said this machine is.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub timezone: Option<Timezone>,
@@ -77,36 +83,28 @@ impl Chosen {
     /// [`None`] where they chose none and the language decides.
     #[must_use]
     pub fn region(&self) -> Option<&str> {
-        self.regionally.as_ref().and_then(Regionally::region)
+        self.region.as_ref().map(RegionCode::code)
     }
 
     /// **Write dates and times the way this region does** — or, for
     /// [`None`], the way the person's language does.
     ///
-    /// The language the formats are in stays what the file already said, and
-    /// where it said nothing it is the language the person reads, `reading`. A
-    /// person who reads Portuguese and chooses Belgium gets Portuguese words in
-    /// Belgium's order, which is the case this crate was written for.
+    /// **Only the region is kept.** The words are in whatever language the
+    /// person reads when the date is written — `alo_shell::TheirFormats` asks —
+    /// so a person who reads Portuguese and chooses Belgium gets Portuguese
+    /// words in Belgium's order, and French ones the day they change to French.
     ///
     /// # Errors
-    /// [`NotARegion`] for a region that is not two capital letters, or a
-    /// language CLDR cannot be asked about. Nothing is changed then.
-    pub fn written_as_in(&mut self, region: Option<&str>, reading: &str) -> Result<(), NotARegion> {
-        let Some(region) = region else {
-            self.regionally = None;
-            return Ok(());
-        };
-        let language = self
-            .regionally
-            .as_ref()
-            .map_or(reading, Regionally::language);
-        self.regionally = Some(Regionally::reading(language)?.in_region(region)?);
+    /// [`NotARegion`] for a region that is not two capital letters. Nothing is
+    /// changed then.
+    pub fn written_as_in(&mut self, region: Option<&str>) -> Result<(), NotARegion> {
+        self.region = region.map(RegionCode::named).transpose()?;
         Ok(())
     }
 }
 
 /// Every key the file may have at its top, besides `format`.
-const KEYS: &[&str] = &["regionally", "timezone", "following-the-network"];
+const KEYS: &[&str] = &["region", "timezone", "following-the-network"];
 
 impl Kept for Chosen {
     const FILE: &'static str = THE_FILE;
@@ -204,7 +202,7 @@ mod tests {
     fn what_a_person_chose_is_what_is_read_back() {
         let at = a_file();
         let chosen = Chosen {
-            regionally: Some(Regionally::reading("pt").unwrap().in_region("BE").unwrap()),
+            region: Some(RegionCode::named("BE").unwrap()),
             timezone: Some(Timezone::named("Europe/Brussels").unwrap()),
             following_the_network: FollowingTheNetwork::Yes,
         };
@@ -243,34 +241,58 @@ mod tests {
         assert_eq!(read(&at).unwrap(), Chosen::default());
     }
 
-    /// **Choosing a region keeps the language the formats were in**, and
-    /// choosing none gives the decision back to the language.
+    /// **Choosing a region keeps the region and no language**, and choosing
+    /// none gives the decision back to the language.
     #[test]
-    fn choosing_a_region_keeps_the_language_and_choosing_none_gives_it_back() {
+    fn choosing_a_region_keeps_only_the_region_and_choosing_none_gives_it_back() {
+        let at = a_file();
         let mut chosen = Chosen::default();
-        chosen.written_as_in(Some("BE"), "pt").unwrap();
+        chosen.written_as_in(Some("BE")).unwrap();
         assert_eq!(chosen.region(), Some("BE"));
+        keep(&at, &chosen).unwrap();
         assert_eq!(
-            chosen.regionally.as_ref().map(Regionally::language),
-            Some("pt")
+            std::fs::read_to_string(&at).unwrap(),
+            "format = 1\nregion = \"BE\"\n",
+            "the file keeps something besides the region"
         );
-        chosen.written_as_in(Some("FR"), "de").unwrap();
-        assert_eq!(
-            chosen.regionally.as_ref().map(Regionally::language),
-            Some("pt"),
-            "a second region moved the language"
-        );
-        chosen.written_as_in(None, "de").unwrap();
+        chosen.written_as_in(Some("FR")).unwrap();
+        assert_eq!(chosen.region(), Some("FR"));
+        chosen.written_as_in(None).unwrap();
         assert_eq!(chosen, Chosen::default());
+    }
+
+    /// **A region that is not one is refused on the way in**, naming the key —
+    /// a hand edit of `region = "belgium"` is not half-honoured.
+    #[test]
+    fn a_file_whose_region_is_not_one_is_refused_whole() {
+        let at = a_file();
+        std::fs::write(&at, "format = 1\nregion = \"belgium\"\n").unwrap();
+        let (chosen, refused) = at_sign_in(&at);
+        assert_eq!(chosen, Chosen::default());
+        assert!(refused.is_some(), "a region that is not one was read");
+    }
+
+    /// **The table this file had before 2026-10-28 is not read**, because
+    /// nothing ever wrote one and a key nobody declared is refused.
+    #[test]
+    fn the_old_regionally_table_is_a_key_nobody_declared() {
+        let at = a_file();
+        std::fs::write(
+            &at,
+            "format = 1\n\n[regionally]\nlanguage = \"pt\"\nregion = \"BE\"\n",
+        )
+        .unwrap();
+        let (_, refused) = at_sign_in(&at);
+        assert_eq!(refused.unwrap().key(), Some("regionally"));
     }
 
     /// **A region that is not one is refused and nothing changes.**
     #[test]
     fn a_region_that_is_not_one_changes_nothing() {
         let mut chosen = Chosen::default();
-        chosen.written_as_in(Some("BE"), "pt").unwrap();
+        chosen.written_as_in(Some("BE")).unwrap();
         let before = chosen.clone();
-        assert!(chosen.written_as_in(Some("belgium"), "pt").is_err());
+        assert!(chosen.written_as_in(Some("belgium")).is_err());
         assert_eq!(chosen, before);
     }
 }

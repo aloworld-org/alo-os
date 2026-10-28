@@ -699,3 +699,37 @@ fn a_refusal_does_not_follow_the_person_to_the_next_thing_they_type() {
          still on their screen"
     );
 }
+
+/// **The screen speaks the language from the press that chose it** — the
+/// owner's decision of 2026-10-28, *from the first minute*. German chosen on
+/// the sheet is the first language the screen tries for every sentence after,
+/// including the first-account sheet; Escape gives it back its source.
+#[test]
+fn choosing_a_language_on_the_sheet_is_the_language_the_screen_speaks() {
+    let (door, _heard) = a_door(Ok(Answered::Opened));
+    let mut screen = SignInScreen::of(
+        Ok(Greeting::of(Accounts::none().unwrap(), PERSON, door)),
+        the_machines_words(),
+    );
+    assert!(screen.words().chain().is_empty(), "spoke a language nobody chose");
+    // From English, two rows up is Deutsch.
+    for key in [SignInKey::Earlier, SignInKey::Earlier, SignInKey::Enter] {
+        screen = still(screen.pressed(key));
+    }
+    assert_eq!(screen.the_language_chosen(), Some("de"));
+    assert_eq!(
+        screen.words().chain().first().map(alo_strings::Language::tag),
+        Some("de")
+    );
+    screen = still(screen.pressed(SignInKey::Clear));
+    assert!(screen.words().chain().is_empty(), "unchoosing kept German");
+    for key in [SignInKey::Enter, SignInKey::Enter] {
+        screen = still(screen.pressed(key));
+    }
+    assert!(matches!(screen.shows(), SignInShows::FirstAccount { .. }));
+    assert_eq!(
+        screen.words().chain().first().map(alo_strings::Language::tag),
+        Some("de"),
+        "the first-account sheet forgot the language chosen"
+    );
+}

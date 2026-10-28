@@ -336,8 +336,8 @@ impl<K: Knocking> SignInScreen<K> {
     /// further back to go from the screen a machine starts at, which is the
     /// reason `alo_access::leaving` gives for Escape clearing this screen.
     ///
-    /// **Nothing here writes anything.** The chosen keyboard leaves on
-    /// [`Signing::Still`] through [`Self::the_keyboard_to_use`], and the
+    /// **Nothing here writes anything.** The chosen keyboard and language leave
+    /// on [`Signing::Still`] through [`Self::the_language_chosen`], and the
     /// compositor keeps it and applies it — this file decides no paths and
     /// opens no files, which is the same division `makes_an_account` keeps
     /// with the accounts store.
@@ -381,6 +381,16 @@ impl<K: Knocking> SignInScreen<K> {
             // by the compiler that this screen exists.
             SignInKey::Letter(_) | SignInKey::Erase | SignInKey::Nothing => {}
         }
+        // **The screen speaks the language from the press that chose it** —
+        // the owner's decision of 2026-10-28, *from the first minute*. So the
+        // name sheet after this one is in it, wherever this machine has a
+        // translation; unchoosing gives the screen back its source language.
+        let chosen: Vec<alo_strings::Language> = offered
+            .chosen()
+            .and_then(|it| alo_strings::Language::written(it.tag).ok())
+            .into_iter()
+            .collect();
+        self.strings.prefers(&chosen);
         self.stands = Stands::ChooseLanguage(offered, said, greeting);
         Signing::Still(Box::new(self))
     }
