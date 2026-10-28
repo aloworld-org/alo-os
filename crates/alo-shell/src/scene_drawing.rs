@@ -245,6 +245,19 @@ where
     for edge in native.edges {
         edge.paint(&mut frame)?;
     }
+    // **alo's own terminal: a window among windows**, so it is painted where
+    // a client's window is — under the Dock, the task windows and every
+    // surface of alo's own. The record, Settings, the question, the egress
+    // indicator, what is in use, a notification and the capture tools each sit
+    // above whatever a client maps, and a terminal has no claim to that.
+    //
+    // **It was painted after Settings until 2026-10-28**, and nobody could
+    // tell: the real display never handed this function a terminal until #974.
+    // The first walk that did showed Settings, and then the card a person
+    // approves a change on, covered by a terminal opened earlier.
+    if let Some(terminal) = native.terminal.filter(|drawn| !drawn.is_empty()) {
+        terminal.paint(&mut frame)?;
+    }
     // Above every client and control: the dock is furniture no window covers,
     // and the desktop windows are above it; below the record, the question and
     // the indicator.
@@ -260,15 +273,6 @@ where
     // setting being changed; below the question and the indicator.
     if let Some(settings) = native.settings.filter(|settings| !settings.is_empty()) {
         settings.paint(&mut frame)?;
-    }
-    // **alo's own terminal: a window among windows, and under every one of the
-    // surfaces below.** The approval sentence, the egress indicator, what is in
-    // use, a notification and the capture tools each sit above whatever a
-    // client maps — the comments on each say why — and a terminal has no claim
-    // to that. It is drawn here, after the desktop's own furniture and before
-    // the first of them.
-    if let Some(terminal) = native.terminal.filter(|drawn| !drawn.is_empty()) {
-        terminal.paint(&mut frame)?;
     }
     // Above every client and control, so no window covers the sentence a
     // person is asked to approve; below the indicator, so the question never
@@ -320,3 +324,7 @@ where
 fn submission(error: impl std::fmt::Display) -> RenderError {
     RenderError::Submission(error.to_string())
 }
+
+#[cfg(test)]
+#[path = "scene_drawing_tests.rs"]
+mod tests;
