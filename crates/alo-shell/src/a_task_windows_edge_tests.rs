@@ -29,7 +29,15 @@ fn a_task_window() -> (tempfile::TempDir, Server, WhichTask) {
     let runtime = tempfile::tempdir().expect("a runtime directory of this test's own");
     std::fs::set_permissions(runtime.path(), std::fs::Permissions::from_mode(0o700))
         .expect("a private runtime directory");
-    let mut server = Server::bind(runtime.path(), "a-task-windows-edge").expect("a display");
+    let mut server = Server::bind_keyboard(
+        runtime.path(),
+        "a-task-windows-edge",
+        smithay::input::keyboard::XkbConfig {
+            layout: "us",
+            ..smithay::input::keyboard::XkbConfig::default()
+        },
+    )
+    .expect("a display with a keyboard");
     server.enable_pointer().expect("a pointer on this seat");
     let which = server.tasks_mut().and_now_this_one(ATask::asked_for(
         "tidy my invoices",
