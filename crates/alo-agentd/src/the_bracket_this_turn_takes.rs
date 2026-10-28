@@ -229,6 +229,7 @@ impl TheTurnsBracket {
                 ASideOfTheTurn::NotKept(why) => self.why_not = Some(why),
             },
         }
+        self.say_why_not("before");
     }
 
     /// Close the bracket: take the other side and write down what the turn did.
@@ -245,6 +246,24 @@ impl TheTurnsBracket {
         }
         if let Err(why) = kept.what_it_did(ended, did) {
             self.why_not = Some(why);
+        }
+        self.say_why_not("after");
+    }
+
+    /// Say on the error stream, which is the machine's journal, why this turn
+    /// kept nothing to return to — once, as it happens.
+    ///
+    /// **Until 2026-10-28 this was said nowhere.** A booted machine renamed a
+    /// file a person approved, the snapshot of a home that was not a subvolume
+    /// was refused, and nothing in the journal, the record or the reply said
+    /// so: `alo-back` was the first place the loss showed. ADR 0045's third
+    /// term is that such a turn still runs; it is not that it runs silently.
+    fn say_why_not(&self, which_side: &str) {
+        if let Some(why) = &self.why_not {
+            eprintln!(
+                "alo-agentd: turn {} kept no place to return to ({which_side} the change), so it cannot be undone: {why:?}",
+                self.named
+            );
         }
     }
 
