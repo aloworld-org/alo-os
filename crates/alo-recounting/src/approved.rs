@@ -102,12 +102,11 @@ mod tests {
         let account = Recounting::kept_at(&at)
             .about(&Asking::anything(), AtMost::ONE_SITTING)
             .unwrap();
-        let told = account.told();
-        assert_eq!(told.len(), 1, "{account:?}");
-        assert!(told[0].approved().is_some(), "{:?}", told[0]);
+        assert_eq!(account.told().len(), 1, "{account:?}");
+        let told = account.told().first().unwrap();
+        assert!(told.approved().is_some(), "{told:?}");
         assert!(
-            told[0]
-                .sentence()
+            told.sentence()
                 .is_some_and(|sentence| sentence.as_str().contains("invoice-march.pdf"))
         );
     }

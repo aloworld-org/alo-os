@@ -1586,6 +1586,7 @@ record.verb.not-this-crates	nothing in the record does {verb} — it answers wha
 record.verb.what-touched-this-file.argument.file	the file to look for in the record
 record.verb.what-touched-this-file.purpose	look in the record for what was done to a file
 record.verb.what-touched-this-file.sentence	look in the record for what was done to {file}
+recounting.approval.the-person-said-yes	the person at this machine was shown this and said yes before it happened
 recounting.description-not-read	What this machine did cannot be shown to you: what this machine says about itself could not be read. Ask whoever set it up
 recounting.no-compositor	What this machine's record says cannot be put in front of you: the desktop is not running. Sign in to the desktop, and ask again
 recounting.no-description	What this machine did cannot be shown to you: this machine does not say where it keeps a record of what its agent has done. Ask whoever set it up

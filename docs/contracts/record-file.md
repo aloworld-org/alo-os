@@ -263,7 +263,7 @@ one of the two could not keep that promise at the moment it mattered.
 
 **It is not `ran`, and a reader must not add the two together.** `ran` is a verb
 from the broker's closed list, redeemed from an approval and checked against
-grants, and carries `from-approval` and `against`. A command is none of those —
+grants, and carries `from_approval` and `against`. A command is none of those —
 ADR 0064 is explicit that running code is not a verb — so this tag has neither
 field, and a reader counting verb executions will not find commands among them.
 A reader wanting both asks for both.
