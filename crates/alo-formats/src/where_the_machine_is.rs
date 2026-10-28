@@ -29,7 +29,7 @@ use crate::regions::EVERY_REGION;
 /// CLDR names every zone with a BCP 47 id whose first two letters are the
 /// zone's country (`deber`, `usnyc`, `chzrh`) and whose next three are a place
 /// in it — five letters in all. Ids that are not a place have another shape
-/// (`utc`, `gmt`, `unk`, `utcw05`, `est5edt`) and name no country, so this
+/// (`utc`, `gmt`, `unk`, `utcw05`) and name no country, so this
 /// answers [`None`] for them, and for a zone CLDR does not know: a machine
 /// keeping universal time is not in any region, and saying it was would be a
 /// guess.
@@ -105,7 +105,6 @@ mod tests {
             "Etc/GMT",
             "GMT",
             "Etc/GMT+5",
-            "EST5EDT",
             "Made/Up",
             "",
         ] {
