@@ -10,7 +10,9 @@
 //! The questions a reader asks of a thing that is read and pressed:
 //! `GetRole`, `GetState`, `GetInterfaces`, `GetChildren`, `GetChildAtIndex`,
 //! `GetAttributes`, and the `Name`, `Description`, `ChildCount` and `Parent`
-//! properties. **Nothing else is served**: no `Component`, so nothing here is
+//! properties — and, on a node a reader can press, `org.a11y.atspi.Action`
+//! beside them (`crate::access_action`), whose press is handed to the desktop
+//! through [`ReadAloudBus::pressed`]. **Nothing else is served**: no `Component`, so nothing here is
 //! asked or answered about where a thing is on the screen, and no `Text`,
 //! because none of these controls is a document a reader reads through — what
 //! each says is its name, in the person's language, and a name is not text a
@@ -30,11 +32,13 @@
 //! needs is for the tree to be there when it arrives.
 
 use std::collections::HashMap;
+use std::sync::mpsc::{self, Receiver, Sender};
 
-use zbus::blocking::Connection;
 use zbus::blocking::connection::Builder;
+use zbus::blocking::{Connection, ObjectServer};
 use zbus::zvariant::{ObjectPath, OwnedObjectPath};
 
+use crate::access_action::{ACTION, Pressable, Pressed};
 use crate::access_nodes::{Node, ROOT, ReadAloudTree};
 use crate::access_roles::LIVE;
 
@@ -87,6 +91,10 @@ pub struct ReadAloudBus {
     /// answering about something that is gone. Remembered here because the
     /// server will not say what it is holding.
     served: Vec<String>,
+    /// Where a pressable node hands a reader's press, cloned into each one.
+    to: Sender<Pressed>,
+    /// Where the desktop takes those presses from, on its own thread.
+    presses: Receiver<Pressed>,
 }
 
 impl ReadAloudBus {
@@ -110,20 +118,48 @@ impl ReadAloudBus {
                 .at(ROOT, TheShellItself { id: 0 })
                 .map_err(|_| NotRead::NotServed)
                 .and_then(|put| put.then_some(()).ok_or(NotRead::NotServed))?;
-            for node in tree.nodes() {
-                let served = ReadAloud::of(node, tree, &answers_as);
-                server
-                    .at(node.path.as_str(), served)
-                    .map_err(|_| NotRead::NotServed)
-                    .and_then(|put| put.then_some(()).ok_or(NotRead::NotServed))?;
-            }
         }
-        let served = tree.nodes().iter().map(|node| node.path.clone()).collect();
-        Ok(Self {
+        let (to, presses) = mpsc::channel();
+        let mut this = Self {
             connection,
             answers_as,
-            served,
-        })
+            served: Vec::new(),
+            to,
+            presses,
+        };
+        this.put_on(tree)?;
+        Ok(this)
+    }
+
+    /// Every node of `tree` on the bus, remembered so it can be taken off.
+    fn put_on(&mut self, tree: &ReadAloudTree) -> Result<(), NotRead> {
+        let server = self.connection.object_server();
+        for node in tree.nodes() {
+            served_at(
+                &server,
+                node.path.as_str(),
+                ReadAloud::of(node, tree, &self.answers_as),
+            )?;
+            self.served.push(node.path.clone());
+            if let Some(pressed) = node.press {
+                let pressable = Pressable {
+                    pressed,
+                    said: node.name.clone(),
+                    to: self.to.clone(),
+                };
+                served_at(&server, node.path.as_str(), pressable)?;
+            }
+        }
+        Ok(())
+    }
+
+    /// What a reader pressed since this was last asked, oldest first.
+    ///
+    /// Asked by the desktop on its own thread, once a frame; each press is
+    /// handed out once and only once.
+    #[must_use]
+    pub fn pressed(&self) -> Vec<Pressed> {
+        self.presses.try_iter().collect()
     }
 
     /// Serve the tree on the accessibility bus this session's reader is on.
@@ -172,21 +208,21 @@ impl ReadAloudBus {
     /// different moments at once, and an error a caller can retry is better than
     /// a reader being told a mixture.
     pub fn now_showing(&mut self, tree: &ReadAloudTree) -> Result<(), NotRead> {
-        let server = self.connection.object_server();
-        for path in self.served.drain(..) {
-            // A path that is already gone is not a failure: the tree it belonged
-            // to is what this is replacing.
-            let _ = server.remove::<ReadAloud, _>(path.as_str());
+        {
+            let server = self.connection.object_server();
+            for path in self.served.drain(..) {
+                // A path that is already gone is not a failure: the tree it
+                // belonged to is what this is replacing. A path that was never
+                // pressable has no `Action` to take off, which is not one
+                // either.
+                let _ = server.remove::<ReadAloud, _>(path.as_str());
+                let _ = server.remove::<Pressable, _>(path.as_str());
+            }
         }
-        for node in tree.nodes() {
-            let served = ReadAloud::of(node, tree, &self.answers_as);
-            server
-                .at(node.path.as_str(), served)
-                .map_err(|_| NotRead::NotServed)
-                .and_then(|put| put.then_some(()).ok_or(NotRead::NotServed))?;
-            self.served.push(node.path.clone());
-        }
-        Ok(())
+        // A press a reader made on the tree being replaced was made on a
+        // window the person could hear; it is still handed over, and the
+        // shell's own rules decide what it comes to.
+        self.put_on(tree)
     }
 
     /// The name this machine's tree answers as.
@@ -283,6 +319,21 @@ struct ReadAloud {
     children: Vec<(String, OwnedObjectPath)>,
     /// What it hangs under.
     parent: (String, OwnedObjectPath),
+    /// Whether a reader can press it, which is whether `Action` is served
+    /// beside this.
+    pressable: bool,
+}
+
+/// Put one interface on the bus at `path`.
+fn served_at<I: zbus::object_server::Interface>(
+    server: &ObjectServer,
+    path: &str,
+    interface: I,
+) -> Result<(), NotRead> {
+    server
+        .at(path, interface)
+        .map_err(|_| NotRead::NotServed)
+        .and_then(|put| put.then_some(()).ok_or(NotRead::NotServed))
 }
 
 impl ReadAloud {
@@ -308,6 +359,7 @@ impl ReadAloud {
             attributes,
             children: node.children.iter().map(|child| at(*child)).collect(),
             parent: at(node.parent),
+            pressable: node.press.is_some(),
         }
     }
 }
@@ -331,10 +383,14 @@ impl ReadAloud {
         self.states.clone()
     }
 
-    /// What this answers. One interface: it is read, and nothing here is a
-    /// document, a picture or a place on a screen.
+    /// What this answers: it is read, and where a reader can press it, it is
+    /// pressed. Nothing here is a document, a picture or a place on a screen.
     fn get_interfaces(&self) -> Vec<String> {
-        vec![ACCESSIBLE.to_owned()]
+        let mut answers = vec![ACCESSIBLE.to_owned()];
+        if self.pressable {
+            answers.push(ACTION.to_owned());
+        }
+        answers
     }
 
     /// What is inside this, in reading order.

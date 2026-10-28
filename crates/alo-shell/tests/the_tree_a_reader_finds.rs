@@ -621,6 +621,173 @@ fn the_served_tree_follows_the_windows_that_open() {
     );
 }
 
+/// Each window under *the windows open* on the live bus: its name, and each
+/// control under it with where it is.
+fn windows_and_their_controls(
+    session: &ASession,
+    answers_as: &str,
+) -> Vec<(String, Vec<(NodeAt, Facts)>)> {
+    let strings = words();
+    let list = Surface::Desktop
+        .read_aloud()
+        .into_iter()
+        .find(|control| control.role == alo_access::Role::List)
+        .map(|control| said(&strings, &control))
+        .expect("the desktop is read as a list of the windows open");
+    let reader = session.reader();
+    let ours = waiting_for(
+        "this machine's own tree being listed by the registry",
+        || {
+            reader
+                .applications()
+                .ok()?
+                .into_iter()
+                .find(|running| running.at.holder == answers_as)
+        },
+    );
+    let (_, list) = everything(&reader, &ours.at)
+        .into_iter()
+        .find(|(_, facts)| facts.name == list)
+        .expect("the bus carries the list of the windows open");
+    list.children
+        .iter()
+        .map(|window| {
+            let window = reader.facts(window).expect("a window the list named");
+            let under = window
+                .children
+                .iter()
+                .map(|control| {
+                    let facts = reader.facts(control).expect("a control the window named");
+                    (control.clone(), facts)
+                })
+                .collect();
+            (window.name, under)
+        })
+        .collect()
+}
+
+/// **A screen reader finds Close on every task window, and pressing it does
+/// what clicking it does** — read and pressed over a real accessibility bus
+/// by the agent's own reader, then handed to the shell the way the desktop's
+/// loop hands it.
+///
+/// The owner's decision of 2026-10-28: a finished task closes; a task alo is
+/// still working on stays open (Stop is not built); and an action the control
+/// does not have presses nothing.
+#[test]
+fn a_reader_finds_close_on_each_task_window_and_presses_it() {
+    use std::os::unix::fs::PermissionsExt as _;
+
+    use alo_models::InferenceSource;
+    use alo_shell::closing_a_task_window::WhatClosingCameTo;
+    use alo_shell::{Pressed, Server};
+    use alo_tasks::ATask;
+    use alo_tasks::conversation::Turn;
+
+    let session = ASession::started();
+    let strings = words();
+    let showing = [Surface::Desktop];
+
+    let runtime = tempfile::tempdir().unwrap();
+    std::fs::set_permissions(runtime.path(), std::fs::Permissions::from_mode(0o700)).unwrap();
+    let mut server = Server::bind(runtime.path(), "a-reader-presses-close").unwrap();
+    let done = server.tasks_mut().and_now_this_one(ATask::asked_for(
+        "tidy my invoices",
+        InferenceSource::ThisMachine,
+    ));
+    let working = server.tasks_mut().and_now_this_one(ATask::asked_for(
+        "explain an invoice",
+        InferenceSource::ThisMachine,
+    ));
+    server.tasks_mut().put_whatever_has_nowhere_to_be(
+        smithay::utils::Rectangle::new((0, 0).into(), (1280, 800).into()),
+        alo_strings::Direction::LeftToRight,
+        &[],
+    );
+    server
+        .tasks_mut()
+        .the_mut(done)
+        .unwrap()
+        .alo_says(Turn::from_alo("Your invoices are tidy."));
+
+    let tree = server.read_aloud_with_the_frames_open(&strings, &showing, &TurnedOn::nothing());
+    let mut bus = ReadAloudBus::serving(&session.accessibility, &tree).expect("the tree is served");
+    bus.embedded().expect("the registry embedded this machine");
+
+    let close = strings
+        .say(
+            &alo_shortcuts::Action::CloseWindow.word().key(),
+            &Filling::nothing(),
+        )
+        .text()
+        .to_owned();
+    let found = windows_and_their_controls(&session, bus.answers_as());
+    // **The count before the contents**, so a bus that carried no window
+    // cannot pass the loop below by having nothing in it.
+    let names: Vec<&str> = found.iter().map(|(name, _)| name.as_str()).collect();
+    assert_eq!(names, ["tidy my invoices", "explain an invoice"]);
+    let reader = session.reader();
+    let mut closes = Vec::new();
+    for (window, under) in &found {
+        let [(at, facts)] = under.as_slice() else {
+            panic!("{window}: a reader found {under:?} under it, not one Close");
+        };
+        assert_eq!(
+            facts.name, close,
+            "{window}: its control is not called Close"
+        );
+        assert_eq!(
+            Role::of_the_tree(facts.role),
+            Role::Button,
+            "{window}: Close is not a button"
+        );
+        assert_eq!(
+            reader.actions(at).expect("Close answers what it does"),
+            [close.clone()],
+            "{window}: Close does not say it can be pressed"
+        );
+        closes.push(at.clone());
+    }
+
+    // **An action Close does not have presses nothing.**
+    assert!(!reader.act(&closes[0], 1).expect("the bus answered"));
+    assert!(
+        bus.pressed().is_empty(),
+        "a refused press reached the shell"
+    );
+
+    // **A running task's Close is pressed and the task stays open.**
+    assert!(reader.act(&closes[1], 0).expect("the bus answered"));
+    let pressed = bus.pressed();
+    assert_eq!(pressed, [Pressed::CloseTheTask(working)]);
+    assert_eq!(
+        server.a_reader_pressed(pressed[0]),
+        WhatClosingCameTo::StillRunning
+    );
+    assert!(server.tasks().is_open(working), "a running task was closed");
+
+    // **A finished task's Close closes it**, and the reader is told so.
+    assert!(reader.act(&closes[0], 0).expect("the bus answered"));
+    let pressed = bus.pressed();
+    assert_eq!(pressed, [Pressed::CloseTheTask(done)], "one press, once");
+    assert_eq!(
+        server.a_reader_pressed(pressed[0]),
+        WhatClosingCameTo::Closed
+    );
+    assert!(
+        !server.tasks().is_open(done),
+        "the finished task did not close"
+    );
+    let after = server.read_aloud_with_the_frames_open(&strings, &showing, &TurnedOn::nothing());
+    bus.now_showing(&after)
+        .expect("the closing reached the bus");
+    assert_eq!(
+        names_under_the_windows_open(&session, bus.answers_as()),
+        vec!["explain an invoice".to_owned()],
+        "a reader was still told about the task window that closed"
+    );
+}
+
 /// Every process on this machine that names `place` in its command line or
 /// its environment, as `pid command`.
 ///
