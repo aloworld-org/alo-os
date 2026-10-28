@@ -22,7 +22,6 @@ use smithay::reexports::wayland_server::protocol::wl_surface::WlSurface;
 use crate::desktop_raster::{DesktopPicture, filling_shows, running_shows};
 use crate::egress_status_raster::EgressStatusPicture;
 use crate::nested_egress_status::status_picture;
-use crate::scene_native::NativeLayers;
 use crate::{
     ApprovalFrame, DesktopLook, EgressStatus, EgressStatusFrame, FillingPressed, FillingWindow,
     FrameTarget, InputError, Nested, RecordFrame, RenderError, RunningPressed, RunningWindow,
@@ -34,7 +33,9 @@ use crate::{
 /// **This exists because the nested backend drew no terminal at all until
 /// 2026-10-17.** [`Nested::submit_with_desktop`] passed `None` for the terminal
 /// picture, so a terminal a chord had opened was taking keys and never reaching
-/// a frame — while `direct_desktop` drew it from the same helper. The effect was
+/// a frame — while `direct_desktop` drew it from the same helper. (*Drew* was
+/// wrong: it built the picture and never handed it to the painter, which stayed
+/// true until 2026-10-27 — see [`DesktopPictures::layers`].) The effect was
 /// that **no gate could ever see alo's own terminal**, because the only backend
 /// a build machine can run is this one, and the four promises the terminal keeps
 /// were checkable on real hardware and nowhere else.
@@ -392,24 +393,7 @@ impl Nested {
             (size.w, size.h),
             terminal,
         )?;
-        self.submit_native_layers(
-            roots,
-            popups,
-            cursor,
-            NativeLayers {
-                scene: None,
-                edges,
-                desktop: Some(&pictures.desktop),
-                record: pictures.record.as_ref(),
-                settings: None,
-                approval: pictures.approval.as_ref(),
-                status: Some(&pictures.status),
-                in_use: Some(&pictures.in_use),
-                notifications: Some(&pictures.notifications),
-                capturing: pictures.capturing.as_ref(),
-                terminal: pictures.terminal.as_ref(),
-            },
-        )
+        self.submit_native_layers(roots, popups, cursor, pictures.layers(edges))
     }
 }
 
@@ -431,6 +415,41 @@ pub(crate) struct DesktopPictures {
     pub(crate) record: Option<crate::record_raster::RecordPicture>,
     /// A question, when the frame carries one.
     pub(crate) approval: Option<crate::approval_raster::ApprovalPicture>,
+}
+
+impl DesktopPictures {
+    /// **Every picture this frame holds, as the layers a display paints.**
+    ///
+    /// One place rather than a literal at each backend, because a literal at
+    /// each backend is how three of these pictures were built every frame on a
+    /// real display and never painted. Until 2026-10-27 `direct_desktop` named
+    /// only the desktop, the status area and Settings and let
+    /// `NativeLayers::nothing()` fill the rest, so alo's own terminal, the
+    /// camera-and-microphone indicator and the notifications were laid out and
+    /// thrown away — a chord opened a terminal nobody could see, and nothing
+    /// said so because nothing failed. The nested backend named them all, which
+    /// is why no gate could tell.
+    ///
+    /// Settings is not here because it is not a picture of this frame's: the
+    /// direct backend draws it beside these and sets it on what this returns.
+    pub(crate) fn layers<'a>(
+        &'a self,
+        edges: &'a [crate::EdgePicture],
+    ) -> crate::scene_native::NativeLayers<'a> {
+        crate::scene_native::NativeLayers {
+            scene: None,
+            edges,
+            desktop: Some(&self.desktop),
+            record: self.record.as_ref(),
+            settings: None,
+            approval: self.approval.as_ref(),
+            status: Some(&self.status),
+            in_use: Some(&self.in_use),
+            notifications: Some(&self.notifications),
+            capturing: self.capturing.as_ref(),
+            terminal: self.terminal.as_ref(),
+        }
+    }
 }
 
 /// Every picture for one frame, or the refusal that stops the whole frame —

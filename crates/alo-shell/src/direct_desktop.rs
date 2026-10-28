@@ -1914,11 +1914,8 @@ impl LoopInput for Desk<'_> {
         let mut layered = Layered {
             target,
             layers: NativeLayers {
-                desktop: Some(&pictures.desktop),
-                status: Some(&pictures.status),
                 settings: Some(&settings),
-                edges: &edges,
-                ..NativeLayers::nothing()
+                ..pictures.layers(&edges)
             },
         };
         //
@@ -1928,12 +1925,7 @@ impl LoopInput for Desk<'_> {
             .iter_mut()
             .map(|(other, its_pictures, its_edges)| Layered {
                 target: *other,
-                layers: NativeLayers {
-                    desktop: Some(&its_pictures.desktop),
-                    status: Some(&its_pictures.status),
-                    edges: its_edges,
-                    ..NativeLayers::nothing()
-                },
+                layers: its_pictures.layers(its_edges),
             })
             .collect();
         let mut displays: Vec<&mut dyn crate::FrameTarget> = Vec::with_capacity(1 + painted.len());
