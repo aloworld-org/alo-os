@@ -369,6 +369,8 @@ mod status_row;
 mod surfaces;
 /// Everything on the Dock that a person reads, said once a frame.
 mod tab_moves_among_the_bars_controls;
+/// The order a desktop's task windows are painted in: each one whole.
+mod task_layers;
 /// The colours a task window draws in, mapped from the design's tokens.
 mod task_look;
 /// A task window's furniture, rasterised.
