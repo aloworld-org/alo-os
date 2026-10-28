@@ -9,19 +9,19 @@
 //! inside a message looks like. **On 2026-10-28 the owner decided they are
 //! drawn**, with the styles taken from the design's existing type scale;
 //! `docs/design/emphasis-in-alos-answers.md` records the decision and the
-//! mapping. So this reads each mark into [`HowItIsMarked`] and leaves *how* it
+//! mapping. So this reads each mark into `HowItIsMarked` and leaves *how* it
 //! looks to `crate::task_text`, which holds the type styles:
 //!
-//! - `**strong**` and `__strong__`, in pairs, are [`HowItIsMarked::Strong`];
+//! - `**strong**` and `__strong__`, in pairs, are `HowItIsMarked::Strong`;
 //! - `#`, `##` and `###` before a heading make the line a
-//!   [`HowItIsMarked::Heading`];
+//!   `HowItIsMarked::Heading`;
 //! - `` `code` `` in pairs, and the lines inside a ```` ``` ```` fence, are
-//!   [`HowItIsMarked::Code`]; the fence lines themselves go.
+//!   `HowItIsMarked::Code`; the fence lines themselves go.
 //!
 //! # What is still only taken out
 //!
 //! - `####` to `######` lose their hashes and the line is drawn
-//!   [`HowItIsMarked::Strong`] — the type scale has one heading style for a
+//!   `HowItIsMarked::Strong` — the type scale has one heading style for a
 //!   message, and three sizes of heading inside a reply is a document, not a
 //!   conversation;
 //! - `-`, `*` and `+` starting a list item become `•`, as before;
@@ -37,9 +37,9 @@
 //!
 //! A person's words are theirs and are drawn exactly as typed. A proposed
 //! change is the sentence a person approves, and `alo_tasks` holds that nothing
-//! may rewrite it. So [`MarkedWords::read_from`] is applied to alo's replies
+//! may rewrite it. So `MarkedWords::read_from` is applied to alo's replies
 //! and questions only, by `crate::the_tasks_words`, and everything else is
-//! [`MarkedWords::as_said`].
+//! `MarkedWords::as_said`.
 
 /// How one stretch of alo's words is marked.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -165,10 +165,9 @@ impl MarkedWords {
             let mark = if ticks && rest.starts_with('`') {
                 code = !code;
                 1
-            } else if !code && stars && rest.starts_with("**") {
-                strong = !strong;
-                2
-            } else if !code && unders && rest.starts_with("__") {
+            } else if !code
+                && ((stars && rest.starts_with("**")) || (unders && rest.starts_with("__")))
+            {
                 strong = !strong;
                 2
             } else {
