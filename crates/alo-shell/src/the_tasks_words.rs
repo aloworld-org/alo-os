@@ -32,6 +32,10 @@ use crate::task_text::{TheWordsInATaskWindow, WhatWasSaid};
 struct ATasksWords {
     /// Where its window is on this display.
     at: Rectangle<i32, Physical>,
+    /// Its place in the list of tasks.
+    place: usize,
+    /// How far its conversation is scrolled back.
+    scroll: alo_tasks::TheScroll,
     /// What the person asked for, which names it.
     title: String,
     /// What kind of thing it is.
@@ -92,10 +96,13 @@ impl TheTasksWords {
         let each = tasks
             .iter()
             .zip(placed.iter())
-            .filter_map(|(task, at)| {
+            .enumerate()
+            .filter_map(|(place, (task, at))| {
                 let at = (*at)?;
                 Some(ATasksWords {
                     at,
+                    place,
+                    scroll: task.scroll(),
                     // **The person's own words, not a sentence this machine
                     // owns.** A task is named by what somebody asked for.
                     title: task
@@ -157,6 +164,8 @@ impl TheTasksWords {
             .iter()
             .map(|one| ATaskOnTheDisplay {
                 at: one.at,
+                place: one.place,
+                scroll: one.scroll,
                 how_many_files: one.files.len(),
                 words: TheWordsInATaskWindow {
                     title: &one.title,

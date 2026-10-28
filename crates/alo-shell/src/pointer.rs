@@ -474,6 +474,25 @@ impl Server {
         // remembered line, or at the newest, the scroll falls through to the
         // plane rather than being swallowed — which is why `look_back` answers
         // whether the view moved rather than returning nothing.
+        // **A scroll over a task window scrolls its conversation**, and never
+        // reaches what is underneath — `crate::a_task_window_scrolls`. Asked
+        // first because a task window is drawn over the terminal too.
+        if let Some(location) = self
+            .surfaces
+            .pointer
+            .as_ref()
+            .map(|pointer| pointer.location)
+        {
+            #[expect(
+                clippy::cast_possible_truncation,
+                reason = "the pointer is clamped to the output, which is well inside i32"
+            )]
+            let on_the_screen =
+                Point::<i32, Physical>::from((location.x as i32, location.y as i32));
+            if let Some(moved) = self.a_scroll_over_a_task_window(on_the_screen, &frame) {
+                return Ok(moved);
+            }
+        }
         if self.the_terminal_is_taking_the_keys() {
             let lines = the_lines_a_scroll_asks_for(&frame);
             if lines != 0 && self.alos_own_terminal_scrolled(lines) {

@@ -382,9 +382,14 @@ pub(crate) fn picture(
                 task.how_many_files,
                 &task.words,
                 &task.said,
+                task.scroll,
                 fonts,
             )
             .ok()
+            .map(|picture| crate::task_raster::TaskPicture {
+                place: task.place,
+                ..picture
+            })
         })
         .collect();
 

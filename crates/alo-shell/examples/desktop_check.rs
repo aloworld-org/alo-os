@@ -349,6 +349,8 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                             how_many_files: "",
                         },
                         said: said.to_vec(),
+                        scroll: alo_tasks::TheScroll::at_the_newest(),
+                        place: 0,
                     }];
                     // **One market window, so there is one to look at.** The
                     // model was built with no caller, the raster was built with
