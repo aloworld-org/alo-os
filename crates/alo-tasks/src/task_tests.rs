@@ -282,3 +282,27 @@ fn allowing_once_does_not_widen_what_the_task_holds() {
     assert_eq!(task.deny(), Answered::Denied);
     assert_eq!(task.permissions().how_many_grants(), held_before);
 }
+
+/// **A change still asked about keeps the task waiting**, whatever was said
+/// after it. A person may write beneath a card; the card is still there.
+#[test]
+fn a_change_still_asked_about_keeps_the_task_waiting() {
+    let mut task = a_task();
+    task.is_asking("Rename march.pdf");
+    task.alo_says(Turn::alo_proposing("Rename march.pdf"));
+    task.the_person_says("which one?");
+    task.alo_says(Turn::from_alo("That reply did not reach alo."));
+
+    assert!(task.is_waiting_for_the_person());
+    assert_eq!(
+        task.what_is_happening(),
+        crate::words::WAITING_FOR_YOUR_PERMISSION
+    );
+    assert!(task.in_the_panel().waiting_for_you);
+
+    let _ = task.allow_once();
+    assert!(
+        !task.is_waiting_for_the_person(),
+        "an answered change still kept the task waiting"
+    );
+}

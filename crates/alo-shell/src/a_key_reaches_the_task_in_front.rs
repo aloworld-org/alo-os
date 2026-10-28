@@ -140,7 +140,15 @@ impl Server {
             self.the_task_gave_the_keyboard_up();
             return;
         }
-        drop(self.a_key_reached_a_task_window(which, typed));
+        // **A reply that was sent is said to have gone nowhere**, because it
+        // has: `crate::what_becomes_of_a_reply` says why, and what it leaves
+        // for the owner. Dropped here until 2026-10-28, which left the window
+        // reading *alo is working* for ever with nothing asked.
+        if let crate::a_key_reaches_a_task_window::WhatTheReplyBoxDid::TheyReplied(_) =
+            self.a_key_reached_a_task_window(which, typed)
+        {
+            self.a_reply_was_sent(which, strings);
+        }
     }
 }
 

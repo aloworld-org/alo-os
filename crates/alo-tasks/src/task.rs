@@ -108,6 +108,18 @@ impl ATask {
         &self.permissions
     }
 
+    /// Whether this task is waiting for the person to answer something.
+    ///
+    /// **The conversation's last turn, or a change still asked about.** The
+    /// last turn alone is not enough once a person can write beneath a card: a
+    /// reply sent while a change waits ends the conversation on something else,
+    /// and a task read from the last turn alone would stop saying *waiting for
+    /// your permission* with the card and its two answers still on the screen.
+    #[must_use]
+    pub fn is_waiting_for_the_person(&self) -> bool {
+        self.conversation.is_waiting_for_the_person() || self.permissions.asking().is_some()
+    }
+
     /// Whether it is stopping.
     #[must_use]
     pub const fn stopping(&self) -> &Stopping {
@@ -227,7 +239,7 @@ impl ATask {
             Stopping::Asked => crate::words::STOPPING,
             Stopping::Stopped { .. } => crate::words::STOPPED,
             Stopping::NobodyAsked => {
-                if self.conversation.is_waiting_for_the_person() {
+                if self.is_waiting_for_the_person() {
                     crate::words::WAITING_FOR_YOUR_PERMISSION
                 } else if self.activity.doing_now().is_some() || self.conversation.is_alos_turn() {
                     crate::words::ALO_IS_WORKING
@@ -248,7 +260,7 @@ impl ATask {
                 .map(|turn| turn.said().to_owned())
                 .unwrap_or_default(),
             doing: self.activity.doing_now().map(|act| act.said().to_owned()),
-            waiting_for_you: self.conversation.is_waiting_for_the_person(),
+            waiting_for_you: self.is_waiting_for_the_person(),
             something_went_wrong: self.activity.anything_went_wrong(),
         }
     }

@@ -212,7 +212,7 @@ impl TheTasks {
         self.open
             .iter()
             .enumerate()
-            .filter(|(_, task)| task.conversation().is_waiting_for_the_person())
+            .filter(|(_, task)| task.is_waiting_for_the_person())
             .map(|(at, _)| WhichTask(at))
     }
 }
