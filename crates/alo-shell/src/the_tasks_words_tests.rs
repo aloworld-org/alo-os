@@ -323,10 +323,11 @@ fn a_task_not_asking_draws_no_answers_whatever_is_selected() {
     );
 }
 
-/// **alo's Markdown marks are taken out; a person's words and a proposal are
-/// drawn exactly as said.** The control is the same `**` in all three.
+/// **alo's Markdown is read into marks; a person's words and a proposal are
+/// drawn exactly as said, with nothing marked.** The control is the same `**`
+/// in all three.
 #[test]
-fn only_alos_own_words_lose_their_markdown() {
+fn only_alos_own_words_are_read_for_markdown() {
     let strings = words();
     let mut task = ATask::asked_for("rename **draft**.txt", InferenceSource::ThisMachine);
     task.alo_says(Turn::from_alo("1. **Header**: the word"));
@@ -341,9 +342,24 @@ fn only_alos_own_words_lose_their_markdown() {
         one.said[0].words, "rename **draft**.txt",
         "the person's words were changed"
     );
+    assert!(
+        one.said[0].marks.is_empty(),
+        "the person's words were marked"
+    );
     assert_eq!(one.said[1].words, "1. Header: the word");
+    assert!(
+        one.said[1]
+            .marks
+            .iter()
+            .any(|mark| mark.how == crate::alos_marked_words::HowItIsMarked::Strong),
+        "alo's bold was not read"
+    );
     assert_eq!(
         one.said[2].words, "Rename **draft**.txt",
         "the sentence to approve was changed"
+    );
+    assert!(
+        one.said[2].marks.is_empty(),
+        "the sentence to approve was marked"
     );
 }

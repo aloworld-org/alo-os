@@ -608,7 +608,7 @@ mod the_bundled_monospace_face {
     /// family this database's sans-serif, so a monospace face loaded ahead of
     /// Manrope would retypeset every label — and it found something else
     /// instead: `shape_said` asked for `Family::SansSerif` with `Attrs::new()`,
-    /// which means **weight 400**. Nothing in the Manrope family is weight 400,
+    /// which means **weight 400**. Nothing in the Manrope family was weight 400 then,
     /// so the exact-weight rule dropped the family and every window control
     /// label on this machine was drawn in **Inter**, with no error.
     ///

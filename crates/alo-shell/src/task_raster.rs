@@ -297,6 +297,7 @@ pub(crate) fn furniture(
                 fonts,
                 crate::task_text::ToWrite {
                     words: one.words,
+                    marks: one.marks,
                     style: style_of(one.whose),
                     ground: ground_of(one.whose, &palette),
                     ink: palette.ink,
@@ -381,6 +382,7 @@ pub(crate) fn furniture(
                     style: AStyle::Label,
                     ground,
                     ink,
+                    marks: &[],
                 },
                 px(room),
                 measure,
@@ -510,6 +512,7 @@ pub(crate) fn furniture(
     // status's own opaque ink box painting over the title's lower half — which
     // read as the title being clipped and was not.
     let mut write = |words: &str,
+                     marks: &[crate::alos_marked_words::AMark],
                      style: AStyle,
                      ground: [u8; 3],
                      ink: [u8; 3],
@@ -528,6 +531,7 @@ pub(crate) fn furniture(
                 style,
                 ground,
                 ink,
+                marks,
             },
             px(width),
             measure,
@@ -552,6 +556,7 @@ pub(crate) fn furniture(
                     style,
                     ground,
                     ink,
+                    marks,
                 },
                 fits,
                 measure,
@@ -578,6 +583,7 @@ pub(crate) fn furniture(
     // The heading: the title, what kind of task it is, and the status.
     write(
         &title.shown,
+        &[],
         AStyle::Heading,
         palette.surface,
         palette.ink,
@@ -589,6 +595,7 @@ pub(crate) fn furniture(
     );
     write(
         words.kind,
+        &[],
         AStyle::SmallLabel,
         palette.surface,
         palette.ink_secondary,
@@ -605,6 +612,7 @@ pub(crate) fn furniture(
     // wording and this crate's colour: ADR 0067's teal marks alo acting.
     write(
         words.status,
+        &[],
         AStyle::Label,
         palette.surface,
         palette.alo,
@@ -628,6 +636,7 @@ pub(crate) fn furniture(
         }
         write(
             label,
+            &[],
             AStyle::Label,
             palette.cool,
             palette.ink,
@@ -642,6 +651,7 @@ pub(crate) fn furniture(
     // The composer: the invitation, the model's name, and where it happens.
     write(
         words.invitation,
+        &[],
         AStyle::Body,
         palette.surface,
         palette.ink_quiet,
@@ -656,6 +666,7 @@ pub(crate) fn furniture(
     );
     write(
         words.model,
+        &[],
         AStyle::Label,
         palette.cool,
         palette.ink,
@@ -667,6 +678,7 @@ pub(crate) fn furniture(
     );
     write(
         words.destination,
+        &[],
         AStyle::Destination,
         palette.surface,
         palette.ink_quiet,
@@ -699,6 +711,7 @@ pub(crate) fn furniture(
         };
         write(
             one.words,
+            one.marks,
             style_of(block.whose),
             ground_of(block.whose, &palette),
             palette.ink,
@@ -720,6 +733,7 @@ pub(crate) fn furniture(
             let centred = |button: u32, label: u32| button.saturating_sub(label) / 2;
             write(
                 answers.allow_once,
+                &[],
                 AStyle::Label,
                 palette.ink,
                 palette.surface,
@@ -732,6 +746,7 @@ pub(crate) fn furniture(
             let deny_starts = left + m::ALLOW_ONCE_IS_WIDE + m::GAP;
             write(
                 answers.deny,
+                &[],
                 AStyle::Label,
                 palette.cool,
                 palette.ink,
@@ -747,6 +762,7 @@ pub(crate) fn furniture(
     // *Permissions and model choices apply to this task.*
     write(
         words.scope_note,
+        &[],
         AStyle::SmallLabel,
         palette.surface,
         palette.ink_quiet,

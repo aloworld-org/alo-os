@@ -1,6 +1,6 @@
 # Native control typefaces
 
-Six files, three families, and they are not interchangeable. **Manrope is what alo's own
+Seven files, three families, and they are not interchangeable. **Manrope is what alo's own
 surfaces are drawn in**, because it is what the design is drawn in. Inter
 remains for everything not yet moved to it, and as fallback. **Geist Mono is
 what a terminal's cells are drawn in**, and nothing else.
@@ -107,6 +107,32 @@ SHA-256: `f43edb46a08e1538413ea2383ef01ed93cdab191a2c57d2489d9590985858cf7`.
 145,104 bytes.
 Upstream: <https://github.com/googlefonts/manrope/tree/468c0dbe38efa331b80bfe9448256abe27be44c3/fonts/ttf>.
 
+## Manrope Regular — the static cut `Body/Large` needs
+
+Static instance, **unmodified**, under the same SIL Open Font License 1.1 in
+`Manrope-OFL.txt`. From the Manrope project's own repository at the **same
+revision as the SemiBold cut** — `468c0dbe38efa331b80bfe9448256abe27be44c3`,
+path `fonts/ttf/manrope-regular.ttf`. The SemiBold file fetched from that
+revision on the same day hashed to the value recorded above, so the two come
+from one place.
+
+**Why a third Manrope file.** The design draws what a person and alo say in
+`Body/Large`, *Manrope Regular 16 / 25*, and with only the variable file (200)
+and SemiBold (600) loaded, a task window drew every message at SemiBold. That
+was invisible until the owner decided on 2026-10-28 that alo's `**bold**` is
+drawn rather than stripped: bold is the design's SemiBold, and SemiBold on
+SemiBold is no emphasis at all. `docs/design/emphasis-in-alos-answers.md` has
+the decision.
+
+**Measured rather than assumed**: `the_regular_cut_is_manrope_at_400` in
+`../src/task_text_tests.rs` loads this file into the shell's own font system,
+finds a face whose family is `Manrope` at weight 400, and reads back the face
+that drew a Body letter.
+
+SHA-256: `d23d6eedf51dd495138aa1a83588027d4a63549cdfcc2fa5e0d8e84e09cf4cb1`.
+143,112 bytes.
+Upstream: <https://github.com/googlefonts/manrope/tree/468c0dbe38efa331b80bfe9448256abe27be44c3/fonts/ttf>.
+
 ## Geist Mono Medium — the static cut `Terminal/Command` needs
 
 Static instance, **unmodified**, under the same SIL Open Font License 1.1 in
@@ -193,7 +219,7 @@ Upstream: <https://github.com/google/fonts/tree/0b58fb370093f9a9f4ff785d94405710
 
 ## Fallback is deliberate and stays
 
-All five are loaded, so a script none covers falls through to whatever else the
+Every face here is loaded, so a script none covers falls through to whatever else the
 font database holds. **Dropping Inter would not simplify this** — it would
 narrow the scripts this machine can draw, and a person whose language stops
 rendering is a worse outcome than two files in a folder. The owner's direction
