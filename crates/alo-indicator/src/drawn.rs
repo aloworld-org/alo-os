@@ -321,7 +321,15 @@ mod tests {
         assert!(!drawn.lamp().cannot_tell());
         let said = drawn.lines_said(&strings);
         assert_eq!(said.len(), 2);
-        assert_eq!(said[1].text(), service.showing()[0].said(&strings).text());
+        assert_eq!(
+            said.get(1).map(alo_strings::Said::text),
+            service
+                .showing()
+                .first()
+                .map(|line| line.said(&strings))
+                .as_ref()
+                .map(alo_strings::Said::text)
+        );
         assert!(indicator.ended(departing));
         assert!(service.ended(asking));
 

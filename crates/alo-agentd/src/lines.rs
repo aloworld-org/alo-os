@@ -114,6 +114,12 @@ impl Line {
         Ok(Some(line))
     }
 
+    /// Give the connection over to being told what leaves (`crate::watchers`):
+    /// nothing is read on it again, and what it is written is the indicator's.
+    pub(crate) fn given_over(self) -> UnixStream {
+        self.writing
+    }
+
     /// Say one thing back.
     ///
     /// The line ending is this method's, because it is part of the envelope
@@ -125,12 +131,6 @@ impl Line {
     ///
     /// [`NotHeard::Broken`] — a caller that has gone, most often, which is not
     /// a fault of this machine's and is the reason it is not reported as one.
-    /// Give the connection over to being told what leaves (`crate::watchers`):
-    /// nothing is read on it again, and what it is written is the indicator's.
-    pub(crate) fn given_over(self) -> UnixStream {
-        self.writing
-    }
-
     pub fn say(&mut self, line: &str) -> Result<(), NotHeard> {
         self.writing
             .write_all(line.as_bytes())
