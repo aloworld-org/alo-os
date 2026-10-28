@@ -110,6 +110,11 @@ follow-up on is recorded as *not yet measured* rather than given one. The
 measurement and where it is kept are `alo-models`' and `alo-driving`'s; this
 decision only says that it exists and is kept apart.
 
+**First measured on 2026-10-28, once, by hand**: `gpt-4o` at OpenAI drove 20
+of 20 follow-ups (*reliably*) under the words a turn shows. Every model in the
+catalogue is recorded as *not yet measured* on follow-ups; none was run here.
+`crates/alo-models/data/follow-ups.toml` holds both.
+
 ## Compatibility
 
 The line comes **after** the request because an `alo-agent` written before

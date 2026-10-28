@@ -17,3 +17,19 @@
 #   models was not run for this. Nothing here is guessed.
 # - A grade belongs to the digest it was earned under. When the words a turn
 #   shows change, these stop being read, as ADR 0133 did to first-request grades.
+
+# Measured once, by hand, on 2026-10-28: the five follow-ups, four rounds,
+# every answer the call alo OS would act on and about what the conversation
+# meant. `against_a_model_at_a_provider the_follow_ups` re-runs it.
+[[follow_up]]
+model = "gpt-4o"
+at = "OpenAI"
+grade = "reliably"
+
+[follow_up.measured]
+machine = "the model runs at the provider; asked from WSL Ubuntu on a Windows Server 2022 host"
+date = "2026-10-28"
+runtime = "OpenAI chat completions API, held to the envelope"
+drove = 20
+of = 20
+instructions = "cf522fc50729caf13ce79d9fcb3fd44d48b95cc531316b9e4dac4a67c84ff406"
