@@ -25,6 +25,7 @@
 //! | [`Attempt`] | What a model produced for one exercise, put through the daemon's door |
 //! | [`Outcome`] | What became of it: five ways to fail, and one to drive |
 //! | [`Measured`] | A whole run, and the grade it earns |
+//! | [`AFollowUp`] | A request that only makes sense after an earlier conversation, measured apart (ADR 0136) |
 //! | [`BothRoads`] | One set of weights measured on each road, held to each other |
 //! | [`Instructions`] | How a model is told to answer, and the digest a grade names them by |
 //!
@@ -76,6 +77,7 @@ pub mod attempt;
 pub mod both_roads;
 pub mod exercise;
 pub mod exercises;
+pub mod follow_ups;
 pub mod measured;
 pub mod the_whole_call;
 
@@ -92,5 +94,6 @@ pub use attempt::{Attempt, Outcome};
 pub use both_roads::{BothRoads, NotAComparison, OnARoad};
 pub use exercise::{Exercise, prompt, prompt_under};
 pub use exercises::{Exercises, NotComparable, THE_SET};
+pub use follow_ups::{AFollowUp, FollowedUp, Said, THE_FOLLOW_UPS};
 pub use measured::{Measured, NotMeasurable, RELIABLY, SOMETIMES, grade_of, owes_a_second_round};
 pub use the_whole_call::{digest_of, grammar_for};
