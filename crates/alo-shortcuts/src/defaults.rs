@@ -43,10 +43,14 @@ const NOTHING: Modifiers = Modifiers::none();
 /// puts every one of them back through [`Chord::checked`]: the shipped list is
 /// held to the rules a person's own bindings are held to, or the rules are
 /// advice.
-const SHIPPED: [(Action, Chord); 22] = [
+const SHIPPED: [(Action, Chord); 23] = [
     (Action::TheAgent, Chord::shipped(SUPER, Key::A)),
     (Action::Launcher, Chord::shipped(SUPER, Key::Space)),
     (Action::Settings, Chord::shipped(SUPER, Key::I)),
+    // **Super+R, for the record**, chosen by the owner on 2026-10-27. No other
+    // desktop ships it for anything a person relies on, and the letter is the
+    // record's own.
+    (Action::SeeWhatAloDid, Chord::shipped(SUPER, Key::R)),
     // **Ctrl+Alt+T, which is the habit people arrive with.** It is the chord
     // GNOME, Ubuntu, Cinnamon and Xfce all ship for a terminal, and
     // `docs/features.md` promises *the habits people arrive with still work*.
@@ -291,6 +295,7 @@ mod tests {
         assert_eq!(said(Action::TheAgent), "Super+A");
         assert_eq!(said(Action::Launcher), "Super+Space");
         assert_eq!(said(Action::Settings), "Super+I");
+        assert_eq!(said(Action::SeeWhatAloDid), "Super+R");
         // **Alt+F3, beside Alt+F4 which closes.** KDE spells the window's own
         // operations menu this way. It is not Alt+Space, which most desktops
         // use: `alo_keyboards::switching` reserves that chord on this machine

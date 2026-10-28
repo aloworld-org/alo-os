@@ -94,6 +94,15 @@ pub const SETTINGS: Word = Word::saying("shortcuts.action.settings", "Open Setti
      place, the way an application has a name.",
 );
 
+/// What [`crate::Action::SeeWhatAloDid`] does.
+pub const SEE_WHAT_ALO_DID: Word =
+    Word::saying("shortcuts.action.see-what-alo-did", "See what alo did").noting(
+        "Opens the record: a plain list of everything the assistant built into alo OS did on this \
+     computer, what it was allowed to reach, and who approved it. \"alo\" is the assistant's \
+     name and is never translated or capitalised. Also the label of a row in Settings, so it \
+     reads as an action a person takes, not as a title.",
+    );
+
 /// What [`crate::Action::CloseWindow`] does.
 /// Show what can be done to the window in front.
 pub const WINDOW_OPTIONS: Word = Word::saying(
@@ -505,10 +514,11 @@ pub const KEPT_NOT_REPLACED: Word = Word::saying(
 /// the shortcuts do, what is held down, the keys that print a word, why a
 /// combination was refused, what one chord wanted twice says, and then what is
 /// said about the person's own file.
-pub const EVERY_WORD: [Word; 57] = [
+pub const EVERY_WORD: [Word; 58] = [
     THE_AGENT,
     LAUNCHER,
     SETTINGS,
+    SEE_WHAT_ALO_DID,
     TERMINAL,
     WHY_IS_IT_WAITING,
     WINDOW_OPTIONS,

@@ -118,6 +118,19 @@ pub enum Action {
     /// by keyboard and a person who has never been told a chord exists are
     /// different people*.
     Settings,
+    /// See what alo did: the record, opened by hand.
+    ///
+    /// **The road a person reaches the record by**, which nothing on a running
+    /// machine offered until 2026-10-27: `alo_shell::RecordWindow` was built,
+    /// routed and tested, and no key, row or Dock item opened it, so Demo 1
+    /// stopped at *open the record*. The owner chose this key and a row in
+    /// Settings that day.
+    ///
+    /// **This makes an existing promise true rather than adding one**:
+    /// `docs/features.md` promises the record and *afterwards, ask what it
+    /// did*, and ADR 0009 requires a plain road beside the agent's. It needs no
+    /// model and no agent, so it works on a machine where neither was set up.
+    SeeWhatAloDid,
     /// Show what can be done to the window in front.
     ///
     /// **The road a person reaches the window's own options by**, and the one
@@ -197,7 +210,7 @@ pub enum Action {
 
 impl Action {
     /// Everything a shortcut can do, in the order a settings panel lists them:
-    /// the three that summon something, then the five done to the window in
+    /// the six that summon something, then the five done to the window in
     /// front, then the four for moving between windows and applications, then
     /// the canvas's five, then the two that move the keyboard between the
     /// parts of the screen.
@@ -213,6 +226,7 @@ impl Action {
         Self::TheAgent,
         Self::Launcher,
         Self::Settings,
+        Self::SeeWhatAloDid,
         Self::Terminal,
         Self::WhyIsItWaiting,
         Self::CloseWindow,
@@ -242,6 +256,7 @@ impl Action {
             Self::TheAgent => words::THE_AGENT,
             Self::Launcher => words::LAUNCHER,
             Self::Settings => words::SETTINGS,
+            Self::SeeWhatAloDid => words::SEE_WHAT_ALO_DID,
             Self::Terminal => words::TERMINAL,
             Self::WhyIsItWaiting => words::WHY_IS_IT_WAITING,
             Self::CloseWindow => words::CLOSE_WINDOW,

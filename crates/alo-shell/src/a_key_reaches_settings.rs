@@ -201,6 +201,12 @@ fn the_press_is_carried_out(server: &mut Server, press: crate::SettingsPress, st
         server.a_provider_is_added();
         return;
     }
+    // **And the record is opened here** for the same reason: it is the
+    // server's window, and the one opener closes Settings first.
+    if let Some(SettingsDid::OpeningTheRecord) = did {
+        let _ = server.the_record_is_opened();
+        return;
+    }
     if let Some(SettingsDid::Kept(SettingsSection::Shortcuts, SettingsKept::Written)) = did
         && let Some(bound) = server.settings.shortcuts().cloned()
     {

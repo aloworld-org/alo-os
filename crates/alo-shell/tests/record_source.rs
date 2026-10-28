@@ -422,27 +422,15 @@ fn calls_to(door: &str, discriminator: Option<&str>) -> Vec<String> {
 /// bound to a surface nothing reaches teaches a person a way in and then takes
 /// it away, which is what `the_road_every_action_takes.rs` refuses for the
 /// keyboard's actions; this is the same rule for the record window's two doors.
-const CALLED_BY_NOTHING: [(&str, &str); 2] = [
-    (
-        "opened_by_hand",
-        "The person's road, and **nothing on a running machine walks it**. Measured \
-         2026-10-17: the only call is `nested_record.rs:196`, which is inside that \
-         file's `#[cfg(test)]` block — it begins at line 162. The two production \
-         calls of this name in the crate, `a_press_on_the_dock.rs:565` and \
-         `settings_command.rs:121`, are the **settings** window's door of the same \
-         name. So `docs/features.md`'s record — *explain what it did* — has a \
-         window that lays out, refuses correctly, and that no person can open.",
-    ),
-    (
-        "asked_what_it_did",
-        "The agent's road, and nothing walks it either. Measured 2026-10-17: zero \
+const CALLED_BY_NOTHING: [(&str, &str); 1] = [(
+    "asked_what_it_did",
+    "The agent's road, and nothing walks it. Measured 2026-10-17: zero \
          calls anywhere outside tests. Nothing is wrong with the door — what is \
          missing is that an agent's answer cannot reach this window. \
          `what_a_person_asked_goes_to_the_agent.rs` addresses an answer to a task \
          window, by `WhichTask`, and there is no *who asked* that can also be a \
          record or a terminal.",
-    ),
-];
+)];
 
 /// **Each of the window's two doors is called by something a machine runs, or
 /// is named above as one that is not.**

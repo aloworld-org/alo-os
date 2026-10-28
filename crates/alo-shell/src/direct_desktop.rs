@@ -330,6 +330,19 @@ pub trait TheDesktop {
         None
     }
 
+    /// Where this machine keeps its record, or why it could not say — asked
+    /// once as the session starts, so Super+R and the row in Settings can open
+    /// it.
+    ///
+    /// **The shell asks and does not read**, for the settings places' reason:
+    /// the description naming the record's path is a file. `None` leaves the
+    /// record unreachable and says so on the error stream when it is asked for.
+    fn the_recounting(
+        &mut self,
+    ) -> Option<Result<alo_recounting::Recounting, alo_recounting::NotRecounted>> {
+        None
+    }
+
     /// The canvas layout this person left, asked for once as the session
     /// starts.
     ///
@@ -532,6 +545,11 @@ impl crate::DirectSession {
             // leaves the seat exactly as it was.
             if let Some(places) = desktop.the_settings_places() {
                 server.the_settings_places_are(places);
+            }
+            // And where the record is, for the same reason and in the same
+            // breath.
+            if let Some(recounting) = desktop.the_recounting() {
+                server.the_record_is_kept(recounting);
             }
             match setup {
                 Ok((output, painter, input, others)) => crate::direct_loop::run_with_input(
@@ -824,7 +842,15 @@ impl LoopInput for Desk<'_> {
                 // event. `InputError::is_about_one_event` is the judgement
                 // and it is made once, here, because four copies of it is
                 // four chances to disagree about what is survivable.
-                let went = if server.settings_is_taking_the_keys() {
+                // **The record window first**, because opening it closes
+                // Settings and it is the one open window that answered a
+                // person's own chord most recently. Its question is false
+                // unless it is open, so an ordinary frame pays one `is_open`.
+                let went = if server.the_record_is_taking_the_keys() {
+                    crate::a_key_reaches_the_record::a_key_reaches_the_record(
+                        server, update, extent,
+                    )
+                } else if server.settings_is_taking_the_keys() {
                     crate::a_key_reaches_settings::a_key_reaches_settings(
                         server, update, extent, strings,
                     )
@@ -1012,10 +1038,11 @@ impl LoopInput for Desk<'_> {
 
     /// Make this frame's pictures and submit them with the clients.
     ///
-    /// The record and a question are not carried yet: nothing on a machine
-    /// opens either, and a frame that reserved room for them would be drawing
-    /// for a state that cannot arrive. They are the same two `Option`s in
-    /// `frame_pictures` when something does.
+    /// The record is carried while it is open — Super+R and a row in Settings
+    /// open it, since 2026-10-27. A question is not carried yet: nothing on a
+    /// machine opens the full-screen approval surface, and a frame that
+    /// reserved room for it would be drawing for a state that cannot arrive.
+    /// It is the second `Option` in `frame_pictures` when something does.
     fn present<T: crate::direct_loop::LoopTarget + crate::presentation::NativeTarget>(
         &mut self,
         server: &mut Server,
@@ -1510,9 +1537,11 @@ impl LoopInput for Desk<'_> {
             frame,
             self.strings,
         );
+        // **The record window, while it is open**, in this frame and on
+        // this display. A chord or a row in Settings opens it.
         let pictures = crate::nested_desktop::frame_pictures(
             frame,
-            None,
+            server.the_records_frame(frame.strings, frame.look),
             None,
             self.labels,
             (size.w, size.h),
@@ -1652,7 +1681,7 @@ impl LoopInput for Desk<'_> {
             );
             let its_pictures = crate::nested_desktop::frame_pictures(
                 frame,
-                None,
+                server.the_records_frame(frame.strings, frame.look),
                 None,
                 self.labels,
                 (size.w, size.h),

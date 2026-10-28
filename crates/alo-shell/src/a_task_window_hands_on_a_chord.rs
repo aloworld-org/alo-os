@@ -39,6 +39,7 @@ const fn sends_the_keyboard_elsewhere(action: Action) -> bool {
         Action::TheAgent
         | Action::Launcher
         | Action::Settings
+        | Action::SeeWhatAloDid
         | Action::WhyIsItWaiting
         | Action::WindowOptions
         | Action::CloseWindow
