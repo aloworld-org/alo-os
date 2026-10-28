@@ -841,6 +841,7 @@ in-use.the-agent	{agent}, the agent on this machine
 in-use.the-camera	The camera is in use by {who}
 in-use.the-microphone	The microphone is in use by {who}
 in-use.the-screen	The screen is in use by {who}
+indicator.cannot-tell	alo OS cannot tell whether your agent is sending anything — its service is not answering
 indicator.how-many-are-leaving#one	One thing is leaving this machine right now
 indicator.how-many-are-leaving#other	{how_many} things are leaving this machine right now
 indicator.no-compositor	What is leaving this machine cannot be shown: the desktop is not running. Sign in to the desktop, and the indicator appears with it
