@@ -128,7 +128,6 @@ fn a_process_waiting_on_an_empty_pipe_reads_as_parked() {
 fn a_command_on_a_terminal_is_waiting_for_the_keyboard() {
     let shell = crate::AShellOnAPseudoterminal::running(
         crate::HowBig::of(80, 24, 100).expect("a grid"),
-        None,
         "cat",
         &[],
     )
