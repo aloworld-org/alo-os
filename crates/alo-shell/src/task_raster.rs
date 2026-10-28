@@ -477,6 +477,27 @@ pub(crate) fn furniture(
     let limit = at.loc.y + at.size.h;
     let mut inked = Vec::new();
 
+    // **The title keeps to its one line, and ends in an ellipsis when it must.**
+    // The design's identity is 680 × 54: one Heading line of 30, a gap of 4 and
+    // the kind at 16, so a second line has nowhere to go but over the kind —
+    // which a walk on a booted machine showed a long request doing. Fitted the
+    // way the window edge fits a title (the owner's ruling of 2026-10-10 in
+    // `docs/design/the-external-window-edge.md`): grapheme-safe, measured in the
+    // face it is drawn in, and to the room this display's window actually has.
+    // The whole request is never lost: it is the first thing in the
+    // conversation, drawn in full.
+    let identity_is_wide = rows.heading.wide.saturating_sub(m::BESIDE_A_ROW * 2);
+    let the_titles_room = THE_IDENTITY_IS_WIDE.min(identity_is_wide);
+    let one_line = words.title.split_whitespace().collect::<Vec<_>>().join(" ");
+    // One short of the room, so the line the writer shapes at the full room
+    // can never wrap on a rounding of the measurement.
+    let title = crate::window_edge_title::fitted(
+        fonts,
+        &one_line,
+        px(the_titles_room).saturating_sub(1),
+        AStyle::Heading.metrics(measure),
+    );
+
     // **Centred in the band it is given, from its own measured height.** Not
     // from a half-of-a-leading constant: the height depends on the font, the
     // person's text size and how many lines it wrapped to, so a constant would
@@ -555,15 +576,14 @@ pub(crate) fn furniture(
     };
 
     // The heading: the title, what kind of task it is, and the status.
-    let identity_is_wide = rows.heading.wide.saturating_sub(m::BESIDE_A_ROW * 2);
     write(
-        words.title,
+        &title.shown,
         AStyle::Heading,
         palette.surface,
         palette.ink,
         m::BESIDE_A_ROW,
         (rows.heading.from_the_top + IDENTITY_STARTS, TITLE_IS_TALL),
-        THE_IDENTITY_IS_WIDE.min(identity_is_wide),
+        the_titles_room,
         false,
         None,
     );

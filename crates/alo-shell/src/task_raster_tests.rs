@@ -795,3 +795,65 @@ fn scrolled_back_the_start_of_the_conversation_is_drawn() {
         "scrolled back as far as it goes, the request was not at the top"
     );
 }
+
+/// **A long title keeps to its one line and never runs into the line beneath
+/// it.** Found walking a booted machine on 2026-10-28: a long request wrapped
+/// to a second line that ran over the small *alo task* label. The design's
+/// identity holds one Heading line of 30.
+#[test]
+fn a_long_title_keeps_to_one_line_and_ends_in_an_ellipsis() {
+    let files = two_files();
+    let mut fonts = cosmic_text::FontSystem::new();
+    let at = Rectangle::new((120, 80).into(), (1040, 800).into());
+    let long = crate::task_text::TheWordsInATaskWindow {
+        title: "rename /home/alo/Documents/march-invoice.pdf to invoice-march.pdf and then \
+                tell me what else is in that folder",
+        ..the_words(&files)
+    };
+    let drawn = furniture(
+        at,
+        a_look(),
+        0,
+        &long,
+        &[],
+        alo_tasks::TheScroll::at_the_newest(),
+        &mut fonts,
+    )
+    .expect("the design's size");
+
+    let border = i32::try_from(alo_tasks::measures::BORDER).expect("1");
+    let (x, y) = (
+        at.loc.x + border + i32::try_from(alo_tasks::measures::BESIDE_A_ROW).expect("32"),
+        at.loc.y + border + i32::try_from(super::IDENTITY_STARTS).expect("11"),
+    );
+    let title = drawn
+        .inked
+        .iter()
+        .find(|one| {
+            one.area.loc.x == x
+                && (y..y + i32::try_from(super::TITLE_IS_TALL).expect("30"))
+                    .contains(&one.area.loc.y)
+        })
+        .expect("the title was drawn where the identity starts");
+    assert!(
+        title.area.size.h <= i32::try_from(super::TITLE_IS_TALL).expect("30"),
+        "the title took {} rows, more than its one line",
+        title.area.size.h
+    );
+
+    let fitted = crate::window_edge_title::fitted(
+        &mut fonts,
+        long.title,
+        i32::try_from(super::THE_IDENTITY_IS_WIDE).expect("680") - 1,
+        crate::task_text::AStyle::Heading.metrics(a_look().measure()),
+    );
+    assert!(
+        fitted.cut,
+        "the control: this title is too long for its line"
+    );
+    assert!(
+        fitted
+            .shown
+            .ends_with(crate::window_edge_title::AN_ELLIPSIS)
+    );
+}
