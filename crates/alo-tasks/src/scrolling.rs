@@ -35,6 +35,8 @@ pub struct TheScroll {
     back: u32,
     /// How far back it can go, as the last frame measured.
     the_most: u32,
+    /// How tall the view is, as the last frame measured.
+    the_view: u32,
     /// How many turns the conversation had when the person last scrolled.
     turns_then: usize,
 }
