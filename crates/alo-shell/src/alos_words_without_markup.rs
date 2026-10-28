@@ -89,7 +89,7 @@ fn as_a_bullet(line: &str) -> String {
 /// was never Markdown is kept.
 fn without_pairs(line: &str, mark: &str) -> String {
     let how_many = line.matches(mark).count();
-    if how_many >= 2 && how_many % 2 == 0 {
+    if how_many >= 2 && how_many.is_multiple_of(2) {
         line.replace(mark, "")
     } else {
         line.to_owned()

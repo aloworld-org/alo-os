@@ -41,7 +41,7 @@ enum TheTaskTook {
     /// A shortcut this person has bound, to be carried out rather than typed.
     AChord(alo_shortcuts::Chord),
     /// Page Up or Page Down, which scroll the conversation rather than type.
-    APage(crate::a_task_window_scrolls::APage),
+    Scrolling(crate::a_task_window_scrolls::APage),
     /// A key, as typing and as an answer to a waiting change.
     AKey(ComposerKey, ApprovalKey),
 }
@@ -104,12 +104,12 @@ impl Server {
                 // wheel still has to be able to read the start of a long answer.
                 match symbol {
                     smithay::input::keyboard::Keysym::Page_Up => {
-                        return FilterResult::Intercept(Some(TheTaskTook::APage(
+                        return FilterResult::Intercept(Some(TheTaskTook::Scrolling(
                             crate::a_task_window_scrolls::APage::Back,
                         )));
                     }
                     smithay::input::keyboard::Keysym::Page_Down => {
-                        return FilterResult::Intercept(Some(TheTaskTook::APage(
+                        return FilterResult::Intercept(Some(TheTaskTook::Scrolling(
                             crate::a_task_window_scrolls::APage::Forward,
                         )));
                     }
@@ -135,7 +135,7 @@ impl Server {
                 let _ = self.a_task_window_hands_on_a_chord(chord);
                 Ok(None)
             }
-            Some(TheTaskTook::APage(page)) => {
+            Some(TheTaskTook::Scrolling(page)) => {
                 if let Some(which) = self.the_task_with_the_keyboard {
                     let _ = self.a_page_in_the_task(which, page);
                 }

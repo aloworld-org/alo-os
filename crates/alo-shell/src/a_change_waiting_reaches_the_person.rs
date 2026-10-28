@@ -332,8 +332,7 @@ impl crate::Server {
 fn it_only_announces(said: &str, sentence: &str) -> bool {
     said.lines()
         .map(str::trim)
-        .filter(|line| !line.is_empty())
-        .next_back()
+        .rfind(|line| !line.is_empty())
         .is_some_and(|last| last == sentence.trim())
 }
 
