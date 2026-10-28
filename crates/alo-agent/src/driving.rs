@@ -91,7 +91,7 @@ pub fn driving(
 
 /// **Drive a follow-up to its end**: [`driving`], with the conversation the
 /// person had in that task window shown to the model before the request
-/// ([ADR 0135](../../../docs/decisions/0135-a-follow-up-is-sent-with-the-conversation-so-far.md)).
+/// ([ADR 0136](../../../docs/decisions/0136-a-follow-up-is-sent-with-the-conversation-so-far.md)).
 ///
 /// The earlier conversation reaches the model **inside the question this turn
 /// asks**, and by no other road — so it leaves the machine only where a

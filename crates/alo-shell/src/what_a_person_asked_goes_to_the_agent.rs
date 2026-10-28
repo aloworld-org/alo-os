@@ -169,7 +169,7 @@ impl TheAgentsDoor {
     /// **Hand over a follow-up**, with the conversation so far: [`Self::ask`]
     /// with what was said before in that task window, so alo can tell what
     /// *and the April one too* refers to
-    /// ([ADR 0135](../../../docs/decisions/0135-a-follow-up-is-sent-with-the-conversation-so-far.md)).
+    /// ([ADR 0136](../../../docs/decisions/0136-a-follow-up-is-sent-with-the-conversation-so-far.md)).
     ///
     /// `earlier` is built at the moment the person pressed Enter and not
     /// before — context offered, never watched — and it is already held to its
@@ -260,7 +260,7 @@ impl Said {
 ///
 /// `earlier` is the line the conversation so far travels on — the marker
 /// alone for a first request — written **after** the request, where an agent
-/// from before ADR 0135 never reads, so an older agent answers a follow-up as
+/// from before ADR 0136 never reads, so an older agent answers a follow-up as
 /// a first request rather than mistaking the conversation for one.
 fn ask_and_wait(
     socket: &Path,

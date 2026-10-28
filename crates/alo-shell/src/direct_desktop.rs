@@ -1185,7 +1185,7 @@ impl LoopInput for Desk<'_> {
             }
         }
         // **And a follow-up typed in a task window goes to the agent with the
-        // conversation so far** (ADR 0135), into the window it was typed in.
+        // conversation so far** (ADR 0136), into the window it was typed in.
         // Taken for the same reason as the requests above: one Enter, one ask.
         for follow_up in server.take_the_follow_ups() {
             self.asking.ask_following(

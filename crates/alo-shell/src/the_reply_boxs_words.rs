@@ -1,6 +1,6 @@
 //! What a task window says about a reply a person sent from its reply box.
 //!
-//! **A reply reaches alo, with the conversation so far**, since ADR 0135 — so
+//! **A reply reaches alo, with the conversation so far**, since ADR 0136 — so
 //! these are the three things the window says when that is not the whole
 //! story: the reply did not go because a change above is still waiting, or
 //! because alo has not answered yet, or it went without the oldest part of a

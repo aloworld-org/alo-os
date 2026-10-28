@@ -4,7 +4,7 @@ Status: public surface. The socket and its first line are
 [ADR 0109](../decisions/0109-a-persons-words-reach-the-agent-through-a-socket-systemd-opens-as-the-agent.md)
 (2026-10-14); the folders line was added on 2026-10-24; the earlier
 conversation was added on 2026-10-28 by
-[ADR 0135](../decisions/0135-a-follow-up-is-sent-with-the-conversation-so-far.md).
+[ADR 0136](../decisions/0136-a-follow-up-is-sent-with-the-conversation-so-far.md).
 This document was written that day: until then the lines were described only
 in code, in two places that held each other to nothing.
 

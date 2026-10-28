@@ -1,6 +1,6 @@
 //! **What was said before a follow-up**, and how a model is told it.
 //!
-//! [ADR 0135](../../../docs/decisions/0135-a-follow-up-is-sent-with-the-conversation-so-far.md):
+//! [ADR 0136](../../../docs/decisions/0136-a-follow-up-is-sent-with-the-conversation-so-far.md):
 //! when a person types a follow-up in a task window — *and the April one too* —
 //! it is sent to alo with the conversation so far, so alo can tell what it
 //! refers to. Until then a turn was one request and nothing before it.
@@ -33,7 +33,7 @@
 //! The instructions a grade names by digest
 //! ([`crate::Instructions::SHOWN_TO_A_TURN`]) are untouched, so no grade is
 //! set aside. What that costs is the same as the language clause's: a grade
-//! earned on a first request is not proof about a follow-up. ADR 0135 says so.
+//! earned on a first request is not proof about a follow-up. ADR 0136 says so.
 
 /// What the person did with a change alo proposed.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

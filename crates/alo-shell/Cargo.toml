@@ -104,7 +104,7 @@ alo-dock = { path = "../alo-dock" }
 # below keeps its meaning.
 alo-tasks = { path = "../alo-tasks" }
 # The conversation so far, which a follow-up typed in a task window carries to
-# the agent (ADR 0135): its shape, its bound and the line it travels on. That
+# the agent (ADR 0136): its shape, its bound and the line it travels on. That
 # crate opens nothing and asks nothing; this one builds the value from a task
 # and writes it after the request.
 alo-instructing = { path = "../alo-instructing" }

@@ -551,7 +551,7 @@ fn the_desktop_is_told_before_an_agents_question_reaches_the_provider() {
 }
 
 /// **A follow-up's earlier conversation leaves under the same indicator**
-/// (ADR 0135). It travels inside the agent's question and by no other road,
+/// (ADR 0136). It travels inside the agent's question and by no other road,
 /// so the desktop is told before the connection that carries it reaches the
 /// provider, exactly as for a first request — and it is sent only because an
 /// agent asked, which is only because a person pressed Enter.

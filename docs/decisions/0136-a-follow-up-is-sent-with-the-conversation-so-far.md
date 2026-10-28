@@ -1,4 +1,4 @@
-# ADR 0135 — A follow-up is sent with the conversation so far
+# ADR 0136 — A follow-up is sent with the conversation so far
 
 **Status:** **accepted, 2026-10-28, by the owner**, who decided that a
 follow-up typed in a task window is sent to alo together with the

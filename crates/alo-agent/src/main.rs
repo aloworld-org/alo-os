@@ -138,7 +138,7 @@ fn run() -> Result<ExitCode, String> {
     //
     // **And a follow-up is shown what came before it**, inside the question
     // this turn asks the daemon — the only road anything takes off this
-    // machine, so the indicator and the record see it (ADR 0135).
+    // machine, so the indicator and the record see it (ADR 0136).
     let happened = driving_after(
         &asked.earlier,
         &asked.request,
@@ -266,7 +266,7 @@ struct Asked {
     /// `alo-ask` writes one line and still does.
     may_reach: WhatItMayReach,
     /// What was said before, when this is a follow-up typed in a task window
-    /// (ADR 0135); nothing for a first request and for a request typed here.
+    /// (ADR 0136); nothing for a first request and for a request typed here.
     earlier: TheConversationSoFar,
 }
 
