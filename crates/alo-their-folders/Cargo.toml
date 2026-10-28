@@ -8,11 +8,14 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
-# The names a person reads, which here are also the names on the disk. Every
-# other crate uses this for sentences; this one uses it for three nouns, and
-# that is the whole reason the folders can be Dokumente on a German machine
-# without a second list anywhere.
+# The refusals this crate says, and the language a person reads.
 alo-strings = { path = "../alo-strings" }
+
+# The language the program names folders in: the person's own settings first
+# (`alo-choosing`), then the language the machine was set up in on its
+# first-start sheet (`alo-formats`). The binary asks both; the library does not.
+alo-choosing = { path = "../alo-choosing" }
+alo-formats = { path = "../alo-formats" }
 
 # The one derive this crate rents, for the refusals a caller has to tell apart.
 thiserror = { workspace = true }
@@ -22,6 +25,12 @@ thiserror = { workspace = true }
 # own list; the acceptance test asks whether what this crate says survives
 # being put beside everybody else's.
 alo-saying = { path = "../alo-saying" }
+
+# The picker and the grant a person makes from it, walked against a German
+# person's real `Dokumente` to show alo reaches a folder by the name really on
+# the disk (ADR 0136).
+alo-picking = { path = "../alo-picking" }
+alo-capability = { path = "../alo-capability" }
 
 [lints]
 workspace = true

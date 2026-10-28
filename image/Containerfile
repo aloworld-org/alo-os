@@ -435,6 +435,36 @@ COPY --from=built /alo-os/target/${THE_TARGET}/release/alo-giving-a-name /usr/li
 # `CAP_DAC_OVERRIDE` either and a person's `0700` home is closed to it.
 COPY --from=built /alo-os/target/${THE_TARGET}/release/alo-their-folders /usr/libexec/alo-their-folders
 
+# **What those folders are called, in the person's language**: the
+# translations `xdg-user-dirs` ships, which is what every Linux desktop names
+# them with, so Dolphin and every other program agree with alo OS about where a
+# German person's `Dokumente` is ([ADR 0136](../docs/decisions/0136-home-folder-names-come-from-xdg-user-dirs.md)).
+# Measured on 2026-10-28: the base has no `xdg-user-dirs`, keeps every
+# language's files (`%_install_langs` is `all`), and Fedora 42's 0.18 carries
+# 22 of the 24 official EU languages — English is its source, and Maltese has
+# no catalogue, so a Maltese person's folders are its English names.
+#
+# **Its own updater is masked.** `xdg-user-dirs-update` runs in the C locale
+# here — the base has only `glibc-minimal-langpack` — and would add English
+# folders beside a person's own. `alo-their-folders` is what names them; this
+# package is the names. Its autostart entry is left as shipped, because nothing
+# on this machine starts a desktop's autostart entries.
+#
+# **And the real catalogue is read by the real program**: a person whose
+# settings say German is given `Dokumente` in a throwaway home. A file being
+# there is not the same as it being read, which this repository has learnt
+# about a converter, a decoder and a language sheet.
+RUN dnf install --assumeyes --setopt=install_weak_deps=False xdg-user-dirs \
+ && dnf clean all \
+ && systemctl --global mask xdg-user-dirs.service \
+ && test -L /etc/systemd/user/xdg-user-dirs.service \
+ && mkdir -p /tmp/a-german-home/.config/alo \
+ && printf 'format = 3\n\n[reading]\nlanguages = ["de"]\n' > /tmp/a-german-home/.config/alo/settings.toml \
+ && env HOME=/tmp/a-german-home /usr/libexec/alo-their-folders \
+ && test -d /tmp/a-german-home/Dokumente \
+ && grep -q 'XDG_DOCUMENTS_DIR="$HOME/Dokumente"' /tmp/a-german-home/.config/user-dirs.dirs \
+ && rm -rf /tmp/a-german-home
+
 # **The agent itself, in `bin` rather than `libexec`, because something other
 # than systemd runs it.**
 #

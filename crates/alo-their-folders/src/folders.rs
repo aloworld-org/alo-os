@@ -16,12 +16,11 @@
 //!
 //! # The name in the record is not the name on the disk
 //!
-//! The folder on the disk is called whatever the person's language calls it.
+//! The folder on the disk is called whatever `xdg-user-dirs` calls it in the
+//! person's language ([`crate::catalogue`]).
 //! The key in the record is always the same ASCII, because that key is what
 //! other software reads — it is a name for programs, not for people, and
 //! translating it would hide the folder from everything that looks for it.
-
-use crate::words::{DOCUMENTS, DOWNLOADS, PICTURES, Word};
 
 /// One of the folders a person gets in their home.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -40,11 +39,11 @@ impl Folder {
 
     /// The word this folder is named by, which a person's language translates.
     #[must_use]
-    pub const fn word(self) -> Word {
+    pub const fn xdg_name(self) -> &'static str {
         match self {
-            Self::Documents => DOCUMENTS,
-            Self::Downloads => DOWNLOADS,
-            Self::Pictures => PICTURES,
+            Self::Documents => "Documents",
+            Self::Downloads => "Downloads",
+            Self::Pictures => "Pictures",
         }
     }
 
@@ -100,10 +99,7 @@ mod tests {
         keys.dedup();
         assert_eq!(keys.len(), Folder::ALL.len());
 
-        let mut words: Vec<String> = Folder::ALL
-            .iter()
-            .map(|it| it.word().key().to_string())
-            .collect();
+        let mut words: Vec<&str> = Folder::ALL.iter().map(|it| it.xdg_name()).collect();
         words.sort_unstable();
         words.dedup();
         assert_eq!(words.len(), Folder::ALL.len());

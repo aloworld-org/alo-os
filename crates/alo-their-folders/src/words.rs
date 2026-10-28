@@ -1,15 +1,11 @@
-//! Every string this crate can say, and the English beside each one.
+//! Every string this crate can say, and the English beside each one: the
+//! refusals, read by whoever is looking after a machine where making the
+//! folders did not work.
 //!
-//! Three of them are not sentences at all: they are the **names of folders on
-//! a person's disk**. A French machine makes *Documents*, a German one
-//! *Dokumente*, and a Greek one a name in Greek letters — because a person who
-//! chose their language on the first screen should not then be handed three
-//! English folders to live in. Every other desktop operating system does this,
-//! and `docs/features.md`'s rule that hardcoded English is a bug does not stop
-//! being true because the string happens to end up in a path.
-//!
-//! The rest are refusals, read by whoever is looking after a machine where
-//! making the folders did not work.
+//! **The folders' names are not here.** They were, until 2026-10-28, as three
+//! words for alo OS's own translators. They are now what `xdg-user-dirs` calls
+//! them in the person's language ([`crate::catalogue`], ADR 0136), so a German
+//! person's `Dokumente` is the `Dokumente` every other Linux program expects.
 //!
 //! The shape is `alo-picking`'s and is copied rather than re-decided:
 //! constants under one area, `alo_strings::Word` because these are literals in
@@ -17,13 +13,12 @@
 //! tests at the bottom holding the list to the rules every other list is held
 //! to.
 //!
-//! # A folder name is translated under tighter rules than a sentence
+//! # A folder name is held to tighter rules than a sentence
 //!
-//! It becomes a directory on a disk, so the note on each of the three says so
-//! and says what that costs: one word where the language has one, no slash, no
-//! leading dot, and nothing that is only punctuation. `crate::naming` refuses
-//! a name that breaks those rather than making a folder a person cannot see or
-//! cannot open, and the refusal names the key so the list can be fixed.
+//! It becomes a directory on a disk: no slash, no leading dot, and nothing
+//! that is only punctuation. `crate::naming` refuses a name that breaks those
+//! rather than making a folder a person cannot see or cannot open, and the
+//! refusal names the English key so the catalogue can be fixed.
 
 use alo_strings::Vocabulary;
 
@@ -31,36 +26,6 @@ use alo_strings::Vocabulary;
 /// crate's files and the tests that read its list name it as
 /// `crate::words::Word`.
 pub use alo_strings::Word;
-
-// ---------------------------------------------------------------------------
-// The folders themselves. These become directories on a person's disk.
-// ---------------------------------------------------------------------------
-
-/// Where a person's own documents go.
-pub const DOCUMENTS: Word = Word::saying("their-folders.documents", "Documents").noting(
-    "A FOLDER NAME, not a sentence: this becomes a real directory in the person's home folder, \
-     and they will see it and type it. Use the ordinary word your language already uses for this \
-     folder on a computer - the same one Windows and macOS use in your language - so that it \
-     looks like every other machine they have used. One word where your language has one. It must \
-     not contain a slash, must not begin with a dot, and must not be only punctuation.",
-);
-
-/// Where things a person fetched from elsewhere arrive.
-pub const DOWNLOADS: Word = Word::saying("their-folders.downloads", "Downloads").noting(
-    "A FOLDER NAME, not a sentence: this becomes a real directory in the person's home folder. \
-     The folder things arrive in when they are fetched from the network. Use the ordinary word \
-     your language already uses for this folder on a computer. One word where your language has \
-     one. It must not contain a slash, must not begin with a dot, and must not be only \
-     punctuation.",
-);
-
-/// Where a person's pictures go.
-pub const PICTURES: Word = Word::saying("their-folders.pictures", "Pictures").noting(
-    "A FOLDER NAME, not a sentence: this becomes a real directory in the person's home folder. \
-     Photographs and images, not drawings or diagrams specifically. Use the ordinary word your \
-     language already uses for this folder on a computer. One word where your language has one. \
-     It must not contain a slash, must not begin with a dot, and must not be only punctuation.",
-);
 
 // ---------------------------------------------------------------------------
 // Refusals, read by whoever looks after the machine.
@@ -76,7 +41,8 @@ pub const NOT_A_NAME_A_FOLDER_CAN_HAVE: Word = Word::saying(
     "Shown to whoever looks after the machine, not to the person signing in. It means a \
      translation of one of the three folder names is empty, contains a slash, begins with a dot, \
      or is only punctuation - so making it would give the person a folder they cannot see or \
-     cannot open.",
+     cannot open. The names come from the translations of xdg-user-dirs, the package every Linux \
+     desktop names these folders with.",
 );
 
 /// The disk would not make the folder.
@@ -104,10 +70,7 @@ pub const THE_RECORD_WAS_NOT_WRITTEN: Word = Word::saying(
 );
 
 /// Every string this crate can say, in the order a translator meets them.
-pub const EVERY_WORD: [Word; 6] = [
-    DOCUMENTS,
-    DOWNLOADS,
-    PICTURES,
+pub const EVERY_WORD: [Word; 3] = [
     NOT_A_NAME_A_FOLDER_CAN_HAVE,
     THE_DISK_WOULD_NOT,
     THE_RECORD_WAS_NOT_WRITTEN,

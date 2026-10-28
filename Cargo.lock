@@ -1896,6 +1896,10 @@ dependencies = [
 name = "alo-their-folders"
 version = "0.0.1"
 dependencies = [
+ "alo-capability",
+ "alo-choosing",
+ "alo-formats",
+ "alo-picking",
  "alo-saying",
  "alo-strings",
  "thiserror 2.0.20",

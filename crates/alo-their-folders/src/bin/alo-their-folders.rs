@@ -48,23 +48,45 @@
 //! sentence whoever looks after the machine reads, with the operating system's
 //! own words after it for a log.
 //!
-//! # Today these names are English, and that is not this program's doing
+//! # The names are in the person's language
 //!
-//! `alo_their_folders` names each folder through `alo_strings`, so a machine
-//! that prefers German makes `Dokumente`. **This program does not prefer one
-//! yet.** Since 2026-10-28 the first-start sheet's language is kept and given
-//! to the person as their reading language (`alo_shell::the_language_set_up_in`,
-//! run by their desktop), but this program loads no translations and asks no
-//! settings, so every machine makes the English names until it does — and it
-//! runs beside the desktop at sign-in, so on a first sign-in it could not
-//! count on the language having been written yet. The one line to change is
-//! the `Strings` built below.
+//! The first language in their own `settings.toml`'s `[reading]`, or — where
+//! that names none — the language the machine was set up in on its first-start
+//! sheet (`alo_formats::set_up_in`). That is the rule the person's desktop
+//! gives them their reading language by, asked here rather than waited for,
+//! because this runs beside the desktop at sign-in and on a first sign-in
+//! could not count on the desktop having written it yet. The names are
+//! `xdg-user-dirs`' own for that language (`alo_their_folders::catalogue`,
+//! ADR 0136), read from `/usr/share/locale`.
+//!
+//! **A folder the record already names keeps its name.** Where the person's
+//! language now calls it something else, this says so on the journal and
+//! renames nothing: offering the rename is a screen, and that screen is not
+//! designed yet.
 
 use std::path::Path;
 use std::process::ExitCode;
 
-use alo_strings::Strings;
-use alo_their_folders::{OnThisDisk, made_for, their_folders_words};
+use alo_strings::{Language, Strings};
+use alo_their_folders::catalogue::THE_LOCALES;
+use alo_their_folders::{Catalogue, OnThisDisk, made_for, their_folders_words};
+
+/// **The language this person reads**: their own settings first, then the
+/// language the machine was set up in — or [`None`], which is the English
+/// names.
+fn the_language_they_read(home: &str) -> Option<Language> {
+    let settings = alo_choosing::where_it_is(
+        std::env::var_os("XDG_CONFIG_HOME").as_deref(),
+        Some(std::ffi::OsStr::new(home)),
+    )
+    .and_then(|at| alo_choosing::Settings::at(&at).ok())
+    .and_then(|settings| settings.languages().first().cloned());
+    settings.or_else(|| {
+        alo_formats::set_up_in::read(Path::new(alo_formats::set_up_in::THE_MACHINES_SET_UP_IN))
+            .ok()
+            .and_then(|set_up| set_up.language())
+    })
+}
 
 /// Makes this person's folders and stops.
 fn main() -> ExitCode {
@@ -89,7 +111,22 @@ fn main() -> ExitCode {
         }
     };
 
-    let made = made_for(Path::new(&home), &strings, &OnThisDisk);
+    let language = the_language_they_read(&home);
+    let catalogue = language
+        .as_ref()
+        .and_then(|it| Catalogue::for_language(Path::new(THE_LOCALES), it));
+    println!(
+        "alo-their-folders: the names are {}",
+        match (&language, &catalogue) {
+            (Some(language), Some(_)) => format!("xdg-user-dirs' own in {}", language.tag()),
+            (Some(language), None) => format!(
+                "xdg-user-dirs' English keys: {THE_LOCALES} has no catalogue for {}",
+                language.tag()
+            ),
+            (None, _) => "xdg-user-dirs' English keys: nobody has named a language".to_owned(),
+        }
+    );
+    let made = made_for(Path::new(&home), catalogue.as_ref(), &OnThisDisk);
 
     for (_, at) in made.folders() {
         println!("alo-their-folders: {}", at.display());
@@ -98,6 +135,14 @@ fn main() -> ExitCode {
         println!(
             "alo-their-folders: and {} says which folder is which",
             record.display()
+        );
+    }
+    for kept in made.named_differently() {
+        println!(
+            "alo-their-folders: {} keeps its name; this person's language calls it {} now, and \
+             renaming it is theirs to choose",
+            kept.at.display(),
+            kept.now
         );
     }
     for refusal in made.refusals() {
