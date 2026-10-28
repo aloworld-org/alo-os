@@ -5,7 +5,8 @@
 //! one message in and one message out. This file knows the one thing that
 //! convention never agreed on — **how a service says the money is gone.** It is
 //! a second reason to change and therefore a second file (law 4), and it is the
-//! only place in this crate that reads the body of a refusal at all.
+//! first place in this crate that read the body of a refusal; `crate::too_long`
+//! reads one more name the same way.
 //!
 //! # There is no status that means it, so there is a list
 //!
@@ -77,7 +78,7 @@ pub(crate) fn said_in(body: &str) -> bool {
 
 /// Every place in a refusal a service might have put the name of what went
 /// wrong.
-fn named_in(refusal: &Value) -> impl Iterator<Item = &str> {
+pub(crate) fn named_in(refusal: &Value) -> impl Iterator<Item = &str> {
     let inside = refusal.get("error");
     [
         inside.and_then(|error| error.get("code")),
@@ -97,7 +98,7 @@ fn named_in(refusal: &Value) -> impl Iterator<Item = &str> {
 /// `INSUFFICIENT_QUOTA`, `insufficient-quota`, `InsufficientQuota` — and which
 /// one a provider chose is not a thing this repository should have an opinion
 /// about. Matching on the letters is the opinion it has instead.
-fn plainly(name: &str) -> String {
+pub(crate) fn plainly(name: &str) -> String {
     name.chars()
         .filter(char::is_ascii_alphanumeric)
         .map(|letter| letter.to_ascii_lowercase())

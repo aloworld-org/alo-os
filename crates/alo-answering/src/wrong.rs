@@ -163,6 +163,15 @@ pub enum WentWrong {
     /// was turned away. *Nothing answered* would send somebody to check on a
     /// machine that is working. `crate::refused_there` has the three.
     RefusedThere(RefusedThere),
+    /// The place answered that the question was longer than the model can
+    /// read at once.
+    ///
+    /// A different thing to be **told**: *nothing usable* would send somebody
+    /// to ask again with the same conversation and meet the same wall, and the
+    /// only way on is a shorter one — which alo OS never makes by dropping the
+    /// start of what they said (ADR 0136). Read off the place's own refusal,
+    /// never guessed from a length.
+    TooLongForTheModel,
 }
 
 impl WentWrong {
@@ -180,6 +189,7 @@ impl WentWrong {
             Self::HavingTrouble(_) => words::HAVING_TROUBLE,
             Self::RanOut => words::RAN_OUT,
             Self::NoWayThere => words::NO_WAY_THERE,
+            Self::TooLongForTheModel => words::TOO_LONG_FOR_THE_MODEL,
         }
     }
 
@@ -216,6 +226,7 @@ impl WentWrong {
             | Self::SentSomewhereElse
             | Self::HavingTrouble(_)
             | Self::NoWayThere
+            | Self::TooLongForTheModel
             | Self::RefusedThere(_) => None,
         }
     }

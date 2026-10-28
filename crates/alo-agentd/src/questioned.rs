@@ -341,6 +341,7 @@ fn judged(
                 | WentWrong::RanOut
                 | WentWrong::SentSomewhereElse
                 | WentWrong::NoWayThere
+                | WentWrong::TooLongForTheModel
                 // Not reachable from this machine's own model, which is the only
                 // thing a question from another machine is put to; answered as
                 // what it would mean rather than assumed away.

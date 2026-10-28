@@ -167,6 +167,20 @@ pub const NO_WAY_THERE: Word = Word::saying(
      answered and arrives already in the reader's language.",
 );
 
+/// The question was longer than the model there can read, and it said so.
+pub const TOO_LONG_FOR_THE_MODEL: Word = Word::saying(
+    "answering.wrong.too-long-for-the-model",
+    "nothing was answered {source} — this conversation is now longer than the model there can \
+     read. Start a new one from the Dock to continue",
+)
+.noting(
+    "Said when the model refused the question because it was longer than it can read at once — \
+     which, in a task window, is the whole conversation so far, sent with each reply. Nothing was \
+     shortened to make it fit and nothing was answered. \"Start a new one\" means a new request, \
+     which the person types in the Dock, the bar at the bottom of the screen; use the name the \
+     Dock has in your language. {source} is where the question was to be answered and arrives \
+     already in the reader's language.",
+);
 // ---------------------------------------------------------------------------
 // The line that is always shown — [`crate::Failed::nothing_was_sent`].
 //
@@ -316,7 +330,7 @@ pub const NOT_ON_OFFER: Word = Word::saying(
 ///
 /// The array is what a test reads down and what [`declare_into`] walks, so a
 /// word declared above and left out here is a string nothing can look up.
-pub const EVERY_WORD: [Word; 18] = [
+pub const EVERY_WORD: [Word; 19] = [
     NOTHING_ANSWERED,
     TOOK_TOO_LONG,
     NOTHING_USABLE,
@@ -326,6 +340,7 @@ pub const EVERY_WORD: [Word; 18] = [
     HAVING_TROUBLE,
     RAN_OUT,
     NO_WAY_THERE,
+    TOO_LONG_FOR_THE_MODEL,
     NOT_PERMITTED_THERE,
     ANSWERS_ELSEWHERE_THERE,
     NOTHING_CHOSEN_THERE,
@@ -506,6 +521,7 @@ mod tests {
             HAVING_TROUBLE,
             RAN_OUT,
             NO_WAY_THERE,
+            TOO_LONG_FOR_THE_MODEL,
         ] {
             for suggesting in ["instead", "try ", "another"] {
                 assert!(

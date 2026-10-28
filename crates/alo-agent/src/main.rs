@@ -201,6 +201,13 @@ fn said(happened: &WhatHappened) -> ExitCode {
             ExitCode::SUCCESS
         }
         WhatHappened::ItWasRefused { said, after } => {
+            // **And to the person**, on the output the shell puts in their
+            // window. The sentence was worded for them by the daemon, in their
+            // language — *this conversation is now longer than the model there
+            // can read* among them (ADR 0136) — and until 2026-10-28 it went
+            // only to the service log, so the window could say no more than
+            // that the request stopped.
+            println!("{said}");
             eprintln!("alo-agent: refused after {} step(s): {said}", after.len());
             ExitCode::FAILURE
         }

@@ -710,11 +710,13 @@ fn sending(
     // unless it is an account with nothing left, and a `429` is a service
     // asking this machine to slow down unless it is the same. And a paired
     // machine refuses in a word of its own on a `403` or a `503`, which only
-    // a question down the corridor reads. Nothing else here reads an error
+    // a question down the corridor reads. A `400` or `422` is read for one
+    // name only, that the question was longer than the model reads
+    // (`crate::too_long`). Nothing else here reads an error
     // body at all, and neither `ran_out.rs` nor `refused_on_the_wire.rs`
     // keeps anything out of the one it does read.
     let reads_the_refusal =
-        matches!(status, 403 | 429) || (down_the_corridor && matches!(status, 503));
+        matches!(status, 400 | 403 | 422 | 429) || (down_the_corridor && matches!(status, 503));
     let refusal = if reads_the_refusal {
         response
             .body_mut()
@@ -750,6 +752,12 @@ fn sending(
         // A refusal of the request itself. It is not the person's to fix and it
         // is not the service having a bad day, so it is neither sentence:
         // something answered, and not with an answer.
+        // **Unless it says the question was longer than the model reads**
+        // (`crate::too_long`), which is the one refusal of a request a person
+        // can act on: by starting a shorter conversation (ADR 0136).
+        400 | 422 if refusal.as_deref().is_some_and(crate::too_long::said_in) => {
+            return Err(WentWrong::TooLongForTheModel);
+        }
         400 | 422 => return Err(WentWrong::NothingUsable),
         429 if ran_out => return Err(WentWrong::RanOut),
         other => return Err(WentWrong::HavingTrouble(other)),
@@ -1002,6 +1010,34 @@ mod tests {
             .unwrap_err();
             server.join().unwrap();
             assert_eq!(went_wrong, WentWrong::RanOut, "{status}: {body}");
+        }
+    }
+
+    /// **A question longer than the model reads is said to be**, and every
+    /// other refusal of a request is still *nothing usable* — the refusal path,
+    /// because telling somebody to start a shorter conversation about a
+    /// request that was wrong for another reason sends them the wrong way
+    /// (ADR 0136).
+    #[test]
+    fn a_question_too_long_for_the_model_is_told_apart_from_other_refusals() {
+        for (body, status, expected) in [
+            (
+                r#"{"error":{"message":"This model's maximum context length is 128000 tokens.","type":"invalid_request_error","param":"messages","code":"context_length_exceeded"}}"#,
+                400,
+                WentWrong::TooLongForTheModel,
+            ),
+            (
+                r#"{"error":{"type":"invalid_request_error","code":"invalid_value"}}"#,
+                400,
+                WentWrong::NothingUsable,
+            ),
+            ("", 422, WentWrong::NothingUsable),
+        ] {
+            let (url, server) = serving(body, status);
+            let went_wrong =
+                put(&url, None, &question(), A_MOMENT, &resolved(&url), None).unwrap_err();
+            server.join().unwrap();
+            assert_eq!(went_wrong, expected, "{status}: {body:?}");
         }
     }
 
