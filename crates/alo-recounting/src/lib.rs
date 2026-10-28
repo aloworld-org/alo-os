@@ -147,6 +147,13 @@
 //! asked of it, and what is quoted has been through `alo_record::Line` and can
 //! rewrite nothing.
 //!
+//! **Who said yes is read off the entry as well.** [`Told::approved`] answers
+//! [`Approved`] only for a change that ran from an approval, which only the
+//! person at this machine can give (ADR 0001 §5); a read, which needs none,
+//! answers nothing. It says nothing about when they said it, and nothing about
+//! which grant it ran under, because the record keeps neither in a form a person
+//! could be shown — see [`approved`].
+//!
 //! # Three things this crate is deliberately not
 //!
 //! **It is not the record.** Nothing here writes an entry, removes one, or
@@ -180,6 +187,7 @@
 #![doc(html_root_url = "https://github.com/aloworld-org/alo-os")]
 
 pub mod account;
+pub mod approved;
 pub mod bounding;
 pub mod recounting;
 pub mod refusing;
@@ -192,6 +200,7 @@ pub mod words;
 mod testing;
 
 pub use account::Account;
+pub use approved::Approved;
 pub use bounding::AtMost;
 pub use recounting::{Recounting, Recounts};
 pub use refusing::NotRecounted;

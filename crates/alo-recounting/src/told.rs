@@ -48,6 +48,7 @@ use alo_egress::Destination;
 use alo_record::{Entry, Happened, Line, Stopped, WhyLetGo};
 use alo_strings::{Filling, Said, Strings};
 
+use crate::approved::Approved;
 use crate::words::{self, Word};
 
 /// What became of one entry.
@@ -306,6 +307,9 @@ pub struct Told {
     from_approval: Option<u64>,
     /// The grants it ran against.
     against: Vec<u64>,
+    /// That the person at this machine said yes to what ran — absent for a
+    /// read and for everything that did not run.
+    approved: Option<Approved>,
     /// The moment of the entry an undo put back — absent for everything that
     /// is not an undo.
     undid: Option<SystemTime>,
@@ -340,8 +344,21 @@ impl Told {
             went_to: happened.destination().cloned(),
             from_approval: happened.from_approval(),
             against: happened.against().to_vec(),
+            approved: Approved::of(happened),
             undid: happened.undid().map(|(at, _)| at),
         }
+    }
+
+    /// That the person at this machine was shown what ran and said yes to it.
+    ///
+    /// Read off the approval the entry was redeemed from, and [`None`] for a
+    /// read, which needed none, and for everything that did not run. The
+    /// clause is this crate's, through [`Approved::said`]; see
+    /// [`crate::approved`] for why it says nothing about when, or about which
+    /// grant.
+    #[must_use]
+    pub fn approved(&self) -> Option<Approved> {
+        self.approved
     }
 
     /// The moment of the change an undo put back — [`None`] for everything
@@ -505,6 +522,7 @@ mod tests {
             sentence.is("move /home/anna/Invoices/march.pdf into /home/anna/Archive")
         }));
         assert!(told.from_approval().is_some());
+        assert!(told.approved().is_some(), "the person said yes to it");
         assert_eq!(told.against().len(), 2);
         assert_eq!(told.because(), None);
         assert_eq!(told.asked_for(), None);
@@ -519,6 +537,7 @@ mod tests {
         assert_eq!(told.outcome(), Outcome::Ran);
         assert_eq!(told.from_approval(), None);
         assert_eq!(told.against().len(), 1);
+        assert_eq!(told.approved(), None, "nobody was asked about a read");
         assert!(told.sentence().is_some());
     }
 
@@ -549,6 +568,9 @@ mod tests {
             "{:?}",
             last_moment.because()
         );
+        for refused in [&never, &said_no, &last_moment] {
+            assert_eq!(refused.approved(), None, "{:?}", refused.outcome());
+        }
 
         // And no two of them are the same clause, or a person reading their own
         // record could not tell the machine refusing from themselves refusing.

@@ -256,6 +256,7 @@ fn the_machines_own_words_are_drawn_as_the_record_kept_them() {
     for (entry, told) in picture.entries.iter().zip(account.told().iter().rev()) {
         let mut expected: Vec<String> = Vec::new();
         expected.extend(told.sentence().map(|line| line.as_str().to_owned()));
+        expected.extend(told.approved().map(|yes| yes.said(&strings).into_text()));
         expected.extend(told.because().map(|line| line.as_str().to_owned()));
         expected.extend(told.went_to().map(|to| to.shown(&strings)));
         let drawn: Vec<String> = entry.after.iter().map(|text| text.text.clone()).collect();
@@ -267,6 +268,47 @@ fn the_machines_own_words_are_drawn_as_the_record_kept_them() {
         .find(|entry| entry.words.outcome == Outcome::Ran)
         .unwrap();
     assert!(ran.after[0].text.contains("march.pdf"), "{ran:#?}");
+}
+
+/// **What ran says who said yes to it, and nothing refused does.** Demo 1's
+/// fourteenth step opens the record on an approved rename and asks who approved
+/// it; the line beneath the sentence is the vocabulary's answer, drawn because
+/// the record holds the approval the change ran from.
+#[test]
+fn what_ran_says_the_person_said_yes_and_nothing_refused_does() {
+    let kept = an_afternoon_kept();
+    let window = opened(&kept);
+    let picture = drawn(&window);
+    let yes = "the person at this machine was shown this and said yes before it happened";
+
+    let ran = picture
+        .entries
+        .iter()
+        .find(|entry| entry.words.outcome == Outcome::Ran)
+        .unwrap();
+    assert_eq!(ran.after[1].text, yes, "{ran:#?}");
+
+    let declined = picture
+        .entries
+        .iter()
+        .find(|entry| entry.words.outcome == Outcome::ThePersonSaidNo)
+        .unwrap();
+    for entry in picture
+        .entries
+        .iter()
+        .filter(|entry| entry.words.outcome != Outcome::Ran)
+    {
+        assert!(
+            entry.after.iter().all(|text| text.text != yes),
+            "{:?}",
+            entry.words.outcome
+        );
+    }
+    assert_eq!(
+        declined.after.len(),
+        1,
+        "only what they declined: {declined:#?}"
+    );
 }
 
 /// **The record's sentences about itself stay above every view**, and a view

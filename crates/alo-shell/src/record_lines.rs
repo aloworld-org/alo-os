@@ -10,6 +10,9 @@
 //!   drawn there would be an authority the screen invented;
 //! - **the machine's own sentence** — what the call was, as it was worded
 //!   when it happened;
+//! - **that the person said yes**, where the record holds the approval a change
+//!   ran from — `alo_recounting::Approved::said`, so the words are the
+//!   vocabulary's and the fact is the record's;
 //! - **why it was refused**, in the words the person was shown then;
 //! - **where something went**, as `alo_egress::Destination::shown` words it,
 //!   which is the one rendering the indicator used at the time.
@@ -36,7 +39,8 @@ pub(crate) struct EntryWords {
     /// Whose authority it was under — [`None`] for the machine's own errand.
     pub(crate) agent: Option<String>,
     /// Everything after the clause and the agent, each drawn whole: the
-    /// machine's sentence, why it was refused, where something went.
+    /// machine's sentence, that the person said yes to it, why it was refused,
+    /// where something went.
     pub(crate) after: Vec<String>,
 }
 
@@ -59,6 +63,9 @@ fn words_of(told: &Told, strings: &Strings) -> EntryWords {
     let mut after = Vec::new();
     if let Some(sentence) = told.sentence() {
         after.push(sentence.as_str().to_owned());
+    }
+    if let Some(approved) = told.approved() {
+        after.push(approved.said(strings).into_text());
     }
     if let Some(because) = told.because() {
         after.push(because.as_str().to_owned());
