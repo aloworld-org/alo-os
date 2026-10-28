@@ -625,8 +625,11 @@ fn at_two_hundred_percent_the_rasterisers_corner_doubles() {
         })
         .expect("a panel with area rasterises");
         let (left, top) = (200 - drawn.area.loc.x, 200 - drawn.area.loc.y);
+        // **The outermost row**, where the corner's reach is the radius
+        // itself. A row further in meets the arc sooner, and by more the
+        // thicker the hairline is, which is not what this measures.
         (0..200)
-            .find(|step| pixel(&drawn, left + step, top + 1)[3] == 255)
+            .find(|step| pixel(&drawn, left + step, top)[3] == 255)
             .unwrap_or_else(|| panic!("the top edge never becomes solid at {scale}"))
     };
     let (ordinary, dense) = (reach(1.0), reach(2.0));

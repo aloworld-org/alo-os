@@ -58,6 +58,9 @@ pub(crate) struct WhatTheStripSays<'a> {
     pub(crate) who: Option<&'a str>,
 }
 
+/// **For the drawing's own tests**, which are about cells and not about the
+/// strip: a real terminal always passes what it read.
+#[cfg(test)]
 impl WhatTheStripSays<'static> {
     /// A strip that knows only where the shell runs — every shell runs on this
     /// machine today — and nothing it would have to read.
