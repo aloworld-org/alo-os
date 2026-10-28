@@ -1462,6 +1462,9 @@ pub(crate) fn picture(
                             alo_put_aside::the_region_the_panel_claims::WhichEdge::Left
                         }
                     },
+                    // The scale this Dock is drawn at, which is the display's,
+                    // so the column is the one the panel reserves on it.
+                    scale,
                 ),
                 text: look.scale(),
                 words,

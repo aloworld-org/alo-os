@@ -691,13 +691,13 @@ impl crate::Server {
         //
         // What makes it wrong is measurable rather than a matter of reading:
         // the test now named
-        // `desktop_raster_tests::the_dock_band_moves_with_the_displays_scale_and_the_panel_column_does_not_yet`
+        // `desktop_raster_tests::the_dock_band_and_the_panel_column_move_with_the_displays_scale`
         // drew the same display at 100, 125, 150 and 200 per cent and found
         // **both rectangles identical**. That was read as *they are logical*;
         // it was truer to say they were unscaled. The room is the display's own
         // pixels (`DirectTarget::size` is its mode) and neither rectangle went
-        // through the scale. **Since 2026-10-28 the Dock's band does**, so it
-        // grows on a dense display. Both are still the rectangles the display
+        // through the scale. **Since 2026-10-28 the Dock's band and the panel's
+        // column do**, so both grow on a dense display. Both are still the rectangles the display
         // really covers, in the pixels windows are drawn in — clients are told
         // scale one — and a handle multiplied by the scale protected 88 × 48 at
         // 200 per cent where the promise is 44 × 24.

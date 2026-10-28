@@ -207,11 +207,12 @@ fn drawn_at(
 /// that the band did *not* move, and recorded it as a fact to build on rather
 /// than as a promise.
 ///
-/// **The panel's column does not, yet.** It is still laid out from the person's
-/// text size alone, so it is the same rectangle at every scale — and anything
-/// compared against it must stay in that space until it follows the Dock.
+/// **The put-aside panel's column moves too**, since later the same day: it was
+/// laid out from the person's text size alone, and so was half the size of the
+/// Dock beside it on a dense screen. It is the measured 112 converted — 140,
+/// 168 and 224 — still the full height and still flush to its edge.
 #[test]
-fn the_dock_band_moves_with_the_displays_scale_and_the_panel_column_does_not_yet() {
+fn the_dock_band_and_the_panel_column_move_with_the_displays_scale() {
     let appearance = an_appearance();
     let look = noon_look(&appearance, Direction::LeftToRight);
     let (running, filling, _folder) = both_open();
@@ -225,7 +226,12 @@ fn the_dock_band_moves_with_the_displays_scale_and_the_panel_column_does_not_yet
         "the premise: the measured thickness at 100"
     );
 
-    for (scale, thick) in [(125_u16, 95), (150, 114), (200, 152)] {
+    assert_eq!(
+        one_column.size.w, 112,
+        "the premise: the measured column at 100"
+    );
+
+    for (scale, thick, column) in [(125_u16, 95, 140), (150, 114, 168), (200, 152, 224)] {
         let dense = drawn_at(&Dock::shipped(), look, &running, &filling, size, scale).unwrap();
         let band = dense.dock.as_ref().map(|dock| dock.band).unwrap();
         assert_eq!(
@@ -238,9 +244,10 @@ fn the_dock_band_moves_with_the_displays_scale_and_the_panel_column_does_not_yet
             "at {scale} per cent the bar is no longer than at 100: {band:?} against {one_band:?}"
         );
         assert_eq!(
-            dense.panel.reserved, one_column,
+            dense.panel.reserved,
+            smithay::utils::Rectangle::new((size.0 - column, 0).into(), (column, size.1).into()),
             "at {scale} per cent the panel's reserved column is {:?} and at 100 it is \
-             {one_column:?} — and a pointer is tested against this rectangle.",
+             {one_column:?}: the measured 112 did not go through the display's scale",
             dense.panel.reserved
         );
     }
