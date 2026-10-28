@@ -123,7 +123,7 @@ fn the_earlier_conversation(
     let read = input.read_line(&mut line);
     // Back to waiting as long as it takes; `crate::holding_the_turn` sets its
     // own bound when it needs one.
-    drop(set_socket_timeout(socket, Timeout::Recv, None));
+    let _ = set_socket_timeout(socket, Timeout::Recv, None);
     match read {
         Ok(0) => Ok(TheConversationSoFar::nothing()),
         Ok(_) => TheConversationSoFar::read(&line).map_err(|why| why.to_string()),

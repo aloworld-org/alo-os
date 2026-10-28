@@ -34,6 +34,15 @@
 //! on past where a real turn would have stopped. That is why the verdict reads
 //! the model's lines, and counts **any** proposal to a question as a failure.
 //!
+//! # And a follow-up, since ADR 0135
+//!
+//! `a_follow_up_is_answered_from_what_came_before` drives two turns in one
+//! task window — *list the files in …*, then *and how big is the biggest one?*
+//! — with the second sent with the conversation so far, as a task window sends
+//! it, and the same follow-up sent alone beside it as the control. Two folders
+//! are granted and the other holds a bigger file, so only the earlier
+//! conversation says which *biggest one* the person meant.
+//!
 //! # It is ignored, and it leaves the machine
 //!
 //! It asks a real provider and costs money, so it is run by name:
