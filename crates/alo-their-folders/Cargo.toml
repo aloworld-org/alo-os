@@ -28,7 +28,7 @@ alo-saying = { path = "../alo-saying" }
 
 # The picker and the grant a person makes from it, walked against a German
 # person's real `Dokumente` to show alo reaches a folder by the name really on
-# the disk (ADR 0136).
+# the disk (ADR 0137).
 alo-picking = { path = "../alo-picking" }
 alo-capability = { path = "../alo-capability" }
 

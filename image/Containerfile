@@ -438,7 +438,7 @@ COPY --from=built /alo-os/target/${THE_TARGET}/release/alo-their-folders /usr/li
 # **What those folders are called, in the person's language**: the
 # translations `xdg-user-dirs` ships, which is what every Linux desktop names
 # them with, so Dolphin and every other program agree with alo OS about where a
-# German person's `Dokumente` is ([ADR 0136](../docs/decisions/0136-home-folder-names-come-from-xdg-user-dirs.md)).
+# German person's `Dokumente` is ([ADR 0137](../docs/decisions/0137-home-folder-names-come-from-xdg-user-dirs.md)).
 # Measured on 2026-10-28: the base has no `xdg-user-dirs`, keeps every
 # language's files (`%_install_langs` is `all`), and Fedora 42's 0.18 carries
 # 22 of the 24 official EU languages — English is its source, and Maltese has

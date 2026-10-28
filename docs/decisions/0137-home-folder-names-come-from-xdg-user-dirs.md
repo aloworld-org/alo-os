@@ -1,4 +1,4 @@
-# ADR 0136 — A person's home folders are named by xdg-user-dirs, in their language
+# ADR 0137 — A person's home folders are named by xdg-user-dirs, in their language
 
 **Status:** accepted, 2026-10-28, by the owner: *home folder names follow the
 person's language, the Linux way.*

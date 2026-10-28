@@ -2,7 +2,7 @@
 //! translations `xdg-user-dirs` ships, read from the machine rather than
 //! written here.
 //!
-//! [ADR 0136](../../../docs/decisions/0136-home-folder-names-come-from-xdg-user-dirs.md):
+//! [ADR 0137](../../../docs/decisions/0137-home-folder-names-come-from-xdg-user-dirs.md):
 //! a German person gets `Dokumente` because that is what `xdg-user-dirs` — the
 //! package every Linux desktop uses to name and record these folders — calls
 //! *Documents* in German, in a catalogue kept by that project's translators
@@ -26,7 +26,7 @@
 //! Linux desktop, not a fallback of ours. Of the 24 official EU languages the
 //! catalogue the image installs has 22 (English is its source); **Maltese is
 //! the one without**, measured on 2026-10-28 from Fedora 42's `xdg-user-dirs`
-//! 0.18, and ADR 0136 records that.
+//! 0.18, and ADR 0137 records that.
 
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};

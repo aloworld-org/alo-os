@@ -29,7 +29,7 @@
 //! folder is** — whatever language that name is in. A home made in English and
 //! signed into after a change to German keeps `Documents`: renaming a person's
 //! folder, or making a second `Dokumente` beside it, is not this program's to
-//! do (the owner's decision of 2026-10-28; ADR 0136). Lines naming folders
+//! do (the owner's decision of 2026-10-28; ADR 0137). Lines naming folders
 //! this crate does not make — `XDG_MUSIC_DIR`, somebody's own — are kept as
 //! they were, and a key set to `$HOME` alone, which is how the format says
 //! *this person has no such folder*, is honoured rather than refilled.

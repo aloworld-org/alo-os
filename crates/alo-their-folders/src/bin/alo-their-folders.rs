@@ -57,7 +57,7 @@
 //! because this runs beside the desktop at sign-in and on a first sign-in
 //! could not count on the desktop having written it yet. The names are
 //! `xdg-user-dirs`' own for that language (`alo_their_folders::catalogue`,
-//! ADR 0136), read from `/usr/share/locale`.
+//! ADR 0137), read from `/usr/share/locale`.
 //!
 //! **A folder the record already names keeps its name.** Where the person's
 //! language now calls it something else, this says so on the journal and

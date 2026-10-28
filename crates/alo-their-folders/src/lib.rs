@@ -22,7 +22,7 @@
 //! letters — **the names `xdg-user-dirs` gives them**, the package every Linux
 //! desktop names these folders with, so that Dolphin and every other program
 //! agree with alo OS about where a person's documents are
-//! ([`catalogue`], ADR 0136). A folder that already has a name keeps it.
+//! ([`catalogue`], ADR 0137). A folder that already has a name keeps it.
 //!
 //! That makes `crate::naming` the file to read first: a translated name
 //! becomes a directory, and three kinds of translation produce a folder a
