@@ -130,6 +130,7 @@ answering.wrong.nothing-answered	nothing answered {source}
 answering.wrong.nothing-usable	something answered {source}, but not with anything this machine could use
 answering.wrong.ran-out	nothing was answered {source} — the account there has run out, so nothing will be answered until it is paid for, and nothing else about this machine has changed
 answering.wrong.sent-somewhere-else	nothing was answered {source} — that address sends this machine somewhere nobody agreed to, and the question was not carried there
+answering.wrong.too-long-for-the-model	nothing was answered {source} — this conversation is now longer than the model there can read. Start a new one from the Dock to continue
 answering.wrong.took-too-long	nothing answered {source} within the time this machine waits
 appearance.accent.a-ground-not-an-accent	{colour} is a ground or a structure colour rather than an accent — choose indigo, violet, moss or rose
 appearance.accent.indigo	Indigo
