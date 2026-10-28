@@ -102,6 +102,11 @@ impl TheDaemonsDoor {
     fn answer(&self, request: &FromAPerson) -> Option<Answered> {
         match self.asked(request).ok()? {
             ToAPerson::Did(done) => Some(Answered::It(Box::new(done))),
+            // **A change that ran and cannot be undone** (2026-10-28) — see
+            // `Answered::ItCannotBeUndone`.
+            ToAPerson::DidAndCannotBeUndone(done) => {
+                Some(Answered::ItCannotBeUndone(Box::new(done)))
+            }
             ToAPerson::Refused(wording) => Some(Answered::Refused {
                 told: wording.text().to_owned(),
             }),
@@ -149,6 +154,7 @@ impl TheDaemonsDoor {
             // saying something unrecognisable is treated like no daemon,
             // because the change already stands and the next start reads it.
             ToAPerson::Did(_)
+            | ToAPerson::DidAndCannotBeUndone(_)
             | ToAPerson::Waiting { .. }
             | ToAPerson::APlaceToReturnTo { .. }
             | ToAPerson::Declined

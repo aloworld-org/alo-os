@@ -30,6 +30,11 @@
 //! has to say so: every change comes back stamped with the name this machine's
 //! person gave that machine (`alo_protocol::Standing::from_a_machine`).
 //!
+//! **A change that ran says it cannot be undone.** Only a local turn carries
+//! `crate::the_bracket_this_turn_takes`, so nothing is kept from before a
+//! remote turn's change, and *done* alone would tell the person otherwise
+//! (ADR 0045's third term, since 2026-10-28).
+//!
 //! **Nothing here reaches a read or a question.** A remote turn has no door
 //! for either from this side, and the person's door has no request that
 //! would ask for one.
@@ -87,7 +92,12 @@ pub fn answered_to(
             Some(waiting) => {
                 let shared = network.locked();
                 match arriving.approving(waiting, shared.pairings(), grants, now) {
-                    Ok(answer) => ToAPerson::did(as_a_client_sees_it(&answer, now)),
+                    // **A remote turn takes no bracket**, so nothing was kept
+                    // from before this change and the person is told so (ADR
+                    // 0045's third term), never a bare *done*.
+                    Ok(answer) => {
+                        ToAPerson::did_and_cannot_be_undone(as_a_client_sees_it(&answer, now))
+                    }
                     Err(why) => ToAPerson::refused(&why.said(strings)),
                 }
             }
@@ -316,6 +326,10 @@ mod tests {
                 let approve = format!(r#"{{"approve":{{"number":{number}}}}}"#);
                 let said = the_person_says(&approve, doorway, network, grants, strings);
                 assert!(said.done().is_some(), "{said:?}");
+                assert!(
+                    said.cannot_be_undone(),
+                    "a remote turn keeps nothing, and the person was told plain done: {said:?}"
+                );
                 assert!(!invoice.is_file(), "the file did not move on the disk");
 
                 let again = the_person_says(&approve, doorway, network, grants, strings);

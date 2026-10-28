@@ -60,6 +60,21 @@ pub const IT_WAS_DONE: Word = Word::saying("the-card.it-was-done", "Done.").noti
      not \"will do\".",
 );
 
+/// What the conversation says once an allowed change was carried out and
+/// nothing was kept to undo it with (ADR 0045's third term: the change runs,
+/// *and says it is not undoable*).
+pub const IT_WAS_DONE_AND_CANNOT_BE_UNDONE: Word = Word::saying(
+    "the-card.it-was-done-and-cannot-be-undone",
+    "Done. This change cannot be undone: alo could not keep a copy of your files from before it.",
+)
+.noting(
+    "Said by the agent in the conversation straight after the person pressed Allow once, the \
+     machine carried the change out, and it could not first keep a copy of the person's files to \
+     go back to. The change is the sentence on the card just above. This is a plain fact, not a \
+     risk: it must never soften into \"may not be undoable\" or \"might not\", because the person \
+     will act on it. \"alo\" is the product's name and stays as it is.",
+);
+
 /// What the conversation says once the person said no.
 pub const YOU_SAID_NO: Word = Word::saying(
     "the-card.you-said-no",
@@ -102,10 +117,11 @@ pub const IT_STOPPED_WITHOUT_FINISHING: Word = Word::saying(
 );
 
 /// Every string this file declares, in the order a translator meets them.
-pub const THE_CARDS_WORDS: [Word; 6] = [
+pub const THE_CARDS_WORDS: [Word; 7] = [
     ALLOW_ONCE,
     DENY,
     IT_WAS_DONE,
+    IT_WAS_DONE_AND_CANNOT_BE_UNDONE,
     YOU_SAID_NO,
     NO_WORD_BACK,
     IT_STOPPED_WITHOUT_FINISHING,

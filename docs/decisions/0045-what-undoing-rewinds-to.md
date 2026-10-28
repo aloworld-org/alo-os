@@ -563,3 +563,23 @@ capability* would otherwise re-measure it, or worse, find the `capsh`
 measurements above, read them as settling the question, and ship an agent that
 can delete its own evidence on the strength of a measurement about root.
 
+## Note of 2026-10-28 — term 3's *says it is not undoable* now reaches the person
+
+Term 3 says a change that could not be bracketed still runs *and the record says
+plainly that this one cannot be undone*. On a booted machine on 2026-10-28 the
+change ran and the conversation said only **Done.**, which reads exactly like a
+change `alo-back` can take back. The record was not where the person was
+looking.
+
+Now `alo-agentd` answers an approval with `did-and-cannot-be-undone`
+([the daemon contract](../contracts/daemon-protocol.md), added additively) in
+place of `did` whenever **nothing was kept** before the change: the snapshot
+failed, the session has no home, or the change came from a paired machine's
+turn, which takes no bracket. The shell says *Done. This change cannot be
+undone: alo could not keep a copy of your files from before it.* The question
+asked is whether a place was kept, not whether something went wrong, because a
+session with no home has no reason to give and kept nothing all the same.
+
+This decides nothing new. It makes the existing term true where the person
+reads it.
+
