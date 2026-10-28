@@ -589,6 +589,7 @@ pub(crate) fn frame_pictures(
             labels,
             size,
             record.look,
+            record.clock,
         )?),
         None => None,
     };

@@ -71,7 +71,7 @@ and it is written whole to `<file>.new`, read back off the disk as the same
 value, and only then renamed over the old one. Which files, and their keys, are
 sections of this contract as those crates gain them.
 
-Since 2026-09-21 there are **eleven**, each read and written by the crate that
+Since 2026-10-28 there are **twelve**, each read and written by the crate that
 declares its shape, at a path that crate is handed, and by nobody else:
 
 | File | Kept by | `format` | Keys besides `format` |
@@ -87,6 +87,7 @@ declares its shape, at a path that crate is handed, and by nobody else:
 | `keyboards.toml` | `alo_keyboards::keeping` | `1` | `layouts`, `compose`, `input-methods` |
 | `gestures.toml` | `alo_desktops::gesture_files` | `1` | `scroll`, `pinch`, `three-finger-swipe`, `four-finger-swipe`, `scrolling` |
 | `undo.toml` | `alo_letting_go::keeping` | `1` | `window` |
+| `formats.toml` | `alo_formats::keeping` | `1` | `regionally`, `timezone`, `following-the-network` |
 
 **That number is true because a test reads it.** The sentence above said *four*
 from 2026-09-15 until 2026-09-21 while the folder grew to ten, and it was the
@@ -100,12 +101,19 @@ chose, and has no reason to look. So the count is no longer prose. Each of
 number in the sentence above against the number of rows in the table. A row added without the number moving, or the
 number moved without a row, fails in the change that does it.
 
-**Nine of the eleven have a section of their own below.** `keyboards.toml` and
+**Ten of the twelve have a section of their own below.** `keyboards.toml` and
 `gestures.toml` are in the table because they exist and a reader needs to know
 they do; their sections, and the tests that would hold them, are owed by the
-crates that keep them. Those two rows are the only ones nothing yet checks —
+crates that keep them. Those two rows, and `formats.toml` below, are the only
+ones nothing yet checks —
 read them as a pointer to `alo_keyboards::keeping` and
 `alo_desktops::gesture_files`, where the two shapes are actually declared.
+
+**[`formats.toml`](#formatstoml--how-this-persons-dates-and-times-are-written) has a
+section and no test reading it yet.** Its shape is held by
+`alo_formats::keeping`'s own tests; a `the_contract_describes_this_file.rs` of
+its own, like the nine below, is owed, and until it lands the section is a
+description rather than a checked one.
 
 A file that did not read is answered, by each crate's `keeping::at_sign_in`,
 with what the release ships and the refusal beside it — naming the file, and the
@@ -2297,6 +2305,77 @@ and does not read is refused (`letting-go.kept.not-replaced`) with the file byte
 for byte as it was, `alo_letting_go::FileNotWritten::did_not_read` saying what
 is wrong with it. `alo_letting_go::keeping::put_back_as_shipped` is the one door
 that replaces such a file, and it writes `format = 1` alone.
+
+## `formats.toml` — how this person's dates and times are written
+
+Kept by `alo_formats::keeping`, beside `appearance.toml`, at the path the
+crate is handed. It holds `alo_formats::Chosen`: the region whose way of
+writing dates and times the person chose, the zone they said they are in, and
+whether the machine may ask the network where it is — and nothing the release
+ships. Settings writes the region (*How dates and times are written*, the
+owner's decision of 2026-10-28); nothing writes the other two yet, and a
+person may.
+
+**Every date and time on the machine follows it**: the status area's clock,
+the lock screen's clock and the record's times and day headings, through the
+one answer `alo_formats::TheirFormats` gives.
+
+### Keys
+
+Besides `format`, and optional: a key that is not there is a setting the person
+has not changed.
+
+| Key | Meaning |
+|---|---|
+| `regionally` | A table: `language`, the language the formats are written in, and `region`, two capital letters (`BE`). |
+| `timezone` | The zone they are in, as the zone database names it (`Europe/Brussels`). |
+| `following-the-network` | `"yes"` lets the machine ask the network where it is. Not there is `"no"`. |
+
+### `format`
+
+`format = 1`, the first line of the file, and the only shape this alo OS reads.
+
+### What alo OS writes
+
+A region chosen in Settings by somebody who reads Portuguese:
+
+```toml
+format = 1
+
+[regionally]
+language = "pt"
+region = "BE"
+```
+
+### Where nothing is chosen
+
+**The language the person reads decides**, with CLDR's own region for it: the
+first language in `settings.toml`'s `[reading]`, or the machine's source
+language, English, where that names none. Choosing *As my language writes
+them* in Settings removes `regionally` from the file. A zone not named is the
+machine's own; a zone named that the zone database does not have is the
+machine's own too, and the session's log says which name it could not find.
+
+### How Settings reaches it
+
+By the same four calls as the three sections walked in
+[A Settings surface](#a-settings-surface-from-sign-in-to-the-next-change):
+`alo_formats::keeping::THE_FILE` for its name inside the folder,
+`alo_formats::keeping::at_sign_in` at sign-in, `alo_formats::keeping::keep` for
+a change and `alo_formats::keeping::put_back_as_shipped` for a file that did
+not read. **They are named here and not in that section's table**, because
+that table is held to exactly the calls
+`crates/alo-choosing/tests/one_persons_folder_from_sign_in_to_the_next_change.rs`
+walks, and that walk does not reach `formats.toml` yet. A row there with no
+walk behind it was refused by that test on 2026-10-28, which is the test doing
+its job.
+
+### A file that does not read
+
+Refused whole, like every file in the folder: dates and times are written the
+language's way, Settings says why above the regions — naming the file, and the
+key when a key was what was wrong — and a change is not written over it until
+the person puts the section back as alo OS ships it.
 
 ## A Settings surface, from sign-in to the next change
 

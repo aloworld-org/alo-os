@@ -266,6 +266,7 @@ fn the_record_window_sits_in_the_desktop_frame() {
         window: &window,
         strings: &strings,
         look: light(),
+        clock: crate::record_testing::a_clock(),
     };
     let pictures =
         frame_pictures(desktop, Some(record), None, &mut labels, (1920, 1080), None).unwrap();

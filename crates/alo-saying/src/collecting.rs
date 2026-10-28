@@ -117,6 +117,7 @@ pub const EVERY_LIST: &[&str] = &[
     "alo-enrolling",
     "alo-files",
     "alo-finding",
+    "alo-formats",
     "alo-as-it-was",
     "alo-granted",
     "alo-greeting",
@@ -318,6 +319,7 @@ pub fn everything_this_machine_can_say() -> Result<Vocabulary, NotCollected> {
     )?;
     declare(&mut vocabulary, "alo-files", alo_files::words::declare_into)?;
     declare(&mut vocabulary, "alo-finding", alo_finding::declare_into)?;
+    declare(&mut vocabulary, "alo-formats", alo_formats::declare_into)?;
     declare(
         &mut vocabulary,
         "alo-as-it-was",
@@ -500,6 +502,7 @@ mod tests {
         ("alo-enrolling", "enrolling.that-does-not-open-this-machine"),
         ("alo-files", "files.failed.not-a-file-verb"),
         ("alo-finding", "finding.not-absolute"),
+        ("alo-formats", "formats.day.today"),
         ("alo-as-it-was", "as-it-was.nothing-is-kept"),
         ("alo-granted", "granted.nothing-granted"),
         ("alo-greeting", "greeting.make-an-account"),
@@ -626,6 +629,7 @@ mod tests {
             alo_enrolling::words::enrolling_words().unwrap().how_many(),
             alo_files::file_words().unwrap().how_many(),
             alo_finding::finding_words().unwrap().how_many(),
+            alo_formats::formats_words().unwrap().how_many(),
             alo_as_it_was::words::as_it_was_words().unwrap().how_many(),
             alo_granted::granted_words().unwrap().how_many(),
             alo_greeting::greeting_words().unwrap().how_many(),

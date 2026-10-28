@@ -26,10 +26,10 @@
 //! one absence, that is the shape of the type the shell already has, and the
 //! log says which cause it was.
 
-use alo_formats::Regionally;
 use alo_networks::{HowFar, Metered, Reaching};
 use alo_power::TheBattery;
 use alo_shell::StatusItems;
+use alo_shell::TheirFormats;
 
 /// The moment a reading is taken at.
 ///
@@ -121,9 +121,11 @@ impl WhatWasNotRead {
 /// Only the clock, which is the one reading with no absence the status area can
 /// draw — a time is a `String` there, and a status area with no time on it is
 /// not a thing this decides to show.
-pub fn taken(at: &At, region: &Regionally) -> Result<(StatusItems, WhatWasNotRead), String> {
-    let clock = region
-        .time(at.hour, at.minute)
+pub fn taken(at: &At, formats: &TheirFormats) -> Result<(StatusItems, WhatWasNotRead), String> {
+    // **The moment, written as this person writes a time, where they are** —
+    // the same answer the record's times are, so the two cannot disagree.
+    let clock = formats
+        .time_of(at.moment)
         .ok_or_else(|| format!("a time nobody writes: {}:{}", at.hour, at.minute))?;
     let mut missing = WhatWasNotRead::default();
 

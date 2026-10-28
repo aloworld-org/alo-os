@@ -12,19 +12,30 @@
 
 use super::*;
 
-/// The way a time is written here.
-fn region() -> Regionally {
-    Regionally::reading("en")
-        .and_then(|reading| reading.in_region("GB"))
-        .unwrap()
+/// A person who chose to write times as `region` does, in universal time so
+/// nothing in this file depends on where it runs.
+fn written_as_in(region: &str) -> TheirFormats {
+    let mut chosen = alo_formats::Chosen::default();
+    chosen.written_as_in(Some(region), "en").unwrap();
+    TheirFormats::of(chosen, Some("en")).in_zone(jiff::tz::TimeZone::UTC)
 }
 
-/// A moment, named rather than taken from a clock.
+/// The way a time is written here.
+fn region() -> TheirFormats {
+    written_as_in("GB")
+}
+
+/// A moment, named rather than taken from a clock: this time of day on
+/// 2026-10-28, in universal time.
 fn at(hour: u8, minute: u8) -> At {
+    let midnight = 1_793_145_600_u64;
     At {
         hour,
         minute,
-        moment: std::time::SystemTime::UNIX_EPOCH + std::time::Duration::from_secs(1_760_000_000),
+        moment: std::time::SystemTime::UNIX_EPOCH
+            + std::time::Duration::from_secs(
+                midnight + u64::from(hour) * 3600 + u64::from(minute) * 60,
+            ),
         // Universal time, so nothing in this file depends on where it runs.
         minutes_east_of_universal_time: 0,
     }
@@ -61,9 +72,21 @@ fn the_clock_is_written_the_way_the_region_writes_one() {
 
     assert_eq!(
         items.clock(),
-        region().time(9, 41).unwrap(),
+        region().time_of(at(9, 41).moment).unwrap(),
         "the clock is not what alo-formats wrote"
     );
+    assert_eq!(items.clock(), "09:41");
+}
+
+/// **Choosing a region changes the clock's text** — the owner's decision of
+/// 2026-10-28, and the reason the clock is no longer typed into this binary.
+#[test]
+fn choosing_a_region_changes_the_clock() {
+    let (british, _) = taken(&at(17, 38), &written_as_in("GB")).unwrap();
+    let (american, _) = taken(&at(17, 38), &written_as_in("US")).unwrap();
+    assert_eq!(british.clock(), "17:38");
+    assert_ne!(british.clock(), american.clock());
+    assert!(american.clock().starts_with("5:38"), "{}", american.clock());
 }
 
 /// **Taking the readings never fails because a device is missing.**
@@ -106,10 +129,13 @@ fn what_was_not_read_says_which_and_why() {
     );
 }
 
-/// **A time nobody writes is a refusal, not an empty clock.**
+/// **A moment no calendar holds is a refusal, not an empty clock.**
 #[test]
 fn a_time_that_cannot_be_written_is_refused() {
-    let refused = taken(&at(99, 99), &region());
+    let mut beyond = at(9, 41);
+    beyond.moment = std::time::SystemTime::UNIX_EPOCH
+        + std::time::Duration::from_secs(400_000 * 365 * 24 * 3600);
+    let refused = taken(&beyond, &region());
 
     assert!(
         refused.is_err(),

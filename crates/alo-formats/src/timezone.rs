@@ -58,6 +58,13 @@ pub enum FollowingTheNetwork {
 }
 
 impl FollowingTheNetwork {
+    /// Whether this is the machine asking nothing, which is what a file
+    /// leaves unsaid.
+    #[must_use]
+    pub const fn is_no(&self) -> bool {
+        matches!(self, Self::No)
+    }
+
     /// Whether anything would leave this machine for this.
     #[must_use]
     pub const fn would_leave_the_machine(self) -> bool {
