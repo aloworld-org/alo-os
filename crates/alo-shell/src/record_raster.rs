@@ -193,7 +193,16 @@ pub(crate) fn picture(
             y += 1 + 2 * room.gap;
             let entries_top = y;
 
-            for words in newest_first(account, moved_past, strings, clock) {
+            // **The entries that could be in view, and the one time column
+            // they share.** No entry is shorter than one line, so no more than
+            // this many can fit; their times are measured before any is placed,
+            // so every clause starts at one edge whatever its minutes are.
+            let most = usize::try_from((bottom - y) / room.measure.px(24)).unwrap_or(0) + 1;
+            let in_view: Vec<EntryWords> = newest_first(account, moved_past, strings, clock)
+                .take(most)
+                .collect();
+            let room = with_one_time_column(fonts, room, &in_view);
+            for words in in_view {
                 let Some(entry) = entry_at(fonts, words, room, look.reading, y, bottom) else {
                     if drawn.entries.is_empty() {
                         return Err(RenderError::RecordScene);
@@ -231,6 +240,26 @@ pub(crate) fn picture(
             }
             Ok(drawn)
         }
+    }
+}
+
+/// The room with its time column wide enough for every time in `in_view`:
+/// the design's 56 at the least, and the widest time and a gap either side
+/// of it where a region writes a wider one.
+fn with_one_time_column(fonts: &mut FontSystem, room: Room, in_view: &[EntryWords]) -> Room {
+    let widest = in_view
+        .iter()
+        .map(|words| {
+            words
+                .time
+                .as_deref()
+                .map_or(0, |time| room.shaped(fonts, time, room.inner).width)
+        })
+        .max()
+        .unwrap_or(0);
+    Room {
+        time_column: room.time_column.max(widest + 2 * room.gap),
+        ..room
     }
 }
 

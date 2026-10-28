@@ -39,8 +39,9 @@ use crate::regionally::Regionally;
 use crate::timezone::Timezone;
 use crate::words;
 
-/// The language a machine shows when nobody has named one: its source.
-const THE_SOURCE: &str = "en";
+/// The language a machine shows when nobody has named one: its source, which
+/// `alo-strings` holds English to be.
+pub const THE_SOURCE_LANGUAGE: &str = "en";
 
 /// **One person's way of writing a moment.**
 #[derive(Debug, Clone)]
@@ -106,7 +107,7 @@ impl TheirFormats {
     /// The language they read, where they said — or the machine's source.
     #[must_use]
     pub fn reading(&self) -> &str {
-        self.reading.as_deref().unwrap_or(THE_SOURCE)
+        self.reading.as_deref().unwrap_or(THE_SOURCE_LANGUAGE)
     }
 
     /// The zone they named that the zone database does not have, if they did.

@@ -144,7 +144,7 @@ fn the_language_they_read(choosing: Option<&Path>) -> String {
                 .first()
                 .map(|language| language.tag().to_owned())
         })
-        .unwrap_or_else(|| "en".to_owned())
+        .unwrap_or_else(|| alo_formats::THE_SOURCE_LANGUAGE.to_owned())
 }
 
 #[cfg(test)]

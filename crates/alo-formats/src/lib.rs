@@ -50,7 +50,7 @@ pub use cannot_reach::{Missing, what_cldr_has_that_this_cannot_reach};
 pub use keeping::Chosen;
 pub use region_names::{NamedRegion, the_regions_named_in};
 pub use regionally::{FirstDay, NotARegion, Regionally};
-pub use their_formats::{TheDay, TheirFormats};
+pub use their_formats::{THE_SOURCE_LANGUAGE, TheDay, TheirFormats};
 pub use timezone::{FollowingTheNetwork, Timezone};
 pub use unkept::{FileNotRead, FileNotWritten};
 pub use words::{WordsError, declare_into, formats_words};

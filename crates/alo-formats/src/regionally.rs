@@ -42,7 +42,7 @@ impl Regionally {
     /// to rather than to nothing.
     pub(crate) fn the_source() -> Self {
         Self {
-            language: "en".to_owned(),
+            language: crate::THE_SOURCE_LANGUAGE.to_owned(),
             region: None,
         }
     }

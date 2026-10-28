@@ -96,9 +96,10 @@ pub(crate) struct Room {
     ///
     /// Frame `82:887` sets the time at 73 and the title at 129 on every
     /// entry: **56 logical pixels from the start of one to the start of the
-    /// other**, so the clauses line up whatever the minutes are. A time wider
-    /// than that — a twelve-hour clock's *12:58 PM* — pushes its own clause
-    /// along rather than being drawn over it.
+    /// other**, so the clauses line up whatever the minutes are. Where a time
+    /// in view is wider than that — a twelve-hour clock's *12:58 PM*, or this
+    /// machine's typeface — the column widens for every entry in view
+    /// (`record_raster::with_one_time_column`), so they still line up.
     pub(crate) time_column: i32,
     /// The rail's left edge.
     pub(crate) rail_x: i32,
