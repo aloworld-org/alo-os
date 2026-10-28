@@ -490,6 +490,22 @@ fn main() -> std::process::ExitCode {
         };
         let mut child = Command::new(me);
         child.env(SUBMODE, named);
+        // **The terminal check gets an empty home of its own.** alo's terminal
+        // opens in the person's home since 2026-10-28, so a check that types
+        // `ls` would otherwise list whatever the machine running the gate keeps
+        // there — 111 entries on one of ours, which scrolled the line the check
+        // reads off the screen. Kept alive until the child has finished.
+        let a_home = if named == "terminal" {
+            let Ok(home) = tempfile::tempdir() else {
+                eprintln!("{named}: no empty home could be made for it");
+                refused.push(named);
+                continue;
+            };
+            child.env("HOME", home.path());
+            Some(home)
+        } else {
+            None
+        };
         if let Some(runtime) = &runtime {
             child
                 .env("XDG_RUNTIME_DIR", runtime)
@@ -507,6 +523,8 @@ fn main() -> std::process::ExitCode {
                 refused.push(named);
             }
         }
+        // Removed only now, after the child that stood in it has gone.
+        drop(a_home);
     }
     if refused.is_empty() {
         eprintln!(
