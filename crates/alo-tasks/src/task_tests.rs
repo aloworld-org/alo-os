@@ -256,6 +256,25 @@ fn denying_answers_the_question_and_keeps_nothing() {
     assert_eq!(task.permissions().asking(), None);
 }
 
+/// **The task remembers which sentence was answered and how**, so a follow-up
+/// can say what became of each change — and a press on nothing is not kept.
+#[test]
+fn each_answer_is_kept_with_the_sentence_it_answered() {
+    let mut task = a_task();
+    task.is_asking("Move march.pdf to Paid");
+    assert_eq!(task.allow_once(), Answered::AllowedOnce);
+    assert_eq!(task.deny(), Answered::NothingWasAsked);
+    task.is_asking("Delete april.pdf");
+    assert_eq!(task.deny(), Answered::Denied);
+    assert_eq!(
+        task.answers_given().each(),
+        [
+            ("Move march.pdf to Paid".to_owned(), Answered::AllowedOnce),
+            ("Delete april.pdf".to_owned(), Answered::Denied),
+        ]
+    );
+}
+
 /// **Allowing once widens nothing**, which is why `ThePermissions` can answer
 /// a question without any way to grant.
 ///

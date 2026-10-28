@@ -31,7 +31,7 @@ use std::path::PathBuf;
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::time::{Duration, SystemTime};
 
-use alo_agent::{HowFar, NotAnswered, TheDoor, WhatHappened, driving};
+use alo_agent::{HowFar, NotAnswered, TheDoor, WhatHappened, driving, driving_after};
 use alo_capability::{Approvals, Given, Grant, Grantee, Grants, Proposal, Reach, Verbs};
 use alo_files::{OnThisMachine, Resolving as _};
 use alo_instructing::{Instructions, WhatItMayReach};
@@ -557,4 +557,60 @@ fn what_a_step_says_does_not_carry_the_question() {
             "the diagnosis carried the person's own question"
         );
     }
+}
+
+/// **A follow-up shows the model the conversation so far on every round**, in
+/// the question the turn asks the daemon and nowhere else — and a first request
+/// shows none (ADR 0135).
+#[test]
+fn a_follow_up_carries_the_earlier_conversation_in_every_question_it_asks() {
+    use alo_instructing::{AnEarlierTurn, TheConversationSoFar};
+
+    let verbs = the_verbs();
+    let earlier = TheConversationSoFar::of(vec![
+        AnEarlierTurn::ThePersonSaid("list the files in /home/anna/Invoices".to_owned()),
+        AnEarlierTurn::AloAnswered("march.pdf (12 KB) and april.pdf (40 KB)".to_owned()),
+    ]);
+    let mut door = ADoorThatAnswers::with(vec![
+        the_model_said(&a_read_of("/home/anna/Invoices")),
+        Ok(it_listed("march.pdf\napril.pdf")),
+        the_model_said("april.pdf is the biggest, at 40 KB"),
+    ]);
+    let happened = driving_after(
+        &earlier,
+        "and how big is the biggest one?",
+        &verbs,
+        &WhatItMayReach::not_said(),
+        &mut door,
+        HowFar::THE_ORDINARY,
+        Instructions::SHOWN_TO_A_TURN,
+    );
+    assert!(matches!(
+        happened,
+        WhatHappened::ItWasAnsweredInWords { .. }
+    ));
+    for nth in 0..2 {
+        let question = door.the_question(nth);
+        assert!(
+            question.contains(&earlier.told()),
+            "round {nth}: {question}"
+        );
+        assert!(question.starts_with(Instructions::SHOWN_TO_A_TURN.text()));
+    }
+    // Only questions: the conversation is never a request of its own.
+    assert_eq!(door.asked.len(), 3, "{:?}", door.asked);
+
+    let mut first = ADoorThatAnswers::with(vec![the_model_said("there are two")]);
+    let _ = driving(
+        "list the files in /home/anna/Invoices",
+        &verbs,
+        &WhatItMayReach::not_said(),
+        &mut first,
+        HowFar::THE_ORDINARY,
+        Instructions::SHOWN_TO_A_TURN,
+    );
+    assert!(
+        !first.the_question(0).contains("The earlier conversation:"),
+        "a first request was shown a conversation nobody had"
+    );
 }

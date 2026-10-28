@@ -26,6 +26,8 @@
 //! | [`Instructions`] | Which set of how-to-answer a model was shown, and the digest a grade names it by |
 //! | [`shown_to_a_model`] | The whole text: the instructions, the verbs, the request |
 //! | [`shown_to_a_turn`] | The same, under the set a turn shows ([`Instructions::SHOWN_TO_A_TURN`]) |
+//! | [`TheConversationSoFar`] | What was said before a follow-up, held to its bound, how a model is told it, and the line it travels on (ADR 0135) |
+//! | [`TheConversationSoFar`] | What was said before a follow-up, held to its bound, and how a model is told it (ADR 0135) |
 //!
 //! # What this crate does not do
 //!
@@ -52,6 +54,8 @@ pub mod an_answer;
 pub mod answering_in;
 pub mod instructions;
 pub mod shown;
+pub mod the_conversation_on_the_wire;
+pub mod the_conversation_so_far;
 pub mod the_language_asked_in;
 pub mod verb_as_told;
 pub mod what_it_may_reach;
@@ -68,6 +72,8 @@ pub use instructions::{
     AND_AN_ANSWER, AND_YOU_MAY_LOOK_FIRST, EVERY_DOOR_AND_AN_ANSWER, HOW_TO_ANSWER, Instructions,
     ONE_EXAMPLE_PER_DOOR, SEVERAL_STEPS,
 };
-pub use shown::{shown_to_a_model, shown_to_a_turn};
+pub use shown::{shown_to_a_model, shown_to_a_model_after, shown_to_a_turn};
+pub use the_conversation_on_the_wire::{NotTheConversation, THE_EARLIER_CONVERSATION};
+pub use the_conversation_so_far::{AnEarlierTurn, TheAnswer, TheConversationSoFar};
 pub use the_language_asked_in::the_language_of;
 pub use what_it_may_reach::WhatItMayReach;

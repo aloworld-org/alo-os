@@ -51,7 +51,9 @@
 //! person's settings**, and law 1's indicator is lit by it rather than by us.
 
 use alo_capability::Verbs;
-use alo_instructing::{AStep, ATurnInProgress, Instructions, WhatItMayReach, shown_in_progress};
+use alo_instructing::{
+    AStep, ATurnInProgress, Instructions, TheConversationSoFar, WhatItMayReach, shown_in_progress,
+};
 use alo_protocol::{Answered, FromAnAgent, ToAnAgent};
 
 use crate::how_far::HowFar;
@@ -76,13 +78,41 @@ pub fn driving(
     how_far: HowFar,
     instructions: Instructions,
 ) -> WhatHappened {
+    driving_after(
+        &TheConversationSoFar::nothing(),
+        request,
+        verbs,
+        may_reach,
+        door,
+        how_far,
+        instructions,
+    )
+}
+
+/// **Drive a follow-up to its end**: [`driving`], with the conversation the
+/// person had in that task window shown to the model before the request
+/// ([ADR 0135](../../../docs/decisions/0135-a-follow-up-is-sent-with-the-conversation-so-far.md)).
+///
+/// The earlier conversation reaches the model **inside the question this turn
+/// asks**, and by no other road — so it leaves the machine only where a
+/// question does, through the daemon, under the indicator and into the record.
+/// This loop has no second way out.
+pub fn driving_after(
+    earlier: &TheConversationSoFar,
+    request: &str,
+    verbs: &Verbs,
+    may_reach: &WhatItMayReach,
+    door: &mut dyn TheDoor,
+    how_far: HowFar,
+    instructions: Instructions,
+) -> WhatHappened {
     let mut steps: Vec<AStep> = Vec::new();
 
     for _ in 0..how_far.rounds() {
         let shown = shown_in_progress(
             instructions,
             verbs,
-            ATurnInProgress::of(request, &steps, may_reach),
+            ATurnInProgress::of(request, &steps, may_reach).after(earlier),
         );
         let asked = FromAnAgent::Ask {
             question: shown,

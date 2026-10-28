@@ -431,6 +431,8 @@ mod the_window_edge_is_pointed_at;
 mod the_window_edge_reveals;
 mod their_displays;
 mod top_controls_region;
+/// What a follow-up typed in a task window carries to alo (ADR 0135).
+mod what_a_follow_up_carries;
 /// What a person typed, on its way to their agent and back (ADR 0109).
 pub mod what_a_person_asked_goes_to_the_agent;
 /// From *a person asked for this application* to *it is here*.
@@ -442,7 +444,7 @@ mod what_an_application_act_asks_for;
 #[cfg(test)]
 mod what_an_application_act_asks_for_tests;
 /// What becomes of a reply sent from a task window's reply box.
-mod what_becomes_of_a_reply;
+pub mod what_becomes_of_a_reply;
 pub mod what_the_agent_may_reach;
 mod what_the_dock_has_open;
 /// One keypress, read as what a person typed: the compositor's half of the

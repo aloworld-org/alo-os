@@ -8,6 +8,7 @@
 
 #![expect(
     clippy::expect_used,
+    clippy::panic,
     reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
 )]
 
@@ -711,13 +712,12 @@ fn the_status(
         .what_is_happening()
 }
 
-/// **A reply in a finished task never claims alo is working.** Found walking a
-/// booted machine on 2026-10-28: a person replied in a window that read
-/// *Complete*, pressed Enter, and it read *alo is working* for ever — and no
-/// request had left the machine. The reply stays where they wrote it, the line
-/// beneath says it did not reach alo, and Escape still lets go of the keyboard.
+/// **A reply in a finished task goes to alo with the conversation so far**
+/// (ADR 0135), and the window says alo is working because a request really
+/// starts. Until 2026-10-28 it read *alo is working* with nothing asked; #982
+/// made it say the reply went nowhere; now it goes.
 #[test]
-fn a_reply_in_a_finished_task_is_said_not_to_have_reached_alo() {
+fn a_reply_in_a_finished_task_is_sent_with_the_conversation_so_far() {
     let (_runtime, mut server) = a_session();
     let which = a_task_holding_the_keyboard(&mut server);
     let daemon = ADaemon::default();
@@ -734,35 +734,69 @@ fn a_reply_in_a_finished_task_is_said_not_to_have_reached_alo() {
         alo_tasks::words::COMPLETE,
         "the control: the task had finished"
     );
+    assert!(
+        server.take_the_follow_ups().is_empty(),
+        "the control: nothing is sent before the person presses Enter"
+    );
+
+    press(&mut server, A, &daemon);
+    assert!(
+        server.take_the_follow_ups().is_empty(),
+        "typing alone sent something"
+    );
+    press(&mut server, ENTER, &daemon);
+
+    let sent = server.take_the_follow_ups();
+    let [one] = sent.as_slice() else {
+        panic!("one Enter did not send exactly one follow-up: {sent:?}");
+    };
+    assert_eq!(one.which, which);
+    assert_eq!(one.said, "a");
+    assert_eq!(
+        one.earlier.turns(),
+        [
+            alo_instructing::AnEarlierTurn::ThePersonSaid("tidy my invoices".to_owned()),
+            alo_instructing::AnEarlierTurn::AloAnswered("It is in Invoices.".to_owned()),
+        ]
+    );
+    assert!(
+        server.take_the_follow_ups().is_empty(),
+        "one Enter was sent twice"
+    );
+    assert_eq!(
+        the_status(&server, which),
+        alo_tasks::words::ALO_IS_WORKING,
+        "a reply that was sent did not say alo is working"
+    );
+    assert_eq!(draft(&server, which), "", "the reply stayed in the box");
+}
+
+/// **A second reply while alo is still answering the first is not sent**, and
+/// the window says so: the earlier turn is still running, and the machine
+/// serves one at a time.
+#[test]
+fn a_reply_while_alo_is_still_working_is_said_not_to_have_been_sent() {
+    let (_runtime, mut server) = a_session();
+    let which = a_task_holding_the_keyboard(&mut server);
+    let daemon = ADaemon::default();
 
     press(&mut server, A, &daemon);
     press(&mut server, ENTER, &daemon);
 
+    assert!(
+        server.take_the_follow_ups().is_empty(),
+        "a reply was sent while alo was still answering"
+    );
+    assert!(
+        the_last_thing_said(&server, which).starts_with("alo did not receive this, because alo"),
+        "{}",
+        the_last_thing_said(&server, which)
+    );
     assert_ne!(
         the_status(&server, which),
         alo_tasks::words::ALO_IS_WORKING,
         "a reply nothing carried made the window say alo is working"
     );
-    let said = server
-        .tasks()
-        .the(which)
-        .expect("the task is open")
-        .conversation()
-        .each()
-        .iter()
-        .map(|turn| turn.said().to_owned())
-        .collect::<Vec<_>>();
-    assert_eq!(
-        said.get(said.len().saturating_sub(2)).map(String::as_str),
-        Some("a"),
-        "the person's reply was not kept where they wrote it"
-    );
-    assert!(
-        the_last_thing_said(&server, which).starts_with("alo did not receive this."),
-        "{}",
-        the_last_thing_said(&server, which)
-    );
-    assert_eq!(draft(&server, which), "", "the reply stayed in the box");
 
     press(&mut server, ESCAPE, &daemon);
     assert!(
@@ -799,6 +833,18 @@ fn a_reply_beneath_a_waiting_card_leaves_the_task_waiting() {
     assert!(
         server.the_change_waiting.is_asking(),
         "the card was taken down"
+    );
+    // **And it was not sent**: the agent that proposed the change still holds
+    // its turn, so the person is told to answer the change first.
+    assert!(
+        server.take_the_follow_ups().is_empty(),
+        "a reply was sent while a change was still waiting"
+    );
+    assert!(
+        the_last_thing_said(&server, which)
+            .starts_with("alo did not receive this, because a change above"),
+        "{}",
+        the_last_thing_said(&server, which)
     );
 
     press(&mut server, TAB, &daemon);

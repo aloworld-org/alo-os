@@ -1,32 +1,61 @@
 //! What a task window says about a reply a person sent from its reply box.
 //!
-//! One sentence today, and it exists because of what the machine could not do:
-//! **no road carries a reply to the agent yet.** `alo-agent` takes one request
-//! per turn and keeps nothing between turns — *a request is one line because a
-//! turn is one request; anything longer is a conversation and this is not one*,
-//! in its own words — so a reply has nowhere to go that would let alo know what
-//! it answers. `crate::what_becomes_of_a_reply` holds the account and the
-//! question it leaves for the owner.
+//! **A reply reaches alo, with the conversation so far**, since ADR 0135 — so
+//! these are the three things the window says when that is not the whole
+//! story: the reply did not go because a change above is still waiting, or
+//! because alo has not answered yet, or it went without the oldest part of a
+//! long conversation. `crate::what_becomes_of_a_reply` decides which.
 
 use alo_strings::{Vocabulary, Word};
 
-/// What the conversation says straight after a reply that was not sent.
-pub const A_REPLY_DOES_NOT_REACH_ALO_YET: Word = Word::saying(
-    "the-reply.does-not-reach-alo-yet",
-    "alo did not receive this. Replies in a task window cannot reach alo yet; to ask again, start \
-     a new request from the Dock.",
+/// Said beneath a reply that was not sent because a change is still waiting.
+pub const A_REPLY_WAITS_FOR_THE_CHANGE: Word = Word::saying(
+    "the-reply.waits-for-the-change",
+    "alo did not receive this, because a change above is still waiting for your answer. Allow it \
+     or deny it, then send this again.",
 )
 .noting(
     "Said in a task window's conversation directly beneath something the person typed in its \
-     reply box and sent with Enter. Nothing was sent anywhere and nothing on the computer changed; \
-     this must never read as \"alo is thinking\", \"queued\" or \"will answer later\", because it \
-     will not. \"The Dock\" is the bar at the bottom of the screen where a person types a request \
-     to alo; use the name the Dock has in your language. \"alo\" is the product's name and stays \
-     as it is, in lower case.",
+     reply box and sent with Enter, while a proposed change above still shows \"Allow once\" and \
+     \"Deny\". Nothing was sent anywhere and nothing on the computer changed; this must never read \
+     as \"queued\" or \"will be sent later\", because it will not. \"Allow\" and \"deny\" refer to \
+     the two buttons on that change; use the same words those buttons use in your language. \
+     \"alo\" is the product's name and stays as it is, in lower case.",
+);
+
+/// Said beneath a reply that was not sent because alo has not answered yet.
+pub const A_REPLY_WAITS_FOR_ALO: Word = Word::saying(
+    "the-reply.waits-for-alo",
+    "alo did not receive this, because alo is still working on what you asked before. Send it \
+     again once alo has answered.",
+)
+.noting(
+    "Said in a task window's conversation directly beneath something the person typed in its \
+     reply box and sent with Enter, while alo is still answering their previous message. Nothing \
+     was sent and nothing on the computer changed; this must never read as \"queued\", because it \
+     is not. \"alo\" is the product's name and stays as it is, in lower case.",
+);
+
+/// Said in a task's activity when a long conversation was sent in part.
+pub const PART_OF_THE_CONVERSATION_WAS_NOT_SENT: Word = Word::saying(
+    "the-reply.part-was-not-sent",
+    "The oldest part of this conversation was not sent to alo with your reply, because the \
+     conversation is longer than alo sends at once. alo was told that part is missing.",
+)
+.noting(
+    "Shown in a task window's activity after the person sent a reply. Each reply is sent to alo \
+     together with the conversation before it, so alo knows what the reply refers to; when the \
+     conversation is very long, its beginning is left out, and alo is told so. If the provider \
+     answering is on the internet, the part that was sent left this computer. \"alo\" is the \
+     product's name and stays as it is, in lower case.",
 );
 
 /// Every string this file declares, in the order a translator meets them.
-pub const THE_REPLY_BOXS_WORDS: [Word; 1] = [A_REPLY_DOES_NOT_REACH_ALO_YET];
+pub const THE_REPLY_BOXS_WORDS: [Word; 3] = [
+    A_REPLY_WAITS_FOR_THE_CHANGE,
+    A_REPLY_WAITS_FOR_ALO,
+    PART_OF_THE_CONVERSATION_WAS_NOT_SENT,
+];
 
 /// Why this file's words could not be declared.
 #[derive(Debug, thiserror::Error, PartialEq, Eq)]

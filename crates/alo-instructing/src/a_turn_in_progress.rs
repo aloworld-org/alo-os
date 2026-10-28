@@ -54,7 +54,8 @@
 use alo_capability::Verbs;
 
 use crate::instructions::Instructions;
-use crate::shown::shown_to_a_model;
+use crate::shown::shown_to_a_model_after;
+use crate::the_conversation_so_far::TheConversationSoFar;
 use crate::what_it_may_reach::WhatItMayReach;
 
 /// One request a turn has already made, and what came back.
@@ -138,7 +139,16 @@ pub struct ATurnInProgress<'a> {
     /// about a folder on round one and not on round two would start guessing
     /// again, which is the behaviour `crate::what_it_may_reach` exists to end.
     may_reach: &'a WhatItMayReach,
+    /// What was said in the task window before this request, which is nothing
+    /// for a first request (ADR 0135).
+    ///
+    /// On the turn rather than beside it for `may_reach`'s reason: every round
+    /// of one turn is shown the same earlier conversation.
+    earlier: &'a TheConversationSoFar,
 }
+
+/// The conversation before a first request, which is none.
+static NOTHING_EARLIER: TheConversationSoFar = TheConversationSoFar::nothing();
 
 impl<'a> ATurnInProgress<'a> {
     /// A turn on this request, after these steps, able to reach these folders.
@@ -148,7 +158,15 @@ impl<'a> ATurnInProgress<'a> {
             request,
             steps,
             may_reach,
+            earlier: &NOTHING_EARLIER,
         }
+    }
+
+    /// **The same turn, following this earlier conversation** — a follow-up a
+    /// person typed in a task window.
+    #[must_use]
+    pub const fn after(self, earlier: &'a TheConversationSoFar) -> Self {
+        Self { earlier, ..self }
     }
 
     /// Whether anything has been asked yet.
@@ -187,7 +205,13 @@ pub fn shown_in_progress(
     verbs: &Verbs,
     turn: ATurnInProgress<'_>,
 ) -> String {
-    let mut text = shown_to_a_model(instructions, verbs, turn.may_reach, turn.request);
+    let mut text = shown_to_a_model_after(
+        instructions,
+        verbs,
+        turn.may_reach,
+        turn.earlier,
+        turn.request,
+    );
     if !turn.has_begun() {
         return text;
     }
@@ -337,6 +361,34 @@ mod tests {
             ATurnInProgress::of("read it", &steps, &WhatItMayReach::nothing()),
         );
         assert!(shown.contains("was cut here"));
+    }
+
+    /// **Every round of a follow-up is shown the earlier conversation**, before
+    /// the request, and the steps of this turn still come after it.
+    #[test]
+    fn a_follow_up_shows_the_earlier_conversation_on_every_round() {
+        use crate::the_conversation_so_far::{AnEarlierTurn, TheConversationSoFar};
+
+        let verbs = the_verbs();
+        let earlier = TheConversationSoFar::of(vec![
+            AnEarlierTurn::ThePersonSaid("list the invoices".to_owned()),
+            AnEarlierTurn::AloAnswered("march.pdf and april.pdf".to_owned()),
+        ]);
+        let nothing: [AStep; 0] = [];
+        let steps = [AStep::of("asked-first", "answered-first")];
+        for steps in [&nothing[..], &steps[..]] {
+            let shown = shown_to_a_turn_in_progress(
+                &verbs,
+                ATurnInProgress::of("and the April one too", steps, &WhatItMayReach::nothing())
+                    .after(&earlier),
+            );
+            let earlier_at = shown.find("alo answered: march.pdf and april.pdf").unwrap();
+            let request_at = shown.find("The request: and the April one too").unwrap();
+            assert!(earlier_at < request_at, "{shown}");
+            if let Some(step_at) = shown.find("asked-first") {
+                assert!(request_at < step_at, "{shown}");
+            }
+        }
     }
 
     /// Several steps are shown oldest first, which is the order they happened

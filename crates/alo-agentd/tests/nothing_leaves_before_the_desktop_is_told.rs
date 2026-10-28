@@ -499,11 +499,15 @@ fn a_provider_that_looks_at_the_desktop(
     })
 }
 
+/// The question an agent asks, as a line of the protocol.
+const THE_QUESTION: &str =
+    "{\"format\":1,\"asks\":{\"ask\":{\"question\":\"may the tenant sublet?\"}}}\n";
+
 /// An agent's question, on the agent's door, and the line it was answered with.
-fn an_agent_asks(at: &Path) -> String {
+fn an_agent_asks(at: &Path, question: &str) -> String {
     let mut agent = UnixStream::connect(at).expect("the agent's door");
     agent
-        .write_all(b"{\"format\":1,\"asks\":{\"ask\":{\"question\":\"may the tenant sublet?\"}}}\n")
+        .write_all(question.as_bytes())
         .expect("the question is written");
     agent
         .set_read_timeout(Some(PATIENCE * 2))
@@ -539,21 +543,55 @@ fn the_desktop_is_told_before_an_agents_question_reaches_the_provider() {
     if the_daemon_if_this_is_one() {
         return;
     }
-    let folder = a_folder_of_our_own("told-first");
+    told_before_it_reaches_the_provider(
+        "the_desktop_is_told_before_an_agents_question_reaches_the_provider",
+        "told-first",
+        THE_QUESTION,
+    );
+}
+
+/// **A follow-up's earlier conversation leaves under the same indicator**
+/// (ADR 0135). It travels inside the agent's question and by no other road,
+/// so the desktop is told before the connection that carries it reaches the
+/// provider, exactly as for a first request — and it is sent only because an
+/// agent asked, which is only because a person pressed Enter.
+#[test]
+fn a_follow_ups_earlier_conversation_is_told_to_the_desktop_before_it_leaves() {
+    if the_daemon_if_this_is_one() {
+        return;
+    }
+    let earlier = alo_instructing::TheConversationSoFar::of(vec![
+        alo_instructing::AnEarlierTurn::ThePersonSaid("list the files in /home/anna".to_owned()),
+        alo_instructing::AnEarlierTurn::AloAnswered("march.pdf and april.pdf".to_owned()),
+    ]);
+    let question = format!("{}\n\nThe request: and the April one too", earlier.told());
+    let line = alo_protocol::FromAnAgent::Ask {
+        question,
+        answered: alo_protocol::Answered::AsTheNextRequest,
+    }
+    .written()
+    .expect("a question can be written");
+    told_before_it_reaches_the_provider(
+        "a_follow_ups_earlier_conversation_is_told_to_the_desktop_before_it_leaves",
+        "told-first-follow-up",
+        &format!("{line}\n"),
+    );
+}
+
+/// The guarantee, for one agent's question: what the desktop held at the moment
+/// the question's connection reached the provider.
+fn told_before_it_reaches_the_provider(test: &str, what: &str, question: &str) {
+    let folder = a_folder_of_our_own(what);
     let listener =
         TcpListener::bind(SocketAddr::new(our_own_address(), 0)).expect("a listener of our own");
     let provider = listener.local_addr().expect("a listener knows where it is");
     let config = a_person_who_chose(&folder, provider);
 
-    let mut daemon = ADaemon::started(
-        "the_desktop_is_told_before_an_agents_question_reaches_the_provider",
-        &folder,
-        &config,
-    );
+    let mut daemon = ADaemon::started(test, &folder, &config);
     let watching = Arc::new(Mutex::new(Watching::began(daemon.first_connection())));
     let reached = a_provider_that_looks_at_the_desktop(listener, Arc::clone(&watching));
 
-    let answer = an_agent_asks(&daemon.at);
+    let answer = an_agent_asks(&daemon.at, question);
     let seen = reached.join().expect("the provider's thread finishes");
 
     let mut watching = Arc::try_unwrap(watching)
@@ -621,7 +659,7 @@ fn a_question_that_goes_nowhere_tells_the_desktop_nothing() {
         &nothing_chosen,
     );
     let mut watching = Watching::began(daemon.first_connection());
-    let answer = an_agent_asks(&daemon.at);
+    let answer = an_agent_asks(&daemon.at, THE_QUESTION);
 
     // Anything more the daemon was going to tell has had a second to arrive.
     let _ = watching.waiting_until(Instant::now() + Duration::from_secs(1), |_| false);
