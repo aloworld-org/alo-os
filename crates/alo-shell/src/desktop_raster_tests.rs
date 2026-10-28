@@ -1089,6 +1089,8 @@ fn a_task_window_reaches_the_desktop_picture_and_is_painted() {
         how_many_files: 2,
         words: a_tasks_words(),
         said: Vec::new(),
+        scroll: alo_tasks::TheScroll::at_the_newest(),
+        place: 0,
     }];
     let with = of(&one);
 
@@ -1132,6 +1134,8 @@ fn a_task_window_too_small_is_left_out_rather_than_refusing_the_frame() {
         how_many_files: 0,
         words: a_tasks_words(),
         said: Vec::new(),
+        scroll: alo_tasks::TheScroll::at_the_newest(),
+        place: 0,
     }];
     let drawn = picture(
         &dock,

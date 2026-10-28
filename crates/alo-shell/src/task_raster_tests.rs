@@ -86,6 +86,7 @@ fn as_drawn() -> TaskPicture {
         2,
         &the_words(&files),
         &said,
+        alo_tasks::TheScroll::at_the_newest(),
         &mut fonts,
     )
     .expect("the size the design was drawn at")
@@ -147,6 +148,7 @@ fn the_middle_of_an_empty_window_is_its_surface() {
         0,
         &the_words(&files),
         &[],
+        alo_tasks::TheScroll::at_the_newest(),
         &mut fonts,
     )
     .expect("the design's size");
@@ -249,6 +251,7 @@ fn a_chip_is_drawn_per_shared_file_and_none_without() {
             how_many,
             &the_words(&files),
             &said,
+            alo_tasks::TheScroll::at_the_newest(),
             &mut fonts,
         )
         .expect("the design's size");
@@ -282,6 +285,7 @@ fn a_window_too_small_is_refused_rather_than_drawn_wrong() {
         0,
         &the_words(&files),
         &said,
+        alo_tasks::TheScroll::at_the_newest(),
         &mut fonts,
     )
     .expect_err("a 200 by 100 window was rasterised");
@@ -307,6 +311,7 @@ fn chips_stop_at_the_rows_edge_rather_than_running_off_it() {
         20,
         &the_words(&files),
         &said,
+        alo_tasks::TheScroll::at_the_newest(),
         &mut fonts,
     )
     .expect("the design's size");
@@ -359,15 +364,32 @@ fn the_words_are_drawn_and_an_empty_window_draws_none() {
         files: &[],
         how_many_files: "",
     };
-    let silent = furniture(at, a_look(), 0, &nothing, &[], &mut fonts).expect("the design's size");
+    let silent = furniture(
+        at,
+        a_look(),
+        0,
+        &nothing,
+        &[],
+        alo_tasks::TheScroll::at_the_newest(),
+        &mut fonts,
+    )
+    .expect("the design's size");
     assert!(
         silent.inked.is_empty(),
         "a window with nothing to say drew {} pieces of text",
         silent.inked.len()
     );
 
-    let spoken = furniture(at, a_look(), 2, &the_words(&files), &said, &mut fonts)
-        .expect("the design's size");
+    let spoken = furniture(
+        at,
+        a_look(),
+        2,
+        &the_words(&files),
+        &said,
+        alo_tasks::TheScroll::at_the_newest(),
+        &mut fonts,
+    )
+    .expect("the design's size");
 
     // **Derived, not a number.** Seven fixed strings — the title, the kind, the
     // status, the invitation, the model, the destination and the scope note —
@@ -408,7 +430,16 @@ fn no_word_is_drawn_outside_the_window() {
                 single one of the attached documents in considerable detail",
         ..the_words(&files)
     };
-    let drawn = furniture(at, a_look(), 2, &long, &said, &mut fonts).expect("the design's size");
+    let drawn = furniture(
+        at,
+        a_look(),
+        2,
+        &long,
+        &said,
+        alo_tasks::TheScroll::at_the_newest(),
+        &mut fonts,
+    )
+    .expect("the design's size");
 
     for one in &drawn.inked {
         assert!(
@@ -462,6 +493,7 @@ fn a_persons_words_are_drawn_further_right_than_alos() {
         0,
         &silent,
         &said,
+        alo_tasks::TheScroll::at_the_newest(),
         &mut fonts,
     )
     .expect("the design's size");
@@ -504,6 +536,7 @@ fn with_a_card(
         2,
         &the_words(&files),
         &said,
+        alo_tasks::TheScroll::at_the_newest(),
         &mut fonts,
     )
     .expect("the size the design was drawn at")
@@ -629,5 +662,198 @@ fn the_outline_appears_only_where_the_keyboard_is() {
     assert_ne!(
         allow.panel.pixels, deny.panel.pixels,
         "the outline did not move with the selection"
+    );
+}
+
+/// A request and an answer far taller than any window, as a model writes one.
+fn a_long_answer() -> Vec<crate::task_text::WhatWasSaid<'static>> {
+    /// Forty lines of an answer, each its own paragraph.
+    const LONG: &str = "An invoice is a document a seller sends a buyer.\n\
+        It names what was sold.\nIt names the price.\nIt names the date.\n\
+        It carries a number.\nIt says when to pay.\nIt says how to pay.\n\
+        It names the seller.\nIt names the buyer.\nIt adds the tax.\n\
+        It totals the lot.\nIt is kept for years.\nIt is sent once.\n\
+        It can be corrected.\nIt is not a receipt.\nA receipt says it was paid.\n\
+        An invoice asks.\nA receipt answers.\nBoth are kept.\nThat is all.";
+    vec![
+        crate::task_text::WhatWasSaid {
+            whose: alo_tasks::WhoseBlock::ThePersons,
+            words: "Explain what an invoice is.",
+            answers: None,
+        },
+        crate::task_text::WhatWasSaid {
+            whose: alo_tasks::WhoseBlock::Alos,
+            words: LONG,
+            answers: None,
+        },
+    ]
+}
+
+/// Where the conversation's view is on the screen, for a window at `at`.
+fn the_conversations_view(at: Rectangle<i32, smithay::utils::Physical>) -> (i32, i32) {
+    let rows = alo_tasks::TheRows::of(
+        u32::try_from(at.size.w).expect("a width"),
+        u32::try_from(at.size.h).expect("a height"),
+    )
+    .expect("a window the layout takes");
+    let inside = |of: u32| i32::try_from(of).expect("a small figure");
+    let top = at.loc.y
+        + inside(alo_tasks::measures::BORDER)
+        + inside(rows.conversation.from_the_top + alo_tasks::measures::INSIDE_THE_CONVERSATION);
+    let tall = rows
+        .conversation
+        .tall
+        .saturating_sub(alo_tasks::measures::INSIDE_THE_CONVERSATION * 2);
+    (top, top + inside(tall))
+}
+
+/// **A long answer stays inside the conversation's view.** Found walking a
+/// booted machine on 2026-10-28: a four-hundred-word answer ran down over the
+/// reply box and out of the window. No piece of text may straddle either edge
+/// of the view, and the window says it has somewhere to scroll.
+#[test]
+fn a_long_answer_is_cut_to_the_conversations_view() {
+    let files = two_files();
+    let said = a_long_answer();
+    let mut fonts = cosmic_text::FontSystem::new();
+    let at = Rectangle::new((120, 80).into(), (1040, 800).into());
+    let drawn = furniture(
+        at,
+        a_look(),
+        0,
+        &the_words(&files),
+        &said,
+        alo_tasks::TheScroll::at_the_newest(),
+        &mut fonts,
+    )
+    .expect("the design's size");
+    let (top, bottom) = the_conversations_view(at);
+
+    assert!(
+        drawn.the_conversation.0 > 0,
+        "the control: an answer this long has somewhere to scroll"
+    );
+    for one in &drawn.inked {
+        let (from, to) = (one.area.loc.y, one.area.loc.y + one.area.size.h);
+        for edge in [top, bottom] {
+            assert!(
+                !(from < edge && to > edge),
+                "text from y {from} to {to} runs across the conversation's edge at {edge}"
+            );
+        }
+    }
+}
+
+/// **Scrolled back as far as it goes, the request is at the top of the view**
+/// — the start of the conversation can be read.
+#[test]
+fn scrolled_back_the_start_of_the_conversation_is_drawn() {
+    let files = two_files();
+    let said = a_long_answer();
+    let mut fonts = cosmic_text::FontSystem::new();
+    let at = Rectangle::new((120, 80).into(), (1040, 800).into());
+    let at_the_newest = furniture(
+        at,
+        a_look(),
+        0,
+        &the_words(&files),
+        &said,
+        alo_tasks::TheScroll::at_the_newest(),
+        &mut fonts,
+    )
+    .expect("the design's size");
+    let (the_most, the_view) = at_the_newest.the_conversation;
+    let mut scroll = alo_tasks::TheScroll::at_the_newest();
+    scroll.the_frame_measured(the_most, the_view);
+    assert!(scroll.scrolled(i32::try_from(the_most).expect("a height"), said.len()));
+
+    let scrolled_back = furniture(
+        at,
+        a_look(),
+        0,
+        &the_words(&files),
+        &said,
+        scroll,
+        &mut fonts,
+    )
+    .expect("the design's size");
+    let (top, _) = the_conversations_view(at);
+    // The request's words, inside its bubble's padding at the top of the view.
+    let the_requests_words = top + i32::try_from(alo_tasks::measures::INSIDE_A_BLOCK).expect("16");
+    let at_the_top = |picture: &TaskPicture| {
+        picture
+            .inked
+            .iter()
+            .any(|one| one.area.loc.y == the_requests_words)
+    };
+    assert!(
+        !at_the_top(&at_the_newest),
+        "the control: at the newest the request is out of view"
+    );
+    assert!(
+        at_the_top(&scrolled_back),
+        "scrolled back as far as it goes, the request was not at the top"
+    );
+}
+
+/// **A long title keeps to its one line and never runs into the line beneath
+/// it.** Found walking a booted machine on 2026-10-28: a long request wrapped
+/// to a second line that ran over the small *alo task* label. The design's
+/// identity holds one Heading line of 30.
+#[test]
+fn a_long_title_keeps_to_one_line_and_ends_in_an_ellipsis() {
+    let files = two_files();
+    let mut fonts = cosmic_text::FontSystem::new();
+    let at = Rectangle::new((120, 80).into(), (1040, 800).into());
+    let long = crate::task_text::TheWordsInATaskWindow {
+        title: "rename /home/alo/Documents/march-invoice.pdf to invoice-march.pdf and then \
+                tell me what else is in that folder",
+        ..the_words(&files)
+    };
+    let drawn = furniture(
+        at,
+        a_look(),
+        0,
+        &long,
+        &[],
+        alo_tasks::TheScroll::at_the_newest(),
+        &mut fonts,
+    )
+    .expect("the design's size");
+
+    let border = i32::try_from(alo_tasks::measures::BORDER).expect("1");
+    let (x, y) = (
+        at.loc.x + border + i32::try_from(alo_tasks::measures::BESIDE_A_ROW).expect("32"),
+        at.loc.y + border + i32::try_from(super::IDENTITY_STARTS).expect("11"),
+    );
+    let title = drawn
+        .inked
+        .iter()
+        .find(|one| {
+            one.area.loc.x == x
+                && (y..y + i32::try_from(super::TITLE_IS_TALL).expect("30"))
+                    .contains(&one.area.loc.y)
+        })
+        .expect("the title was drawn where the identity starts");
+    assert!(
+        title.area.size.h <= i32::try_from(super::TITLE_IS_TALL).expect("30"),
+        "the title took {} rows, more than its one line",
+        title.area.size.h
+    );
+
+    let fitted = crate::window_edge_title::fitted(
+        &mut fonts,
+        long.title,
+        i32::try_from(super::THE_IDENTITY_IS_WIDE).expect("680") - 1,
+        crate::task_text::AStyle::Heading.metrics(a_look().measure()),
+    );
+    assert!(
+        fitted.cut,
+        "the control: this title is too long for its line"
+    );
+    assert!(
+        fitted
+            .shown
+            .ends_with(crate::window_edge_title::AN_ELLIPSIS)
     );
 }

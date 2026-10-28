@@ -32,6 +32,10 @@ use crate::task_text::{TheWordsInATaskWindow, WhatWasSaid};
 struct ATasksWords {
     /// Where its window is on this display.
     at: Rectangle<i32, Physical>,
+    /// Its place in the list of tasks.
+    place: usize,
+    /// How far its conversation is scrolled back.
+    scroll: alo_tasks::TheScroll,
     /// What the person asked for, which names it.
     title: String,
     /// What kind of thing it is.
@@ -92,10 +96,13 @@ impl TheTasksWords {
         let each = tasks
             .iter()
             .zip(placed.iter())
-            .filter_map(|(task, at)| {
+            .enumerate()
+            .filter_map(|(place, (task, at))| {
                 let at = (*at)?;
                 Some(ATasksWords {
                     at,
+                    place,
+                    scroll: task.scroll(),
                     // **The person's own words, not a sentence this machine
                     // owns.** A task is named by what somebody asked for.
                     title: task
@@ -131,7 +138,7 @@ impl TheTasksWords {
                         .conversation()
                         .each()
                         .iter()
-                        .map(|turn| (whose(turn), turn.said().to_owned()))
+                        .map(|turn| (whose(turn), as_drawn(turn)))
                         .collect(),
                     // **The latest proposal, and only while the task is
                     // asking.** Every earlier proposal was answered and draws
@@ -157,6 +164,8 @@ impl TheTasksWords {
             .iter()
             .map(|one| ATaskOnTheDisplay {
                 at: one.at,
+                place: one.place,
+                scroll: one.scroll,
                 how_many_files: one.files.len(),
                 words: TheWordsInATaskWindow {
                     title: &one.title,
@@ -189,6 +198,23 @@ impl TheTasksWords {
                     .collect(),
             })
             .collect()
+    }
+}
+
+/// The words one turn is drawn with.
+///
+/// **alo's replies and questions without their Markdown marks**, and
+/// everything else exactly as it was said: a person's words are theirs, and a
+/// proposal is the sentence they approve. `crate::alos_words_without_markup`
+/// says why the marks are removed rather than rendered.
+fn as_drawn(turn: &alo_tasks::Turn) -> String {
+    match turn.who() {
+        alo_tasks::WhoSaidIt::Alo | alo_tasks::WhoSaidIt::AloAsking => {
+            crate::alos_words_without_markup::without_markup(turn.said())
+        }
+        alo_tasks::WhoSaidIt::ThePerson | alo_tasks::WhoSaidIt::AloProposing => {
+            turn.said().to_owned()
+        }
     }
 }
 

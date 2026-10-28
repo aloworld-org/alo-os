@@ -187,3 +187,14 @@ pub const A_POPOVER_IS_INSET: u32 = 1;
 /// itself out with a negative conversation on a short display. Three lines
 /// because two is a question and its answer with nowhere for the next thing.
 pub const THE_LEAST_CONVERSATION: u32 = 75;
+
+/// One line of what was said: Body/Large's leading.
+///
+/// **What scrolling a conversation counts in.** A wheel notch moves three of
+/// these, which is what a terminal moves and what a hand is used to, and a
+/// page keeps one of them in sight so the line a person was reading is still
+/// there after the jump.
+pub const A_LINE_OF_WHAT_WAS_SAID: u32 = 25;
+
+/// How far one wheel notch scrolls a conversation: three lines.
+pub const A_NOTCH_SCROLLS: u32 = A_LINE_OF_WHAT_WAS_SAID * 3;

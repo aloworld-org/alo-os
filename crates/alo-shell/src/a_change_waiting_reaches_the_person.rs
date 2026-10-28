@@ -142,16 +142,43 @@ impl AChangeWaiting {
     /// which are the two halves of one thing: what they read, and what they
     /// answer.
     pub fn arrived(&mut self, task: &mut ATask, daemon: &dyn Answering) -> WhatArrived {
+        self.arrived_after(None, task, daemon)
+    }
+
+    /// What the agent said, and then whatever the daemon is holding.
+    ///
+    /// **The agent's words go into the conversation before the card, unless
+    /// all they do is announce the card.** `alo-agent` reports a change it left
+    /// waiting as *a change is waiting for you to answer, as number 0:* and then
+    /// the sentence — the daemon's own number, which means nothing to a person,
+    /// above the sentence the card is about to show in full. The design's
+    /// approval card *names the action*, so the conversation says it once, on
+    /// the card. Words whose last line is anything else are alo's and are kept.
+    pub fn arrived_after(
+        &mut self,
+        said: Option<String>,
+        task: &mut ATask,
+        daemon: &dyn Answering,
+    ) -> WhatArrived {
+        let say = |task: &mut ATask, said: Option<String>| {
+            if let Some(said) = said {
+                task.alo_says(Turn::from_alo(said));
+            }
+        };
         if self.number.is_some() {
+            say(task, said);
             return WhatArrived::TheOneAlreadyThere;
         }
-        let Some(changes) = daemon.waiting() else {
-            return WhatArrived::Nothing;
-        };
+        let changes = daemon.waiting().unwrap_or_default();
         let Some(first) = changes.first() else {
+            say(task, said);
             return WhatArrived::Nothing;
         };
         let sentence = first.sentence().text().to_owned();
+        say(
+            task,
+            said.filter(|said| !it_only_announces(said, &sentence)),
+        );
         self.number = Some(first.number());
         task.is_asking(sentence.clone());
         task.alo_says(Turn::alo_proposing(sentence));
@@ -260,7 +287,7 @@ impl crate::Server {
         // The machine failing and the agent answering are told apart, because a
         // person reads them differently: an answer belongs in the conversation
         // and *this machine could not be asked* belongs beside it.
-        if the_machines_fault {
+        let words = if the_machines_fault {
             task.and_then(alo_tasks::Act::done(said));
             // **And the turn ends in the conversation too.** Until 2026-10-27
             // the reason went beside the conversation and nothing went in it, so
@@ -275,20 +302,38 @@ impl crate::Server {
                     .text()
                     .to_owned(),
             ));
+            None
         } else {
-            task.alo_says(Turn::from_alo(said));
-        }
+            Some(said)
+        };
+        let arrived = match daemon {
+            Some(daemon) => waiting.arrived_after(words, task, daemon),
+            None => {
+                if let Some(words) = words {
+                    task.alo_says(Turn::from_alo(words));
+                }
+                WhatArrived::Nothing
+            }
+        };
         // **A question that arrived keeps the agent's turn open** until the
         // person answers it. Anything else — an answer in words, a refusal, a
         // question already standing, no daemon — lets the agent go now, by
         // dropping the socket here.
-        if let Some(daemon) = daemon
-            && waiting.arrived(task, daemon) == WhatArrived::AQuestion
+        if arrived == WhatArrived::AQuestion
             && let Some(the_turn) = the_turn
         {
             waiting.and_its_turn_is_held_by(the_turn);
         }
     }
+}
+
+/// Whether the agent's words only announce the change about to be shown:
+/// their last line is that change's own sentence.
+fn it_only_announces(said: &str, sentence: &str) -> bool {
+    said.lines()
+        .map(str::trim)
+        .rfind(|line| !line.is_empty())
+        .is_some_and(|last| last == sentence.trim())
 }
 
 #[cfg(test)]

@@ -63,6 +63,12 @@ pub struct ATaskOnTheDisplay<'a> {
     /// has answered, so the first thing a person sees is proof the machine
     /// heard them.
     pub said: Vec<crate::task_text::WhatWasSaid<'a>>,
+    /// How far the person has scrolled the conversation back from its newest
+    /// words.
+    pub scroll: alo_tasks::TheScroll,
+    /// Its place in the list of tasks, so what this frame measured about it
+    /// can be handed back to the right one.
+    pub place: usize,
 }
 
 /// Why a task window could not be rasterised.
@@ -88,6 +94,15 @@ pub(crate) struct TaskPicture {
     /// so the edges of the letters blend into that ground rather than into
     /// whatever was behind the window. Two lists, painted in order.
     pub(crate) inked: Vec<crate::painted::Inked>,
+    /// How far back from its newest words this conversation can be scrolled,
+    /// and how tall its view is — measured here because only a frame that
+    /// shaped the words knows either, and handed back to the task through
+    /// `alo_tasks::TheScroll::the_frame_measured`.
+    pub(crate) the_conversation: (u32, u32),
+    /// Which task this is, by its place in the list — set by whoever drew
+    /// it from an `ATaskOnTheDisplay`, so the measurement above reaches the
+    /// task it is about.
+    pub(crate) place: usize,
 }
 
 /// Which style one kind of block is written in.
@@ -160,6 +175,7 @@ pub(crate) fn furniture(
     how_many_files: usize,
     words: &crate::task_text::TheWordsInATaskWindow<'_>,
     said: &[crate::task_text::WhatWasSaid<'_>],
+    scroll: alo_tasks::TheScroll,
     fonts: &mut cosmic_text::FontSystem,
 ) -> Result<TaskPicture, NoTaskPicture> {
     let (wide, tall) = (
@@ -314,8 +330,18 @@ pub(crate) fn furniture(
         .conversation
         .tall
         .saturating_sub(m::INSIDE_THE_CONVERSATION * 2);
-    let scrolled = blocks.scrolled_to_the_newest(view);
+    // **And then wherever the person scrolled back to**, which
+    // `alo_tasks::TheScroll` holds and which returns to the newest when
+    // something new is said.
+    let the_newest = blocks.scrolled_to_the_newest(view);
+    let scrolled = scroll.the_view_starts(the_newest, said.len());
     let top_of_the_column = rows.conversation.from_the_top + m::INSIDE_THE_CONVERSATION;
+    // **The conversation's own view, and nothing in it is drawn outside it.**
+    // Until 2026-10-28 a block partly above the view was drawn from the top of
+    // it in full, and the words were cut only at the window's bottom edge — so
+    // a long answer ran down over the reply box and out of the window, which a
+    // walk on a booted machine showed.
+    let the_view = (top_of_the_column, top_of_the_column + view);
 
     // **The bubbles, as rounded shapes rather than the text's own ground.**
     // Until now what looked like a bubble was the box `sentence` inks text
@@ -335,12 +361,16 @@ pub(crate) fn furniture(
         let Some(answers) = one.answers else {
             continue;
         };
-        if !block.is_in_view(scrolled, view) {
+        // **The row of answers is drawn whole or not at all.** Half a button
+        // is a target a person can see and cannot be sure of pressing; the
+        // keyboard still reaches both while the row is scrolled out of view.
+        let in_the_content =
+            (block.from_the_top + block.tall).saturating_sub(m::INSIDE_A_BLOCK + m::A_CONTROL_IS);
+        if in_the_content < scrolled || in_the_content + m::A_CONTROL_IS > scrolled + view {
             continue;
         }
         let left = m::INSIDE_THE_CONVERSATION + block.from_the_left + m::INSIDE_A_BLOCK;
-        let down = (top_of_the_column + block.from_the_top.saturating_sub(scrolled) + block.tall)
-            .saturating_sub(m::INSIDE_A_BLOCK + m::A_CONTROL_IS);
+        let down = top_of_the_column + in_the_content - scrolled;
         // **Each label measured here, to be centred on its button later.** The
         // font system is free now; once the writer below takes it, it is not.
         let mut width_of = |words: &str, ground: [u8; 3], ink: [u8; 3], room: u32| -> u32 {
@@ -397,12 +427,21 @@ pub(crate) fn furniture(
         if !block.whose.is_in_a_bubble() || !block.is_in_view(scrolled, view) {
             continue;
         }
-        let (bx, by) = inside(
-            m::INSIDE_THE_CONVERSATION + block.from_the_left,
-            top_of_the_column + block.from_the_top.saturating_sub(scrolled),
-        );
+        // **Cut to the view**, top and bottom: a bubble scrolled half out of
+        // view shows the half that is in it, and never the half over the
+        // heading or the reply box.
+        let top = (top_of_the_column + block.from_the_top)
+            .saturating_sub(scrolled)
+            .max(the_view.0);
+        let bottom = (top_of_the_column + block.past_its_bottom())
+            .saturating_sub(scrolled)
+            .min(the_view.1);
+        if bottom <= top {
+            continue;
+        }
+        let (bx, by) = inside(m::INSIDE_THE_CONVERSATION + block.from_the_left, top);
         wells.push(AWell {
-            at: Rectangle::new((bx, by).into(), (px(block.wide), px(block.tall)).into()),
+            at: Rectangle::new((bx, by).into(), (px(block.wide), px(bottom - top)).into()),
             corner: m::A_BLOCKS_CORNER,
         });
     }
@@ -438,6 +477,27 @@ pub(crate) fn furniture(
     let limit = at.loc.y + at.size.h;
     let mut inked = Vec::new();
 
+    // **The title keeps to its one line, and ends in an ellipsis when it must.**
+    // The design's identity is 680 × 54: one Heading line of 30, a gap of 4 and
+    // the kind at 16, so a second line has nowhere to go but over the kind —
+    // which a walk on a booted machine showed a long request doing. Fitted the
+    // way the window edge fits a title (the owner's ruling of 2026-10-10 in
+    // `docs/design/the-external-window-edge.md`): grapheme-safe, measured in the
+    // face it is drawn in, and to the room this display's window actually has.
+    // The whole request is never lost: it is the first thing in the
+    // conversation, drawn in full.
+    let identity_is_wide = rows.heading.wide.saturating_sub(m::BESIDE_A_ROW * 2);
+    let the_titles_room = THE_IDENTITY_IS_WIDE.min(identity_is_wide);
+    let one_line = words.title.split_whitespace().collect::<Vec<_>>().join(" ");
+    // One short of the room, so the line the writer shapes at the full room
+    // can never wrap on a rounding of the measurement.
+    let title = crate::window_edge_title::fitted(
+        fonts,
+        &one_line,
+        px(the_titles_room).saturating_sub(1),
+        AStyle::Heading.metrics(measure),
+    );
+
     // **Centred in the band it is given, from its own measured height.** Not
     // from a half-of-a-leading constant: the height depends on the font, the
     // person's text size and how many lines it wrapped to, so a constant would
@@ -456,7 +516,8 @@ pub(crate) fn furniture(
                      x: u32,
                      band: (u32, u32),
                      width: u32,
-                     to_the_right: bool| {
+                     to_the_right: bool,
+                     scrolled_in: Option<(u32, (u32, u32))>| {
         if words.is_empty() {
             return;
         }
@@ -473,7 +534,9 @@ pub(crate) fn furniture(
         );
         let (top, tall) = band;
         let spare = px(tall) - shaped.height;
-        let down = px(top) + if spare > 0 { spare / 2 } else { 0 };
+        // **Lifted by how far the conversation is scrolled**, for words in it.
+        let lifted = scrolled_in.map_or(0, |(by, _)| px(by));
+        let down = px(top) - lifted + if spare > 0 { spare / 2 } else { 0 };
         // **Right-aligned text is shaped twice**, and the second time at its own
         // width. `sentence` inks into a box exactly as wide as it was told, so
         // shifting that box to the right edge leaves it hanging past it — which
@@ -500,22 +563,29 @@ pub(crate) fn furniture(
         };
         let (px_x, _) = inside(along, 0);
         let px_y = at.loc.y + i32::try_from(m::BORDER).unwrap_or(0) + down;
-        if let Some(one) = shaped.placed(px_x, px_y, limit) {
+        // **Cut to the conversation's view** for words in it, and to the
+        // window's bottom edge for everything else.
+        let (from, to) = scrolled_in.map_or((at.loc.y, limit), |(_, (top, bottom))| {
+            let (_, top) = inside(0, top);
+            let (_, bottom) = inside(0, bottom);
+            (top, bottom.min(limit))
+        });
+        if let Some(one) = shaped.placed_between(px_x, px_y, from, to) {
             inked.push(one);
         }
     };
 
     // The heading: the title, what kind of task it is, and the status.
-    let identity_is_wide = rows.heading.wide.saturating_sub(m::BESIDE_A_ROW * 2);
     write(
-        words.title,
+        &title.shown,
         AStyle::Heading,
         palette.surface,
         palette.ink,
         m::BESIDE_A_ROW,
         (rows.heading.from_the_top + IDENTITY_STARTS, TITLE_IS_TALL),
-        THE_IDENTITY_IS_WIDE.min(identity_is_wide),
+        the_titles_room,
         false,
+        None,
     );
     write(
         words.kind,
@@ -529,6 +599,7 @@ pub(crate) fn furniture(
         ),
         THE_IDENTITY_IS_WIDE.min(identity_is_wide),
         false,
+        None,
     );
     // **The status in teal while alo is working**, which is the caller's
     // wording and this crate's colour: ADR 0067's teal marks alo acting.
@@ -545,6 +616,7 @@ pub(crate) fn furniture(
         (rows.heading.from_the_top, m::THE_HEADING_IS_TALL),
         THE_STATUS_IS_WIDE,
         true,
+        None,
     );
 
     // Each chip's label, on the chip's own cool ground.
@@ -563,6 +635,7 @@ pub(crate) fn furniture(
             (rows.shared_files.from_the_top, m::THE_SHARED_FILES_ARE_TALL),
             m::A_CHIP_IS_WIDE.saturating_sub(m::BEFORE_A_CHIPS_LABEL * 2),
             false,
+            None,
         );
     }
 
@@ -579,6 +652,7 @@ pub(crate) fn furniture(
         ),
         field_is_wide.saturating_sub(m::INSIDE_THE_FIELD * 2),
         false,
+        None,
     );
     write(
         words.model,
@@ -589,6 +663,7 @@ pub(crate) fn furniture(
         (controls.from_the_top, m::A_CONTROL_IS),
         m::THE_MODEL_CONTROL_IS_WIDE.saturating_sub(m::A_CHEVRON + m::GAP * 2),
         false,
+        None,
     );
     write(
         words.destination,
@@ -599,6 +674,7 @@ pub(crate) fn furniture(
         (controls.from_the_top, m::A_CONTROL_IS),
         m::THE_DESTINATION_IS_WIDE,
         false,
+        None,
     );
 
     for (one, block) in said.iter().zip(blocks.each()) {
@@ -610,8 +686,9 @@ pub(crate) fn furniture(
         } else {
             0
         };
-        // The block's place in the content, less how far the view has scrolled.
-        let down = top_of_the_column + block.from_the_top.saturating_sub(scrolled) + padding;
+        // The block's place in the content; the writer lifts it by how far the
+        // view has scrolled and cuts it to the view.
+        let down = top_of_the_column + block.from_the_top + padding;
         // **The words keep to the space above the answers.** They are centred in
         // the band they are given, so a band that included the row would put
         // the sentence on top of the buttons.
@@ -629,6 +706,7 @@ pub(crate) fn furniture(
             (down, block.tall.saturating_sub(padding * 2 + below)),
             block.wide.saturating_sub(padding * 2),
             false,
+            Some((scrolled, the_view)),
         );
         // **The two labels, in the design's Label/Medium**, each on its own
         // button's ground: white on the navy of Allow once, navy on the card
@@ -649,6 +727,7 @@ pub(crate) fn furniture(
                 (row, m::A_CONTROL_IS),
                 (allow_is + 2).min(m::ALLOW_ONCE_IS_WIDE),
                 false,
+                None,
             );
             let deny_starts = left + m::ALLOW_ONCE_IS_WIDE + m::GAP;
             write(
@@ -660,6 +739,7 @@ pub(crate) fn furniture(
                 (row, m::A_CONTROL_IS),
                 (deny_is + 2).min(m::DENY_IS_WIDE),
                 false,
+                None,
             );
         }
     }
@@ -674,9 +754,16 @@ pub(crate) fn furniture(
         (rows.scope_note.from_the_top, m::THE_SCOPE_NOTE_IS_TALL),
         rows.scope_note.wide.saturating_sub(m::BESIDE_A_ROW * 2),
         false,
+        None,
     );
 
-    Ok(TaskPicture { panel, at, inked })
+    Ok(TaskPicture {
+        panel,
+        at,
+        inked,
+        the_conversation: (the_newest, view),
+        place: 0,
+    })
 }
 
 #[cfg(test)]

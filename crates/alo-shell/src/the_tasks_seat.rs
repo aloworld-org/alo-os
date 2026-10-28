@@ -40,6 +40,8 @@ use crate::{InputError, Server};
 enum TheTaskTook {
     /// A shortcut this person has bound, to be carried out rather than typed.
     AChord(alo_shortcuts::Chord),
+    /// Page Up or Page Down, which scroll the conversation rather than type.
+    Scrolling(crate::a_task_window_scrolls::APage),
     /// A key, as typing and as an answer to a waiting change.
     AKey(ComposerKey, ApprovalKey),
 }
@@ -97,6 +99,22 @@ impl Server {
                     return FilterResult::Intercept(Some(TheTaskTook::AChord(chord)));
                 }
                 let symbol = symbol.modified_sym();
+                // **The page keys scroll the conversation** — `crate::a_task_window_scrolls`.
+                // The reply box has no use for them, and a person who cannot use a
+                // wheel still has to be able to read the start of a long answer.
+                match symbol {
+                    smithay::input::keyboard::Keysym::Page_Up => {
+                        return FilterResult::Intercept(Some(TheTaskTook::Scrolling(
+                            crate::a_task_window_scrolls::APage::Back,
+                        )));
+                    }
+                    smithay::input::keyboard::Keysym::Page_Down => {
+                        return FilterResult::Intercept(Some(TheTaskTook::Scrolling(
+                            crate::a_task_window_scrolls::APage::Forward,
+                        )));
+                    }
+                    _ => {}
+                }
                 // `Composing::No` for `the_bars_key`'s reason: this
                 // compositor runs no input method.
                 FilterResult::Intercept(Some(TheTaskTook::AKey(
@@ -115,6 +133,12 @@ impl Server {
             // `crate::a_task_window_hands_on_a_chord` has the account.
             Some(TheTaskTook::AChord(chord)) => {
                 let _ = self.a_task_window_hands_on_a_chord(chord);
+                Ok(None)
+            }
+            Some(TheTaskTook::Scrolling(page)) => {
+                if let Some(which) = self.the_task_with_the_keyboard {
+                    let _ = self.a_page_in_the_task(which, page);
+                }
                 Ok(None)
             }
             Some(TheTaskTook::AKey(typed, answering)) => Ok(Some((typed, answering))),

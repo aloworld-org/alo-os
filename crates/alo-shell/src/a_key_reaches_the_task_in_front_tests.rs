@@ -809,3 +809,33 @@ fn a_reply_beneath_a_waiting_card_leaves_the_task_waiting() {
         "the card could not be answered"
     );
 }
+
+/// **Page Up in a task window scrolls its conversation and types nothing.**
+///
+/// The keyboard's road to the start of a long answer, for somebody with no
+/// wheel to turn.
+#[test]
+fn page_up_scrolls_the_conversation_and_types_nothing() {
+    /// evdev's code for Page Up.
+    const PAGE_UP: u32 = 104;
+    let (_runtime, mut server) = a_session();
+    let which = a_task_holding_the_keyboard(&mut server);
+    let daemon = ADaemon::default();
+    server
+        .tasks_mut()
+        .the_mut(which)
+        .expect("the task is open")
+        .scroll_mut()
+        .the_frame_measured(600, 300);
+    let the_view_starts = |server: &Server| {
+        let task = server.tasks().the(which).expect("the task is open");
+        task.scroll()
+            .the_view_starts(600, task.conversation().each().len())
+    };
+    assert_eq!(the_view_starts(&server), 600, "the control: at the newest");
+
+    press(&mut server, PAGE_UP, &daemon);
+
+    assert!(the_view_starts(&server) < 600, "Page Up did not scroll");
+    assert_eq!(draft(&server, which), "", "Page Up was typed");
+}

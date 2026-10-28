@@ -169,6 +169,31 @@ impl Shaped {
             pixels,
         })
     }
+
+    /// The box at (`x`, `y`), keeping only the rows from `top` down to just
+    /// above `bottom`.
+    ///
+    /// **For words in a view that scrolls**, which can start above the view
+    /// as well as run past its foot. Rows above `top` are dropped from the
+    /// front of the box and the box moves down by as many, so what is drawn is
+    /// exactly the part of the words inside the view.
+    pub(crate) fn placed_between(self, x: i32, y: i32, top: i32, bottom: i32) -> Option<Inked> {
+        let skipped = (top - y).max(0);
+        let rows = self.height.min(bottom - y) - skipped;
+        if rows <= 0 || self.width_of_box <= 0 {
+            return None;
+        }
+        let from = usize::try_from(skipped * self.width_of_box).ok()?;
+        let to = from + usize::try_from(rows * self.width_of_box).ok()?;
+        let pixels = self.pixels.get(from..to)?.to_vec();
+        Some(Inked {
+            area: smithay::utils::Rectangle::new(
+                (x, y + skipped).into(),
+                (self.width_of_box, rows).into(),
+            ),
+            pixels,
+        })
+    }
 }
 
 /// A sentence, wrapped to `width`, in a box exactly as tall as its lines.

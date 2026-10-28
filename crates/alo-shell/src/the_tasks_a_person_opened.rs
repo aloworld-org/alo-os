@@ -191,6 +191,15 @@ impl TheTasks {
         self.open.get_mut(which.at())
     }
 
+    /// The task at this place in the list, to change, for a frame handing back
+    /// what it measured about the window it drew there.
+    ///
+    /// **A place, not a [`WhichTask`]**, because the frame read it off the list
+    /// it was given; a place nothing is at answers `None`.
+    pub(crate) fn at_its_place(&mut self, place: usize) -> Option<&mut ATask> {
+        self.open.get_mut(place)
+    }
+
     /// Every task, oldest first.
     #[must_use]
     pub fn each(&self) -> &[ATask] {

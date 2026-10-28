@@ -22,6 +22,7 @@ use alo_models::InferenceSource;
 use crate::activity::{Act, TheActivity};
 use crate::conversation::{TheConversation, Turn};
 use crate::permissions::{Answered, ThePermissions};
+use crate::scrolling::TheScroll;
 use crate::stopping::Stopping;
 use crate::which_model::WhichModel;
 
@@ -48,6 +49,13 @@ pub struct ATask {
     /// it back, which is the one thing a person does while waiting for work to
     /// finish.
     draft: String,
+    /// How far the person has scrolled the conversation back from its newest
+    /// words.
+    ///
+    /// **Held by the task for the draft's reason**: a person who scrolled back
+    /// to read the start of a long answer and put the window aside should find
+    /// it where they were reading.
+    scroll: TheScroll,
 }
 
 /// What a minimised task shows in the right-hand panel.
@@ -81,7 +89,19 @@ impl ATask {
             permissions: ThePermissions::nothing_yet(),
             stopping: Stopping::nobody_asked(),
             draft: String::new(),
+            scroll: TheScroll::at_the_newest(),
         }
+    }
+
+    /// How far the conversation is scrolled back from its newest words.
+    #[must_use]
+    pub const fn scroll(&self) -> TheScroll {
+        self.scroll
+    }
+
+    /// How far the conversation is scrolled, to be changed.
+    pub const fn scroll_mut(&mut self) -> &mut TheScroll {
+        &mut self.scroll
     }
 
     /// What was said.

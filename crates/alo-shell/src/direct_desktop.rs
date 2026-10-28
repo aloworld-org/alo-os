@@ -1566,6 +1566,10 @@ impl LoopInput for Desk<'_> {
         //
         // `pictures.desktop.market` is what the painter reads, so it is what
         // this asks. Nought is the ordinary answer and the healthy one.
+        // **How far each task's conversation can scroll, as this frame
+        // measured it.** Only the draw shapes the words, so only it knows; see
+        // `crate::a_task_window_scrolls`.
+        server.the_frame_measured_the_tasks(&pictures.desktop.tasks);
         let open_and_undrawn = server.market.is_open() && pictures.desktop.market.is_none();
         server.a_frame_left_this_many_windows_undrawn(usize::from(open_and_undrawn));
         // **Every open window's edge, which nothing on a machine drew until
