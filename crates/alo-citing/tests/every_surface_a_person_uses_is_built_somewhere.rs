@@ -163,25 +163,10 @@ const EVERY_SURFACE_A_PERSON_USES: [(&str, &str, Reach); 8] = [
     // `docs/contracts/native-record-window.md`, and this list did not name it —
     // so the one check that asks *can a machine reach this* had never been asked
     // about it.
-    (
-        "alo_shell",
-        "RecordWindow",
-        Reach::OnlyATestDoes {
-            why: "the window lays out, routes keys and refuses correctly in every \
-                  tested case, and nothing on a running machine builds one. \
-                  Measured 2026-10-17 across 3938 production files of this \
-                  workspace: `RecordWindow::` appears nought times outside tests, \
-                  against one each for `SettingsWindow` (alo-shell/server.rs), \
-                  `FillingWindow` and `RunningWindow` (alo-desktop/main.rs) — which \
-                  is the control, since a search finding nothing everywhere would \
-                  say this about every window. Its two doors are named in \
-                  alo-shell/tests/record_source.rs with the same measurement: \
-                  `opened_by_hand`'s only call is inside nested_record.rs's test \
-                  module, and `asked_what_it_did` has none at all because an \
-                  agent's answer is addressed to a task window by `WhichTask` and \
-                  there is no who-asked that can be a record",
-        },
-    ),
+    // **Built 2026-10-17, reachable 2026-10-27**: Super+R and the row in
+    // Settings open it through `alo-shell/src/a_chord_opens_the_record.rs`, and
+    // `alo-desktop` tells the shell where the record is.
+    ("alo_shell", "RecordWindow", Reach::AMachineCan),
     (
         "alo_capturing",
         "Screenshot",

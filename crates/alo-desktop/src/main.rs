@@ -707,6 +707,18 @@ mod running {
             ))
         }
 
+        /// Where this machine keeps its record, read from the machine's own
+        /// description, so Super+R and the row in Settings can open it.
+        ///
+        /// **The refusal is handed over too**, never swallowed: a machine that
+        /// cannot say where its record is opens the window on that sentence,
+        /// which is different from a record with nothing in it.
+        fn the_recounting(
+            &mut self,
+        ) -> Option<Result<alo_recounting::Recounting, alo_recounting::NotRecounted>> {
+            Some(alo_recounting::Recounting::on_this_machine())
+        }
+
         /// What this person's chords mean, read from their own folder.
         ///
         /// **What this release ships, with the person's changes over it.** A

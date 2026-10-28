@@ -715,6 +715,7 @@ dependencies = [
  "alo-portals",
  "alo-power",
  "alo-put-aside",
+ "alo-recounting",
  "alo-remembering",
  "alo-saying",
  "alo-secrets",

@@ -333,6 +333,20 @@ fn granted(open: &Open, strings: &Strings, now: SystemTime) -> SectionWords {
     // section: a row that appeared once somebody had a grant would be a door
     // that opens after you are through it.
     let mut lines = Vec::new();
+    // **See what alo did**, always, in the shortcut's own words so there is
+    // one string and one translation for the action.
+    lines.push(LineWords {
+        row: Some(SettingsRow::SeeWhatAloDid),
+        parts: vec![
+            strings
+                .say(
+                    &alo_shortcuts::Action::SeeWhatAloDid.word().key(),
+                    &Filling::nothing(),
+                )
+                .into_text(),
+        ],
+        chosen: false,
+    });
     if section.a_folder_can_be_given() {
         lines.push(LineWords {
             row: Some(SettingsRow::GrantAFolder),

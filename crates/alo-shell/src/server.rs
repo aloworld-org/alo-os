@@ -475,6 +475,18 @@ pub struct Server {
     /// the grants and the pairings arrive from `crate::TheDesktop`, and this
     /// crate opens none of them to find out where they are.
     pub(crate) settings_places: Option<crate::SettingsPlaces>,
+    /// **The record window**, which a chord or a row in Settings opens.
+    ///
+    /// Not an `Option` for `settings`' reason: *shut* is a state the window
+    /// already has.
+    pub(crate) record: crate::RecordWindow,
+    /// **Where this machine keeps its record**, told by the desktop, or why it
+    /// could not say.
+    ///
+    /// `None` until a desktop says, which keeps every other road as it was.
+    /// Told rather than read for `settings_places`' reason: the description
+    /// that names the record's path is a file, and this crate opens none.
+    pub(crate) recounting: Option<Result<alo_recounting::Recounting, alo_recounting::NotRecounted>>,
     /// **What this person's Places remember**, as the last keep left it.
     ///
     /// Held here for the same reason the shortcuts above are: a chord is
@@ -687,6 +699,10 @@ impl Server {
             settings: crate::SettingsWindow::closed(),
             // Nobody has told this seat where a person's settings are kept.
             settings_places: None,
+            // Shut, and a chord or a row in Settings is what opens it.
+            record: crate::RecordWindow::on_an_output(),
+            // Nobody has told this seat where the record is kept.
+            recounting: None,
             // Shut, and a press on the person's own Dock is what opens it.
             market: crate::MarketWindow::closed(),
             // Nobody has told this seat what the machine already has.

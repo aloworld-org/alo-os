@@ -219,6 +219,14 @@ impl Server {
             self.shortcuts = Some(shortcuts);
             return names.map_or(WhatTheChordCameTo::NotBound, WhatTheChordCameTo::Carried);
         }
+        // **The record, answered here for the terminal's reason: it borrows
+        // nothing the layers below hold.** It closes Settings and opens one
+        // window, from where the desktop said the record is.
+        // `crate::a_chord_opens_the_record` has the judgement.
+        if self.a_chord_opens_the_record(&shortcuts, chord) {
+            self.shortcuts = Some(shortcuts);
+            return names.map_or(WhatTheChordCameTo::NotBound, WhatTheChordCameTo::Carried);
+        }
         // **Asking why a command is waiting, answered beside the chord that
         // opens the terminal it asks about, and for the same reason: it borrows
         // nothing.** One question put to the terminal already open — no window,

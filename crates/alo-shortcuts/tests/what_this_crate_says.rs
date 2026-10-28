@@ -60,6 +60,7 @@ fn auf_deutsch() -> Strings {
             (words::THE_AGENT, "Den Assistenten fragen"),
             (words::LAUNCHER, "Das Startmenü öffnen"),
             (words::SETTINGS, "Einstellungen öffnen"),
+            (words::SEE_WHAT_ALO_DID, "Ansehen, was alo getan hat"),
             (words::TERMINAL, "Ein Terminal öffnen"),
             (words::WHY_IS_IT_WAITING, "Fragen, warum ein Befehl wartet"),
             (words::WINDOW_OPTIONS, "Fensteroptionen anzeigen"),
@@ -216,6 +217,10 @@ fn the_whole_panel_is_read_in_the_language_the_person_reads() {
                 "Super+Leertaste".to_owned()
             ),
             ("Einstellungen öffnen".to_owned(), "Super+I".to_owned()),
+            (
+                "Ansehen, was alo getan hat".to_owned(),
+                "Super+R".to_owned()
+            ),
             ("Ein Terminal öffnen".to_owned(), "Strg+Alt+T".to_owned()),
             (
                 "Fragen, warum ein Befehl wartet".to_owned(),

@@ -109,6 +109,14 @@ pub enum SettingsRow {
     /// section's own words — *nothing is granted from here* — and so nothing
     /// on the machine could grant alo a folder at all.
     GrantAFolder,
+    /// See what alo did: Enter opens the record.
+    ///
+    /// **In the section of what alo may reach**, above giving it more, because
+    /// that is where a person already looks at what alo is allowed to do; and
+    /// always offered, because the record answers *what happened* whether or
+    /// not anything is granted now. The owner chose this row and Super+R on
+    /// 2026-10-27. `crate::a_chord_opens_the_record` is the one opener.
+    SeeWhatAloDid,
     /// One row of the picker, while a person is in it: Enter acts on it.
     ///
     /// The moves are rows rather than new keys, so the picker is worked with
@@ -155,7 +163,9 @@ impl SettingsRow {
             Self::Accent(_) => SettingsSection::Appearance,
             Self::Hiding(_) => SettingsSection::Dock,
             Self::Shortcut(_) => SettingsSection::Shortcuts,
-            Self::Granted(_) | Self::GrantAFolder | Self::Picking(_) => SettingsSection::Granted,
+            Self::Granted(_) | Self::GrantAFolder | Self::SeeWhatAloDid | Self::Picking(_) => {
+                SettingsSection::Granted
+            }
             Self::UsingAnother(_) => SettingsSection::Answering,
             Self::HowCodeRuns(_) => SettingsSection::HowCodeRuns,
             Self::ShellIntegration | Self::APlaceToReturnTo => SettingsSection::Terminal,
@@ -229,6 +239,11 @@ pub enum SettingsDid {
     /// `Server` because the keys that fill it in reach the seat, not this
     /// window. See `crate::a_provider_is_added_in_settings`.
     AddingAProvider,
+    /// A person asked to see the record, so the record window should open.
+    ///
+    /// **The window says so and does not do it**, for `AddingAProvider`'s
+    /// reason: the record window lives on the `Server`.
+    OpeningTheRecord,
 }
 
 /// What opening Settings read, for the host's log: every file of the
@@ -520,6 +535,7 @@ impl Open {
         // the same argument `AddAProvider` makes a hundred lines up, and the
         // same fault it fixes: a row that appeared only once somebody had a
         // grant would be a door that opens after you are through it.
+        rows.push(SettingsRow::SeeWhatAloDid);
         if self.granted.a_folder_can_be_given() {
             rows.push(SettingsRow::GrantAFolder);
         }
@@ -585,6 +601,9 @@ impl Open {
             // when they press Enter again. A `Kept` here would tell the
             // section a change had landed that has not been made yet.
             SettingsRow::AddAProvider => SettingsDid::AddingAProvider,
+            // **Nothing is read by pressing this**: it asks for the record
+            // window, which reads the record when it opens.
+            SettingsRow::SeeWhatAloDid => SettingsDid::OpeningTheRecord,
             // **Nothing is granted by pressing this**: it opens the picker.
             // The grant is made further in, when the person has chosen a
             // folder *and* said how long — two answers, and this row is

@@ -132,6 +132,20 @@ impl RecordWindow {
         self.read(recounting)
     }
 
+    /// A person opened the window on a machine that could not say where it
+    /// keeps its record.
+    ///
+    /// There is no `Recounting` to read, so neither door above can be walked,
+    /// and a window that stayed shut would answer a person's key with nothing.
+    /// It opens on the refusal instead, in `alo-recounting`'s own words — the
+    /// same state a record that could not be read leaves it in.
+    pub fn could_not_be_found(&mut self, why: NotRecounted) -> RecordOpened {
+        self.shown.taken_down();
+        self.moved_past = 0;
+        self.refusal = Some(why);
+        RecordOpened::RefusedInTheWindow
+    }
+
     /// One key press, and what it did when it read the record again.
     ///
     /// Up, Down, Home and End move the view through the account; F5 reads the

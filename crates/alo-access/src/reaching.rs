@@ -105,6 +105,7 @@ pub const fn the_tab_stop_for(action: Action) -> Surface {
         // reaches it from without a chord is the same one.
         Action::Launcher
         | Action::Settings
+        | Action::SeeWhatAloDid
         // **A terminal is the Dock's by the same reasoning, and today there is
         // nothing there to find.** This answers *where a reader meets this*,
         // and an application is met where applications are. But a terminal is

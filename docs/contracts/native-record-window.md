@@ -8,16 +8,7 @@ itself, every refusal — is `alo-recounting`'s; this document describes only th
 window that puts that account in front of a person and carries their keys back.
 Nothing here is reachable by an agent, and nothing here writes to the record.
 
-**Nothing in alo OS opens this window yet, measured 2026-10-17.** This document
-describes the window's surface and that surface is built, routed and tested —
-and a reader building against it should know that the product itself does not
-yet walk either road described below. `RecordWindow::` appears **nought** times
-in the 3938 production files of this workspace, against one each for the
-settings, running and filling windows, which is the control; and both doors
-below are named in `crates/alo-shell/tests/record_source.rs` as called by
-nothing a machine runs. **Nothing about the surface changes**, which is why this
-is a note rather than a status change: what it affects is what a reader may
-assume about a running machine.
+**How a person opens it, since 2026-10-27:** `Super+R` (`alo_shortcuts::Action::SeeWhatAloDid`), or the row *See what alo did* in Settings, above *Give alo a folder*. Both go through one opener, `Server::the_record_is_opened`, which closes Settings first and calls `opened_by_hand`. `alo-desktop` tells the shell where the record is, from `/etc/alo/agentd.toml`, through `TheDesktop::the_recounting`. On 2026-10-17 nothing opened the window, and Demo 1 stopped at *open the record* on 2026-10-27 for that reason. `asked_what_it_did` is still walked by nothing a machine runs: an agent's answer cannot reach this window yet.
 
 ## Values
 
@@ -31,6 +22,10 @@ internally; there is no way to put an account in it except one
 - `opened_by_hand(&recounting)` — a person opened the window. **ADR 0009's
   road**: it takes where the record is and nothing else — no turn, no model, no
   overlay, no agent.
+- `could_not_be_found(why)` — a person opened the window on a machine that
+  could not say where it keeps its record. It opens on that refusal,
+  `RecordShows::Refusal`, rather than staying shut; only Escape does anything
+  there. Answers `RecordOpened::RefusedInTheWindow`.
 - `asked_what_it_did(&recounting)` — a person asked the agent *what did you
   do?* It reaches **the same account, read the same way**; nothing a model
   says reaches the window.
@@ -57,8 +52,9 @@ the view to the most recent entry, and answer `RecordOpened`:
   Any account shown before comes down.
 - `NowhereToShow(NotRecounted)` — for the host's log; the window stays closed.
 
-`RecordLook { scheme, scale, reading }` is `alo_appearance::Scheme`,
-`alo_appearance::TextScale` and `alo_strings::Direction`.
+`RecordLook { scheme, scale, reading, contrast }` is `alo_appearance::Scheme`,
+`alo_appearance::TextScale`, `alo_strings::Direction` and the palette high
+contrast decides (`contrast` was missing from this line until 2026-10-27).
 
 `RecordFrame { window, strings, look }` borrows the window, the person's
 `alo_strings::Strings` and the look.
@@ -113,6 +109,6 @@ Errors, each refusing the whole frame before anything is drawn:
 
 No filter, no search, no summary and no date: how a moment is written belongs to
 the reader's region, and no crate decides that yet. No title: no crate declares
-one. No key or dock item opens the window yet — `alo_shortcuts::Action` has no
-action for it — so a host calls `opened_by_hand`. No pointer input. No
-screen-reader tree. No direct-display (DRM/KMS) submission.
+one. No Dock item opens the window; `Super+R` and the Settings row do. No
+pointer input. No screen-reader tree. The direct-display (DRM/KMS) backend draws
+it while it is open, through `DesktopPictures::layers`.
