@@ -58,6 +58,7 @@ alo-elsewhere = { path = "../alo-elsewhere" }
 alo-enrolling = { path = "../alo-enrolling" }
 alo-files = { path = "../alo-files" }
 alo-finding = { path = "../alo-finding" }
+alo-formats = { path = "../alo-formats" }
 alo-as-it-was = { path = "../alo-as-it-was" }
 alo-granted = { path = "../alo-granted" }
 alo-greeting = { path = "../alo-greeting" }
