@@ -1,8 +1,10 @@
 //! Every string this crate can say, and the English beside each one.
 //!
-//! Thirty-three, and they divide in three. Twenty-six are **what became of one
+//! Thirty-six, and they divide in four. Twenty-eight are **what became of one
 //! entry** — the short clause read at the head of a line, before the sentence
-//! the machine generated when it happened. Two are **remarks an account makes about
+//! the machine generated when it happened. One is **who said yes** to a change
+//! that ran, read beneath that sentence where the record holds the approval it
+//! was redeemed from. Two are **remarks an account makes about
 //! itself**: that nothing in the record answers the question, and that what is
 //! shown is the most recent part of what does. Five are **refusals**: the ways
 //! an account cannot be put in front of anybody, and the three ways a machine
@@ -364,6 +366,27 @@ pub const NOT_PUT_BACK: Word = Word::saying(
 );
 
 // ---------------------------------------------------------------------------
+// Who said yes to what ran — [`crate::Approved`].
+//
+// Read beneath the machine's sentence about a change that ran, and only where
+// the record holds the approval it was redeemed from (ADR 0001 §7).
+// ---------------------------------------------------------------------------
+
+/// The person at this machine was shown what ran and said yes to it.
+pub const THE_PERSON_SAID_YES: Word = Word::saying(
+    "recounting.approval.the-person-said-yes",
+    "the person at this machine was shown this and said yes before it happened",
+)
+.noting(
+    "Read in a record somebody is reading back, on its own line beneath a sentence describing a \
+     change the agent made — the agent being the assistant built into alo OS and not a person. It \
+     means that sentence was put in front of whoever was using this machine and they agreed to it \
+     before anything was done. It says nothing about when: no time is kept for the agreement \
+     itself. Third person on purpose, to match the line used when somebody declined; it is \
+     neither an accusation nor a warning.",
+);
+
+// ---------------------------------------------------------------------------
 // The answer when nothing matches — [`crate::Account::said`].
 // ---------------------------------------------------------------------------
 
@@ -524,7 +547,7 @@ pub const LET_GO_THE_PERSON_ASKED_TO_FORGET: Word = Word::saying(
 );
 
 /// Every string this crate can say, in the order a translator meets them.
-pub const EVERY_WORD: [Word; 35] = [
+pub const EVERY_WORD: [Word; 36] = [
     RAN,
     NOBODY_WAS_ASKED,
     THE_PERSON_SAID_NO,
@@ -553,6 +576,7 @@ pub const EVERY_WORD: [Word; 35] = [
     LET_GO_OUTSIDE_THE_WINDOW,
     LET_GO_THE_DISK_NEEDED_THE_ROOM,
     LET_GO_THE_PERSON_ASKED_TO_FORGET,
+    THE_PERSON_SAID_YES,
     NOTHING_TO_TELL,
     ONLY_THE_MOST_RECENT,
     NO_DESCRIPTION,
@@ -597,6 +621,9 @@ pub const EVERY_OUTCOME: [Word; 28] = [
     LET_GO_THE_DISK_NEEDED_THE_ROOM,
     LET_GO_THE_PERSON_ASKED_TO_FORGET,
 ];
+
+/// Who said yes to what ran, read beneath it rather than at its head.
+pub const EVERY_APPROVAL: [Word; 1] = [THE_PERSON_SAID_YES];
 
 /// What an account says about itself, rather than about one entry.
 pub const EVERY_REMARK: [Word; 2] = [NOTHING_TO_TELL, ONLY_THE_MOST_RECENT];
@@ -712,13 +739,14 @@ mod tests {
         assert!(matches!(again, WordsError::List(_)), "{again}");
     }
 
-    /// **The three groups are the whole of the list.** A word added here and
+    /// **The four groups are the whole of the list.** A word added here and
     /// classified as none of them fails this rather than quietly escaping every
     /// rule below.
     #[test]
-    fn every_word_is_an_outcome_a_remark_or_a_refusal() {
+    fn every_word_is_an_outcome_an_approval_a_remark_or_a_refusal() {
         let named: BTreeSet<&str> = EVERY_OUTCOME
             .iter()
+            .chain(EVERY_APPROVAL.iter())
             .chain(EVERY_REMARK.iter())
             .chain(EVERY_REFUSAL.iter())
             .map(|word| word.named())
@@ -785,6 +813,18 @@ mod tests {
                 word.named()
             );
             assert!(seen.insert(word.says()), "two outcomes say {}", word.says());
+        }
+        // An approval is read beneath a sentence, so it is a clause too, and it
+        // reads as no outcome: *the agent did this* and *the person said yes*
+        // are two facts about one entry, not one fact said twice.
+        for approval in EVERY_APPROVAL {
+            assert!(!approval.says().ends_with('.'), "{}", approval.named());
+            assert!(
+                approval.says().starts_with(char::is_lowercase),
+                "{} reads as a sentence of its own",
+                approval.named()
+            );
+            assert!(seen.insert(approval.says()), "{}", approval.named());
         }
         // And the remarks are read where a list would have been, or under one,
         // so they are clauses too rather than headings.

@@ -86,9 +86,15 @@ painted **above** it, and the egress indicator and the cursor above both.
   `Account::said` answers, one under another, then a rule, then the entries
   most recent first. Each entry is its clause (`Outcome::said`) at its head, then
   — set in from the side the person starts reading at — the agent's name where
-  the record names one, the machine's sentence, the refusal's own reason, and
+  the record names one, the machine's sentence, that the person said yes to it
+  (`alo_recounting::Approved::said`, only where the record holds the approval a
+  change ran from; added 2026-10-28, additive), the refusal's own reason, and
   where something went (`Destination::shown`), each wrapped at word boundaries
   and never shortened. An entry with no agent has nothing where a name would be.
+  **Which grant a change ran under is not drawn yet**: the record keeps a grant
+  by its number, which matches nothing a person is shown, and naming the folder
+  and how long it was granted for would need the record to keep them. That is a
+  question for the owner, not for this window.
 - Every entry is drawn in the same type, the same two colours and the same
   spacing, whatever became of it. Colours are Cream and Navy (light) or Charcoal
   and Cream (dark); never deep teal.
