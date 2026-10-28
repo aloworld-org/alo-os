@@ -46,6 +46,7 @@
 //! | `session` | Who signed in, and the uid agreement with the description |
 //! | `refusing` | Every refusal, and who each is written for |
 //! | `words` | The two sentences a person reads, named for translation |
+//! | `the_name_given` | Where a person's own name is given to their desktop, and how it is read back |
 
 mod account;
 mod hashing;
@@ -55,6 +56,7 @@ mod place;
 mod refusing;
 mod session;
 mod store;
+mod the_name_given;
 mod words;
 mod written;
 
@@ -65,6 +67,10 @@ pub use place::THE_ACCOUNTS;
 pub use refusing::{CannotHash, NotCreated, NotKept, NotSetAgain, NotSignedIn};
 pub use session::{Session, SignedIn};
 pub use store::Accounts;
+pub use the_name_given::{
+    A_NAMES_MODE, NameNotRead, THE_LONGEST_NAME, THE_NAMES, THE_NAMES_MODE, as_read, as_written,
+    their_name, where_their_name_is,
+};
 pub use words::{
     AN_ACCOUNT_NEEDS_A_PASSWORD, EVERY_WORD, NAME_IS_TAKEN, NOT_A_NAME, NOT_SIGNED_IN,
     NOT_THIS_MACHINES_PERSON, THE_ACCOUNT_WAS_NOT_MADE, Word, WordsError, accounts_words,

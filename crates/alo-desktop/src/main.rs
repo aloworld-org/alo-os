@@ -799,6 +799,35 @@ mod running {
             })
         }
 
+        /// The person's own name, as a sign-in last gave it to them (ADR 0136).
+        ///
+        /// Read from `/var/lib/alo-names/<their number>`, which
+        /// `alo-giving-a-name` writes at every sign-in and only they can read,
+        /// with the number **asked of the kernel** for the reason
+        /// `the_settings_places` gives. Asked once, as the session starts.
+        ///
+        /// **No file is no name, and so is a file that will not read** — the
+        /// terminal's strip then says `Local` alone. The second is said on the
+        /// error stream, without the file's contents.
+        fn whose_desktop_this_is(&mut self) -> Option<String> {
+            let person = alo_remembering::this_person();
+            match alo_accounts::their_name(std::path::Path::new(alo_accounts::THE_NAMES), person) {
+                Ok(name) => {
+                    if name.is_none() {
+                        eprintln!(
+                            "alo-desktop: account {person} has not been given its name yet, so \
+                             the terminal says where it runs and no name"
+                        );
+                    }
+                    name
+                }
+                Err(why) => {
+                    eprintln!("alo-desktop: {why}");
+                    None
+                }
+            }
+        }
+
         fn the_shortcuts(&mut self) -> alo_shortcuts::Shortcuts {
             let shipped = alo_shortcuts::Shortcuts::shipped();
             let Some(at) = self.shortcuts_at.as_deref() else {

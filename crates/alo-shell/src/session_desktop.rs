@@ -158,6 +158,13 @@ pub fn stand_the_desktop_up(
     // (`crate::what_the_dock_is_filled_with`). An empty one is a Dock of first
     // letters, which is the decided fallback and not a failure.
     server.its_applications_draw(the_artwork.clone());
+    // **Whose desktop this is, asked once and told to the server** (ADR 0136).
+    // The desktop binary read it from the file a sign-in gives the person; a
+    // desktop with no name to give answers `None` and the terminal's strip says
+    // `Local` alone — never the login's own name.
+    if let Some(name) = desktop.whose_desktop_this_is() {
+        server.its_person_is_called(name);
+    }
     // **What this person's Dock is pinned to, worked out once.** Two readings
     // meet here and neither is this crate's to take: what they kept, which is a
     // file in their folder, and what the machine has, which is a scan. Both

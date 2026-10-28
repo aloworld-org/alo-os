@@ -783,12 +783,23 @@ not say:
 - **`Local` means the shell runs on this machine**, not on a paired one. It is
   a word in the vocabulary (`terminal.where.this-machine`), joined to the name
   by the design's own ` · `.
-- **the name is the signed-in person's.** *Not drawn yet, and a gap rather than
-  a choice:* the person's name is in the account store the sign-in screen reads
-  (`/etc/alo/accounts.toml`, root's, mode 0600), the desktop runs as the
-  account `alo` on every machine, and nothing hands the name from one to the
-  other. So the words read `Local` alone rather than a name that is not the
-  person's.
+- **the name is the signed-in person's** — the name they typed when they made
+  their account. It is in the account store the sign-in screen reads
+  (`/etc/alo/accounts.toml`, root's, mode 0600), which the desktop must not
+  read, so at every sign-in `alo-giving-a-name` copies it into
+  `/var/lib/alo-names/<number>`, readable by that person alone, and the desktop
+  reads it once
+  ([ADR 0136](../decisions/0136-a-persons-name-reaches-their-desktop-through-a-file-only-they-can-read.md),
+  `docs/contracts/the-persons-name.md`). **Where there is no file** — an account
+  that has not signed in since, or a machine where the helper could not run —
+  the words read `Local` alone, never the desktop's own login, `alo`, which is
+  nobody's name.
+- **A name too long for its room ends in an ellipsis.** *A reading, recorded
+  so it can be disagreed with:* the design hugs `Local · disan` and says nothing
+  about a longer name. The words keep the room they already had — from 24 in to
+  114 before the edge — and are fitted with `crate::fitted`, the shell's rule
+  for a window title: cut at a whole letter, ending in `…`, so `Local · ` stays
+  whole and the folder gives way first.
 
 **Where the words go at another width is a reading, recorded so it can be
 disagreed with.** The design's row hugs its contents with a fixed 740-wide

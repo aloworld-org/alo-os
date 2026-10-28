@@ -23,12 +23,22 @@
 //! control that reaches nothing looks live and is not. **Its room is kept**, so
 //! the words beside it do not move when it arrives.
 //!
-//! **The name, until the desktop is told it.** The person's name lives in the
-//! account store the sign-in screen reads, which the desktop cannot read and
-//! nothing hands on; the desktop's own account is called `alo` on every
-//! machine. So the words say `Local` alone rather than a name that is not the
-//! person's — the same rule the note under the transcript keeps about the
-//! shell's name: *left out rather than guessed*.
+//! **The name, where the desktop has not been told it.** The person's name is
+//! given to them at every sign-in in a file only they can read
+//! ([ADR 0136](../../../docs/decisions/0136-a-persons-name-reaches-their-desktop-through-a-file-only-they-can-read.md)),
+//! and the desktop is told it once (`crate::whose_desktop_this_is`). An account
+//! made before that, or a machine where it could not be given, has none — and
+//! then the words say `Local` alone rather than the desktop's own login, `alo`,
+//! which is nobody's name: the same rule the note under the transcript keeps
+//! about the shell's name, *left out rather than guessed*.
+//!
+//! # A name too long for its room
+//!
+//! The design draws `Local · disan` hugging its text, and says nothing about a
+//! longer name. The reading taken: the words keep the room they have always had
+//! — from the folder's start to 114 before the edge — and a name longer than
+//! that ends in an ellipsis at a whole letter, by `crate::fitted`, the rule the
+//! shell already keeps for a window's title.
 
 use alo_terminal::{WhereTheShellRuns, measures};
 use cosmic_text::{Buffer, FontSystem, Metrics, Shaping, Wrap};
@@ -84,6 +94,22 @@ pub(crate) fn where_and_who(says: &alo_strings::Strings, what: WhatTheStripSays<
     }
 }
 
+/// The words at the strip's right, fitted to `room` pixels.
+///
+/// **A name too long for the room ends in an ellipsis**, cut at a whole letter,
+/// rather than being clipped mid-glyph at the box's edge: the shell's one rule
+/// for a name that does not fit (`crate::fitted`), so `Local · ` stays whole
+/// and what is lost is the end of the name.
+pub(crate) fn the_words_in(
+    fonts: &mut FontSystem,
+    says: &alo_strings::Strings,
+    what: WhatTheStripSays<'_>,
+    room: i32,
+    metrics: Metrics,
+) -> String {
+    crate::fitted(fonts, &where_and_who(says, what), room, metrics).shown
+}
+
 /// A logical measure through this display's scale, in whole pixels.
 #[expect(
     clippy::cast_possible_truncation,
@@ -126,7 +152,6 @@ pub(crate) fn the_strip(
     let mut drawn = Vec::new();
 
     // **The right first**, because the folder's room is what the words leave.
-    let words = where_and_who(says, what);
     let words_line = pixels(measures::WHERE_AND_WHOS_LINE, scale);
     let words_metrics = Metrics::new(
         type_size(measures::WHERE_AND_WHO, scale),
@@ -135,6 +160,7 @@ pub(crate) fn the_strip(
     let words_end =
         strip_left + strip_wide - pixels(measures::WHERE_AND_WHO_END_BEFORE_THE_EDGE, scale);
     let room_for_the_words = words_end - (strip_left + inset);
+    let words = the_words_in(fonts, says, what, room_for_the_words, words_metrics);
     let words_wide = how_wide(fonts, &words, words_metrics).min(room_for_the_words);
     if words_wide <= 0 || words_line <= 0 {
         return drawn;

@@ -1,15 +1,20 @@
-//! **This crate is the only place in the repository that changes a file's
-//! owner**, and this is what holds it to that.
+//! **This crate and `alo-giving-a-name` are the only places in the repository
+//! that change a file's owner**, and this is what holds them to that.
 //!
 //! ADR 0119 promised this test in the sentence that chose a component: *one
 //! component must gain it, narrowly, **with a test holding it to that**.* A
 //! capability granted narrowly and then used from a second place is a capability
 //! granted widely, with a decision document saying otherwise.
 //!
+//! **The second place is a decision, not a drift.** ADR 0136 gave a person's
+//! own name a unit of its own with this same one capability, rather than this
+//! crate growing a second job, and this list grew by one line in that change.
+//! A third place needs a third record.
+//!
 //! # What it reads, and what it cannot
 //!
 //! It walks every crate's `src` and refuses a `chown` that changes an **owner**
-//! anywhere but here.
+//! anywhere but those two.
 //!
 //! **A bare `chown` cannot be what is looked for**, because this repository
 //! makes a legitimate one: `alo-sessiond`'s `unix.rs` does
@@ -32,8 +37,9 @@
 
 use std::path::{Path, PathBuf};
 
-/// The one crate that may.
-const THE_ONE_PLACE: &str = "alo-giving-a-folder";
+/// The crates that may, each on exactly one line: the folder (ADR 0119) and
+/// the name (ADR 0136).
+const THE_PLACES: [&str; 2] = ["alo-giving-a-folder", "alo-giving-a-name"];
 
 /// Whether a line asks the kernel to change a file's **owner**.
 ///
@@ -166,7 +172,7 @@ fn only_this_crate_changes_a_files_owner() {
 
     let mut elsewhere = Vec::new();
     let mut read = 0_usize;
-    let mut here = 0_usize;
+    let mut here = [0_usize; THE_PLACES.len()];
 
     for entry in std::fs::read_dir(&crates).expect("this repository has crates") {
         let at = entry.expect("a directory entry").path();
@@ -194,8 +200,10 @@ fn only_this_crate_changes_a_files_owner() {
                 if in_a_test.get(number).copied().unwrap_or(false) {
                     continue;
                 }
-                if whose == THE_ONE_PLACE {
-                    here += 1;
+                if let Some(which) = THE_PLACES.iter().position(|place| *place == whose) {
+                    if let Some(count) = here.get_mut(which) {
+                        *count += 1;
+                    }
                     continue;
                 }
                 elsewhere.push(format!(
@@ -215,24 +223,26 @@ fn only_this_crate_changes_a_files_owner() {
          than it thinks"
     );
 
-    // **And the other control**: this crate really does change an owner, so the
+    // **And the other control**: each place really does change an owner, so the
     // matcher is known to fire on the code it is written for.
     assert_eq!(
-        here, 1,
-        "{THE_ONE_PLACE} changes an owner on {here} lines and should on exactly one — if it is \
-         zero this test cannot fail for the right reason"
+        here,
+        [1; THE_PLACES.len()],
+        "{THE_PLACES:?} change an owner on {here:?} lines and should each on exactly one — a \
+         zero means this test cannot fail for the right reason"
     );
 
     assert!(
         elsewhere.is_empty(),
-        "a crate other than {THE_ONE_PLACE} changes a file's owner:\n  {}\n\n\
-         **Changing an owner needs `CAP_CHOWN`**, and ADR 0119 granted it to exactly one unit, \
-         `alo-giving-a-folder@.service`, chosen by measurement: `CAP_CHOWN` is necessary and on \
-         its own sufficient, and the two components already running as root are 113,587 and \
-         2,160 lines against this one's hundred. A second place that changes an owner is either \
-         a second unit that needs the capability — which is a decision and a new record — or \
-         code that will fail on a booted machine with `EPERM`, the way `Command::uid()` did on \
-         2026-10-14.",
+        "a crate other than {THE_PLACES:?} changes a file's owner:\n  {}\n\n\
+         **Changing an owner needs `CAP_CHOWN`**, and it is granted to exactly two units, each \
+         small and each a decision: `alo-giving-a-folder@.service` (ADR 0119, chosen by \
+         measurement — `CAP_CHOWN` is necessary and on its own sufficient, and the two \
+         components already running as root are 113,587 and 2,160 lines against its hundred) \
+         and `alo-giving-a-name@.service` (ADR 0136, the same shape). A third place that changes \
+         an owner is either a third unit that needs the capability — which is a decision and a \
+         new record — or code that will fail on a booted machine with `EPERM`, the way \
+         `Command::uid()` did on 2026-10-14.",
         elsewhere.join("\n  ")
     );
 }

@@ -467,6 +467,8 @@ mod which_card_the_seat_holds;
 mod which_display_a_window_is_on;
 pub mod which_preview_the_pointer_is_on;
 mod which_surface_claims_a_point;
+/// The name of the person a desktop is for, told once at sign-in (ADR 0136).
+mod whose_desktop_this_is;
 mod window_activation;
 mod window_close;
 mod window_command;

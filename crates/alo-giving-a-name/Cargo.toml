@@ -1,0 +1,28 @@
+[package]
+name = "alo-giving-a-name"
+version = "0.0.1"
+description = "Gives a person their own name, in a file only they can read, at every sign-in."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+# An owner, a mode and a rename, which exist on this one kind of host. On any
+# other it compiles to nothing at all rather than to a version of itself that
+# pretends — `alo-giving-a-folder`'s argument, and the same one.
+[dependencies]
+# The account store, read the one way this repository reads it, and the place
+# and shape of the file the name is given in. One value in one place: the
+# desktop reads the same constants back.
+alo-accounts = { path = "../alo-accounts" }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+# `chown` is this crate's one privileged act and `std` has no spelling for it.
+rustix = { workspace = true, features = ["fs", "process"] }
+
+[lints]
+workspace = true
+
+[[bin]]
+name = "alo-giving-a-name"
+path = "src/bin/alo-giving-a-name.rs"

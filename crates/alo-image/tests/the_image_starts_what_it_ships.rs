@@ -146,7 +146,7 @@ fn what_is_enabled(recipe: &str) -> String {
 /// do with starting it. A list names the file, and
 /// `every_unit_said_to_be_started_by_a_program_is_named_in_that_program` reads
 /// that file for the name, so the claim is checked rather than taken.
-const STARTED_BY_A_PROGRAM: [(&str, &str); 3] = [
+const STARTED_BY_A_PROGRAM: [(&str, &str); 4] = [
     (
         "alo-applying-an-update.service",
         "crates/alo-brokerd/src/units.rs",
@@ -154,7 +154,11 @@ const STARTED_BY_A_PROGRAM: [(&str, &str); 3] = [
     ("alo-going-back.service", "crates/alo-brokerd/src/units.rs"),
     (
         "alo-giving-a-folder@.service",
-        "crates/alo-sessiond/src/making_a_folder.rs",
+        "crates/alo-sessiond/src/starting_their_units.rs",
+    ),
+    (
+        "alo-giving-a-name@.service",
+        "crates/alo-sessiond/src/starting_their_units.rs",
     ),
 ];
 

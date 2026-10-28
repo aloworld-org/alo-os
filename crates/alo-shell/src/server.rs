@@ -225,6 +225,13 @@ pub struct Server {
     /// **[`None`] is a machine where nobody has opened a terminal**, which is
     /// how every machine starts. Nothing opens one on a person's behalf.
     pub(crate) alos_own_terminal: Option<crate::the_terminal_a_person_opened::TheTerminal>,
+    /// The name of the person this desktop is for, as they typed it when they
+    /// made their account — told once at sign-in by
+    /// `Server::its_person_is_called`, and shown in the terminal's strip.
+    ///
+    /// **[`None`] is no name, never the login's**: the desktop runs as `alo`
+    /// on every machine, which is nobody's name (ADR 0136).
+    pub(crate) whose_desktop: Option<String>,
     /// How this machine asks an application to start, when something has told
     /// it.
     ///
@@ -661,6 +668,8 @@ impl Server {
             asked_to_start: Vec::new(),
             the_terminal: None,
             alos_own_terminal: None,
+            // Nobody has said whose desktop this is; the stand-up does.
+            whose_desktop: None,
             asks_an_application_to_start: None,
             // Nothing has been worked out yet; the stand-up fills it.
             what_the_dock_is_pinned_to: alo_dock::Holding::nothing(),

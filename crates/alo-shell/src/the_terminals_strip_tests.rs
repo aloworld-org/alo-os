@@ -13,7 +13,7 @@
 use alo_terminal::{WhereTheShellRuns, measures};
 use smithay::utils::{Physical, Rectangle};
 
-use super::{WhatTheStripSays, the_strip, where_and_who};
+use super::{WhatTheStripSays, the_strip, the_words_in, where_and_who};
 use crate::painted::Inked;
 
 /// The panel's white and the strip's `text/muted`.
@@ -225,5 +225,108 @@ fn a_window_too_narrow_for_the_words_draws_no_strip() {
         drawn.is_empty(),
         "a 120-wide window drew {} boxes",
         drawn.len()
+    );
+}
+
+/// The words' metrics at 100%, as the strip shapes them.
+fn the_words_metrics() -> cosmic_text::Metrics {
+    cosmic_text::Metrics::new(
+        f32::from(u16::try_from(measures::WHERE_AND_WHO).expect("a type size fits")),
+        f32::from(u16::try_from(measures::WHERE_AND_WHOS_LINE).expect("a line fits")),
+    )
+}
+
+/// The words' box when the strip says this name, with no folder beside it.
+fn the_words_drawn_for(name: &str) -> Inked {
+    let what = WhatTheStripSays {
+        the_folder: None,
+        who: Some(name),
+        ..everything()
+    };
+    let mut drawn = the_strip(&mut fonts(), &says(), what, a_window(), 1.0, COLOURS);
+    let words = drawn.pop();
+    assert!(drawn.is_empty(), "the strip drew more than the words");
+    words.unwrap_or_else(|| panic!("the strip drew no words for {name:?}"))
+}
+
+/// **A name in another script draws with its own letters**, not as an empty
+/// box: Greek and Cyrillic, the two non-Latin scripts among the languages this
+/// machine ships in, each leave more ink than `Local` and the dot alone.
+#[test]
+fn a_name_in_another_script_draws_with_its_letters() {
+    let without = ink(&the_words_drawn_for("a"));
+    for name in ["Αλέξανδρος", "Анастасия", "Zoë Ångström"] {
+        let with = ink(&the_words_drawn_for(name));
+        assert!(
+            with > without + 40,
+            "{name:?} drew {with} pixels of ink against {without} for a one-letter name, so its \
+             letters are not on the screen"
+        );
+    }
+}
+
+/// **A right-to-left name is kept whole and drawn inside the words' box.**
+///
+/// The strip is one line of `Shaping::Advanced`, which lays a Hebrew or Arabic
+/// run out right to left inside a left-to-right line, so the name sits after
+/// `Local ·` as a reader of either script expects. What this holds is that the
+/// text reaching the shaper is the person's name untouched, and that the box
+/// ends where the design puts the words' end.
+#[test]
+fn a_right_to_left_name_is_kept_whole_and_inside_its_box() {
+    let window = a_window();
+    let words_end = window.loc.x + window.size.w - 1 - 114;
+    for name in ["שרה", "سارة"] {
+        let what = WhatTheStripSays {
+            who: Some(name),
+            ..everything()
+        };
+        let said = the_words_in(&mut fonts(), &says(), what, 800, the_words_metrics());
+        assert_eq!(said, format!("Local \u{b7} {name}"), "the name was changed");
+
+        let words = the_words_drawn_for(name);
+        assert_eq!(
+            words.area.loc.x + words.area.size.w,
+            words_end,
+            "{name:?} moved the words off the design's end"
+        );
+        assert!(ink(&words) > 20, "{name:?} drew no ink at all");
+    }
+}
+
+/// **A name too long for the strip ends in an ellipsis inside the room**: the
+/// words begin where the folder would, end where the design ends them, keep
+/// `Local · ` whole.
+#[test]
+fn an_over_long_name_is_cut_with_an_ellipsis_inside_its_room() {
+    let long = "anna".repeat(60);
+    let what = WhatTheStripSays {
+        who: Some(&long),
+        the_folder: None,
+        ..everything()
+    };
+    let window = a_window();
+    let (strip_left, strip_right) = (window.loc.x + 1, window.loc.x + window.size.w - 1);
+    let room = (strip_right - 114) - (strip_left + 24);
+
+    let said = the_words_in(&mut fonts(), &says(), what, room, the_words_metrics());
+    assert!(said.starts_with("Local \u{b7} anna"), "{said}");
+    assert!(said.ends_with(crate::AN_ELLIPSIS), "{said} was not cut");
+    assert!(said.len() < long.len(), "{said} is the whole name");
+
+    let drawn = the_strip(&mut fonts(), &says(), what, window, 1.0, COLOURS);
+    let [words] = drawn.as_slice() else {
+        panic!(
+            "a name that fills the strip drew {} boxes, not the words alone",
+            drawn.len()
+        );
+    };
+    assert!(
+        words.area.loc.x >= strip_left + 24,
+        "the words began before the strip's inset"
+    );
+    assert!(
+        where_the_ink_ends(words) <= strip_right - 114,
+        "the words' ink ran past where the design ends them"
     );
 }

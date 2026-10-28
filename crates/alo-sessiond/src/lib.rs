@@ -15,6 +15,7 @@
 //! | [`Knock`], [`Answered`] | The whole conversation: one line in carrying a number, one line back |
 //! | [`Door`] | Who may knock at all, which is a group and not a name |
 //! | [`Logind`], [`TheAccounts`] | The two things this crate asks the machine, each one method wide |
+//! | [`TheirFolder`], [`TheirName`] | The two units a sign-in starts for a person, neither of which can refuse them |
 //! | [`EVERY_WORD`] | Every sentence a refusal can be read as, in the one vocabulary |
 //!
 //! # What it is trusted with, and what it is not
@@ -41,7 +42,12 @@
 //!   and that sentence used to read *nothing to open, write, or run*: the unit's
 //!   name is [`THE_UNIT`] plus a number this component has already checked
 //!   against the accounts file, so there is still no shape in which a caller
-//!   names something to be run.
+//!   names something to be run. *And a second*, [`THE_NAMES_UNIT`], added
+//!   2026-10-28 under
+//!   [ADR 0136](../../../docs/decisions/0136-a-persons-name-reaches-their-desktop-through-a-file-only-they-can-read.md)
+//!   in the same shape: a constant and a checked number. That unit reads the
+//!   person's name from the store itself, so **no name reaches this component
+//!   even now**.
 //! - **It cannot be asked for a number nobody here could have signed in as.**
 //!   The number on the wire is checked against the accounts this machine has
 //!   ([`TheAccounts`]) before anything else happens. That file is the one the
@@ -93,12 +99,13 @@ mod door;
 mod logind;
 #[cfg(target_os = "linux")]
 mod machine;
-#[cfg(target_os = "linux")]
-mod making_a_folder;
 mod opening;
 mod place;
 mod refusing;
+#[cfg(target_os = "linux")]
+mod starting_their_units;
 mod their_folder;
+mod their_name;
 #[cfg(unix)]
 mod unix;
 pub mod words;
@@ -112,12 +119,15 @@ pub use door::Door;
 pub use logind::Logind;
 #[cfg(target_os = "linux")]
 pub use machine::{TheMachinesAccounts, TheMachinesLogind};
-#[cfg(target_os = "linux")]
-pub use making_a_folder::{EVERY_METHOD, THE_UNIT, TheMachinesFolders};
 pub use opening::Opening;
 pub use place::{THE_DOOR, THE_DOORS_DIRECTORY};
 pub use refusing::{NotADoor, NotAKnock, NotAnAnswer, NotAsked, NotOpened, NotTheirs};
+#[cfg(target_os = "linux")]
+pub use starting_their_units::{
+    EVERY_METHOD, THE_NAMES_UNIT, THE_UNIT, TheMachinesFolders, TheMachinesNames,
+};
 pub use their_folder::TheirFolder;
+pub use their_name::TheirName;
 #[cfg(unix)]
 pub use unix::our_group;
 pub use words::{
