@@ -64,6 +64,7 @@ fn every_word_in_a_group() -> impl Iterator<Item = Word> {
         .chain(ABOUT_A_DIFF_A_PROGRAM_PRINTED)
         .chain(ABOUT_THE_SHELL_INTEGRATION)
         .chain(ABOUT_KEEPING_A_PLACE)
+        .chain(IN_THE_STRIP)
 }
 
 /// **Every word in the array is in exactly one group.**
@@ -192,6 +193,26 @@ const ABOUT_A_DIFF_A_PROGRAM_PRINTED: [Word; 2] =
 /// so an older mistake may stop being undoable.
 const ABOUT_KEEPING_A_PLACE: [Word; 2] = [A_PLACE_TO_RETURN_TO, WHAT_KEEPING_ONE_COSTS];
 
+/// The words in the strip across the top of the terminal: where the shell
+/// runs. One word each, because the strip gives them the room the design's
+/// `Local` takes beside a name.
+const IN_THE_STRIP: [Word; 1] = [ON_THIS_MACHINE];
+
+/// **Each word in the strip is one word**, held in English where it is
+/// checkable, for the gutter's reason: the room is narrow and a phrase would
+/// push the name out of it.
+#[test]
+fn each_word_in_the_strip_is_a_single_word() {
+    for word in IN_THE_STRIP {
+        assert!(
+            !word.says().contains(' '),
+            "{} is {:?}, which is more than one word",
+            word.named(),
+            word.says()
+        );
+    }
+}
+
 const ABOUT_THE_SHELL_INTEGRATION: [Word; 8] = [
     ALO_CAN_READ_WHAT_YOU_TYPE,
     WHAT_IT_REVEALS,
@@ -243,7 +264,8 @@ fn the_groups_are_the_whole_list() {
             + ABOUT_A_BENCHMARK_A_PROGRAM_PRINTED.len()
             + ABOUT_A_DIFF_A_PROGRAM_PRINTED.len()
             + ABOUT_THE_SHELL_INTEGRATION.len()
-            + ABOUT_KEEPING_A_PLACE.len(),
+            + ABOUT_KEEPING_A_PLACE.len()
+            + IN_THE_STRIP.len(),
         EVERY_WORD.len(),
         "a word is declared and in no group, so no rule is applied to it"
     );

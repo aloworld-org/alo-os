@@ -601,6 +601,7 @@ fn every_picture_a_frame_holds_reaches_the_layers_a_display_paints() {
             a_test_result: None,
             a_benchmark: None,
             a_diff: None,
+            the_strip: crate::the_terminals_strip::WhatTheStripSays::ONLY_WHERE_IT_RUNS,
         },
         size,
         1.0,

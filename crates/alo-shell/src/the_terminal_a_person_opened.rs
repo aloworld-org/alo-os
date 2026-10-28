@@ -107,6 +107,15 @@ pub(crate) struct TheTerminal {
     a_benchmark: Option<alo_terminal::ABenchmark>,
     /// A file diff recognised in what the program printed, if there is one.
     a_diff: Option<alo_terminal::ADiff>,
+    /// The folder the shell is in, written as a person reads it, for the strip
+    /// across the top — `~/Projects/launch`.
+    ///
+    /// **Asked of the kernel when the shell has written something, and at no
+    /// other time**, for the reason the three fields above give. A `cd` is
+    /// always followed by a new prompt, so the strip follows the person from
+    /// folder to folder; nothing reads it while the shell is quiet, and nothing
+    /// is told when it changes.
+    the_folder: Option<String>,
 }
 
 impl TheTerminal {
@@ -129,7 +138,7 @@ impl TheTerminal {
         if let alo_terminal::WhereItStarts::NotTheirHome(why) = shell.where_it_started() {
             eprintln!("alo-shell: alo's own terminal did not open at home: {why}");
         }
-        Ok(Self {
+        let mut terminal = Self {
             shell,
             screen: TerminalOutput::of(size),
             finished: false,
@@ -137,7 +146,10 @@ impl TheTerminal {
             a_test_result: None,
             a_benchmark: None,
             a_diff: None,
-        })
+            the_folder: None,
+        };
+        terminal.the_folder = terminal.where_the_shell_is_now();
+        Ok(terminal)
     }
 
     /// What the shell has written since the last ask, applied to the screen.
@@ -193,8 +205,32 @@ impl TheTerminal {
             self.a_test_result = alo_terminal::a_test_result_in(&lines);
             self.a_benchmark = alo_terminal::a_benchmark_in(&lines);
             self.a_diff = alo_terminal::a_diff_in(&lines);
+            self.the_folder = self.where_the_shell_is_now();
         }
         changed
+    }
+
+    /// The folder the shell is in, asked of the kernel now and written with `~`
+    /// for the person's home.
+    ///
+    /// **The home is the one the shell started in**, and only when that was
+    /// the person's: a shell that fell back to `/` has no home of theirs to
+    /// abbreviate, and every folder is then written in full.
+    fn where_the_shell_is_now(&self) -> Option<String> {
+        let home = match self.shell.where_it_started() {
+            alo_terminal::WhereItStarts::TheirHome(home) => Some(home.as_path()),
+            alo_terminal::WhereItStarts::NotTheirHome(_) => None,
+        };
+        self.shell
+            .where_the_shell_is()
+            .map(|folder| alo_terminal::the_folder_as_a_person_reads_it(&folder, home))
+    }
+
+    /// The folder the shell was in when it last wrote, as a person reads it.
+    ///
+    /// [`None`] where the kernel would not say.
+    pub(crate) fn the_folder(&self) -> Option<&str> {
+        self.the_folder.as_deref()
     }
 
     /// A file diff recognised in what the program printed, if there is one.

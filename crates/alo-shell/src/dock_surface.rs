@@ -16,6 +16,11 @@
 //! | border | `THE_DOCKS_EDGE`, 1, in `border/default` |
 //! | shadow | `0 8px 24px rgba(7,19,31,0.08)` — `THE_SHADOW_FALLS` and `THE_SHADOW_SPREADS` |
 //!
+//! **Those are the Dock's.** Since 2026-10-28 the corner and the shadow arrive
+//! as a `crate::how_a_panel_is_raised::Raised` — a look at a display's scale —
+//! so the terminal's body is drawn here too, with `Elevation/Floating`'s
+//! shadow at its own display's scale, and the Dock is drawn exactly as before.
+//!
 //! # Why this is a raster and not more rectangles
 //!
 //! `crate::painted` draws opaque axis-aligned rectangles, which is right for
@@ -48,20 +53,12 @@
 //! a difference nobody can see at this radius and this opacity.
 
 use alo_dock::measures::{
-    THE_COMPOSERS_CORNER, THE_DOCKS_CORNER, THE_DOCKS_EDGE, THE_FOCUS_RING_IS_THICK,
-    THE_FOCUS_RING_STANDS_OFF, THE_SHADOW_FALLS, THE_SHADOW_SPREADS,
+    THE_COMPOSERS_CORNER, THE_DOCKS_EDGE, THE_FOCUS_RING_IS_THICK, THE_FOCUS_RING_STANDS_OFF,
 };
 use smithay::utils::{Physical, Rectangle};
 
+use crate::how_a_panel_is_raised::Raised;
 use crate::painted::Washed;
-
-/// How dark the shadow is at its darkest, out of 255.
-///
-/// `rgba(7,19,31,0.08)` — the `Overlay / Glass` effect style, measured on
-/// `348:23874`. The **colour** is `text/primary`'s own near-black rather than a
-/// fourth number: a shadow is that colour at eight percent, which is what the
-/// design file says and what keeps this from being a hex nobody can trace.
-const THE_SHADOW_IS_THIS_DARK: f32 = 0.08;
 
 /// The colour a shadow is cast in: `navy/950`, `#07131F`.
 ///
@@ -70,17 +67,6 @@ const THE_SHADOW_IS_THIS_DARK: f32 = 0.08;
 /// light behind a raised object, and it is the same in every scheme. The
 /// palette's roles are things a person's choices reach; this is not one.
 const THE_SHADOWS_COLOUR: [u8; 3] = [0x07, 0x13, 0x1F];
-
-/// How much room the shadow needs beyond the panel's own edge.
-///
-/// The blur reaches `THE_SHADOW_SPREADS` and the whole thing is pushed down by
-/// `THE_SHADOW_FALLS`, so the raster has to be bigger than the panel by their
-/// sum on the side it falls toward — and by the spread alone on the others.
-/// Taken on every side, because one number is easier to be right about than
-/// four and the cost is a few transparent pixels.
-const fn how_far_the_shadow_reaches() -> i32 {
-    (THE_SHADOW_SPREADS + THE_SHADOW_FALLS) as i32
-}
 
 /// One rounded well, with the corner it is drawn at.
 ///
@@ -208,19 +194,16 @@ pub(crate) struct ADocksSurface<'a> {
     /// Found by `the_dock_reaches_the_bytes_a_card_is_handed`, which draws
     /// through the software renderer and got a flat frame.
     pub(crate) room: (i32, i32),
-    // **No scale, and that is the correction rather than the omission.**
-    //
-    // This took one and multiplied the radius and the hairline by it, which
-    // made a dense display draw an 18 radius as 36 **on a band still 76 tall**,
-    // because `crate::dock_raster` hands `alo_dock`'s logical measures straight
-    // through as pixels and scales none of them. Scaling one measure of a
-    // geometry that is otherwise unscaled is worse than scaling none: it is the
-    // *applied twice* fault wearing the *applied once* rule's clothes.
-    //
-    // So every figure reaching this file is in the one space the rest of the
-    // Dock is in. When the Dock becomes scale-aware, the band, the slots, the
-    // radius and the hairline move together — and the rule in `CLAUDE.md` is
-    // kept by them sharing a conversion, not by this one having its own.
+    /// The panel's corner and shadow, at the scale its geometry is laid out in.
+    ///
+    /// **Every logical figure this file draws goes through it** — the corner,
+    /// the hairline, the shadow, each well's corner and each ring — so a panel
+    /// cannot be drawn with one measure scaled and the rest not. That was this
+    /// file's fault once: it multiplied the radius alone by the display's scale
+    /// and drew an 18 radius as 36 on a Dock band still 76 tall. The Dock asks
+    /// for `HowItIsRaised::unscaled` for that reason, and
+    /// `crate::how_a_panel_is_raised` says why.
+    pub(crate) raised: Raised,
 }
 
 /// Rasterise the Dock's surface.
@@ -232,7 +215,8 @@ pub(crate) fn surface(of: ADocksSurface<'_>) -> Option<Washed> {
     if panel.size.w <= 0 || panel.size.h <= 0 {
         return None;
     }
-    let reach = how_far_the_shadow_reaches();
+    let raised = of.raised;
+    let reach = raised.reach();
     // Inflated for the shadow, then **clipped to the display**: a texture whose
     // destination hangs off the framebuffer is pixels nobody sees at best, and
     // a frame the software renderer declines to draw at worst.
@@ -246,7 +230,6 @@ pub(crate) fn surface(of: ADocksSurface<'_>) -> Option<Washed> {
     }
     let area = Rectangle::new((left, top).into(), (right - left, bottom - top).into());
     let (width, height) = (area.size.w, area.size.h);
-    let at = |logical: u32| -> f32 { logical as f32 };
     // The panel's own geometry, relative to the raster's corner — which is not
     // `reach` any more once the clip above has moved it.
     let (left, top) = (
@@ -256,10 +239,17 @@ pub(crate) fn surface(of: ADocksSurface<'_>) -> Option<Washed> {
     let (right, bottom) = (left + panel.size.w as f32, top + panel.size.h as f32);
     let (cx, cy) = ((left + right) / 2.0, (top + bottom) / 2.0);
     let (hw, hh) = ((right - left) / 2.0, (bottom - top) / 2.0);
-    let radius = at(THE_DOCKS_CORNER).min(hw).min(hh);
-    let line = at(THE_DOCKS_EDGE).max(1.0);
-    let falls = at(THE_SHADOW_FALLS);
-    let spreads = at(THE_SHADOW_SPREADS).max(1.0);
+    let radius = raised.corner().min(hw).min(hh);
+    let line = raised.a_measure(THE_DOCKS_EDGE).max(1.0);
+    let falls = raised.falls();
+    let blurs = raised.blurs();
+    // **The shadow's own rectangle**, grown or shrunk by the spread before it
+    // is faded, with the corner following it the way CSS's does. Never smaller
+    // than nothing, so a spread larger than the panel draws no shadow rather
+    // than an inside-out one. With no spread these are the panel's own figures.
+    let spreads = raised.spreads();
+    let (shadow_hw, shadow_hh) = ((hw + spreads).max(0.0), (hh + spreads).max(0.0));
+    let shadow_radius = (radius + spreads).max(0.0).min(shadow_hw).min(shadow_hh);
 
     let mut pixels = vec![0_u8; (width as usize) * (height as usize) * 4];
     for y in 0..height {
@@ -268,12 +258,12 @@ pub(crate) fn surface(of: ADocksSurface<'_>) -> Option<Washed> {
             // The shadow first: the same panel, pushed toward the screen's edge
             // and faded across the blur's width.
             let shadow = {
-                let d = rounded(px, py, cx, cy + falls, hw, hh, radius);
-                let across = (0.5 - d / spreads).clamp(0.0, 1.0);
+                let d = rounded(px, py, cx, cy + falls, shadow_hw, shadow_hh, shadow_radius);
+                let across = (0.5 - d / blurs).clamp(0.0, 1.0);
                 // Smoothed, so the fade has no visible band in it. The cubic is
                 // the usual one and is here rather than in a helper because it
                 // is three operations and naming it would not make it clearer.
-                across * across * (3.0 - 2.0 * across) * THE_SHADOW_IS_THIS_DARK
+                across * across * (3.0 - 2.0 * across) * raised.darkness()
             };
             let d = rounded(px, py, cx, cy, hw, hh, radius);
             let inside = (0.5 - d).clamp(0.0, 1.0);
@@ -308,8 +298,8 @@ pub(crate) fn surface(of: ADocksSurface<'_>) -> Option<Washed> {
                 .fold(0.0_f32, f32::max)
                 * inside;
             // Every well, by the same rounded form the composer's field uses.
-            let well = under_a_well(of.wells, px, py, area) * inside;
-            let well_in_primary = under_a_well(of.in_primary.wells, px, py, area) * inside;
+            let well = under_a_well(of.wells, px, py, area, raised) * inside;
+            let well_in_primary = under_a_well(of.in_primary.wells, px, py, area, raised) * inside;
             let badge = of
                 .badges
                 .iter()
@@ -336,8 +326,9 @@ pub(crate) fn surface(of: ADocksSurface<'_>) -> Option<Washed> {
             // with the item's own radius would run closer at the corners than
             // along the flats. The design's node measured 16 against a card of
             // 12, which is this sum.
-            let ring = on_an_outline(of.rings, px, py, area) * inside;
-            let outline_in_primary = on_an_outline(of.in_primary.outlines, px, py, area) * inside;
+            let ring = on_an_outline(of.rings, px, py, area, raised) * inside;
+            let outline_in_primary =
+                on_an_outline(of.in_primary.outlines, px, py, area, raised) * inside;
 
             // Composited back to front: shadow, fill, hairline, accent.
             let mut colour = [0.0_f32; 3];
@@ -411,9 +402,11 @@ pub(crate) fn a_panel(
     fill: [u8; 3],
     edge: [u8; 3],
     room: (i32, i32),
+    raised: Raised,
     on_it: APanelsShapes<'_>,
 ) -> Option<Washed> {
     surface(ADocksSurface {
+        raised,
         panel,
         fill,
         edge,
@@ -485,7 +478,13 @@ pub(crate) struct APanelsShapes<'a> {
 /// **The one formulation of a well**, shared by every colour of them. Clamped
 /// to half the shorter side, so a radius larger than the shape draws a capsule
 /// rather than collapsing.
-fn under_a_well(wells: &[AWell], px: f32, py: f32, area: Rectangle<i32, Physical>) -> f32 {
+fn under_a_well(
+    wells: &[AWell],
+    px: f32,
+    py: f32,
+    area: Rectangle<i32, Physical>,
+    raised: Raised,
+) -> f32 {
     wells
         .iter()
         .map(|well| {
@@ -495,7 +494,7 @@ fn under_a_well(wells: &[AWell], px: f32, py: f32, area: Rectangle<i32, Physical
                 (at.loc.y - area.loc.y) as f32,
             );
             let (w, h) = (at.size.w as f32 / 2.0, at.size.h as f32 / 2.0);
-            let r = (well.corner as f32).min(w).min(h);
+            let r = raised.a_measure(well.corner).min(w).min(h);
             let d = rounded(px, py, wx + w, wy + h, w, h, r);
             (0.5 - d).clamp(0.0, 1.0)
         })
@@ -514,6 +513,7 @@ fn on_an_outline(
     px: f32,
     py: f32,
     area: Rectangle<i32, Physical>,
+    raised: Raised,
 ) -> f32 {
     outlines
         .iter()
@@ -523,12 +523,13 @@ fn on_an_outline(
                 (at.loc.y - area.loc.y) as f32,
             );
             let (w, h) = (at.size.w as f32 / 2.0, at.size.h as f32 / 2.0);
-            let r = ((THE_COMPOSERS_CORNER + THE_FOCUS_RING_STANDS_OFF) as f32)
+            let r = raised
+                .a_measure(THE_COMPOSERS_CORNER + THE_FOCUS_RING_STANDS_OFF)
                 .min(w)
                 .min(h);
             let d = rounded(px, py, rx + w, ry + h, w, h, r);
             let outer = (0.5 - d).clamp(0.0, 1.0);
-            let inner = (0.5 - (d + THE_FOCUS_RING_IS_THICK as f32)).clamp(0.0, 1.0);
+            let inner = (0.5 - (d + raised.a_measure(THE_FOCUS_RING_IS_THICK))).clamp(0.0, 1.0);
             (outer - inner).clamp(0.0, 1.0)
         })
         .fold(0.0_f32, f32::max)

@@ -1,4 +1,5 @@
-//! The terminal window's own body: a white panel with a hairline round it.
+//! The terminal window's own body: a white panel with rounded corners, a
+//! hairline round it and a shadow under it.
 //!
 //! # What was wrong, in the words of the boot walk
 //!
@@ -17,21 +18,21 @@
 //! | the panel | `bg/surface` `#ffffff` | [`Role::BgSurface`] |
 //! | the hairline | `border/default` `#e7ebef` | [`Role::BorderDefault`] |
 //! | the ink | `text/primary` `#102a43` | [`Role::TextPrimary`] |
-//! | its thickness | `alo_terminal::measures::A_BORDER`, 1 | through the display's scale |
+//! | its thickness | `alo_dock::measures::THE_DOCKS_EDGE`, 1 | through the display's scale |
+//! | the corners | `radius/lg` 18 | [`HowItIsRaised::FLOATING`], through the display's scale |
+//! | the shadow | `Elevation/Floating` | the same, through the display's scale |
 //!
 //! and the render of the same node shows the transcript on the panel's own
 //! white, not on a ground of its own. `docs/design/the-terminal-window.md`
 //! records the measurement.
 //!
-//! # What the design also draws, and this does not — yet
+//! # Drawn by the Dock's own rasteriser, at this display's scale
 //!
-//! **The corners and the shadow.** The same node carries `radius/lg` 18 and
-//! the `Elevation/Floating` shadow. Both are partial coverage, which a
-//! [`Solid`] cannot be, and the one rasteriser that draws them —
-//! `crate::dock_surface::a_panel` — is fixed to the Dock's own shadow and takes
-//! no display scale. So the body is square-cornered and flat until that
-//! rasteriser can draw this panel at this display's scale; this is a named gap
-//! and not a choice of look.
+//! The corners and the shadow are partial coverage, which a flat rectangle
+//! cannot be, so the body is a raster from `crate::dock_surface::a_panel` —
+//! the one that draws the Dock — handed the floating look **at this display's
+//! scale**. On a display at 200% the corner is 36 pixels and the shadow falls
+//! 32, which is the same panel drawn sharper rather than a smaller one.
 //!
 //! # The dark appearance is not measured
 //!
@@ -42,10 +43,11 @@
 //! other surface.
 
 use alo_appearance::{Role, Scheme, Token};
-use alo_terminal::measures;
 use smithay::utils::{Physical, Rectangle};
 
-use crate::painted::Solid;
+use crate::dock_surface::{APanelsShapes, InPrimary, a_panel};
+use crate::how_a_panel_is_raised::HowItIsRaised;
+use crate::painted::Washed;
 
 /// The three colours the terminal's window is drawn in.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -74,54 +76,41 @@ impl TheTerminalsColours {
     }
 }
 
-/// How thick the hairline is on a display at this scale, in whole pixels.
+/// The window's body: its rounded panel, the hairline round it and the shadow
+/// under it, as one raster on a display `room` big at `scale`.
 ///
-/// **Never thinner than one pixel**, because a hairline rounded to nothing on a
-/// display scaled below one is a window with no edge — the fault this file
-/// exists to end.
-fn how_thick_the_hairline_is(scale: f64) -> i32 {
-    #[expect(
-        clippy::cast_possible_truncation,
-        reason = "a one-unit logical measure through a display's scale is a handful of pixels"
-    )]
-    let thick = (f64::from(measures::A_BORDER) * scale).round() as i32;
-    thick.max(1)
-}
-
-/// The window's body, as flat shapes painted back to front: the hairline, then
-/// the panel inside it.
+/// **The Dock's rasteriser with the floating look**, so a change to how a
+/// corner or a shadow is drawn reaches this panel and the Dock together. The
+/// raster reaches past the window by the shadow's room and is kept on the
+/// display, so a window near an edge loses the shadow off the screen rather
+/// than the frame.
 ///
-/// **Two rectangles, not a stroke**, which is how `crate::window_edge_paint`
-/// draws the hairline round an edge: the whole window in the hairline's colour,
-/// then the panel one hairline in from every side.
-///
-/// A window too small to have anything inside its hairline is drawn as the
-/// hairline alone rather than as a panel that overruns it, and a window with no
-/// area is drawn as nothing.
+/// [`None`] for a window with no area, which is a window that cannot be drawn
+/// rather than a failure.
 pub(crate) fn the_body(
     window: Rectangle<i32, Physical>,
+    room: (i32, i32),
     scale: f64,
     colours: TheTerminalsColours,
-) -> Vec<Solid> {
-    if window.size.w <= 0 || window.size.h <= 0 {
-        return Vec::new();
-    }
-    let thick = how_thick_the_hairline_is(scale);
-    let mut body = vec![Solid {
-        area: window,
-        colour: colours.hairline,
-    }];
-    let (inside_w, inside_h) = (window.size.w - thick * 2, window.size.h - thick * 2);
-    if inside_w > 0 && inside_h > 0 {
-        body.push(Solid {
-            area: Rectangle::new(
-                (window.loc.x + thick, window.loc.y + thick).into(),
-                (inside_w, inside_h).into(),
-            ),
-            colour: colours.ground,
-        });
-    }
-    body
+) -> Option<Washed> {
+    a_panel(
+        window,
+        colours.ground,
+        colours.hairline,
+        room,
+        HowItIsRaised::FLOATING.at(scale),
+        APanelsShapes {
+            circles: &[],
+            circle: colours.ground,
+            marks: &[],
+            mark: colours.ground,
+            wells: &[],
+            well_is: colours.ground,
+            rings: &[],
+            ring_is: colours.ground,
+            in_primary: InPrimary::NOTHING,
+        },
+    )
 }
 
 #[cfg(test)]

@@ -188,6 +188,26 @@ where
             })
             .collect::<Result<_, _>>()?,
     };
+    // **The terminal's body, uploaded with the rest** for the same reason: its
+    // rounded panel and shadow are a raster, and the frame below borrows the
+    // renderer.
+    let terminal_washed: Option<(R::TextureId, Rectangle<i32, Physical>)> = match native
+        .terminal
+        .and_then(crate::the_terminals_cells_are_drawn::TerminalPicture::washed)
+    {
+        None => None,
+        Some(raster) => Some(
+            renderer
+                .import_memory(
+                    &raster.pixels,
+                    Fourcc::Abgr8888,
+                    (raster.area.size.w, raster.area.size.h).into(),
+                    false,
+                )
+                .map(|texture| (texture, raster.area))
+                .map_err(submission)?,
+        ),
+    };
     let mut frame = renderer
         .render(framebuffer, size, transform)
         .map_err(submission)?;
@@ -256,7 +276,7 @@ where
     // The first walk that did showed Settings, and then the card a person
     // approves a change on, covered by a terminal opened earlier.
     if let Some(terminal) = native.terminal.filter(|drawn| !drawn.is_empty()) {
-        terminal.paint(&mut frame)?;
+        terminal.paint(&mut frame, terminal_washed.as_ref())?;
     }
     // Above every client and control: the dock is furniture no window covers,
     // and the desktop windows are above it; below the record, the question and

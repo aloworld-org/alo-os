@@ -2163,6 +2163,15 @@ pub(crate) fn drawn_terminal(
             a_test_result: terminal.a_test_result(),
             a_benchmark: terminal.a_benchmark(),
             a_diff: terminal.a_diff(),
+            // **No name yet.** The person's name is in the account store the
+            // sign-in screen reads, which this process cannot read and nothing
+            // hands on — and this process's own account is `alo` on every
+            // machine. `crate::the_terminals_strip` says why it is left out.
+            the_strip: crate::the_terminals_strip::WhatTheStripSays {
+                the_folder: terminal.the_folder(),
+                runs: alo_terminal::WhereTheShellRuns::OnThisMachine,
+                who: None,
+            },
         },
         size,
         scale,

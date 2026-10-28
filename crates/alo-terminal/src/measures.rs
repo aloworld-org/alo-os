@@ -202,6 +202,49 @@ pub const fn a_programs_room_inside(transcript_width: u32) -> u32 {
     a_source_region_inside(transcript_width).saturating_sub(A_GUTTER)
 }
 
+/// The type size the strip's folder is drawn at.
+///
+/// The design's `~/Projects/launch` (`479:29016`) is `Label/Medium`, asked of
+/// the live file for that node on 2026-10-28: *Manrope SemiBold, size 13,
+/// weight 600, line height 18, letter spacing 0.1*, in `text/muted`. The same
+/// style as the gutter's label, and named again here because the two answer to
+/// different nodes and could be changed apart.
+pub const THE_FOLDER: u32 = 13;
+
+/// The line height the strip's folder is laid out on, from `Label/Medium`.
+///
+/// Eighteen in a strip [`A_STRIP`] tall, and the design centres it: the text
+/// sits at row **19** of the 56, which is `(56 − 18) / 2`.
+pub const THE_FOLDERS_LINE: u32 = 18;
+
+/// The type size of `Local · disan` at the strip's right.
+///
+/// The node `479:29018`, read on 2026-10-28: *Manrope SemiBold, size **12**,
+/// line height 18*, in `text/muted`, with no letter spacing and **no style
+/// variable bound** — one point smaller than the folder beside it, which the
+/// render shows and the node's own text box (70 wide for thirteen characters)
+/// agrees with.
+pub const WHERE_AND_WHO: u32 = 12;
+
+/// The line height `Local · disan` is laid out on: 18, centred like the folder.
+pub const WHERE_AND_WHOS_LINE: u32 = 18;
+
+/// How far in from the strip's right edge `Local · disan` ends.
+///
+/// **114, and it is three things the design draws plus the room it leaves.**
+/// The strip is a row with 24 of padding: the text box ends at 924 of a strip
+/// 1038 wide, then 12 of gap and the 44-wide menu, then 58 to the edge — 24 of
+/// them the padding and 34 the slack a row that hugs its contents leaves. The
+/// menu is not drawn (it would look live and reach nothing), and its room is
+/// kept, so the words do not move when it arrives.
+pub const WHERE_AND_WHO_END_BEFORE_THE_EDGE: u32 = 114;
+
+/// The gap the strip keeps between the folder and `Local · disan`.
+///
+/// The row's own `gap`, 12, read off `479:29013`. A folder too long for the
+/// room is cut here rather than drawn under the words beside it.
+pub const BESIDE_THE_FOLDER: u32 = 12;
+
 /// The type size the note under the transcript is drawn at.
 ///
 /// The design's `Label/Small`, asked of the live file for the note's own node
