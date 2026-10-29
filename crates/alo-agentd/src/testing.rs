@@ -127,8 +127,9 @@ pub(crate) fn a_place_of_our_own(what: &str) -> Place {
 
 /// This machine's own address, which is what a provider's has to be.
 ///
-/// A loopback one reports as this machine and the provider door refuses it
-/// outright (`alo_asking::Miswired::NotAProvider`), so a test that wants to
+/// A loopback one reports as this machine and the daemon puts it to the
+/// service door, where nothing leaves (`crate::a_provider_ready_to_be_asked`),
+/// so a test that wants to
 /// watch a question leave has to offer somewhere that is not loopback — and
 /// the only such address a test may be sure of is this machine's own.
 pub(crate) fn our_own_address() -> std::net::IpAddr {
@@ -716,6 +717,55 @@ pub(crate) fn a_runtime_served(
         Catalogue::built_in().unwrap(),
     );
     (runtime, handle)
+}
+
+/// A service of a test's own at a loopback address, answering one question
+/// the way an OpenAI-compatible server does with `said`, and handing back the
+/// request it was sent, head and body.
+///
+/// What a person runs on their own machine — vLLM, llama.cpp's server, a
+/// recording proxy — reduced to the one exchange a test needs.
+pub(crate) fn a_service_here_answering(said: &str) -> (u16, std::thread::JoinHandle<String>) {
+    use std::io::{BufRead as _, Read as _, Write as _};
+
+    let reply = format!(
+        "{{\"object\":\"chat.completion\",\"model\":\"a-model\",\"choices\":[{{\"index\":0,\
+         \"message\":{{\"role\":\"assistant\",\"content\":\"{said}\"}},\"finish_reason\":\
+         \"stop\"}}]}}"
+    );
+    let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+    let port = listener.local_addr().unwrap().port();
+    let heard = std::thread::spawn(move || {
+        let (mut stream, _) = listener.accept().unwrap();
+        let mut reader = std::io::BufReader::new(stream.try_clone().unwrap());
+        let mut head = String::new();
+        let mut length = 0usize;
+        loop {
+            let mut line = String::new();
+            if reader.read_line(&mut line).unwrap() == 0 {
+                break;
+            }
+            if let Some(value) = line.to_ascii_lowercase().strip_prefix("content-length:") {
+                length = value.trim().parse().unwrap_or(0);
+            }
+            let done = line == "\r\n" || line == "\n";
+            head.push_str(&line);
+            if done {
+                break;
+            }
+        }
+        let mut body = vec![0u8; length];
+        reader.read_exact(&mut body).unwrap();
+        let written = format!(
+            "HTTP/1.1 200 OK\r\nContent-Length: {}\r\nContent-Type: application/json\r\n\
+             Connection: close\r\n\r\n{reply}",
+            reply.len()
+        );
+        stream.write_all(written.as_bytes()).unwrap();
+        stream.flush().unwrap();
+        head + &String::from_utf8_lossy(&body)
+    });
+    (port, heard)
 }
 
 /// What a request a test served was sent as its body, read as JSON.

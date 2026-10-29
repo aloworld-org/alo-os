@@ -42,11 +42,15 @@
 //! **resolved destination**, which is a different subject from the provider's
 //! stated source and not a second asking of one question.
 
-use alo_asking::{NotPut, Question, a_question_nobody_is_showing};
+use alo_asking::{
+    NotPut, Question, a_persons_question_to_a_service_here, a_question_nobody_is_showing,
+};
 use alo_protocol::ToAPerson;
 use alo_strings::{Filling, Said, Strings};
 
-use crate::a_provider_ready_to_be_asked::{NotPrepared, a_provider_ready_to_be_asked};
+use crate::a_provider_ready_to_be_asked::{
+    NotPrepared, ThePlaceItIsPut, a_provider_ready_to_be_asked,
+};
 use crate::doing::{a_rule_refused, said_about};
 use crate::questions::{Questions, WhatAnswers};
 use crate::words::{NOTHING_ANSWERS_QUESTIONS, NOTHING_WAS_ASKED};
@@ -81,7 +85,9 @@ pub fn answered(question: &str, questions: &mut Questions, strings: &Strings) ->
             ToAPerson::refused(&alo_models::RuntimeError::Unreachable.said(strings))
         }
         WhatAnswers::NotSet(why) => ToAPerson::refused(&why.said(strings)),
-        // **A question answered on this machine never reaches this file.**
+        // **A question answered by the runtime on this machine never reaches
+        // this file.** (A service the person runs at this machine's address
+        // does: it is in their list of providers, and goes below.)
         // `alo-ask` answers a local model itself and always has: it causes no
         // egress, needs no credential and needs no proxy, so there is nothing
         // here it could not do. A person whose settings name this machine is
@@ -117,20 +123,36 @@ pub fn answered(question: &str, questions: &mut Questions, strings: &Strings) ->
                 places.policy(),
                 &the_road_out,
                 &keyring,
-                |permission, hosted| {
-                    // Resolved here and not by the request, which is ADR 0020's
-                    // separation — `alo_turn::asking::registering`'s own doc
-                    // says this is the daemon's to do and that it is not a
-                    // turn's.
-                    let to = alo_turn::asking::registering(hosted.where_it_would_connect());
-                    a_question_nobody_is_showing(
-                        permission,
-                        places.everywhere_else(),
-                        places.policy(),
-                        &asked,
-                        &hosted,
-                        &to,
-                    )
+                // Resolved here and not by the request, which is ADR 0020's
+                // separation — `alo_turn::asking::registering`'s own doc says
+                // this is the daemon's to do and that it is not a turn's.
+                |permission, put| match put {
+                    ThePlaceItIsPut::AProvider(hosted) => {
+                        let to = alo_turn::asking::registering(hosted.where_it_would_connect());
+                        a_question_nobody_is_showing(
+                            permission,
+                            places.everywhere_else(),
+                            places.policy(),
+                            &asked,
+                            &hosted,
+                            &to,
+                        )
+                    }
+                    // **A service the person runs here is asked here**, which
+                    // the provider door above refuses outright. It went there
+                    // until 2026-10-29, so a person who chose one was told
+                    // *something in alo OS is set up wrongly* on every question.
+                    ThePlaceItIsPut::AServiceHere(served) => {
+                        let to = alo_turn::asking::registering(served.where_it_would_connect());
+                        a_persons_question_to_a_service_here(
+                            permission,
+                            places.everywhere_else(),
+                            places.policy(),
+                            &asked,
+                            &served,
+                            &to,
+                        )
+                    }
                 },
             );
 
@@ -181,6 +203,7 @@ fn nothing_was_asked(strings: &Strings) -> Said {
 #[expect(
     clippy::expect_used,
     clippy::unwrap_used,
+    clippy::panic,
     reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
 )]
 mod tests {
@@ -188,7 +211,7 @@ mod tests {
 
     use super::answered;
     use crate::questions::{Questions, TheBound, WhoseKeyring};
-    use crate::testing::{a_directory_of_our_own, in_english};
+    use crate::testing::{a_directory_of_our_own, a_service_here_answering, in_english};
 
     /// Settings naming one provider the person chose, with a key.
     ///
@@ -435,6 +458,58 @@ mod tests {
             2,
             "a rule refusing and a key being absent are two different things for a person to \
              go and do, and they are said the same way: {distinct:#?}"
+        );
+    }
+
+    /// **A service the person runs on this machine answers their question**,
+    /// and the answer says where it came from in ADR 0021's words.
+    ///
+    /// Until 2026-10-29 a provider at `http://127.0.0.1:<port>` — which
+    /// Settings accepts as a service on this machine — went to the provider
+    /// door, which refuses this machine's address outright, and the person was
+    /// told *something in alo OS is set up wrongly* on every question. Seen
+    /// on 2026-10-28 putting a recording proxy in front of a request.
+    #[test]
+    fn a_service_the_person_runs_here_answers_their_question() {
+        let (port, heard) = a_service_here_answering("only with the landlord's consent");
+        let config = a_directory_of_our_own("persons-question-a-service-here");
+        let folder = config.join(alo_choosing::THE_FOLDER);
+        std::fs::create_dir_all(&folder).unwrap();
+        std::fs::write(
+            folder.join(alo_choosing::THE_SETTINGS),
+            format!(
+                "format = 3\n\n[answers]\nprovider = {{ name = \"Here\", model = \"a-model\" \
+                 }}\n\n[[provider]]\nname = \"Here\"\nendpoint = \"http://127.0.0.1:{port}\"\n"
+            ),
+        )
+        .unwrap();
+        let strings = in_english();
+        // **A machine that keeps questions on itself**, because that is the
+        // rule a service here must still satisfy (ADR 0021, D1) and the one
+        // that would refuse it if it were treated as somewhere else.
+        let mut questions = Questions::of_a_session(
+            Some(config.into_os_string()),
+            None,
+            Catalogue::built_in().unwrap(),
+            TheBound::ThePersons(SourcePolicy::ThisMachineOnly),
+            WhoseKeyring::Nobodys,
+        );
+
+        let said = answered("may the tenant sublet?", &mut questions, &strings);
+        let (text, came_from, model) = said
+            .an_answer()
+            .unwrap_or_else(|| panic!("not answered: {said:?}"));
+        assert_eq!(text, "only with the landlord's consent");
+        assert_eq!(model, "a-model");
+        assert_eq!(
+            came_from.text(),
+            "by a service at this machine's address — alo cannot verify where it was processed",
+            "the answer claims more, or less, than alo OS can check"
+        );
+        let request = heard.join().expect("the service was asked");
+        assert!(
+            request.contains("may the tenant sublet?"),
+            "the service was not asked the person's question: {request}"
         );
     }
 }
