@@ -120,6 +120,15 @@ impl Measure {
         }
     }
 
+    /// Measures for this text size on a display drawn at `display`: the two
+    /// multiplied, so a person who asked for larger text on a dense screen
+    /// gets both. At a display of one this is [`Measure::of`] exactly.
+    pub(crate) fn at(scale: TextScale, display: crate::display_scale::DisplayScale) -> Self {
+        Self {
+            percent: i32::from(scale.as_percent()) * i32::from(display.per_cent()) / 100,
+        }
+    }
+
     /// `at_one` pixels at the ordinary scale, scaled.
     pub(crate) fn px(self, at_one: i32) -> i32 {
         (at_one * self.percent / 100).max(1)
@@ -153,7 +162,13 @@ impl Palette {
     }
 }
 
-/// Lay the surface out for an output of `size` and rasterise it.
+/// Lay the surface out for an output of `size` drawn at `scale`, and
+/// rasterise it.
+///
+/// Every measure on the panel goes through the person's text size and the
+/// display's scale together, so on a 200 per cent screen the question a person
+/// is asked is the same size to the eye as the Dock below it. At 100 nothing
+/// changes.
 ///
 /// # Errors
 /// [`RenderError::ApprovalScene`] when something is open and the output is
@@ -165,6 +180,7 @@ pub(crate) fn picture(
     labels: &mut WindowControlLabels,
     size: (i32, i32),
     look: ApprovalLook,
+    scale: crate::display_scale::DisplayScale,
 ) -> Result<ApprovalPicture, RenderError> {
     let mut drawn = ApprovalPicture {
         size,
@@ -184,7 +200,7 @@ pub(crate) fn picture(
     if width > LARGEST_SIDE || height > LARGEST_SIDE {
         return Err(RenderError::ApprovalScene);
     }
-    let measure = Measure::of(look.scale);
+    let measure = Measure::at(look.scale, scale);
     let palette = Palette::of(look.scheme, look.contrast);
     let margin = measure.px(16);
     let pad = measure.px(20);
