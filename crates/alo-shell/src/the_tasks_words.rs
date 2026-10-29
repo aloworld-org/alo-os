@@ -211,7 +211,7 @@ impl TheTasksWords {
 /// Two blocks the window already draws, rather than a new kind: the words are
 /// the person's, and the note is the machine's account of them — the card an
 /// activity is drawn in.
-fn held(task: &ATask, strings: &Strings) -> Vec<(alo_tasks::WhoseBlock, String)> {
+fn held(task: &ATask, strings: &Strings) -> Vec<(alo_tasks::WhoseBlock, MarkedWords)> {
     let Some(held) = task.held() else {
         return Vec::new();
     };
@@ -221,10 +221,13 @@ fn held(task: &ATask, strings: &Strings) -> Vec<(alo_tasks::WhoseBlock, String)>
         crate::the_reply_boxs_words::HELD_UNTIL_ALO_ANSWERS
     };
     vec![
-        (alo_tasks::WhoseBlock::ThePersons, held.to_owned()),
+        (
+            alo_tasks::WhoseBlock::ThePersons,
+            MarkedWords::as_said(held),
+        ),
         (
             alo_tasks::WhoseBlock::AnAccount,
-            strings.say(&note.key(), &Filling::nothing()).into_text(),
+            MarkedWords::as_said(&strings.say(&note.key(), &Filling::nothing()).into_text()),
         ),
     ]
 }
