@@ -292,17 +292,6 @@ impl TheLanguagesOffered {
         self.on = self.on.saturating_sub(1);
     }
 
-    /// Take back the choice, leaving the cursor where it is.
-    ///
-    /// Escape on this sheet, which `alo_access::leaving` says clears what was
-    /// entered on the screen a machine starts at. It leaves the **cursor**
-    /// alone on purpose: somebody who chose the wrong row and pressed Escape
-    /// is still looking at the row they meant to be near, and moving them back
-    /// to the top would be a second thing they did not ask for.
-    pub(crate) fn unchoose(&mut self) {
-        self.chosen = None;
-    }
-
     /// Choose whatever the cursor is on.
     pub(crate) fn choose(&mut self) {
         if !self.all.is_empty() {
@@ -313,6 +302,13 @@ impl TheLanguagesOffered {
     /// What has been chosen, and [`None`] until something is.
     pub(crate) fn chosen(&self) -> Option<&OfferedLanguage> {
         self.all.get(self.chosen?)
+    }
+
+    /// **What the overview shows before anything is chosen**: the chosen
+    /// language, or the one the cursor arrives on — the language this machine
+    /// already speaks, which is what it will go on speaking if nobody chooses.
+    pub(crate) fn chosen_or_already_spoken(&self) -> Option<&OfferedLanguage> {
+        self.chosen().or_else(|| self.all.get(self.on))
     }
 
     /// The first row of the window onto the list.

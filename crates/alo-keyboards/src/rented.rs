@@ -37,7 +37,7 @@
 //! having read the list would be this crate inventing keyboard data, which is
 //! the one thing its plan forbids.
 
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 use std::io;
 use std::path::{Path, PathBuf};
 
@@ -49,10 +49,11 @@ pub const THE_RULES: &str = "/usr/share/X11/xkb/rules/evdev.lst";
 /// Every keyboard, variant and option the rented data has on this machine.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Rented {
-    /// Every layout name.
-    layouts: BTreeSet<String>,
-    /// Every variant, as the layout it belongs to and its name.
-    variants: BTreeSet<(String, String)>,
+    /// Every layout name, and what the list calls it in English.
+    layouts: BTreeMap<String, String>,
+    /// Every variant, as the layout it belongs to and its name, and what the
+    /// list calls it in English.
+    variants: BTreeMap<(String, String), String>,
     /// Every option, such as `grp:alt_space_toggle`.
     options: BTreeSet<String>,
 }
@@ -95,8 +96,8 @@ impl Rented {
     /// [`NotRented`] when the text names no layouts, which is what a truncated
     /// or replaced file looks like.
     pub fn read_text(text: &str, at: &Path) -> Result<Self, NotRented> {
-        let mut layouts = BTreeSet::new();
-        let mut variants = BTreeSet::new();
+        let mut layouts = BTreeMap::new();
+        let mut variants = BTreeMap::new();
         let mut options = BTreeSet::new();
         let mut section = None;
         for line in text.lines() {
@@ -114,12 +115,15 @@ impl Rented {
             };
             match section {
                 "layout" => {
-                    layouts.insert(code.to_owned());
+                    layouts.insert(code.to_owned(), words.collect::<Vec<_>>().join(" "));
                 }
                 "variant" => {
                     let rest = words.collect::<Vec<_>>().join(" ");
-                    if let Some((of, _)) = rest.split_once(':') {
-                        variants.insert((of.trim().to_owned(), code.to_owned()));
+                    if let Some((of, called)) = rest.split_once(':') {
+                        variants.insert(
+                            (of.trim().to_owned(), code.to_owned()),
+                            called.trim().to_owned(),
+                        );
                     }
                 }
                 "option" => {
@@ -145,14 +149,22 @@ impl Rented {
     /// when one is named.
     #[must_use]
     pub fn has(&self, layout: &Layout) -> bool {
-        if !self.layouts.contains(layout.name()) {
-            return false;
-        }
+        self.called_in_english(layout).is_some()
+    }
+
+    /// **What the list calls this keyboard, in English** — `German`,
+    /// `English (US, intl., with dead keys)` — or [`None`] where this machine
+    /// does not have it. The English is the key `xkeyboard-config`'s own
+    /// translators translate (`crate::naming`).
+    #[must_use]
+    pub fn called_in_english(&self, layout: &Layout) -> Option<&str> {
+        let called = self.layouts.get(layout.name())?;
         match layout.variant() {
-            None => true,
+            None => Some(called.as_str()),
             Some(variant) => self
                 .variants
-                .contains(&(layout.name().to_owned(), variant.to_owned())),
+                .get(&(layout.name().to_owned(), variant.to_owned()))
+                .map(String::as_str),
         }
     }
 
@@ -260,6 +272,25 @@ mod tests {
         assert!(rented.has(&Layout::variant_of("gr", "polytonic").unwrap()));
         assert!(rented.has_option("grp:alt_space_toggle"));
         assert!(rented.has_option("compose:menu"));
+    }
+
+    /// **What the list calls each keyboard is kept**, a variant's without the
+    /// layout it belongs to.
+    #[test]
+    fn what_the_list_calls_a_keyboard_is_kept() {
+        let rented = Rented::read_text(A_LIST, &somewhere()).unwrap();
+        assert_eq!(
+            rented.called_in_english(&Layout::named("de").unwrap()),
+            Some("German")
+        );
+        assert_eq!(
+            rented.called_in_english(&Layout::variant_of("us", "intl").unwrap()),
+            Some("English (US, intl., with dead keys)")
+        );
+        assert_eq!(
+            rented.called_in_english(&Layout::named("qwertz").unwrap()),
+            None
+        );
     }
 
     /// **A layout the rented data does not name is not one**, and neither is

@@ -183,29 +183,48 @@ pub(crate) fn picture(
                 &measure,
             );
         }
-        // **The language sheet**, which a fresh machine shows before it asks
-        // for a name — so that a person has their own keyboard before they
-        // type a password through it.
-        SignInShows::Language { offered } => {
-            return crate::language_sheet::drawn(
-                &crate::language_sheet::LanguageSheet { offered },
-                fonts,
-                words,
-                (width, height),
-                crate::sign_in_surface::TheColours::of(look.contrast, look.scheme),
-                &measure,
-            );
-        }
-        // **The region sheet**, which follows the language sheet.
-        SignInShows::Region { offered } => {
-            return crate::region_sheet::drawn(
-                offered,
-                fonts,
-                words,
-                (width, height),
-                crate::sign_in_surface::TheColours::of(look.contrast, look.scheme),
-                &measure,
-            );
+        // **The first-start sheets**, which a fresh machine shows before it
+        // asks for a name — so that a person has their own language, region
+        // and keyboard before they type a password through it.
+        SignInShows::FirstStart(first_start) => {
+            let colours = crate::sign_in_surface::TheColours::of(look.contrast, look.scheme);
+            return match first_start.sheet() {
+                crate::the_first_start::Sheet::Overview => crate::overview_sheet::drawn(
+                    first_start,
+                    fonts,
+                    words,
+                    (width, height),
+                    colours,
+                    &measure,
+                ),
+                crate::the_first_start::Sheet::Language(_) => crate::language_sheet::drawn(
+                    &crate::language_sheet::LanguageSheet {
+                        offered: first_start.languages(),
+                    },
+                    fonts,
+                    words,
+                    (width, height),
+                    colours,
+                    &measure,
+                ),
+                crate::the_first_start::Sheet::Region(offered) => crate::region_sheet::drawn(
+                    offered,
+                    fonts,
+                    words,
+                    (width, height),
+                    colours,
+                    &measure,
+                ),
+                crate::the_first_start::Sheet::Keyboard(picker) => crate::keyboard_sheet::drawn(
+                    first_start,
+                    picker,
+                    fonts,
+                    words,
+                    (width, height),
+                    colours,
+                    &measure,
+                ),
+            };
         }
         SignInShows::Sentence(said) => {
             let text = sentence(

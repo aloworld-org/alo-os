@@ -35,11 +35,11 @@
 
 use std::path::{Path, PathBuf};
 
-use crate::catalogue::Catalogue;
 use crate::folders::Folder;
 use crate::naming::Named;
 use crate::recording::{AlreadyRecorded, Points, THE_RECORD, the_record, under_home};
 use crate::refusing::NotMade;
+use alo_gettext::Catalogue;
 
 /// The one thing in this crate that touches a filesystem.
 pub trait Disk {

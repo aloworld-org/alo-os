@@ -225,7 +225,7 @@ fn the_keyboard_is_now<K: Knocking>(
 ) {
     use crate::the_keyboard_a_person_chose::AboutTheKeyboard;
     match chose.chose(
-        screen.the_language_chosen(),
+        screen.the_keyboard_chosen().as_ref(),
         std::path::Path::new(alo_keyboards::THE_MACHINES_KEYBOARDS),
     ) {
         AboutTheKeyboard::Unchanged => {}
@@ -344,6 +344,15 @@ impl<'a, K: Knocking> Lane<'a, K> {
     pub(crate) fn the_region_chosen(&self) -> Option<&str> {
         match self.signing.as_ref() {
             Some(Signing::Still(screen)) => screen.the_region_chosen(),
+            Some(Signing::HandedOver(_)) | None => None,
+        }
+    }
+
+    /// The keyboard to type on now, chosen on the first-start sheets, or
+    /// [`None`].
+    pub(crate) fn the_keyboard_chosen(&self) -> Option<alo_keyboards::Layout> {
+        match self.signing.as_ref() {
+            Some(Signing::Still(screen)) => screen.the_keyboard_chosen(),
             Some(Signing::HandedOver(_)) | None => None,
         }
     }

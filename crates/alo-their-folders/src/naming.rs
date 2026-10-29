@@ -1,5 +1,5 @@
-//! A folder's name in the person's language — `xdg-user-dirs`' own, from
-//! [`crate::catalogue`] — checked before it becomes a directory.
+//! A folder's name in the person's language — `xdg-user-dirs`' own, through
+//! `alo_gettext` — checked before it becomes a directory.
 //!
 //! This is the one file in this crate that can be wrong in a way a person
 //! would have to live with. Everywhere else a translator's mistake produces a
@@ -34,9 +34,9 @@
 //! Is the English key, exactly as `xdg-user-dirs` itself leaves it on every
 //! Linux desktop — and an empty translation is the same, as gettext gives it.
 
-use crate::catalogue::Catalogue;
 use crate::folders::Folder;
 use crate::refusing::NotMade;
+use alo_gettext::Catalogue;
 
 /// One folder's name, as this machine will write it on the disk.
 ///
@@ -67,7 +67,7 @@ impl Named {
             key: key.to_owned(),
         };
         let name = catalogue
-            .and_then(|it| it.name_of(key))
+            .and_then(|it| it.translation_of(key))
             .unwrap_or(key)
             .trim();
         if name.is_empty()

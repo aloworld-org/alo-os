@@ -56,7 +56,7 @@
 //! gives them their reading language by, asked here rather than waited for,
 //! because this runs beside the desktop at sign-in and on a first sign-in
 //! could not count on the desktop having written it yet. The names are
-//! `xdg-user-dirs`' own for that language (`alo_their_folders::catalogue`,
+//! `xdg-user-dirs`' own for that language (read through `alo_gettext`,
 //! ADR 0137), read from `/usr/share/locale`.
 //!
 //! **A folder the record already names keeps its name.** Where the person's
@@ -67,9 +67,9 @@
 use std::path::Path;
 use std::process::ExitCode;
 
+use alo_gettext::THE_LOCALES;
 use alo_strings::{Language, Strings};
-use alo_their_folders::catalogue::THE_LOCALES;
-use alo_their_folders::{Catalogue, OnThisDisk, made_for, their_folders_words};
+use alo_their_folders::{Catalogue, OnThisDisk, THE_CATALOGUE, made_for, their_folders_words};
 
 /// **The language this person reads**: their own settings first, then the
 /// language the machine was set up in — or [`None`], which is the English
@@ -114,7 +114,7 @@ fn main() -> ExitCode {
     let language = the_language_they_read(&home);
     let catalogue = language
         .as_ref()
-        .and_then(|it| Catalogue::for_language(Path::new(THE_LOCALES), it));
+        .and_then(|it| Catalogue::for_language(Path::new(THE_LOCALES), THE_CATALOGUE, it));
     println!(
         "alo-their-folders: the names are {}",
         match (&language, &catalogue) {

@@ -80,6 +80,18 @@ impl Keyboards {
         keyboards
     }
 
+    /// **Typed on this keyboard**, whatever language is read — English read
+    /// on a German keyboard is a person, not a mistake (the owner's example of
+    /// 2026-10-28). The layout is one a picker offered, from
+    /// [`crate::the_keyboards_offered`], whose every line this crate's tests
+    /// hold to the rented data.
+    #[must_use]
+    pub fn typed_on(layout: Layout) -> Self {
+        let mut keyboards = Self::shipped();
+        keyboards.layouts = These::just(layout);
+        keyboards
+    }
+
     /// The keyboards, in the order they are switched through.
     #[must_use]
     pub const fn all(&self) -> &These {

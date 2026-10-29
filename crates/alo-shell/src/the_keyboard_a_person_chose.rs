@@ -1,7 +1,8 @@
-//! Keeping the keyboard a person picked on the language sheet, and saying when
-//! it needs applying.
+//! Keeping the keyboard a person picked on the first-start sheets, and saying
+//! when it needs applying.
 //!
-//! The sheet carries a choice out on `SignInScreen::the_keyboard_to_use`; this
+//! The sheets carry a choice out on `SignInScreen::the_keyboard_chosen` — the
+//! keyboard chosen on the keyboard sheet, or the chosen language's — and this
 //! decides whether anything has to happen about it and writes
 //! `alo_keyboards::THE_MACHINES_KEYBOARDS` when it does. Handing the layout to
 //! the keymap is the caller's, because that needs the `Server` and this needs
@@ -29,7 +30,6 @@
 use std::path::Path;
 
 use alo_keyboards::{Keyboards, Layout};
-use alo_strings::Language;
 
 /// What was done about the choice, for a caller that has to apply it and a log
 /// that has to explain it.
@@ -51,7 +51,7 @@ pub(crate) enum AboutTheKeyboard {
 pub(crate) struct TheKeyboardAPersonChose {
     /// What was last written and applied, so a press that changes nothing does
     /// nothing.
-    applied: Option<String>,
+    applied: Option<Layout>,
 }
 
 impl TheKeyboardAPersonChose {
@@ -67,30 +67,25 @@ impl TheKeyboardAPersonChose {
     /// a test writes in a test, for the same reason every other path in this
     /// crate is a parameter.
     ///
-    /// **One layout is kept, which is the language's first offer.**
-    /// `Keyboards::offered_with` sets `These::just(offer.first())` — French
-    /// gets `fr` and not also `be`, `ca` and `ch(fr)`. Those are what a
-    /// *setting* offers next through `Keyboards::add_for`, and installing all
-    /// four here would give a person a switch key cycling through three
-    /// keyboards they never asked for. This comment claimed the opposite until
-    /// a test read the file back and found one layout in it.
-    pub(crate) fn chose(&mut self, chosen: Option<&str>, at: &Path) -> AboutTheKeyboard {
-        let Some(tag) = chosen else {
+    /// **One layout is kept**: the one chosen, whatever language is read —
+    /// English on a German keyboard is a person, not a mistake (the owner's
+    /// example of 2026-10-28). The language's other keyboards are what a
+    /// *setting* offers next through `Keyboards::add_for`; installing several
+    /// here would give a person a switch key cycling through keyboards they
+    /// never asked for.
+    pub(crate) fn chose(&mut self, chosen: Option<&Layout>, at: &Path) -> AboutTheKeyboard {
+        let Some(layout) = chosen else {
             return AboutTheKeyboard::Unchanged;
         };
-        if self.applied.as_deref() == Some(tag) {
+        if self.applied.as_ref() == Some(layout) {
             return AboutTheKeyboard::Unchanged;
         }
-        let Ok(language) = Language::written(tag) else {
-            return AboutTheKeyboard::NotKept(format!("{tag} is not a language tag"));
-        };
-        let keyboards = Keyboards::offered_with(&language);
-        let layout = keyboards.in_use().clone();
+        let keyboards = Keyboards::typed_on(layout.clone());
         if let Err(why) = alo_keyboards::keeping::keep_the_machines(at, &keyboards) {
             return AboutTheKeyboard::NotKept(format!("{} — {:?}", at.display(), why.why()));
         }
-        self.applied = Some(tag.to_owned());
-        AboutTheKeyboard::Apply(layout)
+        self.applied = Some(layout.clone());
+        AboutTheKeyboard::Apply(layout.clone())
     }
 }
 

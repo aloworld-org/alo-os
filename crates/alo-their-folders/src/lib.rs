@@ -22,7 +22,7 @@
 //! letters — **the names `xdg-user-dirs` gives them**, the package every Linux
 //! desktop names these folders with, so that Dolphin and every other program
 //! agree with alo OS about where a person's documents are
-//! ([`catalogue`], ADR 0137). A folder that already has a name keeps it.
+//! (`alo_gettext`, ADR 0137). A folder that already has a name keeps it.
 //!
 //! That makes `crate::naming` the file to read first: a translated name
 //! becomes a directory, and three kinds of translation produce a folder a
@@ -57,7 +57,6 @@
 //! - [`NotMade`] — every way it can fail, each with a sentence for whoever
 //!   looks after the machine.
 
-pub mod catalogue;
 pub mod folders;
 pub mod making;
 pub mod naming;
@@ -69,8 +68,9 @@ pub mod words;
 #[cfg(test)]
 mod testing;
 
-pub use catalogue::Catalogue;
+pub use alo_gettext::Catalogue;
 pub use folders::Folder;
+pub use folders::THE_CATALOGUE;
 pub use making::{Disk, Made, NamedDifferently, made_for};
 pub use naming::Named;
 pub use on_this_disk::OnThisDisk;
