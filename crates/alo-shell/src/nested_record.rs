@@ -149,6 +149,9 @@ fn frame_pictures(
         size,
         record.look,
         record.clock,
+        // **At one**: this scene is the development backend's, drawn in a
+        // window on another desktop, and no display's scale reaches it.
+        crate::display_scale::DisplayScale::ONE,
     )?;
     let question = match approval {
         Some(approval) => Some(crate::approval_raster::picture(

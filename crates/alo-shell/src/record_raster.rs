@@ -40,6 +40,7 @@ use alo_strings::{Direction, Strings};
 use cosmic_text::FontSystem;
 use smithay::utils::{Physical, Rectangle};
 
+use crate::display_scale::DisplayScale;
 use crate::painted::{Inked, Solid};
 use crate::painted_text::Shaped;
 use crate::record_clock::RecordClock;
@@ -121,7 +122,12 @@ impl RecordPicture {
     }
 }
 
-/// Lay the window out for an output of `size` and rasterise it.
+/// Lay the window out for an output of `size` drawn at `display`, and
+/// rasterise it.
+///
+/// Every measure in the window goes through the person's text size and the
+/// display's scale together, so on a 200 per cent screen the record is the
+/// same size to the eye as the Dock beside it. At 100 nothing changes.
 ///
 /// # Errors
 /// [`RenderError::RecordScene`] when the window is open and the output is
@@ -135,12 +141,13 @@ pub(crate) fn picture(
     size: (i32, i32),
     look: RecordLook,
     clock: RecordClock<'_>,
+    display: DisplayScale,
 ) -> Result<RecordPicture, RenderError> {
     let mut drawn = RecordPicture::empty(size);
     match shows {
         RecordShows::Nothing => Ok(drawn),
         RecordShows::Refusal(why) => {
-            let room = Room::on(size, look)?;
+            let room = Room::on(size, look, display)?;
             let said = why.said(strings).into_text();
             let shaped = room.shaped(&mut labels.fonts, &said, room.inner);
             let panel_height = 2 * room.pad + shaped.height;
@@ -164,7 +171,7 @@ pub(crate) fn picture(
             account,
             moved_past,
         } => {
-            let room = Room::on(size, look)?;
+            let room = Room::on(size, look, display)?;
             let top = room.margin;
             let bottom = size.1 - room.margin - room.pad;
             let panel = Rectangle::new(
@@ -190,7 +197,7 @@ pub(crate) fn picture(
             }
             y += room.gap;
             rule(&mut drawn.solids, room, y);
-            y += 1 + 2 * room.gap;
+            y += room.hairline + 2 * room.gap;
             let entries_top = y;
 
             // **The entries that could be in view, and the one time column
@@ -214,7 +221,7 @@ pub(crate) fn picture(
                 drawn.entries.push(entry);
                 y += height + room.gap;
                 rule(&mut drawn.solids, room, y);
-                y += 1 + room.gap;
+                y += room.hairline + room.gap;
             }
 
             let total = account.how_many();

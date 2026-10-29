@@ -609,6 +609,8 @@ pub(crate) fn frame_pictures(
             size,
             record.look,
             record.clock,
+            // **This display's scale**, the one its Dock is drawn at.
+            crate::display_scale::DisplayScale::of_per_cent(desktop.display_scale),
         )?),
         None => None,
     };
