@@ -5,7 +5,7 @@
 //! The owner's decision of 2026-10-28: the zone is changed later **the
 //! standard Linux way** — systemd's time-zone service, asked by the person's
 //! own session and allowed by a polkit rule for their account and not the
-//! agent's (`crate::the_zone_through_timedated`, ADR 0139) — with **the same
+//! agent's (`crate::the_zone_through_timedated`, ADR 0140) — with **the same
 //! names and the same which-city question** as the first-start sheets: the
 //! region's zones named by their cities in the person's language
 //! (`alo_formats::zones`).

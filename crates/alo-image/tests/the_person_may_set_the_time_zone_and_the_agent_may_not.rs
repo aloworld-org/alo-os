@@ -3,7 +3,7 @@
 //!
 //! Settings changes the zone through systemd's own time-zone service, and the
 //! service asks polkit; the image's rule
-//! (`image/usr/share/polkit-1/rules.d/50-alo-time-zone.rules`, ADR 0139) is
+//! (`image/usr/share/polkit-1/rules.d/50-alo-time-zone.rules`, ADR 0140) is
 //! polkit's answer. **What this file proves** is the rule's text against the
 //! image's own accounts: that the account it refuses is the account the agent
 //! runs as, that the refusal comes before anything is allowed, that it is

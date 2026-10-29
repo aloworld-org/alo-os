@@ -3,7 +3,7 @@
 //! the system bus to `SetTimezone`.
 //!
 //! The owner's decision of 2026-10-28, recorded in
-//! [ADR 0139](../../../docs/decisions/0139-the-first-start-sets-the-time-zone-itself.md):
+//! [ADR 0140](../../../docs/decisions/0140-the-first-start-sets-the-time-zone-itself.md):
 //! Settings runs as the person, not as root, so it cannot replace
 //! `/etc/localtime` the way the first-start sheets do. It asks the service whose
 //! job that is, and a polkit rule the image ships

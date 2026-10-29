@@ -6,7 +6,7 @@ one moves it to the walk's own record, with what was seen.
 
 ## The time zone
 
-Added 2026-10-28 with ADR 0139.
+Added 2026-10-28 with ADR 0140.
 
 1. **SELinux accepts the link the first-start screen writes.** Take a region on
    the first-start screens (e.g. Germany). Then:

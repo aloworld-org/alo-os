@@ -1,5 +1,5 @@
 // alo OS: who may change this machine's time zone without an administrator's
-// password (ADR 0139, the owner's decision of 2026-10-28).
+// password (ADR 0140, the owner's decision of 2026-10-28).
 //
 // Settings changes the zone the standard Linux way: it asks systemd's own
 // time-zone service, org.freedesktop.timedate1, to SetTimezone, and that
