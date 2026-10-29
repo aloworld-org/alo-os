@@ -45,7 +45,13 @@ impl SetsTheZone for Timedated {
             &(zone, false),
         )
         .map(|_| ())
-        .map_err(|why| why.to_string())
+        .map_err(|why| {
+            // **Said here, for the session's log**, because Settings words
+            // nothing of its own and shows the person the formats crate's
+            // sentence instead.
+            eprintln!("alo-shell: the time-zone service did not set {zone}: {why}");
+            why.to_string()
+        })
     }
 
     #[cfg(not(target_os = "linux"))]

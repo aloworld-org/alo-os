@@ -17,7 +17,6 @@
 #![expect(
     clippy::expect_used,
     clippy::panic,
-    clippy::indexing_slicing,
     reason = "in a test, a panic on a file that is not there is the failure being reported"
 )]
 

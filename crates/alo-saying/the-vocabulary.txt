@@ -824,7 +824,6 @@ formats.kept.not-written	your date and time settings at {path} could not be writ
 formats.kept.unknown-key	your date and time settings at {path} say {key}, which is not something alo OS can change about how dates and times are written, so nothing in the file has been used
 formats.not-a-language	{asked} is not a language alo OS can write dates and times in, so nothing has been changed
 formats.not-a-region	{asked} is not a region alo OS can write dates and times for, so nothing has been changed
-formats.time-zone	Time zone
 formats.time-zone.not-changed	The time zone was not changed: this computer's time service would not change it
 formats.where-this-machine-is	Where this computer is
 granted.already-gone	That grant is no longer held: it has expired or was already revoked. Nothing was changed — the list here was out of date, so look at it again

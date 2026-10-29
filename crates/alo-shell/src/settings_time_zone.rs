@@ -104,8 +104,10 @@ impl TimeZoneSection {
                 self.told = None;
                 SettingsKept::Written
             }
-            Err(why) => {
-                eprintln!("alo-shell: the time zone {zone} was not set: {why}");
+            // **The service's own words are not this window's to say**:
+            // Settings words nothing of its own, and what it tells the person
+            // is the formats crate's sentence.
+            Err(_) => {
                 self.told = Some(
                     strings
                         .say(
