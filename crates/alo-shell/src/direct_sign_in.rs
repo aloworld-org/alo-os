@@ -19,6 +19,7 @@ use alo_greeting::Knocking;
 use smithay::backend::input::ButtonState;
 use smithay::utils::Size;
 
+use crate::display_scale::DisplayScale;
 use crate::sign_in_pointer::ThePointerOnTheSignInScreen;
 use crate::{
     Cursor, DirectFrame, DirectLoopError, DirectLoopResult, InputError, InputUpdate, RenderError,
@@ -298,7 +299,8 @@ pub(crate) struct Lane<'a, K: Knocking> {
     /// Where the pointer is, kept here and never in the seat's client-facing
     /// one. `crate::sign_in_pointer`'s header says why.
     pointer: ThePointerOnTheSignInScreen,
-    /// The size the last frame was drawn at, or [`None`] before the first one.
+    /// The size the last frame was drawn at and the scale it was drawn at, or
+    /// [`None`] before the first one.
     ///
     /// **A press is hit-tested against the size that was drawn, not against
     /// the display's mode.** They are the same number on this machine, and
@@ -306,11 +308,15 @@ pub(crate) struct Lane<'a, K: Knocking> {
     /// landing where no control was painted, which is the fault
     /// `crate::a_press_in_the_menu` records in its own header.
     ///
+    /// **And at the scale that was drawn**, for the same reason: a press
+    /// arrives in pixels and the layout is logical, so the one conversion
+    /// between them has to be the one the frame used.
+    ///
     /// Nothing before the first draw, which is `crate::direct_desktop`'s rule
     /// for its panel and true here for the same reason: a pointer moving on a
     /// machine that has not painted is an ordinary moment, not something to
     /// invent an answer for.
-    drawn_at: Option<(i32, i32)>,
+    drawn_at: Option<((i32, i32), DisplayScale)>,
 }
 
 impl<'a, K: Knocking> Lane<'a, K> {
@@ -335,7 +341,7 @@ impl<'a, K: Knocking> Lane<'a, K> {
     /// [`InputError`] for a malformed event, which the caller reports rather
     /// than taking the screen away from somebody over.
     pub(crate) fn pointed(&mut self, event: &crate::DirectPointerEvent) -> Result<(), InputError> {
-        let Some(extent) = self.drawn_at else {
+        let Some((extent, _)) = self.drawn_at else {
             return Ok(());
         };
         self.pointer.moved(event, extent)?;
@@ -347,13 +353,19 @@ impl<'a, K: Knocking> Lane<'a, K> {
     /// Answers whether anything was pressed, which is what lets the caller
     /// tell a click on a control from one on the screen's ground.
     pub(crate) fn pressed_by_the_pointer(&mut self) -> bool {
-        let Some(extent) = self.drawn_at else {
+        let Some((extent, display)) = self.drawn_at else {
             return false;
         };
-        let Some(at) = crate::sign_in_layout::sign_in_laid_out(Size::from(extent)) else {
+        // The layout the frame was drawn from: logical, the drawn pixels
+        // through the scale that frame used.
+        let logical = (
+            i32::try_from(display.logical(extent.0)).unwrap_or(i32::MAX),
+            i32::try_from(display.logical(extent.1)).unwrap_or(i32::MAX),
+        );
+        let Some(at) = crate::sign_in_layout::sign_in_laid_out(Size::from(logical)) else {
             return false;
         };
-        let Some(on) = self.pointer.pressed(&at) else {
+        let Some(on) = self.pointer.pressed(&at, display) else {
             return false;
         };
         // **A control with nothing to do is still a control that was pressed.**
@@ -421,6 +433,18 @@ impl<'a, K: Knocking> Lane<'a, K> {
             return Ok(());
         };
         let size = target.size();
+        // **The screen's own scale**, worked out from its pixels and its
+        // glass, because nobody has signed in to have a setting of their own.
+        // A display that cannot describe itself is one that cannot be worked
+        // out, and is drawn one-to-one: what `Scale::worked_out_for` answers
+        // for a screen that gives no size.
+        let display = target.metadata().map_or(DisplayScale::ONE, |metadata| {
+            crate::the_sign_in_screens_scale::the_sign_in_screens_scale(
+                &metadata.name,
+                (size.w, size.h),
+                metadata.physical_size,
+            )
+        });
         let drawn = picture(
             screen.shows(),
             self.labels,
@@ -428,8 +452,9 @@ impl<'a, K: Knocking> Lane<'a, K> {
             (size.w, size.h),
             self.look,
             crate::sign_in_raster::WhoseScreen::ItsOwn,
+            display,
         )?;
-        self.drawn_at = Some((size.w, size.h));
+        self.drawn_at = Some(((size.w, size.h), display));
         // **An arrow only once a device has moved**, so a machine with no
         // mouse draws no cursor rather than one parked in a corner that
         // nothing can move.

@@ -108,6 +108,9 @@ impl Nested {
             (size.w, size.h),
             look,
             crate::sign_in_raster::WhoseScreen::ItsOwn,
+            // **At one**: this is the development backend's window on another
+            // desktop, and no screen's own density reaches it.
+            crate::display_scale::DisplayScale::ONE,
         )?;
         self.submit_native_scene(
             &[],

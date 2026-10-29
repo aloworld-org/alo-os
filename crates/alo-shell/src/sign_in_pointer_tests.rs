@@ -10,6 +10,7 @@
 )]
 
 use super::ThePointerOnTheSignInScreen;
+use crate::display_scale::DisplayScale;
 use crate::sign_in_layout::{SignInLayout, sign_in_laid_out};
 use crate::sign_in_pointing::OnTheSignInScreen;
 use crate::{DirectPointerEvent, InputError};
@@ -57,7 +58,7 @@ fn onto(layout: &SignInLayout, which: Which) -> ThePointerOnTheSignInScreen {
 fn a_pointer_nothing_has_moved_has_no_position_and_presses_nothing() {
     let pointer = ThePointerOnTheSignInScreen::default();
     assert_eq!(pointer.where_it_is(), None);
-    assert_eq!(pointer.pressed(&the_layout()), None);
+    assert_eq!(pointer.pressed(&the_layout(), DisplayScale::ONE), None);
 }
 
 /// **The first delta is applied from the middle of the screen**, not from the
@@ -200,7 +201,7 @@ fn every_control_answers_at_its_own_middle() {
     ];
     for (what, which) in each {
         assert_eq!(
-            onto(&layout, which).pressed(&layout),
+            onto(&layout, which).pressed(&layout, DisplayScale::ONE),
             Some(what),
             "{what:?} does not answer at its own middle"
         );
@@ -217,7 +218,10 @@ fn every_control_answers_at_its_own_middle() {
             SCREEN,
         )
         .expect("a position inside the screen is taken");
-    assert_eq!(pointer.pressed(&layout), Some(OnTheSignInScreen::TheEntry));
+    assert_eq!(
+        pointer.pressed(&layout, DisplayScale::ONE),
+        Some(OnTheSignInScreen::TheEntry)
+    );
 }
 
 /// **A press on the ground is on nothing**, and in particular is not on the
@@ -231,9 +235,66 @@ fn a_press_on_the_ground_is_on_nothing() {
             .moved(&put_at(x, y), SCREEN)
             .expect("a position inside the screen is taken");
         assert_eq!(
-            pointer.pressed(&layout),
+            pointer.pressed(&layout, DisplayScale::ONE),
             None,
             "({x}, {y}) is the screen's ground and answered a control"
         );
     }
+}
+
+/// **At 200 per cent every control answers where it is drawn**: the screen is
+/// 2880 × 1920 pixels, laid out at the reference 1440 × 960, and a press at
+/// the middle of each control as drawn — twice its logical place — lands on
+/// that control. And a press beside a control, on the ground, is still on
+/// nothing.
+#[test]
+fn at_two_hundred_a_press_lands_on_the_control_drawn_there() {
+    let two = DisplayScale::of_per_cent(200);
+    let drawn = (2 * SCREEN.0, 2 * SCREEN.1);
+    let layout = the_layout();
+    let each: [(OnTheSignInScreen, Which); 6] = [
+        (OnTheSignInScreen::Submit, |l| l.submit),
+        (OnTheSignInScreen::Back, |l| l.back),
+        (OnTheSignInScreen::Power, |l| l.power),
+        (OnTheSignInScreen::SwitchPerson, |l| l.switch_person),
+        (OnTheSignInScreen::Accessibility, |l| l.accessibility),
+        (OnTheSignInScreen::OtherWays, |l| l.other_ways),
+    ];
+    let at_pixel = |x: i32, y: i32| {
+        let mut pointer = ThePointerOnTheSignInScreen::default();
+        pointer
+            .moved(
+                &put_at(
+                    f64::from(x) / f64::from(drawn.0 - 1),
+                    f64::from(y) / f64::from(drawn.1 - 1),
+                ),
+                drawn,
+            )
+            .expect("a position inside the screen is taken");
+        pointer
+    };
+    for (what, which) in each {
+        let target = which(&layout);
+        let pointer = at_pixel(
+            2 * target.loc.x + target.size.w,
+            2 * target.loc.y + target.size.h,
+        );
+        assert_eq!(
+            pointer.pressed(&layout, two),
+            Some(what),
+            "{what:?} drawn at 200 does not answer at its own middle"
+        );
+    }
+    // The submit target's middle at 100 per cent's pixels is, at 200, a point
+    // half-way to the screen's corner: not on the arrow.
+    let submit = layout.submit;
+    let at_one = at_pixel(
+        submit.loc.x + submit.size.w / 2,
+        submit.loc.y + submit.size.h / 2,
+    );
+    assert_ne!(
+        at_one.pressed(&layout, two),
+        Some(OnTheSignInScreen::Submit),
+        "a press was answered against the logical layout as though it were pixels"
+    );
 }

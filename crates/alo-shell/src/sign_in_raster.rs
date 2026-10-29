@@ -19,12 +19,24 @@
 //!
 //! `crate::SignInShows` and nothing else about the screen, so this file has no
 //! way to reach the password even by mistake. Colours are `alo-appearance`'s
-//! tokens and the scale is the person's `TextScale`; the font is the bundled
-//! face `crate::WindowControlLabels` already loads, never a host font.
+//! tokens and the scale is the person's `TextScale` times the screen's own
+//! (`crate::the_sign_in_screens_scale`); the font is the bundled face
+//! `crate::WindowControlLabels` already loads, never a host font.
+//!
+//! # The screen's own scale
+//!
+//! The design's numbers are logical, so on a screen drawn at 200 per cent the
+//! screen is **laid out at half its pixels and drawn at twice the size**: the
+//! layout, the rounded shapes, every measure and every line of type. At 100
+//! each conversion is the identity, so the picture is the one it was before.
+//! The first-start sheets and the lock screen's embedded form are not made to
+//! follow it yet, and say so where they are drawn.
 
 use alo_appearance::{Scheme, TextScale};
 use cosmic_text::{Buffer, FontSystem, Metrics, Shaping, Wrap};
-use smithay::utils::{Physical, Rectangle, Scale};
+use smithay::utils::{Logical, Physical, Rectangle, Scale, Size};
+
+use crate::display_scale::DisplayScale;
 
 use crate::painted::{Inked, Solid};
 use crate::painted_text::{Shaped, inked, sentence};
@@ -119,7 +131,12 @@ pub(crate) enum WhoseScreen {
     InsideAnother,
 }
 
-/// Lay the screen out for an output of `size` and rasterise it.
+/// Lay the screen out for an output of `size` drawn at `display`, and
+/// rasterise it.
+///
+/// `display` is the screen's own scale (`crate::the_sign_in_screens_scale`):
+/// every measure goes through it and the person's text size together. At
+/// [`DisplayScale::ONE`] nothing changes.
 ///
 /// # Errors
 /// [`RenderError::SignInScene`] when the output is too small to hold two
@@ -131,8 +148,15 @@ pub(crate) fn picture(
     size: (i32, i32),
     look: SignInLook,
     whose: WhoseScreen,
+    display: DisplayScale,
 ) -> Result<SignInPicture, RenderError> {
-    let measure = Measure::of(look.scale);
+    let measure = Measure::at(look.scale, display);
+    // **The first-start sheets are not made to follow the screen's scale
+    // yet.** Each lays its column out in pixels from logical figures, so
+    // doubled type in an undoubled column would overflow every card. They keep
+    // the person's text size alone until they are converted the way the
+    // sign-in screen below is.
+    let sheet_measure = Measure::of(look.scale);
     let (width, height) = size;
     if width > LARGEST_SIDE || height > LARGEST_SIDE {
         return Err(RenderError::SignInScene);
@@ -180,7 +204,7 @@ pub(crate) fn picture(
                 words,
                 (width, height),
                 crate::sign_in_surface::TheColours::of(look.contrast, look.scheme),
-                &measure,
+                &sheet_measure,
             );
         }
         // **The first-start sheets**, which a fresh machine shows before it
@@ -195,7 +219,7 @@ pub(crate) fn picture(
                     words,
                     (width, height),
                     colours,
-                    &measure,
+                    &sheet_measure,
                 ),
                 crate::the_first_start::Sheet::Language(_) => crate::language_sheet::drawn(
                     &crate::language_sheet::LanguageSheet {
@@ -205,7 +229,7 @@ pub(crate) fn picture(
                     words,
                     (width, height),
                     colours,
-                    &measure,
+                    &sheet_measure,
                 ),
                 crate::the_first_start::Sheet::Region(offered) => crate::region_sheet::drawn(
                     offered,
@@ -213,7 +237,7 @@ pub(crate) fn picture(
                     words,
                     (width, height),
                     colours,
-                    &measure,
+                    &sheet_measure,
                 ),
                 crate::the_first_start::Sheet::Zone(picker) => crate::zone_sheet::drawn(
                     picker,
@@ -221,7 +245,7 @@ pub(crate) fn picture(
                     words,
                     (width, height),
                     colours,
-                    &measure,
+                    &sheet_measure,
                 ),
                 crate::the_first_start::Sheet::Keyboard(picker) => crate::keyboard_sheet::drawn(
                     first_start,
@@ -230,7 +254,7 @@ pub(crate) fn picture(
                     words,
                     (width, height),
                     colours,
-                    &measure,
+                    &sheet_measure,
                 ),
             };
         }
@@ -264,18 +288,21 @@ pub(crate) fn picture(
                 // each is and why four of them are mixed.
                 let colours = crate::sign_in_surface::TheColours::of(look.contrast, look.scheme);
 
-                // **The design's own layout**, in the units this picture is drawn
-                // in. `crate::sign_in_layout` is the only thing that decides where
-                // anything goes, so a test can hold it against `176-10686.xml`
-                // without rendering a pixel.
-                let Some(at) = crate::sign_in_layout::sign_in_laid_out(smithay::utils::Size::<
-                    i32,
-                    smithay::utils::Logical,
-                >::from((
-                    width, height,
-                ))) else {
+                // **The design's own layout**, in logical pixels: the output's
+                // pixels through the screen's own scale, so a 200 per cent
+                // screen is laid out at half its pixels and drawn at twice the
+                // size. `crate::sign_in_layout` is the only thing that decides
+                // where anything goes, so a test can hold it against
+                // `176-10686.xml` without rendering a pixel.
+                let logical = Size::<i32, Logical>::from((
+                    i32::try_from(display.logical(width)).unwrap_or(i32::MAX),
+                    i32::try_from(display.logical(height)).unwrap_or(i32::MAX),
+                ));
+                let Some(laid) = crate::sign_in_layout::sign_in_laid_out(logical) else {
                     return Err(RenderError::SignInScene);
                 };
+                let scale = Scale::from(display.factor());
+                let at = crate::sign_in_in_pixels::SignInInPixels::of(&laid, scale);
                 let refused = if said.is_some() {
                     crate::sign_in_surface::TheEntryIs::Refused
                 } else {
@@ -301,9 +328,10 @@ pub(crate) fn picture(
                 // flat `Solid` cannot draw an 18-unit radius, which is why this is
                 // a raster — see `crate::sign_in_surface`.
                 drawn.surface = crate::sign_in_surface::sign_in_surface(
-                    &at,
+                    &laid,
+                    (width, height),
                     refused,
-                    Scale::from(1.0),
+                    scale,
                     colours,
                 );
 
@@ -372,9 +400,9 @@ pub(crate) fn picture(
                     let shaped = sentence(
                         fonts,
                         hint.text(),
-                        at.entry.size.w
-                            - measure.px(42)
-                            - crate::sign_in_layout::THE_SUBMIT_TARGET_IS,
+                        // The submit target as drawn, which is
+                        // `THE_SUBMIT_TARGET_IS` through the screen's scale.
+                        at.entry.size.w - measure.px(42) - at.submit.size.w,
                         measure.metrics(),
                         colours.entry,
                         colours.muted,
@@ -612,6 +640,15 @@ impl Measure {
     pub(crate) fn of(scale: TextScale) -> Self {
         Self {
             percent: i32::from(scale.as_percent()),
+        }
+    }
+
+    /// Measures for this text size on a screen drawn at `display`: the two
+    /// multiplied, so a person who asked for larger text on a dense screen
+    /// gets both. At a display of one this is [`Measure::of`] exactly.
+    pub(crate) fn at(scale: TextScale, display: DisplayScale) -> Self {
+        Self {
+            percent: i32::from(scale.as_percent()) * i32::from(display.per_cent()) / 100,
         }
     }
 

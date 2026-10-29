@@ -173,18 +173,25 @@ pub(crate) enum TheEntryIs {
     Refused,
 }
 
-/// Rasterise the screen's rounded shapes for this layout, at this scale.
+/// Rasterise the screen's rounded shapes for this layout, at this scale, onto
+/// an output of `pixels`.
+///
+/// **The output's own pixels, not the logical screen converted back.** At a
+/// fractional scale a screen laid out at its pixels divided by the scale comes
+/// back a pixel or two short when multiplied again, and that strip at the
+/// right or bottom edge would be painted by nothing.
 ///
 /// [`None`] when the screen has no area, which is the one case with nothing to
 /// draw rather than a refusal worth reporting.
 #[must_use]
 pub(crate) fn sign_in_surface(
     at: &SignInLayout,
+    pixels: (i32, i32),
     entry: TheEntryIs,
     scale: Scale<f64>,
     colours: TheColours,
 ) -> Option<Washed> {
-    let area: Rectangle<i32, Physical> = at.screen.to_physical_precise_round(scale);
+    let area: Rectangle<i32, Physical> = Rectangle::from_size(pixels.into());
     if area.size.w <= 0 || area.size.h <= 0 {
         return None;
     }

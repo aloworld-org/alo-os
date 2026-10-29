@@ -71,6 +71,7 @@ fn drawn(screen: &SignInScreen<NoDoor>, look: SignInLook) -> SignInPicture {
         (800, 600),
         look,
         super::WhoseScreen::ItsOwn,
+        crate::display_scale::DisplayScale::ONE,
     )
     .unwrap()
 }
@@ -209,6 +210,7 @@ fn an_output_that_cannot_hold_the_screen_is_refused() {
                     size,
                     light(),
                     super::WhoseScreen::ItsOwn,
+                    crate::display_scale::DisplayScale::ONE,
                 ),
                 Err(RenderError::SignInScene)
             ),
@@ -244,6 +246,7 @@ fn the_waiting_field_is_told_apart_by_shape() {
             (800, 600),
             light(),
             super::WhoseScreen::InsideAnother,
+            crate::display_scale::DisplayScale::ONE,
         )
         .unwrap()
     };
@@ -445,4 +448,96 @@ fn marked(ink: &crate::painted::Inked) -> usize {
                 > 24
         })
         .count()
+}
+
+/// The screen of a machine whose one account is `ada`, on an output of `size`
+/// drawn at `display`.
+fn adas_screen_at(size: (i32, i32), display: crate::display_scale::DisplayScale) -> SignInPicture {
+    let mut store = Accounts::none().unwrap();
+    store.created("ada", 1000, "irrelevant").unwrap();
+    let words = crate::what_this_machine_can_say().unwrap();
+    let screen = SignInScreen::of(Ok(Greeting::of(store, 1000, NoDoor)), words);
+    let mut labels = WindowControlLabels::new().unwrap();
+    picture(
+        screen.shows(),
+        &mut labels,
+        screen.words(),
+        size,
+        light(),
+        super::WhoseScreen::ItsOwn,
+        display,
+    )
+    .unwrap()
+}
+
+/// **At 200 per cent everything is drawn twice the size, in twice the
+/// place.** A 3840 × 2160 screen at 200 against a 1920 × 1080 one at 100: the
+/// same pieces of text, each about twice as large and twice as far from the
+/// corner, the dots of a typed PIN twice as large, and the rounded shapes
+/// covering the whole output.
+///
+/// *About*, because a line of type drawn twice the size is not exactly twice
+/// the pixels of its ink: a glyph's edge rounds to a pixel either way. A
+/// tenth and four pixels is far smaller than the halving this replaces.
+#[test]
+fn at_two_hundred_everything_is_twice_the_size() {
+    let one = crate::display_scale::DisplayScale::ONE;
+    let two = crate::display_scale::DisplayScale::of_per_cent(200);
+    let sparse = adas_screen_at((1920, 1080), one);
+    let dense = adas_screen_at((3840, 2160), two);
+
+    let surface = dense
+        .surface
+        .as_ref()
+        .expect("the dense screen has a surface");
+    assert_eq!(
+        (surface.area.size.w, surface.area.size.h),
+        (3840, 2160),
+        "the rounded shapes do not cover the whole dense output"
+    );
+    assert_eq!(
+        sparse.inked.len(),
+        dense.inked.len(),
+        "a different number of lines was drawn at 200"
+    );
+    let about_twice = |at_one: i32, at_two: i32| (at_two - 2 * at_one).abs() <= 4 + at_one / 5;
+    for (small, large) in sparse.inked.iter().zip(&dense.inked) {
+        let (a, b) = (small.area, large.area);
+        assert!(
+            about_twice(a.loc.x, b.loc.x)
+                && about_twice(a.loc.y, b.loc.y)
+                && about_twice(a.size.w, b.size.w)
+                && about_twice(a.size.h, b.size.h),
+            "a line at {a:?} at 100 is at {b:?} at 200, not twice"
+        );
+        assert!(
+            marked(large) > 2 * marked(small),
+            "a line at {b:?} has no more ink at 200 than at 100"
+        );
+    }
+}
+
+/// **A screen too small for the scale is refused, not drawn over itself**:
+/// 640 × 480 at 200 is 320 × 240 logical, under the smallest the screen lays
+/// out for. `crate::the_sign_in_screens_scale` holds the scale down so this
+/// is never asked of a real screen; the raster refuses it anyway.
+#[test]
+fn a_screen_too_small_for_its_scale_is_refused() {
+    let words = crate::what_this_machine_can_say().unwrap();
+    let mut store = Accounts::none().unwrap();
+    store.created("ada", 1000, "irrelevant").unwrap();
+    let screen = SignInScreen::of(Ok(Greeting::of(store, 1000, NoDoor)), words);
+    let mut labels = WindowControlLabels::new().unwrap();
+    assert!(matches!(
+        picture(
+            screen.shows(),
+            &mut labels,
+            screen.words(),
+            (640, 480),
+            light(),
+            super::WhoseScreen::ItsOwn,
+            crate::display_scale::DisplayScale::of_per_cent(200),
+        ),
+        Err(RenderError::SignInScene)
+    ));
 }
