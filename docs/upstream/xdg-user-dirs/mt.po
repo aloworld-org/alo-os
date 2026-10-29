@@ -1,0 +1,62 @@
+# Maltese translation for xdg-user-dirs — A PROPOSAL, NOT SUBMITTED.
+#
+# DO NOT SEND THIS UPSTREAM AS IT IS.
+#
+# Status: NEEDS REVIEW BY A MALTESE SPEAKER. Every msgstr below was written
+# by an alo OS contributor who is not one, on 2026-10-28, from general
+# knowledge of Maltese computing vocabulary. Nobody who reads Maltese has
+# checked a single line. Submitting it is the owner's decision, made
+# separately, and only after that review.
+#
+# Why it exists: xdg-user-dirs, which every Linux desktop names a person's
+# home folders with, ships no Maltese catalogue (measured 2026-10-28 in
+# Fedora 42's xdg-user-dirs 0.18: 22 of the 24 official EU languages are
+# there, English is the source, Maltese is the one missing). So a Maltese
+# person's folders are named in English on every Linux desktop, alo OS's
+# included (ADR 0137). The remedy is a translation in xdg-user-dirs itself,
+# where every desktop gets it, not a list of alo OS's own.
+#
+# What a reviewer is asked:
+#   - Is each name the ordinary word a Maltese speaker expects for this folder
+#     on a computer (the one Windows and macOS use in Maltese, if they do)?
+#   - Is a name better left in English where Maltese usage keeps English
+#     (msgstr "" leaves the English name)?
+#   - Each name becomes a real folder: no slash, no leading dot.
+#
+# The eight msgids are xdg-user-dirs' own, from /etc/xdg/user-dirs.defaults.
+msgid ""
+msgstr ""
+"Project-Id-Version: xdg-user-dirs\n"
+"Language: mt\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=4; plural=(n==1 ? 0 : n==0 || ( n%100>1 && n%100<11) ? 1 : (n%100>10 && n%100<20 ) ? 2 : 3);\n"
+
+# Unsure: Maltese computing usage commonly keeps "Desktop".
+msgid "Desktop"
+msgstr "Desktop"
+
+msgid "Documents"
+msgstr "Dokumenti"
+
+# Unsure: "Tniżżil" is the noun for a download; usage may keep "Downloads".
+msgid "Downloads"
+msgstr "Tniżżil"
+
+msgid "Music"
+msgstr "Mużika"
+
+msgid "Pictures"
+msgstr "Stampi"
+
+msgid "Public"
+msgstr "Pubbliku"
+
+# Unsure: "Mudelli" (models, patterns) is offered for document templates.
+msgid "Templates"
+msgstr "Mudelli"
+
+# Unsure: "Vidjows" is a loan; "Filmati" is also used.
+msgid "Videos"
+msgstr "Vidjows"
