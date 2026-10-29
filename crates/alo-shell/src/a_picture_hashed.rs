@@ -9,7 +9,7 @@
 
 use smithay::utils::{Physical, Rectangle};
 
-use crate::painted::{Inked, Washed};
+use crate::painted::{Inked, Solid, Washed};
 
 /// A running hash a test feeds a picture into, part by part.
 pub(crate) struct Hashed {
@@ -44,6 +44,14 @@ impl Hashed {
     pub(crate) fn washed(&mut self, washed: &Washed) {
         self.area(washed.area);
         self.eat(&washed.pixels);
+    }
+
+    /// Flat shapes, in painting order.
+    pub(crate) fn solids(&mut self, solids: &[Solid]) {
+        for solid in solids {
+            self.area(solid.area);
+            self.eat(&solid.colour);
+        }
     }
 
     /// Words, in painting order.

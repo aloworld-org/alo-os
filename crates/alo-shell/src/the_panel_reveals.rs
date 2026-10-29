@@ -169,6 +169,7 @@ mod tests {
             size,
             WhichEdge::Right,
             WhetherRevealed::Revealed,
+            crate::display_scale::DisplayScale::ONE,
         )
         .unwrap();
         ThePanelAsDrawn::of(&panel, picture)

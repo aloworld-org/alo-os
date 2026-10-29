@@ -33,6 +33,17 @@
 //! rather than rounded into the nearest bucket, because a table that quietly
 //! absorbs the one value that does not fit stops being a measurement.
 //!
+//! # Through the person's text size and the display's scale, both
+//!
+//! Every measure above is logical, and reaches the display through the
+//! person's text size **and** this display's `crate::display_scale::DisplayScale`
+//! (`px` below). Until 2026-10-28 it went through the text size only — the
+//! fault `CLAUDE.md` names, a figure that looks derived and is half the size it
+//! should be on a dense screen — so on a 200 per cent laptop the rail was half
+//! the size of the Dock beside it. The share of the display the rail starts at
+//! needs neither: a tenth of a dense screen is still a tenth. At 100 the scale
+//! is the identity, and an ordinary screen draws exactly what it drew before.
+//!
 //! # Why the reserved column is not the rail
 //!
 //! The rail is what is drawn. The **reserved column** is what the panel owns
@@ -69,6 +80,7 @@ use smithay::utils::{Physical, Point, Rectangle, Size};
 
 use crate::RenderError;
 use crate::desktop_look::DesktopLook;
+use crate::display_scale::DisplayScale;
 use crate::painted::Solid;
 
 /// The largest display side, in pixels, the panel is laid out for. The same
@@ -133,8 +145,8 @@ pub(crate) struct PanelPicture {
     pub(crate) solids: Vec<Solid>,
 }
 
-/// The column the put-aside panel owns on a display of `size`, or `None` when
-/// the display is too narrow to hold one.
+/// The column the put-aside panel owns on a display of `size` drawn at
+/// `scale`, or `None` when the display is too narrow to hold one.
 ///
 /// **Two surfaces need this rectangle and neither draws the other.** The panel
 /// reserves it so a pointer in it belongs to the panel; the Dock's overflow
@@ -157,14 +169,15 @@ pub(crate) fn the_column_it_reserves(
     look: DesktopLook,
     size: (i32, i32),
     edge: WhichEdge,
+    scale: DisplayScale,
 ) -> Option<Rectangle<i32, Physical>> {
     let (width, height) = size;
     if width > LARGEST_SIDE || height > LARGEST_SIDE || width <= 0 || height <= 0 {
         return None;
     }
     let measure = look.measure();
-    let icon = px(measure, ICON).ok()?;
-    let margin = px(measure, MARGIN).ok()?;
+    let icon = px(measure, scale, ICON).ok()?;
+    let margin = px(measure, scale, MARGIN).ok()?;
     let clearance = margin.saturating_mul(3);
 
     let rail_width = icon.saturating_add(margin.saturating_mul(2));
@@ -185,7 +198,7 @@ pub(crate) fn the_column_it_reserves(
     ))
 }
 
-/// Lay `panel` out on a display of `size` and rasterise it.
+/// Lay `panel` out on a display of `size` drawn at `scale`, and rasterise it.
 ///
 /// An empty panel has a rail of no height and no slots. **That is the true
 /// answer rather than a placeholder** — a person who has put nothing aside has
@@ -203,6 +216,7 @@ pub(crate) fn picture(
     size: (i32, i32),
     edge: WhichEdge,
     revealed: WhetherRevealed,
+    scale: DisplayScale,
 ) -> Result<PanelPicture, RenderError> {
     let (width, height) = size;
     if width > LARGEST_SIDE || height > LARGEST_SIDE || width <= 0 || height <= 0 {
@@ -211,9 +225,9 @@ pub(crate) fn picture(
     let palette = look.palette().map_err(|_| RenderError::AccentRefused)?;
     let measure = look.measure();
 
-    let icon = px(measure, ICON)?;
-    let margin = px(measure, MARGIN)?;
-    let gap = px(measure, GAP)?;
+    let icon = px(measure, scale, ICON)?;
+    let margin = px(measure, scale, MARGIN)?;
+    let gap = px(measure, scale, GAP)?;
     let clearance = margin.saturating_mul(3);
 
     let rail_width = icon.saturating_add(margin.saturating_mul(2));
@@ -221,7 +235,7 @@ pub(crate) fn picture(
     // overflow list has to open clear of, and two files deriving it would be
     // two files that agree today. [`the_column_it_reserves`] is the one answer
     // both read.
-    let Some(reserved) = the_column_it_reserves(look, size, edge) else {
+    let Some(reserved) = the_column_it_reserves(look, size, edge, scale) else {
         return Err(RenderError::DesktopScene);
     };
 
@@ -313,11 +327,21 @@ pub(crate) fn picture(
 ///
 /// **This is the whole of how the standing rule is kept here.** A logical
 /// measure is what the design is drawn in; what a display shows is that measure
-/// through the person's text size and this screen's scale. Nothing below this
-/// line is a pixel count somebody wrote down.
-fn px(measure: crate::desktop_look::Measure, logical: u32) -> Result<i32, RenderError> {
-    let logical = i32::try_from(logical).map_err(|_| RenderError::DesktopScene)?;
-    Ok(measure.px(logical))
+/// through the person's text size and this screen's scale — both, multiplied,
+/// so a person who asked for larger text on a dense screen gets both. Nothing
+/// below this line is a pixel count somebody wrote down.
+fn px(
+    measure: crate::desktop_look::Measure,
+    scale: DisplayScale,
+    logical: u32,
+) -> Result<i32, RenderError> {
+    let on_this_display = scale.px(logical);
+    // A measure too large to be a pixel count is refused rather than handed to
+    // a multiplication that would overflow.
+    if on_this_display == i32::MAX {
+        return Err(RenderError::DesktopScene);
+    }
+    Ok(measure.px(on_this_display))
 }
 
 #[cfg(test)]
@@ -337,7 +361,7 @@ mod tests {
     /// The design's own frame, used as *a* display rather than *the* display.
     const AS_DRAWN: (i32, i32) = (1440, 960);
 
-    fn a_look() -> DesktopLook {
+    pub(super) fn a_look() -> DesktopLook {
         noon_look(&an_appearance(), Direction::LeftToRight)
     }
 
@@ -351,7 +375,7 @@ mod tests {
         )
     }
 
-    fn a_panel_holding(how_many: usize) -> Panel {
+    pub(super) fn a_panel_holding(how_many: usize) -> Panel {
         let mut panel = Panel::new();
         for which in 0..how_many {
             panel
@@ -366,13 +390,24 @@ mod tests {
         panel
     }
 
-    fn laid_out(how_many: usize, size: (i32, i32)) -> PanelPicture {
+    pub(super) fn laid_out(how_many: usize, size: (i32, i32)) -> PanelPicture {
+        laid_out_at(how_many, size, DisplayScale::ONE)
+    }
+
+    /// The panel holding `how_many` on the right of a display of `size`, at
+    /// `scale`.
+    pub(super) fn laid_out_at(
+        how_many: usize,
+        size: (i32, i32),
+        scale: DisplayScale,
+    ) -> PanelPicture {
         picture(
             &a_panel_holding(how_many),
             a_look(),
             size,
             WhichEdge::Right,
             WhetherRevealed::Revealed,
+            scale,
         )
         .unwrap()
     }
@@ -555,6 +590,7 @@ mod tests {
             AS_DRAWN,
             WhichEdge::Left,
             WhetherRevealed::Revealed,
+            DisplayScale::ONE,
         )
         .unwrap();
 
@@ -575,7 +611,8 @@ mod tests {
                 a_look(),
                 (80, 600),
                 WhichEdge::Right,
-                WhetherRevealed::Revealed
+                WhetherRevealed::Revealed,
+                DisplayScale::ONE
             )
             .is_err()
         );
@@ -585,7 +622,8 @@ mod tests {
                 a_look(),
                 (0, 600),
                 WhichEdge::Right,
-                WhetherRevealed::Revealed
+                WhetherRevealed::Revealed,
+                DisplayScale::ONE
             )
             .is_err()
         );
@@ -595,7 +633,8 @@ mod tests {
                 a_look(),
                 (1440, 0),
                 WhichEdge::Right,
-                WhetherRevealed::Revealed
+                WhetherRevealed::Revealed,
+                DisplayScale::ONE
             )
             .is_err()
         );
@@ -668,6 +707,7 @@ mod tests {
             AS_DRAWN,
             WhichEdge::Right,
             WhetherRevealed::Revealed,
+            DisplayScale::ONE,
         )
         .unwrap();
         let hidden = picture(
@@ -676,6 +716,7 @@ mod tests {
             AS_DRAWN,
             WhichEdge::Right,
             WhetherRevealed::Concealed,
+            DisplayScale::ONE,
         )
         .unwrap();
 
@@ -711,6 +752,7 @@ mod tests {
             AS_DRAWN,
             WhichEdge::Right,
             WhetherRevealed::Concealed,
+            DisplayScale::ONE,
         )
         .unwrap();
 
@@ -720,3 +762,8 @@ mod tests {
         );
     }
 }
+
+/// The panel at a display's scale against the same panel at one.
+#[cfg(test)]
+#[path = "panel_raster_scale_tests.rs"]
+mod scale_tests;

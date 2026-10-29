@@ -361,6 +361,9 @@ pub(crate) fn picture(
         } else {
             crate::panel_raster::WhetherRevealed::Concealed
         },
+        // **This display's own scale**, the one the Dock is drawn at, so the
+        // rail beside it is the same size to the eye on a dense screen.
+        crate::display_scale::DisplayScale::of_per_cent(display_scale),
     )?;
 
     // **After the panel, because the band's right edge is the panel's left one.**
