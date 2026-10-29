@@ -31,7 +31,9 @@ use std::path::PathBuf;
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::time::{Duration, SystemTime};
 
-use alo_agent::{HowFar, NotAnswered, TheDoor, WhatHappened, driving, driving_after};
+use alo_agent::{
+    HowFar, NotAnswered, TheDoor, WhatHappened, driving, driving_after, driving_until_stopped,
+};
 use alo_capability::{Approvals, Given, Grant, Grantee, Grants, Proposal, Reach, Verbs};
 use alo_files::{OnThisMachine, Resolving as _};
 use alo_instructing::{Instructions, WhatItMayReach};
@@ -613,4 +615,106 @@ fn a_follow_up_carries_the_earlier_conversation_in_every_question_it_asks() {
         !first.the_question(0).contains("The earlier conversation:"),
         "a first request was shown a conversation nobody had"
     );
+}
+
+/// **A Stop between rounds ends the turn, and nothing more is asked** (ADR
+/// 0139): the read that was answered is kept, and the model is not asked again.
+#[test]
+fn a_stop_between_rounds_ends_the_turn_and_asks_nothing_more() {
+    use std::cell::Cell;
+
+    let verbs = the_verbs();
+    let mut door = ADoorThatAnswers::with(vec![
+        the_model_said(&a_read_of("/home/anna/Invoices")),
+        Ok(it_listed("march.pdf")),
+        the_model_said("there is one"),
+    ]);
+    let asked_so_far = Cell::new(0_usize);
+
+    let mut counting = Counting {
+        door: &mut door,
+        asked: &asked_so_far,
+    };
+    let happened = driving_until_stopped(
+        &alo_instructing::TheConversationSoFar::nothing(),
+        "list my invoices",
+        &verbs,
+        &WhatItMayReach::not_said(),
+        &mut counting,
+        HowFar::THE_ORDINARY,
+        Instructions::SHOWN_TO_A_TURN,
+        &|| asked_so_far.get() >= 2,
+    );
+    let WhatHappened::ItWasStopped { after } = happened else {
+        panic!("a stopped turn did not say it was stopped: {happened:?}");
+    };
+    assert_eq!(after.len(), 1, "the read before the Stop was lost");
+    assert_eq!(
+        asked_so_far.get(),
+        2,
+        "the model was asked again after the Stop"
+    );
+}
+
+/// **A change proposed and then stopped is not held for an answer**: the turn
+/// ends as stopped, so the change lapses with it and is never answered by the
+/// Stop.
+#[test]
+fn a_change_waiting_when_stop_arrives_is_never_held_or_answered() {
+    let verbs = the_verbs();
+    let (approvals, strings) = a_change_really_waiting();
+    let standing = standing_in(&approvals, &strings);
+    let mut door = ADoorThatAnswers::with(vec![
+        the_model_said(&a_proposed_rename()),
+        Ok(ToAnAgent::Proposed(standing)),
+    ]);
+    let stopped = std::cell::Cell::new(false);
+    let mut stopping = StopsAfterAnswering {
+        door: &mut door,
+        stopped: &stopped,
+    };
+    let happened = driving_until_stopped(
+        &alo_instructing::TheConversationSoFar::nothing(),
+        "rename the scan",
+        &verbs,
+        &WhatItMayReach::not_said(),
+        &mut stopping,
+        HowFar::THE_ORDINARY,
+        Instructions::SHOWN_TO_A_TURN,
+        &|| stopped.get(),
+    );
+    assert!(
+        matches!(happened, WhatHappened::ItWasStopped { .. }),
+        "{happened:?}"
+    );
+    assert!(!happened.is_waiting_for_the_person());
+}
+
+/// A door that counts what it was asked.
+struct Counting<'a> {
+    door: &'a mut ADoorThatAnswers,
+    asked: &'a std::cell::Cell<usize>,
+}
+
+impl TheDoor for Counting<'_> {
+    fn asking(&mut self, request: &FromAnAgent) -> Result<ToAnAgent, NotAnswered> {
+        self.asked.set(self.asked.get() + 1);
+        self.door.asking(request)
+    }
+}
+
+/// A door after whose second answer the person presses Stop.
+struct StopsAfterAnswering<'a> {
+    door: &'a mut ADoorThatAnswers,
+    stopped: &'a std::cell::Cell<bool>,
+}
+
+impl TheDoor for StopsAfterAnswering<'_> {
+    fn asking(&mut self, request: &FromAnAgent) -> Result<ToAnAgent, NotAnswered> {
+        let answered = self.door.asking(request);
+        if self.door.asked.len() >= 2 {
+            self.stopped.set(true);
+        }
+        answered
+    }
 }

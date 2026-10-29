@@ -271,11 +271,12 @@ pub(crate) fn furniture(
     // **The one button is a circle**, not a well: its radius is half its side,
     // and `circles` is the shape that draws one with an edge rather than a
     // staircase.
-    let (bx, by) = inside(controls.the_one_button, controls.from_the_top);
-    let button = [Rectangle::new(
-        (bx, by).into(),
-        (px(m::A_CONTROL_IS), px(m::A_CONTROL_IS)).into(),
-    )];
+    // From the one place that says where it is, which a press is tested
+    // against too (`crate::a_press_on_the_one_button`).
+    let button: Vec<Rectangle<i32, Physical>> =
+        crate::a_press_on_the_one_button::the_one_buttons_place(at)
+            .into_iter()
+            .collect();
 
     let measure = look.measure().on(scale);
     // **Measured before the panel is rasterised, and that order is forced twice

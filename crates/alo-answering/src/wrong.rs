@@ -172,6 +172,10 @@ pub enum WentWrong {
     /// start of what they said (ADR 0138). Read off the place's own refusal,
     /// never guessed from a length.
     TooLongForTheModel,
+    /// The person stopped the question while it was on its way, and the
+    /// connection was shut so nothing more left (ADR 0139). Not a failure of
+    /// the place, and said as what the person did rather than what went wrong.
+    Stopped,
 }
 
 impl WentWrong {
@@ -190,6 +194,7 @@ impl WentWrong {
             Self::RanOut => words::RAN_OUT,
             Self::NoWayThere => words::NO_WAY_THERE,
             Self::TooLongForTheModel => words::TOO_LONG_FOR_THE_MODEL,
+            Self::Stopped => words::STOPPED_ON_ITS_WAY,
         }
     }
 
@@ -227,6 +232,7 @@ impl WentWrong {
             | Self::HavingTrouble(_)
             | Self::NoWayThere
             | Self::TooLongForTheModel
+            | Self::Stopped
             | Self::RefusedThere(_) => None,
         }
     }

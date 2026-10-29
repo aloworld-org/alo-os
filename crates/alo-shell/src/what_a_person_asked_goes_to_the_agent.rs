@@ -112,6 +112,22 @@ pub struct WhatCameBack {
     /// at once, which is what happens to it for any other answer, it lets an
     /// agent with nothing waiting go immediately.
     pub the_turn: Option<UnixStream>,
+    /// **Whether the person stopped this request**, and the agent has now
+    /// gone: the one moment the window may say *stopped* (ADR 0139).
+    pub stopped: bool,
+}
+
+impl WhatCameBack {
+    /// A request the person stopped, after the agent went.
+    pub(crate) const fn stopped(who: WhoAsked) -> Self {
+        Self {
+            who,
+            said: String::new(),
+            the_machines_fault: false,
+            the_turn: None,
+            stopped: true,
+        }
+    }
 }
 
 /// The door a person's words go out of.
@@ -120,6 +136,8 @@ pub struct TheAgentsDoor {
     socket: PathBuf,
     /// Threads post here; the frame loop drains.
     posting: Sender<WhatCameBack>,
+    /// The requests still being read, so a Stop can reach one.
+    running: crate::stopping_what_was_asked::TheRequestsRunning,
     /// What has come back and not been read.
     arriving: Receiver<WhatCameBack>,
 }
@@ -138,6 +156,7 @@ impl TheAgentsDoor {
         Self {
             socket: socket.to_owned(),
             posting,
+            running: crate::stopping_what_was_asked::TheRequestsRunning::default(),
             arriving,
         }
     }
@@ -187,14 +206,17 @@ impl TheAgentsDoor {
         let earlier = earlier.written();
         let may_reach: Vec<std::path::PathBuf> = may_reach.to_vec();
         let posting = self.posting.clone();
+        let running = self.running.clone();
         // A thread that cannot be started is reported the same way a socket
         // that cannot be reached is: as something wrong with the machine,
         // beside the request rather than instead of it.
         let started = std::thread::Builder::new()
             .name("alo-asking".to_owned())
             .spawn(move || {
-                let came_back = ask_and_wait(&socket, &request, &earlier, &may_reach);
-                drop(posting.send(came_back.into_what_came_back(who)));
+                let came_back =
+                    ask_and_wait(&socket, &request, &earlier, &may_reach, &running, who);
+                let stopped = running.ended(who);
+                drop(posting.send(came_back.into_what_came_back(who, stopped)));
             });
         if let Err(why) = started {
             drop(self.posting.send(WhatCameBack {
@@ -202,8 +224,24 @@ impl TheAgentsDoor {
                 said: format!("this machine could not ask: {why}"),
                 the_machines_fault: true,
                 the_turn: None,
+                stopped: false,
             }));
         }
+    }
+
+    /// **Stop the request from `who`** (ADR 0139): shut this side's sending
+    /// half, which the agent hears as the person stopping. Answers whether a
+    /// request was running to stop. *Stopped* arrives later, from
+    /// [`Self::whatever_came_back`], when the agent's side has closed.
+    pub fn stop(&self, who: WhoAsked) -> bool {
+        self.running.stop(who)
+    }
+
+    /// **Stop a turn a card is holding open** for a person's answer: the same
+    /// Stop, on the connection the card kept, with *stopped* said once the
+    /// agent has gone. The change on the card lapses with the turn.
+    pub fn stop_a_held_turn(&self, who: WhoAsked, turn: UnixStream) {
+        crate::stopping_what_was_asked::stop_a_held_turn(who, turn, self.posting.clone());
     }
 
     /// Everything that has come back since this was last asked.
@@ -232,19 +270,21 @@ enum Said {
 
 impl Said {
     /// The same thing, addressed to whoever asked.
-    fn into_what_came_back(self, who: WhoAsked) -> WhatCameBack {
+    fn into_what_came_back(self, who: WhoAsked, stopped: bool) -> WhatCameBack {
         match self {
             Self::TheAgent(said, socket) => WhatCameBack {
                 who,
                 said,
                 the_machines_fault: false,
                 the_turn: Some(socket),
+                stopped,
             },
             Self::TheMachine(said) => WhatCameBack {
                 who,
                 said,
                 the_machines_fault: true,
                 the_turn: None,
+                stopped,
             },
         }
     }
@@ -267,6 +307,8 @@ fn ask_and_wait(
     request: &str,
     earlier: &str,
     may_reach: &[std::path::PathBuf],
+    running: &crate::stopping_what_was_asked::TheRequestsRunning,
+    who: WhoAsked,
 ) -> Said {
     let machine = |why: &dyn std::fmt::Display| Said::TheMachine(format!("{why}"));
 
@@ -276,6 +318,9 @@ fn ask_and_wait(
             socket.display()
         ));
     };
+    // **Known as running from the moment it connects**, so a Stop pressed
+    // while it is being written or answered reaches it (ADR 0139).
+    running.began(who, &talking);
     if let Err(why) = talking.set_read_timeout(Some(PATIENCE)) {
         return machine(&why);
     }

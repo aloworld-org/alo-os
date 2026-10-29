@@ -282,6 +282,26 @@ impl ATask {
         std::mem::take(&mut self.draft)
     }
 
+    /// **The change being asked about lapsed unanswered**, because its turn
+    /// ended: it is neither allowed nor denied, and the answers given are
+    /// unchanged (ADR 0139).
+    pub fn the_question_lapsed(&mut self) {
+        self.permissions.lapsed();
+    }
+
+    /// What the person allowed in this task, which is what it changed: the
+    /// sentences of every change they said yes to, in order.
+    #[must_use]
+    pub fn what_it_changed(&self) -> crate::changed::WhatChanged {
+        let mut changed = crate::changed::WhatChanged::nothing();
+        for (sentence, answered) in self.answers.each() {
+            if *answered == Answered::AllowedOnce {
+                changed.and_then(sentence.clone());
+            }
+        }
+        changed
+    }
+
     /// The work ended, having changed this.
     pub fn it_stopped(&mut self, changed: crate::changed::WhatChanged) {
         self.stopping = Stopping::stopped(changed);

@@ -91,7 +91,9 @@ use serde::{Deserialize, Serialize};
 use ureq::Agent;
 use ureq::config::Config;
 use ureq::unversioned::resolver::{ResolvedSocketAddrs, Resolver};
-use ureq::unversioned::transport::{DefaultConnector, NextTimeout};
+use ureq::unversioned::transport::{
+    ConnectProxyConnector, Connector as _, NextTimeout, RustlsConnector,
+};
 
 use crate::answer::Answer;
 use crate::question::{NotAQuestion, Question};
@@ -629,8 +631,28 @@ pub(crate) fn put_held_to_a_schema(
 pub(crate) type Where<'a> = (&'a [SocketAddr], Option<std::num::NonZeroU32>);
 
 /// The one road all of them take: this address, these bytes, that long, that
-/// way out.
+/// way out — **and stoppable while it is on its way** (ADR 0139): a question a
+/// person stopped ends as [`WentWrong::Stopped`], whatever the client made of
+/// its connection being shut.
 fn sending(
+    endpoint: &str,
+    key: Option<&Secret>,
+    body: &[u8],
+    waiting: Duration,
+    to: Where<'_>,
+    through: Option<ureq::Proxy>,
+    vouching: Option<Vouching<'_>>,
+) -> Result<String, WentWrong> {
+    let in_flight = crate::the_question_in_flight::begun();
+    let sent = sending_once(endpoint, key, body, waiting, to, through, vouching);
+    match sent {
+        Err(_) if in_flight.was_stopped() => Err(WentWrong::Stopped),
+        sent => sent,
+    }
+}
+
+/// One attempt at [`sending`], before what a Stop made of it is read.
+fn sending_once(
     endpoint: &str,
     key: Option<&Secret>,
     body: &[u8],
@@ -686,7 +708,13 @@ fn sending(
             crate::held_to::HeldTo::the_interface(interface),
             only_these,
         ),
-        None => Agent::with_parts(building.build(), DefaultConnector::new(), only_these),
+        None => Agent::with_parts(
+            building.build(),
+            ().chain(ConnectProxyConnector::default())
+                .chain(crate::the_question_in_flight::Stoppable)
+                .chain(RustlsConnector::default()),
+            only_these,
+        ),
     };
     let request = agent.post(answers_url(endpoint));
     // The key is handed the request rather than the other way round: it cannot

@@ -93,3 +93,24 @@ never before the request, because an older agent reads the request from the
 position it knows and never reads past it. That is what happens to line 3
 today: an agent written before 2026-10-28 reads lines 1 and 2, answers the
 follow-up as a first request, and never sees the conversation.
+
+## Stop
+
+*Added 2026-10-29, [ADR 0139](../decisions/0139-stop-reaches-alo-and-cancels-what-it-sent.md).*
+
+**A shell that shuts its sending side while the turn is running asks the agent
+to stop.** The shell writes nothing more after the request in any case, so the
+half-close is the whole message. The agent then asks the daemon for nothing
+more, shuts its own sending side to the daemon (which cancels a question on its
+way to a provider; `docs/contracts/daemon-protocol.md`, *Stop*), and exits.
+**The agent's side closing is the shell's only evidence that alo stopped**, and
+the only moment a window may say so.
+
+- **A caller that shuts its sending side as soon as it has written** — `alo-ask`
+  does — has said *that was all*, and is never read as stopping: the agent sees
+  that half-close already there where the third line could have been.
+- **After a proposal**, the shell holding the connection open for the person's
+  answer stops the turn the same way; the change on the card lapses with the
+  turn and is never answered by a Stop.
+- **An agent written before this** reads the half-close as the person having
+  answered, and ends the turn too.

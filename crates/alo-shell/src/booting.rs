@@ -259,6 +259,8 @@ pub fn what_this_machine_can_say() -> Result<Strings, WouldNotStand> {
     crate::the_pickers_words::declare_the_pickers_words(&mut vocabulary)
         .map_err(|why| WouldNotStand::Words(why.to_string()))?;
     // **What a task window says about a reply**, declared for the note above.
+    crate::the_closing_words::declare_the_closing_words(&mut vocabulary)
+        .map_err(|why| WouldNotStand::Words(why.to_string()))?;
     crate::the_reply_boxs_words::declare_the_reply_boxs_words(&mut vocabulary)
         .map_err(|why| WouldNotStand::Words(why.to_string()))?;
     // **Every translation this machine has, put on the words**, so a language

@@ -729,24 +729,31 @@ impl<'a> Serving<'a> {
                 // two loops above are the only callers, and answered here
                 // rather than assumed away.
                 (None, _) | (Some(_), None) => Message::Ended,
-                (Some(line), Some((turning, questions))) => one_message(
-                    line,
-                    |said| {
-                        what_an_agent_said(
-                            said,
-                            turning,
-                            questions,
-                            Some(&corridor),
-                            granted.holding(),
-                            strings,
-                            self.terms.standing,
-                            now,
-                        )
-                        .written()
-                        .ok()
-                    },
-                    |why| ToAnAgent::refused(&why.said(strings)).written().ok(),
-                ),
+                (Some(line), Some((turning, questions))) => {
+                    // **Watched while it is answered**, so an agent that hangs
+                    // up during its question — the person pressed Stop — has
+                    // the provider's connection shut at once (ADR 0139). The
+                    // watcher ends with the message.
+                    let _watching = crate::a_stop_while_asking::watching(line.waiting_on());
+                    one_message(
+                        line,
+                        |said| {
+                            what_an_agent_said(
+                                said,
+                                turning,
+                                questions,
+                                Some(&corridor),
+                                granted.holding(),
+                                strings,
+                                self.terms.standing,
+                                now,
+                            )
+                            .written()
+                            .ok()
+                        },
+                        |why| ToAnAgent::refused(&why.said(strings)).written().ok(),
+                    )
+                }
             };
             if answered == Message::Answered {
                 served.messages = served.messages.saturating_add(1);

@@ -27,6 +27,9 @@ use crate::the_tasks_a_person_opened::WhichTask;
 /// evdev's codes for Alt and F4.
 const LEFT_ALT: u32 = 56;
 const F4: u32 = 62;
+const TAB: u32 = 15;
+const ENTER: u32 = 28;
+const ESCAPE: u32 = 1;
 
 /// A daemon holding what a test tells it to, and remembering every answer.
 #[derive(Debug, Default)]
@@ -68,6 +71,8 @@ fn in_english() -> alo_strings::Strings {
     let mut vocabulary = alo_strings::Vocabulary::empty();
     crate::the_cards_words::declare_the_cards_words(&mut vocabulary)
         .expect("the card's words declare");
+    crate::the_closing_words::declare_the_closing_words(&mut vocabulary)
+        .expect("the closing words declare");
     crate::the_reply_boxs_words::declare_the_reply_boxs_words(&mut vocabulary)
         .expect("the reply box's words declare");
     alo_strings::Strings::of(vocabulary)
@@ -211,8 +216,9 @@ fn a_closed_window_is_not_placed_again() {
     );
 }
 
-/// **A running task does not close**, and keeps its window and its keyboard.
-/// Closing it is *Cancel* until the three choices exist.
+/// **A running task does not close at the press**: it is asked about, and
+/// keeps its window and its keyboard while the person chooses.
+/// Nothing stops until *Stop and close* is chosen (ADR 0139).
 #[test]
 fn a_running_task_does_not_close() {
     let (_runtime, mut server) = a_session();
@@ -302,4 +308,124 @@ fn an_answer_for_another_task_still_reaches_it() {
     };
     assert_eq!(said_last(second), "An invoice asks to be paid.");
     assert_eq!(said_last(first), "Your invoices are tidy.");
+}
+
+/// One key, pressed and released, the way a person presses it.
+fn press(server: &mut Server, code: u32, daemon: &ADaemon) {
+    let strings = in_english();
+    for state in [KeyState::Pressed, KeyState::Released] {
+        crate::a_key_reaches_the_task_in_front::the_key_the_task_took(
+            server,
+            crate::DirectKeyEvent {
+                code,
+                state,
+                time: 1,
+            },
+            Some(daemon),
+            &strings,
+        )
+        .expect("the seat took the key");
+    }
+}
+
+/// **Closing a running task asks *Stop and close* or *Cancel***, and
+/// *Cancel* closes nothing and stops nothing (ADR 0139).
+#[test]
+fn closing_a_running_task_asks_and_cancel_changes_nothing() {
+    let (_runtime, mut server) = a_session();
+    let which = a_task(&mut server, "tidy my invoices");
+    let daemon = ADaemon::default();
+
+    alt_f4(&mut server, &daemon);
+    assert!(
+        server.closing_asked_about(which).is_some(),
+        "closing a running task asked nothing"
+    );
+    press(&mut server, TAB, &daemon);
+    press(&mut server, TAB, &daemon);
+    press(&mut server, ENTER, &daemon);
+
+    assert!(server.closing_asked_about(which).is_none());
+    assert!(server.tasks().is_open(which), "Cancel closed the window");
+    assert!(
+        server.take_the_stops().is_empty(),
+        "Cancel stopped the work"
+    );
+}
+
+/// **Escape is *Cancel*, and Enter with nothing chosen does nothing** — a
+/// person who presses Enter to dismiss something has not chosen to stop.
+#[test]
+fn escape_cancels_and_enter_alone_chooses_nothing() {
+    let (_runtime, mut server) = a_session();
+    let which = a_task(&mut server, "tidy my invoices");
+    let daemon = ADaemon::default();
+    alt_f4(&mut server, &daemon);
+
+    press(&mut server, ENTER, &daemon);
+    assert!(
+        server.take_the_stops().is_empty(),
+        "Enter alone stopped the work"
+    );
+    press(&mut server, ESCAPE, &daemon);
+    assert!(server.closing_asked_about(which).is_none());
+    assert!(server.tasks().is_open(which));
+    assert!(server.take_the_stops().is_empty());
+}
+
+/// **Stop and close stops alo, and the window closes only once alo has
+/// really stopped** — never at the press.
+#[test]
+fn stop_and_close_closes_only_after_alo_has_stopped() {
+    let (_runtime, mut server) = a_session();
+    let which = a_task(&mut server, "tidy my invoices");
+    let daemon = ADaemon::default();
+    alt_f4(&mut server, &daemon);
+    press(&mut server, TAB, &daemon);
+    press(&mut server, ENTER, &daemon);
+
+    let stops = server.take_the_stops();
+    assert_eq!(stops.len(), 1, "Stop and close did not stop");
+    assert!(server.tasks().is_open(which), "closed before alo stopped");
+    assert_eq!(
+        server.tasks().the(which).expect("open").what_is_happening(),
+        alo_tasks::words::STOPPING
+    );
+
+    server.it_really_stopped(which);
+    assert!(
+        !server.tasks().is_open(which),
+        "did not close once alo stopped"
+    );
+}
+
+/// **Stop and close never answers a waiting change**: it lapses with the
+/// turn, neither approved nor declined.
+#[test]
+fn stop_and_close_never_answers_a_waiting_change() {
+    let (_runtime, mut server) = a_session();
+    let which = a_task(&mut server, "rename my invoices");
+    let daemon = holding(7, "Delete everything in Invoices");
+    server.an_answer_came_back(
+        which,
+        "Shall I?".to_owned(),
+        false,
+        None,
+        Some(&daemon),
+        &in_english(),
+    );
+    alt_f4(&mut server, &daemon);
+    press(&mut server, TAB, &daemon);
+    press(&mut server, ENTER, &daemon);
+
+    assert!(
+        daemon.approved.borrow().is_empty(),
+        "Stop approved the change"
+    );
+    assert!(
+        daemon.declined.borrow().is_empty(),
+        "Stop declined the change"
+    );
+    assert!(!server.the_change_waiting.is_asking(), "the card stayed up");
+    assert_eq!(server.take_the_stops().len(), 1);
 }

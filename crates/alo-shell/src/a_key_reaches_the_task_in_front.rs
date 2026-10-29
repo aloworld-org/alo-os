@@ -102,6 +102,12 @@ impl Server {
         daemon: Option<&dyn alo_changing::Answering>,
         strings: &alo_strings::Strings,
     ) {
+        // **The question about closing comes first** while it is asked: it is
+        // the newest thing on the screen, and Escape there is *Cancel* rather
+        // than letting go (ADR 0139).
+        if self.a_key_on_the_closing_question(which, answering) {
+            return;
+        }
         let the_question_is_here = self
             .the_tasks
             .the(which)

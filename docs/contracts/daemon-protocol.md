@@ -1054,3 +1054,23 @@ to draw that list from: `granted` answers with a count and no list, deliberately
 no `SourcePolicy` key, so what an organisation permits is `None` on every
 machine — which changes nothing today, because no policy refuses this machine
 answering on itself. Whether the description gains one is ADR 0016's subject.
+
+## Stop
+
+*Added 2026-10-29, [ADR 0139](../decisions/0139-stop-reaches-alo-and-cancels-what-it-sent.md). A new meaning, not a new message.*
+
+**An agent that shuts its sending side while its question is being put to a
+model has stopped it.** The daemon watches the agent's connection for exactly
+the length of each message it answers; if the agent half-closes during an `ask`,
+the connection to the provider is shut at once, so nothing more leaves. The
+question is answered as `refused`, in the sentence for a question the person
+stopped on its way, its departure ends — so a desktop watching what leaves is
+told the line is gone — and the record keeps it like any other unanswered
+question.
+
+- A connection that was **already** half-closed when the message began is a
+  client saying it has finished writing, and is never read as a Stop.
+- A question to the model runtime on this machine is not cancelled: it leaves
+  nothing, and its answer is dropped when the turn ends.
+- Nothing about a change waiting for the person changes: a Stop never approves
+  or declines one.

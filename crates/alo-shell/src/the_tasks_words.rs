@@ -66,6 +66,15 @@ struct ATasksWords {
     deny: String,
     /// Which answer the keyboard is on, and [`None`] until the person moves.
     selected: Option<crate::a_change_waiting_reaches_the_person::WhichAnswer>,
+    /// Which of `said` carries *Stop and close* and *Cancel*: the question
+    /// about closing a running task, while it is asked (ADR 0139).
+    closing_after: Option<usize>,
+    /// *Stop and close*, said once for this task.
+    stop_and_close: String,
+    /// *Cancel*, said once for this task.
+    cancel: String,
+    /// Which of those two the keyboard is on.
+    closing_selected: Option<crate::a_change_waiting_reaches_the_person::WhichAnswer>,
 }
 
 /// Every task window's words, said once for this frame.
@@ -154,10 +163,51 @@ impl TheTasksWords {
                     allow_once: say(crate::the_cards_words::ALLOW_ONCE),
                     deny: say(crate::the_cards_words::DENY),
                     selected,
+                    closing_after: None,
+                    stop_and_close: String::new(),
+                    cancel: String::new(),
+                    closing_selected: None,
                 })
             })
             .collect();
         Self { each }
+    }
+
+    /// **And the question about closing a running task**, on a card at the end
+    /// of that task's conversation, with *Stop and close* and *Cancel* under it
+    /// (`crate::asking_before_closing`; ADR 0139). Nothing when nothing is
+    /// asked.
+    pub(crate) fn with_the_closing_question(
+        mut self,
+        asked: Option<crate::asking_before_closing::ClosingAsked>,
+        strings: &Strings,
+    ) -> Self {
+        use crate::a_change_waiting_reaches_the_person::WhichAnswer;
+        use crate::asking_before_closing::WhichChoice;
+
+        let Some(asked) = asked else {
+            return self;
+        };
+        let say =
+            |word: alo_strings::Word| strings.say(&word.key(), &Filling::nothing()).into_text();
+        if let Some(one) = self
+            .each
+            .iter_mut()
+            .find(|one| one.place == asked.which.at())
+        {
+            one.said.push((
+                alo_tasks::WhoseBlock::AnAccount,
+                MarkedWords::as_said(&say(crate::the_closing_words::ALO_IS_STILL_WORKING_ON_THIS)),
+            ));
+            one.closing_after = Some(one.said.len().saturating_sub(1));
+            one.stop_and_close = say(crate::the_closing_words::STOP_AND_CLOSE);
+            one.cancel = say(crate::the_closing_words::CANCEL);
+            one.closing_selected = asked.selected.map(|choice| match choice {
+                WhichChoice::StopAndClose => WhichAnswer::AllowOnce,
+                WhichChoice::Cancel => WhichAnswer::Deny,
+            });
+        }
+        self
     }
 
     /// The task windows a frame draws, borrowing these words.
@@ -190,13 +240,23 @@ impl TheTasksWords {
                         whose: *whose,
                         words: words.text(),
                         marks: words.marks(),
-                        answers: (one.answers_after == Some(at)).then_some(
-                            crate::task_text::TheTwoAnswers {
+                        answers: if one.answers_after == Some(at) {
+                            Some(crate::task_text::TheTwoAnswers {
                                 allow_once: &one.allow_once,
                                 deny: &one.deny,
                                 selected: one.selected,
-                            },
-                        ),
+                            })
+                        } else if one.closing_after == Some(at) {
+                            // **The approval card's two answers, with the
+                            // closing question's words** (ADR 0139).
+                            Some(crate::task_text::TheTwoAnswers {
+                                allow_once: &one.stop_and_close,
+                                deny: &one.cancel,
+                                selected: one.closing_selected,
+                            })
+                        } else {
+                            None
+                        },
                     })
                     .collect(),
             })

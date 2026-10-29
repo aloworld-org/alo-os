@@ -84,6 +84,15 @@ impl AtTheDaemonsSocket {
             .map_err(|why| not_reached(&why))?;
         Ok(Self { stream })
     }
+
+    /// **A second handle on the connection**, for the watcher that tells the
+    /// daemon the person stopped (`crate::the_person_may_stop`; ADR 0139) by
+    /// shutting this side's sending half. [`None`] when the kernel will not
+    /// give one, which leaves a turn nobody can stop.
+    #[must_use]
+    pub fn a_second_handle(&self) -> Option<UnixStream> {
+        self.stream.try_clone().ok()
+    }
 }
 
 impl TheDoor for AtTheDaemonsSocket {

@@ -224,6 +224,8 @@ mod an_icon_is_drawn_on_its_badge;
 mod what_each_application_draws;
 mod what_the_dock_is_filled_with;
 pub use an_application_is_started::{AWayToStartApplications, AsksAnApplicationToStart};
+/// A press on a task window's one button: Stop (ADR 0139).
+mod a_press_on_the_one_button;
 /// Where the application door's socket goes, and what it refuses rather than
 /// serve. Public because `docs/contracts/application-door.md` publishes the
 /// path and the modes, and a test holds this crate to that document.
@@ -232,6 +234,8 @@ pub use an_application_is_started::{AWayToStartApplications, AsksAnApplicationTo
 /// wire, and because whoever wires a compositor together serves the door.
 /// The compositor's hand for the three application acts the door carries.
 mod an_application_verb_is_carried_out;
+/// Closing a running task asks: Stop and close, or Cancel (ADR 0139).
+mod asking_before_closing;
 pub mod bar_raster;
 mod dock_room;
 mod dock_windows;
@@ -396,6 +400,8 @@ mod socket;
 mod software_scanout;
 pub mod status_items;
 mod status_row;
+/// Stop, on the road a request took (ADR 0139).
+mod stopping_what_was_asked;
 mod surfaces;
 /// Everything on the Dock that a person reads, said once a frame.
 mod tab_moves_among_the_bars_controls;
@@ -418,6 +424,8 @@ pub mod the_bar_finds;
 mod the_bars_pressable_slots;
 mod the_bars_seat;
 pub mod the_cards_words;
+/// What a task window says when closing a running task asks.
+pub mod the_closing_words;
 /// The Dock's composer as a field a person types a request into.
 pub mod the_composer_a_person_types_in;
 mod the_desk_is_reconciled;
@@ -434,6 +442,8 @@ pub mod the_languages_offered;
 pub mod the_machines_keyboard;
 pub mod the_markets_words;
 mod the_panel_reveals;
+/// The person pressed Stop in a task (ADR 0139).
+pub mod the_person_stops_a_task;
 pub mod the_pickers_words;
 mod the_pointer_in_pixels;
 pub mod the_providers_words;

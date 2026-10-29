@@ -210,6 +210,20 @@ impl AChangeWaiting {
         answered
     }
 
+    /// **Let the change go unanswered**, because the person pressed Stop
+    /// (ADR 0139): it is neither approved nor declined, the task's question
+    /// lapses, and the connection holding the agent's turn is handed back so
+    /// the Stop can travel on it. Nothing is sent to the daemon from here.
+    pub(crate) fn let_go_unanswered(
+        &mut self,
+        task: &mut ATask,
+    ) -> Option<std::os::unix::net::UnixStream> {
+        self.number.take()?;
+        self.selected = None;
+        task.the_question_lapsed();
+        self.the_turn.take()
+    }
+
     /// Which answer their keyboard is on, and [`None`] until they move to one.
     #[must_use]
     pub const fn selected(&self) -> Option<WhichAnswer> {

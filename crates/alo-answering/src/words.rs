@@ -181,6 +181,18 @@ pub const TOO_LONG_FOR_THE_MODEL: Word = Word::saying(
      Dock has in your language. {source} is where the question was to be answered and arrives \
      already in the reader's language.",
 );
+
+/// The person stopped the question while it was on its way.
+pub const STOPPED_ON_ITS_WAY: Word = Word::saying(
+    "answering.wrong.stopped-on-its-way",
+    "nothing was answered {source} — you stopped it on its way, and nothing more was sent",
+)
+.noting(
+    "Said when the person pressed Stop in a task window while their question was being put to a \
+     model, and the connection was closed at once. It is what they did, not something going \
+     wrong: say it plainly, without apology or alarm. {source} is where the question was to be \
+     answered and arrives already in the reader's language.",
+);
 // ---------------------------------------------------------------------------
 // The line that is always shown — [`crate::Failed::nothing_was_sent`].
 //
@@ -330,7 +342,7 @@ pub const NOT_ON_OFFER: Word = Word::saying(
 ///
 /// The array is what a test reads down and what [`declare_into`] walks, so a
 /// word declared above and left out here is a string nothing can look up.
-pub const EVERY_WORD: [Word; 19] = [
+pub const EVERY_WORD: [Word; 20] = [
     NOTHING_ANSWERED,
     TOOK_TOO_LONG,
     NOTHING_USABLE,
@@ -341,6 +353,7 @@ pub const EVERY_WORD: [Word; 19] = [
     RAN_OUT,
     NO_WAY_THERE,
     TOO_LONG_FOR_THE_MODEL,
+    STOPPED_ON_ITS_WAY,
     NOT_PERMITTED_THERE,
     ANSWERS_ELSEWHERE_THERE,
     NOTHING_CHOSEN_THERE,
@@ -522,6 +535,7 @@ mod tests {
             RAN_OUT,
             NO_WAY_THERE,
             TOO_LONG_FOR_THE_MODEL,
+            STOPPED_ON_ITS_WAY,
         ] {
             for suggesting in ["instead", "try ", "another"] {
                 assert!(
