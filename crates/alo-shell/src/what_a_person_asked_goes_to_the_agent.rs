@@ -19,8 +19,8 @@
 //! frame loop, so writing and waiting here would stop every window on the
 //! machine from drawing until a provider answered.
 //!
-//! So each request is **handed to a thread of its own**: it connects, writes one
-//! line, waits as long as it likes, and posts what came back down a channel.
+//! So each request is **handed to a thread of its own**: it connects, writes the
+//! request, waits as long as it likes, and posts what came back down a channel.
 //! The loop asks `TheAgentsDoor::whatever_came_back` once a frame, which never
 //! blocks and usually answers with nothing.
 //!
@@ -46,6 +46,8 @@ use std::os::unix::net::UnixStream;
 use std::path::{Path, PathBuf};
 use std::sync::mpsc::{Receiver, Sender, TryRecvError, channel};
 use std::time::Duration;
+
+use alo_instructing::TheConversationSoFar;
 
 /// Where a person's words are handed to their agent.
 ///
@@ -161,8 +163,28 @@ impl TheAgentsDoor {
     /// `crate::what_the_agent_may_reach` holds why this side is the one that
     /// says so, and why naming a wrong one costs a round and nothing else.
     pub fn ask(&self, who: WhoAsked, request: &str, may_reach: &[std::path::PathBuf]) {
+        self.ask_following(who, request, &TheConversationSoFar::nothing(), may_reach);
+    }
+
+    /// **Hand over a follow-up**, with the conversation so far: [`Self::ask`]
+    /// with what was said before in that task window, so alo can tell what
+    /// *and the April one too* refers to
+    /// ([ADR 0138](../../../docs/decisions/0138-a-follow-up-is-sent-with-the-conversation-so-far.md)).
+    ///
+    /// `earlier` is built at the moment the person pressed Enter and not
+    /// before — context offered, never watched — and it is already held to its
+    /// bound. It leaves this process on this socket and nowhere else; whether
+    /// it leaves the machine is the daemon's, under the indicator.
+    pub fn ask_following(
+        &self,
+        who: WhoAsked,
+        request: &str,
+        earlier: &TheConversationSoFar,
+        may_reach: &[std::path::PathBuf],
+    ) {
         let socket = self.socket.clone();
         let request = request.to_owned();
+        let earlier = earlier.written();
         let may_reach: Vec<std::path::PathBuf> = may_reach.to_vec();
         let posting = self.posting.clone();
         // A thread that cannot be started is reported the same way a socket
@@ -171,7 +193,7 @@ impl TheAgentsDoor {
         let started = std::thread::Builder::new()
             .name("alo-asking".to_owned())
             .spawn(move || {
-                let came_back = ask_and_wait(&socket, &request, &may_reach);
+                let came_back = ask_and_wait(&socket, &request, &earlier, &may_reach);
                 drop(posting.send(came_back.into_what_came_back(who)));
             });
         if let Err(why) = started {
@@ -228,14 +250,24 @@ impl Said {
     }
 }
 
-/// Connect, write one line, and read what comes back until it closes.
+/// Connect, write the request, and read what comes back until it closes.
 ///
 /// **Everything the agent wrote, not the first line.** `alo-agent` prints a
 /// waiting change as two lines — the sentence is on the second — so reading one
 /// would hand a person *a change is waiting for you to answer, as number 7* and
 /// drop the sentence they are being asked to approve. Which is the one thing on
 /// this wire that must never be lost.
-fn ask_and_wait(socket: &Path, request: &str, may_reach: &[std::path::PathBuf]) -> Said {
+///
+/// `earlier` is the line the conversation so far travels on — the marker
+/// alone for a first request — written **after** the request, where an agent
+/// from before ADR 0138 never reads, so an older agent answers a follow-up as
+/// a first request rather than mistaking the conversation for one.
+fn ask_and_wait(
+    socket: &Path,
+    request: &str,
+    earlier: &str,
+    may_reach: &[std::path::PathBuf],
+) -> Said {
     let machine = |why: &dyn std::fmt::Display| Said::TheMachine(format!("{why}"));
 
     let Ok(mut talking) = UnixStream::connect(socket) else {
@@ -260,10 +292,14 @@ fn ask_and_wait(socket: &Path, request: &str, may_reach: &[std::path::PathBuf]) 
         .map(|folder| folder.display().to_string())
         .collect::<Vec<String>>()
         .join("\t");
+    // **A request is one line**, and a reply box takes a new line: joined with
+    // a space, because a line break inside it would make its second half the
+    // line after the request, which an agent reads as something else.
+    let request = request.replace(['\r', '\n'], " ");
     let said = if folders.is_empty() {
-        format!("{request}\n")
+        format!("{request}\n{earlier}\n")
     } else {
-        format!("alo-may-reach:{folders}\n{request}\n")
+        format!("alo-may-reach:{folders}\n{request}\n{earlier}\n")
     };
     if let Err(why) = talking
         .write_all(said.as_bytes())
@@ -276,8 +312,8 @@ fn ask_and_wait(socket: &Path, request: &str, may_reach: &[std::path::PathBuf]) 
     // waits on exactly that to learn the person has answered
     // (`alo_agent::holding_the_turn`) — so shutting it here ended every
     // agent's turn before the card it was holding open could be drawn.
-    // `alo-agent` reads one line, or two with the folders, and stops at each
-    // newline, so it never needed the shut to know the request had ended.
+    // `alo-agent` reads the folders, the request and the earlier conversation,
+    // each a line, so it never needed the shut to know the request had ended.
 
     let mut heard = String::new();
     let mut reading = BufReader::new(&talking);

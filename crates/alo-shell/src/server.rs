@@ -406,6 +406,12 @@ pub struct Server {
     /// that is a reading of a person's settings. This crate shows and never
     /// measures.
     pub(crate) asked_alo: Vec<String>,
+    /// Follow-ups a person sent from a task window, waiting to be handed to the
+    /// agent with the conversation so far (ADR 0138).
+    ///
+    /// **Recorded here for `asked_alo`'s reason**: the key arrives in the input
+    /// loop, and the door to the agent is the frame loop's.
+    pub(crate) follow_ups: Vec<crate::what_becomes_of_a_reply::AFollowUp>,
     /// Whether each window's external edge is revealed, one machine per window.
     ///
     /// §5 of `docs/design/the-external-window-edge.md`. The edge is **per
@@ -714,6 +720,7 @@ impl Server {
                 crate::a_change_waiting_reaches_the_person::AChangeWaiting::nothing_yet(),
             the_composer: crate::the_composer_a_person_types_in::TheComposer::empty(),
             asked_alo: Vec::new(),
+            follow_ups: Vec::new(),
             edges_revealed: Vec::new(),
             keyboard_on_edges: Vec::new(),
             asked_to_bring_back: Vec::new(),

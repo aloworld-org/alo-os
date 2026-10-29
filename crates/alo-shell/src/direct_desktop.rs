@@ -1232,6 +1232,19 @@ impl LoopInput for Desk<'_> {
                 );
             }
         }
+        // **And a follow-up typed in a task window goes to the agent with the
+        // conversation so far** (ADR 0138), into the window it was typed in.
+        // Taken for the same reason as the requests above: one Enter, one ask.
+        for follow_up in server.take_the_follow_ups() {
+            self.asking.ask_following(
+                crate::what_a_person_asked_goes_to_the_agent::WhoAsked::ATaskWindow(
+                    follow_up.which,
+                ),
+                &follow_up.said,
+                &follow_up.earlier,
+                &the_folders_to_send(server),
+            );
+        }
         // **What a person pressed Install on becomes an installation, here,
         // once a frame — and before the frame**, for the reason the ask above
         // is: starting one needs the desktop mutably (for its indicator) and

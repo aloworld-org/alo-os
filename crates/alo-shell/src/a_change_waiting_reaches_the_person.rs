@@ -324,6 +324,10 @@ impl crate::Server {
         {
             waiting.and_its_turn_is_held_by(the_turn);
         }
+        // **And a reply the person sent while alo was answering goes now**,
+        // with the conversation as it stands — unless what just arrived is a
+        // change waiting for them, which keeps it held (ADR 0138).
+        self.send_what_was_held(which, strings);
     }
 }
 

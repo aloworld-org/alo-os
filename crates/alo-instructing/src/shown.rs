@@ -12,6 +12,7 @@
 use alo_capability::Verbs;
 
 use crate::instructions::Instructions;
+use crate::the_conversation_so_far::TheConversationSoFar;
 use crate::verb_as_told::as_told;
 use crate::what_it_may_reach::WhatItMayReach;
 
@@ -32,8 +33,32 @@ pub fn shown_to_a_model(
     may_reach: &WhatItMayReach,
     request: &str,
 ) -> String {
+    shown_to_a_model_after(
+        instructions,
+        verbs,
+        may_reach,
+        &TheConversationSoFar::nothing(),
+        request,
+    )
+}
+
+/// **The same text, for a follow-up**: the conversation so far, marked as an
+/// earlier exchange, between what the turn may reach and the request.
+///
+/// In the request half, so the instructions a grade names by digest are the
+/// same bytes at the start of the text (ADR 0138). With nothing earlier this
+/// is [`shown_to_a_model`]'s text to the byte, which a test below holds.
+#[must_use]
+pub fn shown_to_a_model_after(
+    instructions: Instructions,
+    verbs: &Verbs,
+    may_reach: &WhatItMayReach,
+    earlier: &TheConversationSoFar,
+    request: &str,
+) -> String {
     let mut text = the_products_words(instructions, verbs);
     text.push_str(&may_reach.told());
+    text.push_str(&earlier.told());
     text.push_str("\n\nThe request: ");
     text.push_str(request);
     text
@@ -196,6 +221,43 @@ mod tests {
         assert!(
             shown_to_a_turn(&verbs, &WhatItMayReach::nothing(), request)
                 .starts_with(Instructions::SHOWN_TO_A_TURN.text())
+        );
+    }
+
+    /// **A follow-up is shown the same graded words**, then the earlier
+    /// conversation, then the new request last — and with nothing earlier the
+    /// text is the first request's to the byte.
+    #[test]
+    fn a_follow_up_keeps_the_graded_words_and_puts_the_conversation_before_the_request() {
+        use crate::the_conversation_so_far::AnEarlierTurn;
+
+        let verbs = the_verbs();
+        let earlier = TheConversationSoFar::of(vec![
+            AnEarlierTurn::ThePersonSaid("list the files in /home/anna".to_owned()),
+            AnEarlierTurn::AloAnswered("march.pdf and april.pdf".to_owned()),
+        ]);
+        let request = "and how big is the biggest one?";
+        let last = "\n\nThe request: and how big is the biggest one?";
+        let first = shown_to_a_turn(&verbs, &WhatItMayReach::nothing(), request);
+        let follow_up = shown_to_a_model_after(
+            Instructions::SHOWN_TO_A_TURN,
+            &verbs,
+            &WhatItMayReach::nothing(),
+            &earlier,
+            request,
+        );
+        assert!(follow_up.starts_with(Instructions::SHOWN_TO_A_TURN.text()));
+        let before = first.strip_suffix(last).unwrap();
+        assert_eq!(follow_up, format!("{before}{}{last}", earlier.told()));
+        assert_eq!(
+            shown_to_a_model_after(
+                Instructions::SHOWN_TO_A_TURN,
+                &verbs,
+                &WhatItMayReach::nothing(),
+                &TheConversationSoFar::nothing(),
+                request
+            ),
+            first
         );
     }
 

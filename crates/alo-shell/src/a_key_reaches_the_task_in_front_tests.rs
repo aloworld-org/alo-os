@@ -8,6 +8,7 @@
 
 #![expect(
     clippy::expect_used,
+    clippy::panic,
     reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
 )]
 
@@ -28,6 +29,7 @@ use crate::a_change_waiting_reaches_the_person::WhichAnswer;
 
 /// evdev's codes for the keys these tests press.
 const ESCAPE: u32 = 1;
+const BACKSPACE: u32 = 14;
 const TAB: u32 = 15;
 const ENTER: u32 = 28;
 const A: u32 = 30;
@@ -712,24 +714,43 @@ fn the_status(
         .what_is_happening()
 }
 
-/// **A reply in a finished task never claims alo is working.** Found walking a
-/// booted machine on 2026-10-28: a person replied in a window that read
-/// *Complete*, pressed Enter, and it read *alo is working* for ever — and no
-/// request had left the machine. The reply stays where they wrote it, the line
-/// beneath says it did not reach alo, and Escape still lets go of the keyboard.
-#[test]
-fn a_reply_in_a_finished_task_is_said_not_to_have_reached_alo() {
-    let (_runtime, mut server) = a_session();
-    let which = a_task_holding_the_keyboard(&mut server);
+/// The turns of what alo is sent as earlier, as the words in them.
+fn earlier_words(follow_up: &crate::what_becomes_of_a_reply::AFollowUp) -> Vec<String> {
+    follow_up
+        .earlier
+        .turns()
+        .iter()
+        .map(|turn| turn.said().to_owned())
+        .collect()
+}
+
+/// alo answers this task in words, as the frame loop hands an answer over.
+fn alo_answers(
+    server: &mut Server,
+    which: crate::the_tasks_a_person_opened::WhichTask,
+    said: &str,
+) {
     let daemon = ADaemon::default();
     server.an_answer_came_back(
         which,
-        "It is in Invoices.".to_owned(),
+        said.to_owned(),
         false,
         None,
         Some(&daemon),
         &in_english(),
     );
+}
+
+/// **A reply in a finished task goes to alo with the conversation so far**
+/// (ADR 0138), and the window says alo is working because a request really
+/// starts. Until 2026-10-28 it read *alo is working* with nothing asked; #982
+/// made it say the reply went nowhere; now it goes.
+#[test]
+fn a_reply_in_a_finished_task_is_sent_with_the_conversation_so_far() {
+    let (_runtime, mut server) = a_session();
+    let which = a_task_holding_the_keyboard(&mut server);
+    let daemon = ADaemon::default();
+    alo_answers(&mut server, which, "It is in Invoices.");
     assert_eq!(
         the_status(&server, which),
         alo_tasks::words::COMPLETE,
@@ -737,46 +758,106 @@ fn a_reply_in_a_finished_task_is_said_not_to_have_reached_alo() {
     );
 
     press(&mut server, A, &daemon);
+    assert!(
+        server.take_the_follow_ups().is_empty(),
+        "typing alone sent something"
+    );
     press(&mut server, ENTER, &daemon);
 
-    assert_ne!(
+    let sent = server.take_the_follow_ups();
+    let [one] = sent.as_slice() else {
+        panic!("one Enter did not send exactly one follow-up: {sent:?}");
+    };
+    assert_eq!((one.which, one.said.as_str()), (which, "a"));
+    assert_eq!(
+        earlier_words(one),
+        ["tidy my invoices", "It is in Invoices."]
+    );
+    assert!(
+        server.take_the_follow_ups().is_empty(),
+        "one Enter was sent twice"
+    );
+    assert_eq!(
         the_status(&server, which),
         alo_tasks::words::ALO_IS_WORKING,
-        "a reply nothing carried made the window say alo is working"
+        "a reply that was sent did not say alo is working"
     );
-    let said = server
-        .tasks()
-        .the(which)
-        .expect("the task is open")
-        .conversation()
-        .each()
-        .iter()
-        .map(|turn| turn.said().to_owned())
-        .collect::<Vec<_>>();
-    assert_eq!(
-        said.get(said.len().saturating_sub(2)).map(String::as_str),
-        Some("a"),
-        "the person's reply was not kept where they wrote it"
-    );
-    assert!(
-        the_last_thing_said(&server, which).starts_with("alo did not receive this."),
-        "{}",
-        the_last_thing_said(&server, which)
-    );
+    assert_eq!(the_last_thing_said(&server, which), "a");
     assert_eq!(draft(&server, which), "", "the reply stayed in the box");
+}
 
-    press(&mut server, ESCAPE, &daemon);
+/// **A reply typed while alo is still working is held, not refused**: it waits
+/// under the conversation, and goes by itself — with alo's answer in what it
+/// is sent with — once that answer arrives.
+#[test]
+fn a_reply_while_alo_is_working_is_held_and_sent_when_alo_answers() {
+    let (_runtime, mut server) = a_session();
+    let which = a_task_holding_the_keyboard(&mut server);
+    let daemon = ADaemon::default();
+
+    press(&mut server, A, &daemon);
+    press(&mut server, ENTER, &daemon);
+
     assert!(
-        !server.a_task_is_taking_the_keys(),
-        "after a reply, Escape on the empty box did not let go of the keyboard"
+        server.take_the_follow_ups().is_empty(),
+        "a reply was sent while alo was still answering"
+    );
+    let task = server.tasks().the(which).expect("the task is open");
+    assert_eq!(task.held(), Some("a"), "the reply was not held");
+    assert_eq!(
+        task.conversation().each().len(),
+        1,
+        "a held reply joined the conversation before it was sent"
+    );
+    assert_eq!(
+        the_status(&server, which),
+        alo_tasks::words::ALO_IS_WORKING,
+        "the control: alo is still answering the request"
+    );
+
+    alo_answers(&mut server, which, "There are two.");
+
+    let sent = server.take_the_follow_ups();
+    let [one] = sent.as_slice() else {
+        panic!("alo's answer did not send the held reply once: {sent:?}");
+    };
+    assert_eq!(one.said, "a");
+    assert_eq!(earlier_words(one), ["tidy my invoices", "There are two."]);
+    assert_eq!(server.tasks().the(which).expect("open").held(), None);
+    assert_eq!(the_last_thing_said(&server, which), "a");
+}
+
+/// **A held reply can be taken back before it goes**: Backspace in the empty
+/// box gives it back, and alo's answer then sends nothing.
+#[test]
+fn a_held_reply_taken_back_is_never_sent() {
+    let (_runtime, mut server) = a_session();
+    let which = a_task_holding_the_keyboard(&mut server);
+    let daemon = ADaemon::default();
+    press(&mut server, A, &daemon);
+    press(&mut server, ENTER, &daemon);
+
+    press(&mut server, BACKSPACE, &daemon);
+    assert_eq!(
+        draft(&server, which),
+        "a",
+        "the held reply was not given back"
+    );
+    press(&mut server, BACKSPACE, &daemon);
+    assert_eq!(draft(&server, which), "", "the reply could not be deleted");
+
+    alo_answers(&mut server, which, "There are two.");
+    assert!(
+        server.take_the_follow_ups().is_empty(),
+        "a reply the person took back was sent"
     );
 }
 
-/// **A reply beneath a waiting card leaves the task waiting**, and the card
-/// still answerable. Read from the last turn alone, the line beneath the reply
-/// would have made the task read *Complete* with Allow once and Deny on screen.
+/// **A reply beneath a waiting card is held until the person answers it**, the
+/// task keeps waiting and the card stays answerable — and once they answer,
+/// the reply goes, carrying the change and what they said to it.
 #[test]
-fn a_reply_beneath_a_waiting_card_leaves_the_task_waiting() {
+fn a_reply_beneath_a_waiting_card_is_held_until_the_card_is_answered() {
     let (_runtime, mut server) = a_session();
     let which = a_task_holding_the_keyboard(&mut server);
     let daemon = holding(7, "Rename march.pdf");
@@ -801,6 +882,15 @@ fn a_reply_beneath_a_waiting_card_leaves_the_task_waiting() {
         server.the_change_waiting.is_asking(),
         "the card was taken down"
     );
+    assert!(
+        server.take_the_follow_ups().is_empty(),
+        "a reply was sent while a change was still waiting"
+    );
+    assert_eq!(
+        server.tasks().the(which).expect("open").held(),
+        Some("a"),
+        "the reply was not held"
+    );
 
     press(&mut server, TAB, &daemon);
     press(&mut server, ENTER, &daemon);
@@ -808,6 +898,22 @@ fn a_reply_beneath_a_waiting_card_leaves_the_task_waiting() {
         *daemon.approved.borrow(),
         [7],
         "the card could not be answered"
+    );
+
+    let sent = server.take_the_follow_ups();
+    let [one] = sent.as_slice() else {
+        panic!("answering the card did not send the held reply once: {sent:?}");
+    };
+    assert_eq!(one.said, "a");
+    assert!(
+        one.earlier
+            .turns()
+            .contains(&alo_instructing::AnEarlierTurn::AloProposed {
+                sentence: "Rename march.pdf".to_owned(),
+                answer: alo_instructing::TheAnswer::Allowed,
+            }),
+        "{:?}",
+        one.earlier
     );
 }
 

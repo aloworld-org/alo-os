@@ -103,6 +103,11 @@ alo-dock = { path = "../alo-dock" }
 # so the binary makes the task and this crate holds it. The dev-dependency note
 # below keeps its meaning.
 alo-tasks = { path = "../alo-tasks" }
+# The conversation so far, which a follow-up typed in a task window carries to
+# the agent (ADR 0138): its shape, its bound and the line it travels on. That
+# crate opens nothing and asks nothing; this one builds the value from a task
+# and writes it after the request.
+alo-instructing = { path = "../alo-instructing" }
 # The terminal's pty, its VT state machine and its keyboard conventions, behind
 # an interface of ours
 # ([ADR 0114](../../docs/decisions/0114-the-terminals-engine-is-pinned-and-its-face-is-bundled.md)).

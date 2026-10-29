@@ -130,6 +130,8 @@ impl Server {
                     crate::what_an_answer_did::what_an_answer_did(answered.as_ref(), strings),
                 ));
             }
+            // **A reply held for this answer goes now** (ADR 0138).
+            self.send_what_was_held(which, strings);
             return;
         }
         let the_box_is_empty = self
@@ -140,14 +142,14 @@ impl Server {
             self.the_task_gave_the_keyboard_up();
             return;
         }
-        // **A reply that was sent is said to have gone nowhere**, because it
-        // has: `crate::what_becomes_of_a_reply` says why, and what it leaves
-        // for the owner. Dropped here until 2026-10-28, which left the window
+        // **A reply that was sent goes to alo with the conversation so far**,
+        // or says beneath it why it did not: `crate::what_becomes_of_a_reply`
+        // (ADR 0138). Dropped here until 2026-10-28, which left the window
         // reading *alo is working* for ever with nothing asked.
-        if let crate::a_key_reaches_a_task_window::WhatTheReplyBoxDid::TheyReplied(_) =
+        if let crate::a_key_reaches_a_task_window::WhatTheReplyBoxDid::TheyReplied(said) =
             self.a_key_reached_a_task_window(which, typed)
         {
-            self.a_reply_was_sent(which, strings);
+            self.a_reply_was_sent(which, said, strings);
         }
     }
 }

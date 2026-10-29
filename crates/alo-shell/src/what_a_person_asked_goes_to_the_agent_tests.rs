@@ -245,3 +245,95 @@ fn the_default_door_is_the_one_the_decision_published() {
     );
     assert_eq!(WHERE_WORDS_GO, "/run/alo-asking/socket");
 }
+
+/// A stand-in agent that reads `lines` lines, answers `said`, and stops —
+/// reporting everything it read, so a test can hold what crossed whole.
+fn an_agent_reading(
+    at: &PathBuf,
+    lines: usize,
+    said: &'static str,
+) -> std::sync::mpsc::Receiver<String> {
+    let listening = UnixListener::bind(at).unwrap();
+    let (telling, heard) = std::sync::mpsc::channel();
+    std::thread::spawn(move || {
+        let Ok((talking, _)) = listening.accept() else {
+            return;
+        };
+        let mut reading = BufReader::new(&talking);
+        let mut all = String::new();
+        for _ in 0..lines {
+            if reading.read_line(&mut all).is_err() {
+                return;
+            }
+        }
+        drop(telling.send(all));
+        let mut writing = &talking;
+        let _ = writing.write_all(said.as_bytes());
+        let _ = writing.flush();
+        drop(talking);
+    });
+    heard
+}
+
+/// **A follow-up carries exactly the conversation so far, after the request**
+/// — and a reply typed over two lines still crosses as one request (ADR 0138).
+#[test]
+fn a_follow_up_carries_the_conversation_after_the_request() {
+    use alo_instructing::{AnEarlierTurn, TheConversationSoFar};
+
+    let at = a_socket("follow-up");
+    let heard = an_agent_reading(&at, 3, "april.pdf, at 40 KB.\n");
+    let door = TheAgentsDoor::at(&at);
+    let earlier = TheConversationSoFar::of(vec![
+        AnEarlierTurn::ThePersonSaid("list the files in /home/anna".to_owned()),
+        AnEarlierTurn::AloAnswered("march.pdf and april.pdf".to_owned()),
+    ]);
+
+    door.ask_following(
+        WhoAsked::ATaskWindow(WhichTask::numbered(0)),
+        "and how big is\nthe biggest one?",
+        &earlier,
+        &[PathBuf::from("/home/anna")],
+    );
+
+    let crossed = heard.recv().unwrap();
+    let lines: Vec<&str> = crossed.lines().collect();
+    assert_eq!(
+        lines.as_slice(),
+        [
+            "alo-may-reach:/home/anna",
+            "and how big is the biggest one?",
+            earlier.written().as_str(),
+        ],
+        "{crossed}"
+    );
+    assert_eq!(
+        TheConversationSoFar::read(lines.get(2).copied().unwrap_or_default()),
+        Ok(earlier)
+    );
+    assert_eq!(one_answer(&door).said, "april.pdf, at 40 KB.");
+
+    let _ = std::fs::remove_dir_all(at.parent().unwrap());
+}
+
+/// **A first request carries no conversation**: the marker alone, so a current
+/// agent is not left waiting for a line that will not come.
+#[test]
+fn a_first_request_carries_the_marker_and_no_conversation() {
+    let at = a_socket("first-request");
+    let heard = an_agent_reading(&at, 2, "Three are unpaid.\n");
+    let door = TheAgentsDoor::at(&at);
+
+    door.ask(
+        WhoAsked::ATaskWindow(WhichTask::numbered(0)),
+        "how many invoices are unpaid?",
+        &[],
+    );
+
+    assert_eq!(
+        heard.recv().unwrap(),
+        "how many invoices are unpaid?\nalo-earlier:\n"
+    );
+    let _ = one_answer(&door);
+    let _ = std::fs::remove_dir_all(at.parent().unwrap());
+}

@@ -34,6 +34,15 @@
 //! on past where a real turn would have stopped. That is why the verdict reads
 //! the model's lines, and counts **any** proposal to a question as a failure.
 //!
+//! # And a follow-up, since ADR 0138
+//!
+//! `a_follow_up_is_answered_from_what_came_before` drives two turns in one
+//! task window — *list the files in …*, then *and how big is the biggest one?*
+//! — with the second sent with the conversation so far, as a task window sends
+//! it, and the same follow-up sent alone beside it as the control. Two folders
+//! are granted and the other holds a bigger file, so only the earlier
+//! conversation says which *biggest one* the person meant.
+//!
 //! # It is ignored, and it leaves the machine
 //!
 //! It asks a real provider and costs money, so it is run by name:
@@ -155,40 +164,36 @@ fn first_proposal(lines: &[String]) -> Option<String> {
     })
 }
 
-/// One turn: a request in a person's words, over a folder they granted.
-fn one_turn(
-    key: &str,
-    endpoint: &str,
-    model: &str,
-    request: &str,
-    instructions: Instructions,
-) -> Ended {
+/// A keyring of this test's own, holding the provider's key as Settings would.
+fn a_keyring_holding(key: &str) -> alo_keyring_fixture::AKeyringOfOurOwn {
     let keyring = alo_keyring_fixture::AKeyringOfOurOwn::started("a-question-is-answered");
     let named = format!("provider/{THE_PROVIDER}");
-    {
-        let connection = zbus::blocking::connection::Builder::address(keyring.address().as_str())
-            .expect("the fixture's address is an address")
-            .build()
-            .expect("the fixture's bus accepts a connection");
-        let service = SecretService::connect_with_existing(EncryptionType::Dh, connection)
-            .expect("the fixture serves the Secret Service");
-        let collection = service
-            .get_default_collection()
-            .expect("the fixture has a default collection");
-        let mut attributes = HashMap::new();
-        attributes.insert("xdg:schema", "dev.alo.Provider");
-        attributes.insert("reference", named.as_str());
-        collection
-            .create_item(
-                "the owner's test provider key",
-                attributes,
-                key.as_bytes(),
-                true,
-                "text/plain",
-            )
-            .expect("an item can be stored");
-    }
+    let connection = zbus::blocking::connection::Builder::address(keyring.address().as_str())
+        .expect("the fixture's address is an address")
+        .build()
+        .expect("the fixture's bus accepts a connection");
+    let service = SecretService::connect_with_existing(EncryptionType::Dh, connection)
+        .expect("the fixture serves the Secret Service");
+    let collection = service
+        .get_default_collection()
+        .expect("the fixture has a default collection");
+    let mut attributes = HashMap::new();
+    attributes.insert("xdg:schema", "dev.alo.Provider");
+    attributes.insert("reference", named.as_str());
+    collection
+        .create_item(
+            "the owner's test provider key",
+            attributes,
+            key.as_bytes(),
+            true,
+            "text/plain",
+        )
+        .expect("an item can be stored");
+    keyring
+}
 
+/// A person's folder of this test's own, whose settings chose the provider.
+fn a_person_who_chose_the_provider(endpoint: &str, model: &str) -> std::path::PathBuf {
     let theirs = std::env::temp_dir().join(format!(
         "alo-question-{}-{}",
         std::process::id(),
@@ -207,6 +212,19 @@ fn one_turn(
         ),
     )
     .expect("the person's settings can be written");
+    theirs
+}
+
+/// One turn: a request in a person's words, over a folder they granted.
+fn one_turn(
+    key: &str,
+    endpoint: &str,
+    model: &str,
+    request: &str,
+    instructions: Instructions,
+) -> Ended {
+    let keyring = a_keyring_holding(key);
+    let theirs = a_person_who_chose_the_provider(endpoint, model);
 
     // A folder called Documents, as on the machine, with something in it.
     let documents = theirs.join("Documents");
@@ -366,5 +384,228 @@ fn a_request_to_read_is_answered_and_proposes_nothing() {
         "{} of {asked} requests to read were not answered:\n  {}",
         failed.len(),
         failed.join("\n  ")
+    );
+}
+
+/// How a follow-up was sent, for the one measurement and its control.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum TheFollowUpIs {
+    /// With the conversation so far, as a task window sends it (ADR 0138).
+    SentWithTheConversation,
+    /// Alone, as every follow-up was before — the control.
+    SentAlone,
+}
+
+/// How a follow-up came out.
+#[derive(Debug, PartialEq, Eq)]
+enum FollowedUp {
+    /// It answered, and named the biggest file in the folder the first request
+    /// listed.
+    UsedWhatCameBefore,
+    /// It answered in words, and did not name that file.
+    AnsweredSomethingElse(String),
+    /// The first request was not answered in words, so there was nothing to
+    /// follow up.
+    TheFirstWasNotAnswered(String),
+    /// Anything else: a proposal, rounds run out, a refusal.
+    Otherwise(String),
+}
+
+/// **Two turns in one task window**: list a folder, then *and how big is the
+/// biggest one?*
+///
+/// Two folders are granted and the model is told of both, as a real shell
+/// tells it of every granted folder. The other one holds a bigger file, so
+/// *the biggest one* is ambiguous unless the model knows which folder the
+/// person meant — which only the earlier conversation says.
+fn a_follow_up(key: &str, endpoint: &str, model: &str, sent: TheFollowUpIs) -> FollowedUp {
+    use alo_instructing::{AnEarlierTurn, TheConversationSoFar};
+
+    let keyring = a_keyring_holding(key);
+    let theirs = a_person_who_chose_the_provider(endpoint, model);
+    let folder = |name: &str| {
+        let at = theirs.join(name);
+        std::fs::create_dir_all(&at).expect("a folder");
+        OnThisMachine
+            .real(&at)
+            .expect("the folder resolves")
+            .into_path_buf()
+    };
+    let invoices = folder("Invoices");
+    let elsewhere = folder("Backups");
+    std::fs::write(invoices.join("march.pdf"), "x".repeat(1200)).expect("an invoice");
+    std::fs::write(invoices.join("annual-statement.pdf"), "x".repeat(9000)).expect("a statement");
+    std::fs::write(invoices.join("april.pdf"), "x".repeat(3000)).expect("an invoice");
+    std::fs::write(elsewhere.join("photos-2025.zip"), "x".repeat(40000)).expect("a backup");
+
+    let mut questions = Questions::of_a_session(
+        Some(theirs.clone().into_os_string()),
+        None,
+        Catalogue::built_in().expect("the built-in catalogue reads"),
+        TheBound::ThePersons(SourcePolicy::Anywhere),
+        WhoseKeyring::On(keyring.bus()),
+    );
+    let strings = starting::what_this_machine_says()
+        .expect("this machine's own words")
+        .into_strings();
+    let mut writing =
+        Writing::opening(&theirs.join("record.jsonl")).expect("a record can be opened");
+    let mut indicator = Indicator::default();
+    let mut bounding = NothingIsBounded;
+    let offered =
+        alo_turn::the_verbs_a_whole_machine_offers().expect("the machine's verbs declare");
+    let may_reach = WhatItMayReach::these([invoices.as_path(), elsewhere.as_path()]);
+    let mut machine = Machine::carrying_out_file_verbs(
+        &strings,
+        &OnThisMachine,
+        &mut bounding,
+        &mut indicator,
+        &mut writing,
+    )
+    .expect("the six declare");
+
+    let first = format!("list the files in {}", invoices.display());
+    let then = "and how big is the biggest one?";
+    let mut said_first: Option<String> = None;
+    let mut ended = None;
+    for request in [first.as_str(), then] {
+        let earlier = match (&said_first, sent) {
+            (Some(answer), TheFollowUpIs::SentWithTheConversation) => {
+                TheConversationSoFar::of(vec![
+                    AnEarlierTurn::ThePersonSaid(first.clone()),
+                    AnEarlierTurn::AloAnswered(answer.clone()),
+                ])
+            }
+            _ => TheConversationSoFar::nothing(),
+        };
+        let now = SystemTime::now();
+        let mut grants = Grants::default();
+        for reach in [&invoices, &elsewhere] {
+            grants.grant(
+                Grant::checked(THE_AGENT, Reach::Folder(reach.clone()), now, hour())
+                    .expect("a grant over a folder this person owns"),
+            );
+        }
+        let mut turning = Turning::beginning(
+            Context::at_invocation(now),
+            THE_AGENT,
+            hour(),
+            &mut grants,
+            &mut machine,
+        )
+        .expect("a turn can begin");
+        let mut door = TheDaemonInThisProcess {
+            turning: &mut turning,
+            questions: &mut questions,
+            grants: &grants,
+            strings: &strings,
+            now,
+            lines: Vec::new(),
+        };
+        let happened = alo_agent::driving_after(
+            &earlier,
+            request,
+            &offered,
+            &may_reach,
+            &mut door,
+            HowFar::THE_ORDINARY,
+            Instructions::SHOWN_TO_A_TURN,
+        );
+        println!("  asked: {request}");
+        for line in door.lines.iter().filter(|line| !line.contains("\"ask\"")) {
+            println!("    {line}");
+        }
+        let proposed = first_proposal(&door.lines);
+        let is_the_follow_up = said_first.is_some();
+        match (happened, proposed, is_the_follow_up) {
+            (_, Some(verb), false) => {
+                ended = Some(FollowedUp::TheFirstWasNotAnswered(verb));
+                break;
+            }
+            (WhatHappened::ItWasAnsweredInWords { said, .. }, None, false) => {
+                println!("    answered: {said}");
+                said_first = Some(said);
+            }
+            (other, None, false) => {
+                ended = Some(FollowedUp::TheFirstWasNotAnswered(format!("{other:?}")));
+                break;
+            }
+            (_, Some(verb), true) => ended = Some(FollowedUp::Otherwise(verb)),
+            (WhatHappened::ItWasAnsweredInWords { said, .. }, None, true) => {
+                println!("    answered: {said}");
+                ended = Some(if said.contains("annual-statement") {
+                    FollowedUp::UsedWhatCameBefore
+                } else {
+                    FollowedUp::AnsweredSomethingElse(said)
+                });
+            }
+            (other, None, true) => ended = Some(FollowedUp::Otherwise(format!("{other:?}"))),
+        }
+    }
+    let _ = std::fs::remove_dir_all(&theirs);
+    let ended = ended.unwrap_or_else(|| FollowedUp::Otherwise("no second turn".to_owned()));
+    println!("    ended: {ended:?}");
+    ended
+}
+
+/// **A follow-up is answered from what came before it** (ADR 0138), and the
+/// control — the same follow-up sent alone — is run beside it, so the count
+/// says what the conversation changed rather than what a model guessed.
+///
+/// ```text
+/// ALO_PROVIDER_KEY=... ALO_PROVIDER_MODEL=gpt-4o ALO_ROUNDS=3 \
+///   cargo test -p alo-agentd --test a_question_is_answered_in_words \
+///   a_follow_up_is_answered_from_what_came_before -- --ignored --nocapture
+/// ```
+#[test]
+#[ignore = "asks a real provider, costs money, and leaves the machine: run it by name"]
+fn a_follow_up_is_answered_from_what_came_before() {
+    let key =
+        std::env::var("ALO_PROVIDER_KEY").expect("ALO_PROVIDER_KEY names the key to ask with");
+    let endpoint =
+        std::env::var("ALO_PROVIDER").unwrap_or_else(|_| "https://api.openai.com".to_owned());
+    let model = std::env::var("ALO_PROVIDER_MODEL").unwrap_or_else(|_| "gpt-4o".to_owned());
+    let rounds: usize = std::env::var("ALO_ROUNDS")
+        .ok()
+        .and_then(|rounds| rounds.parse().ok())
+        .unwrap_or(3);
+    println!("model {model} at {endpoint}, {rounds} round(s) each way");
+
+    let mut with = Vec::new();
+    let mut alone = Vec::new();
+    for round in 1..=rounds {
+        println!("round {round}, with the conversation");
+        with.push(a_follow_up(
+            &key,
+            &endpoint,
+            &model,
+            TheFollowUpIs::SentWithTheConversation,
+        ));
+        println!("round {round}, alone (the control)");
+        alone.push(a_follow_up(
+            &key,
+            &endpoint,
+            &model,
+            TheFollowUpIs::SentAlone,
+        ));
+    }
+    let used = |all: &[FollowedUp]| {
+        all.iter()
+            .filter(|ended| **ended == FollowedUp::UsedWhatCameBefore)
+            .count()
+    };
+    println!(
+        "\nwith the conversation: {} of {rounds} named the biggest file in the folder listed",
+        used(&with)
+    );
+    println!(
+        "alone (the control):   {} of {rounds} named it",
+        used(&alone)
+    );
+    println!("with: {with:?}\nalone: {alone:?}");
+    assert_eq!(
+        used(&with),
+        rounds,
+        "a follow-up sent with the conversation did not use it: {with:?}"
     );
 }

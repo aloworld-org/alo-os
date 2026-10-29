@@ -34,8 +34,10 @@ pub enum WhatTheReplyBoxDid {
     ItChanged,
     /// **A person sent a reply**, and this is what they said.
     ///
-    /// Already added to the conversation and already out of the box: a reply
-    /// still in the box after being sent is one a person sends twice.
+    /// Out of the box — a reply still in the box after being sent is one a
+    /// person sends twice — and **not yet in the conversation**:
+    /// `crate::what_becomes_of_a_reply` decides whether it is sent now or held
+    /// until alo has answered, and a held reply is not part of what came before.
     TheyReplied(String),
 }
 
@@ -102,7 +104,16 @@ fn erased(task: &mut ATask) -> WhatTheReplyBoxDid {
     use unicode_segmentation::UnicodeSegmentation;
     let draft = task.the_draft();
     let Some(last) = draft.graphemes(true).next_back() else {
-        return WhatTheReplyBoxDid::Nothing;
+        // **An empty box gives a held reply back**, to change or to delete:
+        // the one way to take back something that has not been sent yet, and
+        // nothing is lost by it — the words are in the box (ADR 0138).
+        return match task.take_held() {
+            Some(held) => {
+                task.the_person_is_typing(held);
+                WhatTheReplyBoxDid::ItChanged
+            }
+            None => WhatTheReplyBoxDid::Nothing,
+        };
     };
     let keep = draft.len() - last.len();
     let shorter = draft.get(..keep).unwrap_or_default().to_owned();
@@ -115,9 +126,7 @@ fn replied(task: &mut ATask) -> WhatTheReplyBoxDid {
     if !task.enter_sends_the_draft() {
         return WhatTheReplyBoxDid::Nothing;
     }
-    let said = task.take_the_draft();
-    task.the_person_says(said.clone());
-    WhatTheReplyBoxDid::TheyReplied(said)
+    WhatTheReplyBoxDid::TheyReplied(task.take_the_draft())
 }
 
 /// The most a reply can be, in characters.

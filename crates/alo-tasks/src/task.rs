@@ -20,6 +20,7 @@
 use alo_models::InferenceSource;
 
 use crate::activity::{Act, TheActivity};
+use crate::answers_given::TheAnswersGiven;
 use crate::conversation::{TheConversation, Turn};
 use crate::permissions::{Answered, ThePermissions};
 use crate::scrolling::TheScroll;
@@ -56,6 +57,15 @@ pub struct ATask {
     /// to read the start of a long answer and put the window aside should find
     /// it where they were reading.
     scroll: TheScroll,
+    /// What the person answered to each change this task proposed, so a
+    /// follow-up can say what became of it (ADR 0138).
+    answers: TheAnswersGiven,
+    /// A reply the person sent while alo was still working, or while a change
+    /// waited for their answer: **held, not refused**, and sent with the
+    /// conversation once alo has answered (ADR 0138). Kept out of the
+    /// conversation until it is sent, so what alo is told came before it really
+    /// did come before it.
+    held: Option<String>,
 }
 
 /// What a minimised task shows in the right-hand panel.
@@ -90,6 +100,8 @@ impl ATask {
             stopping: Stopping::nobody_asked(),
             draft: String::new(),
             scroll: TheScroll::at_the_newest(),
+            answers: TheAnswersGiven::nothing_yet(),
+            held: None,
         }
     }
 
@@ -163,13 +175,55 @@ impl ATask {
     /// Answers [`crate::Answered::NothingWasAsked`] when nothing was, which is
     /// a stale window or a second press and is not a refusal the person made.
     pub fn allow_once(&mut self) -> Answered {
-        self.permissions.allow_once()
+        let sentence = self.permissions.asking().map(str::to_owned);
+        let answered = self.permissions.allow_once();
+        if let Some(sentence) = sentence {
+            self.answers.given(sentence, answered);
+        }
+        answered
     }
 
     /// They said no. Nothing happened, and nothing is recorded about why,
     /// because nothing was asked.
     pub fn deny(&mut self) -> Answered {
-        self.permissions.deny()
+        let sentence = self.permissions.asking().map(str::to_owned);
+        let answered = self.permissions.deny();
+        if let Some(sentence) = sentence {
+            self.answers.given(sentence, answered);
+        }
+        answered
+    }
+
+    /// What the person answered to each change this task proposed, oldest
+    /// first.
+    #[must_use]
+    pub const fn answers_given(&self) -> &TheAnswersGiven {
+        &self.answers
+    }
+
+    /// Hold this reply until it can be sent.
+    ///
+    /// **A second reply joins the first**, on a line of its own, rather than
+    /// queueing behind it: the person wrote two things before alo could
+    /// answer either, and alo is sent both at once, in the order written.
+    pub fn hold(&mut self, said: impl Into<String>) {
+        let said = said.into();
+        self.held = Some(match self.held.take() {
+            Some(before) => format!("{before}\n{said}"),
+            None => said,
+        });
+    }
+
+    /// The reply waiting to be sent, if one is.
+    #[must_use]
+    pub fn held(&self) -> Option<&str> {
+        self.held.as_deref()
+    }
+
+    /// Take the held reply — to send it, or to give it back to the person to
+    /// change or delete.
+    pub fn take_held(&mut self) -> Option<String> {
+        self.held.take()
     }
 
     /// A follow-up, which stays in this window.

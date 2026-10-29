@@ -71,8 +71,8 @@
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
-use alo_agent::{AtTheDaemonsSocket, HowFar, WhatHappened, driving};
-use alo_instructing::{Instructions, WhatItMayReach};
+use alo_agent::{AtTheDaemonsSocket, HowFar, WhatHappened, driving_after};
+use alo_instructing::{Instructions, TheConversationSoFar, WhatItMayReach};
 
 /// Where the daemon's doors live, which the image makes at boot.
 ///
@@ -135,7 +135,12 @@ fn run() -> Result<ExitCode, String> {
     // its own passes: `crate::driving` takes them rather than choosing, because
     // a grade is a statement about a set of them and a loop that chose would be
     // a second place deciding the one thing every grade is about.
-    let happened = driving(
+    //
+    // **And a follow-up is shown what came before it**, inside the question
+    // this turn asks the daemon — the only road anything takes off this
+    // machine, so the indicator and the record see it (ADR 0138).
+    let happened = driving_after(
+        &asked.earlier,
         &asked.request,
         &verbs,
         &asked.may_reach,
@@ -196,6 +201,13 @@ fn said(happened: &WhatHappened) -> ExitCode {
             ExitCode::SUCCESS
         }
         WhatHappened::ItWasRefused { said, after } => {
+            // **And to the person**, on the output the shell puts in their
+            // window. The sentence was worded for them by the daemon, in their
+            // language — *this conversation is now longer than the model there
+            // can read* among them (ADR 0138) — and until 2026-10-28 it went
+            // only to the service log, so the window could say no more than
+            // that the request stopped.
+            println!("{said}");
             eprintln!("alo-agent: refused after {} step(s): {said}", after.len());
             ExitCode::FAILURE
         }
@@ -260,15 +272,10 @@ struct Asked {
     /// Empty where nothing said, which is every caller that predates this —
     /// `alo-ask` writes one line and still does.
     may_reach: WhatItMayReach,
+    /// What was said before, when this is a follow-up typed in a task window
+    /// (ADR 0138); nothing for a first request and for a request typed here.
+    earlier: TheConversationSoFar,
 }
-
-/// The marker a line of granted folders begins with.
-///
-/// **A marker rather than a second channel**, because the connection
-/// `alo-asking.socket` hands over is one stream and a request is one line.
-/// Anything that does not begin with this *is* the request, so every caller
-/// written before this one keeps working unchanged.
-const THE_FOLDERS: &str = "alo-may-reach:";
 
 /// Read the arguments.
 ///
@@ -304,40 +311,33 @@ fn what_was_asked() -> Result<Asked, String> {
             _ => words.push(argument),
         }
     }
-    let mut may_reach = WhatItMayReach::nothing();
-    let request = if words.is_empty() {
-        // **One line from the input**, so a shell can pipe a person's words in
-        // without quoting them. A request is one line because a turn is one
-        // request; anything longer is a conversation and this is not one.
-        let mut line = String::new();
-        let input = &mut std::io::stdin().lock();
-        std::io::BufRead::read_line(input, &mut line)
-            .map_err(|why| format!("nothing could be read from the input: {why}"))?;
-        // **An optional first line naming the folders this person granted.**
-        // A line that does not begin with the marker is the request itself, so
-        // `alo-ask` and anything else written before this keeps working.
-        if let Some(folders) = line.trim_end().strip_prefix(THE_FOLDERS) {
-            may_reach = WhatItMayReach::these(folders.split('\t').map(Path::new));
-            line.clear();
-            std::io::BufRead::read_line(input, &mut line)
-                .map_err(|why| format!("nothing could be read from the input: {why}"))?;
+    if !words.is_empty() {
+        let request = words.join(" ").trim().to_owned();
+        if request.is_empty() {
+            return Err(
+                "there is no request to drive. Say what to do, or pipe one line in; `--help` \
+                 shows how"
+                    .to_owned(),
+            );
         }
-        line
-    } else {
-        words.join(" ")
-    };
-    let request = request.trim().to_owned();
-    if request.is_empty() {
-        return Err(
-            "there is no request to drive. Say what to do, or pipe one line in; `--help` shows \
-             how"
-            .to_owned(),
-        );
+        return Ok(Asked {
+            request,
+            at,
+            may_reach: WhatItMayReach::nothing(),
+            earlier: TheConversationSoFar::nothing(),
+        });
     }
+    // **What the shell sent, from the input**: the folders, the request, and
+    // for a follow-up the conversation so far. `alo_agent::what_the_person_sent`
+    // holds the order and why an older caller still works.
+    let stdin = std::io::stdin();
+    let socket = std::os::fd::AsFd::as_fd(&stdin);
+    let sent = alo_agent::read_what_the_person_sent(&mut stdin.lock(), Some(socket))?;
     Ok(Asked {
-        request,
+        request: sent.request,
         at,
-        may_reach,
+        may_reach: sent.may_reach,
+        earlier: sent.earlier,
     })
 }
 

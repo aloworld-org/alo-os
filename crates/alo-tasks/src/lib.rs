@@ -20,6 +20,7 @@
 #![forbid(unsafe_code)]
 
 pub mod activity;
+pub mod answers_given;
 pub mod changed;
 pub mod conversation;
 pub mod conversation_layout;
@@ -34,6 +35,7 @@ pub mod which_model;
 pub mod words;
 
 pub use activity::{Act, HowItWent, TheActivity};
+pub use answers_given::TheAnswersGiven;
 pub use changed::WhatChanged;
 pub use conversation::{TheConversation, Turn, WhoSaidIt};
 pub use conversation_layout::{APlacedBlock, TheBlocks, WhoseBlock};

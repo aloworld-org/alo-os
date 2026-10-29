@@ -37,9 +37,11 @@ fn type_in(server: &mut Server, which: WhichTask, words: &str) {
     }
 }
 
-/// **A person types a reply and sends it, and it joins the conversation.**
+/// **A person types a reply and sends it**: out of the box, and handed on —
+/// `crate::what_becomes_of_a_reply` decides whether it joins the conversation
+/// now or is held until alo has answered.
 #[test]
-fn a_reply_is_typed_sent_and_joins_what_was_said() {
+fn a_reply_is_typed_sent_and_handed_on() {
     let (_directory, mut server, which) = a_server_with_a_task("reply-sent");
     let before = server
         .tasks()
@@ -57,11 +59,7 @@ fn a_reply_is_typed_sent_and_joins_what_was_said() {
         WhatTheReplyBoxDid::TheyReplied("Keep the receipts together".to_owned())
     );
     let task = server.tasks().the(which).expect("the task");
-    assert_eq!(task.conversation().each().len(), before + 1);
-    assert_eq!(
-        task.conversation().each().last().map(Turn::said),
-        Some("Keep the receipts together")
-    );
+    assert_eq!(task.conversation().each().len(), before);
     assert!(
         task.the_draft().is_empty(),
         "the box is empty after sending"
@@ -220,4 +218,28 @@ fn erasing_takes_back_a_whole_grapheme() {
         "caf",
         "the letter and its accent went together"
     );
+}
+
+/// **Backspace in an empty box gives a held reply back**, to change or to
+/// delete, and with nothing held it does nothing (ADR 0138).
+#[test]
+fn backspace_in_an_empty_box_gives_a_held_reply_back() {
+    let (_directory, mut server, which) = a_server_with_a_task("held-back");
+    assert_eq!(
+        server.a_key_reached_a_task_window(which, ComposerKey::Erase),
+        WhatTheReplyBoxDid::Nothing,
+        "the control: an empty box with nothing held"
+    );
+    server
+        .tasks_mut()
+        .the_mut(which)
+        .expect("the task")
+        .hold("and the April one too");
+
+    let what = server.a_key_reached_a_task_window(which, ComposerKey::Erase);
+
+    assert_eq!(what, WhatTheReplyBoxDid::ItChanged);
+    let task = server.tasks().the(which).expect("the task");
+    assert_eq!(task.the_draft(), "and the April one too");
+    assert_eq!(task.held(), None, "the reply is both held and in the box");
 }
