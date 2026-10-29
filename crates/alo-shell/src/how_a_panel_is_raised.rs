@@ -25,17 +25,17 @@
 //! marks go through `crate::display_scale::DisplayScale` in
 //! `crate::dock_raster`, so their corner and shadow ask for
 //! [`HowItIsRaised::at`] with the same scale and the whole panel moves together.
-//! **The alo Bar and the task window do too**, since the same day, through
-//! `crate::where_the_bar_opens`, `crate::bar_raster` and `crate::task_raster`.
+//! **The alo Bar, the task window and the market do too**, since the same
+//! day, through `crate::where_the_bar_opens`, `crate::bar_raster`,
+//! `crate::task_raster` and `crate::market_raster`. So every panel drawn
+//! through `crate::dock_surface` is laid out at its display's scale, and
+//! asks for [`HowItIsRaised::at`] with it.
 //!
-//! **The market does not yet.** Its geometry is still laid out
-//! in logical measures used straight as pixels, and drawing its corner at a
-//! dense display's scale would round a panel that is not scaled — an 18 radius
-//! drawn as 36 on a band still 76 tall, which is the fault `crate::dock_raster`
-//! records. So it asks for [`HowItIsRaised::unscaled`], which names that fact
-//! at the call rather than hiding it in a `1.0`; when its layout goes through
-//! the display's scale, that call becomes [`HowItIsRaised::at`] and nothing in
-//! the rasteriser changes.
+//! `HowItIsRaised::unscaled` remains **for tests only**: a look at one, for a
+//! test that draws a panel with no display at all. A shipped panel that asked
+//! for it would draw its corner and shadow at one on geometry laid out at its
+//! display's scale — the half-scaled picture `crate::display_scale` exists to
+//! prevent.
 
 use alo_dock::measures::{THE_DOCKS_CORNER, THE_SHADOW_FALLS, THE_SHADOW_SPREADS};
 
@@ -94,8 +94,9 @@ impl HowItIsRaised {
         Raised { how: self, scale }
     }
 
-    /// This look for a panel whose own geometry is not scaled — the market,
-    /// today. See this file's header.
+    /// This look at one, for a test that draws a panel with no display.
+    /// See this file's header.
+    #[cfg(test)]
     pub(crate) const fn unscaled(self) -> Raised {
         Raised {
             how: self,

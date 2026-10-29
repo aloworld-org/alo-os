@@ -639,8 +639,13 @@ fn the_market_has_somewhere_to_be_drawn_on_the_size_a_machine_draws() {
     );
 
     assert!(
-        where_the_market_opens(view, &showing, alo_appearance::Appearance::shipped().text())
-            .is_some(),
+        where_the_market_opens(
+            view,
+            &showing,
+            alo_appearance::Appearance::shipped().text(),
+            crate::display_scale::DisplayScale::ONE
+        )
+        .is_some(),
         "the market is open and has nowhere to be drawn, so a person who pressed its entry \
          sees exactly what an ignored press looks like"
     );

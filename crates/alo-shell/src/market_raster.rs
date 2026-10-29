@@ -166,7 +166,9 @@ fn box_at(x: i32, y: i32, wide: i32, tall: i32) -> Rectangle<i32, Physical> {
     Rectangle::new((x, y).into(), (wide.max(0), tall.max(0)).into())
 }
 
-/// Draw the window of what a person can install.
+/// Draw the window of what a person can install, on a display drawn at
+/// `scale`: every measure goes through the person's text size and that scale
+/// together, and its corner and shadow through the scale.
 ///
 /// `at` is where the window sits on the output, already placed. Returns [`None`]
 /// for a window the rasteriser refuses — one with no room in it — which a
@@ -177,11 +179,12 @@ pub(crate) fn picture(
     words: &TheMarketsWords,
     look: MarketLook,
     fonts: &mut FontSystem,
+    scale: crate::display_scale::DisplayScale,
 ) -> Option<MarketPicture> {
     let MarketShows::Browsing(browsing) = showing else {
         return None;
     };
-    let measure = Measure::of(look.scale);
+    let measure = Measure::of(look.scale).on(scale);
     let px = |of: u32| measure.px(i32::try_from(of).unwrap_or(i32::MAX));
 
     // **A window with no room for its own furniture is refused**, not drawn
@@ -310,7 +313,7 @@ pub(crate) fn picture(
         surface,
         edge,
         (at.loc.x + at.size.w, at.loc.y + at.size.h),
-        crate::how_a_panel_is_raised::HowItIsRaised::THE_DOCKS.unscaled(),
+        crate::how_a_panel_is_raised::HowItIsRaised::THE_DOCKS.at(scale.factor()),
         APanelsShapes {
             circles: &circles,
             circle: cool,
