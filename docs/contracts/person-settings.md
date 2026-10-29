@@ -2405,7 +2405,7 @@ two ways ([ADR 0138](../decisions/0138-the-first-start-sets-the-time-zone-itself
 
 - by the **first-start screens**, from the region taken there, asking which
   city where the region has several;
-- by **Settings**, in its *Time zone* rows — the cities of the region dates are
+- by **Settings**, in its time-zone rows — the cities of the region dates are
   written like, named in the person's language. Settings asks systemd's
   time-zone service, `org.freedesktop.timedate1` `SetTimezone`, and the image's
   polkit rule (`/usr/share/polkit-1/rules.d/50-alo-time-zone.rules`) lets the

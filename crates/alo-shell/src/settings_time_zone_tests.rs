@@ -41,18 +41,15 @@ fn american(now: &str) -> TimeZoneSection {
     )
 }
 
-/// **The region's cities are offered, the machine's zone ticked**, and the
-/// heading says what they are.
+/// **The region's cities are offered, the machine's zone ticked**, and
+/// nothing is said before anything is changed.
 #[test]
 fn the_regions_cities_are_offered_with_the_machines_ticked() {
     let section = american("America/New_York");
     assert!(section.choices().contains(&"America/Chicago".to_owned()));
     assert_eq!(section.called("America/Chicago"), "Chicago");
     assert!(section.is_chosen("America/New_York"));
-    assert_eq!(
-        section.said(&words()).first().map(String::as_str),
-        Some("Time zone")
-    );
+    assert!(section.said().is_empty());
 }
 
 /// **The person's change lands**: the service is asked once, for exactly
@@ -92,11 +89,11 @@ fn a_service_that_says_no_moves_nothing_and_is_said() {
     );
     assert!(
         section
-            .said(&words())
+            .said()
             .iter()
             .any(|it| it.contains("was not changed")),
         "{:?}",
-        section.said(&words())
+        section.said()
     );
 }
 

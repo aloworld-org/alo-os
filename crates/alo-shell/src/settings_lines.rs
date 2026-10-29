@@ -65,7 +65,7 @@ pub(crate) fn sections(open: &Open, strings: &Strings, now: SystemTime) -> Vec<S
         answering(open, strings, now),
         appearance(open, strings),
         formats(open, strings),
-        time_zone(open, strings),
+        time_zone(open),
         dock(open, strings),
         shortcuts(open, strings),
         terminal(open, strings),
@@ -223,7 +223,7 @@ fn formats(open: &Open, strings: &Strings) -> SectionWords {
 }
 
 /// The time zone: the region's cities, the machine's ticked.
-fn time_zone(open: &Open, strings: &Strings) -> SectionWords {
+fn time_zone(open: &Open) -> SectionWords {
     let section = &open.time_zone;
     let lines = section
         .choices()
@@ -236,7 +236,7 @@ fn time_zone(open: &Open, strings: &Strings) -> SectionWords {
         .collect();
     SectionWords {
         section: SettingsSection::TimeZone,
-        said: section.said(strings),
+        said: section.said(),
         lines,
     }
 }

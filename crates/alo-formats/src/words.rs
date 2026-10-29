@@ -177,13 +177,6 @@ pub const KEPT_NOT_REPLACED: Word = Word::saying(
      back as it ships, which does replace the file.",
 );
 
-/// Every string this crate can say.
-/// Settings' time-zone rows are the cities of one region; this heads them.
-pub const TIME_ZONE: Word = Word::saying("formats.time-zone", "Time zone").noting(
-    "A heading in Settings above a list of cities, each naming a time zone of the country or \
-     region dates are written like. Choosing one sets this computer's clock to it.",
-);
-
 /// The time zone could not be changed.
 pub const ZONE_NOT_CHANGED: Word = Word::saying(
     "formats.time-zone.not-changed",
@@ -194,7 +187,8 @@ pub const ZONE_NOT_CHANGED: Word = Word::saying(
      refused or could not be reached. The clock keeps the time zone it had.",
 );
 
-pub const EVERY_WORD: [Word; 15] = [
+/// Every string this crate can say.
+pub const EVERY_WORD: [Word; 14] = [
     WHERE_THIS_MACHINE_IS,
     TODAY,
     YESTERDAY,
@@ -208,7 +202,6 @@ pub const EVERY_WORD: [Word; 15] = [
     KEPT_NOT_WRITTEN,
     KEPT_NOT_EXPRESSIBLE,
     KEPT_NOT_REPLACED,
-    TIME_ZONE,
     ZONE_NOT_CHANGED,
 ];
 

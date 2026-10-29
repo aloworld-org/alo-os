@@ -81,16 +81,10 @@ impl TimeZoneSection {
         self.now.as_deref() == Some(zone)
     }
 
-    /// What the section says above its rows: its heading, and what the last
-    /// change said.
-    pub(crate) fn said(&self, strings: &Strings) -> Vec<String> {
-        let mut said = vec![
-            strings
-                .say(&alo_formats::words::TIME_ZONE.key(), &Filling::nothing())
-                .into_text(),
-        ];
-        said.extend(self.told.clone());
-        said
+    /// What the section says above its rows: what the last change said, if
+    /// anything. Settings heads no section, so this one is not headed either.
+    pub(crate) fn said(&self) -> Vec<String> {
+        self.told.clone().into_iter().collect()
     }
 
     /// **The person chose this zone**: the service is asked, and the tick
