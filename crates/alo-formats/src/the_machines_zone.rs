@@ -2,7 +2,7 @@
 //! database, replaced whole.
 //!
 //! The owner's decision of 2026-10-28: the region picked on the first-start
-//! sheets sets the machine's zone. [ADR 0139](../../../docs/decisions/0139-the-first-start-sets-the-time-zone-itself.md)
+//! sheets sets the machine's zone. [ADR 0140](../../../docs/decisions/0140-the-first-start-sets-the-time-zone-itself.md)
 //! records the road: the first-start screen writes the link itself, as it
 //! already writes the machine's keyboard and language beside it, because it is
 //! the owner of `/etc` by user id and needs no capability to replace a file

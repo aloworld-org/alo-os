@@ -1,7 +1,7 @@
 //! Setting the time zone a person's region decided on the first-start sheets.
 //!
 //! The owner's decision of 2026-10-28: the region picked sets the machine's
-//! zone. [ADR 0139](../../../docs/decisions/0139-the-first-start-sets-the-time-zone-itself.md)
+//! zone. [ADR 0140](../../../docs/decisions/0140-the-first-start-sets-the-time-zone-itself.md)
 //! records the road: the compositor sets `/etc/localtime` itself, through
 //! `alo_formats::the_machines_zone`, as it already writes the machine's
 //! keyboard and language. This decides only whether anything has to happen.
