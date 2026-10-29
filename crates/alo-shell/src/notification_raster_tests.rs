@@ -171,7 +171,10 @@ fn the_agents_card_carries_both_the_colour_and_the_word() {
 fn a_card_is_drawn_at_the_other_end_from_what_is_leaving() {
     let size = (1920, 1080);
     let dock = Dock::shipped();
-    let measure = Measure::of(TextScale::ordinary());
+    let measure = Measure::at(
+        TextScale::ordinary(),
+        crate::display_scale::DisplayScale::ONE,
+    );
     let layout = dock.layout_on(Screen::of(1920, 1080).unwrap());
     // **Asked with a panel column as well as without one.** The two ends are
     // different numbers on an output nobody has put a window aside on, and the
