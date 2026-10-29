@@ -37,6 +37,7 @@ fn drawn(window: &RecordWindow, clock: RecordClock<'_>) -> RecordPicture {
         (1920, 2160),
         light(),
         clock,
+        crate::display_scale::DisplayScale::ONE,
     )
     .unwrap()
 }

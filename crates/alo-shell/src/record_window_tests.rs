@@ -92,6 +92,7 @@ fn asking_the_agent_what_it_did_reaches_the_same_account() {
         (1920, 1080),
         light(),
         crate::record_testing::a_clock(),
+        crate::display_scale::DisplayScale::ONE,
     )
     .unwrap();
     let drawn_asked = picture(
@@ -101,6 +102,7 @@ fn asking_the_agent_what_it_did_reaches_the_same_account() {
         (1920, 1080),
         light(),
         crate::record_testing::a_clock(),
+        crate::display_scale::DisplayScale::ONE,
     )
     .unwrap();
     assert_eq!(drawn_by_hand, drawn_asked);

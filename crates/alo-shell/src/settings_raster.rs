@@ -171,6 +171,9 @@ pub(crate) fn picture(
             scale: look.scale,
             reading: look.reading,
         },
+        // **At one**: Settings borrows the record window's room and is not
+        // made to follow its display's scale yet, so it is drawn as it was.
+        crate::display_scale::DisplayScale::ONE,
     )
     .map_err(|_| RenderError::SettingsScene)?;
     let top = room.margin;

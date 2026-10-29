@@ -31,7 +31,16 @@ fn opened(kept: &crate::record_testing::Kept) -> RecordWindow {
 /// The window as it stands, drawn on an output of `size`.
 fn drawn_at(window: &RecordWindow, size: (i32, i32), look: RecordLook) -> RecordPicture {
     let mut labels = WindowControlLabels::new().unwrap();
-    picture(window.shows(), &words(), &mut labels, size, look, a_clock()).unwrap()
+    picture(
+        window.shows(),
+        &words(),
+        &mut labels,
+        size,
+        look,
+        a_clock(),
+        crate::display_scale::DisplayScale::ONE,
+    )
+    .unwrap()
 }
 
 /// The window as it stands, drawn on a tall 1920×2160 output, which holds a
@@ -175,7 +184,11 @@ fn what_was_refused_is_drawn_as_plainly_as_what_ran() {
             &mut labels.fonts,
             &entry.clause.text,
             clause_width,
-            Measure::of(TextScale::ordinary()).metrics(),
+            Measure::at(
+                TextScale::ordinary(),
+                crate::display_scale::DisplayScale::ONE,
+            )
+            .metrics(),
             palette.ground,
             palette.ink,
         );
@@ -362,7 +375,8 @@ fn a_window_that_cannot_hold_an_entry_whole_refuses_rather_than_cutting() {
                     &mut labels,
                     size,
                     light(),
-                    a_clock()
+                    a_clock(),
+                    crate::display_scale::DisplayScale::ONE,
                 ),
                 Err(RenderError::RecordScene)
             ),
@@ -376,6 +390,7 @@ fn a_window_that_cannot_hold_an_entry_whole_refuses_rather_than_cutting() {
         (1920, 1080),
         light(),
         a_clock(),
+        crate::display_scale::DisplayScale::ONE,
     )
     .unwrap();
     assert!(drawn.validate((1920, 1080).into()).is_ok());
@@ -460,4 +475,82 @@ fn deep_teal_is_never_drawn() {
                 .all(|inked| inked.pixels.iter().all(|pixel| *pixel != deep_teal))
         );
     }
+}
+
+/// **At 200 per cent the record is drawn twice the size, in twice the
+/// place**, on a display with twice the pixels each way: the panel exactly,
+/// the same remarks and entries in the same order, each clause's box about
+/// twice as large and as far from the corner, and the rules twice as thick.
+///
+/// *About*, because a line of type drawn twice the size is not exactly twice
+/// the pixels of its box: a glyph's edge rounds to a pixel either way.
+#[test]
+fn at_two_hundred_the_record_is_drawn_twice_the_size() {
+    let kept = an_afternoon_kept();
+    let window = opened(&kept);
+    let strings = words();
+    let mut labels = WindowControlLabels::new().unwrap();
+    let mut at = |size: (i32, i32), per_cent: u16| {
+        picture(
+            window.shows(),
+            &strings,
+            &mut labels,
+            size,
+            light(),
+            a_clock(),
+            crate::display_scale::DisplayScale::of_per_cent(per_cent),
+        )
+        .unwrap()
+    };
+    let sparse = at((1920, 2160), 100);
+    let dense = at((3840, 4320), 200);
+
+    let (one, two) = (sparse.panel.unwrap(), dense.panel.unwrap());
+    assert_eq!(
+        (2 * one.loc.x, 2 * one.loc.y, 2 * one.size.w, 2 * one.size.h),
+        (two.loc.x, two.loc.y, two.size.w, two.size.h),
+        "the panel is not exactly twice the size and place"
+    );
+    let said = |picture: &RecordPicture| -> Vec<String> {
+        picture
+            .remarks
+            .iter()
+            .map(|remark| remark.text.clone())
+            .chain(
+                picture
+                    .entries
+                    .iter()
+                    .map(|entry| entry.clause.text.clone()),
+            )
+            .collect()
+    };
+    assert_eq!(said(&sparse), said(&dense), "different words at 200");
+
+    let about_twice = |at_one: i32, at_two: i32| (at_two - 2 * at_one).abs() <= 4 + at_one / 5;
+    for (small, large) in sparse.entries.iter().zip(&dense.entries) {
+        let (a, b) = (small.clause.area, large.clause.area);
+        assert!(
+            about_twice(a.loc.x, b.loc.x)
+                && about_twice(a.loc.y, b.loc.y)
+                && about_twice(a.size.w, b.size.w)
+                && about_twice(a.size.h, b.size.h),
+            "{:?} is at {a:?} at 100 and {b:?} at 200, not twice",
+            small.clause.text
+        );
+    }
+
+    let thinnest = |picture: &RecordPicture| {
+        picture
+            .solids
+            .iter()
+            .map(|solid| solid.area.size.h)
+            .min()
+            .unwrap()
+    };
+    assert_eq!(
+        thinnest(&sparse),
+        1,
+        "the premise: a rule is a hairline at 100"
+    );
+    assert_eq!(thinnest(&dense), 2, "a rule is not twice as thick at 200");
 }

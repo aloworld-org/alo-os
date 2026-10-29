@@ -1,6 +1,12 @@
 //! Where things go in the record window, and in which colours: the panel's
-//! room on one output, the person's text scale, and the two tokens it is drawn
-//! in.
+//! room on one output, the person's text scale times the display's own, and
+//! the two tokens it is drawn in.
+//!
+//! **The display's scale as well as the text size.** Until 2026-10-29 every
+//! measure here went through the text size alone, so on a 200 per cent
+//! display the record opened at half the size of the Dock beside it. Both now
+//! go through `crate::display_scale::DisplayScale`, and at 100 every figure is
+//! the one it was.
 //!
 //! Apart from `crate::record_raster` because it changes for a different reason:
 //! this is how the window looks and is measured, and that file is what goes in
@@ -11,6 +17,7 @@ use alo_strings::Direction;
 use cosmic_text::{FontSystem, Metrics};
 use smithay::utils::{Physical, Rectangle};
 
+use crate::display_scale::DisplayScale;
 use crate::painted::Solid;
 use crate::painted_text::{Shaped, sentence};
 use crate::{Contrast, RenderError};
@@ -33,7 +40,8 @@ pub struct RecordLook {
 /// The largest output side, in pixels, the window is laid out for.
 const LARGEST_SIDE: i32 = 16_384;
 
-/// Measures scaled by the person's text scale, never below one pixel.
+/// Measures scaled by the person's text scale and the display's, never below
+/// one pixel.
 #[derive(Clone, Copy)]
 pub(crate) struct Measure {
     /// The scale, in percent.
@@ -41,10 +49,12 @@ pub(crate) struct Measure {
 }
 
 impl Measure {
-    /// Measures for this scale.
-    pub(crate) fn of(scale: TextScale) -> Self {
+    /// Measures for this text size on a display drawn at `display`: the two
+    /// multiplied, so a person who asked for larger text on a dense screen
+    /// gets both. At a display of one it is the text size alone.
+    pub(crate) fn at(scale: TextScale, display: DisplayScale) -> Self {
         Self {
-            percent: i32::from(scale.as_percent()),
+            percent: i32::from(scale.as_percent()) * i32::from(display.per_cent()) / 100,
         }
     }
 
@@ -111,6 +121,9 @@ pub(crate) struct Room {
     pub(crate) margin: i32,
     /// The space between two pieces of text.
     pub(crate) gap: i32,
+    /// A rule's thickness: one logical pixel, through the display's scale and
+    /// never the text size, so a larger text size does not thicken a hairline.
+    pub(crate) hairline: i32,
     /// The text measures.
     pub(crate) measure: Measure,
     /// The two colours.
@@ -118,14 +131,21 @@ pub(crate) struct Room {
 }
 
 impl Room {
-    /// The room on an output of `size`, or the refusal for one too small or
-    /// larger than any this window is laid out for.
-    pub(crate) fn on(size: (i32, i32), look: RecordLook) -> Result<Self, RenderError> {
+    /// The room on an output of `size` drawn at `display`, or the refusal for
+    /// one too small or larger than any this window is laid out for.
+    ///
+    /// Every measure goes through the person's text size and the display's
+    /// scale together; at [`DisplayScale::ONE`] each is what it was.
+    pub(crate) fn on(
+        size: (i32, i32),
+        look: RecordLook,
+        display: DisplayScale,
+    ) -> Result<Self, RenderError> {
         let (width, height) = size;
         if width > LARGEST_SIDE || height > LARGEST_SIDE {
             return Err(RenderError::RecordScene);
         }
-        let measure = Measure::of(look.scale);
+        let measure = Measure::at(look.scale, display);
         let margin = measure.px(16);
         let pad = measure.px(20);
         let rail = measure.px(10);
@@ -152,6 +172,7 @@ impl Room {
             pad,
             margin,
             gap: measure.px(6),
+            hairline: display.px(1),
             measure,
             palette: Palette::of(look.scheme, look.contrast),
         })
@@ -179,10 +200,10 @@ impl Room {
     }
 }
 
-/// A rule one pixel high across the text, at `y`.
+/// A rule a hairline high across the text, at `y`.
 pub(crate) fn rule(solids: &mut Vec<Solid>, room: Room, y: i32) {
     solids.push(Solid {
-        area: Rectangle::new((room.text_x, y).into(), (room.inner, 1).into()),
+        area: Rectangle::new((room.text_x, y).into(), (room.inner, room.hairline).into()),
         colour: room.palette.ink,
     });
 }
