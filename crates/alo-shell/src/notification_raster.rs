@@ -24,6 +24,16 @@
 //! that covered *what is leaving this machine* or *your camera is on* would be
 //! trading a promise for a convenience.
 //!
+//! # At the display's scale
+//!
+//! Every measure on a card — its edge, the air inside it, the gap between two
+//! cards, how wide one may grow and the type — goes through the person's text
+//! size **and** the display's scale (`Measure::at`), the same road the rows on
+//! the Dock's other corner take. Until 2026-10-28 it went through the text size
+//! only, so on a 200 per cent screen a card was half the size of the Dock it
+//! sits above. At 100 the scale is the identity, and an ordinary screen draws
+//! exactly what it drew before.
+//!
 //! # What is drawn
 //!
 //! Per card: who it is from, its title, its body, and the label of every action
@@ -130,7 +140,9 @@ pub(crate) fn picture(
         u32::try_from(height).map_err(|_| RenderError::NotificationScene)?,
     )
     .map_err(|_| RenderError::NotificationScene)?;
-    let measure = Measure::of(look.scale);
+    // **The text size and the display's scale together**, because the cards
+    // sit on the Dock's corner and the Dock is drawn at that scale.
+    let measure = Measure::at(look.scale, room.scale);
     let place = Place::of_the_other_end(dock.layout_on(screen), room, measure.px(8), look.reading);
     let ground = look.contrast.ground(look.scheme);
     let ink = look.contrast.ink(look.scheme);
@@ -265,3 +277,8 @@ fn lines_of(shown: &Shown, strings: &Strings) -> Lines {
 #[cfg(test)]
 #[path = "notification_raster_tests.rs"]
 mod tests;
+
+/// The cards at a display's scale against the same cards at one.
+#[cfg(test)]
+#[path = "notification_raster_scale_tests.rs"]
+mod scale_tests;

@@ -35,17 +35,14 @@ pub(crate) struct Measure {
 }
 
 impl Measure {
-    /// The measures for this person's text scale.
-    pub(crate) fn of(scale: TextScale) -> Self {
-        Self {
-            percent: i32::from(scale.as_percent()),
-        }
-    }
-
     /// Measures for this text size on a display drawn at `display`.
     ///
     /// The two multiply: a person who asked for larger text on a dense screen
-    /// gets both. At a display of one this is [`Measure::of`] exactly.
+    /// gets both. At a display of one this is the text size alone, exactly.
+    ///
+    /// **The only door**, since 2026-10-29: a text-size-only `of` stood beside it
+    /// until the last surface that read the rows' measures left it, and a door
+    /// nothing goes through is how the next surface comes to be drawn half-size.
     pub(crate) fn at(text: TextScale, display: crate::display_scale::DisplayScale) -> Self {
         Self {
             percent: i32::from(text.as_percent()) * i32::from(display.per_cent()) / 100,

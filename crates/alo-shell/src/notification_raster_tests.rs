@@ -15,12 +15,12 @@ use alo_notifying::{Became, Missed};
 use smithay::utils::{Point, Size};
 
 /// Everything this machine can say, with nothing translated.
-fn words() -> Strings {
+pub(super) fn words() -> Strings {
     Strings::of(alo_saying::everything_this_machine_can_say().unwrap())
 }
 
 /// The ordinary light look, read left to right.
-fn light() -> NotificationLook {
+pub(super) fn light() -> NotificationLook {
     NotificationLook {
         scheme: Scheme::Light,
         scale: TextScale::ordinary(),
@@ -38,12 +38,12 @@ fn an_open_seat() -> Seat<alo_notifying::Notification> {
 }
 
 /// One notification alo OS sent, shown because nothing is holding it.
-fn from_the_machine(title: &str, body: &str, offering: &[(&str, &str)]) -> Shown {
+pub(super) fn from_the_machine(title: &str, body: &str, offering: &[(&str, &str)]) -> Shown {
     shown(from_alo_os(title, body, offering).unwrap())
 }
 
 /// One notification the agent sent, shown for the same reason.
-fn from_an_agent(title: &str) -> Shown {
+pub(super) fn from_an_agent(title: &str) -> Shown {
     shown(from_the_agent(&Grantee::named("@mail"), title, "", &[]).unwrap())
 }
 
@@ -171,7 +171,10 @@ fn the_agents_card_carries_both_the_colour_and_the_word() {
 fn a_card_is_drawn_at_the_other_end_from_what_is_leaving() {
     let size = (1920, 1080);
     let dock = Dock::shipped();
-    let measure = Measure::of(TextScale::ordinary());
+    let measure = Measure::at(
+        TextScale::ordinary(),
+        crate::display_scale::DisplayScale::ONE,
+    );
     let layout = dock.layout_on(Screen::of(1920, 1080).unwrap());
     // **Asked with a panel column as well as without one.** The two ends are
     // different numbers on an output nobody has put a window aside on, and the
