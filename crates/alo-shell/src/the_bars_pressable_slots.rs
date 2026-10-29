@@ -36,6 +36,15 @@ pub(crate) fn the_one_at(places: &Places, which: usize) -> Option<&APlace> {
     pressable(places).nth(which)
 }
 
+/// Where `place` is, counted the same way — the other direction of
+/// [`the_one_at`], for the pointer: a control the pointer is on is named by the
+/// same number the keyboard's ring and Enter use.
+///
+/// [`None`] for a place that is not on this bar, or is not one a press reaches.
+pub(crate) fn which_one_is(places: &Places, place: &APlace) -> Option<usize> {
+    pressable(places).position(|each| std::ptr::eq(each, place))
+}
+
 /// Every slot a press reaches, in the order they sit along the bar.
 fn pressable(places: &Places) -> impl Iterator<Item = &APlace> {
     places

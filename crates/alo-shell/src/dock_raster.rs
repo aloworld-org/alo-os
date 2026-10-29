@@ -896,7 +896,7 @@ pub(crate) fn a_focus_ring(
 /// placement that has to agree with it exactly or a letter would sit beside its
 /// own circle, and the focus ring, which has to sit round the same target a
 /// press lands on.
-fn a_slot_at(
+pub(crate) fn a_slot_at(
     band: Rectangle<i32, Physical>,
     edge: alo_dock::Edge,
     along: i32,

@@ -284,65 +284,12 @@ fn placed(
     Rectangle::new(Point::from((beside, y)), size)
 }
 
-/// `whole`, broken into lines that each fit `room`.
+/// `whole`, broken into lines that each fit `room`, at most
+/// [`AT_MOST_LINES`] of them.
 ///
-/// **Breaks between graphemes and prefers a space**, for the reason
-/// `window_edge_title` cuts on graphemes: a line break inside a combining
-/// sequence is a broken letter, and one inside a word is harder to read than a
-/// short line. A word longer than `room` on its own is broken rather than
-/// allowed to overrun — a single long token is the case where there is no good
-/// answer and overrunning is the worse one.
+/// The rule is `crate::painted_text_wrapping`'s, shared with the Dock's names.
 fn wrapped(whole: &str, room: i32, fonts: &mut cosmic_text::FontSystem) -> Vec<String> {
-    use unicode_segmentation::UnicodeSegmentation;
-
-    let mut lines: Vec<String> = Vec::new();
-    let mut line = String::new();
-    for word in whole.split_whitespace() {
-        let candidate = if line.is_empty() {
-            word.to_owned()
-        } else {
-            format!("{line} {word}")
-        };
-        if crate::painted_text::how_wide(fonts, &candidate, the_metrics()) <= room {
-            line = candidate;
-            continue;
-        }
-        if !line.is_empty() {
-            lines.push(std::mem::take(&mut line));
-            if lines.len() >= AT_MOST_LINES {
-                return lines;
-            }
-        }
-        // The word alone, broken by graphemes if even that does not fit.
-        let mut rest = word;
-        while crate::painted_text::how_wide(fonts, rest, the_metrics()) > room {
-            let mut kept = String::new();
-            let mut cut = 0;
-            for (at, grapheme) in rest.grapheme_indices(true) {
-                let next = format!("{kept}{grapheme}");
-                if crate::painted_text::how_wide(fonts, &next, the_metrics()) > room {
-                    cut = at;
-                    break;
-                }
-                kept = next;
-                cut = at + grapheme.len();
-            }
-            if cut == 0 {
-                // Not one grapheme fits. Nothing can be laid out in this room.
-                return lines;
-            }
-            lines.push(kept);
-            if lines.len() >= AT_MOST_LINES {
-                return lines;
-            }
-            rest = &rest[cut..];
-        }
-        line = rest.to_owned();
-    }
-    if !line.is_empty() && lines.len() < AT_MOST_LINES {
-        lines.push(line);
-    }
-    lines
+    crate::painted_text_wrapping::wrapped(whole, room, fonts, the_metrics(), AT_MOST_LINES).0
 }
 
 #[cfg(test)]
