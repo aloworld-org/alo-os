@@ -495,7 +495,7 @@ fn what_a_machine_offers_does_not_change_with_what_is_on_its_bus() {
 /// **Naming a road changes exactly one thing about what goes to the runtime.**
 ///
 /// Every question carries the window alo OS chose, `num_ctx`, since 2026-10-28
-/// (ADR 0136): until then a question that named no road carried no options at
+/// (ADR 0137): until then a question that named no road carried no options at
 /// all, and the runtime chose the window itself — on a machine with no graphics
 /// card, 4096 tokens with the start of a longer question silently shifted out.
 /// What naming a road adds is still exactly one field, so a comparison of the

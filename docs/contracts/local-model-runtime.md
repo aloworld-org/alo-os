@@ -1,7 +1,7 @@
 # Contract — what alo OS asks of the model runtime on this machine
 
 Status: written 2026-10-28, when alo OS first chose how much a model reads at
-once ([ADR 0136](../decisions/0136-a-follow-up-is-sent-with-the-conversation-so-far.md)).
+once ([ADR 0137](../decisions/0137-a-follow-up-is-sent-with-the-conversation-so-far.md)).
 Until then nothing described what alo OS sends the pinned runtime. This
 describes it, so that the runtime alo OS pins (ADR 0006) can be replaced, and so
 that a person can check what their machine asks of the model.

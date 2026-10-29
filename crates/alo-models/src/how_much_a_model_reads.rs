@@ -1,7 +1,7 @@
 //! **How much a model on this machine is asked to read at once**, and how alo
 //! OS makes sure a question is never answered from part of itself.
 //!
-//! [ADR 0136](../../../docs/decisions/0136-a-follow-up-is-sent-with-the-conversation-so-far.md),
+//! [ADR 0137](../../../docs/decisions/0137-a-follow-up-is-sent-with-the-conversation-so-far.md),
 //! as the owner amended it on 2026-10-28. Until then alo OS set no size at all,
 //! and the pinned runtime chose one itself: on a machine with no graphics card
 //! it chose **4096 tokens** and started the model with context shifting on —
