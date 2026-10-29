@@ -129,7 +129,8 @@ fn the_edge_carries_close_alone_at_the_designs_figures() {
 /// window's pixels are halved into the edge's units and doubled back.
 #[test]
 fn at_twice_the_scale_the_edge_still_meets_the_window() {
-    let pixels = Rectangle::new((400, 248).into(), (2080, 1600).into());
+    let pixels =
+        Rectangle::<i32, smithay::utils::Physical>::new((400, 248).into(), (2080, 1600).into());
     let units = in_the_edges_units(pixels, 200);
 
     assert_eq!(units, Rectangle::new((200, 124).into(), (1040, 800).into()));
