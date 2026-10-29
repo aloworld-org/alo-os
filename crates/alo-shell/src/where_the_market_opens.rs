@@ -78,10 +78,14 @@ use alo_appearance::TextScale;
 use smithay::utils::{Physical, Point, Rectangle, Size};
 
 use crate::desktop_look::Measure;
+use crate::display_scale::DisplayScale;
 use crate::market_measures as m;
 use crate::market_window::MarketShows;
 
-/// Where the window goes on this display, at this text size.
+/// Where the window goes on this display, at this text size and this
+/// display's scale — the two multiplied, as every measure in the market is
+/// (`crate::market_raster`), so on a 200 per cent screen it asks for twice the
+/// pixels.
 ///
 /// Answers [`None`] for a shut window — which is what a display with no market
 /// on it is — and for a display too small to hold one. The second is a true
@@ -94,11 +98,12 @@ pub(crate) fn where_the_market_opens(
     view: Rectangle<i32, Physical>,
     showing: &MarketShows<'_>,
     scale: TextScale,
+    display: DisplayScale,
 ) -> Option<Rectangle<i32, Physical>> {
     let MarketShows::Browsing(browsing) = showing else {
         return None;
     };
-    let measure = Measure::of(scale);
+    let measure = Measure::of(scale).on(display);
     // **Two cards to a row, and the last row may hold one.** `div_ceil` rather
     // than a division and a remainder, so a list of nine does not lose its
     // ninth — the fault a plain `/ 2` makes, and it loses exactly the last

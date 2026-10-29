@@ -400,6 +400,7 @@ fn the_frame_carries_the_market_a_person_opened() {
         )),
         &showing,
         look.scale(),
+        crate::display_scale::DisplayScale::ONE,
     );
     assert!(
         placed.is_some(),

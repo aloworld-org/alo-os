@@ -1403,17 +1403,14 @@ impl LoopInput for Desk<'_> {
             let showing = window.shows();
             crate::where_the_market_opens::where_the_market_opens(
                 // **The same rectangle as the task windows are placed in, told
-                // in the pixels a frame draws into.**
-                // `where_a_task_window_opens::as_a_frame_draws_it` is one
-                // number to one number and says why: nothing in this shell
-                // applies a display scale yet, and a conversion invented here
-                // would be the single scaled figure in an unscaled geometry.
-                // Reusing it rather than building a second rectangle of the
-                // same numbers, so there is one place to change when the shell
-                // does scale.
+                // in the pixels a frame draws into**, by the one conversion
+                // `where_a_task_window_opens::as_a_frame_draws_it` makes.
                 crate::where_a_task_window_opens::as_a_frame_draws_it(the_view),
                 &showing,
                 frame.look.scale(),
+                // **At this display's scale**, the one the task windows were
+                // placed at, so the market asks for this screen's pixels.
+                crate::display_scale::DisplayScale::of_per_cent(this_displays_scale),
             )
             .map(|at| crate::market_raster::AMarketOnTheDisplay {
                 at,

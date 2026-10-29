@@ -49,6 +49,7 @@ fn drawn(
             scale: TextScale::ordinary(),
         },
         &mut fonts,
+        crate::display_scale::DisplayScale::ONE,
     )
     .unwrap()
 }
@@ -101,6 +102,7 @@ fn a_closed_window_draws_nothing() {
             scale: TextScale::ordinary(),
         },
         &mut fonts,
+        crate::display_scale::DisplayScale::ONE,
     );
     assert!(nothing.is_none());
 }
@@ -258,6 +260,7 @@ fn a_window_with_no_room_in_it_is_not_drawn() {
             scale: TextScale::ordinary(),
         },
         &mut fonts,
+        crate::display_scale::DisplayScale::ONE,
     );
     assert!(nothing.is_none(), "a four-pixel window was drawn");
 }
@@ -294,8 +297,12 @@ fn the_rectangle_the_placement_gives_is_one_the_raster_will_draw() {
     let view = crate::where_a_task_window_opens::as_a_frame_draws_it(
         smithay::utils::Rectangle::new(Point::from((0, 0)), Size::from((1280, 800))),
     );
-    let placed =
-        crate::where_the_market_opens::where_the_market_opens(view, &window.shows(), scale);
+    let placed = crate::where_the_market_opens::where_the_market_opens(
+        view,
+        &window.shows(),
+        scale,
+        crate::display_scale::DisplayScale::ONE,
+    );
     assert!(
         placed.is_some(),
         "the premise: the market has somewhere to be drawn"
@@ -313,10 +320,76 @@ fn the_rectangle_the_placement_gives_is_one_the_raster_will_draw() {
                 scale,
             },
             &mut fonts,
+            crate::display_scale::DisplayScale::ONE,
         )
         .is_some(),
         "the market was placed at {at:?} and the raster refuses to draw that rectangle, \
          so a person who pressed the Applications entry gets an open window with no \
          picture -- and, until the guard beside this is fixed, no keyboard either"
+    );
+}
+
+/// **At 200 the market asks for twice the pixels and is drawn twice the size**,
+/// on a display with twice the pixels each way, with every word still drawn —
+/// and its placement at 200 is one the raster at 200 will draw.
+#[test]
+fn at_two_hundred_the_market_is_placed_and_drawn_twice_the_size() {
+    use smithay::utils::{Point, Size};
+
+    let two = crate::display_scale::DisplayScale::of_per_cent(200);
+    let one = crate::display_scale::DisplayScale::ONE;
+    let mut window = MarketWindow::closed();
+    window.opened(Catalogue::decided().unwrap(), Vec::new());
+    let words = TheMarketsWords::said(&Strings::of(
+        alo_saying::everything_this_machine_can_say().unwrap(),
+    ));
+    let view = |w: i32, h: i32| {
+        crate::where_a_task_window_opens::as_a_frame_draws_it(smithay::utils::Rectangle::new(
+            Point::from((0, 0)),
+            Size::from((w, h)),
+        ))
+    };
+    let text = TextScale::ordinary();
+    let sparse = crate::where_the_market_opens::where_the_market_opens(
+        view(1920, 1080),
+        &window.shows(),
+        text,
+        one,
+    )
+    .unwrap();
+    let dense = crate::where_the_market_opens::where_the_market_opens(
+        view(3840, 2160),
+        &window.shows(),
+        text,
+        two,
+    )
+    .unwrap();
+    assert_eq!(dense.size.w, 2 * sparse.size.w, "the market's width");
+    assert_eq!(dense.size.h, 2 * sparse.size.h, "the market's height");
+
+    let draw = |at, scale| {
+        picture(
+            at,
+            window.shows(),
+            &words,
+            MarketLook {
+                scheme: Scheme::Light,
+                scale: text,
+            },
+            &mut crate::WindowControlLabels::new().unwrap().fonts,
+            scale,
+        )
+    };
+    let (Some(small), Some(big)) = (draw(sparse, one), draw(dense, two)) else {
+        unreachable!("a market placed at either scale was refused by the raster");
+    };
+    assert_eq!(big.inked.len(), small.inked.len(), "every word is drawn");
+    let (Some(a), Some(b)) = (small.inked.first(), big.inked.first()) else {
+        unreachable!("a market with no words");
+    };
+    let ratio = f64::from(b.area.size.h) / f64::from(a.area.size.h);
+    assert!(
+        (1.7..=2.3).contains(&ratio),
+        "a line is {ratio} times as tall"
     );
 }

@@ -201,9 +201,9 @@ pub(crate) struct ADocksSurface<'a> {
     /// the hairline, the shadow, each well's corner and each ring — so a panel
     /// cannot be drawn with one measure scaled and the rest not. That was this
     /// file's fault once: it multiplied the radius alone by the display's scale
-    /// and drew an 18 radius as 36 on a Dock band still 76 tall. A panel whose
-    /// geometry is not scaled asks for `HowItIsRaised::unscaled` for that
-    /// reason, and `crate::how_a_panel_is_raised` says which ones do.
+    /// and drew an 18 radius as 36 on a Dock band still 76 tall. Every panel
+    /// now asks with the scale its geometry was laid out at, and
+    /// `crate::how_a_panel_is_raised` says so.
     pub(crate) raised: Raised,
 }
 

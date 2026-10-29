@@ -14,6 +14,9 @@ use super::*;
 use crate::market_keys::MarketKey;
 use crate::market_window::MarketWindow;
 
+/// One to one, which every test here was written at.
+const ONE: crate::display_scale::DisplayScale = crate::display_scale::DisplayScale::ONE;
+
 /// A window open on the decided catalogue.
 fn an_open_window() -> MarketWindow {
     let mut window = MarketWindow::closed();
@@ -31,8 +34,13 @@ fn a_display(w: i32, h: i32) -> Rectangle<i32, Physical> {
 fn a_shut_window_is_nowhere() {
     let shut = MarketWindow::closed();
     assert!(
-        where_the_market_opens(a_display(1920, 1080), &shut.shows(), TextScale::ordinary())
-            .is_none()
+        where_the_market_opens(
+            a_display(1920, 1080),
+            &shut.shows(),
+            TextScale::ordinary(),
+            ONE
+        )
+        .is_none()
     );
 }
 
@@ -42,7 +50,7 @@ fn a_shut_window_is_nowhere() {
 fn it_is_centred_on_the_display() {
     let window = an_open_window();
     let view = a_display(1920, 1080);
-    let at = where_the_market_opens(view, &window.shows(), TextScale::ordinary()).unwrap();
+    let at = where_the_market_opens(view, &window.shows(), TextScale::ordinary(), ONE).unwrap();
 
     assert_eq!(at.loc.x, (view.size.w - at.size.w) / 2);
     assert_eq!(at.loc.y, (view.size.h - at.size.h) / 2);
@@ -64,6 +72,7 @@ fn it_is_the_width_the_design_draws() {
         a_display(1920, 1080),
         &window.shows(),
         TextScale::ordinary(),
+        ONE,
     )
     .unwrap();
 
@@ -82,6 +91,7 @@ fn narrowing_the_list_shortens_the_window() {
         a_display(1920, 1080),
         &window.shows(),
         TextScale::ordinary(),
+        ONE,
     )
     .unwrap();
 
@@ -94,6 +104,7 @@ fn narrowing_the_list_shortens_the_window() {
         a_display(1920, 1080),
         &window.shows(),
         TextScale::ordinary(),
+        ONE,
     )
     .unwrap();
 
@@ -129,8 +140,9 @@ fn an_odd_number_of_applications_still_gets_its_last_row() {
             };
             let how_many = browsing.how_many();
             let rows = u32::try_from(how_many.div_ceil(m::CARDS_ACROSS as usize)).unwrap();
-            let at = where_the_market_opens(a_display(1920, 1080), &showing, TextScale::ordinary())
-                .unwrap();
+            let at =
+                where_the_market_opens(a_display(1920, 1080), &showing, TextScale::ordinary(), ONE)
+                    .unwrap();
             assert_eq!(
                 at.size.h,
                 i32::try_from(m::the_window_is_tall(rows)).unwrap(),
@@ -158,7 +170,7 @@ fn a_display_too_small_holds_no_window() {
     let window = an_open_window();
     for (w, h) in [(320, 240), (632, 100), (100, 1080)] {
         assert!(
-            where_the_market_opens(a_display(w, h), &window.shows(), TextScale::ordinary())
+            where_the_market_opens(a_display(w, h), &window.shows(), TextScale::ordinary(), ONE)
                 .is_none(),
             "a {w}x{h} display was given a window"
         );
@@ -171,9 +183,10 @@ fn a_display_too_small_holds_no_window() {
 fn a_person_who_reads_larger_gets_a_larger_window() {
     let window = an_open_window();
     let view = a_display(3840, 2160);
-    let ordinary = where_the_market_opens(view, &window.shows(), TextScale::ordinary()).unwrap();
+    let ordinary =
+        where_the_market_opens(view, &window.shows(), TextScale::ordinary(), ONE).unwrap();
     let largest = TextScale::percent(TextScale::range().1).unwrap();
-    let larger = where_the_market_opens(view, &window.shows(), largest).unwrap();
+    let larger = where_the_market_opens(view, &window.shows(), largest, ONE).unwrap();
 
     assert!(
         larger.size.w > ordinary.size.w && larger.size.h > ordinary.size.h,
@@ -201,7 +214,7 @@ fn a_window_too_tall_for_the_display_is_cut_rather_than_refused() {
     let largest = TextScale::percent(TextScale::range().1).unwrap();
     let view = a_display(3840, 2160);
 
-    let at = where_the_market_opens(view, &window.shows(), largest)
+    let at = where_the_market_opens(view, &window.shows(), largest, ONE)
         .expect("a person who reads at 300 per cent has no market at all");
 
     assert_eq!(
@@ -233,7 +246,8 @@ fn a_screen_with_no_room_for_the_furniture_holds_no_window() {
         where_the_market_opens(
             a_display(1920, bare - 1),
             &window.shows(),
-            TextScale::ordinary()
+            TextScale::ordinary(),
+            ONE
         )
         .is_none(),
         "a screen one pixel short of the furniture was given a window"
@@ -242,7 +256,8 @@ fn a_screen_with_no_room_for_the_furniture_holds_no_window() {
         where_the_market_opens(
             a_display(1920, bare),
             &window.shows(),
-            TextScale::ordinary()
+            TextScale::ordinary(),
+            ONE
         )
         .is_some(),
         "a screen with exactly room for the furniture was refused one"
