@@ -162,6 +162,12 @@ pub(crate) const fn off_the_screen(words: [u32; 2]) -> [u32; 2] {
     [words[0] & !(1 << SHOWING), words[1]]
 }
 
+/// Whether these states say the thing is in front of the person, which is
+/// what a control added under it later must agree with.
+pub(crate) const fn is_showing(words: [u32; 2]) -> bool {
+    words[0] & (1 << SHOWING) != 0
+}
+
 /// Whether a state is one a reader announces the moment it changes.
 pub(crate) const fn is_announced(state: State) -> bool {
     matches!(state, State::AnnouncedWhenItChanges)

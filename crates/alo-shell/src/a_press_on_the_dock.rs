@@ -455,8 +455,9 @@ impl crate::Server {
     /// and a pointer come to do different things to one slot —
     /// `crate::window_control_input` records what that cost once: only the
     /// keyboard was migrated and the button stayed broken while a keyboard
-    /// test passed.
-    fn carry_out_what_the_bar_was_asked_for(
+    /// test passed. A screen reader's press is the third road, and comes here
+    /// too (`crate::a_reader_presses`).
+    pub(crate) fn carry_out_what_the_bar_was_asked_for(
         &mut self,
         answer: Option<WhatAPressOnTheDockDoes>,
     ) -> bool {

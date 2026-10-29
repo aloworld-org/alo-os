@@ -23,11 +23,13 @@
 //! sighted person sees are one sentence and not two that can drift.
 
 use alo_access::{Control, Surface, TurnedOn};
+use alo_dock::places::WhatIsHere;
 use alo_strings::{Filling, Strings};
 
 use crate::access_action::Pressed;
 use crate::access_roles::{self, APPLICATION, FILLER};
 use crate::frame_name::FrameName;
+use crate::the_dock_as_a_reader_meets_it::{ItsName, as_read};
 use crate::the_tasks_a_person_opened::WhichTask;
 use crate::window_edge::Decorations;
 use crate::window_edge_reading::what_a_reader_is_told;
@@ -323,7 +325,146 @@ impl ReadAloudTree {
     /// mistaken for one window whose Close still reaches the first.
     #[must_use]
     pub fn what_can_be_pressed(&self) -> Vec<Pressed> {
-        self.nodes.iter().filter_map(|node| node.press).collect()
+        self.nodes
+            .iter()
+            .filter_map(|node| node.press.clone())
+            .collect()
+    }
+
+    /// The same tree, with each control on the Dock in place of the Dock's
+    /// description.
+    ///
+    /// **The owner's decision of 2026-10-28**: every Dock button has a name a
+    /// screen reader announces. `alo-access` describes the Dock as a list with
+    /// *an application* and *open something* in it, which is what a reader is
+    /// told about a Dock in general; `slots` is this Dock, as it was drawn, and
+    /// once there is one the description gives way to it. Each control is
+    /// named and made pressable by `crate::the_dock_as_a_reader_meets_it`.
+    ///
+    /// **No slots, no change**: before a Dock has been drawn there is nothing
+    /// to name, and the description is truer than an empty list would be.
+    ///
+    /// The new controls are shown exactly when the Dock is, so a Dock that is
+    /// not up is not read as something in front of the person.
+    #[must_use]
+    pub fn with_the_docks_slots(mut self, strings: &Strings, slots: &[WhatIsHere]) -> Self {
+        if slots.is_empty() {
+            return self;
+        }
+        let Some(dock) = self
+            .surfaces
+            .iter()
+            .find_map(|(surface, at)| (*surface == Surface::Dock).then_some(*at))
+        else {
+            return self;
+        };
+        let showing = self
+            .nodes
+            .get(dock)
+            .is_some_and(|node| access_roles::is_showing(node.states));
+        let dock = self.take_away_what_hangs_under(dock);
+        for what in slots {
+            let Some(slot) = as_read(what) else {
+                continue;
+            };
+            let name = match slot.name {
+                ItsName::ItsOwn(name) => name.to_owned(),
+                ItsName::Said(word) => said(strings, word),
+            };
+            let states = access_roles::words_of(alo_access::State::CanBeUsed, None);
+            self.push(
+                dock,
+                Node {
+                    path: String::new(),
+                    role: access_roles::number_of(slot.role),
+                    name,
+                    states: if showing {
+                        states
+                    } else {
+                        access_roles::off_the_screen(states)
+                    },
+                    announced: false,
+                    parent: dock,
+                    children: Vec::new(),
+                    press: slot.press,
+                },
+            );
+        }
+        self
+    }
+
+    /// What a reader is told is on the Dock, in the order it hears it.
+    ///
+    /// The Dock's twin of [`Self::the_windows_open_as_read`]: what somebody
+    /// with their eyes shut would hear walking the Dock.
+    #[must_use]
+    pub fn the_dock_as_read(&self) -> Vec<&str> {
+        self.surfaces
+            .iter()
+            .find_map(|(surface, at)| (*surface == Surface::Dock).then_some(*at))
+            .and_then(|dock| self.nodes.get(dock))
+            .map(|dock| {
+                dock.children
+                    .iter()
+                    .filter_map(|at| self.nodes.get(*at).map(|node| node.name.as_str()))
+                    .collect()
+            })
+            .unwrap_or_default()
+    }
+
+    /// Take away everything under `at`, and say where `at` now is.
+    ///
+    /// **Every index is renumbered, and every path with it**, because a node's
+    /// path is its position (see [`Self::push`]) and a gap would leave a path
+    /// pointing at the wrong node. The shell's own node is never under
+    /// anything, so it stays first and keeps [`ROOT`].
+    fn take_away_what_hangs_under(&mut self, at: usize) -> usize {
+        let mut gone: Vec<usize> = Vec::new();
+        let mut looking: Vec<usize> = self
+            .nodes
+            .get(at)
+            .map(|node| node.children.clone())
+            .unwrap_or_default();
+        while let Some(next) = looking.pop() {
+            if let Some(node) = self.nodes.get(next) {
+                looking.extend(node.children.iter().copied());
+            }
+            gone.push(next);
+        }
+        let mut moved_to: Vec<Option<usize>> = Vec::with_capacity(self.nodes.len());
+        let mut kept = 0;
+        for old in 0..self.nodes.len() {
+            if gone.contains(&old) {
+                moved_to.push(None);
+            } else {
+                moved_to.push(Some(kept));
+                kept += 1;
+            }
+        }
+        let moved = |old: usize| moved_to.get(old).copied().flatten();
+        let nodes = std::mem::take(&mut self.nodes);
+        self.nodes = nodes
+            .into_iter()
+            .enumerate()
+            .filter_map(|(old, node)| {
+                let new = moved(old)?;
+                Some(Node {
+                    path: if new == 0 {
+                        node.path
+                    } else {
+                        format!("/org/a11y/atspi/accessible/{new}")
+                    },
+                    parent: moved(node.parent).unwrap_or(0),
+                    children: node.children.iter().filter_map(|c| moved(*c)).collect(),
+                    ..node
+                })
+            })
+            .collect();
+        self.surfaces = std::mem::take(&mut self.surfaces)
+            .into_iter()
+            .filter_map(|(surface, old)| moved(old).map(|new| (surface, new)))
+            .collect();
+        moved(at).unwrap_or(at)
     }
 
     /// The windows a reader is told are open, in the order it hears them.

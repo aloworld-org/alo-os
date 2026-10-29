@@ -680,7 +680,7 @@ fn a_reader_finds_close_on_each_task_window_and_presses_it() {
 
     use alo_models::InferenceSource;
     use alo_shell::closing_a_task_window::WhatClosingCameTo;
-    use alo_shell::{Pressed, Server};
+    use alo_shell::{Pressed, Server, WhatAReaderPressCameTo};
     use alo_tasks::ATask;
     use alo_tasks::conversation::Turn;
 
@@ -761,8 +761,8 @@ fn a_reader_finds_close_on_each_task_window_and_presses_it() {
     let pressed = bus.pressed();
     assert_eq!(pressed, [Pressed::CloseTheTask(working)]);
     assert_eq!(
-        server.a_reader_pressed(pressed[0]),
-        WhatClosingCameTo::StillRunning
+        server.a_reader_pressed(pressed[0].clone()),
+        WhatAReaderPressCameTo::ATaskWindow(WhatClosingCameTo::StillRunning)
     );
     assert!(server.tasks().is_open(working), "a running task was closed");
 
@@ -771,8 +771,8 @@ fn a_reader_finds_close_on_each_task_window_and_presses_it() {
     let pressed = bus.pressed();
     assert_eq!(pressed, [Pressed::CloseTheTask(done)], "one press, once");
     assert_eq!(
-        server.a_reader_pressed(pressed[0]),
-        WhatClosingCameTo::Closed
+        server.a_reader_pressed(pressed[0].clone()),
+        WhatAReaderPressCameTo::ATaskWindow(WhatClosingCameTo::Closed)
     );
     assert!(
         !server.tasks().is_open(done),

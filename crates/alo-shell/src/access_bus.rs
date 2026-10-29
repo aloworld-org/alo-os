@@ -141,9 +141,9 @@ impl ReadAloudBus {
                 ReadAloud::of(node, tree, &self.answers_as),
             )?;
             self.served.push(node.path.clone());
-            if let Some(pressed) = node.press {
+            if let Some(pressed) = &node.press {
                 let pressable = Pressable {
-                    pressed,
+                    pressed: pressed.clone(),
                     said: node.name.clone(),
                     to: self.to.clone(),
                 };
