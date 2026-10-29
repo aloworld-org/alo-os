@@ -78,6 +78,7 @@ pub(crate) fn watching(agent: BorrowedFd<'_>) -> Option<Watching> {
 impl Watching {
     /// The message has been answered: the watcher ends, and says whether the
     /// agent stopped it.
+    #[cfg(test)]
     pub(crate) fn answered(mut self) -> bool {
         self.ended()
     }
@@ -94,7 +95,7 @@ impl Watching {
 
 impl Drop for Watching {
     fn drop(&mut self) {
-        drop(self.ended());
+        let _ = self.ended();
     }
 }
 

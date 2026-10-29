@@ -130,7 +130,7 @@ impl crate::Server {
             return;
         };
         self.close_when_stopped.remove(at);
-        drop(self.the_person_closes_a_task(which));
+        let _ = self.the_person_closes_a_task(which);
     }
 }
 

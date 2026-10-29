@@ -217,7 +217,7 @@ fn a_readers_close_never_answers_a_waiting_change() {
 
     assert_eq!(
         server.a_reader_pressed(Pressed::CloseTheTask(which)),
-        WhatAReaderPressCameTo::ATaskWindow(WhatClosingCameTo::StillRunning)
+        WhatAReaderPressCameTo::ATaskWindow(WhatClosingCameTo::Asked)
     );
     assert!(server.tasks().is_open(which), "a waiting task was closed");
     assert!(daemon.approved.borrow().is_empty(), "closing approved it");
@@ -240,7 +240,7 @@ fn a_readers_close_leaves_a_running_task_open() {
 
     assert_eq!(
         server.a_reader_pressed(Pressed::CloseTheTask(which)),
-        WhatAReaderPressCameTo::ATaskWindow(WhatClosingCameTo::StillRunning)
+        WhatAReaderPressCameTo::ATaskWindow(WhatClosingCameTo::Asked)
     );
     assert!(server.tasks().is_open(which), "a running task was closed");
     assert!(

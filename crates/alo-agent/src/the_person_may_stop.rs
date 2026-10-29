@@ -150,18 +150,19 @@ mod tests {
     /// A watcher over one end of a pair, standing in for the shell's
     /// connection, and the far end of a second pair, standing in for the
     /// daemon's.
-    fn a_turn() -> (UnixStream, UnixStream, ThePersonMayStop) {
+    fn a_turn() -> (UnixStream, UnixStream, UnixStream, ThePersonMayStop) {
         let (shell, input) = UnixStream::pair().unwrap();
         let (to_the_daemon, daemon) = UnixStream::pair().unwrap();
-        let watching = ThePersonMayStop::watching(OwnedFd::from(input), to_the_daemon);
-        (shell, daemon, watching)
+        let watching =
+            ThePersonMayStop::watching(OwnedFd::from(input), to_the_daemon.try_clone().unwrap());
+        (shell, to_the_daemon, daemon, watching)
     }
 
     /// **The shell's half-close is heard as a Stop**, and the daemon is told
     /// by this side's own half-close.
     #[test]
     fn a_shell_that_shuts_its_side_stops_the_turn_and_the_daemon_hears() {
-        let (shell, mut daemon, watching) = a_turn();
+        let (shell, _ours, mut daemon, watching) = a_turn();
         shell.shutdown(std::net::Shutdown::Write).unwrap();
         std::thread::sleep(HOW_OFTEN * 4);
         assert!(watching.has_stopped());
@@ -180,7 +181,7 @@ mod tests {
     /// watcher leaves the daemon's connection as it was.
     #[test]
     fn a_shell_that_waits_has_not_stopped() {
-        let (_shell, daemon, watching) = a_turn();
+        let (_shell, _ours, daemon, watching) = a_turn();
         std::thread::sleep(HOW_OFTEN * 2);
         assert!(!watching.ended());
         daemon.set_nonblocking(true).unwrap();

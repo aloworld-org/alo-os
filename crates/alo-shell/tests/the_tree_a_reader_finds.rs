@@ -763,7 +763,7 @@ fn a_reader_finds_close_on_each_task_window_and_presses_it() {
     assert_eq!(pressed, [Pressed::CloseTheTask(working)]);
     assert_eq!(
         server.a_reader_pressed(pressed[0].clone()),
-        WhatAReaderPressCameTo::ATaskWindow(WhatClosingCameTo::StillRunning)
+        WhatAReaderPressCameTo::ATaskWindow(WhatClosingCameTo::Asked)
     );
     assert!(server.tasks().is_open(working), "a running task was closed");
 
