@@ -19,17 +19,21 @@
 //! and a focus ring all go through the same multiplication, in
 //! `crate::dock_surface`, and none of them through any other.
 //!
-//! # Why the Dock still draws at scale one
+//! # Which panels draw at their display's scale
 //!
-//! The Dock's band, slots and marks are laid out in `alo_dock`'s logical
-//! measures used straight as pixels — `crate::dock_raster` says so and says why.
-//! Drawing its corner at a dense display's scale would round a band that is not
-//! scaled, the fault that file records: an 18 radius drawn as 36 on a band still
-//! 76 tall. So every panel whose geometry is laid out unscaled asks for
-//! [`HowItIsRaised::unscaled`], which names that fact at the call rather than
-//! hiding it in a `1.0`; when the Dock's layout goes through the display's
-//! scale, those calls become [`HowItIsRaised::at`] and nothing in the
-//! rasteriser changes.
+//! **The Dock and *More apps* do**, since 2026-10-28: their band, slots and
+//! marks go through `crate::display_scale::DisplayScale` in
+//! `crate::dock_raster`, so their corner and shadow ask for
+//! [`HowItIsRaised::at`] with the same scale and the whole panel moves together.
+//!
+//! **The Bar and the task window do not yet.** Their geometry is still laid out
+//! in logical measures used straight as pixels, and drawing their corner at a
+//! dense display's scale would round a panel that is not scaled — an 18 radius
+//! drawn as 36 on a band still 76 tall, which is the fault `crate::dock_raster`
+//! records. So they ask for [`HowItIsRaised::unscaled`], which names that fact
+//! at the call rather than hiding it in a `1.0`; when their layout goes through
+//! the display's scale, those calls become [`HowItIsRaised::at`] and nothing in
+//! the rasteriser changes.
 
 use alo_dock::measures::{THE_DOCKS_CORNER, THE_SHADOW_FALLS, THE_SHADOW_SPREADS};
 
@@ -88,8 +92,8 @@ impl HowItIsRaised {
         Raised { how: self, scale }
     }
 
-    /// This look for a panel whose own geometry is not scaled — the Dock, the
-    /// Bar, *More apps* and the task window, today. See this file's header.
+    /// This look for a panel whose own geometry is not scaled — the Bar and
+    /// the task window, today. See this file's header.
     pub(crate) const fn unscaled(self) -> Raised {
         Raised {
             how: self,

@@ -24,11 +24,11 @@
 //!
 //! # No display scale
 //!
-//! Every figure is a logical measure used directly as a pixel, which is
-//! `crate::dock_raster`'s documented decision and the reason given there: a
-//! scale applied to one measure of an otherwise unscaled geometry is worse than
-//! one applied to none. This joins that pending change rather than growing its
-//! own conversion.
+//! Every figure is a logical measure used directly as a pixel. The Dock went
+//! through its display's scale on 2026-10-28 (`crate::display_scale`); this
+//! window has not yet, and until it does every figure here — its focus rings
+//! included — stays at one together, because a scale applied to one measure of
+//! an otherwise unscaled geometry is worse than one applied to none.
 
 use alo_tasks::layout::{TheRows, TooSmall};
 use alo_tasks::measures as m;
@@ -414,10 +414,16 @@ pub(crate) fn furniture(
         rings.push(deny);
         match answers.selected {
             Some(crate::a_change_waiting_reaches_the_person::WhichAnswer::AllowOnce) => {
-                outlines.push(crate::dock_raster::a_focus_ring(allow));
+                outlines.push(crate::dock_raster::a_focus_ring(
+                    allow,
+                    crate::display_scale::DisplayScale::ONE,
+                ));
             }
             Some(crate::a_change_waiting_reaches_the_person::WhichAnswer::Deny) => {
-                outlines.push(crate::dock_raster::a_focus_ring(deny));
+                outlines.push(crate::dock_raster::a_focus_ring(
+                    deny,
+                    crate::display_scale::DisplayScale::ONE,
+                ));
             }
             // **Nothing is preselected, so nothing is outlined** until the
             // person moves to an answer.

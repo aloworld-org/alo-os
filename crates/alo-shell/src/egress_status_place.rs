@@ -89,6 +89,14 @@ pub(crate) struct TheRoom {
     /// [`None`] and a rectangle of no extent are the same answer — see
     /// [`the_span_across`]. Both are ordinary: most frames have nothing put aside.
     pub(crate) panel: Option<Rectangle<i32, Physical>>,
+    /// The output's scale, which the Dock's thickness and the gap it floats in
+    /// are drawn at — so the corner clears a Dock drawn twice the size on a
+    /// two-times display, rather than sitting on it.
+    ///
+    /// **With the size because it is a fact about the same output**, and for the
+    /// reason the panel's column is: a corner laid out from a scale handed in
+    /// separately is a corner one caller will lay out at the wrong one.
+    pub(crate) scale: crate::display_scale::DisplayScale,
 }
 
 impl TheRoom {
@@ -99,8 +107,17 @@ impl TheRoom {
     /// Named rather than written as `TheRoom { size, panel: None }` at each of them,
     /// so *there is no panel in this frame* reads as a statement instead of as a
     /// field somebody left out.
+    ///
+    /// **At scale one**: none of those scenes is laid out through its display's
+    /// scale yet, and an indicator placed for a doubled Dock beside a window
+    /// drawn at one would be the half-scaled picture `crate::display_scale`
+    /// exists to prevent.
     pub(crate) const fn with_nothing_put_aside(size: (i32, i32)) -> Self {
-        Self { size, panel: None }
+        Self {
+            size,
+            panel: None,
+            scale: crate::display_scale::DisplayScale::ONE,
+        }
     }
 }
 
@@ -155,8 +172,8 @@ fn the_columns_reserved(
     width: i32,
 ) -> Vec<Rectangle<i32, Physical>> {
     let mut columns: Vec<Rectangle<i32, Physical>> = room.panel.into_iter().collect();
-    let thickness = i32::try_from(layout.thickness().as_pixels()).unwrap_or(i32::MAX);
-    let floating = i32::try_from(alo_dock::measures::FLOATING_ABOVE_THE_EDGE).unwrap_or(i32::MAX);
+    let thickness = room.scale.room(layout.thickness());
+    let floating = room.scale.px(alo_dock::measures::FLOATING_ABOVE_THE_EDGE);
     // The lane plus the gap it floats in: a row ending flush against the Dock's
     // outer face would still be inside the space the Dock is inset from.
     let lane = thickness.saturating_add(floating);
@@ -302,8 +319,12 @@ impl Place {
     /// parameter, and why the size and the column travel together.
     pub(crate) fn of(layout: Layout, room: TheRoom, margin: i32, reading: Direction) -> Self {
         let (width, height) = room.size;
-        let thickness = i32::try_from(layout.thickness().as_pixels())
-            .unwrap_or(i32::MAX)
+        // **Through the output's scale**, which is the scale the Dock itself is
+        // drawn at — `crate::where_the_dock_is` converts the same two measures
+        // the same way.
+        let thickness = room
+            .scale
+            .room(layout.thickness())
             .clamp(0, width.min(height));
         // **The Dock's thickness is still asked of the whole output.** Narrowing the
         // room is not the same as narrowing the screen: the Dock lays out on the
@@ -317,8 +338,7 @@ impl Place {
         // Clear of the bar, which floats above the bottom edge rather than
         // sitting on it — so the first line starts above the gap as well as
         // above the bar itself.
-        let floating =
-            i32::try_from(alo_dock::measures::FLOATING_ABOVE_THE_EDGE).unwrap_or(i32::MAX);
+        let floating = room.scale.px(alo_dock::measures::FLOATING_ABOVE_THE_EDGE);
         // **Where the rows start, which is the whole of what the edge changes
         // here.** A dock along the bottom is cleared by stacking up from above it;
         // along the top, by stacking down from under it. Down a side it takes no
@@ -350,6 +370,7 @@ mod tests {
     /// A 1920×1080 output with this column reserved on it, if any.
     fn big(panel: Option<Rectangle<i32, Physical>>) -> TheRoom {
         TheRoom {
+            scale: crate::display_scale::DisplayScale::ONE,
             size: (1920, 1080),
             panel,
         }
@@ -359,6 +380,7 @@ mod tests {
     /// column reserved on it, if any.
     fn small(panel: Option<Rectangle<i32, Physical>>) -> TheRoom {
         TheRoom {
+            scale: crate::display_scale::DisplayScale::ONE,
             size: (1280, 720),
             panel,
         }

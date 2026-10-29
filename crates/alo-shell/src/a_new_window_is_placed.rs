@@ -81,8 +81,12 @@
 //! **No second scale conversion happens here, deliberately.**
 //! `crate::canvas_fixed_controls` records that the owner's ruling of
 //! 2026-10-01 asks for exactly one, and that the bounds it stores are in the
-//! room they were laid out from — pinned by
-//! `desktop_raster_tests::the_dock_band_and_the_panel_column_do_not_move_with_the_displays_scale`.
+//! pixels the display draws — which windows are drawn in too, because clients
+//! are told scale one (`crate::their_displays`). Since 2026-10-28 the Dock's
+//! band reaches those pixels through the display's scale and the panel's column
+//! does not yet, which
+//! `desktop_raster_tests::the_dock_band_moves_with_the_displays_scale_and_the_panel_column_does_not_yet`
+//! holds; either way each is the rectangle the display really covers.
 //! So the camera is the only thing applied, and the `Physical` marker on those
 //! rectangles is dropped rather than converted.
 

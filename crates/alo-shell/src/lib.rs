@@ -195,6 +195,8 @@ mod direct_sign_in;
 mod direct_target;
 mod display_lifecycle;
 mod display_resources;
+/// One display's scale, and the one road a logical measure takes to its pixels.
+mod display_scale;
 mod division_raster;
 mod dock_raster;
 /// The Dock's own surface: a rounded panel with a hairline and a shadow,
