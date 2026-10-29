@@ -50,6 +50,10 @@ pub(crate) fn picture(
             (size.0, height),
             look.appearance,
             crate::sign_in_raster::WhoseScreen::InsideAnother,
+            // **At one**: the lock screen's embedded form is not made to
+            // follow its display yet, and is drawn only in the development
+            // backend's window (`crate::nested_lock`).
+            crate::display_scale::DisplayScale::ONE,
         )?;
         if form
             .inked

@@ -440,6 +440,7 @@ fn the_screen_greets_the_person_it_is_authenticating() {
             (1280, 800),
             light(),
             crate::sign_in_raster::WhoseScreen::ItsOwn,
+            crate::display_scale::DisplayScale::ONE,
         )
         .unwrap();
         drawn

@@ -31,6 +31,7 @@
 
 use smithay::utils::{Logical, Point};
 
+use crate::display_scale::DisplayScale;
 use crate::sign_in_layout::SignInLayout;
 use crate::sign_in_pointing::{OnTheSignInScreen, what_is_under_the_pointer};
 use crate::{DirectPointerEvent, InputError};
@@ -97,16 +98,26 @@ impl ThePointerOnTheSignInScreen {
     /// origin** — the rule `crate::a_press_in_the_menu` already holds, and
     /// here it is the difference between a stray button event doing nothing
     /// and one landing on *Back to lock* at (32, 28).
+    ///
+    /// **The pointer is kept in the output's pixels and `at` is logical**, so
+    /// the pixel it is in is taken through `display`, the scale the frame was
+    /// drawn at. At a whole scale every pixel of a drawn control lands inside
+    /// the logical control it was drawn from; at one this is the identity.
     #[must_use]
-    pub(crate) fn pressed(self, at: &SignInLayout) -> Option<OnTheSignInScreen> {
+    pub(crate) fn pressed(
+        self,
+        at: &SignInLayout,
+        display: DisplayScale,
+    ) -> Option<OnTheSignInScreen> {
         let point = self.at?;
         #[expect(
             clippy::cast_possible_truncation,
             reason = "a pointer inside a pixel belongs to that pixel: the half-open rule the \
                       rectangles use, and `crate::the_pointer_in_pixels` gives the reason"
         )]
-        let point = Point::from((point.x as i32, point.y as i32));
-        what_is_under_the_pointer(at, point)
+        let (x, y) = (point.x as i32, point.y as i32);
+        let logical = |pixels: i32| i32::try_from(display.logical(pixels)).unwrap_or(i32::MAX);
+        what_is_under_the_pointer(at, Point::from((logical(x), logical(y))))
     }
 }
 

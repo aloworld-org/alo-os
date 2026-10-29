@@ -78,6 +78,7 @@ fn drawn(screen: &SignInScreen<ADoor>) -> crate::sign_in_raster::SignInPicture {
         (1440, 960),
         light(),
         WhoseScreen::ItsOwn,
+        crate::display_scale::DisplayScale::ONE,
     )
     .expect("a fresh machine's sheet draws")
 }

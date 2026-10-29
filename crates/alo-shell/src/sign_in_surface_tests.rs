@@ -21,7 +21,7 @@ use smithay::utils::{Scale, Size};
 /// The reference screen, at one-to-one.
 fn drawn(entry: TheEntryIs) -> (crate::painted::Washed, crate::sign_in_layout::SignInLayout) {
     let at = sign_in_laid_out(Size::from((1440, 960))).expect("the reference size lays out");
-    let washed = sign_in_surface(&at, entry, Scale::from(1.0), designed())
+    let washed = sign_in_surface(&at, (1440, 960), entry, Scale::from(1.0), designed())
         .expect("a screen with area draws");
     (washed, at)
 }
@@ -194,9 +194,20 @@ fn a_refusal_does_not_touch_what_is_inside_the_entry() {
 #[test]
 fn it_draws_at_fractional_scale() {
     let at_ = sign_in_laid_out(Size::from((1440, 960))).expect("lays out");
-    for scale in [1.0, 1.25, 1.5, 2.0] {
-        let washed = sign_in_surface(&at_, TheEntryIs::Waiting, Scale::from(scale), designed())
-            .expect("a screen with area draws at every scale");
+    for (scale, pixels) in [
+        (1.0, (1440, 960)),
+        (1.25, (1800, 1200)),
+        (1.5, (2160, 1440)),
+        (2.0, (2880, 1920)),
+    ] {
+        let washed = sign_in_surface(
+            &at_,
+            pixels,
+            TheEntryIs::Waiting,
+            Scale::from(scale),
+            designed(),
+        )
+        .expect("a screen with area draws at every scale");
         assert_eq!(
             washed.pixels.len(),
             (washed.area.size.w * washed.area.size.h * 4) as usize,
@@ -207,6 +218,27 @@ fn it_draws_at_fractional_scale() {
             "scaling {scale} made the raster smaller than the logical screen"
         );
     }
+}
+
+/// **The whole output is painted, at a scale that does not divide it.** 1366
+/// at 300 per cent is 455 logical pixels, which is 1365 again: the raster is
+/// the output's own size, so no strip at its edge is left unpainted.
+#[test]
+fn the_whole_output_is_painted_at_a_scale_that_does_not_divide_it() {
+    let at_ = sign_in_laid_out(Size::from((455, 384))).expect("lays out");
+    let washed = sign_in_surface(
+        &at_,
+        (1366, 1152),
+        TheEntryIs::Waiting,
+        Scale::from(3.0),
+        designed(),
+    )
+    .expect("draws");
+    assert_eq!(
+        (washed.area.size.w, washed.area.size.h),
+        (1366, 1152),
+        "the raster is not the output"
+    );
 }
 
 /// **The light colours are still the design's own**, to the unit where the

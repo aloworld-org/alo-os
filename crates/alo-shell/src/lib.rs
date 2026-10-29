@@ -389,6 +389,7 @@ mod setup_sheet_painting;
 mod setup_sheet_surface;
 mod shortcut_dispatch;
 mod sign_in_entry;
+mod sign_in_in_pixels;
 mod sign_in_keys;
 mod sign_in_layout;
 mod sign_in_paint;
@@ -456,6 +457,7 @@ mod the_region_a_person_chose;
 pub mod the_regions_offered;
 pub mod the_reply_boxs_words;
 mod the_session_holds_its_screens;
+mod the_sign_in_screens_scale;
 /// The task windows a person opened by asking alo for something.
 pub mod the_tasks_a_person_opened;
 mod the_tasks_seat;

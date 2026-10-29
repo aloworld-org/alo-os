@@ -82,9 +82,15 @@ fn the_sign_in_files() -> Vec<(String, Vec<(usize, String)>)> {
     // with four changed — `pub(crate) fn` becoming `pub fn`, and the `#[path]`
     // following the test file's rename — and its 311-line test file byte for byte
     // identical.
+    // **17 since 2026-10-29**: `the_sign_in_screens_scale.rs` works out how
+    // large the screen is drawn from the screen's own pixels and glass, and
+    // `sign_in_in_pixels.rs` converts the logical layout to the pixels it is
+    // drawn in. Both were read for this test's concerns before it was raised:
+    // neither holds a word, a password or a road to either — one is two
+    // numbers in and a scale out, the other is rectangles.
     assert_eq!(
         files.len(),
-        15,
+        17,
         "a sign-in file was added or lost: {:?}",
         file_names(&files)
     );
