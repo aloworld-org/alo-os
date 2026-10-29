@@ -63,7 +63,8 @@ fn drawn(size: (i32, i32), scale: DisplayScale) -> NotificationPicture {
 ///
 /// Both cards' places, their edges and grounds, and every word on them. The
 /// hash was taken once, by hand, on 2026-10-28 from this fixture run against
-/// the tree this change was branched from (`56abab9a`), and this test repeats
+/// the tree this change was first branched from (`56abab9a`) and again against
+/// `main` at `a65c898e`, which gave the same, and this test repeats
 /// the comparison on every build.
 #[test]
 fn at_one_hundred_the_cards_draw_the_bytes_they_drew_before() {
