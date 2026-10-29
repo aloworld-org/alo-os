@@ -1,9 +1,9 @@
-//! The strings this crate's own tests are written against, and the disk they
-//! pretend to write to.
+//! The catalogues this crate's own tests are written against, and the disk
+//! they pretend to write to.
 //!
 //! Two fixtures, because every file here has the same questions to answer:
-//! *what does this do on a machine with no translations*, *what does it do
-//! when somebody has translated a folder name* — including translated it into
+//! *what does this do in a language with no catalogue*, *what does it do
+//! when a catalogue names a folder* — including translated it into
 //! something that cannot be a folder, which is the case this crate exists to
 //! refuse rather than obey — and *what does it do when the disk says no*.
 //!
@@ -26,56 +26,19 @@ use std::cell::RefCell;
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
 
-use alo_strings::{Language, Strings, Translation, Vocabulary};
-
+use crate::catalogue::{Catalogue, written};
+use crate::folders::Folder;
 use crate::making::Disk;
-use crate::words::{Word, declare_into};
 
-/// Everything this crate says.
-fn its_own() -> Vocabulary {
-    let mut vocabulary = Vocabulary::empty();
-    declare_into(&mut vocabulary).unwrap();
-    vocabulary
-}
-
-/// This crate's own words, with nothing translated: what a machine with no
-/// translations makes, which is the English folder names.
-pub(crate) fn in_english() -> Strings {
-    Strings::of(its_own())
-}
-
-/// The same, with some words translated into German and German preferred —
-/// German because it is the language the rest of this repository tests
-/// translation with, so a translator's file exercised here looks like the one
-/// exercised everywhere else.
-pub(crate) fn translated(words: &[(Word, &str)]) -> Strings {
-    let vocabulary = its_own();
-    let mut german = Translation::into_language(german_language());
-    for (word, says) in words {
-        german = german.says(word.key(), *says);
-    }
-    let speaking = vocabulary.check(german).unwrap();
-    let mut strings = Strings::of(vocabulary);
-    strings.speaks(speaking).unwrap();
-    strings.prefers(&[german_language()]);
-    strings
-}
-
-/// German, as `alo-strings` names a language.
-pub(crate) fn german_language() -> Language {
-    Language::written("de").unwrap()
-}
-
-/// Whether `alo-strings` would refuse this translation outright.
-///
-/// [`translated`] cannot carry a translation the vocabulary rejects — it would
-/// panic building the fixture rather than exercising anything — so a rule that
-/// `alo-strings` already holds is tested here, at the door it is held at,
-/// rather than pretended to be `crate::naming`'s.
-pub(crate) fn would_not_translate(word: Word, says: &str) -> bool {
-    let vocabulary = its_own();
-    let german = Translation::into_language(german_language()).says(word.key(), says);
-    vocabulary.check(german).is_err()
+/// **An `xdg-user-dirs` catalogue** naming these folders — German in name,
+/// because it is the language the rest of this repository tests with —
+/// written as GNU `msgfmt` writes one and read back the way the machine's is.
+pub(crate) fn in_german(names: &[(Folder, &str)]) -> Catalogue {
+    let pairs: Vec<(&str, &str)> = names
+        .iter()
+        .map(|(folder, name)| (folder.xdg_name(), *name))
+        .collect();
+    Catalogue::read(&written(&pairs)).unwrap()
 }
 
 /// A disk written down rather than written to: what was asked of it, and what
@@ -91,6 +54,10 @@ pub(crate) struct ADisk {
     refuses_everything: bool,
     /// Whether it refuses to write the record.
     refuses_to_write: bool,
+    /// Files already there, and what is in them.
+    holding: BTreeMap<PathBuf, String>,
+    /// Files that are there and will not be read.
+    unreadable: BTreeSet<PathBuf>,
 }
 
 impl ADisk {
@@ -102,7 +69,21 @@ impl ADisk {
             refusing: BTreeSet::new(),
             refuses_everything: false,
             refuses_to_write: false,
+            holding: BTreeMap::new(),
+            unreadable: BTreeSet::new(),
         }
+    }
+
+    /// The same disk, with this file already on it.
+    pub(crate) fn holding(mut self, at: &Path, contents: &str) -> Self {
+        self.holding.insert(at.to_owned(), contents.to_owned());
+        self
+    }
+
+    /// The same disk, with a file here it will not read.
+    pub(crate) fn unreadable(mut self, at: &Path) -> Self {
+        self.unreadable.insert(at.to_owned());
+        self
     }
 
     /// A disk that will not make any directory at all — a full one, or a home
@@ -154,5 +135,12 @@ impl Disk for ADisk {
             .borrow_mut()
             .insert(at.to_owned(), contents.to_owned());
         Ok(())
+    }
+
+    fn read(&self, at: &Path) -> Result<Option<String>, String> {
+        if self.unreadable.contains(at) {
+            return Err(format!("would not read {}", at.display()));
+        }
+        Ok(self.holding.get(at).cloned())
     }
 }

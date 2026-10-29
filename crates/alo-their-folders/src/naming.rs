@@ -1,5 +1,5 @@
-//! A folder's name in the person's language, checked before it becomes a
-//! directory.
+//! A folder's name in the person's language — `xdg-user-dirs`' own, from
+//! [`crate::catalogue`] — checked before it becomes a directory.
 //!
 //! This is the one file in this crate that can be wrong in a way a person
 //! would have to live with. Everywhere else a translator's mistake produces a
@@ -23,24 +23,18 @@
 //! somebody else's shell parses is a thing to get wrong once and never
 //! notice, and no language's word for *documents* contains any of them.
 //!
-//! None of these is hypothetical in the way it sounds. A translator works in a
-//! spreadsheet with no machine in front of them, against 24 languages, and
-//! `crate::words` asks them for a noun in a file otherwise full of sentences.
-//! **A list that is only checked when somebody translates it badly is a list
-//! nothing checks**, so every rule below is a test against a name that breaks
-//! it.
+//! None of these is hypothetical in the way it sounds. The catalogue is
+//! somebody else's file on the machine, translated by people who never saw
+//! this rule. **A list that is only checked when somebody translates it badly
+//! is a list nothing checks**, so every rule below is a test against a name
+//! that breaks it.
 //!
-//! # An undeclared word is refused rather than made
+//! # A language with no catalogue
 //!
-//! `alo_strings::Strings` answers a key it does not hold with the key itself,
-//! marked `Said::is_a_bug`. That is the right answer for a sentence — better a
-//! key on screen than nothing — and the wrong one for a directory, because it
-//! would leave a person with a folder called `their-folders.documents`. So it
-//! is refused here, which turns *the shell forgot to declare this crate's
-//! words* into a line in a log rather than three folders nobody can explain.
+//! Is the English key, exactly as `xdg-user-dirs` itself leaves it on every
+//! Linux desktop — and an empty translation is the same, as gettext gives it.
 
-use alo_strings::{Filling, Strings};
-
+use crate::catalogue::Catalogue;
 use crate::folders::Folder;
 use crate::refusing::NotMade;
 
@@ -57,7 +51,8 @@ pub struct Named {
 }
 
 impl Named {
-    /// This folder's name in the language this person reads.
+    /// This folder's name in the language whose catalogue this is — or, for
+    /// [`None`], its English key.
     ///
     /// The name is trimmed before it is checked and before it is used: a
     /// trailing space in a translator's file is invisible in their tool and
@@ -66,17 +61,15 @@ impl Named {
     /// # Errors
     /// [`NotMade::NotANameAFolderCanHave`], carrying the key, when the
     /// translation is one of the kinds named in this file's header.
-    pub fn of(folder: Folder, strings: &Strings) -> Result<Self, NotMade> {
-        let key = folder.word().key();
+    pub fn of(folder: Folder, catalogue: Option<&Catalogue>) -> Result<Self, NotMade> {
+        let key = folder.xdg_name();
         let refused = || NotMade::NotANameAFolderCanHave {
-            key: key.to_string(),
+            key: key.to_owned(),
         };
-
-        let said = strings.say(&key, &Filling::nothing());
-        if said.is_a_bug() {
-            return Err(refused());
-        }
-        let name = said.text().trim();
+        let name = catalogue
+            .and_then(|it| it.name_of(key))
+            .unwrap_or(key)
+            .trim();
         if name.is_empty()
             || name.contains('/')
             || name.starts_with('.')
@@ -112,72 +105,65 @@ impl Named {
 )]
 mod tests {
     use super::*;
-    use crate::testing::{in_english, translated};
-    use crate::words::DOCUMENTS;
+    use crate::testing::in_german;
 
-    /// The ordinary case, and the one a machine with no translations gets.
+    fn documents_in_german(name: &str) -> Result<Named, NotMade> {
+        Named::of(
+            Folder::Documents,
+            Some(&in_german(&[(Folder::Documents, name)])),
+        )
+    }
+
+    /// **No catalogue is the English key**, as `xdg-user-dirs` leaves it.
     #[test]
-    fn a_machine_with_no_translations_makes_the_english_names() {
-        let strings = in_english();
+    fn a_language_with_no_catalogue_makes_the_english_names() {
+        for folder in Folder::ALL {
+            assert_eq!(Named::of(folder, None).unwrap().name(), folder.xdg_name());
+        }
+    }
+
+    /// The whole point of the crate: a German person gets German folders.
+    #[test]
+    fn a_catalogue_makes_folders_in_its_language() {
         assert_eq!(
-            Named::of(Folder::Documents, &strings).unwrap().name(),
-            "Documents"
-        );
-        assert_eq!(
-            Named::of(Folder::Downloads, &strings).unwrap().name(),
-            "Downloads"
-        );
-        assert_eq!(
-            Named::of(Folder::Pictures, &strings).unwrap().name(),
-            "Pictures"
+            documents_in_german("Dokumente").unwrap().name(),
+            "Dokumente"
         );
     }
 
-    /// The whole point of the crate: a German machine gets German folders.
+    /// **A catalogue without this folder, or with it empty, is the English
+    /// key**, as gettext gives it.
     #[test]
-    fn a_translated_machine_makes_folders_in_that_language() {
-        let strings = translated(&[(DOCUMENTS, "Dokumente")]);
+    fn a_name_the_catalogue_lacks_is_the_english_key() {
+        let without = in_german(&[(Folder::Pictures, "Bilder")]);
         assert_eq!(
-            Named::of(Folder::Documents, &strings).unwrap().name(),
-            "Dokumente"
+            Named::of(Folder::Documents, Some(&without)).unwrap().name(),
+            "Documents"
         );
+        assert_eq!(documents_in_german("").unwrap().name(), "Documents");
     }
 
     /// A name that is not Latin at all, because 24 languages are not.
     #[test]
     fn a_name_outside_the_latin_alphabet_is_a_name() {
-        let strings = translated(&[(DOCUMENTS, "Έγγραφα")]);
-        assert_eq!(
-            Named::of(Folder::Documents, &strings).unwrap().name(),
-            "Έγγραφα"
-        );
+        assert_eq!(documents_in_german("Έγγραφα").unwrap().name(), "Έγγραφα");
     }
 
     /// Invisible in a translator's tool, and a folder nobody can type.
     #[test]
     fn a_name_with_space_round_it_is_trimmed_rather_than_refused() {
-        let strings = translated(&[(DOCUMENTS, "  Dokumente  ")]);
         assert_eq!(
-            Named::of(Folder::Documents, &strings).unwrap().name(),
+            documents_in_german("  Dokumente  ").unwrap().name(),
             "Dokumente"
         );
     }
 
     /// Hidden on every Unix machine: the person would be told they have a
-    /// folder and would not find one.
+    /// folder and would not find one — and `.` and `..` are the sharpest case.
     #[test]
     fn a_name_beginning_with_a_dot_is_refused_because_it_would_be_hidden() {
-        let strings = translated(&[(DOCUMENTS, ".Dokumente")]);
-        assert!(Named::of(Folder::Documents, &strings).is_err());
-    }
-
-    /// `.` and `..` are the sharpest case of the rule above: both would be a
-    /// folder that is not a folder.
-    #[test]
-    fn the_two_names_every_directory_already_has_are_refused() {
-        for name in [".", ".."] {
-            let strings = translated(&[(DOCUMENTS, name)]);
-            assert!(Named::of(Folder::Documents, &strings).is_err(), "{name}");
+        for name in [".Dokumente", ".", ".."] {
+            assert!(documents_in_german(name).is_err(), "{name}");
         }
     }
 
@@ -185,62 +171,37 @@ mod tests {
     #[test]
     fn a_name_holding_a_slash_is_refused_because_it_is_a_path() {
         for name in ["Doku/mente", "../elsewhere", "/etc"] {
-            let strings = translated(&[(DOCUMENTS, name)]);
-            assert!(Named::of(Folder::Documents, &strings).is_err(), "{name}");
+            assert!(documents_in_german(name).is_err(), "{name}");
         }
     }
 
-    /// A folder a person cannot refer to.
-    ///
-    /// **Only punctuation reaches this file.** An empty translation never
-    /// does: `alo-strings` refuses one when the translator's file is checked
-    /// against the vocabulary, long before anything here reads it. That makes
-    /// the `is_empty` guard in [`Named::of`] the second of two rather than the
-    /// only one, and
-    /// `an_empty_translation_is_refused_before_it_can_become_a_folder` below
-    /// is where the first is held to its job — written as its own test
-    /// because this one cannot reach the case at all.
+    /// A folder a person cannot refer to: only punctuation, or only space.
     #[test]
-    fn a_name_that_is_only_punctuation_is_refused() {
-        for name in ["---", "!!!"] {
-            let strings = translated(&[(DOCUMENTS, name)]);
-            assert!(Named::of(Folder::Documents, &strings).is_err(), "{name}");
-        }
-    }
-
-    /// The first of those two guards, and the reason the test above has no
-    /// empty case.
-    #[test]
-    fn an_empty_translation_is_refused_before_it_can_become_a_folder() {
-        for name in ["", "   "] {
-            assert!(
-                crate::testing::would_not_translate(DOCUMENTS, name),
-                "an empty translation was accepted: {name:?}"
-            );
+    fn a_name_that_is_only_punctuation_or_space_is_refused() {
+        for name in ["---", "!!!", "   "] {
+            assert!(documents_in_german(name).is_err(), "{name:?}");
         }
     }
 
     /// A control character in a directory name is a name nothing displays.
     #[test]
     fn a_name_with_a_control_character_is_refused() {
-        let strings = translated(&[(DOCUMENTS, "Doku\u{7}mente")]);
-        assert!(Named::of(Folder::Documents, &strings).is_err());
+        assert!(documents_in_german("Doku\u{7}mente").is_err());
     }
 
     /// Not a disk rule: these would break the record other software reads.
     #[test]
     fn a_name_that_would_break_the_record_is_refused() {
         for name in ["Doku\"mente", "$HOME", "Doku\\mente", "Doku`mente`"] {
-            let strings = translated(&[(DOCUMENTS, name)]);
-            assert!(Named::of(Folder::Documents, &strings).is_err(), "{name}");
+            assert!(documents_in_german(name).is_err(), "{name}");
         }
     }
 
-    /// The refusal names the key, so whoever fixes it knows which line.
+    /// The refusal names the English key, so whoever fixes it knows which
+    /// line of which catalogue.
     #[test]
-    fn the_refusal_says_which_word_has_to_be_fixed() {
-        let strings = translated(&[(DOCUMENTS, ".hidden")]);
-        let refused = Named::of(Folder::Documents, &strings).unwrap_err();
-        assert_eq!(refused.kept_for_a_maintainer(), DOCUMENTS.key().to_string());
+    fn the_refusal_says_which_name_has_to_be_fixed() {
+        let refused = documents_in_german(".hidden").unwrap_err();
+        assert_eq!(refused.kept_for_a_maintainer(), "Documents");
     }
 }

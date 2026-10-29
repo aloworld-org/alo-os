@@ -544,7 +544,7 @@ mod tests {
         ("alo-tasks", "tasks.status.working"),
         ("alo-telling", "telling.carry-on"),
         ("alo-terminal", "terminal.who.program"),
-        ("alo-their-folders", "their-folders.documents"),
+        ("alo-their-folders", "their-folders.the-disk-would-not"),
         ("alo-turn", "turn.closed"),
     ];
 

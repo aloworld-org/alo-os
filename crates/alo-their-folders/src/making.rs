@@ -23,14 +23,22 @@
 //! below walk every path — a name that cannot be a folder, a disk that refuses
 //! one folder, a disk that refuses the record — on every platform the suite
 //! runs on, with no privilege and no temporary directory.
+//!
+//! # A folder the record already names is never renamed
+//!
+//! The record is read first, and a folder it names is that folder, in
+//! whatever language it was made in. When the person's language now calls it
+//! something else, that is said in [`Made::named_differently`] — for a log
+//! today, and for the screen that will *offer* the rename once one is designed
+//! — and nothing on the disk moves. The owner's decision of 2026-10-28: an
+//! existing home is never renamed without asking.
 
 use std::path::{Path, PathBuf};
 
-use alo_strings::Strings;
-
+use crate::catalogue::Catalogue;
 use crate::folders::Folder;
 use crate::naming::Named;
-use crate::recording::{THE_RECORD, the_record};
+use crate::recording::{AlreadyRecorded, Points, THE_RECORD, the_record, under_home};
 use crate::refusing::NotMade;
 
 /// The one thing in this crate that touches a filesystem.
@@ -51,6 +59,25 @@ pub trait Disk {
     /// # Errors
     /// What the operating system said, for a log.
     fn write(&self, at: &Path, contents: &str) -> Result<(), String>;
+
+    /// Read this file, or [`None`] when there is no file there.
+    ///
+    /// # Errors
+    /// What the operating system said, for a file that is there and would not
+    /// be read.
+    fn read(&self, at: &Path) -> Result<Option<String>, String>;
+}
+
+/// A folder the record names, which the person's language now calls
+/// something else.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct NamedDifferently {
+    /// Which folder.
+    pub folder: Folder,
+    /// Where it is, which is where it stays.
+    pub at: PathBuf,
+    /// What their language calls it now.
+    pub now: String,
 }
 
 /// What a person got, and what they did not.
@@ -58,8 +85,10 @@ pub trait Disk {
 pub struct Made {
     /// Each folder that is now on the disk, and where it is.
     folders: Vec<(Folder, PathBuf)>,
-    /// Where the record was written, when it was.
+    /// Where the record is, when it says what it should.
     recorded: Option<PathBuf>,
+    /// Folders kept under a name the person's language no longer uses.
+    named_differently: Vec<NamedDifferently>,
     /// Everything that did not work, in the order it was found.
     refusals: Vec<NotMade>,
 }
@@ -71,10 +100,17 @@ impl Made {
         &self.folders
     }
 
-    /// Where the record naming the folders was written, when it was.
+    /// Where the record naming the folders is, when it says what it should.
     #[must_use]
     pub fn recorded(&self) -> Option<&Path> {
         self.recorded.as_deref()
+    }
+
+    /// **Folders kept under a name the person's language no longer uses** —
+    /// what a rename would be offered for, and never done here.
+    #[must_use]
+    pub fn named_differently(&self) -> &[NamedDifferently] {
+        &self.named_differently
     }
 
     /// Everything that did not work, for whoever looks after the machine.
@@ -83,60 +119,104 @@ impl Made {
         &self.refusals
     }
 
-    /// Whether the person got all of their folders and the record.
+    /// Whether the person got every folder the record does not say they have
+    /// none of, and the record.
     #[must_use]
     pub fn everything_was_made(&self) -> bool {
-        self.refusals.is_empty()
-            && self.recorded.is_some()
-            && self.folders.len() == Folder::ALL.len()
+        self.refusals.is_empty() && self.recorded.is_some()
     }
 }
 
-/// Give this person the folders they expect, under this home folder.
+/// **Give this person the folders they expect, under this home folder.**
 ///
-/// The folders are named in the language `strings` reads, made in the order
-/// [`Folder::ALL`] gives, and then recorded so that other software can find
-/// them. The record names only the folders that were actually made.
+/// A folder the record already names is that folder: made again if it went
+/// missing, never renamed, and never doubled. A folder it does not name is
+/// made under the name `catalogue` gives it — `xdg-user-dirs`' own, in the
+/// person's language — or its English key where there is no catalogue, as
+/// `xdg-user-dirs` itself does. The record is then written with the folders
+/// that are on the disk, keeping every line it had that is not this crate's,
+/// and is not written at all when it already says exactly that.
 ///
 /// `home` is the caller's to supply and is not checked for being a full path:
 /// on this repository's own hosts `Path::is_absolute` answers about the host
 /// the code was compiled for rather than about the machine, so a check here
 /// would be wrong on one of them (`docs/quirks.md`).
 #[must_use]
-pub fn made_for(home: &Path, strings: &Strings, disk: &dyn Disk) -> Made {
+pub fn made_for(home: &Path, catalogue: Option<&Catalogue>, disk: &dyn Disk) -> Made {
     let mut made = Made::default();
-    let mut named = Vec::new();
-
-    for folder in Folder::ALL {
-        let name = match Named::of(folder, strings) {
-            Ok(name) => name,
-            Err(why) => {
-                made.refusals.push(why);
-                continue;
-            }
-        };
-        let at = home.join(name.name());
-        if let Err(said) = disk.make_folder(&at) {
-            made.refusals.push(NotMade::TheDiskWouldNot { said });
-            continue;
+    let record = home.join(THE_RECORD);
+    let already = match disk.read(&record) {
+        Ok(text) => AlreadyRecorded::read(text.as_deref().unwrap_or_default()),
+        // **A record that is there and would not be read is not written
+        // over**: it is somebody's, and this cannot see what is in it.
+        Err(said) => {
+            made.refusals.push(NotMade::TheRecordWasNotWritten { said });
+            return made;
         }
-        made.folders.push((folder, at));
-        named.push(name);
+    };
+
+    let mut ours: Vec<(Folder, String)> = Vec::new();
+    for folder in Folder::ALL {
+        let in_their_language = Named::of(folder, catalogue);
+        match already.where_it_points(folder, home) {
+            Some(Points::Nowhere) => {}
+            Some(Points::At(at)) => {
+                if let Err(said) = disk.make_folder(&at) {
+                    made.refusals.push(NotMade::TheDiskWouldNot { said });
+                    continue;
+                }
+                if let Ok(named) = &in_their_language
+                    && at.file_name().and_then(|it| it.to_str()) != Some(named.name())
+                {
+                    made.named_differently.push(NamedDifferently {
+                        folder,
+                        at: at.clone(),
+                        now: named.name().to_owned(),
+                    });
+                }
+                if let Some(value) = already.value_of(folder) {
+                    ours.push((folder, value.to_owned()));
+                }
+                made.folders.push((folder, at));
+            }
+            None => {
+                let named = match in_their_language {
+                    Ok(named) => named,
+                    Err(why) => {
+                        made.refusals.push(why);
+                        continue;
+                    }
+                };
+                let at = home.join(named.name());
+                if let Err(said) = disk.make_folder(&at) {
+                    made.refusals.push(NotMade::TheDiskWouldNot { said });
+                    continue;
+                }
+                ours.push((folder, under_home(named.name())));
+                made.folders.push((folder, at));
+            }
+        }
     }
 
-    // Nothing was made, so there is nothing to record — and a record naming no
-    // folder at all would only be a file somebody has to explain later.
-    if named.is_empty() {
+    // Nothing to record and nothing recorded: a record naming no folder at all
+    // would only be a file somebody has to explain later.
+    let unchanged = ours
+        .iter()
+        .all(|(folder, value)| already.value_of(*folder) == Some(value.as_str()));
+    if ours.is_empty() && already == AlreadyRecorded::default() {
+        return made;
+    }
+    if unchanged {
+        made.recorded = Some(record);
         return made;
     }
 
-    let record = home.join(THE_RECORD);
     let under = record
         .parent()
         .map_or_else(|| home.to_owned(), Path::to_owned);
     let written = disk
         .make_folder(&under)
-        .and_then(|()| disk.write(&record, &the_record(&named)));
+        .and_then(|()| disk.write(&record, &the_record(&ours, &already)));
     match written {
         Ok(()) => made.recorded = Some(record),
         Err(said) => made.refusals.push(NotMade::TheRecordWasNotWritten { said }),
@@ -151,64 +231,139 @@ pub fn made_for(home: &Path, strings: &Strings, disk: &dyn Disk) -> Made {
 )]
 mod tests {
     use super::*;
-    use crate::testing::{ADisk, in_english, translated};
-    use crate::words::{DOCUMENTS, PICTURES};
+    use crate::testing::{ADisk, in_german};
 
     fn home() -> PathBuf {
         PathBuf::from("/var/home/alo")
     }
 
-    /// The ordinary machine: three folders and a record.
+    fn the_record_at() -> PathBuf {
+        home().join(".config/user-dirs.dirs")
+    }
+
+    fn german() -> Catalogue {
+        in_german(&[
+            (Folder::Documents, "Dokumente"),
+            (Folder::Pictures, "Bilder"),
+        ])
+    }
+
+    /// The ordinary machine with no catalogue: three folders and a record.
     #[test]
     fn a_person_gets_three_folders_and_the_record_naming_them() {
         let disk = ADisk::that_works();
-        let made = made_for(&home(), &in_english(), &disk);
+        let made = made_for(&home(), None, &disk);
 
         assert!(made.everything_was_made(), "{made:?}");
         assert_eq!(made.folders().len(), 3);
-        assert_eq!(
-            made.recorded().unwrap(),
-            home().join(".config/user-dirs.dirs")
-        );
+        assert_eq!(made.recorded().unwrap(), the_record_at());
         assert!(disk.made(&home().join("Documents")));
         assert!(disk.made(&home().join("Downloads")));
         assert!(disk.made(&home().join("Pictures")));
     }
 
-    /// The whole reason the crate exists: a German machine, German folders.
+    /// **A German person gets Dokumente**, and the record says so.
     #[test]
-    fn the_folders_are_made_in_the_language_the_machine_was_set_up_in() {
+    fn a_german_person_gets_dokumente() {
         let disk = ADisk::that_works();
-        let strings = translated(&[(DOCUMENTS, "Dokumente"), (PICTURES, "Bilder")]);
-        let made = made_for(&home(), &strings, &disk);
+        let made = made_for(&home(), Some(&german()), &disk);
 
         assert!(made.everything_was_made(), "{made:?}");
         assert!(disk.made(&home().join("Dokumente")));
         assert!(disk.made(&home().join("Bilder")));
         assert!(!disk.made(&home().join("Documents")));
+        let written = disk.written(&the_record_at()).unwrap();
+        assert!(
+            written.contains("XDG_DOCUMENTS_DIR=\"$HOME/Dokumente\""),
+            "{written}"
+        );
     }
 
-    /// One bad translation costs that folder and nothing else.
+    /// **An existing home is never renamed without asking.** Made in English,
+    /// signed into in German: `Documents` stays, no `Dokumente` appears beside
+    /// it, the record is not touched — and what a rename would be is said.
+    #[test]
+    fn an_existing_home_is_never_renamed_without_asking() {
+        let english = ADisk::that_works();
+        let _ = made_for(&home(), None, &english);
+        let record = english.written(&the_record_at()).unwrap();
+
+        let disk = ADisk::that_works().holding(&the_record_at(), &record);
+        let made = made_for(&home(), Some(&german()), &disk);
+
+        assert!(made.everything_was_made(), "{made:?}");
+        assert!(disk.made(&home().join("Documents")));
+        assert!(
+            !disk.made(&home().join("Dokumente")),
+            "a second folder was made"
+        );
+        assert_eq!(
+            disk.written(&the_record_at()),
+            None,
+            "the record was rewritten"
+        );
+        let differently: Vec<(Folder, &str)> = made
+            .named_differently()
+            .iter()
+            .map(|it| (it.folder, it.now.as_str()))
+            .collect();
+        assert_eq!(
+            differently,
+            [
+                (Folder::Documents, "Dokumente"),
+                (Folder::Pictures, "Bilder")
+            ]
+        );
+    }
+
+    /// **A folder the record says the person has none of stays absent**, and
+    /// the lines it does not own are kept.
+    #[test]
+    fn a_folder_the_record_says_they_have_none_of_stays_absent() {
+        let disk = ADisk::that_works().holding(
+            &the_record_at(),
+            "XDG_PICTURES_DIR=\"$HOME\"\nXDG_MUSIC_DIR=\"$HOME/Musik\"\n",
+        );
+        let made = made_for(&home(), Some(&german()), &disk);
+
+        assert!(!disk.made(&home().join("Bilder")));
+        assert!(!disk.made(&home().join("Pictures")));
+        assert!(disk.made(&home().join("Dokumente")));
+        let written = disk.written(&the_record_at()).unwrap();
+        assert!(
+            written.contains("XDG_MUSIC_DIR=\"$HOME/Musik\""),
+            "{written}"
+        );
+        assert!(!written.contains("XDG_PICTURES_DIR"), "{written}");
+        assert!(made.everything_was_made(), "{made:?}");
+    }
+
+    /// **A record that would not be read is not written over.**
+    #[test]
+    fn a_record_that_would_not_be_read_is_left_alone() {
+        let disk = ADisk::that_works().unreadable(&the_record_at());
+        let made = made_for(&home(), Some(&german()), &disk);
+        assert!(made.folders().is_empty(), "{made:?}");
+        assert_eq!(disk.written(&the_record_at()), None);
+        assert!(matches!(
+            made.refusals().first(),
+            Some(NotMade::TheRecordWasNotWritten { .. })
+        ));
+    }
+
+    /// One bad name costs that folder and nothing else, and is not recorded.
     #[test]
     fn a_name_that_cannot_be_a_folder_does_not_cost_the_other_two() {
         let disk = ADisk::that_works();
-        let made = made_for(&home(), &translated(&[(DOCUMENTS, ".hidden")]), &disk);
+        let made = made_for(
+            &home(),
+            Some(&in_german(&[(Folder::Documents, ".hidden")])),
+            &disk,
+        );
 
         assert_eq!(made.folders().len(), 2, "{made:?}");
         assert_eq!(made.refusals().len(), 1);
-        assert!(made.recorded().is_some());
-        assert!(!made.everything_was_made());
-    }
-
-    /// And the folder that was refused is not in the record, because it is
-    /// not on the disk.
-    #[test]
-    fn a_folder_that_was_not_made_is_not_named_in_the_record() {
-        let disk = ADisk::that_works();
-        let _made = made_for(&home(), &translated(&[(DOCUMENTS, ".hidden")]), &disk);
-        let written = disk
-            .written(&home().join(".config/user-dirs.dirs"))
-            .unwrap();
+        let written = disk.written(&the_record_at()).unwrap();
         assert!(!written.contains("XDG_DOCUMENTS_DIR"), "{written}");
         assert!(written.contains("XDG_PICTURES_DIR"), "{written}");
     }
@@ -217,45 +372,35 @@ mod tests {
     #[test]
     fn a_disk_that_refuses_one_folder_does_not_cost_the_other_two() {
         let disk = ADisk::that_works().refusing(&home().join("Downloads"));
-        let made = made_for(&home(), &in_english(), &disk);
+        let made = made_for(&home(), None, &disk);
 
         assert_eq!(made.folders().len(), 2, "{made:?}");
-        assert_eq!(made.refusals().len(), 1);
         assert!(matches!(
             made.refusals().first(),
             Some(NotMade::TheDiskWouldNot { .. })
         ));
     }
 
-    /// The folders survive a record that could not be written, and the
-    /// refusal says so rather than claiming the folders failed.
+    /// The folders survive a record that could not be written.
     #[test]
     fn a_record_that_was_not_written_leaves_the_folders_made() {
         let disk = ADisk::that_works().refusing_to_write();
-        let made = made_for(&home(), &in_english(), &disk);
+        let made = made_for(&home(), None, &disk);
 
         assert_eq!(made.folders().len(), 3, "{made:?}");
         assert!(made.recorded().is_none());
-        assert!(matches!(
-            made.refusals().first(),
-            Some(NotMade::TheRecordWasNotWritten { .. })
-        ));
         assert!(!made.everything_was_made());
     }
 
-    /// Nothing made means nothing recorded: a record naming no folder is a
-    /// file somebody would later have to explain.
+    /// Nothing made means nothing recorded.
     #[test]
     fn a_machine_that_could_make_nothing_writes_no_record() {
         let disk = ADisk::that_refuses_everything();
-        let made = made_for(&home(), &in_english(), &disk);
+        let made = made_for(&home(), None, &disk);
 
         assert!(made.folders().is_empty(), "{made:?}");
         assert!(made.recorded().is_none());
         assert_eq!(made.refusals().len(), Folder::ALL.len());
-        assert!(
-            disk.written(&home().join(".config/user-dirs.dirs"))
-                .is_none()
-        );
+        assert!(disk.written(&the_record_at()).is_none());
     }
 }
