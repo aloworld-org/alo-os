@@ -96,6 +96,8 @@ impl crate::DirectSession {
                         screen: Lane::of(&mut signing, labels, look),
                         chose:
                             crate::the_keyboard_a_person_chose::TheKeyboardAPersonChose::nothing_yet(),
+                        language:
+                            crate::the_language_a_person_chose::TheLanguageAPersonChose::nothing_yet(),
                     },
                 ),
                 Err(error) => DirectLoopResult {
@@ -145,6 +147,36 @@ struct Greeter<'a, K: Knocking> {
     /// `Lane` deliberately has none -- that is the whole reason a keystroke
     /// can be checked on a machine with no input devices.
     chose: crate::the_keyboard_a_person_chose::TheKeyboardAPersonChose,
+    /// The language a person picked on the language sheet, and whether it
+    /// still needs writing down as the language this machine was set up in.
+    language: crate::the_language_a_person_chose::TheLanguageAPersonChose,
+}
+
+/// Keep the language a person chose as the language this machine was set up
+/// in, if they just chose one, so their desktop can give it to them.
+///
+/// Every outcome ends on the log, for the reason [`the_keyboard_is_now`]
+/// gives: the screen already speaks the language, and a sentence about a file
+/// in front of them would be this program's problem printed where their name
+/// goes.
+fn the_language_is_now<K: Knocking>(
+    language: &mut crate::the_language_a_person_chose::TheLanguageAPersonChose,
+    screen: &Lane<'_, K>,
+) {
+    use crate::the_language_a_person_chose::AboutTheLanguage;
+    match language.chose(
+        screen.the_language_chosen(),
+        std::path::Path::new(alo_formats::the_machines_language::THE_MACHINES_LANGUAGE),
+    ) {
+        AboutTheLanguage::Unchanged => {}
+        AboutTheLanguage::Kept(tag) => eprintln!(
+            "alo-compositor: this machine was set up in {tag}, chosen on the language sheet"
+        ),
+        AboutTheLanguage::NotKept(why) => eprintln!(
+            "alo-compositor: a language was chosen and could not be written down, so the \
+             person's desktop will not be given it: {why}"
+        ),
+    }
 }
 
 /// Keep and apply the keyboard a person chose, if they just chose one.
@@ -385,6 +417,7 @@ impl<K: Knocking> LoopInput for Greeter<'_, K> {
         // Borrowed beside the screen, because the closure below takes both and
         // `self` cannot be lent twice into it.
         let chose = &mut self.chose;
+        let language = &mut self.language;
         self.owner.dispatch(
             || poll().map_err(io::Error::other),
             |update| {
@@ -407,6 +440,7 @@ impl<K: Knocking> LoopInput for Greeter<'_, K> {
                                 // `Unchanged` for all but one of them, so an
                                 // arrow does not rebuild a keymap.
                                 the_keyboard_is_now(chose, screen, server);
+                                the_language_is_now(language, screen);
                                 Ok(())
                             }
                             // A release, a repeat, and a key this keyboard has

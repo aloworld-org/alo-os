@@ -10,7 +10,10 @@
 //! **This is the only file that touches `icu`'s unstable half**, which is why
 //! it is a file of its own: the API is the one CLDR's own implementers have not
 //! yet promised to keep, so an upgrade that moves it should break here and
-//! nowhere else.
+//! nowhere else. [ADR 0136](../../../docs/decisions/0136-the-region-names-come-from-icus-unstable-half.md)
+//! records why, and what to check on every upgrade of `icu`;
+//! `tests/the_region_names_keep_their_shape.rs` fails if an upgrade compiles
+//! and quietly answers something else.
 //!
 //! # A name CLDR does not have
 //!

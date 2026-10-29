@@ -57,12 +57,7 @@ impl Regionally {
     /// # Errors
     /// [`NotARegion::NotARegion`] for anything that is not two capital letters.
     pub fn in_region(mut self, region: &str) -> Result<Self, NotARegion> {
-        if region.len() != 2 || !region.chars().all(|letter| letter.is_ascii_uppercase()) {
-            return Err(NotARegion::NotARegion {
-                asked_for: region.to_owned(),
-            });
-        }
-        self.region = Some(region.to_owned());
+        self.region = Some(String::from(crate::region_code::RegionCode::named(region)?));
         Ok(self)
     }
 

@@ -377,7 +377,13 @@ mod running {
         fn made() -> Result<Self, String> {
             // **Read once here and again every frame** — see `read_again`.
             let at = crate::readings::At::now()?;
-            let formats = their_formats_at_sign_in();
+            // **What the person reads, first**, because the clock and every
+            // word on the desktop follow it. A person who has said nothing is
+            // given the language their machine was set up in on the first-start
+            // sheet (the owner's decision of 2026-10-28), and it is kept in
+            // their own `settings.toml`.
+            let reading = the_languages_they_read();
+            let formats = their_formats_at_sign_in(reading.first().map(alo_strings::Language::tag));
             let (readings, missing) = crate::readings::taken(&at, &formats)?;
             eprintln!(
                 "alo-desktop: the status area's readings — {}",
@@ -404,7 +410,9 @@ mod running {
             // is the fault `booting.rs` already names about a different file:
             // *declared nowhere but in an example, which means its strings have
             // never been sayable on a real machine.*
-            let strings = alo_shell::what_this_machine_can_say().map_err(|why| why.to_string())?;
+            let mut strings =
+                alo_shell::what_this_machine_can_say().map_err(|why| why.to_string())?;
+            strings.prefers(&reading);
             // **The indicator is told before the first frame, including that
             // nothing is leaving.** A desktop whose indicator has never been
             // told anything is refused before any of it is drawn, because
@@ -1267,17 +1275,9 @@ mod running {
     /// rule (ADR 0038): the clock is written the language's way and the line
     /// below names the file and what was wrong, for whoever reads the journal.
     /// Settings says the same to the person, in their language.
-    fn their_formats_at_sign_in() -> alo_shell::TheirFormats {
+    fn their_formats_at_sign_in(reading: Option<&str>) -> alo_shell::TheirFormats {
         let config_home = std::env::var_os("XDG_CONFIG_HOME");
         let home = std::env::var_os("HOME");
-        let reading = alo_choosing::where_it_is(config_home.as_deref(), home.as_deref())
-            .and_then(|at| alo_choosing::Settings::at(&at).ok())
-            .and_then(|settings| {
-                settings
-                    .languages()
-                    .first()
-                    .map(|language| language.tag().to_owned())
-            });
         let chosen =
             match alo_choosing::where_the_folder_is(config_home.as_deref(), home.as_deref()) {
                 Some(folder) => {
@@ -1296,7 +1296,7 @@ mod running {
                 }
                 None => alo_formats::Chosen::default(),
             };
-        let formats = alo_shell::TheirFormats::of(chosen, reading.as_deref());
+        let formats = alo_shell::TheirFormats::of(chosen, reading);
         if let Some(zone) = formats.zone_not_found() {
             eprintln!(
                 "alo-desktop: this person chose the time zone {}, which this machine's zone \
@@ -1305,6 +1305,28 @@ mod running {
             );
         }
         formats
+    }
+
+    /// **The languages this person reads**, best first, with the language the
+    /// machine was set up in given them where they have said none.
+    ///
+    /// Empty is the machine's source language: a session with no folder, or
+    /// settings that did not read, which the log says.
+    fn the_languages_they_read() -> Vec<alo_strings::Language> {
+        let Some(settings) = alo_choosing::where_it_is(
+            std::env::var_os("XDG_CONFIG_HOME").as_deref(),
+            std::env::var_os("HOME").as_deref(),
+        ) else {
+            return Vec::new();
+        };
+        let read = alo_shell::the_language_set_up_in::the_languages_they_read(
+            &settings,
+            std::path::Path::new(alo_formats::the_machines_language::THE_MACHINES_LANGUAGE),
+        );
+        if let Some(said) = &read.for_the_log {
+            eprintln!("alo-desktop: {said}");
+        }
+        read.languages
     }
 
     /// The time of day the appearance is asked about, from the same clock.

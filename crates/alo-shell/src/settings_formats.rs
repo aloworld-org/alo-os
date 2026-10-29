@@ -11,8 +11,9 @@
 //!
 //! The file is `alo_formats::keeping`'s, walked through `crate::settings_kept`
 //! exactly as appearance and the dock are. The names and their order are
-//! CLDR's, from `alo_formats::the_regions_named_in`. What a choice means for a
-//! file that already names a language is `alo_formats::Chosen::written_as_in`.
+//! CLDR's, from `alo_formats::the_regions_named_in`. What a choice keeps is
+//! `alo_formats::Chosen::written_as_in`'s: the region alone, never the language,
+//! so the dates follow whatever language the person reads next.
 //!
 //! # The language the names are in
 //!
@@ -35,9 +36,6 @@ use crate::settings_kept::{KeptSection, SettingsKept};
 pub(crate) struct FormatsSection {
     /// The file, walked the way every kept section is.
     kept: KeptSection<FormatsKept>,
-    /// The language the person reads, which names the regions and is the
-    /// language a first choice of region is written in.
-    reading: String,
     /// Every region, named and ordered once, when Settings opened.
     ///
     /// **Once rather than per frame**: two hundred and fifty names asked of
@@ -54,7 +52,6 @@ impl FormatsSection {
         Self {
             kept: KeptSection::at_sign_in(at),
             regions: alo_formats::the_regions_named_in(&reading),
-            reading,
         }
     }
 
@@ -115,11 +112,10 @@ impl FormatsSection {
     /// The person chose this, and it is kept — or refused in
     /// `alo-formats`' words, with the file as it was.
     pub(crate) fn choose(&mut self, choice: Option<&str>, strings: &Strings) -> SettingsKept {
-        let reading = self.reading.clone();
         self.kept.changed(
             |chosen| {
                 chosen
-                    .written_as_in(choice, &reading)
+                    .written_as_in(choice)
                     .map_err(|refused| refused.said(strings).into_text())
             },
             strings,

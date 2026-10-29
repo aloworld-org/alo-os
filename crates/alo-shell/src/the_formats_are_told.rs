@@ -62,7 +62,7 @@ mod tests {
 
     fn belgian() -> TheirFormats {
         let mut chosen = Chosen::default();
-        chosen.written_as_in(Some("BE"), "fr").unwrap();
+        chosen.written_as_in(Some("BE")).unwrap();
         TheirFormats::of(chosen, Some("fr"))
     }
 
