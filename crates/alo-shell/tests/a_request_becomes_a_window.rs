@@ -72,6 +72,7 @@ fn a_person_types_a_request_and_a_task_window_is_drawn() {
         view,
         alo_strings::Direction::LeftToRight,
         &[],
+        100,
     );
     assert_eq!(placed, 1, "the window was not placed");
     let somewhere = server
@@ -91,6 +92,7 @@ fn a_person_types_a_request_and_a_task_window_is_drawn() {
         view,
         alo_strings::Direction::LeftToRight,
         &[],
+        100,
     );
     assert_eq!(again, 0, "a placed window was placed a second time");
     assert_eq!(

@@ -391,6 +391,7 @@ fn a_click_on_a_task_window_gives_it_the_keyboard() {
         view,
         alo_strings::Direction::LeftToRight,
         &[],
+        100,
     );
     let window = server
         .tasks()

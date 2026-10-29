@@ -1344,9 +1344,17 @@ impl LoopInput for Desk<'_> {
         // records that whether it ought to live on the canvas instead is a
         // question the owner has not answered.
         let the_view = smithay::utils::Rectangle::new((0, 0).into(), (size.w, size.h).into());
-        server
-            .tasks_mut()
-            .put_whatever_has_nowhere_to_be(the_view, frame.look.reading(), &[]);
+        // **At this display's scale**, so a window opened on a dense screen asks
+        // for twice the pixels. Asked here because the frame has not been told
+        // its scale yet; `Server::the_scale_of_display` is the one lookup it
+        // will be told from.
+        let this_displays_scale = server.the_scale_of_display(&named);
+        server.tasks_mut().put_whatever_has_nowhere_to_be(
+            the_view,
+            frame.look.reading(),
+            &[],
+            this_displays_scale,
+        );
         // **Said once a frame, and kept alive for as long as the frame is.**
         // The raster borrows these strings.
         let the_tasks_words = crate::the_tasks_words::TheTasksWords::said(

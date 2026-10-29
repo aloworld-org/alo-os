@@ -22,19 +22,27 @@
 //! **not** a window a person could use, and the next change is the one that
 //! shapes text into it.
 //!
-//! # No display scale
+//! # At its display's scale
 //!
-//! Every figure is a logical measure used directly as a pixel. The Dock went
-//! through its display's scale on 2026-10-28 (`crate::display_scale`); this
-//! window has not yet, and until it does every figure here — its focus rings
-//! included — stays at one together, because a scale applied to one measure of
-//! an otherwise unscaled geometry is worse than one applied to none.
+//! The window's rectangle is in its display's pixels. It is laid out in
+//! **logical** units — its size divided by the display's scale — so
+//! `alo_tasks::layout` and the scroll keep one meaning on every screen, and
+//! every logical figure goes back to pixels through the one
+//! `crate::display_scale::DisplayScale` the window was handed: the rows, the
+//! chips, the field, the controls, the bubbles, the answers, the focus rings,
+//! the corner and shadow, and the type, which goes through the person's text
+//! size and the display's scale together. Heights and widths measured off
+//! shaped words come back in pixels and are taken back to logical units
+//! before the layout reads them. On a 200 per cent screen the window is twice
+//! the pixels and the same size to the eye as the Dock beside it; at 100 every
+//! conversion is the identity and it draws exactly what it drew before.
 
 use alo_tasks::layout::{TheRows, TooSmall};
 use alo_tasks::measures as m;
 use smithay::utils::{Physical, Rectangle};
 
 use crate::desktop_look::DesktopLook;
+use crate::display_scale::DisplayScale;
 use crate::dock_surface::{APanelsShapes, AWell, a_panel};
 use crate::painted::Washed;
 use crate::task_look::TaskPalette;
@@ -154,12 +162,8 @@ const THE_STATUS_IS_WIDE: u32 = 260;
 /// the row.
 const THE_ANSWERS_TAKE: u32 = m::GAP + m::A_CONTROL_IS;
 
-/// A logical measure as a pixel count.
-fn px(of: u32) -> i32 {
-    i32::try_from(of).unwrap_or(i32::MAX)
-}
-
-/// Rasterise the furniture of a task window of this size, at this corner.
+/// Rasterise the furniture of a task window of this size, at this corner, on a
+/// display drawn at `scale`.
 ///
 /// `how_many_files` is how many shared-file chips to draw — the row above the
 /// conversation. Taken as a count rather than as names because this draws their
@@ -169,6 +173,12 @@ fn px(of: u32) -> i32 {
 /// [`NoTaskPicture::TooSmall`] for a window the layout refuses, carrying the
 /// least it would need; [`NoTaskPicture::AccentRefused`] for an accent nobody
 /// may choose.
+#[expect(
+    clippy::too_many_arguments,
+    reason = "what a frame hands over about one window, and the display it is on: each is \
+              one fact a caller already holds apart, and a struct for one caller would \
+              be a second name for `ATaskOnTheDisplay`"
+)]
 pub(crate) fn furniture(
     at: Rectangle<i32, Physical>,
     look: DesktopLook,
@@ -177,11 +187,15 @@ pub(crate) fn furniture(
     said: &[crate::task_text::WhatWasSaid<'_>],
     scroll: alo_tasks::TheScroll,
     fonts: &mut cosmic_text::FontSystem,
+    scale: DisplayScale,
 ) -> Result<TaskPicture, NoTaskPicture> {
-    let (wide, tall) = (
-        u32::try_from(at.size.w.max(0)).unwrap_or(0),
-        u32::try_from(at.size.h.max(0)).unwrap_or(0),
-    );
+    // **A logical measure as this display's pixels**, and the one road every
+    // figure below takes to the screen.
+    let px = |of: u32| scale.px(of);
+    // **And pixels measured off shaped words, back as logical units**, for the
+    // layout that reads them.
+    let logical = |pixels: i32| scale.logical(pixels);
+    let (wide, tall) = (logical(at.size.w), logical(at.size.h));
     let rows = TheRows::of(wide, tall).map_err(NoTaskPicture::TooSmall)?;
     let palette = TaskPalette::of(look).map_err(|_| NoTaskPicture::AccentRefused)?;
     let controls = rows.controls();
@@ -263,7 +277,7 @@ pub(crate) fn furniture(
         (px(m::A_CONTROL_IS), px(m::A_CONTROL_IS)).into(),
     )];
 
-    let measure = look.measure();
+    let measure = look.measure().on(scale);
     // **Measured before the panel is rasterised, and that order is forced twice
     // over.** Both
     // the measuring and the writing need the font system mutably, and two
@@ -305,6 +319,7 @@ pub(crate) fn furniture(
                 px(for_words),
                 measure,
             );
+            let tall = logical(i32::try_from(tall).unwrap_or(i32::MAX));
             // A bubble is taller than its words by its padding.
             let tall = if one.whose.is_in_a_bubble() {
                 tall + m::INSIDE_A_BLOCK * 2
@@ -387,7 +402,7 @@ pub(crate) fn furniture(
                 px(room),
                 measure,
             );
-            u32::try_from(shaped.width.max(0)).unwrap_or(0)
+            logical(shaped.width)
         };
         let allow_is = width_of(
             answers.allow_once,
@@ -414,16 +429,10 @@ pub(crate) fn furniture(
         rings.push(deny);
         match answers.selected {
             Some(crate::a_change_waiting_reaches_the_person::WhichAnswer::AllowOnce) => {
-                outlines.push(crate::dock_raster::a_focus_ring(
-                    allow,
-                    crate::display_scale::DisplayScale::ONE,
-                ));
+                outlines.push(crate::dock_raster::a_focus_ring(allow, scale));
             }
             Some(crate::a_change_waiting_reaches_the_person::WhichAnswer::Deny) => {
-                outlines.push(crate::dock_raster::a_focus_ring(
-                    deny,
-                    crate::display_scale::DisplayScale::ONE,
-                ));
+                outlines.push(crate::dock_raster::a_focus_ring(deny, scale));
             }
             // **Nothing is preselected, so nothing is outlined** until the
             // person moves to an answer.
@@ -459,7 +468,7 @@ pub(crate) fn furniture(
         palette.surface,
         palette.edge,
         (at.loc.x + at.size.w, at.loc.y + at.size.h),
-        crate::how_a_panel_is_raised::HowItIsRaised::THE_DOCKS.unscaled(),
+        crate::how_a_panel_is_raised::HowItIsRaised::THE_DOCKS.at(scale.factor()),
         APanelsShapes {
             circles: &button,
             circle: palette.the_one_button,
@@ -568,13 +577,13 @@ pub(crate) fn furniture(
                 fits,
                 measure,
             );
-            let slack = u32::try_from((px(width) - fits).max(0)).unwrap_or(0);
+            let slack = logical(px(width) - fits);
             (again, x + slack)
         } else {
             (shaped, x)
         };
         let (px_x, _) = inside(along, 0);
-        let px_y = at.loc.y + i32::try_from(m::BORDER).unwrap_or(0) + down;
+        let px_y = at.loc.y + px(m::BORDER) + down;
         // **Cut to the conversation's view** for words in it, and to the
         // window's bottom edge for everything else.
         let (from, to) = scrolled_in.map_or((at.loc.y, limit), |(_, (top, bottom))| {
@@ -792,3 +801,8 @@ pub(crate) fn furniture(
 #[cfg(test)]
 #[path = "task_raster_tests.rs"]
 mod tests;
+
+/// The task window at a display's scale against the same window at one.
+#[cfg(test)]
+#[path = "task_raster_scale_tests.rs"]
+mod scale_tests;

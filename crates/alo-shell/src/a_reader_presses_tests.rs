@@ -66,6 +66,7 @@ fn a_task(server: &mut Server, asked: &str) -> WhichTask {
         view,
         alo_strings::Direction::LeftToRight,
         &[],
+        100,
     );
     which
 }

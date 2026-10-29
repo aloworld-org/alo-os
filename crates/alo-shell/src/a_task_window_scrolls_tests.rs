@@ -51,6 +51,7 @@ fn a_long_conversation() -> (tempfile::TempDir, Server, WhichTask) {
         view,
         alo_strings::Direction::LeftToRight,
         &[],
+        100,
     );
     server
         .tasks_mut()

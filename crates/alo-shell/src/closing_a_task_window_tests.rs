@@ -101,6 +101,7 @@ fn a_task(server: &mut Server, asked: &str) -> WhichTask {
         view,
         alo_strings::Direction::LeftToRight,
         &[],
+        100,
     );
     server.this_task_took_the_keyboard(which);
     which
@@ -199,6 +200,7 @@ fn a_closed_window_is_not_placed_again() {
         view,
         alo_strings::Direction::LeftToRight,
         &[],
+        100,
     );
 
     assert_eq!(placed, 0, "a closed window was placed again");

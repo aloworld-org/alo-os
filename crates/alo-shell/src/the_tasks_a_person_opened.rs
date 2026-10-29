@@ -197,7 +197,10 @@ impl TheTasks {
             })
     }
 
-    /// Put the window of every task that has nowhere to be.
+    /// Put the window of every task that has nowhere to be, on a display drawn
+    /// at `display_scale` per cent — the same number
+    /// [`crate::nested_desktop::DesktopFrame::display_scale`] carries — so a
+    /// window opened on a dense screen asks for that screen's pixels.
     ///
     /// Answers how many were placed, so a caller can tell *nothing to do* from
     /// *a view too small to put one in* — both leave the list unchanged and
@@ -211,7 +214,9 @@ impl TheTasks {
         view: Rectangle<i32, Logical>,
         reading: Direction,
         fixed: &[Rectangle<i32, Logical>],
+        display_scale: u16,
     ) -> usize {
+        let scale = crate::display_scale::DisplayScale::of_per_cent(display_scale);
         debug_assert_eq!(self.open.len(), self.placed.len());
         let mut placed = 0;
         for which in 0..self.placed.len() {
@@ -234,7 +239,7 @@ impl TheTasks {
                 })
                 .collect();
             let Some(at) = crate::where_a_task_window_opens::where_one_more_goes(
-                view, &already, reading, fixed,
+                view, &already, reading, fixed, scale,
             ) else {
                 // A view too small for the window at all. Nothing is placed and
                 // nothing is invented: the next frame on a larger display will
