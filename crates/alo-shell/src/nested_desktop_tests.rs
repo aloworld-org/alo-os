@@ -502,6 +502,7 @@ fn the_frame_carries_the_slot_the_keyboard_is_on() {
             in_more_apps: &[],
             the_bar: None,
             the_keyboard_is_on_the_bar,
+            the_pointer_is_on_the_bar: None,
             dock: &dock,
             look: noon_look(&an_appearance(), Direction::LeftToRight),
             strings: &strings,
