@@ -215,6 +215,14 @@ pub(crate) fn picture(
                     colours,
                     &measure,
                 ),
+                crate::the_first_start::Sheet::Zone(picker) => crate::zone_sheet::drawn(
+                    picker,
+                    fonts,
+                    words,
+                    (width, height),
+                    colours,
+                    &measure,
+                ),
                 crate::the_first_start::Sheet::Keyboard(picker) => crate::keyboard_sheet::drawn(
                     first_start,
                     picker,

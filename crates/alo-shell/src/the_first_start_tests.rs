@@ -216,3 +216,82 @@ fn a_region_is_taken_and_continue_goes_on() {
         Went::Onward
     );
 }
+
+/// **A region with one zone sets it**: Germany is Berlin, with nothing asked.
+#[test]
+fn a_region_with_one_zone_sets_it() {
+    let mut first_start = TheFirstStart::arriving(RegionCode::named("DE").ok());
+    walked(
+        &mut first_start,
+        &[
+            SignInKey::Later,
+            SignInKey::Enter,
+            SignInKey::Enter,
+            SignInKey::Enter,
+        ],
+    );
+    assert_eq!(
+        first_start.sheet(),
+        &Sheet::Overview,
+        "Germany asked which zone"
+    );
+    assert_eq!(first_start.the_zone_chosen(), Some("Europe/Berlin"));
+    assert_eq!(first_start.the_zone_named(), None);
+}
+
+/// **A region with several asks which**: the United States opens the zone
+/// sheet with nothing chosen; one chosen and used is the machine's zone, and
+/// the region row names it.
+#[test]
+fn a_region_with_several_zones_asks_which() {
+    let mut first_start = TheFirstStart::arriving(RegionCode::named("US").ok());
+    walked(
+        &mut first_start,
+        &[
+            SignInKey::Later,
+            SignInKey::Enter,
+            SignInKey::Enter,
+            SignInKey::Enter,
+        ],
+    );
+    let Sheet::Zone(picker) = first_start.sheet() else {
+        panic!("the United States did not ask which zone");
+    };
+    assert_eq!(picker.chosen(), None, "a zone arrived chosen");
+    assert_eq!(first_start.the_zone_chosen(), None);
+    walked(
+        &mut first_start,
+        &[SignInKey::Later, SignInKey::Enter, SignInKey::Enter],
+    );
+    assert_eq!(first_start.sheet(), &Sheet::Overview);
+    let chosen = first_start.the_zone_chosen().unwrap().to_owned();
+    assert!(
+        chosen.starts_with("America/") || chosen.starts_with("Pacific/"),
+        "{chosen}"
+    );
+    assert!(first_start.the_zone_named().is_some());
+}
+
+/// **Escape from the zone sheet sets no zone**: the machine keeps the one it
+/// had, and the region taken stays taken.
+#[test]
+fn escape_from_the_zone_sheet_sets_no_zone() {
+    let mut first_start = TheFirstStart::arriving(RegionCode::named("RU").ok());
+    walked(
+        &mut first_start,
+        &[
+            SignInKey::Later,
+            SignInKey::Enter,
+            SignInKey::Enter,
+            SignInKey::Enter,
+        ],
+    );
+    assert!(matches!(first_start.sheet(), Sheet::Zone(_)));
+    walked(&mut first_start, &[SignInKey::Enter, SignInKey::Clear]);
+    assert_eq!(first_start.sheet(), &Sheet::Overview);
+    assert_eq!(first_start.the_zone_chosen(), None);
+    assert_eq!(
+        first_start.the_region_chosen().map(RegionCode::code),
+        Some("RU")
+    );
+}

@@ -380,6 +380,16 @@ impl<K: Knocking> SignInScreen<K> {
         }
     }
 
+    /// **The time zone the region taken sets**, by its database name, for
+    /// whoever sets it — [`None`] until one is, and on every other screen.
+    #[must_use]
+    pub fn the_zone_chosen(&self) -> Option<&str> {
+        match &self.stands {
+            Stands::FirstStart(first_start, _, _) => first_start.the_zone_chosen(),
+            Stands::SignIn(_) | Stands::MakeAnAccount(_, _) | Stands::Unreadable(_, _) => None,
+        }
+    }
+
     /// **The keyboard to type on now**, for whoever keeps and applies it —
     /// chosen on the keyboard sheet, or the chosen language's, and [`None`]
     /// until either is chosen and on every other screen.

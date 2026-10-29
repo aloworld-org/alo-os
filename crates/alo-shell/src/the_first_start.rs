@@ -19,6 +19,10 @@
 //!   region (`alo_formats::where_the_machine_is`), and the keyboard is the one
 //!   the language is offered first (`alo_keyboards::offered_with`). A region
 //!   or keyboard a person chose stays chosen when they change language.
+//! - **The region sets the machine's time zone** (the owner's decision of
+//!   2026-10-28): a region with one zone sets it, and a region with several —
+//!   the United States, Russia, Brazil — asks which, on a sheet the design
+//!   does not draw (`crate::the_zone_picker`).
 //! - **The screen speaks the language from the press that chose it**, and
 //!   the compositor applies a keyboard the moment it is chosen, so the test
 //!   row and every field after are typed through it.
@@ -26,8 +30,8 @@
 //! # Nothing here writes anything
 //!
 //! What was chosen leaves through [`TheFirstStart::the_language_chosen`],
-//! [`TheFirstStart::the_keyboard_chosen`] and
-//! [`TheFirstStart::the_region_chosen`], and the compositor keeps it.
+//! [`TheFirstStart::the_keyboard_chosen`], [`TheFirstStart::the_region_chosen`]
+//! and [`TheFirstStart::the_zone_chosen`], and the compositor keeps it.
 
 use alo_formats::RegionCode;
 use alo_keyboards::Layout;
@@ -36,6 +40,7 @@ use crate::sign_in_keys::SignInKey;
 use crate::the_keyboard_picker::{TheKeyboardPicker, TheRing};
 use crate::the_languages_offered::{TheLanguagesOffered, WhereTheRingIs};
 use crate::the_regions_offered::TheRegionsOffered;
+use crate::the_zone_picker::TheZonePicker;
 
 /// Which sheet is up.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -48,6 +53,8 @@ pub enum Sheet {
     Region(TheRegionsOffered),
     /// Frame `09a`.
     Keyboard(TheKeyboardPicker),
+    /// Which time zone, in a region that has several; no frame draws it.
+    Zone(TheZonePicker),
 }
 
 /// The overview's three rows, in the design's order.
@@ -90,6 +97,13 @@ pub struct TheFirstStart {
     region: Option<RegionCode>,
     /// The keyboard a person chose, where they chose one.
     keyboard: Option<Layout>,
+    /// The time zone the region taken sets, by its database name, and what
+    /// it is called in the person's language.
+    zone: Option<alo_formats::zones::NamedZone>,
+    /// Whether the region taken has several zones, so the region row names
+    /// the one chosen — worked out once, when the region is taken, rather
+    /// than asked of CLDR on every frame.
+    one_of_several: bool,
     /// The region the machine's own clock says it is in.
     where_the_machine_is: Option<RegionCode>,
     /// What each keyboard is called, in each language the machine has
@@ -109,6 +123,8 @@ impl TheFirstStart {
             languages: TheLanguagesOffered::every_official(),
             region: None,
             keyboard: None,
+            zone: None,
+            one_of_several: false,
             where_the_machine_is,
             names: alo_keyboards::TheKeyboardNames::default(),
         }
@@ -205,6 +221,20 @@ impl TheFirstStart {
         self.region.as_ref()
     }
 
+    /// **The time zone the region taken sets**, by its database name.
+    pub fn the_zone_chosen(&self) -> Option<&str> {
+        self.zone.as_ref().map(|it| it.iana.as_str())
+    }
+
+    /// What the zone is called, for the region row — only where the region
+    /// has several, because one zone says nothing a person did not choose.
+    pub fn the_zone_named(&self) -> Option<&str> {
+        if !self.one_of_several {
+            return None;
+        }
+        self.zone.as_ref().map(|it| it.name.as_str())
+    }
+
     /// The languages, for the language sheet's drawing.
     pub fn languages(&self) -> &TheLanguagesOffered {
         &self.languages
@@ -225,6 +255,10 @@ impl TheFirstStart {
             }
             Sheet::Keyboard(picker) => {
                 self.on_the_keyboard_sheet(key, picker);
+                Went::Stayed
+            }
+            Sheet::Zone(picker) => {
+                self.on_the_zone_sheet(key, picker);
                 Went::Stayed
             }
         }
@@ -318,6 +352,7 @@ impl TheFirstStart {
                     self.region = offered
                         .chosen()
                         .and_then(|it| RegionCode::named(it.code).ok());
+                    self.the_zone_follows_the_region();
                     return;
                 }
                 WhereTheRingIs::OnTheList => offered.enter_on_the_list(),
@@ -330,6 +365,44 @@ impl TheFirstStart {
             SignInKey::Letter(_) | SignInKey::Erase | SignInKey::Nothing => {}
         }
         self.sheet = Sheet::Region(offered);
+    }
+
+    /// **The zone the region taken sets**: its one zone, or — where it has
+    /// several — the sheet that asks which; none where CLDR names none.
+    fn the_zone_follows_the_region(&mut self) {
+        let Some(region) = &self.region else {
+            return;
+        };
+        let mut zones = alo_formats::zones::the_zones_in(region, self.the_language());
+        self.one_of_several = zones.len() > 1;
+        self.zone = None;
+        if self.one_of_several {
+            self.sheet = Sheet::Zone(TheZonePicker::of(zones));
+        } else {
+            self.zone = zones.pop();
+        }
+    }
+
+    /// The zone sheet: a zone chosen and used sets it; Escape returns to the
+    /// overview with the machine's zone as it was.
+    fn on_the_zone_sheet(&mut self, key: SignInKey, mut picker: TheZonePicker) {
+        match key {
+            SignInKey::Earlier => picker.up(),
+            SignInKey::Later => picker.down(),
+            SignInKey::OtherField => picker.ring_crosses(),
+            SignInKey::Enter => match picker.ring() {
+                WhereTheRingIs::OnTheWayOn => {
+                    if let Some(zone) = picker.chosen() {
+                        self.zone = Some(zone.clone());
+                        return;
+                    }
+                }
+                WhereTheRingIs::OnTheList => picker.choose(),
+            },
+            SignInKey::Clear => return,
+            SignInKey::Letter(_) | SignInKey::Erase | SignInKey::Nothing => {}
+        }
+        self.sheet = Sheet::Zone(picker);
     }
 
     /// The keyboard sheet: arrows choose among the keyboards, Tab reaches the
