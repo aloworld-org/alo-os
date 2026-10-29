@@ -49,7 +49,8 @@ fn hashed(panel: &PanelPicture) -> u64 {
 /// right edge and the left, holding four.
 ///
 /// The hashes were taken once, by hand, on 2026-10-28 from this fixture run
-/// against the tree this change was branched from (`56abab9a`), and this test
+/// against the tree this change was first branched from (`56abab9a`) and again
+/// against `main` at `a65c898e`, which gave the same two, and this test
 /// repeats the comparison on every build.
 #[test]
 fn at_one_hundred_the_panel_draws_the_bytes_it_drew_before() {
