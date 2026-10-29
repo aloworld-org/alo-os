@@ -1,5 +1,5 @@
 # How each model does on a FOLLOW-UP: a request that only makes sense after the
-# conversation before it, as a reply typed in a task window is sent (ADR 0137).
+# conversation before it, as a reply typed in a task window is sent (ADR 0138).
 #
 # Kept apart from catalogue.toml on purpose. These grades decide nothing — not
 # whether a model may be given the agent, not what is recommended — and the

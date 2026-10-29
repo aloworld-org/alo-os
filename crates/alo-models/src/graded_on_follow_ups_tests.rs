@@ -28,7 +28,7 @@ fn the_built_in_follow_ups_read() {
 }
 
 /// **No model on this machine has a follow-up grade yet**, and each says so
-/// rather than borrowing its first-request grade (ADR 0137).
+/// rather than borrowing its first-request grade (ADR 0138).
 #[test]
 fn every_model_in_the_catalogue_is_not_yet_measured_on_a_follow_up() {
     let measured = FollowUpsMeasured::built_in().unwrap();
