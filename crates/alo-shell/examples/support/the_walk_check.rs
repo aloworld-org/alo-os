@@ -598,7 +598,7 @@ impl<'a> TheDesk<'a> {
             on_the_dock: &[],
             in_more_apps: &[],
             the_keyboard_is_on_the_bar: None,
-            the_pointer_is_on_the_bar: None,
+            the_docks_name_is_for: None,
             the_bar: None,
         }
     }

@@ -434,6 +434,7 @@ pub mod the_closing_words;
 pub mod the_composer_a_person_types_in;
 mod the_desk_is_reconciled;
 mod the_dock_as_a_reader_meets_it;
+mod the_docks_name_is_held;
 pub mod the_docks_words;
 mod the_edge_takes_the_keyboard;
 pub mod the_first_start;

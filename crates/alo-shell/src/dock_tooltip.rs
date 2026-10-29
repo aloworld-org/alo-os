@@ -31,11 +31,29 @@
 //! gap clear of the bar, centred on the control and moved to stay on the
 //! display. Every figure is logical and goes through the display's scale; the
 //! words also follow the person's text size, because a name is a sentence.
+//!
+//! # In a right-to-left language
+//!
+//! Each line starts from the panel's right edge, inside the same 8, and a
+//! shorter line is flush right under a longer one — the panel's own alignment
+//! mirrored, as the reading language mirrors the rest of the Dock. Where the
+//! panel sits is not mirrored: it is centred on the control, or beside a Dock
+//! down either side toward the canvas, which no reading direction changes.
+//!
+//! # What keeps it, and what dismisses it
+//!
+//! WCAG 1.4.13: the name stays while the pointer is on the control **or on
+//! the name**, so a person can move onto it to read it, and Escape dismisses
+//! it without moving anything. Both are the server's to decide, because both
+//! depend on where the pointer and the keyboard are between frames;
+//! `crate::the_docks_name_is_held` has them. This file draws, and records
+//! where it drew ([`TheNameAsDrawn`]).
 
 use alo_appearance::TextScale;
 use alo_dock::Edge;
 use alo_dock::a_dock_entry::ANativeAction;
 use alo_dock::places::WhatIsHere;
+use alo_strings::Direction;
 use cosmic_text::{FontSystem, Metrics};
 use smithay::utils::{Physical, Rectangle};
 
@@ -102,6 +120,48 @@ pub(crate) struct TheNameShown {
     pub(crate) panel: Washed,
     /// One per line.
     pub(crate) words: Vec<Inked>,
+    /// The control it names, in output pixels: what the pointer may leave the
+    /// name for, and come back from, without it going.
+    pub(crate) slot: Rectangle<i32, Physical>,
+}
+
+/// Where a name was drawn, for the questions asked of it between frames.
+///
+/// Kept by `Server::the_docks_name_was_drawn`, as the Dock's slots are kept by
+/// `Server::the_docks_slots_were_drawn`: outside a frame nothing else knows.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct TheNameAsDrawn {
+    /// Which control it names, counted as `crate::the_bars_pressable_slots`
+    /// counts.
+    pub(crate) which: usize,
+    /// Where the pointer keeps it showing: the smallest rectangle holding the
+    /// control and the name, so the gap between the two is inside it too and a
+    /// pointer moved from one to the other never crosses ground that lets go.
+    ///
+    /// Asked only after the Dock's own hit test, so where this covers part of
+    /// a neighbouring control the neighbour wins and its name is shown.
+    pub(crate) reach: Rectangle<i32, Physical>,
+}
+
+impl TheNameAsDrawn {
+    /// The record of `shown`, the name of control `which`.
+    fn of(which: usize, shown: &TheNameShown) -> Self {
+        let (a, b) = (shown.area, shown.slot);
+        let left = a.loc.x.min(b.loc.x);
+        let top = a.loc.y.min(b.loc.y);
+        let right = (a.loc.x + a.size.w).max(b.loc.x + b.size.w);
+        let bottom = (a.loc.y + a.size.h).max(b.loc.y + b.size.h);
+        Self {
+            which,
+            reach: Rectangle::new((left, top).into(), (right - left, bottom - top).into()),
+        }
+    }
+
+    /// Whether a pointer at `at` keeps this name showing.
+    pub(crate) fn holds(&self, at: smithay::utils::Point<i32, Physical>) -> bool {
+        let r = self.reach;
+        at.x >= r.loc.x && at.x < r.loc.x + r.size.w && at.y >= r.loc.y && at.y < r.loc.y + r.size.h
+    }
 }
 
 /// Show the name of the control at `which` (counted as
@@ -110,23 +170,30 @@ pub(crate) struct TheNameShown {
 ///
 /// The panel goes on after the Dock's own panels and the words after its
 /// words, which is the order `crate::desktop_paint` paints them in, so the
-/// tooltip is over everything the Dock drew.
+/// tooltip is over everything the Dock drew. Where it went is recorded on the
+/// picture ([`DockPicture::the_name`]) for the server to keep.
 pub(crate) fn show_the_name(
     picture: &mut DockPicture,
     which: Option<usize>,
     words: &TheDocksWords,
     text: TextScale,
+    reading: Direction,
     fonts: &mut FontSystem,
 ) {
-    let Some(shown) = which.and_then(|which| the_name_shown(picture, which, words, text, fonts))
+    let Some(shown) =
+        which.and_then(|which| the_name_shown(picture, which, words, text, reading, fonts))
     else {
         return;
     };
+    picture.the_name = which.map(|which| TheNameAsDrawn::of(which, &shown));
     picture.panels.push(shown.panel);
     picture.inked.extend(shown.words);
 }
 
 /// The name of the control at `which` on `picture`, laid out and drawn.
+///
+/// Each line starts from the panel's start edge in `reading`: the left, or
+/// the right in a right-to-left language.
 ///
 /// [`None`] for a slot that is not there, a control with no tooltip, a name
 /// with nothing to draw, or a display too small to hold the panel at all.
@@ -136,6 +203,7 @@ pub(crate) fn the_name_shown(
     which: usize,
     words: &TheDocksWords,
     text: TextScale,
+    reading: Direction,
     fonts: &mut FontSystem,
 ) -> Option<TheNameShown> {
     let dock = &picture.standing;
@@ -219,16 +287,31 @@ pub(crate) fn the_name_shown(
         .iter()
         .zip(0_i32..)
         .filter_map(|(each, down)| {
-            crate::painted_text::sentence(fonts, each, room, metrics, fill, ink)
-                .cropped_to_its_ink()
-                .placed(
-                    area.loc.x + beside,
-                    area.loc.y + above + down * line,
-                    height,
-                )
+            // **Shaped in a box its own width when it reads from the right.**
+            // The shaper sets a right-to-left line against the right of its
+            // box, and cropping keeps a box's left, so a line shaped at the
+            // full `room` and cropped would lose its own ink.
+            let shaped_at = match reading {
+                Direction::LeftToRight => room,
+                Direction::RightToLeft => {
+                    crate::painted_text::how_wide(fonts, each, metrics).clamp(1, room)
+                }
+            };
+            let shaped = crate::painted_text::sentence(fonts, each, shaped_at, metrics, fill, ink)
+                .cropped_to_its_ink();
+            let x = match reading {
+                Direction::LeftToRight => area.loc.x + beside,
+                Direction::RightToLeft => area.loc.x + area.size.w - beside - shaped.width_of_box,
+            };
+            shaped.placed(x, area.loc.y + above + down * line, height)
         })
         .collect();
-    Some(TheNameShown { area, panel, words })
+    Some(TheNameShown {
+        area,
+        panel,
+        words,
+        slot,
+    })
 }
 
 /// Where a panel of `size` goes beside `slot`: toward the canvas from `band`,
@@ -255,22 +338,6 @@ pub(crate) fn placed(
     let x = x.clamp(0, (display.0 - across).max(0));
     let y = y.clamp(0, (display.1 - tall).max(0));
     Rectangle::new((x, y).into(), (across, tall).into())
-}
-
-impl crate::Server {
-    /// Which control on `display`'s Dock the pointer is on, counted as
-    /// `crate::the_bars_pressable_slots` counts.
-    ///
-    /// **The same hit test a press uses** (`Server::the_dock_takes_this_press`),
-    /// on the same Dock as it was last drawn, so the name a person reads is the
-    /// name of the control a click would press.
-    #[must_use]
-    pub(crate) fn the_slot_the_pointer_is_on(&self, display: &str) -> Option<usize> {
-        let at = self.where_the_pointer_is_in_pixels()?;
-        let dock = self.dock_as_drawn.get(display)?;
-        let place = dock.places.at(dock.how_far_along(at)?)?;
-        crate::the_bars_pressable_slots::which_one_is(&dock.places, place)
-    }
 }
 
 #[cfg(test)]

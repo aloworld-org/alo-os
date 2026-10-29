@@ -933,6 +933,17 @@ impl LoopInput for Desk<'_> {
                         server, update, extent, strings,
                     )
                 }
+                // **Escape dismisses a Dock control's name, and does nothing
+                // else** (WCAG 1.4.13). Asked after every surface that holds
+                // the keyboard, because each is in front of the Dock and a
+                // person pressing Escape at one is cancelling that; and
+                // before the Dock's own surfaces, because the name is drawn
+                // over them. False for every key but Escape's press with a
+                // name showing — `crate::the_docks_name_is_held` says why
+                // that narrowness is the point.
+                else if server.the_docks_name_takes_this(&update) {
+                    Ok(())
+                }
                 // **Escape closes what the Dock has open**, and only then.
                 // Asked after Settings because Settings is in front of the
                 // Dock when both are up: a person pressing Escape at a
@@ -1842,6 +1853,17 @@ impl LoopInput for Desk<'_> {
             if let Some(dock) = its_pictures.desktop.dock.as_ref() {
                 server.the_docks_slots_were_drawn(&its.name, dock.standing.clone());
             }
+            // **And the name it showed beside a control, or that it showed
+            // none**, for the pointer that moves onto the name to read it.
+            // Outside the `if let` for the reason given below.
+            server.the_docks_name_was_drawn(
+                &its.name,
+                its_pictures
+                    .desktop
+                    .dock
+                    .as_ref()
+                    .and_then(|dock| dock.the_name),
+            );
             // **And where its open surface was, or that there was none.**
             // Outside the `if let` above deliberately: the two cases that must
             // clear the record are *no Dock on this display* and *a Dock with
@@ -1871,6 +1893,14 @@ impl LoopInput for Desk<'_> {
         }
         // The same for this display, and outside the `if let` for the same
         // reason the one above is.
+        server.the_docks_name_was_drawn(
+            &named,
+            pictures
+                .desktop
+                .dock
+                .as_ref()
+                .and_then(|dock| dock.the_name),
+        );
         server.the_docks_surface_was_drawn(
             &named,
             pictures

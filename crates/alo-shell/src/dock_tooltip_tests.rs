@@ -218,6 +218,7 @@ fn no_name_to_show_changes_nothing() {
         None,
         &words(),
         TextScale::default(),
+        Direction::LeftToRight,
         &mut fonts(),
     );
     assert_eq!(after, before, "nothing pointed at, and the Dock changed");
@@ -227,6 +228,7 @@ fn no_name_to_show_changes_nothing() {
         Some(composer),
         &words(),
         TextScale::default(),
+        Direction::LeftToRight,
         &mut fonts(),
     );
     assert_eq!(
@@ -238,6 +240,7 @@ fn no_name_to_show_changes_nothing() {
         Some(999),
         &words(),
         TextScale::default(),
+        Direction::LeftToRight,
         &mut fonts(),
     );
     assert_eq!(after, before, "a slot that is not there drew something");
@@ -256,6 +259,7 @@ fn an_applications_name_is_drawn_outside_the_bar_on_every_edge() {
             slot_of(&picture, &files),
             &words(),
             TextScale::default(),
+            Direction::LeftToRight,
             &mut fonts(),
         )
         .unwrap_or_else(|| panic!("{edge:?}: no name shown"));
@@ -308,6 +312,7 @@ fn a_long_name_takes_two_lines_and_then_an_ellipsis() {
         slot_of(&picture, &app),
         &words(),
         TextScale::default(),
+        Direction::LeftToRight,
         &mut fonts(),
     )
     .expect("a name shown");
@@ -339,6 +344,7 @@ fn a_dense_display_draws_the_same_tooltip_twice_as_large() {
             slot_of(&picture, &files),
             &words(),
             TextScale::default(),
+            Direction::LeftToRight,
             &mut fonts(),
         )
         .expect("a name shown");
@@ -371,6 +377,7 @@ fn the_persons_text_size_reaches_the_name() {
             slot_of(&picture, &files),
             &words(),
             text,
+            Direction::LeftToRight,
             &mut fonts(),
         )
         .expect("a name shown")
@@ -459,8 +466,66 @@ fn historys_word_is_its_tooltip_only_where_it_is_an_icon() {
         slot_of(&picture, &WhatIsHere::History),
         &words,
         TextScale::default(),
+        Direction::LeftToRight,
         &mut fonts(),
     )
     .expect("History's name is shown on a side Dock");
     assert!(!overlap(shown.area, picture.band), "on the bar");
+}
+
+/// **In a right-to-left language each line starts from the panel's right**,
+/// eight in from its edge as it is eight in from the left otherwise, and a
+/// shorter line is flush right under a longer one. Where the panel sits does
+/// not change: it is centred on the control either way.
+#[test]
+fn in_a_right_to_left_language_the_lines_start_from_the_right() {
+    // Two lines, so the shorter second one shows which edge lines align to.
+    // Latin words, because the bundled faces carry no Hebrew or Arabic: what
+    // is measured is where a line is placed, which the script does not change.
+    let name = "Correspondence for the whole household Mail";
+    let picture = drawn(Edge::Bottom, (1920, 1080), DisplayScale::ONE, &[name]);
+    let app = WhatIsHere::Application(AppId::named(name).expect("named"));
+    let shown_in = |reading: Direction| {
+        the_name_shown(
+            &picture,
+            slot_of(&picture, &app),
+            &words(),
+            TextScale::default(),
+            reading,
+            &mut fonts(),
+        )
+        .expect("a name shown")
+    };
+    let ltr = shown_in(Direction::LeftToRight);
+    let rtl = shown_in(Direction::RightToLeft);
+    assert_eq!(
+        ltr.area, rtl.area,
+        "the panel moved with the reading direction"
+    );
+    assert_eq!(rtl.words.len(), 2, "the premise: two lines");
+    let beside = i32::try_from(super::BESIDE_THE_WORDS).expect("small");
+    let right = rtl.area.loc.x + rtl.area.size.w - beside;
+    for line in &rtl.words {
+        assert_eq!(
+            line.area.loc.x + line.area.size.w,
+            right,
+            "a line does not end eight in from the panel's right"
+        );
+    }
+    for line in &ltr.words {
+        assert_eq!(
+            line.area.loc.x,
+            ltr.area.loc.x + beside,
+            "a line does not start eight in from the panel's left"
+        );
+    }
+    let widths: Vec<i32> = rtl.words.iter().map(|line| line.area.size.w).collect();
+    assert!(
+        widths[1] < widths[0],
+        "the premise: the second line is the shorter: {widths:?}"
+    );
+    assert!(
+        rtl.words[1].area.loc.x > rtl.area.loc.x + beside,
+        "the shorter line starts from the left in a right-to-left language"
+    );
 }
