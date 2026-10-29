@@ -207,6 +207,7 @@ mod dock_raster;
 /// The Dock's own surface: a rounded panel with a hairline and a shadow,
 /// rasterised with alpha because neither is a rectangle.
 mod dock_surface;
+mod dock_tooltip;
 /// How a rounded panel is lifted off what is behind it — its corner and its
 /// shadow — at the display scale its geometry is laid out in.
 mod how_a_panel_is_raised;
@@ -303,6 +304,7 @@ mod output_retirement;
 mod overview_sheet;
 mod painted;
 mod painted_text;
+mod painted_text_wrapping;
 mod panel_raster;
 mod peeking_at_a_put_aside_window;
 mod pointer;

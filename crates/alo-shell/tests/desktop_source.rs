@@ -71,6 +71,9 @@ fn the_desktop_files() -> Vec<(String, Vec<(usize, String)>)> {
             // shadow, rasterised with alpha. It draws furniture and nothing
             // else, which is what every rule below asks of a `dock_*` file.
             "dock_surface.rs",
+            // A control's name beside it on hover and keyboard focus. It draws
+            // furniture and words it is handed, and grants or measures nothing.
+            "dock_tooltip.rs",
             // What the Dock is told is open, built from the mapped surfaces.
             // Not a surface that draws, and held to the same promises for the
             // same reason `desktop_membership.rs` is: it decides which windows

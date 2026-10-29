@@ -195,6 +195,9 @@ pub(crate) struct Shown<'a> {
     /// Which slot on the bar the keyboard is on, from
     /// [`crate::nested_desktop::DesktopFrame::the_keyboard_is_on_the_bar`].
     pub(crate) the_keyboard_is_on_the_bar: Option<usize>,
+    /// Which slot on the bar the pointer is on, from
+    /// [`crate::nested_desktop::DesktopFrame::the_pointer_is_on_the_bar`].
+    pub(crate) the_pointer_is_on_the_bar: Option<usize>,
     /// The alo Bar's panel, from
     /// [`crate::nested_desktop::DesktopFrame::the_bar`].
     pub(crate) the_bar: Option<crate::bar_raster::TheBarOnTheDisplay<'a>>,
@@ -264,6 +267,7 @@ pub(crate) fn picture(
         the_dock_has_open,
         the_docks_words,
         the_keyboard_is_on_the_bar,
+        the_pointer_is_on_the_bar,
         the_bar,
         what_each_application_draws,
     } = shown;
@@ -274,7 +278,7 @@ pub(crate) fn picture(
     // populating an `alo_dock::Holding`. `DesktopFrame::on_the_dock` carries the
     // number and its own note says why the desktop counts and this crate does
     // not.
-    let dock_picture = crate::dock_raster::picture(
+    let mut dock_picture = crate::dock_raster::picture(
         dock,
         look,
         size,
@@ -289,6 +293,16 @@ pub(crate) fn picture(
         // get a Dock laid out for their own.
         crate::display_scale::DisplayScale::of_per_cent(display_scale),
     )?;
+    // **The name of the control a person is pointing at, or the keyboard is
+    // on**, beside it and outside the bar. The pointer first, as the window
+    // title's tooltip asks: pointing at a control is asking about that one.
+    crate::dock_tooltip::show_the_name(
+        &mut dock_picture,
+        the_pointer_is_on_the_bar.or(the_keyboard_is_on_the_bar),
+        the_docks_words,
+        look.scale(),
+        fonts,
+    );
 
     // **Laid out first, shown or not.** The band has to exist before anything
     // can ask whether a window is over it, and `room_beside` below uses it

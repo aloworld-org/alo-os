@@ -263,6 +263,12 @@ pub struct DesktopFrame<'a> {
     /// every other builder of this frame leaves it [`None`] — which is the
     /// true answer for a fixture nobody has pressed F6 on.
     pub the_keyboard_is_on_the_bar: Option<usize>,
+    /// Which slot on the Dock's bar the pointer is on, if it is on the bar.
+    ///
+    /// **Server state for the same reason**: the Dock was laid out by the last
+    /// draw and the pointer is the seat's, so `crate::what_the_server_tells_a_frame`
+    /// fills it and every other builder of this frame leaves it [`None`].
+    pub the_pointer_is_on_the_bar: Option<usize>,
     /// The alo Bar, when a person has it open and has typed something.
     ///
     /// **[`None`] is a Bar nobody is using**, which is most frames: the panel
@@ -523,6 +529,7 @@ pub(crate) fn frame_pictures(
             // with a paragraph under it.
             the_bar: desktop.the_bar,
             the_keyboard_is_on_the_bar: desktop.the_keyboard_is_on_the_bar,
+            the_pointer_is_on_the_bar: desktop.the_pointer_is_on_the_bar,
             // **Read off the frame, and a literal `None` until 2026-10-19.**
             //
             // Every other field in this block is taken from the frame; this
