@@ -67,7 +67,10 @@ not re-measured by any build step except the one below:
   are named `Documents`, `Downloads` and `Pictures` — which is what
   `xdg-user-dirs` gives a Maltese person on every Linux desktop. That is not a
   fallback of ours, and it is the one gap; the remedy is a Maltese translation
-  contributed to `xdg-user-dirs` upstream.
+  contributed to `xdg-user-dirs` upstream. A proposal for the eight names is in
+  [`docs/upstream/xdg-user-dirs/mt.po`](../upstream/xdg-user-dirs/mt.po),
+  **not submitted** and marked for review by a Maltese speaker first; sending
+  it upstream is the owner's decision, made separately.
 
 **What runs on every build**: the image's recipe runs the real
 `alo-their-folders` against the real catalogue for a person whose settings say
