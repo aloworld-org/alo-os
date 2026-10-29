@@ -230,6 +230,7 @@ fn a_press_the_panel_took_is_counted_as_one_the_seat_routed() -> Result<(), Inpu
             EXTENT,
             WhichEdge::Right,
             WhetherRevealed::Revealed,
+            crate::display_scale::DisplayScale::ONE,
         )
         .expect("a panel the design's own frame can hold"),
     );
@@ -559,6 +560,7 @@ fn an_empty_panel_does_not_claim_a_press_meant_for_the_dock() -> Result<(), Inpu
             EXTENT,
             WhichEdge::Right,
             WhetherRevealed::Concealed,
+            crate::display_scale::DisplayScale::ONE,
         )
         .expect("a panel this display can hold"),
     );

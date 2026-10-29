@@ -285,6 +285,7 @@ mod tests {
             AS_DRAWN,
             WhichEdge::Right,
             WhetherRevealed::Revealed,
+            crate::display_scale::DisplayScale::ONE,
         )
         .unwrap();
         assert_eq!(drawn.slots.len(), 4, "the fixture must draw four slots");
@@ -322,6 +323,7 @@ mod tests {
             AS_DRAWN,
             WhichEdge::Right,
             WhetherRevealed::Revealed,
+            crate::display_scale::DisplayScale::ONE,
         )
         .unwrap();
 
@@ -350,6 +352,7 @@ mod tests {
             AS_DRAWN,
             WhichEdge::Right,
             WhetherRevealed::Revealed,
+            crate::display_scale::DisplayScale::ONE,
         )
         .unwrap();
 
@@ -373,6 +376,7 @@ mod tests {
             AS_DRAWN,
             WhichEdge::Right,
             WhetherRevealed::Revealed,
+            crate::display_scale::DisplayScale::ONE,
         )
         .unwrap();
         let first = drawn.slots[0];
@@ -405,6 +409,7 @@ mod tests {
             AS_DRAWN,
             WhichEdge::Right,
             WhetherRevealed::Revealed,
+            crate::display_scale::DisplayScale::ONE,
         )
         .unwrap();
         assert!(drawn.slots.is_empty());
@@ -434,6 +439,7 @@ mod tests {
                 AS_DRAWN,
                 WhichEdge::Right,
                 WhetherRevealed::Revealed,
+                crate::display_scale::DisplayScale::ONE,
             )
             .unwrap(),
         );
@@ -446,6 +452,7 @@ mod tests {
                 AS_DRAWN,
                 WhichEdge::Right,
                 WhetherRevealed::Revealed,
+                crate::display_scale::DisplayScale::ONE,
             )
             .unwrap()
             .slots[2],
@@ -479,6 +486,7 @@ mod tests {
                 AS_DRAWN,
                 WhichEdge::Right,
                 WhetherRevealed::Revealed,
+                crate::display_scale::DisplayScale::ONE,
             )
             .unwrap(),
         );
@@ -489,6 +497,7 @@ mod tests {
                 AS_DRAWN,
                 WhichEdge::Right,
                 WhetherRevealed::Revealed,
+                crate::display_scale::DisplayScale::ONE,
             )
             .unwrap()
             .slots[1],
@@ -533,6 +542,7 @@ mod tests {
             AS_DRAWN,
             WhichEdge::Left,
             WhetherRevealed::Revealed,
+            crate::display_scale::DisplayScale::ONE,
         )
         .unwrap();
 
@@ -560,6 +570,7 @@ mod tests {
             (1366, 768),
             WhichEdge::Right,
             WhetherRevealed::Revealed,
+            crate::display_scale::DisplayScale::ONE,
         )
         .unwrap();
 
