@@ -125,7 +125,9 @@ fn the_input_ended(input: &OwnedFd) -> bool {
     if rustix::event::poll(&mut polling, timeout.as_ref()).is_err() {
         return false;
     }
-    let said = polling.first().map(PollFd::revents).unwrap_or_default();
+    let said = polling
+        .first()
+        .map_or_else(PollFlags::empty, PollFd::revents);
     if said.intersects(PollFlags::RDHUP | PollFlags::HUP) {
         return true;
     }

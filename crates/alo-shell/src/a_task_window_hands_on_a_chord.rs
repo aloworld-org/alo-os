@@ -76,7 +76,8 @@ impl Server {
             && let Some(which) = self.the_task_with_the_keyboard
         {
             return match self.the_person_closes_a_task(which) {
-                crate::closing_a_task_window::WhatClosingCameTo::Closed => {
+                crate::closing_a_task_window::WhatClosingCameTo::Closed
+                | crate::closing_a_task_window::WhatClosingCameTo::Asked => {
                     WhatTheChordCameTo::Carried(Action::CloseWindow)
                 }
                 crate::closing_a_task_window::WhatClosingCameTo::StillRunning
