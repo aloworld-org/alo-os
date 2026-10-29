@@ -96,8 +96,9 @@ fn doubled(it: Rectangle<i32, Physical>) -> Rectangle<i32, Physical> {
 ///
 /// The panel with its shadow, its wells, the keyboard's ring and every word, on
 /// a 1920 × 1080 display. The hash was taken once, by hand, on 2026-10-28 from
-/// this fixture run against the tree this change was branched from
-/// (`56abab9a`), and this test repeats the comparison on every build.
+/// this fixture run against `main` at `a65c898e` without this change, drawn
+/// with the shell's own fonts, and this test repeats the comparison on every
+/// build.
 #[test]
 fn at_one_hundred_the_bar_draws_the_bytes_it_drew_before() {
     let now = hashed(&drawn((1920, 1080), DisplayScale::ONE));
@@ -108,7 +109,7 @@ fn at_one_hundred_the_bar_draws_the_bytes_it_drew_before() {
 }
 
 /// The hash of the Bar before this change. See the test above.
-const BEFORE: u64 = 0x69ea_5717_6b5c_d49a;
+const BEFORE: u64 = 0x3c8c_c3f2_1d67_79b2;
 
 /// **At 200 every measure is exactly twice itself**, and so is every share of
 /// the display, on the display the design was drawn at and the same display
