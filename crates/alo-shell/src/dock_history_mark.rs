@@ -43,33 +43,33 @@ const ITS_STROKE: f32 = 1.983_33;
 #[derive(Debug, Clone, Copy)]
 enum Step {
     /// Lift the pen and put it here.
-    MoveTo(f32, f32),
+    Move(f32, f32),
     /// A straight line to here.
-    LineTo(f32, f32),
+    Line(f32, f32),
     /// A cubic curve through two controls to here.
-    CurveTo(f32, f32, f32, f32, f32, f32),
+    Curve(f32, f32, f32, f32, f32, f32),
 }
 
 /// The design's path, step for step.
 const THE_PATH: [Step; 15] = [
     // The arrow's two sides.
-    Step::MoveTo(10.5, 8.166_67),
-    Step::LineTo(4.666_67, 8.166_67),
-    Step::LineTo(4.666_67, 2.333_33),
+    Step::Move(10.5, 8.166_67),
+    Step::Line(4.666_67, 8.166_67),
+    Step::Line(4.666_67, 2.333_33),
     // The rim, from the arrow round to just short of where it began.
-    Step::MoveTo(4.666_67, 8.166_67),
-    Step::CurveTo(5.979_85, 6.200_18, 7.918_36, 4.734_53, 10.168_3, 4.007_03),
-    Step::CurveTo(12.418_3, 3.279_53, 14.847_9, 3.332_8, 17.063_8, 4.158_19),
-    Step::CurveTo(19.279_7, 4.983_58, 21.152_1, 6.532_78, 22.377_9, 8.554_92),
-    Step::CurveTo(23.603_6, 10.577_1, 24.110_9, 12.953_7, 23.817_6, 15.300_1),
-    Step::CurveTo(23.524_3, 17.646_5, 22.447_6, 19.825_2, 20.761_8, 21.483_4),
-    Step::CurveTo(19.076, 23.141_6, 16.879_9, 24.182_2, 14.529, 24.436_7),
-    Step::CurveTo(12.178_1, 24.691_3, 9.810_09, 24.144_8, 7.808_45, 22.885_9),
-    Step::CurveTo(5.806_81, 21.627, 4.288_72, 19.729_2, 3.5, 17.5),
+    Step::Move(4.666_67, 8.166_67),
+    Step::Curve(5.979_85, 6.200_18, 7.918_36, 4.734_53, 10.168_3, 4.007_03),
+    Step::Curve(12.418_3, 3.279_53, 14.847_9, 3.332_8, 17.063_8, 4.158_19),
+    Step::Curve(19.279_7, 4.983_58, 21.152_1, 6.532_78, 22.377_9, 8.554_92),
+    Step::Curve(23.603_6, 10.577_1, 24.110_9, 12.953_7, 23.817_6, 15.300_1),
+    Step::Curve(23.524_3, 17.646_5, 22.447_6, 19.825_2, 20.761_8, 21.483_4),
+    Step::Curve(19.076, 23.141_6, 16.879_9, 24.182_2, 14.529, 24.436_7),
+    Step::Curve(12.178_1, 24.691_3, 9.810_09, 24.144_8, 7.808_45, 22.885_9),
+    Step::Curve(5.806_81, 21.627, 4.288_72, 19.729_2, 3.5, 17.5),
     // The hands.
-    Step::MoveTo(14.0, 8.166_67),
-    Step::LineTo(14.0, 14.0),
-    Step::LineTo(17.5, 16.333_3),
+    Step::Move(14.0, 8.166_67),
+    Step::Line(14.0, 14.0),
+    Step::Line(17.5, 16.333_3),
 ];
 
 /// How many straight pieces each curve is drawn as. Sixteen keeps the largest
@@ -84,13 +84,13 @@ fn segments(side: f32) -> Vec<((f32, f32), (f32, f32))> {
     let mut out = Vec::new();
     for step in THE_PATH {
         match step {
-            Step::MoveTo(x, y) => pen = at(x, y),
-            Step::LineTo(x, y) => {
+            Step::Move(x, y) => pen = at(x, y),
+            Step::Line(x, y) => {
                 let to = at(x, y);
                 out.push((pen, to));
                 pen = to;
             }
-            Step::CurveTo(ax, ay, bx, by, x, y) => {
+            Step::Curve(ax, ay, bx, by, x, y) => {
                 let (a, b, to) = (at(ax, ay), at(bx, by), at(x, y));
                 let from = pen;
                 for piece in 1..=PIECES_A_CURVE {
