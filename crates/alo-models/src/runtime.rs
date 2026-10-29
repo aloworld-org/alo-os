@@ -192,6 +192,11 @@ pub enum RuntimeError {
     /// already have* into a download nobody asked for. Refused here, before
     /// anything is sent.
     NotAPathOnThisDisk(PathBuf),
+    /// The question is longer than the model is asked to read at once, so it
+    /// was not answered — before it was sent, or because the runtime said the
+    /// window filled and its start may have been shifted out
+    /// (`crate::how_much_a_model_reads`). Carries the model's id.
+    TooLongForTheModel(String),
 }
 
 impl RuntimeError {
@@ -210,6 +215,7 @@ impl RuntimeError {
             Self::PinNotChecked(_) => words::PIN_NOT_CHECKED,
             Self::NothingToBring(_) => words::NOTHING_TO_BRING,
             Self::NotAPathOnThisDisk(_) => words::NOT_A_PATH_ON_THIS_DISK,
+            Self::TooLongForTheModel(_) => words::TOO_LONG_FOR_THE_MODEL_HERE,
         }
     }
 
@@ -223,7 +229,8 @@ impl RuntimeError {
             Self::NotOffered(model)
             | Self::NotInstalled(model)
             | Self::NothingToBring(model)
-            | Self::PinNotChecked(model) => Filling::of("model", model.clone()),
+            | Self::PinNotChecked(model)
+            | Self::TooLongForTheModel(model) => Filling::of("model", model.clone()),
             Self::NotThePinnedFile {
                 model,
                 expected,

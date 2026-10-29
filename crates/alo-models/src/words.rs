@@ -759,6 +759,19 @@ pub const RUNTIME_UNUSABLE: Word = Word::saying(
     "the model runtime gave an answer that could not be used",
 );
 
+/// A question longer than the model on this machine is asked to read at once.
+pub const TOO_LONG_FOR_THE_MODEL_HERE: Word = Word::saying(
+    "models.runtime.too-long-for-the-model",
+    "this conversation is now longer than {model} can read on this machine. Start a new one from \
+     the Dock to continue",
+)
+.noting(
+    "Said when a question to a model on this computer — in a task window, the whole conversation \
+     so far — is longer than the model reads at once. Nothing was shortened to make it fit and \
+     nothing left the computer. {model} is the model's name. \"The Dock\" is the bar at the \
+     bottom of the screen where a person types a request; use the name it has in your language.",
+);
+
 /// A download that stopped before it finished.
 pub const DOWNLOAD_INCOMPLETE: Word = Word::saying(
     "models.runtime.download-incomplete",
@@ -1027,7 +1040,7 @@ pub const NO_ARTEFACT_YET: Word = Word::saying(
 ///
 /// The array is what a test reads down and what [`declare_into`] walks, so a
 /// word declared above and left out here is a string nothing can look up.
-pub const EVERY_WORD: [Word; 68] = [
+pub const EVERY_WORD: [Word; 69] = [
     ON_THIS_MACHINE,
     AT_THIS_MACHINES_ADDRESS,
     ON_A_PAIRED_MACHINE,
@@ -1077,6 +1090,7 @@ pub const EVERY_WORD: [Word; 68] = [
     MODEL_NOT_INSTALLED,
     NOT_ENOUGH_DISK,
     RUNTIME_UNUSABLE,
+    TOO_LONG_FOR_THE_MODEL_HERE,
     DOWNLOAD_INCOMPLETE,
     NOT_THE_PINNED_FILE,
     PIN_NOT_CHECKED,

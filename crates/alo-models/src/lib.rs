@@ -44,6 +44,7 @@ pub mod driving;
 pub mod graded_for_turns;
 pub mod graded_on_follow_ups;
 mod handing_over;
+pub mod how_much_a_model_reads;
 pub mod in_the_envelope;
 pub mod measured_on;
 pub mod ollama;
