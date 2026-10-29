@@ -24,17 +24,20 @@ pub use alo_strings::Word;
 // The row in Settings above the regions.
 // ---------------------------------------------------------------------------
 
-/// The row that hands how dates and times are written back to the language.
-pub const AS_MY_LANGUAGE_WRITES_THEM: Word = Word::saying(
-    "formats.as-my-language-writes-them",
-    "As my language writes them",
-)
-.noting(
-    "The first row of a list in Settings where a person picks how dates and times are written. \
-     Every other row is a country or region, named by the system in the person's own language. \
-     This one means: no region chosen, write dates and times the usual way for the language I \
-     read. It is what a fresh machine is on. \"Them\" is dates and times.",
-);
+/// The row that hands how dates and times are written back to where the
+/// machine is.
+///
+/// It said *As my language writes them* until 2026-10-28, when the owner
+/// decided that a person who has chosen no region is written to the way the
+/// region the **machine** is in writes — so the row says that.
+pub const WHERE_THIS_MACHINE_IS: Word =
+    Word::saying("formats.where-this-machine-is", "Where this computer is").noting(
+        "The first row of a list in Settings where a person picks how dates and times are \
+         written. Every other row is a country or region, named by the system in the person's \
+         own language. This one means: no region chosen, write dates and times the way the \
+         region this computer was set up in does (or, if it was never told, the region of its \
+         time zone, or the usual way for my language). It is what a fresh machine is on.",
+    );
 
 // ---------------------------------------------------------------------------
 // A day, when it is close enough to have a name.
@@ -176,7 +179,7 @@ pub const KEPT_NOT_REPLACED: Word = Word::saying(
 
 /// Every string this crate can say.
 pub const EVERY_WORD: [Word; 13] = [
-    AS_MY_LANGUAGE_WRITES_THEM,
+    WHERE_THIS_MACHINE_IS,
     TODAY,
     YESTERDAY,
     NOT_A_REGION,
@@ -279,7 +282,7 @@ mod tests {
     /// **A heading and a row are names, with nothing to fill in.**
     #[test]
     fn a_heading_and_a_row_name_nothing() {
-        for word in [AS_MY_LANGUAGE_WRITES_THEM, TODAY, YESTERDAY] {
+        for word in [WHERE_THIS_MACHINE_IS, TODAY, YESTERDAY] {
             assert!(
                 word.phrase().unwrap().source().gaps().is_empty(),
                 "{word:?}"

@@ -133,6 +133,59 @@ pub const USE_THIS_LANGUAGE: Word =
          rather than saying OK, so somebody reading only the buttons can tell what will happen.",
     );
 
+/// The small line above the heading on the region sheet, frame `09c`.
+pub const REGION_EYEBROW: Word = Word::saying("shell.first-start.region.eyebrow", "local formats")
+    .noting(
+        "A short line above the heading on the screen where a person says which country or \
+         region they are setting the computer up in. Lower case, like every quiet label in alo \
+         OS. It names the step: the formats of dates, times and numbers used locally.",
+    );
+
+/// The region sheet's heading.
+pub const REGION_TITLE: Word = Word::saying(
+    "shell.first-start.region.title",
+    "Where are you setting up?",
+)
+.noting(
+    "The heading of the screen where a person says which country or region they are in. A \
+     question about place, asked of somebody setting up a new computer.",
+);
+
+/// What a region is for.
+pub const REGION_INTRODUCTION: Word = Word::saying(
+    "shell.first-start.region.introduction",
+    "Your region sets default formats for dates and numbers.",
+)
+.noting(
+    "Under the heading on the region screen. It says what the choice changes: how dates, times \
+     and numbers are written. It does not change the language.",
+);
+
+/// Under the region a person has chosen.
+pub const SELECTED_REGION: Word =
+    Word::saying("shell.first-start.region.selected", "Selected region").noting(
+        "The second line of the row showing the country or region currently chosen, under its \
+         name.",
+    );
+
+/// The row that opens every region.
+pub const OTHER_REGION: Word = Word::saying("shell.first-start.region.other", "Other region")
+    .noting("A row that opens the list of every country and region, to pick a different one.");
+
+/// What that row does.
+pub const OTHER_REGION_HINT: Word = Word::saying(
+    "shell.first-start.region.other.hint",
+    "Choose another country or region.",
+)
+.noting("The second line of the row that opens every country and region.");
+
+/// The way on from the region sheet.
+pub const USE_THIS_REGION: Word = Word::saying("shell.first-start.region.use", "Use this region")
+    .noting(
+        "The button that accepts the country or region chosen. It names what it does rather \
+         than saying OK.",
+    );
+
 /// The way back from a sheet that has one.
 pub const BACK: Word = Word::saying("shell.first-start.back", "Back")
     .noting("The button that returns to the previous step of setting up. It changes nothing.");
@@ -144,7 +197,7 @@ pub const SELECTED: Word = Word::saying("shell.first-start.selected", "Selected"
      word. Keep it a single word if your language has one.",
 );
 /// Every string these sheets draw.
-pub const FIRST_START_WORDS: [Word; 20] = [
+pub const FIRST_START_WORDS: [Word; 27] = [
     STAGE,
     NAME_EYEBROW,
     NAME_TITLE,
@@ -165,6 +218,13 @@ pub const FIRST_START_WORDS: [Word; 20] = [
     USE_THIS_LANGUAGE,
     BACK,
     SELECTED,
+    REGION_EYEBROW,
+    REGION_TITLE,
+    REGION_INTRODUCTION,
+    SELECTED_REGION,
+    OTHER_REGION,
+    OTHER_REGION_HINT,
+    USE_THIS_REGION,
 ];
 
 /// Invalid declaration or collision while registering this wording.

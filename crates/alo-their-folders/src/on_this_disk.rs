@@ -35,6 +35,15 @@ impl Disk for OnThisDisk {
     fn write(&self, at: &Path, contents: &str) -> Result<(), String> {
         std::fs::write(at, contents).map_err(|why| why.to_string())
     }
+
+    /// Read the file, where there is one.
+    fn read(&self, at: &Path) -> Result<Option<String>, String> {
+        match std::fs::read_to_string(at) {
+            Ok(text) => Ok(Some(text)),
+            Err(why) if why.kind() == std::io::ErrorKind::NotFound => Ok(None),
+            Err(why) => Err(why.to_string()),
+        }
+    }
 }
 
 #[cfg(test)]
@@ -48,7 +57,6 @@ mod tests {
     use crate::folders::Folder;
     use crate::making::made_for;
     use crate::recording::THE_RECORD;
-    use crate::testing::in_english;
 
     /// A folder for one test, removed when the test ends.
     ///
@@ -93,7 +101,7 @@ mod tests {
     #[test]
     fn a_real_home_folder_gets_three_real_folders_and_a_real_record() {
         let home = tempish::Folder::new();
-        let made = made_for(home.path(), &in_english(), &OnThisDisk);
+        let made = made_for(home.path(), None, &OnThisDisk);
 
         assert!(made.everything_was_made(), "{made:?}");
         for folder in Folder::ALL {
@@ -133,7 +141,7 @@ mod tests {
         std::fs::create_dir_all(&theirs).unwrap();
         std::fs::write(theirs.join("notes.txt"), "a person's own writing").unwrap();
 
-        let made = made_for(home.path(), &in_english(), &OnThisDisk);
+        let made = made_for(home.path(), None, &OnThisDisk);
 
         assert!(made.everything_was_made(), "{made:?}");
         assert_eq!(
@@ -147,8 +155,8 @@ mod tests {
     #[test]
     fn running_it_a_second_time_leaves_the_same_machine() {
         let home = tempish::Folder::new();
-        let first = made_for(home.path(), &in_english(), &OnThisDisk);
-        let again = made_for(home.path(), &in_english(), &OnThisDisk);
+        let first = made_for(home.path(), None, &OnThisDisk);
+        let again = made_for(home.path(), None, &OnThisDisk);
 
         assert_eq!(first, again);
         assert!(again.everything_was_made(), "{again:?}");
@@ -160,7 +168,7 @@ mod tests {
         let home = tempish::Folder::new();
         assert!(!home.path().join(".config").exists());
 
-        let made = made_for(home.path(), &in_english(), &OnThisDisk);
+        let made = made_for(home.path(), None, &OnThisDisk);
 
         assert!(home.path().join(".config").is_dir());
         assert_eq!(made.recorded().unwrap(), home.path().join(THE_RECORD));

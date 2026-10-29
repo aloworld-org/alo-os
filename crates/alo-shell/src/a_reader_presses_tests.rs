@@ -16,6 +16,7 @@ use alo_models::InferenceSource;
 use alo_tasks::ATask;
 use alo_tasks::conversation::Turn;
 
+use super::WhatAReaderPressCameTo;
 use crate::Server;
 use crate::access_action::Pressed;
 use crate::approval_testing::words;
@@ -113,7 +114,7 @@ fn heard(server: &Server) -> Vec<AWindowHeard> {
                 .children
                 .iter()
                 .filter_map(|at| tree.nodes().get(*at))
-                .map(|control| (control.name.clone(), control.press))
+                .map(|control| (control.name.clone(), control.press.clone()))
                 .collect();
             (window.name.clone(), under)
         })
@@ -174,7 +175,7 @@ fn a_readers_close_closes_a_finished_task() {
 
     assert_eq!(
         server.a_reader_pressed(Pressed::CloseTheTask(which)),
-        WhatClosingCameTo::Closed
+        WhatAReaderPressCameTo::ATaskWindow(WhatClosingCameTo::Closed)
     );
     assert!(!server.tasks().is_open(which), "the window did not close");
     assert!(
@@ -183,7 +184,7 @@ fn a_readers_close_closes_a_finished_task() {
     );
     assert_eq!(
         server.a_reader_pressed(Pressed::CloseTheTask(which)),
-        WhatClosingCameTo::NothingToClose,
+        WhatAReaderPressCameTo::ATaskWindow(WhatClosingCameTo::NothingToClose),
         "pressing it again closed something"
     );
 }
@@ -215,7 +216,7 @@ fn a_readers_close_never_answers_a_waiting_change() {
 
     assert_eq!(
         server.a_reader_pressed(Pressed::CloseTheTask(which)),
-        WhatClosingCameTo::StillRunning
+        WhatAReaderPressCameTo::ATaskWindow(WhatClosingCameTo::StillRunning)
     );
     assert!(server.tasks().is_open(which), "a waiting task was closed");
     assert!(daemon.approved.borrow().is_empty(), "closing approved it");
@@ -238,7 +239,7 @@ fn a_readers_close_leaves_a_running_task_open() {
 
     assert_eq!(
         server.a_reader_pressed(Pressed::CloseTheTask(which)),
-        WhatClosingCameTo::StillRunning
+        WhatAReaderPressCameTo::ATaskWindow(WhatClosingCameTo::StillRunning)
     );
     assert!(server.tasks().is_open(which), "a running task was closed");
     assert!(

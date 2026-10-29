@@ -1456,17 +1456,16 @@ impl LoopInput for Desk<'_> {
         } else {
             crate::the_bar_finds::nothing_can_answer_a_question(self.strings)
         };
-        let the_bar = bar_is_open
-            .then(|| crate::where_the_bar_opens::where_the_bar_opens(size))
-            .flatten()
-            .map(|places| crate::bar_raster::TheBarOnTheDisplay {
-                places,
-                typed: &typed_into_the_bar,
-                origin: &where_from,
-                results: &found,
-                chosen: server.which_row_in_the_bar,
-                display: size,
-            });
+        // **Where it goes is worked out where it is drawn**, by
+        // `crate::bar_raster`, because that is where this display's scale is
+        // known; a display too small for it draws no Bar there.
+        let the_bar = bar_is_open.then(|| crate::bar_raster::TheBarOnTheDisplay {
+            typed: &typed_into_the_bar,
+            origin: &where_from,
+            results: &found,
+            chosen: server.which_row_in_the_bar,
+            display: size,
+        });
         // **An `Arc` of its own, lent to the frame.** The frame holds the
         // reference for as long as it lives and this lane uses the server
         // mutably afterwards, so the borrow cannot come from the server here.

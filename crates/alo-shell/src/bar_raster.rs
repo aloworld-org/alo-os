@@ -2,8 +2,8 @@
 //! rows.
 //!
 //! **The geometry is `crate::where_the_bar_opens`' and the words are
-//! `crate::the_bar_finds`'.** This file turns the two into pixels and decides
-//! nothing of its own — the fault `crate::dock_raster` records the cost of is a
+//! `crate::the_bar_finds`'.** This file asks the first, at the display's scale,
+//! turns the two into pixels and decides nothing of its own — the fault `crate::dock_raster` records the cost of is a
 //! raster with arithmetic of its own, where what a person presses and what
 //! lit up are worked out twice and disagree.
 //!
@@ -19,10 +19,22 @@
 //! `TheBarsPlaces::rows_that_fit` counts whole rows. The design draws a fourth
 //! cut off by the panel's edge, which is the list saying it scrolls; the
 //! results beyond that are real and are simply not on the screen yet.
+//!
+//! # At its display's scale
+//!
+//! The Bar is laid out **here**, with the scale the rest of this display is
+//! drawn at, rather than by the frame loop that decides it is open: that loop
+//! builds the Bar before it knows the display's scale, and asking for the scale
+//! a second time is a second answer to one question. So the corner, the shadow,
+//! the wells, the keyboard's ring, the words and the air inside each row all go
+//! through the one `crate::display_scale::DisplayScale` the rows were laid out
+//! at — on a 200 per cent screen the Bar is twice the pixels and the same size
+//! to the eye as the Dock beside it, and at 100 it is the bytes it always was.
 
 use cosmic_text::{FontSystem, Metrics};
 use smithay::utils::{Physical, Rectangle, Size};
 
+use crate::display_scale::DisplayScale;
 use crate::painted::{Inked, Washed};
 use crate::the_bar_finds::AResult;
 use crate::where_the_bar_opens::TheBarsPlaces;
@@ -30,8 +42,6 @@ use crate::where_the_bar_opens::TheBarsPlaces;
 /// What the Bar shows, as a frame hands it over.
 #[derive(Debug, Clone, Copy)]
 pub struct TheBarOnTheDisplay<'a> {
-    /// Where it all goes.
-    pub places: TheBarsPlaces,
     /// What a person has typed, which the field shows.
     pub typed: &'a str,
     /// The line under the field.
@@ -67,17 +77,19 @@ pub(crate) struct BarPicture {
     pub(crate) inked: Vec<Inked>,
 }
 
-/// Draw the Bar.
+/// Draw the Bar on a display drawn at `scale`.
 ///
-/// [`None`] when the panel could not be rasterised at all, which is the same
-/// answer `crate::dock_surface` gives for a surface with no room in it — and
-/// the caller draws nothing rather than half a Bar.
+/// [`None`] when the display is too small to hold the Bar
+/// (`crate::where_the_bar_opens`), or the panel could not be rasterised at
+/// all, which is the same answer `crate::dock_surface` gives for a surface with
+/// no room in it — and the caller draws nothing rather than half a Bar.
 pub(crate) fn picture(
     bar: &TheBarOnTheDisplay<'_>,
     palette: crate::desktop_look::DesktopPalette,
     fonts: &mut FontSystem,
+    scale: DisplayScale,
 ) -> Option<BarPicture> {
-    let places = bar.places;
+    let places = crate::where_the_bar_opens::where_the_bar_opens(bar.display, scale)?;
     let mut wells = vec![crate::dock_surface::AWell {
         at: places.field,
         corner: alo_dock::measures::THE_COMPOSERS_CORNER,
@@ -91,17 +103,12 @@ pub(crate) fn picture(
             corner: alo_dock::measures::THE_COMPOSERS_CORNER,
         });
         if bar.chosen == Some(which) {
-            // At one, like the rest of the Bar, which is not laid out through
-            // its display's scale yet; see `crate::how_a_panel_is_raised`.
-            rings.push(crate::dock_raster::a_focus_ring(
-                at,
-                crate::display_scale::DisplayScale::ONE,
-            ));
+            rings.push(crate::dock_raster::a_focus_ring(at, places.scale));
         }
     }
 
     let panel = crate::dock_surface::surface(crate::dock_surface::ADocksSurface {
-        raised: crate::how_a_panel_is_raised::HowItIsRaised::THE_DOCKS.unscaled(),
+        raised: crate::how_a_panel_is_raised::HowItIsRaised::THE_DOCKS.at(places.scale.factor()),
         panel: places.panel,
         fill: palette.dock,
         edge: palette.edge,
@@ -137,13 +144,20 @@ pub(crate) fn picture(
         }
     };
 
-    say(bar.typed, inset(places.field), 16.0, palette.ink);
-    say(bar.origin, places.origin, 13.0, palette.ink_quiet);
+    let typed_is = places.scale.type_size(WHAT_IS_TYPED_IS);
+    let a_row_is = places.scale.type_size(A_ROW_IS);
+    say(
+        bar.typed,
+        inset(places.field, places.scale),
+        typed_is,
+        palette.ink,
+    );
+    say(bar.origin, places.origin, a_row_is, palette.ink_quiet);
     for (which, result) in bar.results.iter().enumerate().take(places.rows_that_fit) {
         say(
             &result.shown,
-            inset(row_at(&places, which)),
-            13.0,
+            inset(row_at(&places, which), places.scale),
+            a_row_is,
             palette.ink,
         );
     }
@@ -160,18 +174,32 @@ fn row_at(places: &TheBarsPlaces, which: usize) -> Rectangle<i32, Physical> {
     )
 }
 
-/// A box with the air the design leaves inside a field or a row.
+/// The type size of what a person types into the field, in logical pixels.
+const WHAT_IS_TYPED_IS: u32 = 16;
+
+/// The type size of a row and of the line under the field, in logical pixels.
+const A_ROW_IS: u32 = 13;
+
+/// The air the design leaves inside a field or a row, in logical pixels.
 ///
 /// 16 at the reference, measured off the frame's own `Query` text, and the
 /// same on a row — one number, because the design draws a row as the field.
-fn inset(at: Rectangle<i32, Physical>) -> Rectangle<i32, Physical> {
-    const AIR: i32 = 16;
+const AIR: u32 = 16;
+
+/// A box with [`AIR`] inside it at each side, on a display drawn at `scale`.
+fn inset(at: Rectangle<i32, Physical>, scale: DisplayScale) -> Rectangle<i32, Physical> {
+    let air = scale.px(AIR);
     Rectangle::new(
-        (at.loc.x + AIR, at.loc.y).into(),
-        ((at.size.w - AIR * 2).max(1), at.size.h).into(),
+        (at.loc.x + air, at.loc.y).into(),
+        ((at.size.w - air * 2).max(1), at.size.h).into(),
     )
 }
 
 #[cfg(test)]
 #[path = "bar_raster_tests.rs"]
 mod tests;
+
+/// The Bar at a display's scale against the same Bar at one.
+#[cfg(test)]
+#[path = "bar_raster_scale_tests.rs"]
+mod scale_tests;

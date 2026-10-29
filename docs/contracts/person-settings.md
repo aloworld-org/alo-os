@@ -532,13 +532,18 @@ may-use-another = true
 **The language picked on the first-start sheet is written here** — the owner's
 decision of 2026-10-28, so a machine speaks and writes dates in it from the
 first minute. The sheet is answered as root before anybody has an account, so
-it is kept first in `/etc/alo/language.toml` (`format = 1`, `language = "de"`,
-readable by everyone on the machine, kept by
-`alo_formats::the_machines_language`); the person's own desktop, at sign-in,
+it is kept first in `/etc/alo/set-up-in.toml` (`format = 1`, `language = "de"`,
+and `region = "DE"` from the region sheet after it; readable by everyone on the
+machine, kept by `alo_formats::set_up_in`); the person's own desktop, at sign-in,
 writes it here through `alo_choosing::Choosing::reading` **when `[reading]`
 names nothing**, and never over a language they named. A person who later
 empties the list is given it again at the next sign-in, because an empty list
 is a person who has not said.
+
+**Every person on the machine is given it, not only the first** — the owner's
+decision of 2026-10-28. A second person made later who has not said what they
+read reads the language the machine was set up in, and it is written into their
+own `[reading]` the same way at their first sign-in.
 
 Tags are written the way the rest of the world writes them: `de`, `pt-BR`,
 `sr-Latn-RS`. A list rather than one language, because a person names their own
@@ -2367,10 +2372,28 @@ a file that has one is refused as a key nobody declared.
 
 ### Where nothing is chosen
 
-**The language the person reads decides**, with CLDR's own region for it: the
-first language in `settings.toml`'s `[reading]`, or the machine's source
-language, English, where that names none. Choosing *As my language writes
-them* in Settings removes `region` from the file. A zone not named is the
+**The words are the language the person reads** — the first in
+`settings.toml`'s `[reading]`, or the machine's source language, English, where
+that names none.
+
+**The region is the region the machine is in** — the owner's decision of
+2026-10-28, and never the United States for every English reader who is
+somewhere else. It is the first of these that answers, in this order, by
+`alo_shell::TheirFormats::the_region`:
+
+1. `region` in this file — what the person chose in Settings;
+2. `region` in `/etc/alo/set-up-in.toml` — what was picked on the machine's
+   first-start sheet (see `[reading]` for that file);
+3. the country of the machine's time zone, where it keeps one that is a place
+   (`Europe/Berlin` is `DE`; universal time is no country) — CLDR's own
+   answer, through `alo_formats::where_the_machine_is::the_region_of_the_zone`;
+4. and only then CLDR's default for the language, with no region named.
+
+The first-start sheet offers, before the person has picked, the third of these
+and then the region CLDR writes the language in (`en` is `US`, `pt` is
+`BR`) — **by name, on the screen, where the person can pick another**, never
+used silently. Choosing *Where this computer is* in Settings removes `region`
+from this file. A zone not named is the
 machine's own; a zone named that the zone database does not have is the
 machine's own too, and the session's log says which name it could not find.
 

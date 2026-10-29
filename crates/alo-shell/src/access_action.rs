@@ -29,6 +29,8 @@
 
 use std::sync::mpsc::Sender;
 
+use alo_dock::places::WhatIsHere;
+
 use crate::the_tasks_a_person_opened::WhichTask;
 
 /// The interface a pressable node answers besides `Accessible`.
@@ -40,14 +42,21 @@ const CLICK: &str = "click";
 
 /// **What a reader pressed**, as the shell acts on it.
 ///
-/// One variant, because one control on the tree can be pressed today: a task
-/// window's Close (the owner's decision of 2026-10-28). A window edge's
-/// controls on an application window are announced and not yet pressable; see
-/// `crate::access_nodes`.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// Two kinds of control on the tree can be pressed: a task window's Close, and
+/// each control on the Dock that a click does something on (both the owner's
+/// decisions of 2026-10-28). A window edge's controls on an application window
+/// are announced and not yet pressable; see `crate::access_nodes`.
+///
+/// **Not `Copy`**, because a Dock slot can hold an application, and an
+/// application is named by a string.
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Pressed {
     /// Close on this task window's edge.
     CloseTheTask(WhichTask),
+    /// This control on the Dock, named by what the Dock holds there rather
+    /// than by where it is, so a press reaches the application it was heard
+    /// as and never whatever has since moved into its place.
+    OnTheDock(WhatIsHere),
 }
 
 /// One pressable node, answering `org.a11y.atspi.Action`.
@@ -93,7 +102,8 @@ impl Pressable {
 
     /// No key is announced here. Alt+F4 closes the task window that has the
     /// keyboard, not the one a reader is on, so naming it would be a promise
-    /// about the wrong window.
+    /// about the wrong window. A Dock control's key depends on where the
+    /// keyboard already is on the bar, which one fixed name cannot say.
     fn get_key_binding(&self, _index: i32) -> String {
         String::new()
     }
@@ -110,7 +120,7 @@ impl Pressable {
     /// to take the press — a desktop that has gone. Never `true` for a press
     /// that was not handed over.
     fn do_action(&self, index: i32) -> bool {
-        index == 0 && self.to.send(self.pressed).is_ok()
+        index == 0 && self.to.send(self.pressed.clone()).is_ok()
     }
 }
 

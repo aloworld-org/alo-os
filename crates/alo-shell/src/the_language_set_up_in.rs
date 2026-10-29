@@ -4,7 +4,7 @@
 //! The owner's decision of 2026-10-28: the language picked on the first-start
 //! sheet is the person's **reading language**, so alo OS speaks and writes
 //! dates in it from the first minute. The sheet keeps it in
-//! [`alo_formats::the_machines_language::THE_MACHINES_LANGUAGE`] (it cannot
+//! [`alo_formats::set_up_in::THE_MACHINES_SET_UP_IN`] (it cannot
 //! reach anybody's home, and there is nobody yet); this is the half that runs
 //! **as the person**, in their own desktop, and writes it into their
 //! `settings.toml` through the door that file already has for it,
@@ -64,7 +64,7 @@ pub fn the_languages_they_read(settings: &Path, machine: &Path) -> TheyRead {
             for_the_log: None,
         };
     }
-    let set_up_in = match alo_formats::the_machines_language::read(machine) {
+    let set_up_in = match alo_formats::set_up_in::read(machine).map(|it| it.language()) {
         Ok(Some(language)) => language,
         Ok(None) => {
             return TheyRead {

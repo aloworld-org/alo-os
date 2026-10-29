@@ -49,23 +49,24 @@ fn a_fresh_machine() -> (tempfile::TempDir, SignInScreen<ADoor>) {
     (kept, SignInScreen::of(Ok(greeting), words))
 }
 
-/// A fresh machine, walked past the language sheet to the name sheet.
+/// A fresh machine, walked past the language and region sheets to the name
+/// sheet.
 ///
-/// **The language sheet comes first since 2026-10-13**, so a test about the
-/// account sheet has to reach it the way a person does: one Enter chooses the
-/// language under the cursor, a second takes *Use this language*. Walking the
-/// real journey rather than adding a constructor that skips it — a test that
-/// built the name sheet directly would keep passing on a machine where the
-/// language sheet never handed over.
+/// **The language sheet comes first since 2026-10-13, and the region sheet
+/// after it since 2026-10-28**, so a test about the account sheet has to reach
+/// it the way a person does: on each, one Enter chooses the row under the
+/// cursor and a second takes the way on. Walking the real journey rather than
+/// adding a constructor that skips it — a test that built the name sheet
+/// directly would keep passing on a machine where a sheet never handed over.
 fn at_the_name_sheet(screen: SignInScreen<ADoor>) -> SignInScreen<ADoor> {
-    let chosen = match screen.pressed(crate::SignInKey::Enter) {
-        Signing::Still(screen) => *screen,
-        Signing::HandedOver(_) => panic!("choosing a language signed somebody in"),
-    };
-    match chosen.pressed(crate::SignInKey::Enter) {
-        Signing::Still(screen) => *screen,
-        Signing::HandedOver(_) => panic!("leaving the language sheet signed somebody in"),
+    let mut screen = screen;
+    for _ in 0..4 {
+        screen = match screen.pressed(crate::SignInKey::Enter) {
+            Signing::Still(screen) => *screen,
+            Signing::HandedOver(_) => panic!("a first-start sheet signed somebody in"),
+        };
     }
+    screen
 }
 
 /// The picture a fresh machine draws.

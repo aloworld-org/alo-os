@@ -41,6 +41,7 @@ use alo_strings::{Said, Strings};
 use crate::sign_in_entry::{SignInEntry, SignInField};
 use crate::sign_in_keys::SignInKey;
 use crate::the_languages_offered::TheLanguagesOffered;
+use crate::the_regions_offered::TheRegionsOffered;
 
 /// The sign-in screen, before anybody is signed in.
 ///
@@ -57,6 +58,12 @@ pub struct SignInScreen<K: Knocking> {
     /// What the machine said when the conversation with the opener did not
     /// happen, in English, for whoever maintains the machine.
     trouble: Option<NotAnswered>,
+    /// The region the machine's own time zone is in, where it keeps one that
+    /// is a place — what the region sheet arrives with chosen, before the
+    /// language's own usual region.
+    where_the_machine_is: Option<alo_formats::RegionCode>,
+    /// The region the person took *Use this region* on, for whoever keeps it.
+    region_taken: Option<alo_formats::RegionCode>,
 }
 
 /// What the screen stands at, derived once from the greeting.
@@ -77,6 +84,10 @@ enum Stands<K: Knocking> {
     /// The `Said` and the `Greeting` are carried through untouched, so the
     /// account sheet this becomes is the one `of` would have built.
     ChooseLanguage(TheLanguagesOffered, Said, Greeting<K>),
+    /// **Then the region the machine is in** — frame `09c`, after the
+    /// language, because its names are in the language just chosen. The
+    /// language sheet is carried so *Back* returns to it as it was left.
+    ChooseRegion(TheRegionsOffered, TheLanguagesOffered, Said, Greeting<K>),
 
     /// Nobody has an account yet: this is the sentence, **and the greeting
     /// that can make the first one**.
@@ -160,6 +171,11 @@ pub enum SignInShows<'a> {
         /// The languages, the cursor and the choice.
         offered: &'a crate::the_languages_offered::TheLanguagesOffered,
     },
+    /// The region sheet, frame `09c`, which follows the language sheet.
+    Region {
+        /// The regions, what is chosen, and where the cursor is.
+        offered: &'a TheRegionsOffered,
+    },
     /// A sentence and nothing to type into.
     Sentence(&'a Said),
 }
@@ -209,6 +225,7 @@ impl<K: Knocking> SignInScreen<K> {
             }
             Stands::SignIn(_)
             | Stands::ChooseLanguage(_, _, _)
+            | Stands::ChooseRegion(_, _, _, _)
             | Stands::MakeAnAccount(_, _)
             | Stands::Unreadable(_, _) => SignInEntry::empty(),
         };
@@ -218,7 +235,17 @@ impl<K: Knocking> SignInScreen<K> {
             entry,
             said: None,
             trouble: None,
+            where_the_machine_is: None,
+            region_taken: None,
         }
+    }
+
+    /// **The region this machine's time zone is in**, for the region sheet to
+    /// arrive with — or [`None`] where it keeps universal time or none.
+    #[must_use]
+    pub fn where_the_machine_is(mut self, region: Option<alo_formats::RegionCode>) -> Self {
+        self.where_the_machine_is = region;
+        self
     }
 
     /// Whether this screen draws a single field.
@@ -232,6 +259,7 @@ impl<K: Knocking> SignInScreen<K> {
         match &self.stands {
             Stands::SignIn(greeting) => greeting.whose_name().is_some(),
             Stands::ChooseLanguage(_, _, _)
+            | Stands::ChooseRegion(_, _, _, _)
             | Stands::MakeAnAccount(_, _)
             | Stands::Unreadable(_, _) => false,
         }
@@ -252,6 +280,9 @@ impl<K: Knocking> SignInScreen<K> {
         // wrong question asked of the wrong screen.
         if matches!(self.stands, Stands::ChooseLanguage(_, _, _)) {
             return self.on_the_language_sheet(key);
+        }
+        if matches!(self.stands, Stands::ChooseRegion(_, _, _, _)) {
+            return self.on_the_region_sheet(key);
         }
         // **A screen with one field has no other field to move to.** The
         // returning screen draws a single `Enter your PIN` over a name it
@@ -313,7 +344,9 @@ impl<K: Knocking> SignInScreen<K> {
             // The language sheet never reaches here: `pressed` hands its keys
             // to `on_the_language_sheet` before an entry sees them. Named
             // rather than caught, so adding a state is a compiler error here.
-            Stands::ChooseLanguage(_, _, _) | Stands::Unreadable(_, _) => {
+            Stands::ChooseLanguage(_, _, _)
+            | Stands::ChooseRegion(_, _, _, _)
+            | Stands::Unreadable(_, _) => {
                 return Signing::Still(Box::new(self));
             }
         };
@@ -363,7 +396,24 @@ impl<K: Knocking> SignInScreen<K> {
                 // both chooses and commits.
                 match offered.ring() {
                     crate::the_languages_offered::WhereTheRingIs::OnTheWayOn => {
-                        self.stands = Stands::MakeAnAccount(said, greeting);
+                        // **On to the region, named in the language just
+                        // chosen**, arriving with where the machine is: its
+                        // time zone's country, or the language's own usual
+                        // region — shown by name, never used unseen.
+                        self.stands = match offered.chosen().map(|it| it.tag) {
+                            Some(tag) => {
+                                let where_it_is = self.where_the_machine_is.clone().or_else(|| {
+                                    alo_formats::where_the_machine_is::the_usual_region_of(tag)
+                                });
+                                Stands::ChooseRegion(
+                                    TheRegionsOffered::named_in(tag, where_it_is.as_ref()),
+                                    offered,
+                                    said,
+                                    greeting,
+                                )
+                            }
+                            None => Stands::MakeAnAccount(said, greeting),
+                        };
                         return Signing::Still(Box::new(self));
                     }
                     crate::the_languages_offered::WhereTheRingIs::OnTheList => {
@@ -395,6 +445,54 @@ impl<K: Knocking> SignInScreen<K> {
         Signing::Still(Box::new(self))
     }
 
+    /// One key press while the region sheet is up.
+    ///
+    /// The language sheet's keys, for the same reasons: arrows move, Tab
+    /// crosses to the way on, Enter does one thing at a time. **Escape goes
+    /// back** — from every region to the two rows, and from the two rows to
+    /// the language sheet as it was left — which is the design's *Back*.
+    fn on_the_region_sheet(mut self, key: SignInKey) -> Signing<K> {
+        let Stands::ChooseRegion(mut offered, languages, said, greeting) = self.stands else {
+            return Signing::Still(Box::new(self));
+        };
+        match key {
+            SignInKey::Earlier => offered.up(),
+            SignInKey::Later => offered.down(),
+            SignInKey::OtherField => offered.ring_crosses(),
+            SignInKey::Enter => match offered.ring() {
+                crate::the_languages_offered::WhereTheRingIs::OnTheWayOn => {
+                    self.region_taken = offered
+                        .chosen()
+                        .and_then(|it| alo_formats::RegionCode::named(it.code).ok());
+                    self.stands = Stands::MakeAnAccount(said, greeting);
+                    return Signing::Still(Box::new(self));
+                }
+                crate::the_languages_offered::WhereTheRingIs::OnTheList => {
+                    offered.enter_on_the_list();
+                }
+            },
+            SignInKey::Clear => {
+                if !offered.back() {
+                    self.stands = Stands::ChooseLanguage(languages, said, greeting);
+                    return Signing::Still(Box::new(self));
+                }
+            }
+            SignInKey::Letter(_) | SignInKey::Erase | SignInKey::Nothing => {}
+        }
+        self.stands = Stands::ChooseRegion(offered, languages, said, greeting);
+        Signing::Still(Box::new(self))
+    }
+
+    /// **The region the person took *Use this region* on**, for whoever keeps
+    /// it — and it stays the answer after the sheet is left, because it is
+    /// asked after every key and the keeper writes only what is new.
+    #[must_use]
+    pub fn the_region_chosen(&self) -> Option<&str> {
+        self.region_taken
+            .as_ref()
+            .map(alo_formats::RegionCode::code)
+    }
+
     /// The language the person chose, for whoever keeps and applies it.
     ///
     /// [`None`] until they choose one, and on every screen that is not the
@@ -407,7 +505,10 @@ impl<K: Knocking> SignInScreen<K> {
     pub fn the_language_chosen(&self) -> Option<&str> {
         match &self.stands {
             Stands::ChooseLanguage(offered, _, _) => offered.chosen().map(|it| it.tag),
-            Stands::SignIn(_) | Stands::MakeAnAccount(_, _) | Stands::Unreadable(_, _) => None,
+            Stands::SignIn(_)
+            | Stands::ChooseRegion(_, _, _, _)
+            | Stands::MakeAnAccount(_, _)
+            | Stands::Unreadable(_, _) => None,
         }
     }
 
@@ -449,6 +550,7 @@ impl<K: Knocking> SignInScreen<K> {
                 said: self.said.as_ref(),
             },
             Stands::ChooseLanguage(offered, _, _) => SignInShows::Language { offered },
+            Stands::ChooseRegion(offered, _, _, _) => SignInShows::Region { offered },
             Stands::Unreadable(said, _) => SignInShows::Sentence(said),
         }
     }
@@ -462,9 +564,10 @@ impl<K: Knocking> SignInScreen<K> {
     pub fn for_the_maintainer(&self) -> Option<String> {
         match &self.stands {
             Stands::Unreadable(_, why) => Some(why.to_string()),
-            Stands::ChooseLanguage(_, _, _) | Stands::SignIn(_) | Stands::MakeAnAccount(_, _) => {
-                self.trouble.as_ref().map(ToString::to_string)
-            }
+            Stands::ChooseLanguage(_, _, _)
+            | Stands::ChooseRegion(_, _, _, _)
+            | Stands::SignIn(_)
+            | Stands::MakeAnAccount(_, _) => self.trouble.as_ref().map(ToString::to_string),
         }
     }
 

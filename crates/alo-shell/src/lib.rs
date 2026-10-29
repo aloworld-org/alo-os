@@ -96,6 +96,8 @@ mod a_key_reaches_the_task_in_front;
 mod a_key_types_into_more_apps;
 mod a_new_window_is_placed;
 mod a_person_pins_and_unpins;
+#[cfg(test)]
+mod a_picture_hashed;
 mod a_press_in_the_menu;
 mod a_press_on_an_edge;
 mod a_press_on_the_sign_in_screen;
@@ -115,6 +117,7 @@ pub mod alos_marked_words;
 pub mod closing_a_task_window;
 pub use a_provider_is_added_in_settings::WhyNotSaved;
 mod a_reader_presses;
+pub use a_reader_presses::WhatAReaderPressCameTo;
 /// Typing into a task window's reply box.
 mod a_screen_arrives_or_leaves;
 mod access_action;
@@ -325,6 +328,7 @@ mod recovery_screen;
 mod recovery_seat;
 #[cfg(test)]
 mod recovery_testing;
+mod region_sheet;
 mod resize_cursor;
 mod resize_transaction;
 mod resource_device;
@@ -413,6 +417,7 @@ pub mod the_cards_words;
 /// The Dock's composer as a field a person types a request into.
 pub mod the_composer_a_person_types_in;
 mod the_desk_is_reconciled;
+mod the_dock_as_a_reader_meets_it;
 pub mod the_docks_words;
 mod the_edge_takes_the_keyboard;
 mod the_formats_are_told;
@@ -426,6 +431,8 @@ mod the_panel_reveals;
 pub mod the_pickers_words;
 mod the_pointer_in_pixels;
 pub mod the_providers_words;
+mod the_region_a_person_chose;
+pub mod the_regions_offered;
 pub mod the_reply_boxs_words;
 mod the_session_holds_its_screens;
 /// The task windows a person opened by asking alo for something.
@@ -734,7 +741,7 @@ pub use scene_replacement::SceneReplacement;
 pub use scene_scanout::ActiveScene;
 pub use screens::{ScreenPlace, Screens, TheRoom};
 pub use the_markets_words::TheMarketsWords;
-pub use their_formats::{TheDay, TheirFormats};
+pub use their_formats::{TheDay, TheirFormats, WhereTheRegionCameFrom};
 
 // **The types a desktop needs to answer `their_displays`, re-exported so that
 // answering costs it no new crate edge** — `more-than-one-display-plan.md`

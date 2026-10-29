@@ -23,7 +23,7 @@ struct AMachine {
 
 fn a_fresh_machine() -> AMachine {
     let folder = tempfile::tempdir().unwrap();
-    let machine = folder.path().join("etc").join("language.toml");
+    let machine = folder.path().join("etc").join("set-up-in.toml");
     std::fs::create_dir_all(machine.parent().unwrap()).unwrap();
     let settings = folder.path().join("home").join("alo").join("settings.toml");
     AMachine {
@@ -99,7 +99,7 @@ fn a_fresh_person_who_picked_german_reads_german_dates_and_words() {
 #[test]
 fn a_person_who_said_what_they_read_keeps_it() {
     let at = a_fresh_machine();
-    alo_formats::the_machines_language::keep(&at.machine, &german()).unwrap();
+    alo_formats::set_up_in::keep_the_language(&at.machine, &german()).unwrap();
     let mut choosing = alo_choosing::Choosing::at(&at.settings).unwrap();
     let french = Language::written("fr").unwrap();
     choosing.reading(vec![french.clone()]).unwrap();
@@ -127,7 +127,7 @@ fn a_machine_nobody_set_up_gives_nothing() {
 #[test]
 fn settings_that_do_not_read_are_left_and_said() {
     let at = a_fresh_machine();
-    alo_formats::the_machines_language::keep(&at.machine, &german()).unwrap();
+    alo_formats::set_up_in::keep_the_language(&at.machine, &german()).unwrap();
     std::fs::create_dir_all(at.settings.parent().unwrap()).unwrap();
     std::fs::write(&at.settings, "this is not toml").unwrap();
     let read = the_languages_they_read(&at.settings, &at.machine);

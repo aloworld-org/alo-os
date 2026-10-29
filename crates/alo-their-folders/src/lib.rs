@@ -17,10 +17,12 @@
 //! # The folders are in the person's own language
 //!
 //! A person chooses their language on the first screen, before the account
-//! exists. So by the time this runs the machine knows it, and a French machine
-//! makes *Documents*, a German one *Dokumente* and a Greek one a name in Greek
-//! letters. Hardcoded English is a bug in this repository, and a folder name
-//! is not exempt because it ends up in a path.
+//! exists, and it is theirs from the first sign-in. So a French person gets
+//! *Documents*, a German one *Dokumente* and a Greek one a name in Greek
+//! letters — **the names `xdg-user-dirs` gives them**, the package every Linux
+//! desktop names these folders with, so that Dolphin and every other program
+//! agree with alo OS about where a person's documents are
+//! ([`catalogue`], ADR 0137). A folder that already has a name keeps it.
 //!
 //! That makes `crate::naming` the file to read first: a translated name
 //! becomes a directory, and three kinds of translation produce a folder a
@@ -55,6 +57,7 @@
 //! - [`NotMade`] — every way it can fail, each with a sentence for whoever
 //!   looks after the machine.
 
+pub mod catalogue;
 pub mod folders;
 pub mod making;
 pub mod naming;
@@ -66,10 +69,11 @@ pub mod words;
 #[cfg(test)]
 mod testing;
 
+pub use catalogue::Catalogue;
 pub use folders::Folder;
-pub use making::{Disk, Made, made_for};
+pub use making::{Disk, Made, NamedDifferently, made_for};
 pub use naming::Named;
 pub use on_this_disk::OnThisDisk;
-pub use recording::{THE_RECORD, the_record};
+pub use recording::{AlreadyRecorded, THE_RECORD, the_record};
 pub use refusing::NotMade;
 pub use words::{EVERY_WORD, Word, WordsError, declare_into, their_folders_words};
