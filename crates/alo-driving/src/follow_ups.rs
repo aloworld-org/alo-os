@@ -1,6 +1,6 @@
 //! **Follow-ups, measured on their own**, apart from the fixed ten.
 //!
-//! [ADR 0136](../../../docs/decisions/0136-a-follow-up-is-sent-with-the-conversation-so-far.md):
+//! [ADR 0137](../../../docs/decisions/0137-a-follow-up-is-sent-with-the-conversation-so-far.md):
 //! a reply typed in a task window is sent to a model with the conversation so
 //! far, and a grade earned on a first request is not proof about one. The
 //! owner chose to measure follow-ups separately for each model, and keep the

@@ -1,6 +1,6 @@
 //! **Every follow-up grade is what its counts earn, under instructions this
 //! crate has** — `data/follow-ups.toml` held to the same two rules as the
-//! catalogue's grades (ADR 0136).
+//! catalogue's grades (ADR 0137).
 //!
 //! It runs on every build, and it reads the file as shipped: a grade typed in
 //! by hand that its counts do not earn, or one naming a digest nothing here can

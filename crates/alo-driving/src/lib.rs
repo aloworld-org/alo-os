@@ -25,7 +25,7 @@
 //! | [`Attempt`] | What a model produced for one exercise, put through the daemon's door |
 //! | [`Outcome`] | What became of it: five ways to fail, and one to drive |
 //! | [`Measured`] | A whole run, and the grade it earns |
-//! | [`AFollowUp`] | A request that only makes sense after an earlier conversation, measured apart (ADR 0136) |
+//! | [`AFollowUp`] | A request that only makes sense after an earlier conversation, measured apart (ADR 0137) |
 //! | [`BothRoads`] | One set of weights measured on each road, held to each other |
 //! | [`Instructions`] | How a model is told to answer, and the digest a grade names them by |
 //!

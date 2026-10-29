@@ -157,7 +157,7 @@ fn the_fixed_set_is_put_to_a_model_at_a_provider() {
     );
 }
 
-/// **And the follow-up set (ADR 0136)**, measured apart from the fixed ten and
+/// **And the follow-up set (ADR 0137)**, measured apart from the fixed ten and
 /// recorded in `data/follow-ups.toml` rather than in the catalogue. Run by name:
 /// `cargo test -p alo-driving --test against_a_model_at_a_provider the_follow_ups -- --ignored`.
 ///
