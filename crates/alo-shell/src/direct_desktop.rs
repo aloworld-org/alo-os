@@ -2053,6 +2053,12 @@ impl LoopInput for Desk<'_> {
         // reached is a person without a reader; a compositor that stopped
         // compositing over it would be a machine nobody can use at all.
         if let Some(reader) = self.reader.as_mut() {
+            // **A reader's presses first, then the tree**, so a task window a
+            // reader closed is gone from what the reader is told this frame.
+            // Each goes through the same door a click on it does.
+            for pressed in reader.pressed() {
+                let _ = server.a_reader_pressed(pressed);
+            }
             let _ = reader.following(
                 server,
                 self.strings,

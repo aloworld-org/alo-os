@@ -114,8 +114,10 @@ pub mod alos_marked_words;
 /// Closing a task window, and which ones may close.
 pub mod closing_a_task_window;
 pub use a_provider_is_added_in_settings::WhyNotSaved;
+mod a_reader_presses;
 /// Typing into a task window's reply box.
 mod a_screen_arrives_or_leaves;
+mod access_action;
 mod access_bus;
 mod access_contrast;
 mod access_magnifier;
@@ -644,6 +646,7 @@ pub use window_size::WindowSizeError;
 pub use window_switch::{WindowSwitchDirection, WindowSwitchError};
 
 pub use a_frame_per_display::{DrawnPerDisplay, retire_each_display};
+pub use access_action::Pressed;
 pub use access_bus::{NotRead, ReadAloudBus};
 pub use access_contrast::Contrast;
 pub use access_magnifier::{NotMagnified, magnified, magnifying};
