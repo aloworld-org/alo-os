@@ -20,6 +20,15 @@
 //! machine showing a person one thing and saving another, at the one moment
 //! they are deciding whether their colleague may see what is underneath.
 //!
+//! # At the display's scale
+//!
+//! Where the region and every mark are is the person's, in the display's
+//! pixels, and is never scaled. **How thick an outline is and how large a
+//! label's ground is** go through the person's text size and the display's
+//! scale together (`Measure::at`), so on a 200 per cent screen the outline is
+//! the same weight to the eye as on an ordinary one. Until 2026-10-28 they went
+//! through the text size only. At 100 nothing changes.
+//!
 //! # What it reads
 //!
 //! `alo_capturing::What` and `alo_capturing::Mark`, and nothing else. Which
@@ -30,6 +39,7 @@ use alo_appearance::{Scheme, TextScale};
 use alo_capturing::{Mark, Region, What};
 use smithay::utils::{Physical, Rectangle};
 
+use crate::display_scale::DisplayScale;
 use crate::painted::{Inked, Solid};
 use crate::status_row::Measure;
 use crate::{Contrast, RenderError};
@@ -80,7 +90,8 @@ impl CapturePicture {
     }
 }
 
-/// Lay the capture tools out for an output of `size` and rasterise them.
+/// Lay the capture tools out for an output of `size` drawn at `scale`, and
+/// rasterise them.
 ///
 /// Nobody capturing is an empty picture on any output.
 ///
@@ -91,6 +102,7 @@ pub(crate) fn picture(
     capturing: Capturing<'_>,
     size: (i32, i32),
     look: CaptureLook,
+    scale: DisplayScale,
 ) -> Result<CapturePicture, RenderError> {
     let mut picture = CapturePicture {
         size,
@@ -105,7 +117,7 @@ pub(crate) fn picture(
     if capturing.choosing.is_none() && capturing.marked.is_empty() {
         return Ok(picture);
     }
-    let measure = Measure::of(look.scale);
+    let measure = Measure::at(look.scale, scale);
     let ink = look.contrast.ink(look.scheme);
     let ground = look.contrast.ground(look.scheme);
     let whole = Rectangle::<i32, Physical>::from_size(size.into());
