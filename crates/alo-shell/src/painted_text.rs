@@ -205,17 +205,63 @@ pub(crate) fn sentence(
     ground: [u8; 3],
     ink: [u8; 3],
 ) -> Shaped {
+    let mut buffer = a_wrapping_buffer(fonts, width, metrics);
+    buffer.set_text(fonts, text, &alos_own_text(), Shaping::Advanced);
+    measured_and_inked(fonts, &mut buffer, width, ground, ink)
+}
+
+/// A sentence written in runs, each with its own face, weight or size,
+/// wrapped to `width` as one paragraph.
+///
+/// **The same wrapping, inking and measuring as [`sentence`]**; only how the
+/// text is handed to the shaper differs. A run that asks for a larger size
+/// makes its own line taller — cosmic-text takes a line's height from the
+/// tallest thing on it — so a heading inside a reply is measured as tall as it
+/// is drawn. With no runs at all this is an empty sentence in `default`.
+pub(crate) fn sentence_in_runs(
+    fonts: &mut FontSystem,
+    runs: &[(&str, Attrs<'_>)],
+    default: &Attrs<'_>,
+    width: i32,
+    metrics: Metrics,
+    ground: [u8; 3],
+    ink: [u8; 3],
+) -> Shaped {
+    let mut buffer = a_wrapping_buffer(fonts, width, metrics);
+    buffer.set_rich_text(
+        fonts,
+        runs.iter().map(|(words, attrs)| (*words, attrs.clone())),
+        default,
+        Shaping::Advanced,
+        None,
+    );
+    measured_and_inked(fonts, &mut buffer, width, ground, ink)
+}
+
+/// A buffer that wraps at `width`, by word and then by letter.
+fn a_wrapping_buffer(fonts: &mut FontSystem, width: i32, metrics: Metrics) -> Buffer {
     let mut buffer = Buffer::new(fonts, metrics);
     buffer.set_wrap(fonts, Wrap::WordOrGlyph);
     buffer.set_size(fonts, Some(width as f32), None);
-    buffer.set_text(fonts, text, &alos_own_text(), Shaping::Advanced);
+    buffer
+}
+
+/// Shape what the buffer holds, and ink it into a box exactly as tall as its
+/// lines, reporting the widest line's own width.
+fn measured_and_inked(
+    fonts: &mut FontSystem,
+    buffer: &mut Buffer,
+    width: i32,
+    ground: [u8; 3],
+    ink: [u8; 3],
+) -> Shaped {
     buffer.shape_until_scroll(fonts, false);
     let height = buffer
         .layout_runs()
         .map(|run| run.line_top + run.line_height)
         .fold(0.0, f32::max)
         .ceil() as i32;
-    let mut shaped = inked(fonts, &buffer, (width, height.max(1)), 0, ground, ink);
+    let mut shaped = inked(fonts, buffer, (width, height.max(1)), 0, ground, ink);
     shaped.width = buffer
         .layout_runs()
         .map(|run| run.line_w)

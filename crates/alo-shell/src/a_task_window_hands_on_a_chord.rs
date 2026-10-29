@@ -19,6 +19,15 @@
 //!
 //! Written as one exhaustive match with no catch-all, so a shortcut added
 //! tomorrow does not compile until somebody has answered this question for it.
+//!
+//! # Close window closes the task window
+//!
+//! **Alt+F4 in a task window closed an application behind it** until
+//! 2026-10-28: the shortcut was carried out on the road every other window
+//! takes, and that road knows only applications' windows. The window holding
+//! the keyboard is the one a person means, so here it closes the task — or,
+//! for a task still running, does nothing, which `crate::closing_a_task_window`
+//! explains.
 
 use alo_shortcuts::{Action, Chord};
 
@@ -59,6 +68,23 @@ impl Server {
     /// Carry out a shortcut pressed in the task window holding the keyboard,
     /// and let go of the keyboard if it went somewhere else.
     pub(crate) fn a_task_window_hands_on_a_chord(&mut self, chord: Chord) -> WhatTheChordCameTo {
+        let names = self
+            .shortcuts
+            .as_ref()
+            .and_then(|shortcuts| shortcuts.action_for(chord));
+        if names == Some(Action::CloseWindow)
+            && let Some(which) = self.the_task_with_the_keyboard
+        {
+            return match self.the_person_closes_a_task(which) {
+                crate::closing_a_task_window::WhatClosingCameTo::Closed => {
+                    WhatTheChordCameTo::Carried(Action::CloseWindow)
+                }
+                crate::closing_a_task_window::WhatClosingCameTo::StillRunning
+                | crate::closing_a_task_window::WhatClosingCameTo::NothingToClose => {
+                    WhatTheChordCameTo::Refused
+                }
+            };
+        }
         let came_to = self.the_chord_does_what_it_names(chord);
         if let WhatTheChordCameTo::Carried(action) = came_to
             && sends_the_keyboard_elsewhere(action)

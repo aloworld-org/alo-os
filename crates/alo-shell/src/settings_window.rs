@@ -9,6 +9,9 @@
 //!    `settings.toml` holds, changed through `alo_choosing::Choosing`
 //!    (`crate::settings_answering`);
 //! 2. **appearance** — the accent, through `alo_appearance::keeping`;
+//!    **how dates and times are written** beneath it — the person's language,
+//!    or a region they chose, through `alo_formats::keeping`
+//!    (`crate::settings_formats`);
 //! 3. **the dock** — its edge, through `alo_dock::keeping`;
 //! 4. **shortcuts** — each action's chord, through `alo_shortcuts::keeping`;
 //! 5. **what has been granted to what** — the row that gives alo a folder,
@@ -53,6 +56,7 @@ use alo_strings::Strings;
 use crate::a_folder_is_picked_in_settings::{Folders, PickingRow};
 use crate::how_code_runs_in_settings::HowCodeRunsHere;
 use crate::settings_answering::{AnsweringSection, SettingsAnswered, SettingsChoice};
+use crate::settings_formats::FormatsSection;
 use crate::settings_granted::{GrantedSection, SettingsRevoked};
 use crate::settings_keepers::{AppearanceKept, DockKept, ShortcutsKept};
 use crate::settings_kept::{KeptSection, SettingsKept};
@@ -67,6 +71,9 @@ pub enum SettingsSection {
     Answering,
     /// How the machine looks.
     Appearance,
+    /// How dates and times are written: the person's language, or a region
+    /// they chose (`crate::settings_formats`).
+    Formats,
     /// Which edge the dock is on.
     Dock,
     /// The shortcuts.
@@ -90,6 +97,9 @@ pub enum SettingsRow {
     Answer(SettingsChoice),
     /// An accent: Enter chooses it.
     Accent(Accent),
+    /// How dates and times are written: Enter chooses it. [`None`] is *as my
+    /// language writes them*; a code is the region whose way they follow.
+    WrittenAs(Option<&'static str>),
     /// What the dock does when a window needs the room: Enter chooses it.
     ///
     /// This was an edge for the dock until ADR 0076 fixed the dock to the bottom
@@ -161,6 +171,7 @@ impl SettingsRow {
         match self {
             Self::Answer(_) => SettingsSection::Answering,
             Self::Accent(_) => SettingsSection::Appearance,
+            Self::WrittenAs(_) => SettingsSection::Formats,
             Self::Hiding(_) => SettingsSection::Dock,
             Self::Shortcut(_) => SettingsSection::Shortcuts,
             Self::Granted(_) | Self::GrantAFolder | Self::SeeWhatAloDid | Self::Picking(_) => {
@@ -262,6 +273,8 @@ pub(crate) struct Open {
     pub(crate) answering: AnsweringSection,
     /// Appearance.
     pub(crate) appearance: KeptSection<AppearanceKept>,
+    /// How dates and times are written.
+    pub(crate) formats: FormatsSection,
     /// The dock.
     pub(crate) dock: KeptSection<DockKept>,
     /// Shortcuts.
@@ -311,6 +324,10 @@ impl SettingsWindow {
         self.open = Some(Open {
             answering: AnsweringSection::at_sign_in(places.choosing()),
             appearance: KeptSection::at_sign_in(places.kept(alo_appearance::keeping::THE_FILE)),
+            formats: FormatsSection::at_sign_in(
+                places.kept(alo_formats::keeping::THE_FILE),
+                places.choosing(),
+            ),
             dock: KeptSection::at_sign_in(places.kept(alo_dock::keeping::THE_FILE)),
             shortcuts: KeptSection::at_sign_in(places.kept(alo_shortcuts::keeping::THE_FILE)),
             granted,
@@ -348,6 +365,13 @@ impl SettingsWindow {
     #[must_use]
     pub fn appearance(&self) -> Option<&Appearance> {
         self.open.as_ref().map(|open| open.appearance.drawn())
+    }
+
+    /// How dates and times are written, as Settings holds it — what the seat
+    /// is told the moment a choice is kept.
+    #[must_use]
+    pub fn formats(&self) -> Option<&alo_formats::Chosen> {
+        self.open.as_ref().map(|open| open.formats.drawn())
     }
 
     /// Where the dock is as Settings holds it.
@@ -480,6 +504,12 @@ impl Open {
         if self.appearance.at().is_some() {
             rows.extend(Accent::ALL.into_iter().map(SettingsRow::Accent));
         }
+        rows.extend(
+            self.formats
+                .choices()
+                .into_iter()
+                .map(SettingsRow::WrittenAs),
+        );
         if self.dock.at().is_some() {
             rows.extend(Hiding::ALL.into_iter().map(SettingsRow::Hiding));
         }
@@ -575,6 +605,10 @@ impl Open {
                 );
                 SettingsDid::Kept(SettingsSection::Appearance, kept)
             }
+            SettingsRow::WrittenAs(choice) => SettingsDid::Kept(
+                SettingsSection::Formats,
+                self.formats.choose(*choice, doors.strings),
+            ),
             SettingsRow::Hiding(hiding) => {
                 let hiding = *hiding;
                 let kept = self.dock.changed(
@@ -643,6 +677,7 @@ impl Open {
         let section = row.section();
         let kept = match section {
             SettingsSection::Appearance => self.appearance.put_back_as_shipped(strings),
+            SettingsSection::Formats => self.formats.put_back_as_shipped(strings),
             SettingsSection::Dock => self.dock.put_back_as_shipped(strings),
             SettingsSection::Shortcuts => self.shortcuts.put_back_as_shipped(strings),
             // **Not offered for the terminal, and never will be.** The file

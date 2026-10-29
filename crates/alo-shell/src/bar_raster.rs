@@ -91,11 +91,17 @@ pub(crate) fn picture(
             corner: alo_dock::measures::THE_COMPOSERS_CORNER,
         });
         if bar.chosen == Some(which) {
-            rings.push(crate::dock_raster::a_focus_ring(at));
+            // At one, like the rest of the Bar, which is not laid out through
+            // its display's scale yet; see `crate::how_a_panel_is_raised`.
+            rings.push(crate::dock_raster::a_focus_ring(
+                at,
+                crate::display_scale::DisplayScale::ONE,
+            ));
         }
     }
 
     let panel = crate::dock_surface::surface(crate::dock_surface::ADocksSurface {
+        raised: crate::how_a_panel_is_raised::HowItIsRaised::THE_DOCKS.unscaled(),
         panel: places.panel,
         fill: palette.dock,
         edge: palette.edge,

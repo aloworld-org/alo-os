@@ -12,7 +12,7 @@ use super::*;
 use crate::Contrast;
 use crate::painted_text::sentence as shaped_sentence;
 use crate::record_room::{Measure, Palette};
-use crate::record_testing::{a_long_record, an_afternoon_kept, light, words};
+use crate::record_testing::{a_clock, a_long_record, an_afternoon_kept, light, words};
 use crate::{RecordKey, RecordOpened, RecordWindow};
 use alo_appearance::{Scheme, TextScale, Token};
 use alo_recounting::Outcome;
@@ -31,7 +31,7 @@ fn opened(kept: &crate::record_testing::Kept) -> RecordWindow {
 /// The window as it stands, drawn on an output of `size`.
 fn drawn_at(window: &RecordWindow, size: (i32, i32), look: RecordLook) -> RecordPicture {
     let mut labels = WindowControlLabels::new().unwrap();
-    picture(window.shows(), &words(), &mut labels, size, look).unwrap()
+    picture(window.shows(), &words(), &mut labels, size, look, a_clock()).unwrap()
 }
 
 /// The window as it stands, drawn on a tall 1920×2160 output, which holds a
@@ -230,7 +230,9 @@ fn an_entry_that_names_no_agent_is_drawn_without_inventing_one() {
                 && inked.area.loc.y < errand.after[0].area.loc.y + errand.after[0].area.size.h
         })
         .count();
-    assert_eq!(inked_in_it, 2, "something was drawn where a name would be");
+    // The time at its head, the clause, and where it went: three, and no
+    // fourth where a name would be.
+    assert_eq!(inked_in_it, 3, "something was drawn where a name would be");
 
     for entry in picture
         .entries
@@ -354,13 +356,28 @@ fn a_window_that_cannot_hold_an_entry_whole_refuses_rather_than_cutting() {
     for size in [(1920, 90), (150, 1080), (20_000, 1080), (1920, 20_000)] {
         assert!(
             matches!(
-                picture(window.shows(), &strings, &mut labels, size, light()),
+                picture(
+                    window.shows(),
+                    &strings,
+                    &mut labels,
+                    size,
+                    light(),
+                    a_clock()
+                ),
                 Err(RenderError::RecordScene)
             ),
             "{size:?}"
         );
     }
-    let drawn = picture(window.shows(), &strings, &mut labels, (1920, 1080), light()).unwrap();
+    let drawn = picture(
+        window.shows(),
+        &strings,
+        &mut labels,
+        (1920, 1080),
+        light(),
+        a_clock(),
+    )
+    .unwrap();
     assert!(drawn.validate((1920, 1080).into()).is_ok());
     assert!(matches!(
         drawn.validate((1280, 720).into()),
@@ -409,11 +426,17 @@ fn the_rail_and_the_indent_follow_the_reading_direction() {
     assert!(ltr_track.loc.x > left_to_right.entries[0].clause.area.loc.x);
     assert!(rtl_track.loc.x < right_to_left.entries[0].clause.area.loc.x);
 
+    // Set in from where the head of the entry starts, which is its time.
     let ltr = &left_to_right.entries[0];
-    assert!(ltr.after[0].area.loc.x > ltr.clause.area.loc.x);
+    let ltr_time = ltr.time.as_ref().unwrap();
+    assert!(ltr.after[0].area.loc.x > ltr_time.area.loc.x);
+    assert!(ltr_time.area.loc.x < ltr.clause.area.loc.x);
     let rtl = &right_to_left.entries[0];
-    assert_eq!(rtl.after[0].area.loc.x, rtl.clause.area.loc.x);
-    assert!(rtl.after[0].area.size.w < rtl.clause.area.size.w);
+    let rtl_time = rtl.time.as_ref().unwrap();
+    let right_edge =
+        |area: smithay::utils::Rectangle<i32, smithay::utils::Physical>| area.loc.x + area.size.w;
+    assert!(right_edge(rtl.after[0].area) < right_edge(rtl_time.area));
+    assert!(rtl_time.area.loc.x > rtl.clause.area.loc.x);
 }
 
 /// **Deep teal is never drawn**, in either scheme: it means the agent acting,

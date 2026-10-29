@@ -169,7 +169,7 @@ pub enum WentWrong {
     /// A different thing to be **told**: *nothing usable* would send somebody
     /// to ask again with the same conversation and meet the same wall, and the
     /// only way on is a shorter one — which alo OS never makes by dropping the
-    /// start of what they said (ADR 0136). Read off the place's own refusal,
+    /// start of what they said (ADR 0137). Read off the place's own refusal,
     /// never guessed from a length.
     TooLongForTheModel,
 }

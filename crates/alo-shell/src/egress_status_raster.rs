@@ -143,7 +143,9 @@ pub(crate) fn picture(
         u32::try_from(height).map_err(|_| RenderError::EgressStatusScene)?,
     )
     .map_err(|_| RenderError::EgressStatusScene)?;
-    let measure = Measure::of(look.scale);
+    // **The text size and the output's scale together**, because the rows sit on
+    // the Dock's corner and the Dock is drawn at that scale.
+    let measure = Measure::at(look.scale, room.scale);
     let place = Place::of(dock.layout_on(screen), room, measure.px(8), look.reading).beyond(beyond);
     let fonts = &mut labels.fonts;
     let palette = palette(look.scheme, look.contrast);

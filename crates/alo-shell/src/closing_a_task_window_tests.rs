@@ -1,0 +1,303 @@
+//! That a finished task window closes and lets go of the keyboard, that a
+//! running one does not close, and that closing never answers a change.
+//!
+//! Alt+F4 is pressed by evdev code through the seat, the road a person's key
+//! takes, rather than by calling the closing function.
+
+#![expect(
+    clippy::expect_used,
+    reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
+)]
+
+use std::cell::RefCell;
+use std::os::unix::fs::PermissionsExt as _;
+
+use alo_changing::{Answered, Answering, Standing};
+use alo_models::InferenceSource;
+use alo_tasks::ATask;
+use alo_tasks::conversation::Turn;
+use smithay::backend::input::KeyState;
+use smithay::input::keyboard::XkbConfig;
+use smithay::utils::{Physical, Point};
+
+use super::WhatClosingCameTo;
+use crate::Server;
+use crate::the_tasks_a_person_opened::WhichTask;
+
+/// evdev's codes for Alt and F4.
+const LEFT_ALT: u32 = 56;
+const F4: u32 = 62;
+
+/// A daemon holding what a test tells it to, and remembering every answer.
+#[derive(Debug, Default)]
+struct ADaemon {
+    holding: Vec<Standing>,
+    approved: RefCell<Vec<u64>>,
+    declined: RefCell<Vec<u64>>,
+}
+
+impl Answering for ADaemon {
+    fn waiting(&self) -> Option<Vec<Standing>> {
+        Some(self.holding.clone())
+    }
+
+    fn approve(&self, number: u64) -> Option<Answered> {
+        self.approved.borrow_mut().push(number);
+        None
+    }
+
+    fn decline(&self, number: u64) -> Option<Answered> {
+        self.declined.borrow_mut().push(number);
+        None
+    }
+}
+
+/// A daemon holding one change, read from the wire form a daemon sends.
+fn holding(number: u64, sentence: &str) -> ADaemon {
+    let wire = format!(
+        r#"{{"number":{number},"sentence":{{"text":{sentence:?},"came_from":"the-source"}}}}"#
+    );
+    ADaemon {
+        holding: vec![serde_json::from_str(&wire).expect("a waiting change reads from the wire")],
+        ..ADaemon::default()
+    }
+}
+
+/// The card's and the reply box's words, untranslated.
+fn in_english() -> alo_strings::Strings {
+    let mut vocabulary = alo_strings::Vocabulary::empty();
+    crate::the_cards_words::declare_the_cards_words(&mut vocabulary)
+        .expect("the card's words declare");
+    crate::the_reply_boxs_words::declare_the_reply_boxs_words(&mut vocabulary)
+        .expect("the reply box's words declare");
+    alo_strings::Strings::of(vocabulary)
+}
+
+/// A session with a keyboard on a US layout and the shipped shortcuts.
+fn a_session() -> (tempfile::TempDir, Server) {
+    let runtime = tempfile::tempdir().expect("a runtime directory of this test's own");
+    std::fs::set_permissions(runtime.path(), std::fs::Permissions::from_mode(0o700))
+        .expect("a private runtime directory");
+    let mut server = Server::bind_keyboard(
+        runtime.path(),
+        "closing-a-task-window",
+        XkbConfig {
+            layout: "us",
+            ..XkbConfig::default()
+        },
+    )
+    .expect("a display with a keyboard");
+    server.the_shortcuts_are(alo_shortcuts::Shortcuts::shipped());
+    (runtime, server)
+}
+
+/// A task window, placed on a 1280 × 800 view and holding the keyboard.
+fn a_task(server: &mut Server, asked: &str) -> WhichTask {
+    let which = server
+        .tasks_mut()
+        .and_now_this_one(ATask::asked_for(asked, InferenceSource::ThisMachine));
+    let view = smithay::utils::Rectangle::new((0, 0).into(), (1280, 800).into());
+    server.tasks_mut().put_whatever_has_nowhere_to_be(
+        view,
+        alo_strings::Direction::LeftToRight,
+        &[],
+    );
+    server.this_task_took_the_keyboard(which);
+    which
+}
+
+/// alo answered, so the task's work is over.
+fn finished(server: &mut Server, which: WhichTask) {
+    server
+        .tasks_mut()
+        .the_mut(which)
+        .expect("the task is open")
+        .alo_says(Turn::from_alo("Your invoices are tidy."));
+}
+
+/// The middle of this task's window on the screen.
+fn the_middle_of(server: &Server, which: WhichTask) -> Point<i32, Physical> {
+    let at = server
+        .tasks()
+        .where_each_went()
+        .get(which.at())
+        .copied()
+        .flatten()
+        .expect("the window was placed");
+    (at.loc.x + at.size.w / 2, at.loc.y + at.size.h / 2).into()
+}
+
+/// Alt+F4, held and released the way a person presses it.
+fn alt_f4(server: &mut Server, daemon: &ADaemon) {
+    let strings = in_english();
+    let mut one = |code, state| {
+        crate::a_key_reaches_the_task_in_front::the_key_the_task_took(
+            server,
+            crate::DirectKeyEvent {
+                code,
+                state,
+                time: 1,
+            },
+            Some(daemon),
+            &strings,
+        )
+        .expect("the seat took the key");
+    };
+    one(LEFT_ALT, KeyState::Pressed);
+    one(F4, KeyState::Pressed);
+    one(F4, KeyState::Released);
+    one(LEFT_ALT, KeyState::Released);
+}
+
+/// **Alt+F4 closes a finished task window**: it is no longer drawn, pressed
+/// or counted, and the keyboard goes back to what was behind it.
+#[test]
+fn alt_f4_closes_a_finished_task_window() {
+    let (_runtime, mut server) = a_session();
+    let which = a_task(&mut server, "tidy my invoices");
+    finished(&mut server, which);
+    assert_eq!(
+        server.tasks().how_many(),
+        1,
+        "the control: one window is open"
+    );
+    let middle = the_middle_of(&server, which);
+
+    alt_f4(&mut server, &ADaemon::default());
+
+    assert!(!server.tasks().is_open(which), "the window did not close");
+    assert_eq!(server.tasks().how_many(), 0);
+    assert_eq!(
+        server.tasks().where_each_went(),
+        [None],
+        "it is still drawn"
+    );
+    assert_eq!(
+        server.tasks().the_one_under(middle),
+        None,
+        "a press where it was still lands on it"
+    );
+    assert!(
+        !server.a_task_is_taking_the_keys(),
+        "the closed window kept the keyboard, so typing would go nowhere"
+    );
+}
+
+/// **A closed window is never put back**, however many frames place windows.
+#[test]
+fn a_closed_window_is_not_placed_again() {
+    let (_runtime, mut server) = a_session();
+    let which = a_task(&mut server, "tidy my invoices");
+    finished(&mut server, which);
+
+    assert_eq!(
+        server.the_person_closes_a_task(which),
+        WhatClosingCameTo::Closed
+    );
+    let view = smithay::utils::Rectangle::new((0, 0).into(), (1280, 800).into());
+    let placed = server.tasks_mut().put_whatever_has_nowhere_to_be(
+        view,
+        alo_strings::Direction::LeftToRight,
+        &[],
+    );
+
+    assert_eq!(placed, 0, "a closed window was placed again");
+    assert_eq!(
+        server.the_person_closes_a_task(which),
+        WhatClosingCameTo::NothingToClose,
+        "closing it twice closed something"
+    );
+}
+
+/// **A running task does not close**, and keeps its window and its keyboard.
+/// Closing it is *Cancel* until the three choices exist.
+#[test]
+fn a_running_task_does_not_close() {
+    let (_runtime, mut server) = a_session();
+    let which = a_task(&mut server, "tidy my invoices");
+    assert_eq!(
+        server.tasks().the(which).expect("open").what_is_happening(),
+        alo_tasks::words::ALO_IS_WORKING,
+        "the control: alo is working on it"
+    );
+
+    alt_f4(&mut server, &ADaemon::default());
+
+    assert!(server.tasks().is_open(which), "a running task was closed");
+    assert!(server.a_task_is_taking_the_keys());
+    assert!(
+        !server
+            .tasks()
+            .the(which)
+            .expect("open")
+            .stopping()
+            .is_waiting(),
+        "closing asked the work to stop, which nobody chose"
+    );
+}
+
+/// **Closing never answers a waiting change**: Alt+F4 on the window holding
+/// it approves nothing, declines nothing, and the question still stands.
+#[test]
+fn closing_never_answers_a_waiting_change() {
+    let (_runtime, mut server) = a_session();
+    let which = a_task(&mut server, "rename my invoices");
+    let daemon = holding(7, "Delete everything in Invoices");
+    server.an_answer_came_back(
+        which,
+        "Shall I?".to_owned(),
+        false,
+        None,
+        Some(&daemon),
+        &in_english(),
+    );
+    assert!(
+        server.the_change_waiting.is_asking(),
+        "the control: a change is waiting"
+    );
+
+    alt_f4(&mut server, &daemon);
+
+    assert!(daemon.approved.borrow().is_empty(), "closing approved it");
+    assert!(daemon.declined.borrow().is_empty(), "closing declined it");
+    assert!(server.the_change_waiting.is_asking());
+    assert!(server.tasks().is_open(which));
+}
+
+/// **An answer for a later task still reaches it** after an earlier one
+/// closes — which is why a closed task keeps its place in the list.
+#[test]
+fn an_answer_for_another_task_still_reaches_it() {
+    let (_runtime, mut server) = a_session();
+    let first = a_task(&mut server, "tidy my invoices");
+    finished(&mut server, first);
+    let second = a_task(&mut server, "explain an invoice");
+
+    assert_eq!(
+        server.the_person_closes_a_task(first),
+        WhatClosingCameTo::Closed
+    );
+    server.an_answer_came_back(
+        second,
+        "An invoice asks to be paid.".to_owned(),
+        false,
+        None,
+        None,
+        &in_english(),
+    );
+
+    let said_last = |which| {
+        server
+            .tasks()
+            .the(which)
+            .expect("the task is still in the list")
+            .conversation()
+            .each()
+            .last()
+            .expect("something was said")
+            .said()
+            .to_owned()
+    };
+    assert_eq!(said_last(second), "An invoice asks to be paid.");
+    assert_eq!(said_last(first), "Your invoices are tidy.");
+}

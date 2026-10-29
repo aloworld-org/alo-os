@@ -49,6 +49,10 @@ pub struct TheReaderIsTold {
     windows: Vec<String>,
     /// Which surfaces were up when the tree was last built.
     showing: Vec<Surface>,
+    /// What a reader could press on the tree last published, in reading
+    /// order — compared as well as the names, so a press always reaches the
+    /// window it was heard under.
+    pressable: Vec<crate::Pressed>,
 }
 
 impl TheReaderIsTold {
@@ -78,6 +82,7 @@ impl TheReaderIsTold {
                 .map(str::to_owned)
                 .collect(),
             showing: showing.to_vec(),
+            pressable: tree.what_can_be_pressed(),
             bus,
         })
     }
@@ -106,13 +111,25 @@ impl TheReaderIsTold {
             .into_iter()
             .map(str::to_owned)
             .collect();
-        if windows == self.windows && showing == self.showing.as_slice() {
+        let pressable = tree.what_can_be_pressed();
+        if windows == self.windows
+            && showing == self.showing.as_slice()
+            && pressable == self.pressable
+        {
             return Ok(false);
         }
         self.bus.now_showing(&tree)?;
         self.windows = windows;
         self.showing = showing.to_vec();
+        self.pressable = pressable;
         Ok(true)
+    }
+
+    /// What a reader pressed since this was last asked, oldest first, for the
+    /// desktop to hand to [`crate::Server::a_reader_pressed`].
+    #[must_use]
+    pub fn pressed(&self) -> Vec<crate::Pressed> {
+        self.bus.pressed()
     }
 
     /// What a reader is currently told is open, in the order it hears them.

@@ -12,6 +12,11 @@
 //! | Body/Large | 16 / 25 | what a person and alo said |
 //! | Body/Medium | 14 / 22 | an activity line, an approval's detail |
 //!
+//! The headings and labels are SemiBold and the bodies Regular, as the design's
+//! table gives them. **alo's bold, headings and code are drawn in these same
+//! styles** — the owner's decision of 2026-10-28, recorded with its mapping in
+//! `docs/design/emphasis-in-alos-answers.md`.
+//!
 //! # Every one of them scales with the person's text size
 //!
 //! `crate::desktop_look::Measure` is the scale a person set, and both numbers
@@ -36,10 +41,17 @@
 //! figure measured off a frame and a figure chosen to tidy a table are
 //! different things and only one of them can be checked against the design.
 
-use cosmic_text::{FontSystem, Metrics};
+use cosmic_text::{Attrs, Family, FontSystem, Metrics, Weight};
 
+use crate::alos_marked_words::{AMark, HowItIsMarked};
 use crate::desktop_look::Measure;
-use crate::painted_text::{Shaped, sentence};
+use crate::painted_text::{
+    ALOS_OWN_FACE, ALOS_OWN_WEIGHT, Shaped, alos_own_mono, sentence_in_runs,
+};
+
+/// The design's Regular, which both body styles and the destination are
+/// drawn at. `fonts/Manrope-Regular.ttf` is the face that answers it exactly.
+const REGULAR: Weight = Weight(400);
 
 /// One of the styles a task window is written in.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -69,6 +81,26 @@ impl AStyle {
             Self::SmallBody => (14.0, 22.0),
             Self::Destination => (12.0, 22.0),
         }
+    }
+
+    /// Its weight, as the design's table gives it: the headings and labels
+    /// SemiBold, the bodies and the destination Regular.
+    ///
+    /// **Until 2026-10-28 every style was drawn SemiBold**, because no Regular
+    /// Manrope was bundled, and nobody could see it until alo's bold had to be
+    /// told from its ordinary words.
+    pub(crate) const fn weight(self) -> Weight {
+        match self {
+            Self::Heading | Self::Label | Self::SmallLabel => ALOS_OWN_WEIGHT,
+            Self::Body | Self::SmallBody | Self::Destination => REGULAR,
+        }
+    }
+
+    /// How text in this style is asked for: alo's own face at its weight.
+    pub(crate) fn attrs<'a>(self) -> Attrs<'a> {
+        Attrs::new()
+            .family(Family::Name(ALOS_OWN_FACE))
+            .weight(self.weight())
     }
 
     /// Its metrics at this person's text size.
@@ -124,6 +156,10 @@ pub struct WhatWasSaid<'a> {
     pub whose: alo_tasks::WhoseBlock,
     /// The words, already in the language the person reads.
     pub words: &'a str,
+    /// How stretches of the words are marked — bold, a heading, code — and
+    /// empty for words drawn exactly as said, which is everything that is not
+    /// alo's own: `crate::alos_marked_words` says why.
+    pub marks: &'a [AMark],
     /// The two answers under it, when this block is a change waiting to be
     /// answered, and [`None`] for everything else said in a conversation.
     ///
@@ -160,6 +196,9 @@ pub(crate) struct ToWrite<'a> {
     pub(crate) ground: [u8; 3],
     /// The ink.
     pub(crate) ink: [u8; 3],
+    /// How stretches of the words are marked, and empty when none is — which
+    /// is everything except alo's own words.
+    pub(crate) marks: &'a [AMark],
 }
 
 /// Shape one thing to be written, wrapped to `width`.
@@ -173,14 +212,50 @@ pub(crate) fn shaped(
     width: i32,
     measure: Measure,
 ) -> Shaped {
-    sentence(
+    let plain = write.style.attrs();
+    let runs = the_runs(write, measure);
+    sentence_in_runs(
         fonts,
-        write.words,
+        &runs,
+        &plain,
         width.max(1),
         write.style.metrics(measure),
         write.ground,
         write.ink,
     )
+}
+
+/// The words cut into runs, each asked for as its mark says.
+///
+/// **Every mark is a style the design already has**, which is the owner's
+/// decision of 2026-10-28 recorded in `docs/design/emphasis-in-alos-answers.md`:
+/// bold is the design's SemiBold at the block's own size, a heading is
+/// Heading/Medium, and code is `System/Mono`'s face and weight — Geist Mono
+/// Medium — at the block's own size, so a word of code does not shrink the
+/// line it sits in.
+fn the_runs<'a>(write: ToWrite<'a>, measure: Measure) -> Vec<(&'a str, Attrs<'a>)> {
+    let plain = write.style.attrs();
+    if write.marks.is_empty() {
+        return vec![(write.words, plain)];
+    }
+    let mut from = 0;
+    write
+        .marks
+        .iter()
+        .filter_map(|mark| {
+            let words = write.words.get(from..mark.ends)?;
+            from = mark.ends;
+            let attrs = match mark.how {
+                HowItIsMarked::Plain => plain.clone(),
+                HowItIsMarked::Strong => plain.clone().weight(ALOS_OWN_WEIGHT),
+                HowItIsMarked::Heading => AStyle::Heading
+                    .attrs()
+                    .metrics(AStyle::Heading.metrics(measure)),
+                HowItIsMarked::Code => alos_own_mono(),
+            };
+            Some((words, attrs))
+        })
+        .collect()
 }
 
 /// How tall these words come out at this width, without keeping the pixels.

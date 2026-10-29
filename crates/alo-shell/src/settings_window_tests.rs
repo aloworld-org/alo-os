@@ -53,7 +53,9 @@ fn focus_on(
     door: &CountingDoor,
 ) {
     window.pressed(key(SettingsKey::First), doors(strings, door));
-    for _ in 0..64 {
+    // **Enough for every region**, which since 2026-10-28 is a section of 251
+    // rows between the accents and the dock.
+    for _ in 0..1024 {
         if window.focused(noon()).as_ref() == Some(row) {
             return;
         }
@@ -198,6 +200,9 @@ fn every_setting_the_machine_has_is_in_one_window() {
                 model: "harbour-small".to_owned(),
             }),
             SettingsRow::Accent(Appearance::shipped().accent()),
+            // Nobody chose a region, so the language decides — which is what
+            // the file says, and so what is marked.
+            SettingsRow::WrittenAs(None),
             SettingsRow::Hiding(Dock::shipped().hiding()),
         ]
     );
@@ -1096,15 +1101,17 @@ fn moving_between_rows_and_sections_changes_nothing() {
     let before: Vec<_> = files.iter().map(|at| bytes(at)).collect();
 
     let mut firsts = Vec::new();
-    for _ in 0..8 {
+    for _ in 0..9 {
         firsts.push(window.focused(noon()).unwrap().section());
         window.pressed(key(SettingsKey::NextSection), doors(&strings, &door));
     }
     assert_eq!(
-        firsts[..7],
+        firsts[..8],
         [
             SettingsSection::Answering,
             SettingsSection::Appearance,
+            // How dates and times are written, beneath how the machine looks.
+            SettingsSection::Formats,
             SettingsSection::Dock,
             SettingsSection::Shortcuts,
             // Between the shortcuts and the grants, which is where
@@ -1128,7 +1135,7 @@ fn moving_between_rows_and_sections_changes_nothing() {
     for pressed in [SettingsKey::Last, SettingsKey::First, SettingsKey::Nothing] {
         window.pressed(key(pressed), doors(&strings, &door));
     }
-    for _ in 0..64 {
+    for _ in 0..1024 {
         window.pressed(key(SettingsKey::Next), doors(&strings, &door));
         window.pressed(key(SettingsKey::Nothing), doors(&strings, &door));
     }

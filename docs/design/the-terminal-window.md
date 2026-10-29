@@ -711,19 +711,39 @@ ground of its own, and no rule between the identity strip and the transcript.
 `A_BORDER` through the display's scale (never less than one pixel), and the
 transcript on the panel's white — `crates/alo-shell/src/the_terminals_frame.rs`.
 
-**Not built, and a gap rather than a look:** the 18 corners and the shadow.
-Both are partial coverage, and the one rasteriser that draws them,
-`dock_surface::a_panel`, is fixed to the Dock's shadow (0 8 24, 8%) and takes
-no display scale. Until it can draw this panel's shadow at this display's
-scale the body is square and flat.
+**Built 2026-10-28: the 18 corners and the shadow**, by the Dock's own
+rasteriser. `dock_surface` used to be fixed to the Dock's shadow (0 8 24, 8%)
+and took no display scale; it now takes a look — corner, fall, blur, spread and
+darkness — together with the scale that look is drawn at, in
+`crates/alo-shell/src/how_a_panel_is_raised.rs`. The terminal's body asks for
+`Elevation/Floating` at its display's real scale, so at 200% the corner is 36
+pixels and the shadow falls 32.
 
-**Two readings disagree, and the second is not settled.** The gutter section
-above measured a `Terminal / Source region` in `485-28999` with the program's
-text on `bg/cool` and the gutter on `bg/surface`; this node's render draws the
-whole transcript on `bg/surface`. `479:28965` is a rendering reference and
-`485:28999` the contract for the gutter, so whether a program's region carries
-a cool ground of its own is **left for the owner**, and white is drawn because
-it is what both readings agree the gutter and the panel are.
+| | logical | at 100% | at 200% |
+|---|---|---|---|
+| corner, `radius/lg` | 18 | 18 | 36 |
+| shadow fall | 16 | 16 | 32 |
+| shadow blur | 40 | 40 | 80 |
+| shadow spread | −4 | −4 | −8 |
+| shadow colour | `#07131F` at `0x24` (36 of 255) | the same | the same |
+
+**The blur is drawn the way the Dock's always has been** — the same distance
+function, faded across the blur's width with a smoothstep — not a true
+Gaussian; `dock_surface`'s header gives the reason. **The Dock still draws at
+scale one**, because its band, slots and marks are laid out unscaled and
+rounding its corner alone at a dense display's scale is the fault
+`dock_raster` records. Its pixels are unchanged: `dock_surface`'s tests hold
+a hash of every pixel of a Dock with every kind of shape on it, taken from the
+rasteriser before this change.
+
+**Output sits on white everywhere — the owner's decision, 2026-10-28.** Two
+readings of the design disagree: the gutter section above measured a
+`Terminal / Source region` in `485-28999` with the program's text on
+`bg/cool` and the gutter on `bg/surface`, and this node's render draws the
+whole transcript on `bg/surface`. The owner chose white, which is what was
+built, and nothing changed. **A program's region has no ground of its own**;
+`bg/cool` in `485-28999` is not followed, and this paragraph is where the
+next reader learns that it was decided rather than missed.
 
 **Also not built, each for a reason:**
 
@@ -731,12 +751,63 @@ it is what both readings agree the gutter and the panel are.
   interactive surface — drag, minimise, maximise, close — and this terminal is
   not yet a window on the canvas that any of those could act on. Controls that
   reach nothing would look live.
-- **the identity strip's contents** — `~/Projects/launch`, `Local · disan` and
-  the *search, new session, settings* menu. Whether the path is the folder the
-  shell is in or a Place, and what `Local` stands for, are not written down
-  anywhere; the 56 rows stay reserved and empty.
+- **the strip's menu** — *search, new session, settings*, the three dots at
+  (936, 6), 44×44. Nothing it names exists for it to open, so it would look
+  live and reach nothing. Its room is kept, so the words beside it do not move
+  when it arrives.
 - **the dark body**, which has not been read: the dark pair in `500:29477` is
   owed. The dark ground and ink are the ones drawn before.
+
+## The strip across the top, built 2026-10-28
+
+`Project and session identity`, `479:29013`, asked of the live file on
+2026-10-28 for its own nodes. It is a row: 24 of padding each side, 6 above and
+below, a gap of 12, items centred.
+
+| node | text | where | type | colour |
+|---|---|---|---|---|
+| `479:29016` | `~/Projects/launch` | (24, 19), in a 740-wide box that clips | `Label/Medium`, Manrope SemiBold 13 on 18 | `text/muted` |
+| `479:29018` | `Local · disan` | (854, 19), 70×18 | Manrope SemiBold **12** on 18, no style variable | `text/muted` |
+| `479:29019` | the menu | (936, 6), 44×44 | — | — |
+
+**What each says is the owner's decision of 2026-10-28**, because the file does
+not say:
+
+- **the folder is the one the shell is in now**, following the person as they
+  change folder, with `~` for their home. It is read from the kernel's
+  `/proc/PID/cwd` for the shell's own process **when the shell has written
+  something** — a `cd` is always followed by a prompt — and at no other time.
+  Nothing watches it, and no shell integration is needed: alo's integration
+  marks (ADR 0123) carry no folder, and a strip that only worked with a snippet
+  installed would be blank on most machines.
+- **`Local` means the shell runs on this machine**, not on a paired one. It is
+  a word in the vocabulary (`terminal.where.this-machine`), joined to the name
+  by the design's own ` · `.
+- **the name is the signed-in person's** — the name they typed when they made
+  their account. It is in the account store the sign-in screen reads
+  (`/etc/alo/accounts.toml`, root's, mode 0600), which the desktop must not
+  read, so at every sign-in `alo-giving-a-name` copies it into
+  `/var/lib/alo-names/<number>`, readable by that person alone, and the desktop
+  reads it once
+  ([ADR 0135](../decisions/0135-a-persons-name-reaches-their-desktop-through-a-file-only-they-can-read.md),
+  `docs/contracts/the-persons-name.md`). **Where there is no file** — an account
+  that has not signed in since, or a machine where the helper could not run —
+  the words read `Local` alone, never the desktop's own login, `alo`, which is
+  nobody's name.
+- **A name too long for its room ends in an ellipsis.** *A reading, recorded
+  so it can be disagreed with:* the design hugs `Local · disan` and says nothing
+  about a longer name. The words keep the room they already had — from 24 in to
+  114 before the edge — and are fitted with `crate::fitted`, the shell's rule
+  for a window title: cut at a whole letter, ending in `…`, so `Local · ` stays
+  whole and the folder gives way first.
+
+**Where the words go at another width is a reading, recorded so it can be
+disagreed with.** The design's row hugs its contents with a fixed 740-wide
+folder box, so at 1038 it leaves 34 of slack after the menu. A fixed 740 holds
+at one width only. The reading taken: **the folder starts 24 in; the words end
+114 before the strip's right edge**, which is where the design puts them at its
+own width (854 + 70 = 924 = 1038 − 114); the folder is cut 12 before the words.
+Both go through the display's scale.
 
 ## Colour
 

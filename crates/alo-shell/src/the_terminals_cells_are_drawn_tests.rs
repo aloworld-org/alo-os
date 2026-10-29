@@ -30,11 +30,13 @@ use crate::WindowControlLabels;
 const A_DISPLAY: (i32, i32) = (1440, 1040);
 
 /// How many flat shapes a terminal paints before anything a program wrote: the
-/// window's hairline, its panel, and the transcript's ground.
+/// transcript's ground.
 ///
-/// Three since 2026-10-28, when the window gained a visible edge; it was two
-/// while the window was one rectangle in the canvas's own colour.
-const THE_WINDOW_AND_ITS_TRANSCRIPT: usize = 3;
+/// **One since the window's body became a raster** — rounded, with its
+/// hairline and shadow, in `TerminalPicture::panel` — on 2026-10-28. It was
+/// three for the day the body was a hairline and a panel as two rectangles, and
+/// two while the window was one rectangle in the canvas's own colour.
+const THE_WINDOW_AND_ITS_TRANSCRIPT: usize = 1;
 
 /// The vocabulary the gutter's four words are said from.
 ///
@@ -63,6 +65,7 @@ fn picture_with_a_shell_called(
             a_test_result: None,
             a_benchmark: None,
             a_diff: None,
+            the_strip: crate::the_terminals_strip::WhatTheStripSays::ONLY_WHERE_IT_RUNS,
         },
         size,
         scale,
@@ -94,6 +97,7 @@ fn picture(
             a_test_result: None,
             a_benchmark: None,
             a_diff: None,
+            the_strip: crate::the_terminals_strip::WhatTheStripSays::ONLY_WHERE_IT_RUNS,
         },
         size,
         scale,
@@ -230,15 +234,30 @@ fn the_terminal_is_a_window_that_can_be_told_from_the_desktop() {
     let canvas = alo_appearance::Role::BgCanvas.colour();
     let canvas = [canvas.red(), canvas.green(), canvas.blue()];
 
-    let first = drawn.solids.first().expect("the window is drawn");
-    assert_eq!(
-        first.area, window,
-        "the first thing painted is the whole window"
+    let body = drawn.panel.as_ref().expect("the window's body is drawn");
+    assert!(
+        body.area.contains_rect(window),
+        "the body's raster does not cover the whole window"
     );
-    assert_ne!(
-        first.colour, canvas,
-        "the window's edge is the canvas's colour"
-    );
+    // The middle of the top edge, which is the hairline, and a row inside it,
+    // which is the panel: both opaque, and neither the canvas's colour.
+    let at = |x: i32, y: i32| -> [u8; 4] {
+        let (x, y) = (x - body.area.loc.x, y - body.area.loc.y);
+        let from = usize::try_from((y * body.area.size.w + x) * 4).expect("inside the raster");
+        let mut out = [0_u8; 4];
+        out.copy_from_slice(body.pixels.get(from..from + 4).expect("a pixel"));
+        out
+    };
+    let middle = window.loc.x + window.size.w / 2;
+    for (y, what) in [(window.loc.y, "edge"), (window.loc.y + 10, "panel")] {
+        let [r, g, b, a] = at(middle, y);
+        assert_eq!(a, 255, "the window's {what} is not opaque");
+        assert_ne!(
+            [r, g, b],
+            canvas,
+            "the window's {what} is the canvas's colour"
+        );
+    }
     assert!(
         drawn.solids.iter().all(|solid| solid.colour != canvas),
         "something in the terminal is painted in the canvas's own colour, which reads as a hole"
@@ -1351,6 +1370,7 @@ fn picture_showing_a_result(
             a_test_result: result,
             a_benchmark: None,
             a_diff: None,
+            the_strip: crate::the_terminals_strip::WhatTheStripSays::ONLY_WHERE_IT_RUNS,
         },
         A_DISPLAY,
         1.0,
@@ -1473,6 +1493,7 @@ fn saying_something_draws_the_sentence_and_not_only_its_gutter_word() {
                 a_test_result: None,
                 a_benchmark: None,
                 a_diff: None,
+                the_strip: crate::the_terminals_strip::WhatTheStripSays::ONLY_WHERE_IT_RUNS,
             },
             A_DISPLAY,
             1.0,
@@ -1544,6 +1565,7 @@ fn a_recognised_results_lines_are_drawn_where_the_transcripts_text_goes() {
                 a_test_result: result,
                 a_benchmark: None,
                 a_diff: None,
+                the_strip: crate::the_terminals_strip::WhatTheStripSays::ONLY_WHERE_IT_RUNS,
             },
             A_DISPLAY,
             1.0,
@@ -1620,6 +1642,7 @@ fn a_result_pushes_alos_line_down_rather_than_sharing_its_region() {
                 a_test_result: result,
                 a_benchmark: None,
                 a_diff: None,
+                the_strip: crate::the_terminals_strip::WhatTheStripSays::ONLY_WHERE_IT_RUNS,
             },
             A_DISPLAY,
             1.0,

@@ -225,6 +225,13 @@ pub struct Server {
     /// **[`None`] is a machine where nobody has opened a terminal**, which is
     /// how every machine starts. Nothing opens one on a person's behalf.
     pub(crate) alos_own_terminal: Option<crate::the_terminal_a_person_opened::TheTerminal>,
+    /// The name of the person this desktop is for, as they typed it when they
+    /// made their account — told once at sign-in by
+    /// `Server::its_person_is_called`, and shown in the terminal's strip.
+    ///
+    /// **[`None`] is no name, never the login's**: the desktop runs as `alo`
+    /// on every machine, which is nobody's name (ADR 0135).
+    pub(crate) whose_desktop: Option<String>,
     /// How this machine asks an application to start, when something has told
     /// it.
     ///
@@ -393,7 +400,7 @@ pub struct Server {
     /// measures.
     pub(crate) asked_alo: Vec<String>,
     /// Follow-ups a person sent from a task window, waiting to be handed to the
-    /// agent with the conversation so far (ADR 0136).
+    /// agent with the conversation so far (ADR 0137).
     ///
     /// **Recorded here for `asked_alo`'s reason**: the key arrives in the input
     /// loop, and the door to the agent is the frame loop's.
@@ -493,6 +500,15 @@ pub struct Server {
     /// Told rather than read for `settings_places`' reason: the description
     /// that names the record's path is a file, and this crate opens none.
     pub(crate) recounting: Option<Result<alo_recounting::Recounting, alo_recounting::NotRecounted>>,
+    /// **How this person writes a time and a day**, told by the desktop at
+    /// sign-in and again by Settings when they choose a region.
+    ///
+    /// Until a desktop says, the rule `crate::TheirFormats` holds for a
+    /// person who has chosen nothing and named no language — never one region
+    /// for everybody. See `crate::the_formats_are_told`.
+    pub(crate) formats: crate::TheirFormats,
+    /// Whether the formats changed since the desktop was last told.
+    pub(crate) formats_untold: bool,
     /// **What this person's Places remember**, as the last keep left it.
     ///
     /// Held here for the same reason the shortcuts above are: a chord is
@@ -667,6 +683,8 @@ impl Server {
             asked_to_start: Vec::new(),
             the_terminal: None,
             alos_own_terminal: None,
+            // Nobody has said whose desktop this is; the stand-up does.
+            whose_desktop: None,
             asks_an_application_to_start: None,
             // Nothing has been worked out yet; the stand-up fills it.
             what_the_dock_is_pinned_to: alo_dock::Holding::nothing(),
@@ -710,6 +728,9 @@ impl Server {
             record: crate::RecordWindow::on_an_output(),
             // Nobody has told this seat where the record is kept.
             recounting: None,
+            // Nobody has told this seat how this person writes a time.
+            formats: crate::TheirFormats::of(alo_formats::Chosen::default(), None),
+            formats_untold: false,
             // Shut, and a press on the person's own Dock is what opens it.
             market: crate::MarketWindow::closed(),
             // Nobody has told this seat what the machine already has.

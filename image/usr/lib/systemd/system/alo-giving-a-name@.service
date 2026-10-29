@@ -1,0 +1,63 @@
+# Gives one person their own name, in a file only they can read.
+#
+# ADR 0135 is the decision. The name a person typed when they made their
+# account lives in /etc/alo/accounts.toml, which is root's and mode 0600
+# because it holds every password hash; their desktop runs as their own login
+# and must not read it. So at every sign-in this copies that one name, by
+# number, to /var/lib/alo-names/<number>, mode 0600 and owned by the person.
+#
+# Started as `alo-giving-a-name@1000.service` by alo-sessiond, where the
+# instance name is an account number alo-sessiond has already checked against
+# the accounts file. The caller holds no capability at all — what authorises
+# starting a unit is who you are, not what you hold — so the power lives here
+# and reaches only this program. It is the shape of alo-giving-a-folder@.service
+# on purpose (ADR 0119): a capability belongs to the smallest thing that can
+# hold it, and this is a second small thing rather than that one growing a job.
+[Unit]
+Description=alo OS: give account %i their own name, readable by them alone
+Documentation=https://github.com/aloworld-org/alo-os/blob/main/docs/decisions/0135-a-persons-name-reaches-their-desktop-through-a-file-only-they-can-read.md
+After=local-fs.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=no
+ExecStart=/usr/libexec/alo-giving-a-name %i
+User=root
+Group=root
+
+# **One capability.** `CAP_CHOWN` is what gives the file to the person; making
+# the folder, writing the file and renaming it into place need nothing, because
+# this process owns the folder and what it has just written. Replacing a name
+# the person already owns needs nothing either: a rename over a file in a
+# folder you own does not ask whose the file was.
+CapabilityBoundingSet=CAP_CHOWN
+AmbientCapabilities=CAP_CHOWN
+NoNewPrivileges=yes
+
+# It reads the account store and writes in one place. `ProtectSystem=strict`
+# leaves /etc readable and makes it read-only, and `StateDirectory=` opens the
+# one directory this exists to write in — made by systemd before the program
+# runs, so the first sign-in on a fresh machine is the same as every later one.
+#
+# 0711: anybody may pass through to their own file, and only root may list the
+# folder, so one person cannot learn who else has a name on this machine.
+ProtectSystem=strict
+ProtectHome=yes
+StateDirectory=alo-names
+StateDirectoryMode=0711
+PrivateTmp=yes
+PrivateNetwork=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictNamespaces=yes
+RestrictSUIDSGID=yes
+MemoryDenyWriteExecute=yes
+SystemCallArchitectures=native
+StandardOutput=journal
+StandardError=journal
+
+# **No install section, deliberately.** Nothing enables this: alo-sessiond
+# starts it, once per sign-in, before the session opens. A unit that asked to
+# be wanted by something would run at a time nobody chose, for a number nobody
+# checked.

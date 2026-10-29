@@ -270,6 +270,14 @@ impl Server {
             // window a person clicks has the keyboard.
             let on_the_screen =
                 Point::<i32, Physical>::from((location.x as i32, location.y as i32));
+            // **A task window's edge before the window**, and before any
+            // client's: it is drawn above the task window and over whatever
+            // application is behind, so a press on it is the edge's.
+            if let Some(at) = self.where_the_pointer_is_in_logical_pixels()
+                && self.a_press_on_a_task_windows_edge(at)
+            {
+                return Ok(false);
+            }
             if let Some(which) = self.tasks().the_one_under(on_the_screen) {
                 self.the_composer.it_gave_the_keyboard_up();
                 self.this_task_took_the_keyboard(which);

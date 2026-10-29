@@ -158,6 +158,12 @@ pub enum Decorations {
     /// The application leaves it to the shell. alo's edge carries the title,
     /// the movement and the controls — and no second band is drawn inside.
     TheShellDraws,
+    /// A task window, which is alo's own and carries its title inside it.
+    ///
+    /// **Close and nothing else**, by the owner's decision of 2026-10-28:
+    /// minimise and maximise come with the right-hand panel, and a task window
+    /// does not move. `crate::a_task_windows_edge` draws and presses it.
+    ATaskWindow,
 }
 
 /// What one control on the edge does.

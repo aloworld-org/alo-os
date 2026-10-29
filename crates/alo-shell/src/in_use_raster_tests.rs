@@ -205,3 +205,52 @@ fn an_output_that_cannot_hold_the_indicator_is_refused() {
         "{refused:?}"
     );
 }
+
+/// **On a two-times output the rows are twice as tall and clear a Dock drawn
+/// twice the size**, for `crate::egress_status_raster`'s reason: they sit on
+/// the same corner.
+#[test]
+fn at_two_hundred_the_rows_double_and_clear_a_doubled_dock() {
+    let lines: Vec<Line> = [used(Used::Camera, 1)].iter().map(Use::line).collect();
+    let at = |size: (i32, i32), per_cent: u16| {
+        let mut labels = WindowControlLabels::new().unwrap();
+        picture(
+            &lines,
+            &words(),
+            &Dock::shipped(),
+            &mut labels,
+            TheRoom {
+                size,
+                panel: None,
+                scale: crate::display_scale::DisplayScale::of_per_cent(per_cent),
+            },
+            light(),
+        )
+        .unwrap()
+    };
+    let (one, two) = (at((1920, 1080), 100), at((3840, 2160), 200));
+    assert_eq!(two.height, 2 * one.height, "the stack's height");
+    let (a, b) = (
+        one.rows.first().unwrap().area,
+        two.rows.first().unwrap().area,
+    );
+    assert_eq!(b.size.h, 2 * a.size.h, "the row's height");
+    assert_eq!(b.loc.y, 2 * a.loc.y, "how far down the row sits");
+    assert_eq!(
+        b.loc.x + b.size.w,
+        2 * (a.loc.x + a.size.w),
+        "the row's far end"
+    );
+    let dock = crate::where_the_dock_is::where_the_dock_is(
+        &Dock::shipped(),
+        (3840, 2160),
+        &[],
+        crate::display_scale::DisplayScale::of_per_cent(200),
+    )
+    .unwrap();
+    assert!(
+        b.loc.y + b.size.h <= dock.band.loc.y,
+        "{b:?} against {:?}",
+        dock.band
+    );
+}

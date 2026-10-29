@@ -107,6 +107,7 @@ fn a_correct_password_opens_a_session_through_a_real_door() {
         Numbered(vec![person]),
         Willing::default(),
         Giving,
+        Giving,
     );
 
     let greeting = Greeting::of(
@@ -140,6 +141,7 @@ fn a_refusal_comes_back_as_the_openers_own_sentence() {
         Door::handed_to(ours),
         Numbered(Vec::new()),
         Willing::default(),
+        Giving,
         Giving,
     );
 
@@ -354,6 +356,14 @@ struct Giving;
 
 impl alo_sessiond::TheirFolder for Giving {
     fn made_for(&self, _person: u32) -> Result<(), alo_sessiond::NotTheirs> {
+        Ok(())
+    }
+}
+
+/// And a name, for the same reason: `opening.rs` holds a name that could not be
+/// given to refusing nobody.
+impl alo_sessiond::TheirName for Giving {
+    fn given_to(&self, _person: u32) -> Result<(), alo_sessiond::NotTheirs> {
         Ok(())
     }
 }

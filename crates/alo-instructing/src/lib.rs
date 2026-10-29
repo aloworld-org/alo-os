@@ -26,8 +26,8 @@
 //! | [`Instructions`] | Which set of how-to-answer a model was shown, and the digest a grade names it by |
 //! | [`shown_to_a_model`] | The whole text: the instructions, the verbs, the request |
 //! | [`shown_to_a_turn`] | The same, under the set a turn shows ([`Instructions::SHOWN_TO_A_TURN`]) |
-//! | [`TheConversationSoFar`] | What was said before a follow-up, held to its bound, how a model is told it, and the line it travels on (ADR 0136) |
-//! | [`TheConversationSoFar`] | What was said before a follow-up, held to its bound, and how a model is told it (ADR 0136) |
+//! | [`TheConversationSoFar`] | What was said before a follow-up, held to its bound, how a model is told it, and the line it travels on (ADR 0137) |
+//! | [`TheConversationSoFar`] | What was said before a follow-up, held to its bound, and how a model is told it (ADR 0137) |
 //!
 //! # What this crate does not do
 //!
@@ -72,7 +72,7 @@ pub use instructions::{
     AND_AN_ANSWER, AND_YOU_MAY_LOOK_FIRST, EVERY_DOOR_AND_AN_ANSWER, HOW_TO_ANSWER, Instructions,
     ONE_EXAMPLE_PER_DOOR, SEVERAL_STEPS,
 };
-pub use shown::{shown_to_a_model, shown_to_a_model_after, shown_to_a_turn};
+pub use shown::{shown_to_a_model, shown_to_a_model_after, shown_to_a_turn, the_products_words};
 pub use the_conversation_on_the_wire::{
     NotTheConversation, THE_EARLIER_CONVERSATION, THE_LONGEST_LINE, THE_MOST_A_QUESTION_IS,
 };

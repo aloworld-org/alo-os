@@ -106,7 +106,7 @@ fn chosen_and_focused_are_shapes_in_two_colours_and_never_deep_teal() {
     // Waiting for a chord doubles the focused row's edge.
     let edges = drawn.solids.len();
     let mut guard = 0;
-    while window.focused(noon()) != Some(SettingsRow::Shortcut(Action::TheAgent)) && guard < 64 {
+    while window.focused(noon()) != Some(SettingsRow::Shortcut(Action::TheAgent)) && guard < 1024 {
         window.pressed(key(SettingsKey::Next), doors(&strings, &door));
         guard += 1;
     }

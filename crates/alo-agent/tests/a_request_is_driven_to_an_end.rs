@@ -561,7 +561,7 @@ fn what_a_step_says_does_not_carry_the_question() {
 
 /// **A follow-up shows the model the conversation so far on every round**, in
 /// the question the turn asks the daemon and nowhere else — and a first request
-/// shows none (ADR 0136).
+/// shows none (ADR 0137).
 #[test]
 fn a_follow_up_carries_the_earlier_conversation_in_every_question_it_asks() {
     use alo_instructing::{AnEarlierTurn, TheConversationSoFar};

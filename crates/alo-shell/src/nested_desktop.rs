@@ -550,6 +550,10 @@ pub(crate) fn frame_pictures(
     let room = crate::egress_status_place::TheRoom {
         size,
         panel: Some(drawn.panel.reserved),
+        // **This display's scale, the one its Dock was drawn at**, so the
+        // corner rows clear a Dock drawn twice the size and are drawn twice
+        // the size themselves.
+        scale: crate::display_scale::DisplayScale::of_per_cent(desktop.display_scale),
     };
     let in_use = crate::in_use_raster::picture(
         desktop.in_use,
@@ -589,6 +593,7 @@ pub(crate) fn frame_pictures(
             labels,
             size,
             record.look,
+            record.clock,
         )?),
         None => None,
     };

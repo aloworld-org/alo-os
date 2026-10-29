@@ -141,7 +141,9 @@ pub(crate) fn picture(
         u32::try_from(height).map_err(|_| RenderError::InUseScene)?,
     )
     .map_err(|_| RenderError::InUseScene)?;
-    let measure = Measure::of(look.scale);
+    // **The text size and the output's scale together**, for the reason
+    // `crate::egress_status_raster` gives: these rows sit on the Dock's corner.
+    let measure = Measure::at(look.scale, room.scale);
     let place = Place::of(dock.layout_on(screen), room, measure.px(8), look.reading);
     let palette = palette(look.scheme, look.contrast);
 

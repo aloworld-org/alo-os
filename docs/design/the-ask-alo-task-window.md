@@ -160,6 +160,10 @@ are Label/Medium; the `alo task · Work` line and the shared-file count are
 Label/Small; message bodies are Body/Large; activity lines are Body/Medium. The
 processing destination is **12 / 22 Regular**, which matches no named style.
 
+**Bold, headings and code inside alo's answers** are drawn in styles from
+this table — the owner's decision of 2026-10-28, in
+[emphasis-in-alos-answers.md](emphasis-in-alos-answers.md).
+
 ## The seven states, from the component set
 
 **`417:28422` is the component set, and one read of it returned every variant.**
@@ -225,6 +229,23 @@ What this leaves undefined: the status line's words and colour while stopping,
 and how a disabled Stop is drawn. **Both have to be decided rather than
 measured, and this file is where that is recorded.** They are not in the export
 and must not be reported as if they were.
+
+## Closing: the edge carries Close, and a running task does not close yet
+
+`docs/features.md` promises that closing a running task asks. **The owner
+decided on 2026-10-28**: the frames' `External window edge` is drawn on task
+windows with **Close** only — minimise and maximise come with the right-hand
+panel — and closing a running task will offer **Stop and close** and
+**Cancel**, with *Keep running* added when the panel holds tasks.
+
+**What is built:** the edge, laid out by the same code as a client window's,
+always revealed, Close 44 × 44 at its trailing end, scaled with the display. A
+task window is placed with the edge's 44 above it inside the view, so Close is
+never off the screen. Close and Alt+F4 are one door: a finished or stopped
+task closes and the keyboard goes back to what was behind; a task waiting for
+an approval stays open until the person answers, and closing never answers
+for them; a task still working stays open, because the two choices need a Stop
+that reaches the agent, which is not built.
 
 ## The approval card, 920 × 152
 

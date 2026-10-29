@@ -1,9 +1,10 @@
-//! The three keepers Settings calls, each exactly as its own crate offers it.
+//! The keepers Settings calls, each exactly as its own crate offers it.
 //!
-//! `alo_appearance::keeping`, `alo_dock::keeping` and `alo_shortcuts::keeping`
-//! have one shape and three sets of types. This names that shape once, so
-//! `crate::settings_kept` walks all three the same road, and holds nothing of
-//! its own: every function body is one call into the crate that owns the file.
+//! `alo_appearance::keeping`, `alo_dock::keeping`, `alo_shortcuts::keeping` and
+//! `alo_formats::keeping` have one shape and four sets of types. This names that
+//! shape once, so `crate::settings_kept` walks all four the same road, and
+//! holds nothing of its own: every function body is one call into the crate
+//! that owns the file.
 
 use std::fmt::Debug;
 use std::path::Path;
@@ -145,6 +146,44 @@ impl Keeper for ShortcutsKept {
 
     fn put_back_as_shipped(at: &Path) -> Result<(), Self::NotWritten> {
         alo_shortcuts::keeping::put_back_as_shipped(at)
+    }
+
+    fn did_not_read(refused: &Self::NotWritten) -> Option<Self::NotRead> {
+        refused.did_not_read()
+    }
+
+    fn not_read_said(why: &Self::NotRead, strings: &Strings) -> String {
+        why.said(strings).into_text()
+    }
+
+    fn not_written_said(why: &Self::NotWritten, strings: &Strings) -> String {
+        why.said(strings).into_text()
+    }
+}
+
+/// How this person's dates and times are written: `alo_formats::keeping`.
+#[derive(Debug)]
+pub(crate) struct FormatsKept;
+
+impl Keeper for FormatsKept {
+    type Drawn = alo_formats::Chosen;
+    type NotRead = alo_formats::FileNotRead;
+    type NotWritten = alo_formats::FileNotWritten;
+
+    fn shipped() -> alo_formats::Chosen {
+        alo_formats::Chosen::default()
+    }
+
+    fn at_sign_in(at: &Path) -> (alo_formats::Chosen, Option<Self::NotRead>) {
+        alo_formats::keeping::at_sign_in(at)
+    }
+
+    fn keep(at: &Path, drawn: &alo_formats::Chosen) -> Result<(), Self::NotWritten> {
+        alo_formats::keeping::keep(at, drawn)
+    }
+
+    fn put_back_as_shipped(at: &Path) -> Result<(), Self::NotWritten> {
+        alo_formats::keeping::put_back_as_shipped(at)
     }
 
     fn did_not_read(refused: &Self::NotWritten) -> Option<Self::NotRead> {

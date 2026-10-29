@@ -30,7 +30,8 @@ use alo_recounting::Recounting;
 use alo_strings::Direction;
 
 use crate::RecordLook;
-use crate::approval_testing::{archiving, hour, keeping_in};
+pub(crate) use crate::approval_testing::hour;
+use crate::approval_testing::{archiving, keeping_in};
 pub(crate) use crate::approval_testing::{noon, words};
 
 /// The ordinary light look, read left to right.
@@ -201,4 +202,53 @@ fn minutes(how_many: u64) -> Duration {
 pub(crate) fn ours_alone(path: &Path) {
     use std::os::unix::fs::PermissionsExt;
     std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o600)).unwrap();
+}
+
+/// How the fixture's person writes a time: Great Britain's way, in universal
+/// time, so nothing here depends on where the test runs.
+pub(crate) fn written_as_in(region: &str) -> crate::TheirFormats {
+    let mut chosen = alo_formats::Chosen::default();
+    chosen.written_as_in(Some(region)).unwrap();
+    crate::TheirFormats::of(chosen, Some("en")).in_zone(jiff::tz::TimeZone::UTC)
+}
+
+/// The clock every drawing test reads the record at: Great Britain's way, an
+/// hour after the afternoon began — so every entry in it is *today*.
+pub(crate) fn a_clock() -> crate::RecordClock<'static> {
+    static BRITISH: std::sync::OnceLock<crate::TheirFormats> = std::sync::OnceLock::new();
+    crate::RecordClock {
+        formats: BRITISH.get_or_init(|| written_as_in("GB")),
+        now: noon() + hour(),
+    }
+}
+
+/// Midnight at the end of the afternoon's day, in universal time:
+/// 2025-10-10 00:00.
+pub(crate) fn midnight() -> std::time::SystemTime {
+    std::time::SystemTime::UNIX_EPOCH + Duration::from_secs(1_760_054_400)
+}
+
+/// A record of four verbs turned away an hour apart, from 22:30 to 01:30 —
+/// two before midnight and two after.
+pub(crate) fn a_record_across_midnight() -> Kept {
+    let kept = an_empty_record();
+    let mut writing = Writing::opening(&kept.at).unwrap();
+    for at in [
+        midnight() - minutes(90),
+        midnight() - minutes(30),
+        midnight() + minutes(30),
+        midnight() + minutes(90),
+    ] {
+        writing
+            .keep(&Entry::turned_away(
+                "tidy_everything",
+                "there is no verb called tidy_everything",
+                &Grantee::named("@files"),
+                at,
+            ))
+            .unwrap();
+    }
+    drop(writing);
+    ours_alone(&kept.at);
+    kept
 }

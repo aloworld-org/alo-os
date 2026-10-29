@@ -104,11 +104,20 @@ pub mod a_provider_is_added_in_settings;
 mod a_task_window_hands_on_a_chord;
 /// Scrolling a task window's conversation.
 mod a_task_window_scrolls;
-/// alo's words with the Markdown a model writes taken out.
-mod alos_words_without_markup;
+/// A task window's edge, carrying Close.
+mod a_task_windows_edge;
+/// alo's words read for the emphasis a model marks in Markdown.
+///
+/// **Public because `task_text::WhatWasSaid` carries its marks**, as
+/// `task_text` is public for `task_raster`'s reason.
+pub mod alos_marked_words;
+/// Closing a task window, and which ones may close.
+pub mod closing_a_task_window;
 pub use a_provider_is_added_in_settings::WhyNotSaved;
+mod a_reader_presses;
 /// Typing into a task window's reply box.
 mod a_screen_arrives_or_leaves;
+mod access_action;
 mod access_bus;
 mod access_contrast;
 mod access_magnifier;
@@ -188,11 +197,16 @@ mod direct_sign_in;
 mod direct_target;
 mod display_lifecycle;
 mod display_resources;
+/// One display's scale, and the one road a logical measure takes to its pixels.
+mod display_scale;
 mod division_raster;
 mod dock_raster;
 /// The Dock's own surface: a rounded panel with a hairline and a shadow,
 /// rasterised with alpha because neither is a rectangle.
 mod dock_surface;
+/// How a rounded panel is lifted off what is behind it — its corner and its
+/// shadow — at the display scale its geometry is laid out in.
+mod how_a_panel_is_raised;
 mod the_keyboard_on_the_docks_surfaces;
 pub mod what_is_on_the_clipboard;
 mod where_the_docks_surface_is;
@@ -292,6 +306,7 @@ mod popups;
 mod presentation;
 mod putting_a_window_aside;
 mod readback;
+mod record_clock;
 mod record_keys;
 mod record_lines;
 mod record_paint;
@@ -338,6 +353,7 @@ mod session_input;
 mod settings_answering;
 mod settings_chord;
 mod settings_command;
+mod settings_formats;
 mod settings_granted;
 mod settings_keepers;
 mod settings_kept;
@@ -399,7 +415,10 @@ pub mod the_composer_a_person_types_in;
 mod the_desk_is_reconciled;
 pub mod the_docks_words;
 mod the_edge_takes_the_keyboard;
+mod the_formats_are_told;
 mod the_keyboard_a_person_chose;
+mod the_language_a_person_chose;
+pub mod the_language_set_up_in;
 pub mod the_languages_offered;
 pub mod the_machines_keyboard;
 pub mod the_markets_words;
@@ -427,11 +446,18 @@ mod the_terminals_cells_are_drawn;
 /// hairline round it, in the design's colours, so the terminal reads as a window
 /// rather than as text on the desktop.
 mod the_terminals_frame;
+/// The strip across the top of alo's own terminal: the folder the shell is in,
+/// where the shell runs, and who is signed in.
+mod the_terminals_strip;
 mod the_window_edge_is_pointed_at;
 mod the_window_edge_reveals;
 mod their_displays;
+/// How one person writes a moment: what they chose, the language they read,
+/// and the zone they are in. Here rather than in `alo-formats`, whose header
+/// says why.
+mod their_formats;
 mod top_controls_region;
-/// What a follow-up typed in a task window carries to alo (ADR 0136).
+/// What a follow-up typed in a task window carries to alo (ADR 0137).
 mod what_a_follow_up_carries;
 /// What a person typed, on its way to their agent and back (ADR 0109).
 pub mod what_a_person_asked_goes_to_the_agent;
@@ -463,6 +489,8 @@ mod which_card_the_seat_holds;
 mod which_display_a_window_is_on;
 pub mod which_preview_the_pointer_is_on;
 mod which_surface_claims_a_point;
+/// The name of the person a desktop is for, told once at sign-in (ADR 0135).
+mod whose_desktop_this_is;
 mod window_activation;
 mod window_close;
 mod window_command;
@@ -620,6 +648,7 @@ pub use window_size::WindowSizeError;
 pub use window_switch::{WindowSwitchDirection, WindowSwitchError};
 
 pub use a_frame_per_display::{DrawnPerDisplay, retire_each_display};
+pub use access_action::Pressed;
 pub use access_bus::{NotRead, ReadAloudBus};
 pub use access_contrast::Contrast;
 pub use access_magnifier::{NotMagnified, magnified, magnifying};
@@ -688,6 +717,7 @@ pub use output_metadata::OutputMetadata;
 pub use popups::Popup;
 pub use presentation::{FrameTarget, RenderError};
 pub use readback::{ReadbackError, RowOrder, ScanoutPixels, readback_xrgb};
+pub use record_clock::RecordClock;
 pub use record_keys::RecordKey;
 pub use record_room::RecordLook;
 pub use record_window::{RecordOpened, RecordShows, RecordWindow};
@@ -704,6 +734,7 @@ pub use scene_replacement::SceneReplacement;
 pub use scene_scanout::ActiveScene;
 pub use screens::{ScreenPlace, Screens, TheRoom};
 pub use the_markets_words::TheMarketsWords;
+pub use their_formats::{TheDay, TheirFormats};
 
 // **The types a desktop needs to answer `their_displays`, re-exported so that
 // answering costs it no new crate edge** — `more-than-one-display-plan.md`

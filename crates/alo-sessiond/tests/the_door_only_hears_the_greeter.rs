@@ -91,7 +91,13 @@ fn the_greeter_knocking_over_a_real_socket_opens_a_session() {
     let Ok(listening) = Listening::at(&at, ours) else {
         panic!("the door would not open at {}", at.display());
     };
-    let mut opening = Opening::at(door, Numbered(vec![THE_PERSON]), Willing::default(), Giving);
+    let mut opening = Opening::at(
+        door,
+        Numbered(vec![THE_PERSON]),
+        Willing::default(),
+        Giving,
+        Giving,
+    );
 
     let knocking = std::thread::spawn({
         let at = at.clone();
@@ -122,7 +128,13 @@ fn a_caller_the_kernel_puts_in_another_group_is_refused() {
     // Accounts that hold this person and a logind that would open anything: if
     // either were reached, the answer below would be a session rather than a
     // refusal, so the assertion is also that neither was.
-    let mut opening = Opening::at(door, Numbered(vec![THE_PERSON]), Willing::default(), Giving);
+    let mut opening = Opening::at(
+        door,
+        Numbered(vec![THE_PERSON]),
+        Willing::default(),
+        Giving,
+        Giving,
+    );
 
     let knocking = std::thread::spawn({
         let at = at.clone();
@@ -153,7 +165,13 @@ fn a_line_that_is_not_a_knock_is_answered_and_told_nothing() {
     let Ok(listening) = Listening::at(&at, ours) else {
         panic!("the door would not open at {}", at.display());
     };
-    let mut opening = Opening::at(door, Numbered(vec![THE_PERSON]), Willing::default(), Giving);
+    let mut opening = Opening::at(
+        door,
+        Numbered(vec![THE_PERSON]),
+        Willing::default(),
+        Giving,
+        Giving,
+    );
 
     let knocking = std::thread::spawn({
         let at = at.clone();
@@ -191,7 +209,13 @@ fn a_real_door_refuses_a_stranger_and_a_second_sign_in() {
     let Ok(listening) = Listening::at(&at, ours) else {
         panic!("the door would not open at {}", at.display());
     };
-    let mut opening = Opening::at(door, Numbered(vec![THE_PERSON]), Willing::default(), Giving);
+    let mut opening = Opening::at(
+        door,
+        Numbered(vec![THE_PERSON]),
+        Willing::default(),
+        Giving,
+        Giving,
+    );
 
     for (knock, expected) in [
         (
@@ -228,6 +252,14 @@ struct Giving;
 
 impl alo_sessiond::TheirFolder for Giving {
     fn made_for(&self, _person: u32) -> Result<(), alo_sessiond::NotTheirs> {
+        Ok(())
+    }
+}
+
+/// And a name, for the same reason: `opening.rs` holds a name that could not be
+/// given to refusing nobody.
+impl alo_sessiond::TheirName for Giving {
+    fn given_to(&self, _person: u32) -> Result<(), alo_sessiond::NotTheirs> {
         Ok(())
     }
 }

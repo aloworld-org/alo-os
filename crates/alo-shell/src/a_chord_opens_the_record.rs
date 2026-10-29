@@ -61,6 +61,12 @@ impl crate::Server {
                 reading: look.reading(),
                 contrast: look.contrast(),
             },
+            // **The person's formats, and now.** `crate::record_clock` says
+            // why the window decides neither.
+            clock: crate::RecordClock {
+                formats: self.the_formats(),
+                now: std::time::SystemTime::now(),
+            },
         })
     }
 

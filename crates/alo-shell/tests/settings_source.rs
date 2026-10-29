@@ -319,6 +319,7 @@ fn the_settings_files() -> Vec<(String, Vec<(usize, String)>)> {
             "settings_answering.rs",
             "settings_chord.rs",
             "settings_command.rs",
+            "settings_formats.rs",
             "settings_granted.rs",
             "settings_keepers.rs",
             "settings_kept.rs",

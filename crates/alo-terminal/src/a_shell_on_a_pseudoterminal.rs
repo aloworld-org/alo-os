@@ -363,6 +363,22 @@ impl AShellOnAPseudoterminal {
         crate::what_the_kernel_says::what_this_process_is_called(self.the_shell_itself())
     }
 
+    /// The folder the shell on this terminal is in now, as the kernel records
+    /// it.
+    ///
+    /// **The shell's folder and not the command in front's**, because the
+    /// shell is where `cd` acts: a program a person started may wander off to
+    /// other folders, and the strip says where the person will be when it
+    /// finishes.
+    ///
+    /// [`None`] where the kernel will not say, which is not an error: a shell
+    /// that has just exited is in no folder.
+    #[cfg(target_os = "linux")]
+    #[must_use]
+    pub fn where_the_shell_is(&self) -> Option<std::path::PathBuf> {
+        crate::what_the_kernel_says::where_this_process_is(self.the_shell_itself())
+    }
+
     /// The process the pseudoterminal has in front, if it will say.
     ///
     /// **This, and not the shell, is what *why is it waiting* is about.** A

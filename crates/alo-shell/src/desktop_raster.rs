@@ -284,6 +284,10 @@ pub(crate) fn picture(
         the_keyboard_is_on_the_bar,
         what_each_application_draws,
         fonts,
+        // **This display's own scale**, so a dense screen draws the Dock twice
+        // as large rather than half the size, and two displays side by side each
+        // get a Dock laid out for their own.
+        crate::display_scale::DisplayScale::of_per_cent(display_scale),
     )?;
 
     // **Laid out first, shown or not.** The band has to exist before anything

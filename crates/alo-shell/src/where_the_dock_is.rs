@@ -11,6 +11,20 @@
 //! This file is the other half: the band on this display's edge, and the slots
 //! inside it, in the display's own pixels.
 //!
+//! # Where the logical measures meet the display
+//!
+//! `alo_dock` lays the bar out in logical measures — a slot is 48, the band 76
+//! — and this is the boundary where those meet a display. Every one of them
+//! goes through that display's `crate::display_scale::DisplayScale`, so a
+//! two-times screen draws the same Dock twice as large in pixels and sharper,
+//! rather than half the size. That was the owner's decision of 2026-10-28; until
+//! then the band, the slots and the gaps reached every display as raw pixels.
+//!
+//! **`places` stays logical**, because it is `alo_dock`'s answer and a press is
+//! asked of it: [`TheDocksPlaces::how_far_along`] turns a pixel back into a
+//! logical distance, and the raster turns each slot forward through the same
+//! scale. The band is in pixels, because it is a rectangle on a screen.
+//!
 //! # Why it is here and not inside the raster
 //!
 //! `crate::dock_raster` computed all of this and kept none of it, so the only
@@ -45,20 +59,30 @@ pub(crate) const LARGEST_SIDE: i32 = 16_384;
 pub(crate) struct TheDocksPlaces {
     /// `alo-dock`'s layout for this display.
     pub(crate) layout: Layout,
+    /// The display's scale, which every logical figure below went through.
+    ///
+    /// Kept with the answer so a press reads the slots at the scale they were
+    /// drawn at, rather than asking the display a second time.
+    pub(crate) scale: crate::display_scale::DisplayScale,
     /// The whole band, on the person's chosen edge.
     pub(crate) band: Rectangle<i32, Physical>,
-    /// How thick the band is, already clamped to the display.
+    /// How thick the band is in pixels, already clamped to the display.
     pub(crate) thickness: i32,
     /// Every slot along the bar: the applications, then the overflow control if
-    /// there is one.
+    /// there is one — in **logical** distances along it, as `alo_dock` gives
+    /// them. [`Self::scale`] turns one into pixels.
     pub(crate) places: Places,
     /// What there was no room for, in order, behind that control.
     pub(crate) over: Vec<OnTheDock>,
 }
 
 impl TheDocksPlaces {
-    /// How far along the bar this point is, or [`None`] if it is not on the bar
-    /// at all.
+    /// How far along the bar this point is, in logical units, or [`None`] if it
+    /// is not on the bar at all.
+    ///
+    /// **Logical, because `places` is.** The point is in the display's pixels and
+    /// the slots are in `alo_dock`'s measures, so the distance is divided by the
+    /// display's scale here, once, before any slot is asked about it.
     ///
     /// **Along, not `x`.** `alo_dock::Places` lays the slots out as distances
     /// from the bar's own start without knowing which edge the bar is on, so
@@ -88,11 +112,12 @@ impl TheDocksPlaces {
         } else {
             at.y - self.band.loc.y
         };
-        u32::try_from(along).ok()
+        (along >= 0).then(|| self.scale.logical(along))
     }
 }
 
-/// Where `dock` sits on a display of `size`, holding `on_the_dock`.
+/// Where `dock` sits on a display of `size` drawn at `scale`, holding
+/// `on_the_dock`.
 ///
 /// # Errors
 /// [`RenderError::DesktopScene`] for a display `alo-dock` refuses to lay a dock
@@ -101,6 +126,7 @@ pub(crate) fn where_the_dock_is(
     dock: &Dock,
     size: (i32, i32),
     on_the_dock: &[OnTheDock],
+    scale: crate::display_scale::DisplayScale,
 ) -> Result<TheDocksPlaces, RenderError> {
     let (width, height) = size;
     if width > LARGEST_SIDE || height > LARGEST_SIDE {
@@ -112,12 +138,10 @@ pub(crate) fn where_the_dock_is(
     )
     .map_err(|_| RenderError::DesktopScene)?;
     let layout = dock.layout_on(screen);
-    let thickness = i32::try_from(layout.thickness().as_pixels())
-        .map_err(|_| RenderError::DesktopScene)?
-        .clamp(1, width.min(height));
+    let thickness = scale.room(layout.thickness()).clamp(1, width.min(height));
 
-    let margin = i32::try_from(alo_dock::measures::MARGIN).unwrap_or(i32::MAX);
-    let floating = i32::try_from(alo_dock::measures::FLOATING_ABOVE_THE_EDGE).unwrap_or(i32::MAX);
+    let margin = scale.px(alo_dock::measures::MARGIN);
+    let floating = scale.px(alo_dock::measures::FLOATING_ABOVE_THE_EDGE);
     // **The edge the bar runs along, not always the width.** A dock down a side
     // is as long as the screen is tall, and measuring it against the width would
     // make a portrait screen's side dock short for a reason that has nothing to
@@ -138,30 +162,28 @@ pub(crate) fn where_the_dock_is(
     // into and the one or two controls after it, measured on the design file's
     // own Docks. So what is left for applications is the edge less that group,
     // and `how_many_fit` is asked about the remainder.
-    let commands = i32::try_from(
-        Places::of(&alo_dock::fit(Vec::new(), 0), layout.edge())
-            .how_far_across()
-            .as_pixels(),
-    )
-    .map_err(|_| RenderError::DesktopScene)?;
+    let commands =
+        scale.room(Places::of(&alo_dock::fit(Vec::new(), 0), layout.edge()).how_far_across());
     // `commands` carries both of the bar's own margins and the gap *before* the
     // composer is not in it, so both come back: `how_many_fit` adds the margins
     // itself, and the gap between the last application and the composer is the
     // one piece neither of them accounts for.
-    let gap = i32::try_from(alo_dock::measures::GAP).unwrap_or(8);
+    let gap = scale.px(alo_dock::measures::GAP);
     let for_applications = (widest - commands + 2 * margin - gap).max(1);
-    let at_most = Room::pixels(u32::try_from(for_applications).unwrap_or(u32::MAX)).how_many_fit();
+    // **Back to logical before `alo_dock` is asked**, because it counts in its
+    // own measures: the room is in pixels and a slot is 48 logical.
+    let at_most = Room::pixels(scale.logical(for_applications)).how_many_fit();
     let fitted = alo_dock::fit(on_the_dock.to_vec(), at_most);
     let places = Places::of(&fitted, layout.edge());
-    let wanted = i32::try_from(places.how_far_across().as_pixels())
-        .map_err(|_| RenderError::DesktopScene)?;
-    // Clamped as a last resort that cannot fire: `at_most` came from `widest`,
-    // so `wanted` cannot exceed it except on a display too small for one slot,
-    // where there is nothing to choose.
+    let wanted = scale.room(places.how_far_across());
+    // Clamped as a last resort: `at_most` came from `widest`, so `wanted` cannot
+    // exceed it except on a display too small for one slot, where there is
+    // nothing to choose — or by a pixel of rounding at a fractional scale.
     let bar = wanted.clamp(1, widest);
 
     Ok(TheDocksPlaces {
         layout,
+        scale,
         band: the_band_on(layout.edge(), size, bar, thickness, floating),
         thickness,
         places,

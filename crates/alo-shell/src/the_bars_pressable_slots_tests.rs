@@ -31,8 +31,13 @@ fn a_bar(how_many: usize, edge: alo_dock::Edge) -> crate::where_the_dock_is::The
     let on_the_dock = alo_dock::Holding::nothing().showing(&windows);
     let mut dock = Dock::shipped();
     dock.set_edge(edge);
-    crate::where_the_dock_is::where_the_dock_is(&dock, (1920, 1080), &on_the_dock)
-        .unwrap_or_else(|why| panic!("a {edge:?} Dock would not lay out: {why:?}"))
+    crate::where_the_dock_is::where_the_dock_is(
+        &dock,
+        (1920, 1080),
+        &on_the_dock,
+        crate::display_scale::DisplayScale::ONE,
+    )
+    .unwrap_or_else(|why| panic!("a {edge:?} Dock would not lay out: {why:?}"))
 }
 
 /// **The divider is not a slot anybody can land on**, and this is the test that

@@ -249,7 +249,14 @@ pub fn what_this_machine_can_say() -> Result<Strings, WouldNotStand> {
     // **What a task window says about a reply**, declared for the note above.
     crate::the_reply_boxs_words::declare_the_reply_boxs_words(&mut vocabulary)
         .map_err(|why| WouldNotStand::Words(why.to_string()))?;
-    Ok(Strings::of(vocabulary))
+    // **Every translation this machine has, put on the words**, so a language
+    // chosen on the first-start sheet — and the one a person's desktop is
+    // given from it — is spoken wherever a translation exists. Until
+    // 2026-10-28 this built the words with none, so `Strings::prefers` had
+    // nothing to choose between and a person who picked German read English.
+    // A translation that does not load is a machine that speaks English, never
+    // one that does not start: `alo_saying::Loaded` has no error.
+    Ok(alo_saying::Loaded::at(vocabulary, alo_saying::the_translations()).into_strings())
 }
 
 #[cfg(test)]

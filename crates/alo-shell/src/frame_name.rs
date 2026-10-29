@@ -141,7 +141,19 @@ impl crate::Server {
             .mapped_surfaces()
             .map(|frame| self.the_name_of(frame))
             .collect();
+        // Each task window on the screen and its title, which is the
+        // person's own request (`alo_tasks::ATask::in_the_panel`).
+        let tasks: Vec<(crate::the_tasks_a_person_opened::WhichTask, String)> = self
+            .tasks()
+            .each_open_window()
+            .into_iter()
+            .filter_map(|(which, _)| {
+                let title = self.tasks().the(which)?.in_the_panel().request;
+                Some((which, title))
+            })
+            .collect();
         crate::ReadAloudTree::of(strings, showing, turned_on)
             .with_the_frames_open(strings, &frames, turned_on)
+            .with_the_task_windows_open(strings, &tasks, turned_on)
     }
 }

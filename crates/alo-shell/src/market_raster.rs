@@ -310,6 +310,7 @@ pub(crate) fn picture(
         surface,
         edge,
         (at.loc.x + at.size.w, at.loc.y + at.size.h),
+        crate::how_a_panel_is_raised::HowItIsRaised::THE_DOCKS.unscaled(),
         APanelsShapes {
             circles: &circles,
             circle: cool,

@@ -28,7 +28,7 @@ fn painted_at(call: &str) -> usize {
 /// the question, which no window covers.
 #[test]
 fn the_terminal_is_painted_where_a_window_is_under_every_surface_of_alos() {
-    let terminal = painted_at("terminal.paint(&mut frame)");
+    let terminal = painted_at("terminal.paint(&mut frame, terminal_washed.as_ref())");
 
     for (surface, call) in [
         (

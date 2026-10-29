@@ -25,8 +25,11 @@
 use alo_access::{Control, Surface, TurnedOn};
 use alo_strings::{Filling, Strings};
 
+use crate::access_action::Pressed;
 use crate::access_roles::{self, APPLICATION, FILLER};
 use crate::frame_name::FrameName;
+use crate::the_tasks_a_person_opened::WhichTask;
+use crate::window_edge::Decorations;
 use crate::window_edge_reading::what_a_reader_is_told;
 use crate::window_edge_who_draws::who_draws_a_frame;
 
@@ -50,6 +53,8 @@ pub(crate) struct Node {
     pub(crate) parent: usize,
     /// What hangs under it, in reading order.
     pub(crate) children: Vec<usize>,
+    /// What pressing it asks the shell to do, where a reader can press it.
+    pub(crate) press: Option<Pressed>,
 }
 
 /// **The whole of what a screen reader is told about this machine.**
@@ -91,6 +96,7 @@ impl ReadAloudTree {
                 announced: false,
                 parent: 0,
                 children: Vec::new(),
+                press: None,
             }],
             surfaces: Vec::new(),
         };
@@ -116,6 +122,7 @@ impl ReadAloudTree {
                             announced: false,
                             parent: 0,
                             children: Vec::new(),
+                            press: None,
                         },
                     ),
                     drawn.as_slice(),
@@ -219,6 +226,7 @@ impl ReadAloudTree {
                     announced: false,
                     parent: list,
                     children: Vec::new(),
+                    press: None,
                 },
             );
             // **What can be done to this window, under the window itself.**
@@ -235,6 +243,87 @@ impl ReadAloudTree {
             }
         }
         self
+    }
+
+    /// The same tree, with the task windows now open hanging under *the
+    /// windows open* too, after the frames.
+    ///
+    /// **The owner's decision of 2026-10-28**: the Close on a task window's
+    /// edge is in this tree, so somebody using a screen reader hears it on
+    /// every task window and can press it. Until now a task window was not in
+    /// the tree at all, so a reader was told nothing about the one window
+    /// alo itself draws for a person's request.
+    ///
+    /// # Named as the window is titled
+    ///
+    /// `tasks` is each open task window and its title, which is the person's
+    /// own request — the words the window draws at its top. Like a frame's
+    /// title it is nobody's to translate, so it is used as it is; a request
+    /// with no words falls back to `alo_tasks::words::A_TASK`, the word the
+    /// window draws under its title.
+    ///
+    /// # Its controls are asked the same question as a frame's
+    ///
+    /// `what_a_reader_is_told(Decorations::ATaskWindow)`, which is Close and
+    /// nothing else — the same answer `crate::a_task_windows_edge` draws from,
+    /// so what is heard and what is drawn cannot disagree. Each control that
+    /// closes a window carries [`Pressed::CloseTheTask`], so a reader's press
+    /// reaches the window it is under and no other.
+    ///
+    /// # Order
+    ///
+    /// Oldest first, which is the order they are drawn in; after the frames,
+    /// because task windows are drawn above every application window.
+    #[must_use]
+    pub fn with_the_task_windows_open(
+        mut self,
+        strings: &Strings,
+        tasks: &[(WhichTask, String)],
+        turned_on: &TurnedOn,
+    ) -> Self {
+        let Some(list) = self.the_windows_open() else {
+            return self;
+        };
+        for (which, title) in tasks {
+            let name = if title.trim().is_empty() {
+                said(strings, alo_tasks::words::A_TASK)
+            } else {
+                title.clone()
+            };
+            let window = self.push(
+                list,
+                Node {
+                    path: String::new(),
+                    role: access_roles::number_of(alo_access::Role::ListItem),
+                    name,
+                    states: access_roles::words_of(alo_access::State::CanBeUsed, None),
+                    announced: false,
+                    parent: list,
+                    children: Vec::new(),
+                    press: None,
+                },
+            );
+            for control in what_a_reader_is_told(Decorations::ATaskWindow) {
+                let press = (control.does == Some(alo_shortcuts::Action::CloseWindow))
+                    .then_some(Pressed::CloseTheTask(*which));
+                let node = Node {
+                    press,
+                    ..of_control(strings, control, turned_on)
+                };
+                self.push(window, node);
+            }
+        }
+        self
+    }
+
+    /// Everything a reader can press on this tree, in reading order.
+    ///
+    /// What `crate::access_serving` compares besides the names, so a task
+    /// window that closed and another of the same title that opened are not
+    /// mistaken for one window whose Close still reaches the first.
+    #[must_use]
+    pub fn what_can_be_pressed(&self) -> Vec<Pressed> {
+        self.nodes.iter().filter_map(|node| node.press).collect()
     }
 
     /// The windows a reader is told are open, in the order it hears them.
@@ -305,6 +394,7 @@ fn of_control(strings: &Strings, control: Control, turned_on: &TurnedOn) -> Node
         announced: access_roles::is_announced(control.state),
         parent: 0,
         children: Vec::new(),
+        press: None,
     }
 }
 

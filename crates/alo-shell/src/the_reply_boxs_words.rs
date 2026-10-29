@@ -1,6 +1,6 @@
 //! What a task window says about a reply a person sent from its reply box.
 //!
-//! **A reply reaches alo, with the conversation so far** (ADR 0136). These are
+//! **A reply reaches alo, with the conversation so far** (ADR 0137). These are
 //! the three things the window says when it does not go at once: it is held
 //! until alo has answered, or until the person has answered a change above, or
 //! it cannot go at all because the conversation has grown too long for one

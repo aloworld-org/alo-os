@@ -58,11 +58,11 @@ pub struct ATask {
     /// it where they were reading.
     scroll: TheScroll,
     /// What the person answered to each change this task proposed, so a
-    /// follow-up can say what became of it (ADR 0136).
+    /// follow-up can say what became of it (ADR 0137).
     answers: TheAnswersGiven,
     /// A reply the person sent while alo was still working, or while a change
     /// waited for their answer: **held, not refused**, and sent with the
-    /// conversation once alo has answered (ADR 0136). Kept out of the
+    /// conversation once alo has answered (ADR 0137). Kept out of the
     /// conversation until it is sent, so what alo is told came before it really
     /// did come before it.
     held: Option<String>,
@@ -322,6 +322,23 @@ impl ATask {
                 }
             }
         }
+    }
+
+    /// Whether its window may close without asking the person anything.
+    ///
+    /// **Only a task whose work is over**: finished on its own, or stopped and
+    /// confirmed stopped. A task alo is still working on, one asked to stop and
+    /// not yet stopped, and one waiting for the person — a change to approve,
+    /// or a question — are all still running. `docs/features.md` promises that
+    /// closing one of those *asks*, with three named choices, and never kills
+    /// it silently or leaves it running with nowhere to find it.
+    ///
+    /// **Read from [`Self::what_is_happening`]** rather than worked out again,
+    /// so the status a person reads and what closing does cannot disagree.
+    #[must_use]
+    pub fn may_close_without_asking(&self) -> bool {
+        let happening = self.what_is_happening();
+        happening == crate::words::COMPLETE || happening == crate::words::STOPPED
     }
 
     /// What the right-hand panel shows while this is minimised.

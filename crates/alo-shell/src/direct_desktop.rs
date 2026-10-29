@@ -173,6 +173,22 @@ pub trait TheDesktop {
         alo_shortcuts::Shortcuts::shipped()
     }
 
+    /// **The name of the person this desktop is for**, as they typed it when
+    /// they made their account — asked for once, as the session starts.
+    ///
+    /// The shell asks and does not read, for [`Self::the_shortcuts`]'s reason:
+    /// the name is a file `alo-giving-a-name` writes at every sign-in
+    /// ([ADR 0135](../../../docs/decisions/0135-a-persons-name-reaches-their-desktop-through-a-file-only-they-can-read.md)),
+    /// and reading a file is the desktop binary's, not this crate's.
+    ///
+    /// **[`None`] by default, and that is a real answer**: an account made
+    /// before the name was given, or a machine where the helper could not run.
+    /// The terminal's strip then says `Local` alone. It never says the login's
+    /// own name, which is `alo` on every machine and is nobody's name.
+    fn whose_desktop_this_is(&mut self) -> Option<String> {
+        None
+    }
+
     /// **What this person has settled about their displays** — their
     /// appearance, their night light and the arrangements they have kept.
     ///
@@ -342,6 +358,26 @@ pub trait TheDesktop {
     ) -> Option<Result<alo_recounting::Recounting, alo_recounting::NotRecounted>> {
         None
     }
+
+    /// **How this person writes a time and a day**, asked for once as the
+    /// session starts: what they chose in `formats.toml` and the language they
+    /// read.
+    ///
+    /// **The shell asks and does not read**, for the settings places' reason.
+    /// `None` leaves the seat on `crate::TheirFormats`' rule for a
+    /// person who has chosen nothing — and the record is still written that way
+    /// rather than one region's way for everybody.
+    fn their_formats(&mut self) -> Option<crate::TheirFormats> {
+        None
+    }
+
+    /// **They chose another way of writing a time**, in Settings, and the
+    /// status area's clock is this desktop's to write.
+    ///
+    /// Called on the frame after the change and never on a frame where
+    /// nothing changed. Nothing by default: a desktop that writes no clock has
+    /// nothing to rewrite.
+    fn the_formats_are_now(&mut self, _formats: &crate::TheirFormats) {}
 
     /// The canvas layout this person left, asked for once as the session
     /// starts.
@@ -550,6 +586,12 @@ impl crate::DirectSession {
             // breath.
             if let Some(recounting) = desktop.the_recounting() {
                 server.the_record_is_kept(recounting);
+            }
+            // And how this person writes a time, for the same reason and in the
+            // same breath. `crate::the_formats_are_told` says why there is one
+            // copy and where it goes.
+            if let Some(formats) = desktop.their_formats() {
+                server.the_formats_are(formats);
             }
             match setup {
                 Ok((output, painter, input, others)) => crate::direct_loop::run_with_input(
@@ -1054,6 +1096,12 @@ impl LoopInput for Desk<'_> {
         // Taking them instead would lose them on any `?` below, and they own
         // live scanout.
         let others = &mut self.others;
+        // **A region chosen in Settings reaches the clock on the next frame**,
+        // before the readings are taken, so the first clock drawn after the
+        // choice is already written the new way.
+        if let Some(formats) = server.the_formats_to_tell() {
+            self.desktop.the_formats_are_now(&formats);
+        }
         // Asked before the frame is made, never after: a frame drawn from
         // readings taken after it would show a person the moment before.
         self.desktop.refreshed();
@@ -1185,7 +1233,7 @@ impl LoopInput for Desk<'_> {
             }
         }
         // **And a follow-up typed in a task window goes to the agent with the
-        // conversation so far** (ADR 0136), into the window it was typed in.
+        // conversation so far** (ADR 0137), into the window it was typed in.
         // Taken for the same reason as the requests above: one Enter, one ask.
         for follow_up in server.take_the_follow_ups() {
             self.asking.ask_following(
@@ -1316,7 +1364,7 @@ impl LoopInput for Desk<'_> {
         // The raster borrows these strings.
         let the_tasks_words = crate::the_tasks_words::TheTasksWords::said(
             server.tasks().each(),
-            server.tasks().where_each_went(),
+            &server.tasks().where_each_went(),
             self.strings,
             server.the_change_waiting.selected(),
         );
@@ -1589,12 +1637,20 @@ impl LoopInput for Desk<'_> {
         // now.** Built after the pictures because both want the font system
         // mutably and neither outlives this frame. See
         // `crate::every_windows_edge` for why it is per display.
-        let edges = crate::every_windows_edge::every_windows_edge(
+        let mut edges = crate::every_windows_edge::every_windows_edge(
             server,
             self.labels,
             this_display.1,
             u32::from(this_display.0),
         );
+        // **And each task window's, carrying Close.** On this display only,
+        // because the task windows are drawn on this display only.
+        edges.extend(crate::a_task_windows_edge::every_task_windows_edge(
+            server,
+            &mut self.labels.fonts,
+            this_display.1,
+            u32::from(this_display.0),
+        ));
         // **Where the fixed controls ended up, handed to the drag that has to
         // avoid them.** The draw is the only place that knows: these are laid
         // out here and nowhere else. Without this line
@@ -1798,9 +1854,11 @@ impl LoopInput for Desk<'_> {
                 what_is_leaving: pictures.status.band,
                 top_controls: pictures.desktop.top_controls,
                 // **No scale is handed over, because these rectangles are in
-                // the room they were laid out from and the handle floor is in
-                // the same space.** Measured, not assumed: see
-                // `desktop_raster_tests::the_dock_band_and_the_panel_column_do_not_move_with_the_displays_scale`.
+                // the pixels this display draws, and windows are drawn in the
+                // same pixels.** The Dock's band went through the display's
+                // scale to get there since 2026-10-28 and the panel's column
+                // has not yet: see
+                // `desktop_raster_tests::the_dock_band_moves_with_the_displays_scale_and_the_panel_column_does_not_yet`.
                 // The division below is the one surface that *does* convert,
                 // and it reads the scale itself.
             },
@@ -2008,6 +2066,12 @@ impl LoopInput for Desk<'_> {
         // reached is a person without a reader; a compositor that stopped
         // compositing over it would be a machine nobody can use at all.
         if let Some(reader) = self.reader.as_mut() {
+            // **A reader's presses first, then the tree**, so a task window a
+            // reader closed is gone from what the reader is told this frame.
+            // Each goes through the same door a click on it does.
+            for pressed in reader.pressed() {
+                let _ = server.a_reader_pressed(pressed);
+            }
             let _ = reader.following(
                 server,
                 self.strings,
@@ -2176,6 +2240,14 @@ pub(crate) fn drawn_terminal(
             a_test_result: terminal.a_test_result(),
             a_benchmark: terminal.a_benchmark(),
             a_diff: terminal.a_diff(),
+            // **The person's own name, as the desktop was told it at sign-in**
+            // (ADR 0135), or none — never this process's login, which is `alo`
+            // on every machine.
+            the_strip: crate::the_terminals_strip::WhatTheStripSays {
+                the_folder: terminal.the_folder(),
+                runs: alo_terminal::WhereTheShellRuns::OnThisMachine,
+                who: server.whose_desktop_this_is(),
+            },
         },
         size,
         scale,

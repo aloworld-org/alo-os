@@ -223,6 +223,7 @@ fn with_night_light_off_the_dock_is_drawn_exactly_as_it_was_decided() {
             None,
             &alo_dock::artwork::NOTHING,
             &mut fonts(),
+            crate::display_scale::DisplayScale::ONE,
         )
         .unwrap();
         assert_eq!(picture.dock, undimmed, "{:?}", picture.name);

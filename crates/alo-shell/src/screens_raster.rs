@@ -143,6 +143,10 @@ pub(crate) fn picture(
         // thumbnail for them to be hidden from.
         &alo_dock::artwork::NOTHING,
         fonts,
+        // **One, because this room is already logical.** `ScreenPlace::room` is
+        // a display's size as it is laid out, after its scale — so the preview
+        // draws each screen's Dock in the same units as the screen it sits on.
+        crate::display_scale::one_to_one(),
     )?;
     let warming = place.warming();
     for solid in &mut drawn.solids {

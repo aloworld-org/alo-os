@@ -138,7 +138,7 @@ fn run() -> Result<ExitCode, String> {
     //
     // **And a follow-up is shown what came before it**, inside the question
     // this turn asks the daemon — the only road anything takes off this
-    // machine, so the indicator and the record see it (ADR 0136).
+    // machine, so the indicator and the record see it (ADR 0137).
     let happened = driving_after(
         &asked.earlier,
         &asked.request,
@@ -204,7 +204,7 @@ fn said(happened: &WhatHappened) -> ExitCode {
             // **And to the person**, on the output the shell puts in their
             // window. The sentence was worded for them by the daemon, in their
             // language — *this conversation is now longer than the model there
-            // can read* among them (ADR 0136) — and until 2026-10-28 it went
+            // can read* among them (ADR 0137) — and until 2026-10-28 it went
             // only to the service log, so the window could say no more than
             // that the request stopped.
             println!("{said}");
@@ -273,7 +273,7 @@ struct Asked {
     /// `alo-ask` writes one line and still does.
     may_reach: WhatItMayReach,
     /// What was said before, when this is a follow-up typed in a task window
-    /// (ADR 0136); nothing for a first request and for a request typed here.
+    /// (ADR 0137); nothing for a first request and for a request typed here.
     earlier: TheConversationSoFar,
 }
 

@@ -32,7 +32,7 @@ fn a_conversation_is_kept_whole_and_in_order() {
 
 /// **A long conversation is kept whole**: alo drops nothing of its own
 /// accord, because a follow-up whose earlier parts vanished means something
-/// else without anybody seeing it (ADR 0136).
+/// else without anybody seeing it (ADR 0137).
 #[test]
 fn a_long_conversation_is_never_shortened() {
     let turns: Vec<AnEarlierTurn> = (0..40)

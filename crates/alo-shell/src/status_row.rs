@@ -22,6 +22,12 @@ use crate::painted::{Inked, Solid};
 use crate::painted_text::{Shaped, sentence};
 
 /// Measures scaled by the person's text scale, never below one pixel.
+///
+/// **And by the display's scale, through [`Measure::at`].** These rows sit on
+/// the Dock's corner, and the Dock is drawn at its display's scale; a row sized
+/// by the text size alone is half the size it should be on a two-times screen,
+/// which is the fault `CLAUDE.md` names — a figure scaled by the person's text
+/// size *only*, which looks derived and is not.
 #[derive(Clone, Copy)]
 pub(crate) struct Measure {
     /// The scale, in percent.
@@ -33,6 +39,16 @@ impl Measure {
     pub(crate) fn of(scale: TextScale) -> Self {
         Self {
             percent: i32::from(scale.as_percent()),
+        }
+    }
+
+    /// Measures for this text size on a display drawn at `display`.
+    ///
+    /// The two multiply: a person who asked for larger text on a dense screen
+    /// gets both. At a display of one this is [`Measure::of`] exactly.
+    pub(crate) fn at(text: TextScale, display: crate::display_scale::DisplayScale) -> Self {
+        Self {
+            percent: i32::from(text.as_percent()) * i32::from(display.per_cent()) / 100,
         }
     }
 

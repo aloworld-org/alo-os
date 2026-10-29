@@ -811,6 +811,19 @@ finding.verb.search-files.argument.folder	the folder whose index to search
 finding.verb.search-files.argument.named	the words a file's name has to contain
 finding.verb.search-files.purpose	search the index of a folder for files by what they are called
 finding.verb.search-files.sentence	search the index of {folder} for files whose name contains {named}
+formats.as-my-language-writes-them	As my language writes them
+formats.day.today	Today
+formats.day.yesterday	Yesterday
+formats.kept.another-format	your date and time settings at {path} were written for a different alo OS than this one, so nothing in the file has been used and dates and times are written the way your language writes them
+formats.kept.not-expressible	this alo OS could not write that change into date and time settings at {path} it can read back again, so nothing about how dates and times are written has been changed
+formats.kept.not-read	your date and time settings at {path} could not be read, so dates and times are written the way your language writes them
+formats.kept.not-replaced	your date and time settings at {path} could not be read, so that change has not been written over them and nothing about how dates and times are written has been changed — correct the file, or put these settings back as alo OS ships them
+formats.kept.not-understood	your date and time settings at {path} are not settings alo OS can read, so nothing in the file has been used and dates and times are written the way your language writes them
+formats.kept.not-understood-at	your date and time settings at {path} stop making sense at line {line}, so nothing in the file has been used and dates and times are written the way your language writes them
+formats.kept.not-written	your date and time settings at {path} could not be written, so nothing about how dates and times are written has been changed
+formats.kept.unknown-key	your date and time settings at {path} say {key}, which is not something alo OS can change about how dates and times are written, so nothing in the file has been used
+formats.not-a-language	{asked} is not a language alo OS can write dates and times in, so nothing has been changed
+formats.not-a-region	{asked} is not a region alo OS can write dates and times for, so nothing has been changed
 granted.already-gone	That grant is no longer held: it has expired or was already revoked. Nothing was changed — the list here was out of date, so look at it again
 granted.nothing-granted	Nothing is granted right now. No agent and no application has been granted anything on this machine, and there is nothing here to revoke
 granted.one-grant	{who} has been granted {what}
@@ -1846,6 +1859,7 @@ terminal.waiting.keyboard	waiting for the keyboard
 terminal.waiting.network	waiting for the network
 terminal.waiting.not-known	waiting for something alo cannot identify
 terminal.what-keeping-one-costs	what it costs: disk, and how far back undo reaches. Nothing leaves this machine
+terminal.where.this-machine	Local
 terminal.who.alo	alo
 terminal.who.program	program
 terminal.who.system	system

@@ -24,11 +24,11 @@
 //!
 //! # No display scale
 //!
-//! Every figure is a logical measure used directly as a pixel, which is
-//! `crate::dock_raster`'s documented decision and the reason given there: a
-//! scale applied to one measure of an otherwise unscaled geometry is worse than
-//! one applied to none. This joins that pending change rather than growing its
-//! own conversion.
+//! Every figure is a logical measure used directly as a pixel. The Dock went
+//! through its display's scale on 2026-10-28 (`crate::display_scale`); this
+//! window has not yet, and until it does every figure here — its focus rings
+//! included — stays at one together, because a scale applied to one measure of
+//! an otherwise unscaled geometry is worse than one applied to none.
 
 use alo_tasks::layout::{TheRows, TooSmall};
 use alo_tasks::measures as m;
@@ -297,6 +297,7 @@ pub(crate) fn furniture(
                 fonts,
                 crate::task_text::ToWrite {
                     words: one.words,
+                    marks: one.marks,
                     style: style_of(one.whose),
                     ground: ground_of(one.whose, &palette),
                     ink: palette.ink,
@@ -381,6 +382,7 @@ pub(crate) fn furniture(
                     style: AStyle::Label,
                     ground,
                     ink,
+                    marks: &[],
                 },
                 px(room),
                 measure,
@@ -412,10 +414,16 @@ pub(crate) fn furniture(
         rings.push(deny);
         match answers.selected {
             Some(crate::a_change_waiting_reaches_the_person::WhichAnswer::AllowOnce) => {
-                outlines.push(crate::dock_raster::a_focus_ring(allow));
+                outlines.push(crate::dock_raster::a_focus_ring(
+                    allow,
+                    crate::display_scale::DisplayScale::ONE,
+                ));
             }
             Some(crate::a_change_waiting_reaches_the_person::WhichAnswer::Deny) => {
-                outlines.push(crate::dock_raster::a_focus_ring(deny));
+                outlines.push(crate::dock_raster::a_focus_ring(
+                    deny,
+                    crate::display_scale::DisplayScale::ONE,
+                ));
             }
             // **Nothing is preselected, so nothing is outlined** until the
             // person moves to an answer.
@@ -451,6 +459,7 @@ pub(crate) fn furniture(
         palette.surface,
         palette.edge,
         (at.loc.x + at.size.w, at.loc.y + at.size.h),
+        crate::how_a_panel_is_raised::HowItIsRaised::THE_DOCKS.unscaled(),
         APanelsShapes {
             circles: &button,
             circle: palette.the_one_button,
@@ -510,6 +519,7 @@ pub(crate) fn furniture(
     // status's own opaque ink box painting over the title's lower half — which
     // read as the title being clipped and was not.
     let mut write = |words: &str,
+                     marks: &[crate::alos_marked_words::AMark],
                      style: AStyle,
                      ground: [u8; 3],
                      ink: [u8; 3],
@@ -528,6 +538,7 @@ pub(crate) fn furniture(
                 style,
                 ground,
                 ink,
+                marks,
             },
             px(width),
             measure,
@@ -552,6 +563,7 @@ pub(crate) fn furniture(
                     style,
                     ground,
                     ink,
+                    marks,
                 },
                 fits,
                 measure,
@@ -578,6 +590,7 @@ pub(crate) fn furniture(
     // The heading: the title, what kind of task it is, and the status.
     write(
         &title.shown,
+        &[],
         AStyle::Heading,
         palette.surface,
         palette.ink,
@@ -589,6 +602,7 @@ pub(crate) fn furniture(
     );
     write(
         words.kind,
+        &[],
         AStyle::SmallLabel,
         palette.surface,
         palette.ink_secondary,
@@ -605,6 +619,7 @@ pub(crate) fn furniture(
     // wording and this crate's colour: ADR 0067's teal marks alo acting.
     write(
         words.status,
+        &[],
         AStyle::Label,
         palette.surface,
         palette.alo,
@@ -628,6 +643,7 @@ pub(crate) fn furniture(
         }
         write(
             label,
+            &[],
             AStyle::Label,
             palette.cool,
             palette.ink,
@@ -642,6 +658,7 @@ pub(crate) fn furniture(
     // The composer: the invitation, the model's name, and where it happens.
     write(
         words.invitation,
+        &[],
         AStyle::Body,
         palette.surface,
         palette.ink_quiet,
@@ -656,6 +673,7 @@ pub(crate) fn furniture(
     );
     write(
         words.model,
+        &[],
         AStyle::Label,
         palette.cool,
         palette.ink,
@@ -667,6 +685,7 @@ pub(crate) fn furniture(
     );
     write(
         words.destination,
+        &[],
         AStyle::Destination,
         palette.surface,
         palette.ink_quiet,
@@ -699,6 +718,7 @@ pub(crate) fn furniture(
         };
         write(
             one.words,
+            one.marks,
             style_of(block.whose),
             ground_of(block.whose, &palette),
             palette.ink,
@@ -720,6 +740,7 @@ pub(crate) fn furniture(
             let centred = |button: u32, label: u32| button.saturating_sub(label) / 2;
             write(
                 answers.allow_once,
+                &[],
                 AStyle::Label,
                 palette.ink,
                 palette.surface,
@@ -732,6 +753,7 @@ pub(crate) fn furniture(
             let deny_starts = left + m::ALLOW_ONCE_IS_WIDE + m::GAP;
             write(
                 answers.deny,
+                &[],
                 AStyle::Label,
                 palette.cool,
                 palette.ink,
@@ -747,6 +769,7 @@ pub(crate) fn furniture(
     // *Permissions and model choices apply to this task.*
     write(
         words.scope_note,
+        &[],
         AStyle::SmallLabel,
         palette.surface,
         palette.ink_quiet,

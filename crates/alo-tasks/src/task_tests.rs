@@ -342,3 +342,40 @@ fn a_change_still_asked_about_keeps_the_task_waiting() {
         "an answered change still kept the task waiting"
     );
 }
+
+/// **Only a task whose work is over may close without asking**: finished, or
+/// confirmed stopped.
+#[test]
+fn a_finished_or_stopped_task_may_close_without_asking() {
+    let mut finished = a_task();
+    finished.alo_says(Turn::from_alo("Your presentation is ready."));
+    assert!(finished.may_close_without_asking());
+
+    let mut stopped = a_task();
+    stopped.and_then(Act::doing("reading your documents"));
+    stopped.it_stopped(WhatChanged::nothing());
+    assert!(stopped.may_close_without_asking());
+}
+
+/// **A task still running may not**: working, stopping, or waiting on the
+/// person — a change to approve or a question. Each is the refusal the close
+/// promise turns on, so each is held separately.
+#[test]
+fn a_running_task_may_not_close_without_asking() {
+    let working = a_task();
+    assert!(!working.may_close_without_asking(), "working");
+
+    let mut stopping = a_task();
+    stopping.and_then(Act::doing("reading your documents"));
+    stopping.stop();
+    assert!(!stopping.may_close_without_asking(), "asked to stop");
+
+    let mut a_change = a_task();
+    a_change.alo_says(Turn::from_alo("Here is the plan."));
+    a_change.is_asking("Rename march.pdf to invoice-march.pdf");
+    assert!(!a_change.may_close_without_asking(), "a change waiting");
+
+    let mut a_question = a_task();
+    a_question.alo_says(Turn::alo_asking("Which folder?"));
+    assert!(!a_question.may_close_without_asking(), "a question waiting");
+}

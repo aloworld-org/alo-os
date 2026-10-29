@@ -8,6 +8,10 @@ use icu::decimal::DecimalFormatter;
 use icu::locale::Locale;
 use serde::{Deserialize, Serialize};
 
+/// The language a machine shows when nobody has named one: its source, which
+/// `alo-strings` holds English to be.
+pub const THE_SOURCE_LANGUAGE: &str = "en";
+
 /// **A language, and the region whose way of writing things a person wants.**
 ///
 /// The two apart: a Portuguese speaker in Belgium is `pt` and `BE`, and neither
@@ -37,17 +41,23 @@ impl Regionally {
         })
     }
 
+    /// The machine's source language with no region: what is written where
+    /// nobody has named anything, and what a language CLDR refused falls back
+    /// to rather than to nothing.
+    #[must_use]
+    pub fn the_source() -> Self {
+        Self {
+            language: THE_SOURCE_LANGUAGE.to_owned(),
+            region: None,
+        }
+    }
+
     /// The same person, writing things the way this region does.
     ///
     /// # Errors
     /// [`NotARegion::NotARegion`] for anything that is not two capital letters.
     pub fn in_region(mut self, region: &str) -> Result<Self, NotARegion> {
-        if region.len() != 2 || !region.chars().all(|letter| letter.is_ascii_uppercase()) {
-            return Err(NotARegion::NotARegion {
-                asked_for: region.to_owned(),
-            });
-        }
-        self.region = Some(region.to_owned());
+        self.region = Some(String::from(crate::region_code::RegionCode::named(region)?));
         Ok(self)
     }
 
@@ -83,11 +93,16 @@ impl Regionally {
     /// **A time of day**, written as this person writes times — which is where
     /// the twelve-hour clock lives, and it is CLDR's answer per region rather
     /// than a setting anybody here invented.
+    ///
+    /// **Hours and minutes, no seconds**: the clock in the status area and the
+    /// head of every entry in the record are drawn that way in the design
+    /// (`17:38`, frame `82:887`). This asked for seconds until 2026-10-28, so
+    /// a clock that moves once a minute was written `17:38:00`.
     #[must_use]
     pub fn time(&self, hour: u8, minute: u8) -> Option<String> {
         let time = icu::time::Time::try_new(hour, minute, 0, 0).ok()?;
         let formatter =
-            NoCalendarFormatter::try_new(self.locale().into(), fieldsets::T::medium()).ok()?;
+            NoCalendarFormatter::try_new(self.locale().into(), fieldsets::T::hm()).ok()?;
         Some(formatter.format(&time).to_string())
     }
 
@@ -172,6 +187,22 @@ pub enum NotARegion {
     },
 }
 
+impl NotARegion {
+    /// What this says, in the language the person reads, naming what was
+    /// asked for.
+    #[must_use]
+    pub fn said(&self, strings: &alo_strings::Strings) -> alo_strings::Said {
+        let (word, asked) = match self {
+            Self::NotARegion { asked_for } => (crate::words::NOT_A_REGION, asked_for),
+            Self::NotALanguage { asked_for } => (crate::words::NOT_A_LANGUAGE, asked_for),
+        };
+        strings.say(
+            &word.key(),
+            &alo_strings::Filling::of("asked", asked.clone()),
+        )
+    }
+}
+
 #[cfg(test)]
 #[expect(
     clippy::unwrap_used,
@@ -251,5 +282,18 @@ mod tests {
             Regionally::reading("not a language at all"),
             Err(NotARegion::NotALanguage { .. })
         ));
+    }
+
+    /// **A refusal names what was asked for**, in the vocabulary.
+    #[test]
+    fn a_refusal_names_what_was_asked_for() {
+        let strings = alo_strings::Strings::of(crate::words::formats_words().unwrap());
+        let refused = Regionally::reading("de")
+            .unwrap()
+            .in_region("be")
+            .unwrap_err();
+        let said = refused.said(&strings);
+        assert!(said.unfilled().is_empty(), "{said}");
+        assert!(said.text().starts_with("be is not a region"), "{said}");
     }
 }

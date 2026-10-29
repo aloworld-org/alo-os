@@ -8,7 +8,7 @@
 //! 2. The request, in the person's own words.
 //! 3. `alo-earlier:` and the conversation so far, when the request is a
 //!    follow-up typed in a task window
-//!    ([ADR 0136](../../../docs/decisions/0136-a-follow-up-is-sent-with-the-conversation-so-far.md)).
+//!    ([ADR 0137](../../../docs/decisions/0137-a-follow-up-is-sent-with-the-conversation-so-far.md)).
 //!    A current shell always sends it, with nothing after the marker for a
 //!    first request.
 //!
@@ -45,7 +45,7 @@ pub const THE_FOLDERS: &str = "alo-may-reach:";
 /// How long a line after the request is waited for, on a socket.
 ///
 /// Long enough for bytes a shell wrote in the same call as the request, which
-/// are already here; short enough that a shell written before ADR 0136, which
+/// are already here; short enough that a shell written before ADR 0137, which
 /// sends nothing more, costs a person half a second.
 pub const HOW_LONG_THE_THIRD_LINE_IS_WAITED_FOR: Duration = Duration::from_millis(500);
 

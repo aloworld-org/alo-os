@@ -46,7 +46,7 @@ pub fn shown_to_a_model(
 /// earlier exchange, between what the turn may reach and the request.
 ///
 /// In the request half, so the instructions a grade names by digest are the
-/// same bytes at the start of the text (ADR 0136). With nothing earlier this
+/// same bytes at the start of the text (ADR 0137). With nothing earlier this
 /// is [`shown_to_a_model`]'s text to the byte, which a test below holds.
 #[must_use]
 pub fn shown_to_a_model_after(
@@ -56,14 +56,28 @@ pub fn shown_to_a_model_after(
     earlier: &TheConversationSoFar,
     request: &str,
 ) -> String {
-    let mut text = String::from(instructions.text());
-    for verb in verbs.all() {
-        text.push_str(&as_told(verb));
-    }
+    let mut text = the_products_words(instructions, verbs);
     text.push_str(&may_reach.told());
     text.push_str(&earlier.told());
     text.push_str("\n\nThe request: ");
     text.push_str(request);
+    text
+}
+
+/// **The part of what a model is shown that is the product's alone**: how to
+/// answer, and every verb the registry declares — everything before what the
+/// turn may reach and the request.
+///
+/// Its own function so that `alo-turn` can recognise a question that already
+/// begins with exactly these words, from the same registry, and not put them
+/// in front of it a second time: the agent builds the whole text a turn shows,
+/// and wrapping it again showed a model the instructions and every verb twice.
+#[must_use]
+pub fn the_products_words(instructions: Instructions, verbs: &Verbs) -> String {
+    let mut text = String::from(instructions.text());
+    for verb in verbs.all() {
+        text.push_str(&as_told(verb));
+    }
     text
 }
 
