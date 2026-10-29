@@ -126,6 +126,20 @@ impl<'a> Served<'a> {
         Ok(Self { provider, key })
     }
 
+    /// The same service, holding `key`.
+    ///
+    /// For a caller that had to know whether an address is this machine's
+    /// before it had a key to hold — the daemon asks the rule before it opens
+    /// a keyring — and so cannot build this with [`Served::at`] a second time
+    /// without a refusal it would have to pretend could happen.
+    #[must_use]
+    pub fn holding(&self, key: Option<&'a Secret>) -> Self {
+        Self {
+            provider: self.provider,
+            key,
+        }
+    }
+
     /// Where an answer from this service says it came from: **this machine's
     /// address**, which is not the same claim as *this machine*.
     ///
@@ -149,10 +163,12 @@ impl<'a> Served<'a> {
 
     /// Put the question, and read what comes back.
     ///
-    /// Private, and the only caller is
-    /// [`Asking::to_a_service_on_this_machine`]: a public one here would be a
-    /// way to reach the wire without the permission having been checked.
-    fn ask(
+    /// Reached only through a door that has checked the permission:
+    /// [`Asking::to_a_service_on_this_machine`], and the person's own road,
+    /// `crate::a_persons_question_to_a_service_here`. `pub(crate)` for that
+    /// second file and no wider: a public one here would be a way to reach the
+    /// wire without the permission having been checked.
+    pub(crate) fn ask(
         &self,
         question: &Question,
         to: &[SocketAddr],

@@ -146,6 +146,7 @@
 
 #![doc(html_root_url = "https://github.com/aloworld-org/alo-os")]
 
+pub mod a_persons_question_to_a_service_here;
 pub mod a_question_nobody_is_showing;
 pub mod answer;
 pub mod asked;
@@ -184,6 +185,7 @@ pub mod words;
 #[cfg(test)]
 mod testing;
 
+pub use a_persons_question_to_a_service_here::a_persons_question_to_a_service_here;
 pub use a_question_nobody_is_showing::{NotPut, a_question_nobody_is_showing};
 pub use answer::Answer;
 pub use asked::Asked;

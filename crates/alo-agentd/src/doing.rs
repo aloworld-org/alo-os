@@ -49,7 +49,9 @@ use alo_turn::{Answers, NoAnswer, NoBoundary, NotDone, Places, Turning};
 
 use alo_secrets::NotStored;
 
-use crate::a_provider_ready_to_be_asked::{NotPrepared, a_provider_ready_to_be_asked};
+use crate::a_provider_ready_to_be_asked::{
+    NotPrepared, ThePlaceItIsPut, a_provider_ready_to_be_asked,
+};
 use crate::corridor::{Corridor, put_down_the_corridor};
 use crate::questions::{Questions, WhatAnswers};
 use crate::rereading;
@@ -284,16 +286,17 @@ fn put_to_a_model(
                 // not a turn, so `Answers` is this caller's word for what it
                 // is putting the question to rather than something every
                 // caller has to have (ADR 0126).
-                |permission, hosted| {
+                // **A service at this machine's address goes to the service
+                // door**, which the provider door refuses outright; until
+                // 2026-10-29 it went there anyway and every question was
+                // refused as this repository's own fault.
+                |permission, put| {
+                    let answers = match put {
+                        ThePlaceItIsPut::AProvider(hosted) => Answers::Provider(hosted),
+                        ThePlaceItIsPut::AServiceHere(served) => Answers::Service(served),
+                    };
                     putting(
-                        turning,
-                        answered,
-                        question,
-                        model,
-                        permission,
-                        &Answers::Provider(hosted),
-                        &places,
-                        now,
+                        turning, answered, question, model, permission, &answers, &places, now,
                     )
                 },
             );
@@ -603,9 +606,9 @@ endpoint = \"https://{other}\"
     ///
     /// The endpoint is `https://` at this machine's own address rather than
     /// loopback, because the production path allows nothing else: a loopback
-    /// provider makes `Provider::source` say *this machine*, and
-    /// `Asking::to_a_provider` refuses that outright as `Miswired::NotAProvider`
-    /// — a provider on this machine belongs to the `Served` door. And
+    /// provider makes `Provider::source` say *this machine*, and the daemon
+    /// puts it to the `Served` door (`crate::a_provider_ready_to_be_asked`),
+    /// which shows nothing because nothing leaves. And
     /// `Provider::checked` refuses plain `http://` to anywhere that is not this
     /// machine. Those two together mean **the only address the Provider door
     /// will carry a key to is a real TLS endpoint.**
@@ -3126,5 +3129,60 @@ endpoint = \"https://{at}\"
             assert_ne!(said.refusal().unwrap().text(), expected, "{message}");
         }
         assert_eq!(quiet.len(), 0, "a malformed message left an entry");
+    }
+
+    /// **An agent's question to a service the person runs on this machine is
+    /// answered there**, through the service door, and says where it came from
+    /// in ADR 0021's words — even on a machine that keeps questions on itself.
+    ///
+    /// Until 2026-10-29 it went to the provider door, which refuses this
+    /// machine's address outright, and every such question was refused as
+    /// *something in alo OS is set up wrongly*.
+    #[test]
+    fn a_service_the_person_runs_here_answers_an_agents_question() {
+        let (port, heard) = crate::testing::a_service_here_answering("only with consent");
+        let config = a_directory_of_our_own("agents-question-a-service-here");
+        let folder = config.join(alo_choosing::THE_FOLDER);
+        std::fs::create_dir_all(&folder).unwrap();
+        std::fs::write(
+            folder.join(alo_choosing::THE_SETTINGS),
+            format!(
+                "format = 3\n\n[answers]\nprovider = {{ name = \"Here\", model = \"a-model\" \
+                 }}\n\n[[provider]]\nname = \"Here\"\nendpoint = \"http://127.0.0.1:{port}\"\n"
+            ),
+        )
+        .unwrap();
+        let mut questions = Questions::of_a_session(
+            Some(config.into_os_string()),
+            None,
+            alo_models::Catalogue::built_in().unwrap(),
+            TheBound::ThePersons(SourcePolicy::ThisMachineOnly),
+            WhoseKeyring::Nobodys,
+        );
+
+        let mut record = Record::default();
+        let said = on_a_machine_that_answers(&mut record, |turning, _grants, strings| {
+            put_to_a_model(
+                "may the tenant sublet?",
+                Answered::InWords,
+                turning,
+                &mut questions,
+                None,
+                strings,
+                noon(),
+            )
+        });
+
+        assert!(said.refusal().is_none(), "refused: {:?}", said.refusal());
+        let written = said.written().unwrap();
+        assert!(written.contains("only with consent"), "{written}");
+        assert!(
+            written.contains("by a service at this machine's address"),
+            "the answer does not say where it came from: {written}"
+        );
+        assert!(
+            heard.join().unwrap().contains("may the tenant sublet?"),
+            "the service was not asked the question"
+        );
     }
 }
