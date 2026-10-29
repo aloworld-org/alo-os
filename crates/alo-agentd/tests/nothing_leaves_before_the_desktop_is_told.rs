@@ -695,7 +695,7 @@ fn a_provider_that_waits_to_be_hung_up_on(
                 connection
                     .set_read_timeout(Some(PATIENCE))
                     .expect("a socket can be given a timeout");
-                drop(reached.send(()));
+                let _ = reached.send(());
                 let reached_at = Instant::now();
                 let mut ignored = [0_u8; 4096];
                 loop {

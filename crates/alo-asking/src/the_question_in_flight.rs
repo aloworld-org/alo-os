@@ -4,7 +4,7 @@
 //! when a person presses Stop, a question already on its way to a provider is
 //! cancelled, so **nothing more leaves after Stop**. A request that is blocked
 //! waiting for a provider cannot be interrupted from inside itself, so its
-//! connection is opened here, by [`Stoppable`], and kept where another thread
+//! connection is opened here, by `Stoppable`, and kept where another thread
 //! can shut it: [`stop_the_question_in_flight`].
 //!
 //! # One at a time, and why that is enough
