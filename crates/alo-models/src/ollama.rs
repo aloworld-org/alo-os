@@ -55,6 +55,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::card::Vendor;
 use crate::catalogue::Catalogue;
+use crate::how_much_a_model_reads;
 use crate::road::WhichRoad;
 use crate::runtime::{Installed, Loaded, ModelRuntime, Progress, ProgressSink, RuntimeError};
 use crate::weights::Weights;
@@ -171,11 +172,23 @@ fn found_at(endpoint: &str, catalogue: Catalogue) -> Option<Ollama> {
     // empty runtime is not. A runtime alone must not read as a model: until
     // there are weights, discovery keeps giving ADR 0019's found-nothing
     // answer, and the machine keeps saying nothing here answers questions.
-    runtime
-        .installed()
-        .ok()
-        .filter(|weights| !weights.is_empty())
-        .map(|_| runtime)
+    //
+    // **And what each model can read is kept from the same listing**, so a
+    // question is put with a window alo OS chose (`crate::how_much_a_model_reads`)
+    // and nothing is asked twice to learn it.
+    let listed = runtime.listed().ok()?;
+    if listed.models.is_empty() {
+        return None;
+    }
+    let reads = listed
+        .models
+        .iter()
+        .filter_map(|model| {
+            let most = model.details.as_ref()?.context_length?;
+            Some((Ollama::catalogue_id(&model.name), most))
+        })
+        .collect();
+    Some(Ollama { reads, ..runtime })
 }
 
 /// Ollama, reached over its HTTP API.
@@ -183,6 +196,10 @@ fn found_at(endpoint: &str, catalogue: Catalogue) -> Option<Ollama> {
 pub struct Ollama {
     /// Where the runtime listens, without a trailing slash.
     endpoint: String,
+    /// The most each model it holds can read at once, by catalogue id, as the
+    /// runtime listed when it was found. Empty for a runtime nobody looked at,
+    /// and then every model is asked for `how_much_a_model_reads::THE_MOST_ASKED_FOR`.
+    reads: std::collections::BTreeMap<String, u32>,
     /// What alo OS offers. Held here because it is the gate on `fetch`.
     catalogue: Catalogue,
 }
@@ -219,6 +236,11 @@ struct TagDetails {
     /// The quantisation actually installed, spelled Ollama's way.
     #[serde(default)]
     quantization_level: Option<String>,
+    /// The most the weights can read at once, in tokens, as the runtime lists
+    /// it — `32768` for the Mistral 7B entry, read verbatim off Ollama 0.34.0
+    /// on 2026-09-13. Absent on a runtime that does not list it.
+    #[serde(default)]
+    context_length: Option<u32>,
 }
 
 /// `/api/ps` — what is in video memory now.
@@ -267,16 +289,18 @@ struct ChatRequest<'a> {
     /// Absent on every question a person puts to a model.
     #[serde(skip_serializing_if = "Option::is_none")]
     format: Option<serde_json::Value>,
-    /// Which road to put the question on, where the caller named one. Absent
-    /// on every question that did not, so the request a person's turn sends is
-    /// byte for byte the request it sent before this field existed.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    options: Option<ChatOptions>,
+    /// The runtime's options: the window alo OS chose, always, and the road
+    /// where the caller named one (`crate::how_much_a_model_reads`; ADR 0136).
+    /// Until 2026-10-28 this was absent on every question that named no road,
+    /// and the runtime chose the window itself.
+    options: ChatOptions,
 }
 
-/// The runtime's own options block, of which this crate sets one field.
+/// The runtime's own options block, of which this crate sets two fields.
 ///
-/// Ollama's spelling, here for [`crate::ollama`]'s reason and nowhere else:
+/// Ollama's spelling, here for [`crate::ollama`]'s reason and nowhere else.
+/// `num_ctx` is how many tokens the model reads at once — set on every
+/// question, so the runtime never chooses a window alo OS does not know.
 /// `num_gpu` is how many of a model's layers it puts on a graphics card, and
 /// nought is the processor road asked for rather than waited for. That is the
 /// only way to put one question to both roads on one machine — restarting the
@@ -284,8 +308,12 @@ struct ChatRequest<'a> {
 /// alo OS does to somebody's computer to answer a question about it.
 #[derive(Serialize)]
 struct ChatOptions {
-    /// How many layers go on a graphics card. Nought is the processor.
-    num_gpu: u32,
+    /// How many tokens the model is asked to read at once.
+    num_ctx: u32,
+    /// How many layers go on a graphics card. Nought is the processor; absent
+    /// is the machine as it is.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    num_gpu: Option<u32>,
 }
 
 /// One message in that call.
@@ -303,6 +331,16 @@ struct ChatResponse {
     /// What the model wrote, absent on a reply that is not an answer.
     #[serde(default)]
     message: Option<ChatSaid>,
+    /// How many tokens of the question were read, beside those read from the
+    /// runtime's cache — together, what the window held of the question.
+    #[serde(default)]
+    prompt_eval_count: u64,
+    /// The tokens of the question the runtime had cached from before.
+    #[serde(default)]
+    prompt_eval_cached_count: u64,
+    /// How many tokens the answer took.
+    #[serde(default)]
+    eval_count: u64,
 }
 
 /// The message a model wrote.
@@ -380,6 +418,7 @@ impl Ollama {
     pub fn at(endpoint: &str, catalogue: Catalogue) -> Self {
         Self {
             endpoint: endpoint.trim_end_matches('/').to_owned(),
+            reads: std::collections::BTreeMap::new(),
             catalogue,
         }
     }
@@ -401,6 +440,12 @@ impl Ollama {
             .strip_suffix(":latest")
             .unwrap_or(runtime_name)
             .to_owned()
+    }
+
+    /// `/api/tags`, read: what the runtime holds, and what each can read.
+    fn listed(&self) -> Result<TagsResponse, RuntimeError> {
+        let body = self.get("/api/tags")?;
+        serde_json::from_str(&body).map_err(|_| RuntimeError::Unusable)
     }
 
     /// One GET against the runtime, read to a string. Only for the small
@@ -472,8 +517,7 @@ impl Ollama {
 
 impl ModelRuntime for Ollama {
     fn installed(&self) -> Result<Vec<Installed>, RuntimeError> {
-        let body = self.get("/api/tags")?;
-        let tags: TagsResponse = serde_json::from_str(&body).map_err(|_| RuntimeError::Unusable)?;
+        let tags = self.listed()?;
         Ok(tags
             .models
             .into_iter()
@@ -735,6 +779,12 @@ impl Ollama {
         format: Option<serde_json::Value>,
         road: WhichRoad,
     ) -> Result<String, RuntimeError> {
+        // **The window alo OS chose, and a question that cannot fit it is not
+        // sent** (`crate::how_much_a_model_reads`; ADR 0136).
+        let window = how_much_a_model_reads::the_window(self.reads.get(of_model).copied());
+        if how_much_a_model_reads::certainly_does_not_fit(question, window) {
+            return Err(RuntimeError::TooLongForTheModel(of_model.to_owned()));
+        }
         let body = ChatRequest {
             model: Self::runtime_name(of_model),
             messages: [ChatMessage {
@@ -743,9 +793,12 @@ impl Ollama {
             }],
             stream: false,
             format,
-            options: match road {
-                WhichRoad::AsTheMachineIs => None,
-                WhichRoad::TheProcessor => Some(ChatOptions { num_gpu: 0 }),
+            options: ChatOptions {
+                num_ctx: window,
+                num_gpu: match road {
+                    WhichRoad::AsTheMachineIs => None,
+                    WhichRoad::TheProcessor => Some(0),
+                },
             },
         };
         let response = ureq::post(format!("{}/api/chat", self.endpoint))
@@ -777,6 +830,17 @@ impl Ollama {
             .read_to_string()
             .map_err(|_| RuntimeError::Unusable)?;
         let said: ChatResponse = serde_json::from_str(&body).map_err(|_| RuntimeError::Unusable)?;
+        // **A full window is not an answer to the whole question**: the
+        // runtime may have shifted its start out to make room, so it is refused
+        // rather than shown as though all of it was read.
+        if how_much_a_model_reads::the_window_was_full(
+            said.prompt_eval_count
+                .saturating_add(said.prompt_eval_cached_count),
+            said.eval_count,
+            window,
+        ) {
+            return Err(RuntimeError::TooLongForTheModel(of_model.to_owned()));
+        }
         let said = said.message.map(|m| m.content).unwrap_or_default();
         if said.trim().is_empty() {
             // A reply with no answer in it is not an empty answer to show
@@ -1751,5 +1815,85 @@ mod tests {
             .unwrap_err();
         assert_eq!(refused, RuntimeError::Unreachable);
         drop(std::fs::remove_file(&file));
+    }
+
+    /// **A model the runtime lists as reading 2048 tokens is asked for 2048**,
+    /// carried on the question itself — read off the request the runtime
+    /// received (ADR 0136).
+    #[test]
+    fn a_question_carries_the_window_the_runtime_listed_for_its_model() {
+        let (url, server) = serving_in_turn(
+            &[
+                r#"{"models":[{"name":"a-model:latest","size":1,"details":{"context_length":2048}}]}"#,
+                r#"{"message":{"role":"assistant","content":"yes"},"prompt_eval_count":40,"prompt_eval_cached_count":0,"eval_count":2}"#,
+            ],
+            200,
+        );
+        let found = found_at(&url, catalogue()).unwrap();
+        assert_eq!(found.answers("is it there?", "a-model").unwrap(), "yes");
+        let asked = server.join().unwrap();
+        assert!(
+            without_spaces(&asked[1]).contains(r#""options":{"num_ctx":2048}"#),
+            "{}",
+            asked[1]
+        );
+    }
+
+    /// **A question that cannot fit is refused before anything is sent**, in
+    /// the words for it, and the runtime is never asked.
+    #[test]
+    fn a_question_too_long_for_the_window_is_refused_before_it_is_sent() {
+        let (url, server) = serving_in_turn(
+            &[
+                r#"{"models":[{"name":"a-model:latest","size":1,"details":{"context_length":2048}}]}"#,
+            ],
+            200,
+        );
+        let found = found_at(&url, catalogue()).unwrap();
+        let asked = server.join().unwrap();
+        let too_long = "a".repeat(how_much_a_model_reads::BYTES_A_TOKEN_TAKES_AT_MOST * 4096);
+        assert_eq!(
+            found.answers(&too_long, "a-model"),
+            Err(RuntimeError::TooLongForTheModel("a-model".to_owned()))
+        );
+        assert_eq!(asked.len(), 1, "the runtime was asked the question anyway");
+    }
+
+    /// **A window the runtime says was full is refused after the answer**:
+    /// its start may have been shifted out, so what came back is not an answer
+    /// to the whole question.
+    #[test]
+    fn an_answer_from_a_full_window_is_refused() {
+        let (url, server) = serving_in_turn(
+            &[
+                r#"{"models":[{"name":"a-model:latest","size":1,"details":{"context_length":2048}}]}"#,
+                r#"{"message":{"role":"assistant","content":"an answer to part of it"},"prompt_eval_count":1500,"prompt_eval_cached_count":500,"eval_count":48}"#,
+            ],
+            200,
+        );
+        let found = found_at(&url, catalogue()).unwrap();
+        assert_eq!(
+            found.answers("a long conversation", "a-model"),
+            Err(RuntimeError::TooLongForTheModel("a-model".to_owned()))
+        );
+        server.join().unwrap();
+    }
+
+    /// **A model the runtime lists nothing for is asked for the stated
+    /// figure**, never left to the runtime's own choice.
+    #[test]
+    fn a_model_listed_with_no_window_is_asked_for_the_stated_figure() {
+        let (url, server) = serving(r#"{"message":{"role":"assistant","content":"yes"}}"#, 200);
+        Ollama::at(&url, catalogue())
+            .answers("is it there?", "a-model")
+            .unwrap();
+        let asked = server.join().unwrap();
+        assert!(
+            without_spaces(&asked).contains(&format!(
+                r#""options":{{"num_ctx":{}}}"#,
+                how_much_a_model_reads::THE_MOST_ASKED_FOR
+            )),
+            "{asked}"
+        );
     }
 }

@@ -492,28 +492,31 @@ fn what_a_machine_offers_does_not_change_with_what_is_on_its_bus() {
     );
 }
 
-/// **Naming a road changes exactly one thing about what goes to the runtime,
-/// and naming none changes nothing at all.**
+/// **Naming a road changes exactly one thing about what goes to the runtime.**
 ///
-/// The second half is the one worth a test. Every question a person's turn
-/// asks goes through the door that names no road, and that door must send the
-/// request it sent before this field existed — a new field on every request
-/// would be a change to the pinned runtime's input that nobody measured
-/// (ADR 0006).
+/// Every question carries the window alo OS chose, `num_ctx`, since 2026-10-28
+/// (ADR 0136): until then a question that named no road carried no options at
+/// all, and the runtime chose the window itself — on a machine with no graphics
+/// card, 4096 tokens with the start of a longer question silently shifted out.
+/// What naming a road adds is still exactly one field, so a comparison of the
+/// two roads is a comparison of the roads and not of two different questions.
 #[test]
-fn a_question_that_names_no_road_is_the_request_that_was_always_sent() {
+fn a_question_that_names_no_road_carries_only_the_window() {
     let answer = r#"{"message":{"role":"assistant","content":"{\"format\":1}"}}"#;
 
     let (address, runtime) = a_runtime_answering(answer);
     Ollama::at(&address, Catalogue::built_in().unwrap())
         .answers_in_the_envelope("what is the next step?", "phi-3-mini-instruct")
         .unwrap();
-    let as_it_always_was = compacted(&runtime.join().unwrap());
+    let as_the_machine_is = compacted(&runtime.join().unwrap());
     assert!(
-        !as_it_always_was.contains("options"),
-        "a question that named no road carried one: {as_it_always_was}"
+        as_the_machine_is.contains(r#""options":{"num_ctx":8192}"#),
+        "a question went without the window alo OS chose: {as_the_machine_is}"
     );
-    assert!(!as_it_always_was.contains("num_gpu"), "{as_it_always_was}");
+    assert!(
+        !as_the_machine_is.contains("num_gpu"),
+        "{as_the_machine_is}"
+    );
 
     let (address, runtime) = a_runtime_answering(answer);
     Ollama::at(&address, Catalogue::built_in().unwrap())
@@ -525,16 +528,12 @@ fn a_question_that_names_no_road_is_the_request_that_was_always_sent() {
         .unwrap();
     let on_the_processor = compacted(&runtime.join().unwrap());
     assert!(
-        on_the_processor.contains(r#""options":{"num_gpu":0}"#),
+        on_the_processor.contains(r#""options":{"num_ctx":8192,"num_gpu":0}"#),
         "the processor road was asked for and nothing said so: {on_the_processor}"
     );
-
-    // And the rest of the request is the same one: the road is the only
-    // difference between the two, so a comparison of the two roads is a
-    // comparison of the roads and not of two different questions.
     assert_eq!(
-        on_the_processor.replace(r#","options":{"num_gpu":0}"#, ""),
-        as_it_always_was,
+        on_the_processor.replace(r#","num_gpu":0"#, ""),
+        as_the_machine_is,
     );
 }
 

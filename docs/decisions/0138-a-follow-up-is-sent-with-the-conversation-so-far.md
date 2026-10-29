@@ -66,6 +66,29 @@ the chosen model can read.
   context of any model alo OS can be pointed at today; the contract records
   the reason.
 
+### On this machine: alo chooses the window, and checks before and after
+
+*Decided by the owner the same day, option 1 of three put to them.* A model on
+this machine is asked for **the smaller of its own maximum and 8192 tokens** on
+every question. Until now alo OS set nothing, and the pinned runtime chose: on
+the measuring machine, with no graphics card, 4096 tokens with context
+shifting, which silently drops the start of anything longer — read in the
+runtime's own log of 2026-10-11, not measured again since.
+
+- **Refused before sending** when the question cannot fit even at six bytes a
+  token, with room for an answer.
+- **Refused after answering** when the runtime reports the window was full,
+  because its start may have been shifted out.
+- Either way, the same sentence a provider's refusal for it gets.
+- Context shifting itself is not a request option or a server setting of the
+  pinned release, so these two checks are what make it unreachable.
+
+**The cost is memory**: roughly half a gibibyte more for a 7B model going from
+4096 to 8192, computed from the model's shape and not measured. The local
+grades were earned under the runtime's own window and ADR 0133 has already set
+them aside, so earning them again — now under this window — is work already
+owed. `docs/contracts/local-model-runtime.md` is the contract.
+
 ### When it is sent, and a reply alo cannot take yet
 
 **Only when a reply is sent.** The shell reads the task's conversation then
