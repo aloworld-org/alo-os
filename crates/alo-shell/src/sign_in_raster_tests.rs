@@ -2,6 +2,7 @@
 #![expect(
     clippy::unwrap_used,
     clippy::expect_used,
+    clippy::panic,
     reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
 )]
 
@@ -540,4 +541,78 @@ fn a_screen_too_small_for_its_scale_is_refused() {
         ),
         Err(RenderError::SignInScene)
     ));
+}
+
+/// FNV-1a over a value's `Debug`, which is every pixel, rectangle and colour a
+/// picture holds. Written here rather than taken from `std`, whose hasher is
+/// not promised to stay the same between Rust releases.
+fn fnv_of(value: &impl std::fmt::Debug) -> u64 {
+    struct Fnv(u64);
+    impl std::fmt::Write for Fnv {
+        fn write_str(&mut self, written: &str) -> std::fmt::Result {
+            for byte in written.bytes() {
+                self.0 ^= u64::from(byte);
+                self.0 = self.0.wrapping_mul(0x0100_0000_01b3);
+            }
+            Ok(())
+        }
+    }
+    let mut hashed = Fnv(0xcbf2_9ce4_8422_2325);
+    std::fmt::Write::write_fmt(&mut hashed, format_args!("{value:?}")).unwrap();
+    hashed.0
+}
+
+/// **At 100 per cent the screen is the pixels it was before it followed the
+/// screen's scale**, held to hashes taken from `main` at 99e9007d — the tree
+/// before #1017 — by the same code on 2026-10-29, twice, with the same
+/// answers both times. Drawn with the shell's bundled faces only
+/// (`WindowControlLabels`), so the machine's own fonts cannot move them.
+///
+/// Three screens at two sizes: a returning person with nothing typed and with
+/// a PIN typed, and a machine that asks for a name with one letter of it typed.
+#[test]
+fn at_one_hundred_the_pixels_are_mains() {
+    let mut labels = WindowControlLabels::new().unwrap();
+    let mut hashes = Vec::new();
+    for (uid, keys) in [
+        (1000, vec![]),
+        (1000, vec![SignInKey::Letter('x')]),
+        (1001, vec![SignInKey::Letter('a')]),
+    ] {
+        let mut store = Accounts::none().unwrap();
+        store.created("ada", 1000, "irrelevant").unwrap();
+        let words = crate::what_this_machine_can_say().unwrap();
+        let mut screen = SignInScreen::of(Ok(Greeting::of(store, uid, NoDoor)), words);
+        for key in keys {
+            screen = match screen.pressed(key) {
+                Signing::Still(screen) => *screen,
+                Signing::HandedOver(_) => panic!("a key signed somebody in"),
+            };
+        }
+        for size in [(800, 600), (1920, 1080)] {
+            let drawn = picture(
+                screen.shows(),
+                &mut labels,
+                screen.words(),
+                size,
+                light(),
+                super::WhoseScreen::ItsOwn,
+                crate::display_scale::DisplayScale::ONE,
+            )
+            .unwrap();
+            hashes.push(fnv_of(&drawn));
+        }
+    }
+    assert_eq!(
+        hashes,
+        [
+            0xe3c4_51de_9d6f_927b,
+            0xdd31_62a6_bc81_62b9,
+            0xb5f9_6082_9d80_1781,
+            0x8c0b_fe33_57b1_b364,
+            0x0623_194d_c787_8f03,
+            0x33d2_c3f3_7c7c_319f,
+        ],
+        "a screen at 100 per cent is not the pixels main drew"
+    );
 }
