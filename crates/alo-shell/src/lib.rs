@@ -382,6 +382,7 @@ mod settings_shell_integration;
 #[cfg(test)]
 #[path = "../tests/unit_fixtures/settings_testing.rs"]
 mod settings_testing;
+mod settings_time_zone;
 mod settings_window;
 mod setup_sheet_layout;
 mod setup_sheet_painting;
@@ -479,6 +480,7 @@ mod the_window_edge_is_pointed_at;
 mod the_window_edge_reveals;
 mod the_zone_a_person_chose;
 pub mod the_zone_picker;
+pub mod the_zone_through_timedated;
 mod their_displays;
 /// How one person writes a moment: what they chose, the language they read,
 /// and the zone they are in. Here rather than in `alo-formats`, whose header

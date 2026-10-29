@@ -178,7 +178,23 @@ pub const KEPT_NOT_REPLACED: Word = Word::saying(
 );
 
 /// Every string this crate can say.
-pub const EVERY_WORD: [Word; 13] = [
+/// Settings' time-zone rows are the cities of one region; this heads them.
+pub const TIME_ZONE: Word = Word::saying("formats.time-zone", "Time zone").noting(
+    "A heading in Settings above a list of cities, each naming a time zone of the country or \
+     region dates are written like. Choosing one sets this computer's clock to it.",
+);
+
+/// The time zone could not be changed.
+pub const ZONE_NOT_CHANGED: Word = Word::saying(
+    "formats.time-zone.not-changed",
+    "The time zone was not changed: this computer's time service would not change it",
+)
+.noting(
+    "Shown in Settings when a person chose a time zone and the computer's own time service \
+     refused or could not be reached. The clock keeps the time zone it had.",
+);
+
+pub const EVERY_WORD: [Word; 15] = [
     WHERE_THIS_MACHINE_IS,
     TODAY,
     YESTERDAY,
@@ -192,6 +208,8 @@ pub const EVERY_WORD: [Word; 13] = [
     KEPT_NOT_WRITTEN,
     KEPT_NOT_EXPRESSIBLE,
     KEPT_NOT_REPLACED,
+    TIME_ZONE,
+    ZONE_NOT_CHANGED,
 ];
 
 /// Why this crate's own words could not be declared.
