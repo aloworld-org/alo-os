@@ -775,7 +775,11 @@ fn the_region_sheet_follows_the_language_and_is_taken_or_left() {
 
     screen = still(screen.pressed(SignInKey::Clear));
     assert!(matches!(screen.shows(), SignInShows::Language { .. }));
-    assert_eq!(screen.the_language_chosen(), Some("de"), "back lost the language");
+    assert_eq!(
+        screen.the_language_chosen(),
+        Some("de"),
+        "back lost the language"
+    );
 
     screen = still(screen.pressed(SignInKey::Enter));
     for key in [SignInKey::Enter, SignInKey::Enter] {
