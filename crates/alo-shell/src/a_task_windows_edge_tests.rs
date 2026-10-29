@@ -14,8 +14,9 @@ use alo_tasks::conversation::Turn;
 use smithay::backend::input::ButtonState;
 use smithay::utils::{Logical, Rectangle, Size};
 
-use super::{in_the_edges_units, the_edge_of_a_task_window};
+use super::the_edge_of_a_task_window;
 use crate::Server;
+use crate::an_edge_in_its_displays_units::a_window_in_the_edges_units as in_the_edges_units;
 use crate::the_tasks_a_person_opened::WhichTask;
 use crate::window_edge::OnTheEdge;
 
@@ -26,6 +27,11 @@ fn anywhere() -> Size<i32, Logical> {
 
 /// A session with a pointer, and one task window placed on a 1280 × 800 view.
 fn a_task_window() -> (tempfile::TempDir, Server, WhichTask) {
+    a_task_window_on((1280, 800))
+}
+
+/// The same, on a view of `size`.
+fn a_task_window_on(size: (i32, i32)) -> (tempfile::TempDir, Server, WhichTask) {
     let runtime = tempfile::tempdir().expect("a runtime directory of this test's own");
     std::fs::set_permissions(runtime.path(), std::fs::Permissions::from_mode(0o700))
         .expect("a private runtime directory");
@@ -43,7 +49,7 @@ fn a_task_window() -> (tempfile::TempDir, Server, WhichTask) {
         "tidy my invoices",
         InferenceSource::ThisMachine,
     ));
-    let view = Rectangle::new((0, 0).into(), (1280, 800).into());
+    let view = Rectangle::new((0, 0).into(), size.into());
     server.tasks_mut().put_whatever_has_nowhere_to_be(
         view,
         alo_strings::Direction::LeftToRight,
@@ -55,6 +61,14 @@ fn a_task_window() -> (tempfile::TempDir, Server, WhichTask) {
 /// Press the primary button in the middle of this task's Close, through the
 /// pointer road a person's press takes.
 fn press_close(server: &mut Server, which: WhichTask) -> bool {
+    press_close_at(server, which, 100)
+}
+
+/// The same, on a display drawn at `scale` per cent: the press goes to the
+/// middle of Close **where it is drawn there**, which is its place in the
+/// edge's units multiplied back by the scale, as `EdgePicture::of` draws it.
+fn press_close_at(server: &mut Server, which: WhichTask, scale: u16) -> bool {
+    server.the_scale_edges_are_measured_at = scale;
     let window = server
         .tasks()
         .each_open_window()
@@ -62,16 +76,17 @@ fn press_close(server: &mut Server, which: WhichTask) -> bool {
         .find(|(one, _)| *one == which)
         .map(|(_, at)| at)
         .expect("the window is open");
-    let edge = the_edge_of_a_task_window(in_the_edges_units(window, 100), anywhere());
+    let edge = the_edge_of_a_task_window(in_the_edges_units(window, u32::from(scale)), anywhere());
     let close = edge
         .controls
         .iter()
         .find(|control| control.does == OnTheEdge::Close)
         .expect("a Close on the edge")
         .target;
+    let drawn = |units: i32| units * i32::from(scale) / 100;
     let (x, y) = (
-        close.loc.x + close.size.w / 2,
-        close.loc.y + close.size.h / 2,
+        drawn(close.loc.x) + drawn(close.size.w) / 2,
+        drawn(close.loc.y) + drawn(close.size.h) / 2,
     );
     server
         .pointer_motion(f64::from(x), f64::from(y), 1)
@@ -144,6 +159,87 @@ fn a_press_on_close_closes_a_finished_task() {
         "the press reached an application behind the edge"
     );
     assert!(!server.tasks().is_open(which), "Close did not close it");
+}
+
+/// **At 200 per cent a press where Close is drawn closes the task** — the
+/// owner's report of 2026-10-28: Close was drawn at the display's scale and a
+/// press was read against the edge laid out at 100, so the two disagreed.
+///
+/// Pressed a quarter of the way into the drawn button, which is the part of it
+/// the old reading missed: asserted below to lie outside Close as the edge was
+/// laid out at 100, so this test fails on the code it replaces.
+#[test]
+fn at_two_hundred_a_press_where_close_is_drawn_closes_the_task() {
+    let (_runtime, mut server, which) = a_task_window_on((2560, 1600));
+    server
+        .tasks_mut()
+        .the_mut(which)
+        .expect("open")
+        .alo_says(Turn::from_alo("Your invoices are tidy."));
+    let window = server
+        .tasks()
+        .each_open_window()
+        .into_iter()
+        .find(|(one, _)| *one == which)
+        .map(|(_, at)| at)
+        .expect("the window is open");
+    let close_at = |scale: u32| {
+        the_edge_of_a_task_window(in_the_edges_units(window, scale), anywhere())
+            .controls
+            .iter()
+            .find(|control| control.does == OnTheEdge::Close)
+            .expect("a Close on the edge")
+            .target
+    };
+    let units = close_at(200);
+    let drawn = Rectangle::<i32, Logical>::new(
+        (units.loc.x * 2, units.loc.y * 2).into(),
+        (units.size.w * 2, units.size.h * 2).into(),
+    );
+    assert_eq!(
+        drawn.size,
+        Size::from((88, 88)),
+        "Close is drawn twice the design's 44"
+    );
+    let (x, y) = (
+        drawn.loc.x + drawn.size.w / 4,
+        drawn.loc.y + drawn.size.h / 4,
+    );
+    let at_one = close_at(100);
+    assert!(
+        !(at_one.loc.x..at_one.loc.x + at_one.size.w).contains(&x)
+            || !(at_one.loc.y..at_one.loc.y + at_one.size.h).contains(&y),
+        "the premise: ({x}, {y}) is outside Close as laid out at 100"
+    );
+    server.the_scale_edges_are_measured_at = 200;
+    server
+        .pointer_motion(f64::from(x), f64::from(y), 1)
+        .expect("the pointer moved");
+    let delivered = server
+        .pointer_button(0x110, ButtonState::Pressed, 2)
+        .expect("the press was handled");
+
+    assert!(
+        !delivered,
+        "the press reached an application behind the edge"
+    );
+    assert!(
+        !server.tasks().is_open(which),
+        "a press where Close is drawn at 200 did not close it"
+    );
+}
+
+/// **The same press helper at 200 lands on Close's middle too**, for the
+/// refusal: a running task is not closed at 200 either.
+#[test]
+fn at_two_hundred_close_still_leaves_a_running_task_open() {
+    let (_runtime, mut server, which) = a_task_window_on((2560, 1600));
+    let delivered = press_close_at(&mut server, which, 200);
+    assert!(
+        !delivered,
+        "the press reached an application behind the edge"
+    );
+    assert!(server.tasks().is_open(which), "a running task was closed");
 }
 
 /// **A press on Close does not close a running task**, and asks nothing to

@@ -137,6 +137,11 @@ impl crate::Server {
         };
         let decorations = crate::window_edge_who_draws::who_draws_a_frame();
         let mapped: Vec<WlSurface> = self.mapped_surfaces().cloned().collect();
+        // **In the edge's own units, at the display's scale**, the window and
+        // the press both — so a press lands on the control drawn under it on
+        // a dense display too (`crate::an_edge_in_its_displays_units`).
+        let scale = self.the_scale_an_edge_is_measured_at();
+        let at = crate::an_edge_in_its_displays_units::a_point_in_the_edges_units(at, scale);
         for surface in mapped {
             // **The same room the draw clamps into**, so a press lands where a
             // control was drawn. `edge_of` gained this argument when the
@@ -144,7 +149,10 @@ impl crate::Server {
             // overhangs it and is clamped inside the usable output, and a press
             // tested against an unclamped layout would miss by the overhang.
             let edge = edge_of(
-                crate::where_a_window_is(&surface),
+                crate::an_edge_in_its_displays_units::a_window_in_the_edges_units(
+                    crate::where_a_window_is(&surface),
+                    scale,
+                ),
                 decorations,
                 self.is_this_windows_edge_revealed(&surface),
                 self.the_room_an_edge_is_clamped_in(),
