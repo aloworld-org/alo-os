@@ -77,8 +77,11 @@ runtime's own log of 2026-10-11, not measured again since.
 
 - **Refused before sending** when the question cannot fit even at six bytes a
   token, with room for an answer.
-- **Refused after answering** when the runtime reports the window was full,
-  because its start may have been shifted out.
+- **Refused after answering** when the runtime's own counts show the window
+  was full, or that it read fewer tokens than the question could be — the second
+  catches the real runtime, which on 2026-10-28 cut a 6405-token question to
+  1026 in a 2048 window with only a line in its log;
+  either way its start may be gone.
 - Either way, the same sentence a provider's refusal for it gets.
 - Context shifting itself is not a request option or a server setting of the
   pinned release, so these two checks are what make it unreachable.

@@ -28,12 +28,15 @@
 //! request that counts tokens without answering, so this is an estimate — and
 //! it is pitched to refuse only what certainly does not fit, never what might.
 //!
-//! **After it was answered**, when the runtime says the window was full: the
-//! tokens it read and the tokens it wrote reach the size it was given. Then
-//! something may have been shifted out, and an answer to part of a question is
-//! not shown as an answer to the whole of it. This is the half that holds
-//! whatever the estimate missed. Both are refused with the sentence a provider's
-//! refusal for the same reason is (`alo_answering::WentWrong::TooLongForTheModel`).
+//! **After it was answered**, by the runtime's own counts, two ways: the
+//! tokens it read and wrote reached the size it was given, or — the one that
+//! catches the real runtime — it read fewer tokens than the question could be.
+//! Measured on 2026-10-28 against the pinned Ollama 0.34.0: a question of 6405
+//! tokens in a 2048 window was cut to 1026 with only a line in the runtime's
+//! log, and the answer came back as though nothing had happened. An answer to
+//! part of a question is not shown as an answer to the whole of it. Both checks
+//! are refused with the sentence a provider's refusal for the same reason is
+//! (`alo_answering::WentWrong::TooLongForTheModel`).
 //!
 //! The runtime's context shifting itself cannot be turned off from here: the
 //! pinned runtime's server configuration, as it prints it, has no setting for
@@ -79,6 +82,23 @@ pub fn the_window_was_full(read: u64, wrote: u64, window: u32) -> bool {
     read.saturating_add(wrote) >= u64::from(window)
 }
 
+/// **Whether the runtime read less of the question than was sent**: fewer
+/// tokens than the question could be even at [`BYTES_A_TOKEN_TAKES_AT_MOST`]
+/// bytes a token.
+///
+/// **This is the check that catches the real runtime**, and the window-full one
+/// does not. Measured on 2026-10-28 against the pinned Ollama 0.34.0 with a
+/// 2048-token window: a question of 6405 tokens was cut to **1026** —
+/// `truncating input prompt limit=1026 prompt=6405 keep=4` in its log — and it
+/// answered, reporting 1030 tokens read and 16 written. That is nowhere near a
+/// full window, and nothing in the answer said a word was dropped. What gives
+/// it away is the count: 1030 tokens cannot be twelve kilobytes of text.
+#[must_use]
+pub fn the_runtime_read_less_than_it_was_sent(read: u64, question: &str) -> bool {
+    let at_the_most = u64::try_from(BYTES_A_TOKEN_TAKES_AT_MOST).unwrap_or(u64::MAX);
+    read.saturating_mul(at_the_most) < u64::try_from(question.len()).unwrap_or(u64::MAX)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -102,6 +122,21 @@ mod tests {
         assert!(!certainly_does_not_fit(&might_fit, window));
         let cannot = "a".repeat(BYTES_A_TOKEN_TAKES_AT_MOST * 2048);
         assert!(certainly_does_not_fit(&cannot, window));
+    }
+
+    /// **The real runtime's cut is caught by its own count**: the numbers
+    /// Ollama 0.34.0 reported on 2026-10-28 for a question it cut to 1026
+    /// tokens, and for one of 1105 tokens it read whole, in a 2048 window.
+    #[test]
+    fn a_question_the_runtime_cut_is_caught_by_how_little_it_read() {
+        let cut = " word".repeat(1500) + " What was the first word?";
+        assert!(the_runtime_read_less_than_it_was_sent(1026 + 4, &cut));
+        assert!(
+            !the_window_was_full(1026 + 4, 16, 2048),
+            "the other check misses it"
+        );
+        let whole = " word".repeat(300) + " What was the first word?";
+        assert!(!the_runtime_read_less_than_it_was_sent(1105, &whole));
     }
 
     /// **A full window is caught after the answer**, and one with room is not.

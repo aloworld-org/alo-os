@@ -334,13 +334,13 @@ struct ChatResponse {
     /// How many tokens of the question were read, beside those read from the
     /// runtime's cache — together, what the window held of the question.
     #[serde(default)]
-    prompt_eval_count: u64,
+    prompt_eval_count: Option<u64>,
     /// The tokens of the question the runtime had cached from before.
     #[serde(default)]
-    prompt_eval_cached_count: u64,
+    prompt_eval_cached_count: Option<u64>,
     /// How many tokens the answer took.
     #[serde(default)]
-    eval_count: u64,
+    eval_count: Option<u64>,
 }
 
 /// The message a model wrote.
@@ -833,13 +833,18 @@ impl Ollama {
         // **A full window is not an answer to the whole question**: the
         // runtime may have shifted its start out to make room, so it is refused
         // rather than shown as though all of it was read.
-        if how_much_a_model_reads::the_window_was_full(
-            said.prompt_eval_count
-                .saturating_add(said.prompt_eval_cached_count),
-            said.eval_count,
-            window,
-        ) {
-            return Err(RuntimeError::TooLongForTheModel(of_model.to_owned()));
+        // **Only where the runtime reported its counts**, which the pinned one
+        // does on every answer; a runtime that says nothing is not guessed at.
+        if let Some(read) = said.prompt_eval_count {
+            let read = read.saturating_add(said.prompt_eval_cached_count.unwrap_or(0));
+            if how_much_a_model_reads::the_window_was_full(
+                read,
+                said.eval_count.unwrap_or(0),
+                window,
+            ) || how_much_a_model_reads::the_runtime_read_less_than_it_was_sent(read, question)
+            {
+                return Err(RuntimeError::TooLongForTheModel(of_model.to_owned()));
+            }
         }
         let said = said.message.map(|m| m.content).unwrap_or_default();
         if said.trim().is_empty() {
@@ -1530,6 +1535,9 @@ mod tests {
                 "model": "mistral-7b-instruct:latest",
                 "messages": [{"role": "user", "content": "may the tenant sublet?"}],
                 "stream": false,
+                // The window alo OS chose, on every question since 2026-10-28
+                // (ADR 0136); a runtime that lists no maximum gets the figure.
+                "options": {"num_ctx": how_much_a_model_reads::THE_MOST_ASKED_FOR},
             }),
             "{request}"
         );
@@ -1895,5 +1903,27 @@ mod tests {
             )),
             "{asked}"
         );
+    }
+
+    /// **A question the runtime cut is refused**, caught by how little it says
+    /// it read — the numbers the pinned runtime really reported on 2026-10-28
+    /// for a question it cut to 1026 tokens in a 2048 window, while its answer
+    /// said nothing about the cut.
+    #[test]
+    fn an_answer_to_a_question_the_runtime_cut_is_refused() {
+        let (url, server) = serving_in_turn(
+            &[
+                r#"{"models":[{"name":"a-model:latest","size":1,"details":{"context_length":2048}}]}"#,
+                r#"{"message":{"role":"assistant","content":"word0"},"prompt_eval_count":1026,"prompt_eval_cached_count":4,"eval_count":16}"#,
+            ],
+            200,
+        );
+        let found = found_at(&url, catalogue()).unwrap();
+        let cut = " word".repeat(1600) + " What was the first word?";
+        assert_eq!(
+            found.answers(&cut, "a-model"),
+            Err(RuntimeError::TooLongForTheModel("a-model".to_owned()))
+        );
+        server.join().unwrap();
     }
 }

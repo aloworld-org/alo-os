@@ -1330,6 +1330,7 @@ models.runtime.not-offered	{model} is not a model this system offers
 models.runtime.not-the-pinned-file	the file that arrived for {model} is not the one this system checked, so nothing was installed. {expected} was expected, and {arrived} arrived
 models.runtime.nothing-to-bring	{model} names no file on this machine, so there is nothing to tell the model runtime about
 models.runtime.pin-not-checked	the model runtime would not say which file it has for {model}, so it could not be checked against the one this system vouches for, and nothing was installed
+models.runtime.too-long-for-the-model	this conversation is now longer than {model} can read on this machine. Start a new one from the Dock to continue
 models.runtime.took-too-long	the model on this machine did not answer in the time alo OS waits — a smaller model, or a shorter question, answers sooner
 models.runtime.unreachable	the model runtime is not reachable
 models.runtime.unusable	the model runtime gave an answer that could not be used
