@@ -903,6 +903,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "alo-gettext"
+version = "0.0.1"
+dependencies = [
+ "alo-strings",
+]
+
+[[package]]
 name = "alo-giving-a-folder"
 version = "0.0.1"
 dependencies = [
@@ -1129,6 +1136,7 @@ dependencies = [
 name = "alo-keyboards"
 version = "0.0.1"
 dependencies = [
+ "alo-gettext",
  "alo-kept",
  "alo-shortcuts",
  "alo-strings",
@@ -1899,6 +1907,7 @@ dependencies = [
  "alo-capability",
  "alo-choosing",
  "alo-formats",
+ "alo-gettext",
  "alo-picking",
  "alo-saying",
  "alo-strings",

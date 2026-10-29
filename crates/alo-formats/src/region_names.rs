@@ -71,6 +71,23 @@ pub fn the_regions_named_in(language: &str) -> Vec<NamedRegion> {
     named
 }
 
+/// **One region's name in `language`**, by the same rule as the list — its
+/// English name where the language has none — without naming and sorting the
+/// other 249, which is what a row that names one region on every frame needs.
+#[must_use]
+pub fn the_name_in(code: &str, language: &str) -> Option<String> {
+    let region = Region::try_from_str(code).ok()?;
+    let locale: Locale = language.parse().unwrap_or(Locale::UNKNOWN);
+    let english: Locale = "en".parse().unwrap_or(Locale::UNKNOWN);
+    let theirs = RegionDisplayNames::try_new(locale.into(), DisplayNamesOptions::default()).ok();
+    let fallback = RegionDisplayNames::try_new(english.into(), DisplayNamesOptions::default()).ok();
+    theirs
+        .as_ref()
+        .and_then(|it| it.of(region))
+        .or_else(|| fallback.as_ref().and_then(|it| it.of(region)))
+        .map(str::to_owned)
+}
+
 /// The name of one region in `language`, by the same rule as the list.
 #[must_use]
 pub fn the_name_of(code: &str, language: &str) -> Option<String> {
@@ -135,6 +152,14 @@ mod tests {
         assert_eq!(the_name_of("DE", "de").as_deref(), Some("Deutschland"));
         assert_eq!(the_name_of("DE", "en").as_deref(), Some("Germany"));
         assert_eq!(the_name_of("BE", "fr").as_deref(), Some("Belgique"));
+        for (code, language) in [("DE", "de"), ("XK", "mt"), ("BE", "fr"), ("US", "en")] {
+            assert_eq!(
+                the_name_in(code, language),
+                the_name_of(code, language),
+                "{code} in {language}: one name and the list disagree"
+            );
+        }
+        assert_eq!(the_name_in("not a region", "de"), None);
     }
 
     /// **A language nobody can ask about still gets a list.**

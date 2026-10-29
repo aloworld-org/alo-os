@@ -186,7 +186,10 @@ pub fn stand_the_sign_in_screen_up(
     .where_the_machine_is(
         zone.iana_name()
             .and_then(alo_formats::where_the_machine_is::the_region_of_the_zone),
-    );
+    )
+    // **What every keyboard is called, read once**, so the keyboard sheet opens
+    // no file while a person is choosing.
+    .naming_keyboards_with(alo_keyboards::TheKeyboardNames::on_this_machine());
     let mut session = DirectSession::new(machine.display.to_owned())?;
     let stood = session.sign_in(&mut server, screen, &mut labels, first_look(), &mut next)?;
     // The seat's own close is separate from everything the display reported,

@@ -1,0 +1,15 @@
+[package]
+name = "alo-gettext"
+version = "0.0.1"
+description = "Reads the GNU gettext catalogues rented packages ship, so alo OS shows what those packages call their own words in a person's language."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+# The language a catalogue is asked for, as alo OS writes one.
+alo-strings = { path = "../alo-strings" }
+
+[lints]
+workspace = true

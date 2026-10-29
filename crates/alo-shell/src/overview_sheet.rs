@@ -1,0 +1,95 @@
+//! The first sheet a machine with nobody on it shows — frame `09 · Language,
+//! region and keyboard`: three rows, each its label over what is set now
+//! (*Language* over *English*), then *Continue* and *Back*.
+//!
+//! What the rows name is `crate::the_first_start`'s answer; the region is
+//! named in the person's language by CLDR (`alo_formats::region_names`), and
+//! the keyboard by `xkeyboard-config` (`alo_keyboards::TheKeyboardNames`).
+
+use cosmic_text::FontSystem;
+
+use crate::setup_sheet_painting::{TheSheetSays, a_sheet, two_lines};
+use crate::setup_sheet_surface::{TheMarks, TheRing};
+use crate::sign_in_raster::{Measure, SignInPicture};
+use crate::sign_in_surface::TheColours;
+use crate::the_first_start::{Row, TheFirstStart};
+use crate::the_languages_offered::WhereTheRingIs;
+use crate::{RenderError, first_start_words as say};
+
+/// Draw the overview.
+///
+/// # Errors
+/// [`RenderError::SignInScene`] for a screen too small to hold a sheet.
+pub(crate) fn drawn(
+    first_start: &TheFirstStart,
+    fonts: &mut FontSystem,
+    words: &alo_strings::Strings,
+    size: (i32, i32),
+    colours: TheColours,
+    measure: &Measure,
+) -> Result<SignInPicture, RenderError> {
+    let nothing = alo_strings::Filling::nothing();
+    let say_it = |word: alo_strings::Word| words.say(&word.key(), &nothing).into_text();
+    let (eyebrow, title, introduction) = (
+        say_it(say::LANGUAGE_EYEBROW),
+        say_it(say::OVERVIEW_TITLE),
+        say_it(say::OVERVIEW_INTRODUCTION),
+    );
+    let (go_on, go_back) = (say_it(say::CONTINUE), say_it(say::BACK));
+    let ring = match first_start.ring() {
+        WhereTheRingIs::OnTheList => Row::ALL
+            .iter()
+            .position(|it| *it == first_start.row())
+            .map(TheRing::OnAChoice),
+        WhereTheRingIs::OnTheWayOn => Some(TheRing::OnAnAction(0)),
+    };
+    let (mut drawn, at) = a_sheet(
+        &TheSheetSays {
+            eyebrow: &eyebrow,
+            title: &title,
+            introduction: &introduction,
+            actions: [&go_on, &go_back],
+        },
+        Row::ALL.len(),
+        TheMarks { chosen: None, ring },
+        fonts,
+        words,
+        size,
+        colours,
+        measure,
+    )?;
+
+    let language = first_start.the_language();
+    for (row, card) in Row::ALL.iter().zip(at.choices.iter()) {
+        let (label, set_to) = match row {
+            Row::Language => (
+                say_it(say::ROW_LANGUAGE),
+                first_start.the_language_calls_itself().to_owned(),
+            ),
+            Row::Region => (
+                say_it(say::ROW_REGION),
+                first_start
+                    .the_region()
+                    .and_then(|it| alo_formats::region_names::the_name_in(it.code(), language))
+                    .unwrap_or_default(),
+            ),
+            Row::Keyboard => (
+                say_it(say::ROW_KEYBOARD),
+                first_start.the_name_of(&first_start.the_keyboard()),
+            ),
+        };
+        two_lines(
+            &mut drawn,
+            fonts,
+            *card,
+            (&label, &set_to),
+            colours,
+            measure,
+        );
+    }
+    Ok(drawn)
+}
+
+#[cfg(test)]
+#[path = "overview_sheet_tests.rs"]
+mod tests;

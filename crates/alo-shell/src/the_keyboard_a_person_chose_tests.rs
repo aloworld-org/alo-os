@@ -9,6 +9,16 @@
 
 use super::{AboutTheKeyboard, TheKeyboardAPersonChose};
 
+/// The keyboard a language is offered first, which is what the sheets hand
+/// out for a language chosen with no keyboard chosen.
+fn the_keyboard_for(tag: &str) -> alo_keyboards::Layout {
+    alo_keyboards::Keyboards::offered_with(
+        &alo_strings::Language::written(tag).expect("a language tag"),
+    )
+    .in_use()
+    .clone()
+}
+
 /// A folder this test alone writes in, emptied of whatever a previous run left.
 fn a_folder_of_our_own(what: &str) -> std::path::PathBuf {
     let folder = std::env::temp_dir().join(format!("alo-shell-chose-{what}"));
@@ -34,7 +44,7 @@ fn nothing_chosen_does_nothing_and_writes_nothing() {
 fn choosing_french_keeps_it_and_hands_back_the_layout_to_apply() {
     let at = a_folder_of_our_own("french").join(alo_keyboards::keeping::THE_FILE);
     let mut chose = TheKeyboardAPersonChose::nothing_yet();
-    let AboutTheKeyboard::Apply(layout) = chose.chose(Some("fr"), &at) else {
+    let AboutTheKeyboard::Apply(layout) = chose.chose(Some(&the_keyboard_for("fr")), &at) else {
         panic!("choosing French did not ask for a keyboard to be applied");
     };
     assert_eq!(layout.name(), "fr", "French is typed on an AZERTY keyboard");
@@ -58,7 +68,7 @@ fn one_layout_is_kept_and_it_is_the_language_s_first_offer() {
     let at = a_folder_of_our_own("one-layout").join(alo_keyboards::keeping::THE_FILE);
     let mut chose = TheKeyboardAPersonChose::nothing_yet();
     assert!(matches!(
-        chose.chose(Some("fr"), &at),
+        chose.chose(Some(&the_keyboard_for("fr")), &at),
         AboutTheKeyboard::Apply(_)
     ));
     let read = alo_keyboards::keeping::read(&at).expect("what was written reads back");
@@ -92,12 +102,12 @@ fn choosing_the_same_language_again_changes_nothing() {
     let at = a_folder_of_our_own("again").join(alo_keyboards::keeping::THE_FILE);
     let mut chose = TheKeyboardAPersonChose::nothing_yet();
     assert!(matches!(
-        chose.chose(Some("de"), &at),
+        chose.chose(Some(&the_keyboard_for("de")), &at),
         AboutTheKeyboard::Apply(_)
     ));
     for _ in 0..5 {
         assert_eq!(
-            chose.chose(Some("de"), &at),
+            chose.chose(Some(&the_keyboard_for("de")), &at),
             AboutTheKeyboard::Unchanged,
             "choosing the same language again asked for a keymap rebuild"
         );
@@ -109,10 +119,10 @@ fn changing_the_choice_applies_the_new_one() {
     let at = a_folder_of_our_own("changed").join(alo_keyboards::keeping::THE_FILE);
     let mut chose = TheKeyboardAPersonChose::nothing_yet();
     assert!(matches!(
-        chose.chose(Some("de"), &at),
+        chose.chose(Some(&the_keyboard_for("de")), &at),
         AboutTheKeyboard::Apply(_)
     ));
-    let AboutTheKeyboard::Apply(layout) = chose.chose(Some("fr"), &at) else {
+    let AboutTheKeyboard::Apply(layout) = chose.chose(Some(&the_keyboard_for("fr")), &at) else {
         panic!("changing the choice did not apply the new one");
     };
     assert_eq!(layout.name(), "fr");
@@ -141,7 +151,7 @@ fn a_choice_that_cannot_be_written_is_not_applied() {
     std::fs::write(&in_the_way, b"not a folder").expect("a file in the way");
     let at = in_the_way.join(alo_keyboards::keeping::THE_FILE);
     let mut chose = TheKeyboardAPersonChose::nothing_yet();
-    let answer = chose.chose(Some("fr"), &at);
+    let answer = chose.chose(Some(&the_keyboard_for("fr")), &at);
     assert!(
         matches!(answer, AboutTheKeyboard::NotKept(_)),
         "a choice that could not be written was applied anyway: {answer:?}"
@@ -152,18 +162,25 @@ fn a_choice_that_cannot_be_written_is_not_applied() {
     let folder = a_folder_of_our_own("unwritable-then-writable");
     let at = folder.join(alo_keyboards::keeping::THE_FILE);
     assert!(
-        matches!(chose.chose(Some("fr"), &at), AboutTheKeyboard::Apply(_)),
+        matches!(
+            chose.chose(Some(&the_keyboard_for("fr")), &at),
+            AboutTheKeyboard::Apply(_)
+        ),
         "after a failed write the choice was treated as already applied"
     );
 }
 
+/// **A keyboard that is not the language's is kept as chosen** — English
+/// read on a German keyboard, the owner's example of 2026-10-28.
 #[test]
-fn a_tag_that_is_not_a_language_is_refused_rather_than_written() {
-    let at = a_folder_of_our_own("nonsense").join(alo_keyboards::keeping::THE_FILE);
+fn a_keyboard_other_than_the_languages_is_kept_as_chosen() {
+    let at = a_folder_of_our_own("english-on-german").join(alo_keyboards::keeping::THE_FILE);
     let mut chose = TheKeyboardAPersonChose::nothing_yet();
-    assert!(matches!(
-        chose.chose(Some("not-a-language-tag-at-all"), &at),
-        AboutTheKeyboard::NotKept(_)
-    ));
-    assert!(!at.exists(), "a nonsense tag wrote a keyboards file");
+    let german = alo_keyboards::Layout::named("de").expect("de");
+    assert_eq!(
+        chose.chose(Some(&german), &at),
+        AboutTheKeyboard::Apply(german.clone())
+    );
+    let read = alo_keyboards::keeping::read(&at).expect("what was written reads back");
+    assert_eq!(read.in_use(), &german);
 }

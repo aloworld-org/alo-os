@@ -16,6 +16,8 @@ alo-strings = { path = "../alo-strings" }
 # ADR 0038: a person's keyboards are kept in their own folder, by this crate,
 # under the one rule every such file is kept by.
 alo-kept = { path = "../alo-kept" }
+# What `xkeyboard-config` calls each keyboard in the person's language.
+alo-gettext = { path = "../alo-gettext" }
 serde = { workspace = true }
 thiserror = { workspace = true }
 

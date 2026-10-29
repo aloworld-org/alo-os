@@ -49,21 +49,20 @@ fn a_fresh_machine() -> (tempfile::TempDir, SignInScreen<ADoor>) {
     (kept, SignInScreen::of(Ok(greeting), words))
 }
 
-/// A fresh machine, walked past the language and region sheets to the name
-/// sheet.
+/// A fresh machine, walked past the first-start overview to the name sheet.
 ///
-/// **The language sheet comes first since 2026-10-13, and the region sheet
-/// after it since 2026-10-28**, so a test about the account sheet has to reach
-/// it the way a person does: on each, one Enter chooses the row under the
-/// cursor and a second takes the way on. Walking the real journey rather than
-/// adding a constructor that skips it — a test that built the name sheet
-/// directly would keep passing on a machine where a sheet never handed over.
+/// **The language sheet came first from 2026-10-13, and since 2026-10-28 the
+/// overview of frame `09` does**, so a test about the account sheet has to
+/// reach it the way a person does: Tab to *Continue*, and take it. Walking the
+/// real journey rather than adding a constructor that skips it — a test that
+/// built the name sheet directly would keep passing on a machine where the
+/// overview never handed over.
 fn at_the_name_sheet(screen: SignInScreen<ADoor>) -> SignInScreen<ADoor> {
     let mut screen = screen;
-    for _ in 0..4 {
-        screen = match screen.pressed(crate::SignInKey::Enter) {
+    for key in [crate::SignInKey::OtherField, crate::SignInKey::Enter] {
+        screen = match screen.pressed(key) {
             Signing::Still(screen) => *screen,
-            Signing::HandedOver(_) => panic!("a first-start sheet signed somebody in"),
+            Signing::HandedOver(_) => panic!("the first-start overview signed somebody in"),
         };
     }
     screen

@@ -12,6 +12,7 @@ members = [
   "crates/alo-giving-a-folder",
   "crates/alo-giving-a-name",
   "crates/alo-their-folders",
+  "crates/alo-gettext",
   "crates/alo-as-it-was",
   "crates/alo-back",
   "crates/alo-kept-undo",

@@ -17,10 +17,15 @@
 //! # The name in the record is not the name on the disk
 //!
 //! The folder on the disk is called whatever `xdg-user-dirs` calls it in the
-//! person's language ([`crate::catalogue`]).
+//! person's language (`alo_gettext`).
 //! The key in the record is always the same ASCII, because that key is what
 //! other software reads — it is a name for programs, not for people, and
 //! translating it would hide the folder from everything that looks for it.
+
+/// **The package whose catalogue names these folders**: `xdg-user-dirs`, the
+/// one every Linux desktop names them with (ADR 0137). Its keys are the English
+/// names in `/etc/xdg/user-dirs.defaults` — [`Folder::xdg_name`].
+pub const THE_CATALOGUE: &str = "xdg-user-dirs";
 
 /// One of the folders a person gets in their home.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]

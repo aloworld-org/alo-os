@@ -186,6 +186,83 @@ pub const USE_THIS_REGION: Word = Word::saying("shell.first-start.region.use", "
          than saying OK.",
     );
 
+/// The overview's heading, frame `09`.
+pub const OVERVIEW_TITLE: Word = Word::saying(
+    "shell.first-start.overview.title",
+    "Start with your language.",
+)
+.noting(
+    "The heading of the first screen a new computer shows, which has three rows: the language, \
+     the region and the keyboard. Each row opens a list to choose from.",
+);
+
+/// What the overview is for.
+pub const OVERVIEW_INTRODUCTION: Word = Word::saying(
+    "shell.first-start.overview.introduction",
+    "Choose the language and keyboard you feel comfortable using.",
+)
+.noting("Under the heading on the first screen, saying what its three rows are for.");
+
+/// The overview's language row.
+pub const ROW_LANGUAGE: Word = Word::saying("shell.first-start.overview.language", "Language")
+    .noting("A row label on the first screen; the language currently chosen is written under it.");
+
+/// The overview's region row.
+pub const ROW_REGION: Word = Word::saying("shell.first-start.overview.region", "Region").noting(
+    "A row label on the first screen; the country or region currently chosen is written under \
+     it. It decides how dates and numbers are written.",
+);
+
+/// The overview's keyboard row.
+pub const ROW_KEYBOARD: Word = Word::saying("shell.first-start.overview.keyboard", "Keyboard")
+    .noting(
+        "A row label on the first screen; the keyboard layout currently chosen is written under \
+         it.",
+    );
+
+/// The small line above the heading on the keyboard sheet, frame `09a`.
+pub const KEYBOARD_EYEBROW: Word =
+    Word::saying("shell.first-start.keyboard.eyebrow", "type comfortably").noting(
+        "A short line above the heading on the screen where a person picks their keyboard \
+         layout. Lower case, like every quiet label in alo OS. It describes the step.",
+    );
+
+/// The keyboard sheet's heading.
+pub const KEYBOARD_TITLE: Word =
+    Word::saying("shell.first-start.keyboard.title", "Choose your keyboard.")
+        .noting("The heading of the screen where a person picks their keyboard layout.");
+
+/// What the keyboard sheet asks.
+pub const KEYBOARD_INTRODUCTION: Word = Word::saying(
+    "shell.first-start.keyboard.introduction",
+    "Use the layout printed on your keyboard.",
+)
+.noting(
+    "Under the heading on the keyboard screen: pick the layout that matches the letters printed \
+     on the keys in front of you.",
+);
+
+/// The row where a keyboard is tried.
+pub const TEST_YOUR_KEYBOARD: Word =
+    Word::saying("shell.first-start.keyboard.test", "Test your keyboard").noting(
+        "A row on the keyboard screen where a person types to check the layout they chose. What \
+         they type appears in it.",
+    );
+
+/// What that row says before anything is typed.
+pub const TEST_HINT: Word = Word::saying(
+    "shell.first-start.keyboard.test.hint",
+    "Type here to check letters and symbols.",
+)
+.noting("The second line of the test row, before anything has been typed in it.");
+
+/// The way on from the keyboard sheet.
+pub const USE_THIS_KEYBOARD: Word =
+    Word::saying("shell.first-start.keyboard.use", "Use this keyboard").noting(
+        "The button that accepts the keyboard layout chosen. It names what it does rather than \
+         saying OK.",
+    );
+
 /// The way back from a sheet that has one.
 pub const BACK: Word = Word::saying("shell.first-start.back", "Back")
     .noting("The button that returns to the previous step of setting up. It changes nothing.");
@@ -197,7 +274,7 @@ pub const SELECTED: Word = Word::saying("shell.first-start.selected", "Selected"
      word. Keep it a single word if your language has one.",
 );
 /// Every string these sheets draw.
-pub const FIRST_START_WORDS: [Word; 27] = [
+pub const FIRST_START_WORDS: [Word; 38] = [
     STAGE,
     NAME_EYEBROW,
     NAME_TITLE,
@@ -225,6 +302,17 @@ pub const FIRST_START_WORDS: [Word; 27] = [
     OTHER_REGION,
     OTHER_REGION_HINT,
     USE_THIS_REGION,
+    OVERVIEW_TITLE,
+    OVERVIEW_INTRODUCTION,
+    ROW_LANGUAGE,
+    ROW_REGION,
+    ROW_KEYBOARD,
+    KEYBOARD_EYEBROW,
+    KEYBOARD_TITLE,
+    KEYBOARD_INTRODUCTION,
+    TEST_YOUR_KEYBOARD,
+    TEST_HINT,
+    USE_THIS_KEYBOARD,
 ];
 
 /// Invalid declaration or collision while registering this wording.

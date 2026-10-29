@@ -4,7 +4,7 @@
 //!
 //! **The folders' names are not here.** They were, until 2026-10-28, as three
 //! words for alo OS's own translators. They are now what `xdg-user-dirs` calls
-//! them in the person's language ([`crate::catalogue`], ADR 0137), so a German
+//! them in the person's language (`alo_gettext`, ADR 0137), so a German
 //! person's `Dokumente` is the `Dokumente` every other Linux program expects.
 //!
 //! The shape is `alo-picking`'s and is copied rather than re-decided:

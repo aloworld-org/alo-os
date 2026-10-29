@@ -17,6 +17,9 @@ alo-strings = { path = "../alo-strings" }
 alo-choosing = { path = "../alo-choosing" }
 alo-formats = { path = "../alo-formats" }
 
+# What `xdg-user-dirs` calls each folder in the person's language (ADR 0137).
+alo-gettext = { path = "../alo-gettext" }
+
 # The one derive this crate rents, for the refusals a caller has to tell apart.
 thiserror = { workspace = true }
 

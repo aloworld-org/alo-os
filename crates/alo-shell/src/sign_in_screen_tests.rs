@@ -140,7 +140,7 @@ fn sentence(screen: &SignInScreen<CountingDoor>) -> Option<String> {
         // The language sheet shows no sentence of its own: it offers a list
         // and two actions, and what it would say about a refusal belongs to
         // the sheet that asks for a name.
-        SignInShows::Language { .. } | SignInShows::Region { .. } => None,
+        SignInShows::FirstStart(_) => None,
     }
 }
 
@@ -400,10 +400,9 @@ fn a_machine_with_nobody_on_it_is_offered_a_sheet_and_refused_without_a_store() 
         Ok(Greeting::of(Accounts::none().unwrap(), PERSON, door)),
         the_machines_words(),
     );
-    // Past the language and region sheets, then a name, a secret and submit —
-    // the walk a person actually takes. On each sheet one Enter chooses the row
-    // under the cursor and a second takes the way on.
-    for key in [SignInKey::Enter; 4] {
+    // Past the first-start overview, then a name, a secret and submit — the
+    // walk a person actually takes: Tab to *Continue*, and take it.
+    for key in [SignInKey::OtherField, SignInKey::Enter] {
         screen = still(screen.pressed(key));
     }
     // A name, then a secret, then submit.
@@ -482,7 +481,7 @@ fn every_sentence_the_screen_can_show_is_collected_and_none_is_written_here() {
         }
         SignInShows::Sentence(said) => shown.push(said.clone()),
         // The language and region sheets have no sentence to collect.
-        SignInShows::Language { .. } | SignInShows::Region { .. } => {}
+        SignInShows::FirstStart(_) => {}
     };
 
     // **The first-start sheet says nothing until something is tried**, so it
@@ -494,10 +493,8 @@ fn every_sentence_the_screen_can_show_is_collected_and_none_is_written_here() {
         the_machines_words(),
     );
     for key in [
-        // Past the language and region sheets: choose, then take the way on.
-        SignInKey::Enter,
-        SignInKey::Enter,
-        SignInKey::Enter,
+        // Past the first-start overview: Tab to *Continue*, and take it.
+        SignInKey::OtherField,
         SignInKey::Enter,
         SignInKey::Letter('a'),
         SignInKey::Enter,
@@ -618,17 +615,16 @@ fn a_submission_leaves_no_screen_to_submit_again() {
 
 /// A screen at the first-account sheet, with a name typed and nothing else.
 ///
-/// The four Enters at the front are the language and region sheets': on each
-/// one chooses the row under the cursor, one takes the way on. All are a person's own
-/// presses and neither is hidden, which is why the fixture makes them rather
-/// than reaching past them.
+/// The two keys at the front are the first-start overview's: Tab to
+/// *Continue*, and Enter on it. Both are a person's own presses and neither is
+/// hidden, which is why the fixture makes them rather than reaching past them.
 fn at_the_first_account_sheet() -> SignInScreen<CountingDoor> {
     let (door, _heard) = a_door(Ok(Answered::Opened));
     let mut screen = SignInScreen::of(
         Ok(Greeting::of(Accounts::none().unwrap(), PERSON, door)),
         the_machines_words(),
     );
-    for key in [SignInKey::Enter; 4] {
+    for key in [SignInKey::OtherField, SignInKey::Enter] {
         screen = still(screen.pressed(key));
     }
     for key in [
@@ -704,8 +700,9 @@ fn a_refusal_does_not_follow_the_person_to_the_next_thing_they_type() {
 
 /// **The screen speaks the language from the press that chose it** — the
 /// owner's decision of 2026-10-28, *from the first minute*. German chosen on
-/// the sheet is the first language the screen tries for every sentence after,
-/// including the first-account sheet; Escape gives it back its source.
+/// the language sheet is the first language the screen tries for every
+/// sentence after, the first-account sheet included; Back gives it back its
+/// source.
 #[test]
 fn choosing_a_language_on_the_sheet_is_the_language_the_screen_speaks() {
     let (door, _heard) = a_door(Ok(Answered::Opened));
@@ -713,12 +710,18 @@ fn choosing_a_language_on_the_sheet_is_the_language_the_screen_speaks() {
         Ok(Greeting::of(Accounts::none().unwrap(), PERSON, door)),
         the_machines_words(),
     );
+    assert!(matches!(screen.shows(), SignInShows::FirstStart(_)));
     assert!(
         screen.words().chain().is_empty(),
         "spoke a language nobody chose"
     );
-    // From English, two rows up is Deutsch.
-    for key in [SignInKey::Earlier, SignInKey::Earlier, SignInKey::Enter] {
+    // The language row; from English, two rows up is Deutsch; choose it.
+    for key in [
+        SignInKey::Enter,
+        SignInKey::Earlier,
+        SignInKey::Earlier,
+        SignInKey::Enter,
+    ] {
         screen = still(screen.pressed(key));
     }
     assert_eq!(screen.the_language_chosen(), Some("de"));
@@ -730,9 +733,19 @@ fn choosing_a_language_on_the_sheet_is_the_language_the_screen_speaks() {
             .map(alo_strings::Language::tag),
         Some("de")
     );
+    // Back: nothing chosen, and the screen speaks its source again.
     screen = still(screen.pressed(SignInKey::Clear));
-    assert!(screen.words().chain().is_empty(), "unchoosing kept German");
-    for key in [SignInKey::Enter; 4] {
+    assert!(screen.words().chain().is_empty(), "back kept German");
+    // Chosen again and used, then on to the first account.
+    for key in [
+        SignInKey::Enter,
+        SignInKey::Earlier,
+        SignInKey::Earlier,
+        SignInKey::Enter,
+        SignInKey::Enter,
+        SignInKey::OtherField,
+        SignInKey::Enter,
+    ] {
         screen = still(screen.pressed(key));
     }
     assert!(matches!(screen.shows(), SignInShows::FirstAccount { .. }));
@@ -747,79 +760,63 @@ fn choosing_a_language_on_the_sheet_is_the_language_the_screen_speaks() {
     );
 }
 
-/// **After the language, the region the machine is in** — frame `09c` — named
-/// in the language just chosen, arriving with the country of the machine's
-/// time zone; taking it is what the compositor keeps, and Escape goes back to
-/// the language sheet as it was left.
+/// **The overview names the region the machine is in, the region row takes
+/// one, and English can be typed on a German keyboard** — every choice of
+/// frame `09` reaching the compositor through the screen.
 #[test]
-fn the_region_sheet_follows_the_language_and_is_taken_or_left() {
+fn the_overview_takes_a_region_and_a_keyboard_apart_from_the_language() {
     let (door, _heard) = a_door(Ok(Answered::Opened));
     let mut screen = SignInScreen::of(
         Ok(Greeting::of(Accounts::none().unwrap(), PERSON, door)),
         the_machines_words(),
     )
     .where_the_machine_is(alo_formats::RegionCode::named("AT").ok());
+    let SignInShows::FirstStart(first_start) = screen.shows() else {
+        panic!("a fresh machine did not open on the first-start overview");
+    };
+    assert_eq!(
+        first_start
+            .the_region()
+            .map(|it| it.code().to_owned())
+            .as_deref(),
+        Some("AT")
+    );
+    // The region row: take the region it arrives with.
     for key in [
-        SignInKey::Earlier,
-        SignInKey::Earlier,
+        SignInKey::Later,
+        SignInKey::Enter,
         SignInKey::Enter,
         SignInKey::Enter,
     ] {
         screen = still(screen.pressed(key));
     }
-    let SignInShows::Region { offered } = screen.shows() else {
-        panic!("the language sheet did not lead to the region sheet");
-    };
-    assert_eq!(offered.rows()[0], Some("Österreich"), "not named in German");
-    assert_eq!(screen.the_region_chosen(), None, "kept before it was taken");
-
-    screen = still(screen.pressed(SignInKey::Clear));
-    assert!(matches!(screen.shows(), SignInShows::Language { .. }));
+    assert_eq!(screen.the_region_chosen(), Some("AT"));
+    assert_eq!(
+        screen.the_keyboard_chosen(),
+        None,
+        "a keyboard nobody chose"
+    );
+    // The keyboard row: down to a German keyboard and choose it.
+    screen = still(screen.pressed(SignInKey::Later));
+    screen = still(screen.pressed(SignInKey::Enter));
+    let german = alo_keyboards::Layout::named("de").unwrap();
+    for _ in 0..200 {
+        let SignInShows::FirstStart(first_start) = screen.shows() else {
+            panic!("the sheets closed");
+        };
+        let crate::the_first_start::Sheet::Keyboard(picker) = first_start.sheet() else {
+            panic!("the keyboard row did not open the keyboard sheet");
+        };
+        if picker.window().get(picker.cursor_in_the_window().unwrap()) == Some(&german) {
+            break;
+        }
+        screen = still(screen.pressed(SignInKey::Later));
+    }
+    screen = still(screen.pressed(SignInKey::Enter));
+    assert_eq!(screen.the_keyboard_chosen(), Some(german.clone()));
     assert_eq!(
         screen.the_language_chosen(),
-        Some("de"),
-        "back lost the language"
-    );
-
-    screen = still(screen.pressed(SignInKey::Enter));
-    for key in [SignInKey::Enter, SignInKey::Enter] {
-        screen = still(screen.pressed(key));
-    }
-    assert!(matches!(screen.shows(), SignInShows::FirstAccount { .. }));
-    assert_eq!(screen.the_region_chosen(), Some("AT"));
-}
-
-/// **An English reader on a machine that knows nothing is shown the United
-/// States by name**, where they can pick where they are — never written to as
-/// an American without seeing it.
-#[test]
-fn a_machine_that_knows_nothing_offers_the_languages_usual_region_by_name() {
-    let (door, _heard) = a_door(Ok(Answered::Opened));
-    let mut screen = SignInScreen::of(
-        Ok(Greeting::of(Accounts::none().unwrap(), PERSON, door)),
-        the_machines_words(),
-    );
-    for key in [SignInKey::Enter, SignInKey::Enter] {
-        screen = still(screen.pressed(key));
-    }
-    let SignInShows::Region { offered } = screen.shows() else {
-        panic!("the language sheet did not lead to the region sheet");
-    };
-    assert_eq!(offered.chosen().map(|it| it.code), Some("US"));
-    // Other region, two down, taken.
-    for key in [
-        SignInKey::Later,
-        SignInKey::Enter,
-        SignInKey::Later,
-        SignInKey::Later,
-        SignInKey::Enter,
-        SignInKey::Enter,
-    ] {
-        screen = still(screen.pressed(key));
-    }
-    assert!(matches!(screen.shows(), SignInShows::FirstAccount { .. }));
-    assert!(
-        screen.the_region_chosen().is_some_and(|it| it != "US"),
-        "another region was picked and the United States was kept"
+        None,
+        "the keyboard chose a language"
     );
 }

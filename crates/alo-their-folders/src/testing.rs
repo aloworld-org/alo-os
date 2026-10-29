@@ -26,9 +26,9 @@ use std::cell::RefCell;
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
 
-use crate::catalogue::{Catalogue, written};
 use crate::folders::Folder;
 use crate::making::Disk;
+use alo_gettext::{Catalogue, written};
 
 /// **An `xdg-user-dirs` catalogue** naming these folders — German in name,
 /// because it is the language the rest of this repository tests with —

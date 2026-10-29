@@ -1,32 +1,28 @@
-//! **What every Linux desktop calls these folders in a language**: the
-//! translations `xdg-user-dirs` ships, read from the machine rather than
-//! written here.
+//! **What a rented package calls its own words in a language**: the GNU
+//! gettext catalogues packages ship, read from the machine rather than written
+//! here.
 //!
-//! [ADR 0137](../../../docs/decisions/0137-home-folder-names-come-from-xdg-user-dirs.md):
-//! a German person gets `Dokumente` because that is what `xdg-user-dirs` — the
-//! package every Linux desktop uses to name and record these folders — calls
-//! *Documents* in German, in a catalogue kept by that project's translators
-//! for some seventy languages. A list of our own would be a second answer that
-//! disagrees with Dolphin, GNOME Files and every other program on the first
-//! machine where the two differ.
+//! alo OS rents names it would otherwise have to invent and keep in 24
+//! languages: what `xdg-user-dirs` calls a person's Documents folder
+//! ([ADR 0137](../../../docs/decisions/0137-home-folder-names-come-from-xdg-user-dirs.md)),
+//! what `xkeyboard-config` calls a keyboard layout. Each package's
+//! translators keep its catalogue for dozens of languages, every other Linux
+//! program reads the same one, and so a German person's `Dokumente` or
+//! `Deutsch` keyboard is what every program on their machine agrees on. A list
+//! of our own would be a second answer, wrong first in the languages nobody in
+//! this repository reads.
 //!
 //! # The file
 //!
-//! A GNU gettext catalogue, `<root>/<language>/LC_MESSAGES/xdg-user-dirs.mo`,
-//! whose keys are the English names in `/etc/xdg/user-dirs.defaults` —
-//! `Documents`, `Downloads`, `Pictures` and five more — and see
-//! [`crate::Folder::xdg_name`]. The format is GNU's and is read here in
+//! `<root>/<language>/LC_MESSAGES/<domain>.mo`, GNU's format, read here in
 //! full: a magic number, a count, and two tables of lengths and offsets — one
 //! for the English, one for the translation at the same position.
 //!
-//! # A language it does not have
+//! # A language a package does not have
 //!
-//! Is a language whose folders `xdg-user-dirs` itself leaves in English, and
-//! so does this: the key is the name. That is the upstream answer on every
-//! Linux desktop, not a fallback of ours. Of the 24 official EU languages the
-//! catalogue the image installs has 22 (English is its source); **Maltese is
-//! the one without**, measured on 2026-10-28 from Fedora 42's `xdg-user-dirs`
-//! 0.18, and ADR 0137 records that.
+//! Is [`None`], and a caller shows the English the package itself is written
+//! in, exactly as every other Linux program does for that language. That is
+//! the package's own answer, not a fallback of ours.
 
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
@@ -36,10 +32,7 @@ use alo_strings::Language;
 /// Where a machine keeps its gettext catalogues.
 pub const THE_LOCALES: &str = "/usr/share/locale";
 
-/// The catalogue's name under each language.
-pub const THE_DOMAIN: &str = "xdg-user-dirs";
-
-/// **One language's names for the folders.**
+/// **One language's catalogue, for one package.**
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Catalogue {
     /// Each English key, and its translation.
@@ -125,23 +118,24 @@ impl Catalogue {
         Ok(Self { names })
     }
 
-    /// **The catalogue for `language` under `root`**, or [`None`] where the
-    /// machine has none for it — tried as the language is written (`pt_BR`),
-    /// then as its broader form (`pt`).
+    /// **The catalogue `domain` ships for `language` under `root`**, or
+    /// [`None`] where the machine has none for it — tried as the language is
+    /// written (`pt_BR`), then as its broader form (`pt`).
     #[must_use]
-    pub fn for_language(root: &Path, language: &Language) -> Option<Self> {
+    pub fn for_language(root: &Path, domain: &str, language: &Language) -> Option<Self> {
         let written = language.tag().replace('-', "_");
         let broader = written.split('_').next().unwrap_or_default().to_owned();
         [written, broader]
             .iter()
-            .map(|it| the_file(root, it))
+            .map(|it| the_file(root, it, domain))
             .find_map(|at| std::fs::read(at).ok())
             .and_then(|bytes| Self::read(&bytes).ok())
     }
 
-    /// What this language calls the folder whose English key is `key`.
+    /// What this language says for the English `key`, where the catalogue
+    /// says anything — an empty translation is none, as gettext reads it.
     #[must_use]
-    pub fn name_of(&self, key: &str) -> Option<&str> {
+    pub fn translation_of(&self, key: &str) -> Option<&str> {
         self.names
             .get(key)
             .map(String::as_str)
@@ -149,22 +143,20 @@ impl Catalogue {
     }
 }
 
-/// Where one language's catalogue is.
+/// Where one language's catalogue for `domain` is.
 #[must_use]
-pub fn the_file(root: &Path, locale: &str) -> PathBuf {
+pub fn the_file(root: &Path, locale: &str, domain: &str) -> PathBuf {
     root.join(locale)
         .join("LC_MESSAGES")
-        .join(format!("{THE_DOMAIN}.mo"))
+        .join(format!("{domain}.mo"))
 }
 
-/// A catalogue's bytes, as GNU `msgfmt` writes one, for a test.
-#[cfg(test)]
-#[expect(
-    clippy::cast_possible_truncation,
-    reason = "a test's catalogue is a few hundred bytes"
-)]
-pub(crate) fn written(pairs: &[(&str, &str)]) -> Vec<u8> {
-    let count = pairs.len() as u32;
+/// **A catalogue's bytes, as GNU `msgfmt` writes one**, little-endian — for
+/// tests in every crate that reads a package's catalogue, so none of them
+/// writes its own copy of the format.
+#[must_use]
+pub fn written(pairs: &[(&str, &str)]) -> Vec<u8> {
+    let count = u32::try_from(pairs.len()).unwrap_or_default();
     let originals = 28_u32;
     let translations = originals + 8 * count;
     let mut strings_at = translations + 8 * count;
@@ -182,11 +174,12 @@ pub(crate) fn written(pairs: &[(&str, &str)]) -> Vec<u8> {
             } else {
                 &mut tables.1
             };
-            table.extend((it.len() as u32).to_le_bytes());
+            let length = u32::try_from(it.len()).unwrap_or_default();
+            table.extend(length.to_le_bytes());
             table.extend(strings_at.to_le_bytes());
             text.extend(it.as_bytes());
             text.push(0);
-            strings_at += it.len() as u32 + 1;
+            strings_at = strings_at.saturating_add(length).saturating_add(1);
         }
     }
     [head, tables.0, tables.1, text].concat()
@@ -209,9 +202,9 @@ mod tests {
             ("Documents", "Dokumente"),
         ]);
         let catalogue = Catalogue::read(&bytes).unwrap();
-        assert_eq!(catalogue.name_of("Documents"), Some("Dokumente"));
-        assert_eq!(catalogue.name_of(""), None);
-        assert_eq!(catalogue.name_of("Pictures"), None);
+        assert_eq!(catalogue.translation_of("Documents"), Some("Dokumente"));
+        assert_eq!(catalogue.translation_of(""), None);
+        assert_eq!(catalogue.translation_of("Pictures"), None);
     }
 
     /// **Something that is not a catalogue is refused**, never half-read.
@@ -232,18 +225,21 @@ mod tests {
     #[test]
     fn a_language_is_found_as_written_then_broader() {
         let root = std::env::temp_dir().join(format!("alo-catalogue-{}", std::process::id()));
-        let at = the_file(&root, "pt");
+        let at = the_file(&root, "pt", "xdg-user-dirs");
         std::fs::create_dir_all(at.parent().unwrap()).unwrap();
         std::fs::write(&at, written(&[("Documents", "Documentos")])).unwrap();
         let brazilian = Language::written("pt-BR").unwrap();
         assert_eq!(
-            Catalogue::for_language(&root, &brazilian)
+            Catalogue::for_language(&root, "xdg-user-dirs", &brazilian)
                 .unwrap()
-                .name_of("Documents"),
+                .translation_of("Documents"),
             Some("Documentos")
         );
         let maltese = Language::written("mt").unwrap();
-        assert_eq!(Catalogue::for_language(&root, &maltese), None);
+        assert_eq!(
+            Catalogue::for_language(&root, "xdg-user-dirs", &maltese),
+            None
+        );
         let _ = std::fs::remove_dir_all(&root);
     }
 }

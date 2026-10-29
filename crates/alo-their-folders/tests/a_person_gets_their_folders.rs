@@ -44,7 +44,7 @@ impl Drop for Somewhere {
 /// real disk under a locale tree, found by language the way the program finds
 /// it.
 fn german_on_the_disk(locales: &Somewhere) -> Catalogue {
-    let at = alo_their_folders::catalogue::the_file(&locales.0, "de");
+    let at = alo_gettext::the_file(&locales.0, "de", alo_their_folders::THE_CATALOGUE);
     std::fs::create_dir_all(at.parent().expect("a folder")).expect("the locale tree");
     std::fs::write(
         &at,
@@ -53,6 +53,7 @@ fn german_on_the_disk(locales: &Somewhere) -> Catalogue {
     .expect("the catalogue");
     Catalogue::for_language(
         &locales.0,
+        alo_their_folders::THE_CATALOGUE,
         &alo_strings::Language::written("de").expect("German"),
     )
     .expect("the German catalogue is found")

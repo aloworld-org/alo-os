@@ -315,6 +315,13 @@ impl TheLanguagesOffered {
         self.all.get(self.chosen?)
     }
 
+    /// **What the overview shows before anything is chosen**: the chosen
+    /// language, or the one the cursor arrives on — the language this machine
+    /// already speaks, which is what it will go on speaking if nobody chooses.
+    pub(crate) fn chosen_or_already_spoken(&self) -> Option<&OfferedLanguage> {
+        self.chosen().or_else(|| self.all.get(self.on))
+    }
+
     /// The first row of the window onto the list.
     ///
     /// Derived from the cursor rather than kept beside it, so there is one
