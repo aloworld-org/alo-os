@@ -6,6 +6,7 @@
 )]
 
 use super::*;
+use crate::display_scale::DisplayScale;
 
 /// The ordinary light look.
 fn light() -> CaptureLook {
@@ -18,7 +19,7 @@ fn light() -> CaptureLook {
 
 /// The tools drawn on a 1920×1080 output.
 fn drawn(capturing: Capturing<'_>) -> CapturePicture {
-    picture(capturing, (1920, 1080), light()).unwrap()
+    picture(capturing, (1920, 1080), light(), DisplayScale::ONE).unwrap()
 }
 
 /// Whether any shape covers this point.
@@ -195,6 +196,7 @@ fn a_mark_running_off_the_screen_is_cut_at_it() {
         },
         (1920, 1080),
         light(),
+        DisplayScale::ONE,
     )
     .unwrap();
 
@@ -226,4 +228,61 @@ fn the_whole_screen_is_a_region_like_any_other() {
         !painted_at(&picture, (960, 540)),
         "capturing the whole screen painted over the whole screen"
     );
+}
+
+/// The tools drawn on an output of `size` at `scale`.
+fn drawn_at(capturing: Capturing<'_>, size: (i32, i32), scale: DisplayScale) -> CapturePicture {
+    picture(capturing, size, light(), scale).unwrap()
+}
+
+/// **At 200 the outline is twice as thick and stays where the person put
+/// it.** The region is the person's, in the display's pixels, so its corner and
+/// size are the same at both scales; the weight of the line round it doubles.
+#[test]
+fn at_two_hundred_the_outline_is_twice_as_thick_and_in_the_same_place() {
+    let region = What::APartOfIt(Region::of(400, 200, 800, 600).unwrap());
+    let choosing = Capturing {
+        choosing: Some(&region),
+        marked: &[],
+    };
+    let one = drawn_at(choosing, (3840, 2160), DisplayScale::ONE);
+    let two = drawn_at(choosing, (3840, 2160), DisplayScale::of_per_cent(200));
+    let (Some(top_one), Some(top_two)) = (one.solids.first(), two.solids.first()) else {
+        unreachable!("an outline with no top edge");
+    };
+    assert_eq!(
+        (top_one.area.size.h, top_two.area.size.h),
+        (2, 4),
+        "its weight"
+    );
+    assert_eq!(
+        top_one.area.loc, top_two.area.loc,
+        "where the person put it"
+    );
+    assert_eq!(
+        top_one.area.size.w, top_two.area.size.w,
+        "its width is theirs"
+    );
+}
+
+/// **At 200 the ground under typed words is twice the size**, at the same
+/// place, on two displays at two scales.
+#[test]
+fn at_two_hundred_the_ground_under_words_is_twice_the_size() {
+    let marked = [Mark::Text {
+        saying: "look here".to_owned(),
+        at: (300, 300),
+    }];
+    let words = Capturing {
+        choosing: None,
+        marked: &marked,
+    };
+    let laptop = drawn_at(words, (2560, 1600), DisplayScale::of_per_cent(200));
+    let monitor = drawn_at(words, (1920, 1080), DisplayScale::ONE);
+    let (Some(big), Some(small)) = (laptop.solids.first(), monitor.solids.first()) else {
+        unreachable!("words with no ground under them");
+    };
+    assert_eq!((small.area.size.w, small.area.size.h), (72, 20));
+    assert_eq!((big.area.size.w, big.area.size.h), (144, 40));
+    assert_eq!(big.area.loc, small.area.loc);
 }

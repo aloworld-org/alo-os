@@ -565,7 +565,15 @@ pub(crate) fn frame_pictures(
     )?;
     let capturing = desktop
         .capturing
-        .map(|tools| crate::capture_raster::picture(tools, size, desktop.look.capture()))
+        .map(|tools| {
+            // At this display's scale, the one its Dock is drawn at.
+            crate::capture_raster::picture(
+                tools,
+                size,
+                desktop.look.capture(),
+                crate::display_scale::DisplayScale::of_per_cent(desktop.display_scale),
+            )
+        })
         .transpose()?;
     let notifications = crate::notification_raster::picture(
         desktop.notifications,
