@@ -4,7 +4,7 @@ Status: public surface. The socket and its first line are
 [ADR 0109](../decisions/0109-a-persons-words-reach-the-agent-through-a-socket-systemd-opens-as-the-agent.md)
 (2026-10-14); the folders line was added on 2026-10-24; the earlier
 conversation was added on 2026-10-28 by
-[ADR 0137](../decisions/0137-a-follow-up-is-sent-with-the-conversation-so-far.md).
+[ADR 0138](../decisions/0138-a-follow-up-is-sent-with-the-conversation-so-far.md).
 This document was written that day: until then the lines were described only
 in code, in two places that held each other to nothing.
 
@@ -48,7 +48,7 @@ alo-earlier:{"turns":[{"person":"list my invoices"},{"alo":"march.pdf and april.
 It holds what the person saw in the window and nothing else: never what a
 verb read during an earlier turn, unless the person's words or alo's answer
 contained it. **Nothing is left out of it**: alo puts no limit of its own on a
-conversation (ADR 0137); the model's is the only one, and a conversation too
+conversation (ADR 0138); the model's is the only one, and a conversation too
 long for the model is refused and said to be, never shortened.
 
 **The line's bound, and its reason.** A line is at most **1 MiB**

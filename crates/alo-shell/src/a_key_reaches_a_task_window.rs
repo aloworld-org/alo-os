@@ -106,7 +106,7 @@ fn erased(task: &mut ATask) -> WhatTheReplyBoxDid {
     let Some(last) = draft.graphemes(true).next_back() else {
         // **An empty box gives a held reply back**, to change or to delete:
         // the one way to take back something that has not been sent yet, and
-        // nothing is lost by it — the words are in the box (ADR 0137).
+        // nothing is lost by it — the words are in the box (ADR 0138).
         return match task.take_held() {
             Some(held) => {
                 task.the_person_is_typing(held);

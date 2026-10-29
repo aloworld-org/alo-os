@@ -34,7 +34,7 @@
 //! on past where a real turn would have stopped. That is why the verdict reads
 //! the model's lines, and counts **any** proposal to a question as a failure.
 //!
-//! # And a follow-up, since ADR 0137
+//! # And a follow-up, since ADR 0138
 //!
 //! `a_follow_up_is_answered_from_what_came_before` drives two turns in one
 //! task window — *list the files in …*, then *and how big is the biggest one?*
@@ -390,7 +390,7 @@ fn a_request_to_read_is_answered_and_proposes_nothing() {
 /// How a follow-up was sent, for the one measurement and its control.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum TheFollowUpIs {
-    /// With the conversation so far, as a task window sends it (ADR 0137).
+    /// With the conversation so far, as a task window sends it (ADR 0138).
     SentWithTheConversation,
     /// Alone, as every follow-up was before — the control.
     SentAlone,
@@ -548,7 +548,7 @@ fn a_follow_up(key: &str, endpoint: &str, model: &str, sent: TheFollowUpIs) -> F
     ended
 }
 
-/// **A follow-up is answered from what came before it** (ADR 0137), and the
+/// **A follow-up is answered from what came before it** (ADR 0138), and the
 /// control — the same follow-up sent alone — is run beside it, so the count
 /// says what the conversation changed rather than what a model guessed.
 ///

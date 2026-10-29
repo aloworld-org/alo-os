@@ -3,7 +3,7 @@
 //! The conversation shows the proposal and the card shows Allow once and Deny,
 //! and **nothing kept which one was pressed** — the card comes down and the
 //! answer goes to the daemon. A follow-up sent with the conversation so far
-//! needs it ([ADR 0137](../../../docs/decisions/0137-a-follow-up-is-sent-with-the-conversation-so-far.md)):
+//! needs it ([ADR 0138](../../../docs/decisions/0138-a-follow-up-is-sent-with-the-conversation-so-far.md)):
 //! a model told *alo proposed deleting april.pdf* and not told the person said
 //! no would read the file as gone.
 //!

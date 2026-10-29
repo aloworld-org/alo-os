@@ -754,7 +754,7 @@ fn sending(
         // something answered, and not with an answer.
         // **Unless it says the question was longer than the model reads**
         // (`crate::too_long`), which is the one refusal of a request a person
-        // can act on: by starting a shorter conversation (ADR 0137).
+        // can act on: by starting a shorter conversation (ADR 0138).
         400 | 422 if refusal.as_deref().is_some_and(crate::too_long::said_in) => {
             return Err(WentWrong::TooLongForTheModel);
         }
@@ -1017,7 +1017,7 @@ mod tests {
     /// other refusal of a request is still *nothing usable* — the refusal path,
     /// because telling somebody to start a shorter conversation about a
     /// request that was wrong for another reason sends them the wrong way
-    /// (ADR 0137).
+    /// (ADR 0138).
     #[test]
     fn a_question_too_long_for_the_model_is_told_apart_from_other_refusals() {
         for (body, status, expected) in [

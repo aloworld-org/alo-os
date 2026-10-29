@@ -206,7 +206,7 @@ impl TheTasksWords {
 
 /// **A reply waiting to be sent**, drawn under the conversation: the person's
 /// words, and beneath them a card saying it has not gone yet, when it will,
-/// and how to take it back (ADR 0137). Nothing when nothing is held.
+/// and how to take it back (ADR 0138). Nothing when nothing is held.
 ///
 /// Two blocks the window already draws, rather than a new kind: the words are
 /// the person's, and the note is the machine's account of them — the card an

@@ -58,11 +58,11 @@ pub struct ATask {
     /// it where they were reading.
     scroll: TheScroll,
     /// What the person answered to each change this task proposed, so a
-    /// follow-up can say what became of it (ADR 0137).
+    /// follow-up can say what became of it (ADR 0138).
     answers: TheAnswersGiven,
     /// A reply the person sent while alo was still working, or while a change
     /// waited for their answer: **held, not refused**, and sent with the
-    /// conversation once alo has answered (ADR 0137). Kept out of the
+    /// conversation once alo has answered (ADR 0138). Kept out of the
     /// conversation until it is sent, so what alo is told came before it really
     /// did come before it.
     held: Option<String>,

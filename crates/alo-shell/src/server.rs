@@ -400,7 +400,7 @@ pub struct Server {
     /// measures.
     pub(crate) asked_alo: Vec<String>,
     /// Follow-ups a person sent from a task window, waiting to be handed to the
-    /// agent with the conversation so far (ADR 0137).
+    /// agent with the conversation so far (ADR 0138).
     ///
     /// **Recorded here for `asked_alo`'s reason**: the key arrives in the input
     /// loop, and the door to the agent is the frame loop's.

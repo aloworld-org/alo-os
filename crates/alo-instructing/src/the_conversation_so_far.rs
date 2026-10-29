@@ -1,6 +1,6 @@
 //! **What was said before a follow-up**, and how a model is told it.
 //!
-//! [ADR 0137](../../../docs/decisions/0137-a-follow-up-is-sent-with-the-conversation-so-far.md):
+//! [ADR 0138](../../../docs/decisions/0138-a-follow-up-is-sent-with-the-conversation-so-far.md):
 //! when a person types a follow-up in a task window — *and the April one too* —
 //! it is sent to alo with the conversation so far, so alo can tell what it
 //! refers to. Until then a turn was one request and nothing before it.
@@ -34,7 +34,7 @@
 //! the text, exactly where the language clause and a turn's steps already sit.
 //! The instructions a grade names by digest
 //! ([`crate::Instructions::SHOWN_TO_A_TURN`]) are untouched, so no grade is
-//! set aside. A follow-up is graded on its own (ADR 0137).
+//! set aside. A follow-up is graded on its own (ADR 0138).
 
 /// What the person did with a change alo proposed.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

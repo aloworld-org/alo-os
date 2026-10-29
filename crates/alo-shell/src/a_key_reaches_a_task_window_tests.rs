@@ -221,7 +221,7 @@ fn erasing_takes_back_a_whole_grapheme() {
 }
 
 /// **Backspace in an empty box gives a held reply back**, to change or to
-/// delete, and with nothing held it does nothing (ADR 0137).
+/// delete, and with nothing held it does nothing (ADR 0138).
 #[test]
 fn backspace_in_an_empty_box_gives_a_held_reply_back() {
     let (_directory, mut server, which) = a_server_with_a_task("held-back");

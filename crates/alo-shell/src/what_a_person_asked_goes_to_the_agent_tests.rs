@@ -276,7 +276,7 @@ fn an_agent_reading(
 }
 
 /// **A follow-up carries exactly the conversation so far, after the request**
-/// — and a reply typed over two lines still crosses as one request (ADR 0137).
+/// — and a reply typed over two lines still crosses as one request (ADR 0138).
 #[test]
 fn a_follow_up_carries_the_conversation_after_the_request() {
     use alo_instructing::{AnEarlierTurn, TheConversationSoFar};

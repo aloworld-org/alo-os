@@ -741,7 +741,7 @@ fn alo_answers(
 }
 
 /// **A reply in a finished task goes to alo with the conversation so far**
-/// (ADR 0137), and the window says alo is working because a request really
+/// (ADR 0138), and the window says alo is working because a request really
 /// starts. Until 2026-10-28 it read *alo is working* with nothing asked; #982
 /// made it say the reply went nowhere; now it goes.
 #[test]

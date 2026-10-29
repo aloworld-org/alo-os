@@ -21,7 +21,7 @@
 //! # The one bound, and where it comes from
 //!
 //! **Not a limit on the conversation** — the owner decided alo shortens none
-//! (ADR 0137). It is a limit on what a privileged reader will take off a
+//! (ADR 0138). It is a limit on what a privileged reader will take off a
 //! socket, and it is set from the only place a conversation can go: inside a
 //! question to `alo-agentd`, which refuses any request over
 //! [`THE_MOST_A_QUESTION_IS`] bytes (`docs/contracts/daemon-protocol.md`,

@@ -46,7 +46,7 @@ pub fn shown_to_a_model(
 /// earlier exchange, between what the turn may reach and the request.
 ///
 /// In the request half, so the instructions a grade names by digest are the
-/// same bytes at the start of the text (ADR 0137). With nothing earlier this
+/// same bytes at the start of the text (ADR 0138). With nothing earlier this
 /// is [`shown_to_a_model`]'s text to the byte, which a test below holds.
 #[must_use]
 pub fn shown_to_a_model_after(

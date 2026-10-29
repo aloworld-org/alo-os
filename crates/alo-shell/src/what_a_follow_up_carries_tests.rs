@@ -72,7 +72,7 @@ fn a_held_reply_is_not_carried_as_earlier() {
 }
 
 /// **A long conversation is carried whole** — nothing is left out of it
-/// (ADR 0137).
+/// (ADR 0138).
 #[test]
 fn a_long_conversation_is_carried_whole() {
     let mut task = ATask::asked_for("list everything", InferenceSource::ThisMachine);

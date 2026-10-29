@@ -1,4 +1,4 @@
-# ADR 0137 — A follow-up is sent with the conversation so far
+# ADR 0138 — A follow-up is sent with the conversation so far
 
 **Status:** **accepted, 2026-10-28, by the owner**, and amended by the owner
 the same day (whole conversations, held replies, follow-ups graded apart). The

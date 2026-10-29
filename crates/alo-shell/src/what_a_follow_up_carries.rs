@@ -1,6 +1,6 @@
 //! **What a follow-up carries**: the conversation in a task window, as alo is
 //! sent it with the person's next words
-//! ([ADR 0137](../../../docs/decisions/0137-a-follow-up-is-sent-with-the-conversation-so-far.md)).
+//! ([ADR 0138](../../../docs/decisions/0138-a-follow-up-is-sent-with-the-conversation-so-far.md)).
 //!
 //! Read off the task at the moment the person pressed Enter, and at no other —
 //! *context is offered, never watched*. Nothing here runs on a timer or on a

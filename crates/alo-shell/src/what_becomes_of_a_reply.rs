@@ -3,7 +3,7 @@
 //! # It is sent to alo, with the conversation so far
 //!
 //! The owner decided it on 2026-10-28
-//! ([ADR 0137](../../../docs/decisions/0137-a-follow-up-is-sent-with-the-conversation-so-far.md)):
+//! ([ADR 0138](../../../docs/decisions/0138-a-follow-up-is-sent-with-the-conversation-so-far.md)):
 //! *and the April one too* reaches alo together with everything said before it
 //! in that window, so alo can tell what it refers to. Until then the reply
 //! stayed in the window and the line beneath it said alo had not received it

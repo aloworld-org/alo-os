@@ -2,7 +2,7 @@
 //! read with.
 //!
 //! The owner decided on 2026-10-28 that alo OS puts no limit of its own on a
-//! conversation (ADR 0137): the only limit is what the chosen model can read,
+//! conversation (ADR 0138): the only limit is what the chosen model can read,
 //! and when a conversation passes it the person is told so in plain words —
 //! never answered from a conversation with its beginning quietly dropped. So
 //! the refusal a service sends for it has to be told apart from every other

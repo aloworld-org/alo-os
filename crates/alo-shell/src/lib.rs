@@ -464,7 +464,7 @@ mod their_displays;
 /// says why.
 mod their_formats;
 mod top_controls_region;
-/// What a follow-up typed in a task window carries to alo (ADR 0137).
+/// What a follow-up typed in a task window carries to alo (ADR 0138).
 mod what_a_follow_up_carries;
 /// What a person typed, on its way to their agent and back (ADR 0109).
 pub mod what_a_person_asked_goes_to_the_agent;

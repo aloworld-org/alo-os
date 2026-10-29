@@ -140,7 +140,7 @@ pub struct ATurnInProgress<'a> {
     /// again, which is the behaviour `crate::what_it_may_reach` exists to end.
     may_reach: &'a WhatItMayReach,
     /// What was said in the task window before this request, which is nothing
-    /// for a first request (ADR 0137).
+    /// for a first request (ADR 0138).
     ///
     /// On the turn rather than beside it for `may_reach`'s reason: every round
     /// of one turn is shown the same earlier conversation.
