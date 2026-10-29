@@ -2401,7 +2401,7 @@ machine's own too, and the session's log says which name it could not find.
 
 `timezone` above is a zone a person names for **their own** dates; nothing
 writes it yet. **The machine's zone** is `/etc/localtime`, and it is set in
-two ways ([ADR 0138](../decisions/0138-the-first-start-sets-the-time-zone-itself.md)):
+two ways ([ADR 0139](../decisions/0139-the-first-start-sets-the-time-zone-itself.md)):
 
 - by the **first-start screens**, from the region taken there, asking which
   city where the region has several;
