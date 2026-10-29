@@ -106,20 +106,25 @@ fn overlap(a: Rectangle<i32, Physical>, b: Rectangle<i32, Physical>) -> bool {
 fn a_tooltip_says_the_name_of_what_draws_no_words() {
     let words = words();
     let app = WhatIsHere::Application(AppId::named("Files").expect("a named application"));
-    assert_eq!(what_it_says(&app, &words), Some("Files"));
+    assert_eq!(what_it_says(&app, Edge::Bottom, &words), Some("Files"));
     assert_eq!(
-        what_it_says(&WhatIsHere::ANativeAction(ANativeAction::Settings), &words),
+        what_it_says(
+            &WhatIsHere::ANativeAction(ANativeAction::Settings),
+            Edge::Bottom,
+            &words
+        ),
         Some("Settings")
     );
     assert_eq!(
         what_it_says(
             &WhatIsHere::ANativeAction(ANativeAction::Applications),
+            Edge::Bottom,
             &words
         ),
         Some("Applications")
     );
     assert_eq!(
-        what_it_says(&WhatIsHere::TheOverflow, &words),
+        what_it_says(&WhatIsHere::TheOverflow, Edge::Bottom, &words),
         Some("Show more apps")
     );
     for drawn_in_words in [
@@ -129,7 +134,7 @@ fn a_tooltip_says_the_name_of_what_draws_no_words() {
         WhatIsHere::TheDivider,
     ] {
         assert_eq!(
-            what_it_says(&drawn_in_words, &words),
+            what_it_says(&drawn_in_words, Edge::Bottom, &words),
             None,
             "{drawn_in_words:?}"
         );
@@ -433,4 +438,29 @@ fn the_pointer_names_the_control_a_click_would_press() {
         .pointer_motion(10.0, 10.0, 2)
         .expect("the pointer moved");
     assert_eq!(server.the_slot_the_pointer_is_on("a-display"), None);
+}
+
+/// **History's word is its tooltip on a side Dock, where it is drawn as an
+/// icon, and nowhere else**, where it is drawn as the word.
+#[test]
+fn historys_word_is_its_tooltip_only_where_it_is_an_icon() {
+    let words = words();
+    for edge in Edge::EVERY {
+        let side = matches!(edge, Edge::Left | Edge::Right);
+        assert_eq!(
+            what_it_says(&WhatIsHere::History, edge, &words),
+            side.then_some("History"),
+            "{edge:?}"
+        );
+    }
+    let picture = drawn(Edge::Left, (1920, 1080), DisplayScale::ONE, &["Files"]);
+    let shown = the_name_shown(
+        &picture,
+        slot_of(&picture, &WhatIsHere::History),
+        &words,
+        TextScale::default(),
+        &mut fonts(),
+    )
+    .expect("History's name is shown on a side Dock");
+    assert!(!overlap(shown.area, picture.band), "on the bar");
 }

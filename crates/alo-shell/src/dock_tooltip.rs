@@ -72,12 +72,20 @@ pub(crate) const CLEAR_OF_THE_BAR: u32 = alo_dock::measures::GAP;
 /// What the tooltip on `what` says, or [`None`] where the control already
 /// draws its own words.
 #[must_use]
-pub(crate) fn what_it_says<'a>(what: &'a WhatIsHere, words: &'a TheDocksWords) -> Option<&'a str> {
+pub(crate) fn what_it_says<'a>(
+    what: &'a WhatIsHere,
+    edge: Edge,
+    words: &'a TheDocksWords,
+) -> Option<&'a str> {
     match what {
         WhatIsHere::Application(app) => Some(app.name()),
         WhatIsHere::ANativeAction(ANativeAction::Settings) => Some(&words.settings),
         WhatIsHere::ANativeAction(ANativeAction::Applications) => Some(&words.applications),
         WhatIsHere::TheOverflow => Some(&words.show_more_apps),
+        // **A drawing on a side Dock, so its word is its tooltip.**
+        WhatIsHere::History if crate::dock_history_mark::history_is_a_drawing_on(edge) => {
+            Some(&words.history)
+        }
         WhatIsHere::TheComposer
         | WhatIsHere::ShowAll
         | WhatIsHere::History
@@ -132,7 +140,7 @@ pub(crate) fn the_name_shown(
 ) -> Option<TheNameShown> {
     let dock = &picture.standing;
     let place = crate::the_bars_pressable_slots::the_one_at(&dock.places, which)?;
-    let name = what_it_says(place.what(), words)?;
+    let name = what_it_says(place.what(), dock.layout.edge(), words)?;
     let scale = dock.scale;
     let (width, height) = picture.size;
 

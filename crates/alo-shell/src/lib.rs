@@ -203,9 +203,10 @@ mod display_resources;
 /// One display's scale, and the one road a logical measure takes to its pixels.
 mod display_scale;
 mod division_raster;
-mod dock_raster;
 /// The Dock's own surface: a rounded panel with a hairline and a shadow,
 /// rasterised with alpha because neither is a rectangle.
+mod dock_history_mark;
+mod dock_raster;
 mod dock_surface;
 mod dock_tooltip;
 /// How a rounded panel is lifted off what is behind it — its corner and its

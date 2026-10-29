@@ -35,9 +35,10 @@ anywhere about how long a tooltip waits:
 Written here so they can be disagreed with:
 
 - **Which controls get one: those that draw an icon or a mark.** Applications,
-  Settings, Applications and *Show more apps*. History joins them on a side
-  Dock, where it becomes an icon (a separate change). The
-  composer, *Show all* and History as a word draw their own words already, and
+  Settings, Applications, *Show more apps*, and History on a Dock down either
+  side, where it is the design's icon (`348:23633`) rather than the word. The
+  composer, *Show all* and History as a word (on the top and bottom Docks, by the
+  owner's instruction) draw their own words already, and
   the window title's tooltip already holds that a panel repeating what is on the
   screen says nothing.
 - **The gap between the bar and the panel is 8**, the Dock's own spacing unit

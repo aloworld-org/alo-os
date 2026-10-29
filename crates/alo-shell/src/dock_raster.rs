@@ -1300,6 +1300,27 @@ pub(crate) fn picture(
             alo_dock::places::WhatIsHere::ShowAll => {
                 (words.show_all.as_str(), label, palette.dock, palette.ink)
             }
+            // **On a Dock down either side, the design's drawing**, centred in
+            // its slot at the artwork's size, in the Dock's ink on the Dock's
+            // ground. The word is its tooltip and its spoken name;
+            // `crate::dock_history_mark` carries the owner's decision.
+            alo_dock::places::WhatIsHere::History
+                if crate::dock_history_mark::history_is_a_drawing_on(layout.edge()) =>
+            {
+                let side = scale.px(GLYPH);
+                inked.push(Inked {
+                    area: Rectangle::new(
+                        (left + (its_width - side) / 2, top + (icon - side) / 2).into(),
+                        (side, side).into(),
+                    ),
+                    pixels: crate::dock_history_mark::the_history_mark(
+                        side,
+                        palette.dock,
+                        palette.ink,
+                    ),
+                });
+                continue;
+            }
             alo_dock::places::WhatIsHere::History => {
                 (words.history.as_str(), label, palette.dock, palette.ink)
             }
