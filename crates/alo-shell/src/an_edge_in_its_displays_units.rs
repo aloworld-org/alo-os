@@ -33,9 +33,13 @@ const ORDINARY: u32 = 100;
 /// One length in the display's pixels as edge units at `scale` per cent,
 /// rounded down — so every pixel of an edge drawn back at that scale falls
 /// inside the edge unit it was drawn from.
+///
+/// **A scale of nought is one-to-one**, not a divisor of one: dividing by
+/// `max(1)` multiplies every figure by a hundred, which is the fault
+/// `crate::window_edge::the_usable_output` records about itself.
 fn down(length: i32, scale: u32) -> i32 {
-    i32::try_from(i64::from(length) * i64::from(ORDINARY) / i64::from(scale.max(1)))
-        .unwrap_or(length)
+    let scale = if scale == 0 { ORDINARY } else { scale };
+    i32::try_from(i64::from(length) * i64::from(ORDINARY) / i64::from(scale)).unwrap_or(length)
 }
 
 /// A window's rectangle in the display's pixels, as edge units at `scale`.
