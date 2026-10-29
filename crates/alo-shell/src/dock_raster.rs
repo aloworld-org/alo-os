@@ -187,6 +187,11 @@ pub(crate) struct DockPicture {
     /// place a press can find out where the slots are: outside a frame they do
     /// not exist.
     pub(crate) standing: TheDocksPlaces,
+    /// The name shown beside a control, when one is: which control, and the
+    /// reach the pointer keeps it in. Set by `crate::dock_tooltip::show_the_name`
+    /// and handed to `Server::the_docks_name_was_drawn`, for the reason
+    /// [`Self::standing`] is handed on.
+    pub(crate) the_name: Option<crate::dock_tooltip::TheNameAsDrawn>,
 }
 
 /// What the overflow list needs drawing: everything but the pixels.
@@ -1511,6 +1516,7 @@ pub(crate) fn picture(
         surface,
         overflow_list,
         panels,
+        the_name: None,
     })
 }
 

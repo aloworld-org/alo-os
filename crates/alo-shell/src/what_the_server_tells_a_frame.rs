@@ -175,9 +175,11 @@ pub(crate) fn what_only_the_server_knows<'a>(
     // the Dock gets a slot, and a second opinion here would be a second place
     // for the answer to be wrong.
     frame.the_keyboard_is_on_the_bar = server.which_slot_on_the_bar;
-    // **And where the pointer is on this display's bar**, by the hit test a
-    // press uses, so the name shown is the name of what a click would press.
-    frame.the_pointer_is_on_the_bar = server.the_slot_the_pointer_is_on(named);
+    // **And which control's name is shown beside this display's bar**: the
+    // pointer's by the hit test a press uses, so the name shown is the name of
+    // what a click would press, else the keyboard's — and none once Escape
+    // dismissed it. `crate::the_docks_name_is_held` holds the rules.
+    frame.the_docks_name_is_for = server.the_docks_name_is_for(named);
     // **Whether the overflow list is open**, which a desktop's own state cannot
     // know: it is turned over by a press, and presses reach the `Server`.
     frame.the_dock_has_open = the_dock_has_open;

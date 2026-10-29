@@ -195,9 +195,9 @@ pub(crate) struct Shown<'a> {
     /// Which slot on the bar the keyboard is on, from
     /// [`crate::nested_desktop::DesktopFrame::the_keyboard_is_on_the_bar`].
     pub(crate) the_keyboard_is_on_the_bar: Option<usize>,
-    /// Which slot on the bar the pointer is on, from
-    /// [`crate::nested_desktop::DesktopFrame::the_pointer_is_on_the_bar`].
-    pub(crate) the_pointer_is_on_the_bar: Option<usize>,
+    /// Which control on the bar has its name shown beside it, from
+    /// [`crate::nested_desktop::DesktopFrame::the_docks_name_is_for`].
+    pub(crate) the_docks_name_is_for: Option<usize>,
     /// The alo Bar's panel, from
     /// [`crate::nested_desktop::DesktopFrame::the_bar`].
     pub(crate) the_bar: Option<crate::bar_raster::TheBarOnTheDisplay<'a>>,
@@ -267,7 +267,7 @@ pub(crate) fn picture(
         the_dock_has_open,
         the_docks_words,
         the_keyboard_is_on_the_bar,
-        the_pointer_is_on_the_bar,
+        the_docks_name_is_for,
         the_bar,
         what_each_application_draws,
     } = shown;
@@ -294,13 +294,16 @@ pub(crate) fn picture(
         crate::display_scale::DisplayScale::of_per_cent(display_scale),
     )?;
     // **The name of the control a person is pointing at, or the keyboard is
-    // on**, beside it and outside the bar. The pointer first, as the window
-    // title's tooltip asks: pointing at a control is asking about that one.
+    // on**, beside it and outside the bar. Which one, and whether Escape has
+    // dismissed it, is the server's answer (`crate::the_docks_name_is_held`):
+    // the pointer first, as the window title's tooltip asks, because pointing
+    // at a control is asking about that one.
     crate::dock_tooltip::show_the_name(
         &mut dock_picture,
-        the_pointer_is_on_the_bar.or(the_keyboard_is_on_the_bar),
+        the_docks_name_is_for,
         the_docks_words,
         look.scale(),
+        look.reading(),
         fonts,
     );
 

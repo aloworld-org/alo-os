@@ -121,6 +121,15 @@ pub struct Server {
     /// a band that has not been measured on this display.
     pub(crate) dock_as_drawn:
         std::collections::BTreeMap<String, crate::where_the_dock_is::TheDocksPlaces>,
+    /// Where each display's Dock showed a control's name, when it did.
+    ///
+    /// Kept for `crate::the_docks_name_is_held`: a pointer over the name keeps
+    /// it showing, and only the draw knows where the name is.
+    pub(crate) the_docks_name_as_drawn:
+        std::collections::BTreeMap<String, crate::dock_tooltip::TheNameAsDrawn>,
+    /// Which control's name Escape dismissed on each display, for as long as
+    /// that control is still the one asked about.
+    pub(crate) the_docks_name_was_dismissed: std::collections::BTreeMap<String, usize>,
     /// Where each display's **open surface** was drawn, when one was.
     ///
     /// Beside `dock_as_drawn` and not inside it, because the two have different
@@ -691,6 +700,8 @@ impl Server {
             panel_as_drawn: None,
             the_scale_edges_are_measured_at: 100,
             dock_as_drawn: std::collections::BTreeMap::new(),
+            the_docks_name_as_drawn: std::collections::BTreeMap::new(),
+            the_docks_name_was_dismissed: std::collections::BTreeMap::new(),
             the_docks_surface_as_drawn: std::collections::BTreeMap::new(),
             the_dock_was_asked_for: crate::what_the_dock_has_open::WhatTheDockWasAskedFor::Nothing,
             // Nobody has asked for anything yet.

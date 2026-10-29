@@ -54,13 +54,29 @@ Written here so they can be disagreed with:
 - **Pointer first**: when the pointer is on one control and the keyboard on
   another, the pointer's is shown.
 
+## Accessibility, 2026-10-29
+
+The two WCAG gaps and the right-to-left one were bugs by `CLAUDE.md` and were
+fixed rather than listed (`crates/alo-shell/src/the_docks_name_is_held.rs`):
+
+- **Escape dismisses it, and does nothing else** (WCAG 1.4.13, *dismissible*).
+  Focus does not move, the pointer does not move, and nothing on the Dock
+  opens or closes. The name stays away while the same control is asked about
+  and comes back once the pointer or the keyboard has moved to something else.
+  Escape is taken only while a name is showing, and after every window that
+  holds the keyboard (Settings, the market, the Bar, a task window), because
+  each is in front of the Dock and Escape there cancels that.
+- **The pointer can move onto it** (WCAG 1.4.13, *hoverable*). It stays while
+  the pointer is on the control, on the name, or in the 8 between them.
+- **In a right-to-left language each line starts from the panel's right**,
+  inside the same 8, and a shorter line is flush right. Where the panel sits
+  does not change: it is centred on the control, or beside a side Dock toward
+  the canvas.
+
 ## Not done
 
-- **Escape does not dismiss it**, and moving the pointer onto the panel lets it
-  go. WCAG 1.4.13 asks for both. Neither was asked for here.
-- In a right-to-left language the lines are drawn from the left edge of the
-  panel.
-- The navy is the same in the dark theme, because the Dock's palette has not
-  adopted dark values for these roles.
+- **The navy is the same in the dark theme.** A known gap, not a choice: the
+  Dock's palette has not adopted dark values for these roles, and the design
+  lane has not given them. No change until it does.
 - A task window drawn over that part of the canvas covers the tooltip, as it
   already covers the *More apps* list.
