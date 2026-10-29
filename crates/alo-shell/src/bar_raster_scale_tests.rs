@@ -31,16 +31,15 @@ fn two_times() -> DisplayScale {
     DisplayScale::of_per_cent(200)
 }
 
-/// The bundled faces, as the shell loads them.
+/// The shell's own faces and nothing else.
+///
+/// **Not `FontSystem::new`**, which also reads the machine's own fonts, so a
+/// machine with other fonts installed draws other letters from the same code —
+/// `crate::dock_raster_scale_tests` found that on CI.
 fn fonts() -> cosmic_text::FontSystem {
-    let mut fonts = cosmic_text::FontSystem::new();
-    fonts
-        .db_mut()
-        .load_font_data(include_bytes!("../fonts/Manrope.ttf").to_vec());
-    fonts
-        .db_mut()
-        .load_font_data(include_bytes!("../fonts/Inter.ttf").to_vec());
-    fonts
+    crate::WindowControlLabels::new()
+        .map(|labels| labels.fonts)
+        .unwrap_or_else(|_| unreachable!("the shell's own fonts load"))
 }
 
 /// Four applications found, more than fit, so the list is the design's.
