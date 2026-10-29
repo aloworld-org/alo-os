@@ -7,7 +7,7 @@ done as *every file that says `ADR 0138` now says `ADR 0139`*, across the tree.
 **What was true.** After the rebase onto `main`, `ADR 0138` was **two**
 decisions' number in the tree: the branch's own, and the one that had just
 landed (`0138-a-follow-up-is-sent-with-the-conversation-so-far.md`). The
-replace rewrote 36 files that cite the landed decision, in eleven crates. It was
+replace rewrote about thirty files in other crates that cite the landed decision. It was
 caught at once, because the list of files it touched was printed and named crates
 the branch had never opened. It was undone by restoring every file except the
 branch's own.
