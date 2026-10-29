@@ -15,6 +15,9 @@ use crate::{ApprovalKey, ApprovalScreen};
 use alo_appearance::Token;
 use alo_capability::Given;
 
+/// One to one, which these tests were written at.
+const ONE: crate::display_scale::DisplayScale = crate::display_scale::DisplayScale::ONE;
+
 /// The ordinary look in `scheme`, read `reading`.
 fn look(scheme: Scheme, reading: Direction) -> ApprovalLook {
     ApprovalLook {
@@ -33,7 +36,15 @@ fn light() -> ApprovalLook {
 /// The surface as it stands, drawn on a 1920×1080 output.
 fn drawn(screen: &ApprovalScreen, look: ApprovalLook) -> ApprovalPicture {
     let mut labels = WindowControlLabels::new().unwrap();
-    picture(screen.shows(), &words(), &mut labels, (1920, 1080), look).unwrap()
+    picture(
+        screen.shows(),
+        &words(),
+        &mut labels,
+        (1920, 1080),
+        look,
+        ONE,
+    )
+    .unwrap()
 }
 
 /// **The text drawn is byte-for-byte the text the turn wrote.** The sentence
@@ -245,7 +256,7 @@ fn nothing_open_draws_nothing_and_a_refusal_draws_no_answers() {
         let mut labels = WindowControlLabels::new().unwrap();
         for size in [(1, 1), (20_000, 20_000), (0, 0)] {
             assert!(
-                picture(screen.shows(), &words(), &mut labels, size, light())
+                picture(screen.shows(), &words(), &mut labels, size, light(), ONE)
                     .unwrap()
                     .is_empty()
             );
@@ -283,7 +294,7 @@ fn a_panel_that_cannot_hold_the_whole_sentence_refuses_the_frame() {
         for size in [(1920, 120), (150, 1080), (20_000, 1080), (1920, 20_000)] {
             assert!(
                 matches!(
-                    picture(screen.shows(), &words(), &mut labels, size, light()),
+                    picture(screen.shows(), &words(), &mut labels, size, light(), ONE),
                     Err(RenderError::ApprovalScene)
                 ),
                 "{size:?}"
@@ -295,18 +306,39 @@ fn a_panel_that_cannot_hold_the_whole_sentence_refuses_the_frame() {
             scale: TextScale::percent(200).unwrap(),
             ..light()
         };
-        let ordinary = picture(screen.shows(), &words(), &mut labels, (1920, 1080), light())
-            .unwrap()
-            .panel
-            .unwrap();
-        let larger = picture(screen.shows(), &words(), &mut labels, (1920, 1080), large)
-            .unwrap()
-            .panel
-            .unwrap();
+        let ordinary = picture(
+            screen.shows(),
+            &words(),
+            &mut labels,
+            (1920, 1080),
+            light(),
+            ONE,
+        )
+        .unwrap()
+        .panel
+        .unwrap();
+        let larger = picture(
+            screen.shows(),
+            &words(),
+            &mut labels,
+            (1920, 1080),
+            large,
+            ONE,
+        )
+        .unwrap()
+        .panel
+        .unwrap();
         assert!(larger.size.h > ordinary.size.h);
 
-        let picture =
-            picture(screen.shows(), &words(), &mut labels, (1920, 1080), light()).unwrap();
+        let picture = picture(
+            screen.shows(),
+            &words(),
+            &mut labels,
+            (1920, 1080),
+            light(),
+            ONE,
+        )
+        .unwrap();
         assert!(picture.validate((1920, 1080).into()).is_ok());
         assert!(matches!(
             picture.validate((1280, 720).into()),
@@ -362,6 +394,63 @@ fn high_contrast_draws_the_same_surface_in_the_palette_that_crate_decided() {
                     solid.colour
                 );
             }
+        }
+    });
+}
+
+/// **At 200 the question is twice the size**, on a display with twice the
+/// pixels each way: the panel and both answers are about twice as large and
+/// twice as far from the corner, and the same two answers are offered — so
+/// what a person is asked to approve is not drawn half-size on a dense screen.
+#[test]
+fn at_two_hundred_the_question_is_twice_the_size() {
+    on_a_machine(|turning, grants, places| {
+        let march = archiving(turning, grants, places, "march");
+        let mut screen = ApprovalScreen::on_an_output();
+        screen.arrived(turning, march, noon());
+        let mut labels = WindowControlLabels::new().unwrap();
+        let one = picture(
+            screen.shows(),
+            &words(),
+            &mut labels,
+            (1920, 1080),
+            light(),
+            ONE,
+        )
+        .unwrap();
+        let two = picture(
+            screen.shows(),
+            &words(),
+            &mut labels,
+            (3840, 2160),
+            light(),
+            crate::display_scale::DisplayScale::of_per_cent(200),
+        )
+        .unwrap();
+        let near_twice = |a: i32, b: i32| (a - 2 * b).abs() <= 4;
+        let (Some(small), Some(big)) = (one.panel, two.panel) else {
+            unreachable!("a question drew no panel");
+        };
+        for (a, b) in [
+            (big.loc.x, small.loc.x),
+            (big.loc.y, small.loc.y),
+            (big.size.w, small.size.w),
+            (big.size.h, small.size.h),
+        ] {
+            assert!(
+                near_twice(a, b),
+                "the panel {big:?} is not near twice {small:?}"
+            );
+        }
+        assert_eq!(two.answers.len(), one.answers.len(), "the same answers");
+        for (a, b) in two.answers.iter().zip(&one.answers) {
+            assert_eq!(a.words, b.words, "an answer says what it said");
+            assert!(
+                near_twice(a.area.size.h, b.area.size.h),
+                "an answer {:?} is not near twice {:?}",
+                a.area,
+                b.area
+            );
         }
     });
 }

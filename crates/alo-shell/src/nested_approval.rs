@@ -155,6 +155,9 @@ fn frame_pictures(
         labels,
         size,
         approval.look,
+        // **At one**: this scene is the development backend's, drawn in a
+        // window on another desktop, and no display's scale reaches it.
+        crate::display_scale::DisplayScale::ONE,
     )?;
     Ok((status, question))
 }
