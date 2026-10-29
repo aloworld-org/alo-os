@@ -263,6 +263,35 @@ pub const USE_THIS_KEYBOARD: Word =
          saying OK.",
     );
 
+/// The heading of the sheet that asks which time zone, in a region that has
+/// several. No frame of the design draws this sheet.
+pub const ZONE_TITLE: Word = Word::saying(
+    "shell.first-start.zone.title",
+    "Which time zone are you in?",
+)
+.noting(
+    "The heading of a screen shown only when the country or region chosen has more than one \
+         time zone, such as the United States or Russia. Each row is a city that names a time \
+         zone.",
+);
+
+/// What the zone sheet is for.
+pub const ZONE_INTRODUCTION: Word = Word::saying(
+    "shell.first-start.zone.introduction",
+    "Your region has more than one. The clock follows the one you choose.",
+)
+.noting(
+    "Under the heading on the time zone screen. \"One\" is a time zone; the computer's clock is \
+     set to the one chosen.",
+);
+
+/// The way on from the zone sheet.
+pub const USE_THIS_ZONE: Word = Word::saying("shell.first-start.zone.use", "Use this time zone")
+    .noting(
+        "The button that accepts the time zone chosen. It names what it does rather than saying \
+         OK.",
+    );
+
 /// The way back from a sheet that has one.
 pub const BACK: Word = Word::saying("shell.first-start.back", "Back")
     .noting("The button that returns to the previous step of setting up. It changes nothing.");
@@ -274,7 +303,7 @@ pub const SELECTED: Word = Word::saying("shell.first-start.selected", "Selected"
      word. Keep it a single word if your language has one.",
 );
 /// Every string these sheets draw.
-pub const FIRST_START_WORDS: [Word; 38] = [
+pub const FIRST_START_WORDS: [Word; 41] = [
     STAGE,
     NAME_EYEBROW,
     NAME_TITLE,
@@ -313,6 +342,9 @@ pub const FIRST_START_WORDS: [Word; 38] = [
     TEST_YOUR_KEYBOARD,
     TEST_HINT,
     USE_THIS_KEYBOARD,
+    ZONE_TITLE,
+    ZONE_INTRODUCTION,
+    USE_THIS_ZONE,
 ];
 
 /// Invalid declaration or collision while registering this wording.

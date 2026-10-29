@@ -477,6 +477,8 @@ mod the_terminals_frame;
 mod the_terminals_strip;
 mod the_window_edge_is_pointed_at;
 mod the_window_edge_reveals;
+mod the_zone_a_person_chose;
+pub mod the_zone_picker;
 mod their_displays;
 /// How one person writes a moment: what they chose, the language they read,
 /// and the zone they are in. Here rather than in `alo-formats`, whose header
@@ -576,6 +578,7 @@ mod window_raise;
 mod window_resize;
 mod window_size;
 mod window_switch;
+mod zone_sheet;
 
 pub use peeking_at_a_put_aside_window::{ThePeek, what_a_classification_does_to_a_peek};
 pub use putting_a_window_aside::NotAside;

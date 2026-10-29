@@ -100,6 +100,7 @@ impl crate::DirectSession {
                             crate::the_language_a_person_chose::TheLanguageAPersonChose::nothing_yet(),
                         region:
                             crate::the_region_a_person_chose::TheRegionAPersonChose::nothing_yet(),
+                        zone: crate::the_zone_a_person_chose::TheZoneAPersonChose::nothing_yet(),
                     },
                 ),
                 Err(error) => DirectLoopResult {
@@ -155,6 +156,31 @@ struct Greeter<'a, K: Knocking> {
     /// The region a person took on the region sheet, and whether it still
     /// needs writing down as the region this machine is in.
     region: crate::the_region_a_person_chose::TheRegionAPersonChose,
+    /// The time zone the region a person took sets, and whether it is set yet.
+    zone: crate::the_zone_a_person_chose::TheZoneAPersonChose,
+}
+
+/// Set the time zone the region a person took decided, if it just decided
+/// one (ADR 0140). Every outcome ends on the log, as the region's does.
+fn the_zone_is_now<K: Knocking>(
+    zone: &mut crate::the_zone_a_person_chose::TheZoneAPersonChose,
+    screen: &Lane<'_, K>,
+) {
+    use crate::the_zone_a_person_chose::AboutTheZone;
+    match zone.chose(
+        screen.the_zone_chosen(),
+        std::path::Path::new(alo_formats::the_machines_zone::THE_LOCALTIME),
+        std::path::Path::new(alo_formats::the_machines_zone::THE_ZONEINFO),
+    ) {
+        AboutTheZone::Unchanged => {}
+        AboutTheZone::Set(zone) => eprintln!(
+            "alo-compositor: this machine's time zone is now {zone}, from the region chosen"
+        ),
+        AboutTheZone::NotSet(why) => eprintln!(
+            "alo-compositor: a time zone was chosen and could not be set, so the machine keeps \
+             the one it had: {why}"
+        ),
+    }
 }
 
 /// Keep the region a person took as the region this machine is in, if they
@@ -340,6 +366,14 @@ impl<'a, K: Knocking> Lane<'a, K> {
         true
     }
 
+    /// The time zone the region a person took sets, or [`None`].
+    pub(crate) fn the_zone_chosen(&self) -> Option<&str> {
+        match self.signing.as_ref() {
+            Some(Signing::Still(screen)) => screen.the_zone_chosen(),
+            Some(Signing::HandedOver(_)) | None => None,
+        }
+    }
+
     /// The region a person took on the region sheet, or [`None`].
     pub(crate) fn the_region_chosen(&self) -> Option<&str> {
         match self.signing.as_ref() {
@@ -463,6 +497,7 @@ impl<K: Knocking> LoopInput for Greeter<'_, K> {
         let chose = &mut self.chose;
         let language = &mut self.language;
         let region = &mut self.region;
+        let zone = &mut self.zone;
         self.owner.dispatch(
             || poll().map_err(io::Error::other),
             |update| {
@@ -487,6 +522,7 @@ impl<K: Knocking> LoopInput for Greeter<'_, K> {
                                 the_keyboard_is_now(chose, screen, server);
                                 the_language_is_now(language, screen);
                                 the_region_is_now(region, screen);
+                                the_zone_is_now(zone, screen);
                                 Ok(())
                             }
                             // A release, a repeat, and a key this keyboard has
