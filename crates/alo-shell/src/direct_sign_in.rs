@@ -161,7 +161,7 @@ struct Greeter<'a, K: Knocking> {
 }
 
 /// Set the time zone the region a person took decided, if it just decided
-/// one (ADR 0138). Every outcome ends on the log, as the region's does.
+/// one (ADR 0139). Every outcome ends on the log, as the region's does.
 fn the_zone_is_now<K: Knocking>(
     zone: &mut crate::the_zone_a_person_chose::TheZoneAPersonChose,
     screen: &Lane<'_, K>,

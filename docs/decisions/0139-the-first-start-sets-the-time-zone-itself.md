@@ -1,4 +1,4 @@
-# ADR 0138 — The first-start screen sets the time zone itself
+# ADR 0139 — The first-start screen sets the time zone itself
 
 **Status:** accepted, 2026-10-28, under the owner's instruction: *find the
 honest road to set `/etc/localtime` from a screen that runs as root but with
