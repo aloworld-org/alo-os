@@ -184,7 +184,11 @@ fn what_was_refused_is_drawn_as_plainly_as_what_ran() {
             &mut labels.fonts,
             &entry.clause.text,
             clause_width,
-            Measure::of(TextScale::ordinary()).metrics(),
+            Measure::at(
+                TextScale::ordinary(),
+                crate::display_scale::DisplayScale::ONE,
+            )
+            .metrics(),
             palette.ground,
             palette.ink,
         );

@@ -49,16 +49,9 @@ pub(crate) struct Measure {
 }
 
 impl Measure {
-    /// Measures for this scale.
-    pub(crate) fn of(scale: TextScale) -> Self {
-        Self {
-            percent: i32::from(scale.as_percent()),
-        }
-    }
-
     /// Measures for this text size on a display drawn at `display`: the two
     /// multiplied, so a person who asked for larger text on a dense screen
-    /// gets both. At a display of one this is [`Measure::of`] exactly.
+    /// gets both. At a display of one it is the text size alone.
     pub(crate) fn at(scale: TextScale, display: DisplayScale) -> Self {
         Self {
             percent: i32::from(scale.as_percent()) * i32::from(display.per_cent()) / 100,
