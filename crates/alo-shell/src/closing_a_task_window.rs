@@ -14,20 +14,18 @@
 //! (`crate::a_task_windows_edge`), and a screen reader pressing that Close
 //! (`crate::a_reader_presses`).
 //!
-//! # The three choices are not built, so a running task does not close
+//! # A running task asks: Stop and close, or Cancel
 //!
-//! Each choice leans on something that does not exist yet: *Stop and close*
-//! on a Stop that reaches the agent, *Keep running* on the right-hand panel's
-//! place for a task, and all three on a sheet the design has not drawn. Until
-//! they exist, **closing a running task is *Cancel***: nothing closes, nothing
-//! stops, and a change waiting for the person is neither approved nor
-//! declined. That is the one of the three that needs nothing else, and the
-//! only behaviour that keeps both halves of the promise — never killed, never
-//! lost.
+//! Since 2026-10-29 (ADR 0139) closing a running task asks the person, on a
+//! card at the end of its conversation (`crate::asking_before_closing`):
+//! *Stop and close* stops alo and closes the window **once alo has really
+//! stopped**, and *Cancel* closes nothing. *Keep running* waits for the
+//! right-hand panel's place for a task and is not offered until then. A task
+//! already stopping is not asked again; it closes once it has stopped.
 //!
-//! **Nothing here can approve anything**: this file never reaches
-//! `crate::a_change_waiting_reaches_the_person` or a daemon, and a test holds
-//! that a change waiting when a person presses Alt+F4 is still waiting after.
+//! **Nothing here can approve anything**: this file never reaches a daemon,
+//! and a change waiting when a person closes the window is neither approved
+//! nor declined — under *Stop and close* it lapses with the turn.
 //!
 //! # The keyboard goes back to what was behind
 //!
@@ -43,9 +41,15 @@ use crate::the_tasks_a_person_opened::WhichTask;
 pub enum WhatClosingCameTo {
     /// The window closed. Its work was already over.
     Closed,
-    /// Nothing closed, because the task is still running — working, stopping,
+    /// Nothing closed and nothing was asked: the task is already stopping, and
+    /// closes only once it has stopped.
+    ///
+    /// Until 2026-10-29 this was every running task — working, stopping,
     /// or waiting for the person. Nothing about the task changed.
     StillRunning,
+    /// **Asked**: the task is running, so the person is asked *Stop and close*
+    /// or *Cancel* (`crate::asking_before_closing`, ADR 0139).
+    Asked,
     /// There was no open window by that name to close.
     NothingToClose,
 }
@@ -62,7 +66,14 @@ impl Server {
         let Some(task) = self.the_tasks.the(which) else {
             return WhatClosingCameTo::NothingToClose;
         };
+        let nobody_asked_it_to_stop = matches!(task.stopping(), alo_tasks::Stopping::NobodyAsked);
         if !task.may_close_without_asking() {
+            // **A running task asks**, unless it is already stopping, which
+            // closes nothing until it has stopped (ADR 0139).
+            if nobody_asked_it_to_stop {
+                self.ask_before_closing(which);
+                return WhatClosingCameTo::Asked;
+            }
             return WhatClosingCameTo::StillRunning;
         }
         if !self.the_tasks.closed(which) {

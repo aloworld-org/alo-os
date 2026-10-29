@@ -126,6 +126,13 @@ impl ThePermissions {
             None => Answered::NothingWasAsked,
         }
     }
+
+    /// **The question lapsed unanswered**: the turn it lived in ended, by a
+    /// Stop or by running out of time. Neither allowed nor denied, and nothing
+    /// is widened or recorded as an answer (ADR 0139).
+    pub fn lapsed(&mut self) {
+        self.asking = None;
+    }
 }
 
 #[cfg(test)]

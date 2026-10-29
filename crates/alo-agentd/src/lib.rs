@@ -206,6 +206,8 @@ mod a_port_held_over_ipv6_at_start;
 mod a_proposal_measured_on_the_network_it_arrived_on;
 #[cfg(target_os = "linux")]
 pub mod a_provider_ready_to_be_asked;
+#[cfg(target_os = "linux")]
+mod a_stop_while_asking;
 pub mod ageing;
 #[cfg(target_os = "linux")]
 pub mod answering;

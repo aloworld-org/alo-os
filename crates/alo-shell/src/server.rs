@@ -412,6 +412,14 @@ pub struct Server {
     /// **Recorded here for `asked_alo`'s reason**: the key arrives in the input
     /// loop, and the door to the agent is the frame loop's.
     pub(crate) follow_ups: Vec<crate::what_becomes_of_a_reply::AFollowUp>,
+    /// Stops a person pressed, waiting to be carried to the agent (ADR 0139),
+    /// for `follow_ups`' reason.
+    pub(crate) stops: Vec<crate::the_person_stops_a_task::AStop>,
+    /// A running task whose window the person asked to close, while they
+    /// choose *Stop and close* or *Cancel* (ADR 0139).
+    pub(crate) closing_asked: Option<crate::asking_before_closing::ClosingAsked>,
+    /// Tasks whose window closes once alo has really stopped.
+    pub(crate) close_when_stopped: Vec<crate::the_tasks_a_person_opened::WhichTask>,
     /// Whether each window's external edge is revealed, one machine per window.
     ///
     /// §5 of `docs/design/the-external-window-edge.md`. The edge is **per
@@ -721,6 +729,9 @@ impl Server {
             the_composer: crate::the_composer_a_person_types_in::TheComposer::empty(),
             asked_alo: Vec::new(),
             follow_ups: Vec::new(),
+            stops: Vec::new(),
+            closing_asked: None,
+            close_when_stopped: Vec::new(),
             edges_revealed: Vec::new(),
             keyboard_on_edges: Vec::new(),
             asked_to_bring_back: Vec::new(),

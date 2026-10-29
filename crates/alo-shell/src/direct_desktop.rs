@@ -1245,6 +1245,22 @@ impl LoopInput for Desk<'_> {
                 &the_folders_to_send(server),
             );
         }
+        // **And a Stop the person pressed travels the road its request took**
+        // (ADR 0139): on the request's own connection while it is being read,
+        // or on the connection a card kept. Nothing running to stop means the
+        // work had already ended, which is what the window then says.
+        for stop in server.take_the_stops() {
+            let who =
+                crate::what_a_person_asked_goes_to_the_agent::WhoAsked::ATaskWindow(stop.which);
+            match stop.held_turn {
+                Some(turn) => self.asking.stop_a_held_turn(who, turn),
+                None => {
+                    if !self.asking.stop(who) {
+                        server.it_really_stopped(stop.which);
+                    }
+                }
+            }
+        }
         // **What a person pressed Install on becomes an installation, here,
         // once a frame — and before the frame**, for the reason the ask above
         // is: starting one needs the desktop mutably (for its indicator) and
@@ -1309,6 +1325,13 @@ impl LoopInput for Desk<'_> {
         for came in self.asking.whatever_came_back() {
             match came.who {
                 crate::what_a_person_asked_goes_to_the_agent::WhoAsked::ATaskWindow(which) => {
+                    // **Stopped, now that the agent has gone** (ADR 0139):
+                    // nothing it said is put in the window, because what the
+                    // person asked for was the Stop.
+                    if came.stopped {
+                        server.it_really_stopped(which);
+                        continue;
+                    }
                     let daemon = server
                         .settings_places
                         .as_ref()
@@ -1323,6 +1346,15 @@ impl LoopInput for Desk<'_> {
                             .map(|door| door as &dyn alo_changing::Answering),
                         self.strings,
                     );
+                    // A Stop pressed as this answer was already on its way:
+                    // the agent has gone, so the work has stopped.
+                    if server
+                        .tasks()
+                        .the(which)
+                        .is_some_and(|task| matches!(task.stopping(), alo_tasks::Stopping::Asked))
+                    {
+                        server.it_really_stopped(which);
+                    }
                 }
                 // **An explanation of a command, into the terminal that asked.**
                 //
@@ -1375,7 +1407,8 @@ impl LoopInput for Desk<'_> {
             &server.tasks().where_each_went(),
             self.strings,
             server.the_change_waiting.selected(),
-        );
+        )
+        .with_the_closing_question(server.closing_asked, self.strings);
         let the_task_windows = the_tasks_words.as_displayed();
         // **A copy of the market window for the frame, and only while it is
         // open.**

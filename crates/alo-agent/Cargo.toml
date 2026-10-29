@@ -34,7 +34,7 @@ alo-turn = { path = "../alo-turn" }
 # forbids `unsafe` workspace-wide, so a `getsockopt` by hand is not available
 # either. `alo-agentd`, `alo-broker` and `alo-sessiond` rent the same crate for
 # the same question; this is the fourth.
-rustix = { workspace = true, features = ["net", "process"] }
+rustix = { workspace = true, features = ["event", "net", "process"] }
 thiserror = { workspace = true }
 
 [dev-dependencies]

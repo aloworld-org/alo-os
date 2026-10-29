@@ -70,6 +70,13 @@ pub enum WhatHappened {
         /// How far it had got, oldest first.
         after: Vec<AStep>,
     },
+    /// **The person stopped it** (ADR 0139): the shell shut its side of the
+    /// request, and the loop asked for nothing more. Not a refusal and not a
+    /// fault; what was done before it is in `after`.
+    ItWasStopped {
+        /// What was asked and answered before the Stop arrived.
+        after: Vec<AStep>,
+    },
     /// The turn used every round it had without finishing.
     ///
     /// Not a refusal and not a fault: the model kept asking for reads and never
@@ -105,6 +112,7 @@ impl WhatHappened {
             | Self::ItWasAnsweredInWords { after, .. }
             | Self::ItWasRefused { after, .. }
             | Self::ItRanOutOfRounds { after }
+            | Self::ItWasStopped { after }
             | Self::TheMachineCouldNotBeAsked { after, .. } => after,
         }
     }

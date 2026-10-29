@@ -71,7 +71,7 @@
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
-use alo_agent::{AtTheDaemonsSocket, HowFar, WhatHappened, driving_after};
+use alo_agent::{AtTheDaemonsSocket, HowFar, WhatHappened, driving_until_stopped};
 use alo_instructing::{Instructions, TheConversationSoFar, WhatItMayReach};
 
 /// Where the daemon's doors live, which the image makes at boot.
@@ -139,7 +139,16 @@ fn run() -> Result<ExitCode, String> {
     // **And a follow-up is shown what came before it**, inside the question
     // this turn asks the daemon — the only road anything takes off this
     // machine, so the indicator and the record see it (ADR 0138).
-    let happened = driving_after(
+    //
+    // **And the person may stop it** (ADR 0139): a watcher hears the shell
+    // shut its side, and tells the daemon by shutting this side's.
+    let stop = match (asked.may_stop, door.a_second_handle(), the_input()) {
+        (true, Some(to_the_daemon), Some(input)) => {
+            alo_agent::ThePersonMayStop::watching(input, to_the_daemon)
+        }
+        _ => alo_agent::ThePersonMayStop::cannot(),
+    };
+    let happened = driving_until_stopped(
         &asked.earlier,
         &asked.request,
         &verbs,
@@ -147,7 +156,10 @@ fn run() -> Result<ExitCode, String> {
         &mut door,
         HowFar::THE_ORDINARY,
         Instructions::SHOWN_TO_A_TURN,
+        &|| stop.has_stopped(),
     );
+    // Ended before anything else reads the input: holding below reads it.
+    let _ = stop.ended();
     let code = said(&happened);
     // **And the turn is held open while the person answers**, because the
     // change waiting is inside it: exiting here ended the turn with the
@@ -210,6 +222,16 @@ fn said(happened: &WhatHappened) -> ExitCode {
             println!("{said}");
             eprintln!("alo-agent: refused after {} step(s): {said}", after.len());
             ExitCode::FAILURE
+        }
+        // **Nothing is said to the person**: their shell asked for the Stop,
+        // and what it reports is this process going, which is the one thing
+        // that shows the turn really ended (ADR 0139).
+        WhatHappened::ItWasStopped { after } => {
+            eprintln!(
+                "alo-agent: the person stopped this after {} step(s)",
+                after.len()
+            );
+            ExitCode::SUCCESS
         }
         WhatHappened::ItRanOutOfRounds { after } => {
             eprintln!(
@@ -275,6 +297,8 @@ struct Asked {
     /// What was said before, when this is a follow-up typed in a task window
     /// (ADR 0138); nothing for a first request and for a request typed here.
     earlier: TheConversationSoFar,
+    /// Whether the person can stop this turn from their shell (ADR 0139).
+    may_stop: bool,
 }
 
 /// Read the arguments.
@@ -325,6 +349,7 @@ fn what_was_asked() -> Result<Asked, String> {
             at,
             may_reach: WhatItMayReach::nothing(),
             earlier: TheConversationSoFar::nothing(),
+            may_stop: false,
         });
     }
     // **What the shell sent, from the input**: the folders, the request, and
@@ -338,7 +363,17 @@ fn what_was_asked() -> Result<Asked, String> {
         at,
         may_reach: sent.may_reach,
         earlier: sent.earlier,
+        may_stop: sent.may_stop,
     })
+}
+
+/// A second handle on this process's input, for the watcher that hears a Stop
+/// (ADR 0139). [`None`] when it cannot be had, which leaves a turn nobody can
+/// stop rather than refusing one.
+fn the_input() -> Option<std::os::fd::OwnedFd> {
+    std::os::fd::AsFd::as_fd(&std::io::stdin())
+        .try_clone_to_owned()
+        .ok()
 }
 
 /// The person at the other end of this process's input, when there is one.

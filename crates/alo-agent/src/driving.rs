@@ -89,6 +89,67 @@ pub fn driving(
     )
 }
 
+/// **Drive a request until it ends or the person stops it**: [`driving_after`],
+/// asking `stopped` before every request it makes
+/// ([ADR 0139](../../../docs/decisions/0139-stop-reaches-alo-and-cancels-what-it-sent.md)).
+///
+/// Once the person has stopped, nothing more is asked of the machine, and the
+/// turn ends as [`WhatHappened::ItWasStopped`] with what it had done — **even
+/// after a proposal**: a change waiting when Stop arrives is not held for an
+/// answer, so it lapses with the turn and is never answered by the Stop.
+#[expect(
+    clippy::too_many_arguments,
+    reason = "driving_after's seven, and the one way to stop them; a struct would be a second \
+              name for the same call"
+)]
+pub fn driving_until_stopped(
+    earlier: &TheConversationSoFar,
+    request: &str,
+    verbs: &Verbs,
+    may_reach: &WhatItMayReach,
+    door: &mut dyn TheDoor,
+    how_far: HowFar,
+    instructions: Instructions,
+    stopped: &dyn Fn() -> bool,
+) -> WhatHappened {
+    let mut watched = Watched { door, stopped };
+    let happened = driving_after(
+        earlier,
+        request,
+        verbs,
+        may_reach,
+        &mut watched,
+        how_far,
+        instructions,
+    );
+    if stopped() {
+        return WhatHappened::ItWasStopped {
+            after: happened.after().to_vec(),
+        };
+    }
+    happened
+}
+
+/// A door that asks whether the person stopped before every request it
+/// carries.
+struct Watched<'a> {
+    /// The door the requests go through.
+    door: &'a mut dyn TheDoor,
+    /// Whether the person has stopped the turn.
+    stopped: &'a dyn Fn() -> bool,
+}
+
+impl TheDoor for Watched<'_> {
+    fn asking(&mut self, request: &FromAnAgent) -> Result<ToAnAgent, NotAnswered> {
+        if (self.stopped)() {
+            return Err(NotAnswered::NotReached {
+                why: "the person stopped this turn, so nothing more was asked".to_owned(),
+            });
+        }
+        self.door.asking(request)
+    }
+}
+
 /// **Drive a follow-up to its end**: [`driving`], with the conversation the
 /// person had in that task window shown to the model before the request
 /// ([ADR 0138](../../../docs/decisions/0138-a-follow-up-is-sent-with-the-conversation-so-far.md)).

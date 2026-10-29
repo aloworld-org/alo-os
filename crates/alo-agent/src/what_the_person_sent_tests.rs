@@ -130,3 +130,22 @@ fn an_empty_request_is_refused() {
     let mut input = "\n".as_bytes();
     assert!(read_what_the_person_sent(&mut input, None).is_err());
 }
+
+/// **A shell that keeps its side open can stop the turn; a caller that shut
+/// it as soon as it had written cannot** — that half-close is *that was all*,
+/// never a Stop (ADR 0139).
+#[test]
+fn only_a_caller_that_kept_its_side_open_may_stop() {
+    let (read, _shell) = sent_on_a_socket("list my invoices\nalo-earlier:\n");
+    assert!(read.unwrap().may_stop, "a current shell, still open");
+
+    let (mut asking, agent) = UnixStream::pair().unwrap();
+    asking.write_all(b"list my invoices\n").unwrap();
+    asking.shutdown(std::net::Shutdown::Write).unwrap();
+    let mut input = BufReader::new(&agent);
+    let read = read_what_the_person_sent(&mut input, Some(agent.as_fd())).unwrap();
+    assert!(
+        !read.may_stop,
+        "a caller that finished writing was read as able to stop"
+    );
+}

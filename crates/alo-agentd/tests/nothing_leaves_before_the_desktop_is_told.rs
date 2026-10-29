@@ -675,3 +675,96 @@ fn a_question_that_goes_nowhere_tells_the_desktop_nothing() {
         watching.told
     );
 }
+
+/// A provider that holds the connection it is given and reports how long the
+/// asking side took to close it, or [`None`] if nothing connected.
+fn a_provider_that_waits_to_be_hung_up_on(
+    listener: TcpListener,
+    reached: std::sync::mpsc::Sender<()>,
+) -> JoinHandle<Option<Result<Duration, String>>> {
+    listener
+        .set_nonblocking(true)
+        .expect("a listener can be made not to wait");
+    thread::spawn(move || {
+        let until = Instant::now() + PATIENCE;
+        while Instant::now() < until {
+            if let Ok((mut connection, _)) = listener.accept() {
+                connection
+                    .set_nonblocking(false)
+                    .expect("the connection can wait");
+                connection
+                    .set_read_timeout(Some(PATIENCE))
+                    .expect("a socket can be given a timeout");
+                let _ = reached.send(());
+                let reached_at = Instant::now();
+                let mut ignored = [0_u8; 4096];
+                loop {
+                    match connection.read(&mut ignored) {
+                        Ok(0) => return Some(Ok(reached_at.elapsed())),
+                        Ok(_) => {}
+                        Err(why) if why.kind() == ErrorKind::ConnectionReset => {
+                            return Some(Ok(reached_at.elapsed()));
+                        }
+                        Err(why) => return Some(Err(why.to_string())),
+                    }
+                }
+            }
+            thread::sleep(Duration::from_millis(5));
+        }
+        None
+    })
+}
+
+/// **Stop cancels a question already on its way to the provider** (ADR
+/// 0139): the agent hangs up while its question is out, the provider sees its
+/// connection closed at once, and the desktop is told nothing is leaving.
+#[test]
+fn a_stop_while_asking_closes_the_providers_connection_and_the_indicator_goes_dark() {
+    if the_daemon_if_this_is_one() {
+        return;
+    }
+    let folder = a_folder_of_our_own("stopped-on-its-way");
+    let listener =
+        TcpListener::bind(SocketAddr::new(our_own_address(), 0)).expect("a listener of our own");
+    let provider = listener.local_addr().expect("a listener knows where it is");
+    let config = a_person_who_chose(&folder, provider);
+    let mut daemon = ADaemon::started(
+        "a_stop_while_asking_closes_the_providers_connection_and_the_indicator_goes_dark",
+        &folder,
+        &config,
+    );
+    let mut watching = Watching::began(daemon.first_connection());
+    let (reached, provider_was_reached) = std::sync::mpsc::channel();
+    let hung_up_on = a_provider_that_waits_to_be_hung_up_on(listener, reached);
+
+    let mut agent = UnixStream::connect(&daemon.at).expect("the agent's door");
+    agent
+        .write_all(THE_QUESTION.as_bytes())
+        .expect("the question is written");
+    provider_was_reached
+        .recv_timeout(PATIENCE)
+        .expect("the question never reached the provider, so nothing was measured");
+    // **The Stop**: the agent shuts its sending side while the question is out.
+    agent
+        .shutdown(std::net::Shutdown::Write)
+        .expect("the agent can hang up");
+
+    let closed = hung_up_on
+        .join()
+        .expect("the provider's thread finishes")
+        .expect("the provider was reached");
+    let dark = watching.until(|told| told.last().is_some_and(Vec::is_empty));
+    daemon.stopped();
+
+    let closed = closed.unwrap_or_else(|why| panic!("the provider's connection failed: {why}"));
+    assert!(
+        closed < Duration::from_secs(3),
+        "the provider's connection stayed open {closed:?} after the Stop, so the question kept \
+         leaving"
+    );
+    assert!(
+        dark,
+        "the desktop was never told nothing is leaving: {:?}",
+        watching.told
+    );
+}

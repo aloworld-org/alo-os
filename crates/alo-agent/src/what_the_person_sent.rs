@@ -58,6 +58,11 @@ pub struct WhatThePersonSent {
     pub may_reach: WhatItMayReach,
     /// What was said before, for a follow-up; nothing for a first request.
     pub earlier: TheConversationSoFar,
+    /// Whether the person can still stop this turn: the shell kept its
+    /// sending side open after the request. A caller that shut it as soon as it
+    /// had written — `alo-ask` does — has said *that was all*, and that is
+    /// never read as a Stop (`crate::the_person_may_stop`; ADR 0139).
+    pub may_stop: bool,
 }
 
 /// **Read what the shell sent.**
@@ -91,22 +96,24 @@ pub fn read_what_the_person_sent(
             .to_owned(),
         );
     }
-    let earlier = match socket {
+    let (earlier, may_stop) = match socket {
         Some(socket) => the_earlier_conversation(input, socket)?,
-        None => TheConversationSoFar::nothing(),
+        None => (TheConversationSoFar::nothing(), false),
     };
     Ok(WhatThePersonSent {
         request,
         may_reach,
         earlier,
+        may_stop,
     })
 }
 
-/// The line after the request, waited for briefly, or nothing.
+/// The line after the request, waited for briefly, or nothing — and whether
+/// the caller left its sending side open.
 fn the_earlier_conversation(
     input: &mut dyn BufRead,
     socket: BorrowedFd<'_>,
-) -> Result<TheConversationSoFar, String> {
+) -> Result<(TheConversationSoFar, bool), String> {
     use rustix::net::sockopt::{Timeout, set_socket_timeout};
 
     if set_socket_timeout(
@@ -117,7 +124,7 @@ fn the_earlier_conversation(
     .is_err()
     {
         // Not a socket after all: nobody could have sent a third line.
-        return Ok(TheConversationSoFar::nothing());
+        return Ok((TheConversationSoFar::nothing(), false));
     }
     let mut line = String::new();
     // **Read no further than a question could carry**, plus its newline: the
@@ -129,8 +136,12 @@ fn the_earlier_conversation(
     // own bound when it needs one.
     let _ = set_socket_timeout(socket, Timeout::Recv, None);
     match read {
-        Ok(0) => Ok(TheConversationSoFar::nothing()),
-        Ok(_) => TheConversationSoFar::read(&line).map_err(|why| why.to_string()),
+        // **It has finished writing**: the end of the input came where a
+        // third line could have.
+        Ok(0) => Ok((TheConversationSoFar::nothing(), false)),
+        Ok(_) => TheConversationSoFar::read(&line)
+            .map(|earlier| (earlier, true))
+            .map_err(|why| why.to_string()),
         Err(why)
             if line.is_empty()
                 && matches!(
@@ -138,7 +149,7 @@ fn the_earlier_conversation(
                     std::io::ErrorKind::WouldBlock | std::io::ErrorKind::TimedOut
                 ) =>
         {
-            Ok(TheConversationSoFar::nothing())
+            Ok((TheConversationSoFar::nothing(), true))
         }
         Err(why) => Err(format!(
             "the earlier conversation stopped arriving partway, so it was not read: {why}"
