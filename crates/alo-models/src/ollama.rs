@@ -290,7 +290,7 @@ struct ChatRequest<'a> {
     #[serde(skip_serializing_if = "Option::is_none")]
     format: Option<serde_json::Value>,
     /// The runtime's options: the window alo OS chose, always, and the road
-    /// where the caller named one (`crate::how_much_a_model_reads`; ADR 0137).
+    /// where the caller named one (`crate::how_much_a_model_reads`; ADR 0138).
     /// Until 2026-10-28 this was absent on every question that named no road,
     /// and the runtime chose the window itself.
     options: ChatOptions,
@@ -780,7 +780,7 @@ impl Ollama {
         road: WhichRoad,
     ) -> Result<String, RuntimeError> {
         // **The window alo OS chose, and a question that cannot fit it is not
-        // sent** (`crate::how_much_a_model_reads`; ADR 0137).
+        // sent** (`crate::how_much_a_model_reads`; ADR 0138).
         let window = how_much_a_model_reads::the_window(self.reads.get(of_model).copied());
         if how_much_a_model_reads::certainly_does_not_fit(question, window) {
             return Err(RuntimeError::TooLongForTheModel(of_model.to_owned()));
@@ -1536,7 +1536,7 @@ mod tests {
                 "messages": [{"role": "user", "content": "may the tenant sublet?"}],
                 "stream": false,
                 // The window alo OS chose, on every question since 2026-10-28
-                // (ADR 0137); a runtime that lists no maximum gets the figure.
+                // (ADR 0138); a runtime that lists no maximum gets the figure.
                 "options": {"num_ctx": how_much_a_model_reads::THE_MOST_ASKED_FOR},
             }),
             "{request}"
@@ -1827,7 +1827,7 @@ mod tests {
 
     /// **A model the runtime lists as reading 2048 tokens is asked for 2048**,
     /// carried on the question itself — read off the request the runtime
-    /// received (ADR 0137).
+    /// received (ADR 0138).
     #[test]
     fn a_question_carries_the_window_the_runtime_listed_for_its_model() {
         let (url, server) = serving_in_turn(

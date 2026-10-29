@@ -234,7 +234,7 @@ fn what_went_wrong(why: RuntimeError) -> WentWrong {
             WentWrong::NoModelThere
         }
         // **The same sentence a provider's refusal for it is**, by the owner's
-        // decision (ADR 0137): too long for the model is one thing to be told,
+        // decision (ADR 0138): too long for the model is one thing to be told,
         // wherever the model is.
         RuntimeError::TooLongForTheModel(_) => WentWrong::TooLongForTheModel,
     }
@@ -539,7 +539,7 @@ mod tests {
     }
 
     /// **A question too long for the model here is told in the sentence a
-    /// provider's refusal for it is** (ADR 0137), and never as *nothing usable*.
+    /// provider's refusal for it is** (ADR 0138), and never as *nothing usable*.
     #[test]
     fn a_question_too_long_for_the_model_here_is_said_to_be() {
         let runtime = Stub::failing(RuntimeError::TooLongForTheModel("a-model".to_owned()));
