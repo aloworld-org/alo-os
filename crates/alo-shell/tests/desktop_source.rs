@@ -60,6 +60,9 @@ fn the_desktop_files() -> Vec<(String, Vec<(usize, String)>)> {
             "desktop_raster.rs",
             "desktop_seat.rs",
             "desktop_swipes.rs",
+            // History as the design's line drawing on a side Dock. It draws
+            // furniture and nothing else.
+            "dock_history_mark.rs",
             "dock_raster.rs",
             // Whether a window needs the room the dock sits in. It grants
             // nothing and measures nothing about the machine: it compares two

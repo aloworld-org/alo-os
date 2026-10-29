@@ -160,8 +160,14 @@ fn at_one_hundred_the_whole_dock_draws_the_bytes_it_drew_before() {
 
 /// The hash of the bottom Dock before this change. See the test above.
 const BOTTOM_BEFORE: u64 = 0x4827_adf7_3434_8602;
-/// The hash of the left Dock before this change. See the test above.
-const LEFT_BEFORE: u64 = 0x6225_a4d4_ebf9_1906;
+/// The hash of the left Dock.
+///
+/// **Retaken on 2026-10-29, on purpose and once**: a Dock down a side now
+/// draws History as the design's line drawing rather than the word
+/// (`crate::dock_history_mark`), so its bytes changed and only there. It was
+/// `0x6225_a4d4_ebf9_1906`; the bottom Dock's hash above, which keeps the
+/// word, did not move.
+const LEFT_BEFORE: u64 = 0xc443_f861_4e9e_6c8c;
 
 /// Whether `dense` is `sparse` doubled, allowing one pixel along the bar.
 ///
