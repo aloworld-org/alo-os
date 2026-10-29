@@ -115,6 +115,7 @@ pub mod alos_marked_words;
 pub mod closing_a_task_window;
 pub use a_provider_is_added_in_settings::WhyNotSaved;
 mod a_reader_presses;
+pub use a_reader_presses::WhatAReaderPressCameTo;
 /// Typing into a task window's reply box.
 mod a_screen_arrives_or_leaves;
 mod access_action;
@@ -413,6 +414,7 @@ pub mod the_cards_words;
 /// The Dock's composer as a field a person types a request into.
 pub mod the_composer_a_person_types_in;
 mod the_desk_is_reconciled;
+mod the_dock_as_a_reader_meets_it;
 pub mod the_docks_words;
 mod the_edge_takes_the_keyboard;
 mod the_formats_are_told;

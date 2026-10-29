@@ -152,7 +152,9 @@ impl crate::Server {
                 Some((which, title))
             })
             .collect();
+        // Each control on the Dock, as the Dock was last drawn.
         crate::ReadAloudTree::of(strings, showing, turned_on)
+            .with_the_docks_slots(strings, &self.the_docks_slots_as_drawn())
             .with_the_frames_open(strings, &frames, turned_on)
             .with_the_task_windows_open(strings, &tasks, turned_on)
     }
