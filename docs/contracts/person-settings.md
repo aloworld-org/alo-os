@@ -2397,6 +2397,22 @@ from this file. A zone not named is the
 machine's own; a zone named that the zone database does not have is the
 machine's own too, and the session's log says which name it could not find.
 
+### The time zone is the machine's, and is not kept here
+
+`timezone` above is a zone a person names for **their own** dates; nothing
+writes it yet. **The machine's zone** is `/etc/localtime`, and it is set in
+two ways ([ADR 0140](../decisions/0140-the-first-start-sets-the-time-zone-itself.md)):
+
+- by the **first-start screens**, from the region taken there, asking which
+  city where the region has several;
+- by **Settings**, in its time-zone rows — the cities of the region dates are
+  written like, named in the person's language. Settings asks systemd's
+  time-zone service, `org.freedesktop.timedate1` `SetTimezone`, and the image's
+  polkit rule (`/usr/share/polkit-1/rules.d/50-alo-time-zone.rules`) lets the
+  person's own active session do it without an administrator's password and
+  **refuses the agent's account** (`alo-agent`) in any session. A refusal moves
+  nothing, and Settings says *the time zone was not changed*.
+
 ### How Settings reaches it
 
 By the same four calls as the three sections walked in

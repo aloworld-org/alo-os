@@ -1,0 +1,29 @@
+// alo OS: who may change this machine's time zone without an administrator's
+// password (ADR 0140, the owner's decision of 2026-10-28).
+//
+// Settings changes the zone the standard Linux way: it asks systemd's own
+// time-zone service, org.freedesktop.timedate1, to SetTimezone, and that
+// service asks polkit whether the caller may. This file is polkit's own
+// configuration language; it is configuring the engine, not code of ours.
+//
+//   - The agent's account may not, ever, in any session. It is refused first,
+//     so no rule below and no rule of the base can let it through.
+//   - The person, in their own local, active session — Settings, on the
+//     machine in front of them — may.
+//   - Anybody else gets what the base's own policy says, which asks for an
+//     administrator.
+//
+// crates/alo-image/tests/the_person_may_set_the_time_zone_and_the_agent_may_not.rs
+// reads this file and the image's accounts and holds them to each other.
+polkit.addRule(function (action, subject) {
+    if (action.id !== "org.freedesktop.timedate1.set-timezone") {
+        return polkit.Result.NOT_HANDLED;
+    }
+    if (subject.user === "alo-agent") {
+        return polkit.Result.NO;
+    }
+    if (subject.local && subject.active) {
+        return polkit.Result.YES;
+    }
+    return polkit.Result.NOT_HANDLED;
+});

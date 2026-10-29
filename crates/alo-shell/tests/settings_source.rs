@@ -331,6 +331,7 @@ fn the_settings_files() -> Vec<(String, Vec<(usize, String)>)> {
             "settings_raster.rs",
             "settings_seat.rs",
             "settings_shell_integration.rs",
+            "settings_time_zone.rs",
             "settings_window.rs",
         ],
         "a Settings file was added or lost, and this test has to be told"

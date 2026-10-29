@@ -61,6 +61,8 @@ use crate::settings_granted::{GrantedSection, SettingsRevoked};
 use crate::settings_keepers::{AppearanceKept, DockKept, ShortcutsKept};
 use crate::settings_kept::{KeptSection, SettingsKept};
 use crate::settings_shell_integration::TheShellIntegration;
+use crate::settings_time_zone::TimeZoneSection;
+use crate::the_zone_through_timedated::SetsTheZone;
 use crate::{SettingsKey, SettingsPlaces};
 use alo_choosing::MayUseAnother;
 
@@ -74,6 +76,9 @@ pub enum SettingsSection {
     /// How dates and times are written: the person's language, or a region
     /// they chose (`crate::settings_formats`).
     Formats,
+    /// The time zone: the cities of the region dates are written like
+    /// (`crate::settings_time_zone`), set through systemd's own service.
+    TimeZone,
     /// Which edge the dock is on.
     Dock,
     /// The shortcuts.
@@ -100,6 +105,8 @@ pub enum SettingsRow {
     /// How dates and times are written: Enter chooses it. [`None`] is *as my
     /// language writes them*; a code is the region whose way they follow.
     WrittenAs(Option<&'static str>),
+    /// A time zone, by the zone database's name: Enter sets the machine to it.
+    TimeZone(String),
     /// What the dock does when a window needs the room: Enter chooses it.
     ///
     /// This was an edge for the dock until ADR 0076 fixed the dock to the bottom
@@ -172,6 +179,7 @@ impl SettingsRow {
             Self::Answer(_) => SettingsSection::Answering,
             Self::Accent(_) => SettingsSection::Appearance,
             Self::WrittenAs(_) => SettingsSection::Formats,
+            Self::TimeZone(_) => SettingsSection::TimeZone,
             Self::Hiding(_) => SettingsSection::Dock,
             Self::Shortcut(_) => SettingsSection::Shortcuts,
             Self::Granted(_) | Self::GrantAFolder | Self::SeeWhatAloDid | Self::Picking(_) => {
@@ -225,6 +233,10 @@ pub struct SettingsDoors<'a> {
     pub folders: &'a dyn Folders,
     /// The moment of the press, for the grants and pairings in force.
     pub now: SystemTime,
+    /// systemd's time-zone service, which the time-zone rows ask
+    /// (`crate::the_zone_through_timedated`) — a trait, so every rule about
+    /// what is set is tested without a bus.
+    pub zone: &'a dyn SetsTheZone,
 }
 
 /// What a key press did.
@@ -275,6 +287,8 @@ pub(crate) struct Open {
     pub(crate) appearance: KeptSection<AppearanceKept>,
     /// How dates and times are written.
     pub(crate) formats: FormatsSection,
+    /// The time zone.
+    pub(crate) time_zone: TimeZoneSection,
     /// The dock.
     pub(crate) dock: KeptSection<DockKept>,
     /// Shortcuts.
@@ -328,6 +342,13 @@ impl SettingsWindow {
                 places.kept(alo_formats::keeping::THE_FILE),
                 places.choosing(),
             ),
+            // **The cities are filled in by the host**, which knows the region
+            // dates are written like; see [`SettingsWindow::the_zones_are_those_of`].
+            time_zone: TimeZoneSection::of(
+                None,
+                alo_formats::THE_SOURCE_LANGUAGE,
+                jiff::tz::TimeZone::system().iana_name().map(str::to_owned),
+            ),
             dock: KeptSection::at_sign_in(places.kept(alo_dock::keeping::THE_FILE)),
             shortcuts: KeptSection::at_sign_in(places.kept(alo_shortcuts::keeping::THE_FILE)),
             granted,
@@ -342,6 +363,28 @@ impl SettingsWindow {
             waiting_for_a_chord: false,
         });
         SettingsOpened { not_remembered }
+    }
+
+    /// **The time zones offered are those of the region `formats` writes
+    /// dates like**, in the language its person reads — asked by the host when
+    /// Settings opens and again when a region is kept, because the region is
+    /// the one `crate::TheirFormats` answers, which this window does not hold.
+    pub fn the_zones_are_those_of(&mut self, formats: &crate::TheirFormats) {
+        if let Some(open) = self.open.as_mut() {
+            let region = formats
+                .the_region()
+                .0
+                .and_then(|it| alo_formats::RegionCode::named(&it).ok());
+            open.time_zone.follows(region.as_ref(), formats.reading());
+        }
+    }
+
+    /// The time zone the machine is in as Settings last set or read it.
+    #[must_use]
+    pub fn the_zone(&self) -> Option<String> {
+        self.open
+            .as_ref()
+            .and_then(|open| open.time_zone.now().map(str::to_owned))
     }
 
     /// Close the window. Nothing is written by closing it.
@@ -510,6 +553,12 @@ impl Open {
                 .into_iter()
                 .map(SettingsRow::WrittenAs),
         );
+        rows.extend(
+            self.time_zone
+                .choices()
+                .into_iter()
+                .map(SettingsRow::TimeZone),
+        );
         if self.dock.at().is_some() {
             rows.extend(Hiding::ALL.into_iter().map(SettingsRow::Hiding));
         }
@@ -609,6 +658,11 @@ impl Open {
                 SettingsSection::Formats,
                 self.formats.choose(*choice, doors.strings),
             ),
+            // **The service is asked, and the tick moves only on its yes.**
+            SettingsRow::TimeZone(zone) => SettingsDid::Kept(
+                SettingsSection::TimeZone,
+                self.time_zone.choose(zone, doors.zone, doors.strings),
+            ),
             SettingsRow::Hiding(hiding) => {
                 let hiding = *hiding;
                 let kept = self.dock.changed(
@@ -693,10 +747,14 @@ impl Open {
             // honest once they have: deleting their file would make the machine
             // claim they never answered. `crate::how_code_runs_in_settings`
             // carries the whole argument.
+            // **Not offered for the time zone**: it is the machine's, kept by
+            // systemd rather than in a file of this person's, and there is no
+            // release default to put back — a fresh disk keeps none.
             SettingsSection::Answering
             | SettingsSection::Granted
             | SettingsSection::Terminal
-            | SettingsSection::HowCodeRuns => {
+            | SettingsSection::HowCodeRuns
+            | SettingsSection::TimeZone => {
                 return None;
             }
         };

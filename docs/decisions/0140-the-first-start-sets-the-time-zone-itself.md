@@ -1,6 +1,6 @@
 # ADR 0140 — The first-start screen sets the time zone itself
 
-**Status:** accepted, 2026-10-28, under the owner's instruction: *find the
+**Status:** accepted, 2026-10-28; **amended the same day** for changing the zone later, through systemd's service and a polkit rule for the person and not the agent (the last section). First written under the owner's instruction: *find the
 honest road to set `/etc/localtime` from a screen that runs as root but with
 dropped privileges; if it needs a new privilege, write the ADR, and if that is
 ambiguous report back before building.* It needs no new privilege, so this
@@ -66,9 +66,32 @@ third, beside them in the same way.
   changed. On the first start, the person's desktop is started after the
   sheets, so it reads the zone just set.
 
-## Changing the zone later
+## Changing the zone later — amended the same day
 
-Settings runs as the person, not as root, so it cannot take this road; and
-Settings has no row for a time zone today. So **changing the zone after the
-first start is not built**. When it is, it needs a privilege that the person
-can use and the agent cannot, and that is a decision for its own record.
+**The owner chose the standard Linux way** (2026-10-28): Settings asks
+systemd's own time-zone service, `org.freedesktop.timedate1`, to
+`SetTimezone`, and the image ships a polkit rule,
+`image/usr/share/polkit-1/rules.d/50-alo-time-zone.rules`, that:
+
+- **refuses the agent's account** (`alo-agent`) first, in any session, so no
+  later rule can let it through;
+- **lets a local, active session** — the person at the machine, in Settings —
+  set the zone **without an administrator's password**;
+- leaves everybody else to the base's own policy, which asks for one.
+
+So the setup screen and Settings take two roads to one file, each the honest
+one for the process it is: the screen owns `/etc` and needs nothing; Settings
+runs as the person and asks the service whose job it is. **The rule is the
+only new grant**, and it is to the person rather than to the agent.
+
+Settings offers the same names as the setup screen: the cities of the region
+the person's dates are written like (`alo_shell::settings_time_zone`). A
+person who moves country changes the region there first, and the cities follow.
+
+**What is tested, and what is not:**
+- `crates/alo-image/tests/the_person_may_set_the_time_zone_and_the_agent_may_not.rs`
+  holds the rule's text to the image's accounts on every gate.
+- `crates/alo-shell/src/settings_time_zone_tests.rs` holds that a yes moves
+  the tick and a no moves nothing.
+- polkit itself evaluating the rule needs a booted machine, and is item 3 of
+  `docs/walks/checks-for-the-next-walk.md`.

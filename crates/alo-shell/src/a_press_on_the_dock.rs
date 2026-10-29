@@ -677,6 +677,7 @@ impl crate::Server {
                 // one this file knows: no agent, no grant, no approval. A press
                 // on one's own Dock is that person.
                 let _opened = window.opened_by_hand(&places, std::time::SystemTime::now());
+                window.the_zones_are_those_of(self.the_formats());
                 self.settings = window;
                 self.settings_places = Some(places);
             }

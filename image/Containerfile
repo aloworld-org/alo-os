@@ -1056,6 +1056,15 @@ COPY image/usr/lib/bootc/kargs.d/ /usr/lib/bootc/kargs.d/
 # reads, and this is where it reads it.
 COPY image/usr/lib/systemd/journald.conf.d/ /usr/lib/systemd/journald.conf.d/
 COPY image/etc/alo/ /etc/alo/
+# **Who may change the time zone without an administrator's password**: the
+# person, in their own active session, and never the agent's account
+# ([ADR 0140](../docs/decisions/0140-the-first-start-sets-the-time-zone-itself.md)).
+# Settings asks systemd's time-zone service; this is polkit's answer to it.
+# `/usr/share` because it is what the image ships; `/etc/polkit-1/rules.d` is
+# where a machine's owner adds their own.
+COPY image/usr/share/polkit-1/rules.d/ /usr/share/polkit-1/rules.d/
+RUN test -s /usr/share/polkit-1/rules.d/50-alo-time-zone.rules \
+ && rpm -q polkit systemd
 
 # **What this machine says it is.** The base's own file calls it Fedora Linux
 # 42, which a person who installed alo OS did not install, and carries

@@ -255,6 +255,17 @@ pub(crate) fn doors<'a>(
         daemon,
         folders: &alo_picking::OnThisDisk,
         now: noon(),
+        zone: &NoTimeZoneService,
+    }
+}
+
+/// A time-zone service that is not there, which is what a test machine has:
+/// every zone asked of it is refused, and nothing on the host is changed.
+pub(crate) struct NoTimeZoneService;
+
+impl crate::the_zone_through_timedated::SetsTheZone for NoTimeZoneService {
+    fn set(&self, _zone: &str) -> Result<(), String> {
+        Err("no time-zone service in a test".to_owned())
     }
 }
 

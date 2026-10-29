@@ -190,6 +190,9 @@ fn the_press_is_carried_out(server: &mut Server, press: crate::SettingsPress, st
             // the ones in force then. Every layer below takes it as an
             // argument so a test can choose it.
             now: SystemTime::now(),
+            // **systemd's own time-zone service**, which the image's polkit
+            // rule lets this person's session ask and the agent's not.
+            zone: &crate::the_zone_through_timedated::Timedated,
         },
     );
     server.settings = window;
@@ -214,8 +217,18 @@ fn the_press_is_carried_out(server: &mut Server, press: crate::SettingsPress, st
         && let Some(chosen) = server.settings.formats().cloned()
     {
         let formats = server.the_formats().with(chosen);
+        server.settings.the_zones_are_those_of(&formats);
         server.the_formats_are(formats);
         return;
+    }
+    // **A zone set is told to the seat at once**, so the status area's clock
+    // and the next record opened are in it without waiting for a sign-in.
+    if let Some(SettingsDid::Kept(SettingsSection::TimeZone, SettingsKept::Written)) = did
+        && let Some(zone) = server.settings.the_zone()
+        && let Ok(zone) = jiff::tz::TimeZone::get(&zone)
+    {
+        let formats = server.the_formats().clone().in_zone(zone);
+        server.the_formats_are(formats);
     }
     if let Some(SettingsDid::Kept(SettingsSection::Shortcuts, SettingsKept::Written)) = did
         && let Some(bound) = server.settings.shortcuts().cloned()
