@@ -159,7 +159,7 @@ fn run() -> Result<ExitCode, String> {
         &|| stop.has_stopped(),
     );
     // Ended before anything else reads the input: holding below reads it.
-    drop(stop.ended());
+    let _ = stop.ended();
     let code = said(&happened);
     // **And the turn is held open while the person answers**, because the
     // change waiting is inside it: exiting here ended the turn with the
