@@ -703,6 +703,7 @@ fn a_reader_finds_close_on_each_task_window_and_presses_it() {
         smithay::utils::Rectangle::new((0, 0).into(), (1280, 800).into()),
         alo_strings::Direction::LeftToRight,
         &[],
+        100,
     );
     server
         .tasks_mut()
