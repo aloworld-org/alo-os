@@ -173,6 +173,12 @@ const THE_ANSWERS_TAKE: u32 = m::GAP + m::A_CONTROL_IS;
 /// [`NoTaskPicture::TooSmall`] for a window the layout refuses, carrying the
 /// least it would need; [`NoTaskPicture::AccentRefused`] for an accent nobody
 /// may choose.
+#[expect(
+    clippy::too_many_arguments,
+    reason = "what a frame hands over about one window, and the display it is on: each is \
+              one fact a caller already holds apart, and a struct for one caller would \
+              be a second name for `ATaskOnTheDisplay`"
+)]
 pub(crate) fn furniture(
     at: Rectangle<i32, Physical>,
     look: DesktopLook,
