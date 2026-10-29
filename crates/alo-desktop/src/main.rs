@@ -1296,7 +1296,29 @@ mod running {
                 }
                 None => alo_formats::Chosen::default(),
             };
-        let formats = alo_shell::TheirFormats::of(chosen, reading);
+        // **The region the machine was set up in**, which is where this
+        // person's dates are written like until they choose another — the
+        // owner's decision of 2026-10-28, and the second of the four in
+        // `alo_shell::TheirFormats`' order. A file that did not read is said and
+        // gives nothing.
+        let set_up_in = match alo_formats::set_up_in::read(std::path::Path::new(
+            alo_formats::set_up_in::THE_MACHINES_SET_UP_IN,
+        )) {
+            Ok(set_up) => set_up.region().cloned(),
+            Err(why) => {
+                eprintln!(
+                    "alo-desktop: the region this machine was set up in, at {}, did not read \
+                     ({:?}), so it is not used",
+                    why.at().display(),
+                    why.why()
+                );
+                None
+            }
+        };
+        let formats =
+            alo_shell::TheirFormats::of(chosen, reading).where_the_machine_was_set_up(set_up_in);
+        let (region, from) = formats.the_region();
+        eprintln!("alo-desktop: dates and times are written like {region:?}, because {from:?}");
         if let Some(zone) = formats.zone_not_found() {
             eprintln!(
                 "alo-desktop: this person chose the time zone {}, which this machine's zone \
@@ -1321,7 +1343,7 @@ mod running {
         };
         let read = alo_shell::the_language_set_up_in::the_languages_they_read(
             &settings,
-            std::path::Path::new(alo_formats::the_machines_language::THE_MACHINES_LANGUAGE),
+            std::path::Path::new(alo_formats::set_up_in::THE_MACHINES_SET_UP_IN),
         );
         if let Some(said) = &read.for_the_log {
             eprintln!("alo-desktop: {said}");

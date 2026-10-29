@@ -174,9 +174,18 @@ pub fn stand_the_sign_in_screen_up(
         },
     )?;
     let mut labels = WindowControlLabels::new()?;
+    // **Where the machine is, as far as its own clock says**: the country of
+    // the time zone it keeps, where that is a place. A fresh disk keeps none
+    // and answers nothing, and the region sheet then offers the language's
+    // usual region by name instead.
+    let zone = jiff::tz::TimeZone::system();
     let screen = SignInScreen::of(
         Greeting::at(machine.accounts, machine.person, machine.door),
         words,
+    )
+    .where_the_machine_is(
+        zone.iana_name()
+            .and_then(alo_formats::where_the_machine_is::the_region_of_the_zone),
     );
     let mut session = DirectSession::new(machine.display.to_owned())?;
     let stood = session.sign_in(&mut server, screen, &mut labels, first_look(), &mut next)?;

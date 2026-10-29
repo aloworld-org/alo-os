@@ -196,6 +196,17 @@ pub(crate) fn picture(
                 &measure,
             );
         }
+        // **The region sheet**, which follows the language sheet.
+        SignInShows::Region { offered } => {
+            return crate::region_sheet::drawn(
+                offered,
+                fonts,
+                words,
+                (width, height),
+                crate::sign_in_surface::TheColours::of(look.contrast, look.scheme),
+                &measure,
+            );
+        }
         SignInShows::Sentence(said) => {
             let text = sentence(
                 fonts,

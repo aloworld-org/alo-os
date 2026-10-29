@@ -98,6 +98,8 @@ impl crate::DirectSession {
                             crate::the_keyboard_a_person_chose::TheKeyboardAPersonChose::nothing_yet(),
                         language:
                             crate::the_language_a_person_chose::TheLanguageAPersonChose::nothing_yet(),
+                        region:
+                            crate::the_region_a_person_chose::TheRegionAPersonChose::nothing_yet(),
                     },
                 ),
                 Err(error) => DirectLoopResult {
@@ -150,6 +152,31 @@ struct Greeter<'a, K: Knocking> {
     /// The language a person picked on the language sheet, and whether it
     /// still needs writing down as the language this machine was set up in.
     language: crate::the_language_a_person_chose::TheLanguageAPersonChose,
+    /// The region a person took on the region sheet, and whether it still
+    /// needs writing down as the region this machine is in.
+    region: crate::the_region_a_person_chose::TheRegionAPersonChose,
+}
+
+/// Keep the region a person took as the region this machine is in, if they
+/// just took one. Every outcome ends on the log, as the language's does.
+fn the_region_is_now<K: Knocking>(
+    region: &mut crate::the_region_a_person_chose::TheRegionAPersonChose,
+    screen: &Lane<'_, K>,
+) {
+    use crate::the_region_a_person_chose::AboutTheRegion;
+    match region.chose(
+        screen.the_region_chosen(),
+        std::path::Path::new(alo_formats::set_up_in::THE_MACHINES_SET_UP_IN),
+    ) {
+        AboutTheRegion::Unchanged => {}
+        AboutTheRegion::Kept(code) => {
+            eprintln!("alo-compositor: this machine is in {code}, chosen on the region sheet")
+        }
+        AboutTheRegion::NotKept(why) => eprintln!(
+            "alo-compositor: a region was chosen and could not be written down, so dates on \
+             this machine follow its time zone or its language instead: {why}"
+        ),
+    }
 }
 
 /// Keep the language a person chose as the language this machine was set up
@@ -166,7 +193,7 @@ fn the_language_is_now<K: Knocking>(
     use crate::the_language_a_person_chose::AboutTheLanguage;
     match language.chose(
         screen.the_language_chosen(),
-        std::path::Path::new(alo_formats::the_machines_language::THE_MACHINES_LANGUAGE),
+        std::path::Path::new(alo_formats::set_up_in::THE_MACHINES_SET_UP_IN),
     ) {
         AboutTheLanguage::Unchanged => {}
         AboutTheLanguage::Kept(tag) => eprintln!(
@@ -313,6 +340,14 @@ impl<'a, K: Knocking> Lane<'a, K> {
         true
     }
 
+    /// The region a person took on the region sheet, or [`None`].
+    pub(crate) fn the_region_chosen(&self) -> Option<&str> {
+        match self.signing.as_ref() {
+            Some(Signing::Still(screen)) => screen.the_region_chosen(),
+            Some(Signing::HandedOver(_)) | None => None,
+        }
+    }
+
     /// The language a person chose on the sheet, or [`None`].
     pub(crate) fn the_language_chosen(&self) -> Option<&str> {
         match self.signing.as_ref() {
@@ -418,6 +453,7 @@ impl<K: Knocking> LoopInput for Greeter<'_, K> {
         // `self` cannot be lent twice into it.
         let chose = &mut self.chose;
         let language = &mut self.language;
+        let region = &mut self.region;
         self.owner.dispatch(
             || poll().map_err(io::Error::other),
             |update| {
@@ -441,6 +477,7 @@ impl<K: Knocking> LoopInput for Greeter<'_, K> {
                                 // arrow does not rebuild a keymap.
                                 the_keyboard_is_now(chose, screen, server);
                                 the_language_is_now(language, screen);
+                                the_region_is_now(region, screen);
                                 Ok(())
                             }
                             // A release, a repeat, and a key this keyboard has

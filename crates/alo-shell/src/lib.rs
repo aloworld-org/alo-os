@@ -325,6 +325,7 @@ mod recovery_screen;
 mod recovery_seat;
 #[cfg(test)]
 mod recovery_testing;
+mod region_sheet;
 mod resize_cursor;
 mod resize_transaction;
 mod resource_device;
@@ -426,6 +427,8 @@ mod the_panel_reveals;
 pub mod the_pickers_words;
 mod the_pointer_in_pixels;
 pub mod the_providers_words;
+mod the_region_a_person_chose;
+pub mod the_regions_offered;
 pub mod the_reply_boxs_words;
 mod the_session_holds_its_screens;
 /// The task windows a person opened by asking alo for something.
@@ -732,7 +735,7 @@ pub use scene_replacement::SceneReplacement;
 pub use scene_scanout::ActiveScene;
 pub use screens::{ScreenPlace, Screens, TheRoom};
 pub use the_markets_words::TheMarketsWords;
-pub use their_formats::{TheDay, TheirFormats};
+pub use their_formats::{TheDay, TheirFormats, WhereTheRegionCameFrom};
 
 // **The types a desktop needs to answer `their_displays`, re-exported so that
 // answering costs it no new crate edge** — `more-than-one-display-plan.md`
