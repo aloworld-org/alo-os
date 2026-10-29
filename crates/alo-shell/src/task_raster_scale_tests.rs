@@ -98,7 +98,8 @@ fn hashed(window: &TaskPicture) -> u64 {
 ///
 /// The panel with its shadow, chips, field, controls, bubbles and every word.
 /// The hash was taken once, by hand, on 2026-10-28 from this fixture run
-/// against the tree this change was branched from (`1ff11ae2`), and this test
+/// against `main` at `a65c898e` without this change, drawn with the shell's own
+/// fonts, and this test
 /// repeats the comparison on every build.
 #[test]
 fn at_one_hundred_the_window_draws_the_bytes_it_drew_before() {
@@ -110,7 +111,7 @@ fn at_one_hundred_the_window_draws_the_bytes_it_drew_before() {
 }
 
 /// The hash of the window before this change. See the test above.
-const BEFORE: u64 = 0;
+const BEFORE: u64 = 0xeb6a_85d1_d119_4c7d;
 
 /// **At 200 the panel and its shadow are exactly twice**, the window measures
 /// the same conversation in the same logical units, and every word is there
