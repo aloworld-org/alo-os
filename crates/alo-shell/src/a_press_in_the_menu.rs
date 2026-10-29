@@ -87,9 +87,16 @@ impl crate::Server {
             .filter(|(_, where_it_is)| matches!(where_it_is, TheKeyboardOnTheEdge::InTheMenu(_)))
             .map(|(surface, _)| surface.clone())
             .collect();
+        // In the units the menu was drawn from, at the display's scale — see
+        // `crate::an_edge_in_its_displays_units`.
+        let scale = self.the_scale_an_edge_is_measured_at();
+        let at = crate::an_edge_in_its_displays_units::a_point_in_the_edges_units(at, scale);
         for surface in open {
             let edge = crate::window_edge::edge_of(
-                crate::where_a_window_is(&surface),
+                crate::an_edge_in_its_displays_units::a_window_in_the_edges_units(
+                    crate::where_a_window_is(&surface),
+                    scale,
+                ),
                 crate::window_edge_who_draws::who_draws_a_frame(),
                 true,
                 self.the_room_an_edge_is_clamped_in(),

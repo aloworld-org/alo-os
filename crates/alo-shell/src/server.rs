@@ -94,6 +94,13 @@ pub struct Server {
     /// this display. `crate::peeking_at_a_put_aside_window` answers `Ok(None)`
     /// there instead of inventing one.
     pub(crate) panel_as_drawn: Option<crate::which_preview_the_pointer_is_on::ThePanelAsDrawn>,
+    /// **The scale of the display whose frame was drawn last**, in per cent —
+    /// the display `Surfaces::popups` keeps the size of. Written beside that
+    /// size in `render_frame`, so an edge a press is read against is laid out
+    /// in one display's room at that same display's scale
+    /// (`crate::an_edge_in_its_displays_units`). One to one before the first
+    /// frame, which is what every edge was laid out at before this existed.
+    pub(crate) the_scale_edges_are_measured_at: u16,
     /// **Where each display's Dock is, as the last draw laid it out.**
     ///
     /// The same shape and the same argument as `panel_as_drawn` above and
@@ -668,6 +675,7 @@ impl Server {
             // Nothing has been drawn yet, which is why this is `None` rather than an
             // empty picture — see the field's own note.
             panel_as_drawn: None,
+            the_scale_edges_are_measured_at: 100,
             dock_as_drawn: std::collections::BTreeMap::new(),
             the_docks_surface_as_drawn: std::collections::BTreeMap::new(),
             the_dock_was_asked_for: crate::what_the_dock_has_open::WhatTheDockWasAskedFor::Nothing,
@@ -854,6 +862,9 @@ impl Server {
             // Reactive popup negotiation follows the backend's desired extent,
             // even on submission refusal. wl_output describes only submitted modes.
             self.surfaces.popups.output_size = Some(size);
+            // **And that display's scale, with it**, so the room an edge is
+            // clamped in and the scale it is laid out at are one display's.
+            self.the_scale_edges_are_measured_at = self.the_scale_of_display(&named.name);
             // **And where every display is**, so a popup is constrained to
             // the screen its parent is on rather than to whichever display
             // drew last — `more-than-one-display-plan.md` task 6.

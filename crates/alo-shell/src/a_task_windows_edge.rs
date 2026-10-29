@@ -30,32 +30,22 @@
 //! (`crate::where_a_task_window_opens`). The edge is laid out from the window's
 //! pixels divided by the display's scale, then scaled back by
 //! `EdgePicture::of`, so it sits on the window at any scale and its own figures
-//! are the design's, scaled. A press is read against the edge laid out at the
-//! ordinary scale, which is what `crate::a_press_on_an_edge` does for every
-//! client window's edge.
+//! are the design's, scaled. A press and the pointer's highlight are read the
+//! same way: the pointer divided by the scale and tested against the edge laid
+//! out from the divided window, which is `crate::an_edge_in_its_displays_units`.
+//! Until 2026-10-28 a press was read against the edge laid out at 100, so on a
+//! 200 per cent display Close was drawn where a press did not find it.
 
 use smithay::utils::{Logical, Physical, Point, Rectangle, Size};
 
 use crate::Server;
+use crate::an_edge_in_its_displays_units::{
+    a_point_in_the_edges_units, a_window_in_the_edges_units,
+};
 use crate::the_tasks_a_person_opened::WhichTask;
 use crate::window_edge::{Decorations, OnTheEdge, WindowEdge, edge_of};
 use crate::window_edge_picture::{EdgePicture, OverTheEdge};
 use crate::window_edge_pointing::{UnderThePointer, pointing_at, what_is_under};
-
-/// The ordinary scale, in per cent.
-const ORDINARY: u32 = 100;
-
-/// A task window's pixels in the units the edge is laid out in at this scale.
-fn in_the_edges_units(at: Rectangle<i32, Physical>, scale: u32) -> Rectangle<i32, Logical> {
-    let down = |length: i32| {
-        i32::try_from(i64::from(length) * i64::from(ORDINARY) / i64::from(scale.max(1)))
-            .unwrap_or(length)
-    };
-    Rectangle::new(
-        (down(at.loc.x), down(at.loc.y)).into(),
-        (down(at.size.w), down(at.size.h)).into(),
-    )
-}
 
 /// The edge above one task window, revealed, in `room`.
 #[must_use]
@@ -83,8 +73,12 @@ pub(crate) fn every_task_windows_edge(
         .each_open_window()
         .into_iter()
         .filter_map(|(_, window)| {
-            let edge = the_edge_of_a_task_window(in_the_edges_units(window, scale), room);
-            let pointing = pointing_at(&edge, pointer, None);
+            let edge = the_edge_of_a_task_window(a_window_in_the_edges_units(window, scale), room);
+            let pointing = pointing_at(
+                &edge,
+                pointer.map(|at| a_point_in_the_edges_units(at, scale)),
+                None,
+            );
             EdgePicture::of(
                 &edge,
                 pointing,
@@ -110,9 +104,11 @@ impl Server {
     /// anything.
     pub(crate) fn a_press_on_a_task_windows_edge(&mut self, at: Point<i32, Logical>) -> bool {
         let room = self.the_room_an_edge_is_clamped_in();
+        let scale = self.the_scale_an_edge_is_measured_at();
+        let at = a_point_in_the_edges_units(at, scale);
         let open: Vec<(WhichTask, Rectangle<i32, Physical>)> = self.tasks().each_open_window();
         for (which, window) in open.into_iter().rev() {
-            let edge = the_edge_of_a_task_window(in_the_edges_units(window, ORDINARY), room);
+            let edge = the_edge_of_a_task_window(a_window_in_the_edges_units(window, scale), room);
             match what_is_under(&edge, at) {
                 None => {}
                 Some(UnderThePointer::Control(OnTheEdge::Close)) => {

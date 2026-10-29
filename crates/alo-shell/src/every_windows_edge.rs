@@ -57,7 +57,15 @@ pub(crate) fn every_windows_edge(
     let open: Vec<_> = server.mapped_surfaces().cloned().collect();
     open.iter()
         .filter_map(|surface| {
-            let window = crate::window_placement::where_a_window_is(surface);
+            // **In the edge's units at this display's scale**: the window is in
+            // the display's pixels and `EdgePicture::of` multiplies by the
+            // scale, so without the division a dense display drew every edge
+            // at twice its window's distance from the corner
+            // (`crate::an_edge_in_its_displays_units`).
+            let window = crate::an_edge_in_its_displays_units::a_window_in_the_edges_units(
+                crate::window_placement::where_a_window_is(surface),
+                scale,
+            );
             let edge = crate::window_edge::edge_of(
                 window,
                 crate::window_edge_who_draws::who_draws_a_frame(),
@@ -76,8 +84,11 @@ pub(crate) fn every_windows_edge(
             // any window on a real machine ever showed a highlight or a focus
             // ring: both were built, tested, and fed only by the example.
             let keyboard = server.where_the_keyboard_is_on_this_windows_edge(surface);
-            let pointing =
-                server.what_this_edge_is_pointing_at(&edge, keyboard.what_the_painter_shows());
+            let pointing = server.what_this_edge_is_pointing_at_on(
+                &edge,
+                keyboard.what_the_painter_shows(),
+                scale,
+            );
             // **And this window's menu, where it has one open.** Laid out from
             // the same edge the picture is drawn from, so what a person sees
             // and what `a_press_in_the_menu` hit-tests are one layout.

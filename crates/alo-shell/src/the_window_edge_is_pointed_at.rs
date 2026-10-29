@@ -62,14 +62,36 @@ impl crate::Server {
     /// [`the_edges_were_told_where_the_pointer_is`](crate::Server::the_edges_were_told_where_the_pointer_is),
     /// which is what advances the reveal that `edge_of` then lays out.
     #[must_use]
+    ///
+    /// The pointer is read at the scale of the display drawn last
+    /// (`crate::an_edge_in_its_displays_units`); a draw for one particular
+    /// display asks `what_this_edge_is_pointing_at_on` with its own.
     pub fn what_this_edge_is_pointing_at(
         &self,
         edge: &WindowEdge,
         focused: Option<OnTheEdge>,
     ) -> Pointing {
+        self.what_this_edge_is_pointing_at_on(
+            edge,
+            focused,
+            self.the_scale_an_edge_is_measured_at(),
+        )
+    }
+
+    /// The same answer for an edge laid out on a display drawn at `scale` per
+    /// cent: the pointer is taken into that edge's units first, so on a dense
+    /// display the highlight is on the control under the pointer.
+    pub(crate) fn what_this_edge_is_pointing_at_on(
+        &self,
+        edge: &WindowEdge,
+        focused: Option<OnTheEdge>,
+        scale: u32,
+    ) -> Pointing {
         crate::window_edge_pointing::pointing_at(
             edge,
-            self.where_the_pointer_is_in_logical_pixels(),
+            self.where_the_pointer_is_in_logical_pixels().map(|at| {
+                crate::an_edge_in_its_displays_units::a_point_in_the_edges_units(at, scale)
+            }),
             focused,
         )
     }

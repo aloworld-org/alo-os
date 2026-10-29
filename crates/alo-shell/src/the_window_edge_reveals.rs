@@ -130,7 +130,14 @@ impl crate::Server {
     pub(crate) fn the_room_an_edge_is_clamped_in(&self) -> smithay::utils::Size<i32, Logical> {
         self.surfaces.popups.output_size.map_or_else(
             || smithay::utils::Size::from((i32::MAX, i32::MAX)),
-            |pixels| crate::window_edge::the_usable_output(pixels, 100),
+            // **At the scale of the display it is the size of**, so the room is
+            // in the edge's own units (`crate::an_edge_in_its_displays_units`).
+            |pixels| {
+                crate::window_edge::the_usable_output(
+                    pixels,
+                    self.the_scale_an_edge_is_measured_at(),
+                )
+            },
         )
     }
 
@@ -179,6 +186,10 @@ impl crate::Server {
         let mapped: Vec<WlSurface> = self.mapped_surfaces().cloned().collect();
         let decorations = crate::window_edge_who_draws::who_draws_a_frame();
         let room = self.the_room_an_edge_is_clamped_in();
+        // **The pointer and each window in the edge's units**, at the display's
+        // scale, so what reveals an edge is where the edge is drawn.
+        let scale = self.the_scale_an_edge_is_measured_at();
+        let at = crate::an_edge_in_its_displays_units::a_point_in_the_edges_units(at, scale);
 
         // **Pruned against what is mapped**, so a window that closed takes its
         // reveal state with it. A `WlSurface` is a protocol object at an id the
@@ -198,7 +209,10 @@ impl crate::Server {
                 .find(|(it, _)| *it == surface)
                 .map_or_else(Revealing::covered, |(_, machine)| *machine);
             let edge = crate::window_edge::edge_of(
-                crate::where_a_window_is(&surface),
+                crate::an_edge_in_its_displays_units::a_window_in_the_edges_units(
+                    crate::where_a_window_is(&surface),
+                    scale,
+                ),
                 decorations,
                 was.is_revealed(),
                 room,
