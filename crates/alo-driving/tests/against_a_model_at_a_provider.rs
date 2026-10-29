@@ -60,6 +60,7 @@ mod measuring;
 #[path = "measuring/a_provider_to_measure.rs"]
 mod a_provider_to_measure;
 
+use alo_driving::{FollowedUp, THE_FOLLOW_UPS, grade_of};
 use alo_models::Secret;
 
 /// Which instruction set the model is given. **Defaults to what alo OS ships**,
@@ -153,5 +154,84 @@ fn the_fixed_set_is_put_to_a_model_at_a_provider() {
         ready.model,
         ready.provider.name,
         measuring::as_it_is_written(measured.grade())
+    );
+}
+
+/// **And the follow-up set (ADR 0138)**, measured apart from the fixed ten and
+/// recorded in `data/follow-ups.toml` rather than in the catalogue. Run by name:
+/// `cargo test -p alo-driving --test against_a_model_at_a_provider the_follow_ups -- --ignored`.
+///
+/// **Each follow-up, put to the model `ALO_PROVIDER_ROUNDS` times.**
+#[test]
+#[ignore = "needs a provider, a model and a key, and it leaves the machine"]
+fn the_follow_ups_are_put_to_a_model_at_a_provider() {
+    let ready = a_provider_to_measure::from_what_was_said(
+        measuring::said("ALO_PROVIDER_NAME").as_deref(),
+        measuring::said("ALO_PROVIDER_ENDPOINT").as_deref(),
+        measuring::said("ALO_PROVIDER_REGION").as_deref(),
+        measuring::said("ALO_PROVIDER_MODEL").as_deref(),
+        measuring::said("ALO_PROVIDER_ROUNDS").as_deref(),
+    )
+    .unwrap_or_else(|nothing| panic!("nothing was measured: {}", nothing.what_to_do()));
+    // Read straight into a `Secret`, which shows itself to nobody.
+    let key = std::env::var("ALO_PROVIDER_KEY")
+        .ok()
+        .filter(|key| !key.trim().is_empty())
+        .expect("set ALO_PROVIDER_KEY in the shell that runs this test");
+    let key = Secret::typed(&key).expect("the key read from the environment is a sendable one");
+    let in_the_envelope = std::env::var("ALO_PROVIDER_UNHELD").is_err();
+    let instructions = alo_driving::Instructions::SHOWN_TO_A_TURN;
+    let verbs = measuring::the_verbs();
+    println!(
+        "asking {} at {} under {} (sha256 {}), held to the envelope: {in_the_envelope}",
+        ready.model,
+        ready.provider.endpoint,
+        instructions.named(),
+        instructions.digest()
+    );
+    println!("**this leaves the machine**: every follow-up departs for the provider above");
+
+    let mut outcomes: Vec<FollowedUp> = Vec::new();
+    for round in 1..=ready.rounds {
+        for follow_up in THE_FOLLOW_UPS {
+            let answer = measuring::to_a_provider::one_prompt_put_to_a_provider(
+                &follow_up.prompt_under(instructions, &verbs),
+                &ready.model,
+                &ready.provider,
+                &key,
+                in_the_envelope,
+            )
+            .unwrap_or_else(|why| {
+                panic!(
+                    "round {round}, {}: the provider did not answer — {why}. A provider that \
+                     cannot answer is not a model that failed",
+                    follow_up.named()
+                )
+            });
+            let outcome = follow_up.scored(&verbs, &answer);
+            println!("round {round}  {:<16}  {outcome:?}", follow_up.named());
+            if !outcome.drove() {
+                let shown: String = answer.split_whitespace().collect::<Vec<_>>().join(" ");
+                println!(
+                    "                    {}",
+                    shown.chars().take(200).collect::<String>()
+                );
+            }
+            outcomes.push(outcome);
+        }
+    }
+    let drove = outcomes.iter().filter(|outcome| outcome.drove()).count();
+    let grade = grade_of(drove, outcomes.len());
+    assert!(
+        grade.has_been_measured(),
+        "a run that happened never grades as one that did not"
+    );
+    println!(
+        "\nfor data/follow-ups.toml: {} at {} — {} of {} — {}",
+        ready.model,
+        ready.provider.name,
+        drove,
+        outcomes.len(),
+        measuring::as_it_is_written(grade)
     );
 }

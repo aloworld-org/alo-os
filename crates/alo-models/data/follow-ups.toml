@@ -1,0 +1,35 @@
+# How each model does on a FOLLOW-UP: a request that only makes sense after the
+# conversation before it, as a reply typed in a task window is sent (ADR 0138).
+#
+# Kept apart from catalogue.toml on purpose. These grades decide nothing — not
+# whether a model may be given the agent, not what is recommended — and the
+# grades in the catalogue stay exactly what they were. `alo_models::
+# FollowUpsMeasured` reads this file; `crates/alo-driving/src/follow_ups.rs` is
+# the measurement, and `crates/alo-driving/tests/against_a_model_at_a_provider.rs`
+# runs it.
+#
+# Rules, the catalogue's own:
+# - A grade names where, when and under which instructions digest it was earned,
+#   with the counts, so it can be re-derived. A grade with no digest is refused.
+# - A model with no entry here is NOT YET MEASURED on a follow-up, and that is
+#   what a reader is told. Every model in catalogue.toml is in that state: none
+#   has been run on the follow-up set, because the machine that measures local
+#   models was not run for this. Nothing here is guessed.
+# - A grade belongs to the digest it was earned under. When the words a turn
+#   shows change, these stop being read, as ADR 0133 did to first-request grades.
+
+# Measured once, by hand, on 2026-10-28: the five follow-ups, four rounds,
+# every answer the call alo OS would act on and about what the conversation
+# meant. `against_a_model_at_a_provider the_follow_ups` re-runs it.
+[[follow_up]]
+model = "gpt-4o"
+at = "OpenAI"
+grade = "reliably"
+
+[follow_up.measured]
+machine = "the model runs at the provider; asked from WSL Ubuntu on a Windows Server 2022 host"
+date = "2026-10-28"
+runtime = "OpenAI chat completions API, held to the envelope"
+drove = 20
+of = 20
+instructions = "cf522fc50729caf13ce79d9fcb3fd44d48b95cc531316b9e4dac4a67c84ff406"
