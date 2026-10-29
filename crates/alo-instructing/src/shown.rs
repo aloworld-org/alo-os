@@ -32,13 +32,27 @@ pub fn shown_to_a_model(
     may_reach: &WhatItMayReach,
     request: &str,
 ) -> String {
+    let mut text = the_products_words(instructions, verbs);
+    text.push_str(&may_reach.told());
+    text.push_str("\n\nThe request: ");
+    text.push_str(request);
+    text
+}
+
+/// **The part of what a model is shown that is the product's alone**: how to
+/// answer, and every verb the registry declares — everything before what the
+/// turn may reach and the request.
+///
+/// Its own function so that `alo-turn` can recognise a question that already
+/// begins with exactly these words, from the same registry, and not put them
+/// in front of it a second time: the agent builds the whole text a turn shows,
+/// and wrapping it again showed a model the instructions and every verb twice.
+#[must_use]
+pub fn the_products_words(instructions: Instructions, verbs: &Verbs) -> String {
     let mut text = String::from(instructions.text());
     for verb in verbs.all() {
         text.push_str(&as_told(verb));
     }
-    text.push_str(&may_reach.told());
-    text.push_str("\n\nThe request: ");
-    text.push_str(request);
     text
 }
 
