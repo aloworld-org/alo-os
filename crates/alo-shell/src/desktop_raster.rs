@@ -415,7 +415,17 @@ pub(crate) fn picture(
     // **The alo Bar, left out if it refuses** — the same rule as the market
     // and the task windows above. A panel that could not be rasterised is a
     // panel not drawn, never a half-drawn one.
-    let the_bar = the_bar.and_then(|open| crate::bar_raster::picture(&open, palette, fonts));
+    //
+    // **At this display's scale**, the one the Dock above was drawn at, so a
+    // dense screen draws the Bar twice the pixels rather than half the size.
+    let the_bar = the_bar.and_then(|open| {
+        crate::bar_raster::picture(
+            &open,
+            palette,
+            fonts,
+            crate::display_scale::DisplayScale::of_per_cent(display_scale),
+        )
+    });
 
     Ok(DesktopPicture {
         the_bar,

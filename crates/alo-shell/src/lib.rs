@@ -96,6 +96,8 @@ mod a_key_reaches_the_task_in_front;
 mod a_key_types_into_more_apps;
 mod a_new_window_is_placed;
 mod a_person_pins_and_unpins;
+#[cfg(test)]
+mod a_picture_hashed;
 mod a_press_in_the_menu;
 mod a_press_on_an_edge;
 mod a_press_on_the_sign_in_screen;
