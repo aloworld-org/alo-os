@@ -487,3 +487,64 @@ fn the_screen_greets_the_person_it_is_authenticating() {
         "a machine with no account for this person drew as much ink as one with an account"
     );
 }
+
+/// A screen on a machine with nobody on it, and the folder its accounts are
+/// kept in for as long as the screen needs them.
+fn a_fresh_machine() -> (tempfile::TempDir, Option<Signing<ADoor>>) {
+    let kept = tempfile::tempdir().unwrap();
+    let store = kept.path().join("accounts.toml");
+    alo_accounts::kept(&store, &Accounts::none().unwrap()).unwrap();
+    let greeting = Greeting::at(&store, 1000, ADoor).unwrap();
+    let words = crate::what_this_machine_can_say().unwrap();
+    (
+        kept,
+        Some(Signing::Still(Box::new(SignInScreen::of(
+            Ok(greeting),
+            words,
+        )))),
+    )
+}
+
+/// **Enter on the overview's Keyboard row opens the keyboard sheet, and the
+/// sign-in screen stays up** — driven down the road a booted machine takes:
+/// the keys into the lane, then the frame onto the card.
+///
+/// Measured on a booted machine on 2026-10-30: the keyboard sheet was refused
+/// on its display, the refused frame ended the sign-in screen with nobody
+/// signed in, and the machine was left at the console. The display here is
+/// 1280 × 720, shorter than that one, so the sheet has less room still.
+#[test]
+fn enter_on_the_keyboard_row_opens_the_keyboard_sheet_and_the_screen_stays_up() {
+    let (_kept, mut signing) = a_fresh_machine();
+    let (device, log) = fixture(&[], 0);
+    let mut labels = WindowControlLabels::new().unwrap();
+    let mut target = Target::new(
+        SoftwarePainter::new().unwrap(),
+        device,
+        scanout_tests::output(),
+    );
+    {
+        let mut lane = Lane::of(&mut signing, &mut labels, light());
+        // The overview first, as a machine draws it on arriving.
+        lane.present(&mut target).unwrap();
+        for key in [SignInKey::Later, SignInKey::Later, SignInKey::Enter] {
+            lane.pressed(key);
+        }
+        // The keyboard sheet, drawn rather than refused.
+        lane.present(&mut target).unwrap();
+        assert!(!lane.finished(), "the sign-in screen ended");
+    }
+    assert!(!log.borrow().pixels.is_empty());
+    drop(target);
+    assert!(
+        matches!(
+            &signing,
+            Some(Signing::Still(screen)) if matches!(
+                screen.shows(),
+                crate::SignInShows::FirstStart(first_start)
+                    if matches!(first_start.sheet(), crate::the_first_start::Sheet::Keyboard(_))
+            )
+        ),
+        "the keyboard sheet is not up"
+    );
+}

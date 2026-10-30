@@ -108,6 +108,7 @@ mod a_task_window_hands_on_a_chord;
 mod a_task_window_scrolls;
 /// A task window's edge, carrying Close.
 mod a_task_windows_edge;
+mod a_window_onto_a_list;
 /// alo's words read for the emphasis a model marks in Markdown.
 ///
 /// **Public because `task_text::WhatWasSaid` carries its marks**, as

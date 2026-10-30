@@ -177,9 +177,15 @@ mod running {
                 );
                 ExitCode::SUCCESS
             }
+            // **A failure, so the unit starts the screen again**
+            // (`Stood::is_the_end_this_process_is_for`): a machine left at
+            // the console with nobody signed in is stranded until somebody
+            // switches it off.
             Ok(Stood::NobodyDid) => {
-                eprintln!("alo-compositor: the sign-in screen ended with nobody signed in");
-                ExitCode::SUCCESS
+                eprintln!(
+                    "alo-compositor: the sign-in screen ended with nobody signed in, so it is started again"
+                );
+                ExitCode::FAILURE
             }
             Err(why) => {
                 eprintln!("alo-compositor: this machine cannot be signed in to: {why}");

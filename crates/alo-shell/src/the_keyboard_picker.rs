@@ -115,6 +115,15 @@ impl TheKeyboardPicker {
         self.on = self.on.saturating_sub(1);
     }
 
+    /// **A window of `rows` keyboards** (`crate::a_window_onto_a_list`); the
+    /// test row is drawn after it, and is not in it.
+    pub(crate) fn window_of(
+        &self,
+        rows: usize,
+    ) -> crate::a_window_onto_a_list::AWindow<'_, Layout> {
+        crate::a_window_onto_a_list::a_window(&self.all, self.on, Some(self.chosen), rows)
+    }
+
     /// Tab: keyboards, then the test, then the way on, and round.
     pub(crate) fn ring_crosses(&mut self) {
         self.ring = match self.ring {
