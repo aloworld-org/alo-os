@@ -425,3 +425,35 @@ fn giving_up_takes_away_what_was_waiting_to_be_saved() {
     assert!(server.take_the_provider_to_save().is_none());
     assert!(server.a_provider_is_being_filled_in().is_none());
 }
+
+#[test]
+fn a_service_at_this_machines_address_is_still_saved_when_they_go_ahead() {
+    // **The caution takes nothing away** (law 5, owner's decision of
+    // 2026-10-29): Settings says alo cannot see where a local service sends a
+    // question, and Enter saves it exactly as it saves anything else.
+    let (_directory, mut server) = a_server();
+    server.a_provider_is_added();
+    types(&mut server, "On this machine");
+    server.a_key_fills_in_the_provider(FillingInKey::NextField);
+    types(&mut server, "http://127.0.0.1:11434");
+    server.a_key_fills_in_the_provider(FillingInKey::NextField);
+    types(&mut server, "none");
+    server.a_key_fills_in_the_provider(FillingInKey::NextField);
+    types(&mut server, "llama3");
+    assert!(
+        server
+            .a_provider_is_being_filled_in()
+            .expect("a form")
+            .its_address_is_this_machine(),
+        "the control: this is the address the caution is shown for"
+    );
+
+    assert_eq!(
+        server.a_key_fills_in_the_provider(FillingInKey::Save),
+        Some(WhatFillingInDid::SaveIt)
+    );
+    let saving = server
+        .take_the_provider_to_save()
+        .expect("a provider is waiting to be saved");
+    assert_eq!(saving.provider.endpoint, "http://127.0.0.1:11434");
+}

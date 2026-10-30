@@ -314,6 +314,24 @@ impl AProviderBeingAddded {
             .all(|which| !self.what_is_in(*which).trim().is_empty())
     }
 
+    /// Whether the address typed so far is this machine's own.
+    ///
+    /// **For a warning, not a refusal.** A service at this machine's address is
+    /// asked there and its question goes on no road out, so the egress
+    /// indicator has nothing to show — and if that service forwards the
+    /// question to the internet, nothing in alo OS can see it go (ADR 0021,
+    /// owner's note of 2026-10-29). A surface says so before saving, and the
+    /// person may still save: it is their service on their machine (law 5).
+    ///
+    /// Asked of [`alo_models::address::is_on_this_machine`], the rule the
+    /// daemon uses to send a question there, so the warning appears for exactly
+    /// the addresses whose answers will say *a service at this machine's
+    /// address*.
+    #[must_use]
+    pub fn its_address_is_this_machine(&self) -> bool {
+        alo_models::address::is_on_this_machine(self.address.trim())
+    }
+
     /// What this form would save, or what is still wrong with it.
     ///
     /// **Nothing is written here.** This is the form's answer, and a caller

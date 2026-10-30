@@ -66,6 +66,17 @@ pub(crate) fn the_form(
         said(strings, &crate::the_providers_words::ADDING_A_PROVIDER),
         said(strings, &crate::the_providers_words::WHAT_TO_DO_WITH_IT),
     ];
+    // **Said while the address is this machine's own, before anything is
+    // saved**, and saving still works (owner's decision, 2026-10-29; ADR
+    // 0021). The indicator cannot show what a local service does with a
+    // question, so the person is told so at the one moment they can still
+    // choose another address.
+    if form.its_address_is_this_machine() {
+        lines_said.push(said(
+            strings,
+            &crate::the_providers_words::THIS_MACHINE_CANNOT_SEE_WHERE_IT_GOES,
+        ));
+    }
     if let Some(why) = not_saved {
         lines_said.push(said(strings, &why.the_word()));
     }

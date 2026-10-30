@@ -427,3 +427,50 @@ fn the_model_list_is_exactly_what_was_typed() {
         "what travels beside the provider and what is in it disagree"
     );
 }
+
+/// A form filled in with this address and nothing else changed.
+fn at(address: &str) -> AProviderBeingAddded {
+    let mut form = one_a_person_filled_in();
+    form.the_keyboard_is_in(WhichField::Address);
+    while form.rubbed_out() {}
+    types(&mut form, address);
+    form
+}
+
+#[test]
+fn an_address_at_this_machine_is_known_to_be_one() {
+    // The three ways a person writes this machine, each with the port a local
+    // service listens on: the warning in Settings rests on this answer.
+    for address in [
+        "http://127.0.0.1:11434",
+        "http://[::1]:8080/v1",
+        "http://localhost:1234",
+    ] {
+        assert!(at(address).its_address_is_this_machine(), "{address}");
+    }
+}
+
+#[test]
+fn an_address_off_this_machine_is_not_one() {
+    // The refusal half: a hosted provider, and a name made to look like this
+    // machine, are both somewhere else, so neither carries the warning.
+    for address in [
+        "https://api.openai.com",
+        "https://localhost.attacker.example",
+        "",
+    ] {
+        assert!(!at(address).its_address_is_this_machine(), "{address}");
+    }
+}
+
+#[test]
+fn an_address_at_this_machine_can_still_be_saved() {
+    // **The warning takes nothing away** (law 5): the form saves a service at
+    // this machine's address exactly as it saves any other.
+    let form = at("http://localhost:1234");
+    assert!(form.its_address_is_this_machine());
+    let saving = form
+        .what_it_would_save()
+        .expect("a service at this machine's address is the person's to add");
+    assert_eq!(saving.provider.endpoint, "http://localhost:1234");
+}
