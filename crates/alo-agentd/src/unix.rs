@@ -64,10 +64,12 @@
 //! `SO_REUSEADDR`, which `std` cannot, and
 //! its IPv6 twin and `an_ipv6_only_listener_on` set `IPV6_V6ONLY`, which `std`
 //! cannot either. And
-//! `a_route_dump`, `told_when_networks_change` and `emptied` are the kernel's
-//! routing socket, which `std` has no spelling for at all: which interfaces this
-//! machine has, and when that changes, so discovery is joined on every network
-//! the machine is on. The bytes are `crate::route_messages`'s to read.
+//! `told_when_networks_change` and `emptied` are the kernel's routing socket,
+//! which `std` has no spelling for at all: when this machine's interfaces
+//! change, so discovery is joined on every network the machine is on. Asking
+//! which interfaces it has is `alo-interfaces`', a crate of its own since
+//! 2026-10-30 so the desktop reads them the same way, and the bytes are its
+//! `route_messages`' to read.
 
 use std::os::fd::BorrowedFd;
 use std::os::unix::net::UnixStream;
@@ -252,60 +254,6 @@ pub(crate) fn stopped_sending(socket: &std::net::UdpSocket) -> Result<(), std::i
         Ok(()) | Err(rustix::io::Errno::NOTCONN) => Ok(()),
         Err(why) => Err(std::io::Error::from(why)),
     }
-}
-
-/// Put one request on the kernel's routing socket and read everything it
-/// answers, until `ended` says a datagram was the last.
-///
-/// The fifth thing the standard library will not do here: it has no netlink
-/// socket, and `crate::route_messages` needs one to ask which interfaces this
-/// machine has. What the bytes mean is that file's; this one opens the socket,
-/// sends, and reads. A kernel that says nothing for two seconds is an error
-/// rather than a hang, and so is a dump that goes on past a thousand datagrams.
-///
-/// # Errors
-///
-/// Whatever the machine said, as a `std::io::Error`.
-pub(crate) fn a_route_dump(
-    request: &[u8],
-    ended: impl Fn(&[u8]) -> bool,
-) -> Result<Vec<u8>, std::io::Error> {
-    use rustix::net::netlink::SocketAddrNetlink;
-
-    let socket = rustix::net::socket(
-        rustix::net::AddressFamily::NETLINK,
-        rustix::net::SocketType::DGRAM,
-        // `NETLINK_ROUTE` is protocol zero, which is how `None` is spelt.
-        None,
-    )?;
-    rustix::net::sockopt::set_socket_timeout(
-        &socket,
-        rustix::net::sockopt::Timeout::Recv,
-        Some(Duration::from_secs(2)),
-    )?;
-    rustix::net::sendto(
-        &socket,
-        request,
-        rustix::net::SendFlags::empty(),
-        &SocketAddrNetlink::new(0, 0),
-    )?;
-    let mut answered = Vec::new();
-    let mut datagram = vec![0_u8; 32_768];
-    for _ in 0..1_000 {
-        let (read, _) = rustix::net::recv(
-            &socket,
-            datagram.as_mut_slice(),
-            rustix::net::RecvFlags::empty(),
-        )?;
-        let said = datagram
-            .get(..read)
-            .ok_or_else(|| std::io::Error::from(std::io::ErrorKind::InvalidData))?;
-        answered.extend_from_slice(said);
-        if ended(said) {
-            return Ok(answered);
-        }
-    }
-    Err(std::io::Error::from(std::io::ErrorKind::InvalidData))
 }
 
 /// A socket the kernel writes to whenever a link, or an address on one in

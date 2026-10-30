@@ -27,7 +27,7 @@ use std::net::IpAddr;
 /// the form already knows it.
 #[must_use]
 pub(crate) fn read_now() -> Vec<IpAddr> {
-    match alo_agentd::route_messages::reported_by_the_kernel() {
+    match alo_interfaces::route_messages::reported_by_the_kernel() {
         Ok(interfaces) => of(&interfaces),
         Err(why) => {
             eprintln!("alo-desktop: this machine's own addresses did not read — {why}");
@@ -37,7 +37,7 @@ pub(crate) fn read_now() -> Vec<IpAddr> {
 }
 
 /// The addresses `interfaces` hold, in both families, without loopback.
-fn of(interfaces: &[alo_agentd::networks::Interface]) -> Vec<IpAddr> {
+fn of(interfaces: &[alo_interfaces::interface::Interface]) -> Vec<IpAddr> {
     interfaces
         .iter()
         .flat_map(|interface| {
@@ -53,14 +53,16 @@ fn of(interfaces: &[alo_agentd::networks::Interface]) -> Vec<IpAddr> {
 mod tests {
     use std::net::{Ipv4Addr, Ipv6Addr};
 
+    use alo_interfaces::interface::{IFF_UP, Interface};
+
     use super::*;
 
     /// One interface holding these addresses.
-    fn holding(name: &str, v4: &[Ipv4Addr], v6: &[Ipv6Addr]) -> alo_agentd::networks::Interface {
-        alo_agentd::networks::Interface {
+    fn holding(name: &str, v4: &[Ipv4Addr], v6: &[Ipv6Addr]) -> Interface {
+        Interface {
             index: 2,
             name: name.to_owned(),
-            flags: alo_agentd::networks::IFF_UP,
+            flags: IFF_UP,
             addresses: v4.to_vec(),
             ipv6: v6.to_vec(),
         }
@@ -91,7 +93,7 @@ mod tests {
     /// which has loopback at least, so an answer that kept it would fail here.
     #[test]
     fn the_kernel_here_answers_without_loopback() {
-        let reported = alo_agentd::route_messages::reported_by_the_kernel();
+        let reported = alo_interfaces::route_messages::reported_by_the_kernel();
         assert!(reported.is_ok(), "{reported:?}");
         assert!(read_now().iter().all(|address| !address.is_loopback()));
     }

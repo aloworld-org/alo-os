@@ -295,8 +295,12 @@ pub mod refusing;
 pub mod rereading;
 #[cfg(target_os = "linux")]
 pub mod responding;
+/// What the kernel says about this machine's interfaces. **`alo-interfaces`'
+/// reader, re-exported** so every `crate::route_messages` path in this service
+/// reads as it did: the reader moved into a crate of its own on 2026-10-30 so
+/// the desktop could use it without depending on this service.
 #[cfg(target_os = "linux")]
-pub mod route_messages;
+pub use alo_interfaces::route_messages;
 #[cfg(target_os = "linux")]
 pub mod serving;
 #[cfg(target_os = "linux")]

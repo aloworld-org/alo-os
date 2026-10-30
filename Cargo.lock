@@ -173,6 +173,7 @@ dependencies = [
  "alo-files",
  "alo-installed",
  "alo-instructing",
+ "alo-interfaces",
  "alo-keeping",
  "alo-kept-undo",
  "alo-keyring-fixture",
@@ -695,7 +696,6 @@ version = "0.1.0"
 dependencies = [
  "alo-access",
  "alo-accounts",
- "alo-agentd",
  "alo-appearance",
  "alo-applications",
  "alo-arranging",
@@ -710,6 +710,7 @@ dependencies = [
  "alo-icons",
  "alo-indicator",
  "alo-installed",
+ "alo-interfaces",
  "alo-keyboards",
  "alo-keyring-fixture",
  "alo-models",
@@ -1086,6 +1087,14 @@ dependencies = [
  "alo-strings",
  "ring",
  "serde_json",
+]
+
+[[package]]
+name = "alo-interfaces"
+version = "0.0.1"
+dependencies = [
+ "rustix 1.1.4",
+ "thiserror 2.0.20",
 ]
 
 [[package]]

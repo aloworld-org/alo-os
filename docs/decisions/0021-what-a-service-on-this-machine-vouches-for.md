@@ -622,7 +622,9 @@ and alo can see no more of what it does with a question.
 **How it is read.** When a person opens the form that adds a provider, the
 desktop (`alo-desktop`) asks the kernel which addresses this machine's
 interfaces hold, once, through the routing-socket reader the agent service
-already uses (`alo_agentd::route_messages::reported_by_the_kernel`), and hands
+already uses (`alo_interfaces::route_messages::reported_by_the_kernel` — a
+crate of its own since later the same day, so the desktop no longer depends on
+the agent service's library; it was `alo_agentd::route_messages`), and hands
 them to the shell, which shows and never measures. Nothing watches the network
 while nobody is filling a form in. Settings then shows the caution while the
 address typed is written as one of them
