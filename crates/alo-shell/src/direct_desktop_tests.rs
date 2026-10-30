@@ -379,7 +379,10 @@ fn what_is_leaving_changes_the_frame_a_display_is_handed() {
 /// gone from under it, and no indicator anywhere while the window said *alo is
 /// working*. A window this size covers the corner the indicator is laid out in,
 /// whatever the display's width.
-fn a_task_window_over_everything(width: i32, height: i32) -> crate::task_raster::ATaskOnTheDisplay<'static> {
+fn a_task_window_over_everything(
+    width: i32,
+    height: i32,
+) -> crate::task_raster::ATaskOnTheDisplay<'static> {
     crate::task_raster::ATaskOnTheDisplay {
         at: smithay::utils::Rectangle::new((0, 0).into(), (width, height).into()),
         how_many_files: 0,
@@ -439,9 +442,8 @@ fn what_is_leaving_is_drawn_over_a_task_window_that_covers_its_corner() {
 
     // The premise, asserted rather than assumed: the window was drawn, and the
     // band the indicator painted is inside it.
-    let band = leaving
-        .what_is_leaving
-        .expect("something is leaving, so the indicator painted a band");
+    // Something is leaving, so the indicator painted a band.
+    let band = leaving.what_is_leaving.unwrap();
     assert_eq!(
         leaving.tasks.len(),
         1,
