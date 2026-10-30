@@ -41,17 +41,14 @@ use std::thread;
 use std::time::{Duration, SystemTime};
 
 use alo_answering::Answering;
-use alo_asking::{
-    Asking, Hosted, Miswired, Question, Served, a_question_nobody_is_showing,
-};
+use alo_asking::{Asking, Hosted, Miswired, Question, Served, a_question_nobody_is_showing};
 use alo_capability::Grantee;
 use alo_egress::Indicator;
 use alo_models::{InferenceSource, Provider, Region, Secret, SecretRef, SourcePolicy};
 use alo_record::{Entry, Only, Record};
 
 /// What the service at home answers.
-const AN_ANSWER: &str =
-    r#"{"choices":[{"message":{"role":"assistant","content":"No, not without written consent."}}]}"#;
+const AN_ANSWER: &str = r#"{"choices":[{"message":{"role":"assistant","content":"No, not without written consent."}}]}"#;
 
 /// A stub on loopback that answers one request and hands back what it was sent.
 fn serving() -> (u16, thread::JoinHandle<String>) {
@@ -148,7 +145,13 @@ fn an_agents_question_reaches_it_over_plain_http_and_is_shown_and_recorded() {
 
     let answering = Answering::chosen(hosted.named_source(), &policy).expect("nothing forbids it");
     let asked = Asking::by(&mail, answering, &[], &policy)
-        .to_a_provider(&question(), &hosted, &mut indicator, noon(), &the_stub(port))
+        .to_a_provider(
+            &question(),
+            &hosted,
+            &mut indicator,
+            noon(),
+            &the_stub(port),
+        )
         .expect("the service at home answered");
     let sent = server.join().expect("the stub finished");
 

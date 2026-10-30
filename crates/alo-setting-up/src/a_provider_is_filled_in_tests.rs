@@ -524,10 +524,7 @@ fn another_computer_on_the_persons_network_over_http_is_cautioned_and_can_be_sav
         .what_it_would_save()
         .expect("another computer on the person's own network is the person's to add");
     assert_eq!(saving.provider.endpoint, "http://192.168.1.21:11434");
-    assert_eq!(
-        saving.provider.key.as_ref().map(alo_models::SecretRef::as_str),
-        Some("provider/OpenAI")
-    );
+    assert_eq!(saving.filed_under.as_str(), "provider/OpenAI");
 }
 
 #[test]
