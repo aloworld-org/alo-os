@@ -163,6 +163,9 @@ mod tests {
                 "--version",
             ]
         );
-        assert!(!asked.contains(&"--system"), "a scope from the machine's manager is root's");
+        assert!(
+            !asked.contains(&"--system"),
+            "a scope from the machine's manager is root's"
+        );
     }
 }

@@ -1548,10 +1548,9 @@ mod tests {
         let wrong = everything_wrong_with(&image_at(&root));
 
         assert!(
-            wrong.iter().any(|it| matches!(
-                it,
-                Wrong::TheDesktopIsStartedFromThePersonsManager { .. }
-            )),
+            wrong
+                .iter()
+                .any(|it| matches!(it, Wrong::TheDesktopIsStartedFromThePersonsManager { .. })),
             "{wrong:?}"
         );
     }
@@ -1570,10 +1569,9 @@ mod tests {
         let wrong = everything_wrong_with(&image_at(&root));
 
         assert!(
-            wrong.iter().any(|it| matches!(
-                it,
-                Wrong::TheDesktopIsStartedFromThePersonsManager { .. }
-            )),
+            wrong
+                .iter()
+                .any(|it| matches!(it, Wrong::TheDesktopIsStartedFromThePersonsManager { .. })),
             "{wrong:?}"
         );
     }

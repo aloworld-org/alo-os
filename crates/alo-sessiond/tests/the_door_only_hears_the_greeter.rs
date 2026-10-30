@@ -27,8 +27,8 @@ use std::path::PathBuf;
 
 use alo_sessiond::listening::Listening;
 use alo_sessiond::{
-    ALREADY_SIGNED_IN, Answered, Door, Knock, NOBODY_HERE, NOT_YOURS_TO_ASK, NotAsked,
-    NotOpened, Opening, TheAccounts, TheirDesktop, our_group,
+    ALREADY_SIGNED_IN, Answered, Door, Knock, NOBODY_HERE, NOT_YOURS_TO_ASK, NotAsked, NotOpened,
+    Opening, TheAccounts, TheirDesktop, our_group,
 };
 
 /// The number this machine's one account has, in these tests.

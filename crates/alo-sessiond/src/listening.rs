@@ -38,8 +38,8 @@ use std::time::Duration;
 
 use crate::accounts::TheAccounts;
 use crate::asking::{Answered, Knock};
-use crate::their_desktop::TheirDesktop;
 use crate::opening::Opening;
+use crate::their_desktop::TheirDesktop;
 use crate::their_folder::TheirFolder;
 use crate::their_name::TheirName;
 use crate::words::NOT_YOURS_TO_ASK;

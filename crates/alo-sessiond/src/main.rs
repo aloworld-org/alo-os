@@ -40,8 +40,8 @@ mod running {
 
     use alo_sessiond::listening::Listening;
     use alo_sessiond::{
-        Answered, Door, Opening, THE_DOOR, TheMachinesAccounts, TheMachinesFolders,
-        TheMachinesDesktops, TheMachinesNames, our_group,
+        Answered, Door, Opening, THE_DOOR, TheMachinesAccounts, TheMachinesDesktops,
+        TheMachinesFolders, TheMachinesNames, our_group,
     };
 
     /// Open the door and answer whoever knocks, until this service is stopped.

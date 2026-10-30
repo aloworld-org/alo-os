@@ -68,7 +68,10 @@ use alo_try::{
 /// not for a reason a scope does not fix, and the ordinary path below then
 /// says so in its own words. When it does run again, this process becomes
 /// [`SYSTEMD_RUN`] and does not come back.
-fn in_a_scope_of_its_own_if_it_needs_one(strings: &Strings, typed: &[std::ffi::OsString]) -> Option<ExitCode> {
+fn in_a_scope_of_its_own_if_it_needs_one(
+    strings: &Strings,
+    typed: &[std::ffi::OsString],
+) -> Option<ExitCode> {
     use std::os::unix::process::CommandExt;
 
     let said = std::fs::read_to_string("/proc/self/cgroup").ok()?;

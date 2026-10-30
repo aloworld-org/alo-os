@@ -110,7 +110,10 @@ mod tests {
     /// **Only `active` is a desktop, and only `failed` is the end of one.**
     #[test]
     fn a_state_is_read_as_running_failed_or_still_going() {
-        assert_eq!(Starting::from_systemd("active", "success"), Starting::Running);
+        assert_eq!(
+            Starting::from_systemd("active", "success"),
+            Starting::Running
+        );
         assert_eq!(
             Starting::from_systemd("failed", "exit-code"),
             Starting::Failed("exit-code".to_owned())

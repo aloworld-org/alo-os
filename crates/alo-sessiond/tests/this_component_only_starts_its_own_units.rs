@@ -175,7 +175,11 @@ fn this_component_builds_three_unit_names_and_no_more() {
         "{} builds {built} unit names, and ADR 0121, ADR 0135 and ADR 0141 allow three",
         where_it_is().display()
     );
-    for private in ["started_and_finished", "started_and_running", "the_desktop_of"] {
+    for private in [
+        "started_and_finished",
+        "started_and_running",
+        "the_desktop_of",
+    ] {
         assert!(
             source.contains(&format!("\nfn {private}("))
                 && !source.contains(&format!("pub fn {private}(")),
@@ -216,7 +220,11 @@ fn nothing_in_this_crate_opens_a_session_of_its_own() {
         }
     }
     // The control: the directory read is this crate's source.
-    assert!(read > 5, "only {read} files were read from {}", source.display());
+    assert!(
+        read > 5,
+        "only {read} files were read from {}",
+        source.display()
+    );
     assert!(
         found.is_empty(),
         "this crate asks logind for a session again, which makes alo-sessiond the leader of the \
