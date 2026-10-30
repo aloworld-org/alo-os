@@ -12,8 +12,9 @@
 use cosmic_text::FontSystem;
 use smithay::utils::{Rectangle, Scale};
 
+use crate::a_sheet_that_fits::{ItFits, the_sheet_that_fits};
 use crate::painted_text::sentence;
-use crate::setup_sheet_in_pixels::{laid_out, the_column_in_pixels};
+use crate::setup_sheet_in_pixels::the_column_in_pixels;
 use crate::setup_sheet_layout::TheTextIsTall;
 use crate::sign_in_raster::{Measure, SignInPicture};
 use crate::sign_in_surface::TheColours;
@@ -42,14 +43,6 @@ pub(crate) fn drawn(
     let selected = say_it(say::SELECTED);
 
     let column = the_column_in_pixels(width, measure.display());
-    let shaped_title = sentence(
-        fonts,
-        title.text(),
-        column,
-        measure.title_metrics(),
-        colours.ground,
-        colours.ink,
-    );
     let shaped_introduction = sentence(
         fonts,
         introduction.text(),
@@ -59,22 +52,33 @@ pub(crate) fn drawn(
         colours.ink,
     );
 
-    let rows = offered.rows();
-    let Some(laid) = laid_out(
+    // **Fitted to the screen**: a short one shows fewer rows of every region
+    // at a time, and the window follows the cursor (`crate::a_sheet_that_fits`).
+    let Some(ItFits {
+        laid,
+        title: shaped_title,
+        rows: fit,
+    }) = the_sheet_that_fits(
+        fonts,
+        title.text(),
+        colours,
+        measure,
         size,
         TheTextIsTall {
-            title: shaped_title.height,
+            title: 0,
             introduction: shaped_introduction.height,
             consequence: 0,
-            choices: rows.len(),
+            choices: offered.rows().len(),
             actions: 2,
         },
-        measure.display(),
-    ) else {
+        1,
+    )
+    else {
         return Err(RenderError::SignInScene);
     };
-
-    let chosen = offered.chosen_in_the_rows();
+    let in_sight = offered.window_of(fit);
+    let rows = &in_sight.rows;
+    let chosen = in_sight.chosen;
     let mut drawn = SignInPicture {
         size,
         surface: crate::setup_sheet_surface::setup_sheet_surface(
@@ -84,8 +88,8 @@ pub(crate) fn drawn(
             crate::setup_sheet_surface::TheMarks {
                 chosen,
                 ring: match offered.ring() {
-                    WhereTheRingIs::OnTheList => offered
-                        .cursor_in_the_rows()
+                    WhereTheRingIs::OnTheList => in_sight
+                        .cursor
                         .map(crate::setup_sheet_surface::TheRing::OnAChoice),
                     WhereTheRingIs::OnTheWayOn => {
                         Some(crate::setup_sheet_surface::TheRing::OnAnAction(0))
@@ -100,9 +104,8 @@ pub(crate) fn drawn(
     };
     let at = laid.pixels;
     // **What a press can land on is what was just drawn**, in its pixels.
-    drawn.controls = crate::a_press_on_a_setup_sheet::the_controls_of(&at, |which| {
-        offered.window_of(rows.len()).first + which
-    });
+    drawn.controls =
+        crate::a_press_on_a_setup_sheet::the_controls_of(&at, |which| in_sight.first + which);
 
     for (text, place) in [
         (say_it(say::STAGE), at.stage),

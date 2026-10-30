@@ -25,9 +25,10 @@
 use cosmic_text::FontSystem;
 use smithay::utils::{Rectangle, Scale};
 
+use crate::a_sheet_that_fits::{ItFits, the_sheet_that_fits};
 use crate::painted::Solid;
 use crate::painted_text::sentence;
-use crate::setup_sheet_in_pixels::{laid_out, the_column_in_pixels};
+use crate::setup_sheet_in_pixels::the_column_in_pixels;
 use crate::setup_sheet_layout::TheTextIsTall;
 use crate::sign_in_raster::{Measure, SignInPicture};
 use crate::sign_in_surface::TheColours;
@@ -90,14 +91,6 @@ pub(crate) fn drawn(
     // measured and handed to the layout rather than assumed — which is what
     // stops a longer heading being drawn over the choices.
     let column = the_column_in_pixels(width, measure.display());
-    let shaped_title = sentence(
-        fonts,
-        title.text(),
-        column,
-        measure.title_metrics(),
-        colours.ground,
-        colours.ink,
-    );
     let shaped_introduction = sentence(
         fonts,
         introduction.text(),
@@ -124,10 +117,20 @@ pub(crate) fn drawn(
         colours.muted,
     );
 
-    let Some(laid) = laid_out(
+    // **Fitted to the screen**, which on these sheets can only tighten: the
+    // one row is the field a person types into (`crate::a_sheet_that_fits`).
+    let Some(ItFits {
+        laid,
+        title: shaped_title,
+        ..
+    }) = the_sheet_that_fits(
+        fonts,
+        title.text(),
+        colours,
+        measure,
         size,
         TheTextIsTall {
-            title: shaped_title.height,
+            title: 0,
             introduction: shaped_introduction.height,
             consequence: shaped_consequence.height,
             // One row on each sheet takes what is typed. The design's second
@@ -136,8 +139,9 @@ pub(crate) fn drawn(
             choices: 1,
             actions: 1,
         },
-        measure.display(),
-    ) else {
+        1,
+    )
+    else {
         return Err(RenderError::SignInScene);
     };
 

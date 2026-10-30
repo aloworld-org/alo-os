@@ -38,32 +38,33 @@ pub(crate) fn drawn(
         say_it(say::ZONE_INTRODUCTION),
     );
     let (go_on, go_back) = (say_it(say::USE_THIS_ZONE), say_it(say::BACK));
-    let window = picker.window();
-    let ring = match picker.ring() {
-        WhereTheRingIs::OnTheList => picker.cursor_in_the_window().map(TheRing::OnAChoice),
+    let wanted = picker.window().len();
+    let ring = |rows| match picker.ring() {
+        WhereTheRingIs::OnTheList => picker.window_of(rows).cursor.map(TheRing::OnAChoice),
         WhereTheRingIs::OnTheWayOn => Some(TheRing::OnAnAction(0)),
     };
-    let chosen = picker.chosen_in_the_window();
-    let (mut drawn, at) = a_sheet(
+    let (mut drawn, at, rows) = a_sheet(
         &TheSheetSays {
             eyebrow: &eyebrow,
             title: &title,
             introduction: &introduction,
             actions: [&go_on, &go_back],
         },
-        window.len(),
-        TheMarks { chosen, ring },
+        (wanted, 1),
+        |rows| TheMarks {
+            chosen: picker.window_of(rows).chosen,
+            ring: ring(rows),
+        },
         fonts,
         words,
         size,
         colours,
         measure,
     )?;
-    // **A press names the zone it is on**, by where it is in the whole list.
-    let first = picker
-        .window_of(crate::the_languages_offered::ROWS_AT_A_TIME)
-        .first;
-    drawn.controls = crate::a_press_on_a_setup_sheet::the_controls_of(&at, |which| first + which);
+    let in_sight = picker.window_of(rows);
+    let (window, chosen) = (in_sight.rows, in_sight.chosen);
+    drawn.controls =
+        crate::a_press_on_a_setup_sheet::the_controls_of(&at, |which| in_sight.first + which);
     let selected = say_it(say::SELECTED);
     for (which, (zone, card)) in window.iter().zip(at.choices.iter()).enumerate() {
         // **One answer decides the word and the border**, as on every sheet.

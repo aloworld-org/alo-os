@@ -80,10 +80,14 @@ fn a_short_screen_draws_fewer_keyboards_rather_than_refusing() {
             ),
             &crate::sign_in_raster::Measure::of(alo_appearance::TextScale::ordinary()),
         )
-        .expect("a short screen holds the sheet with fewer keyboards");
-        assert!(
-            drawn.inked.len() < at_the_designs_size,
-            "at {size:?} as many lines were drawn as at the design's size"
-        );
+        .expect("a short screen holds the sheet");
+        // **1280 × 800 holds every keyboard once the sheet is tightened**
+        // (`crate::a_sheet_that_fits`); the shorter screens hold fewer.
+        if size.1 < 800 {
+            assert!(
+                drawn.inked.len() < at_the_designs_size,
+                "at {size:?} as many lines were drawn as at the design's size"
+            );
+        }
     }
 }

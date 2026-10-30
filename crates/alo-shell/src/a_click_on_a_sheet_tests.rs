@@ -305,3 +305,79 @@ fn a_click_before_the_next_frame_does_nothing() {
     drop(lane);
     assert_eq!(still(&signing).the_language_chosen(), None);
 }
+
+/// The first row of the list drawn, by where it is in the whole list.
+fn the_first_row_drawn(drawn: &SignInPicture) -> (usize, SheetControl) {
+    drawn
+        .controls
+        .iter()
+        .find_map(|it| match it.what {
+            OnASheet::Choice(row) => Some((row, *it)),
+            OnASheet::WayOn | OnASheet::WayBack | OnASheet::Accessibility => None,
+        })
+        .unwrap()
+}
+
+/// A wheel turned this far, down being positive.
+fn the_wheel(down: f64) -> DirectPointerEvent {
+    use smithay::backend::input::{Axis, AxisSource};
+    DirectPointerEvent::Axis(
+        smithay::input::pointer::AxisFrame::new(1)
+            .source(AxisSource::Wheel)
+            .value(Axis::Vertical, down),
+    )
+}
+
+/// **The wheel over a list on the smallest sheet moves through it**, three
+/// notches three rows, so a language out of sight comes into it — and the
+/// wheel over the ground moves nothing.
+#[test]
+fn the_wheel_over_the_list_moves_through_it_and_over_the_ground_does_not() {
+    let smallest = crate::setup_sheet_layout::THE_SMALLEST_SHEET_IS;
+    let (_kept, mut signing) = a_fresh_machine();
+    let mut labels = WindowControlLabels::new().unwrap();
+    let mut lane = Lane::of(&mut signing, &mut labels, light());
+    lane.pressed(crate::SignInKey::Enter);
+    let before = lane
+        .drawn_for(smallest, DisplayScale::ONE)
+        .unwrap()
+        .unwrap();
+    let (first, row) = the_first_row_drawn(&before);
+
+    // Over the ground: the stage line's corner, which is no control.
+    pointing_at(&mut lane, smallest, (smallest.0 - 2, 2));
+    lane.pointed(&the_wheel(45.0)).unwrap();
+    let still_there = lane
+        .drawn_for(smallest, DisplayScale::ONE)
+        .unwrap()
+        .unwrap();
+    assert_eq!(
+        the_first_row_drawn(&still_there).0,
+        first,
+        "the ground scrolled the list"
+    );
+
+    pointing_at(&mut lane, smallest, the_middle_of(&row));
+    lane.pointed(&the_wheel(45.0)).unwrap();
+    lane.pointed(&the_wheel(45.0)).unwrap();
+    let after = lane
+        .drawn_for(smallest, DisplayScale::ONE)
+        .unwrap()
+        .unwrap();
+    let rows_drawn = after
+        .controls
+        .iter()
+        .filter(|it| matches!(it.what, OnASheet::Choice(_)))
+        .count();
+    assert!(
+        the_first_row_drawn(&after).0 > first,
+        "three notches and the window did not move: {rows_drawn} rows drawn"
+    );
+    // And back up again, by the wheel pushed away.
+    lane.pointed(&the_wheel(-15.0 * 20.0)).unwrap();
+    let back = lane
+        .drawn_for(smallest, DisplayScale::ONE)
+        .unwrap()
+        .unwrap();
+    assert_eq!(the_first_row_drawn(&back).0, 0);
+}

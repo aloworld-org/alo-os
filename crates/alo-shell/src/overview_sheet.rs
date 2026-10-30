@@ -36,22 +36,28 @@ pub(crate) fn drawn(
         say_it(say::OVERVIEW_INTRODUCTION),
     );
     let (go_on, go_back) = (say_it(say::CONTINUE), say_it(say::BACK));
-    let ring = match first_start.ring() {
-        WhereTheRingIs::OnTheList => Row::ALL
-            .iter()
-            .position(|it| *it == first_start.row())
-            .map(TheRing::OnAChoice),
+    let on = Row::ALL
+        .iter()
+        .position(|it| *it == first_start.row())
+        .unwrap_or_default();
+    // The window of rows in sight, once the sheet has said how many fit.
+    let in_sight = |rows| crate::a_window_onto_a_list::a_window(&Row::ALL, on, None, rows);
+    let ring = |rows| match first_start.ring() {
+        WhereTheRingIs::OnTheList => in_sight(rows).cursor.map(TheRing::OnAChoice),
         WhereTheRingIs::OnTheWayOn => Some(TheRing::OnAnAction(0)),
     };
-    let (mut drawn, at) = a_sheet(
+    let (mut drawn, at, rows) = a_sheet(
         &TheSheetSays {
             eyebrow: &eyebrow,
             title: &title,
             introduction: &introduction,
             actions: [&go_on, &go_back],
         },
-        Row::ALL.len(),
-        TheMarks { chosen: None, ring },
+        (Row::ALL.len(), 1),
+        |rows| TheMarks {
+            chosen: None,
+            ring: ring(rows),
+        },
         fonts,
         words,
         size,
@@ -59,8 +65,11 @@ pub(crate) fn drawn(
         measure,
     )?;
 
+    let window = in_sight(rows);
+    drawn.controls =
+        crate::a_press_on_a_setup_sheet::the_controls_of(&at, |which| window.first + which);
     let language = first_start.the_language();
-    for (row, card) in Row::ALL.iter().zip(at.choices.iter()) {
+    for (row, card) in window.rows.iter().zip(at.choices.iter()) {
         let (label, set_to) = match row {
             Row::Language => (
                 say_it(say::ROW_LANGUAGE),

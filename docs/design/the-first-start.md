@@ -1389,6 +1389,27 @@ smaller version of a 48-tall one, it is a worse one.
 its consequence 14/22 at every size measured. **A build may tighten and it may
 scroll; it may not shrink what a person reads.**
 
+**What is built, 2026-10-30** (`crate::a_sheet_that_fits` in `alo-shell`). A
+sheet that fits at its captured gaps is drawn exactly as before. One that does
+not is **tightened** — the heading to 28/36, the gaps between blocks to 8 and
+the cards to 8 apart — and if it still does not fit, its **list scrolls within
+its own area**: the sheet shows fewer rows of the list at a time (never fewer
+than one; on the keyboard sheet never fewer than one keyboard and the test
+row), the window follows the cursor, and the arrow keys and the wheel move it.
+The heading, the way on, the way back and Accessibility never leave the
+screen, and a card stays 85 tall.
+
+**A deliberate difference from `385:26244`.** That frame scrolls the whole
+column in a 640-wide region and centres it; this scrolls the list alone and
+keeps the column where it is. The design says the content scrolls and the
+actions stay outside it, and both hold; it does not say how far a notch goes or
+how the keyboard drives it, so the wheel follows the task window's
+conversation (#985): **a notch is 15 of the units a scroll frame carries, and
+moves one row** — a row rather than pixels, because the list is drawn a row at
+a time — and a touchpad's small frames are added up. The keyboard was already
+moving the list, a row an arrow. Found because the keyboard sheet did not fit a
+1024 × 768 screen at 100 per cent and was refused, which drew nothing.
+
 ### Text size, which is the case the frames understate
 
 `alo_appearance::TextScale` goes to **200%** — its own doc calls that *the

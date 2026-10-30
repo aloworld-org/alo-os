@@ -324,6 +324,9 @@ pub(crate) struct Lane<'a, K: Knocking> {
     /// sheet: a second click arriving before the next frame would otherwise be
     /// read against rows that are no longer there.
     controls: Vec<crate::a_press_on_a_setup_sheet::SheetControl>,
+    /// What the wheel has turned over a sheet's list that has not yet made a
+    /// row (`crate::a_wheel_over_a_sheet`).
+    wheel: crate::a_wheel_over_a_sheet::TheWheelOnASheet,
 }
 
 impl<'a, K: Knocking> Lane<'a, K> {
@@ -340,6 +343,7 @@ impl<'a, K: Knocking> Lane<'a, K> {
             pointer: ThePointerOnTheSignInScreen::default(),
             drawn_at: None,
             controls: Vec::new(),
+            wheel: crate::a_wheel_over_a_sheet::TheWheelOnASheet::default(),
         }
     }
 
@@ -352,8 +356,36 @@ impl<'a, K: Knocking> Lane<'a, K> {
         let Some((extent, _)) = self.drawn_at else {
             return Ok(());
         };
+        if let crate::DirectPointerEvent::Axis(frame) = event {
+            self.scrolled(frame);
+            return Ok(());
+        }
         self.pointer.moved(event, extent)?;
         Ok(())
+    }
+
+    /// **The wheel over a sheet's list moves through it**, a row a notch, as
+    /// the arrow keys do (`crate::a_wheel_over_a_sheet`). Anywhere else on a
+    /// sheet, and anywhere on the sign-in screen, it does nothing.
+    fn scrolled(&mut self, frame: &smithay::input::pointer::AxisFrame) {
+        let over_the_list = self.pointer.in_pixels().is_some_and(|at| {
+            matches!(
+                crate::a_press_on_a_setup_sheet::what_is_under(&self.controls, at),
+                Some(crate::a_press_on_a_setup_sheet::OnASheet::Choice(_))
+            )
+        });
+        if !over_the_list {
+            return;
+        }
+        let rows = self.wheel.turned(frame);
+        let key = if rows < 0 {
+            crate::SignInKey::Earlier
+        } else {
+            crate::SignInKey::Later
+        };
+        for _ in 0..rows.unsigned_abs() {
+            self.pressed(key);
+        }
     }
 
     /// Act on a press wherever the pointer is.

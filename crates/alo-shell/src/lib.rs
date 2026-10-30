@@ -104,11 +104,13 @@ mod a_press_on_an_edge;
 mod a_press_on_the_sign_in_screen;
 mod a_provider_being_added_is_drawn;
 pub mod a_provider_is_added_in_settings;
+mod a_sheet_that_fits;
 mod a_task_window_hands_on_a_chord;
 /// Scrolling a task window's conversation.
 mod a_task_window_scrolls;
 /// A task window's edge, carrying Close.
 mod a_task_windows_edge;
+mod a_wheel_over_a_sheet;
 mod a_window_onto_a_list;
 /// alo's words read for the emphasis a model marks in Markdown.
 ///
