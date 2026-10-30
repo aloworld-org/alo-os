@@ -15,7 +15,6 @@ use alo_shortcuts::Action;
 
 /// Settings as it stands, drawn on an output of `size`.
 fn drawn_at(window: &SettingsWindow, size: (i32, i32), look: SettingsLook) -> SettingsPicture {
-    let mut labels = WindowControlLabels::new().unwrap();
     drawn_at_scale(window, size, look, DisplayScale::ONE)
 }
 
@@ -341,7 +340,7 @@ fn at_two_hundred_settings_is_twice_its_size() {
 #[test]
 fn at_two_hundred_a_key_moves_the_focus_and_it_stays_in_view() {
     let machine = a_persons_machine("raster-two-keys");
-    let window = machine.opened();
+    let mut window = machine.opened();
     let strings = words();
     let door = CountingDoor::revoking();
     window.pressed(key(SettingsKey::Last), doors(&strings, &door));

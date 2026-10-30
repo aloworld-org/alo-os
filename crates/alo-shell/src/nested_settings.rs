@@ -159,6 +159,9 @@ fn frame_pictures(
         // a Settings window for a check, and nothing in it opens a form --
         // there is no `Server` here to hold one.
         None,
+        // **At one**: this scene is the development backend's, drawn in a
+        // window on another desktop, and no display's scale reaches it.
+        crate::display_scale::DisplayScale::ONE,
     )?;
     let question = match approval {
         Some(approval) => Some(crate::approval_raster::picture(
