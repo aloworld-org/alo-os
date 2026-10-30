@@ -152,6 +152,10 @@ impl Block {
 /// [`RenderError::SettingsScene`] when Settings is open and the output is too
 /// small for a panel, larger than any it is laid out for, or cannot hold the
 /// focused row whole.
+#[expect(
+    clippy::too_many_arguments,
+    reason = "each is a different thing about one frame of Settings, and a struct of them would \n              be named after this call"
+)]
 pub(crate) fn picture(
     window: &SettingsWindow,
     strings: &Strings,
