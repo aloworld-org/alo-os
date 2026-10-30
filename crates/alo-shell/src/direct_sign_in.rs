@@ -317,6 +317,13 @@ pub(crate) struct Lane<'a, K: Knocking> {
     /// machine that has not painted is an ordinary moment, not something to
     /// invent an answer for.
     drawn_at: Option<((i32, i32), DisplayScale)>,
+    /// **The controls the last frame drew**, where it was a first-start or
+    /// first-account sheet, in that frame's pixels.
+    ///
+    /// Emptied by every key and every press, because each may have changed the
+    /// sheet: a second click arriving before the next frame would otherwise be
+    /// read against rows that are no longer there.
+    controls: Vec<crate::a_press_on_a_setup_sheet::SheetControl>,
 }
 
 impl<'a, K: Knocking> Lane<'a, K> {
@@ -332,6 +339,7 @@ impl<'a, K: Knocking> Lane<'a, K> {
             look,
             pointer: ThePointerOnTheSignInScreen::default(),
             drawn_at: None,
+            controls: Vec::new(),
         }
     }
 
@@ -356,6 +364,19 @@ impl<'a, K: Knocking> Lane<'a, K> {
         let Some((extent, display)) = self.drawn_at else {
             return false;
         };
+        // **A sheet answers from what it drew.** Its rows and actions are
+        // nowhere near the sign-in screen's, and asking that screen's layout
+        // was how a click on empty ground became Enter on every sheet.
+        let on_a_sheet = matches!(
+            self.signing.as_ref(),
+            Some(Signing::Still(screen)) if matches!(
+                screen.shows(),
+                crate::SignInShows::FirstStart(_) | crate::SignInShows::FirstAccount { .. }
+            )
+        );
+        if on_a_sheet {
+            return self.pressed_on_a_sheet();
+        }
         // The layout the frame was drawn from: logical, the drawn pixels
         // through the scale that frame used.
         let logical = (
@@ -375,6 +396,24 @@ impl<'a, K: Knocking> Lane<'a, K> {
         if let Some(meant) = crate::a_press_on_the_sign_in_screen::what_a_press_does(on) {
             self.pressed(meant);
         }
+        true
+    }
+
+    /// A press on a sheet: what it landed on among the controls drawn, and
+    /// that handed to the screen.
+    fn pressed_on_a_sheet(&mut self) -> bool {
+        let Some(at) = self.pointer.in_pixels() else {
+            return false;
+        };
+        let Some(on) = crate::a_press_on_a_setup_sheet::what_is_under(&self.controls, at) else {
+            return false;
+        };
+        // What was drawn may no longer be what is up.
+        self.controls.clear();
+        *self.signing = self.signing.take().map(|now| match now {
+            Signing::Still(screen) => (*screen).pressed_on_a_sheet(on),
+            handed_over @ Signing::HandedOver(_) => handed_over,
+        });
         true
     }
 
@@ -413,6 +452,8 @@ impl<'a, K: Knocking> Lane<'a, K> {
 
     /// Hand one key's meaning to the screen, and keep whatever it becomes.
     pub(crate) fn pressed(&mut self, meant: crate::SignInKey) {
+        // What was drawn may no longer be what is up.
+        self.controls.clear();
         *self.signing = self.signing.take().map(|now| match now {
             Signing::Still(screen) => (*screen).pressed(meant),
             handed_over @ Signing::HandedOver(_) => handed_over,
@@ -429,9 +470,6 @@ impl<'a, K: Knocking> Lane<'a, K> {
         &mut self,
         target: &mut impl crate::presentation::NativeTarget,
     ) -> Result<(), RenderError> {
-        let Some(Signing::Still(screen)) = self.signing.as_ref() else {
-            return Ok(());
-        };
         let size = target.size();
         // **The screen's own scale**, worked out from its pixels and its
         // glass, because nobody has signed in to have a setting of their own.
@@ -445,16 +483,9 @@ impl<'a, K: Knocking> Lane<'a, K> {
                 metadata.physical_size,
             )
         });
-        let drawn = picture(
-            screen.shows(),
-            self.labels,
-            screen.words(),
-            (size.w, size.h),
-            self.look,
-            crate::sign_in_raster::WhoseScreen::ItsOwn,
-            display,
-        )?;
-        self.drawn_at = Some(((size.w, size.h), display));
+        let Some(drawn) = self.drawn_for((size.w, size.h), display)? else {
+            return Ok(());
+        };
         // **An arrow only once a device has moved**, so a machine with no
         // mouse draws no cursor rather than one parked in a corner that
         // nothing can move.
@@ -472,6 +503,34 @@ impl<'a, K: Knocking> Lane<'a, K> {
             },
         )?;
         Ok(())
+    }
+
+    /// **The picture for a display of `size` at `display`**, and what a press
+    /// on it will be read against from now on — or [`None`] once a session has
+    /// opened and there is nothing to draw.
+    ///
+    /// # Errors
+    /// [`RenderError`] for a screen this picture cannot be laid out on.
+    pub(crate) fn drawn_for(
+        &mut self,
+        size: (i32, i32),
+        display: DisplayScale,
+    ) -> Result<Option<crate::sign_in_raster::SignInPicture>, RenderError> {
+        let Some(Signing::Still(screen)) = self.signing.as_ref() else {
+            return Ok(None);
+        };
+        let drawn = picture(
+            screen.shows(),
+            self.labels,
+            screen.words(),
+            size,
+            self.look,
+            crate::sign_in_raster::WhoseScreen::ItsOwn,
+            display,
+        )?;
+        self.drawn_at = Some((size, display));
+        self.controls.clone_from(&drawn.controls);
+        Ok(Some(drawn))
     }
 
     /// A session opened, so this screen has nothing left to show.
@@ -569,8 +628,18 @@ impl<K: Knocking> LoopInput for Greeter<'_, K> {
                     }
                     Some(crate::DirectSeatEvent::Button { code, state, .. }) => {
                         // `BTN_LEFT`. Nothing else on this screen means anything.
-                        if code == 0x110 && state == ButtonState::Pressed {
-                            screen.pressed_by_the_pointer();
+                        if code == 0x110
+                            && state == ButtonState::Pressed
+                            && screen.pressed_by_the_pointer()
+                        {
+                            // **A click chooses as a key does**, so what it
+                            // chose is applied as a key's choice is: a
+                            // language clicked on is spoken, and a keyboard
+                            // clicked on is typed through, from the next key.
+                            the_keyboard_is_now(chose, screen, server);
+                            the_language_is_now(language, screen);
+                            the_region_is_now(region, screen);
+                            the_zone_is_now(zone, screen);
                         }
                         Ok(())
                     }
@@ -606,3 +675,7 @@ impl<K: Knocking> LoopInput for Greeter<'_, K> {
         Some(self.owner.shutdown(|| server.clear_input()))
     }
 }
+
+#[cfg(test)]
+#[path = "a_click_on_a_sheet_tests.rs"]
+mod a_click_on_a_sheet_tests;

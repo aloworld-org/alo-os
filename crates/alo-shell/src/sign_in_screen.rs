@@ -38,6 +38,7 @@ use alo_accounts::Session;
 use alo_greeting::{Greeted, Greeting, Knocking, NotAnswered, NotReadable, Standing};
 use alo_strings::{Said, Strings};
 
+use crate::a_press_on_a_setup_sheet::OnASheet;
 use crate::sign_in_entry::{SignInEntry, SignInField};
 use crate::sign_in_keys::SignInKey;
 use crate::the_first_start::{TheFirstStart, Went};
@@ -350,11 +351,37 @@ impl<K: Knocking> SignInScreen<K> {
     /// **Nothing here writes anything.** What was chosen leaves through
     /// [`Self::the_language_chosen`], [`Self::the_keyboard_chosen`] and
     /// [`Self::the_region_chosen`], and the compositor keeps and applies it.
-    fn on_the_first_start(mut self, key: SignInKey) -> Signing<K> {
+    fn on_the_first_start(self, key: SignInKey) -> Signing<K> {
+        self.the_first_start_does(|first_start| first_start.pressed(key))
+    }
+
+    /// **One press of the pointer on a first-start or first-account sheet.**
+    ///
+    /// On the first-start sheets `crate::the_first_start` answers it. On the
+    /// first-account sheets — *Your name* and *Add a PIN* — the way on is the
+    /// Enter it is lettered for (*Continue*, then *Save*), so a click and the
+    /// key take one road to making the account; the field row is where the
+    /// keyboard already is, and nothing else on them acts. On every other
+    /// screen a sheet's press means nothing: `crate::sign_in_pointing` answers
+    /// for the sign-in screen's own controls.
+    #[must_use]
+    pub(crate) fn pressed_on_a_sheet(self, on: OnASheet) -> Signing<K> {
+        match (&self.stands, on) {
+            (Stands::FirstStart(_, _, _), _) => {
+                self.the_first_start_does(|first_start| first_start.pressed_on(on))
+            }
+            (Stands::MakeAnAccount(_, _), OnASheet::WayOn) => self.pressed(SignInKey::Enter),
+            (Stands::MakeAnAccount(_, _), _)
+            | (Stands::SignIn(_) | Stands::Unreadable(_, _), _) => Signing::Still(Box::new(self)),
+        }
+    }
+
+    /// `then` done to the first-start sheets, and the screen it leaves.
+    fn the_first_start_does(mut self, then: impl FnOnce(&mut TheFirstStart) -> Went) -> Signing<K> {
         let Stands::FirstStart(mut first_start, said, greeting) = self.stands else {
             return Signing::Still(Box::new(self));
         };
-        let went = first_start.pressed(key);
+        let went = then(&mut first_start);
         let chosen: Vec<alo_strings::Language> = first_start
             .the_language_chosen()
             .and_then(|tag| alo_strings::Language::written(tag).ok())

@@ -44,6 +44,7 @@ fn a_screen(size: (i32, i32)) -> SignInPicture {
             area: Rectangle::new((2, 1).into(), (3, 2).into()),
             pixels: vec![[255, 255, 255]; 6],
         }],
+        controls: Vec::new(),
     }
 }
 

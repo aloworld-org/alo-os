@@ -273,6 +273,38 @@ impl TheLanguagesOffered {
         };
     }
 
+    /// **A press on a row**, by where it is in the whole list: the cursor to
+    /// it and the ring to the list, so the Enter that follows chooses what was
+    /// pressed. Answers whether there is such a row; nothing moves where there
+    /// is not.
+    pub(crate) fn pointed_at(&mut self, row: usize) -> bool {
+        let there = row < self.all.len();
+        if there {
+            self.ring_to_the_list();
+            self.on = row;
+        }
+        there
+    }
+
+    /// **A window of `rows` rows** onto the list, for a sheet with room for
+    /// that many (`crate::a_window_onto_a_list`).
+    pub(crate) fn window_of(
+        &self,
+        rows: usize,
+    ) -> crate::a_window_onto_a_list::AWindow<'_, OfferedLanguage> {
+        crate::a_window_onto_a_list::a_window(&self.all, self.on, self.chosen, rows)
+    }
+
+    /// **A press on the way on**: the ring to it, where Tab could have put it
+    /// — only once something is chosen, which is `ring_crosses`'s rule. Answers
+    /// whether it went.
+    pub(crate) fn ring_to_the_way_on_if_it_may(&mut self) -> bool {
+        if self.chosen.is_some() {
+            self.ring_to_the_way_on();
+        }
+        self.chosen.is_some()
+    }
+
     /// Move the cursor down one, stopping at the last row.
     ///
     /// **It stops rather than wraps.** A list that jumped from Swedish back to

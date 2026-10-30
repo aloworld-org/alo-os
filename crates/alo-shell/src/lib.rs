@@ -99,6 +99,7 @@ mod a_person_pins_and_unpins;
 #[cfg(test)]
 mod a_picture_hashed;
 mod a_press_in_the_menu;
+mod a_press_on_a_setup_sheet;
 mod a_press_on_an_edge;
 mod a_press_on_the_sign_in_screen;
 mod a_provider_being_added_is_drawn;

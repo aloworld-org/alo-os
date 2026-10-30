@@ -59,6 +59,11 @@ pub(crate) fn drawn(
         colours,
         measure,
     )?;
+    // **A press names the zone it is on**, by where it is in the whole list.
+    let first = picker
+        .window_of(crate::the_languages_offered::ROWS_AT_A_TIME)
+        .first;
+    drawn.controls = crate::a_press_on_a_setup_sheet::the_controls_of(&at, |which| first + which);
     let selected = say_it(say::SELECTED);
     for (which, (zone, card)) in window.iter().zip(at.choices.iter()).enumerate() {
         // **One answer decides the word and the border**, as on every sheet.

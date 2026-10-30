@@ -63,7 +63,7 @@ const LARGEST_SIDE: i32 = 16_384;
 ///
 /// Holds pixels of the name as typed and of sentences, and nothing about the
 /// password but whether one is typed.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq)]
 pub(crate) struct SignInPicture {
     /// The output size it was laid out for.
     pub(crate) size: (i32, i32),
@@ -78,6 +78,27 @@ pub(crate) struct SignInPicture {
     /// with no accounts shows - that screen is the owner's separate task and
     /// keeps the flat ground until it is built.
     pub(crate) surface: Option<crate::painted::Washed>,
+    /// **What a press on this picture can land on**, where it was drawn: a
+    /// first-start sheet's rows and actions (`crate::a_press_on_a_setup_sheet`).
+    ///
+    /// Empty for the sign-in screen, whose presses are answered by
+    /// `crate::sign_in_layout`, and for a sentence, which has nothing to press.
+    pub(crate) controls: Vec<crate::a_press_on_a_setup_sheet::SheetControl>,
+}
+
+/// **What is painted, and nothing else**: the four fields a derived `Debug`
+/// wrote, in its own shape. The controls a press is read against are not
+/// pixels, and leaving them out keeps every hash this crate's tests took of a
+/// picture's `Debug` before the controls existed a hash of the same pixels.
+impl std::fmt::Debug for SignInPicture {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("SignInPicture")
+            .field("size", &self.size)
+            .field("solids", &self.solids)
+            .field("inked", &self.inked)
+            .field("surface", &self.surface)
+            .finish()
+    }
 }
 
 /// The colours of one scheme.
@@ -173,6 +194,7 @@ pub(crate) fn picture(
             colour: palette.ground,
         }],
         inked: Vec::new(),
+        controls: Vec::new(),
     };
     let fonts = &mut labels.fonts;
 

@@ -98,8 +98,11 @@ pub(crate) fn a_sheet(
         ),
         solids: Vec::new(),
         inked: Vec::new(),
+        controls: Vec::new(),
     };
     let at = laid.pixels;
+    // **What a press can land on is what was just drawn**, in its pixels.
+    drawn.controls = crate::a_press_on_a_setup_sheet::the_controls_of(&at, |which| which);
     let nothing = alo_strings::Filling::nothing();
     let stage = words.say(&say::STAGE.key(), &nothing);
     let footer = words.say(&say::FOOTER.key(), &nothing);
