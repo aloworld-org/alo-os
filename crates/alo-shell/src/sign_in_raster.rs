@@ -648,7 +648,11 @@ pub(crate) struct Measure {
 }
 
 impl Measure {
-    /// Measures for this scale.
+    /// Measures for this scale at one-to-one.
+    ///
+    /// **For tests only** since every surface that draws with these measures
+    /// follows its screen's scale through [`Measure::at`].
+    #[cfg(test)]
     pub(crate) fn of(scale: TextScale) -> Self {
         Self {
             percent: i32::from(scale.as_percent()),
