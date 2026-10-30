@@ -154,8 +154,7 @@ impl Block {
 /// focused row whole.
 #[expect(
     clippy::too_many_arguments,
-    reason = "each is a different thing about one frame of Settings, and a struct of them \
-              would be named after this call"
+    reason = "each is a different thing about one frame of Settings, and a struct would be one call"
 )]
 pub(crate) fn picture(
     window: &SettingsWindow,
