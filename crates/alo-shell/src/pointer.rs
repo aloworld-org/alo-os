@@ -383,6 +383,10 @@ impl Server {
         {
             self.the_composer.it_gave_the_keyboard_up();
             self.the_task_gave_the_keyboard_up();
+            // **And off the Dock, if F6 had put it there**: the window a
+            // person clicks has the keyboard, and a Dock still taking Enter
+            // behind it would press a button they are not looking at.
+            self.the_keyboard_is_now_in(None);
             let already = self
                 .surfaces
                 .keyboard

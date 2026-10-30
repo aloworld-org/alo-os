@@ -398,8 +398,10 @@ impl Server {
                 // `crate::a_chord_reaches_its_action`'s own test, which presses
                 // every declared action and asserts that none of them answers
                 // `NoRoad` — the check that would have caught four dead chords.
+                // Carried out on the road that also takes the keyboard off the
+                // Dock when the chord sent it to a window.
                 WhatTheSeatTook::AChord(chord) => {
-                    let _ = self.the_chord_does_what_it_names(chord);
+                    let _ = self.carry_out_a_chord(chord);
                 }
                 // **Also read and not acted on further.** A terminal that has
                 // gone between the filter and here takes nothing, which is a
