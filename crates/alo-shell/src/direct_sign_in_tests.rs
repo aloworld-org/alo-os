@@ -548,3 +548,62 @@ fn enter_on_the_keyboard_row_opens_the_keyboard_sheet_and_the_screen_stays_up() 
         "the keyboard sheet is not up"
     );
 }
+
+/// **The keyboard alone walks a fresh machine from the overview to the name
+/// sheet**: Tab moves the ring from the rows to *Continue* — and the frame the
+/// card is handed changes, so a person can see it moved — and Enter goes on.
+/// Down stops at the last row by design; Tab is the key between the rows and
+/// the buttons, as it is between the two fields of the sign-in screen.
+#[test]
+fn the_keyboard_alone_walks_from_the_overview_to_the_name_sheet() {
+    let (_kept, mut signing) = a_fresh_machine();
+    let (device, log) = fixture(&[], 0);
+    let mut labels = WindowControlLabels::new().unwrap();
+    let mut target = Target::new(
+        SoftwarePainter::new().unwrap(),
+        device,
+        scanout_tests::output(),
+    );
+    let frames = {
+        let mut lane = Lane::of(&mut signing, &mut labels, light());
+        let mut frames = Vec::new();
+        for key in [
+            None,
+            Some(SignInKey::Later),
+            Some(SignInKey::Later),
+            Some(SignInKey::Later),
+            Some(SignInKey::OtherField),
+        ] {
+            if let Some(key) = key {
+                lane.pressed(key);
+            }
+            lane.present(&mut target).unwrap();
+            frames.push(log.borrow().pixels.clone());
+        }
+        lane.pressed(SignInKey::Enter);
+        lane.present(&mut target).unwrap();
+        assert!(!lane.finished(), "the sign-in screen ended");
+        frames
+    };
+    drop(target);
+    let [arrived, _, at_keyboard, still_at_keyboard, at_continue] = frames.as_slice() else {
+        unreachable!("five frames were drawn");
+    };
+    assert_ne!(arrived, at_keyboard, "Down did not move the ring");
+    assert_eq!(
+        at_keyboard, still_at_keyboard,
+        "Down went past the last row"
+    );
+    assert_ne!(
+        at_keyboard, at_continue,
+        "Tab did not move the ring to Continue"
+    );
+    assert!(
+        matches!(
+            &signing,
+            Some(Signing::Still(screen))
+                if matches!(screen.shows(), crate::SignInShows::FirstAccount { .. })
+        ),
+        "Tab then Enter did not go on to the name sheet"
+    );
+}
