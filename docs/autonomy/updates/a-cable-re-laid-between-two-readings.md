@@ -28,7 +28,8 @@ discovery group again.
   dropped (`ENOBUFS`), or a message that cannot be read, count as *any interface
   may have gone*. The module documentation weighs the three readings. Three unit
   tests.
-- `crates/alo-agentd/src/route_messages.rs`: `links_deleted_in` reads the index
+- `crates/alo-interfaces/src/route_messages.rs` (in `alo-agentd` when this was
+  written; moved to a crate of its own on 2026-10-30): `links_deleted_in` reads the index
   out of each `RTM_DELLINK`, in the unspecified family only (a bridge says
   `RTM_DELLINK` in `AF_BRIDGE` when a port merely leaves it). Two unit tests.
 - `crates/alo-agentd/src/unix.rs`: `emptied` hands each datagram it reads, and
