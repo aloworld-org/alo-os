@@ -373,7 +373,11 @@ pub const NOT_AN_ADDRESS: Word = Word::saying(
 
 /// An address a key would travel to in clear.
 pub const INSECURE_ENDPOINT: Word = Word::saying(
-    "models.provider.insecure-endpoint",
+    // A new key, and `models.provider.insecure-endpoint` retired, because the
+    // meaning moved (ADR 0068): the old sentence said plain http works only for
+    // this machine, and since 2026-10-30 it also works for the person's own
+    // network, so a translation of the old one would now be false.
+    "models.provider.insecure-endpoint-beyond-your-network",
     "this address is not https, so your key and your questions would cross the internet \
      unencrypted — use https; plain http works only for this machine, or for another computer on \
      your own network written as its number, such as 192.168.1.20",
