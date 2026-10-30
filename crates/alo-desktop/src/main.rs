@@ -347,6 +347,9 @@ mod running {
         /// Where the listening thread hands over what it was told. Drained on
         /// every frame, and never waited on.
         told: std::sync::mpsc::Receiver<alo_indicator::FromTheDaemon>,
+        /// What was told and taken back between two frames, so it is drawn on
+        /// the next one rather than on none.
+        between_frames: alo_indicator::BetweenFrames,
         /// Shut, because nothing on a machine opens it yet.
         running: RunningWindow,
         /// The same.
@@ -531,6 +534,7 @@ mod running {
                 indicating,
                 daemon,
                 told,
+                between_frames: alo_indicator::BetweenFrames::nothing_owed(),
                 running: RunningWindow::closed(),
                 filling: FillingWindow::closed(),
                 status: readings,
@@ -1114,10 +1118,13 @@ mod running {
             // up to `HOW_OFTEN` later. `Indicating::show` leaves the compositor
             // alone when nothing has changed, so the frames where nothing is
             // leaving cost one comparison.
-            // What the service told since the last frame — the newest wins,
-            // because each is the whole list.
-            while let Ok(told) = self.told.try_recv() {
-                self.daemon = told;
+            // What the service told since the last frame. Each is the whole
+            // list, so the newest is what is leaving now — but a question that
+            // went and came back since the last frame is in an older one, and
+            // `BetweenFrames` draws it on this frame rather than on none.
+            let told: Vec<_> = std::iter::from_fn(|| self.told.try_recv().ok()).collect();
+            if let Some(drawn) = self.between_frames.this_frame(told) {
+                self.daemon = drawn;
             }
             self.indicating
                 .show_both(Some(&mut self.egress), &self.indicator, &self.daemon);

@@ -141,6 +141,7 @@
 
 #![doc(html_root_url = "https://github.com/aloworld-org/alo-os")]
 
+pub mod between_frames;
 pub mod drawn;
 pub mod indicating;
 pub mod lamp;
@@ -154,6 +155,7 @@ pub mod words;
 #[cfg(test)]
 mod testing;
 
+pub use between_frames::BetweenFrames;
 pub use drawn::Drawn;
 pub use indicating::{Drew, Indicating};
 pub use lamp::Lamp;

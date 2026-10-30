@@ -36,6 +36,8 @@ struct ADesktop {
     running: RunningWindow,
     /// The same.
     filling: FillingWindow,
+    /// The task windows open on it: none, unless a test opens one.
+    tasks: Vec<crate::task_raster::ATaskOnTheDisplay<'static>>,
 }
 
 impl ADesktop {
@@ -57,6 +59,7 @@ impl ADesktop {
             egress,
             running: RunningWindow::closed(),
             filling: FillingWindow::closed(),
+            tasks: Vec::new(),
         }
     }
 }
@@ -64,7 +67,7 @@ impl ADesktop {
 impl crate::TheDesktop for ADesktop {
     fn now(&self) -> crate::DesktopFrame<'_> {
         crate::DesktopFrame {
-            tasks: &[],
+            tasks: &self.tasks,
             market: None,
             what_each_application_draws: &alo_dock::artwork::NOTHING,
             the_dock_has_open: &crate::what_the_dock_has_open::NOTHING,
@@ -260,6 +263,31 @@ fn the_four_fixed_controls_a_draw_lays_out_do_not_overlap() {
 
 /// The bytes the injected card was handed for this desktop.
 fn handed_to_the_card(desktop: &ADesktop) -> Vec<u8> {
+    handed_and_laid_out(desktop).pixels
+}
+
+/// What one frame laid out, beside the bytes the card was handed for it.
+struct Handed {
+    /// The bytes, [`row_of`] the width to a row.
+    pixels: Vec<u8>,
+    /// Where the egress indicator painted, when it painted anything.
+    what_is_leaving: Option<smithay::utils::Rectangle<i32, smithay::utils::Physical>>,
+    /// Where each task window was drawn.
+    tasks: Vec<smithay::utils::Rectangle<i32, smithay::utils::Physical>>,
+    /// The display's width, which with [`row_of`] places a pixel in `pixels`.
+    width: i32,
+    /// The display's height.
+    height: i32,
+}
+
+/// One row's bytes in the injected card's buffer: four to a pixel and the 64
+/// the fixture pads every row with (`display_resources_tests::create_buffer`).
+fn row_of(width: i32) -> usize {
+    usize::try_from(width).unwrap() * 4 + 64
+}
+
+/// The frame a card is handed, and what was laid out to make it.
+fn handed_and_laid_out(desktop: &ADesktop) -> Handed {
     use crate::FrameTarget;
 
     let (device, log) = fixture(&[], 0);
@@ -292,7 +320,13 @@ fn handed_to_the_card(desktop: &ADesktop) -> Vec<u8> {
     .unwrap();
     let pixels = log.borrow().pixels.clone();
     drop(target);
-    pixels
+    Handed {
+        pixels,
+        what_is_leaving: pictures.status.band,
+        tasks: pictures.desktop.tasks.iter().map(|task| task.at).collect(),
+        width: size.w,
+        height: size.h,
+    }
 }
 
 /// **A desktop reaches the frame a display scans out.**
@@ -335,6 +369,107 @@ fn what_is_leaving_changes_the_frame_a_display_is_handed() {
     assert_ne!(
         quiet, leaving,
         "a machine with something leaving handed the display the same frame as one with nothing"
+    );
+}
+
+/// A task window over the whole display, working on a question that is away.
+///
+/// **The whole display**, because that is the case the twelfth Demo 1 walk
+/// photographed on 2026-10-30: a task window as tall as the screen, the Dock
+/// gone from under it, and no indicator anywhere while the window said *alo is
+/// working*. A window this size covers the corner the indicator is laid out in,
+/// whatever the display's width.
+fn a_task_window_over_everything(
+    width: i32,
+    height: i32,
+) -> crate::task_raster::ATaskOnTheDisplay<'static> {
+    crate::task_raster::ATaskOnTheDisplay {
+        at: smithay::utils::Rectangle::new((0, 0).into(), (width, height).into()),
+        how_many_files: 0,
+        words: crate::task_text::TheWordsInATaskWindow {
+            title: "write a 700 word story about a lighthouse keeper",
+            kind: "alo task",
+            status: "alo is working",
+            model: "",
+            destination: "by openai, which has not said where it runs",
+            invitation: "Reply to alo or change the direction\u{2026}",
+            scope_note: "Permissions and model choices apply to this task.",
+            files: &[],
+            how_many_files: "",
+        },
+        said: Vec::new(),
+        scroll: alo_tasks::TheScroll::at_the_newest(),
+        place: 0,
+    }
+}
+
+/// **What is leaving is drawn over a task window that covers its corner.**
+///
+/// The indicator is painted after every surface of alo's own — the Dock, the
+/// task windows, the record, Settings and the question — in
+/// `crate::scene_drawing::paint`. This holds that order where it matters, at
+/// the bytes a display is handed: a task window over the whole display, a
+/// question away at a provider, and the pixels inside the indicator's own band
+/// differ from the same frame with nothing leaving. A task window painted
+/// after the indicator would leave those pixels the window's, and fail here.
+///
+/// **What this cannot see** is whether a booted machine was told the departure
+/// in time to draw it; that is `alo_indicator::between_frames`' question, and a
+/// walk's.
+#[test]
+fn what_is_leaving_is_drawn_over_a_task_window_that_covers_its_corner() {
+    // The display's own size, read off a frame drawn on it rather than copied
+    // from the fixture's mode.
+    let (width, height) = {
+        let empty = handed_and_laid_out(&ADesktop::with(None));
+        (empty.width, empty.height)
+    };
+    let mut indicator = Indicator::default();
+    indicator
+        .beginning(
+            &alo_egress::EgressPolicy::Anywhere,
+            crate::egress_status_testing::asking_a_provider(),
+            crate::egress_status_testing::noon(),
+        )
+        .unwrap();
+    let mut quiet = ADesktop::with(None);
+    quiet.tasks = vec![a_task_window_over_everything(width, height)];
+    let mut leaving = ADesktop::with(Some(&indicator));
+    leaving.tasks = vec![a_task_window_over_everything(width, height)];
+
+    let quiet = handed_and_laid_out(&quiet);
+    let leaving = handed_and_laid_out(&leaving);
+
+    // The premise, asserted rather than assumed: the window was drawn, and the
+    // band the indicator painted is inside it.
+    // Something is leaving, so the indicator painted a band.
+    let band = leaving.what_is_leaving.unwrap();
+    assert_eq!(
+        leaving.tasks.len(),
+        1,
+        "the task window was not drawn, so this says nothing about drawing over one"
+    );
+    assert!(
+        leaving.tasks.iter().any(|task| task.contains_rect(band)),
+        "the task window {:?} does not cover the indicator's band {band:?}",
+        leaving.tasks
+    );
+    assert_eq!(quiet.width, leaving.width);
+
+    let row = row_of(leaving.width);
+    let x = usize::try_from(band.loc.x).unwrap();
+    let w = usize::try_from(band.size.w).unwrap();
+    let changed = (band.loc.y..band.loc.y + band.size.h)
+        .map(|y| usize::try_from(y).unwrap() * row)
+        .filter(|start| {
+            let span = start + x * 4..start + (x + w) * 4;
+            quiet.pixels.get(span.clone()) != leaving.pixels.get(span)
+        })
+        .count();
+    assert!(
+        changed > 0,
+        "inside the indicator's band {band:?}, the frame with a question away is the \
+         frame with nothing leaving: the task window covered the indicator"
     );
 }
 
