@@ -60,7 +60,8 @@ pub(crate) struct ItFits {
 /// column drawn under *Accessibility*.
 #[expect(
     clippy::too_many_arguments,
-    reason = "each is a different thing about one sheet, and a struct of them would be named               after this call"
+    reason = "each is a different thing about one sheet, and a struct of them would be named after \
+              this call"
 )]
 pub(crate) fn the_sheet_that_fits(
     fonts: &mut FontSystem,
