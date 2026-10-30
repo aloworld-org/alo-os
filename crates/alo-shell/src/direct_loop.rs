@@ -33,6 +33,33 @@ pub enum DirectLoopError {
     Discovery(#[from] crate::AtomicOutputError),
 }
 
+impl DirectLoopError {
+    /// **Whether the seat took the display away, rather than the display failing.**
+    ///
+    /// The login seat pauses a session when another one is put in front of the
+    /// same screen; that is how the sign-in screen gives way to the desktop of
+    /// the person who just signed in. It arrives either directly or through the
+    /// input context, which carries the seat's own error inside an `io::Error`.
+    ///
+    /// Told apart because the two ends ask opposite things of the sign-in
+    /// process. On 2026-10-30 every end with nobody signed in was made a
+    /// failure, so systemd would start a stranded screen again; a fresh
+    /// machine's first account then opened a desktop, the sign-in screen was
+    /// paused for it, restarted, and took the display back from the desktop.
+    #[must_use]
+    pub fn is_the_seat_handing_the_display_on(&self) -> bool {
+        match self {
+            Self::Session(SessionError::Inactive) => true,
+            Self::Input(input) => input
+                .source
+                .get_ref()
+                .and_then(|inner| inner.downcast_ref::<SessionError>())
+                .is_some_and(|seat| matches!(seat, SessionError::Inactive)),
+            _ => false,
+        }
+    }
+}
+
 /// Loop failure and retirement failure are independent; neither hides the other.
 #[derive(Debug)]
 #[must_use = "inspect loop, retirement and flush results as well as session cleanup"]

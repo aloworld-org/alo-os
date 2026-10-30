@@ -115,10 +115,13 @@ pub enum Stood {
         /// session unlocked*.
         seat: Seat<Notification>,
     },
-    /// The screen ended with nobody signed in: the scheduler said stop, the
-    /// seat took the display away, or the display failed — a frame that could
-    /// not be drawn ends the loop.
+    /// The screen ended with nobody signed in: the scheduler said stop, or the
+    /// display failed — a frame that could not be drawn ends the loop.
     NobodyDid,
+    /// **The seat gave the display to another session**, which owns the screen
+    /// now. This is what a first account's sign-in looks like from here: the
+    /// session opens and is put in front before this screen hears the answer.
+    TheSeatHandedItOn,
 }
 
 impl Stood {
@@ -136,9 +139,17 @@ impl Stood {
     ///
     /// Stopping the unit on purpose is unaffected: systemd never restarts a
     /// unit it was asked to stop, whatever its exit status.
+    ///
+    /// **The seat handing the display on is an end it is for, too.** Another
+    /// session is in front of the screen; a sign-in screen started again would
+    /// take the display back from it. That is what the 2026-10-30 fix did to
+    /// a fresh machine's first desktop, which came up and was pushed off.
     #[must_use]
     pub const fn is_the_end_this_process_is_for(&self) -> bool {
-        matches!(self, Self::SomebodySignedIn { .. })
+        matches!(
+            self,
+            Self::SomebodySignedIn { .. } | Self::TheSeatHandedItOn
+        )
     }
 }
 
@@ -227,10 +238,17 @@ pub fn stand_the_sign_in_screen_up(
         Signing::Still(_) => {
             // **Said, not dropped.** What ended the display was never written
             // anywhere, so the journal said only that nobody signed in.
-            if let Err(why) = &stood.outcome.display.outcome {
-                eprintln!("alo-compositor: the sign-in screen's display ended: {why}");
+            match &stood.outcome.display.outcome {
+                Err(why) if why.is_the_seat_handing_the_display_on() => {
+                    eprintln!("alo-compositor: the sign-in screen's display ended: {why}");
+                    Stood::TheSeatHandedItOn
+                }
+                Err(why) => {
+                    eprintln!("alo-compositor: the sign-in screen's display ended: {why}");
+                    Stood::NobodyDid
+                }
+                Ok(()) => Stood::NobodyDid,
             }
-            Stood::NobodyDid
         }
     };
     Ok(signed_in)
