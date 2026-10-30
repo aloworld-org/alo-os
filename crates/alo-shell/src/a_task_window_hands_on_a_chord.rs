@@ -68,7 +68,7 @@ impl Server {
                 }
             };
         }
-        let came_to = self.a_chord_is_carried_out(chord);
+        let came_to = self.carry_out_a_chord(chord);
         if let WhatTheChordCameTo::Carried(action) = came_to
             && sends_the_keyboard_elsewhere(action)
         {

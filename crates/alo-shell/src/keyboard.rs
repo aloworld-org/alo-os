@@ -401,7 +401,7 @@ impl Server {
                 // Carried out on the road that also takes the keyboard off the
                 // Dock when the chord sent it to a window.
                 WhatTheSeatTook::AChord(chord) => {
-                    let _ = self.a_chord_is_carried_out(chord);
+                    let _ = self.carry_out_a_chord(chord);
                 }
                 // **Also read and not acted on further.** A terminal that has
                 // gone between the filter and here takes nothing, which is a

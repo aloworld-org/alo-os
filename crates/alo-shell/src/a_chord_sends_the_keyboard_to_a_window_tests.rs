@@ -26,7 +26,7 @@ fn on_the_dock(named: &str) -> (tempfile::TempDir, Server) {
     server.the_shortcuts_are(Shortcuts::shipped());
     let f6 = Chord::checked(Modifiers::none(), Key::F6).expect("a function key may stand alone");
     assert_eq!(
-        server.a_chord_is_carried_out(f6),
+        server.carry_out_a_chord(f6),
         WhatTheChordCameTo::Carried(Action::TheNextArea)
     );
     assert_eq!(
@@ -52,7 +52,7 @@ fn the_chord_for(action: Action) -> Chord {
 fn opening_the_terminal_from_the_dock_takes_the_keyboard_off_it() {
     let (_directory, mut server) = on_the_dock("terminal-from-the-dock");
 
-    let came_to = server.a_chord_is_carried_out(the_chord_for(Action::Terminal));
+    let came_to = server.carry_out_a_chord(the_chord_for(Action::Terminal));
 
     assert_eq!(came_to, WhatTheChordCameTo::Carried(Action::Terminal));
     assert_eq!(
@@ -76,7 +76,7 @@ fn opening_the_terminal_from_the_dock_takes_the_keyboard_off_it() {
 fn a_shortcut_that_went_nowhere_leaves_the_keyboard_on_the_dock() {
     let (_directory, mut server) = on_the_dock("nowhere-from-the-dock");
 
-    let came_to = server.a_chord_is_carried_out(the_chord_for(Action::NextWindow));
+    let came_to = server.carry_out_a_chord(the_chord_for(Action::NextWindow));
 
     assert_ne!(
         came_to,

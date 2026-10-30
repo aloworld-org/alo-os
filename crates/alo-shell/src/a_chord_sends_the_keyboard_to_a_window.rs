@@ -63,7 +63,11 @@ impl Server {
     ///
     /// Only a chord that was **carried out** moves it: `Alt`+`Tab` with no
     /// window to go to went nowhere, and a person on the Dock is still there.
-    pub(crate) fn a_chord_is_carried_out(&mut self, chord: Chord) -> WhatTheChordCameTo {
+    ///
+    /// **Not named `a_chord_…`**, because that prefix marks a link *in* the
+    /// dispatch chain and `the_road_every_action_takes` requires the chain to
+    /// call every one. This calls the chain; it is not a link in it.
+    pub(crate) fn carry_out_a_chord(&mut self, chord: Chord) -> WhatTheChordCameTo {
         let came_to = self.the_chord_does_what_it_names(chord);
         if let WhatTheChordCameTo::Carried(action) = came_to
             && sends_the_keyboard_to_a_window(action)
