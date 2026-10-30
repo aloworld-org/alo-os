@@ -38,48 +38,37 @@ pub(crate) fn drawn(
         say_it(say::KEYBOARD_INTRODUCTION),
     );
     let (go_on, go_back) = (say_it(say::USE_THIS_KEYBOARD), say_it(say::BACK));
-    // **As many keyboards as the screen has room for, and never none.** Three
-    // keyboards, the test row, a heading and an introduction need 730 logical
-    // pixels down and a 1280 × 800 screen has 716 above *Accessibility*, so on
-    // main this sheet was refused there — and a refused frame ended the
-    // sign-in screen with nobody signed in. A shorter screen draws fewer
-    // keyboards at a time; the window follows the cursor, so the arrows still
-    // reach every one, and the test row is always drawn.
-    let mut shown = picker.window().len();
-    let (mut drawn, at, in_sight) = loop {
-        let in_sight = picker.window_of(shown);
-        let the_test = in_sight.rows.len();
-        let ring = match picker.ring() {
-            TheRing::OnTheKeyboards => in_sight.cursor.map(TheCardRing::OnAChoice),
-            TheRing::OnTheTest => Some(TheCardRing::OnAChoice(the_test)),
-            TheRing::OnTheWayOn => Some(TheCardRing::OnAnAction(0)),
-        };
-        match a_sheet(
-            &TheSheetSays {
-                eyebrow: &eyebrow,
-                title: &title,
-                introduction: &introduction,
-                actions: [&go_on, &go_back],
-            },
-            the_test + 1,
-            TheMarks {
-                chosen: in_sight.chosen,
-                ring,
-            },
-            fonts,
-            words,
-            size,
-            colours,
-            measure,
-        ) {
-            Ok((drawn, at)) => break (drawn, at, in_sight),
-            Err(_) if shown > 1 => shown -= 1,
-            Err(refused) => return Err(refused),
-        }
+    // **The keyboards in sight, and the test row after them**: a short screen
+    // draws fewer keyboards and keeps the test, because the test is how a
+    // person knows the keyboard they chose is the one they have.
+    let wanted = picker.window().len();
+    let keyboards_in = |rows: usize| picker.window_of(rows.saturating_sub(1));
+    let ring = |rows: usize| match picker.ring() {
+        TheRing::OnTheKeyboards => keyboards_in(rows).cursor.map(TheCardRing::OnAChoice),
+        TheRing::OnTheTest => Some(TheCardRing::OnAChoice(keyboards_in(rows).rows.len())),
+        TheRing::OnTheWayOn => Some(TheCardRing::OnAnAction(0)),
     };
+    let (mut drawn, at, rows) = a_sheet(
+        &TheSheetSays {
+            eyebrow: &eyebrow,
+            title: &title,
+            introduction: &introduction,
+            actions: [&go_on, &go_back],
+        },
+        (wanted + 1, 2),
+        |rows| TheMarks {
+            chosen: keyboards_in(rows).chosen,
+            ring: ring(rows),
+        },
+        fonts,
+        words,
+        size,
+        colours,
+        measure,
+    )?;
+
+    let in_sight = keyboards_in(rows);
     let (window, chosen) = (in_sight.rows, in_sight.chosen);
-    // **A press names the keyboard it is on**, by where it is in the whole
-    // list, because the window drawn depends on the room there was.
     drawn.controls = crate::a_press_on_a_setup_sheet::the_controls_of(&at, |which| {
         if which < window.len() {
             in_sight.first + which
@@ -87,7 +76,6 @@ pub(crate) fn drawn(
             TheKeyboardPicker::THE_TEST
         }
     });
-
     let language = first_start.the_language();
     let selected = say_it(say::SELECTED);
     for (which, card) in at.choices.iter().enumerate() {

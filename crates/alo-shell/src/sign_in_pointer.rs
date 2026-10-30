@@ -48,9 +48,10 @@ impl ThePointerOnTheSignInScreen {
     ///
     /// A button, a scroll and a pinch move nothing and are not errors: a
     /// trackpad at a sign-in screen produces all three and none of them is a
-    /// fault. Scroll and pinch do nothing at all here, deliberately — there is
-    /// nothing on this screen to scroll and nothing to zoom, and the owner's
-    /// direction asks for the four controls and the entry, not for gestures.
+    /// fault. Scroll and pinch do nothing to the pointer, deliberately: the
+    /// sign-in screen has nothing to scroll and nothing to zoom, and on a
+    /// first-start sheet the wheel over a list is the lane's to read
+    /// (`crate::a_wheel_over_a_sheet`), never a move of the arrow.
     ///
     /// # Errors
     /// [`InputError::InvalidPointer`] for a screen with no area, a

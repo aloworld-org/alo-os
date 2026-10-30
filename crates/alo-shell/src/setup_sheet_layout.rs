@@ -101,6 +101,46 @@ mod gaps {
     pub(super) const AFTER_THE_CONSEQUENCE: i32 = 16;
 }
 
+/// **How close the blocks of a sheet sit**: as the account sheets were
+/// captured, or tightened for a screen too short for that.
+///
+/// The tightening is the design's own first answer to a short screen,
+/// measured on `385:26174` (*12k · Arrival / 1280 × 720*) and written in
+/// `docs/design/the-first-start.md` under *Responsive · Height*: **the gaps
+/// between blocks close to 8 and the cards come to 8 apart**, and the heading
+/// comes down to 28 on 36 (`crate::sign_in_raster::Measure::tight_title_metrics`).
+/// The readable text never shrinks, and nor does a card.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum HowClose {
+    /// The capture's own gaps: 16 between blocks, cards 95 apart.
+    AsCaptured,
+    /// The design's short-screen gaps: 8 between blocks, cards 93 apart.
+    Tightened,
+}
+
+impl HowClose {
+    /// The gap between one block of the column and the next.
+    const fn between_blocks(self) -> i32 {
+        match self {
+            Self::AsCaptured => gaps::AFTER_THE_TITLE,
+            Self::Tightened => 8,
+        }
+    }
+
+    /// From the top of one choice to the top of the next.
+    const fn choices_apart(self) -> i32 {
+        match self {
+            Self::AsCaptured => THE_CHOICES_ARE_APART_BY,
+            Self::Tightened => THE_CHOICE_IS.1 + 8,
+        }
+    }
+}
+
+/// How far the footer keeps from *Accessibility* where a narrow screen brings
+/// them side by side: the 24 the design leaves between a control and the text
+/// beside it on the sign-in screen's row of actions.
+const THE_FOOTER_KEEPS_FROM_ACCESSIBILITY: i32 = 24;
+
 /// The eyebrow's own height.
 const THE_EYEBROW_IS_TALL: i32 = 16;
 
@@ -194,6 +234,18 @@ pub fn setup_sheet_laid_out(
     screen: Size<i32, Logical>,
     tall: TheTextIsTall,
 ) -> Option<SetupSheetLayout> {
+    setup_sheet_laid_out_as(screen, tall, HowClose::AsCaptured)
+}
+
+/// [`setup_sheet_laid_out`], with the blocks as close as `close` says.
+#[must_use]
+pub fn setup_sheet_laid_out_as(
+    screen: Size<i32, Logical>,
+    tall: TheTextIsTall,
+    close: HowClose,
+) -> Option<SetupSheetLayout> {
+    // The capture's gaps are all 16, so one figure stands for each of them.
+    let between = close.between_blocks();
     if screen.w < THE_SMALLEST_SHEET_IS.0 || screen.h < THE_SMALLEST_SHEET_IS.1 {
         return None;
     }
@@ -214,15 +266,13 @@ pub fn setup_sheet_laid_out(
 
     let eyebrow = line(top, THE_EYEBROW_IS_TALL);
     let title = line(
-        eyebrow.loc.y + eyebrow.size.h + gaps::AFTER_THE_EYEBROW,
+        eyebrow.loc.y + eyebrow.size.h + between.min(gaps::AFTER_THE_EYEBROW),
         tall.title,
     );
-    let introduction = line(
-        title.loc.y + title.size.h + gaps::AFTER_THE_TITLE,
-        tall.introduction,
-    );
+    let introduction = line(title.loc.y + title.size.h + between, tall.introduction);
 
-    let choices_begin = introduction.loc.y + introduction.size.h + gaps::AFTER_THE_INTRODUCTION;
+    let choices_begin =
+        introduction.loc.y + introduction.size.h + between.min(gaps::AFTER_THE_INTRODUCTION);
     let choices: Vec<_> = (0..tall.choices)
         .map(|which| {
             #[expect(
@@ -232,7 +282,7 @@ pub fn setup_sheet_laid_out(
             )]
             let which = which as i32;
             Rectangle::new(
-                Point::from((left, choices_begin + which * THE_CHOICES_ARE_APART_BY)),
+                Point::from((left, choices_begin + which * close.choices_apart())),
                 Size::from((column_wide, THE_CHOICE_IS.1)),
             )
         })
@@ -242,7 +292,7 @@ pub fn setup_sheet_laid_out(
         .map_or(choices_begin, |last| last.loc.y + last.size.h);
 
     let consequence = line(
-        choices_end + gaps::AFTER_THE_CHOICES,
+        choices_end + between.min(gaps::AFTER_THE_CHOICES),
         if tall.consequence > 0 {
             tall.consequence.max(THE_CONSEQUENCE_IS_TALL)
         } else {
@@ -252,9 +302,9 @@ pub fn setup_sheet_laid_out(
     // A sheet with nothing to say skips both the box and the gap after it,
     // which is what puts `185:10770`'s actions 16 below its choices.
     let actions_top = if tall.consequence > 0 {
-        consequence.loc.y + consequence.size.h + gaps::AFTER_THE_CONSEQUENCE
+        consequence.loc.y + consequence.size.h + between.min(gaps::AFTER_THE_CONSEQUENCE)
     } else {
-        choices_end + gaps::AFTER_THE_CHOICES
+        choices_end + between.min(gaps::AFTER_THE_CHOICES)
     };
     let actions: Vec<_> = (0..tall.actions)
         .map(|which| {
@@ -281,16 +331,16 @@ pub fn setup_sheet_laid_out(
         )),
         Size::from(THE_ACTION_IS),
     );
-    let footer_wide = FOOTER_IS
-        .0
-        .min(screen.w - 2 * FOOTER_SITS_IN_FROM_THE_RIGHT_BY)
-        .max(0);
+    // **Never under *Accessibility*.** On a narrow screen the footer's 640
+    // reached back over the control at the bottom left — at 640 wide it began
+    // at 64, inside a control that ends at 200 — so it starts no further left
+    // than 24 past that control's right edge, and is narrower for it.
+    let footer_right = screen.w - FOOTER_SITS_IN_FROM_THE_RIGHT_BY;
+    let footer_left = (footer_right - FOOTER_IS.0)
+        .max(accessibility.loc.x + accessibility.size.w + THE_FOOTER_KEEPS_FROM_ACCESSIBILITY);
     let footer = Rectangle::new(
-        Point::from((
-            screen.w - FOOTER_SITS_IN_FROM_THE_RIGHT_BY - footer_wide,
-            screen.h - FOOTER_SITS_ABOVE_THE_EDGE_BY,
-        )),
-        Size::from((footer_wide, FOOTER_IS.1)),
+        Point::from((footer_left, screen.h - FOOTER_SITS_ABOVE_THE_EDGE_BY)),
+        Size::from(((footer_right - footer_left).max(0), FOOTER_IS.1)),
     );
     let stage_wide = STAGE_IS.0.min(screen.w - 2 * margin).max(0);
     let stage = Rectangle::new(

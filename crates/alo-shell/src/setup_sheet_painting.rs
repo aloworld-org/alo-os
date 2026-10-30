@@ -11,8 +11,9 @@
 use cosmic_text::FontSystem;
 use smithay::utils::{Physical, Rectangle, Scale};
 
+use crate::a_sheet_that_fits::{ItFits, the_sheet_that_fits};
 use crate::painted_text::sentence;
-use crate::setup_sheet_in_pixels::{SetupSheetInPixels, laid_out, the_column_in_pixels};
+use crate::setup_sheet_in_pixels::{SetupSheetInPixels, the_column_in_pixels};
 use crate::setup_sheet_layout::TheTextIsTall;
 use crate::setup_sheet_surface::TheMarks;
 use crate::sign_in_raster::{Measure, SignInPicture};
@@ -31,9 +32,14 @@ pub(crate) struct TheSheetSays<'a> {
     pub(crate) actions: [&'a str; 2],
 }
 
-/// **A sheet with `rows` rows, its words lettered and its cards drawn** —
-/// and where each row's card is, in the picture's pixels, for the sheet to
-/// letter its rows into.
+/// **A sheet with up to `rows` rows, its words lettered and its cards drawn**
+/// — and where each row's card is, in the picture's pixels, for the sheet to
+/// letter its rows into, and how many rows there was room for.
+///
+/// **Fitted to the screen** (`crate::a_sheet_that_fits`): a screen too short
+/// for every row draws as many as fit and never fewer than `fewest`, and
+/// `marks` is asked for the marks once that number is known, because which
+/// row wears the ring depends on which rows are in sight.
 ///
 /// At the display scale `measure` was made for: laid out at the output's
 /// pixels through it and drawn at its size (`crate::setup_sheet_in_pixels`).
@@ -47,25 +53,17 @@ pub(crate) struct TheSheetSays<'a> {
 )]
 pub(crate) fn a_sheet(
     says: &TheSheetSays<'_>,
-    rows: usize,
-    marks: TheMarks,
+    (rows, fewest): (usize, usize),
+    marks: impl FnOnce(usize) -> TheMarks,
     fonts: &mut FontSystem,
     words: &alo_strings::Strings,
     size: (i32, i32),
     colours: TheColours,
     measure: &Measure,
-) -> Result<(SignInPicture, SetupSheetInPixels), RenderError> {
+) -> Result<(SignInPicture, SetupSheetInPixels, usize), RenderError> {
     let (width, height) = size;
     let display = measure.display();
     let column = the_column_in_pixels(width, display);
-    let shaped_title = sentence(
-        fonts,
-        says.title,
-        column,
-        measure.title_metrics(),
-        colours.ground,
-        colours.ink,
-    );
     let shaped_introduction = sentence(
         fonts,
         says.introduction,
@@ -74,17 +72,26 @@ pub(crate) fn a_sheet(
         colours.ground,
         colours.ink,
     );
-    let Some(laid) = laid_out(
+    let Some(ItFits {
+        laid,
+        title: shaped_title,
+        rows,
+    }) = the_sheet_that_fits(
+        fonts,
+        says.title,
+        colours,
+        measure,
         size,
         TheTextIsTall {
-            title: shaped_title.height,
+            title: 0,
             introduction: shaped_introduction.height,
             consequence: 0,
             choices: rows,
             actions: 2,
         },
-        display,
-    ) else {
+        fewest,
+    )
+    else {
         return Err(RenderError::SignInScene);
     };
     let mut drawn = SignInPicture {
@@ -93,7 +100,7 @@ pub(crate) fn a_sheet(
             &laid.logical,
             size,
             colours,
-            marks,
+            marks(rows),
             Scale::from(display.factor()),
         ),
         solids: Vec::new(),
@@ -101,8 +108,6 @@ pub(crate) fn a_sheet(
         controls: Vec::new(),
     };
     let at = laid.pixels;
-    // **What a press can land on is what was just drawn**, in its pixels.
-    drawn.controls = crate::a_press_on_a_setup_sheet::the_controls_of(&at, |which| which);
     let nothing = alo_strings::Filling::nothing();
     let stage = words.say(&say::STAGE.key(), &nothing);
     let footer = words.say(&say::FOOTER.key(), &nothing);
@@ -159,7 +164,7 @@ pub(crate) fn a_sheet(
         let y = button.loc.y + (button.size.h - shaped.height).max(0) / 2;
         drawn.inked.extend(shaped.placed(x, y, height));
     }
-    Ok((drawn, at))
+    Ok((drawn, at, rows))
 }
 
 /// **A row's two lines**, the first in the ink at 16/25 and the second in

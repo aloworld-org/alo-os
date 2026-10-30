@@ -727,6 +727,16 @@ impl Measure {
         self.greeting_metrics()
     }
 
+    /// The title on a first-start sheet too short for [`Self::title_metrics`]:
+    /// **28 on 36**, the heading the design draws on its short screen,
+    /// `385:26174` (`docs/design/the-first-start.md`, *Responsive · Height*).
+    /// The heading is one of the things the design lets come down; the text a
+    /// person reads under it is not.
+    pub(crate) fn tight_title_metrics(&self) -> Metrics {
+        let factor = self.percent as f32 / 100.0;
+        Metrics::new(28.0 * factor, 36.0 * factor)
+    }
+
     /// What the row of essential actions is lettered at: the smallest text
     /// this screen draws, and still a readable size at every scale.
     pub(crate) fn label_metrics(&self) -> Metrics {
@@ -819,3 +829,7 @@ mod the_first_start_at_one_hundred_tests;
 #[cfg(test)]
 #[path = "the_first_start_at_two_hundred_tests.rs"]
 mod the_first_start_at_two_hundred_tests;
+
+#[cfg(test)]
+#[path = "the_first_start_on_a_small_screen_tests.rs"]
+mod the_first_start_on_a_small_screen_tests;

@@ -35,8 +35,8 @@
 use cosmic_text::FontSystem;
 use smithay::utils::{Rectangle, Scale};
 
+use crate::a_sheet_that_fits::{ItFits, the_sheet_that_fits};
 use crate::painted_text::sentence;
-use crate::setup_sheet_in_pixels::{laid_out, the_column_in_pixels};
 use crate::setup_sheet_layout::TheTextIsTall;
 use crate::sign_in_raster::{Measure, SignInPicture};
 use crate::sign_in_surface::TheColours;
@@ -63,7 +63,7 @@ pub(crate) fn drawn(
     colours: TheColours,
     measure: &Measure,
 ) -> Result<SignInPicture, RenderError> {
-    let (width, height) = size;
+    let height = size.1;
     let nothing = alo_strings::Filling::nothing();
     let say_it = |word: alo_strings::Word| words.say(&word.key(), &nothing);
 
@@ -75,33 +75,34 @@ pub(crate) fn drawn(
 
     // **Shaped before it is placed**, because the heading wraps in a language
     // this code has never seen and its height is what decides where the rows
-    // begin.
-    let column = the_column_in_pixels(width, measure.display());
-    let shaped_title = sentence(
+    // begin — and **fitted to the screen**, so a short one shows fewer rows of
+    // the list rather than no sheet (`crate::a_sheet_that_fits`).
+    let Some(ItFits {
+        laid,
+        title: shaped_title,
+        rows: fit,
+    }) = the_sheet_that_fits(
         fonts,
         title.text(),
-        column,
-        measure.title_metrics(),
-        colours.ground,
-        colours.ink,
-    );
-
-    let rows = sheet.offered.window();
-    let Some(laid) = laid_out(
+        colours,
+        measure,
         size,
         TheTextIsTall {
-            title: shaped_title.height,
+            title: 0,
             // No introduction and no consequence on this sheet; a height of
             // zero is how the layout is told there is none.
             introduction: 0,
             consequence: 0,
-            choices: rows.len(),
+            choices: sheet.offered.window().len(),
             actions: 2,
         },
-        measure.display(),
-    ) else {
+        1,
+    )
+    else {
         return Err(RenderError::SignInScene);
     };
+    let in_sight = sheet.offered.window_of(fit);
+    let rows = in_sight.rows;
 
     let mut drawn = SignInPicture {
         size,
@@ -110,15 +111,14 @@ pub(crate) fn drawn(
             size,
             colours,
             crate::setup_sheet_surface::TheMarks {
-                chosen: sheet.offered.chosen_in_the_window(),
+                chosen: in_sight.chosen,
                 // **Both marks, from one state.** The ring says where a
                 // person is and the border says what they picked; drawing
                 // only the second is what left an arrow key with nothing to
                 // show for itself.
                 ring: match sheet.offered.ring() {
-                    crate::the_languages_offered::WhereTheRingIs::OnTheList => sheet
-                        .offered
-                        .cursor_in_the_window()
+                    crate::the_languages_offered::WhereTheRingIs::OnTheList => in_sight
+                        .cursor
                         .map(crate::setup_sheet_surface::TheRing::OnAChoice),
                     crate::the_languages_offered::WhereTheRingIs::OnTheWayOn => {
                         Some(crate::setup_sheet_surface::TheRing::OnAnAction(0))
@@ -133,13 +133,8 @@ pub(crate) fn drawn(
     };
     let at = laid.pixels;
     // **What a press can land on is what was just drawn**, in its pixels.
-    drawn.controls = crate::a_press_on_a_setup_sheet::the_controls_of(&at, |which| {
-        sheet
-            .offered
-            .window_of(crate::the_languages_offered::ROWS_AT_A_TIME)
-            .first
-            + which
-    });
+    drawn.controls =
+        crate::a_press_on_a_setup_sheet::the_controls_of(&at, |which| in_sight.first + which);
 
     crate::painted_text::line(
         &mut drawn.inked,
@@ -176,7 +171,7 @@ pub(crate) fn drawn(
         // **One answer decides the word and the border.** Both read
         // `chosen_in_the_window`, so a row cannot wear the border without the
         // word or the word without the border.
-        let chosen = sheet.offered.chosen_in_the_window() == Some(which);
+        let chosen = in_sight.chosen == Some(which);
         let first = if chosen {
             format!("{}  ·  {}", row.calls_itself, selected.text())
         } else {

@@ -23,7 +23,7 @@ use smithay::utils::{Logical, Physical, Rectangle, Scale, Size};
 
 use crate::display_scale::DisplayScale;
 use crate::setup_sheet_layout::{
-    SetupSheetLayout, THE_COLUMN_IS_WIDE, TheTextIsTall, setup_sheet_laid_out,
+    HowClose, SetupSheetLayout, THE_COLUMN_IS_WIDE, TheTextIsTall, setup_sheet_laid_out_as,
 };
 
 /// The rectangles a sheet letters into, in its own pixels.
@@ -76,13 +76,23 @@ pub(crate) fn laid_out(
     tall: TheTextIsTall,
     display: DisplayScale,
 ) -> Option<TheSheetIsLaidOut> {
+    laid_out_as(pixels, tall, display, HowClose::AsCaptured)
+}
+
+/// [`laid_out`], with the blocks as close as `close` says.
+pub(crate) fn laid_out_as(
+    pixels: (i32, i32),
+    tall: TheTextIsTall,
+    display: DisplayScale,
+    close: HowClose,
+) -> Option<TheSheetIsLaidOut> {
     let logical = |pixels: i32| i32::try_from(display.logical(pixels)).unwrap_or(i32::MAX);
     let up = |pixels: i32| -> i32 {
         let per_cent = i64::from(display.per_cent());
         let scaled = (i64::from(pixels.max(0)) * 100 + per_cent - 1) / per_cent;
         i32::try_from(scaled).unwrap_or(i32::MAX)
     };
-    let at = setup_sheet_laid_out(
+    let at = setup_sheet_laid_out_as(
         Size::<i32, Logical>::from((logical(pixels.0), logical(pixels.1))),
         TheTextIsTall {
             title: up(tall.title),
@@ -91,6 +101,7 @@ pub(crate) fn laid_out(
             choices: tall.choices,
             actions: tall.actions,
         },
+        close,
     )?;
     let scale = Scale::from(display.factor());
     let px = |logical: Rectangle<i32, Logical>| -> Rectangle<i32, Physical> {
