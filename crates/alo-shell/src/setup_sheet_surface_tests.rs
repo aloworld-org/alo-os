@@ -28,6 +28,7 @@ fn drawn() -> (
     .expect("the reference sheet lays out");
     let washed = setup_sheet_surface(
         &at,
+        (at.sheet.size.w, at.sheet.size.h),
         designed(),
         crate::setup_sheet_surface::TheMarks::default(),
         Scale::from(1.0),
@@ -150,11 +151,11 @@ fn a_sheet_with_no_area_draws_nothing() {
         },
     )
     .expect("lays out");
-    let mut nothing = at_.clone();
-    nothing.sheet = smithay::utils::Rectangle::from_size(Size::from((0, 0)));
+    // **An output of no pixels**, which is what the area is measured from.
     assert!(
         setup_sheet_surface(
-            &nothing,
+            &at_,
+            (0, 0),
             designed(),
             crate::setup_sheet_surface::TheMarks::default(),
             Scale::from(1.0)
@@ -165,6 +166,7 @@ fn a_sheet_with_no_area_draws_nothing() {
     assert!(
         setup_sheet_surface(
             &at_,
+            (1440, 960),
             designed(),
             crate::setup_sheet_surface::TheMarks::default(),
             Scale::from(1.0)
@@ -200,6 +202,7 @@ mod a_chosen_row_is_two_pixels_of_ink {
         .expect("the reference sheet lays out");
         let washed = setup_sheet_surface(
             &at,
+            (at.sheet.size.w, at.sheet.size.h),
             designed(),
             crate::setup_sheet_surface::TheMarks { chosen, ring: None },
             Scale::from(1.0),

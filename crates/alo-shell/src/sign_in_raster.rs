@@ -29,8 +29,10 @@
 //! screen is **laid out at half its pixels and drawn at twice the size**: the
 //! layout, the rounded shapes, every measure and every line of type. At 100
 //! each conversion is the identity, so the picture is the one it was before.
-//! The first-start sheets and the lock screen's embedded form are not made to
-//! follow it yet, and say so where they are drawn.
+//! The first-start sheets follow it the same way (`crate::setup_sheet_in_pixels`),
+//! held to the largest scale at which a sheet still fits
+//! (`crate::a_scale_held_to_what_draws`), and so does the lock screen's
+//! embedded form, whose every figure already went through [`Measure`].
 
 use alo_appearance::{Scheme, TextScale};
 use cosmic_text::{Buffer, FontSystem, Metrics, Shaping, Wrap};
@@ -151,12 +153,6 @@ pub(crate) fn picture(
     display: DisplayScale,
 ) -> Result<SignInPicture, RenderError> {
     let measure = Measure::at(look.scale, display);
-    // **The first-start sheets are not made to follow the screen's scale
-    // yet.** Each lays its column out in pixels from logical figures, so
-    // doubled type in an undoubled column would overflow every card. They keep
-    // the person's text size alone until they are converted the way the
-    // sign-in screen below is.
-    let sheet_measure = Measure::of(look.scale);
     let (width, height) = size;
     if width > LARGEST_SIDE || height > LARGEST_SIDE {
         return Err(RenderError::SignInScene);
@@ -193,70 +189,83 @@ pub(crate) fn picture(
             field,
             said,
         } => {
-            return crate::first_start_sheet::drawn(
-                &crate::first_start_sheet::FirstStartSheet {
-                    on_the_pin: matches!(field, SignInField::Password) || password_typed,
-                    typed: name,
-                    password_typed,
-                    said,
-                },
-                fonts,
-                words,
-                (width, height),
-                crate::sign_in_surface::TheColours::of(look.contrast, look.scheme),
-                &sheet_measure,
-            );
+            // **At the screen's own scale, or the largest that still holds the
+            // sheet** — see `crate::a_scale_held_to_what_draws`.
+            let sheet = crate::first_start_sheet::FirstStartSheet {
+                on_the_pin: matches!(field, SignInField::Password) || password_typed,
+                typed: name,
+                password_typed,
+                said,
+            };
+            let colours = crate::sign_in_surface::TheColours::of(look.contrast, look.scheme);
+            return crate::a_scale_held_to_what_draws::at_the_largest_that_draws(display, |at| {
+                crate::first_start_sheet::drawn(
+                    &sheet,
+                    fonts,
+                    words,
+                    (width, height),
+                    colours,
+                    &Measure::at(look.scale, at),
+                )
+            });
         }
         // **The first-start sheets**, which a fresh machine shows before it
         // asks for a name — so that a person has their own language, region
         // and keyboard before they type a password through it.
         SignInShows::FirstStart(first_start) => {
             let colours = crate::sign_in_surface::TheColours::of(look.contrast, look.scheme);
-            return match first_start.sheet() {
-                crate::the_first_start::Sheet::Overview => crate::overview_sheet::drawn(
-                    first_start,
-                    fonts,
-                    words,
-                    (width, height),
-                    colours,
-                    &sheet_measure,
-                ),
-                crate::the_first_start::Sheet::Language(_) => crate::language_sheet::drawn(
-                    &crate::language_sheet::LanguageSheet {
-                        offered: first_start.languages(),
-                    },
-                    fonts,
-                    words,
-                    (width, height),
-                    colours,
-                    &sheet_measure,
-                ),
-                crate::the_first_start::Sheet::Region(offered) => crate::region_sheet::drawn(
-                    offered,
-                    fonts,
-                    words,
-                    (width, height),
-                    colours,
-                    &sheet_measure,
-                ),
-                crate::the_first_start::Sheet::Zone(picker) => crate::zone_sheet::drawn(
-                    picker,
-                    fonts,
-                    words,
-                    (width, height),
-                    colours,
-                    &sheet_measure,
-                ),
-                crate::the_first_start::Sheet::Keyboard(picker) => crate::keyboard_sheet::drawn(
-                    first_start,
-                    picker,
-                    fonts,
-                    words,
-                    (width, height),
-                    colours,
-                    &sheet_measure,
-                ),
-            };
+            // **At the screen's own scale, or the largest that still holds the
+            // sheet** — see `crate::a_scale_held_to_what_draws`.
+            return crate::a_scale_held_to_what_draws::at_the_largest_that_draws(display, |at| {
+                let sheet_measure = Measure::at(look.scale, at);
+                match first_start.sheet() {
+                    crate::the_first_start::Sheet::Overview => crate::overview_sheet::drawn(
+                        first_start,
+                        fonts,
+                        words,
+                        (width, height),
+                        colours,
+                        &sheet_measure,
+                    ),
+                    crate::the_first_start::Sheet::Language(_) => crate::language_sheet::drawn(
+                        &crate::language_sheet::LanguageSheet {
+                            offered: first_start.languages(),
+                        },
+                        fonts,
+                        words,
+                        (width, height),
+                        colours,
+                        &sheet_measure,
+                    ),
+                    crate::the_first_start::Sheet::Region(offered) => crate::region_sheet::drawn(
+                        offered,
+                        fonts,
+                        words,
+                        (width, height),
+                        colours,
+                        &sheet_measure,
+                    ),
+                    crate::the_first_start::Sheet::Zone(picker) => crate::zone_sheet::drawn(
+                        picker,
+                        fonts,
+                        words,
+                        (width, height),
+                        colours,
+                        &sheet_measure,
+                    ),
+                    crate::the_first_start::Sheet::Keyboard(picker) => {
+                        crate::keyboard_sheet::drawn(
+                            first_start,
+                            picker,
+                            fonts,
+                            words,
+                            (width, height),
+                            colours,
+                            &sheet_measure,
+                        )
+                    }
+                }
+            });
         }
         SignInShows::Sentence(said) => {
             let text = sentence(
@@ -631,8 +640,11 @@ pub(crate) fn picture(
 
 /// Measures scaled by the person's text scale, never below one pixel.
 pub(crate) struct Measure {
-    /// The scale, in percent.
+    /// The scale, in percent: the person's text size times the display's.
     percent: i32,
+    /// The display's own scale, for a surface that lays itself out in logical
+    /// pixels and converts — the first-start sheets.
+    display: DisplayScale,
 }
 
 impl Measure {
@@ -640,6 +652,7 @@ impl Measure {
     pub(crate) fn of(scale: TextScale) -> Self {
         Self {
             percent: i32::from(scale.as_percent()),
+            display: DisplayScale::ONE,
         }
     }
 
@@ -649,7 +662,13 @@ impl Measure {
     pub(crate) fn at(scale: TextScale, display: DisplayScale) -> Self {
         Self {
             percent: i32::from(scale.as_percent()) * i32::from(display.per_cent()) / 100,
+            display,
         }
+    }
+
+    /// The display's own scale these measures were made for.
+    pub(crate) const fn display(&self) -> DisplayScale {
+        self.display
     }
 
     /// `at_one` pixels at the ordinary scale, scaled.
@@ -766,3 +785,11 @@ fn typed_name(
 #[cfg(test)]
 #[path = "sign_in_raster_tests.rs"]
 mod tests;
+
+#[cfg(test)]
+#[path = "the_first_start_at_one_hundred_tests.rs"]
+mod the_first_start_at_one_hundred_tests;
+
+#[cfg(test)]
+#[path = "the_first_start_at_two_hundred_tests.rs"]
+mod the_first_start_at_two_hundred_tests;

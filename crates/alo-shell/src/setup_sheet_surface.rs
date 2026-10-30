@@ -65,7 +65,14 @@ const THE_CORNER_IS: i32 = 14;
 /// How thick a card's hairline is.
 const THE_HAIRLINE_IS: f32 = 1.0;
 
-/// Rasterise a sheet's shapes for this layout, at this scale.
+/// Rasterise a sheet's shapes for this layout, at this scale, onto an output
+/// of `pixels`.
+///
+/// **The output's own pixels, not the logical sheet converted back.** At a
+/// fractional scale a sheet laid out at its pixels divided by the scale comes
+/// back a pixel or two short when multiplied again, and that strip at the
+/// right or bottom edge would be painted by nothing — the rule
+/// `crate::sign_in_surface` keeps for the same reason.
 ///
 /// `marks` carries what is chosen and where the focus ring is. Nothing picked
 /// is the state every setup sheet opens in — which is the state every setup sheet opens in
@@ -77,11 +84,12 @@ const THE_HAIRLINE_IS: f32 = 1.0;
 #[must_use]
 pub(crate) fn setup_sheet_surface(
     at: &SetupSheetLayout,
+    pixels: (i32, i32),
     colours: TheColours,
     marks: TheMarks,
     scale: Scale<f64>,
 ) -> Option<Washed> {
-    let area: Rectangle<i32, Physical> = at.sheet.to_physical_precise_round(scale);
+    let area: Rectangle<i32, Physical> = Rectangle::from_size(pixels.into());
     if area.size.w <= 0 || area.size.h <= 0 {
         return None;
     }

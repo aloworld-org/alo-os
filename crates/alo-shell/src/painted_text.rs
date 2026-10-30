@@ -482,7 +482,7 @@ pub(crate) fn line(
     height: i32,
     fonts: &mut FontSystem,
     text: &str,
-    box_of: Rectangle<i32, smithay::utils::Logical>,
+    box_of: Rectangle<i32, smithay::utils::Physical>,
     metrics: Metrics,
     ground: [u8; 3],
     ink: [u8; 3],

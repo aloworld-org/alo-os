@@ -1,4 +1,5 @@
 //! The lock policy's five permitted facts, rasterized with no access to a desktop.
+use crate::display_scale::DisplayScale;
 use crate::{LockBackground, RenderError, SignInLook, SignInShows, WindowControlLabels};
 use alo_formats::{Regionally, Timezone};
 use alo_locking::LockScreen;
@@ -27,12 +28,19 @@ pub(crate) struct LockPicture {
 }
 
 /// Draw the policy view and optionally the existing credential-entry form.
+///
+/// `display` is the scale the PIN form is drawn at, held to the largest at
+/// which it still fits the middle third (`crate::a_scale_held_to_what_draws`).
+/// At [`DisplayScale::ONE`] the form is the pixels it always was. The clock,
+/// the sentence under it, the battery and the egress mark keep the person's
+/// text size alone.
 pub(crate) fn picture(
     screen: &LockScreen,
     background: &LockBackground,
     fields: Option<SignInShows<'_>>,
     labels: &mut WindowControlLabels,
     look: &LockLook<'_>,
+    display: DisplayScale,
 ) -> Result<LockPicture, RenderError> {
     let size = background.size;
     if size.0 < 320 || size.1 < 480 || &background.chosen != screen.image() {
@@ -43,25 +51,26 @@ pub(crate) fn picture(
         // Reserve the top and bottom thirds for lock facts. Reuse the complete
         // sign-in raster in the middle third, refusing any clipped refusal text.
         let height = size.1 / 3;
-        let mut form = crate::sign_in_raster::picture(
-            fields,
-            labels,
-            look.strings,
-            (size.0, height),
-            look.appearance,
-            crate::sign_in_raster::WhoseScreen::InsideAnother,
-            // **At one**: the lock screen's embedded form is not made to
-            // follow its display yet, and is drawn only in the development
-            // backend's window (`crate::nested_lock`).
-            crate::display_scale::DisplayScale::ONE,
-        )?;
-        if form
-            .inked
-            .iter()
-            .any(|ink| ink.area.loc.y + ink.area.size.h >= height)
-        {
-            return Err(RenderError::LockScene);
-        }
+        let mut form =
+            crate::a_scale_held_to_what_draws::at_the_largest_that_draws(display, |at| {
+                let form = crate::sign_in_raster::picture(
+                    fields,
+                    labels,
+                    look.strings,
+                    (size.0, height),
+                    look.appearance,
+                    crate::sign_in_raster::WhoseScreen::InsideAnother,
+                    at,
+                )?;
+                if form
+                    .inked
+                    .iter()
+                    .any(|ink| ink.area.loc.y + ink.area.size.h >= height)
+                {
+                    return Err(RenderError::LockScene);
+                }
+                Ok(form)
+            })?;
         for solid in &mut form.solids {
             solid.area.loc.y += height;
         }
