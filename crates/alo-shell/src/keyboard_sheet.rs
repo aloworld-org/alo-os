@@ -38,29 +38,46 @@ pub(crate) fn drawn(
         say_it(say::KEYBOARD_INTRODUCTION),
     );
     let (go_on, go_back) = (say_it(say::USE_THIS_KEYBOARD), say_it(say::BACK));
-    let window = picker.window();
-    let the_test = window.len();
-    let ring = match picker.ring() {
-        TheRing::OnTheKeyboards => picker.cursor_in_the_window().map(TheCardRing::OnAChoice),
-        TheRing::OnTheTest => Some(TheCardRing::OnAChoice(the_test)),
-        TheRing::OnTheWayOn => Some(TheCardRing::OnAnAction(0)),
+    // **As many keyboards as the screen has room for, and never none.** Three
+    // keyboards, the test row, a heading and an introduction need 730 logical
+    // pixels down and a 1280 × 800 screen has 716 above *Accessibility*, so on
+    // main this sheet was refused there — and a refused frame ended the
+    // sign-in screen with nobody signed in. A shorter screen draws fewer
+    // keyboards at a time; the window follows the cursor, so the arrows still
+    // reach every one, and the test row is always drawn.
+    let mut shown = picker.window().len();
+    let (mut drawn, at, in_sight) = loop {
+        let in_sight = picker.window_of(shown);
+        let the_test = in_sight.rows.len();
+        let ring = match picker.ring() {
+            TheRing::OnTheKeyboards => in_sight.cursor.map(TheCardRing::OnAChoice),
+            TheRing::OnTheTest => Some(TheCardRing::OnAChoice(the_test)),
+            TheRing::OnTheWayOn => Some(TheCardRing::OnAnAction(0)),
+        };
+        match a_sheet(
+            &TheSheetSays {
+                eyebrow: &eyebrow,
+                title: &title,
+                introduction: &introduction,
+                actions: [&go_on, &go_back],
+            },
+            the_test + 1,
+            TheMarks {
+                chosen: in_sight.chosen,
+                ring,
+            },
+            fonts,
+            words,
+            size,
+            colours,
+            measure,
+        ) {
+            Ok((drawn, at)) => break (drawn, at, in_sight),
+            Err(_) if shown > 1 => shown -= 1,
+            Err(refused) => return Err(refused),
+        }
     };
-    let chosen = picker.chosen_in_the_window();
-    let (mut drawn, at) = a_sheet(
-        &TheSheetSays {
-            eyebrow: &eyebrow,
-            title: &title,
-            introduction: &introduction,
-            actions: [&go_on, &go_back],
-        },
-        the_test + 1,
-        TheMarks { chosen, ring },
-        fonts,
-        words,
-        size,
-        colours,
-        measure,
-    )?;
+    let (window, chosen) = (in_sight.rows, in_sight.chosen);
 
     let language = first_start.the_language();
     let selected = say_it(say::SELECTED);
