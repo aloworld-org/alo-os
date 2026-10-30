@@ -81,6 +81,26 @@ impl Server {
     /// pressing *add a provider* means. There is no second form.
     pub fn a_provider_is_added(&mut self) {
         self.filling_in = Some(AProviderBeingAddded::empty());
+        // **And this machine's own addresses are asked for once, now**, so the
+        // caution about a service on this machine covers its network address
+        // too (owner's decision, 2026-10-30; ADR 0021). Read by the desktop on
+        // the next frame, because the shell shows and never measures — and
+        // read at the moment the form is filled in, never watched.
+        self.the_form_asks_where_this_machine_is = true;
+    }
+
+    /// Whether a form is waiting to be told this machine's own network
+    /// addresses — answered once, then not again until another form opens.
+    pub(crate) fn the_form_asks_where_this_machine_is(&mut self) -> bool {
+        std::mem::take(&mut self.the_form_asks_where_this_machine_is) && self.filling_in.is_some()
+    }
+
+    /// **This machine's own network addresses, as the desktop read them**, for
+    /// the form being filled in. Nothing when no form is open.
+    pub fn this_machine_is_at(&mut self, addresses: Vec<std::net::IpAddr>) {
+        if let Some(form) = self.filling_in.as_mut() {
+            form.this_machine_is_also_at(addresses);
+        }
     }
 
     /// The form a person is filling in, if they are.

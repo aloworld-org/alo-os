@@ -379,6 +379,22 @@ pub trait TheDesktop {
     /// nothing to rewrite.
     fn the_formats_are_now(&mut self, _formats: &crate::TheirFormats) {}
 
+    /// **This machine's own network addresses, read now** — asked once, each
+    /// time a person opens the form that adds a provider, so Settings can warn
+    /// them about a service at one of them as it does about loopback (owner's
+    /// decision, 2026-10-30; ADR 0021).
+    ///
+    /// **The shell asks and does not read**, for [`Self::the_layout_they_left`]'s
+    /// reason: asking the kernel is a measurement. Asked at the moment and
+    /// never watched, so nothing reads the network while nobody is filling a
+    /// form in.
+    ///
+    /// **Empty by default**, and empty from a desktop that could not read them:
+    /// then only loopback carries the caution, which is what it did before.
+    fn this_machines_own_addresses(&mut self) -> Vec<std::net::IpAddr> {
+        Vec::new()
+    }
+
     /// The canvas layout this person left, asked for once as the session
     /// starts.
     ///
@@ -1112,6 +1128,12 @@ impl LoopInput for Desk<'_> {
         // choice is already written the new way.
         if let Some(formats) = server.the_formats_to_tell() {
             self.desktop.the_formats_are_now(&formats);
+        }
+        // **A provider form that just opened learns where this machine is**,
+        // once, from the desktop that may read it.
+        if server.the_form_asks_where_this_machine_is() {
+            let addresses = self.desktop.this_machines_own_addresses();
+            server.this_machine_is_at(addresses);
         }
         // Asked before the frame is made, never after: a frame drawn from
         // readings taken after it would show a person the moment before.

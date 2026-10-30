@@ -277,3 +277,20 @@ fn the_caution_is_a_sentence_and_not_its_key() {
         "{said:?}"
     );
 }
+
+#[test]
+fn a_service_at_this_machines_own_network_address_is_cautioned_and_another_is_not() {
+    // Owner's decision, 2026-10-30: the caution covers the addresses the
+    // machine holds on its networks, as the desktop read them.
+    let on_this_machine = |address: &str| {
+        let mut form = at(address);
+        form.this_machine_is_also_at(vec![std::net::IpAddr::from([192, 168, 1, 20])]);
+        form
+    };
+    assert!(is_cautioned(&on_this_machine("http://192.168.1.20:8000")));
+    assert!(!is_cautioned(&on_this_machine("http://192.168.1.21:8000")));
+    assert!(
+        !is_cautioned(&at("http://192.168.1.20:8000")),
+        "a form told nothing about this machine's network takes it for somewhere else"
+    );
+}

@@ -73,6 +73,30 @@ pub fn is_on_this_machine(endpoint: &str) -> bool {
         .is_some_and(is_this_machine)
 }
 
+/// Whether this endpoint's host is written as one of `addresses`.
+///
+/// **For a caution, never for a promise.** The owner decided on 2026-10-30
+/// that Settings warns a person adding a provider at one of this machine's own
+/// network addresses — `192.168.1.20`, say — as it does for loopback (ADR
+/// 0021). Such an address is not *this machine* to [`is_on_this_machine`],
+/// and stays so: the daemon still treats it as somewhere else, shows it on
+/// the indicator and refuses a provider at it over plain `http://`, because an
+/// address a machine had when the provider was saved is not one it is sure to
+/// have when the question is asked. What this answers is only whether the
+/// person typed an address the caller has just read off this machine.
+///
+/// Taken apart by the same rules as every other question here, so
+/// `http://192.168.1.20@attacker.example` is `attacker.example` and is not
+/// one of them. Only an address written as an IP literal can match: a name is
+/// not resolved here, which is this file's rule.
+#[must_use]
+pub fn its_host_is_one_of(endpoint: &str, addresses: &[IpAddr]) -> bool {
+    authority_of(endpoint)
+        .and_then(host_of)
+        .and_then(|host| host.parse::<IpAddr>().ok())
+        .is_some_and(|host| addresses.contains(&host))
+}
+
 /// The host and port a request to this endpoint would connect to.
 ///
 /// **Where a name is turned into something to resolve**, and it is here because
@@ -156,6 +180,41 @@ fn is_this_machine(host: &str) -> bool {
 
 #[cfg(test)]
 mod tests {
+
+    /// **An address written as one of the machine's own is one of them**, in
+    /// either family, with or without a port or a path.
+    #[test]
+    fn an_address_written_as_one_of_these_is_one_of_them() {
+        let addresses: [IpAddr; 2] = [
+            IpAddr::from([192, 168, 1, 20]),
+            IpAddr::from([0xfd00, 0, 0, 0, 0, 0, 0, 0x20]),
+        ];
+        for endpoint in [
+            "http://192.168.1.20:8000/v1",
+            "https://192.168.1.20",
+            "http://[fd00::20]:8080",
+        ] {
+            assert!(its_host_is_one_of(endpoint, &addresses), "{endpoint}");
+        }
+    }
+
+    /// **And everything else is not**: another address, a name, a lookalike,
+    /// and a credential put in front of somewhere else.
+    #[test]
+    fn an_address_not_written_as_one_of_these_is_not() {
+        let addresses = [IpAddr::from([192, 168, 1, 20])];
+        for endpoint in [
+            "http://192.168.1.21:8000",
+            "http://192.168.1.20.attacker.example",
+            "http://192.168.1.20@attacker.example/",
+            "http://my-machine.local:8000",
+            "ftp://192.168.1.20",
+            "",
+        ] {
+            assert!(!its_host_is_one_of(endpoint, &addresses), "{endpoint}");
+        }
+        assert!(!its_host_is_one_of("http://192.168.1.20", &[]));
+    }
 
     /// **What a request would connect to**, which is the first half of ADR
     /// 0020's separation: a name to look up and a port to reach it on, decided
