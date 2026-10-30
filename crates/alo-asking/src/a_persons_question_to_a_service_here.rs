@@ -1,7 +1,7 @@
 //! A question the person asked themselves, put to a service at this machine's
 //! own address.
 //!
-//! [`crate::a_question_nobody_is_showing`] is the person's road to a hosted
+//! [`crate::a_question_nobody_is_showing`](mod@crate::a_question_nobody_is_showing) is the person's road to a hosted
 //! provider; this is the same road to the other place a person can name in
 //! Settings — **an OpenAI-compatible service they run on this machine**, at a
 //! loopback address. `alo_choosing` accepts one (*a service on this machine is
