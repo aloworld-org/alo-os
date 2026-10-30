@@ -1,0 +1,27 @@
+[package]
+name = "alo-interfaces"
+version = "0.0.1"
+description = "Which network interfaces this machine has and the addresses they hold, read from the kernel's routing socket."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+# **One reader of the kernel's interfaces, for everything that needs one.** The
+# agent service joins discovery on every network the machine is on, and the
+# desktop tells Settings which addresses are this machine's own (ADR 0021,
+# owner's note of 2026-10-30). Both read the same bytes the same way, so the
+# reader is a crate of its own and neither reaches into the other: the desktop
+# used to depend on the whole agent service's library for this one module.
+#
+# The routing socket is Linux's, so on any other host this crate compiles to
+# nothing, as `alo-agentd` did with this code inside it.
+[target.'cfg(target_os = "linux")'.dependencies]
+# The netlink socket. `std` has no spelling for one, and `CLAUDE.md` forbids
+# `unsafe`, so it is the crate the agent service already uses for it. Named in
+# `route_socket.rs` and nowhere else.
+rustix = { workspace = true }
+thiserror = { workspace = true }
+
+[lints]
+workspace = true

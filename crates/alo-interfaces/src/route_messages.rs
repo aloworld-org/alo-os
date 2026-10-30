@@ -5,10 +5,12 @@
 //! no safe spelling. The kernel's routing socket answers the same question with
 //! plain bytes: one request for every link — its index, name and `IFF_*` flags —
 //! and one for every address, IPv4 and IPv6, with the index of the link it is
-//! on. This file writes the two requests and reads the answers; `crate::unix` is the only
-//! file that puts them on a socket, and `crate::networks` decides what is
-//! joined. Reading is a function of bytes, so a message the kernel never sent in
-//! a test is still a test.
+//! on. This file writes the two requests and reads the answers;
+//! `crate::route_socket` is the only file that puts them on a socket, and what
+//! is done with the answer — which networks `alo-agentd` joins, which addresses
+//! `alo-desktop` tells Settings are this machine's — is each caller's. Reading
+//! is a function of bytes, so a message the kernel never sent in a test is
+//! still a test.
 //!
 //! # What is read, and what is refused
 //!
@@ -31,18 +33,18 @@
 //!
 //! # And the kernel saying an interface went
 //!
-//! What the kernel says on the socket `crate::unix` subscribes to link changes
-//! is read for one meaning: **`RTM_DELLINK`, an interface deleted**. A dump
-//! taken afterwards cannot say it — an interface deleted and laid again at the
-//! same number between two dumps is, in both, the same number under the same
-//! name — and that is exactly the interface whose multicast memberships went
-//! with it (`crate::interfaces_that_went`). Only a deletion in the unspecified
+//! What the kernel says on the socket `alo-agentd` subscribes to link changes
+//! with (its `unix.rs`) is read for one meaning: **`RTM_DELLINK`, an interface
+//! deleted**. A dump taken afterwards cannot say it — an interface deleted and
+//! laid again at the same number between two dumps is, in both, the same
+//! number under the same name — and that is exactly the interface whose
+//! multicast memberships went with it (that crate's `interfaces_that_went.rs`). Only a deletion in the unspecified
 //! family is one: a bridge says `RTM_DELLINK` in `AF_BRIDGE` when a port merely
 //! leaves it, and that interface is still there.
 
 use std::net::{Ipv4Addr, Ipv6Addr};
 
-use crate::networks::Interface;
+use crate::interface::Interface;
 
 /// `RTM_NEWLINK`: one link, in a dump or a notification.
 const RTM_NEWLINK: u16 = 16;
@@ -246,7 +248,7 @@ pub fn interfaces_in(links: &[u8], addresses: &[u8]) -> Result<Vec<Interface>, N
 /// be read.
 pub fn reported_by_the_kernel() -> Result<Vec<Interface>, NotReported> {
     let dumped = |request: &[u8]| {
-        crate::unix::a_route_dump(request, |datagram| ends_a_dump(datagram).unwrap_or(true))
+        crate::route_socket::a_route_dump(request, |datagram| ends_a_dump(datagram).unwrap_or(true))
             .map_err(|why| NotReported::TheSocket(why.to_string()))
     };
     interfaces_in(&dumped(&every_link())?, &dumped(&every_address())?)
@@ -340,7 +342,7 @@ const fn aligned(length: usize) -> usize {
 )]
 mod tests {
     use super::*;
-    use crate::networks::{IFF_LOOPBACK, IFF_MULTICAST, IFF_RUNNING, IFF_UP};
+    use crate::interface::{IFF_LOOPBACK, IFF_MULTICAST, IFF_RUNNING, IFF_UP};
 
     /// One message of `kind` carrying `body`, padded.
     fn a_message(kind: u16, body: &[u8]) -> Vec<u8> {

@@ -14,7 +14,7 @@
 //!
 //! [`discovery_networks`] takes a list of [`Interface`]s and answers with the
 //! [`Network`]s to join, so each rule is a test with no kernel in it. What the
-//! kernel actually reports is `crate::route_messages`'s, and joining is
+//! kernel actually reports is `alo_interfaces::route_messages`'s, and joining is
 //! `crate::joining`'s; neither decides anything this file decides.
 //!
 //! - **Up** is the interface administratively up *and* running — `IFF_UP` and
@@ -59,33 +59,12 @@
 //! trusted-network switch by another name. What the machine is plugged into is
 //! the whole of the input.
 
-use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
+use std::net::{IpAddr, Ipv6Addr};
 
-/// `IFF_UP`: the interface is administratively up.
-pub const IFF_UP: u32 = 0x1;
-/// `IFF_LOOPBACK`: the interface is loopback.
-pub const IFF_LOOPBACK: u32 = 0x8;
-/// `IFF_RUNNING`: the interface is operationally up.
-pub const IFF_RUNNING: u32 = 0x40;
-/// `IFF_MULTICAST`: the interface carries multicast.
-pub const IFF_MULTICAST: u32 = 0x1000;
-
-/// One interface, as the kernel reports it.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Interface {
-    /// The kernel's index for it, which is how an address names its interface.
-    pub index: u32,
-    /// Its name, for a line in the service log.
-    pub name: String,
-    /// The kernel's `IFF_*` flags for it.
-    pub flags: u32,
-    /// Its IPv4 addresses, in the order the kernel listed them.
-    pub addresses: Vec<Ipv4Addr>,
-    /// Its IPv6 addresses that can be used now — not ones the kernel is still
-    /// checking nobody else holds, nor ones that check failed — in the order
-    /// the kernel listed them.
-    pub ipv6: Vec<Ipv6Addr>,
-}
+/// What one interface is, and the kernel's flags for it, are
+/// `alo-interfaces`' — the crate that reads them — and are named here so every
+/// path in this service reads as it did before that crate existed.
+pub use alo_interfaces::interface::{IFF_LOOPBACK, IFF_MULTICAST, IFF_RUNNING, IFF_UP, Interface};
 
 /// One network discovery is joined and asked on: an interface, and the address
 /// it is joined and asked from — an IPv4 address, or an IPv6 link-local one, so
