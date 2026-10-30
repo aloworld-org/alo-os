@@ -32,6 +32,7 @@ use alo_appearance::{Scheme, TextScale};
 use alo_strings::{Direction, Strings};
 use smithay::utils::{Physical, Rectangle};
 
+use crate::display_scale::DisplayScale;
 use crate::painted::{Inked, Solid};
 use crate::painted_text::Shaped;
 use crate::record_room::{Room, framed, rule};
@@ -134,12 +135,18 @@ impl Block {
             Self::Line(_, parts) => {
                 parts.iter().map(|shaped| shaped.height).sum::<i32>() + 2 * room.gap
             }
-            Self::Rule => 1 + 2 * room.gap,
+            Self::Rule => room.hairline + 2 * room.gap,
         }
     }
 }
 
-/// Lay Settings out for an output of `size` and rasterise it.
+/// Lay Settings out for an output of `size` drawn at `display`, and
+/// rasterise it.
+///
+/// Every measure goes through the person's text size and the display's scale
+/// together — the record window's room, which Settings shares — so on a 200
+/// per cent screen Settings is the same size to the eye as the Dock beside it.
+/// The rules between sections are one logical pixel. At 100 nothing changes.
 ///
 /// # Errors
 /// [`RenderError::SettingsScene`] when Settings is open and the output is too
@@ -158,6 +165,7 @@ pub(crate) fn picture(
     // `crate::a_provider_is_added_in_settings` for why the form being open is
     // itself the mode.
     filling_in: Option<AFormOnScreen<'_>>,
+    display: DisplayScale,
 ) -> Result<SettingsPicture, RenderError> {
     let mut drawn = SettingsPicture::empty(size);
     let Some(open) = window.open() else {
@@ -171,9 +179,7 @@ pub(crate) fn picture(
             scale: look.scale,
             reading: look.reading,
         },
-        // **At one**: Settings borrows the record window's room and is not
-        // made to follow its display's scale yet, so it is drawn as it was.
-        crate::display_scale::DisplayScale::ONE,
+        display,
     )
     .map_err(|_| RenderError::SettingsScene)?;
     let top = room.margin;
@@ -281,7 +287,7 @@ pub(crate) fn picture(
             Block::Rule => {
                 y += room.gap;
                 rule(&mut drawn.solids, room, y);
-                y += 1 + room.gap;
+                y += room.hairline + room.gap;
             }
             Block::Line(words, parts) => {
                 let area = Rectangle::new(
