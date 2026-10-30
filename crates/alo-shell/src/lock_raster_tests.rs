@@ -189,7 +189,7 @@ fn hash_of(drawn: &super::lock_raster::LockPicture) -> u64 {
 
 #[test]
 /// **At 100 per cent the PIN form is the pixels main drew** before it followed
-/// its display's scale: held to hashes taken from `main` by the same code,
+/// its display's scale: held to hashes taken from `main` at cdce3e15 by the same code,
 /// twice, with the same answers. Bundled faces only.
 fn at_one_hundred_the_pin_form_is_mains() {
     let asked = key(surface(), crate::SignInKey::Enter);
@@ -206,7 +206,15 @@ fn at_one_hundred_the_pin_form_is_mains() {
             .unwrap(),
         ),
     ];
-    assert_eq!(hashes, [0_u64; 3], "{hashes:#x?}");
+    assert_eq!(
+        hashes,
+        [
+            0x9a6d_9443_eb19_e109,
+            0xbcac_bbe7_1b52_7411,
+            0xc7c6_8366_e73d_5d11,
+        ],
+        "the PIN form at 100 per cent is not the pixels main drew: {hashes:#x?}"
+    );
 }
 
 #[test]

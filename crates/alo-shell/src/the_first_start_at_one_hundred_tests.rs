@@ -1,7 +1,7 @@
 //! **At 100 per cent the first-start sheets are the pixels they were** before
 //! they followed the screen's own density.
 //!
-//! Held to hashes taken from `main` at the tree before that change, by the same
+//! Held to hashes taken from `main` at cdce3e15, the tree before that change, by the same
 //! code, twice, with the same answers both times. Drawn with the shell's
 //! bundled faces only (`WindowControlLabels`), so a machine's own fonts cannot
 //! move them.
@@ -106,7 +106,7 @@ pub(super) fn hash_of(drawn: &SignInPicture) -> u64 {
 fn at_one_hundred_every_sheet_is_the_pixels_main_drew() {
     let mut hashes = Vec::new();
     for keys in every_sheet() {
-        for size in [(1024, 768), (1920, 1080)] {
+        for size in [(1440, 960), (2560, 1440)] {
             hashes.push(hash_of(&the_sheet(&keys, size, DisplayScale::ONE).unwrap()));
         }
     }
@@ -116,7 +116,21 @@ fn at_one_hundred_every_sheet_is_the_pixels_main_drew() {
     different.dedup();
     assert_eq!(different.len(), hashes.len(), "{hashes:#x?}");
     assert_eq!(
-        hashes, [0_u64; 12],
+        hashes,
+        [
+            0x65fb_5e06_9413_07e9,
+            0x0306_039b_8963_6f44,
+            0xa730_dc0b_ce66_c79e,
+            0xdd58_b88b_6c1e_865b,
+            0x38f9_e8e2_3110_e10e,
+            0x709c_4fc5_8036_790b,
+            0xfef5_f13c_f256_4ec6,
+            0xe9ae_26d0_30e1_f18d,
+            0x1b08_7f87_c01f_501e,
+            0xa7ee_980d_1017_99fd,
+            0x401c_dd65_b3ab_db9f,
+            0x4a19_2fe8_edb5_21c0,
+        ],
         "a first-start sheet at 100 per cent is not the pixels main drew: {hashes:#x?}"
     );
 }
