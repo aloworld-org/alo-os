@@ -178,7 +178,8 @@ fn a_short_screen_shows_fewer_rows_and_never_smaller_ones() {
     let large = rows(&the_sheet(&keyboard, (1440, 960), DisplayScale::ONE).unwrap());
     let small = rows(&the_sheet(&keyboard, (1024, 768), DisplayScale::ONE).unwrap());
     assert!(small.len() < large.len(), "{small:?} beside {large:?}");
+    let tall = large.first().map(|row| row.size.h);
     for row in &small {
-        assert_eq!(row.size.h, large[0].size.h, "a row was shrunk to fit");
+        assert_eq!(Some(row.size.h), tall, "a row was shrunk to fit");
     }
 }

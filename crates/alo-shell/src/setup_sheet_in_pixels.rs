@@ -71,6 +71,7 @@ pub(crate) fn the_column_in_pixels(width: i32, display: DisplayScale) -> i32 {
 ///
 /// [`None`] where `crate::setup_sheet_layout` refuses: a screen too small at
 /// this scale to hold the sheet.
+#[cfg(test)]
 pub(crate) fn laid_out(
     pixels: (i32, i32),
     tall: TheTextIsTall,
@@ -79,7 +80,7 @@ pub(crate) fn laid_out(
     laid_out_as(pixels, tall, display, HowClose::AsCaptured)
 }
 
-/// [`laid_out`], with the blocks as close as `close` says.
+/// `laid_out`, with the blocks as close as `close` says.
 pub(crate) fn laid_out_as(
     pixels: (i32, i32),
     tall: TheTextIsTall,

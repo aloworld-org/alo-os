@@ -379,6 +379,7 @@ impl TheLanguagesOffered {
     /// Those two are deliberately one answer: both mean *do not draw a
     /// selected border on any visible row*, and a caller that had to tell them
     /// apart would be a caller drawing the border in the wrong place.
+    #[cfg(test)]
     pub(crate) fn chosen_in_the_window(&self) -> Option<usize> {
         let chosen = self.chosen?;
         let from = self.first_in_the_window();

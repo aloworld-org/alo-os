@@ -58,11 +58,6 @@ pub(crate) struct ItFits {
 /// one of the things tightening changes. [`None`] where even the tightened
 /// sheet with its fewest rows does not fit, which is a refusal rather than a
 /// column drawn under *Accessibility*.
-#[expect(
-    clippy::too_many_arguments,
-    reason = "each is a different thing about one sheet, and a struct of them would be named after \
-              this call"
-)]
 pub(crate) fn the_sheet_that_fits(
     fonts: &mut FontSystem,
     title: &str,

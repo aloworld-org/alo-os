@@ -229,6 +229,7 @@ pub struct SetupSheetLayout {
 /// [`None`] for a screen smaller than [`THE_SMALLEST_SHEET_IS`], and for a
 /// sheet whose blocks would not fit above its own footer — which is a refusal
 /// rather than a column drawn over the bottom of the screen.
+#[cfg(test)]
 #[must_use]
 pub fn setup_sheet_laid_out(
     screen: Size<i32, Logical>,
@@ -237,7 +238,7 @@ pub fn setup_sheet_laid_out(
     setup_sheet_laid_out_as(screen, tall, HowClose::AsCaptured)
 }
 
-/// [`setup_sheet_laid_out`], with the blocks as close as `close` says.
+/// `setup_sheet_laid_out`, with the blocks as close as `close` says.
 #[must_use]
 pub fn setup_sheet_laid_out_as(
     screen: Size<i32, Logical>,
