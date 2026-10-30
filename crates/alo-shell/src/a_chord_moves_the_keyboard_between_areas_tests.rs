@@ -141,3 +141,39 @@ fn an_unbound_chord_is_not_taken() {
         "F6 was taken although this person has it bound to nothing"
     );
 }
+
+/// **Escape leaves the Dock**, the fourth key `docs/features.md` promises
+/// beside F6, Tab and Enter: the keyboard goes back to the work and the focus
+/// ring goes with it.
+#[test]
+fn escape_on_the_dock_leaves_it() {
+    let (_directory, mut server) = server("escape-leaves");
+    let shortcuts = Shortcuts::shipped();
+    server.a_chord_moves_the_keyboard_between_areas(&shortcuts, f6());
+    assert!(
+        server.the_dock_is_taking_the_keys(),
+        "the premise: on the Dock"
+    );
+
+    assert!(
+        server.escape_leaves_the_dock(),
+        "Escape did not leave the Dock"
+    );
+    assert_eq!(server.which_area_has_the_keyboard, None);
+    assert_eq!(server.which_slot_on_the_bar, None);
+    assert!(!server.the_dock_is_taking_the_keys());
+}
+
+/// **With the keyboard not on the Dock, Escape is not taken**, so a program
+/// behind can still be cancelled — the narrowness
+/// `crate::a_key_reaches_the_docks_surfaces` argues for.
+#[test]
+fn escape_off_the_dock_is_not_taken() {
+    let (_directory, mut server) = server("escape-not-taken");
+
+    assert!(
+        !server.escape_leaves_the_dock(),
+        "Escape was taken with the keyboard on the work"
+    );
+    assert_eq!(server.which_area_has_the_keyboard, None);
+}

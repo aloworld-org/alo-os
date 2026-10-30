@@ -66,6 +66,28 @@ impl crate::Server {
         };
     }
 
+    /// **Escape leaves**, which is the last of the four keys
+    /// `docs/features.md` promises with F6: the keyboard goes back to the work.
+    ///
+    /// Answers whether it left, so the caller takes the key only then. Only
+    /// the bar itself is left this way — a surface the Dock opened is closed by
+    /// Escape first (`WhatTheDockWasAskedFor::when_escape_is_pressed`), and
+    /// with the keyboard not on the Dock Escape is the application's, which is
+    /// the narrowness `crate::a_key_reaches_the_docks_surfaces` argues for.
+    ///
+    /// Until 2026-10-30 nothing but a second F6 left: the twelfth Demo 1 walk
+    /// pressed Escape twice on the Dock and Enter still pressed its Settings
+    /// button.
+    pub(crate) fn escape_leaves_the_dock(&mut self) -> bool {
+        if self.which_area_has_the_keyboard != Some(AnArea::TheDock)
+            || self.the_dock_was_asked_for.is_anything()
+        {
+            return false;
+        }
+        self.the_keyboard_is_now_in(None);
+        true
+    }
+
     /// Whether this area has anything a person could act on **now**.
     ///
     /// Asked per press rather than remembered: a panel fills and empties while

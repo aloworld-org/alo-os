@@ -173,7 +173,12 @@ pub(crate) fn a_key_reaches_the_docks_surfaces(
     match asked {
         WhatWasAsked::Dismiss => {
             let Some(left_open) = server.the_dock_was_asked_for.when_escape_is_pressed() else {
-                // Nothing was open after all. The key is the application's.
+                // Nothing was open. With the keyboard on the bar, Escape leaves
+                // it and goes no further; otherwise the key is the
+                // application's.
+                if server.escape_leaves_the_dock() {
+                    return Ok(());
+                }
                 return server.libinput_update(InputUpdate::Event(event), extent);
             };
             server.the_dock_was_asked_for = left_open;
