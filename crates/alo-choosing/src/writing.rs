@@ -578,7 +578,7 @@ mod tests {
         providers
             .add(Provider {
                 name: "Somewhere".to_owned(),
-                endpoint: "http://192.168.1.10:11434".to_owned(),
+                endpoint: "http://198.51.100.7:11434".to_owned(),
                 region: Region::Unknown,
                 key: Some(crate::written::a_key_for("Somewhere")),
                 models: Vec::new(),

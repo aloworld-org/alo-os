@@ -523,8 +523,9 @@ fn no_form_open_asks_nothing_and_takes_no_addresses() {
 
 #[test]
 fn a_provider_at_an_address_this_machine_has_is_still_saved() {
-    // **The caution takes nothing away** (law 5). Over https, because a key
-    // over http to anything but loopback is refused by an older rule.
+    // **The caution takes nothing away** (law 5). Over https here; plain http
+    // to the same address is saved too since the owner's second decision of
+    // 2026-10-30, which the tests at the end of this file hold.
     let (_directory, mut server) = a_server();
     on_a_machine_at_192_168_1_20(&mut server, "https://192.168.1.20:8443");
     server.a_key_fills_in_the_provider(FillingInKey::NextField);
@@ -546,4 +547,66 @@ fn a_provider_at_an_address_this_machine_has_is_still_saved() {
         .take_the_provider_to_save()
         .expect("a provider is waiting to be saved");
     assert_eq!(saving.provider.endpoint, "https://192.168.1.20:8443");
+}
+
+/// A form filled in with `address`, as a person types it, ready for Enter.
+fn filled_in_at(server: &mut crate::Server, address: &str) {
+    server.a_provider_is_added();
+    types(server, "At home");
+    server.a_key_fills_in_the_provider(FillingInKey::NextField);
+    types(server, address);
+    server.a_key_fills_in_the_provider(FillingInKey::NextField);
+    types(server, "none");
+    server.a_key_fills_in_the_provider(FillingInKey::NextField);
+    types(server, "llama3");
+}
+
+#[test]
+fn another_computer_on_the_persons_network_over_http_is_saved_when_they_press_enter() {
+    // Owner's decision, 2026-10-30: the caution is up while they type, and
+    // Enter, which only the person can press, is what saves it.
+    let (_directory, mut server) = a_server();
+    filled_in_at(&mut server, "http://192.168.1.21:11434");
+    assert!(
+        server
+            .a_provider_is_being_filled_in()
+            .expect("a form")
+            .its_address_crosses_the_network_unencrypted(),
+        "the control: this is the address the caution is shown for"
+    );
+    assert!(
+        server.take_the_provider_to_save().is_none(),
+        "nothing is put aside to save before Enter"
+    );
+
+    assert_eq!(
+        server.a_key_fills_in_the_provider(FillingInKey::Save),
+        Some(WhatFillingInDid::SaveIt)
+    );
+    let saving = server
+        .take_the_provider_to_save()
+        .expect("a provider is waiting to be saved");
+    assert_eq!(saving.provider.endpoint, "http://192.168.1.21:11434");
+}
+
+#[test]
+fn plain_http_to_the_internet_is_still_not_saved() {
+    // The refusal half: an address on the internet over plain http is refused
+    // when they press Enter, the mark goes on the address, and nothing is put
+    // aside to save.
+    let (_directory, mut server) = a_server();
+    filled_in_at(&mut server, "http://198.51.100.7:8000");
+    assert!(
+        !server
+            .a_provider_is_being_filled_in()
+            .expect("a form")
+            .its_address_crosses_the_network_unencrypted()
+    );
+    assert_eq!(
+        server.a_key_fills_in_the_provider(FillingInKey::Save),
+        Some(WhatFillingInDid::NotRight(
+            alo_setting_up::a_provider_is_filled_in::WhichField::Address
+        ))
+    );
+    assert!(server.take_the_provider_to_save().is_none());
 }

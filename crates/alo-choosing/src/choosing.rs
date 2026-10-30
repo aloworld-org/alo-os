@@ -31,10 +31,10 @@
 //! promise what its name says. `alo_models::Provider` has public fields, so a
 //! surface can hand [`Choosing::adding`] or [`Choosing::changing`] a provider
 //! that `Provider::checked` never made — an address over `http://` to somewhere
-//! on the person's own network, most often. `crate::holding` asks that crate's
-//! rule again in `crate::writing`, which every door here goes through, so an
-//! address that is not https is refused before a byte is written and in
-//! `alo-models`' own words, whichever door it arrived at.
+//! on the internet, say. `crate::holding` asks that crate's rule again in
+//! `crate::writing`, which every door here goes through, so an address that
+//! rule refuses is refused before a byte is written and in `alo-models`' own
+//! words, whichever door it arrived at.
 //!
 //! # A file on this machine is a door of its own
 //!
@@ -419,8 +419,8 @@ impl Choosing {
     /// What the address may be is `alo_models::Provider::checked`'s rule, and
     /// it is asked again on the way to the disk (`crate::holding`): a change
     /// that turned an https address into an http one to anywhere but this
-    /// machine is refused in that crate's words, and the file is byte for byte
-    /// what it was.
+    /// machine or the person's own network is refused in that crate's words,
+    /// and the file is byte for byte what it was.
     ///
     /// # Errors
     ///
@@ -1090,8 +1090,8 @@ mod tests {
         let before = std::fs::read_to_string(&at).unwrap();
 
         for endpoint in [
-            "http://192.168.1.10:11434",
-            "http://10.0.0.5/v1",
+            "http://198.51.100.7:11434",
+            "http://100.64.0.5/v1",
             "http://nas.local:8080",
             "ftp://api.example.com",
             "api.example.com",
@@ -1136,10 +1136,8 @@ mod tests {
         );
     }
 
-    /// **A provider changed to an address that is not https is refused the
-    /// same way**, and the provider keeps the address it had. This is the
-    /// case the sentence in `docs/features.md` is written against: somebody
-    /// editing a working provider to point at *only our internal network*.
+    /// **A provider changed to an address on the internet that is not https is
+    /// refused the same way**, and the provider keeps the address it had.
     #[test]
     fn changing_a_provider_to_an_address_that_is_not_https_leaves_it_as_it_was() {
         let at = a_machine_nobody_has_configured("changed-to-http");
@@ -1148,7 +1146,7 @@ mod tests {
         let before = std::fs::read_to_string(&at).unwrap();
 
         let refused = choosing
-            .changing(by_hand("Mistral", "http://192.168.1.10:8080"))
+            .changing(by_hand("Mistral", "http://198.51.100.7:8080"))
             .unwrap_err();
 
         assert!(
@@ -1170,6 +1168,33 @@ mod tests {
                 .unwrap()
                 .endpoint,
             "https://api.mistral.ai"
+        );
+    }
+
+    /// **Another computer on the person's own network is accepted over plain
+    /// http** (owner's decision, 2026-10-30; ADR 0021), through the same writer
+    /// that refuses the internet, and reads back exactly as it was written.
+    #[test]
+    fn a_computer_on_the_persons_own_network_is_accepted_over_http() {
+        let at = a_machine_nobody_has_configured("home-network");
+        let mut choosing = Choosing::at(&at).unwrap();
+
+        choosing
+            .adding(by_hand("At home", "http://192.168.1.20:11434"))
+            .unwrap();
+        choosing.adding(a_provider("Mistral")).unwrap();
+        choosing
+            .changing(by_hand("Mistral", "http://10.0.0.5:8000/v1"))
+            .unwrap();
+
+        let read = Settings::at(&at).unwrap();
+        assert_eq!(
+            read.providers().get("At home").unwrap().endpoint,
+            "http://192.168.1.20:11434"
+        );
+        assert_eq!(
+            read.providers().get("Mistral").unwrap().endpoint,
+            "http://10.0.0.5:8000/v1"
         );
     }
 

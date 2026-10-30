@@ -26,7 +26,7 @@
 //! | | |
 //! |---|---|
 //! | the name | what they will see when it answers, and what the key is filed under |
-//! | the address | where to ask. `Provider::checked` refuses one that is not `https://`, unless it is this machine |
+//! | the address | where to ask. `Provider::checked` refuses one that is not `https://`, unless it is this machine or another computer on the person's own network |
 //! | the key | what the provider gave them. Held as [`alo_models::Secret`], which exists for exactly this moment |
 //! | the model | what to ask for, *exactly as they wrote it*, because a provider's model names are the provider's |
 //!
@@ -354,6 +354,26 @@ impl AProviderBeingAddded {
         let address = self.address.trim();
         alo_models::address::is_on_this_machine(address)
             || alo_models::address::its_host_is_one_of(address, &self.this_machine_is_also_at)
+    }
+
+    /// Whether the address typed so far is plain `http://` to another computer
+    /// on the person's own network, such as `http://192.168.1.20:11434`.
+    ///
+    /// **For a caution, not a refusal** (owner's decision, 2026-10-30; ADR
+    /// 0021). Such a provider can be saved, and its questions and its key then
+    /// cross that network unencrypted, where anybody else on it could read
+    /// them; a surface says so above the form while this is true, so the
+    /// person meets the cost before they press Enter and saving stays their
+    /// act alone (law 5).
+    ///
+    /// Asked of [`alo_models::address::crosses_a_local_network_unencrypted`],
+    /// which sits beside the rule `Provider::checked` applies, so this is true
+    /// for exactly the plain `http://` addresses that rule accepts beyond
+    /// loopback — never for https, never for loopback, and never for an
+    /// address on the internet, which is refused when they save instead.
+    #[must_use]
+    pub fn its_address_crosses_the_network_unencrypted(&self) -> bool {
+        alo_models::address::crosses_a_local_network_unencrypted(self.address.trim())
     }
 
     /// What this form would save, or what is still wrong with it.

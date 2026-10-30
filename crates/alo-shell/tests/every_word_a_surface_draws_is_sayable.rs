@@ -39,6 +39,7 @@ fn the_shells_own_keys() -> Vec<&'static str> {
         "shell.provider.key",
         "shell.provider.model",
         "shell.provider.this-machine-cannot-see",
+        "shell.provider.unencrypted-on-this-network",
     ]
 }
 

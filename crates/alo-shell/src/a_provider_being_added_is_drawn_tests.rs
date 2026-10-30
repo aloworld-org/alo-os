@@ -294,3 +294,60 @@ fn a_service_at_this_machines_own_network_address_is_cautioned_and_another_is_no
         "a form told nothing about this machine's network takes it for somewhere else"
     );
 }
+
+/// Whether the caution about plain http across the person's network is among
+/// what is said.
+fn is_cautioned_as_unencrypted(form: &AProviderBeingAddded) -> bool {
+    let caution = strings()
+        .say(
+            &crate::the_providers_words::OTHERS_ON_THIS_NETWORK_COULD_READ_IT.key(),
+            &alo_strings::Filling::nothing(),
+        )
+        .into_text();
+    the_form(form, None, &strings()).said.contains(&caution)
+}
+
+#[test]
+fn plain_http_to_another_computer_on_the_persons_network_is_cautioned_in_plain_words() {
+    // Owner's decision, 2026-10-30: the person is told, before Enter, that
+    // the question and the key cross their network unencrypted and who could
+    // read them.
+    let form = at("http://192.168.1.21:11434");
+    assert!(is_cautioned_as_unencrypted(&form));
+    assert!(
+        !is_cautioned(&form),
+        "another computer is not this machine, and the sentence about this machine is false for it"
+    );
+    let said = the_form(&form, None, &strings()).said;
+    let caution = said
+        .iter()
+        .find(|line| line.contains("unencrypted"))
+        .expect("the caution is a sentence and not its key");
+    assert!(caution.contains("your questions and your key"), "{caution}");
+    assert!(caution.contains("Anyone else on that network"), "{caution}");
+}
+
+#[test]
+fn only_plain_http_to_the_persons_network_is_cautioned_as_unencrypted() {
+    // The refusal half: https, loopback, the internet (refused at Enter
+    // instead) and an empty form say nothing about it.
+    for form in [
+        at("https://192.168.1.21:8443"),
+        at("http://127.0.0.1:11434"),
+        at("http://198.51.100.7:8000"),
+        at("https://api.openai.com"),
+        AProviderBeingAddded::empty(),
+    ] {
+        assert!(!is_cautioned_as_unencrypted(&form), "{form:?}");
+    }
+}
+
+#[test]
+fn this_machines_own_network_address_over_http_gets_both_cautions() {
+    // By the time a question is asked, an address this machine held when the
+    // provider was saved may be another computer's.
+    let mut form = at("http://192.168.1.20:8000");
+    form.this_machine_is_also_at(vec![std::net::IpAddr::from([192, 168, 1, 20])]);
+    assert!(is_cautioned(&form));
+    assert!(is_cautioned_as_unencrypted(&form));
+}

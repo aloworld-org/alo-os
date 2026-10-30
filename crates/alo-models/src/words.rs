@@ -374,13 +374,16 @@ pub const NOT_AN_ADDRESS: Word = Word::saying(
 /// An address a key would travel to in clear.
 pub const INSECURE_ENDPOINT: Word = Word::saying(
     "models.provider.insecure-endpoint",
-    "this address is not https, so your key and your questions would travel unencrypted — use \
-     https, or a service on this machine",
+    "this address is not https, so your key and your questions would cross the internet \
+     unencrypted — use https; plain http works only for this machine, or for another computer on \
+     your own network written as its number, such as 192.168.1.20",
 )
 .noting(
-    "\"Your key\" is the credential the provider gave them. https is not translated. The refusal \
-     is firm on purpose: \"it is only our internal network\" is how an unencrypted key gets \
-     shipped (ADR 0003).",
+    "\"Your key\" is the credential the provider gave them. https and http are not translated, \
+     and neither is the example address. Shown for a plain http address that is neither this \
+     computer nor a private address on the person's own network (ADR 0021, owner's note of \
+     2026-10-30): a name such as nas.local is refused too, because alo OS does not look names up \
+     to decide this.",
 );
 
 /// A name another provider already has.

@@ -1,9 +1,10 @@
 //! What the form that adds a provider says, in words somebody can translate.
 //!
-//! Eleven sentences, and none of them is drawn from a string literal: the labels
+//! Twelve sentences, and none of them is drawn from a string literal: the labels
 //! beside the four fields, the heading above them, the one line that says what
-//! a person is about to do, the four reasons a save did not happen, and the
-//! caution about a service at this machine's address.
+//! a person is about to do, the four reasons a save did not happen, the caution
+//! about a service at this machine's address, and the caution about plain http
+//! to another computer on the person's own network.
 //!
 //! # Why these exist at all
 //!
@@ -76,7 +77,7 @@ pub const ITS_MODEL: Word = Word::saying("shell.provider.model", "Model").noting
 /// form drew six of those on a booted machine on 2026-10-23 for that fault one
 /// layer up. The length is written out so that adding a `Word` above and
 /// forgetting this line does not compile.
-pub const THE_PROVIDERS_WORDS: [Word; 11] = [
+pub const THE_PROVIDERS_WORDS: [Word; 12] = [
     ADDING_A_PROVIDER,
     WHAT_TO_DO_WITH_IT,
     ITS_NAME,
@@ -88,6 +89,7 @@ pub const THE_PROVIDERS_WORDS: [Word; 11] = [
     NOT_SAVED_SETTINGS_WOULD_NOT_READ,
     NOT_SAVED_NOWHERE_TO_KEEP,
     THIS_MACHINE_CANNOT_SEE_WHERE_IT_GOES,
+    OTHERS_ON_THIS_NETWORK_COULD_READ_IT,
 ];
 
 /// Why this form's wording would not declare.
@@ -173,4 +175,25 @@ pub const THIS_MACHINE_CANNOT_SEE_WHERE_IT_GOES: Word = Word::saying(
      indicator\" is the part of the screen that shows what alo OS sends over the network. This \
      is a caution, not an error: the person can still save. Keep \"alo\" as written, in lower \
      case.",
+);
+
+/// Said above the fields while the address is plain `http://` to another
+/// computer on the person's own network.
+///
+/// **A warning and not a refusal** (owner's decision, 2026-10-30; ADR 0021).
+/// Such a provider can be saved, and its questions and its key then cross that
+/// network with nothing protecting them. The sentence says so in those terms,
+/// and says who could read them, because that is the cost the person is
+/// choosing to accept. Saving is still theirs (law 5).
+pub const OTHERS_ON_THIS_NETWORK_COULD_READ_IT: Word = Word::saying(
+    "shell.provider.unencrypted-on-this-network",
+    "This address is not https, so your questions and your key cross your network unencrypted. Anyone else on that network could read them.",
+)
+.noting(
+    "Shown above the form that adds a provider while its address starts with http:// and is \
+     another computer on the person's own home or office network, such as 192.168.1.20. \
+     \"Unencrypted\" means sent as plain text that is not protected in any way. \"Your key\" is \
+     the secret the provider gave them. \"Anyone else on that network\" means any other device or \
+     person connected to the same network — a guest's phone, another computer. https and http are \
+     not translated. This is a caution, not an error: the person can still save.",
 );

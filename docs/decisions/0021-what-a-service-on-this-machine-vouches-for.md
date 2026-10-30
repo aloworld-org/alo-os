@@ -638,3 +638,48 @@ about the moment of filling in and not a promise about later.
 **Not covered:** a name that resolves to this machine (`my-machine.local`),
 because nothing here resolves names; and an address the machine gains while
 the form is already open, which is read the next time a form opens.
+
+## Note, 2026-10-30 (later) — plain http to another computer on the person's own network
+
+**Owner's decision.** A person typing a provider such as
+`http://192.168.1.20:11434` — an AI service on another computer at home — was
+refused on saving, because plain `http://` was accepted only for loopback. The
+owner chose: **allow it, with the caution.** This is ADR 0064's row 3 (*allowed
+after a plain warning that the key crosses the network readable*) built for the
+person's own network.
+
+**What is accepted.** `alo_models::Provider::checked` accepts plain `http://`
+to an address on the person's own network, `alo_models::address::is_on_a_local_network`:
+written as numbers, in `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`,
+`169.254.0.0/16`, `fc00::/7` or `fe80::/10`. Every writer and the reader of the
+settings file ask that one function, so a file a person writes by hand is held
+to the same rule as the form.
+
+**What a person is told.** While the address typed is such an address over
+plain `http://`, Settings says above the form *"This address is not https, so
+your questions and your key cross your network unencrypted. Anyone else on that
+network could read them."* (`shell.provider.unencrypted-on-this-network`).
+Saving is the person's Enter, as for any provider; no agent door writes a
+provider (`alo-choosing`'s `no_agents_door_reaches_these_settings`).
+
+**What it does not change.** Such an address is still *somewhere else*:
+`Provider::source` says hosted, an agent's question to it goes the provider's
+road, holds a `Departing`, is on the indicator while it is away and is kept in
+the record (law 1), and the door for a service on this machine (`Served`)
+refuses it. A person's own question to it goes on no indicator, as for every
+provider (ADR 0126). An organisation's rule permitting only this machine still
+refuses it.
+
+**Still refused, and why.** Plain `http://` to an address on the internet,
+and to any **name** — `nas.local` included — because nothing here resolves a
+name and a name that is at home today can be on the internet tomorrow. So is the
+shared range `100.64.0.0/10`, which a provider's network gives many customers at
+once. ADR 0064 row 3 reaches the internet case too; the owner's decision named
+the home network, so that case is not built and waits for a decision of its own.
+
+**Measured where.** `alo-models`' address and provider tests, `alo-choosing`'s
+`an_address_that_is_not_https.rs`, the Settings form's tests in
+`alo-setting-up` and `alo-shell`, and `alo-asking`'s
+`a_question_to_a_computer_on_the_persons_own_network_leaves_and_is_shown.rs`,
+which reads the question and the key off a server's socket. All run on every
+build. No real second computer on a real network was used.

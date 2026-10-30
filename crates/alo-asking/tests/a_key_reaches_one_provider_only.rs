@@ -9,12 +9,16 @@
 //!
 //! # Why this uses the local-service door, and what that is worth
 //!
-//! A test server here speaks plain HTTP, and **a plain-HTTP provider cannot be
-//! constructed**: `Provider::checked` answers `InsecureEndpoint` for `http://`
-//! to anywhere that is not this machine, because a key over plain HTTP to
-//! somewhere else is a key on the wire in clear. That refusal is a guarantee and
-//! this file is not going to route around it by building a `Provider` field by
-//! field.
+//! A test server here speaks plain HTTP, and **a plain-HTTP provider on the
+//! internet cannot be constructed**: `Provider::checked` answers
+//! `InsecureEndpoint` for `http://` to anywhere that is neither this machine
+//! nor the person's own network, because a key over plain HTTP to the internet
+//! is a key on the internet in clear. That refusal is a guarantee and this file
+//! is not going to route around it by building a `Provider` field by field.
+//! (A computer on the person's own network over plain HTTP is accepted since
+//! the owner's decision of 2026-10-30, and
+//! `a_question_to_a_computer_on_the_persons_own_network_leaves_and_is_shown.rs`
+//! is where that road is driven.)
 //!
 //! So the pairing is exercised through `Served`, which is the same pairing:
 //! both doors take a provider and its key **together**, at construction, and
@@ -195,8 +199,8 @@ fn the_key_reaches_the_chosen_one_and_the_other_hears_nothing() {
     assert!(Served::at(&other, None).is_ok());
 }
 
-/// **A key never travels in clear to somewhere that is not this machine**, which
-/// is why the test above uses the local door rather than a hosted provider.
+/// **A key never travels in clear to the internet**, which is why the test
+/// above uses the local door rather than a hosted provider.
 ///
 /// Asserted here so that the reason this file is shaped as it is cannot quietly
 /// stop being true: the day `Provider::checked` stops refusing, this fails and
