@@ -177,6 +177,16 @@ mod running {
                 );
                 ExitCode::SUCCESS
             }
+            // **A success, so the unit leaves the screen to whoever has it.**
+            // The seat put another session in front; restarting here would
+            // take the display back from the desktop that just came up.
+            Ok(Stood::TheSeatHandedItOn) => {
+                eprintln!(
+                    "alo-compositor: the seat gave this display to another session, so the \
+                     sign-in screen steps aside"
+                );
+                ExitCode::SUCCESS
+            }
             // **A failure, so the unit starts the screen again**
             // (`Stood::is_the_end_this_process_is_for`): a machine left at
             // the console with nobody signed in is stranded until somebody
