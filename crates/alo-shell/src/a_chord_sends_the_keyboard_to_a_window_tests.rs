@@ -59,7 +59,10 @@ fn opening_the_terminal_from_the_dock_takes_the_keyboard_off_it() {
         server.which_area_has_the_keyboard, None,
         "the terminal opened and the Dock still held the keyboard"
     );
-    assert_eq!(server.which_slot_on_the_bar, None, "a focus ring stayed on the Dock");
+    assert_eq!(
+        server.which_slot_on_the_bar, None,
+        "a focus ring stayed on the Dock"
+    );
     assert!(
         !server.the_dock_is_taking_the_keys(),
         "Enter would still press the Dock's focused button"
@@ -89,9 +92,10 @@ fn a_shortcut_that_went_nowhere_leaves_the_keyboard_on_the_dock() {
 #[test]
 fn a_task_window_taking_the_keyboard_takes_it_off_the_dock() {
     let (_directory, mut server) = on_the_dock("task-from-the-dock");
-    let which = server
-        .tasks_mut()
-        .and_now_this_one(ATask::asked_for("Tidy my invoices folder", InferenceSource::ThisMachine));
+    let which = server.tasks_mut().and_now_this_one(ATask::asked_for(
+        "Tidy my invoices folder",
+        InferenceSource::ThisMachine,
+    ));
 
     server.this_task_took_the_keyboard(which);
 
