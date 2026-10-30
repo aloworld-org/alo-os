@@ -1677,3 +1677,11 @@ pub(crate) fn picture(
 )]
 #[path = "the_terminals_cells_are_drawn_tests.rs"]
 mod tests;
+
+#[cfg(test)]
+#[expect(
+    clippy::expect_used,
+    reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
+)]
+#[path = "each_letter_keeps_its_own_cell_tests.rs"]
+mod each_letter_keeps_its_own_cell;

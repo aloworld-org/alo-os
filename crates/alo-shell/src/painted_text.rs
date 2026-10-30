@@ -65,10 +65,29 @@ pub(crate) const ALOS_OWN_MONO: &str = "Geist Mono";
 /// drawn in a proportional face. `fonts/GeistMono-Medium.ttf` is the static cut
 /// that makes this weight an exact match; before it was bundled, this ask drew
 /// **Inter**.
+///
+/// **With every substitution by a neighbour switched off.** Geist Mono joins
+/// and swaps characters by what stands beside them — ligatures and contextual
+/// alternates — and a run is shaped whole, so a terminal printed `-rw-r--r--`
+/// as `-IW-F-F-` on the twelfth Demo 1 walk. A cell holds exactly what the
+/// program wrote; `each_letter_keeps_its_own_cell_tests.rs` holds it.
 pub(crate) fn alos_own_mono<'a>() -> Attrs<'a> {
     Attrs::new()
         .family(Family::Name(ALOS_OWN_MONO))
         .weight(Weight(alo_terminal::measures::THE_WEIGHT))
+        .font_features(each_character_as_itself())
+}
+
+/// The features that would draw a character as something other than itself
+/// because of its neighbours, all switched off.
+fn each_character_as_itself() -> cosmic_text::FontFeatures {
+    let mut features = cosmic_text::FontFeatures::new();
+    features
+        .disable(cosmic_text::FeatureTag::STANDARD_LIGATURES)
+        .disable(cosmic_text::FeatureTag::CONTEXTUAL_LIGATURES)
+        .disable(cosmic_text::FeatureTag::CONTEXTUAL_ALTERNATES)
+        .disable(cosmic_text::FeatureTag::DISCRETIONARY_LIGATURES);
+    features
 }
 
 /// How alo asks for a terminal's text when a program has asked for bold or
