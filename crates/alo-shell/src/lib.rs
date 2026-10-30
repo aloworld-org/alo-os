@@ -118,6 +118,7 @@ pub mod closing_a_task_window;
 pub use a_provider_is_added_in_settings::WhyNotSaved;
 mod a_reader_presses;
 pub use a_reader_presses::WhatAReaderPressCameTo;
+mod a_scale_held_to_what_draws;
 /// Typing into a task window's reply box.
 mod a_screen_arrives_or_leaves;
 mod access_action;
@@ -384,6 +385,7 @@ mod settings_shell_integration;
 mod settings_testing;
 mod settings_time_zone;
 mod settings_window;
+mod setup_sheet_in_pixels;
 mod setup_sheet_layout;
 mod setup_sheet_painting;
 mod setup_sheet_surface;

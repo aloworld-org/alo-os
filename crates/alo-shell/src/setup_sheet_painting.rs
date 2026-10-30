@@ -9,10 +9,11 @@
 //! own file's.
 
 use cosmic_text::FontSystem;
-use smithay::utils::{Logical, Rectangle, Scale, Size};
+use smithay::utils::{Physical, Rectangle, Scale};
 
 use crate::painted_text::sentence;
-use crate::setup_sheet_layout::{SetupSheetLayout, TheTextIsTall, setup_sheet_laid_out};
+use crate::setup_sheet_in_pixels::{SetupSheetInPixels, laid_out, the_column_in_pixels};
+use crate::setup_sheet_layout::TheTextIsTall;
 use crate::setup_sheet_surface::TheMarks;
 use crate::sign_in_raster::{Measure, SignInPicture};
 use crate::sign_in_surface::TheColours;
@@ -31,7 +32,11 @@ pub(crate) struct TheSheetSays<'a> {
 }
 
 /// **A sheet with `rows` rows, its words lettered and its cards drawn** —
-/// and where each row's card is, for the sheet to letter its rows into.
+/// and where each row's card is, in the picture's pixels, for the sheet to
+/// letter its rows into.
+///
+/// At the display scale `measure` was made for: laid out at the output's
+/// pixels through it and drawn at its size (`crate::setup_sheet_in_pixels`).
 ///
 /// # Errors
 /// [`RenderError::SignInScene`] for a screen too small to hold a sheet.
@@ -49,9 +54,10 @@ pub(crate) fn a_sheet(
     size: (i32, i32),
     colours: TheColours,
     measure: &Measure,
-) -> Result<(SignInPicture, SetupSheetLayout), RenderError> {
+) -> Result<(SignInPicture, SetupSheetInPixels), RenderError> {
     let (width, height) = size;
-    let column = crate::setup_sheet_layout::THE_COLUMN_IS_WIDE.min(width);
+    let display = measure.display();
+    let column = the_column_in_pixels(width, display);
     let shaped_title = sentence(
         fonts,
         says.title,
@@ -68,8 +74,8 @@ pub(crate) fn a_sheet(
         colours.ground,
         colours.ink,
     );
-    let Some(at) = setup_sheet_laid_out(
-        Size::from(size),
+    let Some(laid) = laid_out(
+        size,
         TheTextIsTall {
             title: shaped_title.height,
             introduction: shaped_introduction.height,
@@ -77,20 +83,23 @@ pub(crate) fn a_sheet(
             choices: rows,
             actions: 2,
         },
+        display,
     ) else {
         return Err(RenderError::SignInScene);
     };
     let mut drawn = SignInPicture {
         size,
         surface: crate::setup_sheet_surface::setup_sheet_surface(
-            &at,
+            &laid.logical,
+            size,
             colours,
             marks,
-            Scale::from(1.0),
+            Scale::from(display.factor()),
         ),
         solids: Vec::new(),
         inked: Vec::new(),
     };
+    let at = laid.pixels;
     let nothing = alo_strings::Filling::nothing();
     let stage = words.say(&say::STAGE.key(), &nothing);
     let footer = words.say(&say::FOOTER.key(), &nothing);
@@ -156,7 +165,7 @@ pub(crate) fn a_sheet(
 pub(crate) fn two_lines(
     drawn: &mut SignInPicture,
     fonts: &mut FontSystem,
-    card: Rectangle<i32, Logical>,
+    card: Rectangle<i32, Physical>,
     lines: (&str, &str),
     colours: TheColours,
     measure: &Measure,

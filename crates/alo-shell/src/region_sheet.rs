@@ -10,10 +10,11 @@
 //! wearing the border and the word *Selected* as the language sheet's does.
 
 use cosmic_text::FontSystem;
-use smithay::utils::{Rectangle, Scale, Size};
+use smithay::utils::{Rectangle, Scale};
 
 use crate::painted_text::sentence;
-use crate::setup_sheet_layout::{TheTextIsTall, setup_sheet_laid_out};
+use crate::setup_sheet_in_pixels::{laid_out, the_column_in_pixels};
+use crate::setup_sheet_layout::TheTextIsTall;
 use crate::sign_in_raster::{Measure, SignInPicture};
 use crate::sign_in_surface::TheColours;
 use crate::the_languages_offered::WhereTheRingIs;
@@ -40,7 +41,7 @@ pub(crate) fn drawn(
     let introduction = say_it(say::REGION_INTRODUCTION);
     let selected = say_it(say::SELECTED);
 
-    let column = crate::setup_sheet_layout::THE_COLUMN_IS_WIDE.min(width);
+    let column = the_column_in_pixels(width, measure.display());
     let shaped_title = sentence(
         fonts,
         title.text(),
@@ -59,8 +60,8 @@ pub(crate) fn drawn(
     );
 
     let rows = offered.rows();
-    let Some(at) = setup_sheet_laid_out(
-        Size::from(size),
+    let Some(laid) = laid_out(
+        size,
         TheTextIsTall {
             title: shaped_title.height,
             introduction: shaped_introduction.height,
@@ -68,6 +69,7 @@ pub(crate) fn drawn(
             choices: rows.len(),
             actions: 2,
         },
+        measure.display(),
     ) else {
         return Err(RenderError::SignInScene);
     };
@@ -76,7 +78,8 @@ pub(crate) fn drawn(
     let mut drawn = SignInPicture {
         size,
         surface: crate::setup_sheet_surface::setup_sheet_surface(
-            &at,
+            &laid.logical,
+            size,
             colours,
             crate::setup_sheet_surface::TheMarks {
                 chosen,
@@ -89,11 +92,12 @@ pub(crate) fn drawn(
                     }
                 },
             },
-            Scale::from(1.0),
+            Scale::from(measure.display().factor()),
         ),
         solids: Vec::new(),
         inked: Vec::new(),
     };
+    let at = laid.pixels;
 
     for (text, place) in [
         (say_it(say::STAGE), at.stage),

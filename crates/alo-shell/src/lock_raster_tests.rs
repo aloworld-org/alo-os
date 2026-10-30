@@ -5,6 +5,7 @@
     reason = "a failed fixture or assertion is a failed test"
 )]
 use crate::Contrast;
+use crate::display_scale::DisplayScale;
 use crate::lock_testing::*;
 use crate::{LockBackground, LockLook, SignInLook, WindowControlLabels};
 use alo_appearance::{Appearance, DisplayId, Scheme, TextScale};
@@ -33,12 +34,23 @@ fn draw(
 ) -> super::lock_raster::LockPicture {
     try_draw(surface, indicator, (800, 600), TextScale::ordinary()).unwrap()
 }
-/// Draw at the requested output and scale, retaining layout refusals.
+/// Draw at the requested output and text scale, at one-to-one.
 fn try_draw(
     surface: &crate::LockSurface<String>,
     indicator: &Indicator,
     size: (i32, i32),
     scale: TextScale,
+) -> Result<super::lock_raster::LockPicture, crate::RenderError> {
+    try_draw_at(surface, indicator, size, scale, DisplayScale::ONE)
+}
+/// Draw at the requested output, text scale and display scale, retaining
+/// layout refusals.
+fn try_draw_at(
+    surface: &crate::LockSurface<String>,
+    indicator: &Indicator,
+    size: (i32, i32),
+    scale: TextScale,
+    display: DisplayScale,
 ) -> Result<super::lock_raster::LockPicture, crate::RenderError> {
     let screen = snapshot(surface, indicator);
     let background = LockBackground::prepare(screen.image(), size)?;
@@ -61,6 +73,7 @@ fn try_draw(
         surface.is_asking().then(|| surface.shows()),
         &mut WindowControlLabels::new().unwrap(),
         &look,
+        display,
     )
 }
 /// Departure.
@@ -165,4 +178,128 @@ fn a_refusal_that_does_not_fit_is_rejected_instead_of_disappearing() {
     let scale = TextScale::percent(200).unwrap();
     assert!(try_draw(&surface, &Indicator::default(), (800, 840), scale).is_err());
     assert!(try_draw(&surface, &Indicator::default(), (1200, 1800), scale).is_ok());
+}
+
+/// Everything a lock picture paints, hashed.
+fn hash_of(drawn: &super::lock_raster::LockPicture) -> u64 {
+    let mut hashed = crate::a_picture_hashed::Hashed::begun();
+    hashed.raw(&drawn.pixels);
+    hashed.done()
+}
+
+#[test]
+/// **At 100 per cent the PIN form is the pixels main drew** before it followed
+/// its display's scale: held to hashes taken from `main` at cdce3e15 by the same code,
+/// twice, with the same answers. Bundled faces only.
+fn at_one_hundred_the_pin_form_is_mains() {
+    let asked = key(surface(), crate::SignInKey::Enter);
+    let hashes = [
+        hash_of(&draw(&asked, &Indicator::default())),
+        hash_of(&draw(&typed("ada", "x"), &Indicator::default())),
+        hash_of(
+            &try_draw(
+                &typed("ada", "x"),
+                &Indicator::default(),
+                (1920, 1080),
+                TextScale::ordinary(),
+            )
+            .unwrap(),
+        ),
+    ];
+    assert_eq!(
+        hashes,
+        [
+            0x9a6d_9443_eb19_e109,
+            0xbcac_bbe7_1b52_7411,
+            0xc7c6_8366_e73d_5d11,
+        ],
+        "the PIN form at 100 per cent is not the pixels main drew: {hashes:#x?}"
+    );
+}
+
+#[test]
+/// **At 200 per cent the PIN form is twice its size and place**: every field
+/// edge and the masked band, held against the same form at one on half the
+/// room.
+fn at_two_hundred_the_pin_form_is_twice_its_size() {
+    let surface = typed("ada", "x");
+    let strings = words();
+    let look = SignInLook {
+        contrast: Contrast::AsDesigned,
+        scheme: Scheme::Dark,
+        scale: TextScale::ordinary(),
+    };
+    let mut labels = WindowControlLabels::new().unwrap();
+    let mut form = |size: (i32, i32), display: DisplayScale| {
+        crate::sign_in_raster::picture(
+            surface.shows(),
+            &mut labels,
+            &strings,
+            size,
+            look,
+            crate::sign_in_raster::WhoseScreen::InsideAnother,
+            display,
+        )
+        .unwrap()
+    };
+    let one = form((800, 200), DisplayScale::ONE);
+    let two = form((1600, 400), DisplayScale::of_per_cent(200));
+    assert_eq!(one.solids.len(), two.solids.len());
+    for (small, large) in one.solids.iter().zip(&two.solids) {
+        let (a, b) = (small.area, large.area);
+        assert_eq!(
+            (2 * a.loc.x, 2 * a.loc.y, 2 * a.size.w, 2 * a.size.h),
+            (b.loc.x, b.loc.y, b.size.w, b.size.h)
+        );
+    }
+}
+
+#[test]
+/// **A lock screen with too little room for the form at its scale draws it at
+/// the largest that fits** rather than blanking: 800 × 600 at 200 leaves a
+/// 200-pixel middle third, which holds the form at 125 and not at 150.
+fn a_pin_form_with_too_little_room_is_held_to_what_fits() {
+    let surface = typed("ada", "x");
+    let at = |display: u16| {
+        try_draw_at(
+            &surface,
+            &Indicator::default(),
+            (800, 600),
+            TextScale::ordinary(),
+            DisplayScale::of_per_cent(display),
+        )
+    };
+    let held = at(200).unwrap();
+    assert_eq!(held, at(125).unwrap());
+    assert_ne!(held, at(100).unwrap(), "and larger than one-to-one");
+}
+
+#[test]
+/// **Keys reach the form at any scale**: what a press changes is the form's
+/// state, which the picture at 200 shows as it does at one.
+fn a_key_changes_the_form_at_two_hundred() {
+    let at_two = |surface: &crate::LockSurface<String>| {
+        try_draw_at(
+            surface,
+            &Indicator::default(),
+            (1600, 1200),
+            TextScale::ordinary(),
+            DisplayScale::of_per_cent(200),
+        )
+        .unwrap()
+    };
+    let named = typed("ada", "");
+    let pressed = key(typed("ada", ""), crate::SignInKey::Letter('1'));
+    assert_ne!(at_two(&named), at_two(&pressed));
+    assert_ne!(
+        at_two(&pressed),
+        try_draw(
+            &pressed,
+            &Indicator::default(),
+            (1600, 1200),
+            TextScale::ordinary()
+        )
+        .unwrap(),
+        "the control: at two it is not the picture at one"
+    );
 }

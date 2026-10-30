@@ -33,6 +33,12 @@ impl Hashed {
         }
     }
 
+    /// Bytes as they are, for a picture that is one raster already: the lock
+    /// screen's.
+    pub(crate) fn raw(&mut self, bytes: &[u8]) {
+        self.eat(bytes);
+    }
+
     /// Where something is and how large.
     pub(crate) fn area(&mut self, at: Rectangle<i32, Physical>) {
         for n in [at.loc.x, at.loc.y, at.size.w, at.size.h] {

@@ -43,7 +43,17 @@ impl Nested {
             return Err(RenderError::LockScene);
         }
         let fields = surface.is_asking().then(|| surface.shows());
-        let drawn = crate::lock_raster::picture(screen, background, fields, labels, look)?;
+        let drawn = crate::lock_raster::picture(
+            screen,
+            background,
+            fields,
+            labels,
+            look,
+            // **At one**: this is the development backend's window on another
+            // desktop, and no screen's own density reaches it — the rule
+            // `crate::nested_sign_in` keeps for the sign-in screen.
+            crate::display_scale::DisplayScale::ONE,
+        )?;
         self.submit_native_scene(
             &[],
             &[],

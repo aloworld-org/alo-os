@@ -23,11 +23,12 @@
 //! `Strings`. Nothing here is English.
 
 use cosmic_text::FontSystem;
-use smithay::utils::{Rectangle, Scale, Size};
+use smithay::utils::{Rectangle, Scale};
 
 use crate::painted::Solid;
 use crate::painted_text::sentence;
-use crate::setup_sheet_layout::{TheTextIsTall, setup_sheet_laid_out};
+use crate::setup_sheet_in_pixels::{laid_out, the_column_in_pixels};
+use crate::setup_sheet_layout::TheTextIsTall;
 use crate::sign_in_raster::{Measure, SignInPicture};
 use crate::sign_in_surface::TheColours;
 use crate::{RenderError, first_start_words as say};
@@ -88,7 +89,7 @@ pub(crate) fn drawn(
     // wraps, in a language this code has never seen, so their heights are
     // measured and handed to the layout rather than assumed — which is what
     // stops a longer heading being drawn over the choices.
-    let column = crate::setup_sheet_layout::THE_COLUMN_IS_WIDE.min(width);
+    let column = the_column_in_pixels(width, measure.display());
     let shaped_title = sentence(
         fonts,
         title.text(),
@@ -123,8 +124,8 @@ pub(crate) fn drawn(
         colours.muted,
     );
 
-    let Some(at) = setup_sheet_laid_out(
-        Size::from(size),
+    let Some(laid) = laid_out(
+        size,
         TheTextIsTall {
             title: shaped_title.height,
             introduction: shaped_introduction.height,
@@ -135,6 +136,7 @@ pub(crate) fn drawn(
             choices: 1,
             actions: 1,
         },
+        measure.display(),
     ) else {
         return Err(RenderError::SignInScene);
     };
@@ -142,14 +144,16 @@ pub(crate) fn drawn(
     let mut drawn = SignInPicture {
         size,
         surface: crate::setup_sheet_surface::setup_sheet_surface(
-            &at,
+            &laid.logical,
+            size,
             colours,
             crate::setup_sheet_surface::TheMarks::default(),
-            Scale::from(1.0),
+            Scale::from(measure.display().factor()),
         ),
         solids: Vec::new(),
         inked: Vec::new(),
     };
+    let at = laid.pixels;
 
     crate::painted_text::line(
         &mut drawn.inked,
