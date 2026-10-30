@@ -15,53 +15,56 @@
 Description=alo OS desktop: the dock, the status area and what is leaving
 Documentation=https://github.com/aloworld-org/alo-os/blob/main/docs/decisions/0024-what-a-person-signs-in-at.md
 
-# **Bound to the person's session, which is `alo-agentd.service`'s shape and for
-# the same reasons.** `logind` starts `user@1000.service` on their first session
-# whatever its seat, so this starts when they sign in; `BindsTo=` takes it down
-# when they sign out, which is how signing out ends a desktop rather than
-# leaving one drawn over a sign-in screen.
-BindsTo=user@1000.service
-After=user@1000.service
+# **Started by `alo-sessiond`, once a person has signed in, and by nothing else**
+# (ADR 0141). The instance is their account number, and there is no `[Install]`
+# section, so nothing can enable it.
+#
+# **This was `alo-desktop.service`, started by `WantedBy=user@1000.service`,
+# until 2026-10-30**, and a booted machine showed what that cost: the person's
+# manager is in no login session, so the desktop it started was in none either,
+# and restart, power off and the time zone asked for a password nothing on the
+# screen could take. Now this unit's own PAM stack opens the person's session
+# and pid 1 moves this process into it — measured inside the image that day:
+# a unit with `User=` and `PAMName=` lands in `session-N.scope`. The person's
+# manager is started by that session rather than the other way round.
 
-# **Ordering only, and the race is named rather than claimed solved.** The
-# greeter holds the card from `seat0` until its process ends, and it ends by
-# returning success once a session opens — the same event that starts
-# `user@1000.service`. So the two are sequential in intent and this line states
-# the intent, but `After=` on a unit that stops itself is not a guarantee that
-# it already has. If the seat refuses the card with *Device or resource busy*,
-# this is the line that was not enough, and the answer is `Conflicts=` or a
-# handover rather than a longer `RestartSec=`. Owed a measurement on a machine.
-After=alo-compositor.service
+# **The display is handed over by `logind`, not by ordering.** This unit's
+# session is made on `seat0` and becomes the seat's active session; `logind`
+# then pauses the sign-in screen's devices, and the sign-in screen steps aside
+# and exits (#1029). No `After=` can make that true and none is needed.
+
+# **When the desktop ends, the sign-in screen comes back.** Signing out is the
+# desktop exiting cleanly. A crash restarts it below; one that keeps crashing
+# runs out of the limit here, fails, and puts the sign-in screen up rather than
+# leaving a console.
+OnSuccess=alo-compositor.service
+OnFailure=alo-compositor.service
+StartLimitIntervalSec=60
+StartLimitBurst=3
 
 [Service]
 # It stays, and the desktop stays with it. A oneshot would draw one frame.
 Type=exec
 
-# **The cgroup is the person's, so `try` has somewhere to make a box.**
+# **No `Delegate=` any more, and `try` still has somewhere to make a box.**
 #
-# `alo-try` is the word a person puts before a command to run it sealed
-# (ADR 0064), and it is a child of their shell, which is a child of this. It
-# makes the box in a child of its **own** cgroup, because cgroup v2 asks
-# whether the *common ancestor* of here and there may be written — not whether
-# the destination may. Without this line that ancestor is this unit's cgroup,
-# which is root's, and every `try` is refused with `Permission denied` from the
-# helper.
-#
-# Measured on 2026-10-18 by running it rather than reasoning about it; the
-# finding is in `docs/quirks.md` under *where a box goes*, which had this
-# question open.
-#
-# The hierarchy and no resource policy, which is `alo-agentd.service`'s wording
-# and its reason: nothing is written into `cgroup.subtree_control` here, because
-# a box is a boundary rather than a budget.
-Delegate=yes
+# This line made the desktop's cgroup the person's, so `alo-try` could make a
+# box as a child of its own cgroup (ADR 0064, measured 2026-10-18). The desktop
+# now lives in the person's session scope, which is `logind`'s and root's
+# whatever this unit says — measured inside the image on 2026-10-30, with and
+# without a `Delegate=` drop-in for session scopes: `mkdir` answered
+# *Permission denied* both times. So `alo-try` asks the person's own manager for
+# a delegated scope of its own when its cgroup is not theirs, which measured
+# `aloprobe:aloprobe`, type `domain`, and a move that succeeded.
 
-# **The person, not root.** The greeter is the machine's and runs as root
-# because a seat lends a card to a privileged caller before anybody is there;
-# this is the person's own desktop and runs as them. `alo-desktop`'s own header
-# is explicit that the uid is not a variable it reads — *whose session this is,
-# is whose session this is* — and this line is what makes that true.
-User=alo
+# **The person, not root, and the person this instance was started for.** The
+# greeter is the machine's and runs as root because a seat lends a card to a
+# privileged caller before anybody is there; this is the person's own desktop
+# and runs as them. `%i` is their account number, which `alo-sessiond` checked
+# against the accounts file before starting this, and pid 1 becomes them before
+# anything here runs. `alo-desktop`'s own header is explicit that the uid is not
+# a variable it reads — *whose session this is, is whose session this is*.
+User=%i
 
 # **The seat, which is the whole reason this unit has a PAM stack.**
 # `image/usr/lib/pam.d/alo-desktop` records why at length: `libseat` asks
@@ -75,6 +78,13 @@ User=alo
 # With it, the same machine answered `seat=seat0 vtnr=1`.
 TTYPath=/dev/tty1
 PAMName=alo-desktop
+
+# **A person's session, said rather than defaulted**, and a Wayland one. With a
+# terminal `pam_systemd` would choose `user` anyway; naming it means a later
+# edit cannot quietly make this a greeter's or a background session, which
+# polkit would not treat as somebody at the machine.
+Environment=XDG_SESSION_CLASS=user
+Environment=XDG_SESSION_TYPE=wayland
 
 # **No card is named here, and one used to be.**
 #
@@ -148,14 +158,11 @@ NoNewPrivileges=yes
 ExecStart=/usr/bin/alo-desktop
 
 # **`on-failure`, and not `always`.** A desktop that died should come back. One
-# that ended because the person signed out must not, and `BindsTo=` above is
-# what ends it then — restarting after that would draw a desktop over a sign-in
-# screen for an account that is no longer signed in.
+# that ended because the person signed out must not — restarting after that
+# would draw a desktop over the sign-in screen `OnSuccess=` just put back.
 Restart=on-failure
 RestartSec=2
 
-[Install]
-# The person's session, not `multi-user.target`: a desktop wanted by the machine
-# would be started before anybody was there, and `BindsTo=` above would then
-# take it straight down again. One lifetime, named in both directions.
-WantedBy=user@1000.service
+# **No `[Install]` section, on purpose.** Only `alo-sessiond` starts this, for a
+# number it has checked; a desktop the machine could enable would start before
+# anybody had signed in.

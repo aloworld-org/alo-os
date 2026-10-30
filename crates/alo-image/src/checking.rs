@@ -153,7 +153,7 @@ pub fn everything_wrong_with(image: &Image) -> Vec<Wrong> {
     the_greeter_signs_in_as_a_greeter(image, &mut wrong);
     the_desktop_is_the_persons(image, &mut wrong);
     no_unit_names_a_card_number(image, &mut wrong);
-    the_desktop_lives_and_dies_with_its_session(image, &mut wrong);
+    the_desktop_opens_its_own_session(image, &mut wrong);
     the_logins_are_the_ones_this_image_makes(image, &mut wrong);
     the_build_holds_every_login_to_its_number(image, &mut wrong);
     the_directories_are_made(image, &mut wrong);
@@ -999,7 +999,7 @@ fn the_person_has_a_home_of_their_own(image: &Image, wrong: &mut Vec<Wrong>) {
 
 /// **Nothing else takes the screen the shell is on.**
 ///
-/// `alo-compositor.service` and `alo-desktop.service` both carry
+/// `alo-compositor.service` and `alo-desktop@.service` both carry
 /// `TTYPath=/dev/tty1`, which is what gives each of them a seat. The base also
 /// enables `getty@tty1`, and on a booted machine that getty restarted the
 /// instant the greeter exited and drew a login prompt over a desktop that was
@@ -1079,9 +1079,14 @@ fn the_greeter_signs_in_as_a_greeter(image: &Image, wrong: &mut Vec<Wrong>) {
 /// process: *whose session this is, is whose session this is*, and it refuses to
 /// read a uid from a variable. So the unit's `User=` line is the only place the
 /// answer exists, and a unit is a file somebody edits.
+///
+/// **And it is the person it was started for**: `%i`, the account number
+/// `alo-sessiond` instanced it with (ADR 0141). A template that named one
+/// login would run every person's desktop as that one.
 fn the_desktop_is_the_persons(image: &Image, wrong: &mut Vec<Wrong>) {
+    const THE_INSTANCE: &str = "%i";
     let runs = image.desktop().as_login();
-    if runs.is_none_or(|who| who == "root") {
+    if runs != Some(THE_INSTANCE) {
         wrong.push(Wrong::TheDesktopIsNotThePersons {
             desktop: image.desktop().called().to_owned(),
             runs: runs.unwrap_or("nothing it says").to_owned(),
@@ -1119,23 +1124,57 @@ fn no_unit_names_a_card_number(image: &Image, wrong: &mut Vec<Wrong>) {
     }
 }
 
-/// **A desktop starts with a session and ends with it, and both are checked.**
+/// **The desktop opens the person's session itself, and its end brings the
+/// sign-in screen back** ([ADR 0141](../../../docs/decisions/0141-the-desktop-is-put-inside-the-persons-session-by-what-already-has-the-privilege.md)).
 ///
-/// One direction is not enough and the two fail differently. `WantedBy=` with no
-/// `BindsTo=` is a desktop that outlives the session that started it — still
-/// drawn after the person signs out, over the sign-in screen of whoever comes
-/// next. `BindsTo=` with no `WantedBy=` is a desktop nothing ever starts, which
-/// is exactly the state this unit was written to end: `alo-desktop` was built
-/// and installed and no unit named it.
-fn the_desktop_lives_and_dies_with_its_session(image: &Image, wrong: &mut Vec<Wrong>) {
-    let a_persons_session = |named: &&str| named.starts_with("user@");
-    let bound = image.desktop().bound_to();
-    let wanted = image.desktop().wanted_by();
-    if !bound.iter().any(a_persons_session) || !wanted.iter().any(a_persons_session) {
-        wrong.push(Wrong::TheDesktopOutlivesItsSession {
-            desktop: image.desktop().called().to_owned(),
-            bound: bound.into_iter().map(str::to_owned).collect(),
+/// This was *a desktop starts with a session and ends with it*: `WantedBy=` and
+/// `BindsTo=` `user@1000.service`. A booted machine showed that the person's
+/// manager is in no login session, so the desktop it started was in none, and
+/// restart, power off and the time zone asked for a password. Three things are
+/// checked now, each a different way to lose that:
+///
+/// - **a session of its own on a seat**: `PAMName=` and `TTYPath=`;
+/// - **nothing but `alo-sessiond` starts it**: no `user@` in `WantedBy=` or
+///   `BindsTo=`, and no `[Install]` to enable;
+/// - **its end brings the sign-in screen back**: `OnSuccess=` for signing out,
+///   `OnFailure=` for a desktop that keeps crashing.
+fn the_desktop_opens_its_own_session(image: &Image, wrong: &mut Vec<Wrong>) {
+    let desktop = image.desktop();
+    let named = || desktop.called().to_owned();
+
+    let pam = desktop.opens_a_session_with();
+    let terminal = desktop.on_the_terminal();
+    if pam.is_none() || terminal.is_none() {
+        wrong.push(Wrong::TheDesktopOpensNoSession {
+            desktop: named(),
+            pam: pam.unwrap_or("nothing").to_owned(),
+            terminal: terminal.unwrap_or("nothing").to_owned(),
+        });
+    }
+
+    let the_persons_manager = |unit: &&str| unit.starts_with("user@");
+    let wanted = desktop.wanted_by();
+    let bound = desktop.bound_to();
+    if desktop.can_be_enabled()
+        || wanted.iter().any(the_persons_manager)
+        || bound.iter().any(the_persons_manager)
+    {
+        wrong.push(Wrong::TheDesktopIsStartedFromThePersonsManager {
+            desktop: named(),
             wanted: wanted.into_iter().map(str::to_owned).collect(),
+            bound: bound.into_iter().map(str::to_owned).collect(),
+        });
+    }
+
+    let screen = image.screen().called();
+    let on_success = desktop.after_it_succeeds();
+    let on_failure = desktop.after_it_fails();
+    if !on_success.contains(&screen) || !on_failure.contains(&screen) {
+        wrong.push(Wrong::NothingPutsTheSignInScreenBack {
+            desktop: named(),
+            on_success: on_success.into_iter().map(str::to_owned).collect(),
+            on_failure: on_failure.into_iter().map(str::to_owned).collect(),
+            screen: screen.to_owned(),
         });
     }
 }
@@ -1431,7 +1470,7 @@ mod tests {
     #[test]
     fn a_desktop_that_would_run_as_root_is_caught() {
         let root = a_copy_of_the_image("desktop-as-root");
-        edited(&root, THE_DESKTOPS_UNIT, "User=alo", "User=root");
+        edited(&root, THE_DESKTOPS_UNIT, "User=%i", "User=root");
 
         let wrong = everything_wrong_with(&image_at(&root));
 
@@ -1443,72 +1482,144 @@ mod tests {
         );
     }
 
-    /// **A desktop that would outlive the session that started it is caught.**
-    ///
-    /// Without `BindsTo=`, signing out leaves the desktop drawn - over the
-    /// sign-in screen of whoever comes next. Checked by removing the line
-    /// rather than by reading it, because the failure is what a person would
-    /// see and not what the file says.
+    /// **A desktop that names one login is caught**, because it would run
+    /// every person's desktop as that one person (ADR 0141's template).
     #[test]
-    fn a_desktop_that_would_outlive_its_session_is_caught() {
-        let root = a_copy_of_the_image("desktop-outlives");
-        edited(&root, THE_DESKTOPS_UNIT, "BindsTo=user@1000.service", "");
+    fn a_desktop_that_names_one_login_for_everybody_is_caught() {
+        let root = a_copy_of_the_image("desktop-one-login");
+        edited(&root, THE_DESKTOPS_UNIT, "User=%i", "User=alo");
 
         let wrong = everything_wrong_with(&image_at(&root));
 
         assert!(
             wrong
                 .iter()
-                .any(|it| matches!(it, Wrong::TheDesktopOutlivesItsSession { .. })),
+                .any(|it| matches!(it, Wrong::TheDesktopIsNotThePersons { .. })),
             "{wrong:?}"
         );
     }
 
-    /// **And a desktop nothing starts is caught by the same check**, which is
-    /// the state this unit was written to end.
-    ///
-    /// `alo-desktop` was built by the recipe and installed to `/usr/bin` and no
-    /// unit named it: 8 `ExecStart=` lines in that directory and none its own.
-    /// A machine signed somebody in and showed them nothing. Removing
-    /// `WantedBy=` is that state in one line, and the check refuses it from the
-    /// other direction than the test above.
+    /// **A desktop with no PAM stack is caught**: it opens no session, which is
+    /// the person in no session and every password prompt the booted machine
+    /// showed on 2026-10-30.
     #[test]
-    fn a_desktop_nothing_would_start_is_caught() {
-        let root = a_copy_of_the_image("desktop-unstarted");
-        edited(&root, THE_DESKTOPS_UNIT, "WantedBy=user@1000.service", "");
+    fn a_desktop_that_opens_no_session_is_caught() {
+        let root = a_copy_of_the_image("desktop-no-pam");
+        edited(&root, THE_DESKTOPS_UNIT, "PAMName=alo-desktop", "");
 
         let wrong = everything_wrong_with(&image_at(&root));
 
         assert!(
             wrong
                 .iter()
-                .any(|it| matches!(it, Wrong::TheDesktopOutlivesItsSession { .. })),
+                .any(|it| matches!(it, Wrong::TheDesktopOpensNoSession { .. })),
             "{wrong:?}"
         );
+    }
+
+    /// **And one with no terminal**, whose session is given no seat.
+    #[test]
+    fn a_desktop_whose_session_has_no_seat_is_caught() {
+        let root = a_copy_of_the_image("desktop-no-tty");
+        edited(&root, THE_DESKTOPS_UNIT, "TTYPath=/dev/tty1", "");
+
+        let wrong = everything_wrong_with(&image_at(&root));
+
+        assert!(
+            wrong
+                .iter()
+                .any(|it| matches!(it, Wrong::TheDesktopOpensNoSession { .. })),
+            "{wrong:?}"
+        );
+    }
+
+    /// **The old road is caught if it comes back**: a desktop wanted by the
+    /// person's own manager, which is in no session, is in none either.
+    #[test]
+    fn a_desktop_started_from_the_persons_manager_is_caught() {
+        let root = a_copy_of_the_image("desktop-wanted-by-manager");
+        edited(
+            &root,
+            THE_DESKTOPS_UNIT,
+            "Restart=on-failure",
+            "Restart=on-failure\n\n[Install]\nWantedBy=user@1000.service",
+        );
+
+        let wrong = everything_wrong_with(&image_at(&root));
+
+        assert!(
+            wrong
+                .iter()
+                .any(|it| matches!(it, Wrong::TheDesktopIsStartedFromThePersonsManager { .. })),
+            "{wrong:?}"
+        );
+    }
+
+    /// **And bound to it**, which is the same road from the other end.
+    #[test]
+    fn a_desktop_bound_to_the_persons_manager_is_caught() {
+        let root = a_copy_of_the_image("desktop-bound-to-manager");
+        edited(
+            &root,
+            THE_DESKTOPS_UNIT,
+            "OnSuccess=alo-compositor.service",
+            "OnSuccess=alo-compositor.service\nBindsTo=user@1000.service",
+        );
+
+        let wrong = everything_wrong_with(&image_at(&root));
+
+        assert!(
+            wrong
+                .iter()
+                .any(|it| matches!(it, Wrong::TheDesktopIsStartedFromThePersonsManager { .. })),
+            "{wrong:?}"
+        );
+    }
+
+    /// **A desktop whose end leaves a console is caught**, from either end:
+    /// signing out, and crashing until it gives up.
+    #[test]
+    fn a_desktop_that_leaves_nothing_on_the_screen_when_it_ends_is_caught() {
+        for (line, called) in [
+            ("OnSuccess=alo-compositor.service", "desktop-no-on-success"),
+            ("OnFailure=alo-compositor.service", "desktop-no-on-failure"),
+        ] {
+            let root = a_copy_of_the_image(called);
+            edited(&root, THE_DESKTOPS_UNIT, line, "");
+
+            let wrong = everything_wrong_with(&image_at(&root));
+
+            assert!(
+                wrong
+                    .iter()
+                    .any(|it| matches!(it, Wrong::NothingPutsTheSignInScreenBack { .. })),
+                "removing {line} was not noticed: {wrong:?}"
+            );
+        }
     }
 
     /// **The shipped desktop unit is the person's, asked of the real file.**
     ///
-    /// The three tests above prove the checks can refuse. This proves the thing
-    /// the task was about: that the unit a built machine actually starts after
+    /// The tests above prove the checks can refuse. This proves the thing the
+    /// task was about: that the unit a built machine actually starts after
     /// sign-in passes them. A check that only ever meets a fixture is a check
     /// about a fixture.
     #[test]
-    fn the_desktop_this_repository_ships_is_the_persons_and_lives_with_their_session() {
-        let at = "../../image/usr/lib/systemd/system/alo-desktop.service";
+    fn the_desktop_this_repository_ships_is_the_persons_and_opens_their_session() {
+        let at = "../../image/usr/lib/systemd/system/alo-desktop@.service";
         let Ok(unit) = std::fs::read_to_string(at) else {
             unreachable!("the shipped desktop unit is in this repository, at {at}")
         };
         let Ok(parsed) = crate::unit::Unit::read(&unit) else {
             unreachable!("the shipped desktop unit parses as a unit")
         };
-        let Ok(desktop) = crate::service::Service::of("alo-desktop.service", parsed) else {
+        let Ok(desktop) = crate::service::Service::of("alo-desktop@.service", parsed) else {
             unreachable!("the shipped desktop unit is a service")
         };
 
         assert_eq!(
             desktop.as_login(),
-            Some("alo"),
+            Some("%i"),
             "the desktop a person arrives at does not run as them"
         );
         assert!(
@@ -1517,15 +1628,31 @@ mod tests {
             desktop.bounded_to(),
             desktop.given()
         );
+        assert_eq!(desktop.opens_a_session_with(), Some("alo-desktop"));
+        assert_eq!(desktop.on_the_terminal(), Some("/dev/tty1"));
         assert!(
-            desktop.bound_to().iter().any(|it| it.starts_with("user@")),
-            "signing out would leave this desktop drawn: bound to {:?}",
-            desktop.bound_to()
+            !desktop.can_be_enabled() && desktop.wanted_by().is_empty(),
+            "the desktop can be started by something other than alo-sessiond"
         );
         assert!(
-            desktop.wanted_by().iter().any(|it| it.starts_with("user@")),
-            "nothing starts this desktop: wanted by {:?}",
-            desktop.wanted_by()
+            !desktop.bound_to().iter().any(|it| it.starts_with("user@")),
+            "the desktop is bound to the person's manager: {:?}",
+            desktop.bound_to()
+        );
+        assert_eq!(desktop.after_it_succeeds(), vec!["alo-compositor.service"]);
+        assert_eq!(desktop.after_it_fails(), vec!["alo-compositor.service"]);
+
+        let image = image_at(Path::new(crate::THE_IMAGE));
+        let found = everything_wrong_with(&image);
+        assert!(
+            !found.iter().any(|it| matches!(
+                it,
+                Wrong::TheDesktopIsNotThePersons { .. }
+                    | Wrong::TheDesktopOpensNoSession { .. }
+                    | Wrong::TheDesktopIsStartedFromThePersonsManager { .. }
+                    | Wrong::NothingPutsTheSignInScreenBack { .. }
+            )),
+            "{found:?}"
         );
     }
 

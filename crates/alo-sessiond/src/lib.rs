@@ -9,12 +9,19 @@
 //! logind opens a session only for a privileged caller. That is the gap, and
 //! this is what stands in it.
 //!
+//! **How it opens the session changed on 2026-10-30**
+//! ([ADR 0141](../../../docs/decisions/0141-the-desktop-is-put-inside-the-persons-session-by-what-already-has-the-privilege.md)).
+//! It used to call `CreateSession` itself, which made this daemon the leader of
+//! the person's session and left their desktop outside it. It now starts the
+//! person's desktop unit, whose own PAM stack opens the session with the desktop
+//! inside it.
+//!
 //! | | |
 //! |---|---|
 //! | [`Opening`] | The four answers a knock can get, and the order they are decided in |
 //! | [`Knock`], [`Answered`] | The whole conversation: one line in carrying a number, one line back |
 //! | [`Door`] | Who may knock at all, which is a group and not a name |
-//! | [`Logind`], [`TheAccounts`] | The two things this crate asks the machine, each one method wide |
+//! | [`TheirDesktop`], [`TheAccounts`] | The two things this crate asks the machine about a sign-in |
 //! | [`TheirFolder`], [`TheirName`] | The two units a sign-in starts for a person, neither of which can refuse them |
 //! | [`EVERY_WORD`] | Every sentence a refusal can be read as, in the one vocabulary |
 //!
@@ -27,9 +34,9 @@
 //!
 //! - **It holds no capability at all.** The loader holds two; this holds none.
 //!   Its unit says `CapabilityBoundingSet=` and `AmbientCapabilities=`, both
-//!   empty, and it still works — because what `logind` decides `CreateSession`
-//!   on is the caller's **uid**, not a capability. The measurement at the foot
-//!   of ADR 0024 and in `docs/quirks.md` is what says so, on the pinned base.
+//!   empty, and it still works — because what systemd decides `StartUnit` on
+//!   is the caller's **uid**, not a capability, and the unit it starts is where
+//!   becoming the person happens: pid 1 does it, with privilege it already has.
 //! - **No password reaches it, and no name.** The conversation is one line
 //!   carrying one number. There is no field for a password and no field for a
 //!   name, so there is no shape in which this component could authenticate
@@ -47,7 +54,9 @@
 //!   [ADR 0135](../../../docs/decisions/0135-a-persons-name-reaches-their-desktop-through-a-file-only-they-can-read.md)
 //!   in the same shape: a constant and a checked number. That unit reads the
 //!   person's name from the store itself, so **no name reaches this component
-//!   even now**.
+//!   even now**. *And a third*, [`THE_DESKTOPS_UNIT`], added 2026-10-30 under
+//!   ADR 0141 in the same shape: the person's desktop, which is what a sign-in
+//!   is for.
 //! - **It cannot be asked for a number nobody here could have signed in as.**
 //!   The number on the wire is checked against the accounts this machine has
 //!   ([`TheAccounts`]) before anything else happens. That file is the one the
@@ -96,7 +105,6 @@
 mod accounts;
 mod asking;
 mod door;
-mod logind;
 #[cfg(target_os = "linux")]
 mod machine;
 mod opening;
@@ -104,6 +112,7 @@ mod place;
 mod refusing;
 #[cfg(target_os = "linux")]
 mod starting_their_units;
+mod their_desktop;
 mod their_folder;
 mod their_name;
 #[cfg(unix)]
@@ -116,16 +125,17 @@ pub mod listening;
 pub use accounts::TheAccounts;
 pub use asking::{Answered, Knock};
 pub use door::Door;
-pub use logind::Logind;
 #[cfg(target_os = "linux")]
-pub use machine::{TheMachinesAccounts, TheMachinesLogind};
+pub use machine::TheMachinesAccounts;
 pub use opening::Opening;
 pub use place::{THE_DOOR, THE_DOORS_DIRECTORY};
 pub use refusing::{NotADoor, NotAKnock, NotAnAnswer, NotAsked, NotOpened, NotTheirs};
 #[cfg(target_os = "linux")]
 pub use starting_their_units::{
-    EVERY_METHOD, THE_NAMES_UNIT, THE_UNIT, TheMachinesFolders, TheMachinesNames,
+    EVERY_METHOD, THE_DESKTOPS_UNIT, THE_NAMES_UNIT, THE_UNIT, TheMachinesDesktops,
+    TheMachinesFolders, TheMachinesNames,
 };
+pub use their_desktop::{Starting, TheirDesktop, has_not_ended};
 pub use their_folder::TheirFolder;
 pub use their_name::TheirName;
 #[cfg(unix)]

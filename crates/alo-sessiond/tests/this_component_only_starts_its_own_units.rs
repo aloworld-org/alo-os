@@ -141,6 +141,10 @@ fn each_unit_is_named_by_a_constant_and_instanced_by_a_number() {
             r#"format!("{THE_NAMES_UNIT}@{person}.service")"#,
             "fn given_to(&self, person: u32)",
         ),
+        (
+            r#"format!("{THE_DESKTOPS_UNIT}@{person}.service")"#,
+            "fn the_desktop_of(person: u32)",
+        ),
     ] {
         assert!(
             source.contains(built),
@@ -155,26 +159,75 @@ fn each_unit_is_named_by_a_constant_and_instanced_by_a_number() {
     }
 }
 
-/// **And there are two units, not a third.**
+/// **And there are three units, not a fourth.**
 ///
-/// A unit name is built in exactly two places, and the function that starts
-/// one is private — so the set of things a sign-in can start is the two
-/// constants, and a third arriving is a decision this test makes somebody take
+/// A unit name is built in exactly three places, and the functions that start
+/// one are private — so the set of things a sign-in can start is the three
+/// constants, and a fourth arriving is a decision this test makes somebody take
 /// on purpose.
 #[test]
-fn this_component_builds_two_unit_names_and_no_more() {
+fn this_component_builds_three_unit_names_and_no_more() {
     let source = the_source();
     let built = source.matches(r#"@{person}.service")"#).count();
     assert_eq!(
         built,
-        2,
-        "{} builds {built} unit names, and ADR 0121 and ADR 0135 allow two",
+        3,
+        "{} builds {built} unit names, and ADR 0121, ADR 0135 and ADR 0141 allow three",
         where_it_is().display()
     );
+    for private in [
+        "started_and_finished",
+        "started_and_running",
+        "the_desktop_of",
+    ] {
+        assert!(
+            source.contains(&format!("\nfn {private}("))
+                && !source.contains(&format!("pub fn {private}(")),
+            "{private}, which starts or names a unit, is public, or gone, in {}",
+            where_it_is().display()
+        );
+    }
+}
+
+/// **Nothing in this crate asks `logind` for a session.**
+///
+/// It used to: `CreateSession`, with this process as the leader, on the
+/// person's seat. Measured inside the image on 2026-10-30, `logind` then moved
+/// `alo-sessiond` into the person's session scope and gave it their seat, and
+/// the desktop's own session was never made — so the person's terminal was in
+/// no session and restart, power off and the time zone asked for a password
+/// (ADR 0141). The desktop's unit opens the session now.
+#[test]
+fn nothing_in_this_crate_opens_a_session_of_its_own() {
+    let mut found = Vec::new();
+    let source = Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
+    let entries = std::fs::read_dir(&source)
+        .unwrap_or_else(|why| panic!("{} could not be read: {why}", source.display()));
+    let mut read = 0;
+    for entry in entries.flatten() {
+        let at = entry.path();
+        if at.extension().is_none_or(|it| it != "rs") {
+            continue;
+        }
+        let text = std::fs::read_to_string(&at)
+            .unwrap_or_else(|why| panic!("{} could not be read: {why}", at.display()));
+        read += 1;
+        for (number, line) in text.lines().enumerate() {
+            let code = line.split("//").next().unwrap_or(line);
+            if code.contains("CreateSession") || code.contains("org.freedesktop.login1") {
+                found.push(format!("{}:{}", at.display(), number + 1));
+            }
+        }
+    }
+    // The control: the directory read is this crate's source.
     assert!(
-        source.contains("\nfn started_and_finished(")
-            && !source.contains("pub fn started_and_finished("),
-        "the function that starts a unit by name is public, or gone, in {}",
-        where_it_is().display()
+        read > 5,
+        "only {read} files were read from {}",
+        source.display()
+    );
+    assert!(
+        found.is_empty(),
+        "this crate asks logind for a session again, which makes alo-sessiond the leader of the \
+         person's session and leaves their desktop outside it: {found:?}"
     );
 }

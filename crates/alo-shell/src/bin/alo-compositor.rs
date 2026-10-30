@@ -158,11 +158,12 @@ mod running {
             }
         }) {
             Ok(Stood::SomebodySignedIn { seat }) => {
-                // The session is open and it is `alo-sessiond` that holds it,
-                // not this process. What goes on that person's display is the
-                // next thing to be built; until it is, this says plainly that
-                // it signed somebody in and stopped, rather than leaving a
-                // black screen to be read as a crash.
+                // The person's desktop is running, inside the login session
+                // its own unit opened (ADR 0141), and that unit holds it — not
+                // this process and not `alo-sessiond`. The desktop's session is
+                // the seat's now, so this screen exits and is not restarted;
+                // the desktop's `OnSuccess=` and `OnFailure=` bring it back
+                // when the desktop ends.
                 //
                 // **The seat arrives here now rather than a uid**, by
                 // ADR 0087 — it is the session owner, and this is the process

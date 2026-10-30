@@ -38,8 +38,8 @@ use std::time::Duration;
 
 use crate::accounts::TheAccounts;
 use crate::asking::{Answered, Knock};
-use crate::logind::Logind;
 use crate::opening::Opening;
+use crate::their_desktop::TheirDesktop;
 use crate::their_folder::TheirFolder;
 use crate::their_name::TheirName;
 use crate::words::NOT_YOURS_TO_ASK;
@@ -105,7 +105,7 @@ impl Listening {
     /// Whatever the machine said about accepting, reading or writing. A caller
     /// that went away mid-sentence is one of these and is not a refusal: there
     /// is nobody left to refuse.
-    pub fn answer_one<A: TheAccounts, L: Logind, F: TheirFolder, N: TheirName>(
+    pub fn answer_one<A: TheAccounts, L: TheirDesktop, F: TheirFolder, N: TheirName>(
         &self,
         opening: &mut Opening<A, L, F, N>,
     ) -> Result<Answered, std::io::Error> {
@@ -126,7 +126,7 @@ impl Listening {
 /// knock, are both answered with the one refusal that gives nothing away.
 /// Neither is a failure of this machine — they are somebody at the door who is
 /// not the sign-in surface — and neither may learn anything more than that.
-fn what_to_say<A: TheAccounts, L: Logind, F: TheirFolder, N: TheirName>(
+fn what_to_say<A: TheAccounts, L: TheirDesktop, F: TheirFolder, N: TheirName>(
     connection: &UnixStream,
     opening: &mut Opening<A, L, F, N>,
 ) -> Answered {

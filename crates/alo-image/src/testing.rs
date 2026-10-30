@@ -28,7 +28,7 @@ pub(crate) const THE_AGENTS_UNIT: &str = "usr/lib/systemd/system/alo-agentd.serv
 pub(crate) const THE_OPENERS_UNIT: &str = "usr/lib/systemd/system/alo-sessiond.service";
 
 /// The unit that stands the person's own desktop up, beneath the image.
-pub(crate) const THE_DESKTOPS_UNIT: &str = "usr/lib/systemd/system/alo-desktop.service";
+pub(crate) const THE_DESKTOPS_UNIT: &str = "usr/lib/systemd/system/alo-desktop@.service";
 
 /// The greeter's own unit, which holds the screen before anybody has signed in.
 pub(crate) const THE_SCREENS_UNIT: &str = "usr/lib/systemd/system/alo-compositor.service";

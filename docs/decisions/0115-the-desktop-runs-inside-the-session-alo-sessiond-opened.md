@@ -4,6 +4,16 @@
 2026-10-16**, see the amendment at the end. Originally proposed 2026-10-14 by
 the third-PC lane, from a measurement on a booted machine.
 
+**Amended by [ADR 0141](0141-the-desktop-is-put-inside-the-persons-session-by-what-already-has-the-privilege.md),
+2026-10-30.** The seated session this record had `alo-sessiond` open is what
+held the seat against the desktop: `logind` moved `alo-sessiond` into the
+person's session scope, the desktop's own PAM session was never made, and the
+person's terminal was in no session. `alo-sessiond` no longer opens a session;
+it starts `alo-desktop@<uid>.service`, whose PAM stack opens one with the
+desktop inside it. The amendment below — *the desktop came up through
+`WantedBy=user@1000.service`* — was true about the screen and not about the
+session.
+
 **This decides launch item 2's named race.** `ROADMAP.md` says of *it boots and
 a person signs in*: "the handover of the graphics card from the greeter to the
 desktop is a named race — `alo-desktop.service` says its ordering is intent

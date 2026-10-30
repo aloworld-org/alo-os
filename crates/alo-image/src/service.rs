@@ -239,6 +239,37 @@ impl Service {
     pub fn wanted_by(&self) -> Vec<&str> {
         self.unit.listed(INSTALL, "WantedBy")
     }
+
+    /// Whether the unit has an `[Install]` section at all, which is whether
+    /// `systemctl enable` can do anything with it.
+    #[must_use]
+    pub fn can_be_enabled(&self) -> bool {
+        self.unit.has(INSTALL)
+    }
+
+    /// The PAM stack systemd opens a login session with for this service.
+    #[must_use]
+    pub fn opens_a_session_with(&self) -> Option<&str> {
+        self.unit.one(SERVICE, "PAMName")
+    }
+
+    /// The terminal the service is given, which is what gives a session a seat.
+    #[must_use]
+    pub fn on_the_terminal(&self) -> Option<&str> {
+        self.unit.one(SERVICE, "TTYPath")
+    }
+
+    /// The units started when this one ends well.
+    #[must_use]
+    pub fn after_it_succeeds(&self) -> Vec<&str> {
+        self.unit.listed(UNIT, "OnSuccess")
+    }
+
+    /// The units started when this one fails.
+    #[must_use]
+    pub fn after_it_fails(&self) -> Vec<&str> {
+        self.unit.listed(UNIT, "OnFailure")
+    }
 }
 
 #[cfg(test)]

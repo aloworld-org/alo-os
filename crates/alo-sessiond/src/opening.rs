@@ -12,10 +12,12 @@
 //!    about the process that connected, before its line is looked at. A caller
 //!    that may not ask is told nothing about what it asked for.
 //! 2. **Is there anybody here with that number?** Asked of the same accounts
-//!    file the surface authenticated against, and before `logind` is asked
+//!    file the surface authenticated against, and before systemd is asked
 //!    anything at all.
 //! 3. **Is somebody signed in already?** A second session nobody asked for is a
-//!    machine with two of everything.
+//!    machine with two of everything. **Asked of systemd, not remembered**:
+//!    signing out is the desktop ending, so a desktop this component started
+//!    that has since ended is nobody signed in, and the next person may.
 //! 4. **Their place for what an undo would put back, then their own name**,
 //!    each of which only a privileged
 //!    process can make ([ADR 0121](../../../docs/decisions/0121-the-thing-that-opens-a-session-makes-the-persons-folder.md)).
@@ -27,9 +29,10 @@
 //!    is placed the same way for the same reasons: after 3, and before 5
 //!    because the session is what starts the desktop that reads it. Its
 //!    failure refuses nobody either (`crate::their_name`).
-//! 5. **Then, and only then, open one.**
+//! 5. **Then, and only then, start their desktop**, whose own unit opens the
+//!    session with the desktop inside it ([ADR 0141](../../../docs/decisions/0141-the-desktop-is-put-inside-the-persons-session-by-what-already-has-the-privilege.md)).
 //!
-//! Reversing any two of 1, 2, 3 and 5 would give something away. Asking `logind` first
+//! Reversing any two of 1, 2, 3 and 5 would give something away. Asking systemd first
 //! would let an unauthorised caller start a session for a number and be refused
 //! afterwards; asking about the accounts before asking who is knocking would
 //! answer *is there an account numbered 1000* to whatever managed to connect.
@@ -45,46 +48,48 @@
 use crate::accounts::TheAccounts;
 use crate::asking::{Answered, Knock};
 use crate::door::Door;
-use crate::logind::Logind;
+use crate::their_desktop::TheirDesktop;
 use crate::their_folder::TheirFolder;
 use crate::their_name::TheirName;
 use crate::words::{ALREADY_SIGNED_IN, NOBODY_HERE, NOT_OPENED, NOT_YOURS_TO_ASK};
 
 /// The decision this privileged component makes, and the only one it makes.
 #[derive(Debug)]
-pub struct Opening<A: TheAccounts, L: Logind, F: TheirFolder, N: TheirName> {
+pub struct Opening<A: TheAccounts, L: TheirDesktop, F: TheirFolder, N: TheirName> {
     /// Who may knock.
     door: Door,
     /// The accounts this machine has.
     accounts: A,
-    /// What opens a session, and what holds it open once it is.
-    logind: L,
+    /// What starts a person's desktop, and says whether it is still running.
+    desktop: L,
     /// What makes a person their place for what an undo would put back.
     folders: F,
     /// What gives a person their own name, where their desktop can read it.
     names: N,
-    /// Whether one is open, which is the whole of this component's memory.
-    signed_in: bool,
+    /// Whose desktop this component last started, which is the whole of its
+    /// memory. Whether that desktop is still running is asked of the machine at
+    /// the next knock, never assumed.
+    started: Option<u32>,
 }
 
-impl<A: TheAccounts, L: Logind, F: TheirFolder, N: TheirName> Opening<A, L, F, N> {
-    /// This door, these accounts, this way of opening a session, this way of
+impl<A: TheAccounts, L: TheirDesktop, F: TheirFolder, N: TheirName> Opening<A, L, F, N> {
+    /// This door, these accounts, this way of starting a desktop, this way of
     /// making a person their folder, and this way of giving them their name.
-    pub const fn at(door: Door, accounts: A, logind: L, folders: F, names: N) -> Self {
+    pub const fn at(door: Door, accounts: A, desktop: L, folders: F, names: N) -> Self {
         Self {
             door,
             accounts,
-            logind,
+            desktop,
             folders,
             names,
-            signed_in: false,
+            started: None,
         }
     }
 
-    /// Whether a session is open.
+    /// Whether this component has started a desktop it has not since seen end.
     #[must_use]
     pub const fn is_signed_in(&self) -> bool {
-        self.signed_in
+        self.started.is_some()
     }
 
     /// What this knock, from a caller in this group, is answered with.
@@ -110,16 +115,29 @@ impl<A: TheAccounts, L: Logind, F: TheirFolder, N: TheirName> Opening<A, L, F, N
                 return Answered::Refused(NOT_OPENED.key());
             }
         }
-        if self.signed_in {
-            return Answered::Refused(ALREADY_SIGNED_IN.key());
+        // **Somebody signed in is a desktop still running**, asked of the
+        // machine. A desktop that ended is somebody who signed out, and the
+        // next correct password is let in rather than told *already signed in*
+        // for ever. A machine that cannot say is not assumed either way: it is
+        // refused as the machine's failure, because starting a second desktop
+        // beside one that may still hold the seat is what `logind` refuses.
+        if let Some(who) = self.started {
+            match self.desktop.is_running_for(who) {
+                Ok(true) => return Answered::Refused(ALREADY_SIGNED_IN.key()),
+                Ok(false) => self.started = None,
+                Err(why) => {
+                    eprintln!("alo-sessiond: {why}");
+                    return Answered::Refused(NOT_OPENED.key());
+                }
+            }
         }
 
         // **Their folder, between the two, and a failure here refuses nobody.**
         //
         // Here rather than after, because the session is what writes into it and
         // a session that opens first would have a window in which it could not.
-        // Here rather than before `signed_in`, because a second knock nobody
-        // asked for should not reach the machine at all.
+        // Here rather than before the check above, because a second knock
+        // nobody asked for should not reach the machine at all.
         //
         // `crate::their_folder` carries the three reasons the person signs in
         // anyway, and `CLAUDE.md` law 5 is the one that decides: refusing the
@@ -131,17 +149,17 @@ impl<A: TheAccounts, L: Logind, F: TheirFolder, N: TheirName> Opening<A, L, F, N
         }
 
         // **Their name, after their folder and for the same reasons.** Before
-        // the session, because the session is what starts the desktop that
-        // reads it; and a failure refuses nobody, because what it costs is a
-        // word in a strip (`crate::their_name`).
-        // `a_name_that_was_not_given_refuses_nobody` is what holds it.
+        // the desktop, because the desktop is what reads it; and a failure
+        // refuses nobody, because what it costs is a word in a strip
+        // (`crate::their_name`). `a_name_that_was_not_given_refuses_nobody` is
+        // what holds it.
         if let Err(why) = self.names.given_to(knock.person()) {
             eprintln!("alo-sessiond: {why}");
         }
 
-        match self.logind.open_a_session_for(knock.person()) {
+        match self.desktop.started_for(knock.person()) {
             Ok(()) => {
-                self.signed_in = true;
+                self.started = Some(knock.person());
                 Answered::Opened
             }
             Err(why) => {
@@ -159,7 +177,7 @@ impl<A: TheAccounts, L: Logind, F: TheirFolder, N: TheirName> Opening<A, L, F, N
 )]
 mod tests {
     use super::*;
-    use std::cell::RefCell;
+    use std::cell::{Cell, RefCell};
 
     use alo_strings::Key;
 
@@ -273,28 +291,57 @@ mod tests {
         }
     }
 
-    /// A `logind` that opens whatever it is asked for, and remembers.
+    /// A machine that starts whatever desktop it is asked for, and remembers.
+    ///
+    /// The second field is whether that desktop has since ended — the person
+    /// signing out — which a test sets to say so.
     #[derive(Default)]
-    struct Willing(RefCell<Vec<u32>>);
+    struct Willing(RefCell<Vec<u32>>, Cell<bool>);
 
-    impl Logind for Willing {
-        fn open_a_session_for(&mut self, person: u32) -> Result<(), NotOpened> {
+    impl TheirDesktop for Willing {
+        fn started_for(&mut self, person: u32) -> Result<(), NotOpened> {
             self.0.borrow_mut().push(person);
+            self.1.set(false);
             Ok(())
+        }
+
+        fn is_running_for(&self, person: u32) -> Result<bool, NotOpened> {
+            Ok(self.0.borrow().contains(&person) && !self.1.get())
         }
     }
 
-    /// A `logind` that refuses, the way an unprivileged caller is refused.
+    /// A machine that refuses, the way an unprivileged caller is refused.
     #[derive(Default)]
     struct Unwilling(RefCell<Vec<u32>>);
 
-    impl Logind for Unwilling {
-        fn open_a_session_for(&mut self, person: u32) -> Result<(), NotOpened> {
+    impl TheirDesktop for Unwilling {
+        fn started_for(&mut self, person: u32) -> Result<(), NotOpened> {
             self.0.borrow_mut().push(person);
             Err(NotOpened::Refused {
                 person,
                 named: "org.freedesktop.DBus.Error.AccessDenied".to_owned(),
                 why: "Access denied".to_owned(),
+            })
+        }
+
+        fn is_running_for(&self, _person: u32) -> Result<bool, NotOpened> {
+            Ok(false)
+        }
+    }
+
+    /// A machine that starts a desktop and then cannot say whether it runs.
+    #[derive(Default)]
+    struct Unanswering(RefCell<Vec<u32>>);
+
+    impl TheirDesktop for Unanswering {
+        fn started_for(&mut self, person: u32) -> Result<(), NotOpened> {
+            self.0.borrow_mut().push(person);
+            Ok(())
+        }
+
+        fn is_running_for(&self, _person: u32) -> Result<bool, NotOpened> {
+            Err(NotOpened::NoBus {
+                why: "the bus went away".to_owned(),
             })
         }
     }
@@ -328,8 +375,8 @@ mod tests {
     /// including whether that number exists.
     #[test]
     fn a_caller_that_is_not_the_surface_is_refused_before_anything_is_asked() {
-        let logind = Willing::default();
-        let mut opening = Opening::at(the_door(), Unreadable, logind, Giving, Naming);
+        let desktop = Willing::default();
+        let mut opening = Opening::at(the_door(), Unreadable, desktop, Giving, Naming);
 
         for knocker in [0, THE_PERSON, 60989, THE_GREETER + 1] {
             let answered = opening.heard(Knock::on_behalf_of(THE_PERSON), knocker);
@@ -341,7 +388,7 @@ mod tests {
         }
         assert!(!opening.is_signed_in());
         assert!(
-            opening.logind.0.borrow().is_empty(),
+            opening.desktop.0.borrow().is_empty(),
             "logind was asked about a caller that may not ask"
         );
     }
@@ -370,7 +417,7 @@ mod tests {
         }
         assert!(!opening.is_signed_in());
         assert!(
-            opening.logind.0.borrow().is_empty(),
+            opening.desktop.0.borrow().is_empty(),
             "logind was asked about somebody this machine has no account for"
         );
     }
@@ -413,9 +460,69 @@ mod tests {
 
         assert_eq!(again, Answered::Refused(ALREADY_SIGNED_IN.key()));
         assert_eq!(
-            opening.logind.0.borrow().len(),
+            opening.desktop.0.borrow().len(),
             1,
             "a second session was opened"
+        );
+    }
+
+    /// **A person who signed out can sign in again.**
+    ///
+    /// Signing out is the desktop ending, and this component is not told. It
+    /// used to keep a flag that was set at the first sign-in and never cleared,
+    /// so the second correct password of a day would have been answered
+    /// *already signed in*. It asks the machine instead.
+    #[test]
+    fn a_person_who_signed_out_can_sign_in_again() {
+        let mut opening = Opening::at(
+            the_door(),
+            Numbered(vec![THE_PERSON]),
+            Willing::default(),
+            Giving,
+            Naming,
+        );
+        assert_eq!(
+            opening.heard(Knock::on_behalf_of(THE_PERSON), THE_GREETER),
+            Answered::Opened
+        );
+
+        // The desktop ends: the person signed out.
+        opening.desktop.1.set(true);
+
+        assert_eq!(
+            opening.heard(Knock::on_behalf_of(THE_PERSON), THE_GREETER),
+            Answered::Opened,
+            "a person who signed out was told they are still signed in"
+        );
+        assert_eq!(*opening.desktop.0.borrow(), vec![THE_PERSON, THE_PERSON]);
+        assert!(opening.is_signed_in());
+    }
+
+    /// **A machine that cannot say whether the last desktop still runs starts
+    /// no second one.** Refused as the machine's failure, never guessed: a
+    /// second desktop beside one that may still hold the seat is one `logind`
+    /// would refuse, after the person had been told they were in.
+    #[test]
+    fn a_machine_that_cannot_say_whether_a_desktop_runs_starts_no_second_one() {
+        let mut opening = Opening::at(
+            the_door(),
+            Numbered(vec![THE_PERSON]),
+            Unanswering::default(),
+            Giving,
+            Naming,
+        );
+        assert_eq!(
+            opening.heard(Knock::on_behalf_of(THE_PERSON), THE_GREETER),
+            Answered::Opened
+        );
+
+        let again = opening.heard(Knock::on_behalf_of(THE_PERSON), THE_GREETER);
+
+        assert_eq!(again, Answered::Refused(NOT_OPENED.key()));
+        assert_eq!(
+            opening.desktop.0.borrow().len(),
+            1,
+            "a second desktop was started"
         );
     }
 
@@ -456,7 +563,7 @@ mod tests {
         let again = opening.heard(Knock::on_behalf_of(THE_PERSON), THE_GREETER);
 
         assert_eq!(again, Answered::Refused(NOT_OPENED.key()));
-        assert_eq!(opening.logind.0.borrow().len(), 2, "it stopped asking");
+        assert_eq!(opening.desktop.0.borrow().len(), 2, "it stopped asking");
     }
 
     /// **An accounts file that will not read is not a machine with no
@@ -469,7 +576,7 @@ mod tests {
         let answered = opening.heard(Knock::on_behalf_of(THE_PERSON), THE_GREETER);
 
         assert_eq!(answered, Answered::Refused(NOT_OPENED.key()));
-        assert!(opening.logind.0.borrow().is_empty());
+        assert!(opening.desktop.0.borrow().is_empty());
     }
 
     /// Every answer this file can give is one of `crate::words`, so there is no

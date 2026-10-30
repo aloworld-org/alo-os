@@ -10,17 +10,15 @@
 //! [ADR 0045](../../../docs/decisions/0045-what-undoing-rewinds-to.md) term 8's
 //! own reasoning for why a privileged step at sign-in is where it goes.
 //!
-//! This is the trait for [`crate::logind::Logind`]'s reason: whether the folder
-//! is asked for, and in what order, is arithmetic on numbers that the workspace
-//! gate can run on any host. `crate::machine` is the half that is really systemd
-//! over the system bus.
+//! This is a trait for the reason [`crate::TheirDesktop`] is: whether the
+//! folder is asked for, and in what order, is arithmetic on numbers that the
+//! workspace gate can run on any host. `crate::starting_their_units` is the
+//! half that is really systemd over the system bus.
 //!
 //! # It holds nothing, so it is `&self`
 //!
-//! Unlike [`crate::logind::Logind`], which keeps the descriptor that holds a
-//! session open, this asks for something to be made and then has nothing. A
-//! directory outlives every process involved. So `&self`, and the difference
-//! between the two signatures is the difference in what each one owns.
+//! This asks for something to be made and then has nothing. A directory
+//! outlives every process involved, so `&self`.
 //!
 //! # Why a failure here is not a refusal
 //!

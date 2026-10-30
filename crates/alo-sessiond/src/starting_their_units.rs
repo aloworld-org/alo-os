@@ -5,12 +5,15 @@
 //! that needs a machine, and it is `cfg(target_os = "linux")` for
 //! `crate::machine`'s reason: there is no unit to start anywhere else.
 //!
-//! **Two units, and one reason to change.** Each is a constant of this
-//! repository instanced by an account number, started and waited for the same
-//! way: [`THE_UNIT`] makes the person their place for what an undo would put
+//! **Three units, and one reason to change.** Each is a constant of this
+//! repository instanced by an account number, started the same way:
+//! [`THE_UNIT`] makes the person their place for what an undo would put
 //! back ([ADR 0121](../../../docs/decisions/0121-the-thing-that-opens-a-session-makes-the-persons-folder.md)),
-//! and [`THE_NAMES_UNIT`] gives them their own name where their desktop can
-//! read it ([ADR 0135](../../../docs/decisions/0135-a-persons-name-reaches-their-desktop-through-a-file-only-they-can-read.md)).
+//! [`THE_NAMES_UNIT`] gives them their own name where their desktop can
+//! read it ([ADR 0135](../../../docs/decisions/0135-a-persons-name-reaches-their-desktop-through-a-file-only-they-can-read.md)),
+//! and [`THE_DESKTOPS_UNIT`] is their desktop, inside the login session its own
+//! PAM stack opens ([ADR 0141](../../../docs/decisions/0141-the-desktop-is-put-inside-the-persons-session-by-what-already-has-the-privilege.md)).
+//! The first two are waited for until they finish, the third until it runs.
 //! This file was `making_a_folder.rs` until the second arrived; what it does —
 //! *start a unit named by a constant and a number, and wait for it* — did not
 //! change, so it was renamed rather than split.
@@ -92,9 +95,20 @@ pub const THE_UNIT: &str = "alo-giving-a-folder";
 /// the number.
 ///
 /// A constant for [`THE_UNIT`]'s reason, instanced from a `u32` by
-/// [`TheirName::given_to`](crate::TheirName::given_to) — and these two are the
-/// whole of what this component can ask systemd to start.
+/// [`TheirName::given_to`](crate::TheirName::given_to) — and these two, with
+/// [`THE_DESKTOPS_UNIT`], are the whole of what this component can ask systemd
+/// to start.
 pub const THE_NAMES_UNIT: &str = "alo-giving-a-name";
+
+/// The person's desktop, before the `@` that carries the number.
+///
+/// **The third unit, and the one a sign-in is for** (ADR 0141). Its PAM stack
+/// opens the person's login session and pid 1 becomes them, so the desktop is
+/// the process `logind` puts in the session's scope — which is what makes
+/// restart, power off and the time zone theirs without a password. A constant
+/// for [`THE_UNIT`]'s reason, instanced from a `u32` by
+/// [`TheirDesktop::started_for`](crate::TheirDesktop::started_for).
+pub const THE_DESKTOPS_UNIT: &str = "alo-desktop";
 
 /// How systemd is asked to enqueue the job: fail rather than disturb anything
 /// already going on.
@@ -137,19 +151,163 @@ impl crate::their_name::TheirName for TheMachinesNames {
     }
 }
 
-/// Start one of this component's two units for `person`, and wait for it.
+/// How long a person waits at the sign-in screen for their desktop to run.
+///
+/// Longer than [`LONGEST_A_PERSON_WAITS`], because this one includes PAM
+/// opening the session and `logind` starting the person's own manager, which
+/// on a cold machine is seconds rather than milliseconds.
+const LONGEST_A_DESKTOP_TAKES: std::time::Duration = std::time::Duration::from_secs(30);
+
+/// systemd, asked to start a person's desktop inside a session of its own.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct TheMachinesDesktops;
+
+impl crate::their_desktop::TheirDesktop for TheMachinesDesktops {
+    fn started_for(&mut self, person: u32) -> Result<(), crate::refusing::NotOpened> {
+        started_and_running(person, &the_desktop_of(person))
+    }
+
+    fn is_running_for(&self, person: u32) -> Result<bool, crate::refusing::NotOpened> {
+        still_running(person, &the_desktop_of(person))
+    }
+}
+
+/// The desktop unit's instance for one account, built in one place.
+fn the_desktop_of(person: u32) -> String {
+    format!("{THE_DESKTOPS_UNIT}@{person}.service")
+}
+
+/// The system bus, with this component's ceiling on one call.
+fn the_bus() -> Result<Connection, String> {
+    zbus::blocking::connection::Builder::system()
+        .map(|building| building.method_timeout(ANSWERING))
+        .and_then(zbus::blocking::connection::Builder::build)
+        .map_err(|why| why.to_string())
+}
+
+/// Start the desktop's unit, and wait until it runs.
+///
+/// Private, and handed only the name [`TheMachinesDesktops`] built from a
+/// constant and a `u32`.
+fn started_and_running(person: u32, named: &str) -> Result<(), crate::refusing::NotOpened> {
+    use crate::refusing::NotOpened;
+    use crate::their_desktop::Starting;
+
+    let bus = the_bus().map_err(|why| NotOpened::NoBus { why })?;
+    let refused = |why: String| NotOpened::Refused {
+        person,
+        named: the_error_name(&why),
+        why,
+    };
+    let _job: OwnedObjectPath = call(
+        &bus,
+        SYSTEMDS_MANAGER,
+        SYSTEMDS_INTERFACE,
+        START_UNIT,
+        &(named, MODE),
+    )
+    .map_err(refused)?;
+    let at: OwnedObjectPath = call(
+        &bus,
+        SYSTEMDS_MANAGER,
+        SYSTEMDS_INTERFACE,
+        GET_UNIT,
+        &(named,),
+    )
+    .map_err(refused)?;
+
+    let until = std::time::Instant::now() + LONGEST_A_DESKTOP_TAKES;
+    loop {
+        let state: String = property(&bus, &at, "org.freedesktop.systemd1.Unit", "ActiveState")
+            .map_err(|why| NotOpened::NotUnderstood { why })?;
+        let result: String = property(&bus, &at, SERVICE, "Result")
+            .map_err(|why| NotOpened::NotUnderstood { why })?;
+        match Starting::from_systemd(&state, &result) {
+            Starting::Running => return Ok(()),
+            Starting::Failed(said) => {
+                return Err(NotOpened::NotRunning {
+                    person,
+                    unit: named.to_owned(),
+                    said,
+                });
+            }
+            Starting::StillGoing => {}
+        }
+        if std::time::Instant::now() >= until {
+            if Starting::at_the_longest_a_person_waits(&state) {
+                eprintln!(
+                    "alo-sessiond: {named} is still starting after {} seconds; it is let \
+                     through, and its own OnFailure= puts the sign-in screen back if it never runs",
+                    LONGEST_A_DESKTOP_TAKES.as_secs()
+                );
+                return Ok(());
+            }
+            return Err(NotOpened::NotRunning {
+                person,
+                unit: named.to_owned(),
+                said: format!(
+                    "it was still {state} after {} seconds",
+                    LONGEST_A_DESKTOP_TAKES.as_secs()
+                ),
+            });
+        }
+        std::thread::sleep(ASKED_AGAIN_EVERY);
+    }
+}
+
+/// Whether the desktop's unit has not ended.
+///
+/// **A unit systemd no longer has loaded is one that ended**: an inactive
+/// instance is let go of, and `GetUnit` then answers `NoSuchUnit`.
+fn still_running(person: u32, named: &str) -> Result<bool, crate::refusing::NotOpened> {
+    use crate::refusing::NotOpened;
+
+    let bus = the_bus().map_err(|why| NotOpened::NoBus { why })?;
+    let at: OwnedObjectPath = match call(
+        &bus,
+        SYSTEMDS_MANAGER,
+        SYSTEMDS_INTERFACE,
+        GET_UNIT,
+        &(named,),
+    ) {
+        Ok(at) => at,
+        Err(why) if why.contains(NO_SUCH_UNIT) => return Ok(false),
+        Err(why) => {
+            return Err(NotOpened::Refused {
+                person,
+                named: the_error_name(&why),
+                why,
+            });
+        }
+    };
+    let state: String = property(&bus, &at, "org.freedesktop.systemd1.Unit", "ActiveState")
+        .map_err(|why| NotOpened::NotUnderstood { why })?;
+    Ok(crate::their_desktop::has_not_ended(&state))
+}
+
+/// systemd's error name for a unit it does not have loaded.
+const NO_SUCH_UNIT: &str = "org.freedesktop.systemd1.NoSuchUnit";
+
+/// The D-Bus error name in a sentence `call` made, or empty where there is none.
+fn the_error_name(why: &str) -> String {
+    why.split_whitespace()
+        .find(|word| word.starts_with("org.freedesktop."))
+        .unwrap_or_default()
+        .trim_end_matches(':')
+        .to_owned()
+}
+
+/// Start one of this component's two helper units for `person`, and wait for
+/// it to finish.
 ///
 /// Private, and handed only names the two impls above built from a constant and
 /// a `u32`: there is no public road from a caller's text to this.
 fn started_and_finished(person: u32, named: &str) -> Result<(), crate::refusing::NotTheirs> {
-    let bus = zbus::blocking::connection::Builder::system()
-        .map(|building| building.method_timeout(ANSWERING))
-        .and_then(zbus::blocking::connection::Builder::build)
-        .map_err(|why| crate::refusing::NotTheirs::NoBus {
-            person,
-            unit: named.to_owned(),
-            why: why.to_string(),
-        })?;
+    let bus = the_bus().map_err(|why| crate::refusing::NotTheirs::NoBus {
+        person,
+        unit: named.to_owned(),
+        why,
+    })?;
 
     let _job: OwnedObjectPath = call(
         &bus,

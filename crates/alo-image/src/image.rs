@@ -68,7 +68,11 @@ pub const THE_COMPOSITOR: &str = "alo-compositor.service";
 ///
 /// Unlike [`THE_COMPOSITOR`] it runs as the person. The greeter is root
 /// because nobody is there yet; a desktop is somebody's.
-pub const THE_DESKTOP: &str = "alo-desktop.service";
+///
+/// **A template since ADR 0141**, instanced by the person's account number and
+/// started by `alo-sessiond` after a sign-in, so that its own PAM stack opens
+/// the person's login session with the desktop inside it.
+pub const THE_DESKTOP: &str = "alo-desktop@.service";
 
 /// Where a unit file goes, beneath the image's root.
 const UNITS: &str = "usr/lib/systemd/system";

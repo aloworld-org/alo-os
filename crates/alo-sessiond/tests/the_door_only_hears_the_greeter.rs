@@ -27,8 +27,8 @@ use std::path::PathBuf;
 
 use alo_sessiond::listening::Listening;
 use alo_sessiond::{
-    ALREADY_SIGNED_IN, Answered, Door, Knock, Logind, NOBODY_HERE, NOT_YOURS_TO_ASK, NotAsked,
-    NotOpened, Opening, TheAccounts, our_group,
+    ALREADY_SIGNED_IN, Answered, Door, Knock, NOBODY_HERE, NOT_YOURS_TO_ASK, NotAsked, NotOpened,
+    Opening, TheAccounts, TheirDesktop, our_group,
 };
 
 /// The number this machine's one account has, in these tests.
@@ -43,14 +43,18 @@ impl TheAccounts for Numbered {
     }
 }
 
-/// A `logind` that opens whatever it is asked for, and remembers.
+/// A machine that starts whatever desktop it is asked for, and remembers.
 #[derive(Default)]
 struct Willing(Vec<u32>);
 
-impl Logind for Willing {
-    fn open_a_session_for(&mut self, person: u32) -> Result<(), NotOpened> {
+impl TheirDesktop for Willing {
+    fn started_for(&mut self, person: u32) -> Result<(), NotOpened> {
         self.0.push(person);
         Ok(())
+    }
+
+    fn is_running_for(&self, person: u32) -> Result<bool, NotOpened> {
+        Ok(self.0.contains(&person))
     }
 }
 
