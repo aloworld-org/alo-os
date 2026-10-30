@@ -248,9 +248,7 @@ pub fn interfaces_in(links: &[u8], addresses: &[u8]) -> Result<Vec<Interface>, N
 /// be read.
 pub fn reported_by_the_kernel() -> Result<Vec<Interface>, NotReported> {
     let dumped = |request: &[u8]| {
-        crate::route_socket::a_route_dump(request, |datagram| {
-            ends_a_dump(datagram).unwrap_or(true)
-        })
+        crate::route_socket::a_route_dump(request, |datagram| ends_a_dump(datagram).unwrap_or(true))
             .map_err(|why| NotReported::TheSocket(why.to_string()))
     };
     interfaces_in(&dumped(&every_link())?, &dumped(&every_address())?)
