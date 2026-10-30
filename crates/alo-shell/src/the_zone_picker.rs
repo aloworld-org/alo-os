@@ -63,6 +63,35 @@ impl TheZonePicker {
         self.on = self.on.saturating_sub(1);
     }
 
+    /// **A press on a row**, by where it is in the whole list: the cursor to
+    /// it and the ring to the list, so the Enter that follows chooses it.
+    /// Answers whether there is such a row.
+    pub(crate) fn pointed_at(&mut self, row: usize) -> bool {
+        let there = row < self.all.len();
+        if there {
+            self.ring = WhereTheRingIs::OnTheList;
+            self.on = row;
+        }
+        there
+    }
+
+    /// **A window of `rows` rows** onto the zones (`crate::a_window_onto_a_list`).
+    pub(crate) fn window_of(
+        &self,
+        rows: usize,
+    ) -> crate::a_window_onto_a_list::AWindow<'_, NamedZone> {
+        crate::a_window_onto_a_list::a_window(&self.all, self.on, self.chosen, rows)
+    }
+
+    /// **A press on the way on**: the ring to it only once a zone is chosen,
+    /// which is Tab's rule. Answers whether it went.
+    pub(crate) fn ring_to_the_way_on_if_it_may(&mut self) -> bool {
+        if self.chosen.is_some() {
+            self.ring = WhereTheRingIs::OnTheWayOn;
+        }
+        self.chosen.is_some()
+    }
+
     /// Tab: to the way on and back, only once a zone is chosen.
     pub(crate) fn ring_crosses(&mut self) {
         self.ring = match (self.ring, self.chosen) {

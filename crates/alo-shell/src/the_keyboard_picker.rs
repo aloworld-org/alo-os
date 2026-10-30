@@ -115,6 +115,27 @@ impl TheKeyboardPicker {
         self.on = self.on.saturating_sub(1);
     }
 
+    /// **A press on a row**, by where it is in the whole list: a keyboard puts
+    /// the cursor on it and the ring on the keyboards, so the Enter that
+    /// follows chooses it; [`Self::THE_TEST`] is *Test your keyboard*, and
+    /// takes the ring. Answers whether there is such a row.
+    pub(crate) fn pointed_at(&mut self, row: usize) -> bool {
+        if row == Self::THE_TEST {
+            self.ring = TheRing::OnTheTest;
+            return true;
+        }
+        let there = row < self.all.len();
+        if there {
+            self.ring = TheRing::OnTheKeyboards;
+            self.on = row;
+        }
+        there
+    }
+
+    /// Where *Test your keyboard* is, for a press: after every keyboard there
+    /// could ever be, so it is never one of them.
+    pub(crate) const THE_TEST: usize = usize::MAX;
+
     /// **A window of `rows` keyboards** (`crate::a_window_onto_a_list`); the
     /// test row is drawn after it, and is not in it.
     pub(crate) fn window_of(
@@ -122,6 +143,12 @@ impl TheKeyboardPicker {
         rows: usize,
     ) -> crate::a_window_onto_a_list::AWindow<'_, Layout> {
         crate::a_window_onto_a_list::a_window(&self.all, self.on, Some(self.chosen), rows)
+    }
+
+    /// **A press on the way on**: there is always a keyboard chosen, so the
+    /// ring may always go there.
+    pub(crate) fn ring_to_the_way_on(&mut self) {
+        self.ring = TheRing::OnTheWayOn;
     }
 
     /// Tab: keyboards, then the test, then the way on, and round.

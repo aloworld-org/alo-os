@@ -212,6 +212,7 @@ fn the_direct_backend_takes_the_sign_in_screen_and_names_what_it_refuses() {
         size: (640, 480),
         solids: Vec::new(),
         inked: Vec::new(),
+        controls: Vec::new(),
     };
     let lock = crate::lock_raster::LockPicture {
         size: (640, 480),

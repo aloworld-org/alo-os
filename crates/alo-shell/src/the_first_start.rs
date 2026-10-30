@@ -36,6 +36,7 @@
 use alo_formats::RegionCode;
 use alo_keyboards::Layout;
 
+use crate::a_press_on_a_setup_sheet::OnASheet;
 use crate::sign_in_keys::SignInKey;
 use crate::the_keyboard_picker::{TheKeyboardPicker, TheRing};
 use crate::the_languages_offered::{TheLanguagesOffered, WhereTheRingIs};
@@ -261,6 +262,67 @@ impl TheFirstStart {
                 self.on_the_zone_sheet(key, picker);
                 Went::Stayed
             }
+        }
+    }
+
+    /// **One press of the pointer**, on a control of the sheet that is up.
+    ///
+    /// A press is answered in the words a key is: it puts the cursor and the
+    /// ring where it landed, then hands [`Self::pressed`] the Enter — or, for
+    /// *Back*, the Escape — a person at the keyboard would have pressed there.
+    /// So a click and a key cannot do two different things to one row, and a
+    /// way on the keyboard cannot reach (a language not yet chosen) cannot be
+    /// reached by clicking either.
+    pub(crate) fn pressed_on(&mut self, on: OnASheet) -> Went {
+        let key = match on {
+            OnASheet::Choice(row) if self.pointed_at(row) => SignInKey::Enter,
+            OnASheet::WayOn if self.ring_to_the_way_on() => SignInKey::Enter,
+            OnASheet::WayBack => SignInKey::Clear,
+            // A row that is not drawn, a way on not yet open, and
+            // *Accessibility*, whose surface does not exist yet.
+            OnASheet::Choice(_) | OnASheet::WayOn | OnASheet::Accessibility => {
+                return Went::Stayed;
+            }
+        };
+        self.pressed(key)
+    }
+
+    /// The cursor and the ring to a row of the sheet that is up; whether the
+    /// sheet has that row.
+    fn pointed_at(&mut self, row: usize) -> bool {
+        match &mut self.sheet {
+            Sheet::Overview => {
+                let there = row < Row::ALL.len();
+                if there {
+                    self.on = row;
+                    self.ring = WhereTheRingIs::OnTheList;
+                }
+                there
+            }
+            Sheet::Language(_) => self.languages.pointed_at(row),
+            Sheet::Region(offered) => offered.pointed_at(row),
+            Sheet::Keyboard(picker) => picker.pointed_at(row),
+            Sheet::Zone(picker) => picker.pointed_at(row),
+        }
+    }
+
+    /// The ring to the way on of the sheet that is up, where Tab could put it.
+    fn ring_to_the_way_on(&mut self) -> bool {
+        match &mut self.sheet {
+            Sheet::Overview => {
+                self.ring = WhereTheRingIs::OnTheWayOn;
+                true
+            }
+            Sheet::Language(_) => self.languages.ring_to_the_way_on_if_it_may(),
+            Sheet::Region(offered) => {
+                offered.ring_to_the_way_on();
+                true
+            }
+            Sheet::Keyboard(picker) => {
+                picker.ring_to_the_way_on();
+                true
+            }
+            Sheet::Zone(picker) => picker.ring_to_the_way_on_if_it_may(),
         }
     }
 

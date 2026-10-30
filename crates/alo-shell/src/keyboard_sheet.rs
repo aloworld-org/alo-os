@@ -78,6 +78,15 @@ pub(crate) fn drawn(
         }
     };
     let (window, chosen) = (in_sight.rows, in_sight.chosen);
+    // **A press names the keyboard it is on**, by where it is in the whole
+    // list, because the window drawn depends on the room there was.
+    drawn.controls = crate::a_press_on_a_setup_sheet::the_controls_of(&at, |which| {
+        if which < window.len() {
+            in_sight.first + which
+        } else {
+            TheKeyboardPicker::THE_TEST
+        }
+    });
 
     let language = first_start.the_language();
     let selected = say_it(say::SELECTED);

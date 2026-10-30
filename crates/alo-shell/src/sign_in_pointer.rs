@@ -91,6 +91,21 @@ impl ThePointerOnTheSignInScreen {
         self.at
     }
 
+    /// **The output pixel the pointer is in**, or [`None`] before a device has
+    /// moved it — for a sheet, whose controls are kept in the pixels they were
+    /// drawn in, so nothing is converted.
+    #[must_use]
+    pub(crate) fn in_pixels(self) -> Option<(i32, i32)> {
+        let point = self.at?;
+        #[expect(
+            clippy::cast_possible_truncation,
+            reason = "a pointer inside a pixel belongs to that pixel, and the position is \
+                      already held within the output's bounds"
+        )]
+        let pixel = (point.x as i32, point.y as i32);
+        Some(pixel)
+    }
+
     /// What a press at this position is on.
     ///
     /// [`None`] both for a pointer that has never moved and for a press on the

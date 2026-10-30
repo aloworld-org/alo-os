@@ -152,8 +152,11 @@ pub(crate) fn drawn(
         ),
         solids: Vec::new(),
         inked: Vec::new(),
+        controls: Vec::new(),
     };
     let at = laid.pixels;
+    // **What a press can land on is what was just drawn**, in its pixels.
+    drawn.controls = crate::a_press_on_a_setup_sheet::the_controls_of(&at, |which| which);
 
     crate::painted_text::line(
         &mut drawn.inked,

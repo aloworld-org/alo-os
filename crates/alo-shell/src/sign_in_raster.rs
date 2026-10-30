@@ -78,6 +78,12 @@ pub(crate) struct SignInPicture {
     /// with no accounts shows - that screen is the owner's separate task and
     /// keeps the flat ground until it is built.
     pub(crate) surface: Option<crate::painted::Washed>,
+    /// **What a press on this picture can land on**, where it was drawn: a
+    /// first-start sheet's rows and actions (`crate::a_press_on_a_setup_sheet`).
+    ///
+    /// Empty for the sign-in screen, whose presses are answered by
+    /// `crate::sign_in_layout`, and for a sentence, which has nothing to press.
+    pub(crate) controls: Vec<crate::a_press_on_a_setup_sheet::SheetControl>,
 }
 
 /// The colours of one scheme.
@@ -173,6 +179,7 @@ pub(crate) fn picture(
             colour: palette.ground,
         }],
         inked: Vec::new(),
+        controls: Vec::new(),
     };
     let fonts = &mut labels.fonts;
 

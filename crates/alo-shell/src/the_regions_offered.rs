@@ -43,6 +43,20 @@ pub enum Showing {
     EveryRegion,
 }
 
+/// The rows of the region sheet in sight: `crate::a_window_onto_a_list::AWindow`,
+/// owned, because the design's two rows are made rather than kept.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct RegionsInSight<'a> {
+    /// Where in what is showing the first row drawn is.
+    pub(crate) first: usize,
+    /// Each row as the name it reads; [`None`] is *Other region*.
+    pub(crate) rows: Vec<Option<&'a str>>,
+    /// The cursor's row among them.
+    pub(crate) cursor: Option<usize>,
+    /// The chosen region's row among them, while it is in sight.
+    pub(crate) chosen: Option<usize>,
+}
+
 /// The regions, what is chosen, and where the cursor and the ring are.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TheRegionsOffered {
@@ -106,6 +120,50 @@ impl TheRegionsOffered {
     pub(crate) fn up(&mut self) {
         self.ring = WhereTheRingIs::OnTheList;
         self.on = self.on.saturating_sub(1);
+    }
+
+    /// **A press on a row**, by where it is in what is showing — the two rows,
+    /// or every region: the cursor to it and the ring to the list, so the Enter
+    /// that follows does what Enter on that row does. Answers whether there is
+    /// such a row.
+    pub(crate) fn pointed_at(&mut self, row: usize) -> bool {
+        let there = match self.showing {
+            Showing::TheTwo => row < 2,
+            Showing::EveryRegion => row < self.all.len(),
+        };
+        if there {
+            self.ring = WhereTheRingIs::OnTheList;
+            self.on = row;
+        }
+        there
+    }
+
+    /// **A window of `rows` rows onto what is showing**, each as the name it
+    /// reads — the chosen region and [`None`] for *Other region* on the two
+    /// rows (`crate::a_window_onto_a_list`). Owned, because the two rows are
+    /// made rather than kept.
+    pub(crate) fn window_of(&self, rows: usize) -> RegionsInSight<'_> {
+        let names: Vec<Option<&str>> = match self.showing {
+            Showing::TheTwo => vec![self.chosen().map(|it| it.name.as_str()), None],
+            Showing::EveryRegion => self.all.iter().map(|it| Some(it.name.as_str())).collect(),
+        };
+        let chosen = match self.showing {
+            Showing::TheTwo => 0,
+            Showing::EveryRegion => self.chosen,
+        };
+        let window = crate::a_window_onto_a_list::a_window(&names, self.on, Some(chosen), rows);
+        RegionsInSight {
+            first: window.first,
+            rows: window.rows.to_vec(),
+            cursor: window.cursor,
+            chosen: window.chosen,
+        }
+    }
+
+    /// **A press on *Use this region***: a region is always chosen, so the
+    /// ring may always go there.
+    pub(crate) fn ring_to_the_way_on(&mut self) {
+        self.ring = WhereTheRingIs::OnTheWayOn;
     }
 
     /// Tab: between the list and *Use this region*. There is always a region
