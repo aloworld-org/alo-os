@@ -81,6 +81,7 @@ mod a_chord_opens_a_terminal;
 mod a_chord_opens_the_bar;
 mod a_chord_opens_the_record;
 mod a_chord_reaches_its_action;
+mod a_chord_sends_the_keyboard_to_a_window;
 mod a_click_brings_a_window_back;
 mod a_display_has_gone;
 pub mod a_folder_is_picked_in_settings;

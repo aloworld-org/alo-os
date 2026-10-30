@@ -153,8 +153,15 @@ impl Server {
 
     /// This task window takes the keyboard — because the person just asked for
     /// it. **Never because a question arrived in it.**
+    ///
+    /// **And off the Dock**, if F6 had put it there: the Dock is asked for keys
+    /// after a task window, so Enter would reach the task — but the Dock would
+    /// still draw its focus ring and take the keyboard back the moment the task
+    /// let go, which is a second place the keyboard is that nobody chose.
     pub const fn this_task_took_the_keyboard(&mut self, which: WhichTask) {
         self.the_task_with_the_keyboard = Some(which);
+        self.which_area_has_the_keyboard = None;
+        self.which_slot_on_the_bar = None;
     }
 
     /// No task window holds the keyboard any more.

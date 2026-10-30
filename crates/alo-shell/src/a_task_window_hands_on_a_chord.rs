@@ -35,33 +35,15 @@ use crate::Server;
 use crate::a_chord_reaches_its_action::WhatTheChordCameTo;
 
 /// Whether carrying out this action sends the keyboard somewhere other than
-/// the task window that held it.
+/// the task window that held it: to another window, or — F6 and Shift+F6 — to
+/// another area of the screen.
+///
+/// The window half is `crate::a_chord_sends_the_keyboard_to_a_window`'s, which
+/// is exhaustive, so the two cannot disagree about which shortcut goes to a
+/// window.
 const fn sends_the_keyboard_elsewhere(action: Action) -> bool {
-    match action {
-        Action::Terminal
-        | Action::NextWindow
-        | Action::PreviousWindow
-        | Action::NextApplication
-        | Action::PreviousApplication
-        | Action::TheNextArea
-        | Action::ThePreviousArea => true,
-        Action::TheAgent
-        | Action::Launcher
-        | Action::Settings
-        | Action::SeeWhatAloDid
-        | Action::WhyIsItWaiting
-        | Action::WindowOptions
-        | Action::CloseWindow
-        | Action::MinimiseWindow
-        | Action::MaximiseWindow
-        | Action::SnapLeft
-        | Action::SnapRight
-        | Action::ZoomTheCanvasIn
-        | Action::ZoomTheCanvasOut
-        | Action::ShowAllOnTheCanvas
-        | Action::MoveTheWindowToTheNextPlace
-        | Action::GoBackOnThisPlace => false,
-    }
+    crate::a_chord_sends_the_keyboard_to_a_window::sends_the_keyboard_to_a_window(action)
+        || matches!(action, Action::TheNextArea | Action::ThePreviousArea)
 }
 
 impl Server {
@@ -86,7 +68,7 @@ impl Server {
                 }
             };
         }
-        let came_to = self.the_chord_does_what_it_names(chord);
+        let came_to = self.a_chord_is_carried_out(chord);
         if let WhatTheChordCameTo::Carried(action) = came_to
             && sends_the_keyboard_elsewhere(action)
         {
