@@ -247,7 +247,7 @@ fn hash_of(drawn: &SettingsPicture) -> u64 {
 }
 
 /// **At 100 per cent Settings is the pixels `main` drew** before it followed
-/// its display's scale: held to hashes taken from `main` by the same code,
+/// its display's scale: held to hashes taken from `main` at cdce3e15 by the same code,
 /// twice, with the same answers. Bundled faces only.
 #[test]
 fn at_one_hundred_settings_is_the_pixels_main_drew() {
@@ -257,7 +257,11 @@ fn at_one_hundred_settings_is_the_pixels_main_drew() {
         hash_of(&drawn_at(&window, (1920, 1080), light())),
         hash_of(&drawn_at(&window, (1280, 800), light())),
     ];
-    assert_eq!(hashes, [0_u64; 2], "{hashes:#x?}");
+    assert_eq!(
+        hashes,
+        [0x3b48_ca93_79e9_f996, 0xc946_4045_fec5_01bc],
+        "Settings at 100 per cent is not the pixels main drew: {hashes:#x?}"
+    );
 }
 
 /// How far a piece of type may land from exactly twice its place, in pixels:
