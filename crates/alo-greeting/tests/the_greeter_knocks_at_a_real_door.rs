@@ -32,7 +32,7 @@ use alo_accounts::Accounts;
 use alo_greeting::{Greeted, Greeting, NotAnswered, TheOpenersDoor};
 use alo_sessiond::listening::Listening;
 use alo_sessiond::{
-    Answered, Door, Knock, Logind, NOBODY_HERE, NotAsked, NotOpened, Opening, TheAccounts,
+    Answered, Door, Knock, NOBODY_HERE, NotAsked, NotOpened, Opening, TheAccounts, TheirDesktop,
     our_group,
 };
 use alo_strings::Strings;
@@ -77,14 +77,18 @@ impl TheAccounts for Numbered {
     }
 }
 
-/// A `logind` that opens whatever it is asked for, and remembers.
+/// A machine that starts whatever desktop it is asked for, and remembers.
 #[derive(Default)]
 struct Willing(Vec<u32>);
 
-impl Logind for Willing {
-    fn open_a_session_for(&mut self, person: u32) -> Result<(), NotOpened> {
+impl TheirDesktop for Willing {
+    fn started_for(&mut self, person: u32) -> Result<(), NotOpened> {
         self.0.push(person);
         Ok(())
+    }
+
+    fn is_running_for(&self, person: u32) -> Result<bool, NotOpened> {
+        Ok(self.0.contains(&person))
     }
 }
 

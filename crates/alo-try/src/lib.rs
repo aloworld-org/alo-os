@@ -56,6 +56,8 @@
 
 use std::path::{Path, PathBuf};
 
+pub mod a_scope_of_its_own;
+
 /// Where a person's own boxes are made: a child of the cgroup this process is
 /// already in.
 ///
@@ -89,9 +91,10 @@ use std::path::{Path, PathBuf};
 ///
 /// # What that asks of the machine
 ///
-/// The unit a person's shell descends from has to be `Delegate=`, or its cgroup
-/// is not theirs to write and `try` refuses. On alo OS that is
-/// `alo-desktop.service`, which the image now says so for.
+/// The cgroup has to be the person's to write. **Since ADR 0141 the person's
+/// shell is in their login session's scope, which is not**, so a `try` that is
+/// refused here runs itself again in a delegated scope from the person's own
+/// manager — [`a_scope_of_its_own`] has the measurement.
 #[must_use]
 pub fn where_the_box_goes(this_processes_cgroup: &Path) -> PathBuf {
     this_processes_cgroup.join("alo-try")

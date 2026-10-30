@@ -1132,7 +1132,7 @@ COPY --chmod=0644 image/signing/alo-os.pub /etc/containers/alo-os.pub
 # **`getty@tty1` is masked, because two things cannot own one screen.**
 #
 # The base enables a console login on tty1 and so does this image's own shell:
-# `alo-compositor.service` and `alo-desktop.service` both carry
+# `alo-compositor.service` and `alo-desktop@.service` both carry
 # `TTYPath=/dev/tty1`, which is what gives them a seat. Measured on a booted
 # machine on 2026-10-10: the getty started at boot, **restarted the instant the
 # greeter exited**, and drew a login prompt over a desktop that was running —
@@ -1237,7 +1237,7 @@ RUN chmod 0755 /usr/libexec/alo-boundaryd /usr/libexec/alo-sessiond \
                /usr/lib/systemd/system/alo-giving-a-name@.service \
                /usr/lib/systemd/system/alo-convertd.service \
                /usr/lib/systemd/system/alo-compositor.service \
-               /usr/lib/systemd/system/alo-desktop.service \
+               /usr/lib/systemd/system/alo-desktop@.service \
                /usr/lib/systemd/system/alo-portald.service \
                /usr/lib/systemd/user/alo-keyring.service \
                /usr/lib/systemd/user/alo-their-folders.service \
@@ -1255,7 +1255,9 @@ RUN chmod 0755 /usr/libexec/alo-boundaryd /usr/libexec/alo-sessiond \
                      alo-modeld.service alo-convertd.socket \
                      alo-asking.socket \
                      alo-compositor.service alo-portald.service \
-                     alo-shipping.service alo-desktop.service \
+                     alo-shipping.service \
+                     # Not the desktop: `alo-desktop@.service` has no `[Install]`
+                     # and is started by alo-sessiond after a sign-in (ADR 0141).
                      # The broker and the one look. The broker's other two units declare no
                      # `[Install]` and are started by the broker, which is how
                      # `alo-convertd.service` is already handled.
@@ -1322,7 +1324,7 @@ RUN chmod 0755 /usr/libexec/alo-boundaryd /usr/libexec/alo-sessiond \
 # **The agent's name is in two files, so the build holds them to each other.**
 #
 # `/etc/alo/agentd.toml` is the source: it is what `alo-agentd` reads and what
-# every grant is matched against. `alo-desktop.service` carries a copy, because
+# every grant is matched against. `alo-desktop@.service` carries a copy, because
 # Settings needs that name to write a grant a person makes by picking a folder,
 # and reading it from the description inside the desktop would make that binary
 # depend on the daemon — which drags the kernel boundary's eBPF build into the
@@ -1333,7 +1335,7 @@ RUN chmod 0755 /usr/libexec/alo-boundaryd /usr/libexec/alo-sessiond \
 # a name the daemon never matches, and alo still cannot read their files with
 # nothing on any screen saying why. So the build refuses instead of shipping it.
 RUN described="$(sed -n 's/^name *= *"\(.*\)"/\1/p' /etc/alo/agentd.toml | head -1)" \
- && unit="$(sed -n 's/^Environment=ALO_AGENT=//p' /usr/lib/systemd/system/alo-desktop.service | head -1)" \
+ && unit="$(sed -n 's/^Environment=ALO_AGENT=//p' /usr/lib/systemd/system/alo-desktop@.service | head -1)" \
  && test -n "$described" \
  && test "$described" = "$unit" \
  && echo "the agent is called '$described' in both the description and the desktop's unit"

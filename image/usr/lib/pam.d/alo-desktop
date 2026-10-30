@@ -14,10 +14,15 @@
 # **This authenticates nobody either, and for a different reason from the
 # greeter's.** The greeter authenticates nobody because nobody is there yet;
 # this authenticates nobody because they already have. `alo-accounts` checked
-# the password and `alo-sessiond` opened the session (ADR 0024), and this unit
-# only runs at all because that session exists — `BindsTo=user@1000.service`.
-# A stack that asked for a password here would ask a person who had just given
-# one for it again.
+# the password (ADR 0024), and `alo-desktop@<number>.service` runs only because
+# `alo-sessiond` started it for that number afterwards (ADR 0141). A stack that
+# asked for a password here would ask a person who had just given one for it
+# again.
+#
+# **This stack is now what opens the person's session**, where until 2026-10-30
+# `alo-sessiond` opened one itself and held the seat with it — so the line below
+# asked for a session on a seat already taken and, as far as the booted machine
+# showed, got none.
 #
 # Modelled on `alo-compositor`'s, which is modelled on the base's own
 # `systemd-run0`. Kept deliberately identical to the greeter's rather than

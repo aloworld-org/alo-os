@@ -182,23 +182,63 @@ pub enum Wrong {
         /// What the unit says it runs as, or that it says nothing.
         runs: String,
     },
-    /// The desktop's service is not tied to the person's session.
+    /// The desktop's service does not open a login session of its own.
     ///
-    /// **Both directions, because one is not enough.** `WantedBy=` without
-    /// `BindsTo=` is a desktop that starts with a session and outlives it -
-    /// drawn over the sign-in screen of the account that replaced it.
-    /// `BindsTo=` without `WantedBy=` is a desktop nothing ever starts, which
-    /// is the state this unit was written to end.
+    /// **ADR 0141.** The desktop is in the person's session only because its
+    /// own unit's PAM stack opens one and pid 1 moves it there; `TTYPath=` is
+    /// what gives that session a seat. Without either, the person's terminal is
+    /// in no session, and restart, power off and the time zone ask for a
+    /// password nothing on the screen can take — what a booted machine showed
+    /// on 2026-10-30.
     #[error(
-        "the desktop's unit {desktop} is not bound to a person's session in both directions:          bound to {bound:?}, wanted by {wanted:?}"
+        "the desktop's unit {desktop} opens no login session on a seat: PAMName={pam}, \
+         TTYPath={terminal} — without both, the person is in no session and restarting, \
+         switching off and the time zone ask for a password (ADR 0141)"
     )]
-    TheDesktopOutlivesItsSession {
+    TheDesktopOpensNoSession {
         /// The desktop's unit.
         desktop: String,
-        /// What it says it is bound to.
-        bound: Vec<String>,
+        /// The PAM stack it names, or that it names none.
+        pam: String,
+        /// The terminal it names, or that it names none.
+        terminal: String,
+    },
+    /// The desktop's service is started from the person's own manager.
+    ///
+    /// That was the road until ADR 0141, and the reason the desktop was in no
+    /// session: `user@1000.service` is in none. The desktop's session is now
+    /// what starts that manager, and only `alo-sessiond` starts the desktop.
+    #[error(
+        "the desktop's unit {desktop} is started or bound by the person's own manager \
+         (wanted by {wanted:?}, bound to {bound:?}), or can be enabled, and a desktop started \
+         that way is in no login session (ADR 0141)"
+    )]
+    TheDesktopIsStartedFromThePersonsManager {
+        /// The desktop's unit.
+        desktop: String,
         /// What it says wants it.
         wanted: Vec<String>,
+        /// What it says it is bound to.
+        bound: Vec<String>,
+    },
+    /// Nothing puts the sign-in screen back when the desktop ends.
+    ///
+    /// Signing out is the desktop exiting cleanly, and a desktop that keeps
+    /// crashing is one that fails. Either way the sign-in screen has already
+    /// stepped aside, so without these the machine is left at a console.
+    #[error(
+        "the desktop's unit {desktop} does not bring the sign-in screen back when it ends: \
+         OnSuccess={on_success:?}, OnFailure={on_failure:?}, and each must name {screen}"
+    )]
+    NothingPutsTheSignInScreenBack {
+        /// The desktop's unit.
+        desktop: String,
+        /// What it starts when it ends well.
+        on_success: Vec<String>,
+        /// What it starts when it fails.
+        on_failure: Vec<String>,
+        /// The sign-in screen's unit.
+        screen: String,
     },
     /// A unit that names which graphics card to open.
     ///

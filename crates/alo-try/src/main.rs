@@ -52,10 +52,49 @@ use alo_bounding::{Boundary, Pinned, THE_ROOT};
 use alo_capability::{Grantee, HowCodeRuns};
 use alo_running::{AskedToRun, WhereCommandsRun, what_a_try_may_reach, what_only_here_may_reach};
 use alo_strings::{Strings, Vocabulary};
+use alo_try::a_scope_of_its_own::{
+    IN_A_SCOPE_OF_ITS_OWN, SYSTEMD_RUN, WhenTheBoxCannotBeMade, the_scope_to_ask_for,
+    when_the_box_cannot_be_made,
+};
 use alo_try::{
     HowNarrow, found_on_the_path, the_cgroup_this_process_is_in, the_record_a_person_keeps,
     what_was_asked_for, where_the_box_goes,
 };
+
+/// **Run this `try` again in a scope of its own, if the cgroup it is in is not
+/// the person's** — before anything is written down, so a run is recorded once.
+///
+/// Returns only when it did not: the box's folder could be made here, or could
+/// not for a reason a scope does not fix, and the ordinary path below then
+/// says so in its own words. When it does run again, this process becomes
+/// [`SYSTEMD_RUN`] and does not come back.
+fn in_a_scope_of_its_own_if_it_needs_one(strings: &Strings, typed: &[std::ffi::OsString]) -> Option<ExitCode> {
+    use std::os::unix::process::CommandExt;
+
+    let said = std::fs::read_to_string("/proc/self/cgroup").ok()?;
+    let mine = the_cgroup_this_process_is_in(&said)?;
+    let why = std::fs::create_dir_all(where_the_box_goes(&mine)).err()?;
+    let asked_already = std::env::var_os(IN_A_SCOPE_OF_ITS_OWN).is_some();
+    if when_the_box_cannot_be_made(why.kind(), asked_already)
+        != WhenTheBoxCannotBeMade::AskForAScopeOfItsOwn
+    {
+        return None;
+    }
+    let this_program = std::env::current_exe().ok()?;
+    let not_run = std::process::Command::new(SYSTEMD_RUN)
+        .args(the_scope_to_ask_for(&this_program, typed))
+        .env(IN_A_SCOPE_OF_ITS_OWN, "1")
+        .exec();
+    the_machine_could_not(
+        strings,
+        &format!(
+            "{} is not this person's to make a box in, and a scope of its own could not be asked \
+             for through {SYSTEMD_RUN}: {not_run}",
+            mine.display()
+        ),
+    );
+    Some(ExitCode::FAILURE)
+}
 
 /// Who the run is written down as having been asked by.
 ///
@@ -171,6 +210,12 @@ fn main() -> ExitCode {
             return ExitCode::FAILURE;
         }
     };
+
+    // **A scope of its own, before anything is written down**, where the
+    // person's login session is not theirs to make a box in (ADR 0141).
+    if let Some(ended) = in_a_scope_of_its_own_if_it_needs_one(&strings, &typed) {
+        return ended;
+    }
 
     // The record, before the box: a run that cannot be written down does not
     // happen, so there is nothing to undo if this is where it stops.

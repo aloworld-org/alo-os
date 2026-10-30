@@ -8,20 +8,19 @@
 //! `/run/alo-sessiond/sign-in.sock`, which is the real machine's door rather
 //! than a path a test may write to.
 //!
-//! # It stays, and the session stays with it
+//! # It stays, because the door stays
 //!
-//! Unlike `alo-boundaryd`, which loads a boundary the kernel then holds, this
-//! process **is** what holds the session: `logind` hands back a descriptor and
-//! the session lasts while somebody keeps it. So the unit is an ordinary
-//! long-running service, and stopping it signs the machine out. That is the
-//! honest shape rather than a limitation — there is nowhere else for a session
-//! to be held, and a `oneshot` that exited would take the person's session with
-//! it a fraction of a second after opening it.
+//! **It no longer holds the session**, and until 2026-10-30 it did: it called
+//! `CreateSession` and kept the descriptor, which made it the leader of the
+//! person's session and left their desktop outside it (ADR 0141). The
+//! desktop's own unit holds the session now, for exactly as long as it runs.
+//! This process stays because the sign-in screen knocks again after every
+//! sign-out, and stopping it no longer signs anybody out.
 //!
 //! # It says one kind of thing, and it says it to a service log
 //!
 //! Nothing this file writes is read by the person using the machine. A `Group=`
-//! line naming root, a bus that is not there, a `logind` that said no: those
+//! line naming root, a bus that is not there, a systemd that said no: those
 //! are read by whoever is standing the machine up, in English. What the person
 //! reads is one of `alo_sessiond::EVERY_WORD`, in their own language, rendered
 //! by the surface that drew the screen — and this is what the log says
@@ -42,7 +41,7 @@ mod running {
     use alo_sessiond::listening::Listening;
     use alo_sessiond::{
         Answered, Door, Opening, THE_DOOR, TheMachinesAccounts, TheMachinesFolders,
-        TheMachinesLogind, TheMachinesNames, our_group,
+        TheMachinesDesktops, TheMachinesNames, our_group,
     };
 
     /// Open the door and answer whoever knocks, until this service is stopped.
@@ -75,13 +74,13 @@ mod running {
 
         eprintln!(
             "alo-sessiond: the door at {THE_DOOR} is open to group {group} and to nobody else; \
-             this process holds no capability, and what it can do is open one session"
+             this process holds no capability, and what it can do is start one person's desktop"
         );
 
         let mut opening = Opening::at(
             door,
             TheMachinesAccounts,
-            TheMachinesLogind::default(),
+            TheMachinesDesktops,
             TheMachinesFolders,
             TheMachinesNames,
         );
@@ -106,7 +105,9 @@ mod running {
     fn said(answered: &Answered) {
         match answered {
             Answered::Opened => {
-                eprintln!("alo-sessiond: a session is open, and it lasts as long as this process");
+                eprintln!(
+                    "alo-sessiond: a desktop is running, inside the session its own unit opened"
+                );
             }
             Answered::Refused(key) => {
                 eprintln!("alo-sessiond: a knock was refused, and the surface was told {key}");
@@ -125,7 +126,7 @@ fn main() -> std::process::ExitCode {
 #[cfg(not(target_os = "linux"))]
 fn main() -> std::process::ExitCode {
     eprintln!(
-        "alo-sessiond opens a systemd-logind session and there is none on this host: alo OS is \
+        "alo-sessiond starts a desktop through systemd and there is none on this host: alo OS is \
          Linux (ADR 0011), and a process that exited cleanly here would be telling a supervisor \
          that this machine can be signed in to"
     );

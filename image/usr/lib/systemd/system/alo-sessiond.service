@@ -14,14 +14,15 @@ Documentation=https://github.com/aloworld-org/alo-os/blob/main/docs/decisions/00
 After=systemd-logind.service
 
 [Service]
-# It stays, and the session stays with it. Unlike alo-boundaryd — which loads a
-# boundary the kernel then holds — this process *is* what holds the session:
-# logind hands back a descriptor and the session lasts while somebody keeps it.
-# A oneshot would take the person's session away a fraction of a second after
-# opening it.
+# It stays, because the sign-in screen knocks again after every sign-out. It no
+# longer holds the session: until 2026-10-30 it called CreateSession and kept
+# the descriptor, which made it the leader of the person's session and left
+# their desktop outside it (ADR 0141). It now starts alo-desktop@<number>.service,
+# whose own PAM stack opens the session with the desktop inside it.
 Type=exec
 
-# Root, because that is what logind decides CreateSession on. The measurement is
+# Root, because that is what systemd decides StartUnit on, as logind decided
+# CreateSession when this called it. The logind measurement is
 # in ADR 0024 and in docs/quirks.md, taken twice: root is answered "Leader PID is
 # not valid" — the call authorised and only its contents refused — and uid 1000
 # is answered "Access denied".

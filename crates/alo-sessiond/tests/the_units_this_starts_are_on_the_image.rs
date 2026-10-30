@@ -163,3 +163,155 @@ fn the_names_unit_runs_its_program_with_the_number_alone() {
         at.display()
     );
 }
+
+/// The desktop's unit as the image ships it, read whole.
+fn the_desktops_unit() -> String {
+    let at = the_images_units().join(format!("{}@.service", alo_sessiond::THE_DESKTOPS_UNIT));
+    std::fs::read_to_string(&at)
+        .unwrap_or_else(|why| panic!("{} could not be read: {why}", at.display()))
+}
+
+/// Every value one key is given in a unit's text.
+fn every(unit: &str, key: &str) -> Vec<String> {
+    let prefix = format!("{key}=");
+    unit.lines()
+        .filter_map(|line| line.trim().strip_prefix(&prefix))
+        .map(str::to_owned)
+        .collect()
+}
+
+/// **The desktop this component starts is a template the image carries, and
+/// it is the only spelling of it.**
+///
+/// The desktop was `alo-desktop.service` until ADR 0141, started by the
+/// person's own manager. A plain unit beside the template would be a second
+/// road to the same desktop, and the old road is the one that left it outside
+/// the person's session.
+#[test]
+fn the_desktop_is_a_template_and_the_old_unit_is_gone() {
+    let units = the_images_units();
+    let template = units.join(format!("{}@.service", alo_sessiond::THE_DESKTOPS_UNIT));
+    let concrete = units.join(format!("{}.service", alo_sessiond::THE_DESKTOPS_UNIT));
+    assert!(template.is_file(), "{} is missing", template.display());
+    assert!(
+        !concrete.is_file(),
+        "{} still exists, and it is the road that left the desktop outside the person's session",
+        concrete.display()
+    );
+}
+
+/// **The desktop's unit grants what the mechanism needs, and nothing more.**
+///
+/// What ADR 0141 rests on, read off the file this component starts: pid 1
+/// becomes the person (`User=%i`), opens their session through a PAM stack
+/// with `pam_systemd` in it (`PAMName=`), on the terminal that gives it a seat
+/// (`TTYPath=`), as a person's session rather than a greeter's — and holds no
+/// capability, because becoming the person is pid 1's act, not the desktop's.
+#[test]
+fn the_desktops_unit_opens_the_persons_session_and_holds_nothing() {
+    let unit = the_desktops_unit();
+    assert_eq!(
+        every(&unit, "User"),
+        vec!["%i"],
+        "the desktop does not run as the person it was started for"
+    );
+    assert_eq!(
+        every(&unit, "PAMName"),
+        vec!["alo-desktop"],
+        "the desktop opens no login session"
+    );
+    assert_eq!(
+        every(&unit, "TTYPath"),
+        vec!["/dev/tty1"],
+        "a session with no terminal is given no seat"
+    );
+    assert!(
+        every(&unit, "Environment")
+            .iter()
+            .any(|it| it == "XDG_SESSION_CLASS=user"),
+        "the desktop's session is not a person's session"
+    );
+    assert_eq!(
+        every(&unit, "CapabilityBoundingSet"),
+        vec![""],
+        "the desktop holds a capability"
+    );
+    assert_eq!(
+        every(&unit, "AmbientCapabilities"),
+        vec![""],
+        "the desktop is handed a capability"
+    );
+    assert_eq!(every(&unit, "NoNewPrivileges"), vec!["yes"]);
+
+    let pam = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../image/usr/lib/pam.d/alo-desktop");
+    let stack = std::fs::read_to_string(&pam)
+        .unwrap_or_else(|why| panic!("{} could not be read: {why}", pam.display()));
+    assert!(
+        stack.lines().any(|line| {
+            let words: Vec<&str> = line.split_whitespace().collect();
+            words == ["session", "required", "pam_systemd.so"]
+        }),
+        "{} does not require pam_systemd, so the desktop's unit opens no session",
+        pam.display()
+    );
+}
+
+/// **Nothing starts the desktop from the person's own manager**, and nothing
+/// ties it to that manager's lifetime.
+///
+/// That was the road until ADR 0141: `WantedBy=user@1000.service`. The person's
+/// manager is in no session, so a desktop it started was in none either. The
+/// desktop's session is now what starts that manager, so the dependency points
+/// the other way, and only `alo-sessiond` may start the desktop at all.
+#[test]
+fn nothing_starts_the_desktop_from_the_persons_own_manager() {
+    let unit = the_desktops_unit();
+    for key in [
+        "WantedBy",
+        "RequiredBy",
+        "BindsTo",
+        "PartOf",
+        "Requires",
+        "After",
+    ] {
+        let naming: Vec<String> = every(&unit, key)
+            .into_iter()
+            .filter(|it| it.contains("user@"))
+            .collect();
+        assert!(
+            naming.is_empty(),
+            "the desktop's unit names the person's manager in {key}={naming:?}"
+        );
+    }
+    assert!(
+        !unit.lines().any(|line| line.trim() == "[Install]"),
+        "the desktop's unit can be enabled, and only alo-sessiond may start it"
+    );
+}
+
+/// **The sign-in screen comes back when the desktop ends, however it ends.**
+///
+/// Signing out is the desktop exiting cleanly; a crash it cannot recover from
+/// is the desktop failing. Either way the next thing on the screen is the
+/// sign-in screen, not a console.
+#[test]
+fn the_sign_in_screen_comes_back_when_the_desktop_ends() {
+    let unit = the_desktops_unit();
+    for key in ["OnSuccess", "OnFailure"] {
+        assert_eq!(
+            every(&unit, key),
+            vec!["alo-compositor.service"],
+            "a desktop that ends with {key} leaves nothing on the screen"
+        );
+    }
+}
+
+/// **The control for the four above**: the reader finds a line that is there
+/// and finds nothing for a line that is not, so an empty answer means absent
+/// rather than unread.
+#[test]
+fn the_unit_reader_tells_present_from_absent() {
+    let unit = "[Service]\nUser=%i\n# User=root\n";
+    assert_eq!(every(unit, "User"), vec!["%i"]);
+    assert!(every(unit, "PAMName").is_empty());
+}

@@ -1,9 +1,12 @@
 # ADR 0141 — The desktop is put inside the person's session by what already has the privilege
 
-**Status:** **proposed, 2026-10-30 — waiting on the owner for one question**
-(the last section). Amends [ADR 0115](0115-the-desktop-runs-inside-the-session-alo-sessiond-opened.md)
-once accepted. No code has been written for it, on purpose: the question
-decides which code.
+**Status:** **accepted, 2026-10-30, by the owner, choosing option (b)**:
+systemd starts the person's desktop; `alo-sessiond` starts
+`alo-desktop@<uid>.service`, and no alo program gains any capability. Amends
+[ADR 0115](0115-the-desktop-runs-inside-the-session-alo-sessiond-opened.md).
+Proposed the same day with the question in the last section and no code; the
+code followed the answer, and *What building it found* records the one thing
+the proposal had not seen.
 
 **Context:** the owner's decision of 2026-10-30, *"Do it the ordinary way"* —
 the sign-in screen starts the person's desktop inside their logind session, as
@@ -209,10 +212,41 @@ Do you want:**
 This record recommends (b). Either way `alo-sessiond` stops opening a session
 of its own on the seat, because that is the measured fault.
 
+## What building it found: `try` lost its box, and gets it back
+
+**Moving the desktop into the session took the person's `try` with it.**
+`alo-try` makes its sealed box as a child of its own cgroup, which worked
+because `alo-desktop.service` said `Delegate=yes`. A login session's scope is
+`logind`'s. Measured inside the image on 2026-10-30, once, by hand, as the
+person in a session opened by road A: the scope was `root:root` and `mkdir`
+answered *Permission denied* — and the same with a `Delegate=yes` drop-in for
+every `session-.scope`, which those scopes do not take.
+
+The person's own manager can give them a delegated scope, measured the same
+way: `systemd-run --user --scope -p Delegate=yes` put the process in
+`user@<uid>.service/app.slice/run-….scope`, owned by the person, type
+`domain`, and a box made and moved into there. So `alo-try`, when its cgroup is
+not the person's, runs itself again inside such a scope, once
+(`crates/alo-try/src/a_scope_of_its_own.rs`). Only the `try` process moves; the
+terminal it was typed in stays in the session. *This makes an existing promise
+true — a sealed box, ADR 0064's default — rather than adding one.*
+
+## What was built
+
+- `image/usr/lib/systemd/system/alo-desktop@.service` replaces
+  `alo-desktop.service`: `User=%i`, `PAMName=alo-desktop`, `TTYPath=/dev/tty1`,
+  `XDG_SESSION_CLASS=user`, no `[Install]`, no `user@` in it, and
+  `OnSuccess=`/`OnFailure=alo-compositor.service`.
+- `alo-sessiond` no longer calls `CreateSession`; it starts that unit and waits
+  until it runs, and asks systemd whether it still runs instead of keeping a
+  flag that never cleared.
+- `alo-compositor` is unchanged in behaviour: #1029's step-aside stands.
+
 ## How it is known to be done
 
-Not by a unit starting. The next walk on a booted machine checks, from the
-person's terminal:
+Not by a unit starting. The tests above run on every build; the machine has
+not been booted with this change. The next walk on a booted machine checks,
+from the person's terminal:
 
 - `cat /proc/self/cgroup` shows a `session-N.scope`;
 - `loginctl show-session self -p Active` says `yes`;
@@ -220,5 +254,8 @@ person's terminal:
 - `timedatectl set-timezone Europe/Berlin` works with no password;
 - the desktop survives sign-in and is not pushed off (#1029's behaviour);
 - signing out — the desktop exiting — brings the sign-in screen back;
-- and, **before** the change, the journal has `pam_systemd(alo-desktop:session):
-  Not creating session` — the line that confirms the inference above.
+- `try true` works from the terminal, inside a `run-….scope` of its own;
+- and, on an image from **before** this change, the journal has
+  `pam_systemd(alo-desktop:session): Not creating session` — the line that
+  confirms the inference above. **The person's account cannot read the system
+  journal on the image**, so this is read from the serial console or as root.

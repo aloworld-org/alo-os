@@ -35,41 +35,37 @@ pub enum NotADoor {
     TheRootsGroup,
 }
 
-/// Why no session was opened.
+/// Why no desktop was started, and so no session opened.
 ///
-/// Everything the machine can answer with when it is asked to make one. A
+/// Everything the machine can answer with when it is asked to start one. A
 /// person is told [`crate::NOT_OPENED`] for every variant of this, because from
-/// where they are standing the four are one fact; which it was belongs here.
+/// where they are standing they are one fact; which it was belongs here.
 #[derive(Debug, thiserror::Error)]
 pub enum NotOpened {
     /// There is no system bus to ask, or this process could not reach it.
     #[error(
-        "alo-sessiond could not reach this machine's system bus, so there was nothing to ask for \
-         a session: {why}"
+        "alo-sessiond could not reach this machine's system bus, so there was nothing to ask to \
+         start a desktop: {why}"
     )]
     NoBus {
         /// What the bus library said.
         why: String,
     },
 
-    /// The call was refused, by `logind` or by the bus in front of it.
+    /// The call was refused, by systemd or by the bus in front of it.
     ///
-    /// The one worth reading closely. ADR 0024 measured that `CreateSession`
-    /// refuses an unprivileged caller and accepts a privileged one — so an
+    /// The one worth reading closely. Starting a unit is authorised by being
+    /// root — the shape ADR 0121's folder helper is started in — so an
     /// access-denied here is a unit file that stopped running as root, not a
     /// machine that cannot do this.
     ///
     /// **The name is carried beside the sentence, and the name is the part to
-    /// decide on.** The same refusal arrives in two wordings depending on
-    /// whether the bus policy turned the call away before `logind` saw it or
-    /// `logind` refused it itself, and `docs/quirks.md` records both; the D-Bus
-    /// error name is `org.freedesktop.DBus.Error.AccessDenied` either way.
-    /// Anything deciding on the sentence would be deciding on prose that
-    /// changes between two machines.
+    /// decide on**, because the same refusal is worded differently by the bus
+    /// policy and by systemd itself.
     #[error(
-        "systemd-logind would not open a session for {person}: {named} — {why} — if this is an \
+        "systemd would not start the desktop for {person}: {named} — {why} — if this is an \
          access-denied, alo-sessiond is not running as root and its unit file is what says it \
-         must be (ADR 0024)"
+         must be (ADR 0024, ADR 0141)"
     )]
     Refused {
         /// The number a session was asked for.
@@ -82,14 +78,30 @@ pub enum NotOpened {
 
     /// It answered with something this crate cannot read.
     ///
-    /// The reply is `soshusub` on the pinned base, and a reply that does not
-    /// destructure is an interface that has moved under us. Refused rather than
-    /// guessed at, because the half of it this crate keeps is a descriptor that
-    /// holds the session open.
-    #[error("systemd-logind answered something alo-sessiond could not read: {why}")]
+    /// A reply that does not destructure is an interface that has moved under
+    /// us, and is refused rather than guessed at.
+    #[error("systemd answered something alo-sessiond could not read: {why}")]
     NotUnderstood {
         /// What the bus library said about the shape of the reply.
         why: String,
+    },
+
+    /// The desktop's unit was started and did not run.
+    ///
+    /// **The first place to look is PAM**: the unit's stack is what opens the
+    /// person's session, and a stack that refuses fails the unit before the
+    /// desktop is ever executed.
+    #[error(
+        "{unit} did not run for {person}: systemd said {said}, and its journal says why — PAM \
+         refusing the session is the first thing to look for"
+    )]
+    NotRunning {
+        /// The number the desktop was started for.
+        person: u32,
+        /// The unit, as systemd was asked for it.
+        unit: String,
+        /// What systemd said about how it ended, or that it never settled.
+        said: String,
     },
 }
 
