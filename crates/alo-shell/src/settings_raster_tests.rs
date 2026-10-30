@@ -15,8 +15,28 @@ use alo_shortcuts::Action;
 
 /// Settings as it stands, drawn on an output of `size`.
 fn drawn_at(window: &SettingsWindow, size: (i32, i32), look: SettingsLook) -> SettingsPicture {
+    drawn_at_scale(window, size, look, DisplayScale::ONE)
+}
+
+/// Settings as it stands, drawn on an output of `size` at `display`.
+fn drawn_at_scale(
+    window: &SettingsWindow,
+    size: (i32, i32),
+    look: SettingsLook,
+    display: DisplayScale,
+) -> SettingsPicture {
     let mut labels = WindowControlLabels::new().unwrap();
-    picture(window, &words(), &mut labels, size, look, noon(), None).unwrap()
+    picture(
+        window,
+        &words(),
+        &mut labels,
+        size,
+        look,
+        noon(),
+        None,
+        display,
+    )
+    .unwrap()
 }
 
 /// A key that means `key`.
@@ -149,7 +169,8 @@ fn the_focused_row_is_always_in_view_and_a_frame_too_small_is_refused() {
             (1920, 90),
             light(),
             noon(),
-            None
+            None,
+            DisplayScale::ONE
         ),
         Err(RenderError::SettingsScene)
     ));
@@ -211,4 +232,129 @@ fn where_the_keyboard_is_is_drawn_before_any_key_is_pressed() {
         1,
         "the focused row is not drawn until a key is pressed"
     );
+}
+
+/// Everything Settings paints, hashed.
+fn hash_of(drawn: &SettingsPicture) -> u64 {
+    let mut hashed = crate::a_picture_hashed::Hashed::begun();
+    if let Some(panel) = drawn.panel {
+        hashed.area(panel);
+    }
+    hashed.solids(&drawn.solids);
+    hashed.inked(&drawn.inked);
+    hashed.done()
+}
+
+/// **At 100 per cent Settings is the pixels `main` drew** before it followed
+/// its display's scale: held to hashes taken from `main` at cdce3e15 by the same code,
+/// twice, with the same answers. Bundled faces only.
+#[test]
+fn at_one_hundred_settings_is_the_pixels_main_drew() {
+    let machine = a_persons_machine("raster-hash");
+    let window = machine.opened();
+    let hashes = [
+        hash_of(&drawn_at(&window, (1920, 1080), light())),
+        hash_of(&drawn_at(&window, (1280, 800), light())),
+    ];
+    assert_eq!(
+        hashes,
+        [0x3b48_ca93_79e9_f996, 0xc946_4045_fec5_01bc],
+        "Settings at 100 per cent is not the pixels main drew: {hashes:#x?}"
+    );
+}
+
+/// How far a piece of type may land from exactly twice its place, in pixels:
+/// type is shaped at each size on its own, so a hinted glyph at 32 is not
+/// precisely one at 16 drawn twice as large.
+const NEARLY: i32 = 6;
+
+/// **At 200 per cent Settings is twice its size and place**: the panel
+/// exactly, every line about twice, the same words in the same order, and the
+/// rules between sections two pixels thick instead of one.
+#[test]
+fn at_two_hundred_settings_is_twice_its_size() {
+    let machine = a_persons_machine("raster-two");
+    let window = machine.opened();
+    let one = drawn_at(&window, (1920, 2160), light());
+    let two = drawn_at_scale(
+        &window,
+        (3840, 4320),
+        light(),
+        DisplayScale::of_per_cent(200),
+    );
+    let (a, b) = (one.panel.unwrap(), two.panel.unwrap());
+    assert_eq!(
+        (2 * a.loc.x, 2 * a.loc.y, 2 * a.size.w, 2 * a.size.h),
+        (b.loc.x, b.loc.y, b.size.w, b.size.h)
+    );
+    assert_eq!(one.lines.len(), two.lines.len());
+    for (small, large) in one.lines.iter().zip(&two.lines) {
+        let texts = |line: &SettingsLineDrawn| -> Vec<String> {
+            line.parts.iter().map(|part| part.text.clone()).collect()
+        };
+        assert_eq!(texts(small), texts(large));
+        let (a, b) = (small.area, large.area);
+        for (doubled, drawn) in [
+            (2 * a.loc.x, b.loc.x),
+            (2 * a.loc.y, b.loc.y),
+            (2 * a.size.w, b.size.w),
+            (2 * a.size.h, b.size.h),
+        ] {
+            assert!(
+                (doubled - drawn).abs() <= NEARLY,
+                "{a:?} at one is {b:?} at two"
+            );
+        }
+    }
+    let thickness = |drawn: &SettingsPicture, inner: i32| -> Vec<i32> {
+        drawn
+            .solids
+            .iter()
+            .filter(|solid| solid.area.size.w == inner)
+            .map(|solid| solid.area.size.h)
+            .collect()
+    };
+    let room_one = crate::record_room::Room::on(
+        (1920, 2160),
+        RecordLook {
+            contrast: light().contrast,
+            scheme: light().scheme,
+            scale: light().scale,
+            reading: light().reading,
+        },
+        DisplayScale::ONE,
+    )
+    .unwrap();
+    let rules_one = thickness(&one, room_one.inner);
+    let rules_two = thickness(&two, 2 * room_one.inner);
+    assert!(
+        !rules_one.is_empty(),
+        "the control: there are rules to measure"
+    );
+    assert!(rules_one.iter().all(|h| *h == 1), "{rules_one:?}");
+    assert_eq!(rules_two, vec![2; rules_one.len()]);
+}
+
+/// **Keys reach Settings at any scale**: a press moves the focus at 200 as it
+/// does at one, and the focused row is still drawn whole in view.
+#[test]
+fn at_two_hundred_a_key_moves_the_focus_and_it_stays_in_view() {
+    let machine = a_persons_machine("raster-two-keys");
+    let mut window = machine.opened();
+    let strings = words();
+    let door = CountingDoor::revoking();
+    window.pressed(key(SettingsKey::Last), doors(&strings, &door));
+    let last = window.focused(noon()).unwrap();
+    let drawn = drawn_at_scale(
+        &window,
+        (2560, 1200),
+        light(),
+        DisplayScale::of_per_cent(200),
+    );
+    let focused: Vec<_> = drawn.lines.iter().filter(|line| line.focused).collect();
+    assert_eq!(focused.len(), 1);
+    assert_eq!(focused[0].words.row.as_ref(), Some(&last));
+    let panel = drawn.panel.unwrap();
+    assert!(focused[0].area.loc.y >= panel.loc.y);
+    assert!(focused[0].area.loc.y + focused[0].area.size.h <= panel.loc.y + panel.size.h);
 }

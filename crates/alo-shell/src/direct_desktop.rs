@@ -2065,6 +2065,9 @@ impl LoopInput for Desk<'_> {
                     not_saved: server.why_the_provider_was_not_saved(),
                 }
             }),
+            // **This display's scale**, the one its Dock is drawn at, read off
+            // the frame rather than asked again.
+            crate::display_scale::DisplayScale::of_per_cent(frame.display_scale),
         )?;
         // **The frame is drawn through the per-display road, with one display
         // on it.** `more-than-one-display-plan.md` task 4. This desk builds one
