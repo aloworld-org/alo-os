@@ -457,3 +457,93 @@ fn a_service_at_this_machines_address_is_still_saved_when_they_go_ahead() {
         .expect("a provider is waiting to be saved");
     assert_eq!(saving.provider.endpoint, "http://127.0.0.1:11434");
 }
+
+/// This machine's own network address, in these tests.
+fn the_machines_own() -> std::net::IpAddr {
+    std::net::IpAddr::from([192, 168, 1, 20])
+}
+
+/// A form opened on a machine that also holds [`the_machines_own`], told so as
+/// the desktop tells it, with `address` typed into the address field.
+fn on_a_machine_at_192_168_1_20(server: &mut crate::Server, address: &str) {
+    server.a_provider_is_added();
+    assert!(
+        server.the_form_asks_where_this_machine_is(),
+        "a form that opens asks where this machine is"
+    );
+    assert!(
+        !server.the_form_asks_where_this_machine_is(),
+        "asked once, not on every frame"
+    );
+    server.this_machine_is_at(vec![the_machines_own()]);
+    types(server, "On this machine");
+    server.a_key_fills_in_the_provider(FillingInKey::NextField);
+    types(server, address);
+}
+
+#[test]
+fn a_provider_at_an_address_this_machine_has_is_cautioned() {
+    // Owner's decision, 2026-10-30: the machine's own network address carries
+    // the caution as loopback does.
+    let (_directory, mut server) = a_server();
+    on_a_machine_at_192_168_1_20(&mut server, "http://192.168.1.20:8000/v1");
+    assert!(
+        server
+            .a_provider_is_being_filled_in()
+            .expect("a form")
+            .its_address_is_this_machine()
+    );
+}
+
+#[test]
+fn a_provider_at_an_address_this_machine_does_not_have_is_not_cautioned() {
+    let (_directory, mut server) = a_server();
+    on_a_machine_at_192_168_1_20(&mut server, "http://192.168.1.21:8000/v1");
+    assert!(
+        !server
+            .a_provider_is_being_filled_in()
+            .expect("a form")
+            .its_address_is_this_machine()
+    );
+}
+
+#[test]
+fn no_form_open_asks_nothing_and_takes_no_addresses() {
+    // The refusal half: with no form open nothing asks the desktop to read the
+    // network, and addresses handed in anyway are not kept anywhere.
+    let (_directory, mut server) = a_server();
+    assert!(!server.the_form_asks_where_this_machine_is());
+    server.this_machine_is_at(vec![the_machines_own()]);
+    assert!(server.a_provider_is_being_filled_in().is_none());
+    // A form opened and given up on before the next frame asks nothing either.
+    server.a_provider_is_added();
+    server.that_provider_is_not_being_added();
+    assert!(!server.the_form_asks_where_this_machine_is());
+}
+
+#[test]
+fn a_provider_at_an_address_this_machine_has_is_still_saved() {
+    // **The caution takes nothing away** (law 5). Over https, because a key
+    // over http to anything but loopback is refused by an older rule.
+    let (_directory, mut server) = a_server();
+    on_a_machine_at_192_168_1_20(&mut server, "https://192.168.1.20:8443");
+    server.a_key_fills_in_the_provider(FillingInKey::NextField);
+    types(&mut server, "none");
+    server.a_key_fills_in_the_provider(FillingInKey::NextField);
+    types(&mut server, "llama3");
+    assert!(
+        server
+            .a_provider_is_being_filled_in()
+            .expect("a form")
+            .its_address_is_this_machine(),
+        "the control: this is an address the caution is shown for"
+    );
+    assert_eq!(
+        server.a_key_fills_in_the_provider(FillingInKey::Save),
+        Some(WhatFillingInDid::SaveIt)
+    );
+    let saving = server
+        .take_the_provider_to_save()
+        .expect("a provider is waiting to be saved");
+    assert_eq!(saving.provider.endpoint, "https://192.168.1.20:8443");
+}

@@ -46,6 +46,9 @@
 mod readings;
 
 #[cfg(target_os = "linux")]
+mod this_machines_own_addresses;
+
+#[cfg(target_os = "linux")]
 mod a_provider_a_person_added_is_saved;
 
 #[cfg(target_os = "linux")]
@@ -962,6 +965,12 @@ mod running {
                     why.why()
                 );
             }
+        }
+
+        /// This machine's own network addresses, read from the kernel now,
+        /// for the form a person just opened (`crate::this_machines_own_addresses`).
+        fn this_machines_own_addresses(&mut self) -> Vec<std::net::IpAddr> {
+            crate::this_machines_own_addresses::read_now()
         }
 
         /// The canvas layout this person left, read from their own folder.

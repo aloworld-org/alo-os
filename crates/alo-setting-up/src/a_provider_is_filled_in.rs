@@ -130,6 +130,14 @@ pub struct AProviderBeingAddded {
     model: String,
     /// Which field the keyboard is in.
     which: WhichField,
+    /// **This machine's own network addresses**, as they were read when the
+    /// form opened — empty until a caller says, and on a machine whose
+    /// addresses could not be read.
+    ///
+    /// Handed in rather than read here: this crate never asks the kernel
+    /// anything, and a surface that read the network on every key would be a
+    /// watcher.
+    this_machine_is_also_at: Vec<std::net::IpAddr>,
 }
 
 /// **Says that somebody is adding a provider, and nothing about what they
@@ -314,7 +322,14 @@ impl AProviderBeingAddded {
             .all(|which| !self.what_is_in(*which).trim().is_empty())
     }
 
-    /// Whether the address typed so far is this machine's own.
+    /// **This machine has these network addresses as well as loopback**, read
+    /// by the caller at the moment the form is filled in.
+    pub fn this_machine_is_also_at(&mut self, addresses: Vec<std::net::IpAddr>) {
+        self.this_machine_is_also_at = addresses;
+    }
+
+    /// Whether the address typed so far is this machine's own: loopback, or
+    /// one of the addresses [`Self::this_machine_is_also_at`] was told.
     ///
     /// **For a warning, not a refusal.** A service at this machine's address is
     /// asked there and its question goes on no road out, so the egress
@@ -327,9 +342,18 @@ impl AProviderBeingAddded {
     /// daemon uses to send a question there, so the warning appears for exactly
     /// the addresses whose answers will say *a service at this machine's
     /// address*.
+    ///
+    /// **And one of this machine's own network addresses**, such as
+    /// `192.168.1.20` (owner's decision, 2026-10-30; ADR 0021). The daemon does
+    /// not treat that one as this machine — its questions are shown on the
+    /// indicator as leaving for that address — but the service behind it is
+    /// still a program on this machine, and what it does next is just as
+    /// invisible to alo; [`alo_models::address::its_host_is_one_of`] says so.
     #[must_use]
     pub fn its_address_is_this_machine(&self) -> bool {
-        alo_models::address::is_on_this_machine(self.address.trim())
+        let address = self.address.trim();
+        alo_models::address::is_on_this_machine(address)
+            || alo_models::address::its_host_is_one_of(address, &self.this_machine_is_also_at)
     }
 
     /// What this form would save, or what is still wrong with it.

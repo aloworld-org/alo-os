@@ -283,6 +283,9 @@ pub struct Server {
     /// flag saying whether a form is open, because a form being open is a
     /// form existing. See `crate::a_provider_is_added_in_settings`.
     pub(crate) filling_in: Option<alo_setting_up::a_provider_is_filled_in::AProviderBeingAddded>,
+    /// Whether a form just opened and has not yet been told this machine's own
+    /// network addresses, which the desktop reads on the next frame.
+    pub(crate) the_form_asks_where_this_machine_is: bool,
     /// What a person copied somewhere else, on its way to a field of ours.
     ///
     /// **Held across frames rather than per press**, because a paste is asked
@@ -717,6 +720,7 @@ impl Server {
             what_the_dock_is_pinned_to: alo_dock::Holding::nothing(),
             // Nobody is adding a provider until they ask to.
             filling_in: None,
+            the_form_asks_where_this_machine_is: false,
             // Nothing has been pasted, and nothing is being waited for.
             clipboard: crate::what_is_on_the_clipboard::TheClipboard::new(),
             // Nobody has asked for a provider to be saved.

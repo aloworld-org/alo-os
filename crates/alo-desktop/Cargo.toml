@@ -57,6 +57,12 @@ alo-secrets = { path = "../alo-secrets" }
 # has to be able to name on the way to the keyring.
 alo-models = { path = "../alo-models" }
 alo-setting-up = { path = "../alo-setting-up" }
+# **This machine's own network addresses**, for the caution Settings shows a
+# person adding a provider at one of them (ADR 0021, owner's note of
+# 2026-10-30). Read through the routing-socket reader the agent service already
+# has and tests (`alo_agentd::route_messages`), rather than a second reading
+# of the kernel's bytes that could disagree with it. Only that module is used.
+alo-agentd = { path = "../alo-agentd" }
 # The task a request becomes.
 alo-tasks = { path = "../alo-tasks" }
 alo-shortcuts = { path = "../alo-shortcuts" }

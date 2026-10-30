@@ -474,3 +474,49 @@ fn an_address_at_this_machine_can_still_be_saved() {
         .expect("a service at this machine's address is the person's to add");
     assert_eq!(saving.provider.endpoint, "http://localhost:1234");
 }
+
+/// A form on a machine that also has `192.168.1.20`, with `address` typed.
+fn at_on_a_machine_at_192_168_1_20(address: &str) -> AProviderBeingAddded {
+    let mut form = at(address);
+    form.this_machine_is_also_at(vec![std::net::IpAddr::from([192, 168, 1, 20])]);
+    form
+}
+
+#[test]
+fn an_address_this_machine_has_on_its_network_is_one_of_its_own() {
+    // The owner's decision of 2026-10-30: the machine's own network address
+    // carries the caution as loopback does.
+    for address in ["http://192.168.1.20:8000/v1", "https://192.168.1.20:8443"] {
+        assert!(
+            at_on_a_machine_at_192_168_1_20(address).its_address_is_this_machine(),
+            "{address}"
+        );
+    }
+}
+
+#[test]
+fn an_address_this_machine_does_not_have_is_not_one_of_its_own() {
+    // The refusal half: a neighbour's address, the same address on a machine
+    // that was told nothing, and the address put after somebody's credential.
+    assert!(
+        !at_on_a_machine_at_192_168_1_20("http://192.168.1.21:8000").its_address_is_this_machine()
+    );
+    assert!(!at("http://192.168.1.20:8000").its_address_is_this_machine());
+    assert!(
+        !at_on_a_machine_at_192_168_1_20("https://192.168.1.20@attacker.example")
+            .its_address_is_this_machine()
+    );
+}
+
+#[test]
+fn an_address_this_machine_has_on_its_network_can_still_be_saved() {
+    // **The caution takes nothing away** (law 5). Over https, because a key
+    // sent over http to anything but loopback is refused by a rule older than
+    // this caution, and that rule is not this caution's to change.
+    let form = at_on_a_machine_at_192_168_1_20("https://192.168.1.20:8443");
+    assert!(form.its_address_is_this_machine());
+    let saving = form
+        .what_it_would_save()
+        .expect("a service at this machine's own network address is the person's to add");
+    assert_eq!(saving.provider.endpoint, "https://192.168.1.20:8443");
+}

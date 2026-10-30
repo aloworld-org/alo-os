@@ -695,6 +695,7 @@ version = "0.1.0"
 dependencies = [
  "alo-access",
  "alo-accounts",
+ "alo-agentd",
  "alo-appearance",
  "alo-applications",
  "alo-arranging",

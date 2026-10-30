@@ -609,3 +609,32 @@ can still choose another address.
 own LAN address. That is not *this machine* to `alo-models`, which treats it
 as a provider somewhere else, like any address it cannot vouch for; it gets no
 caution here, and that is an open question for the owner. Settings has no edit form yet, only *add*, so only the add form carries it.
+
+## Note, 2026-10-30 — this machine's own network addresses carry the caution too
+
+**Owner's decision.** The note above left one case open: a provider at an
+address this machine holds on one of its networks, such as `192.168.1.20`,
+rather than at loopback. The owner decided that it carries the same caution.
+A model server a person runs here and reaches by the machine's own network
+address is as much a program on this machine as one reached at `127.0.0.1`,
+and alo can see no more of what it does with a question.
+
+**How it is read.** When a person opens the form that adds a provider, the
+desktop (`alo-desktop`) asks the kernel which addresses this machine's
+interfaces hold, once, through the routing-socket reader the agent service
+already uses (`alo_agentd::route_messages::reported_by_the_kernel`), and hands
+them to the shell, which shows and never measures. Nothing watches the network
+while nobody is filling a form in. Settings then shows the caution while the
+address typed is written as one of them
+(`alo_models::address::its_host_is_one_of`). Saving still works (law 5).
+
+**What it does not change.** D1 is untouched: such an address is still *not
+this machine* to `alo_models::address::is_on_this_machine`, so the daemon
+shows a question to it on the indicator and refuses a provider at it over
+plain `http://`, as before. An address a machine had when a provider was saved
+is not one it is sure to have when a question is asked, so this is a caution
+about the moment of filling in and not a promise about later.
+
+**Not covered:** a name that resolves to this machine (`my-machine.local`),
+because nothing here resolves names; and an address the machine gains while
+the form is already open, which is read the next time a form opens.
