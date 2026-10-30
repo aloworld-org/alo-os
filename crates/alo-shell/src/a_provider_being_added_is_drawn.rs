@@ -77,6 +77,18 @@ pub(crate) fn the_form(
             &crate::the_providers_words::THIS_MACHINE_CANNOT_SEE_WHERE_IT_GOES,
         ));
     }
+    // **And while it is plain http to another computer on the person's own
+    // network** (owner's decision, 2026-10-30; ADR 0021): such a provider can
+    // be saved, and its questions and key cross that network unencrypted. The
+    // person reads that here, before Enter, so saving is a choice made knowing
+    // its cost. The address of this machine's own, over http, gets both: by
+    // the time a question is asked that address may be another computer's.
+    if form.its_address_crosses_the_network_unencrypted() {
+        lines_said.push(said(
+            strings,
+            &crate::the_providers_words::OTHERS_ON_THIS_NETWORK_COULD_READ_IT,
+        ));
+    }
     if let Some(why) = not_saved {
         lines_said.push(said(strings, &why.the_word()));
     }

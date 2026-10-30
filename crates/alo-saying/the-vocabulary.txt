@@ -1314,7 +1314,7 @@ models.policy.outside-the-building	this machine is set to keep questions in the 
 models.policy.outside-the-region	this machine is set to use inference in {region} only, and {source} does not meet that
 models.policy.region-unstated	this machine is set to use inference in {region} only, and {provider} has not said where it runs — unknown does not count as there
 models.provider.already-added	you already have a provider called {name}
-models.provider.insecure-endpoint	this address is not https, so your key and your questions would travel unencrypted — use https, or a service on this machine
+models.provider.insecure-endpoint-beyond-your-network	this address is not https, so your key and your questions would cross the internet unencrypted — use https; plain http works only for this machine, or for another computer on your own network written as its number, such as 192.168.1.20
 models.provider.not-an-address	that does not look like an address: it should start with https://
 models.provider.unnamed	give the provider a name — it is what you will see when it answers
 models.road.on-the-card	this machine is running the model on its graphics card

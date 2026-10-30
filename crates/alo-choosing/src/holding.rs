@@ -2,8 +2,9 @@
 //! at the one place a provider is written.
 //!
 //! `alo_models::Provider::checked` is where an address is judged: not one at
-//! all, or `http://` to anywhere but this machine — *a key on the wire in
-//! clear* — is refused there, in that crate's own words. The trouble is that
+//! all, or `http://` to anywhere but this machine or the person's own network
+//! — *a key on the internet in clear* — is refused there, in that crate's own
+//! words. The trouble is that
 //! `alo_models::Provider` has public fields. A settings surface that builds one
 //! by hand, or that copies a checked one and edits its address, holds a value
 //! nothing has judged, and `crate::Choosing` took that value on the strength of
@@ -14,7 +15,7 @@
 //! reader and finds the reader will not take it. That is the wrong refusal:
 //! `choosing.change.not-expressible` says *this alo OS could not write that
 //! choice*, which is a defect in alo OS, and what happened is that a person
-//! typed `http://` in front of an address on their own network. They read a
+//! typed `http://` in front of an address the rule refuses. They read a
 //! sentence about a fault in the machine and never the one telling them what to
 //! change.
 //!
@@ -25,18 +26,19 @@
 //! `crate::Choosing` — present and future — goes through on its way to the
 //! disk. A check at `Choosing::adding` alone would hold for that door and be
 //! forgotten at the next one; a check here holds because there is no other way
-//! to the file. The rule is `docs/features.md`'s v0.5 line: *an address that is
-//! not https is refused rather than warned about, unless it is a service on
-//! this machine.*
+//! to the file. The rule is `docs/features.md`'s line: *an address that is not
+//! https is refused rather than warned about, unless it is a service on this
+//! machine* — or, since the owner's decision of 2026-10-30 (ADR 0021), another
+//! computer on the person's own network, which Settings cautions about first.
 //!
 //! # Nothing here decides what an address is
 //!
 //! This file names no scheme, no host and no exception. What is loopback is
 //! `alo_models::address`'s answer, and what `Provider::checked` refuses is
 //! that crate's, asked again rather than copied — so `127.0.0.1`, `::1` and
-//! `localhost` are accepted over `http://` for ADR 0021's reason and an
-//! address on the machine's own network is not, and both are decided in one
-//! place. There is no allow-list of hostnames here and nothing reads an
+//! `localhost` are accepted over `http://` for ADR 0021's reason, an address on
+//! the person's own network for the owner's, and an address on the internet is
+//! not, and all three are decided in one place. There is no allow-list of hostnames here and nothing reads an
 //! environment variable; `tests/an_address_that_is_not_https.rs` reads this
 //! file to make sure of it.
 //!
@@ -114,8 +116,8 @@ mod tests {
     fn an_address_that_is_not_https_does_not_hold() {
         for endpoint in [
             "http://api.example.com",
-            "http://192.168.1.10:11434",
-            "http://10.0.0.5",
+            "http://198.51.100.7:11434",
+            "http://100.64.0.5",
             "http://nas.local:8080/v1",
         ] {
             assert_eq!(

@@ -226,6 +226,10 @@ fn a_provider_reached_over_http_somewhere_else_is_refused() {
     form.the_keyboard_is_in(WhichField::Address);
     while form.rubbed_out() {}
     types(&mut form, "http://someone-elses-machine.example");
+    // Never cautioned about as crossing the person's network: it is refused
+    // instead, so a caution would be a sentence about a save that cannot
+    // happen.
+    assert!(!form.its_address_crosses_the_network_unencrypted());
 
     let refused = form
         .what_it_would_save()
@@ -509,10 +513,51 @@ fn an_address_this_machine_does_not_have_is_not_one_of_its_own() {
 }
 
 #[test]
+fn another_computer_on_the_persons_network_over_http_is_cautioned_and_can_be_saved() {
+    // The owner's decision of 2026-10-30: plain http to another computer on
+    // the person's own network is the person's to choose, told first that it
+    // crosses that network unencrypted.
+    let form = at("http://192.168.1.21:11434");
+    assert!(form.its_address_crosses_the_network_unencrypted());
+    assert!(!form.its_address_is_this_machine());
+    let saving = form
+        .what_it_would_save()
+        .expect("another computer on the person's own network is the person's to add");
+    assert_eq!(saving.provider.endpoint, "http://192.168.1.21:11434");
+    assert_eq!(saving.filed_under.as_str(), "provider/OpenAI");
+}
+
+#[test]
+fn only_plain_http_to_the_persons_network_is_cautioned_as_unencrypted() {
+    // The refusal half of the caution: https crosses nothing in clear,
+    // loopback crosses no network, and the internet is refused rather than
+    // cautioned about.
+    for address in [
+        "https://192.168.1.21:8443",
+        "http://localhost:1234",
+        "http://127.0.0.1:11434",
+        "http://198.51.100.7:8000",
+        "http://nas.local:11434",
+        "http://192.168.1.21@attacker.example/",
+    ] {
+        assert!(
+            !at(address).its_address_crosses_the_network_unencrypted(),
+            "{address}"
+        );
+    }
+}
+
+#[test]
 fn an_address_this_machine_has_on_its_network_can_still_be_saved() {
-    // **The caution takes nothing away** (law 5). Over https, because a key
-    // sent over http to anything but loopback is refused by a rule older than
-    // this caution, and that rule is not this caution's to change.
+    // **The caution takes nothing away** (law 5), over https and — since the
+    // owner's second decision of 2026-10-30 — over plain http, where both
+    // cautions apply: the address could be another computer's by the time a
+    // question is asked.
+    let over_http = at_on_a_machine_at_192_168_1_20("http://192.168.1.20:8000");
+    assert!(over_http.its_address_is_this_machine());
+    assert!(over_http.its_address_crosses_the_network_unencrypted());
+    assert!(over_http.what_it_would_save().is_ok());
+
     let form = at_on_a_machine_at_192_168_1_20("https://192.168.1.20:8443");
     assert!(form.its_address_is_this_machine());
     let saving = form

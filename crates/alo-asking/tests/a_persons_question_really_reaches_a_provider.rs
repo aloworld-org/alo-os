@@ -32,9 +32,13 @@
 //!
 //! # Loopback, for the reason the sibling gives
 //!
-//! `Provider::checked` carries a key over `http://` only to this machine
-//! (`docs/features.md` refuses an unencrypted address that is not), so the test
-//! that reads a whole answer back is the loopback one. What this proves is that
+//! `Provider::checked` carried a key over `http://` only to this machine when
+//! this was written (`docs/features.md` refused an unencrypted address that is
+//! not), so the test that reads a whole answer back is the loopback one. A
+//! computer on the person's own network over `http://` is accepted since the
+//! owner's decision of 2026-10-30, and
+//! `a_question_to_a_computer_on_the_persons_own_network_leaves_and_is_shown.rs`
+//! drives this same road to one. What this proves is that
 //! **the production path runs and works** — the request really crosses a
 //! socket and what the server received is asserted, so it is not a mock
 //! agreeing with itself. It proves nothing about a kernel permitting anything,

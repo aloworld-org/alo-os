@@ -11,9 +11,12 @@
 //! Loopback is deliberately unchecked (ADR 0007), so what a request to
 //! `127.0.0.1` proves is that **the production path runs inside the boundary and
 //! still works** — resolve, register, enter, connect, answer — and not that the
-//! kernel permitted anything. `Provider::checked` permits unencrypted `http://`
-//! only to this machine, which is why the test that reads a whole answer is the
-//! loopback one.
+//! kernel permitted anything. `Provider::checked` permitted unencrypted
+//! `http://` only to this machine when this was written, which is why the test
+//! that reads a whole answer is the loopback one. (Since the owner's decision of
+//! 2026-10-30 it permits a computer on the person's own network too; what such
+//! a provider means for the indicator and the record is driven in `alo-asking`'s
+//! `a_question_to_a_computer_on_the_persons_own_network_leaves_and_is_shown.rs`.)
 //!
 //! What the kernel decides about is a destination that is **not** loopback, so
 //! the other tests bind **this machine's own address on `eth0`** and the
@@ -290,9 +293,9 @@ fn a_question_this_service_puts_to_a_provider_answers_inside_the_boundary() {
     let _one = the_only_one_on_this_machine();
     let kernel = AsAMachineHasIt::on_this_kernel("answers");
     let folder = a_folder_of_our_own("answers");
-    // Loopback, because this is the test that reads a whole answer back and
-    // `Provider::checked` carries a key over `http://` only to this machine. The
-    // kernel's decision about a destination is the *next* test's half.
+    // Loopback, because this is the test that reads a whole answer back, and
+    // the boundary is not asked about loopback at all. The kernel's decision
+    // about a destination is the *next* test's half.
     let (at, server) = serving_at(std::net::IpAddr::from([127, 0, 0, 1]));
 
     let strings = starting::what_this_machine_says()

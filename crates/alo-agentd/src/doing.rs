@@ -610,8 +610,11 @@ endpoint = \"https://{other}\"
     /// puts it to the `Served` door (`crate::a_provider_ready_to_be_asked`),
     /// which shows nothing because nothing leaves. And
     /// `Provider::checked` refuses plain `http://` to anywhere that is not this
-    /// machine. Those two together mean **the only address the Provider door
-    /// will carry a key to is a real TLS endpoint.**
+    /// machine or an address on the person's own network. Those two together
+    /// mean **the only address the Provider door will carry a key to is a real
+    /// TLS endpoint, or a computer on the person's own network that they
+    /// chose after being told the key crosses it unencrypted** (owner's
+    /// decision, 2026-10-30; ADR 0021) — and this test is about the first.
     ///
     /// The listener here speaks no TLS, so the handshake fails and no answer
     /// comes back. **The connection is the assertion**, and it is enough for

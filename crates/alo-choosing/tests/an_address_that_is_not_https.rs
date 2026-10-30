@@ -1,12 +1,15 @@
 //! An address that is not https is refused, unless it is a service on this
-//! machine — at the one place a provider is written.
+//! machine or another computer on the person's own network — at the one place a
+//! provider is written.
 //!
-//! `docs/features.md`, v0.5: *an address that is not https is refused rather
-//! than warned about, unless it is a service on this machine — "it is only our
-//! internal network" is how a key ends up on the wire in clear.* This file is
-//! that sentence as tests, one per clause, each against a settings file on a
-//! real disk and the vocabulary the whole machine loads rather than this
-//! crate's own list.
+//! `docs/features.md`: *an address that is not https is refused rather than
+//! warned about, unless it is a service on this machine.* The owner decided on
+//! 2026-10-30 (ADR 0021) that another computer on the person's own network —
+//! an address in a private range, written as numbers — is accepted over plain
+//! http too, after a caution Settings shows before saving. This file is that
+//! rule as tests, one per clause, each against a settings file on a real disk
+//! and the vocabulary the whole machine loads rather than this crate's own
+//! list.
 //!
 //! The rule itself is `alo_models::Provider::checked`'s and has been since
 //! providers existed. What this file measures is the half that was missing:
@@ -128,16 +131,14 @@ fn adding_an_address_that_is_not_https_is_refused_and_the_file_is_byte_for_byte_
     }
 }
 
-/// **Changing a provider to an address that is not https is refused the same
-/// way**, and the provider keeps the address it had. This is the case the
-/// sentence in `docs/features.md` is written against: a working provider edited
-/// to point at *only our internal network*.
+/// **Changing a provider to an address on the internet that is not https is
+/// refused the same way**, and the provider keeps the address it had.
 #[test]
 fn changing_to_an_address_that_is_not_https_is_refused_and_the_file_is_byte_for_byte_what_it_was() {
     let (mut choosing, at, before) = a_machine_with_a_provider("changing");
 
     let refused = choosing
-        .changing(by_hand("Mistral", "http://192.168.1.10:8080/v1"))
+        .changing(by_hand("Mistral", "http://198.51.100.7:8080/v1"))
         .unwrap_err();
 
     assert!(
@@ -197,22 +198,53 @@ fn a_service_on_this_machine_is_accepted_on_any_scheme() {
     }
 }
 
-/// **An address on the machine's own network is not an exception.** *It is
-/// only our internal network* is the sentence the promise names as the
-/// failure, so every private range, a link-local address, a unique-local one
-/// and a `.local` name are refused over http — and so is anything dressed up
-/// to begin like this machine.
+/// **Another computer on the person's own network is accepted over plain
+/// http** (owner's decision, 2026-10-30): every private range, a link-local
+/// address and a unique-local one, through both doors, and each reads back
+/// from the disk exactly as it was written.
 #[test]
-fn an_address_on_this_machines_own_network_is_not_an_exception() {
+fn a_computer_on_the_persons_own_network_is_accepted_over_http() {
+    let home = a_login_of_our_own("lan-accepted");
+    let at = the_settings_of(&home);
+    let mut choosing = Choosing::at(&at).unwrap();
+
+    let at_home = [
+        ("Ten", "http://10.0.0.5"),
+        ("Seventeen", "http://172.16.0.1:8080/v1"),
+        ("Home", "http://192.168.1.20:11434"),
+        ("Cable", "http://169.254.10.20:8000"),
+        ("Unique", "http://[fd00::1]:8080"),
+        ("Link", "http://[fe80::1]:8080"),
+    ];
+    for (name, endpoint) in at_home {
+        let added = choosing.adding(by_hand(name, endpoint));
+        assert!(added.is_ok(), "{endpoint} was refused: {added:?}");
+        let changed = choosing.changing(by_hand(name, endpoint));
+        assert!(changed.is_ok(), "{endpoint} was refused: {changed:?}");
+    }
+
+    let read = Settings::at(&at).unwrap();
+    assert_eq!(read.providers().configured.len(), at_home.len());
+    for (name, endpoint) in at_home {
+        assert_eq!(read.providers().get(name).unwrap().endpoint, endpoint);
+    }
+}
+
+/// **Everything beyond the person's own network is still refused over http**:
+/// an address on the internet, the shared range a provider's network gives many
+/// customers, a `.local` name — a name is never looked up to decide this — and
+/// anything dressed up to begin like this machine or like a home address.
+#[test]
+fn an_address_beyond_the_persons_own_network_is_not_an_exception() {
     let (mut choosing, at, before) = a_machine_with_a_provider("lan");
 
     for endpoint in [
-        "http://192.168.1.10:11434",
-        "http://10.0.0.5",
-        "http://172.16.0.1:8080/v1",
-        "http://[fe80::1]:8080",
-        "http://[fd00::1]:8080",
+        "http://198.51.100.7:11434",
+        "http://100.64.0.1",
+        "http://[2001:db8::1]:8080",
         "http://nas.local:11434",
+        "http://192.168.1.20.attacker.example",
+        "http://192.168.1.20@attacker.example/",
         "http://127.1",
         "http://[::ffff:127.0.0.1]:8080",
         "http://localhost.attacker.example",
@@ -252,10 +284,10 @@ fn no_door_writes_a_provider_the_writer_has_not_judged() {
 
     // Through the two doors that take a provider.
     let adding = choosing
-        .adding(by_hand("Nearby", "http://10.0.0.5"))
+        .adding(by_hand("Nearby", "http://198.51.100.7"))
         .unwrap_err();
     let changing = choosing
-        .changing(by_hand("Mistral", "http://10.0.0.5"))
+        .changing(by_hand("Mistral", "http://198.51.100.7"))
         .unwrap_err();
     for refused in [adding, changing] {
         assert!(
@@ -334,7 +366,7 @@ fn a_file_written_before_this_rule_is_read_as_it_always_was_and_never_rewritten(
     let at = the_settings_of(&home);
     std::fs::create_dir_all(at.parent().unwrap()).unwrap();
 
-    let nearby = "format = 2\n\n[[provider]]\nname = \"Nearby\"\nendpoint = \"http://192.168.1.10:11434\"\nneeds-a-key = false\n";
+    let nearby = "format = 2\n\n[[provider]]\nname = \"Nearby\"\nendpoint = \"http://198.51.100.7:11434\"\nneeds-a-key = false\n";
     std::fs::write(&at, nearby).unwrap();
     let refused = Choosing::at(&at).unwrap_err();
     assert!(
@@ -373,4 +405,16 @@ fn a_file_written_before_this_rule_is_read_as_it_always_was_and_never_rewritten(
     );
     assert_eq!(*Choosing::at(&at).unwrap().settings(), read);
     assert_eq!(std::fs::read_to_string(&at).unwrap(), local);
+
+    // And a file naming another computer on the person's own network over
+    // http, which a person may write by hand as surely as through Settings,
+    // reads too — the reader and the writer hold one rule.
+    let at_home = "format = 2\n\n[[provider]]\nname = \"At home\"\nendpoint = \"http://192.168.1.20:11434\"\nneeds-a-key = false\n";
+    std::fs::write(&at, at_home).unwrap();
+    let read = Settings::at(&at).unwrap();
+    assert_eq!(
+        read.providers().get("At home").unwrap().endpoint,
+        "http://192.168.1.20:11434"
+    );
+    assert_eq!(std::fs::read_to_string(&at).unwrap(), at_home);
 }

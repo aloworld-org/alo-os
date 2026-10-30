@@ -23,13 +23,14 @@
 //! reassuring label while putting them in breach.
 //!
 //! Both of the questions this file asks about an *address* — may a key travel to
-//! it over http, and does an answer from it leave this machine — belong to
+//! it over http (to this machine, or to the person's own network after a
+//! caution), and does an answer from it leave this machine — belong to
 //! `address.rs`, asked once and answered in one place.
 
 use alo_strings::{Filling, Said, Strings};
 use serde::{Deserialize, Serialize};
 
-use crate::address::is_on_this_machine;
+use crate::address::{is_on_a_local_network, is_on_this_machine};
 use crate::source::{InferenceSource, Region};
 use crate::words;
 
@@ -69,7 +70,8 @@ pub enum ProviderError {
     Unnamed,
     /// The endpoint is not a URL we can use.
     NotAnAddress,
-    /// A key would travel in clear over this connection.
+    /// A key would travel in clear over this connection, to somewhere that is
+    /// neither this machine nor the person's own network.
     InsecureEndpoint,
     /// The same name is already configured, so an answer could not say which
     /// one produced it.
@@ -143,12 +145,17 @@ impl Provider {
         if !endpoint.starts_with("https://") && !endpoint.starts_with("http://") {
             return Err(ProviderError::NotAnAddress);
         }
-        // http is allowed only to this machine. A local runtime on loopback
-        // never leaves the machine, so there is nothing to encrypt; anything
-        // else over http would put the key and the question on the wire in
-        // clear, and "it is only our internal network" is how that gets
-        // shipped.
-        if endpoint.starts_with("http://") && !is_on_this_machine(endpoint) {
+        // http is allowed to this machine, where a local runtime on loopback
+        // never leaves the machine and there is nothing to encrypt — and, since
+        // the owner's decision of 2026-10-30 (ADR 0021), to an address on the
+        // person's own network, which Settings cautions about before they save
+        // because the key and the question cross that network in clear. That
+        // is the person's choice to make (law 5). Anywhere else over http would
+        // put them on the internet in clear, and is still refused.
+        if endpoint.starts_with("http://")
+            && !is_on_this_machine(endpoint)
+            && !is_on_a_local_network(endpoint)
+        {
             return Err(ProviderError::InsecureEndpoint);
         }
         Ok(Self {
@@ -262,11 +269,10 @@ mod tests {
         }
     }
 
-    /// A key over http is a key on the wire in clear. "It is only our internal
-    /// network" is how that gets shipped, so it is refused rather than warned
-    /// about.
+    /// A key over http to the internet is a key on the internet in clear, so it
+    /// is refused rather than warned about.
     #[test]
-    fn an_unencrypted_address_is_refused_unless_it_is_this_machine() {
+    fn an_unencrypted_address_is_refused_unless_it_is_this_machine_or_the_persons_network() {
         let err = Provider::checked("Somewhere", "http://api.example.com", Region::Unknown, None)
             .unwrap_err();
         assert_eq!(err, ProviderError::InsecureEndpoint);
@@ -284,6 +290,60 @@ mod tests {
         assert!(
             Provider::checked("Local", "http://localhost:11434", Region::Unknown, None).is_ok()
         );
+    }
+
+    /// **Another computer on the person's own network is accepted over plain
+    /// http** (owner's decision, 2026-10-30), with a key — and it is still
+    /// *somewhere else*: its answers are hosted, and a question to it causes an
+    /// egress the indicator shows.
+    #[test]
+    fn a_computer_on_the_persons_own_network_is_accepted_over_http_and_still_leaves() {
+        for endpoint in [
+            "http://192.168.1.20:11434",
+            "http://10.0.0.5:8000/v1",
+            "http://172.16.0.1:8080",
+            "http://[fd00::20]:8080",
+        ] {
+            let p = Provider::checked(
+                "At home",
+                endpoint,
+                Region::Unknown,
+                Some(SecretRef::named("provider/at-home")),
+            )
+            .unwrap();
+            assert_eq!(p.endpoint, endpoint);
+            assert_eq!(
+                p.source(),
+                InferenceSource::Hosted {
+                    provider: "At home".to_owned(),
+                    region: Region::Unknown,
+                },
+                "{endpoint}"
+            );
+            assert!(p.source().causes_egress(), "{endpoint}");
+        }
+    }
+
+    /// **And everywhere else over plain http is still refused**: an address on
+    /// the internet, the shared range, a name — `nas.local` included, because a
+    /// name is not resolved here — and an address made to look like one on the
+    /// person's network.
+    #[test]
+    fn plain_http_beyond_the_persons_own_network_is_still_refused() {
+        for endpoint in [
+            "http://198.51.100.7:8000",
+            "http://100.64.0.1:8000",
+            "http://[2001:db8::1]:8000",
+            "http://nas.local:11434",
+            "http://192.168.1.20.attacker.example",
+            "http://192.168.1.20@attacker.example/",
+        ] {
+            assert_eq!(
+                Provider::checked("Nearby", endpoint, Region::Unknown, None).unwrap_err(),
+                ProviderError::InsecureEndpoint,
+                "{endpoint}"
+            );
+        }
     }
 
     /// **An address that only begins like this machine is not this machine**,

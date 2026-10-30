@@ -3,9 +3,11 @@
 //! One question, asked in one place, because three promises rest on it and all
 //! three fail the same way if it is answered loosely.
 //!
-//! - [`crate::Provider::checked`] permits `http://` **only** to this machine.
-//!   An address that is not this machine and is believed to be would put a key
-//!   and somebody's question on the wire in clear.
+//! - [`crate::Provider::checked`] permits `http://` to this machine, and — since
+//!   the owner's decision of 2026-10-30 — to an address on the person's own
+//!   network ([`is_on_a_local_network`]), which Settings cautions about first.
+//!   An address on the internet that is believed to be either would put a key
+//!   and somebody's question on the internet in clear.
 //! - [`crate::Provider::source`] answers `InferenceSource::ThisMachine` for this
 //!   machine, and everything downstream follows: no departure, nothing on the
 //!   indicator, an answer that says *on this machine*, and
@@ -73,16 +75,69 @@ pub fn is_on_this_machine(endpoint: &str) -> bool {
         .is_some_and(is_this_machine)
 }
 
+/// Whether this endpoint's host is an address on the person's own network.
+///
+/// **The owner's decision of 2026-10-30** (ADR 0021): a person may add a
+/// provider at another computer on their own network, such as an AI service
+/// at `http://192.168.1.20:11434`, over plain `http://`, after a caution that
+/// the question and the key cross that network unencrypted.
+/// [`crate::Provider::checked`] accepts such an address and this is the whole
+/// of what it means by one.
+///
+/// **Only an address written as numbers, and only these ranges**, which are
+/// the ones no router carries onto the internet:
+///
+/// - IPv4 `10.0.0.0/8`, `172.16.0.0/12` and `192.168.0.0/16`, the private
+///   ranges a home or office router hands out;
+/// - IPv4 `169.254.0.0/16`, what two computers joined by one cable give
+///   themselves;
+/// - IPv6 `fc00::/7` (unique local) and `fe80::/10` (link-local).
+///
+/// **A name is never one**, `nas.local` included: nothing here resolves a
+/// name, and a name that resolves to a home address today can resolve to the
+/// internet tomorrow. Neither is the shared range `100.64.0.0/10`, which a
+/// provider's network gives many customers at once, nor an IPv4 address
+/// written inside IPv6 — the safe direction, as for loopback above.
+///
+/// This is **not** this machine: a question to such an address is shown on
+/// the indicator and kept in the record as leaving, like any other provider's.
+#[must_use]
+pub fn is_on_a_local_network(endpoint: &str) -> bool {
+    authority_of(endpoint)
+        .and_then(host_of)
+        .and_then(|host| host.parse::<IpAddr>().ok())
+        .is_some_and(|address| match address {
+            IpAddr::V4(four) => four.is_private() || four.is_link_local(),
+            IpAddr::V6(six) => six.is_unique_local() || six.is_unicast_link_local(),
+        })
+}
+
+/// Whether a question to this endpoint would cross the person's own network
+/// unencrypted: plain `http://` to [an address on it](is_on_a_local_network)
+/// that is not this machine's loopback.
+///
+/// **What Settings cautions about before a person saves** such a provider
+/// (owner's decision, 2026-10-30; ADR 0021). Asked here, beside the rule
+/// [`crate::Provider::checked`] applies, so the caution appears for exactly the
+/// plain `http://` addresses that rule accepts and for no address it refuses.
+#[must_use]
+pub fn crosses_a_local_network_unencrypted(endpoint: &str) -> bool {
+    endpoint.starts_with("http://")
+        && !is_on_this_machine(endpoint)
+        && is_on_a_local_network(endpoint)
+}
+
 /// Whether this endpoint's host is written as one of `addresses`.
 ///
 /// **For a caution, never for a promise.** The owner decided on 2026-10-30
 /// that Settings warns a person adding a provider at one of this machine's own
 /// network addresses — `192.168.1.20`, say — as it does for loopback (ADR
 /// 0021). Such an address is not *this machine* to [`is_on_this_machine`],
-/// and stays so: the daemon still treats it as somewhere else, shows it on
-/// the indicator and refuses a provider at it over plain `http://`, because an
-/// address a machine had when the provider was saved is not one it is sure to
-/// have when the question is asked. What this answers is only whether the
+/// and stays so: the daemon still treats it as somewhere else and shows it on
+/// the indicator, because an address a machine had when the provider was saved
+/// is not one it is sure to have when the question is asked. (Plain `http://`
+/// to it is accepted since the owner's later decision the same day, as
+/// [`is_on_a_local_network`] says, with the caution that goes with that.) What this answers is only whether the
 /// person typed an address the caller has just read off this machine.
 ///
 /// Taken apart by the same rules as every other question here, so
@@ -214,6 +269,78 @@ mod tests {
             assert!(!its_host_is_one_of(endpoint, &addresses), "{endpoint}");
         }
         assert!(!its_host_is_one_of("http://192.168.1.20", &[]));
+    }
+
+    /// **An address on the person's own network**, in every range the owner's
+    /// decision of 2026-10-30 covers, with and without a port or a path.
+    #[test]
+    fn an_address_on_a_local_network_is_one() {
+        for endpoint in [
+            "http://192.168.1.20:11434",
+            "http://192.168.0.1",
+            "http://10.0.0.5/v1",
+            "http://10.255.255.255",
+            "http://172.16.0.1:8080/v1",
+            "http://172.31.255.254",
+            "http://169.254.10.20:8000",
+            "http://[fd00::1]:8080",
+            "http://[fc00::1]",
+            "http://[fe80::1]:8080",
+            "https://192.168.1.20:8443",
+        ] {
+            assert!(is_on_a_local_network(endpoint), "{endpoint}");
+        }
+    }
+
+    /// **And everything else is not**: the internet, the shared range, this
+    /// machine's loopback, every name, the lookalikes this file exists for, and
+    /// an address that cannot be read.
+    #[test]
+    fn an_address_that_is_not_on_a_local_network_is_not_one() {
+        for endpoint in [
+            "http://198.51.100.7:8000",
+            "http://8.8.8.8",
+            "http://172.32.0.1",
+            "http://172.15.255.255",
+            "http://100.64.0.1",
+            "http://[2001:db8::1]",
+            "http://127.0.0.1:11434",
+            "http://[::1]:8080",
+            "http://localhost:8000",
+            "http://nas.local:11434",
+            "http://my-nas",
+            "http://192.168.1.20.attacker.example",
+            "http://192.168.1.20@attacker.example/",
+            "http://attacker.example/192.168.1.20",
+            "http://[::ffff:192.168.1.20]",
+            "http://192.168.1",
+            "ftp://192.168.1.20",
+            "192.168.1.20:11434",
+            "",
+        ] {
+            assert!(!is_on_a_local_network(endpoint), "{endpoint}");
+        }
+    }
+
+    /// **Only plain `http://` to such an address crosses it unencrypted**:
+    /// https does not, loopback does not, and an address on the internet is
+    /// not on the person's network at all.
+    #[test]
+    fn only_plain_http_to_a_local_address_crosses_it_unencrypted() {
+        assert!(crosses_a_local_network_unencrypted(
+            "http://192.168.1.20:11434"
+        ));
+        assert!(crosses_a_local_network_unencrypted("http://[fd00::1]:8080"));
+        for endpoint in [
+            "https://192.168.1.20:8443",
+            "http://127.0.0.1:11434",
+            "http://localhost:11434",
+            "http://198.51.100.7:8000",
+            "http://nas.local:11434",
+            "http://192.168.1.20@attacker.example/",
+        ] {
+            assert!(!crosses_a_local_network_unencrypted(endpoint), "{endpoint}");
+        }
     }
 
     /// **What a request would connect to**, which is the first half of ADR
