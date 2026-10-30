@@ -60,7 +60,14 @@ use std::net::IpAddr;
 ///
 /// `false` for anything that is not an `http://` or `https://` address, for an
 /// address whose host cannot be read, and for every host that is not loopback.
-pub(crate) fn is_on_this_machine(endpoint: &str) -> bool {
+///
+/// **Public so that a form asks the daemon's own question** rather than a second
+/// reading of an address that could disagree with this one. Settings warns a
+/// person adding a provider at this machine's address that alo cannot see where
+/// that service sends their questions, and the warning has to appear for exactly
+/// the addresses whose answers will say *a service at this machine's address*.
+#[must_use]
+pub fn is_on_this_machine(endpoint: &str) -> bool {
     authority_of(endpoint)
         .and_then(host_of)
         .is_some_and(is_this_machine)

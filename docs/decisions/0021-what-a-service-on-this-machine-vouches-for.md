@@ -586,3 +586,26 @@ thing this ADR was written to prevent.
 
 **What would overturn this:** supervision existing. Then D4 becomes real and this
 ADR gets a successor, not an edit.
+
+## Note, 2026-10-29 — the person is told before they save
+
+**Owner's decision.** Since #1020, a provider at this machine's own address is
+asked there (D1), and its answer says *a service at this machine's address —
+alo cannot verify where it was processed*. That sentence comes after the fact.
+The owner chose to say it **before**, too: when a person adds a provider whose
+address is this machine's (`127.0.0.0/8`, `::1` or `localhost`, by
+`alo_models::address::is_on_this_machine`, the rule the daemon itself uses),
+Settings says above the form *"alo cannot see where this service sends your
+questions. If it passes them on to the internet, the network indicator will not show it."*
+(`shell.provider.this-machine-cannot-see`).
+
+**It is a caution, not a refusal.** Saving works exactly as before (law 5): it
+is the person's service on the person's machine, and this ADR already refused to
+police it. The gap is the one named above under *The gap, stated precisely*; this
+note closes none of it and only makes sure a person meets it at the moment they
+can still choose another address.
+
+**Not covered:** an address of this machine that is not loopback, such as its
+own LAN address. That is not *this machine* to `alo-models`, which treats it
+as a provider somewhere else, like any address it cannot vouch for; it gets no
+caution here, and that is an open question for the owner. Settings has no edit form yet, only *add*, so only the add form carries it.

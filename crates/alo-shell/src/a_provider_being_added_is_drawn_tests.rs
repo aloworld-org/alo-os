@@ -220,3 +220,60 @@ fn the_four_refusals_are_four_different_sentences() {
     }
     assert_eq!(seen.len(), 4, "the four refusals are not four sentences");
 }
+
+/// A form whose address field holds this, with the keyboard in it.
+fn at(address: &str) -> AProviderBeingAddded {
+    let mut form = AProviderBeingAddded::empty();
+    types(&mut form, "Mine");
+    form.to_the_next_field();
+    types(&mut form, address);
+    form
+}
+
+/// Whether the caution about this machine's address is among what is said.
+fn is_cautioned(form: &AProviderBeingAddded) -> bool {
+    let caution = strings()
+        .say(
+            &crate::the_providers_words::THIS_MACHINE_CANNOT_SEE_WHERE_IT_GOES.key(),
+            &alo_strings::Filling::nothing(),
+        )
+        .into_text();
+    the_form(form, None, &strings()).said.contains(&caution)
+}
+
+#[test]
+fn a_service_at_this_machines_address_is_cautioned_before_saving() {
+    // Owner's decision, 2026-10-29: alo cannot see what a local service does
+    // with a question, so the person is told before they save.
+    for address in [
+        "http://127.0.0.1:11434",
+        "http://[::1]:8080",
+        "http://localhost:1234/v1",
+    ] {
+        assert!(is_cautioned(&at(address)), "{address}");
+    }
+}
+
+#[test]
+fn a_provider_off_this_machine_is_not_cautioned() {
+    // The control: a hosted provider's questions are on the indicator, so a
+    // sentence saying they would not be is false for it.
+    assert!(!is_cautioned(&at("https://api.openai.com")));
+    assert!(!is_cautioned(&AProviderBeingAddded::empty()));
+    assert_eq!(
+        the_form(&at("https://api.openai.com"), None, &strings())
+            .said
+            .len(),
+        2,
+        "a heading and what to do, and nothing else"
+    );
+}
+
+#[test]
+fn the_caution_is_a_sentence_and_not_its_key() {
+    let said = the_form(&at("http://localhost:1234"), None, &strings()).said;
+    assert!(
+        said.iter().any(|line| line.starts_with("alo cannot see")),
+        "{said:?}"
+    );
+}

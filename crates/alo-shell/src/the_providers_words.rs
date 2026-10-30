@@ -1,8 +1,9 @@
 //! What the form that adds a provider says, in words somebody can translate.
 //!
-//! Six sentences, and none of them is drawn from a string literal: the labels
-//! beside the four fields, the heading above them, and the one line that says
-//! what a person is about to do.
+//! Eleven sentences, and none of them is drawn from a string literal: the labels
+//! beside the four fields, the heading above them, the one line that says what
+//! a person is about to do, the four reasons a save did not happen, and the
+//! caution about a service at this machine's address.
 //!
 //! # Why these exist at all
 //!
@@ -75,7 +76,7 @@ pub const ITS_MODEL: Word = Word::saying("shell.provider.model", "Model").noting
 /// form drew six of those on a booted machine on 2026-10-23 for that fault one
 /// layer up. The length is written out so that adding a `Word` above and
 /// forgetting this line does not compile.
-pub const THE_PROVIDERS_WORDS: [Word; 10] = [
+pub const THE_PROVIDERS_WORDS: [Word; 11] = [
     ADDING_A_PROVIDER,
     WHAT_TO_DO_WITH_IT,
     ITS_NAME,
@@ -86,6 +87,7 @@ pub const THE_PROVIDERS_WORDS: [Word; 10] = [
     NOT_SAVED_KEY_NOT_KEPT,
     NOT_SAVED_SETTINGS_WOULD_NOT_READ,
     NOT_SAVED_NOWHERE_TO_KEEP,
+    THIS_MACHINE_CANNOT_SEE_WHERE_IT_GOES,
 ];
 
 /// Why this form's wording would not declare.
@@ -152,3 +154,23 @@ pub const NOT_SAVED_NOWHERE_TO_KEEP: Word = Word::saying(
     "This sign-in has no folder to keep settings in, so nothing was saved. What you typed is still here.",
 )
 .noting("Shown for a session with no home directory.");
+
+/// Said above the fields while the address is this machine's own.
+///
+/// **A warning and not a refusal** (owner's decision, 2026-10-29; ADR 0021). A
+/// service at this machine's address is asked there, so its questions go on no
+/// road out and the indicator has nothing to show — and if that service passes
+/// them on to the internet, nothing in alo OS can see them go. Saving still
+/// works: it is the person's service on the person's machine (law 5).
+pub const THIS_MACHINE_CANNOT_SEE_WHERE_IT_GOES: Word = Word::saying(
+    "shell.provider.this-machine-cannot-see",
+    "alo cannot see where this service sends your questions. If it passes them on to the internet, the network indicator will not show it.",
+)
+.noting(
+    "Shown above the form that adds a provider while its address is this computer's own — a \
+     program the person runs on this computer, such as a local model server. alo OS hands the \
+     question to that program and cannot see what the program does next. \"The network \
+     indicator\" is the part of the screen that shows what alo OS sends over the network. This \
+     is a caution, not an error: the person can still save. Keep \"alo\" as written, in lower \
+     case.",
+);
