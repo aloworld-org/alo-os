@@ -9,7 +9,7 @@
 use alo_strings::Strings;
 
 use super::{
-    TheirNames, WhatARowDoes, nothing_can_answer_a_question, what_the_bar_finds,
+    TheirNames, WhatARowDoes, WhatEachIs, nothing_can_answer_a_question, what_the_bar_finds,
     where_these_came_from,
 };
 
@@ -40,7 +40,7 @@ fn english() -> Strings {
 #[test]
 fn what_was_typed_finds_the_obvious_one_first() {
     let strings = english();
-    let found = what_the_bar_finds("fire", &installed(), &TheirNames::new(), &strings);
+    let found = what_the_bar_finds("fire", &installed(), &TheirNames::new(), &WhatEachIs::new(), &strings);
 
     assert!(
         found.len() >= 2,
@@ -63,7 +63,7 @@ fn what_was_typed_finds_the_obvious_one_first() {
 #[test]
 fn a_row_names_the_application_and_what_it_is() {
     let strings = english();
-    let found = what_the_bar_finds("textedit", &installed(), &TheirNames::new(), &strings);
+    let found = what_the_bar_finds("textedit", &installed(), &TheirNames::new(), &WhatEachIs::new(), &strings);
     let only = found.first().expect("one result");
     assert_eq!(
         only.shown, "TextEditor  ·  Application",
@@ -75,7 +75,7 @@ fn a_row_names_the_application_and_what_it_is() {
 #[test]
 fn an_application_is_read_as_the_machine_knows_it() {
     let strings = english();
-    let found = what_the_bar_finds("calc", &installed(), &TheirNames::new(), &strings);
+    let found = what_the_bar_finds("calc", &installed(), &TheirNames::new(), &WhatEachIs::new(), &strings);
     assert!(
         found
             .first()
@@ -94,11 +94,11 @@ fn an_application_is_read_as_the_machine_knows_it() {
 #[test]
 fn nothing_typed_finds_nothing() {
     let strings = english();
-    assert!(what_the_bar_finds("", &installed(), &TheirNames::new(), &strings).is_empty());
-    assert!(what_the_bar_finds("   ", &installed(), &TheirNames::new(), &strings).is_empty());
+    assert!(what_the_bar_finds("", &installed(), &TheirNames::new(), &WhatEachIs::new(), &strings).is_empty());
+    assert!(what_the_bar_finds("   ", &installed(), &TheirNames::new(), &WhatEachIs::new(), &strings).is_empty());
     // **The control**: the same fixture with something typed does find.
     assert!(
-        !what_the_bar_finds("f", &installed(), &TheirNames::new(), &strings).is_empty(),
+        !what_the_bar_finds("f", &installed(), &TheirNames::new(), &WhatEachIs::new(), &strings).is_empty(),
         "this fixture finds nothing for any query, so the two assertions above mean nothing"
     );
 }
@@ -107,7 +107,7 @@ fn nothing_typed_finds_nothing() {
 #[test]
 fn a_query_that_finds_nothing_is_still_a_sentence() {
     let strings = english();
-    let found = what_the_bar_finds("zzzz", &installed(), &TheirNames::new(), &strings);
+    let found = what_the_bar_finds("zzzz", &installed(), &TheirNames::new(), &WhatEachIs::new(), &strings);
     assert!(found.is_empty(), "the premise: this query matches nothing");
     let said = where_these_came_from(found.len(), &strings);
     assert!(
@@ -346,7 +346,7 @@ fn an_application_is_found_by_the_name_its_entry_gives() {
     .map(|(identifier, name)| (identifier.to_owned(), name.to_owned()))
     .collect();
 
-    let found = what_the_bar_finds("writer", &installed, &called, &strings);
+    let found = what_the_bar_finds("writer", &installed, &called, &WhatEachIs::new(), &strings);
     assert_eq!(found.len(), 1, "{found:?}");
     let writer = found.first().expect("one result");
     assert_eq!(writer.shown, "LibreOffice Writer  ·  Application");
@@ -356,17 +356,107 @@ fn an_application_is_found_by_the_name_its_entry_gives() {
         "what opens is still the identifier, never the name"
     );
     assert_eq!(
-        what_the_bar_finds("libre", &installed, &called, &strings).len(),
+        what_the_bar_finds("libre", &installed, &called, &WhatEachIs::new(), &strings).len(),
         2
     );
     assert_eq!(
-        what_the_bar_finds("dolph", &installed, &called, &strings)
+        what_the_bar_finds("dolph", &installed, &called, &WhatEachIs::new(), &strings)
             .first()
             .expect("one result")
             .shown,
         "Dolphin  ·  Application"
     );
-    // **And what it is is not matched**, which is the owner's question and
-    // said here so a change to it is a change to this line.
-    assert!(what_the_bar_finds("files", &installed, &called, &strings).is_empty());
+    // **With nothing said about what they are, a kind finds nothing** — the
+    // kinds come from the entries, never from a guess at the name.
+    assert!(
+        what_the_bar_finds("files", &installed, &called, &WhatEachIs::new(), &strings).is_empty()
+    );
+}
+
+/// The names and kinds of four applications a fresh machine has, as their
+/// entries give them.
+fn four_with_their_kinds() -> (Vec<String>, TheirNames, WhatEachIs) {
+    let installed = ["org.kde.dolphin", "org.mozilla.firefox", "libreoffice-calc", "filelight"]
+        .map(str::to_owned)
+        .to_vec();
+    let called: TheirNames = [
+        ("org.kde.dolphin", "Dolphin"),
+        ("org.mozilla.firefox", "Firefox"),
+        ("libreoffice-calc", "LibreOffice Calc"),
+        ("filelight", "Filelight"),
+    ]
+    .into_iter()
+    .map(|(identifier, name)| (identifier.to_owned(), name.to_owned()))
+    .collect();
+    let are: WhatEachIs = [
+        (
+            "org.kde.dolphin",
+            &["File Manager", "Gestionnaire de fichiers", "fichiers", "FileManager"][..],
+        ),
+        ("org.mozilla.firefox", &["Web Browser", "Internet", "WebBrowser"][..]),
+        ("libreoffice-calc", &["Spreadsheet", "Office", "Spreadsheet"][..]),
+        ("filelight", &["Disk Usage Statistics", "Utility"][..]),
+    ]
+    .into_iter()
+    .map(|(identifier, words)| {
+        (
+            identifier.to_owned(),
+            words.iter().map(|it| (*it).to_owned()).collect(),
+        )
+    })
+    .collect();
+    (installed, called, are)
+}
+
+/// **The owner's three examples**, in the owner's words of 2026-10-31.
+#[test]
+fn an_application_is_found_by_what_it_is() {
+    let (installed, called, are) = four_with_their_kinds();
+    let opens = |typed: &str| -> Vec<String> {
+        super::what_matches(typed, &installed, &called, &are)
+            .into_iter()
+            .cloned()
+            .collect()
+    };
+    assert_eq!(opens("files"), ["org.kde.dolphin"], "a plural finds File Manager");
+    assert_eq!(opens("browser"), ["org.mozilla.firefox"]);
+    assert_eq!(opens("spreadsheet"), ["libreoffice-calc"]);
+    assert_eq!(opens("file man"), ["org.kde.dolphin"], "the start of the phrase");
+    assert!(
+        opens("rowser").is_empty(),
+        "the middle of a word of what it is finds nothing"
+    );
+}
+
+/// **A translated keyword finds it**, as the reader handed it over in the
+/// person's language.
+#[test]
+fn a_translated_keyword_finds_it() {
+    let (installed, called, are) = four_with_their_kinds();
+    assert_eq!(
+        super::what_matches("fichiers", &installed, &called, &are),
+        [&"org.kde.dolphin".to_owned()]
+    );
+    assert_eq!(
+        super::what_matches("gestionnaire", &installed, &called, &are),
+        [&"org.kde.dolphin".to_owned()]
+    );
+}
+
+/// **A name match ranks above a kind match**: *file* is the start of
+/// *Filelight*'s name and only of Dolphin's kind, so Filelight is first and
+/// Enter opens it.
+#[test]
+fn a_match_by_name_ranks_above_a_match_by_what_it_is() {
+    let (installed, called, are) = four_with_their_kinds();
+    assert_eq!(
+        super::what_matches("file", &installed, &called, &are),
+        [&"filelight".to_owned(), &"org.kde.dolphin".to_owned()]
+    );
+    let strings = english();
+    let rows = what_the_bar_finds("file", &installed, &called, &are, &strings);
+    assert_eq!(
+        rows.first().map(|row| row.does.clone()),
+        Some(WhatARowDoes::OpensAnApplication("filelight".to_owned()))
+    );
 }

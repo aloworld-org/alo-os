@@ -1520,6 +1520,7 @@ impl LoopInput for Desk<'_> {
                 &typed_into_the_bar,
                 &server.what_this_machine_has,
                 &server.what_each_is_called,
+                &server.what_each_is,
                 self.strings,
             )
         } else {

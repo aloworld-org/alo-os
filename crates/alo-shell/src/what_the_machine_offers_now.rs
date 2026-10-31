@@ -39,6 +39,10 @@ pub struct AnApplicationHere {
     pub identifier: String,
     /// What it calls itself, where its entry said.
     pub called: Option<String>,
+    /// What it is, in its entry's own words and the person's language —
+    /// `GenericName`, `Keywords` and `Categories` — for the alo Bar to find it
+    /// by. Empty where the entry says nothing about it.
+    pub is: Vec<String>,
 }
 
 /// Everything one reading of the machine tells a running seat.
@@ -73,6 +77,12 @@ impl Server {
             .installed
             .iter()
             .map(|application| application.identifier.clone())
+            .collect();
+        self.what_each_is = now
+            .installed
+            .iter()
+            .filter(|application| !application.is.is_empty())
+            .map(|application| (application.identifier.clone(), application.is.clone()))
             .collect();
         self.what_each_is_called = now
             .installed

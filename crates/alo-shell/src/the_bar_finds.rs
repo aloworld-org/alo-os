@@ -37,11 +37,20 @@
 //! `crate::which_disks_may_be_offered` refuses for a disk and refuses here for
 //! the same reason.
 //!
-//! **What is still not matched is what an application *is*.** *browser* does
-//! not find Firefox and *files* does not find Dolphin: that is an entry's
-//! `GenericName`, `Keywords` or `Categories`, and nothing in
-//! `docs/features.md` or the Bar's design promises a search by them. It is a
-//! question for the owner, not a gap this file closes by guessing.
+//! # And by what an application is
+//!
+//! *files* finds Dolphin, *browser* Firefox and *spreadsheet* LibreOffice Calc:
+//! an entry's `GenericName`, `Keywords` and `Categories`, in its own words and
+//! the person's language, read by `alo_installed::what_they_are` and told here
+//! with the names. `docs/features.md` promises it by the owner's answer of
+//! 2026-10-31, "Yes, as other operating systems." **A match by name always
+//! ranks above a match by what it is**, so typing the start of an
+//! application's name is never pushed down by applications that merely are
+//! the kind of thing typed.
+//!
+//! *This said until 2026-10-31 that what an application is was not matched,
+//! because nothing promised it. The owner was asked and answered the same
+//! day.*
 
 use alo_strings::{Filling, Strings};
 
@@ -78,6 +87,7 @@ pub(crate) fn what_the_bar_finds(
     typed: &str,
     installed: &[String],
     called: &TheirNames,
+    are: &WhatEachIs,
     strings: &Strings,
 ) -> Vec<AResult> {
     let looking_for = typed.trim().to_lowercase();
@@ -85,7 +95,7 @@ pub(crate) fn what_the_bar_finds(
         return Vec::new();
     }
 
-    what_matches(typed, installed, called)
+    what_matches(typed, installed, called, are)
         .into_iter()
         .map(|identifier| AResult {
             shown: strings
@@ -107,15 +117,19 @@ pub(crate) fn what_the_bar_finds(
 /// One matcher means the thing a person is shown and the thing Enter opens
 /// cannot be worked out differently.
 ///
-/// **Three ranks, and the order inside each is the machine's own.** Somebody
+/// **Four ranks, and the order inside each is the machine's own.** Somebody
 /// typing `fire` means Firefox before they mean anything with *fire* in the
 /// middle of it, and `org.moz` is what a person types only when they already
-/// know what they are after. Sorting inside a rank would be a second opinion
-/// about what is likeliest, which this product does not have.
+/// know what they are after. **What an application is comes last**: a word of
+/// its `GenericName`, a keyword or a category that begins with what was typed
+/// finds it, below every match by name or identifier. Sorting inside a rank
+/// would be a second opinion about what is likeliest, which this product does
+/// not have.
 pub fn what_matches<'a>(
     typed: &str,
     installed: &'a [String],
     called: &TheirNames,
+    are: &WhatEachIs,
 ) -> Vec<&'a String> {
     let looking_for = typed.trim().to_lowercase();
     if looking_for.is_empty() {
@@ -142,6 +156,8 @@ pub fn what_matches<'a>(
                 Some((1, identifier))
             } else if whole.contains(&looking_for) {
                 Some((2, identifier))
+            } else if it_is(are.get(identifier), &looking_for) {
+                Some((3, identifier))
             } else {
                 None
             }
@@ -171,6 +187,30 @@ fn readable<'a>(identifier: &'a str, called: &'a TheirNames) -> &'a str {
 
 /// What each installed application calls itself, by identifier.
 pub type TheirNames = std::collections::BTreeMap<String, String>;
+
+/// What each installed application is, by identifier: its entry's
+/// `GenericName`, `Keywords` and `Categories`, in its own words and the
+/// person's language.
+pub type WhatEachIs = std::collections::BTreeMap<String, Vec<String>>;
+
+/// Whether what an application is matches `looking_for`, already lowercased.
+///
+/// **The start of a word, or of the whole phrase** — *file man* finds *File
+/// Manager*, *files* finds the keyword *files*, *spread* finds the category
+/// *Spreadsheet* — and never the middle of one, so *rowser* does not find a
+/// *Web Browser*. **A plural finds its word too**: *files* finds *File
+/// Manager* in an entry with no *files* keyword, because a person names a
+/// kind of application by what it holds.
+fn it_is(what: Option<&Vec<String>>, looking_for: &str) -> bool {
+    let singular = looking_for.strip_suffix('s').filter(|it| !it.is_empty());
+    what.into_iter().flatten().any(|phrase| {
+        let phrase = phrase.to_lowercase();
+        phrase.starts_with(looking_for)
+            || phrase
+                .split_whitespace()
+                .any(|word| word.starts_with(looking_for) || Some(word) == singular)
+    })
+}
 
 /// How many results there are, said as the line under the field.
 ///
