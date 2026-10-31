@@ -10,7 +10,7 @@ use super::*;
 use crate::settings_testing::{
     CountingDoor, a_persons_machine, doors, light, noon, settings_words,
 };
-use crate::{SettingsKey, SettingsPress, SettingsRow};
+use crate::{SettingsKey, SettingsPress};
 use alo_appearance::Token;
 
 /// Settings as it stands, drawn on an output of `size`.
@@ -134,10 +134,22 @@ fn the_chosen_category_is_on_the_accent_and_nothing_is_deep_teal() {
         "deep teal is alo acting, and Settings is a person choosing"
     );
     let texts: Vec<&str> = drawn.texts.iter().map(|it| it.text.as_str()).collect();
-    for expected in ["Settings", "alo and AI", "Where your questions are answered"] {
-        assert!(texts.contains(&expected), "{expected} is not drawn: {texts:?}");
+    for expected in [
+        "Settings",
+        "alo and AI",
+        "Where your questions are answered",
+    ] {
+        assert!(
+            texts.contains(&expected),
+            "{expected} is not drawn: {texts:?}"
+        );
     }
-    assert!(drawn.texts.iter().all(|it| !it.text.is_empty() && it.area.size.h > 0));
+    assert!(
+        drawn
+            .texts
+            .iter()
+            .all(|it| !it.text.is_empty() && it.area.size.h > 0)
+    );
 }
 
 /// **Where the keyboard is, is drawn before any key is pressed**, and it moves
@@ -239,7 +251,10 @@ fn at_two_hundred_settings_is_twice_its_size() {
         (b.loc.x, b.loc.y, b.size.w, b.size.h)
     );
     for ((_, small), (_, large)) in one.categories.iter().zip(&two.categories) {
-        assert!((2 * small.loc.y - large.loc.y).abs() <= 2, "{small:?} {large:?}");
+        assert!(
+            (2 * small.loc.y - large.loc.y).abs() <= 2,
+            "{small:?} {large:?}"
+        );
         assert_eq!(2 * small.size.h, large.size.h);
     }
 }
@@ -271,7 +286,10 @@ fn every_page_draws_and_can_be_looked_at() {
 
 /// A picture of `drawn` on the canvas colour, written as a PNG.
 fn written_out(drawn: &SettingsPicture, size: (i32, i32), to: &std::path::Path) {
-    let (wide, tall) = (u32::try_from(size.0).unwrap(), u32::try_from(size.1).unwrap());
+    let (wide, tall) = (
+        u32::try_from(size.0).unwrap(),
+        u32::try_from(size.1).unwrap(),
+    );
     let mut image = image::RgbaImage::from_pixel(wide, tall, image::Rgba([0xFA, 0xF7, 0xF2, 255]));
     let washed = drawn.washed.as_ref().unwrap();
     for (at, it) in washed.pixels.chunks(4).enumerate() {
@@ -283,14 +301,15 @@ fn written_out(drawn: &SettingsPicture, size: (i32, i32), to: &std::path::Path) 
         if x < 0 || y < 0 || x >= size.0 || y >= size.1 {
             continue;
         }
-        let under = image.get_pixel(u32::try_from(x).unwrap(), u32::try_from(y).unwrap()).0;
+        let under = image
+            .get_pixel(u32::try_from(x).unwrap(), u32::try_from(y).unwrap())
+            .0;
         let alpha = u32::from(it[3]);
         let mut out = [0u8; 4];
         for channel in 0..3 {
-            out[channel] = ((u32::from(it[channel]) * alpha
-                + u32::from(under[channel]) * (255 - alpha)
-                + 127)
-                / 255) as u8;
+            out[channel] =
+                ((u32::from(it[channel]) * alpha + u32::from(under[channel]) * (255 - alpha) + 127)
+                    / 255) as u8;
         }
         out[3] = 255;
         image.put_pixel(

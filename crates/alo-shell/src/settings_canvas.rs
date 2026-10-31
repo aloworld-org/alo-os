@@ -150,11 +150,7 @@ impl Canvas {
         );
         let reach = shadow.blurs.ceil() as i32 + 1;
         let bounds = Rectangle::new(
-            (
-                (cx - hw) as i32 - reach,
-                (cy - hh) as i32 - reach,
-            )
-                .into(),
+            ((cx - hw) as i32 - reach, (cy - hh) as i32 - reach).into(),
             (2 * hw as i32 + 2 * reach + 2, 2 * hh as i32 + 2 * reach + 2).into(),
         );
         let blurs = shadow.blurs.max(1.0);
@@ -212,23 +208,6 @@ impl Canvas {
         self.each(bounds, |px, py| {
             let d = (((px - cx).powi(2) + (py - cy).powi(2)).sqrt() - radius).abs() - half;
             Some((colour, (0.5 - d).clamp(0.0, 1.0)))
-        });
-    }
-
-    /// Artwork drawn as coverage — `wide` by `tall` bytes from 0 to 255 — at
-    /// (`x`, `y`) in `colour`.
-    pub(crate) fn artwork(&mut self, x: i32, y: i32, wide: i32, covered: &[u8], colour: [u8; 3]) {
-        if wide <= 0 {
-            return;
-        }
-        let tall = i32::try_from(covered.len()).unwrap_or(0) / wide;
-        let x = self.turned(Rectangle::new((x, y).into(), (wide, tall).into())).loc.x;
-        let bounds = Rectangle::new((x, y).into(), (wide, tall).into());
-        self.each(bounds, |px, py| {
-            let (ax, ay) = (px.floor() as i32 - x, py.floor() as i32 - y);
-            let at = usize::try_from(ay * wide + ax).ok()?;
-            let coverage = f32::from(*covered.get(at)?) / 255.0;
-            Some((colour, coverage))
         });
     }
 
@@ -337,7 +316,12 @@ mod tests {
     #[test]
     fn a_fill_is_solid_inside_and_soft_at_its_corner() {
         let mut canvas = ten();
-        canvas.fill(Rectangle::new((0, 0).into(), (10, 10).into()), 4.0, [255, 0, 0], 1.0);
+        canvas.fill(
+            Rectangle::new((0, 0).into(), (10, 10).into()),
+            4.0,
+            [255, 0, 0],
+            1.0,
+        );
         assert_eq!(canvas.at(5, 5), Some([255, 0, 0, 255]));
         assert_eq!(canvas.at(0, 0).map(|it| it[3]), Some(0));
         let edge = canvas.at(1, 1).map(|it| it[3]).unwrap_or(255);
@@ -350,7 +334,12 @@ mod tests {
     fn a_clip_is_obeyed_and_lifts() {
         let mut canvas = ten();
         canvas.clipped_to(Rectangle::new((0, 0).into(), (5, 10).into()));
-        canvas.fill(Rectangle::new((0, 0).into(), (10, 10).into()), 0.0, [0, 0, 255], 1.0);
+        canvas.fill(
+            Rectangle::new((0, 0).into(), (10, 10).into()),
+            0.0,
+            [0, 0, 255],
+            1.0,
+        );
         assert_eq!(canvas.at(2, 2), Some([0, 0, 255, 255]));
         assert_eq!(canvas.at(7, 2), Some([0, 0, 0, 0]));
         canvas.unclipped();
@@ -362,7 +351,12 @@ mod tests {
     #[test]
     fn a_border_is_an_edge_and_not_a_fill() {
         let mut canvas = ten();
-        canvas.border(Rectangle::new((0, 0).into(), (10, 10).into()), 0.0, 1.0, [9, 9, 9]);
+        canvas.border(
+            Rectangle::new((0, 0).into(), (10, 10).into()),
+            0.0,
+            1.0,
+            [9, 9, 9],
+        );
         assert_eq!(canvas.at(0, 5), Some([9, 9, 9, 255]));
         assert_eq!(canvas.at(5, 5), Some([0, 0, 0, 0]));
     }

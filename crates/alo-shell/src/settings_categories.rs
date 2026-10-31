@@ -168,10 +168,8 @@ mod tests {
     /// design draws them: four about alo, then four about this computer.
     #[test]
     fn every_section_has_a_page_in_the_order_drawn() {
-        let groups: Vec<SettingsGroup> = SettingsCategory::ALL
-            .iter()
-            .map(|it| it.group())
-            .collect();
+        let groups: Vec<SettingsGroup> =
+            SettingsCategory::ALL.iter().map(|it| it.group()).collect();
         assert_eq!(
             groups,
             [

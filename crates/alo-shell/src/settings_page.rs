@@ -153,7 +153,9 @@ impl ARow {
 }
 
 impl APage {
-    /// Every row on the page a person can act on, in the keyboard's order.
+    /// Every row on the page a person can act on, in the keyboard's order —
+    /// read by the tests that hold it to `crate::settings_window::Open::rows_on`.
+    #[cfg(test)]
     pub(crate) fn rows(&self) -> Vec<SettingsRow> {
         self.blocks
             .iter()
@@ -381,11 +383,15 @@ fn row_of(line: LineWords, strings: &Strings) -> ARow {
         (Some(SettingsRow::Shortcut(_)), _) => (parts.next(), Vec::new()),
         (_, TheKind::ASwitch(is)) => (
             Some(switch_said(is, strings)),
-            parts.map(|it| crate::settings_type::as_a_name(&it)).collect(),
+            parts
+                .map(|it| crate::settings_type::as_a_name(&it))
+                .collect(),
         ),
         _ => (
             None,
-            parts.map(|it| crate::settings_type::as_a_name(&it)).collect(),
+            parts
+                .map(|it| crate::settings_type::as_a_name(&it))
+                .collect(),
         ),
     };
     ARow {

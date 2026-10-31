@@ -59,8 +59,10 @@ impl TheFrame {
     /// [`TooSmall`] for a screen with no room for the content's column at
     /// [`THE_COLUMN_AT_LEAST`].
     pub(crate) fn on(wide: u32, tall: u32) -> Result<Self, TooSmall> {
-        let window_wide = m::THE_WINDOW_AT_MOST_WIDE.min(wide.saturating_sub(2 * m::BESIDE_THE_WINDOW));
-        let window_tall = m::THE_WINDOW_AT_MOST_TALL.min(tall.saturating_sub(2 * m::ABOVE_THE_WINDOW));
+        let window_wide =
+            m::THE_WINDOW_AT_MOST_WIDE.min(wide.saturating_sub(2 * m::BESIDE_THE_WINDOW));
+        let window_tall =
+            m::THE_WINDOW_AT_MOST_TALL.min(tall.saturating_sub(2 * m::ABOVE_THE_WINDOW));
         // **Of the window's inside**, its border taken off both sides, and
         // rounded up: 1198 × 7 / 30 is 279.5 and the design draws 280; 1150 is
         // 268.3 and it draws 269.
@@ -111,7 +113,10 @@ mod tests {
             (120, 72, 1200, 816)
         );
         assert_eq!(large.side, 280);
-        assert_eq!((large.beside_the_content, large.above_the_content), (64, 48));
+        assert_eq!(
+            (large.beside_the_content, large.above_the_content),
+            (64, 48)
+        );
         assert_eq!(large.column, 720);
         // `550:637` begins at x 281, after the window's border and the side
         // column, and the column is 64 into it.
@@ -125,7 +130,10 @@ mod tests {
         // `550:421` is 269 wide, and `550:476` begins at x 270.
         assert_eq!(small.side, 269);
         assert_eq!(small.the_column_starts(), 318);
-        assert_eq!((small.beside_the_content, small.above_the_content), (48, 36));
+        assert_eq!(
+            (small.beside_the_content, small.above_the_content),
+            (48, 36)
+        );
         assert_eq!(small.column, 720);
     }
 

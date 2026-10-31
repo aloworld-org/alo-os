@@ -21,7 +21,6 @@ use crate::settings_type::{TheType, written};
 use crate::settings_window::SettingsRow;
 
 /// One thing to draw, placed from the top of the page.
-#[derive(Debug, Clone)]
 pub(crate) enum Drawn {
     /// A rounded rectangle, filled.
     Fill(Area, u32, [u8; 3]),
@@ -57,7 +56,6 @@ pub(crate) struct SettingsText {
 }
 
 /// A page laid out.
-#[derive(Debug, Clone)]
 pub(crate) struct ThePageDrawn {
     /// Every shape and every piece of text, in the order painted.
     pub(crate) drawn: Vec<Drawn>,
@@ -92,7 +90,13 @@ impl Laying<'_> {
     }
 
     /// Words shaped in `style`, `width` pixels at most, on `ground` in `ink`.
-    fn words(&mut self, words: &str, style: TheType, width: i32, colours: ([u8; 3], [u8; 3])) -> Shaped {
+    fn words(
+        &mut self,
+        words: &str,
+        style: TheType,
+        width: i32,
+        colours: ([u8; 3], [u8; 3]),
+    ) -> Shaped {
         written(self.fonts, words, style, width, self.measure, colours)
     }
 }
@@ -161,7 +165,8 @@ fn a_box_that_says(out: &mut ThePageDrawn, laying: &mut Laying<'_>, y: i32, said
     );
     let tall = shaped.height + 2 * down;
     let area = Rectangle::new((laying.left, y).into(), (laying.wide, tall).into());
-    out.drawn.push(Drawn::Fill(area, m::A_CARDS_CORNER, palette.cool));
+    out.drawn
+        .push(Drawn::Fill(area, m::A_CARDS_CORNER, palette.cool));
     text(out, laying.left + across, y + down, shaped, said);
     y + tall
 }
@@ -201,8 +206,10 @@ fn a_section(out: &mut ThePageDrawn, laying: &mut Laying<'_>, top: i32, section:
     }
     y += line;
     let card = Rectangle::new((left, card_top).into(), (wide, y - card_top).into());
-    out.drawn
-        .insert(fill_at, Drawn::Fill(card, m::A_CARDS_CORNER, palette.surface));
+    out.drawn.insert(
+        fill_at,
+        Drawn::Fill(card, m::A_CARDS_CORNER, palette.surface),
+    );
     out.drawn
         .push(Drawn::Border(card, m::A_CARDS_CORNER, palette.edge));
     if let Some(footnote) = &section.footnote {
@@ -271,7 +278,12 @@ fn a_row(
     }
     if let Some(words) = &row.at_its_end {
         let shaped = laying
-            .words(words, TheType::Label, inside_wide / 3, (palette.surface, palette.muted))
+            .words(
+                words,
+                TheType::Label,
+                inside_wide / 3,
+                (palette.surface, palette.muted),
+            )
             .cropped_to_its_ink();
         end_wide += shaped.width_of_box
             + if end_wide > 0 {
@@ -288,7 +300,12 @@ fn a_row(
     let mut button: Option<(Shaped, String, i32)> = None;
     if let Some((label, _)) = &row.button {
         let shaped = laying
-            .words(label, TheType::Label, inside_wide / 3, (palette.surface, palette.ink))
+            .words(
+                label,
+                TheType::Label,
+                inside_wide / 3,
+                (palette.surface, palette.ink),
+            )
             .cropped_to_its_ink();
         let wide = shaped.width_of_box + 2 * laying.px(m::BESIDE_A_BUTTONS_LABEL);
         end_wide += wide + if end_wide > 0 { gap } else { 0 };
@@ -300,19 +317,51 @@ fn a_row(
     let words_wide = (right - x).max(laying.px(48));
 
     // The words.
+    let (first_drawn, first_text) = (out.drawn.len(), out.texts.len());
     let mut y = top + above;
-    let title = laying.words(&row.title, TheType::Name, words_wide, (palette.surface, palette.ink));
+    let title = laying.words(
+        &row.title,
+        TheType::Name,
+        words_wide,
+        (palette.surface, palette.ink),
+    );
     let title_tall = title.height;
     y = text(out, x, y, title, &row.title);
     for line_words in &row.lines {
-        let shaped = laying.words(line_words, TheType::Body, words_wide, (palette.surface, palette.muted));
-        y = text(out, x, y + laying.px(m::UNDER_A_ROWS_TITLE), shaped, line_words);
+        let shaped = laying.words(
+            line_words,
+            TheType::Body,
+            words_wide,
+            (palette.surface, palette.muted),
+        );
+        y = text(
+            out,
+            x,
+            y + laying.px(m::UNDER_A_ROWS_TITLE),
+            shaped,
+            line_words,
+        );
     }
     if let Some(note) = &row.note {
         let icon = laying.px(m::A_NOTES_ICON) + laying.px(m::AFTER_A_NOTES_ICON);
-        let ink = if note.warns { palette.warning } else { palette.muted };
-        let shaped = laying.words(&note.words, TheType::SmallLabel, words_wide - icon, (palette.surface, ink));
-        y = text(out, x + icon, y + laying.px(m::UNDER_A_ROWS_TITLE), shaped, &note.words);
+        let ink = if note.warns {
+            palette.warning
+        } else {
+            palette.muted
+        };
+        let shaped = laying.words(
+            &note.words,
+            TheType::SmallLabel,
+            words_wide - icon,
+            (palette.surface, ink),
+        );
+        y = text(
+            out,
+            x + icon,
+            y + laying.px(m::UNDER_A_ROWS_TITLE),
+            shaped,
+            &note.words,
+        );
     }
     if let Some(risk) = &row.risk {
         y = a_risk(
@@ -328,9 +377,24 @@ fn a_row(
         m::A_ROW_AT_LEAST
     });
     let bottom = (y + above).max(top + least);
+    // **A row that opens something, or only says something, is centred in
+    // its least height** — `items-center` in the frames, `550:219` and every
+    // row of `551:939` — where a choice keeps its words at the top.
+    let centred = matches!(
+        row.kind,
+        TheKind::AnAddingRow | TheKind::AnOpeningRow | TheKind::Plain
+    );
+    let lower = if centred {
+        ((bottom - top) - (y - top) - above) / 2
+    } else {
+        0
+    };
+    if lower > 0 {
+        moved_down(out, (first_drawn, first_text), lower);
+    }
 
     // The mark, level with the title's line.
-    let centre_of_title = top + above + title_tall / 2;
+    let centre_of_title = top + above + lower.max(0) + title_tall / 2;
     match row.kind {
         TheKind::AChoice { chosen } | TheKind::ANestedChoice { chosen } => {
             a_choice(out, laying, mark_at, centre_of_title, mark, chosen);
@@ -362,8 +426,10 @@ fn a_row(
         at -= wide;
         let tall = laying.px(m::A_TARGET);
         let area = Rectangle::new((at, top + above).into(), (wide, tall).into());
-        out.drawn.push(Drawn::Fill(area, m::A_CARDS_CORNER, palette.surface));
-        out.drawn.push(Drawn::Border(area, m::A_CARDS_CORNER, palette.edge));
+        out.drawn
+            .push(Drawn::Fill(area, m::A_CARDS_CORNER, palette.surface));
+        out.drawn
+            .push(Drawn::Border(area, m::A_CARDS_CORNER, palette.edge));
         let label_tall = shaped.height;
         let label_wide = shaped.width_of_box;
         text(
@@ -375,14 +441,17 @@ fn a_row(
         );
         button_area = Some((area, target.clone()));
     }
-    let bottom = button_area
-        .as_ref()
-        .map_or(bottom, |(area, _)| bottom.max(area.loc.y + area.size.h + above));
+    let bottom = button_area.as_ref().map_or(bottom, |(area, _)| {
+        bottom.max(area.loc.y + area.size.h + above)
+    });
 
     if let Some(target) = &row.row {
         out.targets.push(ATargetDrawn {
             row: target.clone(),
-            area: Rectangle::new((inside_left, top).into(), (inside_wide, bottom - top).into()),
+            area: Rectangle::new(
+                (inside_left, top).into(),
+                (inside_wide, bottom - top).into(),
+            ),
             section_starts,
         });
     }
@@ -402,13 +471,25 @@ fn a_row(
 /// `bg/surface`. Chosen: a ring 2 thick at radius 9 in the accent, and a dot
 /// of radius 5 in the accent. The 18 under another is the same at 7.25, 7
 /// and 4.
-fn a_choice(out: &mut ThePageDrawn, laying: &Laying<'_>, x: i32, centre: i32, side: i32, chosen: bool) {
+fn a_choice(
+    out: &mut ThePageDrawn,
+    laying: &Laying<'_>,
+    x: i32,
+    centre: i32,
+    side: i32,
+    chosen: bool,
+) {
     let palette = laying.palette;
     let area = Rectangle::new((x, centre - side / 2).into(), (side, side).into());
     out.drawn.push(Drawn::Disc(area, palette.surface));
     if chosen {
-        out.drawn.push(Drawn::Ring(shrunk(area, laying.px(1)), 20, palette.accent));
-        let dot = if side > laying.px(m::A_NESTED_CHOICE) { 6 } else { 5 };
+        out.drawn
+            .push(Drawn::Ring(shrunk(area, laying.px(1)), 20, palette.accent));
+        let dot = if side > laying.px(m::A_NESTED_CHOICE) {
+            6
+        } else {
+            5
+        };
         out.drawn
             .push(Drawn::Disc(shrunk(area, laying.px(dot)), palette.accent));
     } else {
@@ -425,13 +506,17 @@ fn a_choice(out: &mut ThePageDrawn, laying: &Laying<'_>, x: i32, centre: i32, si
 /// word says which it is.
 fn a_switch(out: &mut ThePageDrawn, laying: &Laying<'_>, x: i32, centre: i32, is: SwitchIs) {
     let palette = laying.palette;
-    let (wide, tall) = (laying.px(m::A_SWITCH_IS_WIDE), laying.px(m::A_SWITCH_IS_TALL));
+    let (wide, tall) = (
+        laying.px(m::A_SWITCH_IS_WIDE),
+        laying.px(m::A_SWITCH_IS_TALL),
+    );
     let track = Rectangle::new((x, centre - tall / 2).into(), (wide, tall).into());
     let knob = laying.px(2 * m::A_KNOB);
     let inset = (tall - knob) / 2;
     match is {
         SwitchIs::On => {
-            out.drawn.push(Drawn::Fill(track, m::A_SWITCH_IS_TALL / 2, palette.accent));
+            out.drawn
+                .push(Drawn::Fill(track, m::A_SWITCH_IS_TALL / 2, palette.accent));
             let at = Rectangle::new(
                 (track.loc.x + wide - inset - knob, track.loc.y + inset).into(),
                 (knob, knob).into(),
@@ -439,7 +524,8 @@ fn a_switch(out: &mut ThePageDrawn, laying: &Laying<'_>, x: i32, centre: i32, is
             out.drawn.push(Drawn::Disc(at, palette.surface));
         }
         SwitchIs::Off | SwitchIs::NotSet => {
-            out.drawn.push(Drawn::Fill(track, m::A_SWITCH_IS_TALL / 2, palette.cool));
+            out.drawn
+                .push(Drawn::Fill(track, m::A_SWITCH_IS_TALL / 2, palette.cool));
             out.drawn
                 .push(Drawn::Ring(shrunk(track, 0), 15, palette.muted));
             let at = Rectangle::new(
@@ -470,14 +556,45 @@ fn a_risk(
         inside,
         (palette.canvas, palette.warning),
     );
-    let sentence = laying.words(&risk.words, TheType::Body, inside, (palette.canvas, palette.ink));
+    let sentence = laying.words(
+        &risk.words,
+        TheType::Body,
+        inside,
+        (palette.canvas, palette.ink),
+    );
     let between = laying.px(m::UNDER_A_RISKS_HEADING);
     let tall = heading.height + between + sentence.height + 2 * down;
     let area = Rectangle::new((x, y).into(), (wide, tall).into());
-    out.drawn.push(Drawn::Fill(area, m::A_SMALL_CORNER, palette.canvas));
+    out.drawn
+        .push(Drawn::Fill(area, m::A_SMALL_CORNER, palette.canvas));
     let below = text(out, x + across + icon, y + down, heading, &risk.heading);
-    text(out, x + across + icon, below + between, sentence, &risk.words);
+    text(
+        out,
+        x + across + icon,
+        below + between,
+        sentence,
+        &risk.words,
+    );
     y + tall
+}
+
+/// Everything drawn and written since `from`, moved down by `by`.
+fn moved_down(out: &mut ThePageDrawn, (drawn, texts): (usize, usize), by: i32) {
+    let down = |area: &mut Area| area.loc.y += by;
+    for one in out.drawn.iter_mut().skip(drawn) {
+        match one {
+            Drawn::Fill(area, ..)
+            | Drawn::Border(area, ..)
+            | Drawn::Disc(area, _)
+            | Drawn::Ring(area, ..) => {
+                down(area);
+            }
+            Drawn::Words(_, y, _) => *y += by,
+        }
+    }
+    for text in out.texts.iter_mut().skip(texts) {
+        down(&mut text.area);
+    }
 }
 
 /// `area` taken in by `by` on every side.

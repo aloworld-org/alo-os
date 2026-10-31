@@ -133,8 +133,6 @@ pub(crate) const UNDER_A_RISKS_HEADING: u32 = 2;
 pub(crate) const THE_FOCUS_RING: u32 = 2;
 /// How far the keyboard's outline stands outside what it marks.
 pub(crate) const THE_FOCUS_RING_STANDS_OFF: u32 = 2;
-/// The rail that says where the content is scrolled to, across.
-pub(crate) const THE_RAIL: u32 = 4;
 
 /// Between a page's blocks, per page, as each frame draws it.
 ///

@@ -59,11 +59,14 @@ pub const THE_GROUP_THIS_COMPUTER: Word =
     );
 
 /// The line at the foot of the side column.
-pub const YOURS_TO_CHANGE: Word =
-    Word::saying("settings.yours-to-change", "Everything here is yours to change.").noting(
-        "At the foot of the Settings window's side column. A plain statement that the person may \
+pub const YOURS_TO_CHANGE: Word = Word::saying(
+    "settings.yours-to-change",
+    "Everything here is yours to change.",
+)
+.noting(
+    "At the foot of the Settings window's side column. A plain statement that the person may \
          change any setting.",
-    );
+);
 
 /// The category about where questions are answered.
 pub const ALO_AND_AI: Word = Word::saying("settings.category.alo-and-ai", "alo and AI").noting(
@@ -92,9 +95,8 @@ pub const TERMINAL: Word = Word::saying("settings.category.terminal", "Terminal"
 );
 
 /// The category about how the computer looks.
-pub const APPEARANCE: Word = Word::saying("settings.category.appearance", "Appearance").noting(
-    "A category in Settings: light or dark, the accent colour, and the Dock.",
-);
+pub const APPEARANCE: Word = Word::saying("settings.category.appearance", "Appearance")
+    .noting("A category in Settings: light or dark, the accent colour, and the Dock.");
 
 /// The category about region and time.
 pub const REGION_AND_TIME: Word =
@@ -234,8 +236,8 @@ pub const ANOTHER_RISKS: Word = Word::saying(
 .noting("In the box headed 'What it risks', under the switch that lets alo use another model.");
 
 /// A switch that is on.
-pub const ON: Word = Word::saying("settings.switch.on", "On")
-    .noting("Beside a switch that is on. One short word.");
+pub const ON: Word =
+    Word::saying("settings.switch.on", "On").noting("Beside a switch that is on. One short word.");
 
 /// A switch that is off.
 pub const OFF: Word = Word::saying("settings.switch.off", "Off")
@@ -288,8 +290,9 @@ pub const IT_SAYS_IT_RUNS_IN: Word = Word::saying(
 );
 
 /// The button that would let a person say where a provider runs.
-pub const SAY_WHERE_IT_RUNS: Word = Word::saying("settings.provider.say-where", "Say where it runs")
-    .noting("A button beside an AI service, to say in which country or region it runs.");
+pub const SAY_WHERE_IT_RUNS: Word =
+    Word::saying("settings.provider.say-where", "Say where it runs")
+        .noting("A button beside an AI service, to say in which country or region it runs.");
 
 /// alo's own service, by its name.
 pub const ALOS_OWN_SERVICE: Word = Word::saying("settings.provider.alo", "alo").noting(
@@ -319,7 +322,9 @@ pub const NO_MODEL_HERE_YET: Word = Word::saying(
     "settings.way.no-model-yet",
     "No model is on this computer yet, so there is nothing to choose here.",
 )
-.noting("Shown when a person chooses 'On this machine' and no AI model has been put on the computer.");
+.noting(
+    "Shown when a person chooses 'On this machine' and no AI model has been put on the computer.",
+);
 
 /// Why a way of answering has nothing under it: nothing paired.
 pub const NOTHING_PAIRED_YET: Word = Word::saying(
@@ -368,8 +373,9 @@ pub const STAYS_ON: Word = Word::saying("settings.section.stays-on", "Stays on a
     .noting("A heading over three protections that no choice switches off. Sentence case.");
 
 /// The heading over the terminal's two switches.
-pub const IN_THE_TERMINAL: Word = Word::saying("settings.section.in-the-terminal", "In the terminal")
-    .noting("A heading over two things alo can do in the terminal. Sentence case.");
+pub const IN_THE_TERMINAL: Word =
+    Word::saying("settings.section.in-the-terminal", "In the terminal")
+        .noting("A heading over two things alo can do in the terminal. Sentence case.");
 
 /// The heading over the accent colours.
 pub const LOOK: Word = Word::saying("settings.section.look", "Look")
@@ -399,7 +405,7 @@ pub const SHORTCUTS: Word = Word::saying("settings.section.shortcuts", "Shortcut
 /// The length is written out so that adding a word above and forgetting it
 /// here does not compile — a word declared and left out of this list reaches a
 /// person as its own key.
-pub const THE_SETTINGS_WORDS: [Word; 54] = [
+pub const THE_WINDOWS_WORDS: [Word; 54] = [
     SETTINGS,
     EVERYTHING_IN_ONE_PLACE,
     THE_GROUP_ALO,
@@ -478,7 +484,7 @@ pub fn declare_the_settings_words(
     // declaration that failed halfway would leave a vocabulary holding some of
     // these and not others.
     let mut prepared = vocabulary.clone();
-    for word in THE_SETTINGS_WORDS {
+    for word in THE_WINDOWS_WORDS {
         prepared.says(word.phrase()?)?;
     }
     *vocabulary = prepared;
@@ -498,7 +504,7 @@ mod tests {
     fn every_word_here_can_be_declared() {
         let mut vocabulary = Vocabulary::empty();
         declare_the_settings_words(&mut vocabulary).unwrap();
-        for word in THE_SETTINGS_WORDS {
+        for word in THE_WINDOWS_WORDS {
             assert!(vocabulary.phrase(&word.key()).is_some(), "{word:?}");
         }
     }
@@ -506,13 +512,13 @@ mod tests {
     /// No key here collides with another in this file.
     #[test]
     fn no_two_words_here_share_a_key() {
-        let mut keys: Vec<String> = THE_SETTINGS_WORDS
+        let mut keys: Vec<String> = THE_WINDOWS_WORDS
             .iter()
             .map(|it| it.key().to_string())
             .collect();
         keys.sort_unstable();
         keys.dedup();
-        assert_eq!(keys.len(), THE_SETTINGS_WORDS.len());
+        assert_eq!(keys.len(), THE_WINDOWS_WORDS.len());
     }
 
     /// The two sentences naming a model, and the one naming a region, keep

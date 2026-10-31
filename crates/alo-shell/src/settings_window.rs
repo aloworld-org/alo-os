@@ -221,10 +221,9 @@ impl SettingsRow {
             Self::Granted(_) | Self::GrantAFolder | Self::SeeWhatAloDid | Self::Picking(_) => {
                 SettingsSection::Granted
             }
-            Self::UsingAnother
-            | Self::Way(_)
-            | Self::AlosOwnService
-            | Self::SayWhereItRuns(_) => SettingsSection::Answering,
+            Self::UsingAnother | Self::Way(_) | Self::AlosOwnService | Self::SayWhereItRuns(_) => {
+                SettingsSection::Answering
+            }
             Self::HowCodeRuns(_) => SettingsSection::HowCodeRuns,
             Self::ShellIntegration | Self::APlaceToReturnTo => SettingsSection::Terminal,
             Self::AddAProvider => SettingsSection::Answering,
@@ -730,7 +729,11 @@ impl Open {
         // appearing above the list of grants: the key that opens a folder and
         // the key that revokes a grant would otherwise be one key a row apart.
         if let Some(picking) = self.granted.picking() {
-            return picking.rows().into_iter().map(SettingsRow::Picking).collect();
+            return picking
+                .rows()
+                .into_iter()
+                .map(SettingsRow::Picking)
+                .collect();
         }
         let (paired, given): (Vec<Row>, Vec<Row>) = self
             .granted
@@ -835,7 +838,16 @@ impl Open {
                 rows.iter()
                     .enumerate()
                     .skip(here + 1)
-                    .take_while(|(_, row)| matches!(row, SettingsRow::Answer(SettingsChoice::Provider { .. } | SettingsChoice::Brought(_) | SettingsChoice::Paired(_)) | SettingsRow::SayWhereItRuns(_)))
+                    .take_while(|(_, row)| {
+                        matches!(
+                            row,
+                            SettingsRow::Answer(
+                                SettingsChoice::Provider { .. }
+                                    | SettingsChoice::Brought(_)
+                                    | SettingsChoice::Paired(_)
+                            ) | SettingsRow::SayWhereItRuns(_)
+                        )
+                    })
                     .filter(|(_, row)| matches!(row, SettingsRow::Answer(_)))
                     .map(|(at, _)| at)
                     .collect()
@@ -1016,7 +1028,10 @@ impl Open {
     /// chord — refused in `alo-shortcuts`' words when it cannot be one, or
     /// when another action has it.
     fn chord_pressed(&mut self, press: SettingsPress, doors: SettingsDoors<'_>) -> SettingsDid {
-        let Some(SettingsRow::Shortcut(action)) = self.rows(doors.now).get(self.focus).cloned()
+        let Some(SettingsRow::Shortcut(action)) = self
+            .rows_on(self.category, doors.now)
+            .get(self.focus)
+            .cloned()
         else {
             self.waiting_for_a_chord = false;
             return SettingsDid::StoppedWaiting;

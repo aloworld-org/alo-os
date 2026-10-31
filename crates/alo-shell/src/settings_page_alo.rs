@@ -194,9 +194,11 @@ fn a_choice_under(
             }
             row
         }
-        SettingsChoice::Brought(name) | SettingsChoice::Paired(name) => {
-            ARow::named(Some(SettingsRow::Answer(choice.clone())), kind, name.clone())
-        }
+        SettingsChoice::Brought(name) | SettingsChoice::Paired(name) => ARow::named(
+            Some(SettingsRow::Answer(choice.clone())),
+            kind,
+            name.clone(),
+        ),
         SettingsChoice::NotAtAll => ARow::named(
             Some(SettingsRow::Answer(SettingsChoice::NotAtAll)),
             kind,

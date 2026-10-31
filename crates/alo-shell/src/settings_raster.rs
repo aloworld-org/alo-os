@@ -31,7 +31,7 @@ use std::time::SystemTime;
 
 use alo_appearance::{Colour, Scheme, TextScale};
 use alo_strings::{Direction, Strings};
-use smithay::utils::{Physical, Rectangle};
+use smithay::utils::Rectangle;
 
 use crate::desktop_look::Measure;
 use crate::display_scale::DisplayScale;
@@ -41,7 +41,7 @@ use crate::settings_categories::SettingsCategory;
 use crate::settings_drawn_page::{ATargetDrawn, Laying, SettingsText, laid_out, painted};
 use crate::settings_frame::TheFrame;
 use crate::settings_measures as m;
-use crate::settings_page::{APage, said};
+use crate::settings_page::said;
 use crate::settings_palette::SettingsPalette;
 use crate::settings_type::{TheType, written};
 use crate::{Contrast, RenderError, SettingsWindow, WindowControlLabels};
@@ -151,7 +151,8 @@ pub(crate) fn picture(
         let it = (pixels.max(0) as f32 / factor).floor();
         it as u32
     };
-    let frame = TheFrame::on(design(size.0), design(size.1)).map_err(|_| RenderError::SettingsScene)?;
+    let frame =
+        TheFrame::on(design(size.0), design(size.1)).map_err(|_| RenderError::SettingsScene)?;
     let px = |logical: u32| measure.px(i32::try_from(logical).unwrap_or(i32::MAX));
 
     let window_area = Rectangle::new(
@@ -164,7 +165,11 @@ pub(crate) fn picture(
     let screen: Area = Rectangle::new((0, 0).into(), size.into());
     let canvas_area = Rectangle::new(
         (window_area.loc.x - reach, window_area.loc.y - reach).into(),
-        (window_area.size.w + 2 * reach, window_area.size.h + 2 * reach).into(),
+        (
+            window_area.size.w + 2 * reach,
+            window_area.size.h + 2 * reach,
+        )
+            .into(),
     )
     .intersection(screen)
     .ok_or(RenderError::SettingsScene)?;
@@ -278,7 +283,14 @@ pub(crate) fn picture(
     }
     if let Some(target) = target {
         let area = moved(target.area);
-        a_focus_ring(&mut canvas, area, m::A_CARDS_CORNER, measure, palette, window.is_waiting_for_a_chord());
+        a_focus_ring(
+            &mut canvas,
+            area,
+            m::A_CARDS_CORNER,
+            measure,
+            palette,
+            window.is_waiting_for_a_chord(),
+        );
         picture.focused = Some(area);
     }
     canvas.unclipped();
@@ -324,10 +336,19 @@ fn a_focus_ring(
     let (thick, off) = (px(m::THE_FOCUS_RING), px(m::THE_FOCUS_RING_STANDS_OFF));
     let ring = Rectangle::new(
         (area.loc.x - off - thick, area.loc.y - off - thick).into(),
-        (area.size.w + 2 * (off + thick), area.size.h + 2 * (off + thick)).into(),
+        (
+            area.size.w + 2 * (off + thick),
+            area.size.h + 2 * (off + thick),
+        )
+            .into(),
     );
     let inner = px(corner);
-    canvas.border(ring, (inner + off + thick) as f32, thick as f32, palette.ink);
+    canvas.border(
+        ring,
+        (inner + off + thick) as f32,
+        thick as f32,
+        palette.ink,
+    );
     if doubled {
         let inside = Rectangle::new(
             (area.loc.x + off, area.loc.y + off).into(),
@@ -442,7 +463,11 @@ fn the_side_column(
         fonts,
         said(strings, crate::the_settings_words::YOURS_TO_CHANGE),
         TheType::SmallLabel,
-        (left + beside, (bottom - footer_tall).max(y), wide - 2 * beside),
+        (
+            left + beside,
+            (bottom - footer_tall).max(y),
+            wide - 2 * beside,
+        ),
         (palette.canvas, palette.muted),
     );
     // **The keyboard's outline last**, so nothing in the column covers it.

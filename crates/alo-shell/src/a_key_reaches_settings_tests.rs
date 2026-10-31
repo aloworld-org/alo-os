@@ -143,11 +143,10 @@ fn a_chord_bound_in_settings_is_in_force_at_once() {
     // at a different moment would move the focus somewhere else.
     let now = std::time::SystemTime::now();
     let rows = server.the_settings_window().rows(now);
-    let (at, action) = rows
+    let action = rows
         .iter()
-        .enumerate()
-        .find_map(|(at, row)| match row {
-            SettingsRow::Shortcut(action) => Some((at, *action)),
+        .find_map(|row| match row {
+            SettingsRow::Shortcut(action) => Some(*action),
             _ => None,
         })
         .expect("this machine's Settings draws the shortcuts it keeps");
@@ -155,9 +154,16 @@ fn a_chord_bound_in_settings_is_in_force_at_once() {
         .chord_for(action)
         .expect("a drawn binding has a chord");
 
-    for _ in 0..at {
+    // **Down to *Keyboard and shortcuts* in the side column, and Enter into
+    // it**, where the first row is the first shortcut.
+    let page = crate::SettingsCategory::ALL
+        .iter()
+        .position(|it| *it == crate::SettingsCategory::KeyboardAndShortcuts)
+        .expect("the keyboard has a page");
+    for _ in 0..page {
         tapped(&mut server, KEY_DOWN, &strings);
     }
+    tapped(&mut server, KEY_ENTER, &strings);
     assert_eq!(
         server.the_settings_window().focused(now),
         Some(SettingsRow::Shortcut(action)),

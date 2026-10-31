@@ -293,8 +293,18 @@ fn no_choice_the_old_window_offered_is_dropped() {
     before.push(SettingsRow::AddAProvider);
     before.push(SettingsRow::UsingAnother);
     before.extend(Accent::ALL.into_iter().map(SettingsRow::Accent));
-    before.extend(open.formats.choices().into_iter().map(SettingsRow::WrittenAs));
-    before.extend(open.time_zone.choices().into_iter().map(SettingsRow::TimeZone));
+    before.extend(
+        open.formats
+            .choices()
+            .into_iter()
+            .map(SettingsRow::WrittenAs),
+    );
+    before.extend(
+        open.time_zone
+            .choices()
+            .into_iter()
+            .map(SettingsRow::TimeZone),
+    );
     before.extend(Hiding::ALL.into_iter().map(SettingsRow::Hiding));
     before.extend(
         open.shortcuts
@@ -317,7 +327,12 @@ fn no_choice_the_old_window_offered_is_dropped() {
     if open.granted.a_folder_can_be_given() {
         before.push(SettingsRow::GrantAFolder);
     }
-    before.extend(open.granted.rows(noon()).into_iter().map(SettingsRow::Granted));
+    before.extend(
+        open.granted
+            .rows(noon())
+            .into_iter()
+            .map(SettingsRow::Granted),
+    );
     assert!(
         before.len() > 30,
         "the control: today's window had dozens of choices on this machine"
@@ -393,7 +408,11 @@ fn a_way_with_nothing_under_it_says_why_and_changes_nothing() {
             Some(SettingsDid::Answered(SettingsAnswered::NothingChanged))
         );
         let told = strings.say(&why.key(), &Filling::nothing()).into_text();
-        assert!(said(&window).contains(&told), "{way:?}: {:?}", said(&window));
+        assert!(
+            said(&window).contains(&told),
+            "{way:?}: {:?}",
+            said(&window)
+        );
         assert_eq!(bytes(&settings), before, "{way:?} wrote the settings");
     }
     // **alo's own service says it is not here yet**, and writes nothing.
@@ -1321,7 +1340,11 @@ fn moving_between_pages_rows_and_sections_changes_nothing() {
         press(&mut window, SettingsKey::Next);
     }
     assert_eq!(pages[..8], SettingsCategory::ALL);
-    assert_eq!(pages[8], SettingsCategory::Accessibility, "it stays on the last");
+    assert_eq!(
+        pages[8],
+        SettingsCategory::Accessibility,
+        "it stays on the last"
+    );
     press(&mut window, SettingsKey::First);
     assert_eq!(window.category(), Some(SettingsCategory::AloAndAi));
 
