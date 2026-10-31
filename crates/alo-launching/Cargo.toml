@@ -1,0 +1,17 @@
+[package]
+name = "alo-launching"
+version = "0.0.1"
+description = "How a person's press starts an installed application: over the bus, or from its entry's own Exec line in a unit of its own."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+# **No dependencies, on purpose.** Everything here is a decision about text a
+# desktop entry already holds — which road starts it, what its `Exec` line
+# says, what its unit is called and what it is handed. The bus calls that act
+# on those decisions live in `alo-desktop`, the one binary that holds a
+# connection, so this crate can be read and tested without one.
+
+[lints]
+workspace = true

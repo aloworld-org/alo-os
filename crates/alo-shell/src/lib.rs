@@ -232,7 +232,9 @@ mod an_icon_is_drawn_on_its_badge;
 mod what_each_application_draws;
 mod what_the_dock_is_filled_with;
 mod what_the_machine_offers_now;
-pub use an_application_is_started::{AWayToStartApplications, AsksAnApplicationToStart};
+pub use an_application_is_started::{
+    AWayToStartApplications, AsksAnApplicationToStart, WhoAskedToStart,
+};
 pub use what_the_machine_offers_now::{AnApplicationHere, WhatTheMachineOffersNow};
 /// A press on a task window's one button: Stop (ADR 0139).
 mod a_press_on_the_one_button;
@@ -826,7 +828,7 @@ pub use sign_in_password::PASSWORD_BYTES;
 // name here would be a contract owed forever to no caller.
 pub use sign_in_raster::SignInLook;
 pub use sign_in_screen::{SignInScreen, SignInShows, Signing};
-pub use socket::SocketError;
+pub use socket::{SocketError, the_display_a_client_reaches};
 pub use their_displays::{THE_SIZES_THIS_COMPOSITOR_DRAWS, TheirDisplays};
 pub use top_controls_region::the_top_controls;
 pub use window_command::WindowCommandError;

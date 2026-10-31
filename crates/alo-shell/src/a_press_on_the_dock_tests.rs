@@ -1005,7 +1005,7 @@ fn a_press_with_nothing_open_asks_the_application_to_start() {
 
     let asked: Arc<Mutex<Vec<String>>> = Arc::new(Mutex::new(Vec::new()));
     let heard = Arc::clone(&asked);
-    server.it_can_start_applications_with(Box::new(move |name| {
+    server.it_can_start_applications_with(Box::new(move |name, _| {
         heard
             .lock()
             .expect("the sender's own list")
@@ -1036,7 +1036,7 @@ fn a_press_with_nothing_open_asks_the_application_to_start() {
     // first has been given a sender that says yes.
     let (_elsewhere, mut refusing) = a_session("start-from-a-press-refused");
     refusing.go_to_this_application(&dolphin);
-    refusing.it_can_start_applications_with(Box::new(|_| false));
+    refusing.it_can_start_applications_with(Box::new(|_, _| false));
     let not_started = refusing.start_what_was_asked_for_now();
     assert_eq!(
         not_started,

@@ -28,9 +28,10 @@
 //! fast one. Sent from here it would hold the frame loop until the application
 //! answered, so every window on the machine would stop drawing while one
 //! started. [`crate::an_application_is_started`] carries that whole argument,
-//! and `open` therefore does exactly what a press on a Dock icon does: it puts
-//! the ask in `Server::asked_to_start`, where the loop sends it off the input
-//! path.
+//! and `open` therefore records the ask, in `Server::its_agent_asked_to_start`,
+//! where the loop sends it off the input path — told apart from a person's
+//! press, whose asks may also start an entry's `Exec` line while the agent's
+//! stay on the bus.
 //!
 //! **`not-installed` is a word this compositor never says**, and that is
 //! honest rather than a gap. Which applications exist is
@@ -85,9 +86,11 @@ impl Server {
         match asked_for {
             // Recorded rather than sent, for the reason this file's own
             // documentation gives: `alo_portals::activated` waits for the bus
-            // and this is the frame loop.
+            // and this is the frame loop. **On the agent's own list**, so the
+            // sender knows the agent asked and keeps it to the bus — see
+            // `crate::an_application_is_started`.
             WhatToDo::StartIt => {
-                self.asked_to_start.push(app.clone());
+                self.its_agent_asked_to_start.push(app.clone());
                 Answer::Acted
             }
             WhatToDo::BringThisForward(id) => self.bring_this_window_forward(id),

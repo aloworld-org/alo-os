@@ -79,6 +79,10 @@ alo-applications = { path = "../alo-applications" }
 # its desktop entries. The shell may not take a reading of the machine; this
 # binary is where readings are taken and handed over as data.
 alo-installed = { path = "../alo-installed" }
+# How a person's press starts one of them: over the bus, or from its entry's own
+# `Exec` line in a unit of its own. The decisions are that crate's; the bus calls
+# acting on them are `crate::starting_what_a_person_pressed`.
+alo-launching = { path = "../alo-launching" }
 # Where the icon one of them named actually is, by the icon theme rules.
 alo-icons = { path = "../alo-icons" }
 # The one decoder in this workspace, already pinned by alo-shell at the same

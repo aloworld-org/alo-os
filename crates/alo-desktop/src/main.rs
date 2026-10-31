@@ -60,6 +60,12 @@ mod what_this_machine_offers;
 #[cfg(target_os = "linux")]
 mod watching_what_is_installed;
 
+#[cfg(target_os = "linux")]
+mod starting_what_a_person_pressed;
+
+#[cfg(target_os = "linux")]
+mod telling_the_session_where_alo_draws;
+
 /// What this process does on the machine alo OS is for.
 #[cfg(target_os = "linux")]
 mod running {
@@ -194,7 +200,10 @@ mod running {
                     }
                 }
             },
-            a_way_to_start_applications(),
+            a_way_to_start_applications(&alo_shell::the_display_a_client_reaches(
+                &said.runtime,
+                THE_SOCKET,
+            )),
             // **Read before the desktop stands up, not during a frame.** The
             // rented tool is a process this has to wait for, and waiting for
             // one on the draw lane would stop every window on the machine. See
@@ -1551,13 +1560,21 @@ mod running {
 
     /// How this machine asks an application to start, if it can.
     ///
-    /// `alo_portals::activated` sends `Activate` to the application's own bus name
-    /// and the bus starts it if it is not running — **a message to an application,
-    /// never a command run.** Nothing here reads an `Exec` line, starts a process
-    /// or passes anything to a shell, which is what makes a Dock press permissible
-    /// under the second law at all: a person pressing their own icon *is* the
-    /// choice the law requires, and the mechanism is the part that must not be an
-    /// escape hatch.
+    /// **A person's press** is started the ordinary freedesktop way — over the
+    /// bus where the entry says `DBusActivatable=true`, and from the entry's own
+    /// `Exec` line otherwise, in a unit of its own in their systemd manager
+    /// (`crate::starting_what_a_person_pressed`). **The agent's `open`** is sent
+    /// over the bus only, as it always was. Law 2 binds the agent and never the
+    /// person: a person pressing their own icon *is* the choice the law requires,
+    /// and what runs is an installed entry's own command, never text a caller
+    /// supplied.
+    ///
+    /// *This said until 2026-10-31 that nothing here reads an `Exec` line, and so
+    /// Firefox, Dolphin and LibreOffice were on the Dock and did not start.*
+    ///
+    /// **And the session is told where alo draws**, once, before the first press
+    /// (`crate::telling_the_session_where_alo_draws`), so an application the bus
+    /// starts has a display too.
     ///
     /// # A machine with no bus says so rather than pretending
     ///
@@ -1571,13 +1588,22 @@ mod running {
     /// to outlive the call. Opening one per press would add a bus handshake to
     /// every icon a person clicks, and failing to open one would then look like a
     /// failure to start the application rather than a failure to reach the bus.
-    fn a_way_to_start_applications() -> Option<alo_shell::AWayToStartApplications> {
+    fn a_way_to_start_applications(
+        wayland: &std::path::Path,
+    ) -> Option<alo_shell::AWayToStartApplications> {
         match zbus::blocking::Connection::session() {
             Ok(session) => {
                 let connection = session.into_inner();
-                Some(Box::new(move |identifier: &str| {
-                    zbus::block_on(alo_portals::activated(&connection, identifier))
-                }))
+                crate::telling_the_session_where_alo_draws::tell(&connection, wayland);
+                let starting =
+                    crate::starting_what_a_person_pressed::HowThisMachineStartsThings::on(
+                        connection, wayland,
+                    );
+                Some(Box::new(
+                    move |identifier: &str, who: alo_shell::WhoAskedToStart| {
+                        starting.started(identifier, who)
+                    },
+                ))
             }
             Err(why) => {
                 eprintln!(

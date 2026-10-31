@@ -713,6 +713,7 @@ dependencies = [
  "alo-interfaces",
  "alo-keyboards",
  "alo-keyring-fixture",
+ "alo-launching",
  "alo-models",
  "alo-networks",
  "alo-portals",
@@ -1165,6 +1166,10 @@ dependencies = [
  "secret-service",
  "zbus",
 ]
+
+[[package]]
+name = "alo-launching"
+version = "0.0.1"
 
 [[package]]
 name = "alo-leaving"

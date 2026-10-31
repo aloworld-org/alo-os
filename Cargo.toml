@@ -26,6 +26,7 @@ members = [
   "crates/alo-playing",
   "crates/alo-icons",
   "crates/alo-installed",
+  "crates/alo-launching",
   "crates/alo-adapters",
   "crates/alo-accounts",
   "crates/alo-adapting",

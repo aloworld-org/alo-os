@@ -1,63 +1,73 @@
 //! Starting the applications a person asked for, off the input path.
 //!
-//! `docs/features.md` [v0.01] — *clicking an application … **nothing open:** it
+//! `docs/features.md` — *clicking an application … **nothing open:** it
 //! starts.* `crate::a_press_on_the_dock` records the ask in
 //! `Server::asked_to_start` and this is where it is sent.
 //!
 //! # Why it is here and not in the press
 //!
-//! `alo_portals::activated` sends `Activate` to the application's own bus name
-//! and **the bus starts it if it is not running** — which is the correct
-//! mechanism and is not a fast one. Sent from the press handler it would hold
-//! the compositor's input loop until the application answered, so every window
-//! on the machine would stop drawing while one started. A person pressing an
-//! icon would watch their desktop freeze.
+//! Starting an application waits — for the bus to start one, or for the
+//! person's systemd manager to take a unit — and sent from the press handler
+//! that wait would hold the compositor's input loop, so every window on the
+//! machine would stop drawing while one started. A person pressing an icon
+//! would watch their desktop freeze.
 //!
-//! # What this is not
+//! # Who asked is carried with the ask
 //!
-//! **It is not a launcher.** `alo_portals::opening`'s header has refused that
-//! since it was written, and the refusal is repeated at `activated` itself: a
-//! message to an application, never a command run. Nothing reads an `Exec`
-//! line, starts a process, or passes anything to a shell. The destination is a
-//! validated identifier turned into a path by one character substitution, the
-//! method is a literal, and the only argument is an empty map.
+//! Two roads end here and they are not the same road. **A person** pressing an
+//! icon, pressing Enter on an application in the alo Bar, or pressing the
+//! terminal chord is the choice law 2 requires — the law binds the agent, never
+//! the person — so `alo-desktop` starts what they asked for the way every
+//! Linux desktop does: over the bus where the entry says `DBusActivatable=true`,
+//! and from the entry's own `Exec` line otherwise (`alo_launching`). **The
+//! agent's** `open` reaches here through ADR 0108's door and is kept apart, in
+//! `Server::its_agent_asked_to_start`, so the sender can keep that road exactly
+//! as it was: bus activation only. Whether an approved agent `open` should
+//! reach an `Exec` line too is the owner's question and not this file's.
 //!
-//! That is what makes this permissible under the second law at all. *No code
-//! runs unless the person chose it* — pressing one's own Dock icon **is** that
-//! choice, so starting the application is allowed. What the law forbids is the
-//! mechanism, and anything assembling a command line hands over the one thing
-//! the capability model exists to withhold.
+//! *This header said until 2026-10-31 that nothing here may read an `Exec`
+//! line, and that law 2 forbade the mechanism. Law 2's own text binds the
+//! agent and never the person, and no ADR forbids a person's press from
+//! starting an installed entry's command — so Firefox, Dolphin and LibreOffice
+//! were listed on the Dock and refused to start, on a reading of the law the
+//! law does not make.*
 //!
-//! # An application that cannot be reached this way is not started
+//! **Nothing here starts anything.** The shell holds the asks; the sender it is
+//! given does the starting, and what that sender may run is an installed
+//! entry's own `Exec` line, found by its identifier — never text a caller
+//! supplied, and never a line composed for a shell.
 //!
-//! No name on the bus and nothing to start one answers `false`, and that is
-//! returned rather than retried or worked around. `alo_portals::opening` makes
-//! the same refusal for `Open` and names the alternative it will not take:
-//! *starting such an application from its `Exec` line is a launcher's work.*
+//! # An application that cannot be started is said, not retried
+//!
+//! The sender answers `false` and that is returned rather than retried or
+//! worked around, so the desktop's log names every press that started nothing.
 
 use crate::Server;
 
-/// Whatever can ask an application to start, given its identifier.
+/// Who asked for an application to be started.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum WhoAskedToStart {
+    /// The person, with their own press, Enter or chord.
+    ThePerson,
+    /// Their agent, through the compositor's application door (ADR 0108).
+    TheirAgent,
+}
+
+/// Whatever can ask an application to start, given its identifier and who
+/// asked.
 ///
-/// **A function rather than a crate**, and that is deliberate.
-/// `alo_portals::activated` is the implementation — D-Bus activation, the same
-/// call as `Open` with no file — and `alo-portals` is a **dev-dependency** of
-/// this crate rather than a real one, because the compositor has no business
-/// depending on portal *policy*: that crate decides what a portal request is
-/// answered with, and nothing here should be able to reach those decisions.
-///
-/// The two ways out of that were both worse. Promoting the dependency puts
-/// every portal decision inside the compositor's reach to satisfy one twenty-
-/// line call. Copying the call here makes **two** implementations of D-Bus
-/// activation, and this repository has learned what two implementations of one
-/// question cost — a press reaching a control that is not the one that lit up.
+/// **A function rather than a crate**, and that is deliberate. The
+/// implementation is `alo-desktop`'s — `alo_portals::activated` for the bus,
+/// and the person's systemd manager for an `Exec` line — and neither belongs
+/// in the compositor: `alo-portals` decides what a portal request is answered
+/// with, and nothing here should be able to reach those decisions.
 ///
 /// So the shell holds the ask and not the sending, and whoever wires the two
 /// together supplies this. It is `alo_applications::Installed`'s own shape:
 /// *this crate holds no opinion about where the entries come from.* It also
 /// makes the decision testable without a bus, which nothing about a real
 /// connection would be.
-pub type AsksAnApplicationToStart<'a> = dyn Fn(&str) -> bool + 'a;
+pub type AsksAnApplicationToStart<'a> = dyn Fn(&str, WhoAskedToStart) -> bool + 'a;
 
 /// One way to start applications, owned.
 ///
@@ -66,16 +76,19 @@ pub type AsksAnApplicationToStart<'a> = dyn Fn(&str) -> bool + 'a;
 /// on a thread of its own, and named because the same type appears in three
 /// places and three spellings of one type is three chances to change two of
 /// them.
-pub type AWayToStartApplications = Box<dyn Fn(&str) -> bool + Send>;
+pub type AWayToStartApplications = Box<dyn Fn(&str, WhoAskedToStart) -> bool + Send>;
 
 impl Server {
-    /// Take every application a person asked to start, and say which were not.
+    /// Take every application anybody asked to start, and say which were not.
     ///
     /// **Every ask is taken off the list whether it succeeded or not**, which is
     /// `crate::a_press_on_an_edge`'s rule and the same reasoning: a press that
     /// failed is not retried next frame. A person pressed an icon once, and a
-    /// refusal is an answer — while an ask left on the list would be an
-    /// `Activate` sent on every frame, which is a loop around a bus.
+    /// refusal is an answer — while an ask left on the list would be a start
+    /// sent on every frame, which is a loop around a bus.
+    ///
+    /// The person's asks are sent first and then the agent's, each in the order
+    /// they were made, and each with who made it.
     ///
     /// Returns the applications that could not be reached, for a caller to
     /// record. **Not a `Result`**: one ask failing says nothing about the next,
@@ -84,10 +97,15 @@ impl Server {
         &mut self,
         ask: &AsksAnApplicationToStart<'_>,
     ) -> Vec<alo_dock::AppId> {
-        let asked = std::mem::take(&mut self.asked_to_start);
+        let persons = std::mem::take(&mut self.asked_to_start)
+            .into_iter()
+            .map(|it| (it, WhoAskedToStart::ThePerson));
+        let agents = std::mem::take(&mut self.its_agent_asked_to_start)
+            .into_iter()
+            .map(|it| (it, WhoAskedToStart::TheirAgent));
         let mut not_started = Vec::new();
-        for application in asked {
-            if !ask(application.name()) {
+        for (application, who) in persons.chain(agents) {
+            if !ask(application.name(), who) {
                 not_started.push(application);
             }
         }
@@ -96,9 +114,9 @@ impl Server {
 
     /// Give this machine a way to ask an application to start.
     ///
-    /// Called once, by whoever stands the desktop up and can reach
-    /// `alo_portals::activated`. See `Server::asks_an_application_to_start`
-    /// for why it arrives from outside rather than being built here.
+    /// Called once, by whoever stands the desktop up. See
+    /// `Server::asks_an_application_to_start` for why it arrives from outside
+    /// rather than being built here.
     pub fn it_can_start_applications_with(&mut self, ask: AWayToStartApplications) {
         self.asks_an_application_to_start = Some(ask);
     }
@@ -114,21 +132,23 @@ impl Server {
         // checker's correct objection: the sender could, in principle, ask this
         // machine for something.
         let Some(ask) = self.asks_an_application_to_start.take() else {
-            return std::mem::take(&mut self.asked_to_start);
+            let mut everything = std::mem::take(&mut self.asked_to_start);
+            everything.append(&mut self.its_agent_asked_to_start);
+            return everything;
         };
         let not_started = self.start_what_was_asked_for(&*ask);
         self.asks_an_application_to_start = Some(ask);
         not_started
     }
 
-    /// How many applications are waiting to be started.
+    /// How many applications are waiting to be started, whoever asked.
     ///
     /// For a test and for a caller deciding whether it needs a bus at all: a
     /// lane with nothing to start should not open a connection to discover
     /// that.
     #[must_use]
     pub fn how_many_are_waiting_to_start(&self) -> usize {
-        self.asked_to_start.len()
+        self.asked_to_start.len() + self.its_agent_asked_to_start.len()
     }
 }
 

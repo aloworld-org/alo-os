@@ -1088,12 +1088,11 @@ impl LoopInput for Desk<'_> {
             // what a person reports as *the icon does nothing*, so the machine
             // says so. Once per press, because the list is drained.
             //
-            // The two causes read alike here and are different: this machine
-            // was never given a way to start anything, or the application is
-            // not one the bus can start. `Server::asks_an_application_to_start`
-            // is where the first is decided, and both end as a refusal rather
-            // than as a fallback — `alo_portals::opening` refuses to read an
-            // `Exec` line and so does this.
+            // The causes read alike here and are different: this machine was
+            // never given a way to start anything, or the sender could not
+            // start this one — and the sender says which, and why, on its own
+            // line before this one. `Server::asks_an_application_to_start` is
+            // where the first is decided.
             eprintln!(
                 "alo-shell: {} was asked to start and this machine could not start it",
                 not_started.name()

@@ -220,15 +220,15 @@ pub(crate) enum WhatAnIconDoes {
     /// and the road had been there since the press was written.**
     /// `Server::go_to_this_application` puts the ask on
     /// `Server::asked_to_start`; `crate::an_application_is_started` sends it
-    /// off the input path through the sender this machine was given, which in
-    /// the shipped desktop is `alo_portals::activated` — D-Bus activation, a
-    /// message to the application and never a command run.
+    /// off the input path through the sender this machine was given.
     ///
-    /// **What is true, and is the limit worth writing down instead:** an
-    /// application with no bus name and nothing to start one is **not**
-    /// started, and that refusal is returned rather than worked around.
-    /// Reading an `Exec` line is what `crate::an_application_is_started`'s
-    /// header refuses and the second law is why.
+    /// **The limit, as of 2026-10-31:** the shipped desktop's sender starts a
+    /// person's ask over the bus where the entry says `DBusActivatable=true`
+    /// and from the entry's own `Exec` line otherwise (`alo_launching`, wired
+    /// in `alo-desktop`'s `starting_what_a_person_pressed`). An entry with
+    /// neither, or whose `Exec` line the specification calls invalid, is not
+    /// started, and that refusal is returned and said rather than worked
+    /// around.
     Launch,
 }
 

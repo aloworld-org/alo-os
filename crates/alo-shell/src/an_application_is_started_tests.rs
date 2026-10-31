@@ -55,7 +55,7 @@ fn every_ask_is_sent_once_and_by_name() {
         server.asked_to_start.push(app(named));
     }
     let sent = RefCell::new(Vec::new());
-    let not_started = server.start_what_was_asked_for(&|identifier| {
+    let not_started = server.start_what_was_asked_for(&|identifier, _| {
         sent.borrow_mut().push(identifier.to_owned());
         true
     });
@@ -83,7 +83,7 @@ fn a_refused_ask_is_reported_and_not_retried() {
     let (_directory, mut server) = server("refused-once");
     server.asked_to_start.push(app("org.kde.dolphin"));
     let tries = RefCell::new(0_usize);
-    let not_started = server.start_what_was_asked_for(&|_| {
+    let not_started = server.start_what_was_asked_for(&|_, _| {
         *tries.borrow_mut() += 1;
         false
     });
@@ -116,7 +116,7 @@ fn a_refusal_does_not_drop_the_asks_behind_it() {
         server.asked_to_start.push(app(named));
     }
     let seen = RefCell::new(Vec::new());
-    let not_started = server.start_what_was_asked_for(&|identifier| {
+    let not_started = server.start_what_was_asked_for(&|identifier, _| {
         seen.borrow_mut().push(identifier.to_owned());
         identifier == "org.kde.dolphin"
     });
@@ -141,7 +141,7 @@ fn a_refusal_does_not_drop_the_asks_behind_it() {
 fn an_empty_list_asks_nobody() {
     let (_directory, mut server) = server("nothing-to-start");
     let asked = RefCell::new(0_usize);
-    let not_started = server.start_what_was_asked_for(&|_| {
+    let not_started = server.start_what_was_asked_for(&|_, _| {
         *asked.borrow_mut() += 1;
         true
     });
@@ -151,4 +151,60 @@ fn an_empty_list_asks_nobody() {
         0,
         "something was asked with nothing to ask about"
     );
+}
+
+/// **The sender is told who asked**, so a person's press may start an entry's
+/// `Exec` line and the agent's `open` stays on the bus. The two lists are sent
+/// person first, each in the order it was made.
+#[test]
+fn each_ask_is_sent_with_who_made_it() {
+    use crate::an_application_is_started::WhoAskedToStart;
+    let (_directory, mut server) = server("who-asked");
+    server.asked_to_start.push(app("org.kde.dolphin"));
+    server.its_agent_asked_to_start.push(app("org.gnome.Geary"));
+    assert_eq!(server.how_many_are_waiting_to_start(), 2);
+    let sent = RefCell::new(Vec::new());
+    let not_started = server.start_what_was_asked_for(&|identifier, who| {
+        sent.borrow_mut().push((identifier.to_owned(), who));
+        true
+    });
+    assert!(not_started.is_empty());
+    assert_eq!(
+        sent.into_inner(),
+        [
+            ("org.kde.dolphin".to_owned(), WhoAskedToStart::ThePerson),
+            ("org.gnome.Geary".to_owned(), WhoAskedToStart::TheirAgent),
+        ]
+    );
+    assert_eq!(server.how_many_are_waiting_to_start(), 0);
+}
+
+/// **The agent's `open` lands on the agent's list**, never the person's — the
+/// one line that keeps the agent's road where it was.
+#[test]
+fn the_agents_open_is_recorded_as_the_agents() {
+    use crate::the_application_door::CarriesOutAnApplicationVerb as _;
+    let (_directory, mut server) = server("agent-open");
+    let geary =
+        alo_applications::Application::identified("org.gnome.Geary").expect("an application");
+    let answer = server.carrying_out(&alo_acting::Acting::Open(geary));
+    assert_eq!(answer, alo_acting::Answer::Acted);
+    assert!(
+        server.asked_to_start.is_empty(),
+        "it was filed as the person's"
+    );
+    assert_eq!(server.its_agent_asked_to_start, vec![app("org.gnome.Geary")]);
+}
+
+/// **A machine with no sender reports both lists as not started.**
+#[test]
+fn with_no_sender_every_ask_of_either_kind_is_not_started() {
+    let (_directory, mut server) = server("no-sender-either");
+    server.asked_to_start.push(app("org.kde.dolphin"));
+    server.its_agent_asked_to_start.push(app("org.gnome.Geary"));
+    assert_eq!(
+        server.start_what_was_asked_for_now(),
+        vec![app("org.kde.dolphin"), app("org.gnome.Geary")]
+    );
+    assert_eq!(server.how_many_are_waiting_to_start(), 0);
 }
