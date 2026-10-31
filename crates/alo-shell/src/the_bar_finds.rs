@@ -24,17 +24,24 @@
 //! tool and waiting, on the compositor's input loop, and a press that waited on
 //! a subprocess would stop every window on the machine drawing.
 //!
-//! # Why the identifier is matched and not a name
+//! # The name and the identifier, both
 //!
-//! **Because a name is not there to match.** `alo_software::what_this_machine_has`
-//! reads one identifier per line — `org.mozilla.firefox` — and nothing in this
-//! product reads the `Name=` of a desktop entry yet. So *firefox* finds
-//! Firefox, and *browser* does not, which is worse than what a person expects
-//! and is said here rather than hidden: **the day entries are read, this
-//! matches on the name and the identifier both, and the rows stop looking like
-//! addresses.** Guessing a display name from an identifier would be inventing
-//! one, which is the thing `crate::which_disks_may_be_offered` refuses for a
-//! disk and refuses here for the same reason.
+//! This said, until 2026-10-31, that *the day entries are read, this matches
+//! on the name and the identifier both, and the rows stop looking like
+//! addresses.* **They are read now**: `alo-desktop` reads every desktop entry
+//! on the machine and tells the seat what each calls itself
+//! (`crate::Server::the_machine_now_offers`), so *writer* finds *LibreOffice
+//! Writer* and the row says so. An application whose entry gave no name is
+//! matched and shown by its identifier, as before. Guessing a display name
+//! from an identifier would be inventing one, which is the thing
+//! `crate::which_disks_may_be_offered` refuses for a disk and refuses here for
+//! the same reason.
+//!
+//! **What is still not matched is what an application *is*.** *browser* does
+//! not find Firefox and *files* does not find Dolphin: that is an entry's
+//! `GenericName`, `Keywords` or `Categories`, and nothing in
+//! `docs/features.md` or the Bar's design promises a search by them. It is a
+//! question for the owner, not a gap this file closes by guessing.
 
 use alo_strings::{Filling, Strings};
 
@@ -70,6 +77,7 @@ pub enum WhatARowDoes {
 pub(crate) fn what_the_bar_finds(
     typed: &str,
     installed: &[String],
+    called: &TheirNames,
     strings: &Strings,
 ) -> Vec<AResult> {
     let looking_for = typed.trim().to_lowercase();
@@ -77,13 +85,13 @@ pub(crate) fn what_the_bar_finds(
         return Vec::new();
     }
 
-    what_matches(typed, installed)
+    what_matches(typed, installed, called)
         .into_iter()
         .map(|identifier| AResult {
             shown: strings
                 .say(
                     &words::AN_APPLICATION_ROW.key(),
-                    &Filling::of("what", readable(identifier)),
+                    &Filling::of("what", readable(identifier, called)),
                 )
                 .into_text(),
             does: WhatARowDoes::OpensAnApplication(identifier.clone()),
@@ -104,7 +112,11 @@ pub(crate) fn what_the_bar_finds(
 /// middle of it, and `org.moz` is what a person types only when they already
 /// know what they are after. Sorting inside a rank would be a second opinion
 /// about what is likeliest, which this product does not have.
-pub fn what_matches<'a>(typed: &str, installed: &'a [String]) -> Vec<&'a String> {
+pub fn what_matches<'a>(
+    typed: &str,
+    installed: &'a [String],
+    called: &TheirNames,
+) -> Vec<&'a String> {
     let looking_for = typed.trim().to_lowercase();
     if looking_for.is_empty() {
         return Vec::new();
@@ -114,9 +126,18 @@ pub fn what_matches<'a>(typed: &str, installed: &'a [String]) -> Vec<&'a String>
         .filter_map(|identifier| {
             let whole = identifier.to_lowercase();
             let last = whole.rsplit('.').next().unwrap_or(&whole).to_owned();
-            if last.starts_with(&looking_for) {
+            // **The name the entry gives, and each word of it.** *writer*
+            // finds *LibreOffice Writer* as readily as *libre* does, which is
+            // what a person typing the name they see expects.
+            let name = called
+                .get(identifier)
+                .map(|name| name.to_lowercase())
+                .unwrap_or_default();
+            let a_word_of_the_name_starts =
+                name.split_whitespace().any(|word| word.starts_with(&looking_for));
+            if last.starts_with(&looking_for) || a_word_of_the_name_starts {
                 Some((0, identifier))
-            } else if last.contains(&looking_for) {
+            } else if last.contains(&looking_for) || name.contains(&looking_for) {
                 Some((1, identifier))
             } else if whole.contains(&looking_for) {
                 Some((2, identifier))
@@ -132,15 +153,23 @@ pub fn what_matches<'a>(typed: &str, installed: &'a [String]) -> Vec<&'a String>
         .collect()
 }
 
-/// The part of an identifier a person would recognise.
+/// What a row calls an application: the name its entry gives, or the part of
+/// its identifier a person would recognise when it gives none.
 ///
-/// `org.mozilla.firefox` reads as `firefox`. **Not capitalised and not
+/// `org.mozilla.firefox` reads as `Firefox` when its entry says so, and as
+/// `firefox` when nothing does. **The fallback is not capitalised and not
 /// prettified**: `org.gnome.TextEditor` reads as `TextEditor` because that is
 /// what the identifier says, and turning it into `Text Editor` would be this
 /// product inventing a name for somebody else's application.
-fn readable(identifier: &str) -> &str {
-    identifier.rsplit('.').next().unwrap_or(identifier)
+fn readable<'a>(identifier: &'a str, called: &'a TheirNames) -> &'a str {
+    match called.get(identifier) {
+        Some(name) => name,
+        None => identifier.rsplit('.').next().unwrap_or(identifier),
+    }
 }
+
+/// What each installed application calls itself, by identifier.
+pub type TheirNames = std::collections::BTreeMap<String, String>;
 
 /// How many results there are, said as the line under the field.
 ///

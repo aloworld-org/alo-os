@@ -482,6 +482,21 @@ pub trait TheDesktop {
     /// correct without it: it draws the defaults and works them out again next
     /// time. That is the state every test and the sign-in screen are in.
     fn keep_these_pins(&mut self, _pins: &[alo_dock::ADockEntry]) {}
+
+    /// **A new reading of what the machine offers**, if one arrived since the
+    /// last frame.
+    ///
+    /// Asked every frame and answered from whatever the desktop has already
+    /// read — never by reading here, because this is the draw lane. `alo-desktop`
+    /// reads again on its own thread when the machine's applications change,
+    /// which is how a browser that finished installing after sign-in reaches
+    /// the Dock and the alo Bar. [`crate::Server::the_machine_now_offers`] is
+    /// what is done with it.
+    ///
+    /// Nothing by default: a desktop that never changes has nothing new to say.
+    fn what_this_machine_offers_now(&mut self) -> Option<crate::WhatTheMachineOffersNow> {
+        None
+    }
 }
 
 impl crate::DirectSession {
@@ -1135,6 +1150,12 @@ impl LoopInput for Desk<'_> {
             let addresses = self.desktop.this_machines_own_addresses();
             server.this_machine_is_at(addresses);
         }
+        // **And what the machine offers, when it has changed** — an
+        // application that finished installing after sign-in, told here so it
+        // is on this frame's Dock and in this frame's alo Bar.
+        if let Some(now) = self.desktop.what_this_machine_offers_now() {
+            server.the_machine_now_offers(now, &mut *self.desktop);
+        }
         // Asked before the frame is made, never after: a frame drawn from
         // readings taken after it would show a person the moment before.
         self.desktop.refreshed();
@@ -1499,6 +1520,7 @@ impl LoopInput for Desk<'_> {
             crate::the_bar_finds::what_the_bar_finds(
                 &typed_into_the_bar,
                 &server.what_this_machine_has,
+                &server.what_each_is_called,
                 self.strings,
             )
         } else {

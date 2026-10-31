@@ -78,6 +78,12 @@ use alo_applications::installed::Installed;
 mod icons;
 pub use icons::Icons;
 
+mod not_read;
+pub use not_read::{NotRead, WhyNotRead};
+
+mod where_flatpak_exports;
+pub use where_flatpak_exports::{THE_MACHINES_INSTALLATION, with_what_flatpak_exports};
+
 /// The directories desktop entries live in, most specific first.
 ///
 /// `$XDG_DATA_HOME/applications`, then each of `$XDG_DATA_DIRS/applications`.
@@ -189,10 +195,29 @@ pub fn read_with_what_they_open(places: &[PathBuf]) -> (Installed, Declared) {
 /// `docs/design/the-alo-dock.md`.
 #[must_use]
 pub fn read_with_their_icons(places: &[PathBuf]) -> (Installed, Icons) {
+    let (installed, icons, _said_elsewhere) = read_with_their_icons_saying_what_did_not(places);
+    (installed, icons)
+}
+
+/// [`read_with_their_icons`], and every entry that was there and could not be
+/// read.
+///
+/// **Skipped and said, never fatal.** One unreadable file still costs nobody
+/// any other application — the walk goes on — and the caller is handed the
+/// file and the reason, so a machine missing an application can say whether it
+/// was never installed or is installed and unreadable. [`NotRead`] says which
+/// entries count as a refusal and which are an entry asking not to be listed.
+#[must_use]
+pub fn read_with_their_icons_saying_what_did_not(
+    places: &[PathBuf],
+) -> (Installed, Icons, Vec<NotRead>) {
     let mut installed = Installed::nothing();
     let mut icons = Icons::nothing();
+    let mut not_read = Vec::new();
     for place in places {
-        for entry in entries_under(place) {
+        let mut found = Vec::new();
+        walk(place, place, &mut found, &mut not_read);
+        for entry in found {
             let Ok(application) = Application::called(&entry.identifier, &entry.said.named) else {
                 continue;
             };
@@ -207,7 +232,7 @@ pub fn read_with_their_icons(places: &[PathBuf]) -> (Installed, Icons) {
             }
         }
     }
-    (installed, icons)
+    (installed, icons, not_read)
 }
 
 /// One desktop entry that counted, as the walk found it.
@@ -239,28 +264,71 @@ struct Said {
 /// `kde4/konsole.desktop` is the identifier `kde4-konsole`.
 fn entries_under(place: &Path) -> Vec<Entry> {
     let mut found = Vec::new();
-    walk(place, place, &mut found);
+    // **Dropped here, and said by the one reader that says them.** The two
+    // older readers kept their shape; a caller that wants the refusals asks
+    // `read_with_their_icons_saying_what_did_not`.
+    let mut not_said = Vec::new();
+    walk(place, place, &mut found, &mut not_said);
     found
 }
 
 /// The walk itself, carrying the directory it began in so an identifier can be
 /// built from the path relative to it.
-fn walk(root: &Path, at: &Path, into: &mut Vec<Entry>) {
-    let Ok(entries) = std::fs::read_dir(at) else {
-        return;
+///
+/// **A place that is not there is ordinary and says nothing** — a machine with
+/// no `~/.local/share/applications`, or with no flatpak installed yet, has
+/// nothing there. A place that is there and will not list, and an entry that
+/// will not read, go to `not_read`, and the walk goes on.
+fn walk(root: &Path, at: &Path, into: &mut Vec<Entry>, not_read: &mut Vec<NotRead>) {
+    let entries = match std::fs::read_dir(at) {
+        Ok(entries) => entries,
+        Err(why) if why.kind() == std::io::ErrorKind::NotFound => return,
+        Err(why) => {
+            not_read.push(NotRead::at(
+                at.to_path_buf(),
+                WhyNotRead::WouldNotOpen(why.kind()),
+            ));
+            return;
+        }
     };
     for entry in entries.flatten() {
         let path = entry.path();
         if path.is_dir() {
-            walk(root, &path, into);
-        } else if path.extension() == Some(OsStr::new("desktop"))
-            && let Ok(text) = std::fs::read_to_string(&path)
-            && let Some(said) = what_the_entry_says(&text)
-            && let Some(identifier) = the_identifier_of(root, &path)
-        {
+            walk(root, &path, into, not_read);
+            continue;
+        }
+        if path.extension() != Some(OsStr::new("desktop")) {
+            continue;
+        }
+        let text = match std::fs::read_to_string(&path) {
+            Ok(text) => text,
+            Err(why) => {
+                not_read.push(NotRead::at(path, WhyNotRead::WouldNotOpen(why.kind())));
+                continue;
+            }
+        };
+        let said = match what_the_entry_says(&text) {
+            Reading::Counted(said) => said,
+            Reading::AskedNotToBeListed => continue,
+            Reading::Refused(why) => {
+                not_read.push(NotRead::at(path, why));
+                continue;
+            }
+        };
+        if let Some(identifier) = the_identifier_of(root, &path) {
             into.push(Entry { identifier, said });
         }
     }
+}
+
+/// What reading one entry came to.
+enum Reading {
+    /// An application a person has.
+    Counted(Said),
+    /// The entry's own author said not to list it, which is the entry working.
+    AskedNotToBeListed,
+    /// It is not an entry this machine can read.
+    Refused(WhyNotRead),
 }
 
 /// The desktop file ID: the path under `applications/`, `/` to `-`, no suffix.
@@ -297,7 +365,8 @@ fn the_identifier_of(root: &Path, path: &Path) -> Option<String> {
 /// **A missing `Icon` is [`None`] and not a refusal either**, for the same
 /// reason and with a decided consequence: the Dock draws that application's
 /// first letter.
-fn what_the_entry_says(text: &str) -> Option<Said> {
+fn what_the_entry_says(text: &str) -> Reading {
+    let mut saw_the_group = false;
     let mut inside = false;
     let mut named = None;
     let mut opens: Vec<String> = Vec::new();
@@ -310,6 +379,7 @@ fn what_the_entry_says(text: &str) -> Option<Said> {
                 break;
             }
             inside = line == "[Desktop Entry]";
+            saw_the_group |= inside;
             continue;
         }
         if !inside {
@@ -319,8 +389,8 @@ fn what_the_entry_says(text: &str) -> Option<Said> {
             continue;
         };
         match (key.trim(), value.trim()) {
-            ("Type", kind) if kind != "Application" => return None,
-            ("NoDisplay" | "Hidden", "true") => return None,
+            ("Type", kind) if kind != "Application" => return Reading::AskedNotToBeListed,
+            ("NoDisplay" | "Hidden", "true") => return Reading::AskedNotToBeListed,
             ("Name", shown) if !shown.is_empty() => named = Some(shown.to_owned()),
             // **Semicolon separated, and a trailing one is ordinary.** The
             // desktop entry specification writes a list that way and most
@@ -343,7 +413,11 @@ fn what_the_entry_says(text: &str) -> Option<Said> {
             _ => {}
         }
     }
-    named.map(|named| Said { named, opens, icon })
+    match named {
+        Some(named) => Reading::Counted(Said { named, opens, icon }),
+        None if saw_the_group => Reading::Refused(WhyNotRead::NoName),
+        None => Reading::Refused(WhyNotRead::NoEntryInIt),
+    }
 }
 
 #[cfg(test)]

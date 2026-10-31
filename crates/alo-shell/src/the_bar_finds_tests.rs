@@ -9,7 +9,8 @@
 use alo_strings::Strings;
 
 use super::{
-    WhatARowDoes, nothing_can_answer_a_question, what_the_bar_finds, where_these_came_from,
+    TheirNames, WhatARowDoes, nothing_can_answer_a_question, what_the_bar_finds,
+    where_these_came_from,
 };
 
 /// What a fresh machine has, as `alo_software::what_this_machine_has` prints
@@ -39,7 +40,7 @@ fn english() -> Strings {
 #[test]
 fn what_was_typed_finds_the_obvious_one_first() {
     let strings = english();
-    let found = what_the_bar_finds("fire", &installed(), &strings);
+    let found = what_the_bar_finds("fire", &installed(), &TheirNames::new(), &strings);
 
     assert!(
         found.len() >= 2,
@@ -62,7 +63,7 @@ fn what_was_typed_finds_the_obvious_one_first() {
 #[test]
 fn a_row_names_the_application_and_what_it_is() {
     let strings = english();
-    let found = what_the_bar_finds("textedit", &installed(), &strings);
+    let found = what_the_bar_finds("textedit", &installed(), &TheirNames::new(), &strings);
     let only = found.first().expect("one result");
     assert_eq!(
         only.shown, "TextEditor  ·  Application",
@@ -74,7 +75,7 @@ fn a_row_names_the_application_and_what_it_is() {
 #[test]
 fn an_application_is_read_as_the_machine_knows_it() {
     let strings = english();
-    let found = what_the_bar_finds("calc", &installed(), &strings);
+    let found = what_the_bar_finds("calc", &installed(), &TheirNames::new(), &strings);
     assert!(
         found
             .first()
@@ -93,11 +94,11 @@ fn an_application_is_read_as_the_machine_knows_it() {
 #[test]
 fn nothing_typed_finds_nothing() {
     let strings = english();
-    assert!(what_the_bar_finds("", &installed(), &strings).is_empty());
-    assert!(what_the_bar_finds("   ", &installed(), &strings).is_empty());
+    assert!(what_the_bar_finds("", &installed(), &TheirNames::new(), &strings).is_empty());
+    assert!(what_the_bar_finds("   ", &installed(), &TheirNames::new(), &strings).is_empty());
     // **The control**: the same fixture with something typed does find.
     assert!(
-        !what_the_bar_finds("f", &installed(), &strings).is_empty(),
+        !what_the_bar_finds("f", &installed(), &TheirNames::new(), &strings).is_empty(),
         "this fixture finds nothing for any query, so the two assertions above mean nothing"
     );
 }
@@ -106,7 +107,7 @@ fn nothing_typed_finds_nothing() {
 #[test]
 fn a_query_that_finds_nothing_is_still_a_sentence() {
     let strings = english();
-    let found = what_the_bar_finds("zzzz", &installed(), &strings);
+    let found = what_the_bar_finds("zzzz", &installed(), &TheirNames::new(), &strings);
     assert!(found.is_empty(), "the premise: this query matches nothing");
     let said = where_these_came_from(found.len(), &strings);
     assert!(
@@ -323,4 +324,49 @@ fn the_two_lines_a_person_can_see_are_not_the_same_line() {
         where_these_came_from(0, &strings),
         "nothing chosen and nothing found are two different facts and must read as two"
     );
+}
+
+/// **The name an entry gives is matched and shown**, which is what makes
+/// LibreOffice findable at all: its identifiers are `libreoffice26.2-writer`
+/// and the like, whose last part after a dot is `2-writer`.
+#[test]
+fn an_application_is_found_by_the_name_its_entry_gives() {
+    let strings = english();
+    let installed = vec![
+        "libreoffice26.2-writer".to_owned(),
+        "libreoffice26.2-calc".to_owned(),
+        "org.kde.dolphin".to_owned(),
+    ];
+    let called: TheirNames = [
+        ("libreoffice26.2-writer", "LibreOffice Writer"),
+        ("libreoffice26.2-calc", "LibreOffice Calc"),
+        ("org.kde.dolphin", "Dolphin"),
+    ]
+    .into_iter()
+    .map(|(identifier, name)| (identifier.to_owned(), name.to_owned()))
+    .collect();
+
+    let found = what_the_bar_finds("writer", &installed, &called, &strings);
+    assert_eq!(found.len(), 1, "{found:?}");
+    let writer = found.first().expect("one result");
+    assert_eq!(writer.shown, "LibreOffice Writer  ·  Application");
+    assert_eq!(
+        writer.does,
+        WhatARowDoes::OpensAnApplication("libreoffice26.2-writer".to_owned()),
+        "what opens is still the identifier, never the name"
+    );
+    assert_eq!(
+        what_the_bar_finds("libre", &installed, &called, &strings).len(),
+        2
+    );
+    assert_eq!(
+        what_the_bar_finds("dolph", &installed, &called, &strings)
+            .first()
+            .expect("one result")
+            .shown,
+        "Dolphin  ·  Application"
+    );
+    // **And what it is is not matched**, which is the owner's question and
+    // said here so a change to it is a change to this line.
+    assert!(what_the_bar_finds("files", &installed, &called, &strings).is_empty());
 }

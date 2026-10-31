@@ -500,3 +500,76 @@ mod what_an_entry_calls_its_icon {
         assert!(icons.is_empty());
     }
 }
+
+/// **The refusal path: an entry that cannot be read is skipped and said.**
+///
+/// Four broken entries beside one good one. The good one is the control — it
+/// is still read, so nothing here was fatal — and each broken one is named
+/// with its own reason. The entry that asked not to be listed is the second
+/// control: it is the entry working, and it is not a refusal.
+#[test]
+fn an_entry_that_will_not_read_is_skipped_and_said() {
+    let at = a_place_holding(&[
+        ("browser.desktop", A_BROWSER),
+        ("no-group.desktop", "Type=Application\nName=Nowhere\n"),
+        ("no-name.desktop", "[Desktop Entry]\nType=Application\n"),
+        (
+            "helper.desktop",
+            "[Desktop Entry]\nType=Application\nName=Helper\nNoDisplay=true\n",
+        ),
+    ]);
+    // Not text at all: a desktop entry is UTF-8, and this is not.
+    std::fs::write(at.join("not-text.desktop"), [0xff_u8, 0xfe, 0x00, 0x9f]).unwrap();
+    // A flatpak export left behind by an application half removed: a link to
+    // a file that is gone.
+    #[cfg(unix)]
+    std::os::unix::fs::symlink(at.join("gone"), at.join("dangling.desktop")).unwrap();
+
+    let (installed, _icons, not_read) =
+        read_with_their_icons_saying_what_did_not(std::slice::from_ref(&at));
+
+    assert!(
+        installed.has("browser"),
+        "the good entry beside the broken ones was lost, so a broken one was fatal"
+    );
+    assert_eq!(installed.how_many(), 1);
+    let why = |name: &str| {
+        not_read
+            .iter()
+            .find(|refused| refused.path() == at.join(name))
+            .map(NotRead::why)
+    };
+    assert_eq!(why("no-group.desktop"), Some(WhyNotRead::NoEntryInIt));
+    assert_eq!(why("no-name.desktop"), Some(WhyNotRead::NoName));
+    assert_eq!(
+        why("not-text.desktop"),
+        Some(WhyNotRead::WouldNotOpen(std::io::ErrorKind::InvalidData))
+    );
+    #[cfg(unix)]
+    assert_eq!(
+        why("dangling.desktop"),
+        Some(WhyNotRead::WouldNotOpen(std::io::ErrorKind::NotFound))
+    );
+    assert_eq!(
+        why("helper.desktop"),
+        None,
+        "an entry asking not to be listed is the entry working, not a refusal"
+    );
+    let expected = if cfg!(unix) { 4 } else { 3 };
+    assert_eq!(not_read.len(), expected, "{not_read:?}");
+    let _ = std::fs::remove_dir_all(at);
+}
+
+/// **A place that is not there says nothing**: a machine with no flatpak
+/// installed yet has no export directory, and that is not a refusal.
+#[test]
+fn a_place_that_is_not_there_is_not_a_refusal() {
+    let nowhere = std::env::temp_dir().join(format!(
+        "alo-installed-{}-not-there",
+        std::process::id()
+    ));
+    let _ = std::fs::remove_dir_all(&nowhere);
+    let (installed, _icons, not_read) = read_with_their_icons_saying_what_did_not(&[nowhere]);
+    assert!(installed.is_empty());
+    assert!(not_read.is_empty(), "{not_read:?}");
+}

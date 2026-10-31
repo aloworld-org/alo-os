@@ -57,6 +57,9 @@ mod the_artwork_each_application_has;
 #[cfg(target_os = "linux")]
 mod what_this_machine_offers;
 
+#[cfg(target_os = "linux")]
+mod watching_what_is_installed;
+
 /// What this process does on the machine alo OS is for.
 #[cfg(target_os = "linux")]
 mod running {
@@ -131,54 +134,40 @@ mod running {
         // **What fills the Dock's default roles on this machine**, asked once
         // and before the display is taken, so a slow tool delays the desktop's
         // appearance rather than a frame of it.
-        let offers = crate::what_this_machine_offers::what_this_machine_offers();
-        eprintln!(
-            "alo-desktop: the Dock's default roles resolve to {:?}",
-            offers.roles
-        );
-        // **Said out loud because a Dock of letters has four causes.** ADR 0101
-        // is the owner's ruling that an application draws its own icon and a
-        // letter is the fallback; when a machine shows letters anyway, this is
-        // the line that says whether its entries named no icon, named one that
-        // is not installed, named a scalable one nothing here can rasterise, or
-        // named one that would not decode. Without it the four are one symptom.
-        eprintln!(
-            "alo-desktop: {} applications draw their own icon; {} named none, {} named one that \
-             is not on this machine, {} have only a scalable one, {} would not decode",
-            offers.artwork_went.drew_a_picture,
-            offers.artwork_went.named_none,
-            offers.artwork_went.named_one_that_is_not_here,
-            offers.artwork_went.only_scalable,
-            offers.artwork_went.would_not_decode,
-        );
-        // **What the chord opens, in the order it tries them.** Since
-        // `alo_shell::a_chord_opens_a_terminal` was written, the chord opens
-        // **alo's own** terminal and reaches the installed one only when that
-        // could not start — so naming only the installed one, as this line did
-        // until 2026-10-16, describes a machine that has not existed since.
         //
-        // **It misled a lane the same week.** Reading this line on a serial
-        // console, the desktop lane concluded the chord asks the portal to
-        // start Ptyxis and that a crash-looping `alo-portald` therefore made
-        // alo's own terminal unreachable. Neither follows. The comment below
-        // already said *the one thing that must not happen is somebody reading
-        // a silent log and concluding the chord is broken*; a **wrong** log is
-        // the same fault with the volume up, because a reader has no reason to
-        // doubt it.
-        match offers.terminal {
-            Some(ref terminal) => eprintln!(
-                "alo-desktop: a chord opens alo's own terminal, and this machine's installed \
-                 one — {} — only if alo's own cannot start",
-                terminal.name()
-            ),
-            // **Said rather than passed over.** A machine with no terminal
-            // installed still has alo's own, so the chord is not broken; what
-            // it has lost is the fallback.
-            None => eprintln!(
-                "alo-desktop: a chord opens alo's own terminal, and this machine has no \
-                 installed terminal to fall back to"
-            ),
+        // **And looked at again for as long as the session lasts**, so what
+        // finishes installing after this line reaches the Dock, the alo Bar and
+        // the terminal chord (`crate::watching_what_is_installed`). What the
+        // places look like is taken *before* the reading, so a change between
+        // the two is seen as a change rather than lost.
+        let looking = crate::what_this_machine_offers::WhereToLook::on_this_machine();
+        let there = crate::watching_what_is_installed::what_is_there(&looking);
+        let offers = crate::what_this_machine_offers::what_this_machine_offers();
+        say_what_this_machine_offers(&offers);
+        let (tell, told) = std::sync::mpsc::channel();
+        if let Err(why) = std::thread::Builder::new()
+            .name("what-is-installed".to_owned())
+            .spawn(move || {
+                crate::watching_what_is_installed::kept_watching(
+                    &looking,
+                    there,
+                    crate::watching_what_is_installed::HOW_OFTEN,
+                    |at| {
+                        crate::what_this_machine_offers::what_is_offered(
+                            at,
+                            &alo_software::rented::TheRentedTool::on_this_machine(),
+                        )
+                    },
+                    &tell,
+                );
+            })
+        {
+            eprintln!(
+                "alo-desktop: nothing can watch for applications being installed, so what \
+                 arrives after now appears at the next sign-in: {why}"
+            );
         }
+        desktop.the_machine_is_told_by(told, offers.as_told());
 
         let started = std::time::Instant::now();
         let mut last = None;
@@ -376,9 +365,29 @@ mod running {
         /// The numbers only move when somebody presses something, so this
         /// compares equal on every frame of an idle machine.
         said: alo_shell::WhatTheSeatMadeOfIt,
+        /// **Where a new reading of the machine arrives**, from the thread that
+        /// watches its applications (`crate::watching_what_is_installed`).
+        /// Drained every frame and never waited on. [`None`] until
+        /// [`Self::the_machine_is_told_by`] is called.
+        told_about_the_machine:
+            Option<std::sync::mpsc::Receiver<crate::what_this_machine_offers::Offered>>,
+        /// **The reading taken before the desktop stood up**, owed to the seat
+        /// on its first frame — the Dock has it already, and the alo Bar does
+        /// not until it is told.
+        owed_a_reading: Option<alo_shell::WhatTheMachineOffersNow>,
     }
 
     impl ThisPersonsDesktop {
+        /// Where readings of the machine come from from now on, and the first.
+        fn the_machine_is_told_by(
+            &mut self,
+            told: std::sync::mpsc::Receiver<crate::what_this_machine_offers::Offered>,
+            first: alo_shell::WhatTheMachineOffersNow,
+        ) {
+            self.told_about_the_machine = Some(told);
+            self.owed_a_reading = Some(first);
+        }
+
         /// Everything a desktop is, read once at the start.
         fn made() -> Result<Self, String> {
             // **Read once here and again every frame** — see `read_again`.
@@ -544,6 +553,8 @@ mod running {
                 // Nothing has been said because nothing has arrived, and the
                 // seat's own three numbers start here too.
                 said: alo_shell::WhatTheSeatMadeOfIt::default(),
+                told_about_the_machine: None,
+                owed_a_reading: None,
             })
         }
     }
@@ -971,6 +982,23 @@ mod running {
             }
         }
 
+        /// The newest reading of what the machine offers, if one is owed.
+        ///
+        /// **The newest and not each**: every reading is the whole answer, so
+        /// two that arrived between frames are one change to the seat. Each is
+        /// said in the log as it arrives, so the journal still shows the
+        /// machine filling up one application at a time.
+        fn what_this_machine_offers_now(&mut self) -> Option<alo_shell::WhatTheMachineOffersNow> {
+            let mut newest = self.owed_a_reading.take();
+            if let Some(told) = &self.told_about_the_machine {
+                for offered in std::iter::from_fn(|| told.try_recv().ok()) {
+                    say_what_this_machine_offers(&offered);
+                    newest = Some(offered.as_told());
+                }
+            }
+            newest
+        }
+
         /// This machine's own network addresses, read from the kernel now,
         /// for the form a person just opened (`crate::this_machines_own_addresses`).
         fn this_machines_own_addresses(&mut self) -> Vec<std::net::IpAddr> {
@@ -1366,6 +1394,72 @@ mod running {
             eprintln!("alo-desktop: {said}");
         }
         read.languages
+    }
+
+    /// **Say what one reading of the machine found**, at the start and each
+    /// time the machine's applications change.
+    fn say_what_this_machine_offers(offers: &crate::what_this_machine_offers::Offered) {
+        // **`SoFar` is a machine still installing**, and the line says so,
+        // because `Completed([])` on 2026-10-31 read as a machine with nothing
+        // on it when it was a machine that had not finished arriving.
+        eprintln!(
+            "alo-desktop: the Dock's default roles resolve to {:?}; {} applications can be \
+             opened",
+            offers.roles,
+            offers.installed.len()
+        );
+        // **Said, never dropped**: an entry that would not read is the
+        // difference between *not installed* and *installed and broken*.
+        for not_read in &offers.not_read {
+            eprintln!(
+                "alo-desktop: the desktop entry at {} was left out because it would not read \
+                 ({:?})",
+                not_read.path().display(),
+                not_read.why()
+            );
+        }
+        // **Said out loud because a Dock of letters has four causes.** ADR 0101
+        // is the owner's ruling that an application draws its own icon and a
+        // letter is the fallback; when a machine shows letters anyway, this is
+        // the line that says whether its entries named no icon, named one that
+        // is not installed, named a scalable one nothing here can rasterise, or
+        // named one that would not decode. Without it the four are one symptom.
+        eprintln!(
+            "alo-desktop: {} applications draw their own icon; {} named none, {} named one that \
+             is not on this machine, {} have only a scalable one, {} would not decode",
+            offers.artwork_went.drew_a_picture,
+            offers.artwork_went.named_none,
+            offers.artwork_went.named_one_that_is_not_here,
+            offers.artwork_went.only_scalable,
+            offers.artwork_went.would_not_decode,
+        );
+        // **What the chord opens, in the order it tries them.** Since
+        // `alo_shell::a_chord_opens_a_terminal` was written, the chord opens
+        // **alo's own** terminal and reaches the installed one only when that
+        // could not start — so naming only the installed one, as this line did
+        // until 2026-10-16, describes a machine that has not existed since.
+        //
+        // **It misled a lane the same week.** Reading this line on a serial
+        // console, the desktop lane concluded the chord asks the portal to
+        // start Ptyxis and that a crash-looping `alo-portald` therefore made
+        // alo's own terminal unreachable. Neither follows. A **wrong** log is
+        // the fault of a silent one with the volume up, because a reader has no
+        // reason to doubt it.
+        match offers.terminal {
+            Some(ref terminal) => eprintln!(
+                "alo-desktop: a chord opens alo's own terminal, and this machine's installed \
+                 one — {} — only if alo's own cannot start",
+                terminal.name()
+            ),
+            // **Said rather than passed over.** A machine with no terminal
+            // installed still has alo's own, so the chord is not broken; what
+            // it has lost is the fallback — until one is installed, which this
+            // line is said again for.
+            None => eprintln!(
+                "alo-desktop: a chord opens alo's own terminal, and this machine has no \
+                 installed terminal to fall back to"
+            ),
+        }
     }
 
     /// The time of day the appearance is asked about, from the same clock.
