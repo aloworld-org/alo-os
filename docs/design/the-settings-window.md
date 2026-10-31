@@ -198,7 +198,12 @@ with:
   order, **Home and End** go to the first and last — **End reaches the last row
   of the page**, which a walk relies on — **Tab** goes to the next section and
   from the last back to the side column, **Shift+Tab** the other way, and
-  **Enter or Space** act.
+  **Enter or Space** act. **Left and Right** make the text size smaller and
+  larger on Accessibility, and do nothing anywhere else.
+- **A list** — the countries, the time zones — has the keyboard while it is
+  open: letters type into its search, Backspace takes one back, Up, Down, Home
+  and End move, Enter chooses and closes it, and Escape closes it and leaves
+  Settings open.
 - **Escape** gives up a folder being picked and leaves Settings open, as
   before; otherwise it closes Settings, from either column.
 - **A walk that gave alo a folder by pressing End in the old one-list window
@@ -217,6 +222,9 @@ the design draws them, and choosing one says in words that nothing changed**
   the line under it in the frame, **is not drawn**: it is a statement of fact
   about a service that does not exist yet, and this window draws no fact it
   cannot check.
+- **The pointer's size** (`551:1136`). `docs/features.md` promises *cursor
+  size*; nothing on this computer draws the pointer larger yet. *Default* is
+  marked, because it is what the pointer is.
 - **Say where it runs** (`550:205`). A provider's stated region is kept
   (`alo_models::Region`) and drawn — *Has not said where it runs* in the
   warning colour, or *Says it runs in …* — but there is no form to state it from
@@ -233,13 +241,44 @@ the design draws them, and choosing one says in words that nothing changed**
    keeps the keyboard's row whole and its section's heading above it where
    both fit, recomputed each frame. The frames have no scroll bar and none is
    drawn.
-4. **The icons** beside the categories, the plus, the chevron and the signs on
-   a note and a risk are drawn from the committed SVG by `alo_vector_shapes`,
-   the renderer the reply box brought in (#1040). **Built in later changes**,
-   each with its own record: the other seven pages to their frames — light and dark
-   and the Dock's edge as segmented choices, text size, pointer size, keys as
-   keycaps, the lead icons and *Always on*; the country picker with search,
-   which replaces the 250-row list; and dark.
+4. **The icons** are drawn from the committed SVG by `alo_vector_shapes`, the
+   renderer the reply box brought in (#1040).
+5. **The chosen part of a segmented choice has no shadow here**: the frames
+   give it `Elevation/Quiet` (0, 8, 24, 8 %), and a shadow under a part inside
+   a box is not drawn yet.
+6. **The chosen accent's name is SemiBold, not Bold**: this machine bundles
+   Manrope at Regular and SemiBold only, and a Bold asked for is drawn in
+   whatever face answers.
+7. **The time zone is named by its city**, as `alo_formats` names it; the
+   frame's *Central European Time* is a name nothing on this machine holds, and
+   its line *It is 14:32 here now* is a clock this window does not draw.
+8. **The text size slider runs 75 to 300 per cent**, `alo_appearance`'s range,
+   so 100 % sits near its start; the frame draws it a third of the way along.
+9. **A screen reader is told the window and its list of settings as before**;
+   the categories and each page's rows are not yet in the tree by name. That
+   tree is `alo_access::Surface::Settings` and is static; making it follow the
+   page is its own change.
+
+## Dark
+
+From `550:580` and `550:1025`, read with `get_variable_defs` on each frame's
+root: `bg/surface` #102A43, `bg/canvas` #07131F, `bg/cool` #183B56,
+`border/default` #274C68, `text/primary` #FFFCF8, `text/secondary` #CBD5E1,
+`text/muted` #A4B4C2, `status/warning` #E8AD50, `status/positive` #7ED3A6, and
+the chosen category the accent at 22 % (`550:588`). Each accent is drawn in its
+dark value. High contrast keeps its own palette in either scheme.
+
+## The list a picker opens
+
+`551:841`: 360 across and at most 480 down, `bg/surface`, radius 18, the
+floating shadow, 8 inside and 2 between its items; its right edge on its
+button's and 8 under it. The search is 48 tall in `bg/cool`, radius 12, with a
+2 `text/primary` outline while it has the keyboard, its sign 18 at 12 in and 10
+before the words. A heading — *3 matches*, counted the way the language counts,
+or *All countries and regions* — is 12 above and 4 below, Label/Medium
+`text/secondary`. An entry is 48 tall, 12 inside across, radius 10; the chosen
+one on the accent at 12 % over `bg/surface`, SemiBold, with a check of 18 in the
+accent at its end.
 
 ## Questions for the owner
 
