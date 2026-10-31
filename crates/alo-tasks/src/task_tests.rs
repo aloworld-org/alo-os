@@ -22,6 +22,28 @@ fn a_task() -> ATask {
     ATask::asked_for("Tidy up my invoices folder", InferenceSource::ThisMachine)
 }
 
+/// **A task names the model the person chose, exactly as they wrote it**, and
+/// names none where they chose none — a name of nothing but spaces included.
+#[test]
+fn a_task_names_the_model_the_person_chose_and_no_other() {
+    assert_eq!(a_task().the_models_name(), None, "a name was invented");
+    let named = a_task().asked_of_the_model_named(Some("gpt-4o"));
+    assert_eq!(named.the_models_name(), Some("gpt-4o"));
+    assert_eq!(
+        a_task()
+            .asked_of_the_model_named(Some("  SmolLM2 1.7B "))
+            .the_models_name(),
+        Some("SmolLM2 1.7B")
+    );
+    for nothing in [None, Some(""), Some("   ")] {
+        assert_eq!(
+            a_task().asked_of_the_model_named(nothing).the_models_name(),
+            None,
+            "{nothing:?} named a model"
+        );
+    }
+}
+
 /// **A task begins with the request and nothing else.**
 #[test]
 fn a_task_begins_with_what_was_asked() {

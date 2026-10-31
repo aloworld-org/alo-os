@@ -204,6 +204,23 @@ impl Picked {
         }
     }
 
+    /// **The model's name as the person wrote it**, for a screen to show — or
+    /// [`None`] for a machine down the corridor, where the person chose a
+    /// machine and not a model (ADR 0008).
+    ///
+    /// Not [`Self::model`], which answers [`WHAT_THAT_MACHINE_CHOSE`] there:
+    /// that is what a question is put with, and a word for the wire is not a
+    /// name a person chose. *What the person configured; nothing is branded* —
+    /// the owner, 2026-10-31.
+    #[must_use]
+    pub fn the_name_the_person_gave(&self) -> Option<&str> {
+        match self {
+            Self::OnThisMachine(chosen) => Some(chosen.model()),
+            Self::FromAProvider { model, .. } => Some(model),
+            Self::FromAPairedMachine(_) => None,
+        }
+    }
+
     /// The local choice, where that is what this is.
     #[must_use]
     pub const fn on_this_machine(&self) -> Option<&Chosen> {

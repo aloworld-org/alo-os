@@ -125,16 +125,15 @@ impl TheTasksWords {
                         .unwrap_or_default(),
                     kind: say(alo_tasks::words::A_TASK),
                     status: say(task.what_is_happening()),
-                    // **Empty, and that is a named gap rather than an
-                    // oversight.** The design draws the model's *name* —
-                    // `SmolLM2 1.7B` — and `alo_tasks::WhichModel` holds an
-                    // `InferenceSource`, which answers *where* a question is
-                    // answered and not *which model* answers it. A task
-                    // carries no model identity today, so there is nothing
-                    // truthful to put here, and printing the source's name in
-                    // the slot the design gives to a model would be a window
-                    // telling a person something it does not know.
-                    model: String::new(),
+                    // **The name of the model the person chose, as they
+                    // wrote it** — *what the person configured; nothing is
+                    // branded*, the owner's decision of 2026-10-31. Recorded on
+                    // the task when it was asked (`ATask::the_models_name`),
+                    // and empty where the person named none, as for a machine
+                    // down the corridor: printing the place's name in the slot
+                    // the design gives to a model would be a window telling a
+                    // person something it does not know.
+                    model: task.the_models_name().unwrap_or_default().to_owned(),
                     // **`alo-models`' own sentence**, which words all four
                     // sources and fills in a provider and a region. Not this
                     // crate's to say: two sentences about where a person's data

@@ -142,7 +142,7 @@ pub use folder::{HomeWas, NoFolder, PersonsFolder, the_persons_folder};
 pub use paired::{AMachine, NotPairedToAnswer, WHAT_THAT_MACHINE_CHOSE, WhoMayBeAsked};
 pub use place::{CONFIG_HOME, HOME, THE_FOLDER, THE_SETTINGS, where_it_is, where_the_folder_is};
 pub use refusing::NotSet;
-pub use settings::{MayUseAnother, Settings, Unresolved, what_answers_here};
+pub use settings::{MayUseAnother, Settings, Unresolved, the_model_named_here, what_answers_here};
 pub use setup::Setup;
 pub use unreadable::{At, NotToml};
 pub use unwritten::NotWritten;

@@ -615,7 +615,14 @@ mod running {
                 std::env::var_os("HOME").as_deref(),
             )?;
             let answers = alo_choosing::what_answers_here(&at)?;
-            Some(alo_tasks::ATask::asked_for(request, answers))
+            // **And the name of the model the person chose**, read from the
+            // same file, for the task window's model chip: *what the person
+            // configured; nothing is branded* (the owner, 2026-10-31).
+            let named = alo_choosing::the_model_named_here(&at);
+            Some(
+                alo_tasks::ATask::asked_for(request, answers)
+                    .asked_of_the_model_named(named.as_deref()),
+            )
         }
 
         /// Save a provider a person filled in: the key, then the settings.

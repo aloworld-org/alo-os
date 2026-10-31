@@ -66,6 +66,16 @@ pub struct ATask {
     /// conversation until it is sent, so what alo is told came before it really
     /// did come before it.
     held: Option<String>,
+    /// **The name of the model the person chose**, as they wrote it in their
+    /// settings when this task was asked — `gpt-4o`, `SmolLM2 1.7B` — or
+    /// [`None`] where they named none, as for a machine down the corridor,
+    /// whose own person chooses its model (ADR 0008).
+    ///
+    /// *What the person configured; nothing is branded* — the owner,
+    /// 2026-10-31. It is the name the question was put with, which is a fact
+    /// this machine knows, and not a claim about which model the far end really
+    /// ran, which it cannot know.
+    the_models_name: Option<String>,
 }
 
 /// What a minimised task shows in the right-hand panel.
@@ -102,7 +112,26 @@ impl ATask {
             scroll: TheScroll::at_the_newest(),
             answers: TheAnswersGiven::nothing_yet(),
             held: None,
+            the_models_name: None,
         }
+    }
+
+    /// The same task, asked of the model the person named — see
+    /// [`Self::the_models_name`]. A name of nothing but spaces is no name.
+    #[must_use]
+    pub fn asked_of_the_model_named(mut self, name: Option<&str>) -> Self {
+        self.the_models_name = name
+            .map(str::trim)
+            .filter(|name| !name.is_empty())
+            .map(str::to_owned);
+        self
+    }
+
+    /// The name of the model the person chose when this task was asked, as
+    /// they wrote it, or [`None`] where they named none.
+    #[must_use]
+    pub fn the_models_name(&self) -> Option<&str> {
+        self.the_models_name.as_deref()
     }
 
     /// How far the conversation is scrolled back from its newest words.
