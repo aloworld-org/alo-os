@@ -468,10 +468,7 @@ pub(crate) fn a_slider(
         f32::from(percent.saturating_sub(least)) / f32::from(most.saturating_sub(least).max(1));
     let knob_x = at + (share * track_wide as f32) as i32;
     out.drawn.push(Drawn::Fill(
-        Rectangle::new(
-            track.loc.into(),
-            ((knob_x - at).max(0), track.size.h).into(),
-        ),
+        Rectangle::new(track.loc, ((knob_x - at).max(0), track.size.h).into()),
         2,
         palette.accent,
     ));
