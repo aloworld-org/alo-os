@@ -391,7 +391,9 @@ Named explicitly, so none of it is mistaken for measured:
    `crates/alo-shell/icons/the-reply-box/` with the node each came from
    (ADR 0142). The icon frames are `427:28075` (Attach), `427:28079` (the
    model's chevron), `427:28083` (Permissions), `427:28088` (Stop) and the
-   one inside `427:28090` (Send).
+   one inside `427:28090` (Send). *Checked on 2026-10-31* against the alo
+   window the owner approved that day (page `544:30910`, frames `549:26` and
+   `549:261`): the same components, and the same five files byte for byte.
 5. **The example content is example content.** *Prepare the launch
    presentation*, `SmolLM2 1.7B`, `Launch brief.pdf`, `Launch presentation.odp`
    and `2 files shared with this task` are illustrative, and the component

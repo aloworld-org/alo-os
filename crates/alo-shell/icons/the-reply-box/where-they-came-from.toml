@@ -15,6 +15,16 @@
 file = "nDxyF5Ho9oC4RObjVzwBNJ"
 fetched = "2026-10-30"
 
+# **Checked again on 2026-10-31** against the alo window the owner approved
+# that day, page `544:30910` *Proposed · Settings and the alo window ·
+# 2026-10-31*: its composer rows (`549:103` in the working frame `549:26`, and
+# the Send of `549:362` in the complete frame `549:261`) are instances of the
+# same four components, and all five SVGs came back byte for byte identical to
+# these. That frame's processing destination also carries a cloud icon
+# (`549:113`), which is not one of these five and is not drawn yet.
+confirmed = "2026-10-31"
+confirmed_against = ["549:26", "549:261"]
+
 [[icon]]
 svg = "attach.svg"
 names = "Attach"
