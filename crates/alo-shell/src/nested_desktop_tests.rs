@@ -84,7 +84,10 @@ fn the_egress_indicator_sits_in_the_top_left_corner_clear_of_the_dock() {
                 let pictures =
                     frame_pictures(frame(&quiet), None, None, &mut labels, size, None).unwrap();
                 assert!(pictures.status.rows.is_empty());
-                assert!(!pictures.status.is_empty(), "no quiet circle on a desktop frame");
+                assert!(
+                    !pictures.status.is_empty(),
+                    "no quiet circle on a desktop frame"
+                );
                 assert!(pictures.desktop.dock.as_ref().unwrap().surface.is_some());
 
                 let pictures =

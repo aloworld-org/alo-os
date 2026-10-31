@@ -244,7 +244,7 @@ mod tests {
         let (indicator, sections, question) =
             frame_pictures(egress, settings, None, &mut labels, (1920, 1080)).unwrap();
         // Quiet: the circle and no line (the owner's frames, 2026-10-31).
-            assert!(indicator.rows.is_empty());
+        assert!(indicator.rows.is_empty());
         assert!(!sections.is_empty());
         assert!(!sections.categories.is_empty());
         assert!(question.is_none());
