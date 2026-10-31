@@ -89,7 +89,14 @@ pub(crate) fn status_picture(
         .status
         .showing()
         .ok_or(RenderError::EgressStatusUnknown)?;
-    picture(drawn, egress.strings, egress.dock, labels, room, egress.look)
+    picture(
+        drawn,
+        egress.strings,
+        egress.dock,
+        labels,
+        room,
+        egress.look,
+    )
 }
 
 #[cfg(test)]

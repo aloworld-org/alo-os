@@ -10,10 +10,10 @@
 )]
 
 use super::*;
+use crate::EgressStatus;
 use crate::egress_status_testing::{
     a_provider, asking_a_provider, fetching, noon, the_agent, the_machine_down_the_corridor, words,
 };
-use crate::EgressStatus;
 use alo_egress::{Destination, EgressPolicy, Errand, Indicator, Leaving, OnItsOwn, Why};
 use alo_indicator::{Drew, Indicating};
 use alo_models::InferenceSource;
@@ -44,12 +44,24 @@ fn handed(indicator: &Indicator) -> Drawn {
 /// The indicator drawn on an output of `room`, with the dock where it ships.
 fn drawn_in(indicator: &Indicator, look: EgressStatusLook, room: TheRoom) -> EgressStatusPicture {
     let mut labels = WindowControlLabels::new().unwrap();
-    picture(&handed(indicator), &words(), &Dock::shipped(), &mut labels, room, look).unwrap()
+    picture(
+        &handed(indicator),
+        &words(),
+        &Dock::shipped(),
+        &mut labels,
+        room,
+        look,
+    )
+    .unwrap()
 }
 
 /// The indicator drawn with the machine's vocabulary on a 1920×1080 output.
 fn drawn_as(indicator: &Indicator, look: EgressStatusLook) -> EgressStatusPicture {
-    drawn_in(indicator, look, TheRoom::with_nothing_put_aside((1920, 1080)))
+    drawn_in(
+        indicator,
+        look,
+        TheRoom::with_nothing_put_aside((1920, 1080)),
+    )
 }
 
 /// An indicator with one question to a provider under way.
@@ -74,10 +86,7 @@ fn raster_at(drawn: &EgressStatusPicture, x: i32, y: i32) -> Option<[u8; 3]> {
 
 /// The middle of a rectangle.
 const fn middle_of(area: Rectangle<i32, Physical>) -> (i32, i32) {
-    (
-        area.loc.x + area.size.w / 2,
-        area.loc.y + area.size.h / 2,
-    )
+    (area.loc.x + area.size.w / 2, area.loc.y + area.size.h / 2)
 }
 
 /// **Nothing leaving draws the quiet circle; something answered elsewhere
@@ -203,7 +212,10 @@ fn what_alo_os_does_on_its_own_is_drawn_beside_what_an_agent_caused() {
         .collect();
     let sentences: Vec<&str> = drawn.rows.iter().map(|row| row.sentence.as_str()).collect();
     assert_eq!(sentences, said);
-    assert!(sentences.first().unwrap().starts_with("alo OS"), "{sentences:?}");
+    assert!(
+        sentences.first().unwrap().starts_with("alo OS"),
+        "{sentences:?}"
+    );
     assert_eq!(drawn.washed.len(), 2, "each line is a pill of its own");
 
     assert!(indicator.ended(departing));
@@ -320,7 +332,11 @@ fn deep_teal_never_arrives_alone() {
                 // A third of the way in from the lamp's left, on its fill and
                 // off the arrow.
                 let on_the_fill = raster_at(&drawn, row.mark.loc.x + row.mark.size.w / 6, y);
-                assert_eq!(on_the_fill, Some(deep_teal()), "{look:?}: the lamp is not deep teal");
+                assert_eq!(
+                    on_the_fill,
+                    Some(deep_teal()),
+                    "{look:?}: the lamp is not deep teal"
+                );
                 assert_ne!(
                     raster_at(&drawn, x, y),
                     Some(deep_teal()),
@@ -421,7 +437,11 @@ fn no_look_draws_a_lit_indicator_as_nothing() {
                     scale: TextScale::percent(percent).unwrap(),
                     reading,
                 };
-                let drawn = drawn_in(&indicator, look, TheRoom::with_nothing_put_aside((1366, 768)));
+                let drawn = drawn_in(
+                    &indicator,
+                    look,
+                    TheRoom::with_nothing_put_aside((1366, 768)),
+                );
                 assert_eq!(drawn.rows.len(), 1, "{look:?}");
                 assert!(!drawn.inked.is_empty(), "{look:?}");
                 for area in drawn
@@ -488,7 +508,15 @@ fn an_output_that_cannot_hold_a_dock_refuses_a_lit_frame_and_not_a_quiet_one() {
             "{size:?}"
         );
         assert!(
-            picture(&quiet, &words(), &Dock::shipped(), &mut labels, room, light()).is_ok(),
+            picture(
+                &quiet,
+                &words(),
+                &Dock::shipped(),
+                &mut labels,
+                room,
+                light()
+            )
+            .is_ok(),
             "{size:?}"
         );
     }
@@ -551,7 +579,11 @@ fn at_two_hundred_the_pills_double() {
         two.rows.first().unwrap().area,
     );
     assert_eq!(b.size.h, 2 * a.size.h, "the pill's height");
-    assert_eq!((b.loc.x, b.loc.y), (2 * a.loc.x, 2 * a.loc.y), "where it sits");
+    assert_eq!(
+        (b.loc.x, b.loc.y),
+        (2 * a.loc.x, 2 * a.loc.y),
+        "where it sits"
+    );
 }
 
 /// **The indicator never overlaps the put-aside panel's column or the top
@@ -565,7 +597,13 @@ fn it_never_overlaps_the_panels_column_or_the_top_controls() {
     for _ in 0..12 {
         drop(many.beginning(&EgressPolicy::Anywhere, fetching(), noon()));
     }
-    for (width, height) in [(1024, 600), (1280, 800), (1366, 768), (1920, 1080), (3840, 2160)] {
+    for (width, height) in [
+        (1024, 600),
+        (1280, 800),
+        (1366, 768),
+        (1920, 1080),
+        (3840, 2160),
+    ] {
         for per_cent in [100, 150, 200] {
             for panel_is in [0, 112, 300] {
                 let column = Rectangle::<i32, Physical>::new(

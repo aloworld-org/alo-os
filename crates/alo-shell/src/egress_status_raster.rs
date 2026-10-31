@@ -135,7 +135,10 @@ impl EgressStatusPicture {
     /// Whether nothing at all is drawn — which, since 2026-10-31, is only an
     /// output too small to hold the quiet circle.
     pub(crate) fn is_empty(&self) -> bool {
-        self.rows.is_empty() && self.solids.is_empty() && self.inked.is_empty() && self.washed.is_empty()
+        self.rows.is_empty()
+            && self.solids.is_empty()
+            && self.inked.is_empty()
+            && self.washed.is_empty()
     }
 }
 
@@ -195,13 +198,7 @@ pub(crate) fn picture(
     };
     let (width, height) = size;
     let screen = (width <= LARGEST_SIDE && height <= LARGEST_SIDE)
-        .then(|| {
-            Screen::of(
-                u32::try_from(width).ok()?,
-                u32::try_from(height).ok()?,
-            )
-            .ok()
-        })
+        .then(|| Screen::of(u32::try_from(width).ok()?, u32::try_from(height).ok()?).ok())
         .flatten();
     let Some(screen) = screen else {
         return if drawn.lamp().is_dark() {
@@ -342,20 +339,25 @@ fn the_lit_pills(
     let factor = measure.percent as f32 / 100.0;
     let (size, line) = measures::THE_WORDS_ARE;
     let metrics = Metrics::new(size * factor, line * factor);
-    let chrome = measure.px(
-        2 * measures::THE_HAIRLINE
-            + measures::BEFORE_THE_LAMP
-            + measures::THE_LAMP_IS
-            + measures::AFTER_THE_LAMP
-            + measures::AFTER_THE_WORDS,
-    );
+    let chrome = measure.px(2 * measures::THE_HAIRLINE
+        + measures::BEFORE_THE_LAMP
+        + measures::THE_LAMP_IS
+        + measures::AFTER_THE_LAMP
+        + measures::AFTER_THE_WORDS);
     let most = (place.room_across - chrome).max(1);
     let mut shape = |text: &str| {
         let first = sentence(fonts, text, most, metrics, palette.ground, palette.ink);
         // Shaped again at the width its ink needs, so a pill is as wide as its
         // words rather than as wide as the most a pill may be.
         let words = if first.width > 0 && first.width + 1 < most {
-            sentence(fonts, text, first.width + 1, metrics, palette.ground, palette.ink)
+            sentence(
+                fonts,
+                text,
+                first.width + 1,
+                metrics,
+                palette.ground,
+                palette.ink,
+            )
         } else {
             first
         };
@@ -400,13 +402,17 @@ fn the_lit_pills(
         top += tall + gap;
         a_pill(picture, one, pill, measure, look, palette, colours);
     }
-    picture.band = picture.rows.iter().map(|row| row.area).reduce(|held, area| {
-        let left = held.loc.x.min(area.loc.x);
-        let up = held.loc.y.min(area.loc.y);
-        let right = (held.loc.x + held.size.w).max(area.loc.x + area.size.w);
-        let down = (held.loc.y + held.size.h).max(area.loc.y + area.size.h);
-        Rectangle::new((left, up).into(), (right - left, down - up).into())
-    });
+    picture.band = picture
+        .rows
+        .iter()
+        .map(|row| row.area)
+        .reduce(|held, area| {
+            let left = held.loc.x.min(area.loc.x);
+            let up = held.loc.y.min(area.loc.y);
+            let right = (held.loc.x + held.size.w).max(area.loc.x + area.size.w);
+            let down = (held.loc.y + held.size.h).max(area.loc.y + area.size.h);
+            Rectangle::new((left, up).into(), (right - left, down - up).into())
+        });
 }
 
 /// One pill: its ground and lamp in one raster, the arrow inked on the lamp,
