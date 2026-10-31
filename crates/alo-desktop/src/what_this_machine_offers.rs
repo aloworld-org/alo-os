@@ -65,7 +65,6 @@ use alo_dock::pinning::{ARole, Discovery};
 use alo_dock::window::AppId;
 use alo_installed::NotRead;
 use alo_shell::AnApplicationHere;
-use alo_software::rented::TheRentedTool;
 use alo_software::the_applications_arrived::TheApplicationsArrived;
 use alo_software::{Role, Shipped, Tool};
 
@@ -201,7 +200,7 @@ impl WhereToLook {
 pub fn what_this_machine_offers() -> Offered {
     what_is_offered(
         &WhereToLook::on_this_machine(),
-        &TheRentedTool::on_this_machine(),
+        &alo_software::rented::TheRentedTool::on_this_machine(),
     )
 }
 
