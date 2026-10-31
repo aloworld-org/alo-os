@@ -517,12 +517,58 @@ pub const GIVES_WAY_IS: Word = Word::saying(
 )
 .noting("Under the choice for the Dock that gives way when a window needs the room.");
 
+/// Choose a country or region from the list.
+pub const CHOOSE_A_COUNTRY: Word = Word::saying(
+    "settings.region.choose",
+    "Choose a country or region from the list.",
+)
+.noting(
+    "Under Where this computer is, beside the button that opens the list of countries and regions.",
+);
+
+/// All countries and regions.
+pub const ALL_COUNTRIES: Word = Word::saying("settings.region.all", "All countries and regions")
+    .noting("A small heading over the full list of countries and regions in the list a person chooses from.");
+
+/// All time zones.
+pub const ALL_TIME_ZONES: Word = Word::saying("settings.zone.all", "All time zones")
+    .noting("A small heading over the full list of time zones a person chooses from.");
+
+/// How many countries, regions or time zones match what was typed.
+///
+/// **Counted**, because how a language counts is that language's business:
+/// *one match* is not English's `{count} matches` with a one in it.
+pub const MATCHES: (&str, &str, &str, &str, &str) = (
+    "settings.picker.matches",
+    "count",
+    "1 match",
+    "{count} matches",
+    "A small heading over the countries, regions or time zones whose names contain what the      person typed. {count} is how many.",
+);
+
+/// *N matches*, in the person's language and counted the way it counts.
+pub fn how_many_match(strings: &alo_strings::Strings, how_many: usize) -> String {
+    let (key, ..) = MATCHES;
+    alo_strings::Key::named(key).map_or_else(
+        |_| how_many.to_string(),
+        |key| {
+            strings
+                .count(
+                    &key,
+                    &alo_strings::Counting::of(u64::try_from(how_many).unwrap_or(u64::MAX)),
+                    &alo_strings::Filling::nothing(),
+                )
+                .into_text()
+        },
+    )
+}
+
 /// Every word this window says of its own.
 ///
 /// The length is written out so that adding a word above and forgetting it
 /// here does not compile — a word declared and left out of this list reaches a
 /// person as its own key.
-pub const THE_WINDOWS_WORDS: [Word; 76] = [
+pub const THE_WINDOWS_WORDS: [Word; 79] = [
     SETTINGS,
     EVERYTHING_IN_ONE_PLACE,
     THE_GROUP_ALO,
@@ -599,6 +645,9 @@ pub const THE_WINDOWS_WORDS: [Word; 76] = [
     TOP,
     ALWAYS_SHOWN_IS,
     GIVES_WAY_IS,
+    CHOOSE_A_COUNTRY,
+    ALL_COUNTRIES,
+    ALL_TIME_ZONES,
 ];
 
 /// Why this window's words could not be declared.
@@ -610,6 +659,12 @@ pub enum TheSettingsWordsError {
     /// A key the vocabulary already has.
     #[error(transparent)]
     List(#[from] alo_strings::VocabularyError),
+    /// A counted sentence that does not say its number.
+    #[error(transparent)]
+    Counted(#[from] alo_strings::PluralError),
+    /// A key that is not a key.
+    #[error(transparent)]
+    Key(#[from] alo_strings::KeyError),
 }
 
 /// Add this window's wording atomically, before any translation is loaded.
@@ -626,6 +681,11 @@ pub fn declare_the_settings_words(
     for word in THE_WINDOWS_WORDS {
         prepared.says(word.phrase()?)?;
     }
+    let (key, number, one, other, note) = MATCHES;
+    prepared.counts(
+        alo_strings::Plural::counting(alo_strings::Key::named(key)?, number, one, other)?
+            .noting(note)?,
+    )?;
     *vocabulary = prepared;
     Ok(())
 }

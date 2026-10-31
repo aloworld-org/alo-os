@@ -282,6 +282,43 @@ fn every_page_draws_and_can_be_looked_at() {
         }
         press(&mut window, SettingsKey::Next);
     }
+
+    // **And the country list open, with *Bel* typed** — frame `551:751`.
+    let mut window = machine.opened();
+    for _ in 0..5 {
+        press(&mut window, SettingsKey::Next);
+    }
+    press(&mut window, SettingsKey::Choose);
+    press(&mut window, SettingsKey::Choose);
+    let strings = settings_words();
+    let door = CountingDoor::revoking();
+    for letter in ['b', 'e', 'l'] {
+        window.pressed(
+            SettingsPress {
+                key: SettingsKey::Nothing,
+                chord: None,
+                filling: crate::a_key_fills_in_a_provider::FillingInKey::Typed(letter),
+            },
+            doors(&strings, &door),
+        );
+    }
+    let drawn = drawn_at(&window, (1440, 960), light());
+    let list = drawn.list.unwrap();
+    assert!(drawn.entries.len() > 3, "{:?}", drawn.entries);
+    assert!(
+        drawn
+            .entries
+            .iter()
+            .all(|(_, area)| list.contains_rect(*area)
+                || area.loc.y + area.size.h > list.loc.y + list.size.h)
+    );
+    if let Some(folder) = &folder {
+        written_out(
+            &drawn,
+            (1440, 960),
+            &std::path::Path::new(folder).join("settings-5-RegionAndTime-choosing-1440x960.png"),
+        );
+    }
 }
 
 /// A picture of `drawn` on the canvas colour, written as a PNG.

@@ -44,7 +44,7 @@ use crate::settings_measures as m;
 use crate::settings_page::said;
 use crate::settings_palette::SettingsPalette;
 use crate::settings_type::{TheType, written};
-use crate::{Contrast, RenderError, SettingsWindow, WindowControlLabels};
+use crate::{Contrast, RenderError, SettingsRow, SettingsWindow, WindowControlLabels};
 
 /// How Settings looks, as the person's appearance and language decide.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -82,6 +82,10 @@ pub(crate) struct SettingsPicture {
     pub(crate) texts: Vec<SettingsText>,
     /// Whether any of the page is out of view above or below.
     pub(crate) out_of_view: bool,
+    /// The list a picker opened, while it is open.
+    pub(crate) list: Option<Area>,
+    /// Every entry of that list in view, where it is drawn.
+    pub(crate) entries: Vec<(crate::SettingsRow, Area)>,
 }
 
 impl SettingsPicture {
@@ -96,6 +100,8 @@ impl SettingsPicture {
             focused: None,
             texts: Vec::new(),
             out_of_view: false,
+            list: None,
+            entries: Vec::new(),
         }
     }
 
@@ -294,6 +300,48 @@ pub(crate) fn picture(
         picture.focused = Some(area);
     }
     canvas.unclipped();
+
+    // **The list a picker opened, over the page**, hanging from its button.
+    if let Some(picker) = &open.picker {
+        let row = SettingsRow::OpenThePicker(picker.which);
+        if let Some(anchor) = laid.targets.iter().find(|it| it.row == row) {
+            let area = moved(anchor.area);
+            let (right, centre) = (
+                area.loc.x + area.size.w - px(m::BESIDE_A_ROW),
+                area.loc.y + area.size.h / 2,
+            );
+            let button = Rectangle::new(
+                (right, centre - px(m::A_TARGET) / 2).into(),
+                (0, px(m::A_TARGET)).into(),
+            );
+            let list = crate::settings_drawn_picker::the_list(
+                &mut canvas,
+                open,
+                picker,
+                crate::settings_drawn_picker::TheListsRoom {
+                    fonts: &mut labels.fonts,
+                    measure,
+                    palette,
+                    strings,
+                    button,
+                    window: window_area,
+                    shadow: AShadow {
+                        falls: raised.falls(),
+                        blurs: raised.blurs(),
+                        spreads: raised.spreads(),
+                        darkness: raised.darkness(),
+                    },
+                },
+            );
+            picture.list = Some(list.area);
+            picture.texts.extend(list.texts);
+            picture.entries = list
+                .entries
+                .into_iter()
+                .map(|(entry, area)| (entry.row, area))
+                .collect();
+        }
+    }
     canvas.border(window_area, corner, line as f32, palette.edge);
 
     if look.reading == Direction::RightToLeft {
@@ -510,6 +558,10 @@ fn turned_round(window: Area, picture: &mut SettingsPicture) {
     }
     for target in &mut picture.targets {
         target.area = flip(target.area);
+    }
+    picture.list = picture.list.map(flip);
+    for (_, area) in &mut picture.entries {
+        *area = flip(*area);
     }
     for text in &mut picture.texts {
         text.area = flip(text.area);

@@ -72,11 +72,15 @@ pub(crate) enum ASettingsIcon {
     CircleCheck,
     /// The chosen part of a segmented choice, and the chosen colour.
     Check,
+    /// A picker's button.
+    ChevronUpDown,
+    /// The list's search.
+    Search,
 }
 
 impl ASettingsIcon {
     /// Every icon.
-    pub(crate) const ALL: [Self; 21] = [
+    pub(crate) const ALL: [Self; 23] = [
         Self::Chat,
         Self::Folder,
         Self::Code,
@@ -98,6 +102,8 @@ impl ASettingsIcon {
         Self::File,
         Self::CircleCheck,
         Self::Check,
+        Self::ChevronUpDown,
+        Self::Search,
     ];
 
     /// The file, as the design exported it.
@@ -124,6 +130,8 @@ impl ASettingsIcon {
             Self::File => include_str!("../icons/settings/file.svg"),
             Self::CircleCheck => include_str!("../icons/settings/circle-check.svg"),
             Self::Check => include_str!("../icons/settings/check-16.svg"),
+            Self::ChevronUpDown => include_str!("../icons/settings/chevron-up-down.svg"),
+            Self::Search => include_str!("../icons/settings/search.svg"),
         }
     }
 
@@ -152,6 +160,8 @@ impl ASettingsIcon {
             Self::File => "file.svg",
             Self::CircleCheck => "circle-check.svg",
             Self::Check => "check-16.svg",
+            Self::ChevronUpDown => "chevron-up-down.svg",
+            Self::Search => "search.svg",
         }
     }
 
@@ -180,6 +190,8 @@ impl ASettingsIcon {
             Self::File => (14.0, [2.333, 1.167, 9.333, 11.667]),
             Self::CircleCheck => (20.0, [1.667, 1.667, 16.667, 16.667]),
             Self::Check => (16.0, [2.667, 4.0, 10.667, 7.333]),
+            Self::ChevronUpDown => (16.0, [4.667, 2.667, 6.667, 10.667]),
+            Self::Search => (18.0, [2.25, 2.25, 13.5, 13.5]),
         }
     }
 

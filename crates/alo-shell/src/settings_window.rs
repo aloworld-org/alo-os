@@ -84,6 +84,7 @@ use alo_choosing::MayUseAnother;
 use alo_setting_up::Offered;
 
 pub use crate::settings_categories::SettingsCategory;
+pub use crate::settings_picker::SettingsPicker;
 
 /// The sections of Settings, in the order they are drawn.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -206,6 +207,12 @@ pub enum SettingsRow {
     Edge(alo_dock::Edge),
     /// Another page of Settings, from a row that names it: Enter shows it.
     GoTo(SettingsCategory),
+    /// The list of countries and regions, or of time zones: Enter opens it.
+    ///
+    /// **One row where there were two hundred and fifty.** Every region is
+    /// still a row — [`Self::WrittenAs`] — in the list this opens, with a
+    /// search at its top (`crate::settings_picker`).
+    OpenThePicker(SettingsPicker),
     /// How code the agent writes or fetches runs: Enter chooses this level.
     ///
     /// One row per level of ADR 0064, in that ADR's own order, which is least
@@ -226,6 +233,8 @@ impl SettingsRow {
             Self::TimeZone(_) => SettingsSection::TimeZone,
             Self::Hiding(_) | Self::Edge(_) => SettingsSection::Dock,
             Self::GoTo(_) => SettingsSection::Terminal,
+            Self::OpenThePicker(SettingsPicker::Region) => SettingsSection::Formats,
+            Self::OpenThePicker(SettingsPicker::TimeZone) => SettingsSection::TimeZone,
             Self::Shortcut(_) => SettingsSection::Shortcuts,
             Self::Granted(_) | Self::GrantAFolder | Self::SeeWhatAloDid | Self::Picking(_) => {
                 SettingsSection::Granted
@@ -311,6 +320,8 @@ pub enum SettingsDid {
     AddingAProvider,
     /// Another page is shown, from a row that names it.
     WentTo(SettingsCategory),
+    /// A list to choose from opened, or closed without a choice.
+    TheList(SettingsPicker),
     /// A person asked to see the record, so the record window should open.
     ///
     /// **The window says so and does not do it**, for `AddingAProvider`'s
@@ -357,6 +368,8 @@ pub(crate) struct Open {
     pub(crate) category: SettingsCategory,
     /// Whether the keyboard is in the page rather than the side column.
     pub(crate) in_the_page: bool,
+    /// The list of countries or time zones, while it is open.
+    pub(crate) picker: Option<crate::settings_picker::APickerOpen>,
     /// Which row of the page has the focus, counted from its first.
     pub(crate) focus: usize,
     /// Whether Settings waits for a chord for the focused shortcut.
@@ -417,6 +430,7 @@ impl SettingsWindow {
             // column**, which is where a person chooses what they came for.
             category: SettingsCategory::AloAndAi,
             in_the_page: false,
+            picker: None,
             focus: 0,
             waiting_for_a_chord: false,
         });
@@ -522,6 +536,9 @@ impl SettingsWindow {
     #[must_use]
     pub fn focused(&self, now: SystemTime) -> Option<SettingsRow> {
         let open = self.open.as_ref()?;
+        if let Some(picker) = &open.picker {
+            return picker.shown.get(picker.focus).cloned();
+        }
         if !open.in_the_page {
             return None;
         }
@@ -547,6 +564,9 @@ impl SettingsWindow {
         let open = self.open.as_mut()?;
         if open.waiting_for_a_chord {
             return Some(open.chord_pressed(press, doors));
+        }
+        if open.picker.is_some() {
+            return Some(open.pressed_in_the_list(press, doors));
         }
         if !open.in_the_page {
             let did = open.pressed_in_the_side_column(press.key, doors);
@@ -664,18 +684,18 @@ impl Open {
                 }
                 rows
             }
-            SettingsCategory::RegionAndTime => self
-                .formats
-                .choices()
-                .into_iter()
-                .map(SettingsRow::WrittenAs)
-                .chain(
-                    self.time_zone
-                        .choices()
-                        .into_iter()
-                        .map(SettingsRow::TimeZone),
-                )
-                .collect(),
+            // **Two rows, each opening its list**; every region and zone is a
+            // row of the list it opens.
+            SettingsCategory::RegionAndTime => {
+                let mut rows = Vec::new();
+                if self.formats.is_offered() {
+                    rows.push(SettingsRow::OpenThePicker(SettingsPicker::Region));
+                }
+                if !self.time_zone.choices().is_empty() {
+                    rows.push(SettingsRow::OpenThePicker(SettingsPicker::TimeZone));
+                }
+                rows
+            }
             SettingsCategory::KeyboardAndShortcuts => {
                 if self.shortcuts.at().is_none() {
                     return Vec::new();
@@ -763,6 +783,61 @@ impl Open {
         rows.push(SettingsRow::SeeWhatAloDid);
         rows.extend(paired.into_iter().map(SettingsRow::Granted));
         rows
+    }
+
+    /// A key while a list is open: letters search, Backspace takes one back,
+    /// Up and Down move, Enter chooses and closes it, Escape closes it.
+    fn pressed_in_the_list(
+        &mut self,
+        press: SettingsPress,
+        doors: SettingsDoors<'_>,
+    ) -> SettingsDid {
+        use crate::a_key_fills_in_a_provider::FillingInKey;
+        let Some(picker) = self.picker.clone() else {
+            return SettingsDid::StoppedWaiting;
+        };
+        match press.filling {
+            FillingInKey::Typed(letter) => {
+                let mut typed = picker.typed;
+                typed.push(letter);
+                self.the_search_is(typed, doors.strings);
+                return SettingsDid::TheList(picker.which);
+            }
+            FillingInKey::RubOut => {
+                let mut typed = picker.typed;
+                typed.pop();
+                self.the_search_is(typed, doors.strings);
+                return SettingsDid::TheList(picker.which);
+            }
+            _ => {}
+        }
+        let last = picker.shown.len().saturating_sub(1);
+        let focus = match press.key {
+            SettingsKey::Previous => picker.focus.saturating_sub(1),
+            SettingsKey::Next => (picker.focus + 1).min(last),
+            SettingsKey::First => 0,
+            SettingsKey::Last => last,
+            SettingsKey::Choose => {
+                self.picker = None;
+                return match picker.shown.get(picker.focus) {
+                    Some(row) => self.chosen(row, doors),
+                    None => SettingsDid::TheList(picker.which),
+                };
+            }
+            SettingsKey::Close => {
+                self.picker = None;
+                return SettingsDid::TheList(picker.which);
+            }
+            SettingsKey::NextSection
+            | SettingsKey::PreviousSection
+            | SettingsKey::PutBackThisOne
+            | SettingsKey::PutBackAsShipped
+            | SettingsKey::Nothing => picker.focus,
+        };
+        if let Some(open) = self.picker.as_mut() {
+            open.focus = focus;
+        }
+        SettingsDid::TheList(picker.which)
     }
 
     /// Where each of the page's groups of rows begins, counted in its rows.
@@ -942,6 +1017,10 @@ impl Open {
                 SettingsSection::TimeZone,
                 self.time_zone.choose(zone, doors.zone, doors.strings),
             ),
+            SettingsRow::OpenThePicker(which) => {
+                self.the_list_opens(*which, doors.strings);
+                SettingsDid::TheList(*which)
+            }
             SettingsRow::Edge(edge) => {
                 let edge = *edge;
                 let kept = self.dock.changed(

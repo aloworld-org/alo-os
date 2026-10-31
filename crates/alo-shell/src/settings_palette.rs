@@ -61,6 +61,9 @@ pub(crate) struct SettingsPalette {
     pub(crate) accent: [u8; 3],
     /// The chosen category's ground: the accent over the side column.
     pub(crate) chosen: [u8; 3],
+    /// A chosen entry's ground in a list: the accent over `bg/surface`
+    /// (`551:853`).
+    pub(crate) chosen_on_surface: [u8; 3],
 }
 
 /// A role's colour as three bytes.
@@ -104,6 +107,7 @@ impl SettingsPalette {
             warning: quiet_or_ink(Role::StatusWarning),
             positive: quiet_or_ink(Role::StatusPositive),
             accent: desktop.accent,
+            chosen_on_surface: mixed(desktop.dock, desktop.accent, THE_CHOSEN_GROUND_IS),
             chosen: match look.scheme {
                 Scheme::Light | Scheme::Dark => mixed(canvas, desktop.accent, THE_CHOSEN_GROUND_IS),
             },

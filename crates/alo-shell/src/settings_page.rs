@@ -119,6 +119,9 @@ pub(crate) enum AnEnd {
     Keys(Vec<String>),
     /// *Always on*, with a lock, in the positive colour (`550:990`).
     AlwaysOn(String),
+    /// A button showing what is chosen, that opens the list to choose from
+    /// (`551:826`).
+    Picker(String),
 }
 
 /// Which way a switch is, as the person's settings say.
@@ -266,6 +269,7 @@ pub(crate) fn the_page(
         SettingsCategory::KeyboardAndShortcuts => {
             crate::settings_page_keyboard::the_blocks(open, strings)
         }
+        SettingsCategory::RegionAndTime => crate::settings_page_region::the_blocks(open, strings),
         other => the_sections_of(other, open, strings, now),
     };
     APage {

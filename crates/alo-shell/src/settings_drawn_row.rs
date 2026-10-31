@@ -102,6 +102,17 @@ pub(crate) fn a_row(
                 })
                 .collect(),
         ),
+        AnEnd::Picker(words) => AnEndShaped::Picker(
+            laying
+                .words(
+                    words,
+                    TheType::Body,
+                    inside_wide / 2,
+                    (palette.surface, palette.ink),
+                )
+                .cropped_to_its_ink(),
+            words.clone(),
+        ),
         AnEnd::AlwaysOn(words) => AnEndShaped::AlwaysOn(
             laying
                 .words(
