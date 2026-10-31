@@ -1,0 +1,19 @@
+[package]
+name = "alo-vector-shapes"
+version = "0.0.1"
+description = "Draws the small vector artwork taken from alo OS's design file, sharp at any size."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+# **One dependency, and it was already in every build of the shell.** `zeno` is
+# the path rasteriser `swash` uses to draw every letter the shell shows
+# (through `cosmic-text`), so naming it here adds no crate, no C code and no
+# build-time tool to the image's compositor step. ADR 0142 has the choice and
+# what was weighed against it.
+[dependencies]
+zeno = "0.3"
+
+[lints]
+workspace = true

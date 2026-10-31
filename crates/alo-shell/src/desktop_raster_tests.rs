@@ -1108,6 +1108,7 @@ fn a_task_window_reaches_the_desktop_picture_and_is_painted() {
         words: a_tasks_words(),
         said: Vec::new(),
         scroll: alo_tasks::TheScroll::at_the_newest(),
+        the_one_button: alo_tasks::TheOneButton::Stop,
         place: 0,
     }];
     let with = of(&one);
@@ -1153,6 +1154,7 @@ fn a_task_window_too_small_is_left_out_rather_than_refusing_the_frame() {
         words: a_tasks_words(),
         said: Vec::new(),
         scroll: alo_tasks::TheScroll::at_the_newest(),
+        the_one_button: alo_tasks::TheOneButton::Stop,
         place: 0,
     }];
     let drawn = picture(

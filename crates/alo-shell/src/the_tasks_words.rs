@@ -37,6 +37,8 @@ struct ATasksWords {
     place: usize,
     /// How far its conversation is scrolled back.
     scroll: alo_tasks::TheScroll,
+    /// What its one button shows, Send or Stop.
+    the_one_button: alo_tasks::TheOneButton,
     /// What the person asked for, which names it.
     title: String,
     /// What kind of thing it is.
@@ -113,6 +115,7 @@ impl TheTasksWords {
                     at,
                     place,
                     scroll: task.scroll(),
+                    the_one_button: task.the_one_button(),
                     // **The person's own words, not a sentence this machine
                     // owns.** A task is named by what somebody asked for.
                     title: task
@@ -218,6 +221,7 @@ impl TheTasksWords {
                 at: one.at,
                 place: one.place,
                 scroll: one.scroll,
+                the_one_button: one.the_one_button,
                 how_many_files: one.files.len(),
                 words: TheWordsInATaskWindow {
                     title: &one.title,

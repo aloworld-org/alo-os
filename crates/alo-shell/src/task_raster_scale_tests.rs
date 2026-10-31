@@ -63,6 +63,7 @@ fn drawn(at: Rectangle<i32, Physical>, scale: DisplayScale) -> TaskPicture {
         &the_words(&files),
         &said,
         alo_tasks::TheScroll::at_the_newest(),
+        alo_tasks::TheOneButton::Stop,
         &mut fonts(),
         scale,
     )

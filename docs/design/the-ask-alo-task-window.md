@@ -385,8 +385,13 @@ Named explicitly, so none of it is mistaken for measured:
    descriptions; no stroke width, offset or colour came back for either.
 4. **The icon artwork.** The five composer icons came back as SVG asset URLs on
    Figma's own server, which expire after seven days. The 28/24 frame and the
-   2px stroke are recorded; the paths are not committed, and **the URLs in the
-   response must not be treated as a source.**
+   2px stroke are recorded, and **the URLs in the response must not be treated
+   as a source.** *Since 2026-10-30 the paths are committed*: fetched again that
+   day, one `download_assets` call per node, and kept byte for byte in
+   `crates/alo-shell/icons/the-reply-box/` with the node each came from
+   (ADR 0142). The icon frames are `427:28075` (Attach), `427:28079` (the
+   model's chevron), `427:28083` (Permissions), `427:28088` (Stop) and the
+   one inside `427:28090` (Send).
 5. **The example content is example content.** *Prepare the launch
    presentation*, `SmolLM2 1.7B`, `Launch brief.pdf`, `Launch presentation.odp`
    and `2 files shared with this task` are illustrative, and the component
