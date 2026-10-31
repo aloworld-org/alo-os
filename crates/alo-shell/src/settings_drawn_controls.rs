@@ -197,6 +197,8 @@ pub(crate) enum AnEndShaped {
     Keys(Vec<(Shaped, String)>),
     /// *Always on*, shaped.
     AlwaysOn(Shaped, String),
+    /// A picker's button, its label shaped.
+    Picker(Shaped, String),
 }
 
 impl AnEndShaped {
@@ -213,6 +215,12 @@ impl AnEndShaped {
             }
             Self::AlwaysOn(shaped, _) => {
                 laying.px(m::A_LOCK) + laying.px(m::AFTER_A_NOTES_ICON) + shaped.width_of_box
+            }
+            Self::Picker(shaped, _) => {
+                2 * laying.px(m::INSIDE_A_PICKER)
+                    + shaped.width_of_box
+                    + laying.px(m::BEFORE_A_PICKERS_ARROWS)
+                    + laying.px(m::A_PICKERS_ARROWS)
             }
         }
     }
@@ -253,6 +261,39 @@ impl AnEndShaped {
                     x += wide + laying.px(m::BETWEEN_KEYS);
                 }
             }
+            Self::Picker(shaped, words) => {
+                let wide = self_wide_of_a_picker(laying, &shaped);
+                let tall = laying.px(m::A_TARGET);
+                let button = Rectangle::new((at, centre - tall / 2).into(), (wide, tall).into());
+                out.drawn
+                    .push(Drawn::Fill(button, m::A_CARDS_CORNER, palette.surface));
+                out.drawn
+                    .push(Drawn::Border(button, m::A_CARDS_CORNER, palette.edge));
+                let label = shaped.height;
+                let label_wide = shaped.width_of_box;
+                text(
+                    out,
+                    at + laying.px(m::INSIDE_A_PICKER),
+                    centre - label / 2,
+                    shaped,
+                    &words,
+                );
+                let arrows = laying.px(m::A_PICKERS_ARROWS);
+                out.drawn.push(Drawn::Icon(
+                    ASettingsIcon::ChevronUpDown,
+                    Rectangle::new(
+                        (
+                            at + laying.px(m::INSIDE_A_PICKER)
+                                + label_wide
+                                + laying.px(m::BEFORE_A_PICKERS_ARROWS),
+                            centre - arrows / 2,
+                        )
+                            .into(),
+                        (arrows, arrows).into(),
+                    ),
+                    palette.muted,
+                ));
+            }
             Self::AlwaysOn(shaped, words) => {
                 let lock = laying.px(m::A_LOCK);
                 out.drawn.push(Drawn::Icon(
@@ -271,6 +312,14 @@ impl AnEndShaped {
             }
         }
     }
+}
+
+/// How wide a picker's button is around its shaped label.
+fn self_wide_of_a_picker(laying: &Laying<'_>, shaped: &Shaped) -> i32 {
+    2 * laying.px(m::INSIDE_A_PICKER)
+        + shaped.width_of_box
+        + laying.px(m::BEFORE_A_PICKERS_ARROWS)
+        + laying.px(m::A_PICKERS_ARROWS)
 }
 
 /// A segmented choice's parts, shaped: each label, and whether it is chosen.

@@ -53,6 +53,29 @@ fn focus_on(
     strings: &Strings,
     door: &CountingDoor,
 ) {
+    // A list left open from before is closed first, as a person would.
+    if window.open().is_some_and(|open| open.picker.is_some()) {
+        window.pressed(key(SettingsKey::Close), doors(strings, door));
+    }
+    // **A region or a time zone is in the list its row opens**: that row,
+    // Enter, and down the list from its top.
+    let opens = match row {
+        SettingsRow::WrittenAs(_) => Some(SettingsPicker::Region),
+        SettingsRow::TimeZone(_) => Some(SettingsPicker::TimeZone),
+        _ => None,
+    };
+    if let Some(which) = opens {
+        focus_on(window, &SettingsRow::OpenThePicker(which), strings, door);
+        window.pressed(key(SettingsKey::Choose), doors(strings, door));
+        window.pressed(key(SettingsKey::First), doors(strings, door));
+        for _ in 0..1024 {
+            if window.focused(noon()).as_ref() == Some(row) {
+                return;
+            }
+            window.pressed(key(SettingsKey::Next), doors(strings, door));
+        }
+        panic!("{row:?} is not in its list");
+    }
     let page = SettingsCategory::of(row.section());
     // Out of the page, if the keyboard is in one, and to the first category.
     for _ in 0..64 {
@@ -271,9 +294,11 @@ fn every_setting_the_machine_has_is_in_one_window() {
             SettingsRow::Accent(Appearance::shipped().accent()),
             SettingsRow::Edge(Dock::shipped().edge()),
             SettingsRow::Hiding(Dock::shipped().hiding()),
-            // Nobody chose a region, so the language decides — which is what
-            // the file says, and so what is marked.
-            SettingsRow::WrittenAs(None),
+            // **The region and the time zone are not marked on a page**: each
+            // is chosen in its list, and the list opens on what the file says
+            // — for nobody having chosen a region, the language's own way.
+            // `the_country_is_chosen_from_a_list_that_typing_narrows` holds
+            // that.
         ]
     );
 }
@@ -357,7 +382,12 @@ fn no_choice_the_old_window_offered_is_dropped() {
 
     let drawn = drawn_rows(&window);
     for row in before {
-        assert!(drawn.contains(&row), "{row:?} is not on any page");
+        // **A region and a time zone are rows of the list their page opens.**
+        let in_a_list = matches!(row, SettingsRow::WrittenAs(_) | SettingsRow::TimeZone(_));
+        assert!(
+            in_a_list || drawn.contains(&row),
+            "{row:?} is not on any page"
+        );
         focus_on(&mut window, &row, &strings, &door);
         assert_eq!(window.focused(noon()), Some(row));
     }
@@ -1601,4 +1631,89 @@ fn where_the_dock_sits_is_chosen_as_alo_dock_writes_it_and_a_row_opens_its_page(
             alo_capability::HowCodeRuns::InASealedBox
         ))
     );
+}
+
+/// **The country is chosen from a list with a search**, by the keyboard: its
+/// row opens the list on what is chosen now, typing narrows it, Enter chooses
+/// and closes it — writing exactly what the old list's row wrote — and Escape
+/// closes it without choosing and leaves Settings open.
+#[test]
+fn the_country_is_chosen_from_a_list_that_typing_narrows() {
+    let machine = a_persons_machine("country-list");
+    let strings = words();
+    let door = CountingDoor::revoking();
+    let mut window = machine.opened();
+    let typed = |letter: char| SettingsPress {
+        key: SettingsKey::Nothing,
+        chord: None,
+        filling: crate::a_key_fills_in_a_provider::FillingInKey::Typed(letter),
+    };
+
+    focus_on(
+        &mut window,
+        &SettingsRow::OpenThePicker(SettingsPicker::Region),
+        &strings,
+        &door,
+    );
+    assert_eq!(
+        window.pressed(key(SettingsKey::Choose), doors(&strings, &door)),
+        Some(SettingsDid::TheList(SettingsPicker::Region))
+    );
+    // **It opens on what is chosen now**, which on a fresh file is the
+    // language's own way.
+    assert_eq!(window.focused(noon()), Some(SettingsRow::WrittenAs(None)));
+
+    // Escape closes the list and nothing else.
+    assert_eq!(
+        window.pressed(key(SettingsKey::Close), doors(&strings, &door)),
+        Some(SettingsDid::TheList(SettingsPicker::Region))
+    );
+    assert!(window.is_open());
+    assert!(window.open().is_some_and(|open| open.picker.is_none()));
+
+    window.pressed(key(SettingsKey::Choose), doors(&strings, &door));
+    for letter in ['b', 'e', 'l', 'g'] {
+        window.pressed(typed(letter), doors(&strings, &door));
+    }
+    assert_eq!(
+        window.focused(noon()),
+        Some(SettingsRow::WrittenAs(Some("BE"))),
+        "Belgium is the one match for belg"
+    );
+    assert_eq!(
+        window.pressed(key(SettingsKey::Choose), doors(&strings, &door)),
+        Some(SettingsDid::Kept(
+            SettingsSection::Formats,
+            SettingsKept::Written
+        ))
+    );
+    assert!(window.open().is_some_and(|open| open.picker.is_none()));
+    assert_eq!(window.formats().and_then(|it| it.region()), Some("BE"));
+}
+
+/// **Typing narrows the list to what contains it, and the whole list stays
+/// under the matches**, as frame `551:751` draws it.
+#[test]
+fn typing_narrows_the_list_and_the_whole_list_stays_under_it() {
+    let machine = a_persons_machine("picker-narrows");
+    let strings = crate::settings_testing::settings_words();
+    let mut window = machine.opened();
+    let open = window.open.as_mut().unwrap_or_else(|| unreachable!());
+    open.the_list_opens(SettingsPicker::Region, &strings);
+    let every = open.every_entry(SettingsPicker::Region, &strings).len();
+    assert!(every > 200, "the control: every region is offered");
+    open.the_search_is("bel".to_owned(), &strings);
+    let picker = open.picker.clone().unwrap_or_else(|| unreachable!());
+    let names: Vec<String> = open
+        .the_matches(SettingsPicker::Region, "bel", &strings)
+        .into_iter()
+        .map(|it| it.label)
+        .collect();
+    for expected in ["Belarus", "Belgium", "Belize"] {
+        assert!(names.iter().any(|it| it == expected), "{names:?}");
+    }
+    assert!(names.iter().all(|it| it.to_lowercase().contains("bel")));
+    assert_eq!(picker.matches, names.len());
+    assert_eq!(picker.shown.len(), names.len() + every);
+    assert_eq!(picker.focus, 0);
 }

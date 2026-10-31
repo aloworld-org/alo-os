@@ -386,6 +386,7 @@ mod settings_chord;
 mod settings_command;
 mod settings_drawn_controls;
 mod settings_drawn_page;
+mod settings_drawn_picker;
 mod settings_drawn_row;
 mod settings_formats;
 mod settings_frame;
@@ -400,11 +401,13 @@ mod settings_page_alo;
 mod settings_page_appearance;
 mod settings_page_folders;
 mod settings_page_keyboard;
+mod settings_page_region;
 mod settings_page_running;
 mod settings_page_terminal;
 mod settings_paint;
 mod settings_paired;
 mod settings_palette;
+mod settings_picker;
 mod settings_places;
 mod settings_raster;
 mod settings_seat;
@@ -836,8 +839,8 @@ pub use settings_keys::SettingsKey;
 pub use settings_places::SettingsPlaces;
 pub use settings_raster::SettingsLook;
 pub use settings_window::{
-    SettingsCategory, SettingsDid, SettingsDoors, SettingsOpened, SettingsPress, SettingsRow,
-    SettingsSection, SettingsWindow,
+    SettingsCategory, SettingsDid, SettingsDoors, SettingsOpened, SettingsPicker, SettingsPress,
+    SettingsRow, SettingsSection, SettingsWindow,
 };
 pub use shortcut_dispatch::ShortcutDispatchError;
 pub use sign_in_entry::{NAME_BYTES, SignInField};

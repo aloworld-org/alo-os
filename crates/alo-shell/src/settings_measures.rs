@@ -173,6 +173,39 @@ pub(crate) const UNDER_A_SWATCH: u32 = 6;
 /// Above the colours, under the row's line.
 pub(crate) const ABOVE_THE_SWATCHES: u32 = 8;
 
+/// A picker's button: inside it across (`551:826`).
+pub(crate) const INSIDE_A_PICKER: u32 = 14;
+/// Between its label and its arrows.
+pub(crate) const BEFORE_A_PICKERS_ARROWS: u32 = 10;
+/// Its arrows.
+pub(crate) const A_PICKERS_ARROWS: u32 = 16;
+/// The list a picker opens: across, at most, and down, at most (`551:841`).
+pub(crate) const A_LIST_IS_WIDE: u32 = 360;
+/// The list, down, at most.
+pub(crate) const A_LIST_AT_MOST_TALL: u32 = 480;
+/// The list stands this far below its button.
+pub(crate) const UNDER_A_PICKER: u32 = 8;
+/// Inside the list.
+pub(crate) const INSIDE_A_LIST: u32 = 8;
+/// Between two things in the list.
+pub(crate) const BETWEEN_LIST_ITEMS: u32 = 2;
+/// The search field's outline while it has the keyboard.
+pub(crate) const A_SEARCHS_OUTLINE: u32 = 2;
+/// The search field: inside it across.
+pub(crate) const INSIDE_A_SEARCH: u32 = 12;
+/// Its sign.
+pub(crate) const A_SEARCHS_SIGN: u32 = 18;
+/// Between the sign and what is typed, and what is typed and the caret.
+pub(crate) const AFTER_A_SEARCHS_SIGN: u32 = 10;
+/// A heading in the list: room above it.
+pub(crate) const ABOVE_A_LISTS_HEADING: u32 = 12;
+/// A heading in the list: room below it.
+pub(crate) const BELOW_A_LISTS_HEADING: u32 = 4;
+/// An entry: inside it across.
+pub(crate) const INSIDE_AN_ENTRY: u32 = 12;
+/// The check on the chosen entry.
+pub(crate) const AN_ENTRYS_CHECK: u32 = 18;
+
 /// Between a page's blocks, per page, as each frame draws it.
 ///
 /// **Three figures for one relationship**, and recorded rather than tidied:
