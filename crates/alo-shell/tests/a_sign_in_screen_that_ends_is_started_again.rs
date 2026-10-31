@@ -42,7 +42,9 @@ fn the_binary_fails_when_nobody_signed_in_unless_a_person_has_the_screen() {
     // Both failing ends of the screen — nobody signed in, and the screen
     // failing — ask, and the function is defined once.
     assert_eq!(
-        source.matches("failing_unless_a_person_has_the_screen()").count(),
+        source
+            .matches("failing_unless_a_person_has_the_screen()")
+            .count(),
         3,
         "the two failing ends no longer both ask whose session has the screen"
     );
@@ -51,7 +53,10 @@ fn the_binary_fails_when_nobody_signed_in_unless_a_person_has_the_screen() {
         .nth(1)
         .and_then(|after| after.split("Err(why)").next())
         .unwrap();
-    assert!(arm.contains("failing_unless_a_person_has_the_screen()"), "{arm}");
+    assert!(
+        arm.contains("failing_unless_a_person_has_the_screen()"),
+        "{arm}"
+    );
     assert!(!arm.contains("ExitCode::SUCCESS"), "{arm}");
 
     let deciding = source
@@ -59,7 +64,10 @@ fn the_binary_fails_when_nobody_signed_in_unless_a_person_has_the_screen() {
         .nth(1)
         .and_then(|after| after.split("\n    }\n").next())
         .unwrap();
-    assert!(deciding.contains("a_person_has_the_screen(&Seat0)"), "{deciding}");
+    assert!(
+        deciding.contains("a_person_has_the_screen(&Seat0)"),
+        "{deciding}"
+    );
     let otherwise = deciding.split("} else {").nth(1).unwrap_or_default();
     assert!(
         otherwise.contains("ExitCode::FAILURE") && !otherwise.contains("ExitCode::SUCCESS"),
