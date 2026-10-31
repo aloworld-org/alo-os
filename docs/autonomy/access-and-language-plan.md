@@ -341,7 +341,8 @@ So a value plumbed to that control would have a reader announce **"a setting,
 on"** — true, and useless. A person would be told the state of a switch whose
 identity they were never told. **Telling somebody which way a switch is set
 requires the tree to name the switches**, and today it names one abstract
-stand-in for all of them while `crates/alo-shell/src/settings_lines.rs` draws
+stand-in for all of them while `settings_lines.rs` (deleted on 2026-10-31; each page is now drawn by
+`crates/alo-shell/src/settings_page.rs` and its page files) draws
 the real rows.
 
 **That makes both halves of this task the same decision, which is why the

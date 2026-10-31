@@ -16,7 +16,7 @@ rasterised the way the other nested surfaces are.
 | `crates/alo-shell/src/settings_kept.rs`, `settings_keepers.rs` | One road for appearance, the dock and shortcuts — *drawn at sign-in*, *a change*, *put back as shipped* — each a call into that crate's `keeping`. |
 | `crates/alo-shell/src/settings_answering.rs`, `settings_paired.rs` | What answers questions: `alo-setting-up`'s four, and under each the choices the person's settings hold, changed through `alo_choosing::Choosing`. |
 | `crates/alo-shell/src/settings_granted.rs` | Grants and pairings in one list of `alo_changing::Row`, revoked with `Changing::revoked` alone. |
-| `crates/alo-shell/src/settings_lines.rs` | Each section as the words drawn for it — every piece a crate's answer. |
+| `settings_lines.rs` (deleted on 2026-10-31 for `crates/alo-shell/src/settings_page.rs`) | Each section as the words drawn for it — every piece a crate's answer. |
 | `crates/alo-shell/src/settings_keys.rs`, `settings_chord.rs`, `settings_seat.rs` | Keyboard operation through the seat; a press named as an `alo_shortcuts` chord while Settings waits for one. |
 | `crates/alo-shell/src/settings_raster.rs`, `settings_paint.rs`, `nested_settings.rs` | Laid out, rasterised and submitted above clients and the record, below a waiting question and the egress indicator. |
 | `crates/alo-shell/tests/unit_fixtures/settings_testing.rs` (outside `src/`, since it writes the pairings file the daemon alone writes in shipped source), `settings_window_tests.rs`, `settings_raster_tests.rs` | A person's machine on a real disk, and the tests. |
