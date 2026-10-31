@@ -523,6 +523,9 @@ mod the_window_edge_reveals;
 mod the_zone_a_person_chose;
 pub mod the_zone_picker;
 pub mod the_zone_through_timedated;
+/// Whether a person's session has the screen, asked of `logind` before the
+/// sign-in screen ends as a failure.
+pub mod whose_screen_it_is;
 mod their_displays;
 /// How one person writes a moment: what they chose, the language they read,
 /// and the zone they are in. Here rather than in `alo-formats`, whose header
