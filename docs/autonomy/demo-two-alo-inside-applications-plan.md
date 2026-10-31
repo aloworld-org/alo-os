@@ -20,9 +20,9 @@ that adds a way for alo to act also adds its setting, in ADR 0143's table:
 the safe answer as the default, more up to *alo does it all for me*, each step
 with its risk in plain words — and the record, undo where it reaches, the
 indicator and plain warnings on at every level. **Two of those settings' top
-levels wait on the owner** confirming how `CLAUDE.md`'s *an approval is never a
-session* is read (ADR 0143); the stages build everything below the top and the
-top when that is answered.
+levels are allowed** by the owner's decision of 2026-10-31 — *an approval is
+never a session unless the person chose otherwise in Settings* — and are built
+once `CLAUDE.md` carries those words, which is the owner's edit (ADR 0143).
 
 **Where it ends.** The demo walked on the qemu machine, by a person pressing the
 keys, under the rule `docs/walks/a-day-on-alo-os.md` sets: *nothing is
@@ -84,7 +84,7 @@ the bus launcher is installed and **answers**, not that a file exists.
 ### 3. A person can let alo use an application
 
 **Status:** not started. **Size:** M. **Waits on:** nothing for the default;
-the owner's confirmation in ADR 0143 for *every application*.
+`CLAUDE.md` carrying the owner's change (ADR 0143) for *every application*.
 
 **For the person:** today alo is offered opening and closing applications and
 every one is refused on a real machine, because nothing lets anybody grant it an
@@ -129,7 +129,7 @@ the record keeps it.
 
 **Status:** not started. **Size:** L. **Waits on:** stage 1's measurement, which
 decides how alo types (engineering, not a setting); stage 5; and, for the top
-level of the setting, the owner's confirmation in ADR 0143.
+level of the setting, `CLAUDE.md` carrying the owner's change (ADR 0143).
 
 **For the person:** alo writes into the editor and saves, and they watch it
 happen. How much one approval covers is their setting: one file by default,
@@ -146,10 +146,11 @@ editor.
 
 ### 7. The fresh machine ships a code editor, and an editor is opened honestly
 
-**Status:** not started. **Size:** M. **Waits on:** the owner naming the editor
-(ADR 0143 recommends VSCodium) and stage 1's answer that alo can see into it.
+**Status:** not started. **Size:** M. **Waits on:** stage 1's answer that alo
+can see into it. The editor is **VSCodium** (`com.vscodium.codium`), the
+owner's choice of 2026-10-31.
 
-**For the person:** a developer's first boot has a code editor on the Dock, as
+**For the person:** a developer's first boot has VSCodium on the Dock, as
 it has a browser and a terminal. Where they look at what is installed, it says
 that it can read every file in their home and start programs outside its
 sandbox (fact 4); and if they install VS Code, the install sentence says that

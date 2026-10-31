@@ -1004,10 +1004,10 @@ said in plain words — the shape running code already has (ADR 0064). The
 record, undo wherever it can reach, the indicator and plain warnings stay on at
 every setting, and **nothing alo causes to leave the machine is ever unshown**:
 that is law 1, and a law is not a setting. The top of two of these —
-*everything alo types, approved once* and *every application* — is promised and
-not yet buildable: it goes past `CLAUDE.md`'s *an approval is never a session*,
-and ADR 0143 asks the owner to confirm it is read the way ADR 0064's full trust
-already is.*
+*everything alo types, approved once* and *every application* — **is allowed by
+the owner's decision of 2026-10-31**: an approval is never a session *unless
+the person chose otherwise in Settings*, off by default, like full trust for
+running code. It is built once `CLAUDE.md` carries those words (ADR 0143).*
 
 - ★ **alo works inside the applications a person uses, the way a person does.**
   It opens the application, reads what its window shows, types into its
@@ -1043,12 +1043,11 @@ already is.*
   indicator will then show *that* the application is sending and cannot count
   what. Counting everything an application does, the person's own use included,
   is not offered at any setting — that would be watching the person.
-- ★ **alo OS ships an open-source code editor, installed by default** — the
-  owner, 2026-10-31. A person may also install Microsoft's VS Code, and alo
-  works in it the same way. Which editor is proposed in ADR 0143 —
-  **VSCodium**, the open-source build of the editor developers already know,
-  MIT-licensed and verified on Flathub, recommended over Zed and Lapce — and
-  not yet named by the owner. **It is a new role on the fresh machine's list**,
+- ★ **alo OS ships VSCodium, an open-source code editor, installed by default** — the
+  owner, 2026-10-31, who chose it. It is the open-source build of the editor
+  developers already know, MIT-licensed and verified on Flathub, chosen over
+  Zed and Lapce (ADR 0143). A person may also install Microsoft's VS Code, and
+  alo works in it the same way. **It is a new role on the fresh machine's list**,
   beside the browser and the terminal, not a second text editor. Its package can
   read every file in the person's home and start programs outside its sandbox,
   and the machine says so where a person looks at what is installed.

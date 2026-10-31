@@ -2,10 +2,12 @@
 
 **Status:** **accepted, 2026-10-31, by the owner**: the decisions under *What
 the owner decided*, and the answers under *The owner's answers*, are theirs.
-**Still proposed:** which open-source editor ships (VSCodium is recommended),
-and whether `CLAUDE.md`'s *an approval is never a session* is read past at the
-top of two settings — the owner's to confirm. How alo types is decided on stage
-1's measurement. **Nothing here is built.**
+The shipped editor is **VSCodium**, and the top level of two settings is
+**allowed**, both the owner's choices of 2026-10-31. **Still owed:** the
+matching change to `CLAUDE.md`'s *an approval is never a session*, which the
+owner makes (see *Everything else*); until it lands those two top levels are
+not built. How alo types is decided on stage 1's measurement. **Nothing here is
+built.**
 
 *Number: `origin/main` ends at 0141, and the next number is already taken by a
 decision about small vector artwork on a branch not yet landed, so this is the
@@ -369,7 +371,8 @@ precondition of the walk.
 person may also install Microsoft's VS Code, and alo drives it the same way. The
 demo uses the shipped editor.
 
-Which one is proposed here; the owner has not named it. Measured from Flathub on
+**The owner chose VSCodium on 2026-10-31.** What the choice was made from,
+measured from Flathub on
 2026-10-30, with VSCodium as a known-present control and a made-up identifier as
 the known-absent one:
 
@@ -381,7 +384,7 @@ the known-absent one:
 | what developers know | the VS Code they already use | growing | small |
 | can alo drive it through the accessibility tree | Electron, documented yes with the flag (fact 11) | draws its own interface; a fork of its framework describes an accessibility bridge, and whether Zed's Linux build publishes a tree is **unconfirmed** | draws its own interface; **unconfirmed** |
 
-**Recommendation: VSCodium.** It is the one of the three whose window alo has a
+**VSCodium — recommended here, chosen by the owner.** It is the one of the three whose window alo has a
 documented road into, it is verified, and it is the editor developers already
 know. Its package reaches every file in the home and can leave its sandbox
 (fact 4), so the machine says so where a person looks at what is installed —
@@ -419,15 +422,33 @@ that is said beside it: a law is not a setting.
 | **Letting alo use an application** (Q10) | in Settings, and on a surface the compositor draws when alo asks; one application, by name | at install; **or** every application on this machine, shown as a list of what that is today | *alo will be able to work in every application you have, including the ones that hold your passwords* | a grant nobody can see: even *every application* is a row in the list, with its length, revoked in one action. The terminal stays ADR 0111's own choice |
 | **Pictures and keystrokes, for applications nothing describes** (Q11) | off | on, per application | *alo will act on what it sees in pictures of this window, and may press the wrong thing* | — |
 
-**One thing the owner should confirm, because it touches the constitution
-rather than a feature.** `CLAUDE.md`: *"Reads answer, changes wait … an approval
-is never a session."* The top of Q1 (one approval for everything in a request)
-and the top of Q10 (every application) go past that sentence as written. ADR
-0064's *full trust* already does the same for running code, and ADR 0112 reads
-law 5 as allowing it, so this is the existing precedent applied — but the
-sentence in `CLAUDE.md` still reads as absolute, and **only the owner changes
-that file**. Until they do, the tops of those two settings are recorded here and
-not built.
+**The top of Q1 and the top of Q10 are now allowed — the owner's decision,
+2026-10-31.** Both go past `CLAUDE.md`'s *"Reads answer, changes wait … an
+approval is never a session"* as it was written, and the owner approved
+changing that sentence to: ***an approval is never a session unless the person
+chose otherwise in Settings***. **Off by default**, offered with its risk in
+plain words the way full trust for running code is (ADR 0064), and the record,
+undo where it can reach, and the indicator stay on at every level. The reason is
+the owner's — *"we are not dictators so we allow users to choose what he
+wants"* — and law 5's.
+
+**The sentence in `CLAUDE.md` itself is not changed by this branch.** The
+decision reached this lane relayed through another agent, and an agent does not
+edit the constitution on a relayed message; the owner makes that edit, or tells
+the lane directly to make it. **Until `CLAUDE.md` carries the new words, the two
+top levels are allowed and not built**, so nothing is built against a sentence
+the constitution does not yet say. The text proposed for it, in the file's own
+style:
+
+> **Reads answer, changes wait.** A read runs inside the turn. Any change to the
+> machine is proposed with a sentence describing it and waits for one approval.
+> What a person approves is that sentence, and **an approval is never a session
+> unless the person chose otherwise in Settings** — off by default, offered with
+> its risk in plain words like full trust for running code (ADR 0064), and with
+> the record, undo where it can reach, and the indicator on at every level.
+> *Changed by the owner on 2026-10-31: "we are not dictators so we allow users to
+> choose what he wants: if he wants alo to do all for him we do, if the user
+> does not want we do not." Law 5: the person chooses, knowing what it costs.*
 
 **Q2 (how alo types) is engineering, not the person's choice.** Stage 1 of the
 plan measures typing through the accessibility tree, and the answer is decided
