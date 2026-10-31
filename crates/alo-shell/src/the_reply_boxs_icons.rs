@@ -178,7 +178,10 @@ pub(crate) fn ink_an_icon(
     // the frame is the room the design gives it, and a box that overran it
     // would draw over the control beside it.
     let frame = scale.px(icon.is());
-    let (wide, tall) = (at_this_scale(wide).min(frame), at_this_scale(tall).min(frame));
+    let (wide, tall) = (
+        at_this_scale(wide).min(frame),
+        at_this_scale(tall).min(frame),
+    );
     let left = centred_in.loc.x + (centred_in.size.w - wide) / 2;
     let top = centred_in.loc.y + (centred_in.size.h - tall) / 2;
     crate::inking_a_shape::ink_a_shape(
