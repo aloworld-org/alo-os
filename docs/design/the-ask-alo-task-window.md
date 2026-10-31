@@ -242,10 +242,22 @@ panel — and closing a running task will offer **Stop and close** and
 always revealed, Close 44 × 44 at its trailing end, scaled with the display. A
 task window is placed with the edge's 44 above it inside the view, so Close is
 never off the screen. Close and Alt+F4 are one door: a finished or stopped
-task closes and the keyboard goes back to what was behind; a task waiting for
-an approval stays open until the person answers, and closing never answers
-for them; a task still working stays open, because the two choices need a Stop
-that reaches the agent, which is not built.
+task closes; a running task asks *Stop and close* or *Cancel* (ADR 0139), and
+closing never answers a waiting change for the person.
+
+**The window in front keeps the keyboard** — the owner, 2026-10-30: *like every
+desktop, the window you can see in front gets your typing.* Escape empties the
+reply box and does nothing more. Closing the window that holds the keyboard
+hands it to the task window now in front, or, with none left, lets it go.
+*Withdrawn the same day by the owner's decision:* until 2026-10-30 Escape on an
+empty reply box gave the keyboard up "so a person can always get back to their
+applications". On a booted machine the window stayed drawn in front, every key
+went to the terminal hidden behind it, and Alt+F4 found no window to close.
+
+**Still open:** every task window is drawn over the terminal and every
+application. So a shortcut from a task window to an application or to the
+terminal sends typing to a window the task window may cover. Which window comes
+in front then is a stacking question for the owner.
 
 ## The approval card, 920 × 152
 

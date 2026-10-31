@@ -170,6 +170,18 @@ impl TheTasks {
             .collect()
     }
 
+    /// The open window drawn in front of every other task window, if any is
+    /// open: **the last opened**, because windows are drawn in the order they
+    /// were opened and never reordered. One asked for and not yet placed counts,
+    /// since the next frame places it and draws it last.
+    #[must_use]
+    pub fn the_one_in_front(&self) -> Option<WhichTask> {
+        self.placed
+            .iter()
+            .rposition(|window| *window != ItsWindow::Closed)
+            .map(WhichTask)
+    }
+
     /// Whether this task's window is still open — placed or about to be.
     #[must_use]
     pub fn is_open(&self, which: WhichTask) -> bool {

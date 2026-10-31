@@ -20,6 +20,21 @@
 //! Written as one exhaustive match with no catch-all, so a shortcut added
 //! tomorrow does not compile until somebody has answered this question for it.
 //!
+//! # A move that went nowhere keeps the keyboard
+//!
+//! *The keyboard goes with what comes in front* — the owner, 2026-10-30. A
+//! next-window or next-application shortcut with no application open is
+//! carried out and goes nowhere, and until then the task let go anyway: the
+//! window stayed in front and typing fell to whatever was hidden behind it. So
+//! a move between windows takes the keyboard only when an application's window
+//! now holds the seat's keyboard.
+//!
+//! **What this does not make true**: every task window is drawn over the
+//! terminal and every application, and nothing changes that order. So a move
+//! from a task window to an application, or Ctrl+Alt+T to the terminal, sends
+//! typing to a window the task window may still cover. Which window comes in
+//! front then is a question about stacking, open on 2026-10-30 and the owner's.
+//!
 //! # Close window closes the task window
 //!
 //! **Alt+F4 in a task window closed an application behind it** until
@@ -44,6 +59,18 @@ use crate::a_chord_reaches_its_action::WhatTheChordCameTo;
 const fn sends_the_keyboard_elsewhere(action: Action) -> bool {
     crate::a_chord_sends_the_keyboard_to_a_window::sends_the_keyboard_to_a_window(action)
         || matches!(action, Action::TheNextArea | Action::ThePreviousArea)
+}
+
+/// Whether this action moves to an application's window, so that it went
+/// somewhere only if one now holds the seat's keyboard.
+const fn moves_between_windows(action: Action) -> bool {
+    matches!(
+        action,
+        Action::NextWindow
+            | Action::PreviousWindow
+            | Action::NextApplication
+            | Action::PreviousApplication
+    )
 }
 
 impl Server {
@@ -71,6 +98,7 @@ impl Server {
         let came_to = self.carry_out_a_chord(chord);
         if let WhatTheChordCameTo::Carried(action) = came_to
             && sends_the_keyboard_elsewhere(action)
+            && (!moves_between_windows(action) || self.surfaces.keyboard_root().is_some())
         {
             self.the_task_gave_the_keyboard_up();
         }

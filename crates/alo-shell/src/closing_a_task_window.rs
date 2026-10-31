@@ -27,11 +27,23 @@
 //! and a change waiting when a person closes the window is neither approved
 //! nor declined — under *Stop and close* it lapses with the turn.
 //!
-//! # The keyboard goes back to what was behind
+//! # The keyboard goes to the window now in front
 //!
-//! A task window holding the keyboard takes every key at the seat. Closing it
-//! lets go, so the next key reaches whatever had the keyboard before the task
-//! took it — the same letting-go Escape on an empty reply box does.
+//! *Like every desktop, the window you can see in front gets your typing* —
+//! the owner, 2026-10-30. A task window holding the keyboard takes every key at
+//! the seat, and closing it hands the keyboard to **the task window now in
+//! front**, if one is open: task windows are drawn over the terminal and every
+//! application, so that is the window a person sees. With none left, it lets
+//! go, and the next key reaches the terminal or the application behind.
+//!
+//! **Only when the closed window held the keyboard.** A person typing in an
+//! application who clicks another task window's Close has not asked to type
+//! somewhere else.
+//!
+//! *Until 2026-10-30 Escape on an empty reply box let go too, "so a person can
+//! always get back to their applications". The owner withdrew that on
+//! 2026-10-30: the task window stayed drawn in front, and the keys went to a
+//! terminal hidden behind it.*
 
 use crate::Server;
 use crate::the_tasks_a_person_opened::WhichTask;
@@ -57,8 +69,9 @@ pub enum WhatClosingCameTo {
 impl Server {
     /// The person asked to close this task's window.
     ///
-    /// Closes it only when its work is over; see this file's header for why a
-    /// running task does not close yet.
+    /// Closes it only when its work is over, and asks about a running task;
+    /// see this file's header. A window that closes while holding the keyboard
+    /// hands it to the task window now in front.
     pub fn the_person_closes_a_task(&mut self, which: WhichTask) -> WhatClosingCameTo {
         if !self.the_tasks.is_open(which) {
             return WhatClosingCameTo::NothingToClose;
@@ -80,7 +93,10 @@ impl Server {
             return WhatClosingCameTo::NothingToClose;
         }
         if self.the_task_with_the_keyboard == Some(which) {
-            self.the_task_gave_the_keyboard_up();
+            match self.the_tasks.the_one_in_front() {
+                Some(in_front) => self.this_task_took_the_keyboard(in_front),
+                None => self.the_task_gave_the_keyboard_up(),
+            }
         }
         WhatClosingCameTo::Closed
     }
