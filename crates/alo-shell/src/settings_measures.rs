@@ -134,6 +134,45 @@ pub(crate) const THE_FOCUS_RING: u32 = 2;
 /// How far the keyboard's outline stands outside what it marks.
 pub(crate) const THE_FOCUS_RING_STANDS_OFF: u32 = 2;
 
+/// A lead icon's well, square (`550:820`).
+pub(crate) const A_LEADS_WELL: u32 = 36;
+/// A key's cap: inside it across (`551:945`).
+pub(crate) const INSIDE_A_KEY: u32 = 9;
+/// A key's cap, down.
+pub(crate) const A_KEY_IS_TALL: u32 = 30;
+/// A key's cap's corner.
+pub(crate) const A_KEYS_CORNER: u32 = 7;
+/// Between two keys.
+pub(crate) const BETWEEN_KEYS: u32 = 4;
+/// The lock before *Always on* (`550:991`).
+pub(crate) const A_LOCK: u32 = 16;
+/// A segmented choice's box: inside it, and between its parts (`551:291`).
+pub(crate) const INSIDE_A_SEGMENTED: u32 = 4;
+/// A part of a segmented choice: inside it across.
+pub(crate) const INSIDE_A_SEGMENT: u32 = 16;
+/// The chosen part: inside it across.
+pub(crate) const INSIDE_A_CHOSEN_SEGMENT: u32 = 14;
+/// The chosen part's check.
+pub(crate) const A_SEGMENTS_CHECK: u32 = 16;
+/// Between the check and the label.
+pub(crate) const AFTER_A_SEGMENTS_CHECK: u32 = 6;
+/// A part's corner.
+pub(crate) const A_SEGMENTS_CORNER: u32 = 9;
+/// An accent colour, across, with its name under it (`551:308`).
+pub(crate) const A_SWATCH_IS_WIDE: u32 = 72;
+/// Between two accent colours.
+pub(crate) const BETWEEN_SWATCHES: u32 = 16;
+/// An accent colour's disc, its radius.
+pub(crate) const A_SWATCH: u32 = 17;
+/// The ring round the chosen colour, its radius.
+pub(crate) const A_CHOSEN_SWATCHS_RING: u32 = 21;
+/// The check on the chosen colour.
+pub(crate) const A_SWATCHS_CHECK: u32 = 18;
+/// Between a colour and its name.
+pub(crate) const UNDER_A_SWATCH: u32 = 6;
+/// Above the colours, under the row's line.
+pub(crate) const ABOVE_THE_SWATCHES: u32 = 8;
+
 /// Between a page's blocks, per page, as each frame draws it.
 ///
 /// **Three figures for one relationship**, and recorded rather than tidied:
