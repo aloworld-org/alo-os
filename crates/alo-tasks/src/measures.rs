@@ -131,15 +131,17 @@ pub const DENY_IS_WIDE: u32 = 104;
 /// How wide the control naming the model is.
 pub const THE_MODEL_CONTROL_IS_WIDE: u32 = 176;
 
-/// How wide the processing destination is: its cloud, and the words saying
-/// where the processing happens.
+/// How wide the processing destination is: its cloud, when there is one, and
+/// the words saying where the processing happens.
 ///
-/// **283 since 2026-10-31**, from the alo window the owner approved that day
-/// (`549:112` in `549:26`, `549:351` in `549:261`, `549:477` in `549:372`): it
-/// was 148 in the first frames, which drew no cloud and a shorter sentence. The
-/// flexible space gives up the difference, so the row is still 948 wide and the
-/// one button has not moved.
-pub const THE_DESTINATION_IS_WIDE: u32 = 283;
+/// **148, from the first frames, and not yet the approved window's 283.** The
+/// alo window the owner approved on 2026-10-31 (`549:112` in `549:26`) draws it
+/// 283 wide, and taking that here raised the narrowest window the row fits in
+/// from 600 to 735 — a task window on a small screen would be refused. How the
+/// row gives way on a narrow window is a question for the owner, recorded in
+/// `docs/design/the-ask-alo-task-window.md`; until it is answered the cloud and
+/// the words share the 148.
+pub const THE_DESTINATION_IS_WIDE: u32 = 148;
 
 /// The cloud before the processing destination's words: its icon frame.
 pub const THE_DESTINATIONS_ICON: u32 = 16;

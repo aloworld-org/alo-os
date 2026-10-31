@@ -81,18 +81,23 @@ Left to right, gap 8 throughout:
 |---|---|---|---|---|
 | Attach | 48 | 12 | `bg/cool` | 28 |
 | Model | 176 | 12 | `bg/cool` | label + 24 chevron |
-| Processing destination | 283 | — | none | a 16 cloud, 6, then the words |
+| Processing destination | 148 | — | none | a 16 cloud and 6, while a provider answers, then the words |
 | Permissions | 48 | 12 | `bg/cool` | 28 |
-| Flexible space | 305 | — | — | — |
-
-**The destination was 148, text only, with 440 of flexible space**, in the
-first frames. The alo window the owner approved on 2026-10-31 (page
-`544:30910`; `549:112` in `549:26`) draws it 283 wide with a cloud (`549:113`)
-before the words, and the flexible space gives up the difference, so the row
-is still 948 and the one button is where it was. The cloud is drawn while a
-provider answers; the approved frames show no other destination, and a cloud
-beside *On this computer* would say the opposite of the words.
+| Flexible space | 440 | — | — | — |
 | Send / Stop | 48 | 24 | `text/primary` | 28 |
+
+**The cloud, since 2026-10-31.** The alo window the owner approved that day
+(page `544:30910`; `549:112` in `549:26`) draws a 16 cloud (`549:113`), then 6,
+then the words. It is drawn while a provider answers; the approved frames show
+no other destination, and a cloud beside *On this computer* would say the
+opposite of the words.
+
+**Open: the approved window draws the destination 283 wide, and this row keeps
+148.** Taking 283, with the flexible space giving up the difference, raises the
+narrowest window the row fits in from 600 to 735, so a task window on a small
+screen would be refused rather than drawn. How the row gives way on a narrow
+window — the destination shrinking to its words, the flexible space going
+first, or a narrower window being refused — is the owner's to decide.
 
 **The artwork frame is 28 and the chevron is 24, with 2px strokes**, from the
 component descriptions — and the artwork frame is not the target. The target is
