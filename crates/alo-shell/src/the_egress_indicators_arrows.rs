@@ -52,11 +52,9 @@ impl AnArrow {
             }
             (Self::Quiet, crate::Contrast::High) => contrast.ink(scheme),
             // The lit arrow is drawn on the lamp, in the mark's own colour.
-            (Self::Lit, _) => {
-                crate::egress_status_mark::rgb(
-                    crate::egress_status_mark::MarkColours::of(scheme, contrast).arrow,
-                )
-            }
+            (Self::Lit, _) => crate::egress_status_mark::rgb(
+                crate::egress_status_mark::MarkColours::of(scheme, contrast).arrow,
+            ),
         }
     }
 

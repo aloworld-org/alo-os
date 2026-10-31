@@ -346,7 +346,9 @@ fn deep_teal_never_arrives_alone() {
                 // the arrow's lighter ink rather than deep teal.
                 let third = row.mark.size.w / 3;
                 let arrow = (x - third / 2..x + third / 2)
-                    .flat_map(|across| (y - third / 2..y + third / 2).map(move |down| (across, down)))
+                    .flat_map(|across| {
+                        (y - third / 2..y + third / 2).map(move |down| (across, down))
+                    })
                     .filter(|&(across, down)| {
                         raster_at(&drawn, across, down).is_some_and(|colour| colour != deep_teal())
                     })
