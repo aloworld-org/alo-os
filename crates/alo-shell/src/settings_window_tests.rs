@@ -45,16 +45,32 @@ fn chord(held: Modifiers, pressed: Key) -> SettingsPress {
     }
 }
 
-/// Move the focus to `row`, the way a person does: from the first row, down.
+/// Move the focus to `row`, the way a person does: the page it is on chosen
+/// in the side column, into the page, and down from its first row.
 fn focus_on(
     window: &mut SettingsWindow,
     row: &SettingsRow,
     strings: &Strings,
     door: &CountingDoor,
 ) {
+    let page = SettingsCategory::of(row.section());
+    // Out of the page, if the keyboard is in one, and to the first category.
+    for _ in 0..64 {
+        if !window.is_in_the_page() {
+            break;
+        }
+        window.pressed(key(SettingsKey::PreviousSection), doors(strings, door));
+    }
     window.pressed(key(SettingsKey::First), doors(strings, door));
+    for _ in 0..SettingsCategory::ALL.len() {
+        if window.category() == Some(page) {
+            break;
+        }
+        window.pressed(key(SettingsKey::Next), doors(strings, door));
+    }
+    window.pressed(key(SettingsKey::NextSection), doors(strings, door));
     // **Enough for every region**, which since 2026-10-28 is a section of 251
-    // rows between the accents and the dock.
+    // rows.
     for _ in 0..1024 {
         if window.focused(noon()).as_ref() == Some(row) {
             return;
@@ -62,6 +78,18 @@ fn focus_on(
         window.pressed(key(SettingsKey::Next), doors(strings, door));
     }
     panic!("{row:?} is not a row: {:?}", window.rows(noon()));
+}
+
+/// Every row every page draws, page by page, as `crate::settings_page` lays
+/// them out — the second reader of the question `Open::rows` answers.
+fn drawn_rows(window: &SettingsWindow) -> Vec<SettingsRow> {
+    let open = window.open().unwrap();
+    SettingsCategory::ALL
+        .into_iter()
+        .flat_map(|category| {
+            crate::settings_page::the_page(open, category, &words(), noon()).rows()
+        })
+        .collect()
 }
 
 /// Focus `row` and press Enter on it.
@@ -127,29 +155,41 @@ fn every_setting_the_machine_has_is_in_one_window() {
         .iter()
         .filter(|row| row.section() == SettingsSection::Answering)
         .collect();
-    assert_eq!(
-        answers,
-        [
-            &SettingsRow::Answer(SettingsChoice::Paired(RECEPTION.to_owned())),
-            &SettingsRow::Answer(SettingsChoice::Provider {
-                provider: PROVIDER.to_owned(),
-                model: "harbour-small".to_owned(),
-            }),
-            &SettingsRow::Answer(SettingsChoice::NotAtAll),
-            // **Beneath the four ways and above the question about them**,
-            // because it is how the list of ways gets longer. It is the one
-            // row here that does not depend on what the person already has —
-            // every other appears only for something they have, which is why
-            // a fresh machine was offered *not at all* and nothing else.
-            &SettingsRow::AddAProvider,
-            // **Beneath the four**, and only because this person chose a
-            // provider: *Unless the person says otherwise, in Settings*. The
-            // test below asserts they are absent for somebody who chose a
-            // model on this machine.
-            &SettingsRow::UsingAnother(MayUseAnother::Yes),
-            &SettingsRow::UsingAnother(MayUseAnother::No),
-        ]
-    );
+    let provider = SettingsChoice::Provider {
+        provider: PROVIDER.to_owned(),
+        model: "harbour-small".to_owned(),
+    };
+    let said_where = window
+        .open()
+        .unwrap()
+        .answering
+        .the_provider(PROVIDER)
+        .is_some_and(|it| matches!(it.region, alo_models::Region::Declared(_)));
+    let mut expected = vec![
+        // **All four ways, each a choice of its own**, as the redesign of
+        // 2026-10-31 draws them — the one on this machine with nothing under
+        // it, because this person brought no weights.
+        SettingsRow::Way(Offered::OnThisMachine),
+        SettingsRow::Way(Offered::OnAMachineOnThisNetwork),
+        SettingsRow::Answer(SettingsChoice::Paired(RECEPTION.to_owned())),
+        SettingsRow::Way(Offered::FromAProvider),
+        SettingsRow::Answer(provider),
+    ];
+    if !said_where {
+        expected.push(SettingsRow::SayWhereItRuns(PROVIDER.to_owned()));
+    }
+    expected.extend([
+        // **alo's own service inside the providers, with no exemption**, and
+        // then the row that adds another — always offered, because it is how
+        // the list of ways gets longer.
+        SettingsRow::AlosOwnService,
+        SettingsRow::AddAProvider,
+        SettingsRow::Answer(SettingsChoice::NotAtAll),
+        // **Beneath the four**, and only because this person chose a
+        // provider: *Unless the person says otherwise, in Settings*.
+        SettingsRow::UsingAnother,
+    ]);
+    assert_eq!(answers, expected.iter().collect::<Vec<_>>());
     let accents: Vec<SettingsRow> = Accent::ALL.into_iter().map(SettingsRow::Accent).collect();
     let edges: Vec<SettingsRow> = Hiding::ALL.into_iter().map(SettingsRow::Hiding).collect();
     let actions: Vec<SettingsRow> = Action::ALL
@@ -170,49 +210,212 @@ fn every_setting_the_machine_has_is_in_one_window() {
     assert!(matches!(grant, SettingsRow::Granted(Row::Grant(_))));
     assert!(matches!(pairing, SettingsRow::Granted(Row::Pairing(_))));
 
+    // **Page by page, in the side column's order.**
     let mut sorted = rows.clone();
-    sorted.sort_by_key(SettingsRow::section);
-    assert_eq!(sorted, rows, "the sections are not in the order drawn");
+    sorted.sort_by_key(|row| SettingsCategory::of(row.section()));
+    assert_eq!(sorted, rows, "the pages are not in the order drawn");
 
-    let drawn: Vec<SettingsRow> = sections(window.open().unwrap(), &words(), noon())
-        .into_iter()
-        .flat_map(|section| section.lines)
-        .filter_map(|line| line.row)
-        .collect();
     assert_eq!(
-        drawn, rows,
+        drawn_rows(&window),
+        rows,
         "a row is acted on that is not drawn, or drawn and not acted on"
     );
 
     // What the settings are now is what is marked, and nothing is chosen that
     // the person did not choose.
-    let chosen: Vec<SettingsRow> = sections(window.open().unwrap(), &words(), noon())
+    let open = window.open().unwrap();
+    let chosen: Vec<SettingsRow> = SettingsCategory::ALL
         .into_iter()
-        .flat_map(|section| section.lines)
-        .filter(|line| line.chosen)
-        .filter_map(|line| line.row)
+        .flat_map(|category| {
+            crate::settings_page::the_page(open, category, &words(), noon()).blocks
+        })
+        .filter_map(|block| match block {
+            crate::settings_page::ABlock::Section(section) => Some(section.rows),
+            crate::settings_page::ABlock::Said(_) => None,
+        })
+        .flatten()
+        .filter(|row| {
+            matches!(
+                row.kind,
+                crate::settings_page::TheKind::AChoice { chosen: true }
+                    | crate::settings_page::TheKind::ANestedChoice { chosen: true }
+                    | crate::settings_page::TheKind::ASwitch(crate::settings_page::SwitchIs::On)
+            )
+        })
+        .filter_map(|row| row.row)
         .collect();
     assert_eq!(
         chosen,
         [
+            SettingsRow::Way(Offered::FromAProvider),
             SettingsRow::Answer(SettingsChoice::Provider {
                 provider: PROVIDER.to_owned(),
                 model: "harbour-small".to_owned(),
             }),
             SettingsRow::Accent(Appearance::shipped().accent()),
+            SettingsRow::Hiding(Dock::shipped().hiding()),
             // Nobody chose a region, so the language decides — which is what
             // the file says, and so what is marked.
             SettingsRow::WrittenAs(None),
-            SettingsRow::Hiding(Dock::shipped().hiding()),
         ]
     );
 }
 
-/// **A way to answer questions with nothing to choose under it is absent, not
-/// disabled**: with no provider, no brought weights and no pairing, only *not
-/// at all* is offered, and no line names a way nobody could choose.
+/// **No choice the old window offered is dropped by the redesign** — law 5,
+/// and the owner's condition of 2026-10-31: *every row in today's Settings
+/// must appear in the new design.*
+///
+/// Today's choices are enumerated here **as the one-list window offered them
+/// before the redesign**, by kind, from the crates that own each: every way to
+/// answer the person's settings hold, adding a provider, whether alo may use
+/// another, every accent, every way of writing dates, every time zone, both
+/// things the Dock may do, every shortcut, both terminal rows, the three
+/// levels of running code, seeing what alo did, giving alo a folder, and every
+/// grant and pairing. **Each is then found on a page, by the keyboard**: the
+/// page chosen in the side column and the row reached by Down. A row that the
+/// redesign left off a page fails here by name.
+///
+/// The two answers to *may alo use another* became one switch, so they are
+/// one row now — and pressing it twice writes each answer, which
+/// `using_another_changes_nothing_alo_choosing_would_not` holds.
 #[test]
-fn a_way_with_nothing_to_choose_is_absent_rather_than_disabled() {
+fn no_choice_the_old_window_offered_is_dropped() {
+    let machine = a_persons_machine("nothing-dropped");
+    let strings = words();
+    let door = CountingDoor::revoking();
+    let mut window = machine.opened();
+    let open = window.open().unwrap();
+    let pairings = open.pairings();
+    let mut before: Vec<SettingsRow> = Vec::new();
+    for (_, choices) in open.answering.offered(&pairings, noon()) {
+        before.extend(choices.into_iter().map(SettingsRow::Answer));
+    }
+    before.push(SettingsRow::AddAProvider);
+    before.push(SettingsRow::UsingAnother);
+    before.extend(Accent::ALL.into_iter().map(SettingsRow::Accent));
+    before.extend(open.formats.choices().into_iter().map(SettingsRow::WrittenAs));
+    before.extend(open.time_zone.choices().into_iter().map(SettingsRow::TimeZone));
+    before.extend(Hiding::ALL.into_iter().map(SettingsRow::Hiding));
+    before.extend(
+        open.shortcuts
+            .drawn()
+            .bindings()
+            .map(|binding| SettingsRow::Shortcut(binding.action)),
+    );
+    if open.shell_integration.offers_a_row() {
+        before.push(SettingsRow::ShellIntegration);
+    }
+    if open.a_place_to_return_to.offers_a_row() {
+        before.push(SettingsRow::APlaceToReturnTo);
+    }
+    before.extend(
+        alo_capability::HowCodeRuns::ALL
+            .into_iter()
+            .map(SettingsRow::HowCodeRuns),
+    );
+    before.push(SettingsRow::SeeWhatAloDid);
+    if open.granted.a_folder_can_be_given() {
+        before.push(SettingsRow::GrantAFolder);
+    }
+    before.extend(open.granted.rows(noon()).into_iter().map(SettingsRow::Granted));
+    assert!(
+        before.len() > 30,
+        "the control: today's window had dozens of choices on this machine"
+    );
+
+    let drawn = drawn_rows(&window);
+    for row in before {
+        assert!(drawn.contains(&row), "{row:?} is not on any page");
+        focus_on(&mut window, &row, &strings, &door);
+        assert_eq!(window.focused(noon()), Some(row));
+    }
+}
+
+/// **A way to answer questions with nothing under it is drawn, and choosing it
+/// says why and changes nothing**: with no provider, no brought weights and no
+/// pairing, the four ways are drawn as the redesign draws them, *not at all*
+/// is the one answer that can be written, and Enter on any of the other three
+/// writes nothing and says in words why there is nothing there.
+///
+/// **This was *absent rather than disabled* until 2026-10-31**, when the
+/// owner's redesign drew the four always. The honesty is the same by another
+/// road: nothing is offered that does nothing silently.
+#[test]
+fn a_way_with_nothing_under_it_says_why_and_changes_nothing() {
+    let strings = words();
+    let door = CountingDoor::revoking();
+    let held = a_twin();
+    let home = held.path().join("home");
+    std::fs::create_dir_all(&home).unwrap();
+    let var = held.path().join("var");
+    std::fs::create_dir_all(&var).unwrap();
+    let places = SettingsPlaces::of(
+        None,
+        Some(home.as_os_str()),
+        None,
+        &var.join("grants"),
+        &var.join("pairings"),
+        &var.join("agentd.sock"),
+        &var.join("how-code-runs.toml"),
+        Some("alo"),
+    );
+    let mut window = SettingsWindow::closed();
+    window.opened_by_hand(&places, noon());
+    assert_eq!(
+        window.rows_on_the_page(noon()),
+        [
+            SettingsRow::Way(Offered::OnThisMachine),
+            SettingsRow::Way(Offered::OnAMachineOnThisNetwork),
+            SettingsRow::Way(Offered::FromAProvider),
+            SettingsRow::AlosOwnService,
+            SettingsRow::AddAProvider,
+            SettingsRow::Answer(SettingsChoice::NotAtAll),
+        ]
+    );
+    let settings = places.choosing().unwrap().to_owned();
+    let before = bytes(&settings);
+    for (way, why) in [
+        (
+            Offered::OnThisMachine,
+            crate::the_settings_words::NO_MODEL_HERE_YET,
+        ),
+        (
+            Offered::OnAMachineOnThisNetwork,
+            crate::the_settings_words::NOTHING_PAIRED_YET,
+        ),
+        (
+            Offered::FromAProvider,
+            crate::the_settings_words::NO_PROVIDER_YET,
+        ),
+    ] {
+        assert_eq!(
+            chosen(&mut window, &SettingsRow::Way(way), &strings, &door),
+            Some(SettingsDid::Answered(SettingsAnswered::NothingChanged))
+        );
+        let told = strings.say(&why.key(), &Filling::nothing()).into_text();
+        assert!(said(&window).contains(&told), "{way:?}: {:?}", said(&window));
+        assert_eq!(bytes(&settings), before, "{way:?} wrote the settings");
+    }
+    // **alo's own service says it is not here yet**, and writes nothing.
+    assert_eq!(
+        chosen(&mut window, &SettingsRow::AlosOwnService, &strings, &door),
+        Some(SettingsDid::Answered(SettingsAnswered::NothingChanged))
+    );
+    let not_yet = strings
+        .say(
+            &crate::the_settings_words::NOT_ON_THIS_COMPUTER_YET.key(),
+            &Filling::nothing(),
+        )
+        .into_text();
+    assert!(said(&window).contains(&not_yet));
+    assert_eq!(bytes(&settings), before);
+}
+
+/// **On a fresh machine the one answer that can be written is *not at all***,
+/// nothing is marked, and nothing granted is a sentence with the way in under
+/// it rather than an empty list.
+#[test]
+fn a_fresh_machine_can_answer_only_not_at_all_and_is_offered_the_way_in() {
     let held = a_twin();
     let home = held.path().join("home");
     std::fs::create_dir_all(&home).unwrap();
@@ -533,14 +736,16 @@ fn using_another_changes_nothing_alo_choosing_would_not() {
     let twin_at = copied(&at, twin.path());
     let mut twin_choosing = Choosing::at(&twin_at).unwrap();
 
-    for said in MayUseAnother::BOTH {
+    // **One switch, pressed twice**: *Not set* turns it on, and on turns it
+    // off — each answer written exactly as `alo-choosing` writes it.
+    assert_eq!(
+        window.open().unwrap().answering.may_use_another(),
+        None,
+        "the control: this person has never said"
+    );
+    for said in [MayUseAnother::Yes, MayUseAnother::No] {
         assert_eq!(
-            chosen(
-                &mut window,
-                &SettingsRow::UsingAnother(said),
-                &strings,
-                &door
-            ),
+            chosen(&mut window, &SettingsRow::UsingAnother, &strings, &door),
             Some(SettingsDid::Answered(SettingsAnswered::Written)),
             "{said:?} was not written"
         );
@@ -570,7 +775,7 @@ fn using_another_is_no_question_when_nothing_answers() {
         window
             .rows(noon())
             .iter()
-            .any(|row| matches!(row, SettingsRow::UsingAnother(_))),
+            .any(|row| matches!(row, SettingsRow::UsingAnother)),
         "this fixture chose a provider, so the rows should be there before the change below"
     );
 
@@ -588,7 +793,7 @@ fn using_another_is_no_question_when_nothing_answers() {
     assert!(
         !rows
             .iter()
-            .any(|row| matches!(row, SettingsRow::UsingAnother(_))),
+            .any(|row| matches!(row, SettingsRow::UsingAnother)),
         "a person who chose that nothing answers was offered a fallback: {rows:?}"
     );
 }
@@ -1089,55 +1294,100 @@ fn a_closed_window_does_nothing_and_closing_writes_nothing() {
     assert!(door.unpaired.borrow().is_empty());
 }
 
-/// **Tab moves between sections, and nothing but Enter, Backspace or Delete
-/// acts**: moving through every row of every section changes no file.
+/// **The keyboard walks the side column and every page, and nothing but
+/// Enter, Backspace or Delete acts**: Down chooses the page, Tab goes into it
+/// and from section to section and back out, End reaches the page's last row,
+/// and walking every row of every page changes no file.
 #[test]
-fn moving_between_rows_and_sections_changes_nothing() {
+fn moving_between_pages_rows_and_sections_changes_nothing() {
     let machine = a_persons_machine("moving");
     let strings = words();
     let door = CountingDoor::revoking();
     let mut window = machine.opened();
     let files = [machine.grants(), machine.pairings(), machine.choosing()];
     let before: Vec<_> = files.iter().map(|at| bytes(at)).collect();
-
-    let mut firsts = Vec::new();
-    for _ in 0..9 {
-        firsts.push(window.focused(noon()).unwrap().section());
-        window.pressed(key(SettingsKey::NextSection), doors(&strings, &door));
-    }
-    assert_eq!(
-        firsts[..8],
-        [
-            SettingsSection::Answering,
-            SettingsSection::Appearance,
-            // How dates and times are written, beneath how the machine looks.
-            SettingsSection::Formats,
-            SettingsSection::Dock,
-            SettingsSection::Shortcuts,
-            // Between the shortcuts and the grants, which is where
-            // `settings_lines` draws it.
-            SettingsSection::Terminal,
-            // And between the terminal and the grants: this **is** a grant —
-            // the separate one ADR 0064 makes running code — so a person reads
-            // the grant they are giving before the list of ones they gave.
-            SettingsSection::HowCodeRuns,
-            SettingsSection::Granted,
-        ]
-    );
-    window.pressed(key(SettingsKey::PreviousSection), doors(&strings, &door));
-    assert_eq!(
-        window.focused(noon()).unwrap(),
-        // One section back from the grants is the first of the three levels —
-        // it was the terminal's single row until how code runs got a surface,
-        // and the first shortcut before the terminal section existed.
-        SettingsRow::HowCodeRuns(alo_capability::HowCodeRuns::InASealedBox)
-    );
-    for pressed in [SettingsKey::Last, SettingsKey::First, SettingsKey::Nothing] {
+    let press = |window: &mut SettingsWindow, pressed: SettingsKey| {
         window.pressed(key(pressed), doors(&strings, &door));
+    };
+
+    // **It opens on alo and AI, with the keyboard in the side column**, and
+    // Down and Up choose the page there.
+    assert_eq!(window.category(), Some(SettingsCategory::AloAndAi));
+    assert!(!window.is_in_the_page());
+    assert_eq!(window.focused(noon()), None);
+    let mut pages = Vec::new();
+    for _ in 0..9 {
+        pages.push(window.category().unwrap());
+        press(&mut window, SettingsKey::Next);
     }
-    for _ in 0..1024 {
-        window.pressed(key(SettingsKey::Next), doors(&strings, &door));
-        window.pressed(key(SettingsKey::Nothing), doors(&strings, &door));
+    assert_eq!(pages[..8], SettingsCategory::ALL);
+    assert_eq!(pages[8], SettingsCategory::Accessibility, "it stays on the last");
+    press(&mut window, SettingsKey::First);
+    assert_eq!(window.category(), Some(SettingsCategory::AloAndAi));
+
+    // **Tab goes into the page, then from section to section, and from the
+    // last back to the side column.** alo and AI has two: the four ways, and
+    // whether alo may use another.
+    press(&mut window, SettingsKey::NextSection);
+    assert!(window.is_in_the_page());
+    assert_eq!(
+        window.focused(noon()),
+        Some(SettingsRow::Way(Offered::OnThisMachine))
+    );
+    press(&mut window, SettingsKey::NextSection);
+    assert_eq!(window.focused(noon()), Some(SettingsRow::UsingAnother));
+    press(&mut window, SettingsKey::NextSection);
+    assert!(!window.is_in_the_page(), "Tab from the last section");
+    press(&mut window, SettingsKey::PreviousSection);
+    assert_eq!(
+        window.focused(noon()),
+        Some(SettingsRow::UsingAnother),
+        "Shift+Tab from the side column goes to the page's last section"
+    );
+
+    // **End reaches the page's last row, Home its first.**
+    press(&mut window, SettingsKey::First);
+    assert_eq!(
+        window.focused(noon()),
+        Some(SettingsRow::Way(Offered::OnThisMachine))
+    );
+    press(&mut window, SettingsKey::Last);
+    assert_eq!(
+        window.focused(noon()),
+        window.rows_on_the_page(noon()).last().cloned()
+    );
+
+    // **Enter on a way with something under it goes to the choice there**,
+    // and writes nothing.
+    focus_on(
+        &mut window,
+        &SettingsRow::Way(Offered::FromAProvider),
+        &strings,
+        &door,
+    );
+    press(&mut window, SettingsKey::Choose);
+    assert_eq!(
+        window.focused(noon()),
+        Some(SettingsRow::Answer(SettingsChoice::Provider {
+            provider: PROVIDER.to_owned(),
+            model: "harbour-small".to_owned(),
+        }))
+    );
+
+    // Every row of every page, walked.
+    for category in SettingsCategory::ALL {
+        while window.is_in_the_page() {
+            press(&mut window, SettingsKey::PreviousSection);
+        }
+        press(&mut window, SettingsKey::First);
+        while window.category() != Some(category) {
+            press(&mut window, SettingsKey::Next);
+        }
+        press(&mut window, SettingsKey::NextSection);
+        for _ in 0..300 {
+            press(&mut window, SettingsKey::Next);
+            press(&mut window, SettingsKey::Nothing);
+        }
     }
     let after: Vec<_> = files.iter().map(|at| bytes(at)).collect();
     assert_eq!(after, before);
@@ -1149,6 +1399,13 @@ fn moving_between_rows_and_sections_changes_nothing() {
         assert_eq!(bytes(&machine.kept(file)), None);
     }
     assert_eq!(door.knocks.get(), 0);
+
+    // **Escape closes it from the side column too.**
+    while window.is_in_the_page() {
+        press(&mut window, SettingsKey::PreviousSection);
+    }
+    press(&mut window, SettingsKey::Close);
+    assert!(!window.is_open());
 }
 
 /// **A folder given until the person removes it is on the list, and the list

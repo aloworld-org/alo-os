@@ -4,15 +4,18 @@
 //! (`crate::settings_seat`). Settings is operated whole from the keyboard,
 //! and the list is short on purpose:
 //!
-//! - **Up, Down, Home, End** move through the rows; **Tab** and **Shift+Tab**
-//!   move to the next and the previous section;
+//! - in the side column, **Up, Down, Home, End** choose the page, and **Tab**,
+//!   **Enter** or **Space** go into it;
+//! - in the page, **Up, Down, Home, End** move through its rows — End reaches
+//!   its last — and **Tab** and **Shift+Tab** move to the next and the
+//!   previous section, and out to the side column past either end;
 //! - **Enter** or **Space** acts on the row: chooses it, waits for a chord for
 //!   a shortcut, or revokes a grant or a pairing;
 //! - **Backspace** puts the focused shortcut back to what it ships with;
 //! - **Delete** puts a section whose file did not read back as shipped — the
 //!   one act that replaces such a file, and one the section is told it may
 //!   take in its own crate's sentence;
-//! - **Escape** closes the window.
+//! - **Escape** closes the window, from either column.
 //!
 //! Nothing is a letter, so nothing types; and a chord with Control, Alt or the
 //! logo key held is **nothing**, so a shortcut meant for something else never

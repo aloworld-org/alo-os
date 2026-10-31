@@ -8,6 +8,25 @@ that prose was 55 top-level frames behind without anything saying so.
 **Approved by the owner on 2026-10-04**, with the size explicitly accepted: *an untraceable
 design change is the larger problem.*
 
+## The Settings window and the alo window, 2026-10-31
+
+**`544-30910.xml` is the page the owner approved on 2026-10-31**, *Proposed ·
+Settings and the alo window · 2026-10-31*: fifteen Settings frames, five alo
+window frames and a parts kit, 2,905 lines. Read with `get_metadata` on the
+page's own id and written by this file's procedure — entry 0 only, LF, no
+trailing whitespace, the refusal list checked, the root closed — by a script
+rather than by hand, because the response was 243 thousand characters and came
+back as a file.
+
+**Geometry and layer names only**, as every file here. The appearance — fills,
+strokes, the dark values, type — is in
+**[`../the-settings-window.md`](../the-settings-window.md)**, from
+`get_design_context` on each frame the same day; the artwork is SVG in
+`crates/alo-shell/icons/settings/`, with the node each came from. **Instances
+are not expanded**: a button appears as one `<instance>` with its width and no
+label, which is why the button widths in that page are recorded as the frames
+set them rather than measured off their labels.
+
 ## The sign-in and unlock screen, 2026-10-12
 
 **`176-10686.xml` is authoritative for the sign-in and unlock screen**, and

@@ -296,6 +296,10 @@ pub fn what_this_machine_can_say() -> Result<Strings, WouldNotStand> {
     // fault that note records this repository already having once.
     crate::the_providers_words::declare_the_providers_words(&mut vocabulary)
         .map_err(|why| WouldNotStand::Words(why.to_string()))?;
+    // **The Settings window's own words** — its title, its categories, each
+    // page's heading — declared here for the note above.
+    crate::the_settings_words::declare_the_settings_words(&mut vocabulary)
+        .map_err(|why| WouldNotStand::Words(why.to_string()))?;
     // **The surface that gives alo a folder**, declared here for the same
     // reason. `alo-picking` words the picker's own refusals and `alo-saying`
     // collects those; what is declared here is this window's part — the row

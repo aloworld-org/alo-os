@@ -1,81 +1,66 @@
-//! Settings laid out and rasterised for one output.
+//! Settings laid out and rasterised for one output: the window the owner's
+//! redesign of 2026-10-31 draws, with a side column of categories and the page
+//! the person chose beside it.
 //!
 //! # What is drawn
 //!
-//! While Settings is closed, **nothing**. While it is open, one tall panel
-//! holding the sections in order (`crate::settings_lines`), a rule between
-//! each two: first what a section has to say — its file did not read, a change
-//! was refused, a revocation came back — and then its rows.
+//! While Settings is closed, **nothing**. While it is open, one window — a
+//! rounded panel with the floating shadow, frame `550:98` — holding:
 //!
-//! # Shapes carry state, words carry meaning
+//! - **the side column** on the canvas colour: *Settings*, the line under it,
+//!   the two groups of categories, and the footer at its foot. The page being
+//!   shown is the category on the accent's ground (`crate::settings_palette`);
+//! - **the page** beside it: its heading, its introduction, and its sections as
+//!   `crate::settings_drawn_page` lays them out — and it **scrolls**, so the
+//!   row the keyboard is on is always in view, with the start of its section
+//!   above it where both fit.
 //!
-//! Every row is drawn in the same type and the same two colours. What is
-//! chosen now is a filled square at the start of the row; the row with the
-//! focus has an edge around it, and a doubled edge while Settings waits for a
-//! chord. **Nothing is dimmed**, because nothing drawn here is disabled: a row
-//! exists only for something a person can do, and a state that is only a hue
-//! fails anybody who cannot tell the hue apart (EN 301 549). Deep teal is not
-//! among the colours: it means the agent acting, and Settings is a person
-//! choosing.
+//! Where it goes and how large is a rule of the display (`crate::settings_frame`),
+//! and every figure goes through the person's text size and the display's
+//! scale together, so a 200 per cent screen draws the same window sharper.
 //!
-//! # Every row is drawn whole or not at all
+//! # Where the keyboard is, is drawn
 //!
-//! The view moves to keep the focused row in it, and keeps the sentences its
-//! section says in view above it where they fit. Nothing is cut: a line that
-//! does not fit below the last one waits for the view to move, a rail on the
-//! trailing edge says where the view is, and a window that cannot hold the
-//! focused row whole **refuses the frame** ([`RenderError::SettingsScene`]).
+//! A navy outline (`text/primary`, as the task window's is) round the category
+//! while the keyboard is in the side column, and round the row or button it is
+//! on in the page — doubled while Settings waits for a chord. Nothing is
+//! dimmed: a row is drawn only for something a person can do, or says in words
+//! that it is not on this computer yet.
 
 use std::time::SystemTime;
 
-use alo_appearance::{Scheme, TextScale};
+use alo_appearance::{Colour, Scheme, TextScale};
 use alo_strings::{Direction, Strings};
 use smithay::utils::{Physical, Rectangle};
 
+use crate::desktop_look::Measure;
 use crate::display_scale::DisplayScale;
-use crate::painted::{Inked, Solid};
-use crate::painted_text::Shaped;
-use crate::record_room::{Room, framed, rule};
-use crate::settings_lines::{LineWords, sections};
-use crate::{Contrast, RecordLook, RenderError, SettingsWindow, WindowControlLabels};
+use crate::painted::Washed;
+use crate::settings_canvas::{AShadow, Area, Canvas};
+use crate::settings_categories::SettingsCategory;
+use crate::settings_drawn_page::{ATargetDrawn, Laying, SettingsText, laid_out, painted};
+use crate::settings_frame::TheFrame;
+use crate::settings_measures as m;
+use crate::settings_page::{APage, said};
+use crate::settings_palette::SettingsPalette;
+use crate::settings_type::{TheType, written};
+use crate::{Contrast, RenderError, SettingsWindow, WindowControlLabels};
 
 /// How Settings looks, as the person's appearance and language decide.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct SettingsLook {
     /// Light or dark, as `alo-appearance` decides it.
     pub scheme: Scheme,
-    /// The person's text scale, applied to every measure.
+    /// The person's text size, applied to every measure.
     pub scale: TextScale,
-    /// Which way the person reads, which decides where the mark and the rail
-    /// are.
+    /// Which way the person reads, which decides which side the side column
+    /// is on.
     pub reading: Direction,
     /// The design's palette, or the one high contrast decides
     /// (`crate::access_contrast`).
     pub contrast: Contrast,
-}
-
-/// One piece of text as drawn.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) struct SettingsText {
-    /// The text inked, exactly as it arrived.
-    pub(crate) text: String,
-    /// Its box.
-    pub(crate) area: Rectangle<i32, Physical>,
-}
-
-/// One line as drawn.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) struct SettingsLineDrawn {
-    /// The words it was drawn from.
-    pub(crate) words: LineWords,
-    /// Each piece of text, in order.
-    pub(crate) parts: Vec<SettingsText>,
-    /// The whole line's box.
-    pub(crate) area: Rectangle<i32, Physical>,
-    /// Whether it has the focus.
-    pub(crate) focused: bool,
-    /// The mark saying it is chosen, when it is.
-    pub(crate) mark: Option<Rectangle<i32, Physical>>,
+    /// The person's accent, which selections and switches are drawn in.
+    pub accent: Colour,
 }
 
 /// Settings for one output size, ready to paint.
@@ -83,75 +68,62 @@ pub(crate) struct SettingsLineDrawn {
 pub(crate) struct SettingsPicture {
     /// The output size it was laid out for.
     pub(crate) size: (i32, i32),
-    /// The panel, while Settings is open.
-    pub(crate) panel: Option<Rectangle<i32, Physical>>,
-    /// Every sentence a section says, in view, in order.
-    pub(crate) said: Vec<SettingsText>,
-    /// Every line in view, in order.
-    pub(crate) lines: Vec<SettingsLineDrawn>,
-    /// Whether anything is out of view above or below.
+    /// The window, while Settings is open.
+    pub(crate) panel: Option<Area>,
+    /// The window and everything on it, as one raster.
+    pub(crate) washed: Option<Washed>,
+    /// Every category, where it is drawn, in the side column's order.
+    pub(crate) categories: Vec<(SettingsCategory, Area)>,
+    /// Every target on the page that is in view, where it is drawn.
+    pub(crate) targets: Vec<ATargetDrawn>,
+    /// Where the keyboard's outline is drawn round, when it is anywhere.
+    pub(crate) focused: Option<Area>,
+    /// Every piece of text drawn, where it is drawn.
+    pub(crate) texts: Vec<SettingsText>,
+    /// Whether any of the page is out of view above or below.
     pub(crate) out_of_view: bool,
-    /// Flat shapes, painted first.
-    pub(crate) solids: Vec<Solid>,
-    /// Text, painted after the shapes.
-    pub(crate) inked: Vec<Inked>,
 }
 
 impl SettingsPicture {
     /// Nothing drawn, for an output of `size`.
-    fn empty(size: (i32, i32)) -> Self {
+    const fn empty(size: (i32, i32)) -> Self {
         Self {
             size,
             panel: None,
-            said: Vec::new(),
-            lines: Vec::new(),
+            washed: None,
+            categories: Vec::new(),
+            targets: Vec::new(),
+            focused: None,
+            texts: Vec::new(),
             out_of_view: false,
-            solids: Vec::new(),
-            inked: Vec::new(),
         }
     }
 
     /// Whether nothing at all is drawn.
-    pub(crate) fn is_empty(&self) -> bool {
-        self.panel.is_none() && self.solids.is_empty() && self.inked.is_empty()
+    pub(crate) const fn is_empty(&self) -> bool {
+        self.washed.is_none()
     }
 }
 
-/// One thing laid out in the panel, before the view is chosen.
-enum Block {
-    /// A sentence a section says.
-    Said(String, Shaped),
-    /// A line, each piece shaped.
-    Line(LineWords, Vec<Shaped>),
-    /// The rule between two sections.
-    Rule,
-}
-
-impl Block {
-    /// How tall it is.
-    fn height(&self, room: Room) -> i32 {
-        match self {
-            Self::Said(_, shaped) => shaped.height + room.gap,
-            Self::Line(_, parts) => {
-                parts.iter().map(|shaped| shaped.height).sum::<i32>() + 2 * room.gap
-            }
-            Self::Rule => room.hairline + 2 * room.gap,
-        }
-    }
+/// The provider form on screen, and what the machine answered about it.
+///
+/// **One value rather than two arguments**, because a refusal without a form is
+/// not a state this surface can be in: the sentence is *about* what is on the
+/// screen, and a form that has closed takes its answer with it.
+#[derive(Debug, Clone, Copy)]
+pub struct AFormOnScreen<'a> {
+    /// What a person has typed so far.
+    pub form: &'a alo_setting_up::a_provider_is_filled_in::AProviderBeingAddded,
+    /// Why the last attempt to save it did not happen, when one did not.
+    pub not_saved: Option<crate::a_provider_is_added_in_settings::WhyNotSaved>,
 }
 
 /// Lay Settings out for an output of `size` drawn at `display`, and
 /// rasterise it.
 ///
-/// Every measure goes through the person's text size and the display's scale
-/// together — the record window's room, which Settings shares — so on a 200
-/// per cent screen Settings is the same size to the eye as the Dock beside it.
-/// The rules between sections are one logical pixel. At 100 nothing changes.
-///
 /// # Errors
-/// [`RenderError::SettingsScene`] when Settings is open and the output is too
-/// small for a panel, larger than any it is laid out for, or cannot hold the
-/// focused row whole.
+/// [`RenderError::SettingsScene`] when Settings is open and the output has no
+/// room for its window, or the person's accent is not one they may choose.
 #[expect(
     clippy::too_many_arguments,
     reason = "each is a different thing about one frame of Settings, and a struct would be one call"
@@ -164,239 +136,346 @@ pub(crate) fn picture(
     look: SettingsLook,
     now: SystemTime,
     // **The provider a person is filling in, when they are.** Handed in
-    // rather than read off the window, because the form lives on the `Server`
-    // and this function is given the window -- see
-    // `crate::a_provider_is_added_in_settings` for why the form being open is
-    // itself the mode.
+    // rather than read off the window, because the form lives on the `Server`.
     filling_in: Option<AFormOnScreen<'_>>,
     display: DisplayScale,
 ) -> Result<SettingsPicture, RenderError> {
-    let mut drawn = SettingsPicture::empty(size);
+    let mut picture = SettingsPicture::empty(size);
     let Some(open) = window.open() else {
-        return Ok(drawn);
+        return Ok(picture);
     };
-    let room = Room::on(
-        size,
-        RecordLook {
-            contrast: look.contrast,
-            scheme: look.scheme,
-            scale: look.scale,
-            reading: look.reading,
-        },
-        display,
+    let palette = SettingsPalette::of(look).map_err(|_| RenderError::SettingsScene)?;
+    let measure = Measure::of(look.scale).on(display);
+    let factor = measure.factor();
+    let design = |pixels: i32| -> u32 {
+        let it = (pixels.max(0) as f32 / factor).floor();
+        it as u32
+    };
+    let frame = TheFrame::on(design(size.0), design(size.1)).map_err(|_| RenderError::SettingsScene)?;
+    let px = |logical: u32| measure.px(i32::try_from(logical).unwrap_or(i32::MAX));
+
+    let window_area = Rectangle::new(
+        (px(frame.left), px(frame.top)).into(),
+        (px(frame.wide), px(frame.tall)).into(),
+    );
+    picture.panel = Some(window_area);
+    let raised = crate::how_a_panel_is_raised::HowItIsRaised::FLOATING.at(f64::from(factor));
+    let reach = raised.reach();
+    let screen: Area = Rectangle::new((0, 0).into(), size.into());
+    let canvas_area = Rectangle::new(
+        (window_area.loc.x - reach, window_area.loc.y - reach).into(),
+        (window_area.size.w + 2 * reach, window_area.size.h + 2 * reach).into(),
     )
-    .map_err(|_| RenderError::SettingsScene)?;
-    let top = room.margin;
-    let bottom = size.1 - room.margin - room.pad;
-    let panel = Rectangle::new(
-        (room.left, top).into(),
-        (room.width, size.1 - 2 * room.margin).into(),
-    );
-    framed(&mut drawn.solids, panel, room.measure.px(2), room.palette);
-    drawn.panel = Some(panel);
-
-    let fonts = &mut labels.fonts;
-    let mark = room.measure.px(12);
-    let (after_x, after_width) = room.after_box(look.reading);
-    let focused = window.focused(now);
-    let mut blocks = Vec::new();
-    let mut focus_at = None;
-    let mut section_at = 0;
-    // **A form replaces the rows rather than joining them.** Every key is the
-    // form's while one is open, so the rows behind it are rows a person
-    // cannot reach -- drawing them would be drawing a list that does not
-    // respond. See `crate::a_provider_being_added_is_drawn`.
-    let showing = filling_in.map_or_else(
-        || sections(open, strings, now),
-        |on_screen| {
-            vec![crate::a_provider_being_added_is_drawn::the_form(
-                on_screen.form,
-                on_screen.not_saved,
-                strings,
-            )]
+    .intersection(screen)
+    .ok_or(RenderError::SettingsScene)?;
+    let mut canvas = Canvas::over(canvas_area);
+    // **For a reader of a right-to-left language the whole window is turned
+    // round**: the side column on the right, every row's mark at its right-hand
+    // end. Words are placed turned and drawn as they were shaped.
+    if look.reading == Direction::RightToLeft {
+        canvas.turned_round(window_area);
+    }
+    let corner = px(m::THE_WINDOWS_CORNER) as f32;
+    canvas.shadow(
+        window_area,
+        corner,
+        AShadow {
+            falls: raised.falls(),
+            blurs: raised.blurs(),
+            spreads: raised.spreads(),
+            darkness: raised.darkness(),
         },
     );
-    for (which, section) in showing.into_iter().enumerate() {
-        if which > 0 {
-            blocks.push(Block::Rule);
-        }
-        let starts = blocks.len();
-        for text in section.said {
-            let shaped = room.shaped(fonts, &text, room.inner);
-            blocks.push(Block::Said(text, shaped));
-        }
-        for line in section.lines {
-            let parts = line
-                .parts
-                .iter()
-                .enumerate()
-                .map(|(at, text)| {
-                    let width = if at == 0 {
-                        room.inner - room.indent
-                    } else {
-                        after_width - room.indent
-                    };
-                    room.shaped(fonts, text, width)
-                })
-                .collect();
-            if line.row.is_some() && line.row == focused {
-                focus_at = Some(blocks.len());
-                section_at = starts;
-            }
-            blocks.push(Block::Line(line, parts));
-        }
-    }
+    canvas.fill(window_area, corner, palette.surface, 1.0);
 
-    let room_for = bottom - (top + room.pad);
-    let heights: Vec<i32> = blocks.iter().map(|block| block.height(room)).collect();
-    let from = match focus_at {
-        Some(focus) => {
-            let fits = |from: usize| {
-                heights
-                    .get(from..=focus)
-                    .map_or(0, |seen| seen.iter().sum::<i32>())
-                    <= room_for
-            };
-            let mut from = 0;
-            while from < focus && !fits(from) {
-                from += 1;
-            }
-            if !fits(from) {
-                return Err(RenderError::SettingsScene);
-            }
-            if from > section_at && fits(section_at) {
-                section_at
-            } else {
-                from
-            }
-        }
-        None => 0,
+    // **The side column**, on the canvas colour, inside the window's own
+    // rounded shape: filled as the window is and cut where it ends.
+    let line = px(m::A_HAIRLINE);
+    let side_wide = px(frame.side);
+    let side = Rectangle::new(
+        (window_area.loc.x + line, window_area.loc.y + line).into(),
+        (side_wide, window_area.size.h - 2 * line).into(),
+    );
+    canvas.clipped_to(side);
+    canvas.fill(window_area, corner, palette.canvas, 1.0);
+    canvas.fill(
+        Rectangle::new(
+            (side.loc.x + side.size.w - line, side.loc.y).into(),
+            (line, side.size.h).into(),
+        ),
+        0.0,
+        palette.edge,
+        1.0,
+    );
+    the_side_column(
+        &mut canvas,
+        &mut picture,
+        labels,
+        (side, measure),
+        (palette, strings),
+        open,
+    );
+    canvas.unclipped();
+
+    // **The page**, in its own view, scrolled to keep the keyboard in it.
+    let view = Rectangle::new(
+        (side.loc.x + side.size.w, window_area.loc.y + line).into(),
+        (
+            window_area.loc.x + window_area.size.w - line - (side.loc.x + side.size.w),
+            window_area.size.h - 2 * line,
+        )
+            .into(),
+    );
+    let page = filling_in.map_or_else(
+        || crate::settings_page::the_page(open, open.category, strings, now),
+        |on_screen| {
+            crate::settings_page::the_form_page(
+                crate::a_provider_being_added_is_drawn::the_form(
+                    on_screen.form,
+                    on_screen.not_saved,
+                    strings,
+                ),
+                strings,
+            )
+        },
+    );
+    let mut laying = Laying {
+        fonts: &mut labels.fonts,
+        measure,
+        palette,
+        left: window_area.loc.x + px(frame.the_column_starts()),
+        wide: px(frame.column),
+        above: px(frame.above_the_content),
     };
-
-    let edge = room.measure.px(2);
-    let mut y = top + room.pad;
-    let mut shown = 0;
-    for (block, height) in blocks.into_iter().zip(heights.iter().copied()).skip(from) {
-        if y + height > bottom {
-            break;
+    let laid = laid_out(&page, &mut laying);
+    let focused_row = window.focused(now);
+    let target = focused_row
+        .as_ref()
+        .and_then(|row| laid.targets.iter().find(|it| it.row == *row));
+    let scrolled = scrolled_to(target, laid.tall, view.size.h);
+    let top = view.loc.y - scrolled;
+    picture.out_of_view = scrolled > 0 || laid.tall - scrolled > view.size.h;
+    canvas.clipped_to(view);
+    painted(&laid.drawn, &mut canvas, top, factor);
+    let moved = |area: Area| Rectangle::new((area.loc.x, area.loc.y + top).into(), area.size);
+    for drawn in &laid.targets {
+        let area = moved(drawn.area);
+        if area.intersection(view).is_some() {
+            picture.targets.push(ATargetDrawn {
+                area,
+                ..drawn.clone()
+            });
         }
-        match block {
-            Block::Said(text, shaped) => {
-                let rows = shaped.height;
-                drawn
-                    .said
-                    .push(placed(&mut drawn.inked, shaped, text, room.text_x, y));
-                y += rows + room.gap;
-            }
-            Block::Rule => {
-                y += room.gap;
-                rule(&mut drawn.solids, room, y);
-                y += room.hairline + room.gap;
-            }
-            Block::Line(words, parts) => {
-                let area = Rectangle::new(
-                    (room.text_x - edge * 2, y).into(),
-                    (room.inner + edge * 4, height).into(),
-                );
-                let is_focused = words.row.is_some() && words.row == focused;
-                if is_focused {
-                    framed(&mut drawn.solids, area, edge, room.palette);
-                    if window.is_waiting_for_a_chord() {
-                        let inner = Rectangle::new(
-                            (area.loc.x + 2 * edge, area.loc.y + 2 * edge).into(),
-                            (area.size.w - 4 * edge, area.size.h - 4 * edge).into(),
-                        );
-                        framed(&mut drawn.solids, inner, edge, room.palette);
-                    }
-                }
-                let mut at = y + room.gap;
-                let (first_x, mark_x) = match look.reading {
-                    Direction::RightToLeft => (room.text_x, room.text_x + room.inner - mark),
-                    Direction::LeftToRight => (room.text_x + room.indent, room.text_x),
-                };
-                let marked = words.chosen.then(|| {
-                    Rectangle::new(
-                        (mark_x, at + room.measure.px(6)).into(),
-                        (mark, mark).into(),
-                    )
-                });
-                if let Some(square) = marked {
-                    drawn.solids.push(Solid {
-                        area: square,
-                        colour: room.palette.ink,
-                    });
-                }
-                let mut texts = Vec::new();
-                for (which, (shaped, text)) in parts.into_iter().zip(words.parts.iter()).enumerate()
-                {
-                    let rows = shaped.height;
-                    let x = if which == 0 {
-                        first_x
-                    } else {
-                        after_x + room.indent
-                    };
-                    texts.push(placed(&mut drawn.inked, shaped, text.clone(), x, at));
-                    at += rows;
-                }
-                drawn.lines.push(SettingsLineDrawn {
-                    words,
-                    parts: texts,
-                    area,
-                    focused: is_focused,
-                    mark: marked,
-                });
-                y += height;
-            }
+    }
+    for text in &laid.texts {
+        let area = moved(text.area);
+        if area.intersection(view).is_some() {
+            picture.texts.push(SettingsText {
+                area,
+                ..text.clone()
+            });
         }
-        shown += 1;
     }
+    if let Some(target) = target {
+        let area = moved(target.area);
+        a_focus_ring(&mut canvas, area, m::A_CARDS_CORNER, measure, palette, window.is_waiting_for_a_chord());
+        picture.focused = Some(area);
+    }
+    canvas.unclipped();
+    canvas.border(window_area, corner, line as f32, palette.edge);
 
-    if shown == 0 && !heights.is_empty() {
-        return Err(RenderError::SettingsScene);
+    if look.reading == Direction::RightToLeft {
+        turned_round(window_area, &mut picture);
     }
-    drawn.out_of_view = from > 0 || from + shown < heights.len();
-    if drawn.out_of_view {
-        let track = Rectangle::new(
-            (room.rail_x, top + room.pad).into(),
-            (room.rail, room_for.max(room.rail)).into(),
-        );
-        let total = heights.len().max(1);
-        let at = |blocks: usize| (track.size.h as usize * blocks / total) as i32;
-        let thumb = Rectangle::new(
-            (room.rail_x, track.loc.y + at(from)).into(),
-            (room.rail, at(shown).max(room.measure.px(8))).into(),
-        );
-        framed(&mut drawn.solids, track, room.measure.px(1), room.palette);
-        drawn.solids.push(Solid {
-            area: thumb,
-            colour: room.palette.ink,
-        });
-    }
-    Ok(drawn)
+    picture.washed = Some(canvas.washed());
+    Ok(picture)
 }
 
-/// Text placed whole at (`x`, `y`): it was measured to fit, so nothing is cut.
-fn placed(inked: &mut Vec<Inked>, shaped: Shaped, text: String, x: i32, y: i32) -> SettingsText {
-    let area = Rectangle::new((x, y).into(), (shaped.width_of_box, shaped.height).into());
-    let bottom = y + shaped.height;
-    inked.extend(shaped.placed(x, y, bottom));
-    SettingsText { text, area }
+/// How far the page is scrolled for the keyboard's row to be in view: as
+/// little as keeps it whole, and the start of its section with it when both
+/// fit. Never past the page's end.
+fn scrolled_to(target: Option<&ATargetDrawn>, tall: i32, view: i32) -> i32 {
+    let most = (tall - view).max(0);
+    let Some(target) = target else {
+        return 0;
+    };
+    let (from, to) = (target.area.loc.y, target.area.loc.y + target.area.size.h);
+    let mut scrolled = (to - view).max(0);
+    if from < scrolled {
+        scrolled = from;
+    }
+    if to - target.section_starts <= view && target.section_starts < scrolled {
+        scrolled = target.section_starts;
+    }
+    scrolled.clamp(0, most)
+}
+
+/// The keyboard's outline round `area`, standing off it, doubled while
+/// Settings waits for a chord.
+fn a_focus_ring(
+    canvas: &mut Canvas,
+    area: Area,
+    corner: u32,
+    measure: Measure,
+    palette: SettingsPalette,
+    doubled: bool,
+) {
+    let px = |logical: u32| measure.px(i32::try_from(logical).unwrap_or(i32::MAX));
+    let (thick, off) = (px(m::THE_FOCUS_RING), px(m::THE_FOCUS_RING_STANDS_OFF));
+    let ring = Rectangle::new(
+        (area.loc.x - off - thick, area.loc.y - off - thick).into(),
+        (area.size.w + 2 * (off + thick), area.size.h + 2 * (off + thick)).into(),
+    );
+    let inner = px(corner);
+    canvas.border(ring, (inner + off + thick) as f32, thick as f32, palette.ink);
+    if doubled {
+        let inside = Rectangle::new(
+            (area.loc.x + off, area.loc.y + off).into(),
+            (area.size.w - 2 * off, area.size.h - 2 * off).into(),
+        );
+        canvas.border(inside, inner as f32, thick as f32, palette.ink);
+    }
+}
+
+/// The side column's contents: the heading, the two groups of categories, and
+/// the footer at its foot.
+fn the_side_column(
+    canvas: &mut Canvas,
+    picture: &mut SettingsPicture,
+    labels: &mut WindowControlLabels,
+    (side, measure): (Area, Measure),
+    (palette, strings): (SettingsPalette, &Strings),
+    open: &crate::settings_window::Open,
+) {
+    let px = |logical: u32| measure.px(i32::try_from(logical).unwrap_or(i32::MAX));
+    let fonts = &mut labels.fonts;
+    let line = px(m::A_HAIRLINE);
+    let left = side.loc.x + px(m::INSIDE_THE_SIDE_COLUMN);
+    let wide = side.size.w - line - 2 * px(m::INSIDE_THE_SIDE_COLUMN);
+    let inside_heading = px(m::INSIDE_THE_HEADING);
+    let beside = px(m::BESIDE_A_CATEGORY);
+    let mut y = side.loc.y + px(m::INSIDE_THE_SIDE_COLUMN);
+    let mut put = |canvas: &mut Canvas,
+                   fonts: &mut cosmic_text::FontSystem,
+                   words: String,
+                   style: TheType,
+                   (x, y, width): (i32, i32, i32),
+                   colours: ([u8; 3], [u8; 3])|
+     -> i32 {
+        let shaped = written(fonts, &words, style, width, measure, colours).cropped_to_its_ink();
+        let tall = shaped.height;
+        picture.texts.push(SettingsText {
+            text: words,
+            area: Rectangle::new((x, y).into(), (shaped.width_of_box, tall).into()),
+        });
+        canvas.words(x, y, &shaped);
+        tall
+    };
+
+    let heading_x = left + inside_heading;
+    let heading_wide = wide - 2 * inside_heading;
+    let tall = put(
+        canvas,
+        fonts,
+        said(strings, crate::the_settings_words::SETTINGS),
+        TheType::Title,
+        (heading_x, y + inside_heading, heading_wide),
+        (palette.canvas, palette.ink),
+    );
+    let under_at = y + inside_heading + tall + px(m::UNDER_THE_TITLE);
+    let under = put(
+        canvas,
+        fonts,
+        said(strings, crate::the_settings_words::EVERYTHING_IN_ONE_PLACE),
+        TheType::Body,
+        (heading_x, under_at, heading_wide),
+        (palette.canvas, palette.muted),
+    );
+    y = under_at + under + inside_heading + px(m::BETWEEN_SIDE_ITEMS);
+
+    let mut group = None;
+    let mut chosen_at = None;
+    for category in SettingsCategory::ALL {
+        if group != Some(category.group()) {
+            group = Some(category.group());
+            let tall = put(
+                canvas,
+                fonts,
+                said(strings, category.group().word()),
+                TheType::SmallLabel,
+                (left + beside, y + px(m::ABOVE_A_GROUP), wide - 2 * beside),
+                (palette.canvas, palette.muted),
+            );
+            y += px(m::ABOVE_A_GROUP) + tall + px(m::BELOW_A_GROUP) + px(m::BETWEEN_SIDE_ITEMS);
+        }
+        let item = Rectangle::new((left, y).into(), (wide, px(m::A_TARGET)).into());
+        let chosen = category == open.category;
+        let (style, ground, ink) = if chosen {
+            canvas.fill(item, px(m::A_SMALL_CORNER) as f32, palette.chosen, 1.0);
+            chosen_at = Some(item);
+            (TheType::Name, palette.chosen, palette.ink)
+        } else {
+            (TheType::Body, palette.canvas, palette.secondary)
+        };
+        let before = beside + px(m::A_CATEGORYS_ICON) + px(m::AFTER_A_CATEGORYS_ICON);
+        let line_tall = px(style.line());
+        put(
+            canvas,
+            fonts,
+            category.said(strings),
+            style,
+            (
+                left + before,
+                y + (item.size.h - line_tall) / 2,
+                wide - before - beside,
+            ),
+            (ground, ink),
+        );
+        picture.categories.push((category, item));
+        y += item.size.h + px(m::BETWEEN_SIDE_ITEMS);
+    }
+
+    let footer_tall = px(TheType::SmallLabel.line());
+    let bottom = side.loc.y + side.size.h - px(m::INSIDE_THE_SIDE_COLUMN) - px(m::BELOW_THE_FOOTER);
+    put(
+        canvas,
+        fonts,
+        said(strings, crate::the_settings_words::YOURS_TO_CHANGE),
+        TheType::SmallLabel,
+        (left + beside, (bottom - footer_tall).max(y), wide - 2 * beside),
+        (palette.canvas, palette.muted),
+    );
+    // **The keyboard's outline last**, so nothing in the column covers it.
+    if let Some(item) = chosen_at.filter(|_| !open.in_the_page) {
+        a_focus_ring(canvas, item, m::A_SMALL_CORNER, measure, palette, false);
+        picture.focused = Some(item);
+    }
+}
+
+/// The record of where each thing is drawn, turned round the window for a
+/// reader of a right-to-left language — the canvas drew it turned already
+/// (`crate::settings_canvas::Canvas::turned_round`), so a test reads where it
+/// really is.
+fn turned_round(window: Area, picture: &mut SettingsPicture) {
+    let (left, wide) = (window.loc.x, window.size.w);
+    let flip = |area: Area| -> Area {
+        Rectangle::new(
+            (2 * left + wide - area.loc.x - area.size.w, area.loc.y).into(),
+            area.size,
+        )
+    };
+    picture.focused = picture.focused.map(flip);
+    for (_, area) in &mut picture.categories {
+        *area = flip(*area);
+    }
+    for target in &mut picture.targets {
+        target.area = flip(target.area);
+    }
+    for text in &mut picture.texts {
+        text.area = flip(text.area);
+    }
 }
 
 #[cfg(test)]
 #[path = "settings_raster_tests.rs"]
 mod tests;
-
-/// The provider form on screen, and what the machine answered about it.
-///
-/// **One value rather than two arguments**, because a refusal without a form is
-/// not a state this surface can be in: the sentence is *about* what is on the
-/// screen, and a form that has closed takes its answer with it. Two `Option`s
-/// side by side made that combination representable and nothing refused it.
-#[derive(Debug, Clone, Copy)]
-pub struct AFormOnScreen<'a> {
-    /// What a person has typed so far.
-    pub form: &'a alo_setting_up::a_provider_is_filled_in::AProviderBeingAddded,
-    /// Why the last attempt to save it did not happen, when one did not.
-    pub not_saved: Option<crate::a_provider_is_added_in_settings::WhyNotSaved>,
-}

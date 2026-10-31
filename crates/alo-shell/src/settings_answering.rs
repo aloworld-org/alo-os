@@ -16,12 +16,15 @@
 //! weights they brought, the model of a provider they chose — and each model a
 //! provider they added is known to offer, where their settings know any, which
 //! today they do not keep — and each machine they paired with whose pairing
-//! lets its models be asked. One of the
-//! four with nothing under it is **absent** rather than drawn and disabled —
-//! a provider nobody has added is not a choice, and a greyed line would be the
-//! advertisement ADR 0009 rejects. *Not at all* needs nothing, so it is always
-//! offered. Adding a provider, bringing weights and pairing are flows of their
-//! own, in the crates that own them, and none is reachable from this list.
+//! lets its models be asked. *Not at all* needs nothing, so it is always
+//! offered.
+//!
+//! **Since the redesign of 2026-10-31 the four are drawn always**
+//! ([`AnsweringSection::every_way`]), and one with nothing under it says in
+//! words why when it is chosen, rather than being left out — the honesty ADR
+//! 0009 asks for, by the road the owner's design takes. Bringing weights and
+//! pairing are flows of their own, in the crates that own them; adding a
+//! provider is a row of this section.
 //!
 //! # A file that did not read is not written over
 //!
@@ -68,6 +71,10 @@ pub enum SettingsAnswered {
     /// There are no settings to write it into: the session has no folder, or
     /// the file there did not read and is not written over.
     NowhereToWrite,
+    /// Nothing was asked of the settings: the keyboard went to what is under a
+    /// way, or the section says why there is nothing to choose there or that
+    /// the choice is not on this computer yet.
+    NothingChanged,
 }
 
 /// The section, as it stands.
@@ -157,6 +164,60 @@ impl AnsweringSection {
             })
             .filter(|(_, choices): &(Offered, Vec<SettingsChoice>)| !choices.is_empty())
             .collect()
+    }
+
+    /// **All four, in setup's order, each with what can be chosen under it —
+    /// including the ones with nothing under them.**
+    ///
+    /// The owner's redesign of 2026-10-31 draws the four ways always, each as
+    /// a choice of its own, with what the person has under it. Until then a
+    /// way with nothing under it was absent; it is drawn now, and choosing it
+    /// says in words why there is nothing to choose there yet — which is the
+    /// same honesty by a different road, and offers the person the road to
+    /// adding one. Empty when there are no settings to change.
+    pub(crate) fn every_way(
+        &self,
+        pairings: &Pairings,
+        now: SystemTime,
+    ) -> Vec<(Offered, Vec<SettingsChoice>)> {
+        if !matches!(&self.choosing, Some(Ok(_))) {
+            return Vec::new();
+        }
+        let mut offered = self.offered(pairings, now).into_iter();
+        let mut next = offered.next();
+        THE_FOUR
+            .into_iter()
+            .map(|way| match next.take() {
+                Some((it, choices)) if it == way => {
+                    next = offered.next();
+                    (way, choices)
+                }
+                other => {
+                    next = other;
+                    (way, Vec::new())
+                }
+            })
+            .collect()
+    }
+
+    /// The provider the person added under `name`, as their settings hold it:
+    /// where it says it runs, and whether its key is kept.
+    pub(crate) fn the_provider(&self, name: &str) -> Option<&alo_models::Provider> {
+        let Some(Ok(choosing)) = &self.choosing else {
+            return None;
+        };
+        choosing
+            .settings()
+            .providers()
+            .configured
+            .iter()
+            .find(|provider| provider.name == name)
+    }
+
+    /// Say `sentence` above the section, for a choice that changed nothing:
+    /// a way with nothing under it, or something not on this computer yet.
+    pub(crate) fn tell(&mut self, sentence: String) {
+        self.told = Some(sentence);
     }
 
     /// Which of the four the person's settings are, when they say.

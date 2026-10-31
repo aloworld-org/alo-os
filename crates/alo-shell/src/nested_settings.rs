@@ -246,7 +246,7 @@ mod tests {
             frame_pictures(egress, settings, None, &mut labels, (1920, 1080)).unwrap();
         assert!(indicator.is_empty());
         assert!(!sections.is_empty());
-        assert!(!sections.lines.is_empty());
+        assert!(!sections.categories.is_empty());
         assert!(question.is_none());
 
         assert!(matches!(

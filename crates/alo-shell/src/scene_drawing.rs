@@ -208,6 +208,26 @@ where
                 .map_err(submission)?,
         ),
     };
+    // **Settings, uploaded with the rest** since the redesign of 2026-10-31
+    // made it one raster: a rounded window with a shadow, and rings and
+    // switches that are partial coverage.
+    let settings_washed: Option<(R::TextureId, Rectangle<i32, Physical>)> = match native
+        .settings
+        .and_then(crate::settings_raster::SettingsPicture::washed)
+    {
+        None => None,
+        Some(raster) => Some(
+            renderer
+                .import_memory(
+                    &raster.pixels,
+                    Fourcc::Abgr8888,
+                    (raster.area.size.w, raster.area.size.h).into(),
+                    false,
+                )
+                .map(|texture| (texture, raster.area))
+                .map_err(submission)?,
+        ),
+    };
     let mut frame = renderer
         .render(framebuffer, size, transform)
         .map_err(submission)?;
@@ -292,7 +312,7 @@ where
     // Above every client, the desktop and the record, so no window covers a
     // setting being changed; below the question and the indicator.
     if let Some(settings) = native.settings.filter(|settings| !settings.is_empty()) {
-        settings.paint(&mut frame)?;
+        settings.paint(&mut frame, settings_washed.as_ref())?;
     }
     // Above every client and control, so no window covers the sentence a
     // person is asked to approve; below the indicator, so the question never

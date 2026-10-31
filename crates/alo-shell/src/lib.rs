@@ -371,16 +371,24 @@ mod session_desktop;
 mod session_device;
 mod session_input;
 mod settings_answering;
+mod settings_canvas;
+mod settings_categories;
 mod settings_chord;
 mod settings_command;
+mod settings_drawn_page;
 mod settings_formats;
 mod settings_granted;
 mod settings_keepers;
 mod settings_kept;
 mod settings_keys;
+mod settings_measures;
 mod settings_lines;
+mod settings_frame;
+mod settings_page;
+mod settings_page_alo;
 mod settings_paint;
 mod settings_paired;
+mod settings_palette;
 mod settings_places;
 mod settings_raster;
 mod settings_seat;
@@ -389,6 +397,7 @@ mod settings_shell_integration;
 #[path = "../tests/unit_fixtures/settings_testing.rs"]
 mod settings_testing;
 mod settings_time_zone;
+mod settings_type;
 mod settings_window;
 mod setup_sheet_in_pixels;
 mod setup_sheet_layout;
@@ -467,6 +476,7 @@ pub mod the_regions_offered;
 mod the_reply_boxs_icons;
 pub mod the_reply_boxs_words;
 mod the_session_holds_its_screens;
+pub mod the_settings_words;
 mod the_sign_in_screens_scale;
 /// The task windows a person opened by asking alo for something.
 pub mod the_tasks_a_person_opened;
@@ -802,8 +812,8 @@ pub use settings_keys::SettingsKey;
 pub use settings_places::SettingsPlaces;
 pub use settings_raster::SettingsLook;
 pub use settings_window::{
-    SettingsDid, SettingsDoors, SettingsOpened, SettingsPress, SettingsRow, SettingsSection,
-    SettingsWindow,
+    SettingsCategory, SettingsDid, SettingsDoors, SettingsOpened, SettingsPress, SettingsRow,
+    SettingsSection, SettingsWindow,
 };
 pub use shortcut_dispatch::ShortcutDispatchError;
 pub use sign_in_entry::{NAME_BYTES, SignInField};
