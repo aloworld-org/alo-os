@@ -191,17 +191,41 @@ mod running {
             // **A failure, so the unit starts the screen again**
             // (`Stood::is_the_end_this_process_is_for`): a machine left at
             // the console with nobody signed in is stranded until somebody
-            // switches it off.
+            // switches it off — **unless a person's session has the screen**,
+            // which is the hand-over arriving as a refused frame rather than a
+            // paused seat (2026-10-31).
             Ok(Stood::NobodyDid) => {
-                eprintln!(
-                    "alo-compositor: the sign-in screen ended with nobody signed in, so it is started again"
-                );
-                ExitCode::FAILURE
+                eprintln!("alo-compositor: the sign-in screen ended with nobody signed in");
+                failing_unless_a_person_has_the_screen()
             }
             Err(why) => {
                 eprintln!("alo-compositor: this machine cannot be signed in to: {why}");
-                ExitCode::FAILURE
+                failing_unless_a_person_has_the_screen()
             }
+        }
+    }
+
+    /// **A failing end, unless a person's session has the screen.**
+    ///
+    /// Asked of `logind` rather than read off the error, because the person's
+    /// desktop taking the display arrives in more than one shape and which one
+    /// is timing: a paused seat (#1029) or, measured on 2026-10-31, the next
+    /// frame refused with *Permission denied*. Restarted after the second, this
+    /// screen took the display back as root and the desktop died.
+    /// `alo_shell::whose_screen_it_is` fails safe: no answer is a failure, so
+    /// the screen comes back as it always did.
+    fn failing_unless_a_person_has_the_screen() -> ExitCode {
+        use alo_shell::whose_screen_it_is::{Seat0, a_person_has_the_screen};
+
+        if a_person_has_the_screen(&Seat0) {
+            eprintln!(
+                "alo-compositor: a person's session has the screen, so this end is the hand-over \
+                 and the sign-in screen steps aside"
+            );
+            ExitCode::SUCCESS
+        } else {
+            eprintln!("alo-compositor: nobody's session has the screen, so it is started again");
+            ExitCode::FAILURE
         }
     }
 

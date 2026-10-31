@@ -37,6 +37,13 @@ Documentation=https://github.com/aloworld-org/alo-os/blob/main/docs/decisions/00
 # desktop exiting cleanly. A crash restarts it below; one that keeps crashing
 # runs out of the limit here, fails, and puts the sign-in screen up rather than
 # leaving a console.
+#
+# **systemd logs `multiple trigger source candidates for exit status
+# propagation (alo-desktop@1000.service, alo-desktop@1000.service), skipping`**
+# when the sign-in screen starts, because this one unit names it twice, once
+# for each road. It is harmless: what it skips is the `MONITOR_*` variables
+# systemd would hand the sign-in screen about how the desktop ended, and the
+# sign-in screen reads none of them. Measured on a booted machine, 2026-10-31.
 OnSuccess=alo-compositor.service
 OnFailure=alo-compositor.service
 StartLimitIntervalSec=60
