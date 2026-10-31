@@ -140,7 +140,6 @@ fn frame_pictures(
         egress,
         labels,
         crate::egress_status_place::TheRoom::with_nothing_put_aside(size),
-        0,
     )?;
     let account = picture(
         record.window.shows(),
@@ -238,7 +237,8 @@ mod tests {
         };
         let (indicator, account, question) =
             frame_pictures(egress, record, None, &mut labels, (1920, 1080)).unwrap();
-        assert!(indicator.is_empty());
+        // Quiet: the circle and no line (the owner's frames, 2026-10-31).
+        assert!(indicator.rows.is_empty());
         assert!(!account.is_empty());
         assert!(!account.entries.is_empty());
         assert!(question.is_none());

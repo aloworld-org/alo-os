@@ -279,6 +279,8 @@ pub mod how_long_a_grant_lasts;
 mod in_use_mark;
 mod in_use_paint;
 mod in_use_raster;
+/// Vector artwork inked into a raster at its box's size.
+mod inking_a_shape;
 mod keyboard;
 mod keyboard_sheet;
 mod language_sheet;
@@ -468,6 +470,8 @@ mod the_dock_as_a_reader_meets_it;
 mod the_docks_name_is_held;
 pub mod the_docks_words;
 mod the_edge_takes_the_keyboard;
+/// The egress indicator's two arrows, from the design file's SVG.
+mod the_egress_indicators_arrows;
 pub mod the_first_start;
 mod the_formats_are_told;
 mod the_keyboard_a_person_chose;

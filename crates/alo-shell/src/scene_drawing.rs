@@ -228,6 +228,36 @@ where
                 .map_err(submission)?,
         ),
     };
+    // **The egress indicator is not drawn before sign-in** — the owner's
+    // decision of 2026-10-31. Law 1 is about the egress an agent causes, and no
+    // agent runs on the sign-in or first-start screens, so nothing an agent
+    // causes can leave; those screens keep the top-left corner for *Back to lock*
+    // and the *alo OS* brand. Refused here, in the one painter, so no road can
+    // hand it one by mistake.
+    let before_sign_in = matches!(
+        native.scene,
+        Some(crate::scene_native::NativeScene::SignIn(_))
+    );
+    let status = native.status.filter(|_| !before_sign_in);
+    // **The egress indicator's circle or pills, uploaded with the rest**: since
+    // 2026-10-31 they have round ends and a shadow, which are a raster.
+    let status_washed: Vec<(R::TextureId, Rectangle<i32, Physical>)> = match status {
+        None => Vec::new(),
+        Some(status) => status
+            .washed()
+            .map(|raster| {
+                renderer
+                    .import_memory(
+                        &raster.pixels,
+                        Fourcc::Abgr8888,
+                        (raster.area.size.w, raster.area.size.h).into(),
+                        false,
+                    )
+                    .map(|texture| (texture, raster.area))
+                    .map_err(submission)
+            })
+            .collect::<Result<_, _>>()?,
+    };
     let mut frame = renderer
         .render(framebuffer, size, transform)
         .map_err(submission)?;
@@ -353,8 +383,8 @@ where
     }
     // Above every client and control, below the cursor: nothing a client maps
     // covers a line of what is leaving this machine.
-    if let Some(status) = native.status.filter(|status| !status.is_empty()) {
-        status.paint(&mut frame)?;
+    if let Some(status) = status.filter(|status| !status.is_empty()) {
+        status.paint(&mut frame, &status_washed)?;
     }
     // Beside it, and as high: nothing covers the line that says the camera is
     // on either.

@@ -156,43 +156,14 @@ pub(crate) fn ink_an_icon(
         return;
     };
     let side = scale.px(icon.is());
-    let Ok(side_is) = u32::try_from(side) else {
-        return;
-    };
     let left = centred_in.loc.x + (centred_in.size.w - side) / 2;
     let top = centred_in.loc.y + (centred_in.size.h - side) / 2;
-    let covered = shape.coverage(side_is, side_is);
-    let wide = panel.area.size.w;
-    for (at, coverage) in covered.into_iter().enumerate() {
-        if coverage == 0 {
-            continue;
-        }
-        let Ok(at) = i32::try_from(at) else {
-            return;
-        };
-        let (x, y) = (
-            left + at % side - panel.area.loc.x,
-            top + at / side - panel.area.loc.y,
-        );
-        if x < 0 || y < 0 || x >= wide || y >= panel.area.size.h {
-            continue;
-        }
-        let Ok(index) = usize::try_from((y * wide + x) * 4) else {
-            continue;
-        };
-        if let Some(pixel) = panel.pixels.get_mut(index..index + 3) {
-            for (channel, inked) in pixel.iter_mut().zip(ink) {
-                *channel = blended(*channel, inked, coverage);
-            }
-        }
-    }
-}
-
-/// `under` with `over` painted on it at this coverage.
-fn blended(under: u8, over: u8, coverage: u8) -> u8 {
-    let (under, over, coverage) = (u32::from(under), u32::from(over), u32::from(coverage));
-    let mixed = (over * coverage + under * (255 - coverage) + 127) / 255;
-    u8::try_from(mixed).unwrap_or(u8::MAX)
+    crate::inking_a_shape::ink_a_shape(
+        panel,
+        shape,
+        Rectangle::new((left, top).into(), (side, side).into()),
+        ink,
+    );
 }
 
 #[cfg(test)]

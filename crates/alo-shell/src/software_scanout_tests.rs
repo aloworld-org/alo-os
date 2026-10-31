@@ -242,19 +242,9 @@ fn an_extent_no_display_has_is_refused_before_anything_is_allocated() {
     ));
 }
 
-/// **What is leaving this machine is drawn above everything else.**
-///
-/// The one surface this product may not ship without, checked where the pixels
-/// are rather than in the order of some `if`s: a sign-in screen fills the frame
-/// with its ground, the egress indicator puts a mark on top of it, and the byte
-/// a display would scan out at that spot is the indicator's. A layer painted
-/// underneath, or dropped because the frame already had a scene on it, fails
-/// here.
-#[test]
-fn what_is_leaving_is_drawn_above_the_screen_under_it() {
-    let size = (8, 4);
-    let screen = a_screen(size);
-    let leaving = crate::egress_status_raster::EgressStatusPicture {
+/// An indicator with one flat mark at the top of an 8 × 4 frame.
+fn a_mark_of_what_is_leaving(size: (i32, i32)) -> crate::egress_status_raster::EgressStatusPicture {
+    crate::egress_status_raster::EgressStatusPicture {
         size,
         rows: Vec::new(),
         solids: vec![Solid {
@@ -262,8 +252,37 @@ fn what_is_leaving_is_drawn_above_the_screen_under_it() {
             colour: [200, 100, 50],
         }],
         inked: Vec::new(),
+        washed: Vec::new(),
         band: None,
+    }
+}
+
+/// **What is leaving this machine is drawn above everything else.**
+///
+/// The one surface this product may not ship without, checked where the pixels
+/// are rather than in the order of some `if`s: a whole-output screen fills the
+/// frame with its ground, the egress indicator puts a mark on top of it, and
+/// the byte a display would scan out at that spot is the indicator's. A layer
+/// painted underneath, or dropped because the frame already had a scene on it,
+/// fails here.
+///
+/// **The recovery screen since 2026-10-31**, not the sign-in screen: the
+/// indicator is not drawn before sign-in any more (the next test).
+#[test]
+fn what_is_leaving_is_drawn_above_the_screen_under_it() {
+    let size = (8, 4);
+    let screen = crate::recovery_raster::RecoveryPicture {
+        size,
+        panel: Rectangle::from_size(size.into()),
+        sentence: (String::new(), Rectangle::new((0, 0).into(), (0, 0).into())),
+        moments: Vec::new(),
+        solids: vec![Solid {
+            area: Rectangle::from_size(size.into()),
+            colour: [20, 30, 40],
+        }],
+        inked: Vec::new(),
     };
+    let leaving = a_mark_of_what_is_leaving(size);
     let mut painter = SoftwarePainter::new().expect("a machine with no software renderer");
 
     let (pixels, _) = painter
@@ -273,7 +292,7 @@ fn what_is_leaving_is_drawn_above_the_screen_under_it() {
             &[],
             &Cursor::Default,
             crate::scene_native::NativeLayers {
-                scene: Some(NativeScene::SignIn(&screen)),
+                scene: Some(NativeScene::Recovery(&screen)),
                 status: Some(&leaving),
                 ..crate::scene_native::NativeLayers::nothing()
             },
@@ -293,6 +312,40 @@ fn what_is_leaving_is_drawn_above_the_screen_under_it() {
     );
 }
 
+/// **The indicator is not drawn before sign-in** — the owner's decision of
+/// 2026-10-31. Law 1 is about the egress an agent causes, and no agent runs on
+/// the sign-in or first-start screens (both are drawn as the sign-in scene), so
+/// nothing an agent causes can leave; *Back to lock* and the *alo OS* brand
+/// keep the top-left corner. Handed one anyway, the painter leaves it out.
+#[test]
+fn no_indicator_is_drawn_before_sign_in() {
+    let size = (8, 4);
+    let screen = a_screen(size);
+    let leaving = a_mark_of_what_is_leaving(size);
+    let mut painter = SoftwarePainter::new().expect("a machine with no software renderer");
+
+    let (pixels, _) = painter
+        .paint(
+            extent(size),
+            &[],
+            &[],
+            &Cursor::Default,
+            crate::scene_native::NativeLayers {
+                scene: Some(NativeScene::SignIn(&screen)),
+                status: Some(&leaving),
+                ..crate::scene_native::NativeLayers::nothing()
+            },
+            alo_canvas::Camera::new(),
+        )
+        .expect("a sign-in frame handed an indicator was refused");
+
+    assert_eq!(
+        pixel_at(&pixels, (6, 0)),
+        [20, 30, 40],
+        "the egress indicator was drawn over the sign-in screen"
+    );
+}
+
 /// **A frame with no whole-output scene still carries the desktop's layers.**
 ///
 /// The seam took one scene and nothing else until the desktop needed it, and a
@@ -309,6 +362,7 @@ fn a_frame_with_no_scene_but_a_layer_on_it_is_drawn() {
             colour: [10, 200, 10],
         }],
         inked: Vec::new(),
+        washed: Vec::new(),
         band: None,
     };
     let mut painter = SoftwarePainter::new().expect("a machine with no software renderer");

@@ -1,4 +1,11 @@
-//! Where the egress indicator sits: at the far end of the dock, above it.
+//! Where the status corner's surfaces sit.
+//!
+//! **The egress indicator moved on 2026-10-31**, by the owner's decision: to
+//! the top-left corner of the screen, outside any window, through
+//! [`Place::in_the_top_left_corner`]. It sat at the far end of the dock, above it,
+//! until then, and that corner, [`Place::of`], is still where *your camera is
+//! on* sits, with notifications at the other end. What follows was written
+//! when the egress indicator was there too.
 //!
 //! `docs/features.md` puts the indicator in the status area *so "nothing has
 //! left this machine" sits where a person already glances*. The dock is along the
@@ -231,35 +238,6 @@ pub(crate) struct Place {
 }
 
 impl Place {
-    /// The same place, with `taken` pixels already used at the corner.
-    ///
-    /// **What is in use has the corner and what is leaving stacks beyond it.**
-    /// ADR 0010 makes the in-use indicator's position one of the three things a
-    /// person is given besides a colour, and the reason is that position costs
-    /// nothing to learn — which only holds while that stack's origin does not
-    /// move. So it keeps the fixed corner and this moves the other one along.
-    ///
-    /// The egress indicator's own rule is untouched: its first line stays
-    /// nearest its origin and a new one is added beyond, so nothing already on
-    /// the screen moves when something else starts leaving.
-    pub(crate) fn beyond(self, taken: i32) -> Self {
-        if taken <= 0 {
-            return self;
-        }
-        Self {
-            stacked: match self.stacked {
-                Stacked::Upwards(y) => Stacked::Upwards(y - taken),
-                // **Along, not up.** `beyond` means *this much of the corner is
-                // already used*, and which way that moves the origin follows the
-                // way the rows grow — so a top dock's stack starts further down by
-                // exactly what the in-use indicator took.
-                Stacked::Downwards(y) => Stacked::Downwards(y + taken),
-            },
-            room_down: (self.room_down - taken).max(0),
-            ..self
-        }
-    }
-
     /// The **other** end of the same dock, for a surface that must not cover
     /// the status area.
     ///
@@ -295,6 +273,43 @@ impl Place {
                 Stacked::Downwards(y) => Stacked::Downwards(y.max(margin)),
             },
             ..corner
+        }
+    }
+
+    /// **The top-left corner of the room**, where the egress indicator has sat
+    /// since the owner's decision of 2026-10-31, replacing *the far end of the
+    /// Dock, above it*.
+    ///
+    /// The approved frames drew it top right; that corner is the put-aside
+    /// panel's, by the owner's ruling of 2026-09-30, so the owner gave the
+    /// indicator the top-left instead — **a corner of its own**, and the top
+    /// controls' band starts just to its right
+    /// (`crate::top_controls_region::after_the_indicator`). The left whichever
+    /// way a person reads: it is a corner of the screen, not the end of a row.
+    ///
+    /// The room is what the panel's column and a Dock down a side leave, so a
+    /// Dock on the left is stepped over, and a Dock along the top is cleared by
+    /// starting below it.
+    ///
+    /// `margin` is kept from the left edge; the rows' own distance from the top
+    /// is the caller's, because the two states of the indicator sit at
+    /// different heights in the design.
+    pub(crate) fn in_the_top_left_corner(layout: Layout, room: TheRoom, margin: i32) -> Self {
+        let (width, height) = room.size;
+        let (from, to) = the_span_across(width, &the_columns_reserved(layout, room, width));
+        let across = Across::FromLeft(from + margin);
+        let below_a_top_dock = match layout.edge() {
+            Edge::Top => {
+                room.scale.room(layout.thickness()).clamp(0, height.max(0))
+                    + room.scale.px(alo_dock::measures::FLOATING_ABOVE_THE_EDGE)
+            }
+            Edge::Bottom | Edge::Left | Edge::Right => 0,
+        };
+        Self {
+            across,
+            stacked: Stacked::Downwards(below_a_top_dock),
+            room_across: (to - from - 2 * margin).max(0),
+            room_down: (height - below_a_top_dock).max(0),
         }
     }
 

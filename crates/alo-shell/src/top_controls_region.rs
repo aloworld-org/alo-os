@@ -44,6 +44,17 @@
 //! panel's column as an argument rather than reading a width of its own. The band's
 //! right edge **is** the panel's left edge, so the two cannot overlap by construction
 //! rather than by two numbers agreeing.
+//!
+//! # And where it starts, decided by the owner on 2026-10-31
+//!
+//! **The egress indicator owns the top-left corner, and the band starts just to
+//! its right.** The owner moved the indicator out of the Dock's far end on
+//! 2026-10-31, where it covered a task window's Send button; the approved frames
+//! put it top right, and that corner is the panel's by the ruling above, so the
+//! owner gave it the top-left instead and had this band make room. The band
+//! still ends at the panel's column; it now begins where the indicator's circle
+//! or pills end, by [`after_the_indicator`], so one pointer position still
+//! cannot reveal two surfaces.
 
 use smithay::utils::{Physical, Point, Rectangle, Size};
 
@@ -92,4 +103,28 @@ pub(crate) fn reserved(
     let height = i32::try_from(THE_TOP_CONTROLS.round() as i64).unwrap_or(i32::MAX);
     (width > 0 && height > 0 && room.1 >= height)
         .then(|| Rectangle::new(Point::from((0, 0)), Size::from((width, height))))
+}
+
+/// **The band, starting just to the right of the egress indicator** — the
+/// owner's decision of 2026-10-31 (this file's header). `indicator` is where
+/// the indicator was drawn on this frame, its quiet circle or its pills.
+///
+/// [`None`] when the indicator leaves the band no room. A band the indicator
+/// does not reach is returned as it was.
+pub(crate) fn after_the_indicator(
+    band: Option<Rectangle<i32, Physical>>,
+    indicator: Option<Rectangle<i32, Physical>>,
+) -> Option<Rectangle<i32, Physical>> {
+    let band = band?;
+    let Some(corner) = indicator.filter(|corner| corner.overlaps(band)) else {
+        return Some(band);
+    };
+    let starts = (corner.loc.x + corner.size.w).max(band.loc.x);
+    let ends = band.loc.x + band.size.w;
+    (starts < ends).then(|| {
+        Rectangle::new(
+            Point::from((starts, band.loc.y)),
+            Size::from((ends - starts, band.size.h)),
+        )
+    })
 }

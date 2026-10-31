@@ -68,7 +68,7 @@ fn a_machine_watching_nothing_draws_no_indicator() {
     let quiet = drawn(&[]);
 
     assert!(quiet.is_empty(), "something was drawn for nothing in use");
-    assert_eq!(quiet.height, 0);
+    assert!(quiet.rows.is_empty());
 }
 
 /// **The order is the screen, then the camera, then the microphone** — whatever
@@ -229,7 +229,7 @@ fn at_two_hundred_the_rows_double_and_clear_a_doubled_dock() {
         .unwrap()
     };
     let (one, two) = (at((1920, 1080), 100), at((3840, 2160), 200));
-    assert_eq!(two.height, 2 * one.height, "the stack's height");
+    assert_eq!(two.rows.len(), one.rows.len(), "the stack's rows");
     let (a, b) = (
         one.rows.first().unwrap().area,
         two.rows.first().unwrap().area,

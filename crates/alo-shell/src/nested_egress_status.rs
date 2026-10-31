@@ -54,7 +54,6 @@ impl Nested {
             egress,
             labels,
             TheRoom::with_nothing_put_aside((size.w, size.h)),
-            0,
         )?;
         self.submit_native_scene(
             roots,
@@ -68,9 +67,9 @@ impl Nested {
 
 /// The indicator for this frame, or the refusal that stops the whole frame.
 ///
-/// `beyond` is how much of the status area's corner is already taken by the
-/// in-use indicator, which has the corner (`crate::in_use_raster`). Frames that
-/// do not carry that indicator pass zero.
+/// It shared a corner with the in-use indicator until 2026-10-31, and was
+/// handed how much of it that one took; the egress indicator has the top-left
+/// corner to itself since, and the in-use indicator keeps the old one.
 ///
 /// `panel` is the column the put-aside panel reserved, or [`None`] on a frame that
 /// has no panel to reserve one. **Every scene that draws a desktop passes the
@@ -85,7 +84,6 @@ pub(crate) fn status_picture(
     egress: EgressStatusFrame<'_>,
     labels: &mut WindowControlLabels,
     room: TheRoom,
-    beyond: i32,
 ) -> Result<EgressStatusPicture, RenderError> {
     let drawn = egress
         .status
@@ -98,7 +96,6 @@ pub(crate) fn status_picture(
         labels,
         room,
         egress.look,
-        beyond,
     )
 }
 
@@ -148,7 +145,6 @@ mod tests {
                 frame,
                 &mut labels,
                 TheRoom::with_nothing_put_aside((1920, 1080)),
-                0,
             ),
             Err(RenderError::EgressStatusUnknown)
         ));
@@ -173,7 +169,6 @@ mod tests {
                 frame,
                 &mut labels,
                 TheRoom::with_nothing_put_aside((1920, 1080)),
-                0,
             ),
             Err(RenderError::EgressStatusUnknown)
         ));
@@ -194,7 +189,6 @@ mod tests {
                 frame,
                 &mut labels,
                 TheRoom::with_nothing_put_aside((200, 150)),
-                0,
             ),
             Err(RenderError::EgressStatusScene)
         ));
@@ -202,7 +196,9 @@ mod tests {
     }
 
     /// **Told, it draws**: a lit indicator is a picture with a row in it, and
-    /// a quiet one is a frame with nothing added.
+    /// a quiet one is the quiet circle and no row — from the first frame it is
+    /// told, since 2026-10-31, when the owner's frames gave the quiet state a
+    /// circle rather than nothing.
     #[test]
     fn a_told_egress_indicator_draws_what_it_was_told() {
         let strings = words();
@@ -219,15 +215,16 @@ mod tests {
             dock: &dock,
             look: look(),
         };
+        let quiet = status_picture(
+            frame,
+            &mut labels,
+            TheRoom::with_nothing_put_aside((1920, 1080)),
+        )
+        .unwrap();
+        assert!(quiet.rows.is_empty(), "a quiet indicator drew a line");
         assert!(
-            status_picture(
-                frame,
-                &mut labels,
-                TheRoom::with_nothing_put_aside((1920, 1080)),
-                0,
-            )
-            .unwrap()
-            .is_empty()
+            !quiet.is_empty(),
+            "the quiet circle is not on the first frame"
         );
 
         let departing = indicator
@@ -245,7 +242,6 @@ mod tests {
                 frame,
                 &mut labels,
                 TheRoom::with_nothing_put_aside((1920, 1080)),
-                0,
             )
             .unwrap()
             .rows

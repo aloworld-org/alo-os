@@ -15,16 +15,12 @@ use alo_egress::{EgressPolicy, Indicator};
 use alo_indicator::{Drew, Indicating};
 use alo_strings::Direction;
 
-/// **The egress indicator sits at the far end of the dock, clear of it.** Read
-/// either way, on a laptop and on a large screen: while something is leaving,
-/// its lines grow upwards from that corner, because the dock and the indicator
-/// are laid out from one `alo_dock::Dock`.
-///
-/// This used to assert the indicator sat inside the span of the dock's *status
-/// area*. ADR 0076 took the status area off the Dock; the indicator did not move,
-/// and what it is measured against is now the band itself.
+/// **The egress indicator sits in the top-left corner, clear of the Dock and
+/// of the top controls** — the owner's decisions of 2026-10-31. Read either
+/// way, on a laptop and on a large screen. It sat at the far end of the dock
+/// until then, and this test asserted that.
 #[test]
-fn the_egress_indicator_sits_at_the_far_end_of_the_dock_clear_of_it() {
+fn the_egress_indicator_sits_in_the_top_left_corner_clear_of_the_dock() {
     let strings = words();
     let mut labels = WindowControlLabels::new().unwrap();
     let running = RunningWindow::closed();
@@ -83,82 +79,57 @@ fn the_egress_indicator_sits_at_the_far_end_of_the_dock_clear_of_it() {
                     filling: &filling,
                 };
 
+                // **Quiet, the circle is there from the first frame**, in the
+                // top-left corner.
                 let pictures =
                     frame_pictures(frame(&quiet), None, None, &mut labels, size, None).unwrap();
-                assert!(pictures.status.is_empty());
+                assert!(pictures.status.rows.is_empty());
+                assert!(
+                    !pictures.status.is_empty(),
+                    "no quiet circle on a desktop frame"
+                );
                 assert!(pictures.desktop.dock.as_ref().unwrap().surface.is_some());
 
                 let pictures =
                     frame_pictures(frame(&lit), None, None, &mut labels, size, None).unwrap();
-                let dock_drawn = &pictures.desktop.dock;
+                let dock_drawn = pictures.desktop.dock.as_ref().unwrap();
                 let rows = &pictures.status.rows;
                 assert_eq!(rows.len(), 2, "{reading:?} {size:?}");
                 for row in rows {
                     assert!(
-                        dock_drawn
-                            .as_ref()
-                            .unwrap()
-                            .band
-                            .intersection(row.area)
-                            .is_none(),
+                        dock_drawn.band.intersection(row.area).is_none(),
                         "{reading:?}: a line covers the dock"
                     );
                 }
-                // The first line ends at **the far corner of the room** — the
-                // side a person reads last — rather than at the Dock's end.
-                //
-                // Those were the same place while the Dock was a band spanning
-                // the width, so nobody had to choose between them. The bar is
-                // centred and narrow, and the indicator stays at the corner: it
-                // is where a person already glances, and one that moved into
-                // the middle of the screen because the Dock got narrower would
-                // be harder to find rather than easier.
-                //
-                // **The room, not the output, since 2026-10-04 — and that is not a
-                // weakening of the sentence above.** The reasoning there is about
-                // refusing to follow the *Dock's* width, and it still holds: the bar
-                // is centred and narrow and the indicator ignores it. What the
-                // indicator now stops before is the put-aside panel's reserved
-                // column, which is a different surface and the one the owner's ruling
-                // of 2026-09-30 names — *so one pointer position cannot reveal two
-                // surfaces*. Before this, the first line ran 104 pixels **under** the
-                // column on a real draw, and this test read `width - margin` and
-                // passed, because the output's far corner and the room's far corner
-                // were the same number only while nothing reserved anything.
-                //
-                // Taken from the picture's own column rather than written as 112, so a
-                // panel that changes width does not need this test edited — and so a
-                // panel that reserves nothing still asserts the output's own corner.
+                // **The top-left corner, whichever way a person reads** — the
+                // owner's decisions of 2026-10-31. It sat at the far end of the
+                // Dock until then; this test said so, and was rewritten with
+                // the move. 20 from the left of the room and 10 from the top at
+                // 100 — and **the room starts after the put-aside panel's
+                // column** where a mirrored session puts that column on the
+                // left: the panel owns its column, top included, by the owner's
+                // ruling of 2026-09-30, and the indicator sits just beside it.
                 let first = rows.first().unwrap().area;
-                let band = dock_drawn.as_ref().unwrap().band;
-                let (width, _) = size;
-                let margin = i32::try_from(alo_dock::measures::MARGIN).unwrap();
                 let column = pictures.desktop.panel.reserved;
-                let reserved = (column.size.w > 0 && column.size.h > 0).then_some(column);
-                assert!(
-                    reserved.is_some(),
-                    "this fixture reveals the panel, so a reserved column is what makes                      the two corners different numbers — without one this asserts the                      case it was rewritten to stop asserting"
+                let near = if column.size.w > 0 && column.loc.x <= 0 {
+                    column.loc.x + column.size.w
+                } else {
+                    0
+                };
+                assert_eq!(
+                    (first.loc.x, first.loc.y),
+                    (near + 20, 10),
+                    "{reading:?} {size:?}"
                 );
-                match reading {
-                    Direction::LeftToRight => {
-                        let far = reserved.map_or(width, |column| column.loc.x);
-                        assert_eq!(
-                            first.loc.x + first.size.w,
-                            far - margin,
-                            "{reading:?} {size:?}"
-                        );
-                    }
-                    Direction::RightToLeft => {
-                        let near = reserved
-                            .filter(|column| column.loc.x <= 0)
-                            .map_or(0, |column| column.loc.x + column.size.w);
-                        assert_eq!(first.loc.x, near + margin, "{reading:?} {size:?}");
-                    }
+                // **And the top controls start just to its right.**
+                let band = pictures.status.band.unwrap();
+                if let Some(top_controls) = pictures.desktop.top_controls {
+                    assert!(
+                        !top_controls.overlaps(band),
+                        "{reading:?} {size:?}: the top controls claim the indicator's corner"
+                    );
+                    assert!(top_controls.loc.x >= band.loc.x + band.size.w);
                 }
-                assert!(
-                    first.loc.y + first.size.h <= band.loc.y,
-                    "the first line is not above the dock"
-                );
             }
         }
     }
