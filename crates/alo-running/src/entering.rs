@@ -107,12 +107,36 @@ pub fn enter_the_box_and_become(
 
     // Step one. After this write, every open this process makes is the
     // kernel's decision — including the open `exec` is about to make.
+    //
+    // **Each step says which it was.** On a booted machine on 2026-10-31 every
+    // `try` ended *did not start inside …: Permission denied*, and that one
+    // sentence could not say whether the box refused this process or the box,
+    // once joined, refused the command. They are different faults in different
+    // crates. The kind is kept, so a caller deciding on it decides as before.
     if let Err(why) = fs::write(here.join(THE_PROCESSES), MEANING_ME) {
-        return why;
+        return std::io::Error::new(why.kind(), the_box_would_not_be_joined(&here, &why));
     }
 
     // Step two, and there is no step three. `exec` returns only on failure.
-    Command::new(program).args(arguments).exec()
+    let why = Command::new(program).args(arguments).exec();
+    std::io::Error::new(why.kind(), the_command_would_not_start(program, &why))
+}
+
+/// What a refusal to join the box says: this process never got in.
+pub(crate) fn the_box_would_not_be_joined(here: &Path, why: &std::io::Error) -> String {
+    format!(
+        "the box at {} would not take this process, so nothing was run: {why}",
+        here.display()
+    )
+}
+
+/// What a refusal after joining says: the box was entered, and from inside it
+/// the command could not be started.
+pub(crate) fn the_command_would_not_start(program: &Path, why: &std::io::Error) -> String {
+    format!(
+        "the box was joined, and from inside it {} could not be started: {why}",
+        program.display()
+    )
 }
 
 #[cfg(test)]

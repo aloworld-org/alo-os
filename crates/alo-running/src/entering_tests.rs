@@ -72,6 +72,43 @@ fn the_box_is_entered_before_the_command_is_reached() {
         "what was written is not the byte cgroup v2 reads as this process"
     );
 
+    // **And it says the box was joined**, so a refusal here is read as the
+    // command's and not the box's (2026-10-31: one sentence served both).
+    assert!(
+        why.to_string().contains("the box was joined"),
+        "a command that would not start after the box was joined did not say so: {why}"
+    );
+
+    drop(fs::remove_dir_all(&inside));
+}
+
+/// **A box that will not take this process says so, and says nothing ran.**
+///
+/// The other step of the two. The box here is a folder with no `cgroup.procs`
+/// that can be written — a directory in its place — so the admission fails,
+/// and what comes back must name the box rather than the command.
+#[test]
+fn a_box_that_will_not_take_this_process_says_so() {
+    let (inside, the_box) = a_box_to_enter("will-not-take");
+    fs::create_dir_all(the_box.join(THE_PROCESSES)).expect("a folder where the file would be");
+
+    let why = enter_the_box_and_become(
+        &inside,
+        &the_box,
+        &a_command_that_cannot_start(),
+        &[] as &[&str],
+    );
+
+    let said = why.to_string();
+    assert!(
+        said.contains("would not take this process") && said.contains("nothing was run"),
+        "a box that refused the admission was not named as the step that failed: {said}"
+    );
+    assert!(
+        !said.contains("the box was joined"),
+        "a refused admission was described as a joined box: {said}"
+    );
+
     drop(fs::remove_dir_all(&inside));
 }
 
