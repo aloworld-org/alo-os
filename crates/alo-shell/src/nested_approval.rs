@@ -240,7 +240,8 @@ mod tests {
             };
             let (indicator, question) =
                 frame_pictures(egress, approval, &mut labels, (1920, 1080)).unwrap();
-            assert!(indicator.is_empty());
+            // Quiet: the circle and no line (the owner's frames, 2026-10-31).
+            assert!(indicator.rows.is_empty());
             assert!(!question.is_empty());
             assert_eq!(question.answers.len(), 2);
 

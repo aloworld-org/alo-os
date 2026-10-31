@@ -71,8 +71,10 @@ fn asking() -> Indicator {
     indicator
 }
 
-/// The colour drawn at `(x, y)` on the screen in the picture's rasters, the
-/// last raster holding the point winning, as the painter paints them.
+/// The colour drawn at `(x, y)` on the screen in the picture's rasters: the
+/// last raster that is **opaque** there, as the painter's result shows. A later
+/// pill's raster reaches over an earlier one with its transparent shadow, which
+/// is not what is seen there.
 fn raster_at(drawn: &EgressStatusPicture, x: i32, y: i32) -> Option<[u8; 3]> {
     drawn.washed.iter().rev().find_map(|washed| {
         let (left, top) = (x - washed.area.loc.x, y - washed.area.loc.y);
@@ -80,7 +82,10 @@ fn raster_at(drawn: &EgressStatusPicture, x: i32, y: i32) -> Option<[u8; 3]> {
             return None;
         }
         let at = usize::try_from((top * washed.area.size.w + left) * 4).ok()?;
-        <[u8; 3]>::try_from(washed.pixels.get(at..at + 3)?).ok()
+        let pixel = washed.pixels.get(at..at + 4)?;
+        (pixel.get(3) == Some(&255))
+            .then(|| <[u8; 3]>::try_from(pixel.get(..3)?).ok())
+            .flatten()
     })
 }
 
