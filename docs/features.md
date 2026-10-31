@@ -991,61 +991,96 @@ each portal request is a grant in the sense of ADR 0001.
 
 ## alo working inside applications, and in the person's name (owner, 2026-10-31)
 
-*The owner's decisions of 2026-10-31, written down here because building is
-gated on this file. [ADR 0143](decisions/0143-alo-works-inside-applications-and-may-post-in-the-persons-name.md)
-records them, what they run into, and the questions still open. **None of this
-is built.** The lines say what is promised; the ADR says what stands between
-the promise and a screen.*
+*The owner's decisions and answers of 2026-10-31, written down here because
+building is gated on this file. [ADR 0143](decisions/0143-alo-works-inside-applications-and-may-post-in-the-persons-name.md)
+records them and what they run into. **None of this is built.** The lines say
+what is promised; the ADR says what stands between the promise and a screen.*
 
-- ★ **alo works inside the applications a person uses, the way a person does — VS Code first.**
+*The rule under every line here is the owner's: "we are not dictators so we
+allow users to choose what he wants: if he wants alo to do all for him we do, if
+the user does not want we do not." So each choice below starts at the safe
+answer and can be turned up, as far as **alo does it all for me**, with its risk
+said in plain words — the shape running code already has (ADR 0064). The
+record, undo wherever it can reach, the indicator and plain warnings stay on at
+every setting, and **nothing alo causes to leave the machine is ever unshown**:
+that is law 1, and a law is not a setting. The top of two of these —
+*everything alo types, approved once* and *every application* — is promised and
+not yet buildable: it goes past `CLAUDE.md`'s *an approval is never a session*,
+and ADR 0143 asks the owner to confirm it is read the way ADR 0064's full trust
+already is.*
+
+- ★ **alo works inside the applications a person uses, the way a person does.**
   It opens the application, reads what its window shows, types into its
   editor and saves, so that what it made is in front of the person in the
   application they would have used themselves, not written to disk behind their
-  back. Everything it types is shown first, in full, and waits for the person's
-  approval; what counts as one approval — a block of text, a file, or more —
-  is **the owner's question in ADR 0143 and not yet decided**. alo reads an
-  application's window only during a turn the person started, and keeps no copy
-  of what it read. *Owner, 2026-10-31.*
-  **Any installed application, not VS Code alone** — the owner, the same day:
-  *"for alo driving applications it should be able to drive any application
-  installed."* **Only the ones the person has let it use**: a person lets alo
-  use **one application at a time**, by name, for as long as they pick, and
-  takes it back in one action — never *all applications* in one switch, and
-  never because alo used it once. **What "any" honestly covers** is written down
+  back. **How much one approval covers is the person's setting**: by default one
+  file, shown in full and saved in the same approval; stricter, each block on
+  its own; or, turned all the way up, everything alo types for one request,
+  approved once — said as *alo will type text you have not read line by line*.
+  alo reads an application's window only during a turn the person started, and
+  keeps no copy of what it read. *Owner, 2026-10-31.*
+  **Any installed application** — the owner, the same day: *"for alo driving
+  applications it should be able to drive any application installed."* **Only
+  the ones the person has let it use**: by default the person lets alo use
+  **one application at a time**, by name, for as long as they pick, and takes it
+  back in one action — and never because alo used it once. A person may instead
+  let alo use **every application on the machine**, told that this includes the
+  ones that hold their passwords; even then it is one row in the list of what
+  alo may reach, with its length, removed in one action. **What "any" honestly covers** is written down
   in ADR 0143, application by application: an application that describes its
   own window to assistive technology (most GTK, Qt and LibreOffice windows,
   browsers, and Electron applications started the right way) can be driven; one
   that draws everything itself — a game, a 3D or painting canvas, a remote
   desktop — **cannot be driven reliably by any mechanism**, and alo says so
-  rather than guessing.
+  rather than guessing — unless the person has switched on, for that
+  application, alo acting on pictures of its window, told that *alo may press
+  the wrong thing*. **Off by default.**
+  **In the browser, by default alo reads only the window it opened** for the
+  turn; a person may let it read every tab, told that this includes their mail
+  and their bank. **What a driven application sends is on the indicator**: by
+  default alo works in a window of its own, so what that window sends can be
+  counted; a person may let it work in their own window instead, told that the
+  indicator will then show *that* the application is sending and cannot count
+  what. Counting everything an application does, the person's own use included,
+  is not offered at any setting — that would be watching the person.
+- ★ **alo OS ships an open-source code editor, installed by default** — the
+  owner, 2026-10-31. A person may also install Microsoft's VS Code, and alo
+  works in it the same way. Which editor is proposed in ADR 0143 —
+  **VSCodium**, the open-source build of the editor developers already know,
+  MIT-licensed and verified on Flathub, recommended over Zed and Lapce — and
+  not yet named by the owner. **It is a new role on the fresh machine's list**,
+  beside the browser and the terminal, not a second text editor. Its package can
+  read every file in the person's home and start programs outside its sandbox,
+  and the machine says so where a person looks at what is installed.
 - ★ **alo can post to a social account in the person's name — only when the person has switched that on.**
   Settings holds the choice, **off until the person turns it on**, and it says
   the risk in plain words before it can be turned on (proposed wording): *alo will be able to
   publish under your name to everyone who can see your profile; a post can be
   seen and copied before you delete it; and the site may treat posting by an
-  assistant as against its rules and restrict your account.* It is chosen per
-  site (ADR 0143's recommendation; whether one switch covers every site is the
-  owner's question), it lasts as long as the person picks — an hour, a day, a month, or until
+  assistant as against its rules and restrict your account.* By default it is
+  switched on for one site and one account; a person may switch it on for every
+  social site they are signed in to. It lasts as long as the person picks — an hour, a day, a month, or until
   they remove it — and it is removed in one action, taking effect at once, like
   every grant. **Switching it on never approves a post.** Each post is still
   proposed as a sentence with its **full text** and where it goes, and waits for
   one approval; one approval publishes it once. **Deleting a post is the same**:
   its own sentence, its own approval. A post that was published cannot be
-  recalled by undo, and the sentence says so. LinkedIn is the first site. The
-  owner named the browser or LinkedIn's own desktop application; LinkedIn
-  publishes no application for this system, so it is the browser — unless the
-  owner chooses LinkedIn's own publishing interface instead, which ADR 0143
-  puts to them.
-  *Owner, 2026-10-31: "User allows this in the settings that allow alo to use my
-  social media profile … no problem if the users approves it."*
-- **The developer demo: install VS Code, build something simple in it, put it on GitHub Pages, and announce it.**
-  alo proposes installing VS Code and the person approves; alo builds a small
-  page inside VS Code; it is published to GitHub Pages; and alo writes a
-  LinkedIn post about it and, with the setting above switched on and the post
-  approved, publishes it. **The person signs in to GitHub and LinkedIn
-  themselves** — alo never types a password, and its reading of a window never
-  includes a password field's contents. Publishing to GitHub leaves the machine
-  and cannot be undone from it, and its sentence says so. This is **Demo 2**,
+  recalled by undo, and the sentence says so. **alo posts in the person's own
+  browser or application, as they would — no site's publishing interface is
+  used** — and a site's own terms are the person's to weigh, never alo's to
+  enforce. *Owner, 2026-10-31: "User allows this in the settings that allow alo
+  to use my social media profile … no problem if the users approves it"; and
+  later the same day, "the agent is using the user's PC so we do not need APIs
+  for this. Our alo accesses and operates any application installed."*
+- **The developer demo: build something simple in the code editor the machine ships, and put it on GitHub Pages.**
+  alo builds a small page inside the shipped editor, approving as the person's
+  setting says; the person signs in to GitHub themselves — alo never types a
+  password, and its reading of a window never includes a password field's
+  contents; and alo presses **Publish** in the editor after one approval whose
+  sentence says plainly that *publishing to the internet cannot be undone*. What
+  the editor sends is on the indicator while it happens. **The demo posts
+  nowhere social**: *"We may not do a demo with LinkedIn but we can do a demo
+  with other applications. LinkedIn was just an example."* This is **Demo 2**,
   the public demo for developers, chosen over the first walk by the owner on
   2026-10-31. The stages are in
   [the Demo 2 plan](autonomy/demo-two-alo-inside-applications-plan.md).

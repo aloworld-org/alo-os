@@ -1,10 +1,11 @@
 # ADR 0143 — alo works inside applications, and may post in the person's name when they switch it on
 
-**Status:** **accepted in part, 2026-10-31, by the owner**: the four decisions
-quoted under *What the owner decided* are theirs and are not reopened here.
-**Everything else is proposed.** The section *Questions only the owner can
-answer* is open, and no code may be written against an answer it has not got.
-**Nothing here is built.**
+**Status:** **accepted, 2026-10-31, by the owner**: the decisions under *What
+the owner decided*, and the answers under *The owner's answers*, are theirs.
+**Still proposed:** which open-source editor ships (VSCodium is recommended),
+and whether `CLAUDE.md`'s *an approval is never a session* is read past at the
+top of two settings — the owner's to confirm. How alo types is decided on stage
+1's measurement. **Nothing here is built.**
 
 *Number: `origin/main` ends at 0141, and the next number is already taken by a
 decision about small vector artwork on a branch not yet landed, so this is the
@@ -19,9 +20,12 @@ alo an application — only writing the grant into the grants file by hand
 would (fact 11). **It cannot do anything inside an application**: it
 cannot read what VS Code shows, cannot type a line into it, and cannot post
 anything anywhere. After the work this record starts, a person can ask alo to
-build something in VS Code and watch it happen in VS Code, approving what it
-types; and, if they have switched it on in Settings, ask it to post to LinkedIn
-in their name, approving each post with its full text in front of them.
+build something in the code editor the machine ships — or in VS Code, if they
+install it — and watch it happen there, approving what it types; let alo work in
+any application they have let it use; and, if they have switched it on in
+Settings, ask it to post to a social site in their name, approving each post
+with its full text in front of them. How much each step asks of them is theirs
+to set, from *ask me every time* to *do it all for me*.
 
 **What it costs them is said plainly below**, because two parts of it are
 risks no other part of this product carries: alo publishing under a person's
@@ -46,6 +50,11 @@ itself run programs.
 6. **Any installed application, not VS Code alone.** The owner's words, the
    same day: *"for alo driving applications it should be able to drive any
    application installed."*
+
+**Changed by the owner's answers later the same day** (below): the demo uses an
+open-source editor alo OS ships rather than VS Code, and **posts nowhere
+social** — LinkedIn *"was just an example"*. Decisions 2 and 5 stand as features;
+they are no longer the demo's steps.
 
 These are law 5 and [ADR 0112](0112-with-the-persons-permission-the-agent-may-do-anything-on-the-machine.md)
 applied: *if the person grants it, the agent may do it*, and the question is
@@ -325,10 +334,109 @@ any of them; none of them is a question about *whether*.
   and is on the indicator while it happens and in the record afterwards. *How*
   is question 6; *whether* is law 1 and not open.
 
-## Questions only the owner can answer
+## The owner's answers, 2026-10-31
 
-Each has options and a recommendation. **The recommendation is not the
-decision.**
+The questions below were put on 2026-10-30 and are kept as they were asked,
+because the reasoning in them is what the answers rest on. The owner answered
+them the next day.
+
+### Posting, and LinkedIn (Q4)
+
+The owner: *"the agent is using the user's PC so we do not need APIs for this.
+Our alo accesses and operates any application installed. We may not do a demo
+with LinkedIn but we can do a demo with other applications. LinkedIn was just an
+example."*
+
+- **alo drives the person's own applications, the browser included, as a person
+  would. No platform's publishing interface is used.** Q4 is answered (a).
+- **A site's own terms are the person's to weigh.** The risk is said in plain
+  words where the person switches posting on — that the site may treat it as
+  against its rules and restrict their account (fact 6) — and alo never refuses
+  on a site's behalf. Law 5.
+- **LinkedIn is dropped from the demo.** The social switch stays a feature; the
+  demo walk posts nowhere social.
+
+### Publishing to GitHub Pages (Q5)
+
+**alo presses *Publish* in the editor, after one approval** whose sentence says
+plainly that publishing to the internet cannot be undone. Q5 is answered (a).
+**The traffic is on the indicator**, so stage 9 of the plan stays a
+precondition of the walk.
+
+### The editor (Q3)
+
+**alo OS ships an existing open-source code editor, installed by default.** A
+person may also install Microsoft's VS Code, and alo drives it the same way. The
+demo uses the shipped editor.
+
+Which one is proposed here; the owner has not named it. Measured from Flathub on
+2026-10-30, with VSCodium as a known-present control and a made-up identifier as
+the known-absent one:
+
+| | VSCodium (`com.vscodium.codium`) | Zed (`dev.zed.Zed`) | Lapce (`dev.lapce.lapce`) |
+|---|---|---|---|
+| licence | MIT | AGPL-3.0-or-later, Apache-2.0, GPL-3.0-or-later | Apache-2.0 |
+| release | 1.140.06880 | 1.26.2 | 0.4.6 — before its first stable release |
+| verified publisher | **yes** | no | yes |
+| what developers know | the VS Code they already use | growing | small |
+| can alo drive it through the accessibility tree | Electron, documented yes with the flag (fact 11) | draws its own interface; a fork of its framework describes an accessibility bridge, and whether Zed's Linux build publishes a tree is **unconfirmed** | draws its own interface; **unconfirmed** |
+
+**Recommendation: VSCodium.** It is the one of the three whose window alo has a
+documented road into, it is verified, and it is the editor developers already
+know. Its package reaches every file in the home and can leave its sandbox
+(fact 4), so the machine says so where a person looks at what is installed —
+a shipped application is installed at first boot with no sentence to approve.
+
+**This is a new role on the fresh machine's list.** `shipped.toml` carries one
+application per role and `alo_software::Shipped::decided` refuses a role twice;
+the roles are seven (`web-browser`, `file-manager`, `archives`, `text-editor`,
+`image-viewer`, `document-viewer`, `terminal`). A code editor is an eighth —
+`code-editor` — added to `alo_software::Role`, not a second `text-editor`. The
+first boot downloads more because of it: VSCodium runs on the
+`org.freedesktop.Sdk` runtime, not a smaller one (read from its manifest; the
+size is unmeasured).
+
+### Everything else: the person chooses (Q1, Q6–Q11)
+
+The owner: *"we are not dictators so we allow users to choose what he wants: if
+he wants alo to do all for him we do, if the user does not want we do not."*
+
+So each of these is **a setting**, in the shape ADR 0064 already gives running
+code: **the safe answer is the default**, more is available up to *alo does it
+all for me*, and each step up carries its risk in plain words and is switched on
+by the person. **The protections that restrict nothing stay on at every level**
+— the record, undo wherever undo can reach, the indicator, and plain warnings.
+Where an option would break one of the five laws, it is **not** offered, and
+that is said beside it: a law is not a setting.
+
+| Setting | Default | More, up to all | Said when it is turned up | Not offered, and why |
+|---|---|---|---|---|
+| **What one approval covers when alo types** (Q1) | one file, shown in full, saved in the same approval | each block shown on its own (stricter); **or** everything alo types in one request, approved once | *alo will type text you have not read line by line* | — |
+| **How a driven application's traffic is shown** (Q6) | alo works in **its own window** of the application, and only that window's traffic is counted | alo works in the person's own window, with a line on the indicator for the turn | *alo will show that the application is sending, but cannot count what it sends, and works where your other tabs are* | **nothing it sends ever goes unshown** — law 1. Counting *everything* the application does, the person's own use included, is **not offered**: that is watching the person, which this product calls a bug |
+| **Running what alo built** (Q7) | ADR 0064's level, which is the person's and starts at the sealed box | ADR 0064's other two levels | ADR 0064's own words | no new setting: ADR 0064 already is one |
+| **What alo can read in the browser** (Q8) | only the window alo opened for the turn | every window and tab of that application, for the turn | *alo will be able to read every tab you have open while it works, including your mail and your bank* | — |
+| **Posting** (Q9) | off; when on, one site and one account | every social site the person has signed in to | the site's terms, and that a post can be copied before it is deleted | — |
+| **Letting alo use an application** (Q10) | in Settings, and on a surface the compositor draws when alo asks; one application, by name | at install; **or** every application on this machine, shown as a list of what that is today | *alo will be able to work in every application you have, including the ones that hold your passwords* | a grant nobody can see: even *every application* is a row in the list, with its length, revoked in one action. The terminal stays ADR 0111's own choice |
+| **Pictures and keystrokes, for applications nothing describes** (Q11) | off | on, per application | *alo will act on what it sees in pictures of this window, and may press the wrong thing* | — |
+
+**One thing the owner should confirm, because it touches the constitution
+rather than a feature.** `CLAUDE.md`: *"Reads answer, changes wait … an approval
+is never a session."* The top of Q1 (one approval for everything in a request)
+and the top of Q10 (every application) go past that sentence as written. ADR
+0064's *full trust* already does the same for running code, and ADR 0112 reads
+law 5 as allowing it, so this is the existing precedent applied — but the
+sentence in `CLAUDE.md` still reads as absolute, and **only the owner changes
+that file**. Until they do, the tops of those two settings are recorded here and
+not built.
+
+**Q2 (how alo types) is engineering, not the person's choice.** Stage 1 of the
+plan measures typing through the accessibility tree, and the answer is decided
+on the measurement.
+
+## The questions as they were put, 2026-10-30
+
+Each has options and a recommendation, and **each has now been answered** —
+above. They stay as they were asked so the reasoning can be checked.
 
 ### Q1. What does one approval cover when alo types?
 
