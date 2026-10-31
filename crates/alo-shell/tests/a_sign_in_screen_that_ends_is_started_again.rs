@@ -183,7 +183,10 @@ fn theirs(class: &str, state: &str) -> ASessionOnTheSeat {
 
 /// The person's desktop unit, in this state.
 fn their_desktop(state: &str) -> Units {
-    Units(Ok(vec![("alo-desktop@1000.service".to_owned(), state.to_owned())]))
+    Units(Ok(vec![(
+        "alo-desktop@1000.service".to_owned(),
+        state.to_owned(),
+    )]))
 }
 
 /// **A refused frame while the person's session is still opening is the
@@ -246,4 +249,3 @@ fn an_unreachable_logind_and_systemd_start_the_screen_again() {
         &Units(Err("org.freedesktop.DBus.Error.ServiceUnknown".to_owned()))
     ));
 }
-

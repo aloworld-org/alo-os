@@ -26,7 +26,7 @@
 //! So two things each count as a person arriving, and either is enough:
 //!
 //! - **a session of theirs on the seat**: a person's account (a uid from
-//!   [`THE_FIRST_PERSON`] up, and not `nobody`), a class that begins `user`, and a
+//!   `THE_FIRST_PERSON` up, and not `nobody`), a class that begins `user`, and a
 //!   state that is opening, online or active — anything but closing;
 //! - **their desktop's unit starting or running**: `alo-desktop@<uid>.service`
 //!   activating or active, asked of systemd. This one does not depend on
