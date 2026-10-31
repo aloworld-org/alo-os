@@ -173,17 +173,6 @@ pub const ACCESSIBILITY_IS: Word = Word::saying(
 )
 .noting("Under the heading of the Accessibility page.");
 
-/// What the accessibility page says while nothing on it can be changed from
-/// this window yet.
-pub const NOTHING_HERE_YET: Word = Word::saying(
-    "settings.page.nothing-here-yet",
-    "Nothing on this page can be changed from this window yet.",
-)
-.noting(
-    "Shown on a page of Settings whose controls are not on this computer yet. Plain and \
-     factual: nothing is broken, the controls have not been built.",
-);
-
 /// The heading over the four ways a question can be answered.
 pub const WHERE_QUESTIONS_ARE_ANSWERED: Word = Word::saying(
     "settings.section.where-answered",
@@ -645,7 +634,7 @@ pub const AS_A_PERCENTAGE: Word = Word::saying("settings.access.percent", "{perc
 /// The length is written out so that adding a word above and forgetting it
 /// here does not compile — a word declared and left out of this list reaches a
 /// person as its own key.
-pub const THE_WINDOWS_WORDS: [Word; 91] = [
+pub const THE_WINDOWS_WORDS: [Word; 90] = [
     SETTINGS,
     EVERYTHING_IN_ONE_PLACE,
     THE_GROUP_ALO,
@@ -667,7 +656,6 @@ pub const THE_WINDOWS_WORDS: [Word; 91] = [
     REGION_AND_TIME_IS,
     KEYBOARD_AND_SHORTCUTS_IS,
     ACCESSIBILITY_IS,
-    NOTHING_HERE_YET,
     WHERE_QUESTIONS_ARE_ANSWERED,
     EVERY_ANSWER_SAYS_WHERE,
     WHEN_IT_IS_NOT_AVAILABLE,

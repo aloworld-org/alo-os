@@ -98,12 +98,13 @@ fn settings_has_a_row_that_opens_the_picker() {
 /// turn them into lines a person reads.
 #[test]
 fn the_pickers_rows_are_drawn() {
-    let lines = read("settings_lines.rs");
-    let shipped = production_part_of(&lines);
+    let page = read("settings_page_folders.rs");
+    let shipped = production_part_of(&page);
 
     assert!(
-        shipped.contains("LineWords {"),
-        "settings_lines.rs no longer builds lines, so nothing below is measuring what it claims"
+        shipped.contains("ARow::named("),
+        "settings_page_folders.rs no longer builds rows, so nothing below is measuring what it \
+         claims"
     );
 
     assert!(

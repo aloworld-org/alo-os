@@ -258,6 +258,11 @@ the design draws them, and choosing one says in words that nothing changed**
    the categories and each page's rows are not yet in the tree by name. That
    tree is `alo_access::Surface::Settings` and is static; making it follow the
    page is its own change.
+10. **In the form that adds a provider, the field with the keyboard is marked
+    only by its caret.** The old window drew a filled square before it; the
+    page draws a form's fields as plain rows, which have none, and no frame
+    draws the form. Lost in the first stage of this redesign and found when
+    the old window's line-builder was deleted in the fourth.
 
 ## Dark
 

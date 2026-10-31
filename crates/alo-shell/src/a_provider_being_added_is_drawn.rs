@@ -7,11 +7,12 @@
 //!
 //! # A section, not a new kind of drawing
 //!
-//! `crate::settings_raster` lays out sections of `SectionWords`, moves the view
-//! to keep the focused line in it, draws a rule between sections and an edge
-//! around the focused row. All of that is right for a form, so a form is made
-//! out of the same words rather than drawn beside them — which means the view
-//! scrolls, the focus ring lands and nothing is cut, with no code here at all.
+//! `crate::settings_page::the_form_page` turns these words into a page of
+//! plain rows, which `crate::settings_raster` lays out and scrolls like every
+//! other page — so nothing is cut, with no drawing code here at all. **The
+//! field with the keyboard is the one with the caret in it**, which is the only
+//! mark it has: since the redesign of 2026-10-31 a plain row has no filled
+//! square to draw.
 //!
 //! **It replaces the rows rather than joining them.** A person filling a form
 //! in is doing one thing, and the rows behind would be rows they cannot reach:
@@ -37,8 +38,26 @@
 use alo_setting_up::a_provider_is_filled_in::{AProviderBeingAddded, WhichField};
 use alo_strings::{Filling, Strings};
 
-use crate::settings_lines::{LineWords, SectionWords};
-use crate::settings_window::SettingsSection;
+/// The form's words: what it says above its fields, and the fields.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct TheFormsWords {
+    /// What the form says above its fields.
+    pub(crate) said: Vec<String>,
+    /// Its fields, in order.
+    pub(crate) lines: Vec<AFieldsWords>,
+}
+
+/// One field: its label, then what is in it.
+///
+/// **No [`crate::settings_window::SettingsRow`].** A row names something a
+/// person acts on with Enter, and Enter in a form saves the whole of it rather
+/// than acting on the field the keyboard is in. A row here would put the form's
+/// one action on four lines, so a field has none to give.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct AFieldsWords {
+    /// The pieces of text, in reading order: the label, then what is in it.
+    pub(crate) parts: Vec<String>,
+}
 
 /// What one hidden character is drawn as.
 ///
@@ -54,7 +73,7 @@ pub(crate) fn the_form(
     form: &AProviderBeingAddded,
     not_saved: Option<crate::a_provider_is_added_in_settings::WhyNotSaved>,
     strings: &Strings,
-) -> SectionWords {
+) -> TheFormsWords {
     let which = form.which_field();
     // **The refusal goes above the fields rather than below them.** Somebody
     // who pressed Enter is looking at the top of the form for what happened,
@@ -92,11 +111,7 @@ pub(crate) fn the_form(
     if let Some(why) = not_saved {
         lines_said.push(said(strings, &why.the_word()));
     }
-    SectionWords {
-        // **The section it belongs under**, so a person reads it where they
-        // were: this is how their questions get answered, and the list of what
-        // can answer them is what this form is adding to.
-        section: SettingsSection::Answering,
+    TheFormsWords {
         said: lines_said,
         lines: WhichField::EVERY
             .into_iter()
@@ -111,19 +126,10 @@ fn one_field(
     field: WhichField,
     which: WhichField,
     strings: &Strings,
-) -> LineWords {
+) -> AFieldsWords {
     let typed = form.what_is_in(field);
-    LineWords {
-        // **No row.** `SettingsRow` names a row a person acts on with Enter,
-        // and Enter in a form saves the whole of it rather than acting on the
-        // line the keyboard is in. A row here would put the form's one action
-        // on four lines.
-        row: None,
+    AFieldsWords {
         parts: vec![label(field, strings), shown(typed, field, which)],
-        // **The field with the keyboard is marked as chosen**, which is the
-        // one piece of state this section has and the one `settings_raster`
-        // already draws without being told anything new.
-        chosen: field == which,
     }
 }
 
