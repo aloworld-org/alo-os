@@ -171,6 +171,7 @@ mod carrying;
 pub mod crossing;
 #[cfg(test)]
 mod down_the_corridor;
+pub mod how_an_application_starts;
 mod installing_an_application;
 pub mod kept;
 mod looking_at_the_catalogue;
@@ -202,6 +203,7 @@ pub use arriving::Arriving;
 pub use became::Became;
 pub use bounding::{Bounding, Doing, Done};
 pub use crossing::Departed;
+pub use how_an_application_starts::{NoRoad, SaysHowAnApplicationStarts, TheRoad};
 pub use kept::Kept;
 pub use machine::{
     Machine, WhatASoftwareVerbNeeds, WhatAnApplicationVerbNeeds, the_verbs_a_whole_machine_offers,

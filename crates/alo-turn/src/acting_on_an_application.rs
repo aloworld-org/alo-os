@@ -17,7 +17,13 @@
 //!    not installed* about an application nobody granted would tell an agent
 //!    which applications a person has, and that is a fingerprint of who they
 //!    are.
-//! 3. **Ask the door**, and turn its one word into the person's own.
+//! 3. **For `open`, how it starts**, read off its entry
+//!    (`crate::how_an_application_starts`): an entry that gives no way to start
+//!    is refused by name here, and the record of one that does says which road
+//!    — over the bus, or from its entry's own command. The owner's decision of
+//!    2026-10-31 (ADR 0108): an approved `open` starts an application exactly
+//!    as a Dock press does.
+//! 4. **Ask the door**, and turn its one word into the person's own.
 //!
 //! **There is no indicator line**, and that is not an omission. Law 1 is about
 //! egress, and nothing here leaves the machine: a Unix socket to a process
@@ -46,6 +52,7 @@ use alo_capability::{Authorised, Grants, Refused};
 use alo_record::Entry;
 use alo_strings::{Filling, Said, Strings, Word};
 
+use crate::how_an_application_starts::{NoRoad, TheRoad};
 use crate::machine::Machine;
 use crate::refusing::NotDone;
 use crate::the_door_the_compositor_serves::NotAtTheDoor;
@@ -140,6 +147,35 @@ pub(crate) fn acting_on_an_application(
     let identifier = application.identifier().to_owned();
     let acting = acting_for(application.clone());
 
+    // Step 2½, for `open` alone. **How it starts, read off its entry**, so an
+    // entry that gives no way to start is refused by name before anything is
+    // asked, and the record of one that does names the road (the owner's
+    // decision of 2026-10-31, ADR 0108). `focus` and `close` start nothing.
+    let road = if matches!(acting, Acting::Open(_)) {
+        let how = machine
+            .how_applications_start()
+            .map(|it| it.how_it_starts(&identifier));
+        match how {
+            Some(Ok(road)) => Some(road),
+            Some(Err(NoRoad::NothingStartsIt)) => {
+                let refused = Refused::worded_elsewhere(
+                    call,
+                    said_about(strings, words::NOTHING_STARTS_IT, &identifier),
+                );
+                let entry = Entry::refused(&refused, &agent, strings, at);
+                return (entry, Err(NotDone::Refused(refused)));
+            }
+            Some(Err(NoRoad::NoEntry)) | None => {
+                let refused =
+                    Refused::worded_elsewhere(call, could_not_ask_about(strings, &identifier));
+                let entry = Entry::refused(&refused, &agent, strings, at);
+                return (entry, Err(NotDone::Refused(refused)));
+            }
+        }
+    } else {
+        None
+    };
+
     // Step 3. Ask the door, and say what happened in the person's own words.
     let asked = match machine.at_the_compositors_door() {
         Some(door) => door.asking(&Request::to(acting.clone())),
@@ -150,7 +186,14 @@ pub(crate) fn acting_on_an_application(
             // The authorisation's own moment and agent, read back off the
             // `Reaching` that holds it — the same entry `crate::carrying`
             // writes for a file verb that ran.
+            //
+            // **With the road, for an `open`**: one approval, one entry, and
+            // the entry says how the application starts.
             let entry = Entry::ran(reaching.authorised(), strings);
+            let entry = match road {
+                Some(road) => entry.telling(&[said_about(strings, the_word_for(road), &identifier)]),
+                None => entry,
+            };
             return (entry, Ok(Reached { acting }));
         }
         Ok(Answer::NotActed(why)) => as_the_person_reads_it(why),
@@ -195,6 +238,14 @@ const fn as_the_person_reads_it(why: NotActed) -> alo_strings::Word {
     }
 }
 
+/// What the record says about how an application starts.
+const fn the_word_for(road: TheRoad) -> Word {
+    match road {
+        TheRoad::OverTheBus => words::STARTS_OVER_THE_BUS,
+        TheRoad::FromItsCommand => words::STARTS_FROM_ITS_COMMAND,
+    }
+}
+
 /// One of the three words, about this application.
 fn said_about(strings: &Strings, why: Word, application: &str) -> Said {
     strings.say(
@@ -231,6 +282,7 @@ mod tests {
     use alo_software::Bound;
 
     use crate::Turning;
+    use crate::how_an_application_starts::{NoRoad, SaysHowAnApplicationStarts, TheRoad};
     use crate::machine::{Machine, WhatASoftwareVerbNeeds, WhatAnApplicationVerbNeeds};
     use crate::refusing::NotDone;
     use crate::testing::{hour, in_english, noon, offering};
@@ -347,6 +399,32 @@ mod tests {
         granting: bool,
         doing: impl FnOnce(&mut Turning<'_, '_>, &mut Grants) -> T,
     ) -> (T, Record) {
+        on_a_machine_where_it_starts(
+            door,
+            installed,
+            granting,
+            &ItStarts(Ok(TheRoad::FromItsCommand)),
+            doing,
+        )
+    }
+
+    /// Whatever says how the mail client starts, answering one thing.
+    struct ItStarts(Result<TheRoad, NoRoad>);
+
+    impl SaysHowAnApplicationStarts for ItStarts {
+        fn how_it_starts(&self, _: &str) -> Result<TheRoad, NoRoad> {
+            self.0
+        }
+    }
+
+    /// [`on_a_machine_with_a_door`], with how the application starts said.
+    fn on_a_machine_where_it_starts<T>(
+        door: &mut ADoor,
+        installed: Installed,
+        granting: bool,
+        starting: &ItStarts,
+        doing: impl FnOnce(&mut Turning<'_, '_>, &mut Grants) -> T,
+    ) -> (T, Record) {
         let strings = in_english();
         let tool = NoTool;
         let mut indicator = Indicator::default();
@@ -364,7 +442,11 @@ mod tests {
                     tool: &tool,
                     bound: Bound::Nobodys,
                 },
-                WhatAnApplicationVerbNeeds { installed, door },
+                WhatAnApplicationVerbNeeds {
+                    installed,
+                    door,
+                    starting,
+                },
                 &mut bounding,
                 &mut indicator,
                 &mut record,
@@ -675,6 +757,7 @@ mod tests {
             WhatAnApplicationVerbNeeds {
                 installed: the_mail_client_is_here(),
                 door: &mut door,
+                starting: &ItStarts(Ok(TheRoad::OverTheBus)),
             },
             &mut bounding,
             &mut indicator,
@@ -697,5 +780,168 @@ mod tests {
         // did not take anything away.
         assert!(names.contains(&"rename_file"), "{names:?}");
         assert!(names.contains(&"install_application"), "{names:?}");
+    }
+
+    /// The sentences an entry was written with.
+    fn what_it_told(record: &Record) -> Vec<String> {
+        record
+            .answering(&Asking::anything())
+            .flat_map(|entry| entry.told().iter().map(ToString::to_string))
+            .collect()
+    }
+
+    /// **An approved `open` of an entry that is not D-Bus-activatable reaches
+    /// the door once, and the one entry says it starts from its own command** —
+    /// the owner's decision of 2026-10-31, that alo's approved open starts an
+    /// application exactly as a Dock press does.
+    #[test]
+    fn an_approved_open_of_a_command_entry_is_asked_once_and_recorded_with_its_road() {
+        let mut door = ADoor::answering(Answer::Acted);
+        let tally = door.a_tally();
+        let (did, record) = on_a_machine_where_it_starts(
+            &mut door,
+            the_mail_client_is_here(),
+            true,
+            &ItStarts(Ok(TheRoad::FromItsCommand)),
+            |turning, grants| through_a_whole_turn(turning, grants, "open_application", &tally),
+        );
+        assert!(did.is_ok(), "{did:?}");
+        assert_eq!(
+            door.asked.borrow().iter().map(Request::written).collect::<Vec<_>>(),
+            [format!("open {THE_MAIL_CLIENT}")],
+            "one approval, one ask"
+        );
+        assert_eq!(record.answering(&Asking::anything()).count(), 1);
+        assert_eq!(
+            what_it_told(&record),
+            [format!(
+                "{THE_MAIL_CLIENT} starts from the command its own entry names, never from one \
+                 alo wrote"
+            )]
+        );
+    }
+
+    /// The other road, named as itself.
+    #[test]
+    fn an_approved_open_of_a_bus_entry_is_recorded_as_over_the_bus() {
+        let mut door = ADoor::answering(Answer::Acted);
+        let tally = door.a_tally();
+        let (did, record) = on_a_machine_where_it_starts(
+            &mut door,
+            the_mail_client_is_here(),
+            true,
+            &ItStarts(Ok(TheRoad::OverTheBus)),
+            |turning, grants| through_a_whole_turn(turning, grants, "open_application", &tally),
+        );
+        assert!(did.is_ok(), "{did:?}");
+        assert_eq!(
+            what_it_told(&record),
+            [format!(
+                "{THE_MAIL_CLIENT} starts by being asked over the session bus, as its entry says"
+            )]
+        );
+    }
+
+    /// **An entry with no way to start is refused by name, the door is never
+    /// asked, and the refusal is written down.**
+    #[test]
+    fn an_open_with_nothing_to_start_it_is_refused_by_name_and_recorded() {
+        for (no, expected) in [
+            (
+                NoRoad::NothingStartsIt,
+                "org.gnome.Geary's entry gives this machine no way to start it",
+            ),
+            (
+                NoRoad::NoEntry,
+                "this machine could not reach org.gnome.Geary",
+            ),
+        ] {
+            let mut door = ADoor::answering(Answer::Acted);
+            let tally = door.a_tally();
+            let (did, record) = on_a_machine_where_it_starts(
+                &mut door,
+                the_mail_client_is_here(),
+                true,
+                &ItStarts(Err(no)),
+                |turning, grants| {
+                    through_a_whole_turn(turning, grants, "open_application", &tally)
+                },
+            );
+            let Err(NotDone::Refused(refused)) = did else {
+                panic!("{no:?} was not refused: {did:?}");
+            };
+            let said = refused.said(&in_english()).text().to_owned();
+            assert!(said.contains(expected), "{no:?} said {said:?}");
+            assert!(
+                door.asked.borrow().is_empty(),
+                "{no:?}: the door was asked to start something nothing starts"
+            );
+            assert_eq!(
+                record.answering(&Asking::anything()).count(),
+                1,
+                "{no:?} left no record"
+            );
+        }
+    }
+
+    /// **An ungranted `open` starts nothing and is written down** — the road
+    /// does not change who may ask.
+    #[test]
+    fn an_ungranted_open_starts_nothing_and_is_recorded() {
+        let mut door = ADoor::answering(Answer::Acted);
+        let tally = door.a_tally();
+        let (did, record) = on_a_machine_where_it_starts(
+            &mut door,
+            the_mail_client_is_here(),
+            false,
+            &ItStarts(Ok(TheRoad::FromItsCommand)),
+            |turning, grants| {
+                turning.proposing(
+                    "open_application",
+                    &[("application", Given::text(THE_MAIL_CLIENT))],
+                    grants,
+                    hour(),
+                    noon(),
+                )
+            },
+        );
+        assert!(matches!(did, Err(NotDone::NeverAsked(_))), "{did:?}");
+        assert!(tally.borrow().is_empty(), "an ungranted open reached the door");
+        assert_eq!(record.answering(&Asking::anything()).count(), 1);
+    }
+
+    /// **An `open` the person declined starts nothing, and the refusal is
+    /// written down**: the door is untouched until the one approval, and a
+    /// proposal is not one.
+    #[test]
+    fn an_unapproved_open_starts_nothing_and_is_recorded() {
+        let mut door = ADoor::answering(Answer::Acted);
+        let tally = door.a_tally();
+        let (declined, record) = on_a_machine_where_it_starts(
+            &mut door,
+            the_mail_client_is_here(),
+            true,
+            &ItStarts(Ok(TheRoad::FromItsCommand)),
+            |turning, grants| {
+                let id = turning.proposing(
+                    "open_application",
+                    &[("application", Given::text(THE_MAIL_CLIENT))],
+                    grants,
+                    hour(),
+                    noon(),
+                )?;
+                turning.declining(id, noon())
+            },
+        );
+        assert!(declined.is_ok(), "{declined:?}");
+        assert!(
+            tally.borrow().is_empty(),
+            "a proposal nobody approved reached the door"
+        );
+        assert_eq!(
+            record.answering(&Asking::anything()).count(),
+            1,
+            "a declined open left no record"
+        );
     }
 }

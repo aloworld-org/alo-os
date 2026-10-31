@@ -71,8 +71,13 @@ alo-kept-undo = { path = "../alo-kept-undo" }
 alo-acting = { path = "../alo-acting" }
 # The applications this machine has, read out of the desktop entries the
 # specification's own directories hold. Read once when the daemon starts, which
-# `starting::what_is_installed_here` argues — nothing here watches a directory.
+# `starting::where_entries_are_here` argues — nothing here watches a directory.
 alo-installed = { path = "../alo-installed" }
+# How an installed application starts — over the bus, or from its entry's own
+# `Exec` line — read off the same entries, so the record of an approved `open`
+# names the road (the owner's decision of 2026-10-31, ADR 0108). The same
+# decisions the desktop's sender makes; `crate::how_applications_start_here`.
+alo-launching = { path = "../alo-launching" }
 # The application identifier a verb is granted and approved against, and the
 # list of what is installed that `crate::starting` reads once. **It was a
 # dev-dependency of this crate until 2026-10-13**; the three application verbs

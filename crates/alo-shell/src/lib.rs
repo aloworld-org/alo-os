@@ -461,6 +461,7 @@ pub mod task_text;
 pub mod the_application_door;
 pub mod the_application_doors_place;
 pub mod the_bar_finds;
+mod the_door_on_the_desktop;
 mod the_bars_pressable_slots;
 mod the_bars_seat;
 pub mod the_cards_words;

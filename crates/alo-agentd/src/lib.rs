@@ -218,6 +218,8 @@ pub mod arrived_on;
 #[cfg(target_os = "linux")]
 pub mod at_the_compositors_door;
 #[cfg(target_os = "linux")]
+pub mod how_applications_start_here;
+#[cfg(target_os = "linux")]
 pub mod bounding;
 #[cfg(target_os = "linux")]
 pub mod caller;

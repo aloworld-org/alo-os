@@ -139,6 +139,7 @@ use alo_turn::{
 
 use crate::at_the_compositors_door::AtTheCompositorsDoor;
 use crate::caller::Uid;
+use crate::how_applications_start_here::HowApplicationsStartHere;
 use crate::described::Described;
 use crate::knocking::Knocking;
 use crate::names::TheNames;
@@ -276,11 +277,18 @@ pub fn until_stopped(
     // answer rather than a reason not to start.
     let mut at_the_compositors_door =
         AtTheCompositorsDoor::beside(Place::for_person(described.sides().person()).directory());
+    // **How each application starts, from the same entries the installed list
+    // is read from** — so an approved `open` is recorded with its road and an
+    // entry with none is refused by name (ADR 0108, 2026-10-31).
+    let starting = HowApplicationsStartHere::in_these(where_entries_are_here());
     let mut machine = what_this_machine_can_carry_out(
         strings,
         &installing_with,
         described,
-        &mut at_the_compositors_door,
+        ReachingApplications {
+            door: &mut at_the_compositors_door,
+            starting: &starting,
+        },
         bounding,
         &mut indicator,
         kept,
@@ -366,7 +374,7 @@ fn what_this_machine_can_carry_out<'a>(
     strings: &'a Strings,
     installing_with: &'a dyn alo_software::Tool,
     described: &Described,
-    at_the_compositors_door: &'a mut AtTheCompositorsDoor,
+    applications: ReachingApplications<'a>,
     bounding: &'a mut dyn Bounding,
     indicator: &'a mut alo_egress::Indicator,
     kept: &'a mut dyn Shortening,
@@ -379,8 +387,9 @@ fn what_this_machine_can_carry_out<'a>(
             bound: described.applications().clone(),
         },
         WhatAnApplicationVerbNeeds {
-            installed: what_is_installed_here(),
-            door: at_the_compositors_door,
+            installed: alo_installed::read(applications.starting.places()),
+            door: applications.door,
+            starting: applications.starting,
         },
         bounding,
         indicator,
@@ -388,7 +397,20 @@ fn what_this_machine_can_carry_out<'a>(
     )
 }
 
-/// The applications this machine has, read once, now.
+/// What the three application acts reach: the compositor's door, and what
+/// says how each application starts.
+///
+/// **A pair rather than two arguments**, for `WhatAnApplicationVerbNeeds`'
+/// reason: the function below would otherwise take eight.
+struct ReachingApplications<'a> {
+    /// The compositor's door.
+    door: &'a mut AtTheCompositorsDoor,
+    /// How each application starts, and where the entries are.
+    starting: &'a HowApplicationsStartHere,
+}
+
+/// Where this machine's desktop entries are, most specific first — the
+/// installed list and how each starts are both read from these.
 ///
 /// **Read here and not watched**, which is the same rule as everything else a
 /// machine holds about itself: an application installed a moment ago is not in
@@ -408,18 +430,29 @@ fn what_this_machine_can_carry_out<'a>(
 /// is skipped, both of which are `alo_installed::read`'s own decisions. So a
 /// machine with nothing installed answers an empty list, and the three verbs
 /// then refuse every application by name rather than failing.
-fn what_is_installed_here() -> alo_applications::Installed {
+///
+/// **Both flatpak installations are added**, as `alo-desktop` adds them: a
+/// system unit is given no `XDG_DATA_DIRS` naming flatpak's exports, so until
+/// 2026-10-31 an agent here could not be granted Firefox or Dolphin at all —
+/// they were *not installed* to the daemon while the Dock listed them.
+fn where_entries_are_here() -> Vec<std::path::PathBuf> {
     // Bound to locals rather than chained, so each borrow outlives the call
     // that reads it and the whole thing stays one expression nobody has to
     // reason about the lifetime of.
     let home = std::env::var_os("HOME");
     let data_home = std::env::var_os("XDG_DATA_HOME");
     let data_dirs = std::env::var_os("XDG_DATA_DIRS");
-    alo_installed::read(&alo_installed::where_entries_live(
+    let data_dirs = alo_installed::with_what_flatpak_exports(
+        Path::new(alo_installed::THE_MACHINES_INSTALLATION),
         home.as_deref().map(Path::new),
         data_home.as_deref(),
         data_dirs.as_deref(),
-    ))
+    );
+    alo_installed::where_entries_live(
+        home.as_deref().map(Path::new),
+        data_home.as_deref(),
+        Some(&data_dirs),
+    )
 }
 
 #[cfg(test)]
@@ -487,6 +520,7 @@ mod tests {
         let installing_with = TheRentedTool::on_this_machine();
         let mut at_the_compositors_door =
             AtTheCompositorsDoor::beside(std::path::Path::new("/run/alo/0"));
+        let starting = HowApplicationsStartHere::in_these(Vec::new());
         let mut indicator = alo_egress::Indicator::default();
         let mut record = Record::default();
         let mut bounding = crate::testing::NothingIsBounded;
@@ -494,7 +528,10 @@ mod tests {
             strings,
             &installing_with,
             &described,
-            &mut at_the_compositors_door,
+            ReachingApplications {
+                door: &mut at_the_compositors_door,
+                starting: &starting,
+            },
             &mut bounding,
             &mut indicator,
             &mut record,
