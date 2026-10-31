@@ -415,6 +415,81 @@ impl ASegmented {
     }
 }
 
+/// The text size slider: `551:1116`, at least 48 tall — a small *A* in
+/// Body/Medium, a track 4 tall in `bg/cool` filled in the accent up to a knob of
+/// radius 11 in `bg/surface` with a 2 accent edge, a large *A* in
+/// Heading/Large, and the percentage — 16 between each. The track is 360
+/// across at most. Answer the slider's bottom.
+pub(crate) fn a_slider(
+    out: &mut ThePageDrawn,
+    laying: &mut Laying<'_>,
+    (x, y, wide): (i32, i32, i32),
+    (percent, (least, most)): (u16, (u16, u16)),
+    the_percentage: Option<AnEndShaped>,
+) -> i32 {
+    let palette = laying.palette;
+    let gap = laying.px(m::INSIDE_A_ROW);
+    let tall = laying.px(m::A_TARGET);
+    let centre = y + tall / 2;
+    let letter = crate::the_settings_words::THE_LETTER;
+    let small = laying
+        .words(
+            letter,
+            TheType::Body,
+            wide,
+            (palette.surface, palette.secondary),
+        )
+        .cropped_to_its_ink();
+    let large = laying
+        .words(
+            letter,
+            TheType::PageHeading,
+            wide,
+            (palette.surface, palette.secondary),
+        )
+        .cropped_to_its_ink();
+    let end = the_percentage
+        .as_ref()
+        .map_or(0, |it| it.wide(laying) + gap);
+    let track_wide = (wide - small.width_of_box - large.width_of_box - 2 * gap - end - gap)
+        .min(laying.px(m::A_SLIDER_AT_MOST))
+        .max(laying.px(m::A_TARGET));
+    let (small_tall, large_tall) = (small.height, large.height);
+    let mut at = x;
+    let small_wide = small.width_of_box;
+    text(out, at, centre - small_tall / 2, small, letter);
+    at += small_wide + gap;
+    let track = Rectangle::new(
+        (at, centre - laying.px(2)).into(),
+        (track_wide, laying.px(4)).into(),
+    );
+    out.drawn.push(Drawn::Fill(track, 2, palette.cool));
+    let share =
+        f32::from(percent.saturating_sub(least)) / f32::from(most.saturating_sub(least).max(1));
+    let knob_x = at + (share * track_wide as f32) as i32;
+    out.drawn.push(Drawn::Fill(
+        Rectangle::new(track.loc, ((knob_x - at).max(0), track.size.h).into()),
+        2,
+        palette.accent,
+    ));
+    let knob = laying.px(2 * m::A_SLIDERS_KNOB);
+    let knob_area = Rectangle::new(
+        (knob_x - knob / 2, centre - knob / 2).into(),
+        (knob, knob).into(),
+    );
+    out.drawn.push(Drawn::Disc(knob_area, palette.surface));
+    out.drawn.push(Drawn::Ring(knob_area, 20, palette.accent));
+    at += track_wide + gap;
+    let large_wide = large.width_of_box;
+    text(out, at, centre - large_tall / 2, large, letter);
+    at += large_wide + gap;
+    if let Some(percentage) = the_percentage {
+        let wide = percentage.wide(laying);
+        percentage.placed(out, laying, at + wide, centre);
+    }
+    y + tall
+}
+
 /// The accent colours: `551:307`, each 72 across with 16 between, a target 48
 /// square holding a disc of radius 17 in the colour — and round the chosen one
 /// a ring of radius 21, 2 thick, in the same colour, with a white check of 18
@@ -440,7 +515,12 @@ pub(crate) fn the_swatches(
             (left + (item - target) / 2, y).into(),
             (target, target).into(),
         );
-        let colour = part.colour.unwrap_or(palette.accent);
+        let colour = part.colour.map_or(
+            palette.accent,
+            |(light, dark)| {
+                if palette.dark { dark } else { light }
+            },
+        );
         let centre = (area.loc.x + target / 2, area.loc.y + target / 2);
         let disc = laying.px(2 * m::A_SWATCH);
         out.drawn.push(Drawn::Disc(

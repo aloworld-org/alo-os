@@ -36,6 +36,29 @@ use crate::desktop_look::DesktopPalette;
 /// How strongly the chosen category's ground is the accent, light.
 const THE_CHOSEN_GROUND_IS: f32 = 0.12;
 
+/// How strongly it is the accent, dark: `rgba(138,160,230,0.22)` in `550:588`.
+const THE_CHOSEN_GROUND_IS_DARK: f32 = 0.22;
+
+/// The dark frames' colours, the accent and the chosen grounds left to the
+/// person's accent. **The design's values, and not the roles'**:
+/// `alo_appearance::Role` is the light theme only and says so, and these were
+/// read with `get_variable_defs` on `550:580` and `550:1025` on 2026-10-31.
+const THE_DARK_FRAME: SettingsPalette = SettingsPalette {
+    surface: [0x10, 0x2A, 0x43],
+    canvas: [0x07, 0x13, 0x1F],
+    cool: [0x18, 0x3B, 0x56],
+    edge: [0x27, 0x4C, 0x68],
+    ink: [0xFF, 0xFC, 0xF8],
+    secondary: [0xCB, 0xD5, 0xE1],
+    muted: [0xA4, 0xB4, 0xC2],
+    warning: [0xE8, 0xAD, 0x50],
+    positive: [0x7E, 0xD3, 0xA6],
+    accent: [0, 0, 0],
+    chosen: [0, 0, 0],
+    chosen_on_surface: [0, 0, 0],
+    dark: true,
+};
+
 /// The colours the window draws in.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) struct SettingsPalette {
@@ -61,6 +84,9 @@ pub(crate) struct SettingsPalette {
     pub(crate) accent: [u8; 3],
     /// The chosen category's ground: the accent over the side column.
     pub(crate) chosen: [u8; 3],
+    /// Whether these are the dark frame's colours, for what has a light and a
+    /// dark value of its own: an accent shown as a colour.
+    pub(crate) dark: bool,
     /// A chosen entry's ground in a list: the accent over `bg/surface`
     /// (`551:853`).
     pub(crate) chosen_on_surface: [u8; 3],
@@ -70,6 +96,17 @@ pub(crate) struct SettingsPalette {
 fn rgb_of(role: Role) -> [u8; 3] {
     let it = role.colour();
     [it.red(), it.green(), it.blue()]
+}
+
+/// The dark frame's side column, its chosen category Indigo at 22 per cent:
+/// what `550:588` fills it with.
+#[cfg(test)]
+pub(crate) fn the_dark_chosen_ground() -> [u8; 3] {
+    mixed(
+        THE_DARK_FRAME.canvas,
+        [0x8A, 0xA0, 0xE6],
+        THE_CHOSEN_GROUND_IS_DARK,
+    )
 }
 
 /// `over` at `amount` on `under`.
@@ -95,6 +132,18 @@ impl SettingsPalette {
             crate::Contrast::High => desktop.ink,
             crate::Contrast::AsDesigned => rgb_of(role),
         };
+        // **Dark is the frame's own values** (`550:580`, `550:1025`), read from
+        // the dark frames and recorded in `docs/design/the-settings-window.md`.
+        // High contrast keeps its own palette in either scheme.
+        if look.scheme == Scheme::Dark && look.contrast == crate::Contrast::AsDesigned {
+            let dark = THE_DARK_FRAME;
+            return Ok(Self {
+                accent: desktop.accent,
+                chosen: mixed(dark.canvas, desktop.accent, THE_CHOSEN_GROUND_IS_DARK),
+                chosen_on_surface: mixed(dark.surface, desktop.accent, THE_CHOSEN_GROUND_IS_DARK),
+                ..dark
+            });
+        }
         let canvas = desktop.ground;
         Ok(Self {
             surface: desktop.dock,
@@ -108,9 +157,8 @@ impl SettingsPalette {
             positive: quiet_or_ink(Role::StatusPositive),
             accent: desktop.accent,
             chosen_on_surface: mixed(desktop.dock, desktop.accent, THE_CHOSEN_GROUND_IS),
-            chosen: match look.scheme {
-                Scheme::Light | Scheme::Dark => mixed(canvas, desktop.accent, THE_CHOSEN_GROUND_IS),
-            },
+            chosen: mixed(canvas, desktop.accent, THE_CHOSEN_GROUND_IS),
+            dark: look.scheme == Scheme::Dark,
         })
     }
 }

@@ -206,6 +206,11 @@ pub(crate) const INSIDE_AN_ENTRY: u32 = 12;
 /// The check on the chosen entry.
 pub(crate) const AN_ENTRYS_CHECK: u32 = 18;
 
+/// The text size slider's track, across at most (`551:1118`).
+pub(crate) const A_SLIDER_AT_MOST: u32 = 360;
+/// Its knob, the radius.
+pub(crate) const A_SLIDERS_KNOB: u32 = 11;
+
 /// Between a page's blocks, per page, as each frame draws it.
 ///
 /// **Three figures for one relationship**, and recorded rather than tidied:

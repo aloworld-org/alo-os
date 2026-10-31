@@ -113,6 +113,51 @@ pub enum SettingsSection {
     HowCodeRuns,
     /// What has been granted to what.
     Granted,
+    /// Text size and the pointer's size.
+    Accessibility,
+}
+
+/// Light, dark, or following the time of day.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum LightOrDark {
+    /// Light, whatever the time.
+    Light,
+    /// Dark, whatever the time.
+    Dark,
+    /// Dark in the evening and light again in the morning, by the schedule
+    /// `alo-appearance` ships.
+    FollowTheTimeOfDay,
+}
+
+impl LightOrDark {
+    /// All three, in the order the frame draws them.
+    pub const ALL: [Self; 3] = [Self::Light, Self::Dark, Self::FollowTheTimeOfDay];
+
+    /// Which one a person's appearance follows.
+    #[must_use]
+    pub const fn of(following: alo_appearance::Following) -> Self {
+        match following {
+            alo_appearance::Following::Always(alo_appearance::Scheme::Light) => Self::Light,
+            alo_appearance::Following::Always(alo_appearance::Scheme::Dark) => Self::Dark,
+            alo_appearance::Following::TheClock(_) => Self::FollowTheTimeOfDay,
+        }
+    }
+}
+
+/// How large the pointer is drawn.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PointerSize {
+    /// As it ships.
+    Default,
+    /// Larger.
+    Large,
+    /// Larger still.
+    Larger,
+}
+
+impl PointerSize {
+    /// All three, in the order the frame draws them.
+    pub const ALL: [Self; 3] = [Self::Default, Self::Large, Self::Larger];
 }
 
 /// One row a person can act on.
@@ -207,6 +252,14 @@ pub enum SettingsRow {
     Edge(alo_dock::Edge),
     /// Another page of Settings, from a row that names it: Enter shows it.
     GoTo(SettingsCategory),
+    /// Light, dark, or following the time of day: Enter chooses it.
+    LightOrDark(LightOrDark),
+    /// How large text is drawn everywhere: Left and Right make it smaller and
+    /// larger, a step of 25 per cent at a time, and Enter makes it larger.
+    TextSize,
+    /// How large the pointer is drawn: Enter says it is not on this computer
+    /// yet. `docs/features.md` promises *cursor size*; nothing draws it yet.
+    PointerSize(PointerSize),
     /// The list of countries and regions, or of time zones: Enter opens it.
     ///
     /// **One row where there were two hundred and fifty.** Every region is
@@ -233,6 +286,8 @@ impl SettingsRow {
             Self::TimeZone(_) => SettingsSection::TimeZone,
             Self::Hiding(_) | Self::Edge(_) => SettingsSection::Dock,
             Self::GoTo(_) => SettingsSection::Terminal,
+            Self::LightOrDark(_) => SettingsSection::Appearance,
+            Self::TextSize | Self::PointerSize(_) => SettingsSection::Accessibility,
             Self::OpenThePicker(SettingsPicker::Region) => SettingsSection::Formats,
             Self::OpenThePicker(SettingsPicker::TimeZone) => SettingsSection::TimeZone,
             Self::Shortcut(_) => SettingsSection::Shortcuts,
@@ -322,6 +377,9 @@ pub enum SettingsDid {
     WentTo(SettingsCategory),
     /// A list to choose from opened, or closed without a choice.
     TheList(SettingsPicker),
+    /// Something the design draws and this computer does not have yet: the
+    /// page says so, and nothing changed.
+    NotOnThisComputerYet,
     /// A person asked to see the record, so the record window should open.
     ///
     /// **The window says so and does not do it**, for `AddingAProvider`'s
@@ -370,6 +428,10 @@ pub(crate) struct Open {
     pub(crate) in_the_page: bool,
     /// The list of countries or time zones, while it is open.
     pub(crate) picker: Option<crate::settings_picker::APickerOpen>,
+    /// What the page says about the last thing chosen on it, for a page
+    /// with no section of its own to say it: something not on this computer
+    /// yet. Gone when the page changes.
+    pub(crate) told: Option<String>,
     /// Which row of the page has the focus, counted from its first.
     pub(crate) focus: usize,
     /// Whether Settings waits for a chord for the focused shortcut.
@@ -431,6 +493,7 @@ impl SettingsWindow {
             category: SettingsCategory::AloAndAi,
             in_the_page: false,
             picker: None,
+            told: None,
             focus: 0,
             waiting_for_a_chord: false,
         });
@@ -596,6 +659,18 @@ impl SettingsWindow {
                 }
             }
             SettingsKey::Choose => return focused.map(|row| open.chosen(&row, doors)),
+            // **Left and Right on the text size make it smaller and larger**;
+            // anywhere else they do nothing.
+            SettingsKey::Less | SettingsKey::More => {
+                if focused == Some(SettingsRow::TextSize) {
+                    let by = if press.key == SettingsKey::More {
+                        25
+                    } else {
+                        -25
+                    };
+                    return Some(open.the_text_is(by, doors.strings));
+                }
+            }
             SettingsKey::PutBackAsShipped => {
                 return focused.and_then(|row| open.put_back_as_shipped(&row, doors.strings));
             }
@@ -676,6 +751,7 @@ impl Open {
             SettingsCategory::Appearance => {
                 let mut rows = Vec::new();
                 if self.appearance.at().is_some() {
+                    rows.extend(LightOrDark::ALL.into_iter().map(SettingsRow::LightOrDark));
                     rows.extend(Accent::ALL.into_iter().map(SettingsRow::Accent));
                 }
                 if self.dock.at().is_some() {
@@ -709,7 +785,14 @@ impl Open {
             // **Nothing yet.** The text size and the pointer's size the design
             // draws here are not reachable from this window; the page says so
             // in words rather than drawing controls that do nothing.
-            SettingsCategory::Accessibility => Vec::new(),
+            SettingsCategory::Accessibility => {
+                let mut rows = Vec::new();
+                if self.appearance.at().is_some() {
+                    rows.push(SettingsRow::TextSize);
+                }
+                rows.extend(PointerSize::ALL.into_iter().map(SettingsRow::PointerSize));
+                rows
+            }
         }
     }
 
@@ -832,12 +915,33 @@ impl Open {
             | SettingsKey::PreviousSection
             | SettingsKey::PutBackThisOne
             | SettingsKey::PutBackAsShipped
+            | SettingsKey::Less
+            | SettingsKey::More
             | SettingsKey::Nothing => picker.focus,
         };
         if let Some(open) = self.picker.as_mut() {
             open.focus = focus;
         }
         SettingsDid::TheList(picker.which)
+    }
+
+    /// The text made `by` per cent larger, or smaller, within the range
+    /// `alo-appearance` allows, through its keeper.
+    pub(crate) fn the_text_is(&mut self, by: i32, strings: &Strings) -> SettingsDid {
+        let (least, most) = alo_appearance::TextScale::range();
+        let now = i32::from(self.appearance.drawn().text().as_percent());
+        let to = (now + by).clamp(i32::from(least), i32::from(most));
+        let to = u16::try_from(to).unwrap_or(least);
+        let kept = self.appearance.changed(
+            |appearance| {
+                let scale = alo_appearance::TextScale::percent(to)
+                    .map_err(|refused| refused.said(strings).into_text())?;
+                appearance.set_text(scale);
+                Ok(())
+            },
+            strings,
+        );
+        SettingsDid::Kept(SettingsSection::Appearance, kept)
     }
 
     /// Where each of the page's groups of rows begins, counted in its rows.
@@ -901,10 +1005,15 @@ impl Open {
                 }
                 return Some(SettingsDid::Closed);
             }
-            SettingsKey::PutBackThisOne | SettingsKey::PutBackAsShipped | SettingsKey::Nothing => {}
+            SettingsKey::PutBackThisOne
+            | SettingsKey::PutBackAsShipped
+            | SettingsKey::Less
+            | SettingsKey::More
+            | SettingsKey::Nothing => {}
         }
         if self.category != before {
             self.focus = 0;
+            self.told = None;
         }
         None
     }
@@ -1017,6 +1126,35 @@ impl Open {
                 SettingsSection::TimeZone,
                 self.time_zone.choose(zone, doors.zone, doors.strings),
             ),
+            SettingsRow::LightOrDark(which) => {
+                let following = match which {
+                    LightOrDark::Light => {
+                        alo_appearance::Following::Always(alo_appearance::Scheme::Light)
+                    }
+                    LightOrDark::Dark => {
+                        alo_appearance::Following::Always(alo_appearance::Scheme::Dark)
+                    }
+                    LightOrDark::FollowTheTimeOfDay => alo_appearance::Following::TheClock(
+                        alo_appearance::Shipped::the_evening_schedule(),
+                    ),
+                };
+                let kept = self.appearance.changed(
+                    |appearance| {
+                        appearance.follow(following);
+                        Ok(())
+                    },
+                    doors.strings,
+                );
+                SettingsDid::Kept(SettingsSection::Appearance, kept)
+            }
+            SettingsRow::TextSize => self.the_text_is(25, doors.strings),
+            SettingsRow::PointerSize(_) => {
+                self.told = Some(crate::settings_page::said(
+                    doors.strings,
+                    crate::the_settings_words::NOT_ON_THIS_COMPUTER_YET,
+                ));
+                SettingsDid::NotOnThisComputerYet
+            }
             SettingsRow::OpenThePicker(which) => {
                 self.the_list_opens(*which, doors.strings);
                 SettingsDid::TheList(*which)
@@ -1036,6 +1174,7 @@ impl Open {
             // row**, which is where a person reaches for it.
             SettingsRow::GoTo(category) => {
                 self.category = *category;
+                self.told = None;
                 self.in_the_page = !self.rows_on(*category, doors.now).is_empty();
                 self.focus = 0;
                 SettingsDid::WentTo(*category)
@@ -1131,6 +1270,7 @@ impl Open {
             | SettingsSection::Granted
             | SettingsSection::Terminal
             | SettingsSection::HowCodeRuns
+            | SettingsSection::Accessibility
             | SettingsSection::TimeZone => {
                 return None;
             }

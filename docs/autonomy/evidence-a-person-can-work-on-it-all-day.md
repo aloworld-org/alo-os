@@ -355,7 +355,8 @@ it to `dock.toml`. What was missing was the middle: nothing resolved a person's
 choice against what the release ships, so a written answer could not be read back,
 and the two strings for the rows a person picks between had no code that could say
 either of them. `Dock::hiding`, `Dock::showing` and `Hiding::said` are that middle,
-and `crates/alo-shell/src/settings_lines.rs` now draws the two rows.
+and `settings_lines.rs` now draws the two rows. (That file was deleted on
+2026-10-31; the rows are drawn by `crates/alo-shell/src/settings_page_folders.rs`.)
 
 *This entry read **still owed: the hiding** and cited `layout.rs` writing* whether
 it hides when a window needs the room is v0.5 *at the place it would go. That

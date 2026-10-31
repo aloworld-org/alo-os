@@ -357,3 +357,46 @@ fn written_out(drawn: &SettingsPicture, size: (i32, i32), to: &std::path::Path) 
     }
     image.save(to).unwrap();
 }
+
+/// **Dark is the dark frame's colours** (`550:580`): the page on
+/// `bg/surface` #102A43, and the chosen category Indigo at 22 per cent over
+/// the side column's #07131F.
+#[test]
+fn the_dark_window_is_the_dark_frames_colours() {
+    let machine = a_persons_machine("raster-dark");
+    let mut window = machine.opened();
+    let dark = SettingsLook {
+        scheme: alo_appearance::Scheme::Dark,
+        accent: alo_appearance::Accent::Indigo.on(alo_appearance::Scheme::Dark),
+        ..light()
+    };
+    let drawn = drawn_at(&window, (1440, 960), dark);
+    let panel = drawn.panel.unwrap();
+    // Inside the page, clear of everything on it: just under the window's
+    // top edge, at its right.
+    assert_eq!(
+        pixel(&drawn, panel.loc.x + panel.size.w - 30, panel.loc.y + 10),
+        [0x10, 0x2A, 0x43, 255]
+    );
+    let (_, chosen) = drawn.categories[0];
+    let [red, green, blue] = crate::settings_palette::the_dark_chosen_ground();
+    assert_eq!(
+        pixel(&drawn, chosen.loc.x + 4, chosen.loc.y + 24),
+        [red, green, blue, 255]
+    );
+    if let Some(folder) = std::env::var_os("ALO_SETTINGS_PICTURES") {
+        written_out(
+            &drawn,
+            (1440, 960),
+            &std::path::Path::new(&folder).join("settings-0-AloAndAi-dark-1440x960.png"),
+        );
+        press(&mut window, SettingsKey::Next);
+        press(&mut window, SettingsKey::Next);
+        let running = drawn_at(&window, (1440, 960), dark);
+        written_out(
+            &running,
+            (1440, 960),
+            &std::path::Path::new(&folder).join("settings-2-RunningCode-dark-1440x960.png"),
+        );
+    }
+}

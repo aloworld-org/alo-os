@@ -76,11 +76,13 @@ pub(crate) enum ASettingsIcon {
     ChevronUpDown,
     /// The list's search.
     Search,
+    /// The pointer's size.
+    Pointer,
 }
 
 impl ASettingsIcon {
     /// Every icon.
-    pub(crate) const ALL: [Self; 23] = [
+    pub(crate) const ALL: [Self; 24] = [
         Self::Chat,
         Self::Folder,
         Self::Code,
@@ -104,6 +106,7 @@ impl ASettingsIcon {
         Self::Check,
         Self::ChevronUpDown,
         Self::Search,
+        Self::Pointer,
     ];
 
     /// The file, as the design exported it.
@@ -132,6 +135,7 @@ impl ASettingsIcon {
             Self::Check => include_str!("../icons/settings/check-16.svg"),
             Self::ChevronUpDown => include_str!("../icons/settings/chevron-up-down.svg"),
             Self::Search => include_str!("../icons/settings/search.svg"),
+            Self::Pointer => include_str!("../icons/settings/pointer.svg"),
         }
     }
 
@@ -162,6 +166,7 @@ impl ASettingsIcon {
             Self::Check => "check-16.svg",
             Self::ChevronUpDown => "chevron-up-down.svg",
             Self::Search => "search.svg",
+            Self::Pointer => "pointer.svg",
         }
     }
 
@@ -192,6 +197,7 @@ impl ASettingsIcon {
             Self::Check => (16.0, [2.667, 4.0, 10.667, 7.333]),
             Self::ChevronUpDown => (16.0, [4.667, 2.667, 6.667, 10.667]),
             Self::Search => (18.0, [2.25, 2.25, 13.5, 13.5]),
+            Self::Pointer => (20.0, [3.333, 3.333, 14.167, 14.167]),
         }
     }
 

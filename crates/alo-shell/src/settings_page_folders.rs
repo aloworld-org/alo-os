@@ -2,8 +2,8 @@
 //! each with *Take back*; the button that gives it another; the record of what
 //! it did; and the computers paired with this one.
 //!
-//! **While a folder is being picked the picker is the whole page**, for the
-//! reason `crate::settings_lines` gives: a person walking their own folders
+//! **While a folder is being picked the picker is the whole page**, because a
+//! person walking their own folders
 //! with the grants underneath would be moving one ring through two lists, and
 //! the key that opens a folder would be the key that takes one back a row
 //! away.

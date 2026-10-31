@@ -331,9 +331,9 @@ fn the_settings_files() -> Vec<(String, Vec<(usize, String)>)> {
             "settings_keepers.rs",
             "settings_kept.rs",
             "settings_keys.rs",
-            "settings_lines.rs",
             "settings_measures.rs",
             "settings_page.rs",
+            "settings_page_accessibility.rs",
             "settings_page_alo.rs",
             "settings_page_appearance.rs",
             "settings_page_folders.rs",
@@ -553,12 +553,12 @@ fn settings_grants_only_from_a_pick_and_changes_only_through_the_owning_crates()
 fn a_settings_file_that_words_grants_or_writes_around_its_keeper_is_refused() {
     let caught = [
         (
-            "settings_lines.rs",
+            "settings_page.rs",
             "let said = format!(\"{name} chosen\");",
             "format!",
         ),
         (
-            "settings_lines.rs",
+            "settings_page.rs",
             "const CHOSEN: Word = Word::saying(\"x\", \"y\");",
             "Word::",
         ),
@@ -583,7 +583,7 @@ fn a_settings_file_that_words_grants_or_writes_around_its_keeper_is_refused() {
             ".granted(",
         ),
         (
-            "settings_lines.rs",
+            "settings_page.rs",
             "let picked = alo_picking::Picker::standing_in(at, folders)?;",
             "alo_picking",
         ),
@@ -669,7 +669,7 @@ fn a_settings_file_that_words_grants_or_writes_around_its_keeper_is_refused() {
         ),
         ("nested_settings.rs", "    reason = \"one session frame\""),
         (
-            "settings_lines.rs",
+            "settings_page.rs",
             "strings.say(&may.word().key(), &Filling::nothing())",
         ),
     ];
@@ -682,7 +682,5 @@ fn a_settings_file_that_words_grants_or_writes_around_its_keeper_is_refused() {
     }
     let only_in_a_test =
         "fn drawn() {}\n#[cfg(test)]\nmod tests {\n    fn f() { let _ = format!(\"x\"); }\n}\n";
-    assert!(
-        what_settings_must_not_do("settings_lines.rs", &the_code_of(only_in_a_test)).is_empty()
-    );
+    assert!(what_settings_must_not_do("settings_page.rs", &the_code_of(only_in_a_test)).is_empty());
 }

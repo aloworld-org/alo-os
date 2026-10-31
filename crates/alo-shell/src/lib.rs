@@ -394,9 +394,9 @@ mod settings_granted;
 mod settings_keepers;
 mod settings_kept;
 mod settings_keys;
-mod settings_lines;
 mod settings_measures;
 mod settings_page;
+mod settings_page_accessibility;
 mod settings_page_alo;
 mod settings_page_appearance;
 mod settings_page_folders;
@@ -839,8 +839,8 @@ pub use settings_keys::SettingsKey;
 pub use settings_places::SettingsPlaces;
 pub use settings_raster::SettingsLook;
 pub use settings_window::{
-    SettingsCategory, SettingsDid, SettingsDoors, SettingsOpened, SettingsPicker, SettingsPress,
-    SettingsRow, SettingsSection, SettingsWindow,
+    LightOrDark, PointerSize, SettingsCategory, SettingsDid, SettingsDoors, SettingsOpened,
+    SettingsPicker, SettingsPress, SettingsRow, SettingsSection, SettingsWindow,
 };
 pub use shortcut_dispatch::ShortcutDispatchError;
 pub use sign_in_entry::{NAME_BYTES, SignInField};

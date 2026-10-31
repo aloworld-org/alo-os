@@ -12,7 +12,7 @@
 use std::path::{Path, PathBuf};
 
 use super::*;
-use crate::settings_lines::sections;
+use crate::settings_page::{APage, ARow, TheKind};
 use crate::settings_testing::{
     CountingDoor, Machine, PROVIDER, RECEPTION, a_persons_machine, bytes, doors, noon, words,
 };
@@ -131,11 +131,36 @@ fn a_twin() -> tempfile::TempDir {
     tempfile::tempdir().unwrap()
 }
 
-/// Every sentence Settings draws above its rows, in every section.
+/// The page `category` draws, as the window holds it at `at`.
+fn the_page_at(
+    window: &SettingsWindow,
+    category: SettingsCategory,
+    strings: &Strings,
+    at: std::time::SystemTime,
+) -> APage {
+    crate::settings_page::the_page(window.open().unwrap(), category, strings, at)
+}
+
+/// Every row a page draws, in reading order.
+fn rows_drawn(page: &APage) -> Vec<&ARow> {
+    page.blocks
+        .iter()
+        .flat_map(|block| match block {
+            crate::settings_page::ABlock::Section(section) => section.rows.iter().collect(),
+            _ => Vec::new(),
+        })
+        .collect()
+}
+
+/// Every sentence Settings draws above its rows, on every page.
 fn said(window: &SettingsWindow) -> Vec<String> {
-    sections(window.open().unwrap(), &words(), noon())
+    SettingsCategory::ALL
         .into_iter()
-        .flat_map(|section| section.said)
+        .flat_map(|category| the_page_at(window, category, &words(), noon()).blocks)
+        .filter_map(|block| match block {
+            crate::settings_page::ABlock::Said(it) => Some(it),
+            _ => None,
+        })
         .collect()
 }
 
@@ -213,7 +238,13 @@ fn every_setting_the_machine_has_is_in_one_window() {
         SettingsRow::UsingAnother,
     ]);
     assert_eq!(answers, expected.iter().collect::<Vec<_>>());
-    let accents: Vec<SettingsRow> = Accent::ALL.into_iter().map(SettingsRow::Accent).collect();
+    // **Light and dark, then the accents**, the Look section as `551:280`
+    // draws it.
+    let accents: Vec<SettingsRow> = LightOrDark::ALL
+        .into_iter()
+        .map(SettingsRow::LightOrDark)
+        .chain(Accent::ALL.into_iter().map(SettingsRow::Accent))
+        .collect();
     // **The Dock's four edges, then what it does when a window needs the
     // room**: where it sits is chosen in Settings again (`docs/features.md`).
     let edges: Vec<SettingsRow> = alo_dock::Edge::EVERY
@@ -291,6 +322,7 @@ fn every_setting_the_machine_has_is_in_one_window() {
                 provider: PROVIDER.to_owned(),
                 model: "harbour-small".to_owned(),
             }),
+            SettingsRow::LightOrDark(LightOrDark::of(Appearance::shipped().following())),
             SettingsRow::Accent(Appearance::shipped().accent()),
             SettingsRow::Edge(Dock::shipped().edge()),
             SettingsRow::Hiding(Dock::shipped().hiding()),
@@ -299,6 +331,8 @@ fn every_setting_the_machine_has_is_in_one_window() {
             // — for nobody having chosen a region, the language's own way.
             // `the_country_is_chosen_from_a_list_that_typing_narrows` holds
             // that.
+            // The pointer is the size it ships at.
+            SettingsRow::PointerSize(PointerSize::Default),
         ]
     );
 }
@@ -501,53 +535,52 @@ fn a_fresh_machine_can_answer_only_not_at_all_and_is_offered_the_way_in() {
     let opened = window.opened_by_hand(&places, noon());
     assert!(opened.not_remembered.is_empty());
 
-    let lines: Vec<_> = sections(window.open().unwrap(), &words(), noon())
-        .into_iter()
-        .filter(|section| section.section == SettingsSection::Answering)
-        .flat_map(|section| section.lines)
-        .collect();
-    // **The ways, and not every line in the section.** `Add a provider` is a
-    // line here too and is deliberately not a way: it is the one row that does
-    // not depend on what the person already has, which is the whole reason it
-    // exists — a fresh machine could otherwise be told only *not at all*, with
-    // no road to anything else. This test is about the four ways being absent
-    // rather than drawn and disabled, so it asks about those.
-    let ways: Vec<_> = lines
+    let page = the_page_at(&window, SettingsCategory::AloAndAi, &words(), noon());
+    let rows = rows_drawn(&page);
+    // **The one answer that is a choice on its own is *not at all*.** Since
+    // the redesign of 2026-10-31 the four ways are drawn whatever the person
+    // has, as the design draws them, and the other three are chosen by what is
+    // under them — here, nothing. `docs/design/the-settings-window.md` asks the
+    // owner whether that is meant. `Add a provider` is the road to something
+    // under a way, which is the whole reason it is always offered: a fresh
+    // machine could otherwise be told only *not at all*.
+    let answers: Vec<_> = rows
         .iter()
-        .filter(|line| matches!(line.row, Some(SettingsRow::Answer(_))))
+        .filter(|row| matches!(row.row, Some(SettingsRow::Answer(_))))
         .collect();
-    assert_eq!(ways.len(), 1, "{lines:#?}");
+    assert_eq!(answers.len(), 1, "{rows:#?}");
     assert_eq!(
-        ways[0].row,
+        answers[0].row,
         Some(SettingsRow::Answer(SettingsChoice::NotAtAll))
     );
+    let heads = rows
+        .iter()
+        .filter(|row| {
+            matches!(
+                row.row,
+                Some(SettingsRow::Way(_) | SettingsRow::Answer(SettingsChoice::NotAtAll))
+            )
+        })
+        .count();
+    assert_eq!(heads, 4, "the four ways, each drawn: {rows:#?}");
     assert!(
-        lines
-            .iter()
-            .any(|line| line.row == Some(SettingsRow::AddAProvider)),
-        "and the one row always offered is here: {lines:#?}"
+        rows.iter()
+            .any(|row| row.row == Some(SettingsRow::AddAProvider)),
+        "and the one row always offered is here: {rows:#?}"
     );
-    assert!(!ways[0].chosen, "nobody has answered, so nothing is chosen");
-
-    // Every line that is not a row is a way to answer with a choice under it.
-    let machine = a_persons_machine("absent");
-    let open = machine.opened();
-    let answering = sections(open.open().unwrap(), &words(), noon())
-        .into_iter()
-        .find(|section| section.section == SettingsSection::Answering)
-        .unwrap();
-    for (at, line) in answering.lines.iter().enumerate() {
-        if line.row.is_none() {
-            let next = answering.lines.get(at + 1).unwrap();
-            assert!(next.row.is_some(), "a way with nothing under it: {line:?}");
-        }
-    }
+    assert_eq!(
+        answers[0].kind,
+        TheKind::AChoice { chosen: false },
+        "nobody has answered, so nothing is chosen"
+    );
 
     // And nothing granted is a sentence, not an empty list.
-    let granted = sections(window.open().unwrap(), &words(), noon())
-        .into_iter()
-        .find(|section| section.section == SettingsSection::Granted)
-        .unwrap();
+    let granted = the_page_at(
+        &window,
+        SettingsCategory::FoldersAloCanUse,
+        &words(),
+        noon(),
+    );
     // **The one row here is the way in, and it is the whole point of it.**
     // This asserted an empty list until 2026-10-24, when it was true and was
     // the fault: a person on a machine with nothing granted was shown a
@@ -557,24 +590,24 @@ fn a_fresh_machine_can_answer_only_not_at_all_and_is_offered_the_way_in() {
     // when there is something — a door that opened once you were through it
     // would be no door at all.
     assert_eq!(
-        granted
-            .lines
-            .iter()
-            .map(|line| line.row.clone())
-            .collect::<Vec<_>>(),
-        // And the record's row above it since 2026-10-27, which is offered
+        granted.rows(),
+        // And the record's row under it since 2026-10-27, which is offered
         // whether or not anything is granted: the record answers *what
         // happened*, and a machine with nothing granted now may have done
         // things under a grant since taken back.
-        [
-            Some(SettingsRow::SeeWhatAloDid),
-            Some(SettingsRow::GrantAFolder)
-        ],
+        [SettingsRow::GrantAFolder, SettingsRow::SeeWhatAloDid],
         "{:?}",
-        granted.lines
+        granted.blocks
     );
     assert_eq!(
-        granted.said,
+        granted
+            .blocks
+            .iter()
+            .filter_map(|block| match block {
+                crate::settings_page::ABlock::Said(it) => Some(it.clone()),
+                _ => None,
+            })
+            .collect::<Vec<_>>(),
         [Listing::of(&Grants::default(), noon())
             .said(&words())
             .unwrap()
@@ -1295,13 +1328,16 @@ fn a_session_with_no_folder_offers_nothing_it_could_not_keep() {
         rows.iter().all(|row| matches!(
             row.section(),
             SettingsSection::Granted | SettingsSection::HowCodeRuns
-        ) || *row == SettingsRow::GoTo(SettingsCategory::RunningCode)),
+        ) || matches!(
+            row,
+            SettingsRow::GoTo(SettingsCategory::RunningCode) | SettingsRow::PointerSize(_)
+        )),
         "{rows:?}"
     );
     assert_eq!(
         rows.len(),
-        7,
-        "one grant, one pairing, the row that opens the record, the three levels, and the          row that opens their page"
+        10,
+        "one grant, one pairing, the row that opens the record, the three levels, and the          row that opens their page, and the pointer's three sizes, which keep nothing"
     );
     assert_eq!(window.appearance(), Some(&Appearance::shipped()));
     assert_eq!(window.dock(), Some(&Dock::shipped()));
@@ -1550,28 +1586,34 @@ fn a_folder_given_until_removed_is_on_the_list_and_says_so() {
             &Filling::nothing(),
         )
         .into_text();
-    let lines: Vec<Vec<String>> = sections(window.open().unwrap(), &strings, noon() + a_year)
+    let until_removed = crate::settings_type::as_a_name(&until_removed);
+    // **A grant's row is the one whose button takes it back.**
+    let notes = |at| -> Vec<Option<String>> {
+        rows_drawn(&the_page_at(
+            &window,
+            SettingsCategory::FoldersAloCanUse,
+            &strings,
+            at,
+        ))
         .into_iter()
-        .filter(|section| section.section == SettingsSection::Granted)
-        .flat_map(|section| section.lines)
-        .filter(|line| matches!(line.row, Some(SettingsRow::Granted(Row::Grant(_)))))
-        .map(|line| line.parts)
-        .collect();
+        .filter(|row| matches!(row.button, Some((_, SettingsRow::Granted(Row::Grant(_))))))
+        .map(|row| row.note.as_ref().map(|note| note.words.clone()))
+        .collect()
+    };
+    let lines = notes(noon() + a_year);
     assert_eq!(lines.len(), 1, "{lines:?}");
-    assert!(
-        lines[0].contains(&until_removed),
+    assert_eq!(
+        lines[0].as_ref(),
+        Some(&until_removed),
         "the row does not say it lasts until removed: {lines:?}"
     );
     assert!(!until_removed.is_empty(), "the word is not declared");
 
     // And the control: the hour-long grant's row does **not** say it, so the
     // sentence is about this grant rather than about every row.
-    let an_hour_in = sections(window.open().unwrap(), &strings, noon())
+    let an_hour_in = notes(noon())
         .into_iter()
-        .filter(|section| section.section == SettingsSection::Granted)
-        .flat_map(|section| section.lines)
-        .filter(|line| matches!(line.row, Some(SettingsRow::Granted(Row::Grant(_)))))
-        .filter(|line| !line.parts.contains(&until_removed))
+        .filter(|note| note.as_ref() != Some(&until_removed))
         .count();
     assert_eq!(an_hour_in, 1, "the grant that ends says it does not");
 
@@ -1716,4 +1758,96 @@ fn typing_narrows_the_list_and_the_whole_list_stays_under_it() {
     assert_eq!(picker.matches, names.len());
     assert_eq!(picker.shown.len(), names.len() + every);
     assert_eq!(picker.focus, 0);
+}
+
+/// **Light and dark and the text size are written exactly as
+/// `alo-appearance` writes them**, and the pointer's size, which nothing draws
+/// yet, says so and writes nothing.
+#[test]
+fn light_and_dark_and_the_text_size_are_kept_as_alo_appearance_keeps_them() {
+    let machine = a_persons_machine("light-dark-text");
+    let strings = words();
+    let door = CountingDoor::revoking();
+    let mut window = machine.opened();
+    let at = machine.kept(alo_appearance::keeping::THE_FILE);
+
+    assert_eq!(
+        chosen(
+            &mut window,
+            &SettingsRow::LightOrDark(LightOrDark::FollowTheTimeOfDay),
+            &strings,
+            &door
+        ),
+        Some(SettingsDid::Kept(
+            SettingsSection::Appearance,
+            SettingsKept::Written
+        ))
+    );
+    let mut expected = Appearance::shipped();
+    expected.follow(alo_appearance::Following::TheClock(
+        alo_appearance::Shipped::the_evening_schedule(),
+    ));
+    let twin = a_twin();
+    let twin_at = twin.path().join(alo_appearance::keeping::THE_FILE);
+    alo_appearance::keeping::keep(&twin_at, expected.changes()).unwrap();
+    assert_eq!(bytes(&at), bytes(&twin_at));
+
+    // **Right makes the text larger, Left smaller**, 25 per cent a step.
+    focus_on(&mut window, &SettingsRow::TextSize, &strings, &door);
+    assert_eq!(
+        window.pressed(key(SettingsKey::More), doors(&strings, &door)),
+        Some(SettingsDid::Kept(
+            SettingsSection::Appearance,
+            SettingsKept::Written
+        ))
+    );
+    assert_eq!(
+        window.appearance().map(|it| it.text().as_percent()),
+        Some(125)
+    );
+    window.pressed(key(SettingsKey::Less), doors(&strings, &door));
+    window.pressed(key(SettingsKey::Less), doors(&strings, &door));
+    assert_eq!(
+        window.appearance().map(|it| it.text().as_percent()),
+        Some(75)
+    );
+    // And never past the smallest it may be.
+    window.pressed(key(SettingsKey::Less), doors(&strings, &door));
+    assert_eq!(
+        window.appearance().map(|it| it.text().as_percent()),
+        Some(75)
+    );
+    expected.set_text(alo_appearance::TextScale::percent(75).unwrap());
+    alo_appearance::keeping::keep(&twin_at, expected.changes()).unwrap();
+    assert_eq!(bytes(&at), bytes(&twin_at));
+
+    let before = bytes(&at);
+    assert_eq!(
+        chosen(
+            &mut window,
+            &SettingsRow::PointerSize(PointerSize::Larger),
+            &strings,
+            &door
+        ),
+        Some(SettingsDid::NotOnThisComputerYet)
+    );
+    assert_eq!(bytes(&at), before);
+    let not_yet = strings
+        .say(
+            &crate::the_settings_words::NOT_ON_THIS_COMPUTER_YET.key(),
+            &Filling::nothing(),
+        )
+        .into_text();
+    let page = crate::settings_page::the_page(
+        window.open().unwrap(),
+        SettingsCategory::Accessibility,
+        &strings,
+        noon(),
+    );
+    assert!(
+        page.blocks
+            .contains(&crate::settings_page::ABlock::Said(not_yet)),
+        "{:?}",
+        page.blocks
+    );
 }

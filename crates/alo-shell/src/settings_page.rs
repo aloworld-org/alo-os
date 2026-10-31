@@ -14,9 +14,9 @@
 
 use alo_strings::{Filling, Strings};
 
+use crate::a_provider_being_added_is_drawn::TheFormsWords;
 use crate::settings_categories::SettingsCategory;
-use crate::settings_lines::{LineWords, SectionWords};
-use crate::settings_window::{Open, SettingsRow, SettingsSection};
+use crate::settings_window::{Open, SettingsRow};
 use crate::the_settings_icons::ASettingsIcon;
 
 /// One page.
@@ -94,6 +94,9 @@ pub(crate) enum TheKind {
     ASegmented,
     /// Colours to choose from, under the row's words (`551:307`).
     ASwatches,
+    /// A size, as a slider under the row's words, at this percentage
+    /// (`551:1116`).
+    ASlider(u16),
 }
 
 /// One of a row's side-by-side choices: a part of a segmented choice, or a
@@ -106,8 +109,8 @@ pub(crate) struct APart {
     pub(crate) row: SettingsRow,
     /// Whether it is what the person's settings are now.
     pub(crate) chosen: bool,
-    /// The colour it shows, for a colour.
-    pub(crate) colour: Option<[u8; 3]>,
+    /// The colour it shows, for a colour: its light value and its dark one.
+    pub(crate) colour: Option<([u8; 3], [u8; 3])>,
 }
 
 /// What is at a row's end.
@@ -270,7 +273,9 @@ pub(crate) fn the_page(
             crate::settings_page_keyboard::the_blocks(open, strings)
         }
         SettingsCategory::RegionAndTime => crate::settings_page_region::the_blocks(open, strings),
-        other => the_sections_of(other, open, strings, now),
+        SettingsCategory::Accessibility => {
+            crate::settings_page_accessibility::the_blocks(open, strings)
+        }
     };
     APage {
         category,
@@ -284,7 +289,7 @@ pub(crate) fn the_page(
 /// AI page over, because every key is the form's while it is open and rows
 /// behind it would be rows nobody can reach. See
 /// `crate::a_provider_being_added_is_drawn`.
-pub(crate) fn the_form_page(form: SectionWords, strings: &Strings) -> APage {
+pub(crate) fn the_form_page(form: TheFormsWords, strings: &Strings) -> APage {
     let category = SettingsCategory::AloAndAi;
     let mut blocks: Vec<ABlock> = form.said.into_iter().map(ABlock::Said).collect();
     let rows: Vec<ARow> = form
@@ -315,190 +320,6 @@ pub(crate) fn the_form_page(form: SectionWords, strings: &Strings) -> APage {
 /// A word of this window's own, said.
 pub(crate) fn said(strings: &Strings, word: alo_strings::Word) -> String {
     strings.say(&word.key(), &Filling::nothing()).into_text()
-}
-
-/// The page's blocks from the sections `crate::settings_lines` words, for every
-/// page whose rows are each one line of words: a section becomes a heading and
-/// a card, and what it says goes above.
-fn the_sections_of(
-    category: SettingsCategory,
-    open: &Open,
-    strings: &Strings,
-    now: std::time::SystemTime,
-) -> Vec<ABlock> {
-    let mut blocks = Vec::new();
-    for section in crate::settings_lines::sections(open, strings, now) {
-        if SettingsCategory::of(section.section) != category {
-            continue;
-        }
-        blocks.extend(blocks_of(section, strings));
-    }
-    if blocks.is_empty() {
-        blocks.push(ABlock::Said(said(
-            strings,
-            crate::the_settings_words::NOTHING_HERE_YET,
-        )));
-    }
-    blocks
-}
-
-/// One section's words as the blocks a page draws.
-fn blocks_of(section: SectionWords, strings: &Strings) -> Vec<ABlock> {
-    let mut blocks: Vec<ABlock> = section.said.into_iter().map(ABlock::Said).collect();
-    let which = section.section;
-    let rows: Vec<ARow> = section
-        .lines
-        .into_iter()
-        .map(|line| row_of(line, strings))
-        .collect();
-    if which == SettingsSection::Granted {
-        blocks.extend(the_granted(rows, strings));
-        return blocks;
-    }
-    if !rows.is_empty() {
-        blocks.push(ABlock::Section(ASection {
-            heading: heading_of(which).map(|word| said(strings, word)),
-            rows,
-            footnote: None,
-        }));
-    }
-    blocks
-}
-
-/// What has been granted, divided the way the design draws it: the folders
-/// given to alo, the row that gives it another, the record of what it did,
-/// and the computers paired with this one.
-///
-/// **The order is `crate::settings_window::Open::rows`' order**, which the
-/// keyboard follows, and `every_setting_the_machine_has_is_in_one_window`
-/// holds the two to each other.
-///
-/// **Paired computers are here, under a heading of their own**, because they
-/// were in this section's one list before the redesign and the redesign does
-/// not draw them anywhere: a pairing is something granted, and it is revoked
-/// here the same way a folder is. `docs/design/the-settings-window.md` names
-/// this as the owner's to confirm.
-fn the_granted(rows: Vec<ARow>, strings: &Strings) -> Vec<ABlock> {
-    use crate::the_settings_words as w;
-    // **While a folder is being picked, the picker is the whole section**, for
-    // the reason `crate::settings_lines` gives.
-    if rows
-        .iter()
-        .any(|row| matches!(row.row, Some(SettingsRow::Picking(_))))
-    {
-        return vec![ABlock::Section(ASection {
-            heading: None,
-            rows,
-            footnote: None,
-        })];
-    }
-    let (mut given, mut giving, mut record, mut paired) =
-        (Vec::new(), Vec::new(), Vec::new(), Vec::new());
-    for row in rows {
-        match &row.row {
-            Some(SettingsRow::Granted(alo_changing::Row::Pairing(_))) => paired.push(row),
-            Some(SettingsRow::GrantAFolder) => giving.push(row),
-            Some(SettingsRow::SeeWhatAloDid) => record.push(row),
-            _ => given.push(row),
-        }
-    }
-    [
-        (Some(w::GIVEN_TO_ALO), given),
-        (None, giving),
-        (Some(w::WHAT_ALO_DID), record),
-        (Some(w::PAIRED_MACHINES), paired),
-    ]
-    .into_iter()
-    .filter(|(_, rows)| !rows.is_empty())
-    .map(|(heading, rows)| {
-        ABlock::Section(ASection {
-            heading: heading.map(|word| said(strings, word)),
-            rows,
-            footnote: None,
-        })
-    })
-    .collect()
-}
-
-/// The heading over a section, in sentence case.
-const fn heading_of(section: SettingsSection) -> Option<alo_strings::Word> {
-    use crate::the_settings_words as w;
-    Some(match section {
-        SettingsSection::Answering => w::WHERE_QUESTIONS_ARE_ANSWERED,
-        SettingsSection::Appearance => w::LOOK,
-        SettingsSection::Dock => w::THE_DOCK,
-        SettingsSection::Formats => w::WHERE_THIS_COMPUTER_IS,
-        SettingsSection::TimeZone => w::TIME_ZONE,
-        SettingsSection::Shortcuts => w::SHORTCUTS,
-        SettingsSection::Terminal => w::IN_THE_TERMINAL,
-        SettingsSection::HowCodeRuns => w::ALO_RUNS_CODE,
-        SettingsSection::Granted => w::GIVEN_TO_ALO,
-    })
-}
-
-/// One line of a section as a row: its first piece the name, the rest the
-/// lines under it, and what kind of row its [`SettingsRow`] makes it.
-fn row_of(line: LineWords, strings: &Strings) -> ARow {
-    let kind = match &line.row {
-        Some(
-            SettingsRow::Accent(_)
-            | SettingsRow::WrittenAs(_)
-            | SettingsRow::TimeZone(_)
-            | SettingsRow::Hiding(_)
-            | SettingsRow::HowCodeRuns(_),
-        ) => TheKind::AChoice {
-            chosen: line.chosen,
-        },
-        Some(SettingsRow::ShellIntegration | SettingsRow::APlaceToReturnTo) => {
-            TheKind::ASwitch(if line.chosen {
-                SwitchIs::On
-            } else {
-                SwitchIs::Off
-            })
-        }
-        Some(
-            SettingsRow::GrantAFolder
-            | SettingsRow::SeeWhatAloDid
-            | SettingsRow::AddAProvider
-            | SettingsRow::Shortcut(_),
-        ) => TheKind::AnOpeningRow,
-        _ => TheKind::Plain,
-    };
-    let mut parts = line.parts.into_iter();
-    let title = parts
-        .next()
-        .map(|it| crate::settings_type::as_a_name(&it))
-        .unwrap_or_default();
-    // **A shortcut's keys at the row's end**, where the design draws them, and
-    // not as a line under the action's name.
-    let (at_its_end, lines) = match (&line.row, kind) {
-        (Some(SettingsRow::Shortcut(_)), _) => (parts.next().map(AnEnd::Words), Vec::new()),
-        (_, TheKind::ASwitch(is)) => (
-            Some(AnEnd::Words(switch_said(is, strings))),
-            parts
-                .map(|it| crate::settings_type::as_a_name(&it))
-                .collect(),
-        ),
-        _ => (
-            None,
-            parts
-                .map(|it| crate::settings_type::as_a_name(&it))
-                .collect(),
-        ),
-    };
-    ARow {
-        row: line.row,
-        kind,
-        title,
-        lines,
-        note: None,
-        risk: None,
-        button: None,
-        at_its_end,
-        lead: None,
-        tag: None,
-        parts: Vec::new(),
-    }
 }
 
 /// The word beside a switch.

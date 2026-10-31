@@ -148,21 +148,16 @@ fn an_empty_field_with_the_keyboard_still_shows_where_they_are() {
 
 #[test]
 fn the_field_with_the_keyboard_is_the_one_marked() {
-    // `settings_raster` draws `chosen` as the filled square at the start of a
-    // row, which is the one piece of state this section has.
+    // **The caret is the mark**, and it is in that field and no other: the
+    // redesign draws a form's fields as plain rows, which have no filled
+    // square to mark one with.
     let mut form = AProviderBeingAddded::empty();
     form.to_the_next_field();
-    let drawn = the_form(&form, None, &strings());
-    let marked: Vec<bool> = drawn.lines.iter().map(|line| line.chosen).collect();
+    let marked: Vec<bool> = WhichField::EVERY
+        .into_iter()
+        .map(|field| what_is_shown(&form, field).ends_with('▏'))
+        .collect();
     assert_eq!(marked, vec![false, true, false, false]);
-}
-
-#[test]
-fn no_line_is_a_row_a_person_acts_on() {
-    // Enter saves the whole form rather than acting on the line the keyboard
-    // is in, so a row here would put one action on four lines.
-    let drawn = the_form(&AProviderBeingAddded::empty(), None, &strings());
-    assert!(drawn.lines.iter().all(|line| line.row.is_none()));
 }
 
 /// **A save that did not happen says so, above the form.**

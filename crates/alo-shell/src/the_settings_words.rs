@@ -173,17 +173,6 @@ pub const ACCESSIBILITY_IS: Word = Word::saying(
 )
 .noting("Under the heading of the Accessibility page.");
 
-/// What the accessibility page says while nothing on it can be changed from
-/// this window yet.
-pub const NOTHING_HERE_YET: Word = Word::saying(
-    "settings.page.nothing-here-yet",
-    "Nothing on this page can be changed from this window yet.",
-)
-.noting(
-    "Shown on a page of Settings whose controls are not on this computer yet. Plain and \
-     factual: nothing is broken, the controls have not been built.",
-);
-
 /// The heading over the four ways a question can be answered.
 pub const WHERE_QUESTIONS_ARE_ANSWERED: Word = Word::saying(
     "settings.section.where-answered",
@@ -546,6 +535,23 @@ pub const MATCHES: (&str, &str, &str, &str, &str) = (
     "A small heading over the countries, regions or time zones whose names contain what the      person typed. {count} is how many.",
 );
 
+/// The letter the text size slider shows small and large at its two ends.
+///
+/// **A letter rather than a word**, so not translated: it is a picture of
+/// type at two sizes, as the design draws it (`551:1117`, `551:1122`), and an
+/// *A* reads as *text* in every script this machine draws.
+pub(crate) const THE_LETTER: &str = "A";
+
+/// A text size as a percentage, in the person's language.
+pub fn as_a_percentage(strings: &alo_strings::Strings, percent: u16) -> String {
+    strings
+        .say(
+            &AS_A_PERCENTAGE.key(),
+            &alo_strings::Filling::of("percent", percent.to_string()),
+        )
+        .into_text()
+}
+
 /// *N matches*, in the person's language and counted the way it counts.
 pub fn how_many_match(strings: &alo_strings::Strings, how_many: usize) -> String {
     let (key, ..) = MATCHES;
@@ -563,12 +569,72 @@ pub fn how_many_match(strings: &alo_strings::Strings, how_many: usize) -> String
     )
 }
 
+/// Light and dark.
+pub const LIGHT_AND_DARK: Word = Word::saying("settings.appearance.light-and-dark", "Light and dark")
+    .noting("The name of the setting for whether the computer is drawn light, dark, or light by day and dark by evening.");
+
+/// Following the time of day turns dark in the evening and light again in the morning.
+pub const LIGHT_AND_DARK_IS: Word = Word::saying(
+    "settings.appearance.light-and-dark.is",
+    "Following the time of day turns dark in the evening and light again in the morning.",
+)
+.noting("Under Light and dark: what the third choice does.");
+
+/// Follow the time of day.
+pub const FOLLOW_THE_TIME_OF_DAY: Word =
+    Word::saying("settings.appearance.follow", "Follow the time of day").noting(
+        "One of three short choices beside Light and Dark: light by day, dark in the evening.",
+    );
+
+/// Text.
+pub const TEXT: Word =
+    Word::saying("settings.section.text", "Text").noting("A heading over the text size setting.");
+
+/// Text size.
+pub const TEXT_SIZE: Word = Word::saying("settings.access.text-size", "Text size")
+    .noting("The name of the setting for how large text is drawn everywhere.");
+
+/// Makes text larger everywhere.
+pub const TEXT_SIZE_IS: Word = Word::saying(
+    "settings.access.text-size.is",
+    "Makes text larger everywhere. Layouts make room for it rather than cutting it off.",
+)
+.noting("Under Text size.");
+
+/// Larger text makes controls larger with it, so they stay easy to reach.
+pub const LARGER_TEXT_NOTE: Word = Word::saying(
+    "settings.access.text-size.note",
+    "Larger text makes controls larger with it, so they stay easy to reach.",
+)
+.noting("Under the text size setting.");
+
+/// Pointer.
+pub const POINTER: Word = Word::saying("settings.section.pointer", "Pointer")
+    .noting("A heading over the pointer size setting. The pointer is the arrow the mouse moves.");
+
+/// Pointer size.
+pub const POINTER_SIZE: Word = Word::saying("settings.access.pointer-size", "Pointer size")
+    .noting("The name of the setting for how large the pointer is drawn.");
+
+/// Large.
+pub const LARGE: Word = Word::saying("settings.access.large", "Large")
+    .noting("One of three short choices for the pointer's size.");
+
+/// Larger.
+pub const LARGER: Word = Word::saying("settings.access.larger", "Larger")
+    .noting("One of three short choices for the pointer's size, larger than Large.");
+
+/// A text size, as a percentage.
+pub const AS_A_PERCENTAGE: Word = Word::saying("settings.access.percent", "{percent}%").noting(
+    "Beside the text size slider: the size as a percentage of the ordinary size. {percent} is      the number. Write a percentage the way your language does, with or without a space.",
+);
+
 /// Every word this window says of its own.
 ///
 /// The length is written out so that adding a word above and forgetting it
 /// here does not compile — a word declared and left out of this list reaches a
 /// person as its own key.
-pub const THE_WINDOWS_WORDS: [Word; 79] = [
+pub const THE_WINDOWS_WORDS: [Word; 90] = [
     SETTINGS,
     EVERYTHING_IN_ONE_PLACE,
     THE_GROUP_ALO,
@@ -590,7 +656,6 @@ pub const THE_WINDOWS_WORDS: [Word; 79] = [
     REGION_AND_TIME_IS,
     KEYBOARD_AND_SHORTCUTS_IS,
     ACCESSIBILITY_IS,
-    NOTHING_HERE_YET,
     WHERE_QUESTIONS_ARE_ANSWERED,
     EVERY_ANSWER_SAYS_WHERE,
     WHEN_IT_IS_NOT_AVAILABLE,
@@ -648,6 +713,18 @@ pub const THE_WINDOWS_WORDS: [Word; 79] = [
     CHOOSE_A_COUNTRY,
     ALL_COUNTRIES,
     ALL_TIME_ZONES,
+    LIGHT_AND_DARK,
+    LIGHT_AND_DARK_IS,
+    FOLLOW_THE_TIME_OF_DAY,
+    TEXT,
+    TEXT_SIZE,
+    TEXT_SIZE_IS,
+    LARGER_TEXT_NOTE,
+    POINTER,
+    POINTER_SIZE,
+    LARGE,
+    LARGER,
+    AS_A_PERCENTAGE,
 ];
 
 /// Why this window's words could not be declared.
