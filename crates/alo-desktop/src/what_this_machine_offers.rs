@@ -132,6 +132,10 @@ pub struct WhereToLook {
     pub entries: Vec<PathBuf>,
     /// The icon directories, in the same order.
     pub icons: Vec<PathBuf>,
+    /// The data directories both lists were made from, flatpak's exports
+    /// included — what an application a press starts is handed as its own
+    /// `XDG_DATA_DIRS`, so it finds its data where the Dock found its entry.
+    pub data_dirs: std::ffi::OsString,
     /// The mark that says the fresh machine's applications were walked.
     pub arrived: TheApplicationsArrived,
 }
@@ -169,6 +173,7 @@ impl WhereToLook {
         Self {
             entries: alo_installed::where_entries_live(home, data_home, Some(&data_dirs)),
             icons: alo_icons::where_icons_live(home, data_home, Some(&data_dirs)),
+            data_dirs,
             arrived,
         }
     }

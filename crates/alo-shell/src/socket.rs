@@ -29,6 +29,18 @@ pub enum SocketError {
     Bind(#[from] BindError),
 }
 
+/// The absolute path a client's `WAYLAND_DISPLAY` names, for a compositor
+/// bound in `runtime` under `name`.
+///
+/// **One spelling, used by the bind and by whoever tells an application where
+/// to draw**, so the two cannot drift: an application handed a path the
+/// compositor did not bind starts, finds no display, and exits without a
+/// window.
+#[must_use]
+pub fn the_display_a_client_reaches(runtime: &Path, name: &str) -> PathBuf {
+    runtime.join(name).join("wayland")
+}
+
 /// Drop the listener before removing only the directory we created.
 pub(crate) struct Socket {
     /// Owned listener; taken before directory cleanup.
@@ -70,7 +82,7 @@ impl Socket {
                 }
             })?;
         let mut socket = Self {
-            path: directory.join("wayland"),
+            path: the_display_a_client_reaches(runtime, name),
             directory,
             listener: None,
         };

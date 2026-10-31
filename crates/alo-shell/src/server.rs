@@ -209,6 +209,10 @@ pub struct Server {
     /// applications — and because the one outcome to avoid is silently dropping
     /// something a person asked for.
     pub(crate) asked_to_start: Vec<alo_dock::AppId>,
+    /// The applications the person's **agent** asked to start, through the
+    /// application door — held apart from [`Self::asked_to_start`] so the
+    /// sender is told who asked. See `crate::an_application_is_started`.
+    pub(crate) its_agent_asked_to_start: Vec<alo_dock::AppId>,
     /// Which application this machine's terminal is, when something has told
     /// it.
     ///
@@ -732,6 +736,7 @@ impl Server {
             asked_to_put_aside: Vec::new(),
             asked_on_an_edge: Vec::new(),
             asked_to_start: Vec::new(),
+            its_agent_asked_to_start: Vec::new(),
             the_terminal: None,
             alos_own_terminal: None,
             where_the_terminal_is: None,
