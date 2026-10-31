@@ -334,6 +334,7 @@ fn the_settings_files() -> Vec<(String, Vec<(usize, String)>)> {
             "settings_lines.rs",
             "settings_measures.rs",
             "settings_page.rs",
+            "settings_page_accessibility.rs",
             "settings_page_alo.rs",
             "settings_page_appearance.rs",
             "settings_page_folders.rs",

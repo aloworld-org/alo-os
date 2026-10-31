@@ -73,7 +73,7 @@ pub(crate) fn a_row(
     };
 
     // What is at its end, measured first so the words know their room.
-    let end = row.at_its_end.as_ref().map(|end| match end {
+    let mut end = row.at_its_end.as_ref().map(|end| match end {
         AnEnd::Words(words) => AnEndShaped::Words(
             laying
                 .words(
@@ -125,6 +125,12 @@ pub(crate) fn a_row(
             words.clone(),
         ),
     });
+    // **A slider's percentage is at the slider's end**, not the row's.
+    let the_percentage = if matches!(row.kind, TheKind::ASlider(_)) {
+        end.take()
+    } else {
+        None
+    };
     let segmented = (row.kind == TheKind::ASegmented).then(|| ASegmented::of(laying, &row.parts));
     let button = row.button.as_ref().map(|(label, _)| {
         let shaped = laying
@@ -241,6 +247,19 @@ pub(crate) fn a_row(
         );
     }
     let mut part_areas = Vec::new();
+    if let TheKind::ASlider(percent) = row.kind {
+        y = crate::settings_drawn_controls::a_slider(
+            out,
+            laying,
+            (
+                x,
+                y + laying.px(m::UNDER_A_ROWS_TITLE) + laying.px(m::ABOVE_THE_SWATCHES),
+                words_wide,
+            ),
+            (percent, alo_appearance::TextScale::range()),
+            the_percentage,
+        );
+    }
     if row.kind == TheKind::ASwatches {
         let (areas, bottom) = the_swatches(
             out,
@@ -274,6 +293,7 @@ pub(crate) fn a_row(
             | TheKind::ANestedChoice { .. }
             | TheKind::ASwitch(_)
             | TheKind::ASwatches
+            | TheKind::ASlider(_)
     );
     let lower = if centred {
         ((bottom - top) - (y - top) - above) / 2

@@ -84,6 +84,7 @@ impl SettingsCategory {
             SettingsSection::Appearance | SettingsSection::Dock => Self::Appearance,
             SettingsSection::Formats | SettingsSection::TimeZone => Self::RegionAndTime,
             SettingsSection::Shortcuts => Self::KeyboardAndShortcuts,
+            SettingsSection::Accessibility => Self::Accessibility,
         }
     }
 

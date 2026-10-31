@@ -8,9 +8,9 @@
 //! it; `alo_dock::Dock::set_edge` and the drawing both honour the choice, and
 //! until this page nothing in Settings could make it.
 //!
-//! **Light and dark is not on this page yet.** The frame draws it first; it
-//! arrives with the change that draws Settings dark, so that choosing *Dark*
-//! is never a choice the window it is made in cannot show.
+//! **Light and dark** is `alo_appearance::Following`: always light, always
+//! dark, or the evening schedule the release ships. It was kept and followed
+//! by the desktop before this page and had no road in Settings.
 
 use alo_appearance::{Accent, Scheme};
 use alo_dock::{Edge, Hiding};
@@ -30,6 +30,31 @@ pub(crate) fn the_blocks(open: &Open, strings: &Strings) -> Vec<ABlock> {
     }
     blocks.extend(appearance.told().map(|it| ABlock::Said(it.to_owned())));
     if appearance.at().is_some() {
+        let following = crate::settings_window::LightOrDark::of(appearance.drawn().following());
+        let mut light_or_dark =
+            ARow::named(None, TheKind::ASegmented, said(strings, w::LIGHT_AND_DARK));
+        light_or_dark
+            .lines
+            .push(said(strings, w::LIGHT_AND_DARK_IS));
+        light_or_dark.parts = crate::settings_window::LightOrDark::ALL
+            .into_iter()
+            .map(|it| APart {
+                label: match it {
+                    crate::settings_window::LightOrDark::Light => crate::settings_type::as_a_name(
+                        &said(strings, alo_appearance::words::SCHEME_LIGHT),
+                    ),
+                    crate::settings_window::LightOrDark::Dark => crate::settings_type::as_a_name(
+                        &said(strings, alo_appearance::words::SCHEME_DARK),
+                    ),
+                    crate::settings_window::LightOrDark::FollowTheTimeOfDay => {
+                        said(strings, w::FOLLOW_THE_TIME_OF_DAY)
+                    }
+                },
+                row: SettingsRow::LightOrDark(it),
+                chosen: following == it,
+                colour: None,
+            })
+            .collect();
         let mut accent = ARow::named(None, TheKind::ASwatches, said(strings, w::ACCENT_COLOUR));
         accent.lines.push(said(strings, w::ACCENT_COLOUR_IS));
         accent.parts = Accent::ALL
@@ -39,14 +64,17 @@ pub(crate) fn the_blocks(open: &Open, strings: &Strings) -> Vec<ABlock> {
                 row: SettingsRow::Accent(it),
                 chosen: appearance.drawn().accent() == it,
                 colour: Some({
-                    let colour = it.on(Scheme::Light);
-                    [colour.red(), colour.green(), colour.blue()]
+                    let bytes = |scheme| {
+                        let colour = it.on(scheme);
+                        [colour.red(), colour.green(), colour.blue()]
+                    };
+                    (bytes(Scheme::Light), bytes(Scheme::Dark))
                 }),
             })
             .collect();
         blocks.push(ABlock::Section(ASection {
             heading: Some(said(strings, w::LOOK)),
-            rows: vec![accent],
+            rows: vec![light_or_dark, accent],
             footnote: Some(said(strings, w::THE_ACCENT_NOTE)),
         }));
     }

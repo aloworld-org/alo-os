@@ -15,6 +15,7 @@
 //! - **Delete** puts a section whose file did not read back as shipped — the
 //!   one act that replaces such a file, and one the section is told it may
 //!   take in its own crate's sentence;
+//! - **Left** and **Right** make the text size smaller and larger;
 //! - **Escape** closes the window, from either column.
 //!
 //! Nothing is a letter, so nothing types; and a chord with Control, Alt or the
@@ -47,6 +48,10 @@ pub enum SettingsKey {
     PutBackAsShipped,
     /// Close the window. Escape.
     Close,
+    /// Less of what the row holds: a smaller text size. Left.
+    Less,
+    /// More of what the row holds: a larger text size. Right.
+    More,
     /// Anything else, which does nothing at all.
     Nothing,
 }
@@ -71,6 +76,8 @@ impl SettingsKey {
             Keysym::BackSpace => Self::PutBackThisOne,
             Keysym::Delete | Keysym::KP_Delete => Self::PutBackAsShipped,
             Keysym::Escape => Self::Close,
+            Keysym::Left | Keysym::KP_Left => Self::Less,
+            Keysym::Right | Keysym::KP_Right => Self::More,
             _ => Self::Nothing,
         }
     }
@@ -101,6 +108,8 @@ mod tests {
             (Keysym::BackSpace, SettingsKey::PutBackThisOne),
             (Keysym::Delete, SettingsKey::PutBackAsShipped),
             (Keysym::Escape, SettingsKey::Close),
+            (Keysym::Left, SettingsKey::Less),
+            (Keysym::Right, SettingsKey::More),
         ] {
             assert_eq!(SettingsKey::of(symbol, &held), meant, "{symbol:?}");
         }

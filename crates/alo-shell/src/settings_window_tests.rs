@@ -213,7 +213,13 @@ fn every_setting_the_machine_has_is_in_one_window() {
         SettingsRow::UsingAnother,
     ]);
     assert_eq!(answers, expected.iter().collect::<Vec<_>>());
-    let accents: Vec<SettingsRow> = Accent::ALL.into_iter().map(SettingsRow::Accent).collect();
+    // **Light and dark, then the accents**, the Look section as `551:280`
+    // draws it.
+    let accents: Vec<SettingsRow> = LightOrDark::ALL
+        .into_iter()
+        .map(SettingsRow::LightOrDark)
+        .chain(Accent::ALL.into_iter().map(SettingsRow::Accent))
+        .collect();
     // **The Dock's four edges, then what it does when a window needs the
     // room**: where it sits is chosen in Settings again (`docs/features.md`).
     let edges: Vec<SettingsRow> = alo_dock::Edge::EVERY
@@ -291,6 +297,7 @@ fn every_setting_the_machine_has_is_in_one_window() {
                 provider: PROVIDER.to_owned(),
                 model: "harbour-small".to_owned(),
             }),
+            SettingsRow::LightOrDark(LightOrDark::of(Appearance::shipped().following())),
             SettingsRow::Accent(Appearance::shipped().accent()),
             SettingsRow::Edge(Dock::shipped().edge()),
             SettingsRow::Hiding(Dock::shipped().hiding()),
@@ -299,6 +306,8 @@ fn every_setting_the_machine_has_is_in_one_window() {
             // — for nobody having chosen a region, the language's own way.
             // `the_country_is_chosen_from_a_list_that_typing_narrows` holds
             // that.
+            // The pointer is the size it ships at.
+            SettingsRow::PointerSize(PointerSize::Default),
         ]
     );
 }
@@ -1295,13 +1304,16 @@ fn a_session_with_no_folder_offers_nothing_it_could_not_keep() {
         rows.iter().all(|row| matches!(
             row.section(),
             SettingsSection::Granted | SettingsSection::HowCodeRuns
-        ) || *row == SettingsRow::GoTo(SettingsCategory::RunningCode)),
+        ) || matches!(
+            row,
+            SettingsRow::GoTo(SettingsCategory::RunningCode) | SettingsRow::PointerSize(_)
+        )),
         "{rows:?}"
     );
     assert_eq!(
         rows.len(),
-        7,
-        "one grant, one pairing, the row that opens the record, the three levels, and the          row that opens their page"
+        10,
+        "one grant, one pairing, the row that opens the record, the three levels, and the          row that opens their page, and the pointer's three sizes, which keep nothing"
     );
     assert_eq!(window.appearance(), Some(&Appearance::shipped()));
     assert_eq!(window.dock(), Some(&Dock::shipped()));
@@ -1716,4 +1728,94 @@ fn typing_narrows_the_list_and_the_whole_list_stays_under_it() {
     assert_eq!(picker.matches, names.len());
     assert_eq!(picker.shown.len(), names.len() + every);
     assert_eq!(picker.focus, 0);
+/// **Light and dark and the text size are written exactly as
+/// `alo-appearance` writes them**, and the pointer's size, which nothing draws
+/// yet, says so and writes nothing.
+#[test]
+fn light_and_dark_and_the_text_size_are_kept_as_alo_appearance_keeps_them() {
+    let machine = a_persons_machine("light-dark-text");
+    let strings = words();
+    let door = CountingDoor::revoking();
+    let mut window = machine.opened();
+    let at = machine.kept(alo_appearance::keeping::THE_FILE);
+
+    assert_eq!(
+        chosen(
+            &mut window,
+            &SettingsRow::LightOrDark(LightOrDark::FollowTheTimeOfDay),
+            &strings,
+            &door
+        ),
+        Some(SettingsDid::Kept(
+            SettingsSection::Appearance,
+            SettingsKept::Written
+        ))
+    );
+    let mut expected = Appearance::shipped();
+    expected.follow(alo_appearance::Following::TheClock(
+        alo_appearance::Shipped::the_evening_schedule(),
+    ));
+    let twin = a_twin();
+    let twin_at = twin.path().join(alo_appearance::keeping::THE_FILE);
+    alo_appearance::keeping::keep(&twin_at, expected.changes()).unwrap();
+    assert_eq!(bytes(&at), bytes(&twin_at));
+
+    // **Right makes the text larger, Left smaller**, 25 per cent a step.
+    focus_on(&mut window, &SettingsRow::TextSize, &strings, &door);
+    assert_eq!(
+        window.pressed(key(SettingsKey::More), doors(&strings, &door)),
+        Some(SettingsDid::Kept(
+            SettingsSection::Appearance,
+            SettingsKept::Written
+        ))
+    );
+    assert_eq!(
+        window.appearance().map(|it| it.text().as_percent()),
+        Some(125)
+    );
+    window.pressed(key(SettingsKey::Less), doors(&strings, &door));
+    window.pressed(key(SettingsKey::Less), doors(&strings, &door));
+    assert_eq!(
+        window.appearance().map(|it| it.text().as_percent()),
+        Some(75)
+    );
+    // And never past the smallest it may be.
+    window.pressed(key(SettingsKey::Less), doors(&strings, &door));
+    assert_eq!(
+        window.appearance().map(|it| it.text().as_percent()),
+        Some(75)
+    );
+    expected.set_text(alo_appearance::TextScale::percent(75).unwrap());
+    alo_appearance::keeping::keep(&twin_at, expected.changes()).unwrap();
+    assert_eq!(bytes(&at), bytes(&twin_at));
+
+    let before = bytes(&at);
+    assert_eq!(
+        chosen(
+            &mut window,
+            &SettingsRow::PointerSize(PointerSize::Larger),
+            &strings,
+            &door
+        ),
+        Some(SettingsDid::NotOnThisComputerYet)
+    );
+    assert_eq!(bytes(&at), before);
+    let not_yet = strings
+        .say(
+            &crate::the_settings_words::NOT_ON_THIS_COMPUTER_YET.key(),
+            &Filling::nothing(),
+        )
+        .into_text();
+    let page = crate::settings_page::the_page(
+        window.open().unwrap(),
+        SettingsCategory::Accessibility,
+        &strings,
+        noon(),
+    );
+    assert!(
+        page.blocks
+            .contains(&crate::settings_page::ABlock::Said(not_yet)),
+        "{:?}",
+        page.blocks
+    );
 }

@@ -94,6 +94,9 @@ pub(crate) enum TheKind {
     ASegmented,
     /// Colours to choose from, under the row's words (`551:307`).
     ASwatches,
+    /// A size, as a slider under the row's words, at this percentage
+    /// (`551:1116`).
+    ASlider(u16),
 }
 
 /// One of a row's side-by-side choices: a part of a segmented choice, or a
@@ -106,8 +109,8 @@ pub(crate) struct APart {
     pub(crate) row: SettingsRow,
     /// Whether it is what the person's settings are now.
     pub(crate) chosen: bool,
-    /// The colour it shows, for a colour.
-    pub(crate) colour: Option<[u8; 3]>,
+    /// The colour it shows, for a colour: its light value and its dark one.
+    pub(crate) colour: Option<([u8; 3], [u8; 3])>,
 }
 
 /// What is at a row's end.
@@ -270,6 +273,9 @@ pub(crate) fn the_page(
             crate::settings_page_keyboard::the_blocks(open, strings)
         }
         SettingsCategory::RegionAndTime => crate::settings_page_region::the_blocks(open, strings),
+        SettingsCategory::Accessibility => {
+            crate::settings_page_accessibility::the_blocks(open, strings)
+        }
         other => the_sections_of(other, open, strings, now),
     };
     APage {
@@ -433,6 +439,7 @@ const fn heading_of(section: SettingsSection) -> Option<alo_strings::Word> {
         SettingsSection::Terminal => w::IN_THE_TERMINAL,
         SettingsSection::HowCodeRuns => w::ALO_RUNS_CODE,
         SettingsSection::Granted => w::GIVEN_TO_ALO,
+        SettingsSection::Accessibility => w::TEXT,
     })
 }
 
