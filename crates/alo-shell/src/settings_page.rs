@@ -17,6 +17,7 @@ use alo_strings::{Filling, Strings};
 use crate::settings_categories::SettingsCategory;
 use crate::settings_lines::{LineWords, SectionWords};
 use crate::settings_window::{Open, SettingsRow, SettingsSection};
+use crate::the_settings_icons::ASettingsIcon;
 
 /// One page.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -40,6 +41,20 @@ pub(crate) enum ABlock {
     Said(String),
     /// A heading, a card of rows and a footnote.
     Section(ASection),
+    /// One action that is the page's own, drawn as the design's Primary
+    /// button with a line beside it: *Give alo a folder* (`550:853`).
+    AnAction(AnAction),
+}
+
+/// A Primary button with a line beside it.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct AnAction {
+    /// The button's label.
+    pub(crate) label: String,
+    /// What pressing it acts on.
+    pub(crate) row: SettingsRow,
+    /// The line beside it, saying what happens.
+    pub(crate) beside: String,
 }
 
 /// One section: a heading over a card of rows, and a footnote under it.
@@ -74,6 +89,36 @@ pub(crate) enum TheKind {
     ASwitch(SwitchIs),
     /// Words, and nothing to choose.
     Plain,
+    /// One of a few short choices, side by side at the row's end: the
+    /// design's segmented choice (`551:336`).
+    ASegmented,
+    /// Colours to choose from, under the row's words (`551:307`).
+    ASwatches,
+}
+
+/// One of a row's side-by-side choices: a part of a segmented choice, or a
+/// colour.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct APart {
+    /// Its name.
+    pub(crate) label: String,
+    /// What choosing it acts on.
+    pub(crate) row: SettingsRow,
+    /// Whether it is what the person's settings are now.
+    pub(crate) chosen: bool,
+    /// The colour it shows, for a colour.
+    pub(crate) colour: Option<[u8; 3]>,
+}
+
+/// What is at a row's end.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) enum AnEnd {
+    /// Words: a switch's *On* or *Off*.
+    Words(String),
+    /// A shortcut's keys, each in a key of its own (`551:944`).
+    Keys(Vec<String>),
+    /// *Always on*, with a lock, in the positive colour (`550:990`).
+    AlwaysOn(String),
 }
 
 /// Which way a switch is, as the person's settings say.
@@ -95,6 +140,26 @@ pub(crate) struct ANote {
     pub(crate) words: String,
     /// Whether it asks for attention, which is drawn in the warning colour.
     pub(crate) warns: bool,
+    /// The sign before it.
+    pub(crate) icon: ASettingsIcon,
+    /// Whether it names a file, which is written in the design's mono.
+    pub(crate) in_mono: bool,
+}
+
+impl ANote {
+    /// A note with the sign its tone takes: a warning's or a quiet one.
+    pub(crate) const fn said(words: String, warns: bool) -> Self {
+        Self {
+            words,
+            warns,
+            icon: if warns {
+                ASettingsIcon::Info
+            } else {
+                ASettingsIcon::Cloud
+            },
+            in_mono: false,
+        }
+    }
 }
 
 /// What a choice risks: a heading and a sentence, in a box of their own.
@@ -124,8 +189,14 @@ pub(crate) struct ARow {
     pub(crate) risk: Option<ARisk>,
     /// A button at its end, with what pressing it acts on.
     pub(crate) button: Option<(String, SettingsRow)>,
-    /// Words at the row's end: a switch's *On* or *Off*, or a shortcut's keys.
-    pub(crate) at_its_end: Option<String>,
+    /// What is at the row's end, besides a switch or a button.
+    pub(crate) at_its_end: Option<AnEnd>,
+    /// An icon in a well at the row's start (`550:820`).
+    pub(crate) lead: Option<ASettingsIcon>,
+    /// A small tag beside its name: *Default* (`550:951`).
+    pub(crate) tag: Option<String>,
+    /// Its side-by-side choices, for a segmented choice or colours.
+    pub(crate) parts: Vec<APart>,
 }
 
 impl ARow {
@@ -140,14 +211,18 @@ impl ARow {
             risk: None,
             button: None,
             at_its_end: None,
+            lead: None,
+            tag: None,
+            parts: Vec::new(),
         }
     }
 
     /// Everything on this row a person can act on, in the order the keyboard
-    /// reaches them: the row, then its button.
+    /// reaches them: the row, its side-by-side choices, then its button.
     pub(crate) fn targets(&self) -> impl Iterator<Item = &SettingsRow> {
         self.row
             .iter()
+            .chain(self.parts.iter().map(|part| &part.row))
             .chain(self.button.as_ref().map(|(_, row)| row))
     }
 }
@@ -159,12 +234,16 @@ impl APage {
     pub(crate) fn rows(&self) -> Vec<SettingsRow> {
         self.blocks
             .iter()
-            .filter_map(|block| match block {
-                ABlock::Section(section) => Some(section),
-                ABlock::Said(_) => None,
+            .flat_map(|block| match block {
+                ABlock::Section(section) => section
+                    .rows
+                    .iter()
+                    .flat_map(ARow::targets)
+                    .cloned()
+                    .collect(),
+                ABlock::AnAction(action) => vec![action.row.clone()],
+                ABlock::Said(_) => Vec::new(),
             })
-            .flat_map(|section| section.rows.iter().flat_map(ARow::targets))
-            .cloned()
             .collect()
     }
 }
@@ -178,6 +257,15 @@ pub(crate) fn the_page(
 ) -> APage {
     let blocks = match category {
         SettingsCategory::AloAndAi => crate::settings_page_alo::the_blocks(open, strings, now),
+        SettingsCategory::FoldersAloCanUse => {
+            crate::settings_page_folders::the_blocks(open, strings, now)
+        }
+        SettingsCategory::RunningCode => crate::settings_page_running::the_blocks(open, strings),
+        SettingsCategory::Terminal => crate::settings_page_terminal::the_blocks(open, strings),
+        SettingsCategory::Appearance => crate::settings_page_appearance::the_blocks(open, strings),
+        SettingsCategory::KeyboardAndShortcuts => {
+            crate::settings_page_keyboard::the_blocks(open, strings)
+        }
         other => the_sections_of(other, open, strings, now),
     };
     APage {
@@ -380,9 +468,9 @@ fn row_of(line: LineWords, strings: &Strings) -> ARow {
     // **A shortcut's keys at the row's end**, where the design draws them, and
     // not as a line under the action's name.
     let (at_its_end, lines) = match (&line.row, kind) {
-        (Some(SettingsRow::Shortcut(_)), _) => (parts.next(), Vec::new()),
+        (Some(SettingsRow::Shortcut(_)), _) => (parts.next().map(AnEnd::Words), Vec::new()),
         (_, TheKind::ASwitch(is)) => (
-            Some(switch_said(is, strings)),
+            Some(AnEnd::Words(switch_said(is, strings))),
             parts
                 .map(|it| crate::settings_type::as_a_name(&it))
                 .collect(),
@@ -403,6 +491,9 @@ fn row_of(line: LineWords, strings: &Strings) -> ARow {
         risk: None,
         button: None,
         at_its_end,
+        lead: None,
+        tag: None,
+        parts: Vec::new(),
     }
 }
 

@@ -56,11 +56,27 @@ pub(crate) enum ASettingsIcon {
     ChevronRight,
     /// What a choice risks.
     Warn,
+    /// How long a folder is given for.
+    History14,
+    /// The record of what alo did.
+    History20,
+    /// Always on.
+    Lock,
+    /// Your files are copied before each run.
+    Undo,
+    /// Anything that leaves this machine is shown.
+    Egress,
+    /// The file a terminal setting adds a line to.
+    File,
+    /// Something just done.
+    CircleCheck,
+    /// The chosen part of a segmented choice, and the chosen colour.
+    Check,
 }
 
 impl ASettingsIcon {
     /// Every icon.
-    pub(crate) const ALL: [Self; 13] = [
+    pub(crate) const ALL: [Self; 21] = [
         Self::Chat,
         Self::Folder,
         Self::Code,
@@ -74,6 +90,14 @@ impl ASettingsIcon {
         Self::Plus,
         Self::ChevronRight,
         Self::Warn,
+        Self::History14,
+        Self::History20,
+        Self::Lock,
+        Self::Undo,
+        Self::Egress,
+        Self::File,
+        Self::CircleCheck,
+        Self::Check,
     ];
 
     /// The file, as the design exported it.
@@ -92,6 +116,14 @@ impl ASettingsIcon {
             Self::Plus => include_str!("../icons/settings/plus.svg"),
             Self::ChevronRight => include_str!("../icons/settings/chevron-right.svg"),
             Self::Warn => include_str!("../icons/settings/warn.svg"),
+            Self::History14 => include_str!("../icons/settings/history-14.svg"),
+            Self::History20 => include_str!("../icons/settings/history-20.svg"),
+            Self::Lock => include_str!("../icons/settings/lock.svg"),
+            Self::Undo => include_str!("../icons/settings/undo.svg"),
+            Self::Egress => include_str!("../icons/settings/egress.svg"),
+            Self::File => include_str!("../icons/settings/file.svg"),
+            Self::CircleCheck => include_str!("../icons/settings/circle-check.svg"),
+            Self::Check => include_str!("../icons/settings/check-16.svg"),
         }
     }
 
@@ -112,6 +144,14 @@ impl ASettingsIcon {
             Self::Plus => "plus.svg",
             Self::ChevronRight => "chevron-right.svg",
             Self::Warn => "warn.svg",
+            Self::History14 => "history-14.svg",
+            Self::History20 => "history-20.svg",
+            Self::Lock => "lock.svg",
+            Self::Undo => "undo.svg",
+            Self::Egress => "egress.svg",
+            Self::File => "file.svg",
+            Self::CircleCheck => "circle-check.svg",
+            Self::Check => "check-16.svg",
         }
     }
 
@@ -132,6 +172,14 @@ impl ASettingsIcon {
             Self::Plus => (16.0, [3.333, 3.333, 9.333, 9.333]),
             Self::ChevronRight => (20.0, [7.5, 5.0, 5.0, 10.0]),
             Self::Warn => (18.0, [1.487, 2.239, 15.012, 13.511]),
+            Self::History14 => (14.0, [1.75, 1.75, 10.5, 10.5]),
+            Self::History20 => (20.0, [2.5, 2.5, 15.0, 15.0]),
+            Self::Lock => (16.0, [2.0, 1.333, 12.0, 13.333]),
+            Self::Undo => (20.0, [3.333, 3.333, 13.333, 13.333]),
+            Self::Egress => (16.0, [4.667, 4.667, 6.667, 6.667]),
+            Self::File => (14.0, [2.333, 1.167, 9.333, 11.667]),
+            Self::CircleCheck => (20.0, [1.667, 1.667, 16.667, 16.667]),
+            Self::Check => (16.0, [2.667, 4.0, 10.667, 7.333]),
         }
     }
 

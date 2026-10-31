@@ -55,6 +55,8 @@ pub(crate) struct SettingsPalette {
     pub(crate) muted: [u8; 3],
     /// A note that asks for attention, and what a choice risks.
     pub(crate) warning: [u8; 3],
+    /// *Always on*: `status/positive`.
+    pub(crate) positive: [u8; 3],
     /// The person's accent.
     pub(crate) accent: [u8; 3],
     /// The chosen category's ground: the accent over the side column.
@@ -100,6 +102,7 @@ impl SettingsPalette {
             secondary: quiet_or_ink(Role::TextSecondary),
             muted: desktop.ink_quiet,
             warning: quiet_or_ink(Role::StatusWarning),
+            positive: quiet_or_ink(Role::StatusPositive),
             accent: desktop.accent,
             chosen: match look.scheme {
                 Scheme::Light | Scheme::Dark => mixed(canvas, desktop.accent, THE_CHOSEN_GROUND_IS),

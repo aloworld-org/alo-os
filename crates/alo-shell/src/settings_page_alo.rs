@@ -32,7 +32,7 @@ use alo_strings::{Filling, Strings};
 
 use crate::settings_answering::SettingsChoice;
 use crate::settings_page::{
-    ABlock, ANote, ARisk, ARow, ASection, SwitchIs, TheKind, said, switch_said,
+    ABlock, ANote, ARisk, ARow, ASection, AnEnd, SwitchIs, TheKind, said, switch_said,
 };
 use crate::settings_type::as_a_name;
 use crate::settings_window::{Open, SettingsRow};
@@ -71,7 +71,7 @@ pub(crate) fn the_blocks(open: &Open, strings: &Strings, now: SystemTime) -> Vec
             heading: said(strings, w::WHAT_IT_RISKS),
             words: said(strings, w::ANOTHER_RISKS),
         });
-        row.at_its_end = Some(switch_said(is, strings));
+        row.at_its_end = Some(AnEnd::Words(switch_said(is, strings)));
         blocks.push(ABlock::Section(ASection {
             heading: Some(said(strings, w::WHEN_IT_IS_NOT_AVAILABLE)),
             rows: vec![row],
@@ -171,21 +171,18 @@ fn a_choice_under(
             );
             match added.map(|it| &it.region) {
                 Some(alo_models::Region::Declared(region)) => {
-                    row.note = Some(ANote {
-                        words: strings
+                    row.note = Some(ANote::said(
+                        strings
                             .say(
                                 &w::IT_SAYS_IT_RUNS_IN.key(),
                                 &Filling::of(w::THE_REGION, region.clone()),
                             )
                             .into_text(),
-                        warns: false,
-                    });
+                        false,
+                    ));
                 }
                 Some(alo_models::Region::Unknown) | None => {
-                    row.note = Some(ANote {
-                        words: said(strings, w::HAS_NOT_SAID_WHERE),
-                        warns: true,
-                    });
+                    row.note = Some(ANote::said(said(strings, w::HAS_NOT_SAID_WHERE), true));
                     row.button = Some((
                         said(strings, w::SAY_WHERE_IT_RUNS),
                         SettingsRow::SayWhereItRuns(provider.clone()),

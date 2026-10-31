@@ -191,7 +191,13 @@ fn every_setting_the_machine_has_is_in_one_window() {
     ]);
     assert_eq!(answers, expected.iter().collect::<Vec<_>>());
     let accents: Vec<SettingsRow> = Accent::ALL.into_iter().map(SettingsRow::Accent).collect();
-    let edges: Vec<SettingsRow> = Hiding::ALL.into_iter().map(SettingsRow::Hiding).collect();
+    // **The Dock's four edges, then what it does when a window needs the
+    // room**: where it sits is chosen in Settings again (`docs/features.md`).
+    let edges: Vec<SettingsRow> = alo_dock::Edge::EVERY
+        .into_iter()
+        .map(SettingsRow::Edge)
+        .chain(Hiding::ALL.into_iter().map(SettingsRow::Hiding))
+        .collect();
     let actions: Vec<SettingsRow> = Action::ALL
         .iter()
         .copied()
@@ -231,18 +237,28 @@ fn every_setting_the_machine_has_is_in_one_window() {
         })
         .filter_map(|block| match block {
             crate::settings_page::ABlock::Section(section) => Some(section.rows),
-            crate::settings_page::ABlock::Said(_) => None,
+            crate::settings_page::ABlock::Said(_) | crate::settings_page::ABlock::AnAction(_) => {
+                None
+            }
         })
         .flatten()
-        .filter(|row| {
-            matches!(
+        .flat_map(|row| {
+            let marked = matches!(
                 row.kind,
                 crate::settings_page::TheKind::AChoice { chosen: true }
                     | crate::settings_page::TheKind::ANestedChoice { chosen: true }
                     | crate::settings_page::TheKind::ASwitch(crate::settings_page::SwitchIs::On)
-            )
+            );
+            let mut them: Vec<SettingsRow> =
+                row.row.clone().filter(|_| marked).into_iter().collect();
+            them.extend(
+                row.parts
+                    .iter()
+                    .filter(|part| part.chosen)
+                    .map(|part| part.row.clone()),
+            );
+            them
         })
-        .filter_map(|row| row.row)
         .collect();
     assert_eq!(
         chosen,
@@ -253,6 +269,7 @@ fn every_setting_the_machine_has_is_in_one_window() {
                 model: "harbour-small".to_owned(),
             }),
             SettingsRow::Accent(Appearance::shipped().accent()),
+            SettingsRow::Edge(Dock::shipped().edge()),
             SettingsRow::Hiding(Dock::shipped().hiding()),
             // Nobody chose a region, so the language decides — which is what
             // the file says, and so what is marked.
@@ -1242,17 +1259,19 @@ fn a_session_with_no_folder_offers_nothing_it_could_not_keep() {
     // grants because ADR 0064 makes running code a grant. A session with no
     // home directory can still keep it, so it is still offered — which is what
     // this test is about: *nothing it could **not** keep*, rather than nothing.
+    // **And the row that opens the Running code page**, which keeps nothing
+    // and is offered whatever the session has.
     assert!(
         rows.iter().all(|row| matches!(
             row.section(),
             SettingsSection::Granted | SettingsSection::HowCodeRuns
-        )),
+        ) || *row == SettingsRow::GoTo(SettingsCategory::RunningCode)),
         "{rows:?}"
     );
     assert_eq!(
         rows.len(),
-        6,
-        "one grant, one pairing, the row that opens the record, and the three levels"
+        7,
+        "one grant, one pairing, the row that opens the record, the three levels, and the          row that opens their page"
     );
     assert_eq!(window.appearance(), Some(&Appearance::shipped()));
     assert_eq!(window.dock(), Some(&Dock::shipped()));
@@ -1531,4 +1550,55 @@ fn a_folder_given_until_removed_is_on_the_list_and_says_so() {
     let kept = String::from_utf8(std::fs::read(machine.grants()).unwrap()).unwrap();
     assert!(kept.contains("expires = \"removed\""), "{kept}");
     assert!(kept.contains("format = 3"), "{kept}");
+}
+
+/// **Where the Dock sits is written exactly as `alo-dock` writes it**, and
+/// the Terminal page's row that names Running code shows that page.
+///
+/// `docs/features.md` promises *the person decides where it goes — bottom,
+/// left, right or top, chosen in Settings*. Until the redesign nothing in
+/// Settings could choose it.
+#[test]
+fn where_the_dock_sits_is_chosen_as_alo_dock_writes_it_and_a_row_opens_its_page() {
+    let machine = a_persons_machine("dock-edge");
+    let strings = words();
+    let door = CountingDoor::revoking();
+    let mut window = machine.opened();
+    let at = machine.kept(alo_dock::keeping::THE_FILE);
+    assert_eq!(
+        chosen(
+            &mut window,
+            &SettingsRow::Edge(alo_dock::Edge::Left),
+            &strings,
+            &door
+        ),
+        Some(SettingsDid::Kept(
+            SettingsSection::Dock,
+            SettingsKept::Written
+        ))
+    );
+    let twin = a_twin();
+    let mut expected = Dock::shipped();
+    expected.set_edge(alo_dock::Edge::Left);
+    let twin_at = twin.path().join(alo_dock::keeping::THE_FILE);
+    alo_dock::keeping::keep(&twin_at, expected.changes()).unwrap();
+    assert_eq!(bytes(&at), bytes(&twin_at));
+    assert_eq!(window.dock().map(Dock::edge), Some(alo_dock::Edge::Left));
+
+    assert_eq!(
+        chosen(
+            &mut window,
+            &SettingsRow::GoTo(SettingsCategory::RunningCode),
+            &strings,
+            &door
+        ),
+        Some(SettingsDid::WentTo(SettingsCategory::RunningCode))
+    );
+    assert_eq!(window.category(), Some(SettingsCategory::RunningCode));
+    assert_eq!(
+        window.focused(noon()),
+        Some(SettingsRow::HowCodeRuns(
+            alo_capability::HowCodeRuns::InASealedBox
+        ))
+    );
 }

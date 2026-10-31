@@ -198,6 +198,14 @@ pub enum SettingsRow {
     AlosOwnService,
     /// Say where a provider runs: Enter says it is not on this computer yet.
     SayWhereItRuns(String),
+    /// Which edge of the screen the Dock sits on: Enter chooses it.
+    ///
+    /// `docs/features.md`: *the person decides where it goes — bottom, left,
+    /// right or top, chosen in Settings*, the promise the owner restored after
+    /// ADR 0076 withdrew it.
+    Edge(alo_dock::Edge),
+    /// Another page of Settings, from a row that names it: Enter shows it.
+    GoTo(SettingsCategory),
     /// How code the agent writes or fetches runs: Enter chooses this level.
     ///
     /// One row per level of ADR 0064, in that ADR's own order, which is least
@@ -216,7 +224,8 @@ impl SettingsRow {
             Self::Accent(_) => SettingsSection::Appearance,
             Self::WrittenAs(_) => SettingsSection::Formats,
             Self::TimeZone(_) => SettingsSection::TimeZone,
-            Self::Hiding(_) => SettingsSection::Dock,
+            Self::Hiding(_) | Self::Edge(_) => SettingsSection::Dock,
+            Self::GoTo(_) => SettingsSection::Terminal,
             Self::Shortcut(_) => SettingsSection::Shortcuts,
             Self::Granted(_) | Self::GrantAFolder | Self::SeeWhatAloDid | Self::Picking(_) => {
                 SettingsSection::Granted
@@ -300,6 +309,8 @@ pub enum SettingsDid {
     /// `Server` because the keys that fill it in reach the seat, not this
     /// window. See `crate::a_provider_is_added_in_settings`.
     AddingAProvider,
+    /// Another page is shown, from a row that names it.
+    WentTo(SettingsCategory),
     /// A person asked to see the record, so the record window should open.
     ///
     /// **The window says so and does not do it**, for `AddingAProvider`'s
@@ -639,6 +650,7 @@ impl Open {
                 if self.a_place_to_return_to.offers_a_row() {
                     rows.push(SettingsRow::APlaceToReturnTo);
                 }
+                rows.push(SettingsRow::GoTo(SettingsCategory::RunningCode));
                 rows
             }
             SettingsCategory::Appearance => {
@@ -647,6 +659,7 @@ impl Open {
                     rows.extend(Accent::ALL.into_iter().map(SettingsRow::Accent));
                 }
                 if self.dock.at().is_some() {
+                    rows.extend(alo_dock::Edge::EVERY.into_iter().map(SettingsRow::Edge));
                     rows.extend(Hiding::ALL.into_iter().map(SettingsRow::Hiding));
                 }
                 rows
@@ -758,13 +771,17 @@ impl Open {
         let mut starts = Vec::new();
         let mut counted = 0;
         for block in &page.blocks {
-            if let crate::settings_page::ABlock::Section(section) = block {
-                let here: usize = section.rows.iter().map(|row| row.targets().count()).sum();
-                if here > 0 {
-                    starts.push(counted);
+            let here: usize = match block {
+                crate::settings_page::ABlock::Section(section) => {
+                    section.rows.iter().map(|row| row.targets().count()).sum()
                 }
-                counted += here;
+                crate::settings_page::ABlock::AnAction(_) => 1,
+                crate::settings_page::ABlock::Said(_) => 0,
+            };
+            if here > 0 {
+                starts.push(counted);
             }
+            counted += here;
         }
         starts
     }
@@ -925,6 +942,25 @@ impl Open {
                 SettingsSection::TimeZone,
                 self.time_zone.choose(zone, doors.zone, doors.strings),
             ),
+            SettingsRow::Edge(edge) => {
+                let edge = *edge;
+                let kept = self.dock.changed(
+                    |dock| {
+                        dock.set_edge(edge);
+                        Ok(())
+                    },
+                    doors.strings,
+                );
+                SettingsDid::Kept(SettingsSection::Dock, kept)
+            }
+            // **The page it names is shown, with the keyboard on its first
+            // row**, which is where a person reaches for it.
+            SettingsRow::GoTo(category) => {
+                self.category = *category;
+                self.in_the_page = !self.rows_on(*category, doors.now).is_empty();
+                self.focus = 0;
+                SettingsDid::WentTo(*category)
+            }
             SettingsRow::Hiding(hiding) => {
                 let hiding = *hiding;
                 let kept = self.dock.changed(

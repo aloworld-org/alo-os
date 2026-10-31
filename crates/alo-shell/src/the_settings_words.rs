@@ -400,12 +400,129 @@ pub const TIME_ZONE: Word = Word::saying("settings.section.time-zone", "Time zon
 pub const SHORTCUTS: Word = Word::saying("settings.section.shortcuts", "Shortcuts")
     .noting("A heading over the list of keyboard shortcuts.");
 
+/// Take back.
+pub const TAKE_BACK: Word = Word::saying("settings.take-back", "Take back")
+    .noting("A button beside a folder alo may read, or a computer paired with this one, that takes the permission back at once.");
+
+/// Taking a folder back stops it at once: the next thing asked under it is refused.
+pub const TAKING_BACK_STOPS_IT: Word = Word::saying("settings.folders.taking-back", "Taking a folder back stops it at once: the next thing asked under it is refused. It does not undo what was already done — the record and undo are for that.")
+    .noting("Under the list of folders alo may read. The record is the list of what alo did; undo puts files back.");
+
+/// You choose the folder and how long, in the same step.
+pub const YOU_CHOOSE_FOLDER_AND_HOW_LONG: Word = Word::saying(
+    "settings.folders.you-choose",
+    "You choose the folder and how long, in the same step.",
+)
+.noting("Beside the button that gives alo a folder: what happens when it is pressed.");
+
+/// Every action and every refusal, in order, with what it changed.
+pub const EVERY_ACTION_AND_REFUSAL: Word = Word::saying(
+    "settings.record.is",
+    "Every action and every refusal, in order, with what it changed.",
+)
+.noting("Under the row that opens the record of what alo did.");
+
+/// The system locks the box.
+pub const SEALED_BOX_IS: Word = Word::saying(
+    "settings.running.sealed-box.is",
+    "The system locks the box. What runs inside it sees this project and nothing else.",
+)
+.noting("Under the choice that runs commands in a sealed box.");
+
+/// Nothing runs until you have read it and said yes.
+pub const ASKING_IS: Word = Word::saying(
+    "settings.running.asking.is",
+    "Nothing runs until you have read it and said yes. One yes runs it once.",
+)
+.noting("Under the choice that shows each command and waits for the person.");
+
+/// Default.
+pub const DEFAULT: Word = Word::saying("settings.default", "Default")
+    .noting("A small tag beside the choice a fresh computer starts with. One word.");
+
+/// Always on.
+pub const ALWAYS_ON: Word = Word::saying("settings.always-on", "Always on")
+    .noting("At the end of a protection that no setting switches off. Two words.");
+
+/// These protect you without stopping anything, so no level turns them off.
+pub const THEY_PROTECT_YOU: Word = Word::saying(
+    "settings.running.stays-on.note",
+    "These protect you without stopping anything, so no level turns them off.",
+)
+.noting("Under the three protections that stay on whatever level of running code is chosen.");
+
+/// Related.
+pub const RELATED: Word = Word::saying("settings.section.related", "Related")
+    .noting("A heading over a row that opens a related page of Settings.");
+
+/// How alo runs code.
+pub const HOW_ALO_RUNS_CODE: Word =
+    Word::saying("settings.terminal.how-code-runs", "How alo runs code").noting(
+        "A row on the Terminal page that opens the Running code page. alo is the assistant.",
+    );
+
+/// In a sealed box, after asking you, or straight away.
+pub const HOW_ALO_RUNS_CODE_IS: Word = Word::saying(
+    "settings.terminal.how-code-runs.is",
+    "In a sealed box, after asking you, or straight away. Set in Running code.",
+)
+.noting("Under the row that opens the Running code page. Running code is that page's name.");
+
+/// Accent colour.
+pub const ACCENT_COLOUR: Word = Word::saying("settings.appearance.accent", "Accent colour")
+    .noting("The name of the setting for the colour that selections and switches are drawn in.");
+
+/// Each colour has a version for light and for dark, so it reads properly either way.
+pub const ACCENT_COLOUR_IS: Word = Word::saying(
+    "settings.appearance.accent.is",
+    "Each colour has a version for light and for dark, so it reads properly either way.",
+)
+.noting("Under Accent colour.");
+
+/// The whole of alo OS follows the accent: selections, switches and choices.
+pub const THE_ACCENT_NOTE: Word = Word::saying("settings.appearance.accent.note", "The whole of alo OS follows the accent: selections, switches and choices. Deep teal is not offered: it means alo is acting, and nothing else.")
+    .noting("Under the accent colours. Deep teal is the colour reserved for alo, the assistant, acting.");
+
+/// Where the Dock sits.
+pub const WHERE_THE_DOCK_SITS: Word = Word::saying("settings.dock.where", "Where the Dock sits")
+    .noting("The name of the setting for which edge of the screen the Dock is on. The Dock is the bar of applications.");
+
+/// Bottom.
+pub const BOTTOM: Word = Word::saying("settings.dock.bottom", "Bottom")
+    .noting("One of four short choices for the edge of the screen the Dock sits on.");
+
+/// Left.
+pub const LEFT: Word = Word::saying("settings.dock.left", "Left")
+    .noting("One of four short choices for the edge of the screen the Dock sits on.");
+
+/// Right.
+pub const RIGHT: Word = Word::saying("settings.dock.right", "Right")
+    .noting("One of four short choices for the edge of the screen the Dock sits on.");
+
+/// Top.
+pub const TOP: Word = Word::saying("settings.dock.top", "Top")
+    .noting("One of four short choices for the edge of the screen the Dock sits on.");
+
+/// The Dock keeps its place on its edge of the screen.
+pub const ALWAYS_SHOWN_IS: Word = Word::saying(
+    "settings.dock.always-shown.is",
+    "The Dock keeps its place on its edge of the screen.",
+)
+.noting("Under the choice Always shown, for the Dock.");
+
+/// The Dock steps aside and comes back when you reach for it.
+pub const GIVES_WAY_IS: Word = Word::saying(
+    "settings.dock.gives-way.is",
+    "The Dock steps aside and comes back when you reach for it.",
+)
+.noting("Under the choice for the Dock that gives way when a window needs the room.");
+
 /// Every word this window says of its own.
 ///
 /// The length is written out so that adding a word above and forgetting it
 /// here does not compile — a word declared and left out of this list reaches a
 /// person as its own key.
-pub const THE_WINDOWS_WORDS: [Word; 54] = [
+pub const THE_WINDOWS_WORDS: [Word; 76] = [
     SETTINGS,
     EVERYTHING_IN_ONE_PLACE,
     THE_GROUP_ALO,
@@ -460,6 +577,28 @@ pub const THE_WINDOWS_WORDS: [Word; 54] = [
     WHERE_THIS_COMPUTER_IS,
     TIME_ZONE,
     SHORTCUTS,
+    TAKE_BACK,
+    TAKING_BACK_STOPS_IT,
+    YOU_CHOOSE_FOLDER_AND_HOW_LONG,
+    EVERY_ACTION_AND_REFUSAL,
+    SEALED_BOX_IS,
+    ASKING_IS,
+    DEFAULT,
+    ALWAYS_ON,
+    THEY_PROTECT_YOU,
+    RELATED,
+    HOW_ALO_RUNS_CODE,
+    HOW_ALO_RUNS_CODE_IS,
+    ACCENT_COLOUR,
+    ACCENT_COLOUR_IS,
+    THE_ACCENT_NOTE,
+    WHERE_THE_DOCK_SITS,
+    BOTTOM,
+    LEFT,
+    RIGHT,
+    TOP,
+    ALWAYS_SHOWN_IS,
+    GIVES_WAY_IS,
 ];
 
 /// Why this window's words could not be declared.
