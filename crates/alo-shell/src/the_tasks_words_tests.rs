@@ -130,23 +130,23 @@ fn where_it_happens_is_the_sentence_alo_models_already_says() {
     );
 }
 
-/// **The model's name is empty, and that is the gap rather than a bug.**
+/// **The model's chip says the name the person chose, exactly as they wrote
+/// it, and nothing where they chose none** — *what the person configured;
+/// nothing is branded* (the owner, 2026-10-31).
 ///
-/// `alo_tasks::WhichModel` holds an `InferenceSource`, which says *where* a
-/// question is answered and not *which model* answers it. The design draws a
-/// name. Asserted so that the day a task carries a model identity, this test
-/// fails and somebody fills the slot — rather than the emptiness going
-/// unnoticed because nobody looked at that part of the window.
+/// Until that day this test asserted the chip was empty, because a task carried
+/// no model's name, and it was written to fail on the day one did.
 #[test]
-fn the_models_name_is_empty_because_a_task_does_not_carry_one() {
+fn the_models_chip_says_the_name_the_person_chose() {
     let strings = words();
-    let said = TheTasksWords::said(&[a_task()], &[Some(somewhere())], &strings, None);
+    let named = a_task().asked_of_the_model_named(Some("gpt-4o"));
+    let said = TheTasksWords::said(&[named, a_task()], &[Some(somewhere()), Some(somewhere())], &strings, None);
     let drawn = said.as_displayed();
 
+    assert_eq!(drawn.first().expect("two windows").words.model, "gpt-4o");
     assert!(
-        drawn.first().expect("one window").words.model.is_empty(),
-        "a task now carries a model name — fill the slot the design gives it and \
-         delete this test"
+        drawn.get(1).expect("two windows").words.model.is_empty(),
+        "a task whose person named no model was given a name"
     );
 }
 

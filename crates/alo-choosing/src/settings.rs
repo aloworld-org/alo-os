@@ -607,6 +607,23 @@ pub fn what_answers_here(at: &std::path::Path) -> Option<alo_models::InferenceSo
     picked.source(&providers)
 }
 
+/// **The name of the model the person chose, as they wrote it**, from the
+/// settings file at `at` — for a task window's model chip, which shows *what
+/// the person configured; nothing is branded* (the owner, 2026-10-31).
+///
+/// [`None`] where no file reads, nothing is chosen, or a machine down the
+/// corridor is (`Picked::the_name_the_person_gave`). Read from the same file
+/// [`what_answers_here`] reads, so the name and the place a question goes are
+/// one person's one choice.
+#[must_use]
+pub fn the_model_named_here(at: &std::path::Path) -> Option<String> {
+    let settings = Settings::at(at).ok()?;
+    settings
+        .chosen()?
+        .the_name_the_person_gave()
+        .map(str::to_owned)
+}
+
 #[cfg(test)]
 #[expect(
     clippy::unwrap_used,
@@ -618,8 +635,33 @@ mod what_answers_here_tests {
 
     use alo_models::InferenceSource;
 
-    use super::what_answers_here;
+    use super::{the_model_named_here, what_answers_here};
     use crate::{Choosing, Chosen, Picked, Which};
+
+    /// **The model's name is the one the person wrote**, read from the file
+    /// the place a question goes is read from; nothing chosen names nothing.
+    #[test]
+    fn the_model_named_is_the_one_the_person_chose() {
+        let at = a_settings_file("named");
+        assert_eq!(the_model_named_here(&at), None, "an unset machine named a model");
+        let mut choosing = Choosing::at(&at).unwrap();
+        choosing
+            .answered_by(Some(Picked::OnThisMachine(
+                Chosen::of(Which::Catalogue, "mistral-small").unwrap(),
+            )))
+            .unwrap();
+        assert_eq!(the_model_named_here(&at).as_deref(), Some("mistral-small"));
+    }
+
+    /// **A provider's model is named as the person wrote it, and a machine
+    /// down the corridor names none** — its own person chooses its model.
+    #[test]
+    fn a_provider_names_its_model_and_a_paired_machine_names_none() {
+        let provider = Picked::from_a_provider("My provider", "gpt-4o").unwrap();
+        assert_eq!(provider.the_name_the_person_gave(), Some("gpt-4o"));
+        let local = Picked::OnThisMachine(Chosen::of(Which::Brought, "my-finetune").unwrap());
+        assert_eq!(local.the_name_the_person_gave(), Some("my-finetune"));
+    }
 
     /// A settings file of our own, in a folder nobody else's test uses.
     fn a_settings_file(what: &str) -> PathBuf {
