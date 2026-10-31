@@ -139,8 +139,8 @@ use alo_turn::{
 
 use crate::at_the_compositors_door::AtTheCompositorsDoor;
 use crate::caller::Uid;
-use crate::how_applications_start_here::HowApplicationsStartHere;
 use crate::described::Described;
+use crate::how_applications_start_here::HowApplicationsStartHere;
 use crate::knocking::Knocking;
 use crate::names::TheNames;
 use crate::network::{KeepingPairings, TheNetwork};

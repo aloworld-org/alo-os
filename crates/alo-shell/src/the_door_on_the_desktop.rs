@@ -68,9 +68,7 @@ impl TheDoorOnTheDesktop {
         if self.served.is_none() {
             self.looked_for();
         }
-        self.served
-            .as_mut()
-            .map_or(0, |door| door.answered(server))
+        self.served.as_mut().map_or(0, |door| door.answered(server))
     }
 
     /// Whether the door is served.

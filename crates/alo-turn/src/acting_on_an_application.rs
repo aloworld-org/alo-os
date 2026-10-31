@@ -191,7 +191,9 @@ pub(crate) fn acting_on_an_application(
             // the entry says how the application starts.
             let entry = Entry::ran(reaching.authorised(), strings);
             let entry = match road {
-                Some(road) => entry.telling(&[said_about(strings, the_word_for(road), &identifier)]),
+                Some(road) => {
+                    entry.telling(&[said_about(strings, the_word_for(road), &identifier)])
+                }
                 None => entry,
             };
             return (entry, Ok(Reached { acting }));
@@ -807,7 +809,11 @@ mod tests {
         );
         assert!(did.is_ok(), "{did:?}");
         assert_eq!(
-            door.asked.borrow().iter().map(Request::written).collect::<Vec<_>>(),
+            door.asked
+                .borrow()
+                .iter()
+                .map(Request::written)
+                .collect::<Vec<_>>(),
             [format!("open {THE_MAIL_CLIENT}")],
             "one approval, one ask"
         );
@@ -863,9 +869,7 @@ mod tests {
                 the_mail_client_is_here(),
                 true,
                 &ItStarts(Err(no)),
-                |turning, grants| {
-                    through_a_whole_turn(turning, grants, "open_application", &tally)
-                },
+                |turning, grants| through_a_whole_turn(turning, grants, "open_application", &tally),
             );
             let Err(NotDone::Refused(refused)) = did else {
                 panic!("{no:?} was not refused: {did:?}");
@@ -906,7 +910,10 @@ mod tests {
             },
         );
         assert!(matches!(did, Err(NotDone::NeverAsked(_))), "{did:?}");
-        assert!(tally.borrow().is_empty(), "an ungranted open reached the door");
+        assert!(
+            tally.borrow().is_empty(),
+            "an ungranted open reached the door"
+        );
         assert_eq!(record.answering(&Asking::anything()).count(), 1);
     }
 

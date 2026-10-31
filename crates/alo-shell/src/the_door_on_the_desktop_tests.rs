@@ -54,13 +54,19 @@ fn the_door_waits_for_the_daemons_directory_and_then_is_served() {
     let mut door = TheDoorOnTheDesktop::at(place.clone(), us());
 
     assert_eq!(door.answered(&mut server), 0);
-    assert!(!door.is_served(), "a door was served with no directory to put it in");
+    assert!(
+        !door.is_served(),
+        "a door was served with no directory to put it in"
+    );
 
     std::fs::create_dir_all(place.directory()).unwrap();
     for _ in 0..=HOW_OFTEN {
         let _ = door.answered(&mut server);
     }
-    assert!(door.is_served(), "the directory arrived and no door was served");
+    assert!(
+        door.is_served(),
+        "the directory arrived and no door was served"
+    );
     drop(door);
     assert!(
         !place.socket().exists(),
