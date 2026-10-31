@@ -407,6 +407,7 @@ pub(crate) fn picture(
                 &task.words,
                 &task.said,
                 task.scroll,
+                task.the_one_button,
                 fonts,
                 // **This display's scale**, the one the Dock is drawn at, so a
                 // task window on a dense screen is the same size to the eye.

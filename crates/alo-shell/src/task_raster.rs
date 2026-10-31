@@ -11,9 +11,10 @@
 //! # What is here and what is not
 //!
 //! **The furniture**: the window's own panel, the shared-file chips, the reply
-//! field, the grounds of the four composer controls, and the circle the one
-//! Send-or-Stop button sits in. Everything whose place comes from the layout
-//! alone.
+//! field, the grounds of the four composer controls, the circle the one
+//! Send-or-Stop button sits in, and the icons on them — drawn as vectors from
+//! the design file's own SVG since 2026-10-30 (`crate::the_reply_boxs_icons`).
+//! Everything whose place comes from the layout alone.
 //!
 //! **Not the words, and not the conversation's blocks.** How tall a message is
 //! depends on how many lines its text wraps to, so `alo_tasks::TheBlocks` takes
@@ -74,6 +75,9 @@ pub struct ATaskOnTheDisplay<'a> {
     /// How far the person has scrolled the conversation back from its newest
     /// words.
     pub scroll: alo_tasks::TheScroll,
+    /// What its one button shows: the Stop square while alo is working, the
+    /// Send arrow otherwise.
+    pub the_one_button: alo_tasks::TheOneButton,
     /// Its place in the list of tasks, so what this frame measured about it
     /// can be handed back to the right one.
     pub place: usize,
@@ -186,6 +190,7 @@ pub(crate) fn furniture(
     words: &crate::task_text::TheWordsInATaskWindow<'_>,
     said: &[crate::task_text::WhatWasSaid<'_>],
     scroll: alo_tasks::TheScroll,
+    button: alo_tasks::TheOneButton,
     fonts: &mut cosmic_text::FontSystem,
     scale: DisplayScale,
 ) -> Result<TaskPicture, NoTaskPicture> {
@@ -273,8 +278,8 @@ pub(crate) fn furniture(
     // staircase.
     // From the one place that says where it is, which a press is tested
     // against too (`crate::a_press_on_the_one_button`).
-    let button: Vec<Rectangle<i32, Physical>> =
-        crate::a_press_on_the_one_button::the_one_buttons_place(at)
+    let the_button: Vec<Rectangle<i32, Physical>> =
+        crate::a_press_on_the_one_button::the_one_buttons_place(at, scale)
             .into_iter()
             .collect();
 
@@ -464,14 +469,14 @@ pub(crate) fn furniture(
         });
     }
 
-    let panel = a_panel(
+    let mut panel = a_panel(
         at,
         palette.surface,
         palette.edge,
         (at.loc.x + at.size.w, at.loc.y + at.size.h),
         crate::how_a_panel_is_raised::HowItIsRaised::THE_DOCKS.at(scale.factor()),
         APanelsShapes {
-            circles: &button,
+            circles: &the_button,
             circle: palette.the_one_button,
             marks: &[],
             mark: palette.ink,
@@ -489,6 +494,75 @@ pub(crate) fn furniture(
     .ok_or(NoTaskPicture::TooSmall(TooSmall::NotTallEnough {
         the_least: alo_tasks::layout::the_least_height(),
     }))?;
+
+    // **The model's name and its arrow, centred together in their control** —
+    // the design's `Model` is a row with 8 inside each end and 8 between, its
+    // contents centred. The name is measured here, while the font system is
+    // free, so the arrow can sit right after it. With no name, which is every
+    // task today (`crate::the_tasks_words` says why), the arrow is centred.
+    let the_names_room = m::THE_MODEL_CONTROL_IS_WIDE.saturating_sub(m::GAP * 3 + m::A_CHEVRON);
+    let the_names_width = if words.model.is_empty() {
+        0
+    } else {
+        let shaped = crate::task_text::shaped(
+            fonts,
+            crate::task_text::ToWrite {
+                words: words.model,
+                style: AStyle::Label,
+                ground: palette.cool,
+                ink: palette.ink,
+                marks: &[],
+            },
+            px(the_names_room),
+            measure,
+        );
+        logical(shaped.width).min(the_names_room)
+    };
+    let the_models_row = if the_names_width == 0 {
+        m::A_CHEVRON
+    } else {
+        the_names_width + m::GAP + m::A_CHEVRON
+    };
+    let the_name_starts =
+        controls.model + m::THE_MODEL_CONTROL_IS_WIDE.saturating_sub(the_models_row) / 2;
+    let the_chevron_starts = if the_names_width == 0 {
+        the_name_starts
+    } else {
+        the_name_starts + the_names_width + m::GAP
+    };
+
+    // **The icons, drawn as vectors into the panel's own raster** at this
+    // display's scale (`crate::the_reply_boxs_icons`). Each is centred in its
+    // control; the chevron in a box of its own size beside the name.
+    {
+        use crate::the_reply_boxs_icons::{AnIcon, ink_an_icon};
+        let a_control = |x: u32, wide: u32| {
+            let (cx, cy) = inside(x, controls.from_the_top);
+            Rectangle::new((cx, cy).into(), (px(wide), px(m::A_CONTROL_IS)).into())
+        };
+        for (icon, control) in [
+            (AnIcon::Attach, a_control(controls.attach, m::A_CONTROL_IS)),
+            (
+                AnIcon::TheModelsChevron,
+                a_control(the_chevron_starts, m::A_CHEVRON),
+            ),
+            (
+                AnIcon::Permissions,
+                a_control(controls.permissions, m::A_CONTROL_IS),
+            ),
+        ] {
+            ink_an_icon(&mut panel, icon, control, scale, palette.ink);
+        }
+        for circle in &the_button {
+            ink_an_icon(
+                &mut panel,
+                AnIcon::on_the_one_button(button),
+                *circle,
+                scale,
+                palette.on_the_one_button,
+            );
+        }
+    }
 
     // **The words, inked onto the ground each sits on.** Each is placed from the
     // window's own inside corner, cut at the window's bottom edge so a long
@@ -687,9 +761,9 @@ pub(crate) fn furniture(
         AStyle::Label,
         palette.cool,
         palette.ink,
-        controls.model + m::GAP,
+        the_name_starts,
         (controls.from_the_top, m::A_CONTROL_IS),
-        m::THE_MODEL_CONTROL_IS_WIDE.saturating_sub(m::A_CHEVRON + m::GAP * 2),
+        the_names_room,
         false,
         None,
     );
@@ -807,3 +881,8 @@ mod tests;
 #[cfg(test)]
 #[path = "task_raster_scale_tests.rs"]
 mod scale_tests;
+
+/// The reply box's icons, on the window as it is drawn.
+#[cfg(test)]
+#[path = "task_raster_icons_tests.rs"]
+mod icons_tests;

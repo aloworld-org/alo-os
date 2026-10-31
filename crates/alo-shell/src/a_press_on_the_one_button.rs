@@ -17,20 +17,25 @@ use alo_tasks::layout::TheRows;
 use alo_tasks::measures as m;
 use smithay::utils::{Physical, Point, Rectangle};
 
-/// A logical measure as a pixel count.
-fn px(of: u32) -> i32 {
-    i32::try_from(of).unwrap_or(i32::MAX)
-}
+use crate::display_scale::DisplayScale;
 
-/// **Where a task window's one button is**, for a window at `at`, in the
-/// same pixels the window is drawn in; [`None`] for a window too small to lay
-/// out.
+/// **Where a task window's one button is**, for a window at `at` on a display
+/// drawn at `scale`, in the same pixels the window is drawn in; [`None`] for a
+/// window too small to lay out.
+///
+/// **Laid out in logical units and drawn in the display's pixels**, as
+/// `crate::task_raster` lays out the rest of the window. Until 2026-10-30 this
+/// read the window's pixels as logical units, so on a display at 200 per cent
+/// the circle was drawn half its size and in the wrong place, and a press was
+/// tested against that wrong place.
 pub(crate) fn the_one_buttons_place(
     at: Rectangle<i32, Physical>,
+    scale: DisplayScale,
 ) -> Option<Rectangle<i32, Physical>> {
-    let wide = u32::try_from(at.size.w.max(0)).unwrap_or(0);
-    let tall = u32::try_from(at.size.h.max(0)).unwrap_or(0);
-    let controls = TheRows::of(wide, tall).ok()?.controls();
+    let px = |of: u32| scale.px(of);
+    let controls = TheRows::of(scale.logical(at.size.w), scale.logical(at.size.h))
+        .ok()?
+        .controls();
     Some(Rectangle::new(
         (
             at.loc.x + px(m::BORDER) + px(controls.the_one_button),
@@ -46,8 +51,12 @@ impl crate::Server {
     /// buttons, newest first. Answers whether one showing **Stop** took it.
     pub(crate) fn a_press_on_a_one_button(&mut self, at: Point<i32, Physical>) -> bool {
         let open = self.tasks().each_open_window();
+        // **The scale the windows were last drawn at**, the same answer a
+        // press on a task window's edge is measured with.
+        let scale = DisplayScale::of_per_cent(self.the_scale_edges_are_measured_at);
         for (which, window) in open.into_iter().rev() {
-            let on_it = the_one_buttons_place(window).is_some_and(|button| button.contains(at));
+            let on_it =
+                the_one_buttons_place(window, scale).is_some_and(|button| button.contains(at));
             if !on_it {
                 continue;
             }

@@ -90,6 +90,7 @@ fn as_drawn() -> TaskPicture {
         &the_words(&files),
         &said,
         alo_tasks::TheScroll::at_the_newest(),
+        alo_tasks::TheOneButton::Stop,
         &mut fonts,
         crate::display_scale::DisplayScale::ONE,
     )
@@ -153,6 +154,7 @@ fn the_middle_of_an_empty_window_is_its_surface() {
         &the_words(&files),
         &[],
         alo_tasks::TheScroll::at_the_newest(),
+        alo_tasks::TheOneButton::Stop,
         &mut fonts,
         crate::display_scale::DisplayScale::ONE,
     )
@@ -212,6 +214,9 @@ fn the_reply_field_is_outlined_rather_than_filled() {
 
 /// **The one button is drawn in the ink colour**, which is the inversion that
 /// marks it as the thing a person presses to act.
+///
+/// Sampled above its icon, which since 2026-10-30 sits in the middle: 6 down
+/// from the circle's top, in its middle column, is circle and not artwork.
 #[test]
 fn the_one_button_is_drawn_in_the_ink_colour() {
     let drawn = as_drawn();
@@ -223,7 +228,7 @@ fn the_one_button_is_drawn_in_the_ink_colour() {
     let (x, y) = in_the_raster(
         &drawn,
         i32::try_from(controls.the_one_button + middle).expect("a small number"),
-        i32::try_from(controls.from_the_top + middle).expect("a small number"),
+        i32::try_from(controls.from_the_top + 6).expect("a small number"),
     );
     let [r, g, b, _] = pixel(&drawn, x, y);
 
@@ -257,6 +262,7 @@ fn a_chip_is_drawn_per_shared_file_and_none_without() {
             &the_words(&files),
             &said,
             alo_tasks::TheScroll::at_the_newest(),
+            alo_tasks::TheOneButton::Stop,
             &mut fonts,
             crate::display_scale::DisplayScale::ONE,
         )
@@ -292,6 +298,7 @@ fn a_window_too_small_is_refused_rather_than_drawn_wrong() {
         &the_words(&files),
         &said,
         alo_tasks::TheScroll::at_the_newest(),
+        alo_tasks::TheOneButton::Stop,
         &mut fonts,
         crate::display_scale::DisplayScale::ONE,
     )
@@ -319,6 +326,7 @@ fn chips_stop_at_the_rows_edge_rather_than_running_off_it() {
         &the_words(&files),
         &said,
         alo_tasks::TheScroll::at_the_newest(),
+        alo_tasks::TheOneButton::Stop,
         &mut fonts,
         crate::display_scale::DisplayScale::ONE,
     )
@@ -379,6 +387,7 @@ fn the_words_are_drawn_and_an_empty_window_draws_none() {
         &nothing,
         &[],
         alo_tasks::TheScroll::at_the_newest(),
+        alo_tasks::TheOneButton::Stop,
         &mut fonts,
         crate::display_scale::DisplayScale::ONE,
     )
@@ -396,6 +405,7 @@ fn the_words_are_drawn_and_an_empty_window_draws_none() {
         &the_words(&files),
         &said,
         alo_tasks::TheScroll::at_the_newest(),
+        alo_tasks::TheOneButton::Stop,
         &mut fonts,
         crate::display_scale::DisplayScale::ONE,
     )
@@ -447,6 +457,7 @@ fn no_word_is_drawn_outside_the_window() {
         &long,
         &said,
         alo_tasks::TheScroll::at_the_newest(),
+        alo_tasks::TheOneButton::Stop,
         &mut fonts,
         crate::display_scale::DisplayScale::ONE,
     )
@@ -505,6 +516,7 @@ fn a_persons_words_are_drawn_further_right_than_alos() {
         &silent,
         &said,
         alo_tasks::TheScroll::at_the_newest(),
+        alo_tasks::TheOneButton::Stop,
         &mut fonts,
         crate::display_scale::DisplayScale::ONE,
     )
@@ -550,6 +562,7 @@ fn with_a_card(
         &the_words(&files),
         &said,
         alo_tasks::TheScroll::at_the_newest(),
+        alo_tasks::TheOneButton::Stop,
         &mut fonts,
         crate::display_scale::DisplayScale::ONE,
     )
@@ -740,6 +753,7 @@ fn a_long_answer_is_cut_to_the_conversations_view() {
         &the_words(&files),
         &said,
         alo_tasks::TheScroll::at_the_newest(),
+        alo_tasks::TheOneButton::Stop,
         &mut fonts,
         crate::display_scale::DisplayScale::ONE,
     )
@@ -776,6 +790,7 @@ fn scrolled_back_the_start_of_the_conversation_is_drawn() {
         &the_words(&files),
         &said,
         alo_tasks::TheScroll::at_the_newest(),
+        alo_tasks::TheOneButton::Stop,
         &mut fonts,
         crate::display_scale::DisplayScale::ONE,
     )
@@ -792,6 +807,7 @@ fn scrolled_back_the_start_of_the_conversation_is_drawn() {
         &the_words(&files),
         &said,
         scroll,
+        alo_tasks::TheOneButton::Stop,
         &mut fonts,
         crate::display_scale::DisplayScale::ONE,
     )
@@ -836,6 +852,7 @@ fn a_long_title_keeps_to_one_line_and_ends_in_an_ellipsis() {
         &long,
         &[],
         alo_tasks::TheScroll::at_the_newest(),
+        alo_tasks::TheOneButton::Stop,
         &mut fonts,
         crate::display_scale::DisplayScale::ONE,
     )

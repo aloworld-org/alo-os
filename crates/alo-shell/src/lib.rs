@@ -462,6 +462,9 @@ mod the_pointer_in_pixels;
 pub mod the_providers_words;
 mod the_region_a_person_chose;
 pub mod the_regions_offered;
+/// The reply box's five icons, read from the design file's SVG and drawn at
+/// the display's scale.
+mod the_reply_boxs_icons;
 pub mod the_reply_boxs_words;
 mod the_session_holds_its_screens;
 mod the_sign_in_screens_scale;

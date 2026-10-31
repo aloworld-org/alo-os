@@ -1,0 +1,66 @@
+# Where the reply box's five icons came from.
+#
+# Taken from the design file on 2026-10-30 with the Figma connector's
+# `download_assets`, one call per node, and committed byte for byte as it
+# answered. The owner's decision of the same day: take the icons from the design
+# file as SVG and keep them here, because the links the connector hands out
+# expire after seven days and the earlier capture's had.
+#
+# `instance` is the node in the Working state's composer row (`417:27673`, in
+# the component set `417:28422`); `component` is the composer component it is an
+# instance of; `artwork` is the icon frame inside that component, which is what
+# the SVG draws. `crates/alo-shell/src/the_reply_boxs_icons_tests.rs` reads this
+# file and holds every SVG named here to it.
+
+file = "nDxyF5Ho9oC4RObjVzwBNJ"
+fetched = "2026-10-30"
+
+# **Checked again on 2026-10-31** against the alo window the owner approved
+# that day, page `544:30910` *Proposed · Settings and the alo window ·
+# 2026-10-31*: its composer rows (`549:103` in the working frame `549:26`, and
+# the Send of `549:362` in the complete frame `549:261`) are instances of the
+# same four components, and all five SVGs came back byte for byte identical to
+# these. That frame's processing destination also carries a cloud icon
+# (`549:113`), which is not one of these five and is not drawn yet.
+confirmed = "2026-10-31"
+confirmed_against = ["549:26", "549:261"]
+
+[[icon]]
+svg = "attach.svg"
+names = "Attach"
+instance = "417:27705"
+component = "427:28073"
+artwork = "427:28075"
+artwork_is = 28
+
+[[icon]]
+svg = "model-chevron.svg"
+names = "the arrow beside the model's name"
+instance = "417:27674"
+component = "427:28077"
+artwork = "427:28079"
+artwork_is = 24
+
+[[icon]]
+svg = "permissions.svg"
+names = "Permissions"
+instance = "417:27678"
+component = "427:28081"
+artwork = "427:28083"
+artwork_is = 28
+
+[[icon]]
+svg = "send.svg"
+names = "Send, while alo is not working"
+instance = "the Stopped and Complete states' shared action"
+component = "427:28090"
+artwork = "inside 427:28090"
+artwork_is = 28
+
+[[icon]]
+svg = "stop.svg"
+names = "Stop, while alo is working"
+instance = "417:27709"
+component = "427:28086"
+artwork = "427:28088"
+artwork_is = 28

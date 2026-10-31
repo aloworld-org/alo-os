@@ -199,6 +199,10 @@ cosmic-text = { version = "=0.14.2", default-features = false, features = ["std"
 # crate draws with had the answer and naming it directly adds nothing to the
 # supply chain.
 unicode-segmentation = "1.13"
+# The reply box's icons, read from the design file's own SVG and drawn at each
+# display's scale (ADR 0142). Its one dependency is the rasteriser cosmic-text
+# already draws every letter with, so it adds nothing to the supply chain.
+alo-vector-shapes = { path = "../alo-vector-shapes" }
 smithay = { version = "=0.7.0", default-features = false, features = ["wayland_frontend", "renderer_gl", "backend_winit", "backend_session_libseat", "backend_libinput", "backend_udev", "use_system_lib", "desktop", "renderer_pixman"] }
 rustix.workspace = true
 thiserror.workspace = true
@@ -213,6 +217,9 @@ drm = "=0.14.1"
 # its waiting changes from the wire form a real daemon sends rather than from a
 # constructor only tests call — so the test breaks if that shape drifts.
 serde_json = "1"
+# Read by `the_reply_boxs_icons_tests`, which holds every committed icon to the
+# record of which design node it was taken from.
+toml.workspace = true
 
 [target.'cfg(target_os = "linux")'.dev-dependencies]
 # The agent's own reader, used to read this machine's tree back off the bus:

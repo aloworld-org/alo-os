@@ -1763,6 +1763,7 @@ dependencies = [
  "alo-tasks",
  "alo-terminal",
  "alo-turn",
+ "alo-vector-shapes",
  "cosmic-text",
  "drm",
  "drm-ffi",
@@ -1774,6 +1775,7 @@ dependencies = [
  "smithay",
  "tempfile",
  "thiserror 2.0.20",
+ "toml",
  "unicode-segmentation",
  "wayland-client",
  "wayland-protocols",
@@ -1980,6 +1982,13 @@ dependencies = [
  "alo-strings",
  "serde_json",
  "thiserror 2.0.20",
+]
+
+[[package]]
+name = "alo-vector-shapes"
+version = "0.0.1"
+dependencies = [
+ "zeno",
 ]
 
 [[package]]
