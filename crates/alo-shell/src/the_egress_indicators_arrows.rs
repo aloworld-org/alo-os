@@ -34,14 +34,6 @@ impl AnArrow {
         }
     }
 
-    /// Its icon frame's side, in logical pixels.
-    pub(crate) const fn frame_is(self) -> u32 {
-        match self {
-            Self::Lit => 14,
-            Self::Quiet => 16,
-        }
-    }
-
     /// The arrow's own box inside its frame, in hundredths of a logical pixel —
     /// the file's `viewBox`, which the design places in the middle of the
     /// frame.
@@ -119,12 +111,23 @@ mod tests {
                 .iter()
                 .find(|icon| icon.get("svg").and_then(toml::Value::as_str) == Some(file))
                 .unwrap_or_else(|| unreachable!("{file} is drawn and not recorded"));
-            let frame = recorded.get("frame_is").and_then(toml::Value::as_integer);
-            assert_eq!(frame, Some(i64::from(arrow.frame_is())), "{file}");
+            let frame = recorded
+                .get("frame_is")
+                .and_then(toml::Value::as_integer)
+                .unwrap_or_default();
             let drawn = recorded
                 .get("drawn_is")
                 .and_then(toml::Value::as_float)
                 .unwrap_or_default();
+            #[expect(
+                clippy::cast_precision_loss,
+                reason = "an icon frame of 14 or 16 is exact in f64"
+            )]
+            let frame_is = frame as f64;
+            assert!(
+                drawn > 0.0 && drawn < frame_is,
+                "{file}: the arrow's box {drawn} is not inside its frame {frame}"
+            );
             #[expect(
                 clippy::cast_possible_truncation,
                 reason = "a box of a few logical pixels, in hundredths"
