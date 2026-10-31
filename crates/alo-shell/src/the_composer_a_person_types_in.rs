@@ -197,6 +197,7 @@ impl crate::Server {
             self.the_composer.typed(),
             &self.what_this_machine_has,
             &self.what_each_is_called,
+            &self.what_each_is,
         );
         matches
             .get(self.which_row_in_the_bar.unwrap_or(0))

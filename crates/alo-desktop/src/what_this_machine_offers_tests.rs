@@ -280,8 +280,16 @@ pub(super) fn a_machine_laid_out_like_the_image(named: &str) -> std::path::PathB
     std::fs::create_dir_all(&exports).expect("the export directory");
     for (identifier, name, extra) in [
         ("org.mozilla.firefox", "Firefox", ""),
-        ("org.kde.dolphin", "Dolphin", ""),
-        ("org.gnome.Papers-previewer", "Papers", "NoDisplay=true\n"),
+        (
+            "org.kde.dolphin",
+            "Dolphin",
+            "GenericName=File Manager\nKeywords[fr]=fichiers;\n",
+        ),
+        (
+            "org.gnome.Papers-previewer",
+            "Papers",
+            "NoDisplay=true\nKeywords=files;\n",
+        ),
     ] {
         let deployed = root.join(format!(
             "var/lib/flatpak/app/{identifier}/current/active/export/share/applications"
@@ -383,6 +391,44 @@ fn a_machine_laid_out_like_the_image_offers_its_flatpaks_and_its_own() {
         "a machine whose applications were walked is still looking"
     );
     let _ = std::fs::remove_dir_all(root);
+}
+
+/// **What each application is reaches the Bar, in the person's language**, and
+/// an entry that asked not to be listed is not offered by what it is either.
+#[test]
+fn what_each_application_is_is_offered_in_the_persons_language() {
+    let root = a_machine_laid_out_like_the_image("kinds");
+    let at = as_the_desktop_unit_starts_it(&root).read_in(vec!["fr-FR".to_owned()]);
+    let offered = what_is_offered(&at, &AToolThatSays::listing(&[]));
+    let dolphin = offered
+        .installed
+        .iter()
+        .find(|it| it.identifier == "org.kde.dolphin")
+        .map(|it| it.is.clone());
+    assert_eq!(
+        dolphin,
+        Some(vec!["File Manager".to_owned(), "fichiers".to_owned()])
+    );
+    assert!(
+        offered
+            .installed
+            .iter()
+            .all(|it| it.identifier != "org.gnome.Papers-previewer"),
+        "an entry saying NoDisplay=true was offered"
+    );
+    let in_their_own_words = what_is_offered(
+        &as_the_desktop_unit_starts_it(&root),
+        &AToolThatSays::listing(&[]),
+    );
+    assert!(
+        in_their_own_words
+            .installed
+            .iter()
+            .filter(|it| it.identifier == "org.kde.dolphin")
+            .all(|it| it.is == ["File Manager"]),
+        "a language nobody asked for was read"
+    );
+    let _ = std::fs::remove_dir_all(&root);
 }
 
 /// **The refusal: a broken entry is said, and costs nobody anything else.**

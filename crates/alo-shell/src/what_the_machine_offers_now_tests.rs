@@ -69,6 +69,7 @@ fn offering(roles: Discovery, installed: &[(&str, &str)]) -> WhatTheMachineOffer
             .map(|(identifier, called)| AnApplicationHere {
                 identifier: (*identifier).to_owned(),
                 called: Some((*called).to_owned()),
+                is: Vec::new(),
             })
             .collect(),
     }

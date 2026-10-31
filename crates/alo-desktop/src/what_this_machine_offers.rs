@@ -65,7 +65,6 @@ use alo_dock::pinning::{ARole, Discovery};
 use alo_dock::window::AppId;
 use alo_installed::NotRead;
 use alo_shell::AnApplicationHere;
-use alo_software::rented::TheRentedTool;
 use alo_software::the_applications_arrived::TheApplicationsArrived;
 use alo_software::{Role, Shipped, Tool};
 
@@ -138,6 +137,11 @@ pub struct WhereToLook {
     pub data_dirs: std::ffi::OsString,
     /// The mark that says the fresh machine's applications were walked.
     pub arrived: TheApplicationsArrived,
+    /// The languages the person reads, best first, as BCP 47 tags — what an
+    /// entry's localised `GenericName` and `Keywords` are read in, so the alo
+    /// Bar finds an application by what it is in their words. Empty reads the
+    /// entries' own words only.
+    pub languages: Vec<String>,
 }
 
 impl WhereToLook {
@@ -175,16 +179,28 @@ impl WhereToLook {
             icons: alo_icons::where_icons_live(home, data_home, Some(&data_dirs)),
             data_dirs,
             arrived,
+            languages: Vec::new(),
         }
+    }
+
+    /// The same places, read in these languages.
+    #[must_use]
+    pub fn read_in(self, languages: Vec<String>) -> Self {
+        Self { languages, ..self }
     }
 }
 
 /// The Dock roles this machine can fill, its terminal, its artwork and every
 /// application on it, read from the machine this process runs on.
+///
+/// **In the entries' own words only.** The desktop itself reads through
+/// [`what_is_offered`] with places that know the person's languages; this is
+/// the tests' way of asking the machine they run on.
+#[cfg(test)]
 pub fn what_this_machine_offers() -> Offered {
     what_is_offered(
         &WhereToLook::on_this_machine(),
-        &TheRentedTool::on_this_machine(),
+        &alo_software::rented::TheRentedTool::on_this_machine(),
     )
 }
 
@@ -209,9 +225,17 @@ pub fn what_is_offered(at: &WhereToLook, tool: &(impl Tool + ?Sized)) -> Offered
     // and the watcher then sees that change and reads again.
     let (found, _icons, not_read) =
         alo_installed::read_with_their_icons_saying_what_did_not(&at.entries);
+    // **And a third, for what each one is**, which reads only the entries the
+    // walk above listed — so an entry asking not to be listed is not found by
+    // its kind either.
+    let languages: Vec<&str> = at.languages.iter().map(String::as_str).collect();
+    let mut what_each_is = alo_installed::what_they_are(&at.entries, &languages);
     let installed = found
         .all()
         .map(|application| AnApplicationHere {
+            is: what_each_is
+                .remove(application.identifier())
+                .unwrap_or_default(),
             identifier: application.identifier().to_owned(),
             called: match application.name() {
                 Some(alo_applications::application::Called::ByWhoeverPackagedIt(called)) => {

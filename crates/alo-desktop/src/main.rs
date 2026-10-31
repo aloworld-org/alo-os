@@ -146,9 +146,20 @@ mod running {
         // the terminal chord (`crate::watching_what_is_installed`). What the
         // places look like is taken *before* the reading, so a change between
         // the two is seen as a change rather than lost.
-        let looking = crate::what_this_machine_offers::WhereToLook::on_this_machine();
+        //
+        // **Read in the person's languages**, so the alo Bar finds an
+        // application by what it is in their words as well as the entry's.
+        let looking = crate::what_this_machine_offers::WhereToLook::on_this_machine().read_in(
+            the_languages_they_read()
+                .iter()
+                .map(|language| language.tag().to_owned())
+                .collect(),
+        );
         let there = crate::watching_what_is_installed::what_is_there(&looking);
-        let offers = crate::what_this_machine_offers::what_this_machine_offers();
+        let offers = crate::what_this_machine_offers::what_is_offered(
+            &looking,
+            &alo_software::rented::TheRentedTool::on_this_machine(),
+        );
         say_what_this_machine_offers(&offers);
         let (tell, told) = std::sync::mpsc::channel();
         if let Err(why) = std::thread::Builder::new()

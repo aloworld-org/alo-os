@@ -612,6 +612,10 @@ pub struct Server {
     /// An identifier missing from this has no name a person can be shown, and
     /// the Bar falls back to the identifier's last part.
     pub(crate) what_each_is_called: std::collections::BTreeMap<String, String>,
+    /// **What each of those is**, by identifier, in its entry's own words and
+    /// the person's language — what the alo Bar finds it by when the name does
+    /// not match. See `crate::the_bar_finds`.
+    pub(crate) what_each_is: crate::the_bar_finds::WhatEachIs,
     /// **Whether this session's Dock has its final answer** — the person's own
     /// pins, or defaults that were written down.
     ///
@@ -799,6 +803,7 @@ impl Server {
             what_this_machine_has: Vec::new(),
             // Nor what any of it is called.
             what_each_is_called: std::collections::BTreeMap::new(),
+            what_each_is: std::collections::BTreeMap::new(),
             // Nothing has filled the Dock yet, so nothing is final.
             the_dock_is_settled: false,
             // Nobody has asked for anything to be installed.

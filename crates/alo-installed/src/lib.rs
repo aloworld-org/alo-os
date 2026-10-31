@@ -78,6 +78,9 @@ use alo_applications::installed::Installed;
 mod icons;
 pub use icons::Icons;
 
+mod what_they_are;
+pub use what_they_are::{WhatEachIs, the_keys_a_language_reads, what_they_are};
+
 mod not_read;
 pub use not_read::{NotRead, WhyNotRead};
 
@@ -246,6 +249,10 @@ struct Entry {
     identifier: String,
     /// What the entry said about itself.
     said: Said,
+    /// The file it was read from, for a reader of keys [`Said`] does not hold
+    /// — `crate::what_they_are` — so that *which entries count* is still
+    /// decided once, here.
+    at: PathBuf,
 }
 
 /// What one entry said about itself, off one reading of one file.
@@ -316,7 +323,11 @@ fn walk(root: &Path, at: &Path, into: &mut Vec<Entry>, not_read: &mut Vec<NotRea
             }
         };
         if let Some(identifier) = the_identifier_of(root, &path) {
-            into.push(Entry { identifier, said });
+            into.push(Entry {
+                identifier,
+                said,
+                at: path,
+            });
         }
     }
 }
