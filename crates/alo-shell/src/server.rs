@@ -595,6 +595,20 @@ pub struct Server {
     /// wrong, and it is visibly wrong rather than quietly wrong: the install
     /// itself refuses, and the window says so.
     pub(crate) what_this_machine_has: Vec<String>,
+    /// **What each of those calls itself**, by identifier, as its desktop entry
+    /// says — what the alo Bar matches and shows beside the identifier.
+    ///
+    /// An identifier missing from this has no name a person can be shown, and
+    /// the Bar falls back to the identifier's last part.
+    pub(crate) what_each_is_called: std::collections::BTreeMap<String, String>,
+    /// **Whether this session's Dock has its final answer** — the person's own
+    /// pins, or defaults that were written down.
+    ///
+    /// Until it does, each new reading of what the machine offers works the
+    /// Dock out again (`crate::what_the_machine_offers_now`). After it does,
+    /// none may, because a later reading would put back a pin the person had
+    /// just taken off.
+    pub(crate) the_dock_is_settled: bool,
     /// **What a person pressed Install on**, waiting for the lane to start it.
     ///
     /// Held here for [`Self::asked_alo`]'s reason exactly: the press arrives at
@@ -769,6 +783,10 @@ impl Server {
             market: crate::MarketWindow::closed(),
             // Nobody has told this seat what the machine already has.
             what_this_machine_has: Vec::new(),
+            // Nor what any of it is called.
+            what_each_is_called: std::collections::BTreeMap::new(),
+            // Nothing has filled the Dock yet, so nothing is final.
+            the_dock_is_settled: false,
             // Nobody has asked for anything to be installed.
             asked_to_install: None,
             // Nothing has been refused, because nothing has arrived.

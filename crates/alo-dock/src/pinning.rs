@@ -172,6 +172,9 @@ impl ThePins {
             (Self::NeverSet, Discovery::Completed(installed)) => {
                 WhatToPin::TheseAndWriteThemDown(what_a_fresh_machine_pins(installed))
             }
+            (Self::NeverSet, Discovery::SoFar(found)) => {
+                WhatToPin::ForNow(what_a_fresh_machine_pins(found))
+            }
             (Self::NeverSet, Discovery::StillLooking) => WhatToPin::NotYet(WhyNotYet::StillLooking),
             (Self::NeverSet, Discovery::Failed) => WhatToPin::NotYet(WhyNotYet::ItFailed),
         }
@@ -202,6 +205,18 @@ pub enum Discovery {
     Completed(Vec<(ARole, AppId)>),
     /// It has not finished. Nothing may be concluded from it yet.
     StillLooking,
+    /// It has not finished, **and this is what it has found so far.**
+    ///
+    /// A fresh machine installs its applications after it first boots — for
+    /// minutes on real hardware and for hours in a virtual machine — and a
+    /// person can be signed in the whole time. What has arrived may be drawn;
+    /// **nothing may be written down from it**, because what has not arrived
+    /// yet is still the owner's fourth clause: *an unfinished scan is not proof
+    /// that an application is absent.*
+    ///
+    /// Distinct from [`Self::StillLooking`], which knows nothing and draws
+    /// nothing; this knows something and draws it.
+    SoFar(Vec<(ARole, AppId)>),
     /// It failed. Nothing may be concluded from it either.
     Failed,
 }
@@ -221,6 +236,10 @@ pub enum WhatToPin {
     /// The defaults, just worked out. **Write them down**, or they are worked
     /// out again on the next boot and a pin the person removes comes back.
     TheseAndWriteThemDown(Vec<ADockEntry>),
+    /// The defaults **as far as they are known**: drawn now, written nowhere,
+    /// and worked out again when discovery says more. What
+    /// [`Discovery::SoFar`] comes to for a person who has never set their own.
+    ForNow(Vec<ADockEntry>),
     /// Not knowable yet. Pin nothing **for now**, store nothing, and ask again
     /// when discovery has something to say.
     NotYet(WhyNotYet),
@@ -232,7 +251,7 @@ impl WhatToPin {
     #[must_use]
     pub fn to_draw(&self) -> &[ADockEntry] {
         match self {
-            Self::These(pins) | Self::TheseAndWriteThemDown(pins) => pins,
+            Self::These(pins) | Self::TheseAndWriteThemDown(pins) | Self::ForNow(pins) => pins,
             Self::NotYet(_) => &[],
         }
     }
@@ -244,6 +263,19 @@ impl WhatToPin {
     #[must_use]
     pub const fn should_be_written_down(&self) -> bool {
         matches!(self, Self::TheseAndWriteThemDown(_))
+    }
+
+    /// Whether this answer is final for the session, so that a later
+    /// discovery must not replace it.
+    ///
+    /// **True for the person's own pins and for defaults written down**; false
+    /// for [`Self::ForNow`] and [`Self::NotYet`], which are exactly the answers
+    /// that say *ask again when discovery has something to say*. A host that
+    /// re-asked after a settled answer would put back a pin the person had
+    /// just taken off.
+    #[must_use]
+    pub const fn is_settled(&self) -> bool {
+        matches!(self, Self::These(_) | Self::TheseAndWriteThemDown(_))
     }
 
     /// The pins as a [`Holding`], ready to be asked what the Dock shows.
@@ -682,5 +714,56 @@ mod tests {
             Some(ANativeAction::Settings),
             "the third pin is an application, so an identifier was invented for Settings"
         );
+    }
+
+    /// **A fresh machine still installing draws what has arrived and writes
+    /// nothing down.**
+    ///
+    /// The booted machine of 2026-10-31 is the case: the desktop was up at
+    /// 669 s and the browser arrived at 1429 s. Concluding at 669 s wrote a
+    /// Dock with no browser into the person's folder for good; this draws the
+    /// two entries that cannot be missing, then the browser beside them when
+    /// it lands, and leaves the question open until the installing is done.
+    #[test]
+    fn a_machine_still_installing_draws_what_has_arrived_and_keeps_nothing() {
+        let before = ThePins::NeverSet.what_to_pin(&Discovery::SoFar(Vec::new()));
+        assert_eq!(names(before.to_draw()), ["Settings", "Applications"]);
+        assert!(!before.should_be_written_down());
+        assert!(
+            !before.is_settled(),
+            "an unfinished install settled the Dock"
+        );
+
+        let later = ThePins::NeverSet.what_to_pin(&Discovery::SoFar(vec![(
+            ARole::Browser,
+            app("org.mozilla.firefox"),
+        )]));
+        assert_eq!(
+            names(later.to_draw()),
+            ["org.mozilla.firefox", "Settings", "Applications"]
+        );
+        assert!(!later.should_be_written_down());
+        assert!(!later.is_settled());
+
+        let done = ThePins::NeverSet.what_to_pin(&Discovery::Completed(vec![(
+            ARole::Browser,
+            app("org.mozilla.firefox"),
+        )]));
+        assert!(
+            done.should_be_written_down(),
+            "the control: a finished scan is kept"
+        );
+        assert!(done.is_settled());
+    }
+
+    /// **The person's own pins are settled, whatever is still arriving**, so a
+    /// host never replaces them when discovery says more.
+    #[test]
+    fn the_persons_own_pins_are_settled_while_a_machine_installs() {
+        let theirs = ThePins::Chosen(vec![ADockEntry::Native(ANativeAction::Settings)]);
+        let answer = theirs.what_to_pin(&Discovery::SoFar(a_full_machine()));
+        assert_eq!(names(answer.to_draw()), ["Settings"]);
+        assert!(answer.is_settled());
+        assert!(!answer.should_be_written_down());
     }
 }

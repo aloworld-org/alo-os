@@ -71,6 +71,7 @@ impl Server {
     ) -> Option<Vec<alo_dock::ADockEntry>> {
         let what = kept.what_to_pin(discovery);
         self.what_the_dock_is_pinned_to = what.holding();
+        self.the_dock_is_settled = what.is_settled();
         what.should_be_written_down()
             .then(|| what.to_draw().to_vec())
     }

@@ -5,10 +5,11 @@
     reason = "in a test, a panic on an unexpected Err is the failure being reported"
 )]
 
-use super::{filled_by, what_this_machine_offers};
+use super::{WhereToLook, filled_by, what_is_offered, what_this_machine_offers};
 use alo_applications::Application;
 use alo_dock::pinning::{ARole, Discovery};
 use alo_software::source::{Configured, SourceName};
+use alo_software::the_applications_arrived::TheApplicationsArrived;
 use alo_software::what_this_machine_has::{WhatThisMachineHas, what_this_machine_has};
 use alo_software::{Failed, Shipped, Tool};
 
@@ -260,4 +261,153 @@ fn a_reading_that_failed_offers_no_terminal() {
             "a scan that failed named a terminal anyway"
         );
     }
+}
+
+/// A desktop entry as an application's packager writes one.
+fn an_entry(name: &str, extra: &str) -> String {
+    format!("[Desktop Entry]\nType=Application\nName={name}\nExec=x\n{extra}")
+}
+
+/// **A directory tree laid out like the image**, under a root of the test's
+/// own: flatpak's export directory of links into each application's own tree,
+/// and `/usr/share/applications` with what the image itself carries.
+///
+/// Returned with the root so the caller can remove it.
+pub(super) fn a_machine_laid_out_like_the_image(named: &str) -> std::path::PathBuf {
+    let root = std::env::temp_dir().join(format!("alo-desktop-{}-{named}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&root);
+    let exports = root.join("var/lib/flatpak/exports/share/applications");
+    std::fs::create_dir_all(&exports).expect("the export directory");
+    for (identifier, name, extra) in [
+        ("org.mozilla.firefox", "Firefox", ""),
+        ("org.kde.dolphin", "Dolphin", ""),
+        ("org.gnome.Papers-previewer", "Papers", "NoDisplay=true\n"),
+    ] {
+        let deployed = root.join(format!(
+            "var/lib/flatpak/app/{identifier}/current/active/export/share/applications"
+        ));
+        std::fs::create_dir_all(&deployed).expect("the application's own tree");
+        let file = deployed.join(format!("{identifier}.desktop"));
+        std::fs::write(&file, an_entry(name, extra)).expect("an entry");
+        std::os::unix::fs::symlink(&file, exports.join(format!("{identifier}.desktop")))
+            .expect("flatpak's export link");
+    }
+    let image = root.join("usr/share/applications");
+    std::fs::create_dir_all(&image).expect("the image's own directory");
+    std::fs::write(
+        image.join("libreoffice26.2-writer.desktop"),
+        an_entry("LibreOffice Writer", "Icon=libreoffice-writer\n"),
+    )
+    .expect("an entry");
+    std::fs::write(
+        image.join("gcr-prompter.desktop"),
+        an_entry("Access Prompt", "NoDisplay=true\n"),
+    )
+    .expect("an entry");
+    std::fs::write(image.join("mimeapps.list"), "[Default Applications]\n").expect("a list");
+    root
+}
+
+/// Where the desktop's own unit leaves it: a home, and no `XDG_DATA_DIRS` —
+/// spelled here as the specification's default under the test's root, since a
+/// test may not read the real `/usr/share`.
+fn as_the_desktop_unit_starts_it(root: &std::path::Path) -> WhereToLook {
+    let defaults = format!(
+        "{}:{}",
+        root.join("usr/local/share").display(),
+        root.join("usr/share").display()
+    );
+    WhereToLook::beneath(
+        &root.join("var/lib/flatpak"),
+        Some(&root.join("home/someone")),
+        None,
+        Some(std::ffi::OsStr::new(&defaults)),
+        TheApplicationsArrived::beneath(root),
+    )
+}
+
+/// **Discovery from a tree laid out like the image** — the test that would have
+/// caught the booted machine of 2026-10-31.
+///
+/// The flatpaks are found though nothing put their directory on the
+/// environment, LibreOffice is found beside them, and what asked not to be
+/// listed is not. While `alo-shipping` has not finished the roles are `SoFar`;
+/// once it has, the same reading is `Completed`.
+#[test]
+fn a_machine_laid_out_like_the_image_offers_its_flatpaks_and_its_own() {
+    let root = a_machine_laid_out_like_the_image("offers");
+    let at = as_the_desktop_unit_starts_it(&root);
+    let tool = AToolThatSays::listing(&[THE_BROWSER, THE_FILE_MANAGER]);
+
+    let offered = what_is_offered(&at, &tool);
+
+    let mut found: Vec<(String, Option<String>)> = offered
+        .installed
+        .iter()
+        .map(|it| (it.identifier.clone(), it.called.clone()))
+        .collect();
+    found.sort();
+    assert_eq!(
+        found,
+        vec![
+            (
+                "libreoffice26.2-writer".to_owned(),
+                Some("LibreOffice Writer".to_owned())
+            ),
+            ("org.kde.dolphin".to_owned(), Some("Dolphin".to_owned())),
+            ("org.mozilla.firefox".to_owned(), Some("Firefox".to_owned())),
+        ],
+        "what a person can open is not what the image's directories hold"
+    );
+    assert!(offered.not_read.is_empty(), "{:?}", offered.not_read);
+    let both = vec![
+        (
+            ARole::Files,
+            alo_dock::AppId::named(THE_FILE_MANAGER).expect("an identifier"),
+        ),
+        (
+            ARole::Browser,
+            alo_dock::AppId::named(THE_BROWSER).expect("an identifier"),
+        ),
+    ];
+    assert_eq!(
+        offered.roles,
+        Discovery::SoFar(both.clone()),
+        "a machine still installing concluded something"
+    );
+
+    at.arrived.record().expect("the mark");
+    assert_eq!(
+        what_is_offered(&at, &tool).roles,
+        Discovery::Completed(both),
+        "a machine whose applications were walked is still looking"
+    );
+    let _ = std::fs::remove_dir_all(root);
+}
+
+/// **The refusal: a broken entry is said, and costs nobody anything else.**
+#[test]
+fn an_entry_that_will_not_read_is_said_and_the_rest_are_offered() {
+    let root = a_machine_laid_out_like_the_image("broken");
+    std::fs::write(
+        root.join("usr/share/applications/broken.desktop"),
+        "this is not a desktop entry\n",
+    )
+    .expect("a broken entry");
+    let offered = what_is_offered(
+        &as_the_desktop_unit_starts_it(&root),
+        &AToolThatSays::refusing(),
+    );
+    assert_eq!(
+        offered.installed.len(),
+        3,
+        "the broken entry cost another one"
+    );
+    assert_eq!(offered.not_read.len(), 1, "{:?}", offered.not_read);
+    assert_eq!(
+        offered.roles,
+        Discovery::Failed,
+        "the control: the tool's refusal is still a refusal"
+    );
+    let _ = std::fs::remove_dir_all(root);
 }
