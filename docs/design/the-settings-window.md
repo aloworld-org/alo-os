@@ -233,9 +233,10 @@ the design draws them, and choosing one says in words that nothing changed**
    keeps the keyboard's row whole and its section's heading above it where
    both fit, recomputed each frame. The frames have no scroll bar and none is
    drawn.
-4. **Built in later changes**, each with its own record: the icons beside the
-   categories and on the rows (waiting on the vector renderer the task window's
-   reply box is adding); the other seven pages to their frames — light and dark
+4. **The icons** beside the categories, the plus, the chevron and the signs on
+   a note and a risk are drawn from the committed SVG by `alo_vector_shapes`,
+   the renderer the reply box brought in (#1040). **Built in later changes**,
+   each with its own record: the other seven pages to their frames — light and dark
    and the Dock's edge as segmented choices, text size, pointer size, keys as
    keycaps, the lead icons and *Always on*; the country picker with search,
    which replaces the 250-row list; and dark.

@@ -211,6 +211,27 @@ impl Canvas {
         });
     }
 
+    /// Artwork drawn as coverage — `wide` bytes across, from 0 to 255 — at
+    /// (`x`, `y`) in `colour`; placed turned when the canvas is, and drawn as
+    /// it was made.
+    pub(crate) fn artwork(&mut self, x: i32, y: i32, wide: i32, covered: &[u8], colour: [u8; 3]) {
+        if wide <= 0 {
+            return;
+        }
+        let tall = i32::try_from(covered.len()).unwrap_or(0) / wide;
+        let x = self
+            .turned(Rectangle::new((x, y).into(), (wide, tall).into()))
+            .loc
+            .x;
+        let bounds = Rectangle::new((x, y).into(), (wide, tall).into());
+        self.each(bounds, |px, py| {
+            let (ax, ay) = (px.floor() as i32 - x, py.floor() as i32 - y);
+            let at = usize::try_from(ay * wide + ax).ok()?;
+            let coverage = f32::from(*covered.get(at)?) / 255.0;
+            Some((colour, coverage))
+        });
+    }
+
     /// Words already inked onto their own ground, copied in whole at
     /// (`x`, `y`) and cut to the clip.
     ///

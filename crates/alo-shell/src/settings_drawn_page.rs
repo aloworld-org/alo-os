@@ -19,6 +19,7 @@ use crate::settings_page::{ABlock, APage, ARisk, ARow, ASection, SwitchIs, TheKi
 use crate::settings_palette::SettingsPalette;
 use crate::settings_type::{TheType, written};
 use crate::settings_window::SettingsRow;
+use crate::the_settings_icons::ASettingsIcon;
 
 /// One thing to draw, placed from the top of the page.
 pub(crate) enum Drawn {
@@ -32,6 +33,8 @@ pub(crate) enum Drawn {
     Ring(Area, u32, [u8; 3]),
     /// Words already inked on their ground, at a point.
     Words(i32, i32, Shaped),
+    /// One of the window's icons, in its frame, in a colour.
+    Icon(ASettingsIcon, Area, [u8; 3]),
 }
 
 /// Everything a person can act on, where it is on the page.
@@ -355,13 +358,21 @@ fn a_row(
             words_wide - icon,
             (palette.surface, ink),
         );
-        y = text(
-            out,
-            x + icon,
-            y + laying.px(m::UNDER_A_ROWS_TITLE),
-            shaped,
-            &note.words,
-        );
+        let note_at = y + laying.px(m::UNDER_A_ROWS_TITLE);
+        let side = laying.px(m::A_NOTES_ICON);
+        out.drawn.push(Drawn::Icon(
+            if note.warns {
+                ASettingsIcon::Info
+            } else {
+                ASettingsIcon::Cloud
+            },
+            Rectangle::new(
+                (x, note_at + (shaped.height - side) / 2).into(),
+                (side, side).into(),
+            ),
+            ink,
+        ));
+        y = text(out, x + icon, note_at, shaped, &note.words);
     }
     if let Some(risk) = &row.risk {
         y = a_risk(
@@ -400,7 +411,16 @@ fn a_row(
             a_choice(out, laying, mark_at, centre_of_title, mark, chosen);
         }
         TheKind::AnAddingRow => {
-            // The plus is artwork, drawn with the icons; its room is kept.
+            // **The plus, 16 in the 18 a ring would take** (`550:220`).
+            let side = laying.px(16);
+            out.drawn.push(Drawn::Icon(
+                ASettingsIcon::Plus,
+                Rectangle::new(
+                    (mark_at + (mark - side) / 2, centre_of_title - side / 2).into(),
+                    (side, side).into(),
+                ),
+                palette.secondary,
+            ));
         }
         TheKind::AnOpeningRow | TheKind::ASwitch(_) | TheKind::Plain => {}
     }
@@ -408,8 +428,16 @@ fn a_row(
     // The end, right to left: chevron, switch with its word, or the button.
     let mut at = inside_left + inside_wide - beside;
     if matches!(row.kind, TheKind::AnOpeningRow | TheKind::AnAddingRow) {
-        // The chevron is artwork too; its room is kept, centred on the row.
+        // **The chevron, centred on the row** (`550:227`).
         at -= chevron;
+        out.drawn.push(Drawn::Icon(
+            ASettingsIcon::ChevronRight,
+            Rectangle::new(
+                (at, top + (bottom - top - chevron) / 2).into(),
+                (chevron, chevron).into(),
+            ),
+            palette.muted,
+        ));
     }
     if let TheKind::ASwitch(is) = row.kind {
         at -= switch;
@@ -567,6 +595,12 @@ fn a_risk(
     let area = Rectangle::new((x, y).into(), (wide, tall).into());
     out.drawn
         .push(Drawn::Fill(area, m::A_SMALL_CORNER, palette.canvas));
+    let sign = laying.px(m::A_RISKS_ICON);
+    out.drawn.push(Drawn::Icon(
+        ASettingsIcon::Warn,
+        Rectangle::new((x + across, y + down).into(), (sign, sign).into()),
+        palette.warning,
+    ));
     let below = text(out, x + across + icon, y + down, heading, &risk.heading);
     text(
         out,
@@ -590,6 +624,7 @@ fn moved_down(out: &mut ThePageDrawn, (drawn, texts): (usize, usize), by: i32) {
                 down(area);
             }
             Drawn::Words(_, y, _) => *y += by,
+            Drawn::Icon(_, area, _) => down(area),
         }
     }
     for text in out.texts.iter_mut().skip(texts) {
@@ -644,6 +679,7 @@ pub(crate) fn painted(drawn: &[Drawn], canvas: &mut Canvas, top: i32, scale: f32
                 }
             }
             Drawn::Words(x, y, shaped) => canvas.words(*x, *y + top, shaped),
+            Drawn::Icon(icon, area, colour) => icon.drawn(canvas, moved(area), *colour),
         }
     }
 }

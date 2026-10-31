@@ -438,6 +438,21 @@ fn the_side_column(
         } else {
             (TheType::Body, palette.canvas, palette.secondary)
         };
+        // **The icon in the accent when its page is shown**, `550:106`, and in
+        // `text/secondary` otherwise.
+        let side = px(m::A_CATEGORYS_ICON);
+        category.icon().drawn(
+            canvas,
+            Rectangle::new(
+                (left + beside, y + (item.size.h - side) / 2).into(),
+                (side, side).into(),
+            ),
+            if chosen {
+                palette.accent
+            } else {
+                palette.secondary
+            },
+        );
         let before = beside + px(m::A_CATEGORYS_ICON) + px(m::AFTER_A_CATEGORYS_ICON);
         let line_tall = px(style.line());
         put(

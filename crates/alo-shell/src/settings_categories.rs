@@ -130,6 +130,21 @@ impl SettingsCategory {
         }
     }
 
+    /// The icon beside it in the side column, frames `550:106` to `550:146`.
+    pub(crate) const fn icon(self) -> crate::the_settings_icons::ASettingsIcon {
+        use crate::the_settings_icons::ASettingsIcon as I;
+        match self {
+            Self::AloAndAi => I::Chat,
+            Self::FoldersAloCanUse => I::Folder,
+            Self::RunningCode => I::Code,
+            Self::Terminal => I::Terminal,
+            Self::Appearance => I::Contrast,
+            Self::RegionAndTime => I::Globe,
+            Self::KeyboardAndShortcuts => I::Keyboard,
+            Self::Accessibility => I::Access,
+        }
+    }
+
     /// Its name in the person's language.
     pub(crate) fn said(self, strings: &Strings) -> String {
         strings
