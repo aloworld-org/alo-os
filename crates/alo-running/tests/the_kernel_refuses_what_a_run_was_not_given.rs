@@ -149,13 +149,16 @@ fn running_a_script(
     };
 
     let mut kept = Record::default();
+    let mut said = Vec::new();
+    let mut complained = Vec::new();
     let what_happened = {
         let mut where_they_run = WhereCommandsRun::with_the_helper_at(
             &mut machine.boundary,
             &boxes,
             &mut kept,
             Path::new(HELPER),
-        );
+        )
+        .saying_it_to(&mut said, &mut complained);
         where_they_run.ran(
             &alo_capability::Grantee::named("alo-try"),
             named,
@@ -165,9 +168,16 @@ fn running_a_script(
         )
     };
 
+    if !complained.is_empty() {
+        eprintln!(
+            "the boxed script said on its standard error: {}",
+            String::from_utf8_lossy(&complained)
+        );
+    }
     what_happened.map(|what| WhatCameOfIt {
         happy: what.the_command_was_happy(),
         kept,
+        said,
     })
 }
 

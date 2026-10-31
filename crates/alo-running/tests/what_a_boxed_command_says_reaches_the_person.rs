@@ -65,7 +65,8 @@ fn both_streams_arrive_whole_and_apart() {
 /// the helper's own sentence about a command that would not start.
 #[test]
 fn a_refusal_on_standard_error_alone_arrives() {
-    let (code, out, err) = what_it_said("echo 'alo-enter-the-box: /usr/bin/id did not start' >&2; exit 1");
+    let (code, out, err) =
+        what_it_said("echo 'alo-enter-the-box: /usr/bin/id did not start' >&2; exit 1");
 
     assert_eq!(code, Some(1));
     assert!(out.is_empty());
@@ -96,8 +97,10 @@ fn more_than_a_pipe_holds_arrives() {
 /// helper before this change: exit 101, nothing printed.
 #[test]
 fn the_helper_ends_as_a_refusal_when_its_refusal_cannot_be_written() {
-    let refusing =
-        std::fs::OpenOptions::new().write(true).open("/dev/full").expect("/dev/full to open");
+    let refusing = std::fs::OpenOptions::new()
+        .write(true)
+        .open("/dev/full")
+        .expect("/dev/full to open");
     let ended = Command::new(env!("CARGO_BIN_EXE_alo-enter-the-box"))
         .stdin(Stdio::null())
         .stdout(Stdio::null())

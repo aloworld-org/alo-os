@@ -172,14 +172,21 @@ fn every_library_folder_this_machine_has_is_under_the_grant() {
              command whose libraries are there cannot start in a box"
         );
     }
-    assert!(asked > 0, "no library folder was found, so nothing was checked");
+    assert!(
+        asked > 0,
+        "no library folder was found, so nothing was checked"
+    );
 }
 
 /// **The library place is never the whole machine.**
 #[test]
 fn the_library_place_is_never_the_root_of_the_machine() {
     let granted = where_the_libraries_are().expect("a machine that runs things");
-    assert_ne!(granted, Path::new("/"), "the box was granted the whole machine");
+    assert_ne!(
+        granted,
+        Path::new("/"),
+        "the box was granted the whole machine"
+    );
     assert_eq!(
         the_folder_both_are_under(Path::new("/usr/lib"), Path::new("/usr/lib64")),
         Path::new("/usr")

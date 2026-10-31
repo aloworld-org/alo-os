@@ -151,9 +151,9 @@ pub fn where_the_libraries_are() -> Result<PathBuf, NoPlacesForIt> {
         .collect();
     match found.split_first() {
         Some((first, rest)) => {
-            let shared = rest
-                .iter()
-                .fold(first.clone(), |shared, next| the_folder_both_are_under(&shared, next));
+            let shared = rest.iter().fold(first.clone(), |shared, next| {
+                the_folder_both_are_under(&shared, next)
+            });
             // Two folders that resolved somewhere unrelated share only `/`,
             // and granting `/` is granting everything. The first alone, then.
             Ok(if shared.parent().is_none() {
