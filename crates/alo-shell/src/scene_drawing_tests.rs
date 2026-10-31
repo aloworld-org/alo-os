@@ -41,7 +41,7 @@ fn the_terminal_is_painted_where_a_window_is_under_every_surface_of_alos() {
         ),
         (
             "Settings, so it covers a setting being changed",
-            "settings.paint(&mut frame)",
+            "settings.paint(&mut frame, settings_washed.as_ref())",
         ),
         (
             "the question a person is asked to approve",

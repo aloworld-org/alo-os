@@ -1,5 +1,5 @@
-//! Laid-out Settings, read as text, boxes and colours: what is in it, how a
-//! chosen and a focused row are shown, and what never is.
+//! Laid-out Settings, read as text, boxes and colours: the window the frames
+//! draw, where the keyboard is, and what scrolling keeps in view.
 #![expect(
     clippy::unwrap_used,
     clippy::indexing_slicing,
@@ -7,11 +7,11 @@
 )]
 
 use super::*;
-use crate::record_room::Palette;
-use crate::settings_testing::{CountingDoor, a_persons_machine, doors, light, noon, words};
-use crate::{SettingsKey, SettingsPress, SettingsRow};
-use alo_appearance::{Accent, Token};
-use alo_shortcuts::Action;
+use crate::settings_testing::{
+    CountingDoor, a_persons_machine, doors, light, noon, settings_words,
+};
+use crate::{SettingsKey, SettingsPress};
+use alo_appearance::Token;
 
 /// Settings as it stands, drawn on an output of `size`.
 fn drawn_at(window: &SettingsWindow, size: (i32, i32), look: SettingsLook) -> SettingsPicture {
@@ -28,7 +28,7 @@ fn drawn_at_scale(
     let mut labels = WindowControlLabels::new().unwrap();
     picture(
         window,
-        &words(),
+        &settings_words(),
         &mut labels,
         size,
         look,
@@ -48,6 +48,28 @@ fn key(key: SettingsKey) -> SettingsPress {
     }
 }
 
+/// Press `pressed` once.
+fn press(window: &mut SettingsWindow, pressed: SettingsKey) {
+    let strings = settings_words();
+    let door = CountingDoor::revoking();
+    window.pressed(key(pressed), doors(&strings, &door));
+}
+
+/// The pixel at (`x`, `y`) of a picture's raster, as red, green, blue, alpha.
+fn pixel(drawn: &SettingsPicture, x: i32, y: i32) -> [u8; 4] {
+    let washed = drawn.washed.as_ref().unwrap();
+    let at = usize::try_from(
+        ((y - washed.area.loc.y) * washed.area.size.w + (x - washed.area.loc.x)) * 4,
+    )
+    .unwrap();
+    [
+        washed.pixels[at],
+        washed.pixels[at + 1],
+        washed.pixels[at + 2],
+        washed.pixels[at + 3],
+    ]
+}
+
 /// **Closed Settings draws nothing.**
 #[test]
 fn closed_settings_draws_nothing() {
@@ -56,115 +78,123 @@ fn closed_settings_draws_nothing() {
     assert!(drawn.is_empty());
 }
 
-/// **Every piece of text drawn is a crate's answer, drawn whole**: each line's
-/// pieces are exactly the words `crate::settings_lines` took from the owning
-/// crates, in order, and an accent's line is `alo_appearance::Accent::said`.
+/// **The window is where the frame draws it, at both sizes the design gives**:
+/// 1200 × 816 at (120, 72) on 1440 × 960 and 1152 × 688 at (64, 56) on
+/// 1280 × 800 — and the side column's eight categories are 48 tall, in two
+/// groups, starting where `550:105` does.
 #[test]
-fn every_piece_of_text_drawn_is_a_crates_answer() {
-    let machine = a_persons_machine("raster-words");
+fn the_window_is_where_both_frames_draw_it() {
+    let machine = a_persons_machine("raster-frame");
     let window = machine.opened();
-    let strings = words();
-    let drawn = drawn_at(&window, (1920, 2160), light());
-    assert!(!drawn.lines.is_empty());
-    for line in &drawn.lines {
-        let texts: Vec<&str> = line.parts.iter().map(|part| part.text.as_str()).collect();
-        let words: Vec<&str> = line.words.parts.iter().map(String::as_str).collect();
-        assert_eq!(texts, words);
-        if let Some(SettingsRow::Accent(accent)) = &line.words.row {
-            assert_eq!(texts, [accent.said(&strings).text()]);
-        }
-        for part in &line.parts {
-            assert!(!part.text.is_empty());
-            assert!(part.area.size.h > 0);
-        }
-    }
-    let rose = drawn
-        .lines
-        .iter()
-        .find(|line| line.words.row == Some(SettingsRow::Accent(Accent::Rose)))
-        .unwrap();
-    assert_eq!(rose.parts.len(), 1);
-}
-
-/// **What is chosen is a shape and the focus is an edge, and neither is only a
-/// colour**: exactly the chosen rows carry a mark, exactly the focused row an
-/// edge, and waiting for a chord doubles it. Every shape is in the two tokens
-/// of the scheme — nothing dimmed, and never deep teal.
-#[test]
-fn chosen_and_focused_are_shapes_in_two_colours_and_never_deep_teal() {
-    let machine = a_persons_machine("raster-shapes");
-    let mut window = machine.opened();
-    let strings = words();
-    let door = CountingDoor::revoking();
-    let drawn = drawn_at(&window, (1920, 2160), light());
-
-    for line in &drawn.lines {
-        assert_eq!(line.mark.is_some(), line.words.chosen, "{:?}", line.words);
-        assert_eq!(line.focused, line.words.row == window.focused(noon()));
-    }
-    assert_eq!(drawn.lines.iter().filter(|line| line.focused).count(), 1);
+    let large = drawn_at(&window, (1440, 960), light());
+    let panel = large.panel.unwrap();
     assert_eq!(
-        drawn
-            .lines
-            .iter()
-            .filter(|line| line.mark.is_some())
-            .count(),
-        4
+        (panel.loc.x, panel.loc.y, panel.size.w, panel.size.h),
+        (120, 72, 1200, 816)
     );
-
-    let palette = Palette::of(alo_appearance::Scheme::Light, Contrast::AsDesigned);
-    let deep_teal = Token::DeepTeal.colour();
-    let deep_teal = [deep_teal.red(), deep_teal.green(), deep_teal.blue()];
-    for solid in &drawn.solids {
-        assert!(
-            solid.colour == palette.ink || solid.colour == palette.ground,
-            "{solid:?}"
-        );
-        assert_ne!(solid.colour, deep_teal);
-    }
-
-    // Waiting for a chord doubles the focused row's edge.
-    let edges = drawn.solids.len();
-    let mut guard = 0;
-    while window.focused(noon()) != Some(SettingsRow::Shortcut(Action::TheAgent)) && guard < 1024 {
-        window.pressed(key(SettingsKey::Next), doors(&strings, &door));
-        guard += 1;
-    }
-    let moved = drawn_at(&window, (1920, 2160), light());
-    window.pressed(key(SettingsKey::Choose), doors(&strings, &door));
-    assert!(window.is_waiting_for_a_chord());
-    let waiting = drawn_at(&window, (1920, 2160), light());
-    assert_eq!(waiting.solids.len(), moved.solids.len() + 2);
-    assert!(edges > 0);
+    let small = drawn_at(&window, (1280, 800), light());
+    let panel = small.panel.unwrap();
+    assert_eq!(
+        (panel.loc.x, panel.loc.y, panel.size.w, panel.size.h),
+        (64, 56, 1152, 688)
+    );
+    let categories: Vec<SettingsCategory> =
+        large.categories.iter().map(|(which, _)| *which).collect();
+    assert_eq!(categories, SettingsCategory::ALL);
+    let (_, first) = large.categories[0];
+    // `550:105` is at (16, 158) inside the side column, which is one border
+    // inside the window: (120 + 1 + 16, 72 + 1 + 158).
+    assert_eq!((first.loc.x, first.loc.y), (137, 231));
+    assert!(large.categories.iter().all(|(_, at)| at.size.h == 48));
 }
 
-/// **The focused row is always in view, whole**: on a short output, moving to
-/// the last row moves the view, says something is out of view, and draws the
-/// last row; an output too small to hold a row whole is refused.
+/// **The chosen category is on the accent's ground, the page's words are the
+/// crates' and the window's own, and nothing is deep teal.**
+#[test]
+fn the_chosen_category_is_on_the_accent_and_nothing_is_deep_teal() {
+    let machine = a_persons_machine("raster-colours");
+    let window = machine.opened();
+    let drawn = drawn_at(&window, (1440, 960), light());
+    let (_, chosen) = drawn.categories[0];
+    // Indigo at twelve per cent over the side column, inside the item.
+    assert_eq!(
+        pixel(&drawn, chosen.loc.x + 4, chosen.loc.y + 24),
+        [227, 228, 233, 255]
+    );
+    let (_, other) = drawn.categories[1];
+    assert_eq!(
+        pixel(&drawn, other.loc.x + 4, other.loc.y + 24),
+        [0xFA, 0xF7, 0xF2, 255]
+    );
+    let teal = Token::DeepTeal.colour();
+    let teal = [teal.red(), teal.green(), teal.blue(), 255];
+    let washed = drawn.washed.as_ref().unwrap();
+    assert!(
+        !washed.pixels.chunks(4).any(|it| it == teal),
+        "deep teal is alo acting, and Settings is a person choosing"
+    );
+    let texts: Vec<&str> = drawn.texts.iter().map(|it| it.text.as_str()).collect();
+    for expected in [
+        "Settings",
+        "alo and AI",
+        "Where your questions are answered",
+    ] {
+        assert!(
+            texts.contains(&expected),
+            "{expected} is not drawn: {texts:?}"
+        );
+    }
+    assert!(
+        drawn
+            .texts
+            .iter()
+            .all(|it| !it.text.is_empty() && it.area.size.h > 0)
+    );
+}
+
+/// **Where the keyboard is, is drawn before any key is pressed**, and it moves
+/// into the page with Tab.
+///
+/// `alo_access::Setting::FocusAlwaysVisible` asks for *where the keyboard is,
+/// always drawn*: the window opens with the keyboard on the chosen category
+/// and draws its outline there with no key pressed at all.
+#[test]
+fn where_the_keyboard_is_is_drawn_before_any_key_is_pressed() {
+    let machine = a_persons_machine("focus-at-once");
+    let mut window = machine.opened();
+    let drawn = drawn_at(&window, (1440, 960), light());
+    let (_, chosen) = drawn.categories[0];
+    assert_eq!(drawn.focused, Some(chosen));
+    press(&mut window, SettingsKey::NextSection);
+    let inside = drawn_at(&window, (1440, 960), light());
+    let row = window.focused(noon()).unwrap();
+    let target = inside.targets.iter().find(|it| it.row == row).unwrap();
+    assert_eq!(inside.focused, Some(target.area));
+}
+
+/// **The row the keyboard is on is always in view, whole**: on a short screen,
+/// End scrolls the page so the last row is drawn inside the window; and a
+/// screen too small for the window is refused.
 #[test]
 fn the_focused_row_is_always_in_view_and_a_frame_too_small_is_refused() {
     let machine = a_persons_machine("raster-view");
     let mut window = machine.opened();
-    let strings = words();
-    let door = CountingDoor::revoking();
-    window.pressed(key(SettingsKey::Last), doors(&strings, &door));
+    press(&mut window, SettingsKey::NextSection);
+    press(&mut window, SettingsKey::Last);
     let last = window.focused(noon()).unwrap();
-    let drawn = drawn_at(&window, (1280, 600), light());
+    let drawn = drawn_at(&window, (1280, 800), light());
     assert!(drawn.out_of_view);
-    let focused: Vec<_> = drawn.lines.iter().filter(|line| line.focused).collect();
-    assert_eq!(focused.len(), 1);
-    assert_eq!(focused[0].words.row.as_ref(), Some(&last));
+    let target = drawn.targets.iter().find(|it| it.row == last).unwrap();
     let panel = drawn.panel.unwrap();
-    for line in &drawn.lines {
-        assert!(line.area.loc.y >= panel.loc.y);
-        assert!(line.area.loc.y + line.area.size.h <= panel.loc.y + panel.size.h);
-    }
+    assert!(target.area.loc.y >= panel.loc.y);
+    assert!(target.area.loc.y + target.area.size.h <= panel.loc.y + panel.size.h);
+    assert_eq!(drawn.focused, Some(target.area));
 
     let mut labels = WindowControlLabels::new().unwrap();
     assert!(matches!(
         picture(
             &window,
-            &strings,
+            &settings_words(),
             &mut labels,
             (1920, 90),
             light(),
@@ -176,109 +206,42 @@ fn the_focused_row_is_always_in_view_and_a_frame_too_small_is_refused() {
     ));
 }
 
-/// **A right-to-left reader gets the mark at the other edge**, and nothing else
-/// about what is drawn changes.
+/// **A right-to-left reader gets the side column on the right**, and the same
+/// words.
 #[test]
-fn a_right_to_left_reader_gets_the_mark_at_the_other_edge() {
+fn a_right_to_left_reader_gets_the_side_column_on_the_right() {
     let machine = a_persons_machine("raster-rtl");
     let window = machine.opened();
-    let left = drawn_at(&window, (1920, 2160), light());
+    let left = drawn_at(&window, (1440, 960), light());
     let right = drawn_at(
         &window,
-        (1920, 2160),
+        (1440, 960),
         SettingsLook {
-            contrast: Contrast::AsDesigned,
             reading: Direction::RightToLeft,
             ..light()
         },
     );
-    let marks = |drawn: &SettingsPicture| -> Vec<i32> {
-        drawn
-            .lines
-            .iter()
-            .filter_map(|line| line.mark)
-            .map(|mark| mark.loc.x)
-            .collect()
+    let (_, l) = left.categories[0];
+    let (_, r) = right.categories[0];
+    assert!(r.loc.x > 720 && l.loc.x < 720, "{l:?} {r:?}");
+    let words = |drawn: &SettingsPicture| -> Vec<String> {
+        let mut them: Vec<String> = drawn.texts.iter().map(|it| it.text.clone()).collect();
+        them.sort();
+        them
     };
-    assert_eq!(marks(&left).len(), marks(&right).len());
-    for (l, r) in marks(&left).into_iter().zip(marks(&right)) {
-        assert!(r > l, "the mark did not move to the reading edge");
-    }
-    let words_of = |drawn: &SettingsPicture| -> Vec<LineWords> {
-        drawn.lines.iter().map(|line| line.words.clone()).collect()
-    };
-    assert_eq!(words_of(&left), words_of(&right));
+    assert_eq!(words(&left), words(&right));
 }
 
-/// **Where the keyboard is, is drawn before any key is pressed.**
-///
-/// `alo_access::Setting::FocusAlwaysVisible` asks for *where the keyboard is,
-/// always drawn, not only after a key is pressed*, and this window answers it
-/// by construction: a row has the focus from the moment it opens, and it is
-/// drawn as the focused row with no key pressed at all. There is nothing here
-/// for that setting to turn on, which is why nothing reads it — and a change
-/// that made focus appear only after a first keypress would fail here.
-#[test]
-fn where_the_keyboard_is_is_drawn_before_any_key_is_pressed() {
-    let machine = a_persons_machine("focus-at-once");
-    let window = machine.opened();
-    assert!(
-        window.focused(noon()).is_some(),
-        "nothing has the keyboard when Settings opens"
-    );
-    let drawn = drawn_at(&window, (1920, 2160), light());
-    assert_eq!(
-        drawn.lines.iter().filter(|line| line.focused).count(),
-        1,
-        "the focused row is not drawn until a key is pressed"
-    );
-}
-
-/// Everything Settings paints, hashed.
-fn hash_of(drawn: &SettingsPicture) -> u64 {
-    let mut hashed = crate::a_picture_hashed::Hashed::begun();
-    if let Some(panel) = drawn.panel {
-        hashed.area(panel);
-    }
-    hashed.solids(&drawn.solids);
-    hashed.inked(&drawn.inked);
-    hashed.done()
-}
-
-/// **At 100 per cent Settings is the pixels `main` drew** before it followed
-/// its display's scale: held to hashes taken from `main` at cdce3e15 by the same code,
-/// twice, with the same answers. Bundled faces only.
-#[test]
-fn at_one_hundred_settings_is_the_pixels_main_drew() {
-    let machine = a_persons_machine("raster-hash");
-    let window = machine.opened();
-    let hashes = [
-        hash_of(&drawn_at(&window, (1920, 1080), light())),
-        hash_of(&drawn_at(&window, (1280, 800), light())),
-    ];
-    assert_eq!(
-        hashes,
-        [0x3b48_ca93_79e9_f996, 0xc946_4045_fec5_01bc],
-        "Settings at 100 per cent is not the pixels main drew: {hashes:#x?}"
-    );
-}
-
-/// How far a piece of type may land from exactly twice its place, in pixels:
-/// type is shaped at each size on its own, so a hinted glyph at 32 is not
-/// precisely one at 16 drawn twice as large.
-const NEARLY: i32 = 6;
-
-/// **At 200 per cent Settings is twice its size and place**: the panel
-/// exactly, every line about twice, the same words in the same order, and the
-/// rules between sections two pixels thick instead of one.
+/// **At 200 per cent Settings is twice its size and place**: the window
+/// exactly, and the categories within a pixel.
 #[test]
 fn at_two_hundred_settings_is_twice_its_size() {
     let machine = a_persons_machine("raster-two");
     let window = machine.opened();
-    let one = drawn_at(&window, (1920, 2160), light());
+    let one = drawn_at(&window, (1440, 960), light());
     let two = drawn_at_scale(
         &window,
-        (3840, 4320),
+        (2880, 1920),
         light(),
         DisplayScale::of_per_cent(200),
     );
@@ -287,74 +250,73 @@ fn at_two_hundred_settings_is_twice_its_size() {
         (2 * a.loc.x, 2 * a.loc.y, 2 * a.size.w, 2 * a.size.h),
         (b.loc.x, b.loc.y, b.size.w, b.size.h)
     );
-    assert_eq!(one.lines.len(), two.lines.len());
-    for (small, large) in one.lines.iter().zip(&two.lines) {
-        let texts = |line: &SettingsLineDrawn| -> Vec<String> {
-            line.parts.iter().map(|part| part.text.clone()).collect()
-        };
-        assert_eq!(texts(small), texts(large));
-        let (a, b) = (small.area, large.area);
-        for (doubled, drawn) in [
-            (2 * a.loc.x, b.loc.x),
-            (2 * a.loc.y, b.loc.y),
-            (2 * a.size.w, b.size.w),
-            (2 * a.size.h, b.size.h),
-        ] {
-            assert!(
-                (doubled - drawn).abs() <= NEARLY,
-                "{a:?} at one is {b:?} at two"
-            );
-        }
+    for ((_, small), (_, large)) in one.categories.iter().zip(&two.categories) {
+        assert!(
+            (2 * small.loc.y - large.loc.y).abs() <= 2,
+            "{small:?} {large:?}"
+        );
+        assert_eq!(2 * small.size.h, large.size.h);
     }
-    let thickness = |drawn: &SettingsPicture, inner: i32| -> Vec<i32> {
-        drawn
-            .solids
-            .iter()
-            .filter(|solid| solid.area.size.w == inner)
-            .map(|solid| solid.area.size.h)
-            .collect()
-    };
-    let room_one = crate::record_room::Room::on(
-        (1920, 2160),
-        RecordLook {
-            contrast: light().contrast,
-            scheme: light().scheme,
-            scale: light().scale,
-            reading: light().reading,
-        },
-        DisplayScale::ONE,
-    )
-    .unwrap();
-    let rules_one = thickness(&one, room_one.inner);
-    let rules_two = thickness(&two, 2 * room_one.inner);
-    assert!(
-        !rules_one.is_empty(),
-        "the control: there are rules to measure"
-    );
-    assert!(rules_one.iter().all(|h| *h == 1), "{rules_one:?}");
-    assert_eq!(rules_two, vec![2; rules_one.len()]);
 }
 
-/// **Keys reach Settings at any scale**: a press moves the focus at 200 as it
-/// does at one, and the focused row is still drawn whole in view.
+/// **Every page draws**, at both sizes the design gives, and when asked, each
+/// is written out as a picture to set beside the design's frames.
+///
+/// The pictures are written only when `ALO_SETTINGS_PICTURES` names a folder,
+/// which is a check somebody runs once by hand; what runs on every build is
+/// that every page lays out and draws at both sizes.
 #[test]
-fn at_two_hundred_a_key_moves_the_focus_and_it_stays_in_view() {
-    let machine = a_persons_machine("raster-two-keys");
+fn every_page_draws_and_can_be_looked_at() {
+    let machine = a_persons_machine("raster-every-page");
     let mut window = machine.opened();
-    let strings = words();
-    let door = CountingDoor::revoking();
-    window.pressed(key(SettingsKey::Last), doors(&strings, &door));
-    let last = window.focused(noon()).unwrap();
-    let drawn = drawn_at_scale(
-        &window,
-        (2560, 1200),
-        light(),
-        DisplayScale::of_per_cent(200),
+    let folder = std::env::var_os("ALO_SETTINGS_PICTURES");
+    for (which, category) in SettingsCategory::ALL.into_iter().enumerate() {
+        assert_eq!(window.category(), Some(category));
+        for size in [(1440, 960), (1280, 800)] {
+            let drawn = drawn_at(&window, size, light());
+            assert!(!drawn.is_empty(), "{category:?} at {size:?}");
+            if let Some(folder) = &folder {
+                let named = format!("settings-{which}-{category:?}-{}x{}.png", size.0, size.1);
+                written_out(&drawn, size, &std::path::Path::new(folder).join(named));
+            }
+        }
+        press(&mut window, SettingsKey::Next);
+    }
+}
+
+/// A picture of `drawn` on the canvas colour, written as a PNG.
+fn written_out(drawn: &SettingsPicture, size: (i32, i32), to: &std::path::Path) {
+    let (wide, tall) = (
+        u32::try_from(size.0).unwrap(),
+        u32::try_from(size.1).unwrap(),
     );
-    let focused: Vec<_> = drawn.lines.iter().filter(|line| line.focused).collect();
-    assert_eq!(focused.len(), 1);
-    assert_eq!(focused[0].words.row.as_ref(), Some(&last));
-    let panel = drawn.panel.unwrap();
-    assert!(focused[0].area.loc.y >= panel.loc.y);
-    assert!(focused[0].area.loc.y + focused[0].area.size.h <= panel.loc.y + panel.size.h);
+    let mut image = image::RgbaImage::from_pixel(wide, tall, image::Rgba([0xFA, 0xF7, 0xF2, 255]));
+    let washed = drawn.washed.as_ref().unwrap();
+    for (at, it) in washed.pixels.chunks(4).enumerate() {
+        let at = i32::try_from(at).unwrap();
+        let (x, y) = (
+            washed.area.loc.x + at % washed.area.size.w,
+            washed.area.loc.y + at / washed.area.size.w,
+        );
+        if x < 0 || y < 0 || x >= size.0 || y >= size.1 {
+            continue;
+        }
+        let under = image
+            .get_pixel(u32::try_from(x).unwrap(), u32::try_from(y).unwrap())
+            .0;
+        let alpha = u32::from(it[3]);
+        let mut out = [0u8; 4];
+        for channel in 0..3 {
+            out[channel] =
+                ((u32::from(it[channel]) * alpha + u32::from(under[channel]) * (255 - alpha) + 127)
+                    / 255) as u8;
+        }
+        out[3] = 255;
+        image.put_pixel(
+            u32::try_from(x).unwrap(),
+            u32::try_from(y).unwrap(),
+            image::Rgba(out),
+        );
+    }
+    image.save(to).unwrap();
 }

@@ -2094,6 +2094,9 @@ impl LoopInput for Desk<'_> {
                 scale: frame.look.scale(),
                 reading: frame.look.reading(),
                 contrast: frame.look.contrast(),
+                // **The person's accent, which selections and switches are
+                // drawn in** — the owner's decision of 2026-10-31.
+                accent: frame.look.accent(),
             },
             std::time::SystemTime::now(),
             // **Read off the server**, which is where the form lives. A

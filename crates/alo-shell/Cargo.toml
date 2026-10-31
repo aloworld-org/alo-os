@@ -25,6 +25,10 @@ alo-access = { path = "../alo-access" }
 # every value through `alo-canvas`, so a hand-edited place off the plane is
 # refused by the crate that owns that rule rather than landing here.
 alo-arranging = { path = "../alo-arranging" }
+# What a provider the person added says about itself — where it runs, whether
+# its key is kept — which Settings draws under its name. Read, never written:
+# the settings that hold it are `alo-choosing`'s.
+alo-models = { path = "../alo-models" }
 alo-accounts = { path = "../alo-accounts" }
 alo-appearance = { path = "../alo-appearance" }
 # Lock policy, regional wording, and bounded image/time engines. No network lookup.
@@ -234,7 +238,6 @@ alo-sessiond = { path = "../alo-sessiond" }
 # own indicator, by an agent a grant names, to a source a model is answered
 # at. Never a dependency of the shipped surface, which only draws.
 alo-egress = { path = "../alo-egress" }
-alo-models = { path = "../alo-models" }
 # A whole turn for the approval surface's tests — the invocation, the file
 # verbs on a real disk and the record — so *one approval, one execution* is a
 # file that moved once rather than a count the test kept.

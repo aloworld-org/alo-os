@@ -1,0 +1,196 @@
+# Where the Settings window's icons came from.
+#
+# Taken from the design file on 2026-10-31 with the Figma connector's
+# `download_assets`, one call per icon, on the icon's own *Group* node, and
+# committed byte for byte as it answered — the links the connector hands out
+# expire after seven days. The frames are on page 544:30910, which the owner
+# approved the same day; docs/design/the-settings-window.md records them.
+#
+# Each file's viewBox is the group's drawing with its stroke, so it is a little
+# larger than the group. `frame` is the icon's square in the design, and
+# `group` is where the group sits in it — left, top, width, height, in the
+# frame's units, from the insets get_design_context reported. The artwork is
+# drawn centred on the group: a stroke spreads equally to every side, so the
+# viewBox's centre is the group's.
+#
+# The colours in the files are the design's light values for where each was
+# taken from. What is drawn is the palette's colour for where it is used, so the
+# icons follow the person's accent, contrast and appearance.
+
+file = "nDxyF5Ho9oC4RObjVzwBNJ"
+fetched = "2026-10-31"
+
+[[icon]]
+svg = "chat.svg"
+names = "alo and AI, in the side column"
+node = "550:107"
+frame = 20
+group = [2.5, 2.5, 15.0, 15.0]
+
+[[icon]]
+svg = "folder.svg"
+names = "Folders alo can use, in the side column; a folder given"
+node = "550:112"
+frame = 20
+group = [1.667, 2.5, 16.667, 14.167]
+
+[[icon]]
+svg = "code.svg"
+names = "Running code, in the side column"
+node = "550:117"
+frame = 20
+group = [1.667, 5.0, 16.667, 10.0]
+
+[[icon]]
+svg = "terminal.svg"
+names = "Terminal, in the side column"
+node = "550:122"
+frame = 20
+group = [3.333, 4.167, 13.333, 11.667]
+
+[[icon]]
+svg = "contrast.svg"
+names = "Appearance, in the side column"
+node = "550:129"
+frame = 20
+group = [2.5, 2.5, 15.0, 15.0]
+
+[[icon]]
+svg = "globe.svg"
+names = "Region and time, in the side column"
+node = "550:135"
+frame = 20
+group = [1.667, 1.667, 16.667, 16.667]
+
+[[icon]]
+svg = "keyboard.svg"
+names = "Keyboard and shortcuts, in the side column"
+node = "550:141"
+frame = 20
+group = [1.667, 4.167, 16.667, 11.667]
+
+[[icon]]
+svg = "access.svg"
+names = "Accessibility, in the side column"
+node = "550:147"
+frame = 20
+group = [4.167, 2.5, 11.667, 15.0]
+
+[[icon]]
+svg = "info.svg"
+names = "a note that asks for attention, such as Has not said where it runs"
+node = "550:201"
+frame = 14
+group = [1.167, 1.167, 11.667, 11.667]
+
+[[icon]]
+svg = "cloud.svg"
+names = "a note saying where a service answers"
+node = "550:216"
+frame = 14
+group = [1.167, 2.917, 11.666, 8.167]
+
+[[icon]]
+svg = "plus.svg"
+names = "Add a provider"
+node = "550:222"
+frame = 16
+group = [3.333, 3.333, 9.333, 9.333]
+
+[[icon]]
+svg = "chevron-right.svg"
+names = "the end of a row that opens something"
+node = "550:228"
+frame = 20
+group = [7.5, 5.0, 5.0, 10.0]
+
+[[icon]]
+svg = "warn.svg"
+names = "What it risks"
+node = "550:248"
+frame = 18
+group = [1.487, 2.239, 15.012, 13.511]
+
+[[icon]]
+svg = "egress.svg"
+names = "anything that leaves this machine is shown as it happens"
+node = "550:161"
+frame = 16
+group = [4.667, 4.667, 6.667, 6.667]
+
+[[icon]]
+svg = "circle-check.svg"
+names = "a folder was just given"
+node = "550:809"
+frame = 20
+group = [1.667, 1.667, 16.667, 16.667]
+
+[[icon]]
+svg = "history-14.svg"
+names = "how long a folder is given for"
+node = "550:830"
+frame = 14
+group = [1.75, 1.75, 10.5, 10.5]
+
+[[icon]]
+svg = "history-20.svg"
+names = "See what alo did; every command is written down"
+node = "550:864"
+frame = 20
+group = [2.5, 2.5, 15.0, 15.0]
+
+[[icon]]
+svg = "lock.svg"
+names = "Always on"
+node = "550:992"
+frame = 16
+group = [2.0, 1.333, 12.0, 13.333]
+
+[[icon]]
+svg = "undo.svg"
+names = "your files are copied before each run"
+node = "550:999"
+frame = 20
+group = [3.333, 3.333, 13.333, 13.333]
+
+[[icon]]
+svg = "file.svg"
+names = "the file a terminal setting adds a line to"
+node = "551:175"
+frame = 14
+group = [2.333, 1.167, 9.333, 11.667]
+
+[[icon]]
+svg = "check-16.svg"
+names = "the chosen part of a segmented choice"
+node = "551:294"
+frame = 16
+group = [2.667, 4.0, 10.667, 7.333]
+
+[[icon]]
+svg = "check-18.svg"
+names = "the chosen accent; the chosen country"
+node = "551:313"
+frame = 18
+group = [3.0, 4.5, 12.0, 8.25]
+
+[[icon]]
+svg = "chevron-up-down.svg"
+names = "a picker"
+node = "551:829"
+frame = 16
+group = [4.667, 2.667, 6.667, 10.667]
+
+[[icon]]
+svg = "search.svg"
+names = "the country picker's search"
+node = "551:844"
+frame = 18
+group = [2.25, 2.25, 13.5, 13.5]
+
+[[icon]]
+svg = "pointer.svg"
+names = "Pointer size"
+node = "551:1131"
+frame = 20
+group = [3.333, 3.333, 14.167, 14.167]

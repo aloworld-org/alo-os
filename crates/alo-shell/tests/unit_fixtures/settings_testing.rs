@@ -52,7 +52,18 @@ pub(crate) fn light() -> SettingsLook {
         scheme: Scheme::Light,
         scale: TextScale::ordinary(),
         reading: Direction::LeftToRight,
+        accent: alo_appearance::Accent::Indigo.on(Scheme::Light),
     }
+}
+
+/// Every word this machine can say, and the Settings window's own with them —
+/// the window, the picker and the provider form — as a booted machine has them.
+pub(crate) fn settings_words() -> alo_strings::Strings {
+    let mut vocabulary = alo_saying::everything_this_machine_can_say().unwrap();
+    crate::the_settings_words::declare_the_settings_words(&mut vocabulary).unwrap();
+    crate::the_pickers_words::declare_the_pickers_words(&mut vocabulary).unwrap();
+    crate::the_providers_words::declare_the_providers_words(&mut vocabulary).unwrap();
+    alo_strings::Strings::of(vocabulary)
 }
 
 /// A person's machine, in a folder of the test's own.

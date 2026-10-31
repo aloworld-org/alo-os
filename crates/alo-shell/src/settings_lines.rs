@@ -157,15 +157,13 @@ fn answering(open: &Open, strings: &Strings, now: SystemTime) -> SectionWords {
     // Neither row is ticked for a person who has not said. *Absent is stronger
     // than defaulted*: a tick for somebody who has never seen this would be a
     // default dressed as their choice.
+    // **One switch since 2026-10-31**, which is marked only when it is on.
     if section.another_is_a_question_at_all() {
-        let said_already = section.may_use_another();
-        for said in MayUseAnother::BOTH {
-            lines.push(LineWords {
-                chosen: said_already == Some(said),
-                row: Some(SettingsRow::UsingAnother(said)),
-                parts: vec![said.said(strings).into_text()],
-            });
-        }
+        lines.push(LineWords {
+            chosen: section.may_use_another() == Some(MayUseAnother::Yes),
+            row: Some(SettingsRow::UsingAnother),
+            parts: vec![MayUseAnother::Yes.said(strings).into_text()],
+        });
     }
 
     SectionWords {

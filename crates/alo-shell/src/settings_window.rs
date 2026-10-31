@@ -2,7 +2,20 @@
 //! window, each section reading and writing through the crate that owns it.
 //!
 //! `ROADMAP.md` v0.5: *Settings, as one place … not a scattering of dialogues
-//! a person has to know the name of.* The sections, in the order drawn:
+//! a person has to know the name of.*
+//!
+//! # A side column of categories, and a page beside it
+//!
+//! The owner's redesign of 2026-10-31: the sections below are drawn on eight
+//! pages, chosen in a side column (`crate::settings_categories` says which
+//! section is on which page). The keyboard is in one of the two at a time —
+//! Up and Down choose the page in the side column, and Tab or Enter go into
+//! it — and `crate::settings_page` is the one list of what each page draws,
+//! which this file's [`Open::rows_on`] is held to by a test. **No choice the
+//! one-list window offered is dropped**: `no_choice_the_old_window_offered_is_dropped`
+//! enumerates them by kind and finds each on its page.
+//!
+//! The sections, in the order the old one list drew them:
 //!
 //! 1. **what answers questions** — the four ways alo OS runs, as
 //!    `alo-setting-up` offers them, and the choices the person's own
@@ -28,13 +41,16 @@
 //! and what the machine enforces cannot disagree. `tests/settings_source.rs`
 //! holds these files to writing no file and naming no place of their own.
 //!
-//! # Only what the machine has is here
+//! # Only what the machine has works, and the rest says so
 //!
 //! A row is something a person can act on: choose it, rebind it, revoke it.
 //! Nothing is drawn disabled. Deep teal is not among the accents, because
-//! `alo_appearance::Accent` cannot be deep teal. A setting the machine has
-//! no road to change from a window yet — a background picture, a text scale,
-//! adding a provider — is absent rather than greyed out.
+//! `alo_appearance::Accent` cannot be deep teal. **The redesign draws a few
+//! choices this computer does not have yet** — alo's own service, saying where
+//! a provider runs — and they are drawn as the design draws them; choosing one
+//! says in words that it is not on this computer yet and changes nothing. A
+//! setting the redesign does not draw and the machine has no road to change
+//! from a window — a background picture — is absent rather than greyed out.
 //!
 //! # It is a person's, and it is reached by hand
 //!
@@ -65,6 +81,9 @@ use crate::settings_time_zone::TimeZoneSection;
 use crate::the_zone_through_timedated::SetsTheZone;
 use crate::{SettingsKey, SettingsPlaces};
 use alo_choosing::MayUseAnother;
+use alo_setting_up::Offered;
+
+pub use crate::settings_categories::SettingsCategory;
 
 /// The sections of Settings, in the order they are drawn.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -156,12 +175,29 @@ pub enum SettingsRow {
     /// Keep a place to return to before each command (ADR 0130).
     APlaceToReturnTo,
     /// Whether alo may use another model or API when the one the person chose
-    /// is not available: Enter chooses it.
+    /// is not available: one switch, and Enter turns it over.
     ///
     /// In the answering section, under the four ways, because it is a question
     /// about the choice they made there and arises only when they chose a
     /// provider or another machine.
-    UsingAnother(MayUseAnother),
+    ///
+    /// **Two rows until 2026-10-31**, one for each answer, because a person
+    /// who has never said is neither — `alo-choosing`'s *absent is stronger
+    /// than defaulted*. The redesign draws a switch, and the switch keeps that
+    /// third state in words: *Not set* until the person says. Enter on *Not
+    /// set* or *Off* turns it on; Enter on *On* turns it off.
+    UsingAnother,
+    /// One of the four ways a question can be answered, as a choice of its
+    /// own: Enter goes to what is under it, or says why there is nothing.
+    ///
+    /// *Not at all* is never one of these: it needs nothing under it, so it is
+    /// [`Self::Answer`] itself.
+    Way(Offered),
+    /// alo's own service, under the providers: Enter says it is not on this
+    /// computer yet.
+    AlosOwnService,
+    /// Say where a provider runs: Enter says it is not on this computer yet.
+    SayWhereItRuns(String),
     /// How code the agent writes or fetches runs: Enter chooses this level.
     ///
     /// One row per level of ADR 0064, in that ADR's own order, which is least
@@ -185,7 +221,9 @@ impl SettingsRow {
             Self::Granted(_) | Self::GrantAFolder | Self::SeeWhatAloDid | Self::Picking(_) => {
                 SettingsSection::Granted
             }
-            Self::UsingAnother(_) => SettingsSection::Answering,
+            Self::UsingAnother | Self::Way(_) | Self::AlosOwnService | Self::SayWhereItRuns(_) => {
+                SettingsSection::Answering
+            }
             Self::HowCodeRuns(_) => SettingsSection::HowCodeRuns,
             Self::ShellIntegration | Self::APlaceToReturnTo => SettingsSection::Terminal,
             Self::AddAProvider => SettingsSection::Answering,
@@ -303,7 +341,12 @@ pub(crate) struct Open {
     /// says — including *nobody has chosen*, which is why this is not a
     /// `KeptSection`. `crate::how_code_runs_in_settings` holds that argument.
     pub(crate) how_code_runs: HowCodeRunsHere,
-    /// Which row has the focus, counted from the first.
+    /// The page the window is showing, which is the category chosen in the
+    /// side column.
+    pub(crate) category: SettingsCategory,
+    /// Whether the keyboard is in the page rather than the side column.
+    pub(crate) in_the_page: bool,
+    /// Which row of the page has the focus, counted from its first.
     pub(crate) focus: usize,
     /// Whether Settings waits for a chord for the focused shortcut.
     pub(crate) waiting_for_a_chord: bool,
@@ -359,6 +402,10 @@ impl SettingsWindow {
                 places.folder(),
             ),
             how_code_runs: HowCodeRunsHere::at_sign_in(places.how_code_runs()),
+            // **It opens on the first page, with the keyboard in the side
+            // column**, which is where a person chooses what they came for.
+            category: SettingsCategory::AloAndAi,
+            in_the_page: false,
             focus: 0,
             waiting_for_a_chord: false,
         });
@@ -438,11 +485,36 @@ impl SettingsWindow {
             .unwrap_or_default()
     }
 
-    /// The row with the focus, while the window is open and has any row.
+    /// The rows on the page the window is showing, in the order drawn.
+    #[must_use]
+    pub fn rows_on_the_page(&self, now: SystemTime) -> Vec<SettingsRow> {
+        self.open
+            .as_ref()
+            .map(|open| open.rows_on(open.category, now))
+            .unwrap_or_default()
+    }
+
+    /// The page the window is showing, while it is open.
+    #[must_use]
+    pub fn category(&self) -> Option<SettingsCategory> {
+        self.open.as_ref().map(|open| open.category)
+    }
+
+    /// Whether the keyboard is in the page, rather than in the side column.
+    #[must_use]
+    pub fn is_in_the_page(&self) -> bool {
+        self.open.as_ref().is_some_and(|open| open.in_the_page)
+    }
+
+    /// The row with the focus, while the keyboard is in the page and the page
+    /// has any row.
     #[must_use]
     pub fn focused(&self, now: SystemTime) -> Option<SettingsRow> {
         let open = self.open.as_ref()?;
-        let rows = open.rows(now);
+        if !open.in_the_page {
+            return None;
+        }
+        let rows = open.rows_on(open.category, now);
         rows.get(open.focus.min(rows.len().saturating_sub(1)))
             .cloned()
     }
@@ -465,7 +537,14 @@ impl SettingsWindow {
         if open.waiting_for_a_chord {
             return Some(open.chord_pressed(press, doors));
         }
-        let rows = open.rows(doors.now);
+        if !open.in_the_page {
+            let did = open.pressed_in_the_side_column(press.key, doors);
+            if did == Some(SettingsDid::Closed) {
+                self.open = None;
+            }
+            return did;
+        }
+        let rows = open.rows_on(open.category, doors.now);
         let last = rows.len().saturating_sub(1);
         open.focus = open.focus.min(last);
         let focused = rows.get(open.focus).cloned();
@@ -474,8 +553,17 @@ impl SettingsWindow {
             SettingsKey::Next => open.focus = (open.focus + 1).min(last),
             SettingsKey::First => open.focus = 0,
             SettingsKey::Last => open.focus = last,
-            SettingsKey::NextSection => open.focus = next_section(&rows, open.focus, true),
-            SettingsKey::PreviousSection => open.focus = next_section(&rows, open.focus, false),
+            // **Tab goes to the next group of rows on the page, and from the
+            // last back to the side column**; Shift+Tab the other way. The
+            // groups are the page's own sections, as they are drawn.
+            SettingsKey::NextSection | SettingsKey::PreviousSection => {
+                let starts = open.where_sections_start(doors.strings, doors.now);
+                let forward = press.key == SettingsKey::NextSection;
+                match next_section(&starts, open.focus, forward) {
+                    Some(at) => open.focus = at,
+                    None => open.in_the_page = false,
+                }
+            }
             SettingsKey::Choose => return focused.map(|row| open.chosen(&row, doors)),
             SettingsKey::PutBackAsShipped => {
                 return focused.and_then(|row| open.put_back_as_shipped(&row, doors.strings));
@@ -516,115 +604,272 @@ impl SettingsWindow {
 }
 
 impl Open {
-    /// Every row, in the order drawn.
+    /// Every row, in the order drawn: page by page in the order the side
+    /// column lists them, and on each page in the order it draws them.
+    ///
+    /// **This list and `crate::settings_page` are two readers of one
+    /// question**, and `every_setting_the_machine_has_is_in_one_window` holds
+    /// them to each other: *a row is acted on that is not drawn, or drawn and
+    /// not acted on*. It has caught a missing line three times.
     pub(crate) fn rows(&self, now: SystemTime) -> Vec<SettingsRow> {
-        let mut rows = Vec::new();
-        let pairings = self.pairings();
-        for (_, choices) in self.answering.offered(&pairings, now) {
-            rows.extend(choices.into_iter().map(SettingsRow::Answer));
-        }
-        // **Always offered, and that is the point of it.** Every other row in
-        // this section exists only for something the person already has, which
-        // is why a fresh machine offered *not at all* and nothing else — and
-        // why `settings_answering` could say truthfully that adding a provider
-        // was reachable from nowhere. A row that appeared only once somebody
-        // had a provider would be a door that opens after you are through it.
-        if self.answering.a_provider_can_be_added() {
-            rows.push(SettingsRow::AddAProvider);
-        }
-        // **Beneath the four, and in the same order they are drawn in.** This
-        // list and `crate::settings_lines` are two readers of one question, and
-        // `every_setting_the_machine_has_is_in_one_window` holds them to each
-        // other: *a row is acted on that is not drawn, or drawn and not acted
-        // on*. It caught this line being missing.
-        if self.answering.another_is_a_question_at_all() {
-            rows.extend(
-                MayUseAnother::BOTH
-                    .into_iter()
-                    .map(SettingsRow::UsingAnother),
-            );
-        }
-        if self.appearance.at().is_some() {
-            rows.extend(Accent::ALL.into_iter().map(SettingsRow::Accent));
-        }
-        rows.extend(
-            self.formats
+        SettingsCategory::ALL
+            .into_iter()
+            .flat_map(|category| self.rows_on(category, now))
+            .collect()
+    }
+
+    /// The rows on one page, in the order it draws them.
+    pub(crate) fn rows_on(&self, category: SettingsCategory, now: SystemTime) -> Vec<SettingsRow> {
+        match category {
+            SettingsCategory::AloAndAi => self.the_answering_rows(now),
+            SettingsCategory::FoldersAloCanUse => self.the_granted_rows(now),
+            SettingsCategory::RunningCode => alo_capability::HowCodeRuns::ALL
+                .into_iter()
+                .map(SettingsRow::HowCodeRuns)
+                .collect(),
+            SettingsCategory::Terminal => {
+                let mut rows = Vec::new();
+                if self.shell_integration.offers_a_row() {
+                    rows.push(SettingsRow::ShellIntegration);
+                }
+                // **Beneath the integration**, because keeping a place needs
+                // it: the line this row adds calls a command that asks the
+                // service, and a person who has not added the integration has
+                // not added the shell's side of any of this.
+                if self.a_place_to_return_to.offers_a_row() {
+                    rows.push(SettingsRow::APlaceToReturnTo);
+                }
+                rows
+            }
+            SettingsCategory::Appearance => {
+                let mut rows = Vec::new();
+                if self.appearance.at().is_some() {
+                    rows.extend(Accent::ALL.into_iter().map(SettingsRow::Accent));
+                }
+                if self.dock.at().is_some() {
+                    rows.extend(Hiding::ALL.into_iter().map(SettingsRow::Hiding));
+                }
+                rows
+            }
+            SettingsCategory::RegionAndTime => self
+                .formats
                 .choices()
                 .into_iter()
-                .map(SettingsRow::WrittenAs),
-        );
-        rows.extend(
-            self.time_zone
-                .choices()
-                .into_iter()
-                .map(SettingsRow::TimeZone),
-        );
-        if self.dock.at().is_some() {
-            rows.extend(Hiding::ALL.into_iter().map(SettingsRow::Hiding));
-        }
-        if self.shortcuts.at().is_some() {
-            rows.extend(
+                .map(SettingsRow::WrittenAs)
+                .chain(
+                    self.time_zone
+                        .choices()
+                        .into_iter()
+                        .map(SettingsRow::TimeZone),
+                )
+                .collect(),
+            SettingsCategory::KeyboardAndShortcuts => {
+                if self.shortcuts.at().is_none() {
+                    return Vec::new();
+                }
                 self.shortcuts
                     .drawn()
                     .bindings()
-                    .map(|binding| SettingsRow::Shortcut(binding.action)),
-            );
+                    .map(|binding| SettingsRow::Shortcut(binding.action))
+                    .collect()
+            }
+            // **Nothing yet.** The text size and the pointer's size the design
+            // draws here are not reachable from this window; the page says so
+            // in words rather than drawing controls that do nothing.
+            SettingsCategory::Accessibility => Vec::new(),
         }
-        // **Beneath the shortcuts and above the grants**, which is where
-        // `crate::settings_lines` draws the section. The two are held to each
-        // other by `every_setting_the_machine_has_is_in_one_window`.
-        if self.shell_integration.offers_a_row() {
-            rows.push(SettingsRow::ShellIntegration);
+    }
+
+    /// The alo and AI page's rows: each of the four ways and what is under it,
+    /// then the switch about using another.
+    fn the_answering_rows(&self, now: SystemTime) -> Vec<SettingsRow> {
+        let mut rows = Vec::new();
+        let pairings = self.pairings();
+        for (way, choices) in self.answering.every_way(&pairings, now) {
+            if way == Offered::NotAtAll {
+                rows.push(SettingsRow::Answer(SettingsChoice::NotAtAll));
+                continue;
+            }
+            rows.push(SettingsRow::Way(way));
+            for choice in choices {
+                // **A provider that has not said where it runs has a button**,
+                // and the keyboard reaches it straight after the provider.
+                let unsaid = match &choice {
+                    SettingsChoice::Provider { provider, .. } => self
+                        .answering
+                        .the_provider(provider)
+                        .is_none_or(|it| matches!(it.region, alo_models::Region::Unknown))
+                        .then(|| provider.clone()),
+                    _ => None,
+                };
+                rows.push(SettingsRow::Answer(choice));
+                rows.extend(unsaid.map(SettingsRow::SayWhereItRuns));
+            }
+            if way == Offered::FromAProvider {
+                rows.push(SettingsRow::AlosOwnService);
+                // **Always offered, and that is the point of it.** Every other
+                // row here exists only for something the person already has; a
+                // row that appeared only once somebody had a provider would be a
+                // door that opens after you are through it.
+                if self.answering.a_provider_can_be_added() {
+                    rows.push(SettingsRow::AddAProvider);
+                }
+            }
         }
-        // **Beneath the integration**, because keeping a place needs it: the
-        // line this row adds calls a command that asks the service, and a
-        // person who has not added the integration above has not added the
-        // shell's side of any of this. The order says so without a sentence.
-        if self.a_place_to_return_to.offers_a_row() {
-            rows.push(SettingsRow::APlaceToReturnTo);
+        if self.answering.another_is_a_question_at_all() {
+            rows.push(SettingsRow::UsingAnother);
         }
-        // **The three levels, always all three.** Unlike every section above,
-        // this one has no file to be missing: a person who has not chosen is
-        // offered the choice, which is the whole point of the section, and the
-        // file that would not read is the same three rows with none marked.
-        //
-        // **This was drawn and not acted on for one commit**, and
-        // `every_setting_the_machine_has_is_in_one_window` caught it in under a
-        // second — *a row is acted on that is not drawn, or drawn and not acted
-        // on*. A person would have seen three levels and pressing one would
-        // have done nothing. The comment two blocks up records the same test
-        // catching the same class before; this is the third time it has paid
-        // for itself.
-        rows.extend(
-            alo_capability::HowCodeRuns::ALL
-                .into_iter()
-                .map(SettingsRow::HowCodeRuns),
-        );
-        // **The picker takes the section over while it is open**, rather than
-        // appearing above the list of grants. A person walking their own
-        // folders with the grants they already have underneath would be moving
-        // the ring through two unrelated lists, and the key that opens a folder
-        // and the key that revokes a grant would be the same key a row apart.
+        rows
+    }
+
+    /// The folders page's rows: what is given, the row that gives more, the
+    /// record, and the computers paired with this one.
+    fn the_granted_rows(&self, now: SystemTime) -> Vec<SettingsRow> {
+        // **The picker takes the page over while it is open**, rather than
+        // appearing above the list of grants: the key that opens a folder and
+        // the key that revokes a grant would otherwise be one key a row apart.
         if let Some(picking) = self.granted.picking() {
-            rows.extend(picking.rows().into_iter().map(SettingsRow::Picking));
-            return rows;
+            return picking
+                .rows()
+                .into_iter()
+                .map(SettingsRow::Picking)
+                .collect();
         }
-        // **Above the list, and always offered when it can be.** It is the one
-        // row in this section that is not something the person already has —
-        // the same argument `AddAProvider` makes a hundred lines up, and the
-        // same fault it fixes: a row that appeared only once somebody had a
-        // grant would be a door that opens after you are through it.
-        rows.push(SettingsRow::SeeWhatAloDid);
+        let (paired, given): (Vec<Row>, Vec<Row>) = self
+            .granted
+            .rows(now)
+            .into_iter()
+            .partition(|row| matches!(row, Row::Pairing(_)));
+        let mut rows: Vec<SettingsRow> = given.into_iter().map(SettingsRow::Granted).collect();
+        // **Always offered when it can be**: a row that appeared only once
+        // somebody had a grant would be a door that opens after you are
+        // through it.
         if self.granted.a_folder_can_be_given() {
             rows.push(SettingsRow::GrantAFolder);
         }
-        rows.extend(self.granted.rows(now).into_iter().map(SettingsRow::Granted));
+        rows.push(SettingsRow::SeeWhatAloDid);
+        rows.extend(paired.into_iter().map(SettingsRow::Granted));
         rows
+    }
+
+    /// Where each of the page's groups of rows begins, counted in its rows.
+    fn where_sections_start(&self, strings: &Strings, now: SystemTime) -> Vec<usize> {
+        let page = crate::settings_page::the_page(self, self.category, strings, now);
+        let mut starts = Vec::new();
+        let mut counted = 0;
+        for block in &page.blocks {
+            if let crate::settings_page::ABlock::Section(section) = block {
+                let here: usize = section.rows.iter().map(|row| row.targets().count()).sum();
+                if here > 0 {
+                    starts.push(counted);
+                }
+                counted += here;
+            }
+        }
+        starts
+    }
+
+    /// A key while the keyboard is in the side column: Up and Down choose
+    /// the page, Home and End the first and last, and Tab or Enter go into it.
+    fn pressed_in_the_side_column(
+        &mut self,
+        key: SettingsKey,
+        doors: SettingsDoors<'_>,
+    ) -> Option<SettingsDid> {
+        let before = self.category;
+        match key {
+            SettingsKey::Previous => self.category = self.category.previous(),
+            SettingsKey::Next => self.category = self.category.next(),
+            SettingsKey::First => self.category = SettingsCategory::AloAndAi,
+            SettingsKey::Last => self.category = SettingsCategory::Accessibility,
+            SettingsKey::NextSection | SettingsKey::Choose => {
+                if !self.rows_on(self.category, doors.now).is_empty() {
+                    self.in_the_page = true;
+                    self.focus = 0;
+                }
+            }
+            // **Shift+Tab from the side column goes to the page's last group**,
+            // so Tab and Shift+Tab walk one ring in both directions.
+            SettingsKey::PreviousSection => {
+                if let Some(last) = self
+                    .where_sections_start(doors.strings, doors.now)
+                    .last()
+                    .copied()
+                {
+                    self.in_the_page = true;
+                    self.focus = last;
+                }
+            }
+            SettingsKey::Close => {
+                if self.granted.picking().is_some() {
+                    self.granted.that_folder_is_not_being_given();
+                    return Some(SettingsDid::Gave(
+                        crate::settings_granted::SettingsGave::ItChanged,
+                    ));
+                }
+                return Some(SettingsDid::Closed);
+            }
+            SettingsKey::PutBackThisOne | SettingsKey::PutBackAsShipped | SettingsKey::Nothing => {}
+        }
+        if self.category != before {
+            self.focus = 0;
+        }
+        None
     }
 
     /// The pairings as read, or none when they did not read.
     pub(crate) fn pairings(&self) -> Pairings {
         self.granted.pairings()
+    }
+
+    /// Enter on one of the four ways: **the keyboard goes to what is under
+    /// it**, the choice the person has made there or the first; and a way with
+    /// nothing under it says why, in words, and changes nothing.
+    ///
+    /// Choosing the way itself writes nothing, because a way is not an answer:
+    /// *on this machine* is a model on this machine, and which one is the
+    /// person's to say.
+    fn a_way_chosen(&mut self, way: Offered, doors: SettingsDoors<'_>) -> SettingsDid {
+        let rows = self.rows_on(self.category, doors.now);
+        let here = rows.iter().position(|row| *row == SettingsRow::Way(way));
+        let chosen = self.answering.chosen().map(SettingsRow::Answer);
+        let under: Vec<usize> = here
+            .map(|here| {
+                rows.iter()
+                    .enumerate()
+                    .skip(here + 1)
+                    .take_while(|(_, row)| {
+                        matches!(
+                            row,
+                            SettingsRow::Answer(
+                                SettingsChoice::Provider { .. }
+                                    | SettingsChoice::Brought(_)
+                                    | SettingsChoice::Paired(_)
+                            ) | SettingsRow::SayWhereItRuns(_)
+                        )
+                    })
+                    .filter(|(_, row)| matches!(row, SettingsRow::Answer(_)))
+                    .map(|(at, _)| at)
+                    .collect()
+            })
+            .unwrap_or_default();
+        if let Some(first) = under.first() {
+            self.focus = under
+                .iter()
+                .copied()
+                .find(|at| rows.get(*at) == chosen.as_ref())
+                .unwrap_or(*first);
+            return SettingsDid::Answered(SettingsAnswered::NothingChanged);
+        }
+        use crate::the_settings_words as w;
+        let why = match way {
+            Offered::OnThisMachine => w::NO_MODEL_HERE_YET,
+            Offered::OnAMachineOnThisNetwork => w::NOTHING_PAIRED_YET,
+            Offered::FromAProvider | Offered::NotAtAll => w::NO_PROVIDER_YET,
+        };
+        self.answering
+            .tell(crate::settings_page::said(doors.strings, why));
+        SettingsDid::Answered(SettingsAnswered::NothingChanged)
     }
 
     /// Enter on a row.
@@ -639,10 +884,27 @@ impl Open {
                     doors.strings,
                 ))
             }
-            SettingsRow::UsingAnother(said) => SettingsDid::Answered(
-                self.answering
-                    .say_whether_another_may_be_used(*said, doors.strings),
-            ),
+            // **One switch, turned over.** *Not set* and *Off* turn it on; *On*
+            // turns it off. A person who has never said is never written as
+            // having said anything until they press it.
+            SettingsRow::UsingAnother => {
+                let said = match self.answering.may_use_another() {
+                    Some(MayUseAnother::Yes) => MayUseAnother::No,
+                    Some(MayUseAnother::No) | None => MayUseAnother::Yes,
+                };
+                SettingsDid::Answered(
+                    self.answering
+                        .say_whether_another_may_be_used(said, doors.strings),
+                )
+            }
+            SettingsRow::Way(way) => self.a_way_chosen(*way, doors),
+            SettingsRow::AlosOwnService | SettingsRow::SayWhereItRuns(_) => {
+                self.answering.tell(crate::settings_page::said(
+                    doors.strings,
+                    crate::the_settings_words::NOT_ON_THIS_COMPUTER_YET,
+                ));
+                SettingsDid::Answered(SettingsAnswered::NothingChanged)
+            }
             SettingsRow::Accent(accent) => {
                 let accent = *accent;
                 let kept = self.appearance.changed(
@@ -766,7 +1028,10 @@ impl Open {
     /// chord — refused in `alo-shortcuts`' words when it cannot be one, or
     /// when another action has it.
     fn chord_pressed(&mut self, press: SettingsPress, doors: SettingsDoors<'_>) -> SettingsDid {
-        let Some(SettingsRow::Shortcut(action)) = self.rows(doors.now).get(self.focus).cloned()
+        let Some(SettingsRow::Shortcut(action)) = self
+            .rows_on(self.category, doors.now)
+            .get(self.focus)
+            .cloned()
         else {
             self.waiting_for_a_chord = false;
             return SettingsDid::StoppedWaiting;
@@ -808,30 +1073,17 @@ impl Open {
     }
 }
 
-/// The first row of the next section after `from`, or of the one before.
-fn next_section(rows: &[SettingsRow], from: usize, forward: bool) -> usize {
-    let Some(here) = rows.get(from).map(SettingsRow::section) else {
-        return from;
-    };
+/// The first row of the group after the one `from` is in, or of the one
+/// before it — [`None`] past either end, which is the side column.
+///
+/// `starts` is where each group begins, in order. Backwards from a row inside
+/// a group goes to that group's own first row first, the way Shift+Tab in any
+/// list returns to the start of the thing it is in.
+fn next_section(starts: &[usize], from: usize, forward: bool) -> Option<usize> {
     if forward {
-        rows.iter()
-            .enumerate()
-            .skip(from)
-            .find(|(_, row)| row.section() > here)
-            .map_or(from, |(at, _)| at)
+        starts.iter().copied().find(|start| *start > from)
     } else {
-        let Some(before) = rows
-            .iter()
-            .take(from)
-            .rev()
-            .map(SettingsRow::section)
-            .find(|section| *section < here)
-        else {
-            return 0;
-        };
-        rows.iter()
-            .position(|row| row.section() == before)
-            .unwrap_or(0)
+        starts.iter().rev().copied().find(|start| *start < from)
     }
 }
 
