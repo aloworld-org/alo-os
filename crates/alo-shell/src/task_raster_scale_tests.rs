@@ -102,6 +102,12 @@ fn hashed(window: &TaskPicture) -> u64 {
 /// against `main` at `a65c898e` without this change, drawn with the shell's own
 /// fonts, and this test
 /// repeats the comparison on every build.
+///
+/// **Taken again on 2026-10-30, once, by hand**, when the reply box's icons
+/// were first drawn and the model's name was centred with its arrow
+/// (`crate::the_reply_boxs_icons`): it was `0xeb6a_85d1_d119_4c7d` before.
+/// `task_raster_icons_tests` holds what changed; this holds that nothing else
+/// changes unnoticed from here on.
 #[test]
 fn at_one_hundred_the_window_draws_the_bytes_it_drew_before() {
     let now = hashed(&drawn(as_drawn(), DisplayScale::ONE));
@@ -112,7 +118,7 @@ fn at_one_hundred_the_window_draws_the_bytes_it_drew_before() {
 }
 
 /// The hash of the window before this change. See the test above.
-const BEFORE: u64 = 0xeb6a_85d1_d119_4c7d;
+const BEFORE: u64 = 0xe109_587a_4b8c_7858;
 
 /// **At 200 the panel and its shadow are exactly twice**, the window measures
 /// the same conversation in the same logical units, and every word is there

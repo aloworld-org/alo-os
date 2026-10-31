@@ -214,6 +214,9 @@ fn the_reply_field_is_outlined_rather_than_filled() {
 
 /// **The one button is drawn in the ink colour**, which is the inversion that
 /// marks it as the thing a person presses to act.
+///
+/// Sampled above its icon, which since 2026-10-30 sits in the middle: 6 down
+/// from the circle's top, in its middle column, is circle and not artwork.
 #[test]
 fn the_one_button_is_drawn_in_the_ink_colour() {
     let drawn = as_drawn();
@@ -225,7 +228,7 @@ fn the_one_button_is_drawn_in_the_ink_colour() {
     let (x, y) = in_the_raster(
         &drawn,
         i32::try_from(controls.the_one_button + middle).expect("a small number"),
-        i32::try_from(controls.from_the_top + middle).expect("a small number"),
+        i32::try_from(controls.from_the_top + 6).expect("a small number"),
     );
     let [r, g, b, _] = pixel(&drawn, x, y);
 

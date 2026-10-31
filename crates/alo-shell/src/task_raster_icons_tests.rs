@@ -119,8 +119,16 @@ fn the_greyed_states_draw_their_own_icon() {
     );
 }
 
-/// How many pixels of a control are inked, not its cool ground.
-fn inked_in(window: &TaskPicture, scale: DisplayScale, x: u32, wide: u32) -> usize {
+/// How much ink is on a stretch of the control row, `x` to `x + wide`
+/// logical pixels across: the sum, over every pixel, of how far its colour is
+/// from the cool ground.
+///
+/// **A sum of ink, not a count of pixels.** A 2-pixel stroke at 100 per cent
+/// has smoothed edges a pixel wide on each side, so counting touched pixels
+/// overstates a thin line at the small size; summing the ink does not. Kept
+/// four logical pixels clear of the row's top and bottom, away from the
+/// controls' rounded corners.
+fn ink_in(window: &TaskPicture, scale: DisplayScale, x: u32, wide: u32) -> u64 {
     let rows = alo_tasks::layout::TheRows::of(
         scale.logical(window.at.size.w),
         scale.logical(window.at.size.h),
@@ -131,49 +139,64 @@ fn inked_in(window: &TaskPicture, scale: DisplayScale, x: u32, wide: u32) -> usi
     let top = window.at.loc.y + scale.px(alo_tasks::measures::BORDER + controls.from_the_top);
     let (wide, tall) = (scale.px(wide), scale.px(alo_tasks::measures::A_CONTROL_IS));
     let cool = palette().cool;
-    // A margin of four logical pixels in from each side, clear of the
-    // control's rounded corners.
     let margin = scale.px(4);
-    (left + margin..left + wide - margin)
+    (left..left + wide)
         .flat_map(|x| (top + margin..top + tall - margin).map(move |y| (x, y)))
-        .filter(|&(x, y)| colour_at(window, x, y).is_some_and(|colour| colour != cool))
-        .count()
+        .filter_map(|(x, y)| colour_at(window, x, y))
+        .map(|colour| {
+            colour
+                .iter()
+                .zip(cool)
+                .map(|(one, other)| u64::from(one.abs_diff(other)))
+                .sum::<u64>()
+        })
+        .sum()
 }
 
-/// **Attach and Permissions are no longer empty boxes**, and their icons are
-/// drawn four times the pixels at 200 per cent: the same artwork, sharper.
+/// **Attach and Permissions are no longer empty boxes**, and their icons carry
+/// four times the ink at 200 per cent: the same artwork, sharper.
 #[test]
 fn attach_and_permissions_carry_their_icons_at_every_scale() {
-    for (x, named) in [(0, "Attach"), (1, "Permissions")] {
-        let one = drawn(DisplayScale::ONE, TheOneButton::Stop);
-        let two = drawn(DisplayScale::of_per_cent(200), TheOneButton::Stop);
-        let place = |window: &TaskPicture, scale: DisplayScale| {
-            let rows = alo_tasks::layout::TheRows::of(
-                scale.logical(window.at.size.w),
-                scale.logical(window.at.size.h),
-            )
-            .unwrap_or_else(|_| unreachable!("the design's size lays out"))
-            .controls();
-            if x == 0 { rows.attach } else { rows.permissions }
-        };
-        let at_one = inked_in(&one, DisplayScale::ONE, place(&one, DisplayScale::ONE), 48);
-        let at_two = inked_in(
+    let controls = alo_tasks::layout::TheRows::of(1040, 800)
+        .unwrap_or_else(|_| unreachable!("the design's size lays out"))
+        .controls();
+    let one = drawn(DisplayScale::ONE, TheOneButton::Stop);
+    let two = drawn(DisplayScale::of_per_cent(200), TheOneButton::Stop);
+    for (x, named) in [(controls.attach, "Attach"), (controls.permissions, "Permissions")] {
+        let at_one = ink_in(&one, DisplayScale::ONE, x, alo_tasks::measures::A_CONTROL_IS);
+        let at_two = ink_in(
             &two,
             DisplayScale::of_per_cent(200),
-            place(&two, DisplayScale::of_per_cent(200)),
-            48,
+            x,
+            alo_tasks::measures::A_CONTROL_IS,
         );
-        assert!(at_one > 20, "{named} is an empty box: {at_one} pixels inked");
+        // The ink of at least thirty fully inked pixels.
+        let navy_on_cool = ink_in_one_pixel();
+        assert!(
+            at_one > 30 * navy_on_cool,
+            "{named} is an empty box: {at_one} of ink"
+        );
         #[expect(
             clippy::cast_precision_loss,
-            reason = "pixel counts in the thousands are exact in f64"
+            reason = "sums of a few million are exact in f64"
         )]
         let ratio = at_two as f64 / at_one as f64;
         assert!(
-            (3.4..=4.6).contains(&ratio),
-            "{named} at 200 inks {ratio} times the pixels it inks at 100"
+            (3.6..=4.4).contains(&ratio),
+            "{named} at 200 carries {ratio} times the ink it carries at 100"
         );
     }
+}
+
+/// The ink of one pixel fully inked in `text/primary` on the cool ground.
+fn ink_in_one_pixel() -> u64 {
+    let palette = palette();
+    palette
+        .ink
+        .iter()
+        .zip(palette.cool)
+        .map(|(one, other)| u64::from(one.abs_diff(other)))
+        .sum()
 }
 
 /// **The model's control carries its arrow**, centred while it has no name.
@@ -199,14 +222,20 @@ fn the_models_control_carries_its_arrow() {
         .controls()
         .model;
     let wide = alo_tasks::measures::THE_MODEL_CONTROL_IS_WIDE;
-    let left_half = inked_in(&window, DisplayScale::ONE, model, wide / 2);
-    let all = inked_in(&window, DisplayScale::ONE, model, wide);
-    assert!(all > 10, "the model's control has no arrow");
-    // Centred: about half the arrow on each side of the middle.
+    let left_half = ink_in(&window, DisplayScale::ONE, model, wide / 2);
+    let right_half = ink_in(&window, DisplayScale::ONE, model + wide / 2, wide / 2);
+    assert!(
+        left_half + right_half > 10 * ink_in_one_pixel(),
+        "the model's control has no arrow"
+    );
+    // Centred: the arrow is symmetrical, so as much ink on each side.
     #[expect(
         clippy::cast_precision_loss,
-        reason = "pixel counts in the hundreds are exact in f64"
+        reason = "sums of a few thousand are exact in f64"
     )]
-    let share = left_half as f64 / all as f64;
-    assert!((0.35..=0.65).contains(&share), "the arrow is not centred: {share}");
+    let share = left_half as f64 / (left_half + right_half) as f64;
+    assert!(
+        (0.45..=0.55).contains(&share),
+        "the arrow is not centred: {share}"
+    );
 }
