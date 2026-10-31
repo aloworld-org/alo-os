@@ -293,7 +293,8 @@ fn the_cloud_is_drawn_beside_a_provider_and_nowhere_else() {
         let top = cloud.at.loc.y
             + scale.px(alo_tasks::measures::BORDER + controls.from_the_top)
             + (scale.px(alo_tasks::measures::A_CONTROL_IS) - frame_is) / 2;
-        let the_frame = Rectangle::<i32, Physical>::new((left, top).into(), (frame_is, frame_is).into());
+        let the_frame =
+            Rectangle::<i32, Physical>::new((left, top).into(), (frame_is, frame_is).into());
         let wide = cloud.panel.area.size.w;
         let mut differing = 0;
         for (at, (one, other)) in cloud
@@ -318,6 +319,10 @@ fn the_cloud_is_drawn_beside_a_provider_and_nowhere_else() {
                 scale.per_cent()
             );
         }
-        assert!(differing > 10, "at {}: no cloud was drawn", scale.per_cent());
+        assert!(
+            differing > 10,
+            "at {}: no cloud was drawn",
+            scale.per_cent()
+        );
     }
 }

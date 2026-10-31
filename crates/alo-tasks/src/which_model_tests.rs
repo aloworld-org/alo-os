@@ -25,7 +25,10 @@ fn only_a_hosted_service_is_a_provider() {
             machine: "workstation-2".to_owned(),
         },
     ] {
-        assert!(!WhichModel::answering_from(not.clone()).a_provider_answers(), "{not:?}");
+        assert!(
+            !WhichModel::answering_from(not.clone()).a_provider_answers(),
+            "{not:?}"
+        );
     }
 }
 
