@@ -9,9 +9,8 @@ owner makes (see *Everything else*); until it lands those two top levels are
 not built. How alo types is decided on stage 1's measurement. **Nothing here is
 built.**
 
-*Number: `origin/main` ends at 0141, and the next number is already taken by a
-decision about small vector artwork on a branch not yet landed, so this is the
-one after it, chosen after a fetch at push time.*
+*Number: the next one after the decision about small vector artwork, which
+landed while this was written; checked after a fetch at push time.*
 
 ## What it changes for the person
 
