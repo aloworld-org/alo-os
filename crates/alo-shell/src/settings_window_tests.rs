@@ -294,9 +294,11 @@ fn every_setting_the_machine_has_is_in_one_window() {
             SettingsRow::Accent(Appearance::shipped().accent()),
             SettingsRow::Edge(Dock::shipped().edge()),
             SettingsRow::Hiding(Dock::shipped().hiding()),
-            // Nobody chose a region, so the language decides — which is what
-            // the file says, and so what is marked.
-            SettingsRow::WrittenAs(None),
+            // **The region and the time zone are not marked on a page**: each
+            // is chosen in its list, and the list opens on what the file says
+            // — for nobody having chosen a region, the language's own way.
+            // `the_country_is_chosen_from_a_list_that_typing_narrows` holds
+            // that.
         ]
     );
 }
