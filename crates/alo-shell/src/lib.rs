@@ -569,7 +569,7 @@ mod which_surface_claims_a_point;
 mod which_window_is_in_front;
 /// The name of the person a desktop is for, told once at sign-in (ADR 0135).
 mod whose_desktop_this_is;
-/// Whether a person's session has the screen, asked of `logind` before the
+/// Whether a person is arriving at the screen, asked of `logind` and systemd before the
 /// sign-in screen ends as a failure.
 pub mod whose_screen_it_is;
 mod window_activation;
