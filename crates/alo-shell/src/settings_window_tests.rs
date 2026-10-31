@@ -1688,3 +1688,30 @@ fn the_country_is_chosen_from_a_list_that_typing_narrows() {
     assert!(window.open().is_some_and(|open| open.picker.is_none()));
     assert_eq!(window.formats().and_then(|it| it.region()), Some("BE"));
 }
+
+/// **Typing narrows the list to what contains it, and the whole list stays
+/// under the matches**, as frame `551:751` draws it.
+#[test]
+fn typing_narrows_the_list_and_the_whole_list_stays_under_it() {
+    let machine = a_persons_machine("picker-narrows");
+    let strings = crate::settings_testing::settings_words();
+    let mut window = machine.opened();
+    let open = window.open.as_mut().unwrap_or_else(|| unreachable!());
+    open.the_list_opens(SettingsPicker::Region, &strings);
+    let every = open.every_entry(SettingsPicker::Region, &strings).len();
+    assert!(every > 200, "the control: every region is offered");
+    open.the_search_is("bel".to_owned(), &strings);
+    let picker = open.picker.clone().unwrap_or_else(|| unreachable!());
+    let names: Vec<String> = open
+        .the_matches(SettingsPicker::Region, "bel", &strings)
+        .into_iter()
+        .map(|it| it.label)
+        .collect();
+    for expected in ["Belarus", "Belgium", "Belize"] {
+        assert!(names.iter().any(|it| it == expected), "{names:?}");
+    }
+    assert!(names.iter().all(|it| it.to_lowercase().contains("bel")));
+    assert_eq!(picker.matches, names.len());
+    assert_eq!(picker.shown.len(), names.len() + every);
+    assert_eq!(picker.focus, 0);
+}
