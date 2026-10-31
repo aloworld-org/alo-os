@@ -1,0 +1,29 @@
+# Where the egress indicator's two arrows came from.
+#
+# Taken from the design file on 2026-10-31 with the Figma connector's
+# `get_design_context`, from the alo window the owner approved that day on
+# page `544:30910` *Proposed · Settings and the alo window · 2026-10-31*, and
+# committed byte for byte as it answered.
+#
+# Each file is the arrow's own group, not its icon frame: the frame is
+# `frame_is` square and the group sits inside it at the design's inset, so the
+# drawing places the group's box at `drawn_is` in the middle of the frame.
+
+file = "nDxyF5Ho9oC4RObjVzwBNJ"
+fetched = "2026-10-31"
+
+[[icon]]
+svg = "lit.svg"
+names = "the arrow on the lit lamp, while something is leaving"
+indicator = "549:129"
+artwork = "549:131"
+frame_is = 14
+drawn_is = 7.14583
+
+[[icon]]
+svg = "quiet.svg"
+names = "the arrow in the quiet circle, while nothing is leaving"
+indicator = "549:368"
+artwork = "549:369"
+frame_is = 16
+drawn_is = 7.83333

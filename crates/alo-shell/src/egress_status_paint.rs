@@ -22,8 +22,24 @@ impl EgressStatusPicture {
         }
     }
 
-    /// Draw the rows' shapes, then their words.
-    pub(crate) fn paint(&self, frame: &mut impl Frame) -> Result<(), RenderError> {
+    /// Every raster this indicator carries — the quiet circle, or each pill
+    /// with its lamp — in painting order, for the painter to upload before its
+    /// frame opens, as it uploads the Dock's.
+    pub(crate) fn washed(&self) -> impl Iterator<Item = &crate::painted::Washed> {
+        self.washed.iter()
+    }
+
+    /// Draw the circle or the pills, then any flat shape, then the words.
+    ///
+    /// `washed` is what [`Self::washed`] yielded, uploaded, in the same order.
+    pub(crate) fn paint<F: Frame>(
+        &self,
+        frame: &mut F,
+        washed: &[(F::TextureId, smithay::utils::Rectangle<i32, Physical>)],
+    ) -> Result<(), RenderError> {
+        for (texture, area) in washed {
+            crate::painted::wash(frame, texture, *area)?;
+        }
         crate::painted::paint(frame, &self.solids, &self.inked)
     }
 }

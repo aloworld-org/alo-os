@@ -473,6 +473,10 @@ mod the_pointer_in_pixels;
 pub mod the_providers_words;
 mod the_region_a_person_chose;
 pub mod the_regions_offered;
+/// Vector artwork inked into a raster at its box's size.
+mod inking_a_shape;
+/// The egress indicator's two arrows, from the design file's SVG.
+mod the_egress_indicators_arrows;
 /// The reply box's five icons, read from the design file's SVG and drawn at
 /// the display's scale.
 mod the_reply_boxs_icons;

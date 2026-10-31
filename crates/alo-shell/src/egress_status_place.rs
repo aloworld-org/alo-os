@@ -1,4 +1,12 @@
-//! Where the egress indicator sits: at the far end of the dock, above it.
+//! Where the status corner's surfaces sit.
+//!
+//! **The egress indicator moved on 2026-10-31**, by the owner's decision: to
+//! the top corner at the far end of the screen — the top right for a
+//! left-to-right reader — outside any window, through
+//! [`Place::in_the_top_corner`]. It sat at the far end of the dock, above it,
+//! until then, and that corner, [`Place::of`], is still where *your camera is
+//! on* sits, with notifications at the other end. What follows was written
+//! when the egress indicator was there too.
 //!
 //! `docs/features.md` puts the indicator in the status area *so "nothing has
 //! left this machine" sits where a person already glances*. The dock is along the
@@ -295,6 +303,49 @@ impl Place {
                 Stacked::Downwards(y) => Stacked::Downwards(y.max(margin)),
             },
             ..corner
+        }
+    }
+
+    /// **The top corner at the far end of the room**, where the egress
+    /// indicator has sat since the owner's decision of 2026-10-31: *the top
+    /// right of the screen, outside any window*, replacing *the far end of the
+    /// Dock, above it*.
+    ///
+    /// The far end is the reading direction's, as [`Self::of`]'s is — the right
+    /// for a left-to-right reader, so the top-right corner the owner named —
+    /// and the room is what the put-aside panel and a Dock down a side leave,
+    /// so the indicator never sits on either. The panel owns its column,
+    /// including that column's top, by the owner's ruling of 2026-09-30, and
+    /// that ruling is kept: the indicator sits at the top of the room beside it.
+    /// A Dock along the top is cleared by starting below it.
+    ///
+    /// `margin` is kept from the far edge; the rows' own distance from the top
+    /// is the caller's, because the two states of the indicator sit at
+    /// different heights in the design.
+    pub(crate) fn in_the_top_corner(
+        layout: Layout,
+        room: TheRoom,
+        margin: i32,
+        reading: Direction,
+    ) -> Self {
+        let (width, height) = room.size;
+        let (from, to) = the_span_across(width, &the_columns_reserved(layout, room, width));
+        let across = match reading {
+            Direction::RightToLeft => Across::FromLeft(from + margin),
+            Direction::LeftToRight => Across::FromRight(to - margin),
+        };
+        let below_a_top_dock = match layout.edge() {
+            Edge::Top => {
+                room.scale.room(layout.thickness()).clamp(0, height.max(0))
+                    + room.scale.px(alo_dock::measures::FLOATING_ABOVE_THE_EDGE)
+            }
+            Edge::Bottom | Edge::Left | Edge::Right => 0,
+        };
+        Self {
+            across,
+            stacked: Stacked::Downwards(below_a_top_dock),
+            room_across: (to - from - 2 * margin).max(0),
+            room_down: (height - below_a_top_dock).max(0),
         }
     }
 

@@ -228,6 +228,25 @@ where
                 .map_err(submission)?,
         ),
     };
+    // **The egress indicator's circle or pills, uploaded with the rest**: since
+    // 2026-10-31 they have round ends and a shadow, which are a raster.
+    let status_washed: Vec<(R::TextureId, Rectangle<i32, Physical>)> = match native.status {
+        None => Vec::new(),
+        Some(status) => status
+            .washed()
+            .map(|raster| {
+                renderer
+                    .import_memory(
+                        &raster.pixels,
+                        Fourcc::Abgr8888,
+                        (raster.area.size.w, raster.area.size.h).into(),
+                        false,
+                    )
+                    .map(|texture| (texture, raster.area))
+                    .map_err(submission)
+            })
+            .collect::<Result<_, _>>()?,
+    };
     let mut frame = renderer
         .render(framebuffer, size, transform)
         .map_err(submission)?;
@@ -323,7 +342,7 @@ where
     // Above every client and control, below the cursor: nothing a client maps
     // covers a line of what is leaving this machine.
     if let Some(status) = native.status.filter(|status| !status.is_empty()) {
-        status.paint(&mut frame)?;
+        status.paint(&mut frame, &status_washed)?;
     }
     // Beside it, and as high: nothing covers the line that says the camera is
     // on either.

@@ -92,6 +92,27 @@ impl HowItIsRaised {
         darkness: 0.0,
     };
 
+    /// The egress indicator while something is leaving: a pill 40 high, so a
+    /// corner of 20, with `Elevation/Quiet` under it — `0 8px 24px` at `0.08`,
+    /// which is the Dock's own shadow. `549:129`, measured 2026-10-31.
+    pub(crate) const THE_LIT_INDICATOR: Self = Self {
+        corner: 20,
+        falls: THE_SHADOW_FALLS,
+        blurs: THE_SHADOW_SPREADS,
+        spreads: 0,
+        darkness: 0.08,
+    };
+
+    /// The egress indicator while nothing is leaving: a circle 36 across, so a
+    /// corner of 18, and **no shadow** — the design draws none on `549:368`.
+    pub(crate) const THE_QUIET_INDICATOR: Self = Self {
+        corner: 18,
+        falls: 0,
+        blurs: 0,
+        spreads: 0,
+        darkness: 0.0,
+    };
+
     /// This look at a display's scale, as a fraction: 1.0 at 100%, 2.0 at
     /// 200%.
     ///
