@@ -68,8 +68,9 @@
 //! command that never ran rather than a boundary that looks broken.
 
 use std::{
+    io::Write,
     path::Path,
-    process::{Command, ExitStatus},
+    process::{Command, ExitStatus, Stdio},
     time::SystemTime,
 };
 
@@ -78,6 +79,7 @@ use alo_capability::Grantee;
 use alo_record::Entry;
 use alo_strings::{Filling, Strings};
 
+use crate::carrying_what_it_says::{Carrying, carried_until_it_ends};
 use crate::{ARun, AskedToRun, SomewhereToWrite, WhatHappened, failing::NotRun};
 
 /// Where `alo-enter-the-box` is on a machine running alo OS.
@@ -107,6 +109,10 @@ pub struct WhereCommandsRun<'a, R: SomewhereToWrite> {
     record: &'a mut R,
     /// The program that puts a command inside its box.
     helper: &'a Path,
+    /// Where what the command says goes, carried out of the box through pipes
+    /// because the box cannot reach the person's terminal
+    /// (`crate::carrying_what_it_says`).
+    carrying: Carrying<'a>,
 }
 
 impl<'a, R: SomewhereToWrite> WhereCommandsRun<'a, R> {
@@ -118,6 +124,30 @@ impl<'a, R: SomewhereToWrite> WhereCommandsRun<'a, R> {
             boxes_live_in,
             record,
             helper: Path::new(THE_HELPER),
+            carrying: Carrying::ToThePerson,
+        }
+    }
+
+    /// The same, with what each command says written to `out` and `err` rather
+    /// than to the person, and no input. For a test that must see it.
+    #[must_use]
+    pub fn saying_it_to(
+        mut self,
+        out: &'a mut (dyn Write + Send),
+        err: &'a mut (dyn Write + Send),
+    ) -> Self {
+        self.carrying = Carrying::To { out, err };
+        self
+    }
+
+    /// Where this run's output goes, borrowed for the one run.
+    fn carrying(&mut self) -> Carrying<'_> {
+        match &mut self.carrying {
+            Carrying::ToThePerson => Carrying::ToThePerson,
+            Carrying::To { out, err } => Carrying::To {
+                out: &mut **out,
+                err: &mut **err,
+            },
         }
     }
 
@@ -136,6 +166,7 @@ impl<'a, R: SomewhereToWrite> WhereCommandsRun<'a, R> {
             boxes_live_in,
             record,
             helper,
+            carrying: Carrying::ToThePerson,
         }
     }
 
@@ -270,11 +301,18 @@ impl<'a, R: SomewhereToWrite> WhereCommandsRun<'a, R> {
 
         // From here the box is closed, so every road out goes through
         // `put_back`.
+        //
+        // **All three streams are pipes**, because the box refuses the
+        // person's terminal on every read and write, and a command given it
+        // says nothing — not even the helper's own refusal (2026-10-31).
         let started = Command::new(self.helper)
             .arg(self.boxes_live_in)
             .arg(the_box.at())
             .arg(what.program())
             .args(what.arguments())
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
             .spawn();
 
         let mut child = match started {
@@ -289,7 +327,8 @@ impl<'a, R: SomewhereToWrite> WhereCommandsRun<'a, R> {
             }
         };
 
-        let ended = match child.wait() {
+        let carrying = self.carrying();
+        let ended = match carried_until_it_ends(&mut child, carrying) {
             Ok(ended) => ended,
             Err(why) => {
                 return Err(put_back(

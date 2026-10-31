@@ -150,6 +150,51 @@ fn the_library_folder_is_a_resolved_directory() {
     );
 }
 
+/// **Every library folder this machine has is under the one granted.**
+///
+/// The fault a booted machine found on 2026-10-31: `/usr/lib` was granted and
+/// Fedora's loader and C library are in `/usr/lib64`, so no boxed dynamically
+/// linked command could start, while this crate's tests passed on Ubuntu,
+/// which keeps them in `/usr/lib`. Asked of this machine's own folders, so it
+/// fails here on any machine that has a library folder the grant misses.
+#[test]
+fn every_library_folder_this_machine_has_is_under_the_grant() {
+    let granted = where_the_libraries_are().expect("a machine that runs things");
+    let mut asked = 0;
+    for folder in ["/usr/lib", "/usr/lib64", "/lib", "/lib64"] {
+        let Ok(resolved) = Path::new(folder).canonicalize() else {
+            continue;
+        };
+        asked += 1;
+        assert!(
+            resolved.starts_with(&granted),
+            "{folder} resolves to {resolved:?}, which is outside the granted {granted:?}, so a \
+             command whose libraries are there cannot start in a box"
+        );
+    }
+    assert!(asked > 0, "no library folder was found, so nothing was checked");
+}
+
+/// **The library place is never the whole machine.**
+#[test]
+fn the_library_place_is_never_the_root_of_the_machine() {
+    let granted = where_the_libraries_are().expect("a machine that runs things");
+    assert_ne!(granted, Path::new("/"), "the box was granted the whole machine");
+    assert_eq!(
+        the_folder_both_are_under(Path::new("/usr/lib"), Path::new("/usr/lib64")),
+        Path::new("/usr")
+    );
+    assert_eq!(
+        the_folder_both_are_under(Path::new("/usr/lib"), Path::new("/usr/lib")),
+        Path::new("/usr/lib")
+    );
+    assert_eq!(
+        the_folder_both_are_under(Path::new("/usr/lib"), Path::new("/opt/lib")),
+        Path::new("/"),
+        "the helper that finds the shared folder is what the guard above is for"
+    );
+}
+
 /// **Asking twice answers the same**, so two runs of one command are bound the
 /// same way.
 #[test]
