@@ -111,10 +111,10 @@ impl HowThisMachineStartsThings {
                     "alo-desktop: the bus could not start {identifier}, so it is started from \
                      its own entry's command instead"
                 );
-                self.from_its_command(identifier, &entry, &command)
+                self.started_from_its_command(identifier, &entry, &command)
             }
             Ok(HowItStarts::FromItsCommand(command)) => {
-                self.from_its_command(identifier, &entry, &command)
+                self.started_from_its_command(identifier, &entry, &command)
             }
             Err(why) => said(identifier, &the_reason(&why)),
         }
@@ -126,7 +126,12 @@ impl HowThisMachineStartsThings {
     }
 
     /// A transient service in the person's own manager, running this command.
-    fn from_its_command(&self, identifier: &str, entry: &TheEntry, command: &[String]) -> bool {
+    fn started_from_its_command(
+        &self,
+        identifier: &str,
+        entry: &TheEntry,
+        command: &[String],
+    ) -> bool {
         let Some(handed) = self.handed.clone() else {
             return said(identifier, "there is no display to hand it");
         };
