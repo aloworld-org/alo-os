@@ -166,9 +166,12 @@ fn the_keys_said(text: &str) -> BTreeMap<String, String> {
             continue;
         };
         let (key, value) = (key.trim(), value.trim());
-        let wanted = ["GenericName", "Keywords", "Categories"]
-            .iter()
-            .any(|it| key == *it || key.strip_prefix(it).is_some_and(|rest| rest.starts_with('[')));
+        let wanted = ["GenericName", "Keywords", "Categories"].iter().any(|it| {
+            key == *it
+                || key
+                    .strip_prefix(it)
+                    .is_some_and(|rest| rest.starts_with('['))
+        });
         if wanted && !value.is_empty() {
             said.insert(key.to_owned(), value.to_owned());
         }

@@ -106,7 +106,10 @@ fn an_entry_that_asks_not_to_be_listed_is_never_offered() {
             ),
         ],
     );
-    assert_eq!(what_they_are(std::slice::from_ref(&place), &[]), WhatEachIs::new());
+    assert_eq!(
+        what_they_are(std::slice::from_ref(&place), &[]),
+        WhatEachIs::new()
+    );
 }
 
 /// A person's own copy wins, even where it says less.
@@ -132,6 +135,9 @@ fn a_language_tag_becomes_the_keys_an_entry_is_localised_by() {
         words(&["sr_RS@latin", "sr_RS", "sr@latin", "sr"])
     );
     assert_eq!(the_keys_a_language_reads("de"), words(&["de"]));
-    assert_eq!(the_keys_a_language_reads("es-419"), words(&["es_419", "es"]));
+    assert_eq!(
+        the_keys_a_language_reads("es-419"),
+        words(&["es_419", "es"])
+    );
     assert!(the_keys_a_language_reads("").is_empty());
 }
