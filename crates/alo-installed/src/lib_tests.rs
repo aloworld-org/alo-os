@@ -564,10 +564,8 @@ fn an_entry_that_will_not_read_is_skipped_and_said() {
 /// installed yet has no export directory, and that is not a refusal.
 #[test]
 fn a_place_that_is_not_there_is_not_a_refusal() {
-    let nowhere = std::env::temp_dir().join(format!(
-        "alo-installed-{}-not-there",
-        std::process::id()
-    ));
+    let nowhere =
+        std::env::temp_dir().join(format!("alo-installed-{}-not-there", std::process::id()));
     let _ = std::fs::remove_dir_all(&nowhere);
     let (installed, _icons, not_read) = read_with_their_icons_saying_what_did_not(&[nowhere]);
     assert!(installed.is_empty());

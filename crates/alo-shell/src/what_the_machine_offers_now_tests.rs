@@ -100,7 +100,10 @@ fn an_application_that_arrives_after_sign_in_reaches_the_dock_and_the_bar() {
 
     server.the_machine_now_offers(offering(Discovery::SoFar(Vec::new()), &[]), &mut folder);
     assert_eq!(pinned(&server), ["Settings", "Applications"]);
-    assert!(folder.writes.is_empty(), "an unfinished install was written down");
+    assert!(
+        folder.writes.is_empty(),
+        "an unfinished install was written down"
+    );
     assert!(server.what_this_machine_has.is_empty());
 
     server.the_machine_now_offers(
@@ -118,7 +121,10 @@ fn an_application_that_arrives_after_sign_in_reaches_the_dock_and_the_bar() {
     assert!(folder.writes.is_empty());
     assert_eq!(server.what_this_machine_has, ["org.mozilla.firefox"]);
     assert_eq!(
-        server.what_each_is_called.get("org.mozilla.firefox").map(String::as_str),
+        server
+            .what_each_is_called
+            .get("org.mozilla.firefox")
+            .map(String::as_str),
         Some("Firefox")
     );
 
@@ -129,15 +135,27 @@ fn an_application_that_arrives_after_sign_in_reaches_the_dock_and_the_bar() {
     server.the_machine_now_offers(
         offering(
             Discovery::Completed(both),
-            &[("org.kde.dolphin", "Dolphin"), ("org.mozilla.firefox", "Firefox")],
+            &[
+                ("org.kde.dolphin", "Dolphin"),
+                ("org.mozilla.firefox", "Firefox"),
+            ],
         ),
         &mut folder,
     );
     assert_eq!(
         pinned(&server),
-        ["org.kde.dolphin", "org.mozilla.firefox", "Settings", "Applications"]
+        [
+            "org.kde.dolphin",
+            "org.mozilla.firefox",
+            "Settings",
+            "Applications"
+        ]
     );
-    assert_eq!(folder.writes.len(), 1, "the finished defaults are written exactly once");
+    assert_eq!(
+        folder.writes.len(),
+        1,
+        "the finished defaults are written exactly once"
+    );
 }
 
 /// **Once settled, a reading never changes the Dock** — the refusal this file
@@ -188,7 +206,11 @@ fn a_change_the_disk_has_not_had_yet_is_not_overwritten() {
         ),
         &mut folder,
     );
-    assert_eq!(pinned(&server), ["Settings"], "a reading undid the person's unpin");
+    assert_eq!(
+        pinned(&server),
+        ["Settings"],
+        "a reading undid the person's unpin"
+    );
 }
 
 /// **The terminal follows the machine**: one that arrives is the chord's

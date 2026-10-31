@@ -729,7 +729,10 @@ mod tests {
         let before = ThePins::NeverSet.what_to_pin(&Discovery::SoFar(Vec::new()));
         assert_eq!(names(before.to_draw()), ["Settings", "Applications"]);
         assert!(!before.should_be_written_down());
-        assert!(!before.is_settled(), "an unfinished install settled the Dock");
+        assert!(
+            !before.is_settled(),
+            "an unfinished install settled the Dock"
+        );
 
         let later = ThePins::NeverSet.what_to_pin(&Discovery::SoFar(vec![(
             ARole::Browser,
@@ -746,7 +749,10 @@ mod tests {
             ARole::Browser,
             app("org.mozilla.firefox"),
         )]));
-        assert!(done.should_be_written_down(), "the control: a finished scan is kept");
+        assert!(
+            done.should_be_written_down(),
+            "the control: a finished scan is kept"
+        );
         assert!(done.is_settled());
     }
 

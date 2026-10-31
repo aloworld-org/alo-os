@@ -6,10 +6,10 @@
 )]
 
 use super::{WhereToLook, filled_by, what_is_offered, what_this_machine_offers};
-use alo_software::the_applications_arrived::TheApplicationsArrived;
 use alo_applications::Application;
 use alo_dock::pinning::{ARole, Discovery};
 use alo_software::source::{Configured, SourceName};
+use alo_software::the_applications_arrived::TheApplicationsArrived;
 use alo_software::what_this_machine_has::{WhatThisMachineHas, what_this_machine_has};
 use alo_software::{Failed, Shipped, Tool};
 
@@ -274,10 +274,7 @@ fn an_entry(name: &str, extra: &str) -> String {
 ///
 /// Returned with the root so the caller can remove it.
 pub(super) fn a_machine_laid_out_like_the_image(named: &str) -> std::path::PathBuf {
-    let root = std::env::temp_dir().join(format!(
-        "alo-desktop-{}-{named}",
-        std::process::id()
-    ));
+    let root = std::env::temp_dir().join(format!("alo-desktop-{}-{named}", std::process::id()));
     let _ = std::fs::remove_dir_all(&root);
     let exports = root.join("var/lib/flatpak/exports/share/applications");
     std::fs::create_dir_all(&exports).expect("the export directory");
@@ -401,7 +398,11 @@ fn an_entry_that_will_not_read_is_said_and_the_rest_are_offered() {
         &as_the_desktop_unit_starts_it(&root),
         &AToolThatSays::refusing(),
     );
-    assert_eq!(offered.installed.len(), 3, "the broken entry cost another one");
+    assert_eq!(
+        offered.installed.len(),
+        3,
+        "the broken entry cost another one"
+    );
     assert_eq!(offered.not_read.len(), 1, "{:?}", offered.not_read);
     assert_eq!(
         offered.roles,

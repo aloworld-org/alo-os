@@ -76,9 +76,7 @@ pub fn with_what_flatpak_exports(
     ];
     for place in exported.into_iter().flatten() {
         let place = place.to_string_lossy().into_owned();
-        let already = given
-            .split(':')
-            .any(|part| the_same_place(part, &place));
+        let already = given.split(':').any(|part| the_same_place(part, &place));
         if !already {
             places.push(place);
         }

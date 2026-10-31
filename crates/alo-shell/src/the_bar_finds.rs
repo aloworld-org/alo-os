@@ -133,8 +133,9 @@ pub fn what_matches<'a>(
                 .get(identifier)
                 .map(|name| name.to_lowercase())
                 .unwrap_or_default();
-            let a_word_of_the_name_starts =
-                name.split_whitespace().any(|word| word.starts_with(&looking_for));
+            let a_word_of_the_name_starts = name
+                .split_whitespace()
+                .any(|word| word.starts_with(&looking_for));
             if last.starts_with(&looking_for) || a_word_of_the_name_starts {
                 Some((0, identifier))
             } else if last.contains(&looking_for) || name.contains(&looking_for) {

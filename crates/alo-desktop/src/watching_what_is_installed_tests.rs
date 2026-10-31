@@ -16,17 +16,17 @@ use crate::what_this_machine_offers::{WhereToLook, what_is_offered};
 /// flatpak export directory at all, which is a fresh machine before its first
 /// application.
 fn a_fresh_machine(named: &str) -> (std::path::PathBuf, WhereToLook) {
-    let root = std::env::temp_dir().join(format!(
-        "alo-desktop-watch-{}-{named}",
-        std::process::id()
-    ));
+    let root =
+        std::env::temp_dir().join(format!("alo-desktop-watch-{}-{named}", std::process::id()));
     let _ = std::fs::remove_dir_all(&root);
     std::fs::create_dir_all(root.join("usr/share/applications")).expect("a directory");
     let at = WhereToLook::beneath(
         &root.join("var/lib/flatpak"),
         Some(&root.join("home/someone")),
         None,
-        Some(std::ffi::OsStr::new(&root.join("usr/share").display().to_string())),
+        Some(std::ffi::OsStr::new(
+            &root.join("usr/share").display().to_string(),
+        )),
         TheApplicationsArrived::beneath(&root),
     );
     (root, at)
@@ -103,8 +103,10 @@ fn an_application_removed_is_a_change() {
     let (root, at) = a_fresh_machine("removed");
     flatpak_installs(&root, "org.kde.dolphin", "Dolphin");
     let before = what_is_there(&at);
-    std::fs::remove_file(root.join("var/lib/flatpak/exports/share/applications/org.kde.dolphin.desktop"))
-        .expect("removed");
+    std::fs::remove_file(
+        root.join("var/lib/flatpak/exports/share/applications/org.kde.dolphin.desktop"),
+    )
+    .expect("removed");
     assert_ne!(before, what_is_there(&at));
     let _ = std::fs::remove_dir_all(root);
 }
