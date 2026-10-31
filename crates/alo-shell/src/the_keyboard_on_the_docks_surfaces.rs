@@ -134,7 +134,9 @@ impl Server {
                     // the keyboard would be somewhere a person cannot see.
                     return;
                 }
-                let _ = self.activate_window(&surface);
+                // **And the applications come in front**
+                // (`crate::which_window_is_in_front`).
+                let _ = self.the_person_goes_to_this_window(&surface);
             }
         }
     }

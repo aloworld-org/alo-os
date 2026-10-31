@@ -234,6 +234,9 @@ mod what_the_dock_is_filled_with;
 mod what_the_machine_offers_now;
 pub use an_application_is_started::{AWayToStartApplications, AsksAnApplicationToStart};
 pub use what_the_machine_offers_now::{AnApplicationHere, WhatTheMachineOffersNow};
+/// Super+Tab and Alt+Tab going round every window, the terminal and the task
+/// windows included.
+mod a_chord_goes_round_every_window;
 /// A press on a task window's one button: Stop (ADR 0139).
 mod a_press_on_the_one_button;
 /// Where the application door's socket goes, and what it refuses rather than
@@ -545,6 +548,8 @@ mod which_card_the_seat_holds;
 mod which_display_a_window_is_on;
 pub mod which_preview_the_pointer_is_on;
 mod which_surface_claims_a_point;
+/// Which kind of window is in front: the one a person went to (2026-10-31).
+mod which_window_is_in_front;
 /// The name of the person a desktop is for, told once at sign-in (ADR 0135).
 mod whose_desktop_this_is;
 mod window_activation;

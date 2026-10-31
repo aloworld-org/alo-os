@@ -104,7 +104,9 @@ impl Server {
         let root = visible
             .select(self.surfaces.keyboard_root().as_ref(), direction)
             .ok_or(WindowSwitchError::Empty)?;
-        self.activate_window(&root)?;
+        // **A person's own road**, so the applications come in front
+        // (`crate::which_window_is_in_front`).
+        self.the_person_goes_to_this_window(&root)?;
         Ok(root)
     }
 }

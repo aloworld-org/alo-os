@@ -270,22 +270,41 @@ impl Server {
             // window a person clicks has the keyboard.
             let on_the_screen =
                 Point::<i32, Physical>::from((location.x as i32, location.y as i32));
-            // **A task window's edge before the window**, and before any
-            // client's: it is drawn above the task window and over whatever
-            // application is behind, so a press on it is the edge's.
-            if let Some(at) = self.where_the_pointer_is_in_logical_pixels()
-                && self.a_press_on_a_task_windows_edge(at)
-            {
-                return Ok(false);
+            // **The kind of window drawn on top here takes the press** — the
+            // owner's decision of 2026-10-31, `crate::which_window_is_in_front`.
+            // A task window was asked first until then, because it was always
+            // drawn first; now an application or the terminal can be in front
+            // of it, and a press on what a person sees must not reach a task
+            // window behind it.
+            let in_front_here = self.the_kind_under(location);
+            if in_front_here == Some(crate::which_window_is_in_front::AKindOfWindow::TaskWindows) {
+                // **A task window's edge before the window**: it is drawn
+                // above the task window, so a press on it is the edge's.
+                if let Some(at) = self.where_the_pointer_is_in_logical_pixels()
+                    && self.a_press_on_a_task_windows_edge(at)
+                {
+                    return Ok(false);
+                }
+                // **The one button, when it shows Stop** (ADR 0139), before the
+                // window it sits in takes the press for the keyboard.
+                if self.a_press_on_a_one_button(on_the_screen) {
+                    return Ok(false);
+                }
+                if let Some(which) = self.tasks().the_one_under(on_the_screen) {
+                    self.the_composer.it_gave_the_keyboard_up();
+                    self.this_task_took_the_keyboard(which);
+                    return Ok(false);
+                }
             }
-            // **The one button, when it shows Stop** (ADR 0139), before the
-            // window it sits in takes the press for the keyboard.
-            if self.a_press_on_a_one_button(on_the_screen) {
-                return Ok(false);
-            }
-            if let Some(which) = self.tasks().the_one_under(on_the_screen) {
+            // **A press on alo's own terminal brings it in front and gives it
+            // the keyboard**, and goes no further: the terminal is the shell's,
+            // so a press on it was never a press on an application behind it.
+            if in_front_here == Some(crate::which_window_is_in_front::AKindOfWindow::TheTerminal) {
                 self.the_composer.it_gave_the_keyboard_up();
-                self.this_task_took_the_keyboard(which);
+                self.the_keyboard_is_now_in(None);
+                self.the_person_went_to(
+                    crate::which_window_is_in_front::AKindOfWindow::TheTerminal,
+                );
                 return Ok(false);
             }
         }
@@ -382,7 +401,11 @@ impl Server {
             && let Some(window) = self.the_window_under(location)
         {
             self.the_composer.it_gave_the_keyboard_up();
-            self.the_task_gave_the_keyboard_up();
+            // **And the applications come in front** of the terminal and any
+            // task window (the owner, 2026-10-31), which lets go of a task
+            // window's keyboard: the window a person clicks is the one they
+            // see and the one they type into.
+            self.the_person_went_to(crate::which_window_is_in_front::AKindOfWindow::Applications);
             // **And off the Dock, if F6 had put it there**: the window a
             // person clicks has the keyboard, and a Dock still taking Enter
             // behind it would press a button they are not looking at.

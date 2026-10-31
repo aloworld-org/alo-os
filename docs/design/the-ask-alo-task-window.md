@@ -254,10 +254,22 @@ empty reply box gave the keyboard up "so a person can always get back to their
 applications". On a booted machine the window stayed drawn in front, every key
 went to the terminal hidden behind it, and Alt+F4 found no window to close.
 
-**Still open:** every task window is drawn over the terminal and every
-application. So a shortcut from a task window to an application or to the
-terminal sends typing to a window the task window may cover. Which window comes
-in front then is a stacking question for the owner.
+**The window you go to comes in front** — the owner's decision of 2026-10-31,
+which settles the question this paragraph left open on 2026-10-30. Switching
+to the terminal or an application — Super+Tab, Alt+Tab, Ctrl+Alt+T, a click, or
+the Dock — brings it on top of any task window. The task window stays open
+behind it, **one Super+Tab away**: the next-window shortcuts go round the
+applications, then the terminal, then every open task window. A click goes to
+whatever is drawn on top where it lands and brings that in front. So nothing
+can type into a window hidden behind another, and no window is buried where
+the person cannot find it (`docs/features.md`, *Every goal is a canvas*).
+
+Until then every task window was drawn over the terminal and every
+application, in a fixed order, so a shortcut from a task window sent typing to
+a window the task window still covered. The order is between the three kinds
+of window, not inside one: task windows keep theirs, the last opened in front.
+Built in `crates/alo-shell/src/which_window_is_in_front.rs`, which the painter,
+a press and the keyboard all read.
 
 ## The approval card, 920 × 152
 

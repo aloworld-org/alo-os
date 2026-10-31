@@ -640,7 +640,8 @@ impl crate::Server {
         }
         // A refusal here is a window that went away between the lookup and now,
         // which is an ordinary race and not something to end a session over.
-        let _ = self.activate_window(&surface);
+        // **And the applications come in front** (`crate::which_window_is_in_front`).
+        let _ = self.the_person_goes_to_this_window(&surface);
     }
 
     /// Carry out a native entry's action.

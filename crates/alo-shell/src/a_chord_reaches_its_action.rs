@@ -273,6 +273,15 @@ impl Server {
         // coarser grain, because that road wants a focused window and this one
         // does not: pressing it with nothing focused starts at an end of the
         // list, which is a thing a person does and not a refusal.
+        // **Going round every window — applications, the terminal and the task
+        // windows — while the terminal or a task window is open**, asked before
+        // the two roads that walk the applications alone, which still answer
+        // when nothing else is open. The owner's decision of 2026-10-31:
+        // `crate::a_chord_goes_round_every_window`.
+        if self.a_chord_goes_round_every_window(&shortcuts, chord) {
+            self.shortcuts = Some(shortcuts);
+            return names.map_or(WhatTheChordCameTo::NotBound, WhatTheChordCameTo::Carried);
+        }
         if self.a_chord_moves_between_applications(&shortcuts, chord) {
             self.shortcuts = Some(shortcuts);
             return names.map_or(WhatTheChordCameTo::NotBound, WhatTheChordCameTo::Carried);

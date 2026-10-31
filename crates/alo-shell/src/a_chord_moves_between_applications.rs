@@ -88,7 +88,7 @@ impl crate::Server {
     /// what *next* means. A window whose application this compositor cannot
     /// name is skipped rather than given a placeholder: a chord that focused
     /// *the unnamed one* would be a chord a person cannot predict.
-    fn the_applications_the_keyboard_walks(&mut self) -> Vec<AppId> {
+    pub(crate) fn the_applications_the_keyboard_walks(&mut self) -> Vec<AppId> {
         self.switch_order.refresh(self.surfaces.buffered());
         let mut order: Vec<AppId> = Vec::new();
         let surfaces: Vec<_> = self.switch_order.in_order().cloned().collect();
