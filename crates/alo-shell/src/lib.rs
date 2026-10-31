@@ -461,7 +461,6 @@ pub mod task_text;
 pub mod the_application_door;
 pub mod the_application_doors_place;
 pub mod the_bar_finds;
-mod the_door_on_the_desktop;
 mod the_bars_pressable_slots;
 mod the_bars_seat;
 pub mod the_cards_words;
@@ -473,6 +472,7 @@ mod the_desk_is_reconciled;
 mod the_dock_as_a_reader_meets_it;
 mod the_docks_name_is_held;
 pub mod the_docks_words;
+mod the_door_on_the_desktop;
 mod the_edge_takes_the_keyboard;
 /// The egress indicator's two arrows, from the design file's SVG.
 mod the_egress_indicators_arrows;
