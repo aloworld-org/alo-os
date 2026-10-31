@@ -43,12 +43,11 @@ fn main() -> ExitCode {
     // Returns only on failure. On success this process is the command and
     // nothing below here runs.
     let why = alo_running::enter_the_box_and_become(&inside, &the_box, &program, &arguments);
-    eprintln!(
-        "alo-enter-the-box: {} did not start inside {}: {why}",
+    refused(&format!(
+        "{} did not start inside {}: {why}",
         program.display(),
         the_box.display()
-    );
-    ExitCode::FAILURE
+    ))
 }
 
 /// Says which argument was missing, and stops.
@@ -57,6 +56,20 @@ fn main() -> ExitCode {
 /// this program is `alo-running` and a missing argument there is a bug in that
 /// crate rather than a person holding it wrongly.
 fn said(missing: &str) -> ExitCode {
-    eprintln!("alo-enter-the-box: nothing said {missing}");
+    refused(&format!("nothing said {missing}"))
+}
+
+/// Writes a refusal and stops, **without panicking if the write is refused.**
+///
+/// This process is inside the box, and the box may refuse the very stream this
+/// writes to. `eprintln!` panics when it is refused, and the panic's own
+/// message is refused the same way — so on a booted machine on 2026-10-31 a
+/// command that would not start ended with Rust's panic code, 101, and no word
+/// to anybody. A refusal that cannot be written still ends as a refusal, with
+/// this program's own code.
+fn refused(why: &str) -> ExitCode {
+    use std::io::Write;
+    // Let go of on purpose: there is nowhere else to say it.
+    writeln!(std::io::stderr(), "alo-enter-the-box: {why}").ok();
     ExitCode::FAILURE
 }

@@ -81,19 +81,14 @@ const HELPER: &str = env!("CARGO_BIN_EXE_alo-enter-the-box");
 
 /// Where the libraries a dynamically linked command needs live on this machine.
 ///
-/// Asked of the machine rather than assumed, because `/lib` is a link to
-/// `/usr/lib` on some machines and a folder on others, and a bound made of the
-/// link would be a bound around the link.
+/// **The crate's own answer, and not a copy of it.** This test had its own
+/// `["/usr/lib", "/lib"]`, the same list `alo_running::where_the_libraries_are`
+/// had — both right on Ubuntu, where the tests ran, and both wrong on Fedora,
+/// which keeps its loader in `/usr/lib64`. A copy agreeing with the original is
+/// how both stayed wrong together.
 fn where_the_libraries_are() -> PathBuf {
-    for maybe in ["/usr/lib", "/lib"] {
-        let path = Path::new(maybe);
-        if path.is_dir() {
-            return path
-                .canonicalize()
-                .unwrap_or_else(|why| panic!("{maybe} is a folder and would not resolve: {why}"));
-        }
-    }
-    panic!("this machine has no library folder, so no dynamically linked command can run");
+    alo_running::where_the_libraries_are()
+        .unwrap_or_else(|why| panic!("no dynamically linked command can run here: {why}"))
 }
 
 /// A folder holding a script and a secret the script tries to read.
@@ -154,13 +149,16 @@ fn running_a_script(
     };
 
     let mut kept = Record::default();
+    let mut said = Vec::new();
+    let mut complained = Vec::new();
     let what_happened = {
         let mut where_they_run = WhereCommandsRun::with_the_helper_at(
             &mut machine.boundary,
             &boxes,
             &mut kept,
             Path::new(HELPER),
-        );
+        )
+        .saying_it_to(&mut said, &mut complained);
         where_they_run.ran(
             &alo_capability::Grantee::named("alo-try"),
             named,
@@ -170,9 +168,16 @@ fn running_a_script(
         )
     };
 
+    if !complained.is_empty() {
+        eprintln!(
+            "the boxed script said on its standard error: {}",
+            String::from_utf8_lossy(&complained)
+        );
+    }
     what_happened.map(|what| WhatCameOfIt {
         happy: what.the_command_was_happy(),
         kept,
+        said,
     })
 }
 
@@ -341,6 +346,8 @@ struct WhatCameOfIt {
     happy: bool,
     /// Everything the run wrote down.
     kept: Record,
+    /// What the command wrote to its standard output, carried out of the box.
+    said: Vec<u8>,
 }
 
 /// Reads `file` in a box bound to `may_reach`, and says what came of it.
@@ -370,13 +377,16 @@ fn reading_in_a_box(
     };
 
     let mut kept = Record::default();
+    let mut said = Vec::new();
+    let mut complained = Vec::new();
     let what_happened = {
         let mut where_they_run = WhereCommandsRun::with_the_helper_at(
             &mut machine.boundary,
             &boxes,
             &mut kept,
             Path::new(HELPER),
-        );
+        )
+        .saying_it_to(&mut said, &mut complained);
         where_they_run.ran(
             &alo_capability::Grantee::named("@terminal"),
             named,
@@ -387,9 +397,16 @@ fn reading_in_a_box(
     };
 
     drop(fs::remove_dir_all(&boxes));
+    if !complained.is_empty() {
+        eprintln!(
+            "the boxed command said on its standard error: {}",
+            String::from_utf8_lossy(&complained)
+        );
+    }
     what_happened.map(|happened| WhatCameOfIt {
         happy: happened.the_command_was_happy(),
         kept,
+        said,
     })
 }
 
@@ -416,6 +433,16 @@ fn a_command_reaches_what_its_box_was_given() {
         came_of_it.happy,
         "a command bound to the folder it reads could not read it, so the bound is wrong \
          rather than the refusal below being right"
+    );
+
+    // **And what it read reached whoever ran it.** A box refuses the
+    // terminal, so on 2026-10-31 a booted machine's `try id` printed nothing
+    // while its record said it ran. This is the line that fails if a boxed
+    // run stops printing.
+    assert_eq!(
+        String::from_utf8_lossy(&came_of_it.said),
+        "this is what the file says\n",
+        "the command read the file and what it printed never left the box"
     );
 
     // **And the run was written down**, which is the other half of the

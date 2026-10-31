@@ -83,13 +83,23 @@ pub const WHERE_PROGRAMS_ARE: &str = "/usr/bin";
 /// place and everything under it.
 pub const THE_EMPTY_DEVICE: &str = "/dev/null";
 
-/// The folders a library could be in, in the order they are tried.
+/// The folders a machine's libraries are in, every one of which a dynamically
+/// linked command may need.
 ///
-/// Two rather than one because a merged-`/usr` machine has `/lib` as a link to
-/// `/usr/lib` and an unmerged one has both as real directories — and the
-/// boundary compares a device and an inode, so the link and its target are not
-/// the same place. The first that is a directory wins and is resolved.
-const WHERE_LIBRARIES_COULD_BE: [&str; 2] = ["/usr/lib", "/lib"];
+/// **Both, and this used to be the first of them.** It read
+/// `["/usr/lib", "/lib"]` and took whichever was a directory first — `/usr/lib`
+/// everywhere. That is where Ubuntu keeps its loader and its C library, so the
+/// kernel test passed on the development machine; **Fedora, which alo OS
+/// ships on, keeps both in `/usr/lib64`**. Measured inside the image on
+/// 2026-10-31, once, by hand: `/usr/bin/id` asks for
+/// `/lib64/ld-linux-x86-64.so.2`, which resolves to
+/// `/usr/lib64/ld-linux-x86-64.so.2`, outside the one folder granted. So on a
+/// booted machine every boxed dynamically linked command was refused its own
+/// loader and never started.
+const WHERE_LIBRARIES_ARE: [&str; 2] = ["/usr/lib", "/usr/lib64"];
+
+/// Where a machine whose `/usr` holds no libraries keeps them instead.
+const WHERE_LIBRARIES_ONCE_WERE: &str = "/lib";
 
 /// Why a machine cannot run a boxed command at all.
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
@@ -114,25 +124,59 @@ pub enum NoPlacesForIt {
     NoLibraryFolder,
 }
 
-/// The library folder this machine keeps, resolved.
+/// The one folder every library this machine keeps is under, resolved.
+///
+/// **One place, because a box holds four** (`alo_bounding::PLACES`) and the
+/// other three are spoken for. So where a machine has both `/usr/lib` and
+/// `/usr/lib64` the place is the folder they share, `/usr` — the system's
+/// own files, read-only on a booted alo OS, and nothing anybody wrote. Where it
+/// has one, it is that one.
+///
+/// **Never `/`.** Only folders under `/usr` are joined, so the widest this can
+/// be is `/usr`; a machine with no library under `/usr` falls back to `/lib`
+/// alone, as it always did.
 ///
 /// # Errors
-/// [`NoPlacesForIt::NoLibraryFolder`] on a machine with neither, which is not
-/// a machine that runs anything.
+/// [`NoPlacesForIt::NoLibraryFolder`] on a machine with none, which is not a
+/// machine that runs anything.
 pub fn where_the_libraries_are() -> Result<PathBuf, NoPlacesForIt> {
-    for maybe in WHERE_LIBRARIES_COULD_BE {
-        let path = Path::new(maybe);
-        if path.is_dir() {
-            // **Resolved, because the boundary compares inodes.** `/lib` as a
-            // link to `/usr/lib` is a different place from `/usr/lib` as far
-            // as the kernel is concerned, and granting the link grants
-            // nothing the loader opens.
-            if let Ok(resolved) = path.canonicalize() {
-                return Ok(resolved);
-            }
+    // **Resolved, because the boundary compares inodes.** `/lib` as a link to
+    // `/usr/lib` is a different place from `/usr/lib` as far as the kernel is
+    // concerned, and granting the link grants nothing the loader opens.
+    let found: Vec<PathBuf> = WHERE_LIBRARIES_ARE
+        .into_iter()
+        .map(Path::new)
+        .filter(|path| path.is_dir())
+        .filter_map(|path| path.canonicalize().ok())
+        .collect();
+    match found.split_first() {
+        Some((first, rest)) => {
+            let shared = rest.iter().fold(first.clone(), |shared, next| {
+                the_folder_both_are_under(&shared, next)
+            });
+            // Two folders that resolved somewhere unrelated share only `/`,
+            // and granting `/` is granting everything. The first alone, then.
+            Ok(if shared.parent().is_none() {
+                first.clone()
+            } else {
+                shared
+            })
         }
+        None => Path::new(WHERE_LIBRARIES_ONCE_WERE)
+            .canonicalize()
+            .ok()
+            .filter(|resolved| resolved.is_dir())
+            .ok_or(NoPlacesForIt::NoLibraryFolder),
     }
-    Err(NoPlacesForIt::NoLibraryFolder)
+}
+
+/// The deepest folder two resolved paths are both at or under.
+fn the_folder_both_are_under(one: &Path, other: &Path) -> PathBuf {
+    one.components()
+        .zip(other.components())
+        .take_while(|(a, b)| a == b)
+        .map(|(a, _)| a)
+        .collect()
 }
 
 /// Everywhere a command a person said *try* may reach.

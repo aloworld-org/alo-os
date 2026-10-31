@@ -85,6 +85,7 @@
 #![cfg(target_os = "linux")]
 
 mod a_run_inside_a_box;
+mod carrying_what_it_says;
 mod entering;
 mod failing;
 mod somewhere_to_write;
@@ -94,6 +95,7 @@ mod what_happened_in_the_box;
 mod what_was_asked;
 
 pub use a_run_inside_a_box::{THE_HELPER, WhereCommandsRun, checked_and_written_down};
+pub use carrying_what_it_says::{Carrying, carried_until_it_ends};
 pub use entering::{MEANING_ME, THE_PROCESSES, enter_the_box_and_become};
 pub use failing::NotRun;
 pub use somewhere_to_write::SomewhereToWrite;
