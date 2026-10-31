@@ -105,9 +105,10 @@ fn a_task_and_a_terminal(server: &mut Server) -> ThePlaces {
         server.open_alos_own_terminal(crate::the_terminal_a_person_opened::A_SENSIBLE_FIRST_GRID),
         "the control: a terminal opened"
     );
-    let which = server
-        .tasks_mut()
-        .and_now_this_one(ATask::asked_for("tidy my invoices", InferenceSource::ThisMachine));
+    let which = server.tasks_mut().and_now_this_one(ATask::asked_for(
+        "tidy my invoices",
+        InferenceSource::ThisMachine,
+    ));
     let view = Rectangle::new((0, 0).into(), (1920, 1080).into());
     server.tasks_mut().put_whatever_has_nowhere_to_be(
         view,
@@ -123,7 +124,10 @@ fn a_task_and_a_terminal(server: &mut Server) -> ThePlaces {
         .copied()
         .flatten()
         .expect("the task window was placed");
-    assert!(task.loc.x >= 300, "the premise: room for the terminal left of it");
+    assert!(
+        task.loc.x >= 300,
+        "the premise: room for the terminal left of it"
+    );
     // **Drawn where a frame would draw it**, set here so the geometry is the
     // test's: two hundred over the task window's left side.
     server.where_the_terminal_is = Some(Rectangle::<i32, Physical>::new(
@@ -174,7 +178,9 @@ fn a_shortcut(server: &mut Server, held: &[u32], key: u32) {
 
 /// A click at this point.
 fn a_click(server: &mut Server, at: Point<f64, Logical>) {
-    server.pointer_motion(at.x, at.y, 1).expect("the pointer moved");
+    server
+        .pointer_motion(at.x, at.y, 1)
+        .expect("the pointer moved");
     for state in [ButtonState::Pressed, ButtonState::Released] {
         let _ = server
             .pointer_button(0x110, state, 2)
@@ -242,7 +248,12 @@ fn super_tab_reaches_the_task_window_behind_and_back_again() {
     they_agree(&server, &places, AKindOfWindow::TaskWindows, "Super+Tab");
 
     a_shortcut(&mut server, &[LEFT_SUPER], TAB);
-    they_agree(&server, &places, AKindOfWindow::TheTerminal, "a second Super+Tab");
+    they_agree(
+        &server,
+        &places,
+        AKindOfWindow::TheTerminal,
+        "a second Super+Tab",
+    );
 }
 
 /// **Alt+Tab goes round the same way.**
@@ -266,7 +277,12 @@ fn a_click_brings_what_it_lands_on_in_front() {
     let places = a_task_and_a_terminal(&mut server);
 
     a_click(&mut server, places.the_terminal_alone);
-    they_agree(&server, &places, AKindOfWindow::TheTerminal, "a click on the terminal");
+    they_agree(
+        &server,
+        &places,
+        AKindOfWindow::TheTerminal,
+        "a click on the terminal",
+    );
 
     // Where both are drawn the terminal is on top now, so the click is its.
     a_click(&mut server, places.both);
@@ -320,7 +336,10 @@ fn a_terminal_behind_a_task_window_takes_no_key() {
 fn with_no_task_window_open_the_terminal_is_in_front_again() {
     let (_runtime, mut server) = a_session();
     let _places = a_task_and_a_terminal(&mut server);
-    let which = server.tasks().the_one_in_front().expect("the premise: one task");
+    let which = server
+        .tasks()
+        .the_one_in_front()
+        .expect("the premise: one task");
     server
         .tasks_mut()
         .the_mut(which)

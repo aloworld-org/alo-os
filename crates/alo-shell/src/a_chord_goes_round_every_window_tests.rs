@@ -41,7 +41,10 @@ fn back_goes_back_and_wraps_round() {
 #[test]
 fn from_nowhere_it_starts_at_the_end_it_goes_from() {
     let stops = three();
-    assert_eq!(the_next_stop(&stops, None, Forward), Some(AStop::TheTerminal));
+    assert_eq!(
+        the_next_stop(&stops, None, Forward),
+        Some(AStop::TheTerminal)
+    );
     assert_eq!(
         the_next_stop(&stops, None, Backward),
         Some(AStop::ATask(WhichTask::numbered(1)))

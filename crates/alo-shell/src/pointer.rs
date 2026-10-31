@@ -302,7 +302,9 @@ impl Server {
             if in_front_here == Some(crate::which_window_is_in_front::AKindOfWindow::TheTerminal) {
                 self.the_composer.it_gave_the_keyboard_up();
                 self.the_keyboard_is_now_in(None);
-                self.the_person_went_to(crate::which_window_is_in_front::AKindOfWindow::TheTerminal);
+                self.the_person_went_to(
+                    crate::which_window_is_in_front::AKindOfWindow::TheTerminal,
+                );
                 return Ok(false);
             }
         }

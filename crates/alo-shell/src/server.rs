@@ -243,7 +243,8 @@ pub struct Server {
     pub(crate) alos_own_terminal: Option<crate::the_terminal_a_person_opened::TheTerminal>,
     /// Where alo's own terminal was last drawn, in the display's pixels, for a
     /// press to be tested against. [`None`] before it is drawn.
-    pub(crate) where_the_terminal_is: Option<smithay::utils::Rectangle<i32, smithay::utils::Physical>>,
+    pub(crate) where_the_terminal_is:
+        Option<smithay::utils::Rectangle<i32, smithay::utils::Physical>>,
     /// Which kind of window is in front of which: the applications, the
     /// terminal and the task windows (`crate::which_window_is_in_front`).
     pub(crate) which_is_in_front: crate::which_window_is_in_front::WhichIsInFront,
