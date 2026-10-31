@@ -114,6 +114,39 @@ pub const COULD_NOT_ASK: Word = Word::saying(
 )
 .noting(AN_IDENTIFIER);
 
+/// The record of an approved `open`: this application starts over the bus.
+///
+/// The owner's decision of 2026-10-31 (ADR 0108): an approved `open` starts an
+/// application the way a Dock press does, and the record says which road.
+pub const STARTS_OVER_THE_BUS: Word = Word::saying(
+    "applications.starts-over-the-bus",
+    "{application} starts by being asked over the session bus, as its entry says",
+)
+.noting(
+    "{application} is an application's identifier and is never translated. Written in the \
+     record beside an approved open: how this application is started when it is not already \
+     running. \"The session bus\" is the desktop's own message system.",
+);
+
+/// The record of an approved `open`: this application starts from its own
+/// command.
+pub const STARTS_FROM_ITS_COMMAND: Word = Word::saying(
+    "applications.starts-from-its-command",
+    "{application} starts from the command its own entry names, never from one alo wrote",
+)
+.noting(
+    "{application} is an application's identifier and is never translated. Written in the \
+     record beside an approved open: the program that runs is the one the installed \
+     application's own desktop entry names. \"alo\" is the agent's name and is never translated.",
+);
+
+/// An approved `open` of an application whose entry gives no way to start it.
+pub const NOTHING_STARTS_IT: Word = Word::saying(
+    "applications.nothing-starts-it",
+    "{application}'s entry gives this machine no way to start it — nothing was changed",
+)
+.noting(AN_IDENTIFIER);
+
 // ---------------------------------------------------------------------------
 // What could not join the list of what is installed — [`crate::NotAnApplication`].
 // ---------------------------------------------------------------------------
@@ -463,11 +496,14 @@ pub const KEPT_NOT_REPLACED: Word = Word::saying(
 /// it could not reach, what could not join the list, how one is shown, the four
 /// verbs, the arrangements one of them offers, what opens what, and what is said
 /// about the person's own file of those choices.
-pub const EVERY_WORD: [Word; 37] = [
+pub const EVERY_WORD: [Word; 40] = [
     NOT_INSTALLED,
     NO_WINDOW,
     IT_DID_NOT,
     COULD_NOT_ASK,
+    STARTS_OVER_THE_BUS,
+    STARTS_FROM_ITS_COMMAND,
+    NOTHING_STARTS_IT,
     NO_IDENTIFIER,
     NOT_AN_IDENTIFIER,
     CALLED,

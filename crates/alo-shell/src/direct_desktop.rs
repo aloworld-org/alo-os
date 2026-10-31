@@ -702,6 +702,9 @@ impl crate::DirectSession {
                             asking:
                                 crate::what_a_person_asked_goes_to_the_agent::TheAgentsDoor::default(
                                 ),
+                            // **The door an agent's approved act comes in
+                            // at**, for the person this desktop runs as.
+                            door: crate::the_door_on_the_desktop::TheDoorOnTheDesktop::for_this_person(),
                             // **The tool that ships, under no organisation's
                             // rule yet.** `alo_software::TheRentedTool` is the
                             // one this product installs with, and
@@ -782,6 +785,11 @@ struct Desk<'a> {
     /// thing with a *frame* to drain an answer into, and ADR 0109's whole point
     /// is that nothing waits.
     asking: crate::what_a_person_asked_goes_to_the_agent::TheAgentsDoor,
+    /// **The application door an agent's approved act knocks at**, served once
+    /// the daemon's directory is there — see `crate::the_door_on_the_desktop`.
+    /// Owned by the loop for `asking`'s reason: it holds a socket, and the loop
+    /// is the thing with a frame to answer it in.
+    door: crate::the_door_on_the_desktop::TheDoorOnTheDesktop,
     /// The road from *a person asked for this application* to *it is here*.
     ///
     /// **Owned by the loop for `asking`'s reason exactly**: it holds threads
@@ -1082,6 +1090,10 @@ impl LoopInput for Desk<'_> {
         if let Some(owed) = server.take_the_pins_owed_to_the_disk() {
             self.desktop.keep_these_pins(&owed);
         }
+        // **And whatever an agent's approved act asked at the door**, answered
+        // before the starts are sent so an `open` that arrived this frame is
+        // started this frame. It never waits.
+        let _ = self.door.answered(server);
         for not_started in server.start_what_was_asked_for_now() {
             // **Said rather than dropped**, the same rule the edge's menu
             // follows two blocks up: a press that reached here and vanished is

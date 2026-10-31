@@ -3,24 +3,42 @@
 **Status:** contract. Additive changes only; a break requires versioning and a
 deprecation period. See `CLAUDE.md`, "Contracts outlive code".
 
-**One half of this door is built and one is not**, and the table says which.
-A page that read as finished would be the measurement-reported-as-a-property
-fault in document form.
+**Every part of this door is built; none of it has been walked on a booted
+machine**, and the table says which is which. A page that read as finished
+would be the measurement-reported-as-a-property fault in document form.
 
 | | |
 |---|---|
 | The vocabulary and its tests | **built** (`crates/alo-acting`) |
-| The compositor serving the door | **built** (`alo-shell`) |
+| The compositor answering the door | **built** (`alo-shell`) |
+| The desktop serving it at `/run/alo/<uid>/shell.sock` | **built 2026-10-31** (`alo_shell::the_door_on_the_desktop`); only an example served it before |
 | The compositor carrying the acts out | **built**, not yet walked against a real client |
-| The daemon offering the verbs and asking | **not built** (`alo-agentd`) |
+| The daemon offering the verbs and asking | **built** (`alo-agentd`, `alo_turn::acting_on_an_application`) |
 
-So **nothing asks this door anything yet**: `alo-agentd` offers none of
-`open_application`, `focus_application` or `close_application`, and until it
-does, the door is served and quiet. The third row carries its own limit — which
-window to reach is arithmetic over the window list and is unit-tested, but
-*reaching* one needs a real compositor and a real client, which is the nested
-fixture's road and `examples/a_real_application.rs`'s, and has not been walked
-for these three acts.
+*This table said until 2026-10-31 that the daemon half was not built and that
+nothing asked the door. Both had stopped being true: the daemon offered all
+three acts and knocked — and the desktop a person signs in to served no door,
+so every approved act was answered* could-not-ask. The fourth row carries its
+own limit — which window to reach is arithmetic over the window list and is
+unit-tested, but *reaching* one needs a real compositor and a real client,
+which is the nested fixture's road and `examples/a_real_application.rs`'s, and
+has not been walked for these three acts.
+
+## How an `open` starts an application — the owner's decision of 2026-10-31
+
+**An approved `open` starts the application exactly as a person's press on the
+Dock does** ([ADR 0108](../decisions/0108-the-compositor-carries-an-application-verb-out-and-needs-no-token-to.md),
+dated section): over the session bus where its desktop entry says
+`DBusActivatable=true`, and from the entry's own `Exec` line otherwise, as a
+unit of its own in the person's systemd manager handed alo's display. Until
+that day it was bus activation only.
+
+**Nothing on this wire changed.** The request is still `open <application>`
+and the answer still one word. What runs is still only what the installed
+application's own entry names, found by its identifier — there is no field for
+a command to arrive in. The daemon reads the same entry before it asks, so its
+record says which road starts the application, and an entry that gives no way
+to start is refused by name without the door being asked.
 
 This is what goes across the compositor's door in both directions: the one line
 `alo-agentd` writes to have something done to an application's window, and the

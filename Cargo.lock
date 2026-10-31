@@ -177,6 +177,7 @@ dependencies = [
  "alo-keeping",
  "alo-kept-undo",
  "alo-keyring-fixture",
+ "alo-launching",
  "alo-models",
  "alo-nearby",
  "alo-protocol",

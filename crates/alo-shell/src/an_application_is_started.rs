@@ -14,16 +14,18 @@
 //!
 //! # Who asked is carried with the ask
 //!
-//! Two roads end here and they are not the same road. **A person** pressing an
+//! Two kinds of ask end here, and they take one road. **A person** pressing an
 //! icon, pressing Enter on an application in the alo Bar, or pressing the
 //! terminal chord is the choice law 2 requires — the law binds the agent, never
 //! the person — so `alo-desktop` starts what they asked for the way every
 //! Linux desktop does: over the bus where the entry says `DBusActivatable=true`,
 //! and from the entry's own `Exec` line otherwise (`alo_launching`). **The
-//! agent's** `open` reaches here through ADR 0108's door and is kept apart, in
-//! `Server::its_agent_asked_to_start`, so the sender can keep that road exactly
-//! as it was: bus activation only. Whether an approved agent `open` should
-//! reach an `Exec` line too is the owner's question and not this file's.
+//! agent's** approved `open` reaches here through ADR 0108's door and is kept
+//! on a list of its own, `Server::its_agent_asked_to_start`, so the sender is
+//! told who asked. **Since the owner's decision of 2026-10-31 it takes the same
+//! road**: the approval and the grant were the person's choice, and what runs
+//! is still an installed entry's own command. It was bus activation only until
+//! that day.
 //!
 //! *This header said until 2026-10-31 that nothing here may read an `Exec`
 //! line, and that law 2 forbade the mechanism. Law 2's own text binds the

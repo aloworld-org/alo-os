@@ -1581,11 +1581,11 @@ mod running {
     /// **A person's press** is started the ordinary freedesktop way — over the
     /// bus where the entry says `DBusActivatable=true`, and from the entry's own
     /// `Exec` line otherwise, in a unit of its own in their systemd manager
-    /// (`crate::starting_what_a_person_pressed`). **The agent's `open`** is sent
-    /// over the bus only, as it always was. Law 2 binds the agent and never the
-    /// person: a person pressing their own icon *is* the choice the law requires,
-    /// and what runs is an installed entry's own command, never text a caller
-    /// supplied.
+    /// (`crate::starting_what_a_person_pressed`). **The agent's approved
+    /// `open`** takes the same road, by the owner's decision of 2026-10-31 (ADR
+    /// 0108): one approval and a grant for that application are the person's
+    /// choice, and what runs is an installed entry's own command, never text a
+    /// caller supplied.
     ///
     /// *This said until 2026-10-31 that nothing here reads an `Exec` line, and so
     /// Firefox, Dolphin and LibreOffice were on the Dock and did not start.*

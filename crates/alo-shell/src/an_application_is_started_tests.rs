@@ -153,9 +153,9 @@ fn an_empty_list_asks_nobody() {
     );
 }
 
-/// **The sender is told who asked**, so a person's press may start an entry's
-/// `Exec` line and the agent's `open` stays on the bus. The two lists are sent
-/// person first, each in the order it was made.
+/// **The sender is told who asked**, so the journal can say it — both take
+/// the same road since 2026-10-31. The two lists are sent person first, each in
+/// the order it was made.
 #[test]
 fn each_ask_is_sent_with_who_made_it() {
     use crate::an_application_is_started::WhoAskedToStart;

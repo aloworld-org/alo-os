@@ -193,12 +193,15 @@ applications.kept.not-written	your choices of what opens each kind of file, at {
 applications.kept.unknown-key	your choices of what opens each kind of file, at {path}, say {key}, which is not something alo OS can change about what opens what, so nothing in the file has been used
 applications.no-window	{application} has no window open here — open it first, or name one that is open
 applications.not-installed	nothing installed on this machine is {application} — install it, or name one that is here
+applications.nothing-starts-it	{application}'s entry gives this machine no way to start it — nothing was changed
 applications.opens.chosen	{application} opens {what}, because you chose it for that
 applications.opens.declared	{application} opens {what}, because it says it can and you have not chosen an application for it
 applications.opens.declared-instead	{application} opens {what}, because it says it can — {chosen}, which you chose for it, is no longer installed
 applications.opens.nothing	nothing on this machine opens {what} — no application installed says it can, and you have not chosen one
 applications.opens.nothing-choice-not-installed	nothing on this machine opens {what} — {chosen}, which you chose for it, is no longer installed, and no other application installed says it can
 applications.ours.settings	Settings
+applications.starts-from-its-command	{application} starts from the command its own entry names, never from one alo wrote
+applications.starts-over-the-bus	{application} starts by being asked over the session bus, as its entry says
 applications.verb.arrange-application.argument.application	which application's window to move
 applications.verb.arrange-application.argument.where	where on the screen the window goes
 applications.verb.arrange-application.purpose	put an application's window somewhere on the screen
