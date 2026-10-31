@@ -16,14 +16,19 @@
 //! *nothing proceeds on silence* on the one key where it could go wrong: a
 //! person who pressed Enter to send what they wrote has not approved anything.
 //!
-//! # Letting go
+//! # Escape empties the box, and never lets go
 //!
-//! **Escape on an empty reply box, with no answer selected, gives the keyboard
-//! up**, so a person can always get back to their applications. Before that,
-//! Escape empties the box, which is what it already did. Clicking an
-//! application does not take the keyboard back yet — and the same is true of
-//! the Bar, whose `TheComposer::it_gave_the_keyboard_up` has no caller outside
-//! its tests. That is its own change.
+//! **The window in front keeps the keyboard** — the owner, 2026-10-30: *like
+//! every desktop, the window you can see in front gets your typing.* Escape
+//! empties the reply box, and on an empty box does nothing more. The keyboard
+//! leaves a task window when a person goes somewhere else — a click on an
+//! application, a shortcut that goes to another window — or when the window
+//! closes (`crate::closing_a_task_window`).
+//!
+//! *Withdrawn on 2026-10-30 by the owner's decision:* until then Escape on an
+//! empty box with no answer selected gave the keyboard up, "so a person can
+//! always get back to their applications". On a booted machine the task window
+//! stayed drawn in front, and every key went to the terminal hidden behind it.
 
 use crate::approval_keys::ApprovalKey;
 use crate::composer_keys::ComposerKey;
@@ -92,8 +97,8 @@ pub(crate) fn the_key_the_task_took(
 }
 
 impl Server {
-    /// One key in the task window holding the keyboard: to the card, to the
-    /// reply box, or — Escape on an empty box — letting go.
+    /// One key in the task window holding the keyboard: to the closing
+    /// question, to the card, or to the reply box.
     pub(crate) fn a_key_reached_the_task(
         &mut self,
         which: WhichTask,
@@ -140,14 +145,10 @@ impl Server {
             self.send_what_was_held(which, strings);
             return;
         }
-        let the_box_is_empty = self
-            .the_tasks
-            .the(which)
-            .is_none_or(|task| task.the_draft().is_empty());
-        if typed == ComposerKey::Clear && the_box_is_empty && !something_is_selected {
-            self.the_task_gave_the_keyboard_up();
-            return;
-        }
+        // **Escape on an empty box does nothing**: the window in front keeps
+        // the keyboard (this file's header). `a_key_reached_a_task_window`
+        // answers `Nothing` for it.
+        //
         // **A reply that was sent goes to alo with the conversation so far**,
         // or says beneath it why it did not: `crate::what_becomes_of_a_reply`
         // (ADR 0138). Dropped here until 2026-10-28, which left the window

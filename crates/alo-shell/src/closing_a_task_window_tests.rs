@@ -1,5 +1,6 @@
-//! That a finished task window closes and lets go of the keyboard, that a
-//! running one does not close, and that closing never answers a change.
+//! That a finished task window closes and hands the keyboard to the window now
+//! in front, that a running one asks rather than closing, and that closing
+//! never answers a change.
 //!
 //! Alt+F4 is pressed by evdev code through the seat, the road a person's key
 //! takes, rather than by calling the closing function.
@@ -156,7 +157,7 @@ fn alt_f4(server: &mut Server, daemon: &ADaemon) {
 }
 
 /// **Alt+F4 closes a finished task window**: it is no longer drawn, pressed
-/// or counted, and the keyboard goes back to what was behind it.
+/// or counted, and with no other task window open the keyboard is let go.
 #[test]
 fn alt_f4_closes_a_finished_task_window() {
     let (_runtime, mut server) = a_session();
@@ -428,4 +429,98 @@ fn stop_and_close_never_answers_a_waiting_change() {
     );
     assert!(!server.the_change_waiting.is_asking(), "the card stayed up");
     assert_eq!(server.take_the_stops().len(), 1);
+}
+
+/// **The walk of 2026-10-30, pressed again**: Escape twice in a finished
+/// task's empty reply box, then Alt+F4. Escape used to let go, so Alt+F4 found
+/// *no focused window to close* and the window stayed in front. Now Escape
+/// keeps the keyboard and Alt+F4 closes the window.
+#[test]
+fn escape_then_alt_f4_closes_a_finished_task_window() {
+    let (_runtime, mut server) = a_session();
+    let which = a_task(&mut server, "tidy my invoices");
+    finished(&mut server, which);
+    let daemon = ADaemon::default();
+
+    press(&mut server, ESCAPE, &daemon);
+    press(&mut server, ESCAPE, &daemon);
+    assert!(
+        server.a_task_is_taking_the_keys(),
+        "Escape gave the keyboard up"
+    );
+    alt_f4(&mut server, &daemon);
+
+    assert!(!server.tasks().is_open(which), "Alt+F4 did not close it");
+}
+
+/// **After a window closes, the keyboard goes to the task window now in
+/// front**, which is drawn over everything else, rather than falling to
+/// whatever is hidden behind it.
+#[test]
+fn closing_hands_the_keyboard_to_the_task_window_now_in_front() {
+    let (_runtime, mut server) = a_session();
+    let behind = a_task(&mut server, "tidy my invoices");
+    let front = a_task(&mut server, "explain an invoice");
+    finished(&mut server, front);
+    assert_eq!(
+        server.the_task_with_the_keyboard,
+        Some(front),
+        "the control: the newest window has the keyboard"
+    );
+
+    alt_f4(&mut server, &ADaemon::default());
+
+    assert!(!server.tasks().is_open(front));
+    assert_eq!(
+        server.the_task_with_the_keyboard,
+        Some(behind),
+        "the keyboard did not go to the window now in front"
+    );
+}
+
+/// **The keyboard goes nowhere new when the closed window did not hold it.**
+/// A person typing elsewhere who presses another window's Close has not asked
+/// to type into a task window.
+#[test]
+fn closing_a_window_without_the_keyboard_leaves_the_keyboard_where_it_was() {
+    let (_runtime, mut server) = a_session();
+    let _open = a_task(&mut server, "tidy my invoices");
+    let closing = a_task(&mut server, "explain an invoice");
+    finished(&mut server, closing);
+    server.the_task_gave_the_keyboard_up();
+
+    assert_eq!(
+        server.the_person_closes_a_task(closing),
+        WhatClosingCameTo::Closed
+    );
+    assert!(
+        !server.a_task_is_taking_the_keys(),
+        "closing a window that did not hold the keyboard handed it to a task"
+    );
+}
+
+/// **Alt+F4 on a task already stopping closes nothing and keeps the
+/// keyboard**: it closes by itself once alo has really stopped.
+#[test]
+fn alt_f4_on_a_stopping_task_closes_nothing() {
+    let (_runtime, mut server) = a_session();
+    let which = a_task(&mut server, "tidy my invoices");
+    let daemon = ADaemon::default();
+    alt_f4(&mut server, &daemon);
+    press(&mut server, TAB, &daemon);
+    press(&mut server, ENTER, &daemon);
+    assert_eq!(
+        server.tasks().the(which).expect("open").what_is_happening(),
+        alo_tasks::words::STOPPING,
+        "the control: Stop and close was chosen"
+    );
+
+    alt_f4(&mut server, &daemon);
+
+    assert!(server.tasks().is_open(which), "a stopping task was closed");
+    assert!(
+        server.closing_asked_about(which).is_none(),
+        "it asked again"
+    );
+    assert!(server.a_task_is_taking_the_keys());
 }

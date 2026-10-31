@@ -286,27 +286,68 @@ fn escape_on_a_selected_answer_says_no() {
     assert!(daemon.approved.borrow().is_empty());
 }
 
-/// **Escape on an empty box, nothing selected, gives the keyboard up**, so a
-/// person can always get back to their applications.
+/// **Escape empties the box, and on an empty box keeps the keyboard** — the
+/// window in front keeps it (the owner, 2026-10-30). Until then the second
+/// Escape let go, and on a booted machine every key after it went to the
+/// terminal hidden behind the window.
+///
+/// The letter typed after both Escapes is the proof: it reaches this box.
 #[test]
-fn escape_on_an_empty_box_lets_go_of_the_keyboard() {
+fn escape_on_an_empty_box_keeps_the_keyboard() {
     let (_runtime, mut server) = a_session();
     let which = a_task_holding_the_keyboard(&mut server);
     let daemon = ADaemon::default();
 
     press(&mut server, A, &daemon);
     press(&mut server, ESCAPE, &daemon);
-    assert!(
-        server.a_task_is_taking_the_keys(),
-        "the first Escape only empties the box"
+    assert_eq!(
+        draft(&server, which),
+        "",
+        "the first Escape empties the box"
     );
-    assert_eq!(draft(&server, which), "");
 
     press(&mut server, ESCAPE, &daemon);
+    press(&mut server, ESCAPE, &daemon);
     assert!(
-        !server.a_task_is_taking_the_keys(),
-        "the second Escape did not let go"
+        server.a_task_is_taking_the_keys(),
+        "Escape on an empty box gave the keyboard up"
     );
+    press(&mut server, A, &daemon);
+    assert_eq!(draft(&server, which), "a", "the next letter went elsewhere");
+}
+
+/// **With alo's terminal open behind a task window, keys reach the task and
+/// never the terminal** — the fault the 2026-10-30 walk found, where a bash
+/// completion prompt nobody saw appeared in the hidden terminal.
+///
+/// The terminal is a real shell on a real pseudoterminal. What is asserted is
+/// the one thing the input lane reads: `crate::direct_desktop` sends a key to
+/// the task while `a_task_is_taking_the_keys` holds, and only otherwise down the
+/// seat's road, where the terminal takes it. **This does not drive that branch
+/// itself**, which needs a libinput event; it holds the answer the branch reads.
+#[test]
+fn keys_reach_the_task_in_front_and_never_the_terminal_behind() {
+    let (_runtime, mut server) = a_session();
+    assert!(
+        server.open_alos_own_terminal(crate::the_terminal_a_person_opened::A_SENSIBLE_FIRST_GRID),
+        "the control: a terminal opened"
+    );
+    assert!(
+        server.the_terminal_is_taking_the_keys(),
+        "the control: with nothing in front, the terminal takes the keys"
+    );
+    let which = a_task_holding_the_keyboard(&mut server);
+    let daemon = ADaemon::default();
+
+    for code in [ESCAPE, ESCAPE, TAB, TAB, A] {
+        press(&mut server, code, &daemon);
+        assert!(
+            server.a_task_is_taking_the_keys(),
+            "key {code} let the keyboard fall to the terminal behind"
+        );
+    }
+
+    assert_eq!(draft(&server, which), "a");
 }
 
 /// **A question arriving never takes the keyboard.**
@@ -569,6 +610,30 @@ fn a_shortcut_in_a_task_window_is_carried_out_and_not_typed() {
         !server.a_task_is_taking_the_keys(),
         "the terminal opened and the task kept the keyboard, so typing would not reach it"
     );
+}
+
+/// **Super+Tab and Alt+Tab with no application to go to keep the keyboard in
+/// the task window**, which is still in front. Until 2026-10-30 Super+Tab let
+/// go anyway, and typing fell to whatever was behind.
+#[test]
+fn a_move_between_windows_with_nowhere_to_go_keeps_the_keyboard() {
+    let (_runtime, mut server) = a_session();
+    server.the_shortcuts_are(alo_shortcuts::Shortcuts::shipped());
+    let which = a_task_holding_the_keyboard(&mut server);
+    let daemon = ADaemon::default();
+
+    press_holding(&mut server, &[LEFT_SUPER], TAB, &daemon);
+    assert!(
+        server.a_task_is_taking_the_keys(),
+        "Super+Tab with no application open let go"
+    );
+    press_holding(&mut server, &[LEFT_ALT], TAB, &daemon);
+    assert!(
+        server.a_task_is_taking_the_keys(),
+        "Alt+Tab with no window open let go"
+    );
+    press(&mut server, A, &daemon);
+    assert_eq!(draft(&server, which), "a", "the shortcuts were typed");
 }
 
 /// **The agent's shortcut leaves the task holding the keyboard**, because the
