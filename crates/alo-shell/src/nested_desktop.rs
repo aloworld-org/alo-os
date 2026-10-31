@@ -464,9 +464,11 @@ impl DesktopPictures {
 /// the two indicators' first, because a frame that cannot say what is leaving
 /// this machine, or that its camera is on, is refused whatever else it holds.
 ///
-/// **The in-use indicator is laid out before what is leaving**, because it has
-/// the status area's corner and the egress rows stack beyond it
-/// (`crate::in_use_raster` says why).
+/// **The in-use indicator is laid out before what is leaving**, which mattered
+/// while the two shared a corner (`crate::in_use_raster` says why); since
+/// 2026-10-31 the egress indicator has the top-left corner, and **it is laid out
+/// before the top controls' band is settled**, because that band starts just to
+/// its right.
 ///
 /// **And the desktop is laid out before all three of them**, which is a change of
 /// 2026-10-04 and the reason the order is written down here. The put-aside panel
@@ -499,7 +501,7 @@ pub(crate) fn frame_pictures(
 ) -> Result<DesktopPictures, RenderError> {
     let running = running_shows(desktop.running, desktop.strings);
     let filling = filling_shows(desktop.filling, desktop.strings);
-    let drawn = crate::desktop_raster::picture(
+    let mut drawn = crate::desktop_raster::picture(
         desktop.dock,
         desktop.look,
         crate::desktop_raster::Shown {
@@ -601,8 +603,14 @@ pub(crate) fn frame_pictures(
         },
         labels,
         room,
-        in_use.height,
     )?;
+    // **The top controls' band starts just to the indicator's right**, the
+    // owner's decision of 2026-10-31: the indicator owns the top-left corner,
+    // and one pointer position must not reveal two surfaces. Here because the
+    // indicator is laid out after the desktop, and this is the one place both
+    // backends build a frame's pictures.
+    drawn.top_controls =
+        crate::top_controls_region::after_the_indicator(drawn.top_controls, status.band);
     let record = match record {
         Some(record) => Some(crate::record_raster::picture(
             record.window.shows(),

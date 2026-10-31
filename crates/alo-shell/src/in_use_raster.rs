@@ -12,16 +12,15 @@
 //!
 //! # Where it sits, and why it and not the other one has the corner
 //!
-//! **The in-use indicator takes the status area's corner and the egress
-//! indicator stacks beyond it.** ADR 0010 makes this indicator's *position* one
-//! of the three things a person is given besides a colour, and says why:
-//! position is the one that costs nothing to learn, so the camera is in the
-//! same place every glance. That only holds if this stack's origin does not
-//! move — so it gets the fixed corner, and what is leaving is stacked past it.
+//! **The in-use indicator takes the status area's corner.** ADR 0010 makes
+//! this indicator's *position* one of the three things a person is given
+//! besides a colour, and says why: position is the one that costs nothing to
+//! learn, so the camera is in the same place every glance. That only holds if
+//! this stack's origin does not move — so it gets the fixed corner.
 //!
-//! The egress indicator's own rule is untouched by that: its first line stays
-//! nearest *its* origin and a new one is added beyond, so nothing already on
-//! the screen moves when something else starts leaving.
+//! *Until 2026-10-31 the egress indicator stacked beyond it in the same
+//! corner. The owner moved that one to the top-left corner that day, so this
+//! corner is the in-use indicator's alone, and it did not move.*
 //!
 //! # The order is the crate's, and this file cannot change it
 //!
@@ -74,8 +73,6 @@ pub(crate) struct InUsePicture {
     pub(crate) size: (i32, i32),
     /// Every row, nearest the dock first.
     pub(crate) rows: Vec<Row>,
-    /// How tall the whole stack is, so what is leaving can be put beyond it.
-    pub(crate) height: i32,
     /// Flat shapes, painted first.
     pub(crate) solids: Vec<Solid>,
     /// Words, painted after the shapes.
@@ -125,7 +122,6 @@ pub(crate) fn picture(
     let mut picture = InUsePicture {
         size,
         rows: Vec::new(),
-        height: 0,
         solids: Vec::new(),
         inked: Vec::new(),
     };
@@ -214,7 +210,6 @@ pub(crate) fn picture(
         picture.inked.extend(drawn.inked);
         picture.rows.push(drawn.row);
     }
-    picture.height = used.max(0);
     Ok(picture)
 }
 

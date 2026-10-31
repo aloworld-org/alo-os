@@ -1,18 +1,19 @@
 //! The laid-out indicator, read as pixels and rows: what is on it, where, and
 //! what never is.
+//!
+//! Since 2026-10-31 it is a quiet circle or a column of pills in the top-left
+//! corner (the owner's decisions of that day), so these read its rasters as
+//! well as its rows.
 #![expect(
     clippy::unwrap_used,
     reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
 )]
 
 use super::*;
-use crate::egress_status_mark::rgb;
 use crate::egress_status_testing::{
     a_provider, asking_a_provider, fetching, noon, the_agent, the_machine_down_the_corridor, words,
 };
-use crate::painted_text::sentence as shaped_sentence;
-use crate::{EgressStatus, painted::Solid};
-use alo_appearance::Token;
+use crate::EgressStatus;
 use alo_egress::{Destination, EgressPolicy, Errand, Indicator, Leaving, OnItsOwn, Why};
 use alo_indicator::{Drew, Indicating};
 use alo_models::InferenceSource;
@@ -40,51 +41,64 @@ fn handed(indicator: &Indicator) -> Drawn {
     status.showing().unwrap().clone()
 }
 
-/// The indicator drawn with the machine's vocabulary on a 1920×1080 output,
-/// with the dock where it ships.
-fn drawn_as(indicator: &Indicator, look: EgressStatusLook) -> EgressStatusPicture {
+/// The indicator drawn on an output of `room`, with the dock where it ships.
+fn drawn_in(indicator: &Indicator, look: EgressStatusLook, room: TheRoom) -> EgressStatusPicture {
     let mut labels = WindowControlLabels::new().unwrap();
-    picture(
-        &handed(indicator),
-        &words(),
-        &Dock::shipped(),
-        &mut labels,
-        TheRoom::with_nothing_put_aside((1920, 1080)),
-        look,
-        0,
+    picture(&handed(indicator), &words(), &Dock::shipped(), &mut labels, room, look).unwrap()
+}
+
+/// The indicator drawn with the machine's vocabulary on a 1920×1080 output.
+fn drawn_as(indicator: &Indicator, look: EgressStatusLook) -> EgressStatusPicture {
+    drawn_in(indicator, look, TheRoom::with_nothing_put_aside((1920, 1080)))
+}
+
+/// An indicator with one question to a provider under way.
+fn asking() -> Indicator {
+    let mut indicator = Indicator::default();
+    drop(indicator.beginning(&EgressPolicy::Anywhere, asking_a_provider(), noon()));
+    indicator
+}
+
+/// The colour drawn at `(x, y)` on the screen in the picture's rasters, the
+/// last raster holding the point winning, as the painter paints them.
+fn raster_at(drawn: &EgressStatusPicture, x: i32, y: i32) -> Option<[u8; 3]> {
+    drawn.washed.iter().rev().find_map(|washed| {
+        let (left, top) = (x - washed.area.loc.x, y - washed.area.loc.y);
+        if left < 0 || top < 0 || left >= washed.area.size.w || top >= washed.area.size.h {
+            return None;
+        }
+        let at = usize::try_from((top * washed.area.size.w + left) * 4).ok()?;
+        <[u8; 3]>::try_from(washed.pixels.get(at..at + 3)?).ok()
+    })
+}
+
+/// The middle of a rectangle.
+const fn middle_of(area: Rectangle<i32, Physical>) -> (i32, i32) {
+    (
+        area.loc.x + area.size.w / 2,
+        area.loc.y + area.size.h / 2,
     )
-    .unwrap()
 }
 
-/// Deep teal, as the painter takes it.
-fn deep_teal() -> [u8; 3] {
-    rgb(Token::DeepTeal.colour())
-}
-
-/// **A question answered on this machine draws nothing; one answered anywhere
-/// else draws its sentence.** Both halves, because the promise rests on the
-/// difference: a local answer — the runtime alo OS ships, or a service the
-/// person runs at this machine's own address — is not a departure and puts
-/// not one pixel on the screen, while a provider and the machine down the
-/// corridor each draw the line `alo-egress` wrote for them.
+/// **Nothing leaving draws the quiet circle; something answered elsewhere
+/// draws its sentence in a pill.** A local answer — the runtime alo OS ships,
+/// or a service at this machine's own address — is not a departure and leaves
+/// the circle quiet, while a provider and the machine down the corridor each
+/// draw the line `alo-egress` wrote for them.
 #[test]
-fn a_question_answered_here_draws_nothing_and_one_answered_elsewhere_draws_its_sentence() {
+fn a_question_answered_here_leaves_it_quiet_and_one_answered_elsewhere_draws_its_sentence() {
     let strings = words();
-    let nothing_at_all = drawn_as(&Indicator::default(), light());
-    assert!(nothing_at_all.is_empty());
+    let quiet = drawn_as(&Indicator::default(), light());
+    assert!(quiet.rows.is_empty(), "a quiet indicator drew a line");
+    assert_eq!(quiet.washed.len(), 1, "the quiet circle is not drawn");
 
     for here in [
         InferenceSource::ThisMachine,
         InferenceSource::AServiceAtThisMachinesAddress,
     ] {
         let indicator = Indicator::default();
-        // Asked here, there is no departure to begin: `alo-egress` refuses to
-        // make one, so nothing reaches the indicator.
         assert!(Leaving::asking(&the_agent(), &here).is_err(), "{here:?}");
-        let drawn = drawn_as(&indicator, light());
-        assert!(drawn.is_empty(), "{here:?} drew {drawn:?}");
-        assert_eq!(drawn, nothing_at_all);
-        assert!(indicator.showing().is_empty());
+        assert_eq!(drawn_as(&indicator, light()), quiet, "{here:?}");
     }
 
     for elsewhere in [a_provider(), the_machine_down_the_corridor()] {
@@ -101,118 +115,71 @@ fn a_question_answered_here_draws_nothing_and_one_answered_elsewhere_draws_its_s
         let expected = indicator.showing().first().unwrap().said(&strings);
         assert!(!expected.is_a_bug(), "{expected}");
         assert_eq!(drawn.rows.first().unwrap().sentence, expected.text());
-        assert!(drawn.solids.iter().any(|solid| solid.colour == deep_teal()));
         assert!(!drawn.inked.is_empty());
 
-        // And when the answer is back, the screen is empty again.
+        // And when the answer is back, it is quiet again.
         assert!(indicator.ended(departing));
-        assert!(drawn_as(&indicator, light()).is_empty());
+        assert_eq!(drawn_as(&indicator, light()), quiet);
     }
-    let mut provider = Indicator::default();
-    drop(provider.beginning(&EgressPolicy::Anywhere, asking_a_provider(), noon()));
     assert_eq!(
-        drawn_as(&provider, light()).rows.first().unwrap().sentence,
+        drawn_as(&asking(), light()).rows.first().unwrap().sentence,
         "@mail is asking a question of alo, in the EU"
     );
 }
 
-/// **The band is what was painted, not the room it could have grown into.**
-///
-/// `Place` holds a corner and how much room there is; a frame has to keep clear
-/// of where the rows actually *went*. Those differ by however much of the room
-/// is unused, which on a quiet machine is nearly all of it — so a band taken
-/// from the room would reserve space no pixel occupies and push frames out of
-/// reach of nothing.
-///
-/// Asserted against the pieces rather than against a figure, so it keeps
-/// meaning this when the indicator's measurements change.
+/// **The quiet circle is the design's**: 36 across, 20 from the left and 14
+/// from the top, the surface's ground, with the grey arrow in its middle.
 #[test]
-fn the_band_holds_every_piece_drawn_and_starts_where_they_do() {
-    let mut indicator = Indicator::default();
-    assert!(
-        indicator
-            .beginning(&EgressPolicy::Anywhere, asking_a_provider(), noon())
-            .is_ok()
+fn the_quiet_circle_is_where_and_what_the_design_draws() {
+    let quiet = drawn_as(&Indicator::default(), light());
+    assert_eq!(
+        quiet.band,
+        Some(Rectangle::new((20, 14).into(), (36, 36).into()))
     );
+    let palette = palette(Scheme::Light, Contrast::AsDesigned);
+    let circle = quiet.band.unwrap();
+    // Just inside the left of the circle, on its ground.
+    assert_eq!(
+        raster_at(&quiet, circle.loc.x + 6, circle.loc.y + 18),
+        Some(palette.ground)
+    );
+    // Its middle carries the arrow's ink.
+    let (x, y) = middle_of(circle);
+    assert_ne!(raster_at(&quiet, x, y), Some(palette.ground), "no arrow");
+}
+
+/// **The band is what was drawn, not the room it could have grown into**:
+/// every pill is inside it, and it starts where the first one does.
+#[test]
+fn the_band_holds_every_pill_and_starts_where_they_do() {
+    let mut indicator = asking();
+    drop(indicator.beginning(&EgressPolicy::Anywhere, fetching(), noon()));
     let drawn = drawn_as(&indicator, light());
-    assert!(
-        !drawn.is_empty(),
-        "something is leaving, so something is drawn"
-    );
-
-    let Some(band) = drawn.band else {
-        unreachable!("something was drawn and the status area claims no place")
-    };
-
-    let areas: Vec<_> = drawn
-        .solids
-        .iter()
-        .map(|solid| solid.area)
-        .chain(drawn.inked.iter().map(|words| words.area))
-        .filter(|area| area.size.w > 0 && area.size.h > 0)
-        .collect();
-    assert!(
-        !areas.is_empty(),
-        "nothing with a size was drawn to measure"
-    );
-
-    for area in &areas {
-        assert!(
-            band.loc.x <= area.loc.x
-                && band.loc.y <= area.loc.y
-                && band.loc.x + band.size.w >= area.loc.x + area.size.w
-                && band.loc.y + band.size.h >= area.loc.y + area.size.h,
-            "a drawn piece {area:?} lies outside the band {band:?}, so a frame \
-             could sit on it while the never-lost rule believed that area clear"
-        );
+    let band = drawn.band.unwrap();
+    for row in &drawn.rows {
+        assert_eq!(band.intersection(row.area), Some(row.area), "{row:?}");
     }
-
-    assert_eq!(
-        Some(band.loc.x),
-        areas.iter().map(|a| a.loc.x).min(),
-        "the band starts left of everything drawn, reserving empty pixels"
-    );
-    assert_eq!(
-        Some(band.loc.y),
-        areas.iter().map(|a| a.loc.y).min(),
-        "the band starts above everything drawn, reserving empty pixels"
-    );
+    let first = drawn.rows.first().unwrap().area;
+    assert_eq!((band.loc.x, band.loc.y), (first.loc.x, first.loc.y));
 }
 
-/// **Nothing drawn is no band, which is not the same as a band of no size.**
-///
-/// A zero-sized rectangle is a claim about a place. An empty status area has no
-/// place. The rule filters zero-sized bounds anyway, so the difference changes
-/// no behaviour today — and that is exactly why it would survive as a lie a
-/// later reader inherits.
-#[test]
-fn an_indicator_that_drew_nothing_claims_no_place() {
-    let indicator = Indicator::default();
-    let quiet = drawn_as(&indicator, light());
-    assert!(quiet.is_empty(), "nothing is leaving, so nothing is drawn");
-    assert!(
-        quiet.band.is_none(),
-        "nothing was drawn and the status area still claims a place: {:?}",
-        quiet.band
-    );
-}
-
-/// **An egress a policy refused draws nothing**: nothing left, and a surface
+/// **An egress a policy refused leaves it quiet**: nothing left, and a surface
 /// that drew what a rule stopped would teach a person to ignore it.
 #[test]
-fn an_egress_the_policy_refused_draws_nothing() {
+fn an_egress_the_policy_refused_leaves_it_quiet() {
     let mut indicator = Indicator::default();
     assert!(
         indicator
             .beginning(&EgressPolicy::NothingLeaves, asking_a_provider(), noon())
             .is_err()
     );
-    assert!(drawn_as(&indicator, light()).is_empty());
+    let drawn = drawn_as(&indicator, light());
+    assert!(drawn.rows.is_empty());
+    assert_eq!(drawn, drawn_as(&Indicator::default(), light()));
 }
 
-/// **What alo OS does on its own errand is on the same indicator**, drawn the
-/// same way as what an agent caused — a mark and its own sentence — because
-/// *no telemetry* is only checkable by somebody who can see it.
+/// **What alo OS does on its own errand is on the same indicator**, in a pill
+/// of its own beside what an agent caused.
 #[test]
 fn what_alo_os_does_on_its_own_is_drawn_beside_what_an_agent_caused() {
     let strings = words();
@@ -229,7 +196,6 @@ fn what_alo_os_does_on_its_own_is_drawn_beside_what_an_agent_caused() {
         .unwrap();
 
     let drawn = drawn_as(&indicator, light());
-    assert_eq!(drawn.rows.len(), 2);
     let said: Vec<String> = indicator
         .showing()
         .iter()
@@ -237,27 +203,18 @@ fn what_alo_os_does_on_its_own_is_drawn_beside_what_an_agent_caused() {
         .collect();
     let sentences: Vec<&str> = drawn.rows.iter().map(|row| row.sentence.as_str()).collect();
     assert_eq!(sentences, said);
-    assert!(
-        drawn.rows.first().unwrap().sentence.starts_with("alo OS"),
-        "{sentences:?}"
-    );
-    for row in &drawn.rows {
-        assert!(
-            drawn.solids.iter().any(|solid| solid.colour == deep_teal()
-                && row.mark.intersection(solid.area) == Some(solid.area)),
-            "{row:?} has no mark"
-        );
-    }
+    assert!(sentences.first().unwrap().starts_with("alo OS"), "{sentences:?}");
+    assert_eq!(drawn.washed.len(), 2, "each line is a pill of its own");
 
     assert!(indicator.ended(departing));
     assert!(indicator.ended_on_its_own(underway));
-    assert!(drawn_as(&indicator, light()).is_empty());
+    assert!(drawn_as(&indicator, light()).rows.is_empty());
 }
 
-/// **Every line is drawn exactly as `alo-egress` words it, and every one is in
-/// the machine's vocabulary**: for every reason an agent causes egress, every
-/// kind of destination, and every errand, the row holds the line's own
-/// sentence and its pixels are that sentence shaped and nothing else.
+/// **Every line is drawn exactly as `alo-egress` words it**: for every reason
+/// an agent causes egress, every kind of destination and every errand, the
+/// pill holds the line's own sentence and its words are that sentence shaped in
+/// `Label/Medium` and nothing else.
 #[test]
 fn every_line_is_drawn_exactly_as_alo_egress_words_it_and_is_collected() {
     let strings = words();
@@ -294,19 +251,18 @@ fn every_line_is_drawn_exactly_as_alo_egress_words_it_and_is_collected() {
         &mut labels,
         TheRoom::with_nothing_put_aside((3840, 2160)),
         light(),
-        0,
     )
     .unwrap();
     assert_eq!(drawn.rows.len(), lines);
     assert_eq!(drawn.inked.len(), lines);
 
-    let palette = crate::egress_status_raster::palette(Scheme::Light, Contrast::AsDesigned);
-    let metrics = Measure { percent: 100 }.metrics();
+    let palette = palette(Scheme::Light, Contrast::AsDesigned);
+    let metrics = cosmic_text::Metrics::new(13.0, 18.0);
     for ((row, line), inked) in drawn.rows.iter().zip(indicator.showing()).zip(&drawn.inked) {
         let said = line.said(&strings);
         assert!(!said.is_a_bug(), "not collected: {said}");
         assert_eq!(row.sentence, said.text());
-        let alone = shaped_sentence(
+        let alone = crate::painted_text::sentence(
             &mut labels.fonts,
             said.text(),
             row.words.size.w,
@@ -322,38 +278,31 @@ fn every_line_is_drawn_exactly_as_alo_egress_words_it_and_is_collected() {
     }
 }
 
-/// **A vocabulary that forgot the lines still lights the indicator.** The
-/// sentence is then the key, marked as a bug by `alo-strings` — ugly, and far
-/// better than a machine that went quiet because a word was missing.
+/// **A vocabulary that forgot the lines still lights the indicator.**
 #[test]
 fn a_vocabulary_without_the_lines_still_draws_them() {
-    let mut indicator = Indicator::default();
-    drop(indicator.beginning(&EgressPolicy::Anywhere, asking_a_provider(), noon()));
     let mut labels = WindowControlLabels::new().unwrap();
     let drawn = picture(
-        &handed(&indicator),
+        &handed(&asking()),
         &Strings::of(Vocabulary::empty()),
         &Dock::shipped(),
         &mut labels,
         TheRoom::with_nothing_put_aside((1920, 1080)),
         light(),
-        0,
     )
     .unwrap();
     assert_eq!(drawn.rows.len(), 1);
     assert!(!drawn.rows.first().unwrap().sentence.is_empty());
-    assert!(drawn.solids.iter().any(|solid| solid.colour == deep_teal()));
 }
 
 /// **Deep teal never arrives alone.** In both schemes and at every text size,
-/// every deep teal pixel is inside a row's mark, that mark has an arrow drawn
-/// in it in a colour that is not deep teal, and the same row has words inked
-/// in the ink colour. No word is ever inked in deep teal.
+/// each pill's lamp is deep teal at its edge with a light arrow in its middle,
+/// the pill carries its words inked in the ink colour, and no word is inked in
+/// deep teal.
 #[test]
 fn deep_teal_never_arrives_alone() {
     let (_, largest) = TextScale::range();
-    let mut indicator = Indicator::default();
-    drop(indicator.beginning(&EgressPolicy::Anywhere, asking_a_provider(), noon()));
+    let mut indicator = asking();
     drop(indicator.beginning(&EgressPolicy::Anywhere, fetching(), noon()));
     for scheme in [Scheme::Light, Scheme::Dark] {
         for percent in [100, 200, largest] {
@@ -364,35 +313,25 @@ fn deep_teal_never_arrives_alone() {
                 reading: Direction::LeftToRight,
             };
             let drawn = drawn_as(&indicator, look);
-            let palette = crate::egress_status_raster::palette(scheme, Contrast::AsDesigned);
-            assert!(!drawn.rows.is_empty());
-            let deep_teals: Vec<&Solid> = drawn
-                .solids
-                .iter()
-                .filter(|solid| solid.colour == deep_teal())
-                .collect();
-            assert_eq!(deep_teals.len(), drawn.rows.len(), "{look:?}");
-            for fill in deep_teals {
-                let row = drawn
-                    .rows
-                    .iter()
-                    .find(|row| row.mark.intersection(fill.area) == Some(fill.area))
-                    .unwrap();
-                let arrow = drawn.solids.iter().filter(|solid| {
-                    solid.colour != deep_teal()
-                        && fill.area.intersection(solid.area) == Some(solid.area)
-                        && solid.area != fill.area
-                });
-                assert!(arrow.count() >= 2, "{look:?}: a mark with no arrow");
+            let palette = palette(scheme, Contrast::AsDesigned);
+            assert!(!drawn.rows.is_empty(), "{look:?}");
+            for row in &drawn.rows {
+                let (x, y) = middle_of(row.mark);
+                // A third of the way in from the lamp's left, on its fill and
+                // off the arrow.
+                let on_the_fill = raster_at(&drawn, row.mark.loc.x + row.mark.size.w / 6, y);
+                assert_eq!(on_the_fill, Some(deep_teal()), "{look:?}: the lamp is not deep teal");
+                assert_ne!(
+                    raster_at(&drawn, x, y),
+                    Some(deep_teal()),
+                    "{look:?}: a lamp with no arrow"
+                );
                 let words = drawn
                     .inked
                     .iter()
                     .find(|inked| row.area.intersection(inked.area) == Some(inked.area))
                     .unwrap();
-                assert!(
-                    words.pixels.contains(&palette.ink),
-                    "{look:?}: words with no ink"
-                );
+                assert!(words.pixels.contains(&palette.ink), "{look:?}: no ink");
             }
             assert!(
                 drawn
@@ -405,69 +344,57 @@ fn deep_teal_never_arrives_alone() {
     }
 }
 
-/// **It sits at the far end of the dock wherever the dock is**: on all four
-/// edges and in both reading directions, the first row is against the corner
-/// `alo-dock` calls the status area and never over the dock.
+/// **It sits in the top-left corner**, 20 from the left and a pill 10 from the
+/// top — in both reading directions, because it is a corner of the screen and
+/// not the end of a row.
 #[test]
-fn it_is_drawn_at_the_far_end_of_the_dock_wherever_the_dock_is() {
-    let mut indicator = Indicator::default();
-    drop(indicator.beginning(&EgressPolicy::Anywhere, asking_a_provider(), noon()));
-    let drawn_on = indicator;
-    let (width, height, margin) = (1920, 1080, 8);
+fn it_is_drawn_in_the_top_left_corner_whichever_way_a_person_reads() {
     for reading in [Direction::LeftToRight, Direction::RightToLeft] {
-        {
-            let dock = Dock::shipped();
-            let thick = i32::try_from(
-                dock.layout_on(Screen::of(1920, 1080).unwrap())
-                    .thickness()
-                    .as_pixels(),
-            )
-            .unwrap();
-            let mut labels = WindowControlLabels::new().unwrap();
-            let look = EgressStatusLook { reading, ..light() };
-            let drawn = picture(
-                &handed(&drawn_on),
-                &words(),
-                &dock,
-                &mut labels,
-                TheRoom::with_nothing_put_aside((width, height)),
-                look,
-                0,
-            )
-            .unwrap();
-            let row = drawn.rows.first().unwrap().area;
-            let (left, top) = (row.loc.x, row.loc.y);
-            let (right, bottom) = (left + row.size.w, top + row.size.h);
-            let at = reading;
-            let _ = top;
-            let floating = i32::try_from(alo_dock::measures::FLOATING_ABOVE_THE_EDGE).unwrap();
-            assert_eq!(bottom, height - thick - floating - margin, "{at:?}");
-            assert!(
-                bottom <= height - thick - floating,
-                "{at:?} is over the dock"
-            );
-            match reading {
-                Direction::LeftToRight => assert_eq!(right, width - margin, "{at:?}"),
-                Direction::RightToLeft => assert_eq!(left, margin, "{at:?}"),
-            }
-        }
+        let drawn = drawn_as(&asking(), EgressStatusLook { reading, ..light() });
+        let pill = drawn.rows.first().unwrap().area;
+        assert_eq!((pill.loc.x, pill.loc.y), (20, 10), "{reading:?}");
+        assert_eq!(pill.size.h, 40, "{reading:?}");
     }
 }
 
-/// **The mark is on the side a person reads first**: before the words for a
+/// **A Dock along the top is cleared, and one down the left is stepped over.**
+#[test]
+fn a_dock_on_the_top_or_the_left_is_cleared() {
+    use alo_dock::{Edge, Layout, Screen};
+    let room = TheRoom::with_nothing_put_aside((1920, 1080));
+    let on = |edge| Layout::along(edge, Screen::of(1920, 1080).unwrap());
+    let floating = i32::try_from(alo_dock::measures::FLOATING_ABOVE_THE_EDGE).unwrap();
+
+    let bottom = Place::in_the_top_left_corner(on(Edge::Bottom), room, 20);
+    assert_eq!(bottom.across, Across::FromLeft(20));
+    assert_eq!(bottom.stacked, Stacked::Downwards(0));
+
+    let top = on(Edge::Top);
+    let thick = i32::try_from(top.thickness().as_pixels()).unwrap();
+    assert_eq!(
+        Place::in_the_top_left_corner(top, room, 20).stacked,
+        Stacked::Downwards(thick + floating)
+    );
+
+    let left = on(Edge::Left);
+    let lane = i32::try_from(left.thickness().as_pixels()).unwrap() + floating;
+    assert_eq!(
+        Place::in_the_top_left_corner(left, room, 20).across,
+        Across::FromLeft(lane + 20)
+    );
+}
+
+/// **The lamp is on the side a person reads first**: before the words for a
 /// left-to-right reader and after them for a right-to-left one.
 #[test]
-fn the_mark_is_on_the_side_a_person_reads_first() {
-    let mut indicator = Indicator::default();
-    drop(indicator.beginning(&EgressPolicy::Anywhere, asking_a_provider(), noon()));
-    let forwards = drawn_as(&indicator, light());
+fn the_lamp_is_on_the_side_a_person_reads_first() {
+    let forwards = drawn_as(&asking(), light());
     let row = forwards.rows.first().unwrap();
     assert!(row.mark.loc.x + row.mark.size.w <= row.words.loc.x);
 
     let backwards = drawn_as(
-        &indicator,
+        &asking(),
         EgressStatusLook {
-            contrast: Contrast::AsDesigned,
             reading: Direction::RightToLeft,
             ..light()
         },
@@ -476,55 +403,34 @@ fn the_mark_is_on_the_side_a_person_reads_first() {
     assert!(row.words.loc.x + row.words.size.w <= row.mark.loc.x);
 }
 
-/// **No look turns it off**: in every scheme, at every text size, on every
-/// edge, something leaving is drawn, and everything drawn is inside the
-/// output and whole.
+/// **No look turns it off**: in every scheme, at every text size and in both
+/// reading directions, something leaving is drawn, and everything drawn is
+/// inside the output.
 #[test]
-fn no_look_and_no_dock_draws_a_lit_indicator_as_nothing() {
+fn no_look_draws_a_lit_indicator_as_nothing() {
     let (smallest, largest) = TextScale::range();
     let mut indicator = Indicator::default();
     drop(indicator.beginning(&EgressPolicy::Anywhere, fetching(), noon()));
-    let drawn_on = handed(&indicator);
     let output = Rectangle::<i32, Physical>::from_size((1366, 768).into());
-    let mut labels = WindowControlLabels::new().unwrap();
     for scheme in [Scheme::Light, Scheme::Dark] {
         for percent in [smallest, 100, 200, largest] {
-            {
-                for reading in [Direction::LeftToRight, Direction::RightToLeft] {
-                    let dock = Dock::shipped();
-                    let look = EgressStatusLook {
-                        contrast: Contrast::AsDesigned,
-                        scheme,
-                        scale: TextScale::percent(percent).unwrap(),
-                        reading,
-                    };
-                    let drawn = picture(
-                        &drawn_on,
-                        &words(),
-                        &dock,
-                        &mut labels,
-                        TheRoom::with_nothing_put_aside((1366, 768)),
-                        look,
-                        0,
-                    )
-                    .unwrap();
-                    let at = look;
-                    assert_eq!(drawn.rows.len(), 1, "{at:?}");
-                    assert!(!drawn.inked.is_empty(), "{at:?}");
-                    for area in drawn
-                        .solids
-                        .iter()
-                        .map(|solid| solid.area)
-                        .chain(drawn.inked.iter().map(|inked| inked.area))
-                    {
-                        assert_eq!(area.intersection(output), Some(area), "{at:?}: {area:?}");
-                    }
-                    for inked in &drawn.inked {
-                        assert_eq!(
-                            inked.pixels.len(),
-                            (inked.area.size.w * inked.area.size.h) as usize
-                        );
-                    }
+            for reading in [Direction::LeftToRight, Direction::RightToLeft] {
+                let look = EgressStatusLook {
+                    contrast: Contrast::AsDesigned,
+                    scheme,
+                    scale: TextScale::percent(percent).unwrap(),
+                    reading,
+                };
+                let drawn = drawn_in(&indicator, look, TheRoom::with_nothing_put_aside((1366, 768)));
+                assert_eq!(drawn.rows.len(), 1, "{look:?}");
+                assert!(!drawn.inked.is_empty(), "{look:?}");
+                for area in drawn
+                    .washed
+                    .iter()
+                    .map(|washed| washed.area)
+                    .chain(drawn.inked.iter().map(|inked| inked.area))
+                {
+                    assert_eq!(area.intersection(output), Some(area), "{look:?}: {area:?}");
                 }
             }
         }
@@ -532,8 +438,7 @@ fn no_look_and_no_dock_draws_a_lit_indicator_as_nothing() {
 }
 
 /// **Lines that do not all fit are never dropped silently**: as many as fit
-/// are drawn in order, and the last row carries the indicator's own count of
-/// everything that is leaving.
+/// are drawn in order, and the last pill carries the indicator's own count.
 #[test]
 fn lines_that_do_not_fit_end_with_the_indicators_own_count() {
     let strings = words();
@@ -543,12 +448,11 @@ fn lines_that_do_not_fit_end_with_the_indicators_own_count() {
         drop(indicator.beginning(&EgressPolicy::Anywhere, asking_a_provider(), noon()));
     }
     let look = EgressStatusLook {
-        contrast: Contrast::AsDesigned,
         scale: TextScale::percent(largest).unwrap(),
         ..light()
     };
-    let mut labels = WindowControlLabels::new().unwrap();
     let handed_over = handed(&indicator);
+    let mut labels = WindowControlLabels::new().unwrap();
     let drawn = picture(
         &handed_over,
         &strings,
@@ -556,7 +460,6 @@ fn lines_that_do_not_fit_end_with_the_indicators_own_count() {
         &mut labels,
         TheRoom::with_nothing_put_aside((1366, 768)),
         look,
-        0,
     )
     .unwrap();
     assert!(drawn.rows.len() < 40, "{} rows fit", drawn.rows.len());
@@ -568,62 +471,34 @@ fn lines_that_do_not_fit_end_with_the_indicators_own_count() {
     for row in drawn.rows.iter().take(drawn.rows.len() - 1) {
         assert_eq!(row.sentence, "@mail is asking a question of alo, in the EU");
     }
-    let deep_teals = drawn
-        .solids
-        .iter()
-        .filter(|solid| solid.colour == deep_teal())
-        .count();
-    assert_eq!(deep_teals, drawn.rows.len());
 }
 
 /// **An output that cannot hold a dock refuses a lit frame** rather than
-/// drawing it without the indicator — and a quiet indicator, which draws
-/// nothing, is not refused anywhere.
+/// drawing it without the indicator — and a quiet one is not refused anywhere.
 #[test]
 fn an_output_that_cannot_hold_a_dock_refuses_a_lit_frame_and_not_a_quiet_one() {
     let mut labels = WindowControlLabels::new().unwrap();
     let quiet = handed(&Indicator::default());
-    let mut indicator = Indicator::default();
-    drop(indicator.beginning(&EgressPolicy::Anywhere, asking_a_provider(), noon()));
-    let lit = handed(&indicator);
+    let lit = handed(&asking());
     for size in [(100, 100), (0, 0), (-5, 800), (1920, -1), (20_000, 1080)] {
+        let room = TheRoom::with_nothing_put_aside(size);
+        let refused = picture(&lit, &words(), &Dock::shipped(), &mut labels, room, light());
         assert!(
-            matches!(
-                picture(
-                    &lit,
-                    &words(),
-                    &Dock::shipped(),
-                    &mut labels,
-                    TheRoom::with_nothing_put_aside(size),
-                    light(),
-                    0,
-                ),
-                Err(RenderError::EgressStatusScene)
-            ),
+            matches!(refused, Err(RenderError::EgressStatusScene)),
             "{size:?}"
         );
         assert!(
-            picture(
-                &quiet,
-                &words(),
-                &Dock::shipped(),
-                &mut labels,
-                TheRoom::with_nothing_put_aside(size),
-                light(),
-                0,
-            )
-            .unwrap()
-            .is_empty(),
+            picture(&quiet, &words(), &Dock::shipped(), &mut labels, room, light()).is_ok(),
             "{size:?}"
         );
     }
 }
 
-/// The row's words contrast with its ground as text must, in both schemes.
+/// The words contrast with the pill's ground as text must, in both schemes.
 #[test]
 fn the_words_are_readable_on_their_ground() {
     for scheme in [Scheme::Light, Scheme::Dark] {
-        let palette = crate::egress_status_raster::palette(scheme, Contrast::AsDesigned);
+        let palette = palette(scheme, Contrast::AsDesigned);
         let colour = |[red, green, blue]: [u8; 3]| alo_appearance::Colour::of(red, green, blue);
         let contrast = colour(palette.ink).contrast_with(colour(palette.ground));
         assert!(
@@ -633,108 +508,100 @@ fn the_words_are_readable_on_their_ground() {
     }
 }
 
-/// **High contrast draws the indicator in the other palette, mark and all.**
-/// The rows are where they were, every flat colour is one
-/// `alo_access::HighContrast` decided, and the mark is still the agent's — that
-/// palette's own deep teal, which is the reserved colour taken deep enough to
-/// read rather than another colour wearing the agent's meaning (ADR 0010).
+/// **High contrast draws the lamp in the other palette's own deep teal**, the
+/// reserved colour taken deep enough to read (ADR 0010), and never the
+/// design's.
 #[test]
-fn high_contrast_draws_the_indicator_and_its_mark_in_the_other_palette() {
-    let mut indicator = Indicator::default();
-    indicator
-        .beginning(&EgressPolicy::Anywhere, asking_a_provider(), noon())
-        .unwrap();
+fn high_contrast_draws_the_lamp_in_the_other_palette() {
     for scheme in [Scheme::Light, Scheme::Dark] {
-        let designed = drawn_as(&indicator, EgressStatusLook { scheme, ..light() });
         let high = drawn_as(
-            &indicator,
+            &asking(),
             EgressStatusLook {
                 scheme,
                 contrast: Contrast::High,
                 ..light()
             },
         );
-        assert_eq!(
-            designed.rows.len(),
-            high.rows.len(),
-            "{scheme:?}: high contrast changed how many rows there are"
-        );
-        let palette = crate::access_contrast::every_colour_of(
-            Contrast::High,
-            scheme,
-            Token::DeepTeal.colour(),
-        );
-        for solid in &high.solids {
-            assert!(
-                palette.contains(&solid.colour),
-                "{scheme:?}: {:?} is drawn in {:?}, which is in no palette this crate may use",
-                solid.area,
-                solid.colour
-            );
-        }
-        let agents = rgb(alo_access::HighContrast::of(scheme).accent);
-        assert!(
-            high.solids.iter().any(|solid| solid.colour == agents),
-            "{scheme:?}: the agent's mark is not on the indicator in high contrast"
-        );
-        assert!(
-            !high.solids.iter().any(|solid| solid.colour == deep_teal()),
-            "{scheme:?}: the design's deep teal survived into high contrast"
-        );
+        let row = high.rows.first().unwrap();
+        let (_, y) = middle_of(row.mark);
+        let on_the_fill = raster_at(&high, row.mark.loc.x + row.mark.size.w / 6, y);
+        let agents = crate::egress_status_mark::rgb(alo_access::HighContrast::of(scheme).accent);
+        assert_eq!(on_the_fill, Some(agents), "{scheme:?}");
+        assert_ne!(on_the_fill, Some(deep_teal()), "{scheme:?}");
     }
 }
 
-/// **On a two-times output the rows are twice as tall and clear a Dock drawn
-/// twice the size.**
-///
-/// The rows sit on the Dock's corner, and the Dock is drawn at its display's
-/// scale; a row sized by the text size alone was half the size it should be
-/// beside it. The same output at 100 and at 200: the row's height and how far
-/// down it sits double exactly, its far end stays the same margin from the far
-/// corner, and it is still above the band.
+/// **On a two-times output the pills are twice the size and twice as far in.**
 #[test]
-fn at_two_hundred_the_rows_double_and_clear_a_doubled_dock() {
-    let mut indicator = Indicator::default();
-    drop(indicator.beginning(&EgressPolicy::Anywhere, asking_a_provider(), noon()));
+fn at_two_hundred_the_pills_double() {
     let at = |size: (i32, i32), per_cent: u16| {
-        let mut labels = WindowControlLabels::new().unwrap();
-        picture(
-            &handed(&indicator),
-            &words(),
-            &Dock::shipped(),
-            &mut labels,
+        drawn_in(
+            &asking(),
+            light(),
             TheRoom {
                 size,
                 panel: None,
                 scale: crate::display_scale::DisplayScale::of_per_cent(per_cent),
             },
-            light(),
-            0,
         )
-        .unwrap()
     };
     let (one, two) = (at((1920, 1080), 100), at((3840, 2160), 200));
     let (a, b) = (
         one.rows.first().unwrap().area,
         two.rows.first().unwrap().area,
     );
-    assert_eq!(b.size.h, 2 * a.size.h, "the row's height");
-    assert_eq!(b.loc.y, 2 * a.loc.y, "how far down the row sits");
-    assert_eq!(
-        b.loc.x + b.size.w,
-        2 * (a.loc.x + a.size.w),
-        "the row's far end"
-    );
-    let dock = crate::where_the_dock_is::where_the_dock_is(
-        &Dock::shipped(),
-        (3840, 2160),
-        &[],
-        crate::display_scale::DisplayScale::of_per_cent(200),
-    )
-    .unwrap();
-    assert!(
-        b.loc.y + b.size.h <= dock.band.loc.y,
-        "the row {b:?} runs into the doubled Dock {:?}",
-        dock.band
-    );
+    assert_eq!(b.size.h, 2 * a.size.h, "the pill's height");
+    assert_eq!((b.loc.x, b.loc.y), (2 * a.loc.x, 2 * a.loc.y), "where it sits");
+}
+
+/// **The indicator never overlaps the put-aside panel's column or the top
+/// controls' band** — at every display size and scale, quiet, lit with one
+/// line and lit with many, and with the panel showing or not. The owner's
+/// decisions of 2026-10-31: the indicator owns the top-left corner, the top
+/// controls start just to its right, and the panel keeps the top-right.
+#[test]
+fn it_never_overlaps_the_panels_column_or_the_top_controls() {
+    let mut many = Indicator::default();
+    for _ in 0..12 {
+        drop(many.beginning(&EgressPolicy::Anywhere, fetching(), noon()));
+    }
+    for (width, height) in [(1024, 600), (1280, 800), (1366, 768), (1920, 1080), (3840, 2160)] {
+        for per_cent in [100, 150, 200] {
+            for panel_is in [0, 112, 300] {
+                let column = Rectangle::<i32, Physical>::new(
+                    (width - panel_is, 0).into(),
+                    (panel_is, height).into(),
+                );
+                let room = TheRoom {
+                    size: (width, height),
+                    panel: Some(column),
+                    scale: crate::display_scale::DisplayScale::of_per_cent(per_cent),
+                };
+                for indicator in [&Indicator::default(), &asking(), &many] {
+                    let drawn = drawn_in(indicator, light(), room);
+                    let band = drawn.band.unwrap();
+                    let at = (width, height, per_cent, panel_is);
+                    assert!(
+                        column.size.w == 0 || !band.overlaps(column),
+                        "{at:?}: the indicator {band:?} is on the panel's column {column:?}"
+                    );
+                    let top_controls = crate::top_controls_region::after_the_indicator(
+                        crate::top_controls_region::reserved((width, height), column, false),
+                        drawn.band,
+                    );
+                    if let Some(top_controls) = top_controls {
+                        assert!(
+                            !band.overlaps(top_controls),
+                            "{at:?}: the indicator {band:?} and the top controls \
+                             {top_controls:?} claim one point"
+                        );
+                        assert!(
+                            !top_controls.overlaps(column) || column.size.w == 0,
+                            "{at:?}: the top controls reach the panel's column"
+                        );
+                    }
+                }
+            }
+        }
+    }
 }

@@ -140,7 +140,6 @@ fn frame_pictures(
         egress,
         labels,
         crate::egress_status_place::TheRoom::with_nothing_put_aside(size),
-        0,
     )?;
     let account = picture(
         record.window.shows(),

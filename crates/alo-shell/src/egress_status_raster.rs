@@ -1,14 +1,20 @@
-//! The egress indicator laid out and rasterised for one output, in the top
-//! corner at the far end of the screen.
+//! The egress indicator laid out and rasterised for one output, in the
+//! top-left corner of the screen.
 //!
 //! # Where, since 2026-10-31
 //!
-//! **The owner's decision of 2026-10-31**: the indicator sits in the top-right
-//! corner of the screen, outside any window — the top left for a person who
-//! reads right to left — replacing *the far end of the Dock, above it*. There
-//! it covered the Send button of a task window. `crate::egress_status_place`'s
-//! [`Place::in_the_top_corner`] says where, and keeps it beside the put-aside
-//! panel's column and clear of a Dock on the top or the far side.
+//! **The owner's decisions of 2026-10-31**: the indicator leaves *the far end
+//! of the Dock, above it*, where it covered the Send button of a task window,
+//! for a corner of its own outside any window. The approved frames drew it top
+//! right; that corner is the put-aside panel's, so it is the **top left**, and
+//! the top controls' band starts just to its right.
+//! `crate::egress_status_place`'s [`Place::in_the_top_left_corner`] says where,
+//! and keeps it clear of a Dock along the top or down the left.
+//!
+//! **And only on a desktop.** It is not drawn on the sign-in or first-start
+//! screens: law 1 is about the egress an agent causes, and no agent runs
+//! before somebody signs in, so nothing an agent causes can leave. Those
+//! screens keep the corner for *Back to lock* and the *alo OS* brand.
 //!
 //! # What is drawn — the approved frames `549:368` and `549:129`
 //!
@@ -205,11 +211,10 @@ pub(crate) fn picture(
         };
     };
     let measure = Measure::at(look.scale, room.scale);
-    let place = Place::in_the_top_corner(
+    let place = Place::in_the_top_left_corner(
         dock.layout_on(screen),
         room,
         measure.px(measures::FROM_THE_SIDE),
-        look.reading,
     );
     if drawn.lamp().is_dark() {
         the_quiet_circle(&mut picture, place, measure, look);

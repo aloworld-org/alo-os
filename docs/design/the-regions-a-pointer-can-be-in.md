@@ -117,6 +117,24 @@ and does not reach the panel at all.
 **So the top region as drawn is the loose one**, and 1440 × 84 is superseded by
 that rule rather than recorded as the answer.
 
+### And the top-left corner, decided by the owner on 2026-10-31
+
+**The egress indicator owns the top-left corner, and the top controls start
+just to its right.** The owner moved the indicator off the Dock's far end that
+day; the approved frames drew it top right, which the ruling above gives to the
+panel, so the owner gave it the top-left instead. The top controls still span up
+to the reserved right-panel area; they now **start after the indicator's
+corner**, wherever its quiet circle or its pills end
+(`crates/alo-shell/src/top_controls_region.rs`, `after_the_indicator`), so one
+pointer position still cannot reveal two surfaces.
+`it_never_overlaps_the_panels_column_or_the_top_controls` in
+`crates/alo-shell/src/egress_status_raster_tests.rs` holds the indicator, the top
+controls and the panel apart at several display sizes and scales, on every build.
+
+**Not before sign-in.** The indicator is not drawn on the sign-in or first-start
+screens — no agent runs there, and law 1 is about the egress an agent causes — so
+those screens keep the top-left for *Back to lock* and the *alo OS* brand.
+
 **And 84 is an overlay envelope, not a band taken out of the canvas** — see the
 owner's ruling at the end of this document. The bottom already complies, which
 is why it stops 192 short of the panel.
