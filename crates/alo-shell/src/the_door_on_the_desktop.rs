@@ -71,7 +71,8 @@ impl TheDoorOnTheDesktop {
         self.served.as_mut().map_or(0, |door| door.answered(server))
     }
 
-    /// Whether the door is served.
+    /// Whether the door is served — for a test; the desktop only answers.
+    #[cfg(test)]
     pub(crate) const fn is_served(&self) -> bool {
         self.served.is_some()
     }

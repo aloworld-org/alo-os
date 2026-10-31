@@ -36,7 +36,7 @@ fn one_line(talking: &mut UnixStream) -> Option<String> {
     loop {
         match talking.read(&mut byte) {
             Ok(0) | Err(_) => return None,
-            Ok(_) if byte == [b'\n'] => return String::from_utf8(heard).ok(),
+            Ok(_) if byte == *b"\n" => return String::from_utf8(heard).ok(),
             Ok(_) => heard.extend_from_slice(&byte),
         }
     }
