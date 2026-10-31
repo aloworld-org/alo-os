@@ -15,9 +15,13 @@
 //! applications quit by themselves when the display they drew on goes away;
 //! that is theirs to decide, and the unit does not outlive them.)
 //!
-//! **The agent's asks keep the road they had.** An `open` the agent's door
-//! recorded is sent over the bus only, as before this file existed; see
-//! `alo_shell::WhoAskedToStart`.
+//! **An approved agent `open` takes the same road.** The owner's decision of
+//! 2026-10-31 (ADR 0108): after the person's approval and their grant for that
+//! application, alo starts it exactly as a press would — still only an
+//! installed application, by its identifier, from its entry's own `Exec`, never
+//! a command anybody wrote. Until that day the agent's ask was sent over the
+//! bus only. Who asked is still carried (`alo_shell::WhoAskedToStart`) and said
+//! on the journal line, so the two can be told apart afterwards.
 //!
 //! # Every refusal is said
 //!
@@ -73,16 +77,23 @@ impl HowThisMachineStartsThings {
     }
 
     /// Start `identifier` for whoever asked, and whether it was started.
+    ///
+    /// **One road for both**, by the owner's decision of 2026-10-31: the entry
+    /// decides. Who asked changes only the journal's words.
     #[must_use]
     pub fn started(&self, identifier: &str, who: WhoAskedToStart) -> bool {
-        match who {
-            WhoAskedToStart::TheirAgent => self.over_the_bus(identifier),
-            WhoAskedToStart::ThePerson => self.for_the_person(identifier),
-        }
+        eprintln!(
+            "alo-desktop: {identifier} is asked to start, {}",
+            match who {
+                WhoAskedToStart::ThePerson => "by the person's own press",
+                WhoAskedToStart::TheirAgent => "by alo, with the person's approval",
+            }
+        );
+        self.as_its_entry_says(identifier)
     }
 
-    /// The person's road: the entry decides.
-    fn for_the_person(&self, identifier: &str) -> bool {
+    /// The one road: the entry decides.
+    fn as_its_entry_says(&self, identifier: &str) -> bool {
         let Some(location) = alo_launching::where_the_entry_is(identifier, &self.entries) else {
             return said(identifier, "no entry by that name is installed");
         };

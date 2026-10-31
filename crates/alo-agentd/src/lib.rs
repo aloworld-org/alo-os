@@ -239,6 +239,8 @@ pub mod hearing;
 pub mod holding;
 #[cfg(target_os = "linux")]
 pub mod hosting;
+#[cfg(target_os = "linux")]
+pub mod how_applications_start_here;
 #[cfg(all(test, target_os = "linux"))]
 mod installing_under_the_description;
 #[cfg(target_os = "linux")]

@@ -29,9 +29,10 @@
 //! answered, so every window on the machine would stop drawing while one
 //! started. [`crate::an_application_is_started`] carries that whole argument,
 //! and `open` therefore records the ask, in `Server::its_agent_asked_to_start`,
-//! where the loop sends it off the input path — told apart from a person's
-//! press, whose asks may also start an entry's `Exec` line while the agent's
-//! stay on the bus.
+//! where the loop sends it off the input path. It is told apart from a
+//! person's press so the journal can say who asked; since the owner's decision
+//! of 2026-10-31 (ADR 0108) both take the same road — the bus where the entry
+//! asks for it, the entry's own `Exec` line otherwise.
 //!
 //! **`not-installed` is a word this compositor never says**, and that is
 //! honest rather than a gap. Which applications exist is

@@ -27,11 +27,13 @@
 //! found by its identifier, the same line every other desktop would run. There
 //! is no argument a caller can add.
 //!
-//! **The agent's road is not this one.** `open_application` reaches the
-//! compositor through ADR 0108's door, and that ask keeps the bus-only road it
-//! had; `alo-desktop` is where the two are told apart. Whether an approved
-//! agent `open` should also reach an `Exec` line is a question for the owner,
-//! not a consequence of this crate.
+//! **The agent's approved `open` takes this road too**, by the owner's
+//! decision of 2026-10-31 (ADR 0108): after the person's approval and their
+//! grant for that application, alo starts it exactly as a press would. It is
+//! still only an installed application, by its identifier, from its entry's own
+//! `Exec` — and `alo-agentd` reads the same decisions from this crate, so the
+//! record of that `open` names the road. Until that day the agent's ask was
+//! bus activation only.
 //!
 //! # Nothing here touches a bus or starts a process
 //!

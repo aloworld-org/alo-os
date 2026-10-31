@@ -80,6 +80,7 @@ use alo_software::{Bound, Tool};
 use alo_strings::{Said, Strings};
 
 use crate::bounding::Bounding;
+use crate::how_an_application_starts::SaysHowAnApplicationStarts;
 use crate::kept::Kept;
 use crate::shortening::{Shortened, Shortening};
 use crate::the_door_the_compositor_serves::TheDoorTheCompositorServes;
@@ -163,6 +164,10 @@ pub struct Machine<'a> {
     /// screen with no compositor is the ordinary case rather than an error —
     /// `crate::the_door_the_compositor_serves` carries that argument.
     reaching_the_compositor: Option<&'a mut dyn TheDoorTheCompositorServes>,
+    /// What says how an application starts, read off its entry, so the record
+    /// of an approved `open` names the road — see
+    /// `crate::how_an_application_starts`. `None` exactly when the door is.
+    knowing_how_it_starts: Option<&'a dyn SaysHowAnApplicationStarts>,
 }
 
 /// What a machine needs to carry out the installation verb.
@@ -200,6 +205,10 @@ pub struct WhatAnApplicationVerbNeeds<'a> {
     /// inside lives on the field, where it means *this machine does not offer
     /// them*.
     pub door: &'a mut dyn TheDoorTheCompositorServes,
+    /// How each application starts, so an approved `open` is refused by name
+    /// where nothing starts it and recorded with its road where something does
+    /// (the owner's decision of 2026-10-31, ADR 0108).
+    pub starting: &'a dyn SaysHowAnApplicationStarts,
 }
 
 /// Every verb a whole machine offers, as one list.
@@ -265,6 +274,7 @@ impl<'a> Machine<'a> {
             installing_with: None,
             installed: Installed::default(),
             reaching_the_compositor: None,
+            knowing_how_it_starts: None,
             bound: Bound::Nobodys,
             bounding,
             indicator,
@@ -322,6 +332,7 @@ impl<'a> Machine<'a> {
             installing_with: Some(installing_with),
             installed: Installed::default(),
             reaching_the_compositor: None,
+            knowing_how_it_starts: None,
             bound,
             bounding,
             indicator,
@@ -395,6 +406,7 @@ impl<'a> Machine<'a> {
             installing_with: Some(software.tool),
             installed: applications.installed,
             reaching_the_compositor: Some(applications.door),
+            knowing_how_it_starts: Some(applications.starting),
             bound: software.bound,
             bounding,
             indicator,
@@ -423,6 +435,14 @@ impl<'a> Machine<'a> {
         self.reaching_the_compositor
             .as_deref_mut()
             .map(|door| door as &mut dyn TheDoorTheCompositorServes)
+    }
+
+    /// What says how an application starts, on a machine that offers the
+    /// three application acts.
+    ///
+    /// `pub(crate)`, and the only caller is `acting_on_an_application.rs`.
+    pub(crate) fn how_applications_start(&self) -> Option<&'a dyn SaysHowAnApplicationStarts> {
+        self.knowing_how_it_starts
     }
 
     /// What an agent may ask for on this machine.

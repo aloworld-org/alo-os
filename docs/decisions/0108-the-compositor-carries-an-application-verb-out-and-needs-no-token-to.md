@@ -122,3 +122,38 @@ in that directory is.
 ADR 0001 §2's broker and its token, `daemon-protocol.md`'s two doors and its
 `SO_PEERCRED` rule, and law 2's enumerated verbs. This proposes a third door for
 an unprivileged consumer and asks for no exception to any of them.
+
+## How an approved `open` starts the application — the owner's decision of 2026-10-31
+
+**Asked:** once a person's own press on the Dock started any installed
+application the ordinary way (#1045) — over the bus where the entry says
+`DBusActivatable=true`, and from the entry's own `Exec` line otherwise, in a
+unit of its own with alo's display — should an approved `open_application`
+take the same road, or stay on bus activation only, as it had?
+
+**The owner's answer: the same road.** After the person's approval and their
+grant for that application, alo starts it exactly as a press would. What that
+does and does not widen:
+
+- **It still starts only installed applications, by their identifier, from the
+  entry's own `Exec` line.** There is no field on this door for a command to
+  arrive in, and none is added: the request line is unchanged, and what runs is
+  what the installed desktop entry names — never text the agent wrote.
+- **One approval, one execution, one record.** The record of an approved `open`
+  says **which road** starts the application — *over the session bus, as its
+  entry says*, or *from the command its own entry names* — read off the entry
+  with the same decisions the desktop's sender makes (`alo_launching`).
+- **An entry that gives no way to start is refused by name before the door is
+  asked**, and that refusal is written down like every other.
+
+The record names the road the entry asks for, decided before the door is
+asked. The desktop's one further step — using the entry's `Exec` line when the
+bus has nothing to start for a `DBusActivatable` entry — is said on the
+desktop's journal, not in this record: a door whose answer is one word cannot
+carry it, and changing that answer would be a break in a published surface.
+
+**And the door is now served.** Until the same day nothing on a real machine
+served `/run/alo/<uid>/shell.sock` — only an example did — so every approved
+application act was answered *this machine could not reach* the application.
+The desktop now serves it once the daemon's directory is there
+(`alo_shell::the_door_on_the_desktop`).
