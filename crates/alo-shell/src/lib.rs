@@ -464,6 +464,11 @@ mod the_pointer_in_pixels;
 pub mod the_providers_words;
 mod the_region_a_person_chose;
 pub mod the_regions_offered;
+/// Which kind of window is in front: the one a person went to (2026-10-31).
+mod which_window_is_in_front;
+/// Super+Tab and Alt+Tab going round every window, the terminal and the task
+/// windows included.
+mod a_chord_goes_round_every_window;
 /// The reply box's five icons, read from the design file's SVG and drawn at
 /// the display's scale.
 mod the_reply_boxs_icons;

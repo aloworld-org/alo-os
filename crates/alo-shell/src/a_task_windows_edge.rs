@@ -96,6 +96,18 @@ pub(crate) fn every_task_windows_edge(
 }
 
 impl Server {
+    /// Whether any task window's edge is under `at`, in the units
+    /// [`Self::a_press_on_a_task_windows_edge`] takes, without pressing it.
+    pub(crate) fn a_task_windows_edge_is_under(&self, at: Point<i32, Logical>) -> bool {
+        let room = self.the_room_an_edge_is_clamped_in();
+        let scale = self.the_scale_an_edge_is_measured_at();
+        let at = a_point_in_the_edges_units(at, scale);
+        self.tasks().each_open_window().into_iter().any(|(_, window)| {
+            let edge = the_edge_of_a_task_window(a_window_in_the_edges_units(window, scale), room);
+            what_is_under(&edge, at).is_some()
+        })
+    }
+
     /// A press at `at`, offered to the task windows' edges, newest first.
     ///
     /// Answers whether one took it. **Anywhere on a task window's edge takes

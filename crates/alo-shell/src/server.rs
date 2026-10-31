@@ -241,6 +241,12 @@ pub struct Server {
     /// **[`None`] is a machine where nobody has opened a terminal**, which is
     /// how every machine starts. Nothing opens one on a person's behalf.
     pub(crate) alos_own_terminal: Option<crate::the_terminal_a_person_opened::TheTerminal>,
+    /// Where alo's own terminal was last drawn, in the display's pixels, for a
+    /// press to be tested against. [`None`] before it is drawn.
+    pub(crate) where_the_terminal_is: Option<smithay::utils::Rectangle<i32, smithay::utils::Physical>>,
+    /// Which kind of window is in front of which: the applications, the
+    /// terminal and the task windows (`crate::which_window_is_in_front`).
+    pub(crate) which_is_in_front: crate::which_window_is_in_front::WhichIsInFront,
     /// The name of the person this desktop is for, as they typed it when they
     /// made their account — told once at sign-in by
     /// `Server::its_person_is_called`, and shown in the terminal's strip.
@@ -727,6 +733,8 @@ impl Server {
             asked_to_start: Vec::new(),
             the_terminal: None,
             alos_own_terminal: None,
+            where_the_terminal_is: None,
+            which_is_in_front: crate::which_window_is_in_front::WhichIsInFront::default(),
             // Nobody has said whose desktop this is; the stand-up does.
             whose_desktop: None,
             asks_an_application_to_start: None,

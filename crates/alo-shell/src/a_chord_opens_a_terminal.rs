@@ -108,6 +108,11 @@ impl crate::Server {
         // window sits — those are the design's and are measured in
         // `docs/design/the-terminal-window.md`.
         if self.open_alos_own_terminal(crate::the_terminal_a_person_opened::A_SENSIBLE_FIRST_GRID) {
+            // **And it comes in front** of the applications and any task
+            // window — the owner's decision of 2026-10-31,
+            // `crate::which_window_is_in_front` — so the keys it now takes go
+            // to a window the person can see.
+            self.the_person_went_to(crate::which_window_is_in_front::AKindOfWindow::TheTerminal);
             return true;
         }
         // **Falling back to the installed one is deliberate and is not a

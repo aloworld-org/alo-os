@@ -24,16 +24,17 @@ fn painted_at(call: &str) -> usize {
 }
 
 /// **A terminal is a window among windows**: painted where a client's window
-/// is, under the Dock and the task windows, and under the record, Settings and
-/// the question, which no window covers.
+/// is, under the Dock, and under the record, Settings and the question, which
+/// no window covers. Whether it is under the task windows is the person's
+/// (`crate::which_window_is_in_front`); the next test holds that order.
 #[test]
 fn the_terminal_is_painted_where_a_window_is_under_every_surface_of_alos() {
     let terminal = painted_at("terminal.paint(&mut frame, terminal_washed.as_ref())");
 
     for (surface, call) in [
         (
-            "the Dock and the task windows, so it covers a change waiting for approval",
-            "desktop.paint(&mut frame, &washed)",
+            "the Dock, so it covers the furniture no window covers",
+            "desktop.paint(&mut frame, &washed, the_tasks_are_in_front)",
         ),
         (
             "the record, so it covers what the machine did",
@@ -51,6 +52,28 @@ fn the_terminal_is_painted_where_a_window_is_under_every_surface_of_alos() {
         assert!(
             terminal < painted_at(call),
             "the terminal is painted over {surface}"
+        );
+    }
+}
+
+/// **The three kinds of window are painted in the person's order**, and in
+/// one loop: the applications, the terminal and the task windows are each
+/// painted inside the loop over `bottom_to_top`, and nowhere else, so no kind
+/// can be drawn outside the order a press and the keyboard read.
+#[test]
+fn the_windows_are_painted_in_the_order_the_person_put_them_in() {
+    let the_loop = painted_at("for kind in native.in_front.bottom_to_top()");
+    let the_desktop = painted_at("desktop.paint(&mut frame, &washed, the_tasks_are_in_front)");
+    for call in [
+        "draw_render_elements(&mut frame, zoom, &drawing.elements, &[damage])",
+        "terminal.paint(&mut frame, terminal_washed.as_ref())",
+        "desktop.paint_the_tasks(&mut frame, &washed)",
+        "task_edge.paint(&mut frame)",
+    ] {
+        let at = painted_at(call);
+        assert!(
+            the_loop < at && at < the_desktop,
+            "`{call}` is painted outside the loop over the person's order"
         );
     }
 }

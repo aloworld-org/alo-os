@@ -48,6 +48,13 @@ pub(crate) struct NativeLayers<'a> {
     /// **Above the clients and below the desktop**, with the other layers: an
     /// edge sits on its window and the Dock sits over both.
     pub(crate) edges: &'a [crate::window_edge_picture::EdgePicture],
+    /// Every task window's edge, painted with the task windows wherever they
+    /// are in [`Self::in_front`]'s order.
+    pub(crate) task_edges: &'a [crate::window_edge_picture::EdgePicture],
+    /// Which kind of window is in front of which — the applications, the
+    /// terminal, the task windows — and so the order they are painted in
+    /// (`crate::which_window_is_in_front`, the owner's decision of 2026-10-31).
+    pub(crate) in_front: crate::which_window_is_in_front::WhichIsInFront,
     /// The dock and the desktop windows, when the frame carries the desktop.
     pub(crate) desktop: Option<&'a crate::desktop_raster::DesktopPicture>,
     /// The record window, when the frame carries one.
@@ -86,6 +93,8 @@ impl NativeLayers<'_> {
         Self {
             scene: None,
             edges: &[],
+            task_edges: &[],
+            in_front: crate::which_window_is_in_front::WhichIsInFront::AS_IT_WAS,
             desktop: None,
             record: None,
             settings: None,
@@ -102,6 +111,7 @@ impl NativeLayers<'_> {
     pub(crate) const fn is_empty(&self) -> bool {
         self.scene.is_none()
             && self.edges.is_empty()
+            && self.task_edges.is_empty()
             && self.desktop.is_none()
             && self.record.is_none()
             && self.settings.is_none()

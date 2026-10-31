@@ -15,6 +15,41 @@ use crate::desktop_raster::DesktopPicture;
 use crate::painted::Washed;
 
 impl DesktopPicture {
+    /// **The task windows alone**, for a frame where the person has gone to
+    /// the terminal or an application and the task windows are drawn behind
+    /// it. `washed` is [`Self::washed`]'s textures, as [`Self::paint`] takes
+    /// them; the task windows' are the first.
+    pub(crate) fn paint_the_tasks<F: Frame>(
+        &self,
+        frame: &mut F,
+        washed: &[(F::TextureId, smithay::utils::Rectangle<i32, Physical>)],
+    ) -> Result<(), RenderError> {
+        let tasks: Vec<_> = washed.iter().take(self.tasks.len()).collect();
+        self.the_tasks_in_order(frame, tasks)
+    }
+
+    /// Each task window whole, its panel then its words, oldest first.
+    fn the_tasks_in_order<F: Frame>(
+        &self,
+        frame: &mut F,
+        tasks: Vec<&(F::TextureId, smithay::utils::Rectangle<i32, Physical>)>,
+    ) -> Result<(), RenderError> {
+        for layer in crate::task_layers::in_painting_order(
+            self.tasks.iter().map(|task| task.inked.as_slice()),
+            tasks,
+        ) {
+            match layer {
+                crate::task_layers::TaskLayer::Panel((texture, area)) => {
+                    crate::painted::wash(frame, texture, *area)?;
+                }
+                crate::task_layers::TaskLayer::Words(inked) => {
+                    crate::painted::paint(frame, &[], inked)?;
+                }
+            }
+        }
+        Ok(())
+    }
+
     /// Refuse a frame the desktop was not laid out for, before anything is
     /// imported or drawn.
     pub(crate) fn validate(&self, size: Size<i32, Physical>) -> Result<(), RenderError> {
@@ -83,10 +118,17 @@ impl DesktopPicture {
     /// `washed` is the textures [`Self::washed`] asked for, already uploaded, in
     /// the same order. Each is drawn **before** the flat shapes that sit on it,
     /// because the Dock's surface is what its icons and its words are drawn on.
+    ///
+    /// `with_the_tasks` is whether the task windows are painted here, above the
+    /// Dock, which is where they go **while they are in front**. When the
+    /// person has gone to the terminal or an application, the painter draws
+    /// them earlier, behind those, with [`Self::paint_the_tasks`]
+    /// (`crate::which_window_is_in_front`, the owner's decision of 2026-10-31).
     pub(crate) fn paint<F: Frame>(
         &self,
         frame: &mut F,
         washed: &[(F::TextureId, smithay::utils::Rectangle<i32, Physical>)],
+        with_the_tasks: bool,
     ) -> Result<(), RenderError> {
         // **The first is the Dock's own surface and goes under its contents.**
         // Anything after it is a panel opened *from* the Dock — the overflow
@@ -146,18 +188,8 @@ impl DesktopPicture {
         // at a picture of a real draw, which is what `examples/desktop_check.rs`
         // exists for and says so in its own header: *it needs eyes, and eyes
         // need pictures.*
-        for layer in crate::task_layers::in_painting_order(
-            self.tasks.iter().map(|task| task.inked.as_slice()),
-            tasks,
-        ) {
-            match layer {
-                crate::task_layers::TaskLayer::Panel((texture, area)) => {
-                    crate::painted::wash(frame, texture, *area)?;
-                }
-                crate::task_layers::TaskLayer::Words(inked) => {
-                    crate::painted::paint(frame, &[], inked)?;
-                }
-            }
+        if with_the_tasks {
+            self.the_tasks_in_order(frame, tasks)?;
         }
         // **The market, and until 2026-10-18 nothing painted it at all.**
         //

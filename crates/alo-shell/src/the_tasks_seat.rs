@@ -158,7 +158,13 @@ impl Server {
     /// after a task window, so Enter would reach the task — but the Dock would
     /// still draw its focus ring and take the keyboard back the moment the task
     /// let go, which is a second place the keyboard is that nobody chose.
-    pub const fn this_task_took_the_keyboard(&mut self, which: WhichTask) {
+    ///
+    /// **And the task windows come in front** of the terminal and the
+    /// applications (`crate::which_window_is_in_front`): the window a person
+    /// goes to is the one they can see.
+    pub fn this_task_took_the_keyboard(&mut self, which: WhichTask) {
+        self.which_is_in_front
+            .comes_to_the_front(crate::which_window_is_in_front::AKindOfWindow::TaskWindows);
         self.the_task_with_the_keyboard = Some(which);
         self.which_area_has_the_keyboard = None;
         self.which_slot_on_the_bar = None;

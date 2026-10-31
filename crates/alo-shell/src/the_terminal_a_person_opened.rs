@@ -459,10 +459,24 @@ impl crate::Server {
     /// **A terminal whose shell has gone does not hold the keyboard.**
     /// Otherwise a person would be typing into a window that cannot answer,
     /// with no way to tell.
+    ///
+    /// **And only while it is the window in front** — the owner's decision of
+    /// 2026-10-31, `crate::which_window_is_in_front`. Until then an open
+    /// terminal took every key wherever it was drawn: from behind a task
+    /// window, and from behind an application a person had clicked.
     pub(crate) fn the_terminal_is_taking_the_keys(&self) -> bool {
-        self.alos_own_terminal
-            .as_ref()
-            .is_some_and(|terminal| !terminal.has_finished())
+        self.the_kind_in_front() == crate::which_window_is_in_front::AKindOfWindow::TheTerminal
+    }
+
+    /// Whether alo's own terminal is open and drawn under this point.
+    pub(crate) fn the_terminal_is_under(
+        &self,
+        at: smithay::utils::Point<i32, smithay::utils::Physical>,
+    ) -> bool {
+        self.alos_own_terminal.is_some()
+            && self
+                .where_the_terminal_is
+                .is_some_and(|window| window.contains(at))
     }
 
     /// Scroll alo's own terminal by this many lines, if one is open.
@@ -567,8 +581,15 @@ impl crate::Server {
         scale: f64,
     ) -> bool {
         let Some(terminal) = self.alos_own_terminal.as_mut() else {
+            self.where_the_terminal_is = None;
             return false;
         };
+        // **Where it is drawn, kept for a press to be tested against** — the
+        // same function the drawing places it with, so the terminal a person
+        // sees and the one they can press cannot come apart.
+        self.where_the_terminal_is =
+            crate::the_terminals_cells_are_drawn::where_the_window_goes(size, scale)
+                .map(|(window, _)| window);
         // **The scrollback it already keeps**, so laying the grid out again
         // never silently changes how much a person can scroll back to.
         let remembered = terminal.screen().size().remembered();
