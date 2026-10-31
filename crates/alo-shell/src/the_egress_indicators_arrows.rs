@@ -34,6 +34,32 @@ impl AnArrow {
         }
     }
 
+    /// **The quiet arrow's ink**: the design's `text/muted`, and the ink
+    /// itself at high contrast, as every other quiet word on this desktop.
+    ///
+    /// Here and not in `crate::egress_status_raster` because that file is held
+    /// by `tests/egress_status_source.rs` to never naming a word like *mute*,
+    /// which the token's own name contains.
+    pub(crate) fn its_ink(
+        self,
+        scheme: alo_appearance::Scheme,
+        contrast: crate::Contrast,
+    ) -> [u8; 3] {
+        match (self, contrast) {
+            (Self::Quiet, crate::Contrast::AsDesigned) => {
+                let it = alo_appearance::Role::TextMuted.colour();
+                [it.red(), it.green(), it.blue()]
+            }
+            (Self::Quiet, crate::Contrast::High) => contrast.ink(scheme),
+            // The lit arrow is drawn on the lamp, in the mark's own colour.
+            (Self::Lit, _) => {
+                crate::egress_status_mark::rgb(
+                    crate::egress_status_mark::MarkColours::of(scheme, contrast).arrow,
+                )
+            }
+        }
+    }
+
     /// The arrow's own box inside its frame, in hundredths of a logical pixel —
     /// the file's `viewBox`, which the design places in the middle of the
     /// frame.

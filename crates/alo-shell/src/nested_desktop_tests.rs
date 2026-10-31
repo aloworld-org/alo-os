@@ -104,9 +104,23 @@ fn the_egress_indicator_sits_in_the_top_left_corner_clear_of_the_dock() {
                 // **The top-left corner, whichever way a person reads** — the
                 // owner's decisions of 2026-10-31. It sat at the far end of the
                 // Dock until then; this test said so, and was rewritten with
-                // the move. 20 from the left and 10 from the top at 100.
+                // the move. 20 from the left of the room and 10 from the top at
+                // 100 — and **the room starts after the put-aside panel's
+                // column** where a mirrored session puts that column on the
+                // left: the panel owns its column, top included, by the owner's
+                // ruling of 2026-09-30, and the indicator sits just beside it.
                 let first = rows.first().unwrap().area;
-                assert_eq!((first.loc.x, first.loc.y), (20, 10), "{reading:?} {size:?}");
+                let column = pictures.desktop.panel.reserved;
+                let near = if column.size.w > 0 && column.loc.x <= 0 {
+                    column.loc.x + column.size.w
+                } else {
+                    0
+                };
+                assert_eq!(
+                    (first.loc.x, first.loc.y),
+                    (near + 20, 10),
+                    "{reading:?} {size:?}"
+                );
                 // **And the top controls start just to its right.**
                 let band = pictures.status.band.unwrap();
                 if let Some(top_controls) = pictures.desktop.top_controls {

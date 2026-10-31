@@ -342,11 +342,16 @@ fn deep_teal_never_arrives_alone() {
                     Some(deep_teal()),
                     "{look:?}: the lamp is not deep teal"
                 );
-                assert_ne!(
-                    raster_at(&drawn, x, y),
-                    Some(deep_teal()),
-                    "{look:?}: a lamp with no arrow"
-                );
+                // The middle third of the lamp holds the arrow: some of it is
+                // the arrow's lighter ink rather than deep teal.
+                let third = row.mark.size.w / 3;
+                let arrow = (x - third / 2..x + third / 2)
+                    .flat_map(|across| (y - third / 2..y + third / 2).map(move |down| (across, down)))
+                    .filter(|&(across, down)| {
+                        raster_at(&drawn, across, down).is_some_and(|colour| colour != deep_teal())
+                    })
+                    .count();
+                assert!(arrow > 2, "{look:?}: a lamp with no arrow");
                 let words = drawn
                     .inked
                     .iter()

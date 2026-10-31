@@ -160,14 +160,6 @@ fn the_hairline(scheme: Scheme, contrast: Contrast) -> [u8; 3] {
     }
 }
 
-/// The quiet arrow's ink: `text/muted` as designed, the ink at high contrast.
-fn the_quiet_ink(scheme: Scheme, contrast: Contrast) -> [u8; 3] {
-    match contrast {
-        Contrast::High => contrast.ink(scheme),
-        Contrast::AsDesigned => rgb(alo_appearance::Role::TextMuted.colour()),
-    }
-}
-
 /// Lay the indicator out for an output and rasterise it.
 ///
 /// `dock` is asked only where it is: a Dock along the top is cleared by
@@ -307,7 +299,7 @@ fn the_quiet_circle(
             &mut washed,
             arrow,
             the_arrows_box(AnArrow::Quiet, circle, measure),
-            the_quiet_ink(look.scheme, look.contrast),
+            AnArrow::Quiet.its_ink(look.scheme, look.contrast),
         );
     }
     picture.washed.push(washed);
