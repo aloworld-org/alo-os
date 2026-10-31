@@ -11,7 +11,7 @@
 
 use zeno::{Fill, Mask, Stroke, Transform};
 
-use crate::reading::{AShape, APart, Cap, Join, Paint};
+use crate::reading::{APart, AShape, Cap, Join, Paint};
 
 impl AShape {
     /// How much of each pixel the artwork covers, drawn into a box `wide` by

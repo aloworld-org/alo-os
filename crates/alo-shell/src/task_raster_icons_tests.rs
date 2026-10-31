@@ -61,7 +61,11 @@ fn the_button(window: &TaskPicture, scale: DisplayScale) -> Rectangle<i32, Physi
 /// A point inside the button, `x` and `y` logical pixels from its corner.
 fn in_the_button(window: &TaskPicture, scale: DisplayScale, x: u32, y: u32) -> Option<[u8; 3]> {
     let button = the_button(window, scale);
-    colour_at(window, button.loc.x + scale.px(x), button.loc.y + scale.px(y))
+    colour_at(
+        window,
+        button.loc.x + scale.px(x),
+        button.loc.y + scale.px(y),
+    )
 }
 
 /// The palette the window is drawn in.
@@ -162,8 +166,16 @@ fn attach_and_permissions_carry_their_icons_at_every_scale() {
         .controls();
     let one = drawn(DisplayScale::ONE, TheOneButton::Stop);
     let two = drawn(DisplayScale::of_per_cent(200), TheOneButton::Stop);
-    for (x, named) in [(controls.attach, "Attach"), (controls.permissions, "Permissions")] {
-        let at_one = ink_in(&one, DisplayScale::ONE, x, alo_tasks::measures::A_CONTROL_IS);
+    for (x, named) in [
+        (controls.attach, "Attach"),
+        (controls.permissions, "Permissions"),
+    ] {
+        let at_one = ink_in(
+            &one,
+            DisplayScale::ONE,
+            x,
+            alo_tasks::measures::A_CONTROL_IS,
+        );
         let at_two = ink_in(
             &two,
             DisplayScale::of_per_cent(200),

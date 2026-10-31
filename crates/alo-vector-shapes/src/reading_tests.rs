@@ -30,7 +30,10 @@ fn the_design_files_own_export_reads() {
 #[test]
 fn a_path_filled_and_stroked_is_two_parts() {
     let shape = AShape::read(&a_path_with(r##"fill="#102A43" stroke="black""##));
-    assert_eq!(shape.map(|it| it.colours()), Ok(vec![[0x10, 0x2a, 0x43], [0, 0, 0]]));
+    assert_eq!(
+        shape.map(|it| it.colours()),
+        Ok(vec![[0x10, 0x2a, 0x43], [0, 0, 0]])
+    );
 }
 
 #[test]

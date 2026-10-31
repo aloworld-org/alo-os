@@ -60,14 +60,16 @@ fn every_icon_is_recorded_with_the_node_it_came_from() {
         else {
             unreachable!("{} is drawn and not recorded", icon.file_name());
         };
-        assert_eq!(i64::from(icon.is()), *is, "{} is drawn at another size", icon.file_name());
+        assert_eq!(
+            i64::from(icon.is()),
+            *is,
+            "{} is drawn at another size",
+            icon.file_name()
+        );
         assert!(!component.is_empty());
         // The file's own box is the size the design drew it at.
         let shape = icon.shape().unwrap_or_else(|| unreachable!("read above"));
-        #[expect(
-            clippy::cast_precision_loss,
-            reason = "28 and 24 are exact in f32"
-        )]
+        #[expect(clippy::cast_precision_loss, reason = "28 and 24 are exact in f32")]
         let drawn = icon.is() as f32;
         assert_eq!(shape.its_box(), (drawn, drawn), "{}", icon.file_name());
     }
@@ -81,7 +83,9 @@ fn every_icon_is_in_the_colour_the_design_names() {
     const TEXT_PRIMARY: [u8; 3] = [0x10, 0x2a, 0x43];
     const WHITE: [u8; 3] = [255, 255, 255];
     for icon in AnIcon::ALL {
-        let shape = icon.shape().unwrap_or_else(|| unreachable!("every icon reads"));
+        let shape = icon
+            .shape()
+            .unwrap_or_else(|| unreachable!("every icon reads"));
         let expected = match icon {
             AnIcon::Attach | AnIcon::TheModelsChevron | AnIcon::Permissions => TEXT_PRIMARY,
             AnIcon::Send | AnIcon::Stop => WHITE,
@@ -98,7 +102,10 @@ fn every_icon_is_in_the_colour_the_design_names() {
 #[test]
 fn stop_while_alo_is_working_and_send_otherwise() {
     assert_eq!(AnIcon::on_the_one_button(TheOneButton::Stop), AnIcon::Stop);
-    assert_eq!(AnIcon::on_the_one_button(TheOneButton::Stopping), AnIcon::Stop);
+    assert_eq!(
+        AnIcon::on_the_one_button(TheOneButton::Stopping),
+        AnIcon::Stop
+    );
     assert_eq!(AnIcon::on_the_one_button(TheOneButton::Send), AnIcon::Send);
     assert_eq!(
         AnIcon::on_the_one_button(TheOneButton::NothingToSend),
@@ -150,7 +157,10 @@ fn an_icon_is_drawn_at_the_displays_scale() {
         reason = "pixel counts in the thousands are exact in f64"
     )]
     let ratio = two as f64 / one as f64;
-    assert!((3.6..=4.4).contains(&ratio), "200 per cent inked {ratio} times as many pixels");
+    assert!(
+        (3.6..=4.4).contains(&ratio),
+        "200 per cent inked {ratio} times as many pixels"
+    );
 }
 
 /// **Centred in its box**: the Stop square's middle is the box's middle, and a

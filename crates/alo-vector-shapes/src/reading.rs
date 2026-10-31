@@ -220,9 +220,7 @@ impl Reader {
             None => (tag, false),
         };
         let body = body.trim();
-        let (name, attributes) = body
-            .split_once(char::is_whitespace)
-            .unwrap_or((body, ""));
+        let (name, attributes) = body.split_once(char::is_whitespace).unwrap_or((body, ""));
         let attributes = attributes_of(attributes)?;
         match name {
             "svg" => self.an_svg(&attributes)?,
@@ -246,7 +244,12 @@ impl Reader {
             match name {
                 "viewBox" => view = Some(a_view_box(value)?),
                 "fill" if value == "none" => {}
-                "xmlns" | "width" | "height" | "preserveAspectRatio" | "overflow" | "style"
+                "xmlns"
+                | "width"
+                | "height"
+                | "preserveAspectRatio"
+                | "overflow"
+                | "style"
                 | "id" => {}
                 other => return Err(not_read("svg", other)),
             }

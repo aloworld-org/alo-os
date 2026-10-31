@@ -170,7 +170,10 @@ pub(crate) fn ink_an_icon(
         let Ok(at) = i32::try_from(at) else {
             return;
         };
-        let (x, y) = (left + at % side - panel.area.loc.x, top + at / side - panel.area.loc.y);
+        let (x, y) = (
+            left + at % side - panel.area.loc.x,
+            top + at / side - panel.area.loc.y,
+        );
         if x < 0 || y < 0 || x >= wide || y >= panel.area.size.h {
             continue;
         }

@@ -30,9 +30,21 @@ fn the_stop_square_is_inside_its_box_and_nowhere_else() {
     let covered = read(STOP).coverage(28, 28);
     assert_eq!(covered.len(), 28 * 28);
     assert_eq!(at(&covered, 28, 14, 14), 255, "the middle is not covered");
-    assert_eq!(at(&covered, 28, 3, 3), 0, "the corner of the box is covered");
-    assert_eq!(at(&covered, 28, 24, 14), 0, "right of the square is covered");
-    assert_eq!(at(&covered, 28, 8, 14), 255, "the square's own edge is not covered");
+    assert_eq!(
+        at(&covered, 28, 3, 3),
+        0,
+        "the corner of the box is covered"
+    );
+    assert_eq!(
+        at(&covered, 28, 24, 14),
+        0,
+        "right of the square is covered"
+    );
+    assert_eq!(
+        at(&covered, 28, 8, 14),
+        255,
+        "the square's own edge is not covered"
+    );
 }
 
 #[test]
@@ -45,7 +57,10 @@ fn drawn_twice_the_size_it_covers_four_times_as_much() {
         reason = "sums of a few thousand bytes are exact in f64"
     )]
     let ratio = two as f64 / one as f64;
-    assert!((3.9..=4.1).contains(&ratio), "twice the size covers {ratio} times as much");
+    assert!(
+        (3.9..=4.1).contains(&ratio),
+        "twice the size covers {ratio} times as much"
+    );
 }
 
 #[test]
