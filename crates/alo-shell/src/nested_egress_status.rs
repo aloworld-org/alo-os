@@ -215,7 +215,10 @@ mod tests {
         )
         .unwrap();
         assert!(quiet.rows.is_empty(), "a quiet indicator drew a line");
-        assert!(!quiet.is_empty(), "the quiet circle is not on the first frame");
+        assert!(
+            !quiet.is_empty(),
+            "the quiet circle is not on the first frame"
+        );
 
         let departing = indicator
             .beginning(&EgressPolicy::Anywhere, asking_a_provider(), noon())

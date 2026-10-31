@@ -111,7 +111,10 @@ mod tests {
             let shape = arrow
                 .shape()
                 .unwrap_or_else(|| unreachable!("{arrow:?} does not read"));
-            assert!(shape.colours().iter().all(|one| *one == colour), "{arrow:?}");
+            assert!(
+                shape.colours().iter().all(|one| *one == colour),
+                "{arrow:?}"
+            );
             let recorded = icons
                 .iter()
                 .find(|icon| icon.get("svg").and_then(toml::Value::as_str) == Some(file))
