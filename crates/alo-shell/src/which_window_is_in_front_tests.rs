@@ -56,8 +56,7 @@ fn the_kind_gone_to_comes_in_front_and_the_others_keep_their_order() {
             AKindOfWindow::Applications
         ]
     );
-    assert!(order.is_above(AKindOfWindow::Applications, AKindOfWindow::TaskWindows));
-    assert!(order.is_above(AKindOfWindow::TaskWindows, AKindOfWindow::TheTerminal));
+    assert!(!order.the_task_windows_are_in_front());
     order.comes_to_the_front(AKindOfWindow::Applications);
     assert_eq!(
         order.top_to_bottom(),

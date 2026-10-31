@@ -101,12 +101,6 @@ impl WhichIsInFront {
         self.bottom_to_top = order;
     }
 
-    /// Whether `this` is drawn above `that`.
-    pub(crate) fn is_above(self, this: AKindOfWindow, that: AKindOfWindow) -> bool {
-        let at = |kind| self.bottom_to_top.iter().position(|one| *one == kind);
-        at(this) > at(that)
-    }
-
     /// Whether the task windows are in front of both other kinds.
     pub(crate) fn the_task_windows_are_in_front(self) -> bool {
         self.top_to_bottom().first() == Some(&AKindOfWindow::TaskWindows)
