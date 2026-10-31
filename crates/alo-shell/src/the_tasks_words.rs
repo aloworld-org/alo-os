@@ -39,6 +39,8 @@ struct ATasksWords {
     scroll: alo_tasks::TheScroll,
     /// What its one button shows, Send or Stop.
     the_one_button: alo_tasks::TheOneButton,
+    /// Whether a provider answers it, which puts the cloud before where it happens.
+    a_provider_answers: bool,
     /// What the person asked for, which names it.
     title: String,
     /// What kind of thing it is.
@@ -116,6 +118,7 @@ impl TheTasksWords {
                     place,
                     scroll: task.scroll(),
                     the_one_button: task.the_one_button(),
+                    a_provider_answers: task.model().a_provider_answers(),
                     // **The person's own words, not a sentence this machine
                     // owns.** A task is named by what somebody asked for.
                     title: task
@@ -221,6 +224,7 @@ impl TheTasksWords {
                 place: one.place,
                 scroll: one.scroll,
                 the_one_button: one.the_one_button,
+                a_provider_answers: one.a_provider_answers,
                 how_many_files: one.files.len(),
                 words: TheWordsInATaskWindow {
                     title: &one.title,

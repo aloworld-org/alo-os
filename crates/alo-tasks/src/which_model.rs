@@ -74,6 +74,13 @@ impl WhichModel {
         &self.answering
     }
 
+    /// Whether a provider answers now — a hosted service, whatever its region —
+    /// which is what the task window draws a cloud beside (2026-10-31).
+    #[must_use]
+    pub const fn a_provider_answers(&self) -> bool {
+        matches!(self.answering, InferenceSource::Hosted { .. })
+    }
+
     /// What a person asked to use next, if they asked for anything.
     #[must_use]
     pub const fn next(&self) -> Option<&InferenceSource> {

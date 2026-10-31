@@ -64,6 +64,7 @@ fn drawn(at: Rectangle<i32, Physical>, scale: DisplayScale) -> TaskPicture {
         &said,
         alo_tasks::TheScroll::at_the_newest(),
         alo_tasks::TheOneButton::Stop,
+        false,
         &mut fonts(),
         scale,
     )

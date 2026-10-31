@@ -78,6 +78,9 @@ pub struct ATaskOnTheDisplay<'a> {
     /// What its one button shows: the Stop square while alo is working, the
     /// Send arrow otherwise.
     pub the_one_button: alo_tasks::TheOneButton,
+    /// Whether a provider answers it, which puts the cloud before the
+    /// processing destination.
+    pub a_provider_answers: bool,
     /// Its place in the list of tasks, so what this frame measured about it
     /// can be handed back to the right one.
     pub place: usize,
@@ -191,6 +194,7 @@ pub(crate) fn furniture(
     said: &[crate::task_text::WhatWasSaid<'_>],
     scroll: alo_tasks::TheScroll,
     button: alo_tasks::TheOneButton,
+    a_cloud: bool,
     fonts: &mut cosmic_text::FontSystem,
     scale: DisplayScale,
 ) -> Result<TaskPicture, NoTaskPicture> {
@@ -562,6 +566,20 @@ pub(crate) fn furniture(
                 palette.on_the_one_button,
             );
         }
+        // **The cloud before the processing destination, while a provider
+        // answers** — the approved window of 2026-10-31 (`549:113`), in the
+        // destination's own quiet ink. Not drawn for an answer on this machine
+        // or the network: the design draws the cloud only beside a provider,
+        // and a cloud beside *On this computer* would say the opposite.
+        if a_cloud {
+            ink_an_icon(
+                &mut panel,
+                AnIcon::Cloud,
+                a_control(controls.destination, m::THE_DESTINATIONS_ICON),
+                scale,
+                palette.ink_quiet,
+            );
+        }
     }
 
     // **The words, inked onto the ground each sits on.** Each is placed from the
@@ -767,15 +785,22 @@ pub(crate) fn furniture(
         false,
         None,
     );
+    // **After the cloud, when there is one** (`549:112`): the icon frame, then
+    // six, then the words, in the room that is left.
+    let the_words_start = if a_cloud {
+        m::THE_DESTINATIONS_ICON + m::BESIDE_THE_DESTINATIONS_ICON
+    } else {
+        0
+    };
     write(
         words.destination,
         &[],
         AStyle::Destination,
         palette.surface,
         palette.ink_quiet,
-        controls.destination,
+        controls.destination + the_words_start,
         (controls.from_the_top, m::A_CONTROL_IS),
-        m::THE_DESTINATION_IS_WIDE,
+        m::THE_DESTINATION_IS_WIDE.saturating_sub(the_words_start),
         false,
         None,
     );
