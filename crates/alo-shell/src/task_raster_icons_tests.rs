@@ -37,6 +37,7 @@ fn drawn(scale: DisplayScale, button: TheOneButton) -> TaskPicture {
         &said,
         alo_tasks::TheScroll::at_the_newest(),
         button,
+        false,
         &mut fonts(),
         scale,
     )
@@ -225,6 +226,7 @@ fn the_models_control_carries_its_arrow() {
         &what_was_said(),
         alo_tasks::TheScroll::at_the_newest(),
         TheOneButton::Stop,
+        false,
         &mut fonts(),
         DisplayScale::ONE,
     )
@@ -250,4 +252,72 @@ fn the_models_control_carries_its_arrow() {
         (0.45..=0.55).contains(&share),
         "the arrow is not centred: {share}"
     );
+}
+
+/// The design's window at `scale`, with or without the cloud.
+fn with_a_cloud(scale: DisplayScale, a_cloud: bool) -> TaskPicture {
+    let files = two_files();
+    let per_cent = i32::from(scale.per_cent());
+    furniture(
+        Rectangle::new(
+            (120 * per_cent / 100, 80 * per_cent / 100).into(),
+            (1040 * per_cent / 100, 800 * per_cent / 100).into(),
+        ),
+        a_look(),
+        2,
+        &the_words(&files),
+        &what_was_said(),
+        alo_tasks::TheScroll::at_the_newest(),
+        TheOneButton::Stop,
+        a_cloud,
+        &mut fonts(),
+        scale,
+    )
+    .unwrap_or_else(|_| unreachable!("the design's size draws"))
+}
+
+/// **The cloud is drawn before the processing destination while a provider
+/// answers, and only then** — the approved window of 2026-10-31 (`549:113`).
+/// The two windows differ in the panel's raster only inside the cloud's 16
+/// frame at the destination's start, at 100 per cent and at 200.
+#[test]
+fn the_cloud_is_drawn_beside_a_provider_and_nowhere_else() {
+    for scale in [DisplayScale::ONE, DisplayScale::of_per_cent(200)] {
+        let (cloud, none) = (with_a_cloud(scale, true), with_a_cloud(scale, false));
+        assert_eq!(cloud.panel.area, none.panel.area);
+        let controls = alo_tasks::layout::TheRows::of(1040, 800)
+            .unwrap_or_else(|_| unreachable!("the design's size lays out"))
+            .controls();
+        let frame_is = scale.px(alo_tasks::measures::THE_DESTINATIONS_ICON);
+        let left = cloud.at.loc.x + scale.px(alo_tasks::measures::BORDER + controls.destination);
+        let top = cloud.at.loc.y
+            + scale.px(alo_tasks::measures::BORDER + controls.from_the_top)
+            + (scale.px(alo_tasks::measures::A_CONTROL_IS) - frame_is) / 2;
+        let the_frame = Rectangle::<i32, Physical>::new((left, top).into(), (frame_is, frame_is).into());
+        let wide = cloud.panel.area.size.w;
+        let mut differing = 0;
+        for (at, (one, other)) in cloud
+            .panel
+            .pixels
+            .chunks(4)
+            .zip(none.panel.pixels.chunks(4))
+            .enumerate()
+        {
+            if one == other {
+                continue;
+            }
+            differing += 1;
+            let at = i32::try_from(at).unwrap_or(i32::MAX);
+            let point = smithay::utils::Point::<i32, Physical>::from((
+                cloud.panel.area.loc.x + at % wide,
+                cloud.panel.area.loc.y + at / wide,
+            ));
+            assert!(
+                the_frame.contains(point),
+                "at {}: the cloud drew at {point:?}, outside its frame {the_frame:?}",
+                scale.per_cent()
+            );
+        }
+        assert!(differing > 10, "at {}: no cloud was drawn", scale.per_cent());
+    }
 }

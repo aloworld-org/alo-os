@@ -46,16 +46,19 @@ pub(crate) enum AnIcon {
     Send,
     /// The one button while alo is working: a solid square.
     Stop,
+    /// The cloud before the processing destination, while a provider answers.
+    Cloud,
 }
 
 impl AnIcon {
     /// Every icon, in the order the row draws them.
-    pub(crate) const ALL: [Self; 5] = [
+    pub(crate) const ALL: [Self; 6] = [
         Self::Attach,
         Self::TheModelsChevron,
         Self::Permissions,
         Self::Send,
         Self::Stop,
+        Self::Cloud,
     ];
 
     /// The icon the one button shows. **Stop while alo is working, Send
@@ -78,6 +81,7 @@ impl AnIcon {
             Self::Permissions => include_str!("../icons/the-reply-box/permissions.svg"),
             Self::Send => include_str!("../icons/the-reply-box/send.svg"),
             Self::Stop => include_str!("../icons/the-reply-box/stop.svg"),
+            Self::Cloud => include_str!("../icons/the-reply-box/cloud.svg"),
         }
     }
 
@@ -89,6 +93,7 @@ impl AnIcon {
             Self::Permissions => "permissions.svg",
             Self::Send => "send.svg",
             Self::Stop => "stop.svg",
+            Self::Cloud => "cloud.svg",
         }
     }
 
@@ -96,6 +101,7 @@ impl AnIcon {
     pub(crate) const fn is(self) -> u32 {
         match self {
             Self::TheModelsChevron => alo_tasks::measures::A_CHEVRON,
+            Self::Cloud => alo_tasks::measures::THE_DESTINATIONS_ICON,
             Self::Attach | Self::Permissions | Self::Send | Self::Stop => {
                 alo_tasks::measures::ARTWORK
             }
@@ -110,6 +116,7 @@ impl AnIcon {
             Self::Permissions => 2,
             Self::Send => 3,
             Self::Stop => 4,
+            Self::Cloud => 5,
         }
     }
 
@@ -143,6 +150,11 @@ impl AnIcon {
 /// Ink `icon` into the panel's raster, centred in `centred_in` (in the
 /// display's pixels), at the display's `scale`, in `ink`.
 ///
+/// **At the file's own size**: its `viewBox`, in logical pixels, through the
+/// display's scale. For the square icons that is the icon frame itself; the
+/// cloud's is 14.5 × 10.5 in the middle of a 16 frame, which the design draws
+/// and which stretching it to the frame would distort.
+///
 /// Pixels outside the raster are left alone, so an icon on a window running off
 /// the screen's raster is cut rather than refused.
 pub(crate) fn ink_an_icon(
@@ -155,13 +167,19 @@ pub(crate) fn ink_an_icon(
     let Some(shape) = icon.shape() else {
         return;
     };
-    let side = scale.px(icon.is());
-    let left = centred_in.loc.x + (centred_in.size.w - side) / 2;
-    let top = centred_in.loc.y + (centred_in.size.h - side) / 2;
+    let (wide, tall) = shape.its_box();
+    #[expect(
+        clippy::cast_possible_truncation,
+        reason = "an icon's box is a few dozen pixels at any display's scale"
+    )]
+    let at_this_scale = |logical: f32| (f64::from(logical) * scale.factor()).round() as i32;
+    let (wide, tall) = (at_this_scale(wide), at_this_scale(tall));
+    let left = centred_in.loc.x + (centred_in.size.w - wide) / 2;
+    let top = centred_in.loc.y + (centred_in.size.h - tall) / 2;
     crate::inking_a_shape::ink_a_shape(
         panel,
         shape,
-        Rectangle::new((left, top).into(), (side, side).into()),
+        Rectangle::new((left, top).into(), (wide, tall).into()),
         ink,
     );
 }

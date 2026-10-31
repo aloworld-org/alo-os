@@ -81,9 +81,17 @@ Left to right, gap 8 throughout:
 |---|---|---|---|---|
 | Attach | 48 | 12 | `bg/cool` | 28 |
 | Model | 176 | 12 | `bg/cool` | label + 24 chevron |
-| Processing destination | 148 | — | none (text only) | — |
+| Processing destination | 283 | — | none | a 16 cloud, 6, then the words |
 | Permissions | 48 | 12 | `bg/cool` | 28 |
-| Flexible space | 440 | — | — | — |
+| Flexible space | 305 | — | — | — |
+
+**The destination was 148, text only, with 440 of flexible space**, in the
+first frames. The alo window the owner approved on 2026-10-31 (page
+`544:30910`; `549:112` in `549:26`) draws it 283 wide with a cloud (`549:113`)
+before the words, and the flexible space gives up the difference, so the row
+is still 948 and the one button is where it was. The cloud is drawn while a
+provider answers; the approved frames show no other destination, and a cloud
+beside *On this computer* would say the opposite of the words.
 | Send / Stop | 48 | 24 | `text/primary` | 28 |
 
 **The artwork frame is 28 and the chevron is 24, with 2px strokes**, from the

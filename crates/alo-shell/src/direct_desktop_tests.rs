@@ -400,6 +400,7 @@ fn a_task_window_over_everything(
         said: Vec::new(),
         scroll: alo_tasks::TheScroll::at_the_newest(),
         the_one_button: alo_tasks::TheOneButton::Stop,
+        a_provider_answers: false,
         place: 0,
     }
 }

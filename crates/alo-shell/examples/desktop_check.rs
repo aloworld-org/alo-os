@@ -354,6 +354,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                         said: said.to_vec(),
                         scroll: alo_tasks::TheScroll::at_the_newest(),
                         the_one_button: alo_tasks::TheOneButton::Stop,
+                        a_provider_answers: false,
                         place: 0,
                     }];
                     // **One market window, so there is one to look at.** The

@@ -187,8 +187,10 @@ fn a_window_too_small_in_both_names_its_width() {
 /// **The controls are the design's own positions at the design's own size.**
 ///
 /// Measured off the frame: attach at 44, model at 100, destination at 284,
-/// permissions at 440, the button at 944, with 440 of flexible space between
-/// the last control and the button.
+/// the button at 944. **Permissions at 575 with 305 of flexible space since
+/// 2026-10-31**, when the approved alo window widened the destination to 283
+/// (`549:103`: permissions at 531 in a row starting at 44); they were 440 and
+/// 440 in the first frames.
 #[test]
 fn the_controls_sit_where_the_design_puts_them() {
     let rows = as_drawn();
@@ -197,9 +199,9 @@ fn the_controls_sit_where_the_design_puts_them() {
     assert_eq!(controls.attach, 44);
     assert_eq!(controls.model, 100);
     assert_eq!(controls.destination, 284);
-    assert_eq!(controls.permissions, 440);
+    assert_eq!(controls.permissions, 44 + 531);
     assert_eq!(controls.the_one_button, 944);
-    assert_eq!(controls.flexible_space, 440);
+    assert_eq!(controls.flexible_space, 305);
     // **Eight lower than the frame draws it**, which is the cost of giving the
     // residue to the conversation. Asserted as the figure *and* as the
     // relationship, so the reason is visible beside the number.
@@ -249,9 +251,13 @@ fn a_popover_opens_upward_from_its_control() {
     // docstring. An earlier version of this test asserted the design's top of
     // 274 and failed at 282 — having been written straight after the docstring
     // saying a hard-coded top would be wrong.
+    // **The permissions popover's left follows its control**, which moved to
+    // 575 on 2026-10-31 with the wider destination; the first frames measured
+    // it at 441 beside a control at 440, and the approved window draws no
+    // popover, so it is the same one-right rule at the new place.
     for (named, control_left, tall, design_left, design_top) in [
         ("model", controls.model, 396, 101, 274),
-        ("permissions", controls.permissions, 398, 441, 272),
+        ("permissions", controls.permissions, 398, 575 + 1, 272),
     ] {
         let (left, top) = rows.a_popover_from(control_left, tall);
 

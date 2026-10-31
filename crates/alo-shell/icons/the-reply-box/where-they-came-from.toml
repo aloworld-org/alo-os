@@ -58,6 +58,15 @@ artwork = "inside 427:28090"
 artwork_is = 28
 
 [[icon]]
+svg = "cloud.svg"
+names = "the cloud before the processing destination, while a provider answers"
+instance = "549:113, in the composer row 549:103 of the approved alo window 549:26"
+component = "none: the frame draws it in place"
+artwork = "549:114"
+artwork_is = 16
+fetched_on = "2026-10-31"
+
+[[icon]]
 svg = "stop.svg"
 names = "Stop, while alo is working"
 instance = "417:27709"

@@ -67,11 +67,23 @@ fn every_icon_is_recorded_with_the_node_it_came_from() {
             icon.file_name()
         );
         assert!(!component.is_empty());
-        // The file's own box is the size the design drew it at.
+        // The file's own box is the size the design drew it at: the icon
+        // frame itself, or — for the cloud — a box inside that frame.
         let shape = icon.shape().unwrap_or_else(|| unreachable!("read above"));
-        #[expect(clippy::cast_precision_loss, reason = "28 and 24 are exact in f32")]
-        let drawn = icon.is() as f32;
-        assert_eq!(shape.its_box(), (drawn, drawn), "{}", icon.file_name());
+        #[expect(clippy::cast_precision_loss, reason = "28, 24 and 16 are exact in f32")]
+        let frame = icon.is() as f32;
+        let (wide, tall) = shape.its_box();
+        match icon {
+            AnIcon::Cloud => assert!(
+                wide <= frame && tall <= frame,
+                "the cloud's box {wide} × {tall} is bigger than its frame"
+            ),
+            AnIcon::Attach
+            | AnIcon::TheModelsChevron
+            | AnIcon::Permissions
+            | AnIcon::Send
+            | AnIcon::Stop => assert_eq!((wide, tall), (frame, frame), "{}", icon.file_name()),
+        }
     }
 }
 
@@ -81,6 +93,7 @@ fn every_icon_is_recorded_with_the_node_it_came_from() {
 #[test]
 fn every_icon_is_in_the_colour_the_design_names() {
     const TEXT_PRIMARY: [u8; 3] = [0x10, 0x2a, 0x43];
+    const TEXT_MUTED: [u8; 3] = [0x59, 0x6b, 0x78];
     const WHITE: [u8; 3] = [255, 255, 255];
     for icon in AnIcon::ALL {
         let shape = icon
@@ -89,6 +102,8 @@ fn every_icon_is_in_the_colour_the_design_names() {
         let expected = match icon {
             AnIcon::Attach | AnIcon::TheModelsChevron | AnIcon::Permissions => TEXT_PRIMARY,
             AnIcon::Send | AnIcon::Stop => WHITE,
+            // In the destination's own quiet ink.
+            AnIcon::Cloud => TEXT_MUTED,
         };
         assert!(
             shape.colours().iter().all(|colour| *colour == expected),

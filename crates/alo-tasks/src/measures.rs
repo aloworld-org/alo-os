@@ -131,8 +131,21 @@ pub const DENY_IS_WIDE: u32 = 104;
 /// How wide the control naming the model is.
 pub const THE_MODEL_CONTROL_IS_WIDE: u32 = 176;
 
-/// How wide the text saying where the processing happens is.
-pub const THE_DESTINATION_IS_WIDE: u32 = 148;
+/// How wide the processing destination is: its cloud, and the words saying
+/// where the processing happens.
+///
+/// **283 since 2026-10-31**, from the alo window the owner approved that day
+/// (`549:112` in `549:26`, `549:351` in `549:261`, `549:477` in `549:372`): it
+/// was 148 in the first frames, which drew no cloud and a shorter sentence. The
+/// flexible space gives up the difference, so the row is still 948 wide and the
+/// one button has not moved.
+pub const THE_DESTINATION_IS_WIDE: u32 = 283;
+
+/// The cloud before the processing destination's words: its icon frame.
+pub const THE_DESTINATIONS_ICON: u32 = 16;
+
+/// Between the cloud and the words.
+pub const BESIDE_THE_DESTINATIONS_ICON: u32 = 6;
 
 /// A control's artwork frame.
 ///

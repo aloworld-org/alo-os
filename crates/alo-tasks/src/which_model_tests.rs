@@ -13,6 +13,22 @@ fn a_provider() -> InferenceSource {
     }
 }
 
+/// **Only a provider is a provider**: a hosted service answers yes, and this
+/// machine, a service at its own address and a paired machine answer no.
+#[test]
+fn only_a_hosted_service_is_a_provider() {
+    assert!(WhichModel::answering_from(a_provider()).a_provider_answers());
+    for not in [
+        InferenceSource::ThisMachine,
+        InferenceSource::AServiceAtThisMachinesAddress,
+        InferenceSource::PairedMachine {
+            machine: "workstation-2".to_owned(),
+        },
+    ] {
+        assert!(!WhichModel::answering_from(not.clone()).a_provider_answers(), "{not:?}");
+    }
+}
+
 /// **A change does not touch the request in flight.**
 ///
 /// The rule, and the reason: a model swapped under a running action gives a
