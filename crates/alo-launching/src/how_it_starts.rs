@@ -62,7 +62,11 @@ pub fn how_it_starts(
     if entry.hidden {
         return Err(WhyItCannotStart::Deleted);
     }
-    if entry.kind.as_deref().is_some_and(|kind| kind != "Application") {
+    if entry
+        .kind
+        .as_deref()
+        .is_some_and(|kind| kind != "Application")
+    {
         return Err(WhyItCannotStart::NotAnApplication);
     }
     if entry.terminal {

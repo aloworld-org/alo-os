@@ -44,7 +44,12 @@ fn two_starts_of_one_application_are_two_units() {
 /// bytes, and the `@` once.
 #[test]
 fn every_name_is_one_systemd_accepts() {
-    for identifier in ["org.mozilla.firefox", "libreoffice-calc", "kde4-konsole", "a;b$c"] {
+    for identifier in [
+        "org.mozilla.firefox",
+        "libreoffice-calc",
+        "kde4-konsole",
+        "a;b$c",
+    ] {
         let name = the_unit_for(identifier, u64::MAX).unwrap_or_default();
         assert!(!name.is_empty() && name.len() <= 255, "{name}");
         assert_eq!(name.matches('@').count(), 1, "{name}");

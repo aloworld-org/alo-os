@@ -47,10 +47,7 @@ pub fn tell(connection: &zbus::Connection, wayland: &Path) {
              application it starts may find no display: {why}"
         );
     }
-    let pairs: HashMap<&str, &str> = told
-        .iter()
-        .filter_map(|it| it.split_once('='))
-        .collect();
+    let pairs: HashMap<&str, &str> = told.iter().filter_map(|it| it.split_once('=')).collect();
     let to_the_bus = zbus::block_on(connection.call_method(
         Some("org.freedesktop.DBus"),
         "/org/freedesktop/DBus",

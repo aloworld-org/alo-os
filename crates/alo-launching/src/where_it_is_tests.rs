@@ -72,7 +72,11 @@ fn runs(paths: &[&str]) -> impl Fn(&Path) -> bool {
 fn a_bare_program_is_found_on_the_search_path_in_order() {
     let can = runs(&["/usr/bin/dolphin", "/opt/bin/dolphin"]);
     assert_eq!(
-        the_program("dolphin", Some(OsStr::new("/usr/local/bin:/usr/bin:/opt/bin")), &can),
+        the_program(
+            "dolphin",
+            Some(OsStr::new("/usr/local/bin:/usr/bin:/opt/bin")),
+            &can
+        ),
         Some(PathBuf::from("/usr/bin/dolphin"))
     );
     assert_eq!(

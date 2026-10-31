@@ -133,8 +133,7 @@ impl HowThisMachineStartsThings {
         let Some((first, _)) = command.split_first() else {
             return said(identifier, "its command names nothing");
         };
-        let Some(program) =
-            alo_launching::the_program(first, self.search.as_deref(), is_runnable)
+        let Some(program) = alo_launching::the_program(first, self.search.as_deref(), is_runnable)
         else {
             return said(
                 identifier,

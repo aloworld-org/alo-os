@@ -191,7 +191,10 @@ fn an_undefined_field_code_is_refused() {
 fn a_line_that_names_nothing_is_refused() {
     assert_eq!(the_command_in("", &NOTHING), Err(WhyNotACommand::Empty));
     assert_eq!(the_command_in("   ", &NOTHING), Err(WhyNotACommand::Empty));
-    assert_eq!(the_command_in("%u %F", &NOTHING), Err(WhyNotACommand::Empty));
+    assert_eq!(
+        the_command_in("%u %F", &NOTHING),
+        Err(WhyNotACommand::Empty)
+    );
     assert_eq!(
         the_command_in(r#""" app"#, &NOTHING),
         Err(WhyNotACommand::Empty),

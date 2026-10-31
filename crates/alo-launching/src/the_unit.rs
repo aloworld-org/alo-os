@@ -33,7 +33,10 @@ const LAUNCHER: &str = "alo";
 /// asking the manager for a unit it will refuse.
 #[must_use]
 pub fn the_unit_for(identifier: &str, distinct: u64) -> Option<String> {
-    let name = format!("app-{LAUNCHER}-{}@{distinct:x}.service", escaped(identifier));
+    let name = format!(
+        "app-{LAUNCHER}-{}@{distinct:x}.service",
+        escaped(identifier)
+    );
     (name.len() <= 255).then_some(name)
 }
 

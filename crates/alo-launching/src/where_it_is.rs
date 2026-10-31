@@ -47,7 +47,10 @@ fn the_ways_to_read(identifier: &str) -> Vec<PathBuf> {
     }
     ways.into_iter()
         .map(PathBuf::from)
-        .filter(|way| way.components().all(|part| matches!(part, Component::Normal(_))))
+        .filter(|way| {
+            way.components()
+                .all(|part| matches!(part, Component::Normal(_)))
+        })
         .collect()
 }
 

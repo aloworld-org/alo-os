@@ -17,7 +17,9 @@ fn entry(exec: Option<&str>, bus: bool) -> TheEntry {
 #[test]
 fn an_activatable_entry_goes_over_the_bus_and_keeps_its_command_for_after() {
     let editor = entry(
-        Some("/usr/bin/flatpak run --branch=stable --command=gnome-text-editor org.gnome.TextEditor %U"),
+        Some(
+            "/usr/bin/flatpak run --branch=stable --command=gnome-text-editor org.gnome.TextEditor %U",
+        ),
         true,
     );
     assert_eq!(
@@ -122,10 +124,22 @@ fn a_deleted_entry_a_link_and_a_terminal_program_are_refused() {
 
 #[test]
 fn a_bus_name_is_held_to_the_specifications_shape() {
-    for name in ["org.kde.dolphin", "org.gnome.TextEditor", "a.b", "org.x-y._z"] {
+    for name in [
+        "org.kde.dolphin",
+        "org.gnome.TextEditor",
+        "a.b",
+        "org.x-y._z",
+    ] {
         assert!(is_a_bus_name(name), "{name}");
     }
-    for name in ["firefox", "libreoffice-writer", "org..x", "org.1x", ".org.x", ""] {
+    for name in [
+        "firefox",
+        "libreoffice-writer",
+        "org..x",
+        "org.1x",
+        ".org.x",
+        "",
+    ] {
         assert!(!is_a_bus_name(name), "{name}");
     }
 }

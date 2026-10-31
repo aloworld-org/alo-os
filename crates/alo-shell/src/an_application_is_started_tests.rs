@@ -193,7 +193,10 @@ fn the_agents_open_is_recorded_as_the_agents() {
         server.asked_to_start.is_empty(),
         "it was filed as the person's"
     );
-    assert_eq!(server.its_agent_asked_to_start, vec![app("org.gnome.Geary")]);
+    assert_eq!(
+        server.its_agent_asked_to_start,
+        vec![app("org.gnome.Geary")]
+    );
 }
 
 /// **A machine with no sender reports both lists as not started.**
