@@ -300,7 +300,11 @@ fn escape_on_an_empty_box_keeps_the_keyboard() {
 
     press(&mut server, A, &daemon);
     press(&mut server, ESCAPE, &daemon);
-    assert_eq!(draft(&server, which), "", "the first Escape empties the box");
+    assert_eq!(
+        draft(&server, which),
+        "",
+        "the first Escape empties the box"
+    );
 
     press(&mut server, ESCAPE, &daemon);
     press(&mut server, ESCAPE, &daemon);

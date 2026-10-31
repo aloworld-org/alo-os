@@ -518,6 +518,9 @@ fn alt_f4_on_a_stopping_task_closes_nothing() {
     alt_f4(&mut server, &daemon);
 
     assert!(server.tasks().is_open(which), "a stopping task was closed");
-    assert!(server.closing_asked_about(which).is_none(), "it asked again");
+    assert!(
+        server.closing_asked_about(which).is_none(),
+        "it asked again"
+    );
     assert!(server.a_task_is_taking_the_keys());
 }
