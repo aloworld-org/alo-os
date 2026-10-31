@@ -29,7 +29,7 @@ fn nobody_signing_in_is_not_the_end_the_process_is_for() {
 }
 
 /// **The binary exits failing when nobody signed in**, unless a person's
-/// session has the screen — and both failing ends ask.
+/// session has the screen â€” and both failing ends ask.
 ///
 /// Until 2026-10-31 the arm was `ExitCode::FAILURE` alone. A booted machine
 /// showed the person's desktop taking the card first, this screen's next frame
@@ -39,8 +39,8 @@ fn nobody_signing_in_is_not_the_end_the_process_is_for() {
 #[test]
 fn the_binary_fails_when_nobody_signed_in_unless_a_person_has_the_screen() {
     let source = read("src/bin/alo-compositor.rs");
-    // Both failing ends of the screen — nobody signed in, and the screen
-    // failing — ask, and the function is defined once.
+    // Both failing ends of the screen â€” nobody signed in, and the screen
+    // failing â€” ask, and the function is defined once.
     assert_eq!(
         source
             .matches("failing_unless_a_person_has_the_screen()")
@@ -65,8 +65,8 @@ fn the_binary_fails_when_nobody_signed_in_unless_a_person_has_the_screen() {
         .and_then(|after| after.split("\n    }\n").next())
         .unwrap();
     assert!(
-        deciding.contains("a_person_has_the_screen(&Seat0)"),
-        "{deciding}"
+        deciding.contains("a_person_is_arriving(&Seat0, &TheDesktopUnits)"),
+        "the failing end no longer asks both logind and systemd: {deciding}"
     );
     let otherwise = deciding.split("} else {").nth(1).unwrap_or_default();
     assert!(
@@ -125,7 +125,7 @@ fn a_paused_seat_is_read_as_a_handover() {
 }
 
 /// **And a display that failed is not**, so the screen still comes back after
-/// a frame it could not draw — the end the restart exists for.
+/// a frame it could not draw â€” the end the restart exists for.
 #[test]
 fn a_failed_display_is_not_a_handover() {
     use alo_shell::{DirectLoopError, InputDispatchError, RenderError, SessionError};
@@ -147,65 +147,103 @@ fn a_failed_display_is_not_a_handover() {
     }
 }
 
-/// A seat that answers with these sessions, or cannot be asked.
-struct Answering(Result<Vec<alo_shell::whose_screen_it_is::ASessionOnTheSeat>, String>);
+use alo_shell::whose_screen_it_is::{
+    ASessionOnTheSeat, TheDesktops, TheSeat, a_person_is_arriving,
+};
 
-impl alo_shell::whose_screen_it_is::TheSeat for Answering {
-    fn sessions(&self) -> Result<Vec<alo_shell::whose_screen_it_is::ASessionOnTheSeat>, String> {
+/// A seat that answers with these sessions, or cannot be asked.
+struct Answering(Result<Vec<ASessionOnTheSeat>, String>);
+
+impl TheSeat for Answering {
+    fn sessions(&self) -> Result<Vec<ASessionOnTheSeat>, String> {
         self.0.clone()
     }
 }
 
-/// One session on the seat.
-fn on_the_seat(class: &str, state: &str) -> alo_shell::whose_screen_it_is::ASessionOnTheSeat {
-    alo_shell::whose_screen_it_is::ASessionOnTheSeat {
-        active: true,
-        class: class.to_owned(),
-        state: state.to_owned(),
+/// A systemd that answers with these desktop units, or cannot be asked.
+struct Units(Result<Vec<(String, String)>, String>);
+
+impl TheDesktops for Units {
+    fn units(&self) -> Result<Vec<(String, String)>, String> {
+        self.0.clone()
     }
 }
 
-/// **A refused frame while a person's session is in front is the hand-over.**
-///
-/// The booted machine of 2026-10-31: the screen ended with *atomic TEST_ONLY
-/// failed: Permission denied*, which is not a paused seat, so it was read as
-/// nobody signing in — and the answer that decides it is `logind`'s.
-#[test]
-fn a_refused_frame_while_a_persons_session_is_in_front_is_the_hand_over() {
-    use alo_shell::whose_screen_it_is::a_person_has_the_screen;
+/// The person's session on the seat, in this class and state.
+fn theirs(class: &str, state: &str) -> ASessionOnTheSeat {
+    ASessionOnTheSeat {
+        id: "3".to_owned(),
+        uid: 1000,
+        active: true,
+        class: class.to_owned(),
+        state: state.to_owned(),
+        service: "alo-desktop".to_owned(),
+    }
+}
 
-    // The error shape alone still does not say so, which is why the seat is
-    // asked: a refused frame is a failed display to `is_the_seat_handing_…`.
+/// The person's desktop unit, in this state.
+fn their_desktop(state: &str) -> Units {
+    Units(Ok(vec![("alo-desktop@1000.service".to_owned(), state.to_owned())]))
+}
+
+/// **A refused frame while the person's session is still opening is the
+/// hand-over.**
+///
+/// The second walk of 2026-10-31: the screen ended with *atomic TEST_ONLY
+/// failed: Permission denied* while the person's session was being opened, and
+/// a check for a settled session answered *nobody*.
+#[test]
+fn an_opening_session_counts_as_the_hand_over() {
+    // The error shape alone still does not say so, which is why the machine
+    // is asked: a refused frame is a failed display to `is_the_seat_handing_…`.
     let refused = alo_shell::DirectLoopError::Dispatch(std::io::Error::from(
         std::io::ErrorKind::PermissionDenied,
     ));
     assert!(!refused.is_the_seat_handing_the_display_on());
 
-    assert!(a_person_has_the_screen(&Answering(Ok(vec![
-        on_the_seat("greeter", "online"),
-        on_the_seat("user", "active"),
-    ]))));
+    assert!(a_person_is_arriving(
+        &Answering(Ok(vec![theirs("user-early", "opening")])),
+        &Units(Ok(vec![]))
+    ));
 }
 
-/// **The same end with no person's session in front starts the screen again**
+/// **The person's desktop unit still starting is the hand-over**, whatever
+/// `logind` said at that moment.
+#[test]
+fn an_activating_desktop_unit_counts_as_the_hand_over() {
+    assert!(a_person_is_arriving(
+        &Answering(Ok(vec![])),
+        &their_desktop("activating")
+    ));
+}
+
+/// **A session on its way out does not count**, or signing out would leave a
+/// black screen.
+#[test]
+fn a_closing_session_does_not_count() {
+    assert!(!a_person_is_arriving(
+        &Answering(Ok(vec![theirs("user", "closing")])),
+        &their_desktop("inactive")
+    ));
+}
+
+/// **Neither a person's session nor their desktop starts the screen again**
 /// (#1026's purpose).
 #[test]
-fn the_same_end_with_no_persons_session_starts_the_screen_again() {
-    use alo_shell::whose_screen_it_is::a_person_has_the_screen;
-
-    assert!(!a_person_has_the_screen(&Answering(Ok(vec![on_the_seat(
-        "greeter", "active"
-    )]))));
-    assert!(!a_person_has_the_screen(&Answering(Ok(vec![]))));
+fn neither_present_starts_the_screen_again() {
+    assert!(!a_person_is_arriving(
+        &Answering(Ok(vec![])),
+        &Units(Ok(vec![]))
+    ));
 }
 
-/// **A logind that cannot be asked starts the screen again**, which is what
-/// happened before the seat was asked at all.
+/// **Nothing that can be asked starts the screen again**, which is what
+/// happened before the machine was asked at all.
 #[test]
-fn a_logind_that_cannot_be_asked_starts_the_screen_again() {
-    use alo_shell::whose_screen_it_is::a_person_has_the_screen;
-
-    assert!(!a_person_has_the_screen(&Answering(Err(
-        "org.freedesktop.DBus.Error.ServiceUnknown".to_owned()
-    ))));
+fn an_unreachable_logind_and_systemd_start_the_screen_again() {
+    assert!(!a_person_is_arriving(
+        &Answering(Err("org.freedesktop.DBus.Error.ServiceUnknown".to_owned())),
+        &Units(Err("org.freedesktop.DBus.Error.ServiceUnknown".to_owned()))
+    ));
 }
+

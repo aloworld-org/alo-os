@@ -138,10 +138,13 @@ ExecStart=/usr/bin/alo-compositor
 # **And a failure is only a failure if nobody's session has the screen.** On
 # 2026-10-31 the person's desktop took the card first, this screen's next frame
 # was refused, it exited failing, was restarted, and as root took the display
-# back so the desktop died. The process now asks logind before it fails: a
-# person's session in front of the seat is the hand-over, and it exits 0
-# (`alo_shell::whose_screen_it_is`). If logind cannot be asked it fails, as
-# before, so a stranded screen still comes back.
+# back so the desktop died. The process now asks before it fails: a person's
+# session on the seat that is opening or open, or their desktop's unit starting
+# or running, is the hand-over, and it exits 0 (`alo_shell::whose_screen_it_is`).
+# The second walk that day showed why both: a check for a settled session alone
+# answered *nobody* while the session was still being opened. If neither logind
+# nor systemd can be asked it fails, as before, so a stranded screen still comes
+# back.
 Restart=on-failure
 RestartSec=2
 
