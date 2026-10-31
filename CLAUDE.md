@@ -298,7 +298,12 @@ cannot demonstrate.
   session" until 2026-10-14**, which 0064 had contradicted since the day
   it was accepted. At every level the run is recorded, the files are
   snapshotted before it, and what leaves is shown — because none of
-  those three takes a choice away.
+  those three takes a choice away. **On 2026-10-31 the owner extended
+  the same choice to alo working inside applications** (ADR 0143): one
+  approval for everything alo types in a request, and alo may use
+  every application, both off by default with their risk in plain
+  words. *"We are not dictators so we allow users to choose what he
+  wants."*
 - **Contracts outlive code.** The agent verbs, the application-adapter
   SDK, D-Bus interfaces, config keys, the image format and the update
   channel are public surfaces. Third parties build adapters against

@@ -431,7 +431,17 @@ undo where it can reach, and the indicator stay on at every level. The reason is
 the owner's — *"we are not dictators so we allow users to choose what he
 wants"* — and law 5's.
 
-**The sentence in `CLAUDE.md` itself is not changed by this branch.** The
+**Corrected and applied 2026-10-31.** The premise below was stale: since
+2026-10-14 `CLAUDE.md` has read *"an approval is not a session at the default
+setting, and a person may choose otherwise"*, not *"never a session"*. Both
+this record and the question put to the owner quoted an out-of-date copy of the
+file held in an agent's context. The owner approved the two top levels directly
+when asked, and `CLAUDE.md` now names them beside ADR 0064's third level, so
+they may be built. The proposed wording below was never needed and is kept
+only as what was asked.
+
+**The sentence in `CLAUDE.md` itself was not changed by the branch that wrote
+this record.** The
 decision reached this lane relayed through another agent, and an agent does not
 edit the constitution on a relayed message; the owner makes that edit, or tells
 the lane directly to make it. **Until `CLAUDE.md` carries the new words, the two
