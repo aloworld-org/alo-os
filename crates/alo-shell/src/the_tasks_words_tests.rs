@@ -140,7 +140,12 @@ fn where_it_happens_is_the_sentence_alo_models_already_says() {
 fn the_models_chip_says_the_name_the_person_chose() {
     let strings = words();
     let named = a_task().asked_of_the_model_named(Some("gpt-4o"));
-    let said = TheTasksWords::said(&[named, a_task()], &[Some(somewhere()), Some(somewhere())], &strings, None);
+    let said = TheTasksWords::said(
+        &[named, a_task()],
+        &[Some(somewhere()), Some(somewhere())],
+        &strings,
+        None,
+    );
     let drawn = said.as_displayed();
 
     assert_eq!(drawn.first().expect("two windows").words.model, "gpt-4o");

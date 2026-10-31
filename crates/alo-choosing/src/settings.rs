@@ -643,7 +643,11 @@ mod what_answers_here_tests {
     #[test]
     fn the_model_named_is_the_one_the_person_chose() {
         let at = a_settings_file("named");
-        assert_eq!(the_model_named_here(&at), None, "an unset machine named a model");
+        assert_eq!(
+            the_model_named_here(&at),
+            None,
+            "an unset machine named a model"
+        );
         let mut choosing = Choosing::at(&at).unwrap();
         choosing
             .answered_by(Some(Picked::OnThisMachine(
