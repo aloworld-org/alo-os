@@ -153,7 +153,8 @@ impl AnIcon {
 /// **At the file's own size**: its `viewBox`, in logical pixels, through the
 /// display's scale. For the square icons that is the icon frame itself; the
 /// cloud's is 14.5 × 10.5 in the middle of a 16 frame, which the design draws
-/// and which stretching it to the frame would distort.
+/// and which stretching it to the frame would distort. Never larger than the
+/// frame ([`AnIcon::is`]).
 ///
 /// Pixels outside the raster are left alone, so an icon on a window running off
 /// the screen's raster is cut rather than refused.
@@ -173,7 +174,11 @@ pub(crate) fn ink_an_icon(
         reason = "an icon's box is a few dozen pixels at any display's scale"
     )]
     let at_this_scale = |logical: f32| (f64::from(logical) * scale.factor()).round() as i32;
-    let (wide, tall) = (at_this_scale(wide), at_this_scale(tall));
+    // **Never bigger than its icon frame**, whatever a file's `viewBox` says:
+    // the frame is the room the design gives it, and a box that overran it
+    // would draw over the control beside it.
+    let frame = scale.px(icon.is());
+    let (wide, tall) = (at_this_scale(wide).min(frame), at_this_scale(tall).min(frame));
     let left = centred_in.loc.x + (centred_in.size.w - wide) / 2;
     let top = centred_in.loc.y + (centred_in.size.h - tall) / 2;
     crate::inking_a_shape::ink_a_shape(
