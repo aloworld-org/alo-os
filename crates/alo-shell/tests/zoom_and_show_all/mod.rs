@@ -136,7 +136,8 @@ fn the_canvas_returns_to_one_hundred_per_cent() {
     assert_eq!(command(&f, back), Some(back));
     assert_eq!(zoom(&f), 1000, "from zoomed in");
 
-    for _ in 0..4 {
+    // 700, 500, 400: three rungs out from life size.
+    for _ in 0..3 {
         assert!(command(&f, Action::ZoomTheCanvasOut).is_some());
     }
     assert_eq!(zoom(&f), 400);

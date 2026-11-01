@@ -273,6 +273,10 @@ fn the_whole_panel_is_read_in_the_language_the_person_reads() {
                 "Super+0".to_owned(),
             ),
             (
+                "Arbeitsfläche auf 100 % zurücksetzen".to_owned(),
+                "Super+1".to_owned(),
+            ),
+            (
                 "Fenster auf die nächste Fläche verschieben".to_owned(),
                 "Super+Umschalt+.".to_owned(),
             ),
