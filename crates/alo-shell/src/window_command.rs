@@ -26,6 +26,9 @@ pub enum WindowCommandError {
     /// Maximize or restore refused without queuing a configure.
     #[error(transparent)]
     Maximize(#[from] WindowMaximizeError),
+    /// Full screen, or leaving it, refused without queuing a configure.
+    #[error(transparent)]
+    FullScreen(#[from] crate::WindowFullScreenError),
     /// The division refused to put the window on that side, in its own words.
     #[error(transparent)]
     Dividing(#[from] crate::NotDivided),
@@ -73,6 +76,7 @@ impl Server {
             action,
             Action::MinimiseWindow
                 | Action::MaximiseWindow
+                | Action::FillTheScreen
                 | Action::SnapLeft
                 | Action::SnapRight
                 | Action::WindowOptions
@@ -119,6 +123,14 @@ impl Server {
             Action::MaximiseWindow => {
                 let maximize = self.surfaces.requested_window_mode(&root) != Mode::Maximized;
                 self.set_window_maximized(&root, maximize)?;
+            }
+            // **Full screen, by the person's own key** — the mode an
+            // application asking for it already reaches (`crate::window_full_screen`),
+            // toggled from the latest requested mode exactly as maximise is, so
+            // two quick presses are in and out rather than in twice.
+            Action::FillTheScreen => {
+                let filling = self.surfaces.requested_window_mode(&root) != Mode::FillingTheScreen;
+                self.set_window_full_screen(&root, filling)?;
             }
             // **The side and the layout are both `alo-dividing`'s.** The side
             // has been since 2026-09-22; the layout is since the `Server` came

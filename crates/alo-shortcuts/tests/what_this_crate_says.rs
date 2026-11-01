@@ -70,6 +70,7 @@ fn auf_deutsch() -> Strings {
                 words::MAXIMISE_WINDOW,
                 "Fenster maximieren oder zurücksetzen",
             ),
+            (words::FILL_THE_SCREEN, "Vollbild ein- oder ausschalten"),
             (words::SNAP_LEFT, "Fenster auf die linke Hälfte legen"),
             (words::SNAP_RIGHT, "Fenster auf die rechte Hälfte legen"),
             (words::NEXT_WINDOW, "Nächstes Fenster"),
@@ -148,6 +149,7 @@ fn auf_deutsch() -> Strings {
             (words::SHIFT, "Umschalt"),
             (words::SPACE, "Leertaste"),
             (words::TAB, "Tabulator"),
+            (words::ENTER, "Eingabe"),
             (words::DELETE, "Entf"),
             (words::INSERT, "Einfg"),
             (words::HOME, "Pos1"),
@@ -245,6 +247,10 @@ fn the_whole_panel_is_read_in_the_language_the_person_reads() {
             (
                 "Fenster maximieren oder zurücksetzen".to_owned(),
                 "Super+Pfeil hoch".to_owned()
+            ),
+            (
+                "Vollbild ein- oder ausschalten".to_owned(),
+                "Super+Eingabe".to_owned()
             ),
             (
                 "Fenster auf die linke Hälfte legen".to_owned(),

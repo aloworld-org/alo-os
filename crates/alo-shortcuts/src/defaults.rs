@@ -43,7 +43,7 @@ const NOTHING: Modifiers = Modifiers::none();
 /// puts every one of them back through [`Chord::checked`]: the shipped list is
 /// held to the rules a person's own bindings are held to, or the rules are
 /// advice.
-const SHIPPED: [(Action, Chord); 25] = [
+const SHIPPED: [(Action, Chord); 26] = [
     (Action::TheAgent, Chord::shipped(SUPER, Key::A)),
     (Action::Launcher, Chord::shipped(SUPER, Key::Space)),
     (Action::Settings, Chord::shipped(SUPER, Key::I)),
@@ -87,6 +87,8 @@ const SHIPPED: [(Action, Chord); 25] = [
     (Action::CloseWindow, Chord::shipped(ALT, Key::F4)),
     (Action::MinimiseWindow, Chord::shipped(SUPER, Key::Down)),
     (Action::MaximiseWindow, Chord::shipped(SUPER, Key::Up)),
+    // **`⊞`+Enter, the design's *enter or leave full screen*.**
+    (Action::FillTheScreen, Chord::shipped(SUPER, Key::Enter)),
     (Action::SnapLeft, Chord::shipped(SUPER, Key::Left)),
     (Action::SnapRight, Chord::shipped(SUPER, Key::Right)),
     (Action::NextWindow, Chord::shipped(ALT, Key::Tab)),

@@ -145,6 +145,16 @@ pub enum Action {
     MinimiseWindow,
     /// Make the window in front fill the screen, or put it back.
     MaximiseWindow,
+    /// Make the window in front fill the whole screen, with the Dock and the
+    /// panel giving way to it, or put it back.
+    ///
+    /// **Promised and missing until 2026-11-01.** The design gives *Enter or
+    /// leave full screen* `⊞`+Enter, and full screen itself was built on
+    /// 2026-09-30 for an application that asks for it — so a person could not
+    /// ask for it from the keyboard. Maximise is not this: a maximised window
+    /// keeps its own title bar and the Dock stays. This makes an existing
+    /// promise true.
+    FillTheScreen,
     /// Snap the window in front to the left half of the screen.
     SnapLeft,
     /// Snap the window in front to the right half of the screen.
@@ -232,7 +242,7 @@ pub enum Action {
 
 impl Action {
     /// Everything a shortcut can do, in the order a settings panel lists them:
-    /// the six that summon something, then the five done to the window in
+    /// the six that summon something, then the seven done to the window in
     /// front, then the four for moving between windows and applications, then
     /// the canvas's seven, then the two that move the keyboard between the
     /// parts of the screen.
@@ -255,6 +265,7 @@ impl Action {
         Self::WindowOptions,
         Self::MinimiseWindow,
         Self::MaximiseWindow,
+        Self::FillTheScreen,
         Self::SnapLeft,
         Self::SnapRight,
         Self::NextWindow,
@@ -287,6 +298,7 @@ impl Action {
             Self::WindowOptions => words::WINDOW_OPTIONS,
             Self::MinimiseWindow => words::MINIMISE_WINDOW,
             Self::MaximiseWindow => words::MAXIMISE_WINDOW,
+            Self::FillTheScreen => words::FILL_THE_SCREEN,
             Self::SnapLeft => words::SNAP_LEFT,
             Self::SnapRight => words::SNAP_RIGHT,
             Self::NextWindow => words::NEXT_WINDOW,
