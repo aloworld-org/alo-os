@@ -264,3 +264,47 @@ fn the_launcher_draws_at_both_frames_sizes_and_can_be_looked_at() {
             .expect("written");
     }
 }
+
+/// **The approved frames, drawn, for the owner to compare** — `561:275` at
+/// 1440 × 960 and `561:370` at 1280 × 800: the panel over the canvas cream.
+///
+/// With `ALO_ROUND_2_PICTURES` set to a folder each is written there as a PNG,
+/// which is how the rendered-against-design pictures are made: a check somebody
+/// runs by hand. What runs on every build is that each draws.
+#[test]
+fn the_approved_frames_are_drawn() {
+    for (size, name) in [
+        ((1440, 960), "launcher-find-open-or-ask-1440x960-light.png"),
+        ((1280, 800), "launcher-find-open-or-ask-1280x800-light.png"),
+    ] {
+        let drawn = a_launcher(Size::from(size), &dolphin(), None, true).expect("drawn");
+        let Some(folder) = std::env::var_os("ALO_ROUND_2_PICTURES") else {
+            continue;
+        };
+        let (wide, tall) = (
+            u32::try_from(size.0).expect("a width"),
+            u32::try_from(size.1).expect("a height"),
+        );
+        let mut image = image::RgbImage::from_pixel(wide, tall, image::Rgb([0xFA, 0xF7, 0xF2]));
+        let area = drawn.panel.area;
+        for (at, pixel) in drawn.panel.pixels.as_chunks::<4>().0.iter().enumerate() {
+            let at = i32::try_from(at).expect("inside the raster");
+            let (Ok(x), Ok(y)) = (
+                u32::try_from(area.loc.x + at % area.size.w),
+                u32::try_from(area.loc.y + at / area.size.w),
+            ) else {
+                continue;
+            };
+            let alpha = f32::from(pixel[3]) / 255.0;
+            let under = image.get_pixel(x, y).0;
+            let over = |which: usize| {
+                (f32::from(pixel[which]) * alpha + f32::from(under[which]) * (1.0 - alpha)).round()
+                    as u8
+            };
+            image.put_pixel(x, y, image::Rgb([over(0), over(1), over(2)]));
+        }
+        image
+            .save(std::path::Path::new(&folder).join(name))
+            .expect("written");
+    }
+}

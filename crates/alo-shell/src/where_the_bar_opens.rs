@@ -134,7 +134,13 @@ pub(crate) fn where_the_bar_opens(
     let inset = share(across, INSIDE_THE_PANEL).max(1);
     let inner = across - inset * 2;
     let left = (display.w - across) / 2;
-    let top = share(display.h, THE_PANEL_BEGINS);
+    // **A share of the display's logical height, scaled after**, so twice the
+    // pixels puts the panel exactly twice as far down: a share of 1920 rounds
+    // to 417 where twice the share of 960 is 416.
+    let tall_as_drawn =
+        i32::try_from(i64::from(display.h) * 100 / i64::from(scale.per_cent().max(1)))
+            .unwrap_or(display.h);
+    let top = px(u32::try_from(share(tall_as_drawn, THE_PANEL_BEGINS)).unwrap_or(0));
     if inner <= px(THE_CLOSE_CONTROL_IS.0) {
         return None;
     }
