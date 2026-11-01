@@ -65,6 +65,12 @@ pub(crate) fn drawn_from(bytes: &[u8], across: u32) -> Option<APicture> {
     );
     // `tiny-skia` holds premultiplied colour; the Dock's pictures are straight
     // (`alo_dock::artwork::APicture`), so each pixel is divided back out.
+    // **A file that draws nothing is no picture.** `resvg` reads `<svg/>` as an
+    // empty canvas of a default size, and an invisible icon on the Dock would
+    // hide the application's letter behind nothing at all.
+    if pixmap.pixels().iter().all(|pixel| pixel.alpha() == 0) {
+        return None;
+    }
     let pixels = pixmap
         .pixels()
         .iter()

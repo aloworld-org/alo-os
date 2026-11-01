@@ -79,7 +79,7 @@ fn rubbish_is_no_picture() {
     assert!(drawn_from(b"", 48).is_none());
     assert!(
         drawn_from(b"<svg/>", 48).is_none(),
-        "an SVG with no size was drawn"
+        "an SVG that draws nothing was handed over as a picture"
     );
 }
 
