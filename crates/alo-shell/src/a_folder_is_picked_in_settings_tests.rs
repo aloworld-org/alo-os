@@ -324,3 +324,128 @@ fn every_row_says_something_and_a_folder_says_its_own_name() {
         assert!(!said.contains('«'), "a key reached a person: {said}");
     }
 }
+
+/// A home with the hidden folders every real home has, as a booted machine
+/// listed them on 2026-11-01.
+fn a_home_with_hidden_folders() -> SomeFolders {
+    let mut folders = SomeFolders::a_persons_home();
+    folders.0.insert(
+        PathBuf::from("/var/home/alo"),
+        vec![
+            ".cache".to_owned(),
+            ".config".to_owned(),
+            "Documents".to_owned(),
+            "Downloads".to_owned(),
+            "Pictures".to_owned(),
+        ],
+    );
+    folders
+        .0
+        .insert(PathBuf::from("/var/home/alo/.config"), vec![]);
+    folders
+}
+
+/// **Hidden folders are not listed until the person asks**, and the row that
+/// shows them is at the end.
+#[test]
+fn hidden_folders_are_hidden_and_one_row_shows_them() {
+    let folders = a_home_with_hidden_folders();
+    let picking = in_their_home(&folders);
+    assert_eq!(
+        picking.rows(),
+        [
+            PickingRow::PickThisFolder,
+            PickingRow::UpOneFolder,
+            PickingRow::IntoFolder("Documents".to_owned()),
+            PickingRow::IntoFolder("Downloads".to_owned()),
+            PickingRow::IntoFolder("Pictures".to_owned()),
+            PickingRow::HiddenFoldersShown(true),
+        ]
+    );
+}
+
+/// **Showing them lists them, and a hidden folder can still be given**: a
+/// person could give alo `.config` before hidden folders were hidden, and
+/// still can (law 5).
+#[test]
+fn shown_hidden_folders_can_be_walked_into_and_hidden_again() {
+    let folders = a_home_with_hidden_folders();
+    let strings = what_it_can_say();
+    let mut picking = in_their_home(&folders);
+    let into_config = PickingRow::IntoFolder(".config".to_owned());
+    assert_eq!(
+        picking.act(&into_config, &folders, &strings),
+        WhatPickingDid::Nothing,
+        "the control: a hidden folder was reachable while hidden"
+    );
+
+    assert_eq!(
+        picking.act(&PickingRow::HiddenFoldersShown(true), &folders, &strings),
+        WhatPickingDid::ItChanged
+    );
+    assert!(picking.rows().contains(&into_config));
+    assert_eq!(
+        picking.rows().last(),
+        Some(&PickingRow::HiddenFoldersShown(false)),
+        "the row does not offer to hide them again"
+    );
+
+    assert_eq!(
+        picking.act(&into_config, &folders, &strings),
+        WhatPickingDid::ItChanged
+    );
+    assert_eq!(picking.at(), Path::new("/var/home/alo/.config"));
+    assert!(matches!(
+        picking.act(&PickingRow::PickThisFolder, &folders, &strings),
+        WhatPickingDid::ItChanged
+    ));
+    assert!(
+        picking.is_saying_how_long(),
+        "a hidden folder could not be given"
+    );
+}
+
+/// **No row about hidden folders where there are none.**
+#[test]
+fn a_folder_with_nothing_hidden_offers_nothing_to_show() {
+    let folders = SomeFolders::a_persons_home();
+    let picking = in_their_home(&folders);
+    assert!(
+        !picking
+            .rows()
+            .iter()
+            .any(|row| matches!(row, PickingRow::HiddenFoldersShown(_)))
+    );
+}
+
+/// **The page says which folder this is**: its name and its full path, in
+/// the home and inside a folder.
+#[test]
+fn the_picker_says_which_folder_the_person_is_in() {
+    let folders = SomeFolders::a_persons_home();
+    let strings = what_it_can_say();
+    let mut picking = in_their_home(&folders);
+    assert_eq!(
+        picking.where_they_are(&strings),
+        "You are in alo, at /var/home/alo"
+    );
+    picking.act(
+        &PickingRow::IntoFolder("Documents".to_owned()),
+        &folders,
+        &strings,
+    );
+    assert_eq!(
+        picking.where_they_are(&strings),
+        "You are in Documents, at /var/home/alo/Documents"
+    );
+}
+
+/// **At the top of the disk the folder has no name of its own**, so it is
+/// called by its path rather than by nothing.
+#[test]
+fn the_top_of_the_disk_is_called_by_its_path() {
+    let folders = SomeFolders::a_persons_home();
+    let strings = what_it_can_say();
+    let picking = AFolderBeingPicked::standing_in(Path::new("/"), &folders).unwrap();
+    assert_eq!(picking.where_they_are(&strings), "You are in /, at /");
+}
