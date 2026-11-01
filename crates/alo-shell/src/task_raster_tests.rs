@@ -1171,11 +1171,14 @@ fn the_file_a_change_touches_has_a_row_between_the_action_and_the_answers() {
     assert!(action.area.loc.y + action.area.size.h <= name.area.loc.y);
     assert!(name.area.loc.y + name.area.size.h <= where_it_is.area.loc.y);
     assert!(where_it_is.area.loc.y + where_it_is.area.size.h <= allow.area.loc.y);
-    let [_, _, allow_before, _, _] = the_cards_ink(&without);
+    // Measured from the action, because the conversation opens at its newest
+    // words and a taller card scrolls the whole view.
+    let [_, action_before, allow_before, _, _] = the_cards_ink(&without);
     assert_eq!(
-        allow.area.loc.y - allow_before.area.loc.y,
+        (allow.area.loc.y - action.area.loc.y)
+            - (allow_before.area.loc.y - action_before.area.loc.y),
         64 + 12,
-        "the answers did not move down by the row"
+        "the answers did not move down from the action by the row"
     );
     const COOL: [u8; 3] = [0xEE, 0xF2, 0xF4];
     assert!(
@@ -1249,10 +1252,12 @@ fn what_a_change_does_is_written_under_the_action_side_by_side() {
         "the two overlap"
     );
     assert!(does.area.loc.y + does.area.size.h <= allow.area.loc.y);
-    let [_, _, allow_before, _, _] = the_cards_ink(&without);
+    // From the action, because a taller card scrolls the whole view.
+    let [_, action_before, allow_before, _, _] = the_cards_ink(&without);
     assert!(
-        allow.area.loc.y > allow_before.area.loc.y,
-        "the answers did not move down for the line"
+        allow.area.loc.y - action.area.loc.y
+            > allow_before.area.loc.y - action_before.area.loc.y,
+        "the answers did not move down from the action for the line"
     );
 }
 
