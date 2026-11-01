@@ -794,6 +794,17 @@ approved is still the sentence and the number.
 {"waiting":{"changes":[{"number":7,"sentence":{"text":"…","came_from":"translation"},"lapses_in":300,"touches":[{"path":"/home/anna/Invoices/march.pdf"}]}]}}
 ```
 
+It also carries **`changes`** and **`leaves`**: the verb's own sentences saying
+what every call of it changes and what it leaves alone
+(`docs/contracts/agent-verbs.md`, *The shape of a verb*), each in the language
+the person reads and with where it came from, as `sentence` is. **Added
+2026-11-01, additively, by the same decision**: each is absent for a verb that
+says none, `format` does not change, and like `touches` they authorise nothing.
+
+```json
+{"waiting":{"changes":[{"number":7,"sentence":{"text":"…","came_from":"translation"},"lapses_in":300,"touches":[{"path":"/home/anna/Invoices/march.pdf"}],"changes":{"text":"Gives one file a new name, in the folder it is in.","came_from":"the-source"},"leaves":{"text":"What is in it stays the same, and no other file is changed or replaced.","came_from":"the-source"}}]}}
+```
+
 `answered` carries where the answer came from, and there is no shape without it:
 `docs/features.md` promises *where the answer came from is said where the answer
 appears*, and this is the last boundary at which that could be lost.

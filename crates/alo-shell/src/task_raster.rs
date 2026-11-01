@@ -170,6 +170,23 @@ const THE_STATUS_IS_WIDE: u32 = 260;
 /// the row.
 const THE_ANSWERS_TAKE: u32 = m::GAP + m::A_CONTROL_IS;
 
+/// One line saying what a change does or leaves alone, placed in its card:
+/// across and down from where those lines start, as measured while the font
+/// system was free.
+#[derive(Debug, Clone)]
+struct ALineOfWhatItDoes {
+    /// The words, already in the person's language.
+    words: String,
+    /// How far across from the start of the lines its tick is.
+    across: u32,
+    /// How far down from the start of the lines it is.
+    down: u32,
+    /// The room its words have.
+    wide: u32,
+    /// How tall its words are.
+    tall: u32,
+}
+
 /// Where a card's two answers were placed, measured while the font system was
 /// free, for their labels to be centred on them once the panel is made.
 #[derive(Debug, Clone, Copy)]
@@ -326,32 +343,109 @@ pub(crate) fn furniture(
     // **An approval card's action, measured in the heading size it is drawn
     // in** (`crate::the_approval_card`), for the cards there are; [`None`] for
     // every other block.
-    let the_cards: Vec<Option<TheCard>> = said
-        .iter()
-        .map(|one| {
-            let answers = one.answers?;
-            answers.asking?;
-            let inside = row_is_wide.saturating_sub(m::INSIDE_THE_CONVERSATION * 2);
-            let wide = one.whose.how_wide().min(inside);
-            let tall = crate::task_text::how_tall(
-                fonts,
-                crate::task_text::ToWrite {
-                    words: one.words,
-                    marks: one.marks,
-                    style: AStyle::Heading,
-                    ground: palette.surface,
-                    ink: palette.ink,
-                },
-                px(TheCard::the_actions_room(wide)),
-                measure,
-            );
-            Some(TheCard {
-                wide,
-                the_action_is_tall: logical(i32::try_from(tall).unwrap_or(i32::MAX)),
-                rows: u32::try_from(answers.touches.len().min(card::THE_MOST_ROWS)).unwrap_or(0),
-            })
-        })
-        .collect();
+    // **And where the lines saying what it does and leaves alone go**
+    // (`549:209`): side by side as the frame draws them when both fit on one
+    // line, one under the other when they do not.
+    let mut the_cards: Vec<Option<TheCard>> = Vec::new();
+    let mut what_each_does: Vec<Vec<ALineOfWhatItDoes>> = Vec::new();
+    for one in said {
+        let mut lines = Vec::new();
+        let the_card = one
+            .answers
+            .filter(|answers| answers.asking.is_some())
+            .map(|answers| {
+                let inside = row_is_wide.saturating_sub(m::INSIDE_THE_CONVERSATION * 2);
+                let wide = one.whose.how_wide().min(inside);
+                let room = TheCard::the_actions_room(wide);
+                let tall = crate::task_text::how_tall(
+                    fonts,
+                    crate::task_text::ToWrite {
+                        words: one.words,
+                        marks: one.marks,
+                        style: AStyle::Heading,
+                        ground: palette.surface,
+                        ink: palette.ink,
+                    },
+                    px(room),
+                    measure,
+                );
+                // Its whole width on one line, and its height wrapped at `width`.
+                let mut measured = |words: &str, width: u32| {
+                    let natural = crate::painted_text::how_wide_as(
+                        fonts,
+                        words,
+                        AStyle::SmallBody.metrics(measure),
+                        &AStyle::SmallBody.attrs(),
+                    );
+                    let shaped = crate::task_text::shaped(
+                        fonts,
+                        crate::task_text::ToWrite {
+                            words,
+                            marks: &[],
+                            style: AStyle::SmallBody,
+                            ground: palette.surface,
+                            ink: palette.ink,
+                        },
+                        px(width),
+                        measure,
+                    );
+                    (logical(natural), logical(shaped.height))
+                };
+                let beside = card::A_TICK + card::AFTER_A_TICK;
+                let sentences: Vec<&str> = [answers.does.0, answers.does.1]
+                    .into_iter()
+                    .flatten()
+                    .filter(|it| !it.is_empty())
+                    .collect();
+                // Each at its own width on one line, and then whether both fit.
+                let natural: Vec<(u32, u32)> =
+                    sentences.iter().map(|it| measured(it, room)).collect();
+                let in_a_row = natural.iter().map(|(w, _)| beside + w + 2).sum::<u32>()
+                    + card::BETWEEN_WHAT_IT_DOES
+                        * u32::try_from(natural.len().saturating_sub(1)).unwrap_or(0);
+                let one_line = natural.iter().map(|(_, h)| *h).max().unwrap_or(0);
+                let fits = in_a_row <= room;
+                let mut across = 0;
+                let mut down = 0;
+                for (which, words) in sentences.iter().enumerate() {
+                    if fits {
+                        let (w, _) = natural.get(which).copied().unwrap_or((0, 0));
+                        lines.push(ALineOfWhatItDoes {
+                            words: (*words).to_owned(),
+                            across,
+                            down: 0,
+                            wide: w + 2,
+                            tall: one_line,
+                        });
+                        across += beside + w + 2 + card::BETWEEN_WHAT_IT_DOES;
+                    } else {
+                        let width = room.saturating_sub(beside);
+                        let (_, h) = measured(words, width);
+                        if which > 0 {
+                            down += card::UNDER_WHAT_IT_DOES;
+                        }
+                        lines.push(ALineOfWhatItDoes {
+                            words: (*words).to_owned(),
+                            across: 0,
+                            down,
+                            wide: width,
+                            tall: h,
+                        });
+                        down += h;
+                    }
+                }
+                let what_it_does_is_tall = if fits { one_line } else { down };
+                TheCard {
+                    wide,
+                    the_action_is_tall: logical(i32::try_from(tall).unwrap_or(i32::MAX)),
+                    rows: u32::try_from(answers.touches.len().min(card::THE_MOST_ROWS))
+                        .unwrap_or(0),
+                    what_it_does_is_tall,
+                }
+            });
+        the_cards.push(the_card);
+        what_each_does.push(lines);
+    }
     let heights: Vec<(alo_tasks::WhoseBlock, u32)> = said
         .iter()
         .zip(&the_cards)
@@ -835,6 +929,52 @@ pub(crate) fn furniture(
         }
     }
 
+    // **The tick before each line saying what the change does and leaves
+    // alone**, centred on its first line, drawn whole or not at all.
+    #[expect(
+        clippy::cast_possible_truncation,
+        reason = "a line of text is a few dozen pixels at any text size"
+    )]
+    let a_line = logical(AStyle::SmallBody.metrics(measure).line_height.round() as i32);
+    for ((block, the_card), lines) in blocks.each().iter().zip(&the_cards).zip(&what_each_does) {
+        let Some(the_card) = the_card else {
+            continue;
+        };
+        let Some(tick) = crate::the_approval_cards_icons::ACardsIcon::ATick.shape() else {
+            continue;
+        };
+        let (wide, tall) = tick.its_box();
+        #[expect(
+            clippy::cast_possible_truncation,
+            reason = "an icon is a few dozen pixels at any display's scale"
+        )]
+        let (tw, th) = (
+            (f64::from(wide) * scale.factor()).round() as i32,
+            (f64::from(tall) * scale.factor()).round() as i32,
+        );
+        for line in lines {
+            let at = block.from_the_top + the_card.what_it_does() + line.down;
+            let centred = at + a_line.min(line.tall).saturating_sub(card::A_TICK) / 2;
+            if centred < scrolled || centred + card::A_TICK > scrolled + view {
+                continue;
+            }
+            let (bx, by) = inside(
+                m::INSIDE_THE_CONVERSATION + block.from_the_left + card::BESIDE + line.across,
+                top_of_the_column + centred - scrolled,
+            );
+            let box_is = px(card::A_TICK);
+            crate::the_approval_cards_icons::ink_a_cards_icon(
+                &mut panel,
+                crate::the_approval_cards_icons::ACardsIcon::ATick,
+                Rectangle::new(
+                    (bx + (box_is - tw) / 2, by + (box_is - th) / 2).into(),
+                    (tw, th).into(),
+                ),
+                palette.ink_secondary,
+            );
+        }
+    }
+
     // **The words, inked onto the ground each sits on.** Each is placed from the
     // window's own inside corner, cut at the window's bottom edge so a long
     // title cannot write past the frame.
@@ -1091,11 +1231,12 @@ pub(crate) fn furniture(
         None,
     );
 
-    for (((one, block), the_card), rows_shown) in said
+    for ((((one, block), the_card), rows_shown), its_lines) in said
         .iter()
         .zip(blocks.each())
         .zip(&the_cards)
         .zip(&the_rows_shown)
+        .zip(&what_each_does)
     {
         if !block.is_in_view(scrolled, view) {
             continue;
@@ -1170,6 +1311,22 @@ pub(crate) fn furniture(
                         card::WHERE_IT_IS_TALL,
                     ),
                     words_room,
+                    false,
+                    Some((scrolled, the_view)),
+                );
+            }
+            // **What it does and what it leaves alone**, each after its tick,
+            // in Body/Medium.
+            for line in its_lines {
+                write(
+                    &line.words,
+                    &[],
+                    AStyle::SmallBody,
+                    palette.surface,
+                    palette.ink,
+                    left + card::BESIDE + line.across + card::A_TICK + card::AFTER_A_TICK,
+                    (top + the_card.what_it_does() + line.down, line.tall),
+                    line.wide,
                     false,
                     Some((scrolled, the_view)),
                 );

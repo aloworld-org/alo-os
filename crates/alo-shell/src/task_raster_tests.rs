@@ -556,7 +556,7 @@ fn with_a_card(
     selected: Option<crate::a_change_waiting_reaches_the_person::WhichAnswer>,
     answering: bool,
 ) -> TaskPicture {
-    a_window_with_a_card(selected, answering, None, &[])
+    a_window_with_a_card(selected, answering, None, &[], (None, None))
 }
 
 /// The design's frame with a change waiting at the end of it, drawn as the
@@ -569,6 +569,7 @@ fn with_the_approved_card(
         true,
         Some(("alo is asking to", APPROVED_ONCE)),
         &[],
+        (None, None),
     )
 }
 
@@ -581,6 +582,7 @@ fn a_window_with_a_card(
     answering: bool,
     approved: Option<(&'static str, &'static str)>,
     touches: &[crate::task_text::ATouchedRow],
+    does: (Option<&'static str>, Option<&'static str>),
 ) -> TaskPicture {
     let files = two_files();
     let mut said = what_was_said();
@@ -595,6 +597,7 @@ fn a_window_with_a_card(
             asking: approved.map(|(asking, _)| asking),
             once: approved.map(|(_, once)| once),
             touches,
+            does,
         }),
     });
     let mut fonts = cosmic_text::FontSystem::new();
@@ -1135,6 +1138,7 @@ fn with_the_approved_card_touching(touches: &[crate::task_text::ATouchedRow]) ->
         true,
         Some(("alo is asking to", APPROVED_ONCE)),
         touches,
+        (None, None),
     )
 }
 
@@ -1208,5 +1212,93 @@ fn where_a_file_is_is_written_from_home() {
         with.inked.len(),
         without.inked.len() + 1,
         "an application's row wrote a place it does not have"
+    );
+}
+
+/// The frame's own two lines: what a change does and what it leaves alone.
+const THE_FRAMES_TWO: (Option<&str>, Option<&str>) = (
+    Some("Creates one file."),
+    Some("Existing files will not be changed."),
+);
+
+/// **What a change does and what it leaves alone are written under the
+/// action, side by side when they fit** (`549:209`): two more pieces of ink,
+/// on one line, below the action and above the answers, and the answers move
+/// down by the line and the 12 above it.
+#[test]
+fn what_a_change_does_is_written_under_the_action_side_by_side() {
+    let without = with_the_approved_card(None);
+    let with = a_window_with_a_card(
+        None,
+        true,
+        Some(("alo is asking to", APPROVED_ONCE)),
+        &[],
+        THE_FRAMES_TWO,
+    );
+    assert_eq!(with.inked.len(), without.inked.len() + 2);
+    let at = |back: usize| {
+        with.inked
+            .get(with.inked.len() - back)
+            .expect("a piece of ink the order says is there")
+    };
+    let (action, does, leaves, allow) = (at(7), at(6), at(5), at(4));
+    assert!(action.area.loc.y + action.area.size.h <= does.area.loc.y);
+    assert_eq!(
+        does.area.loc.y, leaves.area.loc.y,
+        "the two are not on one line"
+    );
+    assert!(
+        does.area.loc.x + does.area.size.w + 20 <= leaves.area.loc.x,
+        "the two overlap"
+    );
+    assert!(does.area.loc.y + does.area.size.h <= allow.area.loc.y);
+    // From the action, because a taller card scrolls the whole view.
+    let [_, action_before, allow_before, _, _] = the_cards_ink(&without);
+    assert!(
+        allow.area.loc.y - action.area.loc.y > allow_before.area.loc.y - action_before.area.loc.y,
+        "the answers did not move down from the action for the line"
+    );
+}
+
+/// **Too long for one line, they go one under the other**, and neither runs
+/// into the other.
+#[test]
+fn what_a_change_does_goes_one_under_the_other_when_it_does_not_fit() {
+    let long = "Makes one new file, an archive of the folder, in the folder you named for it.";
+    let with = a_window_with_a_card(
+        None,
+        true,
+        Some(("alo is asking to", APPROVED_ONCE)),
+        &[],
+        (Some(long), Some(long)),
+    );
+    let at = |back: usize| {
+        with.inked
+            .get(with.inked.len() - back)
+            .expect("a piece of ink the order says is there")
+    };
+    let (does, leaves) = (at(6), at(5));
+    assert!(
+        does.area.loc.y + does.area.size.h <= leaves.area.loc.y,
+        "two lines too long for one were drawn on one"
+    );
+    assert_eq!(does.area.loc.x, leaves.area.loc.x);
+}
+
+/// **The ticks are drawn**, one before each line: the control is the card
+/// with nothing said, which draws none.
+#[test]
+fn a_tick_is_drawn_before_each_line() {
+    let without = with_the_approved_card(None);
+    let with = a_window_with_a_card(
+        None,
+        true,
+        Some(("alo is asking to", APPROVED_ONCE)),
+        &[],
+        THE_FRAMES_TWO,
+    );
+    assert_ne!(
+        without.panel.pixels, with.panel.pixels,
+        "nothing was drawn in the panel for the two lines"
     );
 }

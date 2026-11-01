@@ -237,6 +237,22 @@ pub enum VerbError {
     /// The sentence could not be read at all.
     #[error(transparent)]
     Unreadable(#[from] SentenceError),
+    /// A read verb said what it changes.
+    #[error(
+        "{name} reads and changes nothing — only a change says what it changes and what it leaves alone"
+    )]
+    AReadChangesNothing {
+        /// The verb.
+        name: String,
+    },
+    /// What a verb changes or leaves alone, said with a gap in it.
+    #[error(
+        "say what {name} changes and leaves alone without naming an argument — the same words stand for every call of it, and the call's own sentence names its arguments"
+    )]
+    WhatItChangesHasAGap {
+        /// The verb.
+        name: String,
+    },
 }
 
 /// One verb an agent may ask for.
@@ -264,6 +280,10 @@ pub struct Verb {
     requires: Requires,
     /// How its sentence is generated.
     sentence: Sentence,
+    /// What every call of it changes, in one short sentence, for a change.
+    changes: Option<Word>,
+    /// What every call of it leaves alone, in one short sentence.
+    leaves: Option<Word>,
 }
 
 impl Verb {
@@ -303,7 +323,49 @@ impl Verb {
             args,
             requires,
             sentence,
+            changes: None,
+            leaves: None,
         })
+    }
+
+    /// **What every call of this change changes, and what it leaves alone**,
+    /// each one short sentence a person reads under the action on the approval
+    /// card (`docs/contracts/agent-verbs.md`, *What a change says it changes*;
+    /// the owner's decision of 2026-11-01).
+    ///
+    /// **Each must be exactly true of what the verb does**, and the crate that
+    /// carries the verb out holds it to that with a test that runs the verb.
+    /// They name no argument: the same words stand for every call, and the
+    /// call's own sentence is what names its arguments.
+    ///
+    /// # Errors
+    /// [`VerbError::AReadChangesNothing`] for a read, and
+    /// [`VerbError::WhatItChangesHasAGap`] for words with a gap in them.
+    pub fn changing(mut self, changes: Word, leaves: Option<Word>) -> Result<Self, VerbError> {
+        if !self.effect.waits_for_approval() {
+            return Err(VerbError::AReadChangesNothing { name: self.name });
+        }
+        if std::iter::once(&changes)
+            .chain(leaves.as_ref())
+            .any(|word| word.says().contains('{'))
+        {
+            return Err(VerbError::WhatItChangesHasAGap { name: self.name });
+        }
+        self.changes = Some(changes);
+        self.leaves = leaves;
+        Ok(self)
+    }
+
+    /// What every call of it changes, where it says.
+    #[must_use]
+    pub const fn what_it_changes(&self) -> Option<&Word> {
+        self.changes.as_ref()
+    }
+
+    /// What every call of it leaves alone, where it says.
+    #[must_use]
+    pub const fn what_it_leaves(&self) -> Option<&Word> {
+        self.leaves.as_ref()
     }
 
     /// The stable identifier a call arrives under. Matched exactly.
@@ -1015,6 +1077,48 @@ mod tests {
                 saying("list {folder}"),
             ),
             Err(VerbError::ArgumentWithoutPurpose { .. })
+        ));
+    }
+
+    /// **Only a change says what it changes, and in words with no gap**: the
+    /// same sentences stand for every call, and a read changes nothing.
+    #[test]
+    fn what_a_change_changes_is_said_by_a_change_only_and_names_no_argument() {
+        let changes = Word::saying("testing.verb.changes", "Gives one file a new name.");
+        let leaves = Word::saying("testing.verb.leaves", "No other file is changed.");
+        assert!(matches!(
+            list().unwrap().changing(changes, Some(leaves)),
+            Err(VerbError::AReadChangesNothing { .. })
+        ));
+        let rename = || {
+            Verb::checked(
+                "rename_it",
+                saying("rename a thing"),
+                Effect::Change,
+                vec![folder(), name()],
+                Requires::grants_over(["folder"]),
+                saying("rename {folder} to {name}"),
+            )
+            .unwrap()
+        };
+        let said = rename().changing(changes, Some(leaves)).unwrap();
+        assert_eq!(
+            said.what_it_changes().map(Word::says),
+            Some("Gives one file a new name.")
+        );
+        assert_eq!(
+            said.what_it_leaves().map(Word::says),
+            Some("No other file is changed.")
+        );
+        assert!(rename().what_it_changes().is_none());
+        let with_a_gap = Word::saying("testing.verb.gap", "Renames {folder}.");
+        assert!(matches!(
+            rename().changing(with_a_gap, None),
+            Err(VerbError::WhatItChangesHasAGap { .. })
+        ));
+        assert!(matches!(
+            rename().changing(changes, Some(with_a_gap)),
+            Err(VerbError::WhatItChangesHasAGap { .. })
         ));
     }
 }

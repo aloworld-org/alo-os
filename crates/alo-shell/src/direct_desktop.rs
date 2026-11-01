@@ -1499,6 +1499,7 @@ impl LoopInput for Desk<'_> {
             server.the_change_waiting.selected(),
         )
         .with_the_closing_question(server.closing_asked, self.strings)
+        .with_what_the_change_does(server.the_change_waiting.does())
         .with_what_the_change_touches(
             server.the_change_waiting.touches(),
             server

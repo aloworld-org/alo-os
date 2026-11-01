@@ -67,6 +67,14 @@ pub struct Standing {
     /// written before it reads back exactly as it was written.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     touches: Vec<crate::Touched>,
+    /// What the change changes, in one short sentence the verb declares
+    /// (`alo_capability::Verb::changing`), in the language the person reads.
+    /// Added 2026-11-01, additively: absent for a verb that says none.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    changes: Option<Wording>,
+    /// What the change leaves alone, likewise.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    leaves: Option<Wording>,
 }
 
 impl Standing {
@@ -92,7 +100,29 @@ impl Standing {
                 .iter()
                 .filter_map(crate::Touched::of)
                 .collect(),
+            changes: waiting
+                .proposal
+                .call()
+                .what_it_changes(strings)
+                .map(|said| Wording::of(&said)),
+            leaves: waiting
+                .proposal
+                .call()
+                .what_it_leaves(strings)
+                .map(|said| Wording::of(&said)),
         }
+    }
+
+    /// What the change changes, where its verb says.
+    #[must_use]
+    pub const fn changes(&self) -> Option<&Wording> {
+        self.changes.as_ref()
+    }
+
+    /// What the change leaves alone, where its verb says.
+    #[must_use]
+    pub const fn leaves(&self) -> Option<&Wording> {
+        self.leaves.as_ref()
     }
 
     /// Every file, folder and application this change touches — empty for one
@@ -225,6 +255,26 @@ mod tests {
             !serde_json::to_string(&back).unwrap().contains("touches"),
             "a change touching nothing wrote the field"
         );
+    }
+
+    /// **A change says what its verb says it changes and leaves alone**, and
+    /// a message written before the two reads back as one saying neither.
+    #[test]
+    fn a_change_says_what_its_verb_does_and_an_older_message_says_nothing() {
+        let (approvals, strings) = a_change_waiting();
+        let standing = Standing::of(the_change(&approvals), &strings, the_moment());
+        assert_eq!(
+            standing.changes().map(Wording::text),
+            Some("Gives one file a new name, in the folder it is in.")
+        );
+        assert_eq!(
+            standing.leaves().map(Wording::text),
+            Some("What is in it stays the same, and no other file is changed or replaced.")
+        );
+        let older =
+            r#"{"number":7,"sentence":{"text":"…","came_from":"the-source"},"lapses_in":300}"#;
+        let back: Standing = serde_json::from_str(older).unwrap();
+        assert!(back.changes().is_none() && back.leaves().is_none());
     }
 
     /// What is written is what is read back.

@@ -64,7 +64,24 @@ pub(crate) struct TheCard {
     pub(crate) the_action_is_tall: u32,
     /// How many rows naming what the change touches it has.
     pub(crate) rows: u32,
+    /// How tall the lines saying what the change does and leaves alone are
+    /// (`549:209`), and nought where its verb says neither.
+    pub(crate) what_it_does_is_tall: u32,
 }
+
+/// Above the lines saying what the change does: the column's 12.
+pub(crate) const ABOVE_WHAT_IT_DOES: u32 = 12;
+/// The tick before each of those lines.
+pub(crate) const A_TICK: u32 = 16;
+/// Between the tick and its words.
+pub(crate) const AFTER_A_TICK: u32 = 8;
+/// Between the two, side by side, as the frame draws them.
+pub(crate) const BETWEEN_WHAT_IT_DOES: u32 = 20;
+/// Between the two when they do not fit side by side and are drawn one under
+/// the other. **A departure the frame does not draw**: it shows two short
+/// English sentences on one line, and a translation or a longer sentence may
+/// not fit there.
+pub(crate) const UNDER_WHAT_IT_DOES: u32 = 4;
 
 /// The most rows a card draws. No verb on the list names more than three
 /// things; the bound is for a message that claims more, which must not make a
@@ -126,10 +143,24 @@ impl TheCard {
 
     /// Where the row of choices starts, down — its hairline.
     pub(crate) const fn the_choices(self) -> u32 {
+        let what_it_does = if self.what_it_does_is_tall == 0 {
+            0
+        } else {
+            ABOVE_WHAT_IT_DOES + self.what_it_does_is_tall
+        };
         self.the_action()
             + self.the_action_is_tall
             + self.rows * (ABOVE_A_ROW + A_ROW_IS_TALL)
+            + what_it_does
             + BELOW_THE_ACTION
+    }
+
+    /// Where the lines saying what it does start, down.
+    pub(crate) const fn what_it_does(self) -> u32 {
+        self.the_action()
+            + self.the_action_is_tall
+            + self.rows * (ABOVE_A_ROW + A_ROW_IS_TALL)
+            + ABOVE_WHAT_IT_DOES
     }
 
     /// Where the two answers start, down.

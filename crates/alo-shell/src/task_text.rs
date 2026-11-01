@@ -219,6 +219,10 @@ pub struct TheTwoAnswers<'a> {
     /// (`549:200`), under the action. Empty for the closing question and for
     /// a change that touches none.
     pub touches: &'a [ATouchedRow],
+    /// What the change does and what it leaves alone (`549:209`), each beside
+    /// a tick under the rows, as its verb words them. Neither for the closing
+    /// question, or for a verb that says nothing.
+    pub does: (Option<&'a str>, Option<&'a str>),
 }
 
 /// One row on an approval card naming something the change touches.

@@ -31,7 +31,7 @@
 use std::collections::BTreeMap;
 use std::time::SystemTime;
 
-use alo_strings::{Filling, Key, Said, Strings};
+use alo_strings::{Filling, Key, Said, Strings, Word};
 use serde::Serialize;
 
 use crate::a_terminal_for_the_agent::ATerminalForTheAgent;
@@ -157,6 +157,14 @@ pub struct Call {
     /// wherever somebody reads them; the gaps are filled from the values above
     /// and from nothing else.
     sentence: Key,
+    /// What names what every call of this verb changes, where the verb says
+    /// (`Verb::changing`). **Not recorded**: it is the verb's, not this
+    /// call's, and the record keeps what ran.
+    #[serde(skip)]
+    changes: Option<Key>,
+    /// What names what every call of this verb leaves alone.
+    #[serde(skip)]
+    leaves: Option<Key>,
 }
 
 impl Call {
@@ -203,7 +211,26 @@ impl Call {
             values,
             asks,
             sentence: verb.sentence().key().clone(),
+            changes: verb.what_it_changes().map(Word::key),
+            leaves: verb.what_it_leaves().map(Word::key),
         })
+    }
+
+    /// **What this change changes, in the language the person reads** — the
+    /// verb's own sentence (`Verb::changing`), or [`None`] where it says none.
+    #[must_use]
+    pub fn what_it_changes(&self, strings: &Strings) -> Option<Said> {
+        self.changes
+            .as_ref()
+            .map(|key| strings.say(key, &Filling::nothing()))
+    }
+
+    /// **What this change leaves alone**, in the language the person reads.
+    #[must_use]
+    pub fn what_it_leaves(&self, strings: &Strings) -> Option<Said> {
+        self.leaves
+            .as_ref()
+            .map(|key| strings.say(key, &Filling::nothing()))
     }
 
     /// The verb this is a call of.
