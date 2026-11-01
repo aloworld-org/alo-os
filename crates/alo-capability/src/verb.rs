@@ -237,6 +237,22 @@ pub enum VerbError {
     /// The sentence could not be read at all.
     #[error(transparent)]
     Unreadable(#[from] SentenceError),
+    /// A read verb said what it changes.
+    #[error(
+        "{name} reads and changes nothing — only a change says what it changes and what it leaves alone"
+    )]
+    AReadChangesNothing {
+        /// The verb.
+        name: String,
+    },
+    /// What a verb changes or leaves alone, said with a gap in it.
+    #[error(
+        "say what {name} changes and leaves alone without naming an argument — the same words stand for every call of it, and the call's own sentence names its arguments"
+    )]
+    WhatItChangesHasAGap {
+        /// The verb.
+        name: String,
+    },
 }
 
 /// One verb an agent may ask for.
@@ -264,6 +280,10 @@ pub struct Verb {
     requires: Requires,
     /// How its sentence is generated.
     sentence: Sentence,
+    /// What every call of it changes, in one short sentence, for a change.
+    changes: Option<Word>,
+    /// What every call of it leaves alone, in one short sentence.
+    leaves: Option<Word>,
 }
 
 impl Verb {
@@ -303,7 +323,49 @@ impl Verb {
             args,
             requires,
             sentence,
+            changes: None,
+            leaves: None,
         })
+    }
+
+    /// **What every call of this change changes, and what it leaves alone**,
+    /// each one short sentence a person reads under the action on the approval
+    /// card (`docs/contracts/agent-verbs.md`, *What a change says it changes*;
+    /// the owner's decision of 2026-11-01).
+    ///
+    /// **Each must be exactly true of what the verb does**, and the crate that
+    /// carries the verb out holds it to that with a test that runs the verb.
+    /// They name no argument: the same words stand for every call, and the
+    /// call's own sentence is what names its arguments.
+    ///
+    /// # Errors
+    /// [`VerbError::AReadChangesNothing`] for a read, and
+    /// [`VerbError::WhatItChangesHasAGap`] for words with a gap in them.
+    pub fn changing(mut self, changes: Word, leaves: Option<Word>) -> Result<Self, VerbError> {
+        if !self.effect.waits_for_approval() {
+            return Err(VerbError::AReadChangesNothing { name: self.name });
+        }
+        if std::iter::once(&changes)
+            .chain(leaves.as_ref())
+            .any(|word| word.says().contains('{'))
+        {
+            return Err(VerbError::WhatItChangesHasAGap { name: self.name });
+        }
+        self.changes = Some(changes);
+        self.leaves = leaves;
+        Ok(self)
+    }
+
+    /// What every call of it changes, where it says.
+    #[must_use]
+    pub const fn what_it_changes(&self) -> Option<&Word> {
+        self.changes.as_ref()
+    }
+
+    /// What every call of it leaves alone, where it says.
+    #[must_use]
+    pub const fn what_it_leaves(&self) -> Option<&Word> {
+        self.leaves.as_ref()
     }
 
     /// The stable identifier a call arrives under. Matched exactly.

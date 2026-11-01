@@ -232,7 +232,8 @@ fn rename_file() -> Result<Verb, VerbError> {
         ],
         Requires::grants_over(["file"]),
         words::RENAME_FILE_SENTENCE,
-    )
+    )?
+    .changing(words::RENAME_FILE_CHANGES, Some(words::RENAME_FILE_LEAVES))
 }
 
 /// Move a file into a folder.
@@ -247,7 +248,8 @@ fn move_file() -> Result<Verb, VerbError> {
         ],
         Requires::grants_over(["file", "into"]),
         words::MOVE_FILE_SENTENCE,
-    )
+    )?
+    .changing(words::MOVE_FILE_CHANGES, Some(words::MOVE_FILE_LEAVES))
 }
 
 /// Make one archive file out of a folder.
@@ -267,6 +269,10 @@ fn archive_folder() -> Result<Verb, VerbError> {
         ],
         Requires::grants_over(["folder", "into"]),
         words::ARCHIVE_FOLDER_SENTENCE,
+    )?
+    .changing(
+        words::ARCHIVE_FOLDER_CHANGES,
+        Some(words::ARCHIVE_FOLDER_LEAVES),
     )
 }
 

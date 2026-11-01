@@ -381,10 +381,63 @@ pub const ARCHIVE_FOLDER_NAME: Word = Word::saying(
 )
 .noting("\".zip\" is the ending the name has to have, and is not translated.");
 
+/// What `rename_file` changes, under the action on the approval card.
+pub const RENAME_FILE_CHANGES: Word = Word::saying(
+    "files.verb.rename-file.changes",
+    "Gives one file a new name, in the folder it is in.",
+)
+.noting(
+    "Shown on the card a person answers before alo renames a file, beside a tick. It must stay \
+     exactly true: one file, the same folder, a new name. Held to that by a test that renames a \
+     real file.",
+);
+/// What `rename_file` leaves alone.
+pub const RENAME_FILE_LEAVES: Word = Word::saying(
+    "files.verb.rename-file.leaves",
+    "What is in it stays the same, and no other file is changed or replaced.",
+)
+.noting(
+    "Shown beside RENAME_FILE_CHANGES. 'Replaced' matters: if a file of the new name is already \
+     there, nothing happens and the person is told. Held to that by a test.",
+);
+/// What `move_file` changes.
+pub const MOVE_FILE_CHANGES: Word = Word::saying(
+    "files.verb.move-file.changes",
+    "Moves one file into another folder, keeping its name.",
+)
+.noting("Shown on the card a person answers before alo moves a file. Held to it by a test.");
+/// What `move_file` leaves alone.
+pub const MOVE_FILE_LEAVES: Word = Word::saying(
+    "files.verb.move-file.leaves",
+    "What is in it stays the same, and no other file is changed or replaced.",
+)
+.noting(
+    "Shown beside MOVE_FILE_CHANGES. If a file of that name is already in the folder, nothing \
+     happens and the person is told. Held to it by a test.",
+);
+/// What `archive_folder` changes.
+pub const ARCHIVE_FOLDER_CHANGES: Word = Word::saying(
+    "files.verb.archive-folder.changes",
+    "Makes one new file: an archive of the folder.",
+)
+.noting(
+    "Shown on the card a person answers before alo makes an archive. 'Archive' is a single file \
+     holding copies of what is in the folder. Held to it by a test.",
+);
+/// What `archive_folder` leaves alone.
+pub const ARCHIVE_FOLDER_LEAVES: Word = Word::saying(
+    "files.verb.archive-folder.leaves",
+    "The folder and everything in it stay as they are, and no file is replaced.",
+)
+.noting(
+    "Shown beside ARCHIVE_FOLDER_CHANGES. The original folder is copied, never moved or \
+     emptied. Held to it by a test.",
+);
+
 /// Every plain string this crate can say, in the order a translator meets them:
 /// what the machine could not do, what could not be followed, what a refusal
 /// says, and then the six verbs.
-pub const EVERY_WORD: [Word; 42] = [
+pub const EVERY_WORD: [Word; 48] = [
     NOT_A_FILE_VERB,
     MISSING,
     NOT_A_FOLDER,
@@ -427,6 +480,12 @@ pub const EVERY_WORD: [Word; 42] = [
     ARCHIVE_FOLDER_FOLDER,
     ARCHIVE_FOLDER_INTO,
     ARCHIVE_FOLDER_NAME,
+    RENAME_FILE_CHANGES,
+    RENAME_FILE_LEAVES,
+    MOVE_FILE_CHANGES,
+    MOVE_FILE_LEAVES,
+    ARCHIVE_FOLDER_CHANGES,
+    ARCHIVE_FOLDER_LEAVES,
 ];
 
 /// Why this crate's own words could not be declared.

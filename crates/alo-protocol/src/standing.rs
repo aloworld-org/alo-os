@@ -67,6 +67,14 @@ pub struct Standing {
     /// written before it reads back exactly as it was written.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     touches: Vec<crate::Touched>,
+    /// What the change changes, in one short sentence the verb declares
+    /// (`alo_capability::Verb::changing`), in the language the person reads.
+    /// Added 2026-11-01, additively: absent for a verb that says none.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    changes: Option<Wording>,
+    /// What the change leaves alone, likewise.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    leaves: Option<Wording>,
 }
 
 impl Standing {
@@ -92,7 +100,29 @@ impl Standing {
                 .iter()
                 .filter_map(crate::Touched::of)
                 .collect(),
+            changes: waiting
+                .proposal
+                .call()
+                .what_it_changes(strings)
+                .map(|said| Wording::of(&said)),
+            leaves: waiting
+                .proposal
+                .call()
+                .what_it_leaves(strings)
+                .map(|said| Wording::of(&said)),
         }
+    }
+
+    /// What the change changes, where its verb says.
+    #[must_use]
+    pub const fn changes(&self) -> Option<&Wording> {
+        self.changes.as_ref()
+    }
+
+    /// What the change leaves alone, where its verb says.
+    #[must_use]
+    pub const fn leaves(&self) -> Option<&Wording> {
+        self.leaves.as_ref()
     }
 
     /// Every file, folder and application this change touches — empty for one
