@@ -298,7 +298,11 @@ impl AnEntryShaped {
         canvas.fill(tile_area, px(tile_corner) as f32, palette.cool, 1.0);
         let inset = (px(tile) - px(icon)) / 2;
         let kinds_icon = match self.kind {
-            EntryKind::Changed | EntryKind::Else => ARecordIcon::Changed,
+            EntryKind::Changed => ARecordIcon::Changed,
+            // **The window's own clock, for what is none of the three**: a
+            // file would say a file changed, which a question answered here
+            // did not.
+            EntryKind::Else => ARecordIcon::WhatAloDid,
             EntryKind::Left => ARecordIcon::Sent,
             EntryKind::Refused => ARecordIcon::Refused,
         };

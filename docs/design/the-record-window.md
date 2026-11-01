@@ -40,7 +40,7 @@ stays 796 tall; the list scrolls.
 | between days | 26: the list's 10, the design's 6 spacer, 10 again |
 | an entry | 16 above and below, 20 either side, 16 between columns |
 | its time | SemiBold 13 / 18 `text/secondary`, a column 44 wide at the least |
-| its tile | 32 at corner 8, `bg/cool`, its 16 icon in the middle: a file for a change, an arrow out for what left, a circle struck through for a refusal |
+| its tile | 32 at corner 8, `bg/cool`, its 16 icon in the middle: a file for a change, an arrow out for what left, a circle struck through for a refusal — and for anything else the record keeps, a question answered here or an update, the window's own clock (a reading: the design draws only the three) |
 | its head | 22: the agent's 12 mark at 5 down, 6, its name SemiBold 13 in `accent/default`, 6, the clause SemiBold 14 / 22 `text/primary` |
 | its lines | Regular 14 / 22 `text/secondary`, 4 apart |
 | its marks | 4 below the lines, 16 tall: a 14 icon, 6, SemiBold 11 / 16 — *that you said yes* in `status/positive`, *Refused* in `status/danger`; 12 between |

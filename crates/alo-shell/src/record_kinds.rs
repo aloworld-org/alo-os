@@ -7,7 +7,8 @@
 //! record has twenty-eight outcomes (`alo_recounting::Outcome`), so this is an
 //! exhaustive match from those to the three and a fourth for everything else —
 //! a question answered here, a pairing, an update — which is drawn with the
-//! change's tile and no word. An outcome added to the record and not sorted
+//! window's own clock on its tile and no word, since a file would say a file
+//! changed. An outcome added to the record and not sorted
 //! here is a build that fails, never an entry with the wrong icon.
 //!
 //! # A count is not a summary
