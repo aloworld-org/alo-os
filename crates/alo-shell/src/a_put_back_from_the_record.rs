@@ -90,9 +90,7 @@ impl crate::Server {
         match answer {
             Ok(_) => {
                 if let Some(Ok(recounting)) = self.recounting.clone() {
-                    let read = self
-                        .record
-                        .pressed(crate::RecordKey::ReadAgain, &recounting);
+                    let read = self.record.put_back_is_done(&recounting);
                     self.the_record_answered(read);
                 }
             }

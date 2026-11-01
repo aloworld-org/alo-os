@@ -229,6 +229,13 @@ impl RecordWindow {
         None
     }
 
+    /// Something was put back: the record is read again, so the putting back
+    /// is its newest line, and the confirmation is gone. F5 does not do this
+    /// while the confirmation is open, which is why it is a door of its own.
+    pub fn put_back_is_done(&mut self, recounting: &Recounting) -> Option<RecordOpened> {
+        self.is_open().then(|| self.read(recounting))
+    }
+
     /// A key while the confirmation is open: Tab between its two buttons,
     /// Enter presses the one the keyboard is on, Escape is *Cancel*. Nothing
     /// moves the view behind it.
