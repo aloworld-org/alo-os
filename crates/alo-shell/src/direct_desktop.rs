@@ -1110,6 +1110,11 @@ impl LoopInput for Desk<'_> {
                 not_started.name()
             );
         }
+        // **And a window the person just opened comes in front**, with the
+        // keyboard: once a frame, after clients were heard, so a window that
+        // mapped this frame is drawn in front this frame
+        // (`crate::a_window_the_person_opened`).
+        server.what_the_person_opened_comes_in_front();
         server.put_aside_what_was_asked_for(self.desktop.the_panel());
         // **And the other direction, met in the same place and for the same reason.** A click
         // on a preview was claimed where input happens, because whether the panel owns a click

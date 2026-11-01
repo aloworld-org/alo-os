@@ -121,6 +121,9 @@ impl crate::Server {
     /// window is `Server::this_task_took_the_keyboard`'s, which calls this.
     pub(crate) fn the_person_went_to(&mut self, kind: AKindOfWindow) {
         self.which_is_in_front.comes_to_the_front(kind);
+        // An application started earlier does not take them away from here
+        // when its window comes (`crate::a_window_the_person_opened`).
+        self.the_person_waits_for_nothing();
         if kind != AKindOfWindow::TaskWindows {
             self.the_task_gave_the_keyboard_up();
         }
