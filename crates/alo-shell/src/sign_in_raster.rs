@@ -737,6 +737,18 @@ impl Measure {
         Metrics::new(28.0 * factor, 36.0 * factor)
     }
 
+    /// A grouped row's words and a note's: **14 on 22** (`562:368`, `562:395`).
+    pub(crate) fn metrics_of_a_row(&self) -> Metrics {
+        let factor = self.percent as f32 / 100.0;
+        Metrics::new(14.0 * factor, 22.0 * factor)
+    }
+
+    /// The label over a field in a grouped row: **13 on 18** (`562:485`).
+    pub(crate) fn field_label_metrics(&self) -> Metrics {
+        let factor = self.percent as f32 / 100.0;
+        Metrics::new(13.0 * factor, 18.0 * factor)
+    }
+
     /// What the row of essential actions is lettered at: the smallest text
     /// this screen draws, and still a readable size at every scale.
     pub(crate) fn label_metrics(&self) -> Metrics {

@@ -477,6 +477,7 @@ mod the_edge_takes_the_keyboard;
 /// The egress indicator's two arrows, from the design file's SVG.
 mod the_egress_indicators_arrows;
 pub mod the_first_start;
+mod the_first_starts_icons;
 mod the_formats_are_told;
 mod the_keyboard_a_person_chose;
 pub mod the_keyboard_picker;

@@ -30,6 +30,104 @@ pub(crate) struct TheSheetSays<'a> {
     pub(crate) introduction: &'a str,
     /// The way on, then the way back.
     pub(crate) actions: [&'a str; 2],
+    /// How the rows sit: each its own card, or grouped in one.
+    pub(crate) rows: crate::setup_sheet_layout::TheRowsAre,
+    /// The note under the rows and the icon before it, where the sheet has
+    /// one (`562:391`).
+    pub(crate) note: Option<(crate::the_first_starts_icons::AFirstStartIcon, &'a str)>,
+}
+
+/// How far the note's words sit in from its icon's start: `562:395` at 28.
+const THE_NOTES_WORDS_START_AT: u32 = 28;
+
+/// The note's icon: 16, 4 in (`562:392`).
+const THE_NOTES_ICON_IS: (u32, u32) = (16, 4);
+
+/// *Accessibility*'s icon, 16 at (17, 14), and its word at 41 (`562:350`).
+const ACCESSIBILITYS_ICON: (u32, u32, u32) = (16, 17, 14);
+
+/// Where *Accessibility*'s word starts in its control.
+const ACCESSIBILITYS_WORD_AT: u32 = 41;
+
+/// *Accessibility* in its control: the icon, then the word, in the ink on the
+/// control's own surface (`562:350`).
+pub(crate) fn accessibility(
+    drawn: &mut SignInPicture,
+    fonts: &mut FontSystem,
+    words: &alo_strings::Strings,
+    at: Rectangle<i32, Physical>,
+    colours: TheColours,
+    measure: &Measure,
+) {
+    let (side, x, y) = ACCESSIBILITYS_ICON;
+    let px = |logical: u32| measure.px(i32::try_from(logical).unwrap_or(i32::MAX));
+    drawn.inked.extend(
+        crate::the_first_starts_icons::AFirstStartIcon::Accessibility.inked(
+            Rectangle::new(
+                (at.loc.x + px(x), at.loc.y + px(y)).into(),
+                (px(side), px(side)).into(),
+            ),
+            colours.entry,
+            colours.ink,
+        ),
+    );
+    let word = words.say(
+        &crate::sign_in_words::ACCESSIBILITY.key(),
+        &alo_strings::Filling::nothing(),
+    );
+    let shaped = sentence(
+        fonts,
+        word.text(),
+        (at.size.w - px(ACCESSIBILITYS_WORD_AT)).max(1),
+        measure.label_metrics(),
+        colours.entry,
+        colours.ink,
+    )
+    .cropped_to_its_ink();
+    let down = (at.size.h - shaped.height).max(0) / 2;
+    let height = drawn.size.1;
+    drawn.inked.extend(shaped.placed(
+        at.loc.x + px(ACCESSIBILITYS_WORD_AT),
+        at.loc.y + down,
+        height,
+    ));
+}
+
+/// The note under a sheet's rows: its icon, then its words, in the muted ink on
+/// the sheet's ground (`562:391`).
+pub(crate) fn a_note(
+    drawn: &mut SignInPicture,
+    fonts: &mut FontSystem,
+    (icon, said): (crate::the_first_starts_icons::AFirstStartIcon, &str),
+    at: Rectangle<i32, Physical>,
+    colours: TheColours,
+    measure: &Measure,
+) {
+    let px = |logical: u32| measure.px(i32::try_from(logical).unwrap_or(i32::MAX));
+    let (side, inset) = THE_NOTES_ICON_IS;
+    drawn.inked.extend(icon.inked(
+        Rectangle::new(
+            (at.loc.x + px(inset), at.loc.y + px(3)).into(),
+            (px(side), px(side)).into(),
+        ),
+        colours.ground,
+        colours.muted,
+    ));
+    let shaped = sentence(
+        fonts,
+        said,
+        (at.size.w - px(THE_NOTES_WORDS_START_AT)).max(1),
+        measure.metrics_of_a_row(),
+        colours.ground,
+        colours.muted,
+    )
+    .cropped_to_its_ink();
+    let height = drawn.size.1;
+    drawn.inked.extend(shaped.placed(
+        at.loc.x + px(THE_NOTES_WORDS_START_AT),
+        at.loc.y,
+        height,
+    ));
 }
 
 /// **A sheet with up to `rows` rows, its words lettered and its cards drawn**

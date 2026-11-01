@@ -207,7 +207,11 @@ mod a_chosen_row_is_two_pixels_of_ink {
             &at,
             (at.sheet.size.w, at.sheet.size.h),
             designed(),
-            crate::setup_sheet_surface::TheMarks { chosen, ring: None },
+            crate::setup_sheet_surface::TheMarks {
+                chosen,
+                ring: None,
+                fields: crate::setup_sheet_surface::TheFields::None,
+            },
             Scale::from(1.0),
         )
         .expect("a sheet with area draws");

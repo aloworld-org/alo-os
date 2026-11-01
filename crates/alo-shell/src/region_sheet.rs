@@ -96,6 +96,7 @@ pub(crate) fn drawn(
                         Some(crate::setup_sheet_surface::TheRing::OnAnAction(0))
                     }
                 },
+                fields: crate::setup_sheet_surface::TheFields::None,
             },
             Scale::from(measure.display().factor()),
         ),

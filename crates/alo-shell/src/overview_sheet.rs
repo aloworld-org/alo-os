@@ -57,6 +57,7 @@ pub(crate) fn drawn(
         |rows| TheMarks {
             chosen: None,
             ring: ring(rows),
+            fields: crate::setup_sheet_surface::TheFields::None,
         },
         fonts,
         words,

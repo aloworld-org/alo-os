@@ -79,6 +79,17 @@ pub enum TheRowsAre {
     Grouped(i32),
 }
 
+/// The field inside a grouped row: 15 in from the row's leading side, 17 from
+/// its trailing one, and 41 down,
+/// 48 tall — `562:486` at (16, 42) in a card whose rows start one in.
+#[must_use]
+pub fn the_field_in(row: Rectangle<i32, Logical>) -> Rectangle<i32, Logical> {
+    Rectangle::new(
+        Point::from((row.loc.x + 15, row.loc.y + 41)),
+        Size::from(((row.size.w - 32).max(0), 48)),
+    )
+}
+
 /// The gaps of a grouped sheet, measured off `562:356`: 12 under the eyebrow
 /// and under the title, 28 under the introduction, 12 under the card and 28
 /// under the note.
