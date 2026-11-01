@@ -29,8 +29,16 @@ fn the_top_corners_are_rounded_and_the_bottom_ones_are_not() {
     let (r, b) = (l + drawn.area.size.w - 1, t + drawn.area.size.h - 1);
     assert_eq!(pixel(&drawn, l, t)[3], 0, "the top-left corner is cut");
     assert_eq!(pixel(&drawn, r, t)[3], 0, "the top-right corner is cut");
-    assert_eq!(pixel(&drawn, l, b)[3], 255, "the bottom-left corner is square");
-    assert_eq!(pixel(&drawn, r, b)[3], 255, "the bottom-right corner is square");
+    assert_eq!(
+        pixel(&drawn, l, b)[3],
+        255,
+        "the bottom-left corner is square"
+    );
+    assert_eq!(
+        pixel(&drawn, r, b)[3],
+        255,
+        "the bottom-right corner is square"
+    );
 }
 
 /// **The ground and the line are the look's.**
@@ -38,7 +46,11 @@ fn the_top_corners_are_rounded_and_the_bottom_ones_are_not() {
 fn the_focused_strip_is_white_and_every_other_is_cream() {
     for (look, ground, line) in [
         (WhichLook::Focused, [0xFF, 0xFF, 0xFF], [0xCB, 0xD5, 0xE1]),
-        (WhichLook::NotFocused, [0xFA, 0xF7, 0xF2], [0xE7, 0xEB, 0xEF]),
+        (
+            WhichLook::NotFocused,
+            [0xFA, 0xF7, 0xF2],
+            [0xE7, 0xEB, 0xEF],
+        ),
     ] {
         let drawn = the_strip(strip(), 1.0, look, (1440, 960)).expect("on the display");
         let middle = pixel(&drawn, 672 + 360, 132 + 16);
@@ -52,8 +64,8 @@ fn the_focused_strip_is_white_and_every_other_is_cream() {
 #[test]
 fn the_strip_reaches_the_line_round_the_window() {
     for (scale, wider) in [(1.0, 1), (2.0, 2)] {
-        let drawn = the_strip(strip(), scale, WhichLook::NotFocused, (2880, 1920))
-            .expect("on the display");
+        let drawn =
+            the_strip(strip(), scale, WhichLook::NotFocused, (2880, 1920)).expect("on the display");
         assert_eq!(drawn.area.loc.x, 672 - wider);
         assert_eq!(drawn.area.size.w, 720 + wider * 2);
         assert_eq!(drawn.area.size.h, 32);

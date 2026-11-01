@@ -157,10 +157,8 @@ pub(crate) fn raster(
     let mut pixels = Vec::with_capacity(usize::try_from(w * h * 4).unwrap_or(0));
     for y in 0..h {
         for x in 0..w {
-            let ([red, green, blue], alpha) = pixel(
-                (area.loc.x + x) as f32 + 0.5,
-                (area.loc.y + y) as f32 + 0.5,
-            );
+            let ([red, green, blue], alpha) =
+                pixel((area.loc.x + x) as f32 + 0.5, (area.loc.y + y) as f32 + 0.5);
             #[expect(
                 clippy::cast_possible_truncation,
                 clippy::cast_sign_loss,

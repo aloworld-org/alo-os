@@ -91,7 +91,7 @@ fn only_the_hovered_control_is_highlighted() {
             hovered: Some(OnTheEdge::Maximise),
             focused: None,
         },
-    WhichLook::Focused,
+        WhichLook::Focused,
     );
     let highlights: Vec<_> = edge
         .controls
@@ -131,7 +131,7 @@ fn only_close_and_only_hovered_is_danger_coloured() {
                 hovered: Some(hovered),
                 focused: None,
             },
-        WhichLook::Focused,
+            WhichLook::Focused,
         );
         assert!(
             !colours(&drawn).contains(&DANGER),
@@ -145,7 +145,7 @@ fn only_close_and_only_hovered_is_danger_coloured() {
             hovered: Some(OnTheEdge::Close),
             focused: None,
         },
-    WhichLook::Focused,
+        WhichLook::Focused,
     );
     assert!(
         colours(&closing).contains(&DANGER),
@@ -180,7 +180,7 @@ fn nothing_on_the_edge_is_ever_teal() {
                         hovered,
                         focused: hovered,
                     },
-                WhichLook::Focused,
+                    WhichLook::Focused,
                 );
                 for teal in TEAL {
                     assert!(
@@ -229,7 +229,10 @@ fn an_unfocused_windows_controls_are_muted_and_keep_their_size() {
     );
     let focused = solids(&edge, Pointing::default(), WhichLook::Focused);
     let quiet = solids(&edge, Pointing::default(), WhichLook::NotFocused);
-    assert!(colours(&focused).contains(&(0x10, 0x2A, 0x43)), "text/primary");
+    assert!(
+        colours(&focused).contains(&(0x10, 0x2A, 0x43)),
+        "text/primary"
+    );
     assert!(!colours(&quiet).contains(&(0x10, 0x2A, 0x43)), "no navy");
     assert!(colours(&quiet).contains(&(0x59, 0x6B, 0x78)), "text/muted");
     let shapes = |drawn: &[Solid]| drawn.iter().map(|(rect, _)| *rect).collect::<Vec<_>>();
@@ -258,7 +261,7 @@ fn nothing_is_drawn_over_the_application() {
                 hovered: Some(OnTheEdge::Close),
                 focused: Some(OnTheEdge::Close),
             },
-        WhichLook::Focused,
+            WhichLook::Focused,
         );
         for (rect, _) in &drawn {
             assert!(
@@ -294,7 +297,7 @@ fn no_window_buttons_are_drawn_for_an_application_that_has_its_own() {
             hovered: Some(OnTheEdge::Close),
             focused: None,
         },
-    WhichLook::Focused,
+        WhichLook::Focused,
     );
     assert_eq!(drawn, closing, "a control that is not there was drawn");
 }
@@ -335,7 +338,7 @@ fn the_focus_ring_is_the_whole_target_and_two_units_thick() {
             hovered: None,
             focused: Some(OnTheEdge::Close),
         },
-    WhichLook::Focused,
+        WhichLook::Focused,
     );
     let quiet = solids(
         &edge,
@@ -343,7 +346,7 @@ fn the_focus_ring_is_the_whole_target_and_two_units_thick() {
             hovered: None,
             focused: None,
         },
-    WhichLook::Focused,
+        WhichLook::Focused,
     );
     // Everything the ring added, and nothing else: the difference between the
     // two draws rather than a guess at which solids are the ring.
@@ -423,7 +426,7 @@ fn hover_still_fills_the_thirty_two_by_twenty_eight() {
             hovered: Some(OnTheEdge::Close),
             focused: None,
         },
-    WhichLook::Focused,
+        WhichLook::Focused,
     );
     assert!(
         drawn

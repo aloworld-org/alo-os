@@ -30,7 +30,11 @@ impl Dispatch<WlSurface, ()> for Identities {
 }
 
 /// A window no pointer has ever been near, and what keeps it alive.
-fn a_window() -> (Display<Identities>, std::os::unix::net::UnixStream, WlSurface) {
+fn a_window() -> (
+    Display<Identities>,
+    std::os::unix::net::UnixStream,
+    WlSurface,
+) {
     let display = Display::<Identities>::new().expect("a display");
     let mut handle = display.handle();
     let (socket, peer) = std::os::unix::net::UnixStream::pair().expect("a socket pair");

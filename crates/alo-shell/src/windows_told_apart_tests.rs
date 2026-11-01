@@ -57,10 +57,18 @@ struct AWindow {
 fn three_windows(at_1440: bool) -> Vec<AWindow> {
     let (terminal, task, dolphin) = if at_1440 {
         // `557:148`, `557:176`, `557:212`, each body 44 below its frame.
-        ((48, 116, 560, 476), (624, 116, 768, 516), (672, 164, 720, 556))
+        (
+            (48, 116, 560, 476),
+            (624, 116, 768, 516),
+            (672, 164, 720, 556),
+        )
     } else {
         // `557:300`, `557:328`, `557:364`.
-        ((40, 108, 496, 408), (552, 108, 688, 436), (600, 156, 640, 496))
+        (
+            (40, 108, 496, 408),
+            (552, 108, 688, 436),
+            (600, 156, 640, 496),
+        )
     };
     let rect = |(x, y, w, h): (i32, i32, i32, i32)| {
         Rectangle::new(Point::from((x, y)), Size::from((w, h)))
@@ -265,7 +273,10 @@ fn the_three_windows_are_told_apart_at_both_sizes() {
         // window's white.
         let task = &windows[1];
         let top = dolphin.body.loc.y - 32;
-        assert!(top > task.body.loc.y, "the premise: Dolphin's strip is over the task window");
+        assert!(
+            top > task.body.loc.y,
+            "the premise: Dolphin's strip is over the task window"
+        );
         assert_eq!(
             at(&frame, size, dolphin.body.loc.x + 360, top),
             [0xCB, 0xD5, 0xE1]
@@ -297,8 +308,14 @@ fn each_title_is_inked_in_its_looks_colours() {
     };
     let terminal = ink(&pictures[0]);
     let dolphin = ink(&pictures[2]);
-    assert!(!terminal.is_empty() && !dolphin.is_empty(), "both titles drawn");
+    assert!(
+        !terminal.is_empty() && !dolphin.is_empty(),
+        "both titles drawn"
+    );
     assert!(dolphin.contains(&[0x10, 0x2A, 0x43]), "navy on the focused");
-    assert!(!terminal.contains(&[0x10, 0x2A, 0x43]), "no navy on the other");
+    assert!(
+        !terminal.contains(&[0x10, 0x2A, 0x43]),
+        "no navy on the other"
+    );
     assert!(terminal.contains(&[0x59, 0x6B, 0x78]), "muted on the other");
 }

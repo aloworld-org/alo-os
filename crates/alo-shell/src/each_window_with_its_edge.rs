@@ -86,22 +86,23 @@ pub(crate) fn uploaded<R>(
 where
     R: Renderer + ImportMem,
 {
-    let mut upload = |rasters: &[crate::painted::Washed]| -> Result<Uploaded<R::TextureId>, RenderError> {
-        rasters
-            .iter()
-            .map(|raster| {
-                renderer
-                    .import_memory(
-                        &raster.pixels,
-                        Fourcc::Abgr8888,
-                        (raster.area.size.w, raster.area.size.h).into(),
-                        false,
-                    )
-                    .map(|texture| (texture, raster.area))
-                    .map_err(|error| RenderError::Submission(error.to_string()))
-            })
-            .collect()
-    };
+    let mut upload =
+        |rasters: &[crate::painted::Washed]| -> Result<Uploaded<R::TextureId>, RenderError> {
+            rasters
+                .iter()
+                .map(|raster| {
+                    renderer
+                        .import_memory(
+                            &raster.pixels,
+                            Fourcc::Abgr8888,
+                            (raster.area.size.w, raster.area.size.h).into(),
+                            false,
+                        )
+                        .map(|texture| (texture, raster.area))
+                        .map_err(|error| RenderError::Submission(error.to_string()))
+                })
+                .collect()
+        };
     edges
         .iter()
         .map(|edge| {

@@ -114,7 +114,6 @@ mod a_task_windows_edge;
 mod a_wheel_over_a_sheet;
 mod a_window_onto_a_list;
 mod a_window_raised;
-mod each_window_with_its_edge;
 /// alo's words read for the emphasis a model marks in Markdown.
 ///
 /// **Public because `task_text::WhatWasSaid` carries its marks**, as
@@ -122,6 +121,7 @@ mod each_window_with_its_edge;
 pub mod alos_marked_words;
 /// Closing a task window, and which ones may close.
 pub mod closing_a_task_window;
+mod each_window_with_its_edge;
 pub use a_provider_is_added_in_settings::WhyNotSaved;
 mod a_reader_presses;
 pub use a_reader_presses::WhatAReaderPressCameTo;
@@ -526,9 +526,9 @@ mod the_terminals_frame;
 /// where the shell runs, and who is signed in.
 mod the_terminals_strip;
 mod the_title_strip_drawn;
-mod the_window_titles_shown;
 mod the_window_edge_is_pointed_at;
 mod the_window_edge_reveals;
+mod the_window_titles_shown;
 mod the_zone_a_person_chose;
 pub mod the_zone_picker;
 pub mod the_zone_through_timedated;
@@ -667,9 +667,9 @@ pub use window_edge::{
 /// **The keyboard's road onto the edge itself**, which is what opens the menu
 /// and what holds the edge revealed while a person is using it.
 pub use window_edge_keys::{AnEdgeKey, TheKeyboardOnTheEdge, WhatTheEdgeKeyDid};
+pub use window_edge_look::{EdgeColours, WhichLook};
 pub use window_edge_paint::{Pointing, Solid, solids};
 /// One window edge, laid out in owned pixels and ready for a frame.
-pub use window_edge_look::{EdgeColours, WhichLook};
 pub use window_edge_picture::{EdgePicture, OverTheEdge, TheWindow};
 /// **What a pointer is on, when it is on a window's edge** - the step
 /// between a position and the control a press acts on. Nothing asked it

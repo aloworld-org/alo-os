@@ -75,8 +75,8 @@ pub(crate) fn the_strip(
                     clippy::cast_sign_loss,
                     reason = "a blend of two bytes stays a byte"
                 )]
-                let it = (f32::from(edge) * (1.0 - within) + f32::from(fill) * within).round()
-                    as u8;
+                let it =
+                    (f32::from(edge) * (1.0 - within) + f32::from(fill) * within).round() as u8;
                 it
             };
             let [er, eg, eb] = colours.edge;

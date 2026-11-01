@@ -57,7 +57,6 @@ use crate::window_edge_look::WhichLook;
 /// One rectangle to fill, and what to fill it with.
 pub type Solid = (Rectangle<i32, Logical>, Colour);
 
-
 /// How thick the keyboard-focus ring is.
 ///
 /// **Two, and not the strip's one-unit line.** Measured from `414:27609` on
@@ -252,7 +251,6 @@ fn outline_of(around: Rectangle<i32, Logical>, ink: Role) -> Vec<Solid> {
         ),
     ]
 }
-
 
 #[cfg(test)]
 #[path = "window_edge_paint_tests.rs"]

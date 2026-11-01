@@ -526,11 +526,9 @@ mod running {
                 std::env::var_os("HOME").as_deref(),
             )
             .map_or_else(alo_appearance::WindowTitles::default, |folder| {
-                alo_appearance::keeping::at_sign_in(
-                    &folder.join(alo_appearance::keeping::THE_FILE),
-                )
-                .0
-                .window_titles()
+                alo_appearance::keeping::at_sign_in(&folder.join(alo_appearance::keeping::THE_FILE))
+                    .0
+                    .window_titles()
             });
             Ok(Self {
                 layout_at,

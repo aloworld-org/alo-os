@@ -70,7 +70,10 @@ fn the_line_is_the_pixel_next_to_the_window_in_the_looks_colour() {
         }
         // Two out is the shadow, not the line.
         let beyond = pixel(&bands, window.loc.x - 2, mid_y).expect("further left");
-        assert_ne!(beyond[3], 255, "{look:?}: the line is one pixel and no more");
+        assert_ne!(
+            beyond[3], 255,
+            "{look:?}: the line is one pixel and no more"
+        );
     }
 }
 
@@ -98,12 +101,19 @@ fn the_focused_windows_shadow_is_deeper_below_it() {
     let window = dolphin();
     let below = (window.loc.x + 360, window.loc.y + window.size.h + 12);
     let alpha = |look| {
-        pixel(&round_the_window(window, 1.0, look, (1440, 960)), below.0, below.1)
-            .expect("below the window")[3]
+        pixel(
+            &round_the_window(window, 1.0, look, (1440, 960)),
+            below.0,
+            below.1,
+        )
+        .expect("below the window")[3]
     };
     let (high, low) = (alpha(WhichLook::Focused), alpha(WhichLook::NotFocused));
     assert!(high > 0 && low > 0, "{high} {low}");
-    assert!(high > low, "focused {high} is not deeper than unfocused {low}");
+    assert!(
+        high > low,
+        "focused {high} is not deeper than unfocused {low}"
+    );
 }
 
 /// **Nothing is drawn off the display**, so a window at its edge loses its
@@ -112,7 +122,11 @@ fn the_focused_windows_shadow_is_deeper_below_it() {
 fn a_window_at_the_displays_edge_keeps_its_rasters_on_it() {
     let at_the_corner = Rectangle::new((0, 0).into(), (300, 200).into());
     for band in round_the_window(at_the_corner, 1.0, WhichLook::Focused, (1280, 800)) {
-        assert!(band.area.loc.x >= 0 && band.area.loc.y >= 0, "{:?}", band.area);
+        assert!(
+            band.area.loc.x >= 0 && band.area.loc.y >= 0,
+            "{:?}",
+            band.area
+        );
         assert!(band.area.loc.x + band.area.size.w <= 1280);
         assert!(band.area.loc.y + band.area.size.h <= 800);
     }
