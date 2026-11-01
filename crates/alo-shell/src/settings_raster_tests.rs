@@ -400,3 +400,28 @@ fn the_dark_window_is_the_dark_frames_colours() {
         );
     }
 }
+
+/// **The keyboard's outline is no bigger than what it marks.** On opening,
+/// the chosen category has the keyboard; its outline is drawn on the pill's
+/// own edge, and the column just outside the pill is the column's own ground —
+/// not a navy halo reaching past it, which is what it was until 2026-11-01.
+#[test]
+fn the_keyboards_outline_stays_on_the_row_it_marks() {
+    let machine = a_persons_machine("no-halo");
+    let window = machine.opened();
+    for size in [(1440, 960), (1280, 800)] {
+        let drawn = drawn_at(&window, size, light());
+        let chosen = drawn.focused.unwrap();
+        let mid_y = chosen.loc.y + chosen.size.h / 2;
+        // Navy on the pill's own left edge.
+        let on_the_edge = pixel(&drawn, chosen.loc.x, mid_y);
+        let outside = pixel(&drawn, chosen.loc.x - 2, mid_y);
+        let ink = SettingsPalette::of(light()).unwrap().ink;
+        assert_eq!(&on_the_edge[..3], &ink[..], "{size:?}: the outline is on the edge");
+        assert_ne!(
+            &outside[..3],
+            &ink[..],
+            "{size:?}: the outline reaches outside the row it marks"
+        );
+    }
+}
