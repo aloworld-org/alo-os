@@ -483,6 +483,7 @@ fn main() -> std::process::ExitCode {
     };
 
     let mut refused: Vec<&str> = Vec::new();
+    let mut last_words: Vec<String> = Vec::new();
     for named in EVERY_SUBMODE {
         let Ok(me) = std::env::current_exe() else {
             eprintln!("this program cannot find itself, so it cannot run its own sub-modes");
@@ -515,12 +516,34 @@ fn main() -> std::process::ExitCode {
                 // repository does not pin.
                 .env("LIBGL_ALWAYS_SOFTWARE", "1");
         }
-        match child.status() {
-            Ok(status) if status.success() => eprintln!("{named}: passed"),
-            Ok(_) => refused.push(named),
+        // **Its output is kept as well as shown**, so a refusal can carry the
+        // child's own last words into the line a gate reports — see below.
+        match child.stderr(Stdio::piped()).output() {
+            Ok(done) => {
+                print!("{}", String::from_utf8_lossy(&done.stdout));
+                let said = String::from_utf8_lossy(&done.stderr).into_owned();
+                eprint!("{said}");
+                if done.status.success() {
+                    eprintln!("{named}: passed");
+                } else {
+                    refused.push(named);
+                    last_words.push(format!(
+                        "{named}: {}",
+                        said.lines()
+                            .rev()
+                            .take(8)
+                            .collect::<Vec<_>>()
+                            .into_iter()
+                            .rev()
+                            .collect::<Vec<_>>()
+                            .join(" / ")
+                    ));
+                }
+            }
             Err(why) => {
                 eprintln!("{named} could not be started as a child: {why}");
                 refused.push(named);
+                last_words.push(format!("{named}: could not be started: {why}"));
             }
         }
         // Removed only now, after the child that stood in it has gone.
@@ -537,5 +560,18 @@ fn main() -> std::process::ExitCode {
         "nested fixtures refused: {refused:?} — each ran as its own process above, \
          and its own output says why"
     );
-    std::process::ExitCode::FAILURE
+    // **And once more as a panic, on one line.** A gate's summary carries a
+    // test's panic and not its error stream, so until 2026-11-01 a refused
+    // fixture reached a reader of the gate as a name and nothing else — which
+    // cost a lane a round of guessing at which of twenty-odd it was.
+    the_gate_is_told(&last_words)
+}
+
+/// End the run with every refused fixture's last words, as a panic.
+#[expect(
+    clippy::panic,
+    reason = "a panic is the one line a gate's summary carries, which is the point"
+)]
+fn the_gate_is_told(last_words: &[String]) -> ! {
+    panic!("nested fixtures refused: {}", last_words.join(" | "));
 }

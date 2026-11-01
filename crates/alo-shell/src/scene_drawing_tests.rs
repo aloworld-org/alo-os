@@ -64,8 +64,13 @@ fn the_terminal_is_painted_where_a_window_is_under_every_surface_of_alos() {
 fn the_windows_are_painted_in_the_order_the_person_put_them_in() {
     let the_loop = painted_at("for kind in native.in_front.bottom_to_top()");
     let the_desktop = painted_at("desktop.paint(&mut frame, &washed, the_tasks_are_in_front)");
+    // **Each application window is painted with its own edge** since the
+    // owner's answer of 2026-11-01 (`crate::each_window_with_its_edge`): its
+    // elements one window at a time, then whatever was imported after the
+    // last window. Both are inside the loop.
     for call in [
-        "draw_render_elements(&mut frame, zoom, &drawing.elements, &[damage])",
+        "draw_render_elements(&mut frame, zoom, elements, &[damage])",
+        "draw_render_elements(&mut frame, zoom, rest, &[damage])",
         "terminal.paint(&mut frame, terminal_washed.as_ref())",
         "desktop.paint_the_tasks(&mut frame, &washed)",
         "task_edge.paint(&mut frame)",

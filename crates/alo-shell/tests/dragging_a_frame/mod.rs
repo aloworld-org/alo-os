@@ -34,10 +34,13 @@ use smithay::{
     reexports::wayland_server::protocol::wl_surface::WlSurface,
 };
 
-/// A real display with a pointer on its seat.
+/// A real display with a pointer on its seat, its window titles shown only
+/// when a person points at them — the resting edge these drags are made on,
+/// for the reason `a_frame_is_never_lost_while_dragging::fixture` gives.
 fn fixture() -> Fixture {
     let f = Fixture::keyboard();
     assert!(f.backend(|s| s.enable_pointer()).is_ok());
+    f.backend(|s| s.the_window_titles_are(alo_appearance::WindowTitles::WhenPointedAt));
     f
 }
 

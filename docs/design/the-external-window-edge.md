@@ -281,6 +281,94 @@ tooltip that appears on hover is evidence for exactly one of them.
 
 > Do not mark this complete merely because the drawing component exists.
 
+## Round 2: the title kept visible, and windows told apart — 2026-11-01
+
+**The owner approved the round-2 designs on 2026-11-01** — page `Proposed ·
+Every screen premium · 2026-11-01` (`554:2`): the frames `557:144` (1440 × 960)
+and `557:296` (1280 × 800), the rules board `557:456`, and the parts `554:5`.
+The owner's answer, recorded in `docs/features.md`: *window titles are always
+visible on every window's edge, with the app's icon; Settings offers "show the
+title only when I point at it". The focused window has its own look; unfocused
+windows use the cream strip, muted title and low shadow. Application content is
+never dimmed.*
+
+**What it changes in this document.** *Reveal* above is now the edge of a
+person who chose *show the title only when I point at it*
+(`alo_appearance::WindowTitles::WhenPointedAt`); as this release ships, every
+shell-decorated window's edge is drawn shown, and `Revealing` keeps running so
+the other choice works from the next frame. Nothing about the 44-tall region,
+the 32-tall strip, the 44 × 44 targets or the trailing walk moved.
+
+### Measured off the live file on 2026-11-01
+
+`Proposed / Window edge (title kept visible)`, `554:56`, two variants, each
+640 × 44 — a specimen width, as 600 was:
+
+| | node | figure |
+|---|---|---|
+| strip | `554:25`, `554:41` | 640 × 32 at y 12; corners **[10, 10, 0, 0]**; stroke 1, inside |
+| icon | `554:26` | **16 × 16 at (14, 20)**, its own tile at corner 4 |
+| title | `554:30` | at **(38, 19)**, Manrope SemiBold 13 on 18 |
+| Minimise, Maximise, Close | `554:31`, `554:34`, `554:37` | 44 × 44 at 496, 544, 592 — the same trailing walk; artwork 14 × 14 at (15, 21) |
+
+| | focused (`554:24`) | not focused (`554:40`) |
+|---|---|---|
+| strip | `#ffffff` `bg/surface` | `#faf7f2` `bg/canvas` |
+| strip's line | `#cbd5e1` `border/strong` | `#e7ebef` `border/default` |
+| title and control ink | `#102a43` `text/primary` | `#596b78` `text/muted` |
+
+And the body under it, `557:213` (focused) and `557:149` (not):
+
+| | focused | not focused |
+|---|---|---|
+| line | 1, `#cbd5e1`, inside | 1, `#e7ebef`, inside |
+| shadow | `#07131f` at 14 %, 0 / 16, blur 40, spread −4 | `#07131f` at 8 %, 0 / 8, blur 24, spread 0 |
+| corners | 18 | 18 |
+
+**Every figure is logical** and reaches a display through its scale once, at
+`EdgePicture::of`. The 1280 frame draws the same parts at the same sizes on
+narrower windows (496, 688, 640 against 560, 768, 720), so nothing here is a
+proportion of the frame; the widths are the windows' own.
+
+### Readings taken, each for the owner to overrule
+
+- **The icon sits in the Move target's place, and Move stays.** The approved
+  edge draws no Move glyph; the icon is at 14, inside the 44 × 44 target at 4,
+  and the title follows at 38. Pressing there still moves the window, and the
+  keyboard and a reader still reach *Move the window* — taking that control
+  away would be withdrawing a road a person had (law 5). Where this machine
+  knows no icon for an application, the grip's mark is drawn instead, so the
+  target is never an empty square.
+- **The body's corners stay square on an application's window.** The design
+  rounds the body at 18 on a mock-up of content. On a real application that
+  would cut off the pixels it drew in its corners, which the same board
+  forbids: *the application's own content is never dimmed, cropped or
+  recoloured*. So the line is drawn **outside** the window, the shadow round
+  that, and the strip's top corners carry the rounding. alo's own windows,
+  which draw their own bodies, keep their corners.
+- **`border/strong` is used, not adopted.** It is the one colour here outside
+  the twelve roles; `crate::window_edge_look` names it once.
+- **A task window's edge wears the focused look while it is the window the
+  keys go to**, and the unfocused one otherwise; it still carries Close alone
+  and no title of alo's (`a_task_windows_edge`).
+
+### What was wrong with how edges were drawn, found on the way
+
+Every client was painted first and every edge after it, so the edge of a window
+at the back was drawn **over** the window in front. An edge seen only under the
+pointer hid that; one always shown would have cut across every overlapping pair
+of windows. The painter now walks the windows from the back and draws each with
+its own edge (`crate::each_window_with_its_edge`). This makes the approved frame
+true rather than adding to it: `557:144` draws Dolphin covering the strip of the
+window behind it.
+
+### Not yet true on a booted machine
+
+- **alo's own terminal has no edge yet** — `the-terminal-window.md` records why
+  (*not yet a window on the canvas that any of those could act on*), and the
+  approved frame draws one. It is the next piece, not this one.
+- **The dark appearance is not drawn**: `557:*` are light frames only.
+
 ## What this supersedes — settled 2026-10-09
 
 An earlier version of this document said the internal 48px band and this edge

@@ -105,6 +105,14 @@ pub(crate) fn every_windows_edge(
                 )
                 .map(|menu| (menu, in_the_menu.on()))
             });
+            // **Which window it is, for how its edge looks**: the one the
+            // person's typing goes to wears the focused look (`557:456`), and
+            // every window is framed by alo's line and shadow, drawn round its
+            // own rectangle and never over it.
+            let artwork = std::sync::Arc::clone(&server.what_each_application_draws);
+            let icon = server
+                .the_application_of(surface)
+                .and_then(|application| artwork.of(&application));
             EdgePicture::of(
                 &edge,
                 pointing,
@@ -125,11 +133,19 @@ pub(crate) fn every_windows_edge(
                     // thing to focusing the title until a tab stop exists for it.
                     showing: the_reason_to_show_the_whole_title(server, &edge, keyboard),
                 },
-                title.its_own_words(),
+                crate::window_edge_picture::TheWindow {
+                    title: title.its_own_words(),
+                    look: crate::window_edge_look::WhichLook::of(
+                        server.is_the_window_typing_goes_to(surface),
+                    ),
+                    icon,
+                    body: Some(window),
+                },
                 &mut labels.fonts,
                 output,
                 scale,
             )
+            .map(|picture| picture.on_the_window(surface.clone()))
         })
         .collect()
 }

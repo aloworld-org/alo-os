@@ -214,7 +214,9 @@ impl crate::Server {
                     scale,
                 ),
                 decorations,
-                was.is_revealed(),
+                // **Laid out as it is drawn**: shown, where titles are always
+                // shown, so a pointer arriving on Close is on Close.
+                was.is_revealed() || self.window_titles.are_always_shown(),
                 room,
             );
             // **Two of §5's four conditions, fed from §6.** Read before the
@@ -245,12 +247,19 @@ impl crate::Server {
     /// **`false` for a window nothing has told about a pointer yet**, which is
     /// the same answer as concealed and is the honest one: an edge is covered
     /// until something reveals it, and `Revealing::covered` is that state.
+    ///
+    /// **Always, while the person's titles are always shown** — the owner's
+    /// answer of 2026-11-01, and what this release ships. The machine below
+    /// still runs either way, so a person who chooses *show the title only
+    /// when I point at it* gets the edge §5 describes from the next frame.
     #[must_use]
     pub fn is_this_windows_edge_revealed(&self, surface: &WlSurface) -> bool {
-        self.edges_revealed
-            .iter()
-            .find(|(it, _)| it == surface)
-            .is_some_and(|(_, machine)| machine.is_revealed())
+        self.window_titles.are_always_shown()
+            || self
+                .edges_revealed
+                .iter()
+                .find(|(it, _)| it == surface)
+                .is_some_and(|(_, machine)| machine.is_revealed())
     }
 }
 

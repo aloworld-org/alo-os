@@ -233,6 +233,10 @@ pub struct Server {
     /// is the answer for one with no artwork. See
     /// `crate::what_each_application_draws` for why it is handed in.
     pub(crate) what_each_application_draws: std::sync::Arc<alo_dock::artwork::TheArtwork>,
+    /// When every window's title is on its edge: always, as this release
+    /// ships, or only while a person points at it. See
+    /// `crate::the_window_titles_shown`.
+    pub(crate) window_titles: alo_appearance::WindowTitles,
     /// **alo's own terminal**, when a person has opened one.
     ///
     /// Distinct from [`Self::the_terminal`] above, and the pair is worth
@@ -769,6 +773,8 @@ impl Server {
             // Nothing has failed to save, which is not the same as having saved.
             a_provider_was_not_saved: None,
             what_each_application_draws: std::sync::Arc::new(alo_dock::artwork::TheArtwork::none()),
+            // Always, until the desktop says what this person chose.
+            window_titles: alo_appearance::WindowTitles::default(),
             what_was_typed_into_more_apps: alo_dock::WhatTheyTyped::nothing(),
             pins_owed_to_the_disk: None,
             // The keyboard starts with the work, which is where a person's

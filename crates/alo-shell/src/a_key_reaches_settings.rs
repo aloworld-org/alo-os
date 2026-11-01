@@ -230,6 +230,14 @@ fn the_press_is_carried_out(server: &mut Server, press: crate::SettingsPress, st
         let formats = server.the_formats().clone().in_zone(zone);
         server.the_formats_are(formats);
     }
+    // **When titles are shown is told to the seat at once**, so the next frame
+    // draws every window's edge the way the person just chose.
+    if let Some(SettingsDid::Kept(SettingsSection::Appearance, SettingsKept::Written)) = did
+        && let Some(titles) = server.settings.window_titles()
+    {
+        server.the_window_titles_are(titles);
+        return;
+    }
     if let Some(SettingsDid::Kept(SettingsSection::Shortcuts, SettingsKept::Written)) = did
         && let Some(bound) = server.settings.shortcuts().cloned()
     {

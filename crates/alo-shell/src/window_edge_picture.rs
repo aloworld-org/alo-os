@@ -24,14 +24,36 @@
 
 use smithay::{
     backend::renderer::Frame,
+    reexports::wayland_server::protocol::wl_surface::WlSurface,
     utils::{Logical, Physical, Rectangle},
 };
 
-use crate::painted::{self, Inked, Solid};
+use crate::painted::{self, Inked, Solid, Washed};
 use crate::window_edge::WindowEdge;
+use crate::window_edge_look::WhichLook;
 use crate::window_edge_paint::Pointing;
 use crate::window_edge_title::FittedTitle;
 use crate::{RenderError, painted_text};
+
+/// The window an edge belongs to, as the edge needs to know it.
+///
+/// **Four facts that are the window's rather than the edge's layout**, gathered
+/// so `EdgePicture::of` takes one thing for them rather than four arguments a
+/// call site has to keep in order.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct TheWindow<'a> {
+    /// The application's own title, never translated. [`None`] for an edge
+    /// that carries none.
+    pub title: Option<&'a str>,
+    /// Whether this is the window the person's typing goes to.
+    pub look: WhichLook,
+    /// The application's icon, where this machine knows one.
+    pub icon: Option<&'a alo_dock::artwork::APicture>,
+    /// The window's own rectangle, in the edge's units, where alo draws the
+    /// line and the shadow round it — every application's window. [`None`]
+    /// for a window that draws its own body, as alo's task windows do.
+    pub body: Option<Rectangle<i32, Logical>>,
+}
 
 /// What is drawn **over** one window's edge this frame.
 ///
@@ -56,7 +78,16 @@ pub struct OverTheEdge<'a> {
 
 /// A window's edge, in output pixels.
 pub struct EdgePicture {
-    /// The flat shapes: the strip, the grip, any highlight and focus outline.
+    /// What is drawn **before** the window: the line and shadow round it, and
+    /// the strip with its rounded corners.
+    behind: Vec<Washed>,
+    /// What is drawn after the window and before the flat shapes: its icon.
+    over: Vec<Washed>,
+    /// The window this edge is on, where the caller said; the painter draws
+    /// each window's edge with that window rather than all of them above all
+    /// of them.
+    window: Option<WlSurface>,
+    /// The flat shapes: the grip, any highlight and focus outline.
     solids: Vec<Solid>,
     /// The title, where there is one and it fits.
     inked: Vec<Inked>,
@@ -68,9 +99,10 @@ impl EdgePicture {
     /// Lay this edge out for an output of `output` pixels, at `scale`
     /// hundredths.
     ///
-    /// `title` is the application's own string and is never translated here.
-    /// [`None`] for an edge that carries no title — an application that draws
-    /// its own header, or an edge at rest.
+    /// `window` says what the edge needs to know of its window: the
+    /// application's own title, never translated here and [`None`] for an
+    /// edge that carries none; which look it wears; its icon; and its body,
+    /// where alo draws the line and shadow round it.
     ///
     /// Returns [`None`] when the edge would not be wholly on the output.
     #[must_use]
@@ -83,21 +115,68 @@ impl EdgePicture {
         edge: &WindowEdge,
         pointing: Pointing,
         over: OverTheEdge<'_>,
-        title: Option<&str>,
+        window: TheWindow<'_>,
         fonts: &mut cosmic_text::FontSystem,
         output: (i32, i32),
         scale: u32,
     ) -> Option<Self> {
+        let title = window.title;
         let whole_output = Rectangle::from_size((output.0, output.1).into());
         let region = into_pixels(edge.region, scale);
         if whole_output.intersection(region) != Some(region) {
             return None;
         }
+        let as_a_fraction = f64::from(scale.max(1)) / 100.0;
+        let colours = window.look.colours();
+
+        // **Behind the window: its line and shadow, then the strip.** The
+        // strip after the shadow, so a focused window's shadow never falls
+        // across the strip above it.
+        let mut behind = Vec::new();
+        if let Some(body) = window.body {
+            behind.extend(crate::a_window_raised::round_the_window(
+                into_pixels(body, scale),
+                as_a_fraction,
+                window.look,
+                output,
+            ));
+        }
+        if let Some(strip) = edge.strip {
+            behind.extend(crate::the_title_strip_drawn::the_strip(
+                into_pixels(strip, scale),
+                as_a_fraction,
+                window.look,
+                output,
+            ));
+        }
+        // **The application's own icon**, scaled to the 16 × 16 the design
+        // gives it at this display's scale, so a dense display draws it
+        // sharper rather than smaller.
+        let mut drawn_icon = Vec::new();
+        if let (Some(at), Some(icon)) = (edge.icon, window.icon) {
+            let area = into_pixels(at, scale);
+            if let (Ok(across), Ok(down)) = (u32::try_from(area.size.w), u32::try_from(area.size.h))
+                && across > 0
+                && down > 0
+            {
+                drawn_icon.push(Washed {
+                    area,
+                    pixels: icon.scaled_to(across, down).pixels().to_vec(),
+                });
+            }
+        }
 
         // **The menu after the edge**, because it is drawn over it: these
         // are filled in order and the last one wins where they overlap.
-        let mut solids: Vec<Solid> = crate::window_edge_paint::solids(edge, pointing)
+        let mut solids: Vec<Solid> = crate::window_edge_paint::solids(edge, pointing, window.look)
             .into_iter()
+            // **No icon to show, the grip's mark instead**, so the Move target
+            // is never an empty square a person cannot tell is there.
+            .chain(if edge.icon.is_some() && drawn_icon.is_empty() {
+                crate::window_edge_paint::the_grip_mark(edge)
+            } else {
+                Vec::new()
+            })
             .chain(
                 over.menu
                     .into_iter()
@@ -129,15 +208,15 @@ impl EdgePicture {
             } = was_fitted;
             whole = all.clone();
             if !shown.is_empty() {
-                let ground = alo_appearance::Role::BgSurface.colour();
-                let ink = alo_appearance::Role::TextPrimary.colour();
+                // **On the strip's own ground, in the look's ink**: navy on the
+                // focused window's white, muted on every other's cream.
                 let shaped = painted_text::sentence(
                     fonts,
                     shown,
                     scaled(room, scale),
                     metrics,
-                    [ground.red(), ground.green(), ground.blue()],
-                    [ink.red(), ink.green(), ink.blue()],
+                    colours.strip,
+                    colours.ink,
                 );
                 let placed =
                     into_pixels(Rectangle::new(at, (room, THE_LINE_IS as i32).into()), scale);
@@ -195,10 +274,39 @@ impl EdgePicture {
             }
         }
         Some(Self {
+            behind,
+            over: drawn_icon,
+            window: None,
             solids,
             inked,
             whole,
         })
+    }
+
+    /// The same picture, said to be the edge of `surface`.
+    ///
+    /// **So the painter can draw it with its own window**: a window in front
+    /// then covers the edge of the one behind it, as it covers the rest of it,
+    /// rather than every edge being drawn over every window.
+    #[must_use]
+    pub(crate) fn on_the_window(mut self, surface: WlSurface) -> Self {
+        self.window = Some(surface);
+        self
+    }
+
+    /// The window this edge is on, where it was said.
+    pub(crate) const fn the_window(&self) -> Option<&WlSurface> {
+        self.window.as_ref()
+    }
+
+    /// What is drawn before the window: its line, its shadow and its strip.
+    pub(crate) fn behind(&self) -> &[Washed] {
+        &self.behind
+    }
+
+    /// What is drawn after the window, before the flat shapes: its icon.
+    pub(crate) fn over(&self) -> &[Washed] {
+        &self.over
     }
 
     /// The whole title, however little of it was drawn.
@@ -209,6 +317,13 @@ impl EdgePicture {
     #[must_use]
     pub fn the_whole_title(&self) -> &str {
         &self.whole
+    }
+
+    /// The flat shapes and the inked text, in the order [`Self::paint`] draws
+    /// them — for a test that composites the picture without a renderer.
+    #[cfg(test)]
+    pub(crate) fn flat(&self) -> (&[Solid], &[Inked]) {
+        (&self.solids, &self.inked)
     }
 
     /// Draw it: the shapes, then the text, in that order.

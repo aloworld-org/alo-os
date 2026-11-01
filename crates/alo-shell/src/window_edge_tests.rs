@@ -183,10 +183,85 @@ fn the_grip_and_the_title_are_inside_the_drag_region() {
         edge.grip,
         Rectangle::new(Point::from((19, 21)), Size::from((14, 14)))
     );
-    // **82, not 38.** The title starts after the Move target now: the drag's
-    // leading edge at 4, plus a 44 target, plus a 4 gap, plus the title's own
-    // 30-unit inset. At 38 it would have been drawn over Move's glyph.
-    assert_eq!(edge.title, Some(Point::from((82, 19))));
+    // **38 again, since 2026-11-01.** The approved edge (`554:24`) draws the
+    // application's icon at 14 in the Move target's place, 16 wide, and the
+    // title at 38 after it (`554:30`). It was 82 while the target drew a grip
+    // glyph of its own, which the title had to clear.
+    assert_eq!(edge.title, Some(Point::from((38, 19))));
+    assert_eq!(
+        edge.icon,
+        Some(Rectangle::new(Point::from((14, 20)), Size::from((16, 16))))
+    );
+}
+
+/// **The icon and the title are laid out only where alo draws the title**: an
+/// edge at rest has neither, and an application with its own header has its
+/// own title and its own icon.
+#[test]
+fn only_a_shown_shell_drawn_edge_has_an_icon() {
+    for (decorations, revealed) in [
+        (Decorations::TheShellDraws, false),
+        (Decorations::TheApplicationDraws, true),
+        (Decorations::ATaskWindow, true),
+    ] {
+        let edge = edge_of(
+            specimen(),
+            decorations,
+            revealed,
+            smithay::utils::Size::from((1920, 1080)),
+        );
+        assert!(edge.icon.is_none(), "{decorations:?} {revealed}");
+        assert!(edge.title.is_none(), "{decorations:?} {revealed}");
+    }
+}
+
+/// **At both of the approved frames' sizes the title has room and never meets
+/// a control.** `557:144` at 1440 × 960 and `557:296` at 1280 × 800 draw the
+/// same three windows at different widths; every width here is one of theirs.
+#[test]
+fn the_title_has_room_at_both_frames_widths_and_stops_before_the_controls() {
+    for (width, frame) in [
+        (560, "557:148"),
+        (768, "557:176"),
+        (720, "557:212"),
+        (496, "557:300"),
+        (688, "557:328"),
+        (640, "557:364"),
+    ] {
+        let window = Rectangle::new(Point::from((48, 116)), Size::from((width, 400)));
+        let edge = edge_of(
+            window,
+            Decorations::TheShellDraws,
+            true,
+            smithay::utils::Size::from((1440, 960)),
+        );
+        let title = edge.title.expect("a shown shell-drawn edge has a title");
+        let first_action = edge
+            .controls
+            .iter()
+            .filter(|it| it.does != OnTheEdge::Move)
+            .map(|it| it.target.loc.x)
+            .min()
+            .expect("three actions");
+        assert_eq!(title.x, 48 + 38, "{frame}");
+        assert!(
+            title.x + edge.the_room_a_title_has() <= first_action - 4,
+            "{frame}: the title runs into the first control"
+        );
+        // `554:31`, `554:34`, `554:37`: the three actions end 4 from the
+        // trailing edge, 4 apart, 44 wide — measured in a 640 specimen.
+        let actions: Vec<i32> = edge
+            .controls
+            .iter()
+            .filter(|it| it.does != OnTheEdge::Move)
+            .map(|it| it.target.loc.x - 48)
+            .collect();
+        assert_eq!(
+            actions,
+            vec![width - 144, width - 96, width - 48],
+            "{frame}"
+        );
+    }
 }
 
 /// **At rest there is no strip, no control, and a 24 × 2 grip.**

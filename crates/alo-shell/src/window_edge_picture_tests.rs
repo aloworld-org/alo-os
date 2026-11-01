@@ -46,7 +46,7 @@ fn an_edge_that_would_fall_off_the_output_is_not_drawn() {
             &edge,
             Pointing::default(),
             OverTheEdge::default(),
-            None,
+            TheWindow::default(),
             &mut fonts,
             (1366, 768),
             100
@@ -71,7 +71,7 @@ fn the_scale_is_applied_once_and_only_once() {
         &edge,
         Pointing::default(),
         OverTheEdge::default(),
-        None,
+        TheWindow::default(),
         &mut fonts,
         (2732, 1536),
         100,
@@ -81,7 +81,7 @@ fn the_scale_is_applied_once_and_only_once() {
         &edge,
         Pointing::default(),
         OverTheEdge::default(),
-        None,
+        TheWindow::default(),
         &mut fonts,
         (2732, 1536),
         200,
@@ -90,8 +90,8 @@ fn the_scale_is_applied_once_and_only_once() {
     let first = ordinary
         .solids
         .first()
-        .expect("a revealed edge has a strip");
-    let doubled = dense.solids.first().expect("a revealed edge has a strip");
+        .expect("a revealed edge has a control");
+    let doubled = dense.solids.first().expect("a revealed edge has a control");
     assert_eq!(doubled.area.loc.x, first.area.loc.x * 2);
     assert_eq!(doubled.area.size.w, first.area.size.w * 2);
     assert_eq!(doubled.area.size.h, first.area.size.h * 2);
@@ -115,7 +115,10 @@ fn the_whole_title_survives_a_window_too_narrow_to_show_it() {
         &edge,
         Pointing::default(),
         OverTheEdge::default(),
-        Some("Launch strategy for the first release"),
+        TheWindow {
+            title: Some("Launch strategy for the first release"),
+            ..TheWindow::default()
+        },
         &mut fonts,
         (1366, 768),
         100,
@@ -142,7 +145,10 @@ fn no_title_is_inked_for_an_application_that_has_its_own_header() {
         &edge,
         Pointing::default(),
         OverTheEdge::default(),
-        Some("Calculator"),
+        TheWindow {
+            title: Some("Calculator"),
+            ..TheWindow::default()
+        },
         &mut fonts,
         (1366, 768),
         100,
@@ -174,7 +180,10 @@ fn nothing_is_drawn_over_the_application_at_any_scale() {
                 focused: None,
             },
             OverTheEdge::default(),
-            Some("Launch strategy"),
+            TheWindow {
+                title: Some("Launch strategy"),
+                ..TheWindow::default()
+            },
             &mut fonts,
             (2732, 1536),
             scale,
