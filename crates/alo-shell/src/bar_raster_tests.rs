@@ -98,14 +98,20 @@ fn the_rasterised_panel_covers_the_panel_and_stays_on_the_display() {
         let drawn = a_launcher(display, &dolphin(), None, true).expect("drawn");
         let panel = drawn.places.panel;
         let area = drawn.panel.area;
-        assert!(area.loc.x <= panel.loc.x && area.loc.y <= panel.loc.y, "{w}x{h}");
+        assert!(
+            area.loc.x <= panel.loc.x && area.loc.y <= panel.loc.y,
+            "{w}x{h}"
+        );
         assert!(
             area.loc.x + area.size.w >= panel.loc.x + panel.size.w
                 && area.loc.y + area.size.h >= panel.loc.y + panel.size.h,
             "{w}x{h}: the panel is cut off"
         );
         assert!(area.loc.x >= 0 && area.loc.y >= 0, "{w}x{h}");
-        assert!(area.loc.x + area.size.w <= w && area.loc.y + area.size.h <= h, "{w}x{h}");
+        assert!(
+            area.loc.x + area.size.w <= w && area.loc.y + area.size.h <= h,
+            "{w}x{h}"
+        );
     }
 }
 
@@ -136,10 +142,21 @@ fn the_row_the_keyboard_is_on_is_tinted() {
     let on_asking = a_launcher(Size::from((1440, 960)), &rows, Some(1), true).expect("drawn");
     let row = on_dolphin.places.rows[0].1;
     let ask = on_dolphin.places.ask.expect("offered");
-    let (row_at, ask_at) = ((row.loc.x + 300, row.loc.y + 3), (ask.loc.x + 300, ask.loc.y + 3));
+    let (row_at, ask_at) = (
+        (row.loc.x + 300, row.loc.y + 3),
+        (ask.loc.x + 300, ask.loc.y + 3),
+    );
     let white = [0xFF, 0xFF, 0xFF, 0xFF];
-    assert_ne!(pixel(&on_dolphin, row_at.0, row_at.1), white, "the chosen row is tinted");
-    assert_eq!(pixel(&on_dolphin, ask_at.0, ask_at.1), white, "the other is not");
+    assert_ne!(
+        pixel(&on_dolphin, row_at.0, row_at.1),
+        white,
+        "the chosen row is tinted"
+    );
+    assert_eq!(
+        pixel(&on_dolphin, ask_at.0, ask_at.1),
+        white,
+        "the other is not"
+    );
     assert_eq!(pixel(&on_asking, row_at.0, row_at.1), white);
     assert_ne!(pixel(&on_asking, ask_at.0, ask_at.1), white);
 }

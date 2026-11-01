@@ -25,11 +25,26 @@ fn at(size: (i32, i32), holds: WhatItHolds) -> TheBarsPlaces {
 #[test]
 fn at_1440_it_is_what_the_frame_draws() {
     let places = at((1440, 960), as_drawn());
-    assert_eq!(places.panel, Rectangle::new((380, 208).into(), (680, 360).into()));
-    assert_eq!(places.heading, Rectangle::new((406, 234).into(), (628, 40).into()));
-    assert_eq!(places.close, Rectangle::new((986, 234).into(), (48, 40).into()));
-    assert_eq!(places.field, Rectangle::new((406, 286).into(), (628, 56).into()));
-    assert_eq!(places.origin, Rectangle::new((406, 354).into(), (628, 18).into()));
+    assert_eq!(
+        places.panel,
+        Rectangle::new((380, 208).into(), (680, 360).into())
+    );
+    assert_eq!(
+        places.heading,
+        Rectangle::new((406, 234).into(), (628, 40).into())
+    );
+    assert_eq!(
+        places.close,
+        Rectangle::new((986, 234).into(), (48, 40).into())
+    );
+    assert_eq!(
+        places.field,
+        Rectangle::new((406, 286).into(), (628, 56).into())
+    );
+    assert_eq!(
+        places.origin,
+        Rectangle::new((406, 354).into(), (628, 18).into())
+    );
     assert_eq!(
         places.rows,
         vec![(0, Rectangle::new((406, 384).into(), (628, 56).into()))]
@@ -42,15 +57,24 @@ fn at_1440_it_is_what_the_frame_draws() {
         places.ask,
         Some(Rectangle::new((406, 449).into(), (628, 64).into()))
     );
-    assert_eq!(places.keys, Rectangle::new((406, 525).into(), (628, 28).into()));
+    assert_eq!(
+        places.keys,
+        Rectangle::new((406, 525).into(), (628, 28).into())
+    );
 }
 
 /// **At 1280 × 800 it is `561:404`**: a narrower panel, the same measures.
 #[test]
 fn at_1280_it_is_what_the_frame_draws() {
     let places = at((1280, 800), as_drawn());
-    assert_eq!(places.panel, Rectangle::new((338, 174).into(), (604, 357).into()));
-    assert_eq!(places.field, Rectangle::new((361, 249).into(), (558, 56).into()));
+    assert_eq!(
+        places.panel,
+        Rectangle::new((338, 174).into(), (604, 357).into())
+    );
+    assert_eq!(
+        places.field,
+        Rectangle::new((361, 249).into(), (558, 56).into())
+    );
     assert_eq!(places.origin.loc.y, 174 + 143);
     assert_eq!(places.rows.first().map(|(_, at)| at.loc.y), Some(174 + 173));
     assert_eq!(places.keys.loc.y, 174 + 314);
@@ -102,10 +126,17 @@ fn a_long_list_scrolls_to_the_chosen_row_and_never_off_the_panel() {
     assert!(
         places.rows.iter().any(|(which, _)| *which == 25),
         "the chosen row is shown: {:?}",
-        places.rows.iter().map(|(which, _)| which).collect::<Vec<_>>()
+        places
+            .rows
+            .iter()
+            .map(|(which, _)| which)
+            .collect::<Vec<_>>()
     );
     let bottom = places.panel.loc.y + places.panel.size.h;
-    assert!(bottom <= 800 * 3 / 5 + places.panel.loc.y, "the panel stops growing");
+    assert!(
+        bottom <= 800 * 3 / 5 + places.panel.loc.y,
+        "the panel stops growing"
+    );
     assert!(places.keys.loc.y + places.keys.size.h <= bottom);
 }
 
@@ -135,7 +166,5 @@ fn at_two_hundred_every_place_is_exactly_twice() {
 /// **A display too small has no launcher** rather than one squeezed onto it.
 #[test]
 fn a_display_too_small_has_none() {
-    assert!(
-        where_the_bar_opens(Size::from((200, 160)), DisplayScale::ONE, as_drawn()).is_none()
-    );
+    assert!(where_the_bar_opens(Size::from((200, 160)), DisplayScale::ONE, as_drawn()).is_none());
 }

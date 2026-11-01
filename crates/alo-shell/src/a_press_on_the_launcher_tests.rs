@@ -48,11 +48,7 @@ fn open(what: &str) -> (tempfile::TempDir, Server) {
 #[test]
 fn a_press_on_close_closes_the_launcher() {
     let (_runtime, mut server) = open("launcher-close");
-    let close = server
-        .the_launchers_places
-        .as_ref()
-        .expect("drawn")
-        .close;
+    let close = server.the_launchers_places.as_ref().expect("drawn").close;
     let middle = Point::<i32, Physical>::from((
         close.loc.x + close.size.w / 2,
         close.loc.y + close.size.h / 2,
@@ -75,11 +71,7 @@ fn a_press_on_the_dimmed_screen_closes_it_and_is_taken() {
 #[test]
 fn a_press_on_the_panel_is_taken_and_changes_nothing() {
     let (_runtime, mut server) = open("launcher-panel");
-    let origin = server
-        .the_launchers_places
-        .as_ref()
-        .expect("drawn")
-        .origin;
+    let origin = server.the_launchers_places.as_ref().expect("drawn").origin;
     assert!(server.a_press_on_the_launcher(Point::from((origin.loc.x + 300, origin.loc.y + 5))));
     assert!(server.the_composer.has_the_keyboard());
     assert_eq!(server.the_composer.typed(), "files");

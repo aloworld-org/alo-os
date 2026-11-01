@@ -201,9 +201,7 @@ pub(crate) fn where_the_bar_opens(
         })
         .collect();
     // Back to the bottom of the last row shown.
-    let mut bottom = rows
-        .last()
-        .map_or(list_top, |(_, at)| at.loc.y + at.size.h);
+    let mut bottom = rows.last().map_or(list_top, |(_, at)| at.loc.y + at.size.h);
     let mut hairline = None;
     let ask = holds.asks.then(|| {
         if !rows.is_empty() {

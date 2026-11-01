@@ -174,11 +174,7 @@ pub(crate) fn picture(
     let reach = raised.reach();
     let screen: Area = Rectangle::from_size(bar.display);
     let area = Rectangle::new(
-        (
-            places.panel.loc.x - reach,
-            places.panel.loc.y - reach,
-        )
-            .into(),
+        (places.panel.loc.x - reach, places.panel.loc.y - reach).into(),
         (
             places.panel.size.w + reach * 2,
             places.panel.size.h + reach * 2,
@@ -200,7 +196,12 @@ pub(crate) fn picture(
     );
     canvas.fill(places.panel, corner, palette.edge, 1.0);
     let line = scale.px(1).max(1);
-    canvas.fill(shrunk(places.panel, line), corner - line as f32, palette.ground, 1.0);
+    canvas.fill(
+        shrunk(places.panel, line),
+        corner - line as f32,
+        palette.ground,
+        1.0,
+    );
 
     let say = |canvas: &mut Canvas,
                fonts: &mut FontSystem,
@@ -223,11 +224,7 @@ pub(crate) fn picture(
         (palette.ground, palette.ink),
     );
     canvas.fill(places.close, px(A_WELLS_CORNER) as f32, palette.badge, 1.0);
-    ALaunchersIcon::Close.drawn(
-        &mut canvas,
-        centred(places.close, px(16)),
-        palette.ink,
-    );
+    ALaunchersIcon::Close.drawn(&mut canvas, centred(places.close, px(16)), palette.ink);
 
     // **The field** (`561:315`): the cool well with the keyboard's outline,
     // which is drawn because the field has the keyboard whenever this is open;
@@ -270,7 +267,11 @@ pub(crate) fn picture(
         fonts,
         bar.origin,
         TheType::Label,
-        (places.origin.loc.x, places.origin.loc.y, places.origin.size.w),
+        (
+            places.origin.loc.x,
+            places.origin.loc.y,
+            places.origin.size.w,
+        ),
         (palette.ground, palette.ink_quiet),
     );
 
@@ -339,14 +340,16 @@ pub(crate) fn picture(
         if is_chosen {
             // *Open* and the Enter key, 14 from the row's end (`561:332`).
             let cap = Rectangle::new(
-                (
-                    at.loc.x + at.size.w - px(14) - px(26),
-                    at.loc.y + px(19),
-                )
-                    .into(),
+                (at.loc.x + at.size.w - px(14) - px(26), at.loc.y + px(19)).into(),
                 (px(26), px(18)).into(),
             );
-            a_key_cap(&mut canvas, cap, px(A_KEY_CAPS_CORNER), palette.ground, key_line);
+            a_key_cap(
+                &mut canvas,
+                cap,
+                px(A_KEY_CAPS_CORNER),
+                palette.ground,
+                key_line,
+            );
             ALaunchersIcon::Enter.drawn(&mut canvas, centred(cap, px(12)), secondary);
             let open_wide = crate::painted_text::how_wide(
                 fonts,
@@ -358,7 +361,11 @@ pub(crate) fn picture(
                 fonts,
                 bar.words.open_it,
                 TheType::SmallLabel,
-                (cap.loc.x - px(8) - open_wide, at.loc.y + px(20), open_wide + px(2)),
+                (
+                    cap.loc.x - px(8) - open_wide,
+                    at.loc.y + px(20),
+                    open_wide + px(2),
+                ),
                 (ground, palette.ink_quiet),
             );
         }
@@ -383,12 +390,7 @@ pub(crate) fn picture(
             (at.loc.x + px(icon_in), at.loc.y + px(16)).into(),
             (px(icon), px(icon)).into(),
         );
-        canvas.fill(
-            tile,
-            px(icon_corner) as f32,
-            rgb(Role::AccentSoft),
-            1.0,
-        );
+        canvas.fill(tile, px(icon_corner) as f32, rgb(Role::AccentSoft), 1.0);
         // **Teal, because this row is alo** — ADR 0067's one use for it.
         ALaunchersIcon::Alo.drawn(&mut canvas, tile, rgb(Role::AccentDefault));
         canvas.clipped_to(at);
@@ -440,7 +442,13 @@ pub(crate) fn picture(
     let mut x = keys.loc.x;
     for icon in [ALaunchersIcon::Up, ALaunchersIcon::Down] {
         let cap = Rectangle::new((x, y).into(), (px(26), px(18)).into());
-        a_key_cap(&mut canvas, cap, px(A_KEY_CAPS_CORNER), palette.ground, key_line);
+        a_key_cap(
+            &mut canvas,
+            cap,
+            px(A_KEY_CAPS_CORNER),
+            palette.ground,
+            key_line,
+        );
         icon.drawn(&mut canvas, centred(cap, px(12)), secondary);
         x += px(32);
     }
@@ -453,7 +461,13 @@ pub(crate) fn picture(
         (palette.ground, palette.ink_quiet),
     ) + px(16);
     let cap = Rectangle::new((x, y).into(), (px(26), px(18)).into());
-    a_key_cap(&mut canvas, cap, px(A_KEY_CAPS_CORNER), palette.ground, key_line);
+    a_key_cap(
+        &mut canvas,
+        cap,
+        px(A_KEY_CAPS_CORNER),
+        palette.ground,
+        key_line,
+    );
     ALaunchersIcon::Enter.drawn(&mut canvas, centred(cap, px(12)), secondary);
     x += px(32);
     x += say(
@@ -464,16 +478,19 @@ pub(crate) fn picture(
         (x, y + px(1), keys.size.w / 3),
         (palette.ground, palette.ink_quiet),
     ) + px(16);
-    let esc_wide = crate::painted_text::how_wide(
-        fonts,
-        bar.words.esc,
-        TheType::SmallLabel.metrics(measure),
-    );
+    let esc_wide =
+        crate::painted_text::how_wide(fonts, bar.words.esc, TheType::SmallLabel.metrics(measure));
     let cap = Rectangle::new(
         (x, keys.loc.y + px(6)).into(),
         (esc_wide + px(14), px(22)).into(),
     );
-    a_key_cap(&mut canvas, cap, px(A_KEY_CAPS_CORNER), palette.ground, key_line);
+    a_key_cap(
+        &mut canvas,
+        cap,
+        px(A_KEY_CAPS_CORNER),
+        palette.ground,
+        key_line,
+    );
     say(
         &mut canvas,
         fonts,

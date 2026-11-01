@@ -86,5 +86,9 @@ fn at_two_hundred_every_place_in_the_launcher_is_exactly_twice() {
         two.rows.iter().map(|(which, _)| *which).collect::<Vec<_>>(),
         one.rows.iter().map(|(which, _)| *which).collect::<Vec<_>>()
     );
-    assert_eq!(dense.panel.area, doubled(sparse.panel.area), "the panel and its shadow");
+    assert_eq!(
+        dense.panel.area,
+        doubled(sparse.panel.area),
+        "the panel and its shadow"
+    );
 }

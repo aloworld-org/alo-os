@@ -1621,13 +1621,13 @@ impl LoopInput for Desk<'_> {
                 close: &launcher_words[4],
                 esc: &launcher_words[5],
             },
-            asks: asking_about
-                .as_ref()
-                .map(|(asking, what_it_is, from)| crate::bar_raster::TheAskRow {
+            asks: asking_about.as_ref().map(|(asking, what_it_is, from)| {
+                crate::bar_raster::TheAskRow {
                     asking,
                     what_it_is,
                     from,
-                }),
+                }
+            }),
             artwork: Some(&what_each_draws),
         });
         // **An `Arc` of its own, lent to the frame.** The frame holds the
