@@ -444,29 +444,30 @@ fn super_enter_fills_the_screen_and_gives_it_back() -> Result<(), Box<dyn std::e
     Ok(())
 }
 
-/// **Super+Enter with no window in front refuses by name**, and with no output
-/// it refuses without telling the client anything — the refusal halves.
+/// **Super+Enter with no window in front refuses by name, and tells no window
+/// anything** — the refusal half. A window open and not in front is not
+/// filled in its place.
+///
+/// *No output* is not a refusal here, unlike maximise: full screen needs no
+/// output size at the moment it is asked for — an application asking for it
+/// before the first frame is answered the same way — so that half was measured
+/// on the gate and is not asserted.
 #[test]
-fn super_enter_refuses_with_nothing_in_front_or_nowhere_to_fill()
+fn super_enter_with_nothing_in_front_refuses_and_tells_no_window()
 -> Result<(), Box<dyn std::error::Error>> {
     let f = Fixture::keyboard();
     let mut app = mapped(&f);
-    assert!(matches!(
-        command(&f, Action::FillTheScreen),
-        Err(WindowCommandError::NoFocusedWindow)
-    ));
-    f.focus(Some(0))?;
     app.sync();
     let told = app.events.fullscreen.len();
     assert!(matches!(
         command(&f, Action::FillTheScreen),
-        Err(WindowCommandError::FullScreen(_))
+        Err(WindowCommandError::NoFocusedWindow)
     ));
     app.sync();
     assert_eq!(
         app.events.fullscreen.len(),
         told,
-        "a refused full screen reached the client"
+        "a window not in front was told to fill the screen"
     );
     Ok(())
 }
