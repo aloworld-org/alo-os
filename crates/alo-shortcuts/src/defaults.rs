@@ -43,7 +43,7 @@ const NOTHING: Modifiers = Modifiers::none();
 /// puts every one of them back through [`Chord::checked`]: the shipped list is
 /// held to the rules a person's own bindings are held to, or the rules are
 /// advice.
-const SHIPPED: [(Action, Chord); 24] = [
+const SHIPPED: [(Action, Chord); 26] = [
     (Action::TheAgent, Chord::shipped(SUPER, Key::A)),
     (Action::Launcher, Chord::shipped(SUPER, Key::Space)),
     (Action::Settings, Chord::shipped(SUPER, Key::I)),
@@ -87,6 +87,8 @@ const SHIPPED: [(Action, Chord); 24] = [
     (Action::CloseWindow, Chord::shipped(ALT, Key::F4)),
     (Action::MinimiseWindow, Chord::shipped(SUPER, Key::Down)),
     (Action::MaximiseWindow, Chord::shipped(SUPER, Key::Up)),
+    // **`⊞`+Enter, the design's *enter or leave full screen*.**
+    (Action::FillTheScreen, Chord::shipped(SUPER, Key::Enter)),
     (Action::SnapLeft, Chord::shipped(SUPER, Key::Left)),
     (Action::SnapRight, Chord::shipped(SUPER, Key::Right)),
     (Action::NextWindow, Chord::shipped(ALT, Key::Tab)),
@@ -125,15 +127,21 @@ const SHIPPED: [(Action, Chord); 24] = [
         Action::MoveTheWindowToTheNextPlace,
         Chord::shipped(SUPER_SHIFT, Key::Period),
     ),
-    // **Beside undo's family without joining it.** Going back on a Place walks
-    // the states that Place has been in, which is the same shape as undo and
-    // not the same thing: undo takes back an edit inside a document, this puts
-    // the windows back where they were. `Super` is what marks a chord as the
-    // shell's rather than an application's, and `Shift` is what marks it as
-    // the larger of two acts throughout this list — the window goes with you,
-    // the application goes backwards, the Place goes back.
+    // **`⊞`+Z and `⊞`+Shift+Z: undo and redo on the canvas, as the design's
+    // table gives them** — *undo a canvas action, such as moving or arranging*
+    // and *redo it*. Going back on a Place is exactly that undo: it puts the
+    // windows back where they were a moment ago.
+    //
+    // **Going back was on `⊞`+Shift+Z until 2026-11-01**, chosen to sit
+    // *beside undo's family without joining it*, before the design was read
+    // for it. The design's table is the authority on keys and gives
+    // `⊞`+Shift+Z to *redo*, so going back moved to `⊞`+Z and stepping
+    // forward took its old key. A person who had set their own key for going
+    // back keeps it: only the shipped default moved, and both rows can be
+    // changed in Settings.
+    (Action::GoBackOnThisPlace, Chord::shipped(SUPER, Key::Z)),
     (
-        Action::GoBackOnThisPlace,
+        Action::GoForwardOnThisPlace,
         Chord::shipped(SUPER_SHIFT, Key::Z),
     ),
     // **F6 with nothing held, which is the one chord here that has no

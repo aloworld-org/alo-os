@@ -560,7 +560,10 @@ Place was and assembles the series as it keeps one (`FORMAT` 4, with the first
 migration this crate has needed, reading 3 as well);
 `crates/alo-shell/src/canvas_a_place_remembers_time.rs` carries that series into
 the session and puts a Place back through the live canvas; and
-`Action::GoBackOnThisPlace` on `⊞`+`Shift`+`Z` is the road a person presses.
+`Action::GoBackOnThisPlace` is the road a person presses — on `⊞`+`Z` since
+2026-11-01, when it moved off `⊞`+`Shift`+`Z` to follow the design's *undo* and
+*redo* keys and `Action::GoForwardOnThisPlace` took `⊞`+`Shift`+`Z` to step
+forward again.
 `crates/alo-shell/tests/a_place_remembers_time/` is four tests that move real
 frames on a real plane and read their positions back off it — none round-trips
 an `Arrangement`, which this task's own ruling calls progress rather than

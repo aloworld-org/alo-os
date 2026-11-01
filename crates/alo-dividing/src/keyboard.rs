@@ -57,6 +57,7 @@ pub const fn side_for(action: Action) -> Option<Side> {
         | Action::WindowOptions
         | Action::MinimiseWindow
         | Action::MaximiseWindow
+        | Action::FillTheScreen
         | Action::NextWindow
         | Action::PreviousWindow
         | Action::NextApplication
@@ -88,6 +89,7 @@ pub const fn side_for(action: Action) -> Option<Side> {
         // This arm is what the comment above asked for: the file refused to
         // compile when the action was added, and somebody decided.
         | Action::GoBackOnThisPlace
+        | Action::GoForwardOnThisPlace
         // And moving the keyboard between the parts of the screen is not a
         // division for the plainest reason of all: **it moves nothing.** A
         // division decides how a display's room is shared between windows;

@@ -15,6 +15,7 @@ use smithay::utils::{Physical, Rectangle};
 
 use crate::painted::Washed;
 use crate::window_edge_look::{A_LINE_IS, THE_STRIPS_CORNER, WhichLook};
+use crate::window_rasters_kept::{TheKey, Which, kept_or_made, placed};
 
 /// The strip, at `strip` in this display's pixels, in this look.
 ///
@@ -49,16 +50,33 @@ pub(crate) fn the_strip(
         reason = "one line's width in pixels is well inside an i32"
     )]
     let wider = line as i32;
-    let whole = Rectangle::<i32, Physical>::new(
-        (strip.loc.x - wider, strip.loc.y).into(),
-        (strip.size.w + wider * 2, strip.size.h).into(),
-    );
-    let drawn = whole.intersection(Rectangle::from_size(output.into()))?;
+    // **Made once for a size and a look, at the origin**, and moved and
+    // clipped each frame (`crate::window_rasters_kept`).
+    let size = (strip.size.w + wider * 2, strip.size.h);
+    let key = TheKey::of(Which::Strip, size, scale, look);
+    let kept = kept_or_made(key, || {
+        made_at_the_origin(size, (line, corner), look)
+            .into_iter()
+            .collect()
+    });
+    placed(&kept, (strip.loc.x - wider, strip.loc.y), output)
+        .into_iter()
+        .next()
+}
+
+/// The strip `size` wide and tall with its top-left at the origin, its line
+/// `line` thick and its top corners `corner` round.
+pub(crate) fn made_at_the_origin(
+    size: (i32, i32),
+    (line, corner): (f32, f32),
+    look: WhichLook,
+) -> Option<Washed> {
+    let whole = Rectangle::<i32, Physical>::from_size(size.into());
     let colours = look.colours();
     let (l, t) = (whole.loc.x as f32, whole.loc.y as f32);
     let (r, b) = (l + whole.size.w as f32, t + whole.size.h as f32);
     let corner = corner.min((r - l) / 2.0).min(b - t);
-    crate::a_window_raised::raster(drawn, |px, py| {
+    crate::a_window_raised::raster(whole, |px, py| {
         let d = away_from_a_top_rounded(px, py, (l, t, r, b), corner);
         let inside = (0.5 - d).clamp(0.0, 1.0);
         if inside <= 0.0 {
