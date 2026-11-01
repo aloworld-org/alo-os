@@ -64,6 +64,7 @@ pub struct Changes {
     text: Option<TextScale>,
     /// Which accent they chose.
     accent: Option<Accent>,
+    /// Whether they asked for windows' titles only when pointed at.
     window_titles: Option<WindowTitles>,
 }
 

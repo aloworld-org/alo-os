@@ -1,7 +1,9 @@
 //! Which elements are which window's, and which edges go with them.
 #![expect(
     clippy::expect_used,
-    reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
+    clippy::indexing_slicing,
+    reason = "in a test, a panic on an unexpected None, Err or missing surface is the failure \
+              being reported"
 )]
 
 use super::*;

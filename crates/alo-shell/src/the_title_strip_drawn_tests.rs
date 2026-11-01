@@ -1,7 +1,8 @@
 //! The strip: rounded at the top, square at the bottom, in the look's colours.
 #![expect(
     clippy::expect_used,
-    reason = "in a test, a panic on an unexpected None is the failure being reported"
+    clippy::indexing_slicing,
+    reason = "in a test, a panic on an unexpected None or a missing pixel is the failure being reported"
 )]
 
 use super::*;

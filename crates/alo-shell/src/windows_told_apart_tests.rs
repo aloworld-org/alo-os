@@ -14,7 +14,9 @@
 //! the assertions.
 #![expect(
     clippy::expect_used,
-    reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
+    clippy::indexing_slicing,
+    reason = "in a test, a panic on an unexpected None, Err or missing window is the failure \
+              being reported"
 )]
 
 use crate::painted::Washed;
@@ -47,10 +49,15 @@ fn a_tile(rgb: [u8; 3]) -> alo_dock::artwork::APicture {
 
 /// One window of a frame: its body, what it is, and whether it is focused.
 struct AWindow {
+    /// The application's own rectangle, under its edge.
     body: Rectangle<i32, Logical>,
+    /// Its title, or empty for a task window, which carries none on its edge.
     title: &'static str,
+    /// Who draws its header.
     decorations: Decorations,
+    /// Whether the keyboard is on it.
     focused: bool,
+    /// The colour of the tile standing in for its icon, where it has one.
     icon: Option<[u8; 3]>,
 }
 
@@ -216,10 +223,11 @@ fn at(frame: &[[f32; 3]], size: (i32, i32), x: i32, y: i32) -> [u8; 3] {
         clippy::cast_sign_loss,
         reason = "a channel between 0 and 255"
     )]
-    frame
+    let it = frame
         .get(usize::try_from(y * size.0 + x).expect("inside"))
         .expect("inside")
-        .map(|it| it.round().clamp(0.0, 255.0) as u8)
+        .map(|it| it.round().clamp(0.0, 255.0) as u8);
+    it
 }
 
 /// Write the frame as a PPM, where a folder was named for it.
