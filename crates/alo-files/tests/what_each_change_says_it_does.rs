@@ -92,7 +92,14 @@ fn changing(verb: &str, given: &[(&str, Given)], grants: &Grants) -> Result<Did,
         .unwrap();
     let touching = Touching::of(authorised, grants, &OnThisMachine, &in_english())
         .map_err(|why| why.said(&in_english()).into_text())?;
-    Did::of(touching, grants, &in_english()).map_err(|why| why.said(&in_english()).into_text())
+    let did = Did::of(touching, grants, &in_english())
+        .map_err(|why| why.said(&in_english()).into_text())?;
+    // **A refusal the machine made is carried inside what was done**, as the
+    // record keeps it; here it is a refusal.
+    match did.failure() {
+        Some(why) => Err(why.said(&in_english()).into_text()),
+        None => Ok(did),
+    }
 }
 
 /// What is under a folder: every file's bytes and modification time, and
