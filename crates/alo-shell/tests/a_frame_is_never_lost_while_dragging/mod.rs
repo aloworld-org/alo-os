@@ -67,10 +67,21 @@ const DOCK: i32 = 64;
 /// one, because the test is about the rule and not about the panel's arithmetic.
 const PANEL: i32 = 112;
 
-/// A real display with a pointer and an output.
+/// A real display with a pointer and an output, its window titles shown only
+/// when a person points at them.
+///
+/// **These tests drag a frame by its name with the edge at rest**, 2 in from
+/// the frame's top-left — where the resting edge drags. Titles have been shown
+/// always since 2026-11-01 (the owner's first answer), and a 16-wide window's
+/// shown edge is the 196-wide compact one centred over it, so that point is its
+/// Minimise. The resting edge is still a person's to choose, in Settings
+/// (*Show the title only when I point at it*), and it is what these tests are
+/// about; the shown edge's drag is `window_edge_tests`' and
+/// `a_press_on_an_edge`'s.
 fn fixture() -> Fixture {
     let f = Fixture::keyboard();
     assert!(f.backend(|s| s.enable_pointer()).is_ok());
+    f.backend(|s| s.the_window_titles_are(alo_appearance::WindowTitles::WhenPointedAt));
     f.render(VIEWPORT, false, 1).expect("an output to look at");
     f
 }

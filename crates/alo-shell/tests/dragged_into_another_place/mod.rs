@@ -23,10 +23,13 @@ const VIEWPORT: (i32, i32) = (1280, 720);
 /// `BTN_LEFT`, as a real pointer sends it.
 const LEFT: u32 = 0x110;
 
-/// A real display with a pointer and an output.
+/// A real display with a pointer and an output, its window titles shown only
+/// when a person points at them — the resting edge these drags are made on,
+/// for the reason `a_frame_is_never_lost_while_dragging::fixture` gives.
 fn fixture() -> Fixture {
     let f = Fixture::keyboard();
     assert!(f.backend(|s| s.enable_pointer()).is_ok());
+    f.backend(|s| s.the_window_titles_are(alo_appearance::WindowTitles::WhenPointedAt));
     f.render(VIEWPORT, false, 1).expect("an output to look at");
     f
 }
