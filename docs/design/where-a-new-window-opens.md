@@ -152,3 +152,28 @@ window with nobody choosing it**, which is the one thing the promise forbids.
 
 `crate::window_placement::set` is the primitive that moves one. What has no
 caller is anything that chooses a position **when a window maps**.
+
+## alo's own windows count as windows — 2026-11-01
+
+**The round-2 frames the owner approved on 2026-11-01** (`557:144`, `557:296`,
+and the rules drawn on `557:456`: *room beside: 16 apart; no room: in front, 48
+down and across; many in a row: restart inside the view*) draw alo's terminal
+and an alo task window among the applications, and a new window opening
+**beside** them.
+
+Until that day the placer was handed the applications' windows alone. alo's
+terminal and its task windows are kept in the display's pixels rather than on
+the plane, and nothing passed them in — so with alo's terminal open and nothing
+else, a new application opened in the middle of the view, over the terminal.
+`crate::a_new_window_is_placed` now moves both onto the plane with the camera,
+as it does a fixed control, and counts them among the open windows. The window
+*beside which* a new one opens is the frontmost of whichever kind the person
+went to last (`crate::which_window_is_in_front`), so a person typing in alo's
+terminal gets the next window beside the terminal.
+
+**And never exactly on top.** Two roads could still arrive at a corner a window
+already had — the restart at the view's corner and the step from the middle —
+and a window exactly over another hides all of it, its title strip included.
+`where_a_window_opens` now steps any such answer on by the same 48 until it is
+on nobody's corner. **This makes an existing promise true** — rule 5's *losing
+access to a window is not [permitted]* — rather than adding one.

@@ -206,6 +206,12 @@ the person, stopped or finished, the status line is `text/primary` navy. The
 `alo` speaker label on a reply stays `accent/default` in every variant, because
 it marks who is speaking rather than what is happening.
 
+**Drawn so since 2026-11-01.** Until then `crate::task_raster` wrote every
+status in teal, *Complete* and *Waiting for your permission* included; the
+words now carry whether alo is working (`TheWordsInATaskWindow::alo_is_working`)
+and only that state is teal. *Stopping* is navy with the rest, as this table's
+stopped row is, until its own appearance is drawn.
+
 This is ADR 0067's reservation of teal for alo, drawn: teal is *alo acting*,
 not *alo's surface*. Together with *keyboard focus uses a visible navy outline*
 on all five composer components, this section is consistent evidence that focus

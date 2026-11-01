@@ -1907,3 +1907,81 @@ fn a_paired_computer_is_shown_by_its_name() {
             )))
     );
 }
+
+/// **A provider saved from the form is on the page at once, and chosen**,
+/// without closing Settings. Until 2026-11-01 the page was read only when
+/// Settings opened, and a booted machine showed the new provider only after
+/// Settings was closed and opened again.
+///
+/// The provider is written the way `alo-desktop` writes it — onto the list,
+/// then chosen — into the very file the window opened with.
+#[test]
+fn a_provider_saved_from_the_form_is_on_the_page_at_once_and_chosen() {
+    let strings = words();
+    let door = CountingDoor::revoking();
+    let machine = a_persons_machine("saved-at-once");
+    let mut window = machine.opened();
+    focus_on(&mut window, &SettingsRow::AddAProvider, &strings, &door);
+    let lantern = SettingsChoice::Provider {
+        provider: "Lantern".to_owned(),
+        model: "lantern-large".to_owned(),
+    };
+    assert!(
+        !window
+            .rows(noon())
+            .contains(&SettingsRow::Answer(lantern.clone())),
+        "the control: the provider was on the page before it was saved"
+    );
+
+    let mut choosing = Choosing::at(&machine.choosing()).unwrap();
+    choosing
+        .adding(
+            alo_models::Provider::checked(
+                "Lantern",
+                "https://lantern.example",
+                alo_models::Region::Unknown,
+                None,
+            )
+            .unwrap(),
+        )
+        .unwrap();
+    choosing
+        .answered_by(Some(
+            Picked::from_a_provider("Lantern", "lantern-large").unwrap(),
+        ))
+        .unwrap();
+    assert!(
+        !window
+            .rows(noon())
+            .contains(&SettingsRow::Answer(lantern.clone())),
+        "the control: the window read the file by itself, so this test proves nothing"
+    );
+
+    window.what_answers_is_read_again(&machine.places, noon());
+
+    assert!(
+        window
+            .rows(noon())
+            .contains(&SettingsRow::Answer(lantern.clone())),
+        "the provider just saved is not on the page"
+    );
+    assert_eq!(
+        window.open().unwrap().answering.chosen(),
+        Some(lantern),
+        "the provider just saved is on the page and not chosen"
+    );
+    assert_eq!(
+        window.focused(noon()),
+        Some(SettingsRow::AddAProvider),
+        "the keyboard moved to another row under the person's hand"
+    );
+}
+
+/// **Reading what answers again leaves a closed window closed.**
+#[test]
+fn reading_what_answers_again_does_not_open_settings() {
+    let machine = a_persons_machine("closed-stays-closed");
+    let mut window = SettingsWindow::closed();
+    window.what_answers_is_read_again(&machine.places, noon());
+    assert!(!window.is_open());
+}

@@ -390,6 +390,7 @@ fn a_task_window_over_everything(
             title: "write a 700 word story about a lighthouse keeper",
             kind: "alo task",
             status: "alo is working",
+            alo_is_working: true,
             model: "",
             destination: "by openai, which has not said where it runs",
             invitation: "Reply to alo or change the direction\u{2026}",

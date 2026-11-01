@@ -109,6 +109,11 @@ impl Server {
         for (application, who) in persons.chain(agents) {
             if !ask(application.name(), who) {
                 not_started.push(application);
+            } else if who == WhoAskedToStart::ThePerson {
+                // **Its first window comes in front** when it maps
+                // (`crate::a_window_the_person_opened`). The agent's does
+                // not: only a person's own road moves what is in front.
+                self.the_person_started(application);
             }
         }
         not_started

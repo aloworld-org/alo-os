@@ -118,11 +118,38 @@ pub const IT_WAS_GIVEN: Word = Word::saying(
 /// of a person at the moment they are told what they just handed over.
 pub const THE_FOLDER: &str = "folder";
 
+/// Where the person is standing, over the list of folders.
+pub const YOU_ARE_IN: Word = Word::saying("picker.you-are-in", "You are in {folder}, at {path}")
+    .noting(
+        "Shown above the list while a person walks their folders to choose one for alo. {folder} \
+         is replaced with the name of the folder they are inside and {path} with its full path; \
+         both must be kept. Until this line the list did not say which folder it was showing.",
+    );
+
+/// The gap [`YOU_ARE_IN`] leaves for the folder's full path.
+pub const THE_PATH: &str = "path";
+
+/// The row that shows the folders whose names begin with a dot.
+pub const SHOW_HIDDEN_FOLDERS: Word =
+    Word::saying("picker.show-hidden-folders", "Show hidden folders").noting(
+        "A row at the end of the list of folders. Folders whose names begin with a dot hold \
+         settings and caches and are hidden, as every file manager hides them; this row shows \
+         them, so a person who wants to give alo one still can.",
+    );
+
+/// The row that hides them again.
+pub const HIDE_HIDDEN_FOLDERS: Word =
+    Word::saying("picker.hide-hidden-folders", "Hide hidden folders")
+        .noting("The same row once hidden folders are shown: pressing it hides them again.");
+
 /// Every string this file declares, in the order a translator meets them.
-pub const THE_PICKERS_WORDS: [Word; 10] = [
+pub const THE_PICKERS_WORDS: [Word; 13] = [
     GRANT_A_FOLDER,
+    YOU_ARE_IN,
     PICK_THIS_FOLDER,
     UP_ONE_FOLDER,
+    SHOW_HIDDEN_FOLDERS,
+    HIDE_HIDDEN_FOLDERS,
     HOW_LONG,
     FOR_AN_HOUR,
     FOR_A_DAY,

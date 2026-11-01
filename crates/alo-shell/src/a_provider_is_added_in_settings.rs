@@ -156,6 +156,13 @@ impl Server {
         self.asked_to_save_a_provider = None;
         // A refusal about a form that is gone is a sentence about nothing.
         self.a_provider_was_not_saved = None;
+        // **And the page shows what was saved, at once**: the provider on the
+        // list and chosen to answer. Read from the same file the desktop just
+        // wrote, through the same places Settings opened with.
+        if let Some(places) = self.settings_places.as_ref() {
+            self.settings
+                .what_answers_is_read_again(places, std::time::SystemTime::now());
+        }
     }
 
     /// Carry one press out against the form, and say what came of it.
