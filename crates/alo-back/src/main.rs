@@ -177,7 +177,7 @@ mod putting_back {
         // `alo_as_it_was::go_back_together` — and writes it down. A service
         // that cannot be reached changes nothing: putting back is always
         // written down.
-        match the_service_puts_back(named, goes.folder()) {
+        match the_service_puts_back(named, goes.folder(), strings) {
             Ok(ToAPerson::PutBack { said }) => {
                 for wording in said {
                     println!("{}", wording.text());
@@ -188,8 +188,10 @@ mod putting_back {
                 eprintln!("{}", wording.text());
                 ExitCode::FAILURE
             }
+            // An answer that is not about putting back says nothing a person
+            // could act on, so the sentence stands without one.
             Ok(_) => {
-                say_why_not(strings, "the service answered something else");
+                say_why_not(strings, "");
                 ExitCode::FAILURE
             }
             Err(why) => {
@@ -204,7 +206,11 @@ mod putting_back {
     ///
     /// **No moment and no command on the wire**, as the protocol's person
     /// door has it: the place by its name, and the folder.
-    fn the_service_puts_back(named: &str, folder: &Path) -> Result<ToAPerson, String> {
+    fn the_service_puts_back(
+        named: &str,
+        folder: &Path,
+        strings: &Strings,
+    ) -> Result<ToAPerson, String> {
         let at = where_the_door_is::the_door_of(rustix::process::getuid().as_raw());
         let stream = UnixStream::connect(&at).map_err(|why| why.to_string())?;
         // **Patient**, because a folder is copied out of the place before it
@@ -226,7 +232,7 @@ mod putting_back {
         BufReader::new(&stream)
             .read_line(&mut answer)
             .map_err(|why| why.to_string())?;
-        ToAPerson::read(answer.trim_end()).map_err(|why| why.to_string())
+        ToAPerson::read(answer.trim_end()).map_err(|why| why.said(strings).into_text())
     }
 
     /// Say that nothing was put back because the record could not be told.
