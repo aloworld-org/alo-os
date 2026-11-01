@@ -277,7 +277,7 @@ fn teal_is_only_the_agents_name() {
         let teal = crate::record_palette::RecordPalette::of(scheme, Contrast::AsDesigned).agent;
         let washed = picture.washed.as_ref().unwrap();
         let mut found = 0;
-        for (at, pixel) in washed.pixels.chunks_exact(4).enumerate() {
+        for (at, pixel) in washed.pixels.as_chunks::<4>().0.iter().enumerate() {
             if pixel[..3] != teal[..] {
                 continue;
             }
@@ -667,7 +667,7 @@ fn the_approved_frames_are_drawn() {
             u32::try_from(size.1).unwrap(),
         );
         let mut image = image::RgbImage::from_pixel(wide, tall, image::Rgb(ground));
-        for (at, pixel) in washed.pixels.chunks_exact(4).enumerate() {
+        for (at, pixel) in washed.pixels.as_chunks::<4>().0.iter().enumerate() {
             let at = i32::try_from(at).unwrap();
             let x = washed.area.loc.x + at % washed.area.size.w;
             let y = washed.area.loc.y + at / washed.area.size.w;
