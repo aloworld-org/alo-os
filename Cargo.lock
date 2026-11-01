@@ -162,6 +162,7 @@ dependencies = [
  "alo-agent",
  "alo-answering",
  "alo-applications",
+ "alo-as-it-was",
  "alo-asking",
  "alo-bounding",
  "alo-capability",
@@ -339,6 +340,7 @@ name = "alo-back"
 version = "0.0.1"
 dependencies = [
  "alo-as-it-was",
+ "alo-protocol",
  "alo-saying",
  "alo-strings",
  "rustix 1.1.4",
