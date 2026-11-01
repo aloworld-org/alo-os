@@ -54,7 +54,6 @@
 use alo_appearance::Scheme;
 use alo_terminal::{TerminalOutput, measures};
 use cosmic_text::{Buffer, FontSystem, Metrics, Shaping, Wrap};
-use smithay::backend::renderer::Frame;
 use smithay::utils::{Physical, Rectangle};
 
 use crate::painted::{Inked, Solid, Washed};
@@ -69,11 +68,12 @@ const DOWN_THE_DISPLAY: f32 = 800.0 / 1040.0;
 /// alo's own terminal, ready to paint.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct TerminalPicture {
-    /// The display size it was laid out for.
+    /// The size of the picture: the window and its shadow's reach.
     ///
-    /// **Carried rather than recomputed**, so `validate` can refuse a frame the
-    /// terminal was laid out for another display on — which is the check every
-    /// other native picture in this crate makes, and for the same reason.
+    /// **Carried rather than recomputed**, so `validate` can refuse a part
+    /// laid out outside it — the check every other native picture in this crate
+    /// makes against its output, made here against the picture's own room
+    /// since the terminal became a window on the canvas.
     pub(crate) size: (i32, i32),
     /// The window's body — its rounded panel, hairline and shadow — painted
     /// first of all, under everything else here.
@@ -104,20 +104,13 @@ impl TerminalPicture {
             && self.strip.is_empty()
     }
 
-    /// The raster to upload before a frame opens: the window's body.
-    ///
-    /// **Separate from [`Self::paint`]** for the reason
-    /// `crate::desktop_paint`'s own `washed` gives: importing a texture needs
-    /// the renderer, and a frame borrows it for as long as it is open.
-    pub(crate) fn washed(&self) -> Option<&Washed> {
-        self.panel.as_ref()
-    }
-
-    /// Refuse a picture that would draw outside the output it was laid out for.
+    /// Refuse a picture with a part laid out outside its own room.
     ///
     /// The same check every other native picture makes before a frame opens,
-    /// and for the same reason: a rectangle outside the output is a drawing
+    /// and for the same reason: a rectangle outside the room is a drawing
     /// fault, and finding it here names the picture rather than the renderer.
+    /// `size` is the picture's own; `crate::the_terminal_on_the_plane` asks
+    /// before it flattens the picture into one raster.
     ///
     /// # Errors
     /// [`crate::RenderError::Unsupported`] when anything falls outside.
@@ -136,26 +129,6 @@ impl TerminalPicture {
             return Ok(());
         }
         Err(crate::RenderError::TerminalScene)
-    }
-
-    /// Paint the body, then the shapes, then the cells and the strip.
-    ///
-    /// `panel` is the texture [`Self::washed`] asked for, already uploaded;
-    /// [`None`] paints no body, which is what a renderer that could not take
-    /// the raster leaves.
-    ///
-    /// # Errors
-    /// Whatever the renderer refused.
-    pub(crate) fn paint<F: Frame>(
-        &self,
-        frame: &mut F,
-        panel: Option<&(F::TextureId, Rectangle<i32, Physical>)>,
-    ) -> Result<(), crate::RenderError> {
-        if let Some((texture, area)) = panel {
-            crate::painted::wash(frame, texture, *area)?;
-        }
-        crate::painted::paint(frame, &self.solids, &self.inked)?;
-        crate::painted::paint(frame, &[], &self.strip)
     }
 }
 
@@ -358,11 +331,19 @@ pub(crate) fn how_big_a_cell_is(
     Ok(ACell { advance })
 }
 
-/// Where the terminal's window sits on a display this size, and its transcript.
+/// Where the terminal's window would sit centred on a display this size, and
+/// its transcript.
 ///
 /// Answers the window and the transcript inside it, both in this display's
 /// pixels. Every figure is either a share of the display or a logical measure
 /// put through `scale`.
+///
+/// **What a new terminal's size is taken from**, since the terminal moved onto
+/// the canvas ([ADR
+/// 0145](../../../docs/decisions/0145-alos-own-windows-live-on-the-canvas.md)):
+/// a window opens the share of the display the design draws it at, and from
+/// then on it is a window on the plane with a size of its own, like any
+/// application's. Where it is drawn is `crate::the_terminal_on_the_plane`'s.
 pub(crate) fn where_the_window_goes(
     size: (i32, i32),
     scale: f64,
@@ -373,14 +354,9 @@ pub(crate) fn where_the_window_goes(
     }
     #[expect(
         clippy::cast_possible_truncation,
-        reason = "a two-digit logical measure through a display's scale is a whole number of \
-                  pixels, and a share of a display's own extent is bounded by that extent"
+        reason = "a share of a display's own extent is bounded by that extent"
     )]
-    let (border, strip, note, under, window_width, window_height) = (
-        (f64::from(measures::A_BORDER) * scale).round() as i32,
-        (f64::from(measures::A_STRIP) * scale).round() as i32,
-        (f64::from(measures::A_NOTE) * scale).round() as i32,
-        (f64::from(measures::BELOW_THE_NOTE) * scale).round() as i32,
+    let (window_width, window_height) = (
         (width as f32 * ACROSS_THE_DISPLAY) as i32,
         (height as f32 * DOWN_THE_DISPLAY) as i32,
     );
@@ -388,21 +364,75 @@ pub(crate) fn where_the_window_goes(
         ((width - window_width) / 2, (height - window_height) / 2).into(),
         (window_width, window_height).into(),
     );
+    Some((window, the_transcript_of(window, scale)?))
+}
 
-    // The transcript: inside the border, below the identity strip, above the
-    // note and the rows under it. The same arithmetic as
-    // `measures::transcript_height_in`, which reproduces the design's own 706
-    // at a body of 800.
-    let transcript_height = window_height - border - strip - note - under;
-    let transcript_width = window_width - border * 2;
+/// A terminal window laid out in a picture of its own: the window, its
+/// transcript, and the room the picture needs, which is the window and its
+/// shadow's reach on every side.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct LaidOut {
+    /// The window, inset by the shadow's reach.
+    pub(crate) window: Rectangle<i32, Physical>,
+    /// The transcript inside it.
+    pub(crate) transcript: Rectangle<i32, Physical>,
+    /// The whole picture: the window and its shadow.
+    pub(crate) room: (i32, i32),
+    /// How far the shadow reaches past the window on each side.
+    pub(crate) reach: i32,
+}
+
+/// A terminal window this big, laid out in its own picture at `scale`.
+///
+/// [`None`] for a window with no area, at no scale, or with no room for a
+/// transcript.
+pub(crate) fn laid_out(window: (i32, i32), scale: f64) -> Option<LaidOut> {
+    let (width, height) = window;
+    if width <= 0 || height <= 0 || scale <= 0.0 {
+        return None;
+    }
+    let reach = crate::how_a_panel_is_raised::HowItIsRaised::FLOATING
+        .at(scale)
+        .reach()
+        .max(0);
+    let window = Rectangle::new((reach, reach).into(), (width, height).into());
+    Some(LaidOut {
+        window,
+        transcript: the_transcript_of(window, scale)?,
+        room: (width + reach * 2, height + reach * 2),
+        reach,
+    })
+}
+
+/// The transcript inside a window: inside the border, below the identity
+/// strip, above the note and the rows under it.
+///
+/// The same arithmetic as `measures::transcript_height_in`, which reproduces
+/// the design's own 706 at a body of 800.
+fn the_transcript_of(
+    window: Rectangle<i32, Physical>,
+    scale: f64,
+) -> Option<Rectangle<i32, Physical>> {
+    #[expect(
+        clippy::cast_possible_truncation,
+        reason = "a two-digit logical measure through a display's scale is a whole number of \
+                  pixels"
+    )]
+    let (border, strip, note, under) = (
+        (f64::from(measures::A_BORDER) * scale).round() as i32,
+        (f64::from(measures::A_STRIP) * scale).round() as i32,
+        (f64::from(measures::A_NOTE) * scale).round() as i32,
+        (f64::from(measures::BELOW_THE_NOTE) * scale).round() as i32,
+    );
+    let transcript_height = window.size.h - border - strip - note - under;
+    let transcript_width = window.size.w - border * 2;
     if transcript_height <= 0 || transcript_width <= 0 {
         return None;
     }
-    let transcript = Rectangle::new(
+    Some(Rectangle::new(
         (window.loc.x + border, window.loc.y + border + strip).into(),
         (transcript_width, transcript_height).into(),
-    );
-    Some((window, transcript))
+    ))
 }
 
 /// The note under the transcript, saying what this terminal is.
@@ -499,12 +529,15 @@ fn lines_in(height: i32, line_height: f32) -> usize {
 /// been lied to.
 pub(crate) fn the_grid_that_fits(
     fonts: &mut FontSystem,
-    size: (i32, i32),
+    window: (i32, i32),
     scale: f64,
     remembered: usize,
 ) -> Result<(alo_terminal::HowBig, alo_terminal::ACellInPixels), NothingToDrawWith> {
-    let (_, transcript) =
-        where_the_window_goes(size, scale).ok_or(NothingToDrawWith::TheresNoRoom)?;
+    // **The window's own size, not a display's**, since the terminal became a
+    // window on the canvas: zooming the canvas changes how big it is drawn and
+    // never how many cells the shell is told it has.
+    let LaidOut { transcript, .. } =
+        laid_out(window, scale).ok_or(NothingToDrawWith::TheresNoRoom)?;
     let metrics = the_designs_metrics(scale);
     let cell = how_big_a_cell_is(fonts, metrics)?;
 
@@ -1201,15 +1234,21 @@ pub(crate) struct Shows<'a> {
 /// is why it is here rather than in a vocabulary.
 const BETWEEN_THE_SUMMARYS_PARTS: &str = " · ";
 
-/// Draw alo's own terminal onto a display this size.
+/// Draw alo's own terminal: a window this big, in a picture of its own.
+///
+/// **The picture is the window's, not a display's**, since the terminal moved
+/// onto the canvas: it is laid out by [`laid_out`], with the window inset by
+/// its shadow's reach, and `crate::the_terminal_on_the_plane` puts the whole
+/// picture where the camera says the window is — at whatever zoom, partly off
+/// a display or not on it at all.
 ///
 /// # Errors
-/// [`NothingToDrawWith`] when the face is absent, was not used, or the display
-/// has no room for a terminal.
+/// [`NothingToDrawWith`] when the face is absent, was not used, or the window
+/// has no room for a transcript.
 pub(crate) fn picture(
     fonts: &mut FontSystem,
     shows: Shows<'_>,
-    size: (i32, i32),
+    window_size: (i32, i32),
     scale: f64,
     scheme: Scheme,
     says: &alo_strings::Strings,
@@ -1223,8 +1262,12 @@ pub(crate) fn picture(
         a_diff,
         the_strip,
     } = shows;
-    let (window, transcript) =
-        where_the_window_goes(size, scale).ok_or(NothingToDrawWith::TheresNoRoom)?;
+    let LaidOut {
+        window,
+        transcript,
+        room: size,
+        ..
+    } = laid_out(window_size, scale).ok_or(NothingToDrawWith::TheresNoRoom)?;
     let metrics = the_designs_metrics(scale);
     let cell = how_big_a_cell_is(fonts, metrics)?;
 

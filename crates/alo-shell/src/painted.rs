@@ -100,13 +100,31 @@ pub(crate) fn wash<F: Frame>(
     texture: &F::TextureId,
     area: Rectangle<i32, Physical>,
 ) -> Result<(), RenderError> {
-    if area.size.w <= 0 || area.size.h <= 0 {
+    wash_scaled(frame, texture, (area.size.w, area.size.h), area)
+}
+
+/// Draw one uploaded raster of `source` pixels into `area`, stretched or shrunk
+/// to fill it.
+///
+/// **What a window on the canvas needs**, since alo's terminal became one
+/// ([ADR 0145](../../../docs/decisions/0145-alos-own-windows-live-on-the-canvas.md)):
+/// its picture is laid out at the window's own size and drawn at the camera's
+/// zoom, exactly as an application's buffer is, and `area` may reach past the
+/// output on any side, which the renderer clips. [`wash`] is this with the
+/// source the size of the area.
+pub(crate) fn wash_scaled<F: Frame>(
+    frame: &mut F,
+    texture: &F::TextureId,
+    source: (i32, i32),
+    area: Rectangle<i32, Physical>,
+) -> Result<(), RenderError> {
+    if area.size.w <= 0 || area.size.h <= 0 || source.0 <= 0 || source.1 <= 0 {
         return Ok(());
     }
     frame
         .render_texture_from_to(
             texture,
-            Rectangle::from_size((f64::from(area.size.w), f64::from(area.size.h)).into()),
+            Rectangle::from_size((f64::from(source.0), f64::from(source.1)).into()),
             area,
             // **Relative to the destination, not to the frame.** Smithay's
             // pixman backend adds the destination's own location to every

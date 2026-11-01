@@ -1757,6 +1757,7 @@ impl LoopInput for Desk<'_> {
             &mut self.labels.fonts,
             (size.w, size.h),
             f64::from(server.the_scale_of_display(&named)) / 100.0,
+            frame.look.reading(),
         );
         // **alo's own terminal, drawn here and not inside `frame_pictures`.**
         // Two rules put it here. That file is held to *no string a person could
@@ -2454,11 +2455,15 @@ pub(crate) fn drawn_terminal(
     named: &str,
     frame: crate::DesktopFrame<'_>,
     says: &alo_strings::Strings,
-) -> Option<crate::the_terminals_cells_are_drawn::TerminalPicture> {
+) -> Option<crate::the_terminal_on_the_plane::TheTerminalOnTheScreen> {
     let terminal = server.alos_own_terminal()?;
     let screen = terminal.screen();
     let scale = f64::from(server.the_scale_of_display(named)) / 100.0;
-    match crate::the_terminals_cells_are_drawn::picture(
+    // **Where the canvas has it, through this display's camera** (ADR 0145). A
+    // terminal on another Place is not drawn here, as an application's window
+    // on another Place is not.
+    let (window, camera) = server.where_the_terminal_is_drawn_on(named, size, scale)?;
+    let drawn = match crate::the_terminals_cells_are_drawn::picture(
         &mut labels.fonts,
         crate::the_terminals_cells_are_drawn::Shows {
             screen,
@@ -2475,16 +2480,36 @@ pub(crate) fn drawn_terminal(
                 who: server.whose_desktop_this_is(),
             },
         },
-        size,
+        (window.size.w, window.size.h),
         scale,
         frame.look.scheme(),
         says,
         server.what_alos_own_terminals_shell_is_called().as_deref(),
     ) {
-        Ok(drawn) => Some(drawn),
+        Ok(drawn) => drawn,
         Err(why) => {
             eprintln!("alo-shell: alo's own terminal could not be drawn on {named}: {why}");
-            None
+            return None;
         }
-    }
+    };
+    let Some(raster) = crate::the_terminal_on_the_plane::flattened(&drawn) else {
+        eprintln!(
+            "alo-shell: alo's own terminal could not be drawn on {named}: a part of its picture \
+             was laid out outside the picture"
+        );
+        return None;
+    };
+    // The picture reaches past the window by its shadow, so where it lands is
+    // the window grown by that reach, on the plane, through the camera.
+    let reach =
+        crate::the_terminals_cells_are_drawn::laid_out((window.size.w, window.size.h), scale)
+            .map_or(0, |laid| laid.reach);
+    let with_its_shadow = smithay::utils::Rectangle::new(
+        (window.loc.x - reach, window.loc.y - reach).into(),
+        (raster.area.size.w, raster.area.size.h).into(),
+    );
+    Some(crate::the_terminal_on_the_plane::TheTerminalOnTheScreen {
+        drawn_at: crate::the_terminal_on_the_plane::on_the_screen(with_its_shadow, camera),
+        raster,
+    })
 }
