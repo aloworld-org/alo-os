@@ -5,10 +5,18 @@
 //! code, twice, with the same answers both times. Drawn with the shell's
 //! bundled faces only (`WindowControlLabels`), so a machine's own fonts cannot
 //! move them.
+//!
+//! **Re-taken on 2026-11-01** for the first start the owner approved that day
+//! (`562:342`, `562:462`, `562:508`), which changed every sheet on purpose:
+//! from the gate's run of this tree, which printed them. **They pin what is
+//! drawn; they do not say it is right** — that is the comparison by eye with
+//! the design, through `the_approved_frames_are_drawn`'s pictures, which a
+//! person makes by hand and this test does not.
 #![expect(
     clippy::unwrap_used,
     clippy::panic,
-    reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
+    clippy::indexing_slicing,
+    reason = "in a test, a panic on an unexpected None, Err or index is the failure being reported"
 )]
 
 use alo_accounts::Accounts;
@@ -118,19 +126,109 @@ fn at_one_hundred_every_sheet_is_the_pixels_main_drew() {
     assert_eq!(
         hashes,
         [
-            0x65fb_5e06_9413_07e9,
-            0x0306_039b_8963_6f44,
-            0xa730_dc0b_ce66_c79e,
-            0xdd58_b88b_6c1e_865b,
-            0x38f9_e8e2_3110_e10e,
-            0x709c_4fc5_8036_790b,
-            0xfef5_f13c_f256_4ec6,
-            0xe9ae_26d0_30e1_f18d,
-            0x1b08_7f87_c01f_501e,
-            0xa7ee_980d_1017_99fd,
-            0x401c_dd65_b3ab_db9f,
-            0x4a19_2fe8_edb5_21c0,
+            0xc7d7_1af9_762c_2ae4,
+            0x4828_56a8_a24c_3b79,
+            0xd34e_c7c5_02a7_df72,
+            0xb9d4_411e_0ed1_ab93,
+            0x69d8_8724_8af0_f822,
+            0xd10c_dfb8_0b86_ef03,
+            0x784d_ce7a_811d_65ec,
+            0x5e04_9bcd_cdb4_3583,
+            0x0ef0_7432_0eb6_a38e,
+            0x2bb2_94b5_8d05_d591,
+            0x8b98_b033_7975_07bb,
+            0x5a32_810b_1798_4182,
         ],
         "a first-start sheet at 100 per cent is not the pixels main drew: {hashes:x?}"
     );
+}
+
+/// **The approved frames, drawn, for the owner to compare** — *Start with your
+/// language* `562:342` at 1440 × 960 and `562:402` at 1280 × 800, *What should
+/// we call you?* `562:462`, and *Add a PIN?* `562:508`.
+///
+/// With `ALO_ROUND_2_PICTURES` set to a folder each is written there as a PNG,
+/// which is how the rendered-against-design pictures are made: a check somebody
+/// runs by hand. What runs on every build is that each draws.
+#[test]
+fn the_approved_frames_are_drawn() {
+    use SignInKey::{Enter, Letter, OtherField};
+    for (keys, size, name) in [
+        (
+            vec![],
+            (1440, 960),
+            "first-start-language-improved-1440x960-light.png",
+        ),
+        (
+            vec![],
+            (1280, 800),
+            "first-start-language-improved-1280x800-light.png",
+        ),
+        (
+            vec![OtherField, Enter, Letter('a')],
+            (1440, 960),
+            "first-start-your-name-improved-1440x960-light.png",
+        ),
+        (
+            vec![OtherField, Enter, Letter('a'), Enter, Letter('1')],
+            (1440, 960),
+            "first-start-add-a-pin-improved-1440x960-light.png",
+        ),
+    ] {
+        let drawn = the_sheet(&keys, size, DisplayScale::ONE).unwrap();
+        let Some(folder) = std::env::var_os("ALO_ROUND_2_PICTURES") else {
+            continue;
+        };
+        let (wide, tall) = (
+            u32::try_from(size.0).unwrap(),
+            u32::try_from(size.1).unwrap(),
+        );
+        let mut image = image::RgbImage::from_pixel(wide, tall, image::Rgb([0xFA, 0xF7, 0xF2]));
+        let mut put = |x: i32, y: i32, colour: [u8; 3], alpha: f32| {
+            let (Ok(x), Ok(y)) = (u32::try_from(x), u32::try_from(y)) else {
+                return;
+            };
+            if x >= wide || y >= tall {
+                return;
+            }
+            let under = image.get_pixel(x, y).0;
+            let over = |which: usize| {
+                (f32::from(colour[which]) * alpha + f32::from(under[which]) * (1.0 - alpha)).round()
+                    as u8
+            };
+            image.put_pixel(x, y, image::Rgb([over(0), over(1), over(2)]));
+        };
+        if let Some(surface) = drawn.surface.as_ref() {
+            for (at, pixel) in surface.pixels.as_chunks::<4>().0.iter().enumerate() {
+                let at = i32::try_from(at).unwrap();
+                put(
+                    surface.area.loc.x + at % surface.area.size.w,
+                    surface.area.loc.y + at / surface.area.size.w,
+                    [pixel[0], pixel[1], pixel[2]],
+                    f32::from(pixel[3]) / 255.0,
+                );
+            }
+        }
+        for solid in &drawn.solids {
+            for y in solid.area.loc.y..solid.area.loc.y + solid.area.size.h {
+                for x in solid.area.loc.x..solid.area.loc.x + solid.area.size.w {
+                    put(x, y, solid.colour, 1.0);
+                }
+            }
+        }
+        for inked in &drawn.inked {
+            for (at, pixel) in inked.pixels.iter().enumerate() {
+                let at = i32::try_from(at).unwrap();
+                put(
+                    inked.area.loc.x + at % inked.area.size.w,
+                    inked.area.loc.y + at / inked.area.size.w,
+                    *pixel,
+                    1.0,
+                );
+            }
+        }
+        image
+            .save(std::path::Path::new(&folder).join(name))
+            .unwrap();
+    }
 }
