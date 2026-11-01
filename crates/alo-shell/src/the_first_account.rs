@@ -127,16 +127,6 @@ impl TheFirstAccount {
         }
     }
 
-    /// Which sheet is showing.
-    pub(crate) const fn sheet(&self) -> TheAccountSheet {
-        self.sheet
-    }
-
-    /// Where the keyboard is.
-    pub(crate) const fn on(&self) -> OnTheSheet {
-        self.on
-    }
-
     /// The name as typed.
     pub(crate) fn name(&self) -> &str {
         &self.name
@@ -151,11 +141,6 @@ impl TheFirstAccount {
     /// fact about either that is drawn.
     pub(crate) fn typed(&self) -> (bool, bool) {
         (!self.secret.is_empty(), !self.again.is_empty())
-    }
-
-    /// Whether the last try typed two different secrets.
-    pub(crate) const fn they_differed(&self) -> bool {
-        self.they_differed
     }
 
     /// How many fields the sheet showing has.

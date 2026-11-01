@@ -16,10 +16,10 @@ fn a_name_and_a_pin_typed_twice_make_the_account() {
     let mut account = TheFirstAccount::arriving();
     typed(&mut account, "anna");
     assert_eq!(account.pressed(SignInKey::Enter), Went::Stayed);
-    assert_eq!(account.sheet(), TheAccountSheet::Secret(ASecret::Pin));
+    assert_eq!(account.shown().sheet, TheAccountSheet::Secret(ASecret::Pin));
     typed(&mut account, "4821");
     account.pressed(SignInKey::Enter);
-    assert_eq!(account.on(), OnTheSheet::Field(1));
+    assert_eq!(account.shown().on, OnTheSheet::Field(1));
     typed(&mut account, "4821");
     assert_eq!(account.pressed(SignInKey::Enter), Went::MakeIt);
     assert_eq!((account.name(), account.secret()), ("anna", "4821"));
@@ -36,12 +36,12 @@ fn two_different_secrets_make_no_account() {
     account.pressed(SignInKey::Enter);
     typed(&mut account, "4812");
     assert_eq!(account.pressed(SignInKey::Enter), Went::Stayed);
-    assert!(account.they_differed());
+    assert!(account.shown().they_differed);
     assert_eq!(account.typed(), (true, false));
-    assert_eq!(account.on(), OnTheSheet::Field(1));
+    assert_eq!(account.shown().on, OnTheSheet::Field(1));
     // Typing again stops saying so.
     typed(&mut account, "4");
-    assert!(!account.they_differed());
+    assert!(!account.shown().they_differed);
 }
 
 /// **Enter on the name goes on, as it always has** — the account store
@@ -50,8 +50,8 @@ fn two_different_secrets_make_no_account() {
 fn enter_on_the_name_goes_on_to_the_secret() {
     let mut account = TheFirstAccount::arriving();
     account.pressed(SignInKey::Enter);
-    assert_eq!(account.sheet(), TheAccountSheet::Secret(ASecret::Pin));
-    assert_eq!(account.on(), OnTheSheet::Field(0));
+    assert_eq!(account.shown().sheet, TheAccountSheet::Secret(ASecret::Pin));
+    assert_eq!(account.shown().on, OnTheSheet::Field(0));
 }
 
 /// **Use password only asks for a password**, with the PIN forgotten and the
@@ -63,7 +63,7 @@ fn skipping_the_pin_asks_for_a_password_and_back_returns() {
     account.pressed(SignInKey::Enter);
     typed(&mut account, "48");
     assert_eq!(account.way_back(), Went::Stayed);
-    assert_eq!(account.sheet(), TheAccountSheet::Secret(ASecret::Password));
+    assert_eq!(account.shown().sheet, TheAccountSheet::Secret(ASecret::Password));
     assert_eq!(account.typed(), (false, false), "the PIN is forgotten");
     assert_eq!(account.name(), "anna", "the name is kept");
     typed(&mut account, "correct horse");
@@ -77,7 +77,7 @@ fn skipping_the_pin_asks_for_a_password_and_back_returns() {
     back.pressed(SignInKey::Enter);
     back.way_back();
     back.way_back();
-    assert_eq!(back.sheet(), TheAccountSheet::Secret(ASecret::Pin));
+    assert_eq!(back.shown().sheet, TheAccountSheet::Secret(ASecret::Pin));
 }
 
 /// **Back on the name returns to the first start**, and nothing else does.
@@ -97,13 +97,13 @@ fn tab_reaches_both_buttons_and_enter_presses_them() {
     account.pressed(SignInKey::Enter);
     account.pressed(SignInKey::OtherField);
     account.pressed(SignInKey::OtherField);
-    assert_eq!(account.on(), OnTheSheet::WayOn);
+    assert_eq!(account.shown().on, OnTheSheet::WayOn);
     account.pressed(SignInKey::OtherField);
-    assert_eq!(account.on(), OnTheSheet::WayBack);
+    assert_eq!(account.shown().on, OnTheSheet::WayBack);
     assert_eq!(account.pressed(SignInKey::Enter), Went::Stayed);
-    assert_eq!(account.sheet(), TheAccountSheet::Secret(ASecret::Password));
+    assert_eq!(account.shown().sheet, TheAccountSheet::Secret(ASecret::Password));
     account.pressed(SignInKey::Earlier);
-    assert_eq!(account.on(), OnTheSheet::WayBack);
+    assert_eq!(account.shown().on, OnTheSheet::WayBack);
 }
 
 /// **A letter on a button types nothing**, and Escape on the secret's sheet
