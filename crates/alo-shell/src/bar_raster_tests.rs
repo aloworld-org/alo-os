@@ -192,3 +192,72 @@ fn the_screen_behind_is_dimmed_and_still_seen() {
     assert_eq!(colour, [0xFA, 0xF7, 0xF2]);
     assert!((opacity - 0.45).abs() < f32::EPSILON);
 }
+
+/// **The launcher at both of the approved frames' sizes**, written as a PNG
+/// over the dimmed canvas when `ALO_ROUND_2_PICTURES` names a folder — a check
+/// somebody runs by hand beside `561:275` and `561:370`. What runs on every
+/// build is that both lay out and draw.
+#[test]
+fn the_launcher_draws_at_both_frames_sizes_and_can_be_looked_at() {
+    let folder = std::env::var_os("ALO_ROUND_2_PICTURES");
+    for size in [(1440, 960), (1280, 800)] {
+        let drawn = a_launcher(Size::from(size), &dolphin(), None, true).expect("drawn");
+        let Some(folder) = &folder else {
+            continue;
+        };
+        let (wide, tall) = (
+            u32::try_from(size.0).expect("a width"),
+            u32::try_from(size.1).expect("a height"),
+        );
+        let (_, [vr, vg, vb], opacity) = drawn.veil;
+        let mix = |over: u8, under: u8, alpha: f32| {
+            #[expect(
+                clippy::cast_possible_truncation,
+                clippy::cast_sign_loss,
+                reason = "a blend of two bytes stays a byte"
+            )]
+            let it = (f32::from(over) * alpha + f32::from(under) * (1.0 - alpha)).round() as u8;
+            it
+        };
+        let mut image = image::RgbImage::from_pixel(
+            wide,
+            tall,
+            image::Rgb([
+                mix(vr, 0xFA, opacity),
+                mix(vg, 0xF7, opacity),
+                mix(vb, 0xF2, opacity),
+            ]),
+        );
+        let area = drawn.panel.area;
+        for (at, it) in drawn.panel.pixels.chunks(4).enumerate() {
+            let at = i32::try_from(at).expect("a small picture");
+            let (x, y) = (area.loc.x + at % area.size.w, area.loc.y + at / area.size.w);
+            let (Ok(x), Ok(y)) = (u32::try_from(x), u32::try_from(y)) else {
+                continue;
+            };
+            let &[red, green, blue, alpha] = it else {
+                continue;
+            };
+            if x >= wide || y >= tall {
+                continue;
+            }
+            let [ur, ug, ub] = image.get_pixel(x, y).0;
+            let alpha = f32::from(alpha) / 255.0;
+            image.put_pixel(
+                x,
+                y,
+                image::Rgb([
+                    mix(red, ur, alpha),
+                    mix(green, ug, alpha),
+                    mix(blue, ub, alpha),
+                ]),
+            );
+        }
+        image
+            .save(
+                std::path::Path::new(folder)
+                    .join(format!("launcher-{}x{}-rendered.png", size.0, size.1)),
+            )
+            .expect("written");
+    }
+}
