@@ -234,6 +234,12 @@ the design draws them, and choosing one says in words that nothing changed**
 
 1. **Focus, hover and pressed states** are not in the frames. The keyboard's
    outline above is this repository's existing rule, not a measurement.
+   **Since 2026-11-01 it is drawn on the edge of what it marks**, two thick in
+   navy, rather than two units outside it: standing off, it was eight units
+   wider than the chosen category's pill and reached the side column's edge — an
+   oversized halo on the first thing a person sees when Settings opens, which
+   the frames do not draw. Waiting for a chord is still a doubled outline, the
+   second one ring's width inside the first.
 2. **A provider row's line in the frame** says *key kept in this computer's
    keyring*; the window says that only when the provider's key reference is
    set, which is what the settings know.

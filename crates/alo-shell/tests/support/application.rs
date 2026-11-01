@@ -542,6 +542,38 @@ impl Application {
         Some(viewport)
     }
 
+    /// **A second window of this same application**, named `app_id`, mapped
+    /// through the whole handshake — what a dialog an application opens is.
+    #[allow(
+        dead_code,
+        reason = "used by the new-window tests, not by the examples"
+    )]
+    pub fn another_window(
+        &mut self,
+        app_id: &str,
+    ) -> (
+        wl_surface::WlSurface,
+        xdg_surface::XdgSurface,
+        xdg_toplevel::XdgToplevel,
+    ) {
+        let qh = self.queue.handle();
+        let surface = self.compositor.create_surface(&qh, ());
+        let xdg = self.shell.get_xdg_surface(&surface, &qh, ());
+        let toplevel = xdg.get_toplevel(&qh, ());
+        toplevel.set_app_id(app_id.to_owned());
+        self.events.serial = None;
+        surface.commit();
+        self.sync();
+        if let Some(serial) = self.events.serial {
+            xdg.ack_configure(serial);
+        }
+        surface.attach(Some(&self.buffer), 0, 0);
+        surface.damage_buffer(0, 0, 16, 16);
+        surface.commit();
+        self.sync();
+        (surface, xdg, toplevel)
+    }
+
     /// Assert that the server rejected this client's protocol request.
     pub fn refused(&mut self) {
         assert!(self.queue.roundtrip(&mut self.events).is_err());

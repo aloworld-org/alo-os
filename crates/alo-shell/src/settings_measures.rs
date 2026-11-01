@@ -129,10 +129,9 @@ pub(crate) const A_RISKS_ICON: u32 = 18;
 pub(crate) const AFTER_A_RISKS_ICON: u32 = 10;
 /// Between the risk's heading and its sentence.
 pub(crate) const UNDER_A_RISKS_HEADING: u32 = 2;
-/// The keyboard's outline: how thick, and how far it stands off what it marks.
+/// The keyboard's outline: how thick. It is drawn **on** the edge of what it
+/// marks, never outside it — see `crate::settings_raster`'s `a_focus_ring`.
 pub(crate) const THE_FOCUS_RING: u32 = 2;
-/// How far the keyboard's outline stands outside what it marks.
-pub(crate) const THE_FOCUS_RING_STANDS_OFF: u32 = 2;
 
 /// A lead icon's well, square (`550:820`).
 pub(crate) const A_LEADS_WELL: u32 = 36;

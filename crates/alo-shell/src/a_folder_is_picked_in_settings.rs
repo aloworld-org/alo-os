@@ -56,7 +56,10 @@ use alo_strings::{Filling, Said, Strings};
 pub use alo_picking::Folders;
 
 use crate::how_long_a_grant_lasts::HowLong;
-use crate::the_pickers_words::{HOW_LONG, PICK_THIS_FOLDER, UP_ONE_FOLDER};
+use crate::the_pickers_words::{
+    HIDE_HIDDEN_FOLDERS, HOW_LONG, PICK_THIS_FOLDER, SHOW_HIDDEN_FOLDERS, THE_PATH, UP_ONE_FOLDER,
+    YOU_ARE_IN,
+};
 
 /// One row of the picker, as a person meets it.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -67,6 +70,17 @@ pub enum PickingRow {
     UpOneFolder,
     /// Open this folder, by the name it is shown under.
     IntoFolder(String),
+    /// Show the hidden folders here (`true`), or hide them again (`false`).
+    ///
+    /// **Hidden is the ordinary default, and showing them is one row away.**
+    /// A folder whose name begins with a dot holds settings and caches, and
+    /// every file manager hides it; on a booted machine on 2026-11-01 the
+    /// picker listed `.cache`, `.config` and `.local` above the folders a
+    /// person keeps. They stay reachable, because a person could give alo one
+    /// of them before this and still can (`CLAUDE.md`, law 5).
+    /// `alo_picking::OnThisDisk` hides nothing, and says hiding is the
+    /// drawing's decision; this is that decision.
+    HiddenFoldersShown(bool),
     /// Give it for this long, which makes the grant.
     For(HowLong),
 }
@@ -102,6 +116,16 @@ pub struct AFolderBeingPicked {
     chosen: Option<Chosen>,
     /// The last refusal, in the person's own language, until they move.
     told: Option<String>,
+    /// Whether the folders whose names begin with a dot are listed. Hidden
+    /// until the person asks; kept while they walk, as a file manager keeps
+    /// it.
+    shows_hidden: bool,
+}
+
+/// Whether a folder is one an ordinary listing hides: its name begins with a
+/// dot.
+fn is_hidden(name: &str) -> bool {
+    name.starts_with('.')
 }
 
 impl AFolderBeingPicked {
@@ -116,7 +140,29 @@ impl AFolderBeingPicked {
             picker: Picker::standing_in(at, folders)?,
             chosen: None,
             told: None,
+            shows_hidden: false,
         })
+    }
+
+    /// **Where the person is standing, in words**: the folder's own name and
+    /// its full path, so a list of folders says whose folders they are.
+    ///
+    /// Until 2026-11-01 nothing on the page said it, and inside *Documents* a
+    /// booted machine showed two rows and no way to tell where they were.
+    #[must_use]
+    pub fn where_they_are(&self, strings: &Strings) -> String {
+        let at = self.picker.at();
+        let folder = at.file_name().map_or_else(
+            || at.display().to_string(),
+            |name| name.to_string_lossy().into_owned(),
+        );
+        strings
+            .say(
+                &YOU_ARE_IN.key(),
+                &Filling::of(crate::the_pickers_words::THE_FOLDER, folder)
+                    .and(THE_PATH, at.display().to_string()),
+            )
+            .into_text()
     }
 
     /// Where the person is standing.
@@ -166,8 +212,15 @@ impl AFolderBeingPicked {
             self.picker
                 .showing()
                 .iter()
+                .filter(|name| self.shows_hidden || !is_hidden(name))
                 .map(|name| PickingRow::IntoFolder(name.clone())),
         );
+        // **Offered only where there is something hidden**, which is *up one
+        // folder*'s rule: a row that can change nothing teaches somebody the
+        // list is not to be trusted.
+        if self.picker.showing().iter().any(|name| is_hidden(name)) {
+            rows.push(PickingRow::HiddenFoldersShown(!self.shows_hidden));
+        }
         rows
     }
 
@@ -185,6 +238,17 @@ impl AFolderBeingPicked {
             // word, not ours, and putting it through the vocabulary would be
             // asking a translator about somebody's filing.
             PickingRow::IntoFolder(name) => name.clone(),
+            PickingRow::HiddenFoldersShown(shown) => strings
+                .say(
+                    &if *shown {
+                        SHOW_HIDDEN_FOLDERS
+                    } else {
+                        HIDE_HIDDEN_FOLDERS
+                    }
+                    .key(),
+                    &Filling::nothing(),
+                )
+                .into_text(),
             PickingRow::For(how_long) => strings
                 .say(&how_long.word().key(), &Filling::nothing())
                 .into_text(),
@@ -226,6 +290,10 @@ impl AFolderBeingPicked {
                 Ok(()) => WhatPickingDid::ItChanged,
                 Err(why) => self.refused(why, strings),
             },
+            PickingRow::HiddenFoldersShown(shown) => {
+                self.shows_hidden = *shown;
+                WhatPickingDid::ItChanged
+            }
             PickingRow::For(how_long) => match self.chosen.clone() {
                 Some(chosen) => WhatPickingDid::GiveItThisFolder {
                     chosen: Box::new(chosen),

@@ -213,6 +213,10 @@ pub struct Server {
     /// application door — held apart from [`Self::asked_to_start`] so the
     /// sender is told who asked. See `crate::an_application_is_started`.
     pub(crate) its_agent_asked_to_start: Vec<alo_dock::AppId>,
+    /// The applications the person started whose first window has not come
+    /// yet, oldest first. When it comes it is brought in front and given the
+    /// keyboard: `crate::a_window_the_person_opened`.
+    pub(crate) the_person_is_waiting_for: Vec<alo_dock::AppId>,
     /// Which application this machine's terminal is, when something has told
     /// it.
     ///
@@ -741,6 +745,7 @@ impl Server {
             asked_on_an_edge: Vec::new(),
             asked_to_start: Vec::new(),
             its_agent_asked_to_start: Vec::new(),
+            the_person_is_waiting_for: Vec::new(),
             the_terminal: None,
             alos_own_terminal: None,
             where_the_terminal_is: None,

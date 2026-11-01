@@ -28,7 +28,11 @@ use crate::the_settings_words as w;
 pub(crate) fn the_blocks(open: &Open, strings: &Strings, now: SystemTime) -> Vec<ABlock> {
     let section = &open.granted;
     if let Some(picking) = section.picking() {
-        let mut blocks = vec![ABlock::Said(picking.asking(strings).into_text())];
+        let mut blocks = vec![
+            ABlock::Said(picking.asking(strings).into_text()),
+            // Which folder this is: its name and its full path.
+            ABlock::Said(picking.where_they_are(strings)),
+        ];
         blocks.extend(picking.told().map(|it| ABlock::Said(it.to_owned())));
         let rows = picking
             .rows()
