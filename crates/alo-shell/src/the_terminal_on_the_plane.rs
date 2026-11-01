@@ -104,10 +104,13 @@ impl TheTerminalOnTheScreen {
 /// scaled by the camera one pixel row at a time and stay a run of text. The
 /// shapes and the cells are opaque, so each simply replaces what is under it.
 ///
-/// [`None`] for a picture with no size, or with a part outside its own room,
-/// which `TerminalPicture::validate` refuses.
+/// [`None`] for a picture with nothing in it, with no size, or with a part
+/// outside its own room, which `TerminalPicture::validate` refuses.
 pub(crate) fn flattened(picture: &TerminalPicture) -> Option<Washed> {
     let (width, height) = picture.size;
+    if picture.is_empty() {
+        return None;
+    }
     picture.validate((width, height).into()).ok()?;
     let (w, h) = (usize::try_from(width).ok()?, usize::try_from(height).ok()?);
     let mut pixels = vec![0_u8; w.checked_mul(h)?.checked_mul(4)?];
