@@ -38,7 +38,7 @@ fn the_terminal_is_painted_where_a_window_is_under_every_surface_of_alos() {
         ),
         (
             "the record, so it covers what the machine did",
-            "record.paint(&mut frame)",
+            "record.paint(&mut frame, record_washed.as_ref())",
         ),
         (
             "Settings, so it covers a setting being changed",

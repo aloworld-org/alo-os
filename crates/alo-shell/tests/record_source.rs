@@ -376,12 +376,21 @@ fn the_plain_road_passes_through_no_agent() {
                 "alo_protocol",
                 "alo_approving",
                 "alo_capability",
-                "Turning",
-                "Summoning",
-                "Grants",
             ] {
                 assert!(
                     !line.contains(agent),
+                    "{named}:{which} puts the agent on the road to the record (`{agent}`): {line}"
+                );
+            }
+            // **Types are read as whole names**, as the writers are above:
+            // `Grants` is the agent's grants, and `Outcome::TheGrantsSaidNo`
+            // is one of the record's own outcomes, which the window sorts into
+            // the design's kinds (`record_kinds.rs`) — reading the record, not
+            // reaching the agent. A search on the letters could not tell them
+            // apart.
+            for agent in ["Turning", "Summoning", "Grants"] {
+                assert!(
+                    !names(&line, agent),
                     "{named}:{which} puts the agent on the road to the record (`{agent}`): {line}"
                 );
             }
