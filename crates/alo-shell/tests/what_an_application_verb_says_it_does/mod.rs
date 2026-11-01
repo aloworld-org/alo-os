@@ -160,7 +160,9 @@ fn focusing_does_what_it_says_and_leaves_what_it_says() {
         "its window did not get the keyboard"
     );
     assert_eq!(
-        front_to_back(&f).first().map(|it| it.id().protocol_id()),
+        front_to_back(&f)
+            .first()
+            .map(|it| smithay::reexports::wayland_server::Resource::id(it).protocol_id()),
         Some(files.surface.id().protocol_id()),
         "its window is not in front"
     );
