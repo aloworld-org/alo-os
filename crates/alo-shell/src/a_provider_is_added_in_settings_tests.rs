@@ -589,6 +589,52 @@ fn another_computer_on_the_persons_network_over_http_is_saved_when_they_press_en
     assert_eq!(saving.provider.endpoint, "http://192.168.1.21:11434");
 }
 
+/// **When the desktop says the provider was saved, Settings shows it at
+/// once**, read from the file the desktop wrote — the road the frame loop
+/// takes (`crate::direct_desktop`: `that_provider_was_saved`).
+#[test]
+fn a_saved_provider_is_on_the_settings_page_without_reopening_it() {
+    let (_directory, mut server) = a_server();
+    let machine = crate::settings_testing::a_persons_machine("saved-on-the-page");
+    server.the_settings_places_are(machine.places.clone());
+    let _opened = server
+        .settings
+        .opened_by_hand(&machine.places, std::time::SystemTime::now());
+    let lantern = crate::SettingsRow::Answer(crate::SettingsChoice::Provider {
+        provider: "Lantern".to_owned(),
+        model: "lantern-large".to_owned(),
+    });
+    let mut choosing = alo_choosing::Choosing::at(&machine.choosing()).expect("the settings read");
+    choosing
+        .adding(
+            alo_models::Provider::checked(
+                "Lantern",
+                "https://lantern.example",
+                alo_models::Region::Unknown,
+                None,
+            )
+            .expect("a provider"),
+        )
+        .expect("added");
+    choosing
+        .answered_by(Some(
+            alo_choosing::Picked::from_a_provider("Lantern", "lantern-large").expect("a pick"),
+        ))
+        .expect("chosen");
+    let now = std::time::SystemTime::now();
+    assert!(
+        !server.settings.rows(now).contains(&lantern),
+        "the control: Settings read the file by itself"
+    );
+
+    server.that_provider_was_saved();
+
+    assert!(
+        server.settings.rows(now).contains(&lantern),
+        "the provider the desktop just saved is not on the Settings page"
+    );
+}
+
 #[test]
 fn plain_http_to_the_internet_is_still_not_saved() {
     // The refusal half: an address on the internet over plain http is refused

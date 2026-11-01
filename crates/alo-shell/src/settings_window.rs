@@ -500,6 +500,32 @@ impl SettingsWindow {
         SettingsOpened { not_remembered }
     }
 
+    /// **What answers questions is read again**, because something outside
+    /// this window just wrote it: a provider the person saved from the form on
+    /// this page (`alo-desktop` makes those writes).
+    ///
+    /// Until 2026-11-01 the section was read only when Settings opened, so a
+    /// provider saved here was not on the page — and was not chosen on it —
+    /// until Settings was closed and opened again. Seen on a booted machine.
+    ///
+    /// **The keyboard stays on the row it was on**, found again by what the
+    /// row is: the new provider adds a row above *Add a provider*, and a focus
+    /// kept by number would have moved to a different row under the person's
+    /// hand. Nothing else in the window is read again.
+    pub fn what_answers_is_read_again(&mut self, places: &SettingsPlaces, now: SystemTime) {
+        let was_on = self.focused(now);
+        let Some(open) = self.open.as_mut() else {
+            return;
+        };
+        open.answering = AnsweringSection::at_sign_in(places.choosing());
+        let rows = open.rows_on(open.category, now);
+        if let Some(at) = was_on.and_then(|row| rows.iter().position(|it| *it == row)) {
+            open.focus = at;
+        } else {
+            open.focus = open.focus.min(rows.len().saturating_sub(1));
+        }
+    }
+
     /// **The time zones offered are those of the region `formats` writes
     /// dates like**, in the language its person reads — asked by the host when
     /// Settings opens and again when a region is kept, because the region is
