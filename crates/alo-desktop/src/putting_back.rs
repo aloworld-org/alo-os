@@ -30,9 +30,38 @@ pub(crate) fn where_the_places_are() -> Option<(PathBuf, PathBuf)> {
     })
 }
 
+/// Why nothing was put back, before it is said.
+#[derive(Debug)]
+pub(crate) enum NotPutBack {
+    /// The service refused, in the person's words already.
+    Refused(String),
+    /// The service could not be asked, or answered something that was not an
+    /// answer to this — said with the sentence `alo-back` says for the same
+    /// thing, and what the system said, if anything, filled in.
+    NotReached(String),
+}
+
+impl NotPutBack {
+    /// The sentence the confirmation shows, in `strings`' language.
+    pub(crate) fn said(self, strings: &alo_strings::Strings) -> String {
+        match self {
+            Self::Refused(said) => said,
+            Self::NotReached(why) => strings
+                .say(
+                    &alo_as_it_was::words::NOT_WITHOUT_THE_RECORD.key(),
+                    &alo_strings::Filling::of("why", why),
+                )
+                .into_text(),
+        }
+    }
+}
+
 /// Ask the service to put `folders` back from `place`, and the channel its
 /// answer comes over: the sentences it said, or why nothing was put back.
-pub(crate) fn asked(place: String, folders: Vec<String>) -> Receiver<Result<Vec<String>, String>> {
+pub(crate) fn asked(
+    place: String,
+    folders: Vec<String>,
+) -> Receiver<Result<Vec<String>, NotPutBack>> {
     let (tell, told) = channel();
     let door = alo_changing::this_persons_door();
     let started = std::thread::Builder::new()
@@ -51,28 +80,29 @@ fn the_service_puts_back(
     door: &Path,
     place: String,
     folders: Vec<String>,
-) -> Result<Vec<String>, String> {
-    let stream = UnixStream::connect(door).map_err(|why| why.to_string())?;
-    stream
-        .set_read_timeout(Some(PATIENCE))
-        .map_err(|why| why.to_string())?;
+) -> Result<Vec<String>, NotPutBack> {
+    let unreached = |why: std::io::Error| NotPutBack::NotReached(why.to_string());
+    let stream = UnixStream::connect(door).map_err(unreached)?;
+    stream.set_read_timeout(Some(PATIENCE)).map_err(unreached)?;
     let line = FromAPerson::PutBack { place, folders }
         .written()
-        .map_err(|why| why.to_string())?;
+        .map_err(|why| NotPutBack::NotReached(why.to_string()))?;
     (&stream)
         .write_all(line.as_bytes())
         .and_then(|()| (&stream).write_all(b"\n"))
-        .map_err(|why| why.to_string())?;
+        .map_err(unreached)?;
     let mut answer = String::new();
     BufReader::new(&stream)
         .read_line(&mut answer)
-        .map_err(|why| why.to_string())?;
-    match ToAPerson::read(answer.trim_end()).map_err(|why| why.to_string())? {
-        ToAPerson::PutBack { said } => Ok(said
+        .map_err(unreached)?;
+    // An answer that does not read, or is not about putting back, says
+    // nothing a person could act on, so the sentence stands without one.
+    match ToAPerson::read(answer.trim_end()) {
+        Ok(ToAPerson::PutBack { said }) => Ok(said
             .iter()
             .map(|wording| wording.text().to_owned())
             .collect()),
-        ToAPerson::Refused(wording) => Err(wording.text().to_owned()),
-        other => Err(format!("the service answered something else: {other:?}")),
+        Ok(ToAPerson::Refused(wording)) => Err(NotPutBack::Refused(wording.text().to_owned())),
+        Ok(_) | Err(_) => Err(NotPutBack::NotReached(String::new())),
     }
 }

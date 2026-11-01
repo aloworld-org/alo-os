@@ -285,7 +285,8 @@ mod running {
         dock_at: Option<std::path::PathBuf>,
         /// The answer to the last *Put back* asked from the record window,
         /// while it is being worked out on its own thread.
-        putting_back: Option<std::sync::mpsc::Receiver<Result<Vec<String>, String>>>,
+        putting_back:
+            Option<std::sync::mpsc::Receiver<Result<Vec<String>, crate::putting_back::NotPutBack>>>,
         /// When this person's windows show their titles, read from their
         /// `appearance.toml` once at sign-in.
         ///
@@ -850,11 +851,11 @@ mod running {
                 Ok(answer) => answer,
                 Err(std::sync::mpsc::TryRecvError::Empty) => return None,
                 Err(std::sync::mpsc::TryRecvError::Disconnected) => {
-                    Err("the service's answer never came".to_owned())
+                    Err(crate::putting_back::NotPutBack::NotReached(String::new()))
                 }
             };
             self.putting_back = None;
-            Some(answer)
+            Some(answer.map_err(|why| why.said(&self.strings)))
         }
 
         /// Where this machine keeps its record, read from the machine's own
