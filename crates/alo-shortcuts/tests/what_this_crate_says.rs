@@ -119,6 +119,10 @@ fn auf_deutsch() -> Strings {
                 words::GO_BACK_ON_THIS_PLACE,
                 "Diese Fläche wiederherstellen, wie sie war",
             ),
+            (
+                words::GO_FORWARD_ON_THIS_PLACE,
+                "Diese Fläche wieder vorwärtsstellen",
+            ),
             // **Bildschirmbereich, not *Landmarke*.** A screen reader's German
             // documentation says *Bereich*, and this row is read by somebody
             // using one: the word they already know beats a loan word that is
@@ -282,6 +286,10 @@ fn the_whole_panel_is_read_in_the_language_the_person_reads() {
             ),
             (
                 "Diese Fläche wiederherstellen, wie sie war".to_owned(),
+                "Super+Z".to_owned(),
+            ),
+            (
+                "Diese Fläche wieder vorwärtsstellen".to_owned(),
                 "Super+Umschalt+Z".to_owned(),
             ),
             (

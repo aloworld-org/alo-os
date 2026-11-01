@@ -219,3 +219,150 @@ fn what_one_place_remembers_is_not_what_another_remembers() {
         "going back on one Place wrote a series onto another"
     );
 }
+
+/// The desktop's half of a frame, as `crate::direct_desktop` does it on a real
+/// machine: when the live canvas differs from what it last told, it keeps the
+/// layout **in its own file** — carried forward from the file, not from the
+/// seat's copy — and tells the seat what it kept.
+///
+/// **The difference from [`the_layout_is_kept`] is the point.** That helper
+/// carries forward the seat's own copy, which a step back has already edited;
+/// the real desktop carries forward what it wrote, which a step back never
+/// touched. The four tests above pass either way, because none of them lets a
+/// frame go by between two presses.
+struct TheDesktop {
+    told: Option<alo_arranging::Arrangement>,
+    file: alo_arranging::Arrangement,
+}
+
+impl TheDesktop {
+    fn new() -> Self {
+        Self {
+            told: None,
+            file: alo_arranging::Arrangement::fresh(),
+        }
+    }
+
+    fn a_frame_passes(&mut self, f: &Fixture, when: SystemTime) {
+        let now = f.backend(|s| s.the_arrangement_now());
+        if self.told.as_ref() == Some(&now) {
+            return;
+        }
+        self.told = Some(now.clone());
+        self.file = now.following(&self.file, when);
+        let kept = self.file.clone();
+        f.backend(move |s| s.these_places_remember(&kept));
+    }
+}
+
+/// Three layouts, each kept as a real desktop keeps them, the last in front.
+fn three_layouts_kept() -> (Fixture, Application, TheDesktop) {
+    let (f, app) = a_desktop();
+    let mut desk = TheDesktop::new();
+    for (at, when) in [((100, 100), 1), ((500, 500), 2), ((800, 200), 3)] {
+        put_the_frame_at(&f, at);
+        desk.a_frame_passes(&f, moment(when));
+    }
+    (f, app, desk)
+}
+
+/// **Going back twice walks back twice on a real machine**, with the desktop
+/// keeping the layout between the presses.
+///
+/// Found while building redo on 2026-11-01: each step back moves windows, the
+/// desktop keeps that as a new layout and tells the seat, and being told a new
+/// series ended the walk — so the second press found the canvas just left as
+/// the newest thing held and went *forward* to it. The chord was a toggle on
+/// every machine and a walk only in the tests.
+#[test]
+fn going_back_twice_walks_back_with_the_desktop_keeping_each_step() {
+    let (f, _app, mut desk) = three_layouts_kept();
+
+    command(&f, Action::GoBackOnThisPlace, moment(10));
+    assert_eq!(the_frame_is_at(&f), (500, 500), "one step back");
+    desk.a_frame_passes(&f, moment(11));
+    command(&f, Action::GoBackOnThisPlace, moment(12));
+    desk.a_frame_passes(&f, moment(13));
+    assert_eq!(
+        the_frame_is_at(&f),
+        (100, 100),
+        "the second step back went somewhere other than further back"
+    );
+}
+
+/// **`⊞`+Shift+Z steps forward again**, one press per step back, and stops
+/// where the walk began.
+#[test]
+fn stepping_forward_undoes_each_step_back_and_stops_where_the_walk_began() {
+    let (f, _app, mut desk) = three_layouts_kept();
+    command(&f, Action::GoBackOnThisPlace, moment(10));
+    desk.a_frame_passes(&f, moment(11));
+    command(&f, Action::GoBackOnThisPlace, moment(12));
+    desk.a_frame_passes(&f, moment(13));
+    assert_eq!(the_frame_is_at(&f), (100, 100));
+
+    assert_eq!(
+        command(&f, Action::GoForwardOnThisPlace, moment(14)),
+        Some(Action::GoForwardOnThisPlace)
+    );
+    desk.a_frame_passes(&f, moment(15));
+    assert_eq!(the_frame_is_at(&f), (500, 500), "one step forward");
+    command(&f, Action::GoForwardOnThisPlace, moment(16));
+    desk.a_frame_passes(&f, moment(17));
+    assert_eq!(
+        the_frame_is_at(&f),
+        (800, 200),
+        "a second step forward should reach where the walk began"
+    );
+
+    // Past the beginning there is nothing: the press is answered and nothing
+    // moves.
+    assert_eq!(
+        command(&f, Action::GoForwardOnThisPlace, moment(18)),
+        Some(Action::GoForwardOnThisPlace)
+    );
+    desk.a_frame_passes(&f, moment(19));
+    assert_eq!(
+        the_frame_is_at(&f),
+        (800, 200),
+        "stepped forward past the start"
+    );
+
+    // And going back again after stepping forward still walks back.
+    command(&f, Action::GoBackOnThisPlace, moment(20));
+    desk.a_frame_passes(&f, moment(21));
+    assert_eq!(the_frame_is_at(&f), (500, 500));
+}
+
+/// **A window the person moves ends what stepping forward can reach**, as an
+/// edit after an undo does in every editor — the refusal half of the test
+/// above.
+#[test]
+fn moving_a_window_ends_what_stepping_forward_can_reach() {
+    let (f, _app, mut desk) = three_layouts_kept();
+    command(&f, Action::GoBackOnThisPlace, moment(10));
+    desk.a_frame_passes(&f, moment(11));
+    assert_eq!(the_frame_is_at(&f), (500, 500));
+
+    put_the_frame_at(&f, (40, 60));
+    desk.a_frame_passes(&f, moment(12));
+    command(&f, Action::GoForwardOnThisPlace, moment(13));
+    desk.a_frame_passes(&f, moment(14));
+    assert_eq!(
+        the_frame_is_at(&f),
+        (40, 60),
+        "stepping forward undid a move the person made"
+    );
+}
+
+/// **Stepping forward with no walk moves nothing**, and is not refused.
+#[test]
+fn stepping_forward_with_no_walk_moves_nothing() {
+    let (f, _app) = a_desktop();
+    put_the_frame_at(&f, (260, 240));
+    assert_eq!(
+        command(&f, Action::GoForwardOnThisPlace, moment(1)),
+        Some(Action::GoForwardOnThisPlace)
+    );
+    assert_eq!(the_frame_is_at(&f), (260, 240));
+}

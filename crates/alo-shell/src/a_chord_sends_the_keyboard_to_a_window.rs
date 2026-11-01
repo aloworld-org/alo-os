@@ -54,7 +54,8 @@ pub(crate) const fn sends_the_keyboard_to_a_window(action: Action) -> bool {
         | Action::ShowAllOnTheCanvas
         | Action::ReturnTheCanvasToLifeSize
         | Action::MoveTheWindowToTheNextPlace
-        | Action::GoBackOnThisPlace => false,
+        | Action::GoBackOnThisPlace
+        | Action::GoForwardOnThisPlace => false,
     }
 }
 
