@@ -70,10 +70,16 @@ const MAY: [(&str, &str); 2] = [
 /// It is still the person's road and never an agent's: the request exists only
 /// on the person's own door, and the agent door refuses it before it is read
 /// (`alo-protocol`'s `putting_back_is_the_persons_and_never_an_agents`).
-const MAY_FILES: [(&str, &str); 1] = [(
-    "alo-agentd/src/putting_back.rs",
-    "the person's put-back request, answered on their own door and written down",
-)];
+const MAY_FILES: [(&str, &str); 2] = [
+    (
+        "alo-agentd/src/putting_back.rs",
+        "the person's put-back request, answered on their own door and written down",
+    ),
+    (
+        "alo-shell/src/putting_back_from_the_record.rs",
+        "the plan the record window's confirmation shows; it changes nothing",
+    ),
+];
 
 /// Whether `file` is one of [`MAY_FILES`].
 fn may_name_it(file: &Path, crates: &Path) -> bool {
