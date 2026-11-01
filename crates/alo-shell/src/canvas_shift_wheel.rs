@@ -38,7 +38,6 @@ use smithay::{backend::input::AxisSource, input::pointer::AxisFrame};
 ///
 /// The two axes are swapped rather than the vertical one moved across, so a
 /// wheel that tilts as well as turns keeps both of what it sent.
-#[must_use]
 pub(crate) fn as_the_canvas_pans(frame: AxisFrame, shift: bool) -> AxisFrame {
     if !shift || frame.source != Some(AxisSource::Wheel) {
         return frame;
