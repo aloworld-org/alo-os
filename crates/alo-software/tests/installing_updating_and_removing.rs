@@ -1083,3 +1083,97 @@ fn an_unsandboxed_application_arrives_with_no_grants_either() {
         "an unsandboxed application was allowed something nobody gave it"
     );
 }
+
+// ---------------------------------------------------------------------------
+// What the card says it does, held to what it does.
+// ---------------------------------------------------------------------------
+
+/// **`install_application`: "Downloads this application and installs it for
+/// everyone who uses this computer." and "It is given no access to your
+/// files, and no other application is updated or removed."**
+///
+/// Run the whole way — the verb's call, proposed, approved once, redeemed,
+/// and carried out against this file's machine — and then checked: exactly
+/// one application arrived and nothing else on the list changed, the one list
+/// of grants is as it was, the only act asked of the tool was that one
+/// installation, and the act the real tool runs installs for the whole
+/// machine (`--system`) and names one application (`--app`).
+///
+/// **What this does not see**: the real `flatpak` is rented, and what it
+/// fetches beside the application — the runtime it needs — is its own. No
+/// other *application* is touched, which is what the sentence says.
+#[test]
+fn installing_does_what_it_says_and_leaves_what_it_says() {
+    let verbs = software_verbs().unwrap();
+    let verb = verbs.of("install_application").unwrap();
+    assert_eq!(
+        (
+            verb.what_it_changes().map(alo_strings::Word::says),
+            verb.what_it_leaves().map(alo_strings::Word::says)
+        ),
+        (
+            Some("Downloads this application and installs it for everyone who uses this computer."),
+            Some(
+                "It is given no access to your files, and no other application is updated or removed."
+            )
+        ),
+        "the words changed without this test"
+    );
+    let tool = AMachine::ordinary();
+    let enabled = Enabled::read(&tool, Bound::Nobodys).unwrap();
+    let machine = a_machine_with_grants();
+    let agent = Grantee::named("@alo");
+    let installed_before = tool.installed().unwrap();
+    let granted_before = Listing::of(machine.allowed(), noon());
+
+    let call = verbs
+        .call(
+            "install_application",
+            &[
+                ("application", Given::text("org.gnome.TextEditor")),
+                ("source", Given::text("flathub")),
+            ],
+        )
+        .unwrap();
+    let mut approvals = Approvals::default();
+    let id = approvals.propose(
+        Proposal::checked(&call, &agent, machine.grants().unwrap(), noon(), hour()).unwrap(),
+    );
+    let authorised = approvals
+        .approve(id, noon())
+        .unwrap()
+        .redeem(machine.grants().unwrap(), noon())
+        .unwrap();
+    let wanted = approved(&authorised).unwrap();
+    let mut indicator = Indicator::default();
+    let underway =
+        indicator.beginning_on_its_own(installing(&enabled, &wanted, &tool).unwrap(), noon());
+    install(&underway, &enabled, wanted, &tool).unwrap();
+    indicator.ended_on_its_own(underway);
+
+    // Installs it: one act, and it is that installation.
+    assert_eq!(tool.acted(), ["install org.gnome.TextEditor from flathub"]);
+    // For everyone who uses this computer: the act the real tool runs.
+    let asked = alo_software::asked::install(&SourceName::checked("flathub").unwrap(), &editor());
+    assert!(
+        asked.iter().any(|it| it == "--system") && asked.iter().any(|it| it == "--app"),
+        "the real installation is not for the whole machine, or not of one application: {asked:?}"
+    );
+    // No other application is updated or removed: the list is what it was,
+    // with the new one on it.
+    let mut expected = installed_before;
+    expected.push("org.gnome.TextEditor".to_owned());
+    expected.sort();
+    let mut after = tool.installed().unwrap();
+    after.sort();
+    assert_eq!(
+        after, expected,
+        "another application was added, updated away or removed"
+    );
+    // It is given no access to your files: the one list is as it was.
+    assert_eq!(
+        Listing::of(machine.allowed(), noon()),
+        granted_before,
+        "installing granted something"
+    );
+}
