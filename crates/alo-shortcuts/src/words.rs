@@ -535,7 +535,7 @@ pub const KEPT_NOT_REPLACED: Word = Word::saying(
 /// the shortcuts do, what is held down, the keys that print a word, why a
 /// combination was refused, what one chord wanted twice says, and then what is
 /// said about the person's own file.
-pub const EVERY_WORD: [Word; 60] = [
+pub const EVERY_WORD: [Word; 61] = [
     THE_AGENT,
     LAUNCHER,
     SETTINGS,

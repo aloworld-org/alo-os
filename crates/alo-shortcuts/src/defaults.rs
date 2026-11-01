@@ -43,7 +43,7 @@ const NOTHING: Modifiers = Modifiers::none();
 /// puts every one of them back through [`Chord::checked`]: the shipped list is
 /// held to the rules a person's own bindings are held to, or the rules are
 /// advice.
-const SHIPPED: [(Action, Chord); 25] = [
+const SHIPPED: [(Action, Chord); 26] = [
     (Action::TheAgent, Chord::shipped(SUPER, Key::A)),
     (Action::Launcher, Chord::shipped(SUPER, Key::Space)),
     (Action::Settings, Chord::shipped(SUPER, Key::I)),
