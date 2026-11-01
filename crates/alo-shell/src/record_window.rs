@@ -51,6 +51,7 @@ use alo_record::Asking;
 use alo_recounting::{Account, AtMost, NotRecounted, Recounting, Recounts};
 
 use crate::RecordKey;
+use crate::putting_back_from_the_record::{OnTheSheet, PutBackHere, ThePutBack, TheSheet};
 use crate::record_shown::RecordShown;
 
 /// What the record window draws now.
@@ -66,6 +67,9 @@ pub enum RecordShows<'a> {
         /// How many of the most recent entries the view has moved past.
         /// Zero shows the most recent first.
         moved_past: usize,
+        /// Where Put back stands: this person's places, the change the
+        /// keyboard is on, and the confirmation while it is open.
+        put_back: &'a ThePutBack,
     },
     /// Why the record could not be shown, in the words of whoever refused.
     Refusal(&'a NotRecounted),
@@ -81,6 +85,18 @@ pub enum RecordOpened {
     /// There is nowhere to show anything; the sentence is for the host's log.
     /// The window stays closed.
     NowhereToShow(NotRecounted),
+    /// The person asked to put back the change at this place in the account
+    /// (oldest first): the host works out what that would do, from the
+    /// places on the disk, and opens the confirmation with it.
+    AskedToPutBack(usize),
+    /// The person confirmed: the host asks the service that writes the
+    /// record to put these folders back from this place.
+    PutBackConfirmed {
+        /// The place, by name.
+        place: String,
+        /// Every folder, as absolute paths.
+        folders: Vec<String>,
+    },
 }
 
 /// The record window.
@@ -92,6 +108,8 @@ pub struct RecordWindow {
     refusal: Option<NotRecounted>,
     /// How many of the most recent entries the view has moved past.
     moved_past: usize,
+    /// Where Put back stands.
+    put_back: ThePutBack,
 }
 
 impl RecordWindow {
@@ -114,6 +132,40 @@ impl RecordWindow {
             shown,
             refusal: None,
             moved_past: 0,
+            put_back: ThePutBack::default(),
+        }
+    }
+
+    /// The names of this person's places, as the host has just read them.
+    pub fn the_places_are(&mut self, places: Vec<String>) {
+        self.put_back.places = places;
+    }
+
+    /// Open the confirmation under the change at `at`, with what putting it
+    /// back would do — or why it cannot be done.
+    pub fn the_confirmation_opens(&mut self, at: usize, plan: Result<crate::ThePlan, String>) {
+        let on = if plan.is_ok() {
+            OnTheSheet::PutBack
+        } else {
+            OnTheSheet::Cancel
+        };
+        self.put_back.chosen = Some(at);
+        self.put_back.sheet = Some(TheSheet {
+            at,
+            plan,
+            on,
+            waiting: false,
+            refused: None,
+        });
+    }
+
+    /// The service put nothing back, and this is why: said on the
+    /// confirmation, which stays open with *Cancel*.
+    pub fn nothing_was_put_back(&mut self, why: String) {
+        if let Some(sheet) = self.put_back.sheet.as_mut() {
+            sheet.waiting = false;
+            sheet.refused = Some(why);
+            sheet.on = OnTheSheet::Cancel;
         }
     }
 
@@ -155,11 +207,17 @@ impl RecordWindow {
         if !self.is_open() {
             return None;
         }
+        if self.put_back.sheet.is_some() {
+            return self.on_the_confirmation(key);
+        }
         let last = self
             .shown
             .account()
             .map_or(0, |account| account.how_many().saturating_sub(1));
         match key {
+            RecordKey::NextPutBack => self.the_keyboard_moves(true),
+            RecordKey::PreviousPutBack => self.the_keyboard_moves(false),
+            RecordKey::Press => return self.put_back.chosen.map(RecordOpened::AskedToPutBack),
             RecordKey::Newer => self.moved_past = self.moved_past.saturating_sub(1),
             RecordKey::Older => self.moved_past = (self.moved_past + 1).min(last),
             RecordKey::Newest => self.moved_past = 0,
@@ -171,11 +229,110 @@ impl RecordWindow {
         None
     }
 
+    /// A key while the confirmation is open: Tab between its two buttons,
+    /// Enter presses the one the keyboard is on, Escape is *Cancel*. Nothing
+    /// moves the view behind it.
+    fn on_the_confirmation(&mut self, key: RecordKey) -> Option<RecordOpened> {
+        let sheet = self.put_back.sheet.as_mut()?;
+        match key {
+            RecordKey::NextPutBack | RecordKey::PreviousPutBack => {
+                sheet.on = match sheet.on {
+                    OnTheSheet::PutBack => OnTheSheet::Cancel,
+                    OnTheSheet::Cancel if sheet.can_put_back() => OnTheSheet::PutBack,
+                    OnTheSheet::Cancel => OnTheSheet::Cancel,
+                };
+                None
+            }
+            RecordKey::Press => self.the_confirmation_is_pressed(),
+            RecordKey::Close => {
+                self.put_back.sheet = None;
+                None
+            }
+            RecordKey::Newer
+            | RecordKey::Older
+            | RecordKey::Newest
+            | RecordKey::Oldest
+            | RecordKey::ReadAgain
+            | RecordKey::Nothing => None,
+        }
+    }
+
+    /// The button the keyboard is on, pressed — or a button pressed by
+    /// pointer, which moves the keyboard to it first.
+    pub fn the_confirmation_is_pressed(&mut self) -> Option<RecordOpened> {
+        let sheet = self.put_back.sheet.as_mut()?;
+        match sheet.on {
+            OnTheSheet::Cancel => {
+                if !sheet.waiting {
+                    self.put_back.sheet = None;
+                }
+                None
+            }
+            OnTheSheet::PutBack => {
+                let Ok(plan) = &sheet.plan else {
+                    return None;
+                };
+                if !sheet.can_put_back() {
+                    return None;
+                }
+                sheet.waiting = true;
+                Some(RecordOpened::PutBackConfirmed {
+                    place: plan.place.clone(),
+                    folders: plan.folders_as_asked(),
+                })
+            }
+        }
+    }
+
+    /// Put the keyboard on one of the confirmation's buttons.
+    pub fn the_keyboard_is_on(&mut self, on: OnTheSheet) {
+        if let Some(sheet) = self.put_back.sheet.as_mut() {
+            sheet.on = on;
+        }
+    }
+
+    /// Move the keyboard to the next change that offers *Put back…*, newer
+    /// to older (`forwards`) or back, and the view with it so it is the first
+    /// in view.
+    fn the_keyboard_moves(&mut self, forwards: bool) {
+        let Some(account) = self.shown.account() else {
+            return;
+        };
+        let told = account.told();
+        let places = &self.put_back.places;
+        // Positions newest first: the order the person reads.
+        let mut offered: Vec<usize> = Vec::new();
+        for (at, here) in told.iter().enumerate().rev() {
+            if PutBackHere::of(here, places) == PutBackHere::Offered {
+                offered.push(at);
+            }
+        }
+        let now_at = self
+            .put_back
+            .chosen
+            .and_then(|chosen| offered.iter().position(|at| *at == chosen));
+        let next = match (now_at, forwards) {
+            (None, true) => offered.first(),
+            (None, false) => offered.last(),
+            (Some(here), true) => offered.get(here + 1).or_else(|| offered.first()),
+            (Some(here), false) => here
+                .checked_sub(1)
+                .and_then(|before| offered.get(before))
+                .or_else(|| offered.last()),
+        };
+        if let Some(at) = next.copied() {
+            self.put_back.chosen = Some(at);
+            self.moved_past = told.len().saturating_sub(at + 1);
+        }
+    }
+
     /// Close the window. The record is untouched; the account is dropped.
     pub fn closed(&mut self) {
         self.shown.taken_down();
         self.refusal = None;
         self.moved_past = 0;
+        self.put_back.chosen = None;
+        self.put_back.sheet = None;
     }
 
     /// What the window draws now.
@@ -188,6 +345,7 @@ impl RecordWindow {
             Some(account) => RecordShows::Account {
                 account,
                 moved_past: self.moved_past,
+                put_back: &self.put_back,
             },
             None => RecordShows::Nothing,
         }
@@ -206,6 +364,8 @@ impl RecordWindow {
     fn read(&mut self, recounting: &Recounting) -> RecordOpened {
         self.refusal = None;
         self.moved_past = 0;
+        self.put_back.chosen = None;
+        self.put_back.sheet = None;
         match recounting.show(
             Some(&mut self.shown),
             &Asking::anything(),

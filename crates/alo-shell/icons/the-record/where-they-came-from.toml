@@ -77,3 +77,9 @@ svg = "close.svg"
 names = "Close, at the title strip's end"
 node = "I560:177;554:38"
 frame = 14
+
+[[icon]]
+svg = "put-back.svg"
+names = "Put back…, at the end of a change that can be put back"
+node = "560:243"
+frame = 16

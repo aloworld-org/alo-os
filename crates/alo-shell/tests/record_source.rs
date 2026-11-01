@@ -56,6 +56,7 @@ fn the_record_files() -> Vec<(String, Vec<(usize, String)>)> {
             "record_measures.rs",
             "record_paint.rs",
             "record_palette.rs",
+            "record_put_back_drawn.rs",
             "record_raster.rs",
             "record_room.rs",
             "record_seat.rs",

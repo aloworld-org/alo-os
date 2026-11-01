@@ -69,6 +69,9 @@ mod starting_what_a_person_pressed;
 #[cfg(target_os = "linux")]
 mod telling_the_session_where_alo_draws;
 
+#[cfg(target_os = "linux")]
+mod putting_back;
+
 /// What this process does on the machine alo OS is for.
 #[cfg(target_os = "linux")]
 mod running {
@@ -280,6 +283,9 @@ mod running {
         /// what is pinned — so this is the path the whole of `alo_dock::keeping`
         /// is given, and not a path of the pins' own.
         dock_at: Option<std::path::PathBuf>,
+        /// The answer to the last *Put back* asked from the record window,
+        /// while it is being worked out on its own thread.
+        putting_back: Option<std::sync::mpsc::Receiver<Result<Vec<String>, String>>>,
         /// When this person's windows show their titles, read from their
         /// `appearance.toml` once at sign-in.
         ///
@@ -540,6 +546,8 @@ mod running {
                 window_titles,
                 dock: alo_dock::Dock::shipped(),
                 put_aside: alo_put_aside::Panel::new(),
+                // Nothing has been asked to be put back.
+                putting_back: None,
                 // Nobody is looking at anything yet, which is what a session starts as.
                 peeking: alo_dock::Peeking::at_nothing(),
                 // Nothing put aside and nobody at the edge, so the panel is not showing.
@@ -820,6 +828,33 @@ mod running {
                 std::path::Path::new(alo_remembering::THE_LEVEL),
                 the_agent_this_machine_has().as_deref(),
             ))
+        }
+
+        /// Where this person's places to return to are, and their home, for
+        /// *Put back* in the record window.
+        fn the_places_kept(&mut self) -> Option<(std::path::PathBuf, std::path::PathBuf)> {
+            crate::putting_back::where_the_places_are()
+        }
+
+        /// Ask the service to put folders back, on a thread of its own.
+        fn put_back(&mut self, place: &str, folders: &[String]) {
+            self.putting_back = Some(crate::putting_back::asked(
+                place.to_owned(),
+                folders.to_vec(),
+            ));
+        }
+
+        /// The service's answer, once, when it has come.
+        fn put_back_answered(&mut self) -> Option<Result<Vec<String>, String>> {
+            let answer = match self.putting_back.as_ref()?.try_recv() {
+                Ok(answer) => answer,
+                Err(std::sync::mpsc::TryRecvError::Empty) => return None,
+                Err(std::sync::mpsc::TryRecvError::Disconnected) => {
+                    Err("the service's answer never came".to_owned())
+                }
+            };
+            self.putting_back = None;
+            Some(answer)
         }
 
         /// Where this machine keeps its record, read from the machine's own

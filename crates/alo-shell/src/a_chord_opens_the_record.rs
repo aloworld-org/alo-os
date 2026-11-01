@@ -96,6 +96,10 @@ impl crate::Server {
         };
         if let RecordOpened::NowhereToShow(why) = &opened {
             eprintln!("alo-shell: the record could not be shown: {why:?}");
+        } else {
+            // **And this person's places, read with it**, so *Put back…* is
+            // offered on what can be put back now.
+            self.the_places_are_read_again();
         }
         Some(opened)
     }

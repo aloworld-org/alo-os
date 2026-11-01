@@ -56,6 +56,8 @@ pub(crate) struct RecordPalette {
     pub(crate) allowed: [u8; 3],
     /// That it was refused.
     pub(crate) refused: [u8; 3],
+    /// The confirmation's ground: `bg/canvas` (`560:763`).
+    pub(crate) canvas: [u8; 3],
 }
 
 /// A role's colour as three bytes.
@@ -82,6 +84,7 @@ const THE_DARK_FRAME: RecordPalette = RecordPalette {
     agent: [0x77, 0xC8, 0xC6],
     allowed: [0x7E, 0xD3, 0xA6],
     refused: [0xFF, 0x8D, 0x86],
+    canvas: [0x07, 0x13, 0x1F],
 };
 
 impl RecordPalette {
@@ -100,6 +103,7 @@ impl RecordPalette {
                 agent: ink,
                 allowed: ink,
                 refused: ink,
+                canvas: ground,
             };
         }
         if scheme == Scheme::Dark {
@@ -116,6 +120,7 @@ impl RecordPalette {
             agent: rgb(Role::AccentDefault),
             allowed: rgb(Role::StatusPositive),
             refused: rgb(Role::StatusDanger),
+            canvas: rgb(Role::BgCanvas),
         }
     }
 }

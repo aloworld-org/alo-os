@@ -10,7 +10,7 @@
 //! **No key reaches an application while the window is open**, which is
 //! `crate::record_seat`'s own rule: the record seat intercepts every key.
 
-use crate::{InputError, InputUpdate, RecordKey, RecordOpened, Server};
+use crate::{InputError, InputUpdate, RecordKey, Server};
 
 /// Route one seat update while the record window is open.
 ///
@@ -63,11 +63,8 @@ pub(crate) fn the_key_the_record_took(
 fn the_press_is_carried_out(server: &mut Server, press: RecordKey) {
     match server.recounting.clone() {
         Some(Ok(recounting)) => {
-            if let Some(RecordOpened::NowhereToShow(why)) =
-                server.record.pressed(press, &recounting)
-            {
-                eprintln!("alo-shell: the record could not be shown again: {why:?}");
-            }
+            let opened = server.record.pressed(press, &recounting);
+            server.the_record_answered(opened);
         }
         Some(Err(_)) | None => {
             if press == RecordKey::Close {

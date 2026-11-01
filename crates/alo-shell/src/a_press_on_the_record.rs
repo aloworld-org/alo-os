@@ -16,13 +16,42 @@ use smithay::utils::{Physical, Point};
 
 use crate::settings_canvas::Area;
 
-/// Where the record window and its Close were drawn.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// Where the record window and its Close were drawn — and *Put back…* on each
+/// change that offers it, and the confirmation's two buttons while it is open.
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct TheRecordsPlaces {
     /// The whole window.
     pub(crate) window: Area,
     /// Close's target.
     pub(crate) close: Area,
+    /// *Put back…*, by the change's place in the account.
+    pub(crate) buttons: Vec<(usize, Area)>,
+    /// The confirmation's *Put back*, where it is drawn.
+    pub(crate) put_back: Option<Area>,
+    /// The confirmation's *Cancel*, where it is drawn.
+    pub(crate) cancel: Option<Area>,
+}
+
+impl TheRecordsPlaces {
+    /// Where everything was drawn on one picture of the window.
+    pub(crate) fn of(picture: &crate::record_raster::RecordPicture) -> Option<Self> {
+        let (window, close) = picture.panel.zip(picture.close)?;
+        let confirmation = picture
+            .entries
+            .iter()
+            .find_map(|entry| entry.confirmation.as_ref());
+        Some(Self {
+            window,
+            close,
+            buttons: picture
+                .entries
+                .iter()
+                .filter_map(|entry| entry.put_back_button.map(|at| (entry.words.index, at)))
+                .collect(),
+            put_back: confirmation.and_then(|it| it.put_back),
+            cancel: confirmation.and_then(|it| it.cancel),
+        })
+    }
 }
 
 impl crate::Server {
@@ -37,12 +66,30 @@ impl crate::Server {
         if !self.record.is_open() {
             return false;
         }
-        let Some(places) = self.the_records_places else {
+        let Some(places) = self.the_records_places.clone() else {
             return false;
         };
         if places.close.contains(at) {
             self.record.closed();
             self.the_records_places = None;
+            return true;
+        }
+        // **The confirmation's buttons**, as Enter on them: the keyboard goes
+        // to the one pressed, and it is pressed.
+        for (button, on) in [
+            (places.put_back, crate::OnTheSheet::PutBack),
+            (places.cancel, crate::OnTheSheet::Cancel),
+        ] {
+            if button.is_some_and(|it| it.contains(at)) {
+                self.record.the_keyboard_is_on(on);
+                let opened = self.record.the_confirmation_is_pressed();
+                self.the_record_answered(opened);
+                return true;
+            }
+        }
+        // **Put back…**, as Enter on it: the confirmation opens under it.
+        if let Some((which, _)) = places.buttons.iter().find(|(_, it)| it.contains(at)) {
+            self.the_record_answered(Some(crate::RecordOpened::AskedToPutBack(*which)));
             return true;
         }
         places.window.contains(at)
@@ -75,6 +122,9 @@ mod tests {
         server.the_record_was_drawn(Some(TheRecordsPlaces {
             window: Rectangle::new((280, 56).into(), (880, 796).into()),
             close: Rectangle::new((1112, 56).into(), (44, 44).into()),
+            buttons: vec![(3, Rectangle::new((900, 300).into(), (128, 40).into()))],
+            put_back: None,
+            cancel: None,
         }));
         (runtime, kept, server)
     }
@@ -89,6 +139,16 @@ mod tests {
             !server.a_press_on_the_record((1130, 70).into()),
             "a shut window takes nothing"
         );
+    }
+
+    /// **A press on a change's *Put back…* asks for its plan**, as Enter on it
+    /// does, and is the window's.
+    #[test]
+    fn put_back_on_a_change_asks_for_its_plan() {
+        let (_runtime, _kept, mut server) = open();
+        assert!(server.a_press_on_the_record((950, 320).into()));
+        assert_eq!(server.take_the_plan_asked(), Some(3));
+        assert!(server.record.is_open());
     }
 
     /// **A press on the window is the window's and closes nothing**; a press

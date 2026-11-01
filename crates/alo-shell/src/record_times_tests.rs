@@ -58,7 +58,8 @@ fn the_days(
         panic!("no account");
     };
     let strings = words();
-    newest_first(account, 0, &strings, clock)
+    let nothing_to_put_back = crate::ThePutBack::default();
+    newest_first(account, (0, &nothing_to_put_back), &strings, clock)
         .map(|entry| (entry.day, entry.date))
         .collect()
 }

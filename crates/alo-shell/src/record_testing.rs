@@ -180,6 +180,63 @@ pub(crate) fn an_afternoon_kept() -> Kept {
     kept
 }
 
+/// The name of the place the service kept before [`a_change_with_a_place_kept`].
+pub(crate) const A_PLACE: &str = "1760000000-77-1";
+
+/// A change alo made after the service kept a place, and the place.
+pub(crate) struct AChangeKept {
+    /// The record: one move, carried out, naming the place.
+    pub(crate) kept: Kept,
+    /// The folders it moved between, alive as long as this is.
+    pub(crate) places: crate::approval_testing::Places,
+    /// This person's places to return to, holding the one kept.
+    pub(crate) whose: tempfile::TempDir,
+}
+
+impl AChangeKept {
+    /// The home the place is a copy of.
+    pub(crate) fn home(&self) -> PathBuf {
+        self.places.invoices.parent().unwrap().to_path_buf()
+    }
+}
+
+/// **A change alo made after the service kept a place**: march's invoice moved
+/// into the archive, written down with the place's name, and the place on the
+/// disk holding the home as it was before — a note and a copy, as
+/// `docs/contracts/kept-undo-folder.md` lays one out.
+pub(crate) fn a_change_with_a_place_kept() -> AChangeKept {
+    let kept = an_empty_record();
+    let whose = tempfile::tempdir().unwrap();
+    let mut writing = Writing::opening(&kept.at).unwrap();
+    let places = keeping_in(&mut writing, |turning, grants, places| {
+        let home = places.invoices.parent().unwrap();
+        let place = whose.path().join(A_PLACE);
+        std::fs::create_dir_all(&place).unwrap();
+        let copied = std::process::Command::new("cp")
+            .args(["-a", "--no-target-directory"])
+            .arg(home)
+            .arg(place.join("before"))
+            .status()
+            .unwrap();
+        assert!(copied.success());
+        std::fs::write(
+            place.join("kept.json"),
+            r#"{"format":1,"taken":1760000000,"did":"move march.pdf into archive"}"#,
+        )
+        .unwrap();
+        turning.a_place_was_kept(A_PLACE);
+        let march = archiving(turning, grants, places, "march");
+        turning.approving(march, grants, noon()).unwrap();
+    });
+    drop(writing);
+    ours_alone(&kept.at);
+    AChangeKept {
+        kept,
+        places,
+        whose,
+    }
+}
+
 /// A record of `how_many` verbs turned away, a minute apart — long enough that
 /// no window holds all of it.
 pub(crate) fn a_long_record(how_many: u64) -> Kept {

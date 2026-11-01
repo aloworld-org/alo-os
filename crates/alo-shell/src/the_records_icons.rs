@@ -34,11 +34,13 @@ pub(crate) enum ARecordIcon {
     WhatAloDid,
     /// Close, at the strip's end.
     Close,
+    /// *Put back…*, at the end of a change that can be put back.
+    PutBack,
 }
 
 impl ARecordIcon {
     /// Every icon, in the order the provenance file lists them.
-    pub(crate) const ALL: [Self; 10] = [
+    pub(crate) const ALL: [Self; 11] = [
         Self::Changed,
         Self::Sent,
         Self::Refused,
@@ -49,6 +51,7 @@ impl ARecordIcon {
         Self::Padlock,
         Self::WhatAloDid,
         Self::Close,
+        Self::PutBack,
     ];
 
     /// The file, as the design exported it.
@@ -64,6 +67,7 @@ impl ARecordIcon {
             Self::Padlock => include_str!("../icons/the-record/kept.svg"),
             Self::WhatAloDid => include_str!("../icons/the-record/what-alo-did.svg"),
             Self::Close => include_str!("../icons/the-record/close.svg"),
+            Self::PutBack => include_str!("../icons/the-record/put-back.svg"),
         }
     }
 
@@ -134,6 +138,7 @@ mod tests {
             "kept.svg",
             "what-alo-did.svg",
             "close.svg",
+            "put-back.svg",
         ] {
             assert!(record.contains(name), "{name} is not recorded");
         }

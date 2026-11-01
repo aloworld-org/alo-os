@@ -43,7 +43,9 @@ use crate::TheDay;
 use alo_recounting::{Account, Outcome, Told};
 use alo_strings::Strings;
 
+use crate::putting_back_from_the_record::{OnTheSheet, PutBackHere, ThePutBack, TheSheet};
 use crate::record_clock::RecordClock;
+use crate::the_records_words::{TheRecordsSentences, the_question};
 
 /// The words drawn for one entry.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -68,22 +70,56 @@ pub(crate) struct EntryWords {
     /// That the person said yes to it, in the vocabulary's words, where the
     /// record holds the approval it ran from.
     pub(crate) approved: Option<String>,
+    /// Its place in the account, oldest first: what *Put back* names it by.
+    pub(crate) index: usize,
+    /// What it offers: *Put back…*, a line saying why not, or nothing.
+    pub(crate) put_back: PutBackHere,
+    /// The button's words, where it offers one, and whether the keyboard is
+    /// on it.
+    pub(crate) button: Option<(String, bool)>,
+    /// The line saying why it cannot be put back, where that is the answer.
+    pub(crate) why_not: Option<String>,
+    /// The confirmation, while it is open under this entry.
+    pub(crate) confirmation: Option<TheConfirmationWords>,
+}
+
+/// The confirmation's words, in the person's language (`560:763`).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct TheConfirmationWords {
+    /// The question, or nothing where it cannot be done.
+    pub(crate) question: Option<String>,
+    /// A line per folder, and that it is written down.
+    pub(crate) lines: Vec<String>,
+    /// Why nothing will be, or was, put back.
+    pub(crate) refusal: Option<String>,
+    /// *Put back*, where it can be pressed.
+    pub(crate) put_back: Option<String>,
+    /// *Cancel*.
+    pub(crate) cancel: String,
+    /// *Putting back…*, while it is being done.
+    pub(crate) waiting: Option<String>,
+    /// Where the keyboard is.
+    pub(crate) on: OnTheSheet,
 }
 
 /// The account's entries, most recent first, from `moved_past` entries back.
 pub(crate) fn newest_first<'a>(
     account: &'a Account,
-    moved_past: usize,
+    (moved_past, put_back): (usize, &'a ThePutBack),
     strings: &'a Strings,
     clock: RecordClock<'a>,
 ) -> impl Iterator<Item = EntryWords> + 'a {
     let mut the_day_above: Option<TheDay> = None;
+    let sentences = TheRecordsSentences::of(strings);
+    let last = account.told().len().saturating_sub(1);
     account
         .told()
         .iter()
         .rev()
+        .enumerate()
         .skip(moved_past)
-        .map(move |told| {
+        .map(move |(back, told)| {
+            let index = last.saturating_sub(back);
             let day = clock.formats.day_of(told.at(), clock.now);
             let heading = if day.is_some() && day != the_day_above {
                 day.as_ref().map(|day| {
@@ -99,8 +135,76 @@ pub(crate) fn newest_first<'a>(
                 None
             };
             the_day_above = day;
-            words_of(told, strings, heading, clock)
+            let words = words_of(told, strings, heading, clock);
+            with_put_back(words, (told, index), put_back, &sentences, (strings, clock))
         })
+}
+
+/// `words`, with what the entry offers of *Put back* and the confirmation
+/// when it is open under it.
+fn with_put_back(
+    mut words: EntryWords,
+    (told, index): (&Told, usize),
+    put_back: &ThePutBack,
+    sentences: &TheRecordsSentences,
+    (strings, clock): (&Strings, RecordClock<'_>),
+) -> EntryWords {
+    words.index = index;
+    words.put_back = PutBackHere::of(told, &put_back.places);
+    match words.put_back {
+        PutBackHere::Offered => {
+            words.button = Some((
+                sentences.put_back_asks.clone(),
+                put_back.chosen == Some(index),
+            ));
+        }
+        PutBackHere::OlderThanPutBack => words.why_not = Some(sentences.older.clone()),
+        PutBackHere::NoLongerKept => words.why_not = Some(sentences.no_longer_kept.clone()),
+        PutBackHere::Nothing => {}
+    }
+    words.confirmation = put_back.sheet.as_ref().and_then(|sheet| {
+        (sheet.at == index).then(|| the_confirmation(sheet, sentences, (strings, clock)))
+    });
+    words
+}
+
+/// The confirmation's words.
+fn the_confirmation(
+    sheet: &TheSheet,
+    sentences: &TheRecordsSentences,
+    (strings, clock): (&Strings, RecordClock<'_>),
+) -> TheConfirmationWords {
+    let name = crate::putting_back_from_the_record::named;
+    let (question, mut lines, mut refusal) = match &sheet.plan {
+        Ok(plan) => {
+            let folders: Vec<(String, String)> = plan
+                .folders
+                .iter()
+                .zip(&plan.asides)
+                .map(|(folder, aside)| (name(folder), name(aside)))
+                .collect();
+            let date = clock.formats.date_of(plan.taken).unwrap_or_default();
+            let time = clock.formats.time_of(plan.taken).unwrap_or_default();
+            let (question, lines) = the_question(strings, &folders, (&date, &time));
+            (Some(question), lines, None)
+        }
+        Err(why) => (None, Vec::new(), Some(why.clone())),
+    };
+    if question.is_some() {
+        lines.push(sentences.written_down_too.clone());
+    }
+    if let Some(refused) = &sheet.refused {
+        refusal = Some(refused.clone());
+    }
+    TheConfirmationWords {
+        question,
+        lines,
+        refusal,
+        put_back: sheet.can_put_back().then(|| sentences.put_back.clone()),
+        cancel: sentences.cancel.clone(),
+        waiting: sheet.waiting.then(|| sentences.putting_back.clone()),
+        on: sheet.on,
+    }
 }
 
 /// The words for one entry.
@@ -120,6 +224,12 @@ fn words_of(
     if let Some(went_to) = told.went_to() {
         after.push(went_to.shown(strings));
     }
+    // **What a putting back put back**: each folder, a line of its own.
+    if let Some((_, folders)) = told.put_back() {
+        for folder in folders {
+            after.push(folder.as_str().to_owned());
+        }
+    }
     let (day, date) = heading.map_or((None, None), |(day, date)| (Some(day), date));
     EntryWords {
         day,
@@ -132,5 +242,10 @@ fn words_of(
         approved: told
             .approved()
             .map(|approved| approved.said(strings).into_text()),
+        index: 0,
+        put_back: PutBackHere::Nothing,
+        button: None,
+        why_not: None,
+        confirmation: None,
     }
 }

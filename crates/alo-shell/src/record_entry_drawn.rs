@@ -23,6 +23,9 @@ use crate::record_kinds::EntryKind;
 use crate::record_lines::EntryWords;
 use crate::record_measures as m;
 use crate::record_palette::RecordPalette;
+use crate::record_put_back_drawn::{
+    AButtonShaped, TheConfirmationShaped, the_button, the_confirmation,
+};
 use crate::record_raster::{EntryDrawn, TextDrawn};
 use crate::record_room::Room;
 use crate::settings_canvas::Canvas;
@@ -72,6 +75,15 @@ pub(crate) struct AnEntryShaped {
     refused: Option<Said>,
     /// *Already sent*.
     already_sent: Option<Said>,
+    /// *Put back…*, where the change offers it.
+    button: Option<AButtonShaped>,
+    /// Why it cannot be put back, where that is the answer.
+    why_not: Option<Said>,
+    /// The confirmation, while it is open under it.
+    confirmation: Option<TheConfirmationShaped>,
+    /// How far below the lines the marks reach, gaps included — nought with
+    /// no marks.
+    marks: i32,
     /// How tall it is, inside its card.
     pub(crate) height: i32,
 }
@@ -128,6 +140,10 @@ pub(crate) fn shaped(
     let (above, mark_tall, between_marks, mark_icon, before_words) = m::THE_MARKS;
     let kind = EntryKind::of(words.outcome);
     let ground = palette.surface;
+    let button = words
+        .button
+        .as_ref()
+        .map(|(text, chosen)| the_button(fonts, room, palette, (text, *chosen)));
     let already_sent = (kind == EntryKind::Left).then(|| {
         let shaped = a_mark(
             fonts,
@@ -144,7 +160,8 @@ pub(crate) fn shaped(
         - px(tile)
         - already_sent
             .as_ref()
-            .map_or(0, |(shaped, _)| shaped.width_of_box + px(between)))
+            .map_or(0, |(shaped, _)| shaped.width_of_box + px(between))
+        - button.as_ref().map_or(0, |it| it.wide + px(between)))
     .max(px(80));
     let time = words
         .time
@@ -210,12 +227,36 @@ pub(crate) fn shaped(
         .iter()
         .map(|line| px(m::BETWEEN_LINES) + line.height)
         .sum();
+    let marks = marks_tall.map_or(0, |tall| px(m::BETWEEN_LINES) + px(above) + tall);
+    let why_not = words.why_not.as_deref().map(|text| {
+        let shaped = written(
+            fonts,
+            text,
+            TheType::SmallLabel,
+            content,
+            room.measure,
+            (ground, palette.muted),
+        );
+        (shaped, text.to_owned())
+    });
+    let confirmation = words
+        .confirmation
+        .clone()
+        .map(|it| the_confirmation(fonts, room, palette, it, content));
     let what_happened = clause.height.max(px(head))
         + lines
-        + marks_tall.map_or(0, |tall| px(m::BETWEEN_LINES) + px(above) + tall);
+        + marks
+        + why_not
+            .as_ref()
+            .map_or(0, |(shaped, _)| px(m::BETWEEN_LINES) + shaped.height)
+        + confirmation
+            .as_ref()
+            .map_or(0, |it| 2 * px(m::BETWEEN_LINES) + it.height);
+    let (button_tall, ..) = m::THE_BUTTON;
     let tallest = what_happened
         .max(px(tile))
-        .max(time.as_ref().map_or(0, |time| time.height));
+        .max(time.as_ref().map_or(0, |time| time.height))
+        .max(button.as_ref().map_or(0, |_| px(button_tall)));
     AnEntryShaped {
         words,
         kind,
@@ -226,6 +267,10 @@ pub(crate) fn shaped(
         approved,
         refused,
         already_sent,
+        button,
+        why_not,
+        confirmation,
+        marks,
         height: tallest + 2 * px(pad),
     }
 }
@@ -367,9 +412,29 @@ impl AnEntryShaped {
                 (ARecordIcon::RefusedSmall, palette.refused),
             )
         });
+        let end = columns.left + columns.wide - px(side);
         let already_sent = self.already_sent.as_ref().map(|(shaped, text)| {
-            let end = columns.left + columns.wide - px(side);
             placed(canvas, room, shaped, text, end - shaped.width_of_box, top)
+        });
+        let put_back_button = self
+            .button
+            .as_ref()
+            .map(|button| button.drawn(canvas, room, palette, (end, top)));
+        let mut below = line_y + self.marks;
+        let why_not = self.why_not.as_ref().map(|(shaped, text)| {
+            below += px(m::BETWEEN_LINES);
+            let drawn = placed(canvas, room, shaped, text, x, below);
+            below += shaped.height;
+            drawn
+        });
+        let confirmation = self.confirmation.as_ref().map(|it| {
+            let wide = end - x;
+            it.drawn(
+                canvas,
+                room,
+                palette,
+                (x, below + 2 * px(m::BETWEEN_LINES), wide),
+            )
         });
         EntryDrawn {
             area: room.as_drawn(Rectangle::new(
@@ -388,6 +453,9 @@ impl AnEntryShaped {
             approved,
             refused,
             already_sent,
+            put_back_button,
+            why_not,
+            confirmation,
         }
     }
 }
