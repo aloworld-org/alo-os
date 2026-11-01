@@ -77,8 +77,8 @@ impl crate::Server {
         // **The confirmation's buttons**, as Enter on them: the keyboard goes
         // to the one pressed, and it is pressed.
         for (button, on) in [
-            (places.put_back, crate::OnTheSheet::PutBack),
-            (places.cancel, crate::OnTheSheet::Cancel),
+            (places.put_back, crate::OnTheConfirmation::PutBack),
+            (places.cancel, crate::OnTheConfirmation::Cancel),
         ] {
             if button.is_some_and(|it| it.contains(at)) {
                 self.record.the_keyboard_is_on(on);

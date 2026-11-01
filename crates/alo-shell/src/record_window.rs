@@ -51,7 +51,7 @@ use alo_record::Asking;
 use alo_recounting::{Account, AtMost, NotRecounted, Recounting, Recounts};
 
 use crate::RecordKey;
-use crate::putting_back_from_the_record::{OnTheSheet, PutBackHere, ThePutBack, TheSheet};
+use crate::putting_back_from_the_record::{OnTheConfirmation, PutBackHere, ThePutBack, TheSheet};
 use crate::record_shown::RecordShown;
 
 /// What the record window draws now.
@@ -145,9 +145,9 @@ impl RecordWindow {
     /// back would do — or why it cannot be done.
     pub fn the_confirmation_opens(&mut self, at: usize, plan: Result<crate::ThePlan, String>) {
         let on = if plan.is_ok() {
-            OnTheSheet::PutBack
+            OnTheConfirmation::PutBack
         } else {
-            OnTheSheet::Cancel
+            OnTheConfirmation::Cancel
         };
         self.put_back.chosen = Some(at);
         self.put_back.sheet = Some(TheSheet {
@@ -165,7 +165,7 @@ impl RecordWindow {
         if let Some(sheet) = self.put_back.sheet.as_mut() {
             sheet.waiting = false;
             sheet.refused = Some(why);
-            sheet.on = OnTheSheet::Cancel;
+            sheet.on = OnTheConfirmation::Cancel;
         }
     }
 
@@ -237,9 +237,9 @@ impl RecordWindow {
         match key {
             RecordKey::NextPutBack | RecordKey::PreviousPutBack => {
                 sheet.on = match sheet.on {
-                    OnTheSheet::PutBack => OnTheSheet::Cancel,
-                    OnTheSheet::Cancel if sheet.can_put_back() => OnTheSheet::PutBack,
-                    OnTheSheet::Cancel => OnTheSheet::Cancel,
+                    OnTheConfirmation::PutBack => OnTheConfirmation::Cancel,
+                    OnTheConfirmation::Cancel if sheet.can_put_back() => OnTheConfirmation::PutBack,
+                    OnTheConfirmation::Cancel => OnTheConfirmation::Cancel,
                 };
                 None
             }
@@ -262,13 +262,13 @@ impl RecordWindow {
     pub fn the_confirmation_is_pressed(&mut self) -> Option<RecordOpened> {
         let sheet = self.put_back.sheet.as_mut()?;
         match sheet.on {
-            OnTheSheet::Cancel => {
+            OnTheConfirmation::Cancel => {
                 if !sheet.waiting {
                     self.put_back.sheet = None;
                 }
                 None
             }
-            OnTheSheet::PutBack => {
+            OnTheConfirmation::PutBack => {
                 let Ok(plan) = &sheet.plan else {
                     return None;
                 };
@@ -285,7 +285,7 @@ impl RecordWindow {
     }
 
     /// Put the keyboard on one of the confirmation's buttons.
-    pub fn the_keyboard_is_on(&mut self, on: OnTheSheet) {
+    pub fn the_keyboard_is_on(&mut self, on: OnTheConfirmation) {
         if let Some(sheet) = self.put_back.sheet.as_mut() {
             sheet.on = on;
         }

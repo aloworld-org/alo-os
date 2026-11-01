@@ -12,7 +12,7 @@ use cosmic_text::FontSystem;
 use smithay::utils::Rectangle;
 
 use crate::painted_text::Shaped;
-use crate::putting_back_from_the_record::OnTheSheet;
+use crate::putting_back_from_the_record::OnTheConfirmation;
 use crate::record_header::placed;
 use crate::record_lines::TheConfirmationWords;
 use crate::record_measures as m;
@@ -299,14 +299,14 @@ impl TheConfirmationShaped {
                 canvas,
                 label,
                 (palette.ink, palette.ink),
-                self.words.on == OnTheSheet::PutBack,
+                self.words.on == OnTheConfirmation::PutBack,
             )
         });
         let cancel = a_labelled(
             canvas,
             &self.cancel,
             (palette.surface, palette.edge),
-            self.words.on == OnTheSheet::Cancel,
+            self.words.on == OnTheConfirmation::Cancel,
         );
         TheConfirmationDrawn {
             area: room.as_drawn(area),

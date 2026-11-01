@@ -9,7 +9,7 @@
 use std::os::unix::fs::PermissionsExt;
 
 use crate::record_testing::{A_PLACE, AChangeKept, a_change_with_a_place_kept, words};
-use crate::{OnTheSheet, RecordKey, RecordOpened, RecordShows, Server};
+use crate::{OnTheConfirmation, RecordKey, RecordOpened, RecordShows, Server};
 
 /// A display with the record window open on one change alo made after a place
 /// was kept, the places told.
@@ -52,7 +52,7 @@ fn tab_enter_enter_asks_the_service() {
         .expect("Enter asked for the plan");
     server.the_plan_is_made(at, &words());
     let sheet = the_sheet(&server).expect("the confirmation is open");
-    assert_eq!(sheet.on, OnTheSheet::PutBack);
+    assert_eq!(sheet.on, OnTheConfirmation::PutBack);
     assert!(sheet.can_put_back(), "{sheet:?}");
 
     pressed(&mut server, RecordKey::Press, &change);
@@ -83,7 +83,7 @@ fn nothing_put_back_says_why_and_escape_closes_only_the_confirmation() {
     server.that_put_back_answered(Err("nothing was changed".to_owned()));
     let sheet = the_sheet(&server).unwrap();
     assert_eq!(sheet.refused.as_deref(), Some("nothing was changed"));
-    assert_eq!(sheet.on, OnTheSheet::Cancel);
+    assert_eq!(sheet.on, OnTheConfirmation::Cancel);
     assert!(!sheet.can_put_back());
 
     pressed(&mut server, RecordKey::Close, &change);
@@ -104,7 +104,7 @@ fn cancel_asks_nothing() {
     let at = server.take_the_plan_asked().unwrap();
     server.the_plan_is_made(at, &words());
     pressed(&mut server, RecordKey::NextPutBack, &change);
-    assert_eq!(the_sheet(&server).unwrap().on, OnTheSheet::Cancel);
+    assert_eq!(the_sheet(&server).unwrap().on, OnTheConfirmation::Cancel);
     pressed(&mut server, RecordKey::Press, &change);
     assert_eq!(the_sheet(&server), None);
     assert_eq!(server.take_the_put_back_asked(), None);

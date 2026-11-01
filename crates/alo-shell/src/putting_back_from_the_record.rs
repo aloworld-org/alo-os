@@ -70,7 +70,7 @@ pub struct ThePlan {
 
 /// Where the keyboard is on the confirmation.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum OnTheSheet {
+pub enum OnTheConfirmation {
     /// *Put back*.
     PutBack,
     /// *Cancel*.
@@ -85,7 +85,7 @@ pub struct TheSheet {
     /// What putting back would do, or why it cannot be done, in words.
     pub plan: Result<ThePlan, String>,
     /// Where the keyboard is.
-    pub on: OnTheSheet,
+    pub on: OnTheConfirmation,
     /// Whether it has been confirmed and is being done.
     pub waiting: bool,
     /// What the service said when it put nothing back.

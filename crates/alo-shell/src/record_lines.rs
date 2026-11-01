@@ -43,7 +43,7 @@ use crate::TheDay;
 use alo_recounting::{Account, Outcome, Told};
 use alo_strings::Strings;
 
-use crate::putting_back_from_the_record::{OnTheSheet, PutBackHere, ThePutBack, TheSheet};
+use crate::putting_back_from_the_record::{OnTheConfirmation, PutBackHere, ThePutBack, TheSheet};
 use crate::record_clock::RecordClock;
 use crate::the_records_words::{TheRecordsSentences, the_question};
 
@@ -99,7 +99,7 @@ pub(crate) struct TheConfirmationWords {
     /// *Putting back…*, while it is being done.
     pub(crate) waiting: Option<String>,
     /// Where the keyboard is.
-    pub(crate) on: OnTheSheet,
+    pub(crate) on: OnTheConfirmation,
 }
 
 /// The account's entries, most recent first, from `moved_past` entries back.

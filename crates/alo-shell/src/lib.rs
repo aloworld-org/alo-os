@@ -834,7 +834,9 @@ pub use offscreen::{PreparedScanout, render_control_scanout, render_scanout};
 pub use output_metadata::OutputMetadata;
 pub use popups::Popup;
 pub use presentation::{FrameTarget, RenderError};
-pub use putting_back_from_the_record::{OnTheSheet, PutBackHere, ThePlan, ThePutBack, TheSheet};
+pub use putting_back_from_the_record::{
+    OnTheConfirmation, PutBackHere, ThePlan, ThePutBack, TheSheet,
+};
 pub use readback::{ReadbackError, RowOrder, ScanoutPixels, readback_xrgb};
 pub use record_clock::RecordClock;
 pub use record_keys::RecordKey;
