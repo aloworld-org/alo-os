@@ -169,6 +169,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             RecordShows::Account {
                 account,
                 moved_past,
+                ..
             } => println!(
                 "Drew {what}: {} entries, {moved_past} newer out of view, the newest \"{}\"",
                 account.how_many(),
