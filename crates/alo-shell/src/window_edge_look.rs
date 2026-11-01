@@ -42,7 +42,7 @@ pub(crate) const THE_STRIPS_CORNER: u32 = 10;
 pub(crate) const A_LINE_IS: i32 = 1;
 
 /// Which look a window wears.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 pub enum WhichLook {
     /// The window the person's typing goes to.
     Focused,
