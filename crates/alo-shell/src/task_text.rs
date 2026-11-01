@@ -190,6 +190,17 @@ pub struct TheTwoAnswers<'a> {
     /// appears — and a drawing that marked one anyway would be showing an
     /// answer the person has not chosen.
     pub selected: Option<crate::a_change_waiting_reaches_the_person::WhichAnswer>,
+    /// *alo is asking to*, when this is an approval card, which is then drawn
+    /// as the approved frame draws it (`crate::the_approval_card`): this line
+    /// with alo's mark, the action in heading size, the two answers at equal
+    /// width on a row of their own, and [`Self::once`] beside them.
+    ///
+    /// [`None`] for the closing question (ADR 0139), which borrows the two
+    /// answers and keeps the card it has.
+    pub asking: Option<&'a str>,
+    /// *Allows this one action. alo asks again next time.*, beside the
+    /// answers on an approval card.
+    pub once: Option<&'a str>,
 }
 
 /// One thing to be written into the window.

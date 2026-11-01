@@ -112,6 +112,23 @@ pub(crate) struct InPrimary<'a> {
     pub(crate) outlines: &'a [Rectangle<i32, Physical>],
     /// The colour, `text/primary`.
     pub(crate) colour: [u8; 3],
+    /// **Grounds of their own colours, under the Primary answer**: the
+    /// approval card's hairline, its white and its `bg/canvas` row of choices
+    /// (`crate::the_approval_card`), drawn in the order given.
+    ///
+    /// Here rather than as a field of every panel for the reason this set
+    /// exists at all: only a panel carrying a question draws them, and every
+    /// other panel says [`Self::NOTHING`].
+    pub(crate) grounds: &'a [AGround],
+}
+
+/// A rounded ground in a colour of its own.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct AGround {
+    /// Where it is, and its corner.
+    pub(crate) well: AWell,
+    /// Its colour.
+    pub(crate) colour: [u8; 3],
 }
 
 impl InPrimary<'static> {
@@ -121,6 +138,7 @@ impl InPrimary<'static> {
         wells: &[],
         outlines: &[],
         colour: [0, 0, 0],
+        grounds: &[],
     };
 }
 
@@ -334,6 +352,19 @@ pub(crate) fn surface(of: ADocksSurface<'_>) -> Option<Washed> {
             // Composited back to front: shadow, fill, hairline, accent.
             let mut colour = [0.0_f32; 3];
             let mut alpha = 0.0_f32;
+            let mut over_it = |over: f32, its: [u8; 3]| {
+                if over <= 0.0 {
+                    return;
+                }
+                for channel in 0..3 {
+                    let Some(have) = colour.get_mut(channel) else {
+                        continue;
+                    };
+                    let it = f32::from(*its.get(channel).unwrap_or(&0)) / 255.0;
+                    *have = it * over + *have * (1.0 - over);
+                }
+                alpha = over + alpha * (1.0 - over);
+            };
             for (over, its) in [
                 (shadow, THE_SHADOWS_COLOUR),
                 (within, of.fill),
@@ -342,6 +373,19 @@ pub(crate) fn surface(of: ADocksSurface<'_>) -> Option<Washed> {
                 // **The wells under the badges**, so a circle drawn on a row
                 // sits on it rather than under it.
                 (well, of.well_is),
+            ] {
+                over_it(over, its);
+            }
+            // **The grounds, each in its own colour and in the order given**,
+            // over the plain wells and under the Primary answer: the approval
+            // card's hairline, its white, and its row of choices.
+            for ground in of.in_primary.grounds {
+                over_it(
+                    under_a_well(std::slice::from_ref(&ground.well), px, py, area, raised) * inside,
+                    ground.colour,
+                );
+            }
+            for (over, its) in [
                 // **The Primary answer over the plain wells**, so a card's
                 // own ground never covers it.
                 (well_in_primary, of.in_primary.colour),
@@ -360,17 +404,7 @@ pub(crate) fn surface(of: ADocksSurface<'_>) -> Option<Washed> {
                 // person where their next key press will land.
                 (outline_in_primary, of.in_primary.colour),
             ] {
-                if over <= 0.0 {
-                    continue;
-                }
-                for channel in 0..3 {
-                    let Some(have) = colour.get_mut(channel) else {
-                        continue;
-                    };
-                    let it = f32::from(*its.get(channel).unwrap_or(&0)) / 255.0;
-                    *have = it * over + *have * (1.0 - over);
-                }
-                alpha = over + alpha * (1.0 - over);
+                over_it(over, its);
             }
             let at = ((y as usize) * (width as usize) + (x as usize)) * 4;
             if let Some(out) = pixels.get_mut(at..at + 4) {

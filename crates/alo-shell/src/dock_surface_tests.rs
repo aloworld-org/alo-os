@@ -439,6 +439,7 @@ fn a_primary_well_draws_exactly_as_a_plain_well_in_its_colour() {
             wells: &[answer],
             outlines: &[],
             colour: NAVY,
+            grounds: &[],
         },
     );
     let nothing = a_card(&[], &[], super::InPrimary::NOTHING);
@@ -467,6 +468,7 @@ fn the_keyboards_outline_draws_exactly_as_a_ring_in_its_colour() {
             wells: &[],
             outlines: &[around],
             colour: NAVY,
+            grounds: &[],
         },
     );
     let nothing = a_card(&[], &[], super::InPrimary::NOTHING);
@@ -553,6 +555,7 @@ fn the_dock_is_drawn_exactly_as_it_was_before_the_look() {
                 wells: &primary,
                 outlines: &outlines,
                 colour: [0x10, 0x2A, 0x43],
+                grounds: &[],
             },
         })
         .expect("a panel with area rasterises");
@@ -640,5 +643,64 @@ fn at_two_hundred_percent_the_rasterisers_corner_doubles() {
     assert!(
         (dense - 36).abs() <= 6,
         "at 200% the corner reaches {dense}"
+    );
+}
+
+/// **A ground is a well, drawn by the well's own arithmetic, in its own
+/// colour**, and grounds are drawn in the order given — so the approval card's
+/// white over its hairline leaves exactly the hairline showing.
+#[test]
+fn a_ground_draws_as_a_well_in_its_colour_and_later_grounds_cover_earlier() {
+    let card = super::AWell {
+        at: Rectangle::new((40, 40).into(), (200, 100).into()),
+        corner: 18,
+    };
+    let as_a_well = a_card(&[card], &[], super::InPrimary::NOTHING);
+    let as_a_ground = a_card(
+        &[],
+        &[],
+        super::InPrimary {
+            wells: &[],
+            outlines: &[],
+            colour: NAVY,
+            grounds: &[super::AGround {
+                well: card,
+                colour: NAVY,
+            }],
+        },
+    );
+    assert_eq!(
+        as_a_well.pixels, as_a_ground.pixels,
+        "a ground drew differently from a well of the same colour"
+    );
+
+    let white = [255, 255, 255];
+    let covered = a_card(
+        &[],
+        &[],
+        super::InPrimary {
+            wells: &[],
+            outlines: &[],
+            colour: NAVY,
+            grounds: &[
+                super::AGround {
+                    well: card,
+                    colour: NAVY,
+                },
+                // Larger, so it covers the first one's softened edge too.
+                super::AGround {
+                    well: super::AWell {
+                        at: Rectangle::new((30, 30).into(), (220, 120).into()),
+                        corner: 18,
+                    },
+                    colour: white,
+                },
+            ],
+        },
+    );
+    let nothing = a_card(&[], &[], super::InPrimary::NOTHING);
+    assert_eq!(
+        covered.pixels, nothing.pixels,
+        "the second ground did not cover the first: they are not drawn in order"
     );
 }

@@ -549,10 +549,32 @@ fn a_persons_words_are_drawn_further_right_than_alos() {
     );
 }
 
-/// The design's frame, with a change waiting at the end of it.
+/// The design's frame, with a question at the end of it carrying two answers
+/// on the card it always had — the closing question's (ADR 0139), which keeps
+/// that card. The approved approval card is `with_the_approved_card`.
 fn with_a_card(
     selected: Option<crate::a_change_waiting_reaches_the_person::WhichAnswer>,
     answering: bool,
+) -> TaskPicture {
+    a_window_with_a_card(selected, answering, None)
+}
+
+/// The design's frame with a change waiting at the end of it, drawn as the
+/// approved approval card (`549:135`).
+fn with_the_approved_card(
+    selected: Option<crate::a_change_waiting_reaches_the_person::WhichAnswer>,
+) -> TaskPicture {
+    a_window_with_a_card(selected, true, Some(("alo is asking to", APPROVED_ONCE)))
+}
+
+/// *Allows this one action. alo asks again next time.*
+const APPROVED_ONCE: &str = "Allows this one action. alo asks again next time.";
+
+/// The design's frame with a card at the end of it.
+fn a_window_with_a_card(
+    selected: Option<crate::a_change_waiting_reaches_the_person::WhichAnswer>,
+    answering: bool,
+    approved: Option<(&'static str, &'static str)>,
 ) -> TaskPicture {
     let files = two_files();
     let mut said = what_was_said();
@@ -564,6 +586,8 @@ fn with_a_card(
             allow_once: "Allow once",
             deny: "Deny",
             selected,
+            asking: approved.map(|(asking, _)| asking),
+            once: approved.map(|(_, once)| once),
         }),
     });
     let mut fonts = cosmic_text::FontSystem::new();
@@ -910,6 +934,142 @@ fn a_long_title_keeps_to_one_line_and_ends_in_an_ellipsis() {
             .shown
             .ends_with(crate::window_edge_title::AN_ELLIPSIS)
     );
+}
+
+/// The approved card's five pieces of ink — who is asking, the action, Allow
+/// once, Deny and the line beside them — which are the last before the scope
+/// note under the reply box.
+fn the_cards_ink(drawn: &TaskPicture) -> [&crate::painted::Inked; 5] {
+    let ink = &drawn.inked;
+    let at = |back: usize| {
+        ink.get(ink.len() - back)
+            .expect("a piece of ink the order says is there")
+    };
+    [at(6), at(5), at(4), at(3), at(2)]
+}
+
+/// The middle of a piece of ink, across.
+fn its_middle(ink: &crate::painted::Inked) -> i32 {
+    ink.area.loc.x + ink.area.size.w / 2
+}
+
+/// **The approved card reads in the frame's order** (`549:193`): *alo is
+/// asking to*, the action under it, then Allow once, Deny and the line beside
+/// them on one row below — and two more pieces of ink than the card the
+/// closing question keeps, which writes no line above or beside.
+#[test]
+fn the_approved_card_reads_in_the_frames_order() {
+    let kept = with_a_card(None, true);
+    let approved = with_the_approved_card(None);
+    assert_eq!(
+        approved.inked.len(),
+        kept.inked.len() + 2,
+        "who is asking and the line beside the answers were not both written"
+    );
+    let [asking, action, allow, deny, once] = the_cards_ink(&approved);
+    assert!(
+        asking.area.loc.y + asking.area.size.h <= action.area.loc.y,
+        "alo is asking to is not above the action"
+    );
+    assert!(
+        action.area.loc.y + action.area.size.h <= allow.area.loc.y,
+        "the answers are not below the action"
+    );
+    assert_eq!(
+        allow.area.loc.y, deny.area.loc.y,
+        "the answers are not on one row"
+    );
+    assert!(
+        allow.area.loc.x < deny.area.loc.x && deny.area.loc.x < once.area.loc.x,
+        "Allow once, Deny and the line beside them are not in that order"
+    );
+}
+
+/// **The action is in the heading's size**: taller than the same sentence on
+/// the card the closing question keeps, which writes it in Body/Medium.
+#[test]
+fn the_action_is_written_in_the_headings_size() {
+    let kept = with_a_card(None, true);
+    let approved = with_the_approved_card(None);
+    let [_, action, _, _, _] = the_cards_ink(&approved);
+    let sentence = kept
+        .inked
+        .get(kept.inked.len() - 4)
+        .expect("the kept card's sentence, before its two answers and the scope note");
+    assert!(
+        action.area.size.h > sentence.area.size.h,
+        "the action is {} tall and the same words in Body/Medium {}",
+        action.area.size.h,
+        sentence.area.size.h
+    );
+}
+
+/// **Allow once and Deny are the same width**: each label is centred on its
+/// button, so the two middles are one button and the gap apart — 144 and 8 —
+/// where Deny's old 104 put them 132 apart.
+#[test]
+fn allow_once_and_deny_are_the_same_width() {
+    let approved = with_the_approved_card(None);
+    let [_, _, allow, deny, _] = the_cards_ink(&approved);
+    let apart = its_middle(deny) - its_middle(allow);
+    assert!(
+        (150..=154).contains(&apart),
+        "the labels' middles are {apart} apart, so the buttons are not both 144"
+    );
+}
+
+/// **The line beside the answers is on the row's `bg/canvas`**, and Deny's
+/// label on the white of its button.
+#[test]
+fn the_line_beside_the_answers_is_on_the_canvas() {
+    const CANVAS: [u8; 3] = [0xFA, 0xF7, 0xF2];
+    let approved = with_the_approved_card(None);
+    let [_, _, _, deny, once] = the_cards_ink(&approved);
+    assert!(
+        once.pixels.contains(&CANVAS),
+        "the line beside the answers is not on bg/canvas"
+    );
+    assert!(
+        !once.pixels.contains(&[255, 255, 255]),
+        "the line beside the answers is on white"
+    );
+    assert!(
+        deny.pixels.contains(&[255, 255, 255]),
+        "Deny's label is not on its white button"
+    );
+}
+
+/// **alo's mark is drawn**, in its teal, which nothing else in the panel is.
+/// The control is the card the closing question keeps, which draws none.
+#[test]
+fn alos_mark_is_drawn_on_the_approved_card() {
+    let teal =
+        |panel: &crate::painted::Washed| {
+            panel.pixels.as_chunks::<4>().0.iter().any(|&[r, g, b, _]| {
+                g > r.saturating_add(40) && b > r.saturating_add(40) && g < 200
+            })
+        };
+    assert!(
+        !teal(&with_a_card(None, true).panel),
+        "the control: something teal was already in the panel"
+    );
+    assert!(
+        teal(&with_the_approved_card(None).panel),
+        "alo's mark was not drawn"
+    );
+}
+
+/// **On the approved card too, nothing is outlined until the keyboard moves,
+/// and the outline goes where it moves to.**
+#[test]
+fn the_approved_cards_outline_follows_the_keyboard() {
+    use crate::a_change_waiting_reaches_the_person::WhichAnswer;
+
+    let none = with_the_approved_card(None);
+    let allow = with_the_approved_card(Some(WhichAnswer::AllowOnce));
+    let deny = with_the_approved_card(Some(WhichAnswer::Deny));
+    assert_ne!(none.panel.pixels, allow.panel.pixels);
+    assert_ne!(allow.panel.pixels, deny.panel.pixels);
 }
 
 /// **Teal is alo at work and nothing else.** *Complete* and *Waiting for your

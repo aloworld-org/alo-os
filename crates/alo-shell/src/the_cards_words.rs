@@ -48,8 +48,29 @@ pub const DENY: Word = Word::saying("the-card.deny", "Deny").noting(
     "The other of the two answers on an approval card, beneath the same sentence. It is a \
      complete answer: nothing is postponed, nothing is undone and no reason is asked for or \
      recorded, so a translation should not soften it into \"not now\", \"later\" or \"cancel\". \
-     It is narrower than its pair on the screen because the word is shorter, and not because it \
-     is secondary — both are equally reachable and neither is behind anything.",
+     It is exactly as wide as its pair on the screen, 144: both are equally reachable and \
+     neither is behind anything.",
+);
+
+/// The line at the top of an approval card, above the action.
+pub const ALO_IS_ASKING_TO: Word = Word::saying("the-card.alo-is-asking-to", "alo is asking to")
+    .noting(
+        "alo is the assistant built into alo OS, not a person. The small line at the top of an \
+         approval card, beside alo's mark; the line under it, in large type, is the action — \
+         for example \"rename march.pdf to invoice-march.pdf\" — so this reads as the start of \
+         that sentence. Lower case because alo is always written so. A language whose grammar \
+         cannot leave the sentence open may close it (\"alo asks for this:\").",
+    );
+
+/// What allowing once means, beside the two answers.
+pub const ALLOWS_THIS_ONE_ACTION: Word = Word::saying(
+    "the-card.allows-this-one-action",
+    "Allows this one action. alo asks again next time.",
+)
+.noting(
+    "Beside Allow once and Deny on an approval card. It says what Allow once does and does not \
+     do: it is not a permission that lasts, and alo will ask again the next time it wants to do \
+     anything like this. alo is the assistant built into alo OS, not a person.",
 );
 
 /// What the conversation says once an allowed change was carried out.
@@ -117,9 +138,11 @@ pub const IT_STOPPED_WITHOUT_FINISHING: Word = Word::saying(
 );
 
 /// Every string this file declares, in the order a translator meets them.
-pub const THE_CARDS_WORDS: [Word; 7] = [
+pub const THE_CARDS_WORDS: [Word; 9] = [
+    ALO_IS_ASKING_TO,
     ALLOW_ONCE,
     DENY,
+    ALLOWS_THIS_ONE_ACTION,
     IT_WAS_DONE,
     IT_WAS_DONE_AND_CANNOT_BE_UNDONE,
     YOU_SAID_NO,
