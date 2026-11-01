@@ -70,6 +70,10 @@ pub(crate) struct GrantedSection {
     grants: Option<Grants>,
     /// The pairings the daemon keeps, when they read.
     pairings: Option<Pairings>,
+    /// What the person called the machines they paired with, as the daemon
+    /// keeps it beside the pairings. None named when the file is not there
+    /// or did not read, so a machine is then shown by its identity.
+    names: alo_remembering::MachineNames,
     /// The machines whose pairing the daemon revoked while Settings was open,
     /// which the file read at opening still names — a revocation *until a
     /// restart* is not written down — and which are revoked all the same.
@@ -128,11 +132,31 @@ impl GrantedSection {
                 None
             }
         };
+        // **The names a person gave the machines they paired with**, which the
+        // daemon keeps beside the pairings. Until 2026-11-01 Settings never
+        // read them, so a paired computer was shown by its 32-character
+        // identity in *alo and AI* and in the list of what alo can reach.
+        let names = match &pairings {
+            Some(pairings) => match alo_remembering::machine_names_remembered(
+                &crate::settings_places::the_names_beside(pairings_at),
+                pairings,
+                now,
+            ) {
+                Ok(names) => names,
+                Err(NotRemembered::NotThere { .. }) => alo_remembering::MachineNames::none(),
+                Err(why) => {
+                    refused.push(why);
+                    alo_remembering::MachineNames::none()
+                }
+            },
+            None => alo_remembering::MachineNames::none(),
+        };
         (
             Self {
                 grants_at: grants_at.to_owned(),
                 grants,
                 pairings,
+                names,
                 unpaired: Vec::new(),
                 told: Vec::new(),
                 home: home.map(Path::to_owned),
@@ -311,10 +335,24 @@ impl GrantedSection {
                         pairings.paired_with(pairing.with(), now)
                             && !self.unpaired.contains(pairing.with())
                     })
-                    .map(|pairing| Row::from(SeenPairing::of(pairing))),
+                    .map(|pairing| Row::from(SeenPairing::named(pairing, &self.names))),
             );
         }
         rows
+    }
+
+    /// **What a paired machine is shown as**: the name the person gave it
+    /// when they did, and its identity when they did not — which is how
+    /// pairing itself names a machine (`alo_nearby::Origin`).
+    pub(crate) fn what_a_machine_is_called(&self, identity: &str) -> String {
+        MachineId::read(identity)
+            .ok()
+            .and_then(|machine| {
+                self.names
+                    .called(&machine)
+                    .map(|name| name.as_str().to_owned())
+            })
+            .unwrap_or_else(|| identity.to_owned())
     }
 
     /// What a pairing's row may do, as its pairing says.

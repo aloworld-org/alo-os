@@ -175,6 +175,19 @@ impl SettingsPlaces {
     }
 }
 
+/// **The names file the daemon keeps beside the pairings at `pairings`**:
+/// `alo_remembering::THE_MACHINE_NAMES` sits in the same folder as
+/// `alo_remembering::THE_PAIRINGS` (*beside the pairings*, that crate says),
+/// so it is found from wherever the host said the pairings are — which keeps
+/// a test's own folder and the machine's in step without a second place to
+/// name.
+pub(crate) fn the_names_beside(pairings: &Path) -> PathBuf {
+    let named = Path::new(alo_remembering::THE_MACHINE_NAMES)
+        .file_name()
+        .unwrap_or_else(|| std::ffi::OsStr::new("machine-names.toml"));
+    pairings.with_file_name(named)
+}
+
 #[cfg(test)]
 #[expect(
     clippy::unwrap_used,
@@ -182,6 +195,16 @@ impl SettingsPlaces {
 )]
 mod tests {
     use super::*;
+
+    /// **On the machine, the names beside the pairings are the daemon's names
+    /// file**, so a Settings reading them reads what the daemon wrote.
+    #[test]
+    fn the_names_beside_the_machines_pairings_are_the_daemons_names_file() {
+        assert_eq!(
+            the_names_beside(Path::new(alo_remembering::THE_PAIRINGS)),
+            Path::new(alo_remembering::THE_MACHINE_NAMES)
+        );
+    }
 
     /// **The folder and every file in it are the owning crates' answers**, and a
     /// login with no home directory has none of them — while the machine's own
