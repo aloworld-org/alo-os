@@ -165,6 +165,7 @@ mod canvas_resize;
 mod canvas_shift_wheel;
 mod canvas_show_all;
 mod canvas_space_drag;
+mod canvas_the_room_show_all_fits_into;
 mod canvas_the_world;
 mod canvas_wheel_zoom;
 mod capture_flatten;
