@@ -559,6 +559,11 @@ impl Server {
             if self.ctrl_is_held() {
                 return Ok(self.zoom_the_plane_by_scroll(&frame));
             }
+            // **Shift turns a mouse wheel sideways**, the design's *pan
+            // sideways with a mouse* — `crate::canvas_shift_wheel`. Only here,
+            // over empty canvas: over an application the scroll above is that
+            // application's, Shift and all.
+            let frame = crate::canvas_shift_wheel::as_the_canvas_pans(frame, self.shift_is_held());
             return Ok(self.pan_the_plane_by_scroll(&frame));
         }
         pointer.time = frame.time;
