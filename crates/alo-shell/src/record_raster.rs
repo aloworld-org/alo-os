@@ -37,7 +37,7 @@ use crate::painted::Washed;
 use crate::record_clock::RecordClock;
 use crate::record_entry_drawn::{TheColumns, TheWindowsWords, shaped, the_time};
 use crate::record_header::{ACount, TheHeaderSays, placed};
-use crate::record_icons::ARecordIcon;
+use crate::the_records_icons::ARecordIcon;
 use crate::record_kinds::{EntryKind, Today};
 use crate::record_lines::{EntryWords, newest_first};
 use crate::record_measures as m;

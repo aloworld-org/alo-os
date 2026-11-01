@@ -1717,6 +1717,17 @@ impl LoopInput for Desk<'_> {
             (size.w, size.h),
             terminal,
         )?;
+        // **Where the record window went, for the press after this frame**:
+        // laid out where the display's scale is known, and nowhere else.
+        server.the_record_was_drawn(pictures.record.as_ref().and_then(|record| {
+            record
+                .panel
+                .zip(record.close)
+                .map(|(window, close)| crate::a_press_on_the_record::TheRecordsPlaces {
+                    window,
+                    close,
+                })
+        }));
         // **A window this person has open that this frame did not draw.**
         //
         // **Here, and not where the placement is made.** It stood beside

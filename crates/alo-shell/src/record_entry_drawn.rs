@@ -19,7 +19,7 @@ use smithay::utils::Rectangle;
 
 use crate::painted_text::Shaped;
 use crate::record_header::placed;
-use crate::record_icons::ARecordIcon;
+use crate::the_records_icons::ARecordIcon;
 use crate::record_kinds::EntryKind;
 use crate::record_lines::EntryWords;
 use crate::record_measures as m;

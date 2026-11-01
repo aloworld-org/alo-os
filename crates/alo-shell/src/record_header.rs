@@ -11,7 +11,7 @@
 use cosmic_text::FontSystem;
 use smithay::utils::Rectangle;
 
-use crate::record_icons::ARecordIcon;
+use crate::the_records_icons::ARecordIcon;
 use crate::record_measures as m;
 use crate::record_palette::RecordPalette;
 use crate::record_raster::TextDrawn;
