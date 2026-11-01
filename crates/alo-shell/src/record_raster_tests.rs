@@ -625,3 +625,65 @@ fn at_two_hundred_the_record_is_drawn_twice_the_size() {
         );
     }
 }
+
+/// **The approved frames, drawn, for the owner to compare** — 1440 × 960 light
+/// and dark and 1280 × 800 light, the window over the canvas cream.
+///
+/// With `ALO_ROUND_2_PICTURES` set to a folder each is written there as a PNG,
+/// which is how the rendered-against-design pictures are made: a check somebody
+/// runs by hand. What runs on every build is that each draws.
+#[test]
+fn the_approved_frames_are_drawn() {
+    let kept = an_afternoon_kept();
+    let window = opened(&kept);
+    for (size, scheme, name) in [
+        (
+            (1440, 960),
+            Scheme::Light,
+            "record-what-alo-did-1440x960-light.png",
+        ),
+        (
+            (1280, 800),
+            Scheme::Light,
+            "record-what-alo-did-1280x800-light.png",
+        ),
+        (
+            (1440, 960),
+            Scheme::Dark,
+            "record-what-alo-did-1440x960-dark.png",
+        ),
+    ] {
+        let picture = drawn_at(&window, size, RecordLook { scheme, ..light() });
+        let washed = picture.washed.as_ref().unwrap();
+        let Some(folder) = std::env::var_os("ALO_ROUND_2_PICTURES") else {
+            continue;
+        };
+        let ground = match scheme {
+            Scheme::Dark => [0x07, 0x13, 0x1F],
+            Scheme::Light => [0xFA, 0xF7, 0xF2],
+        };
+        let (wide, tall) = (
+            u32::try_from(size.0).unwrap(),
+            u32::try_from(size.1).unwrap(),
+        );
+        let mut image = image::RgbImage::from_pixel(wide, tall, image::Rgb(ground));
+        for (at, pixel) in washed.pixels.chunks_exact(4).enumerate() {
+            let at = i32::try_from(at).unwrap();
+            let x = washed.area.loc.x + at % washed.area.size.w;
+            let y = washed.area.loc.y + at / washed.area.size.w;
+            let (Ok(x), Ok(y)) = (u32::try_from(x), u32::try_from(y)) else {
+                continue;
+            };
+            let alpha = f32::from(pixel[3]) / 255.0;
+            let under = image.get_pixel(x, y).0;
+            let over = |which: usize| {
+                (f32::from(pixel[which]) * alpha + f32::from(under[which]) * (1.0 - alpha)).round()
+                    as u8
+            };
+            image.put_pixel(x, y, image::Rgb([over(0), over(1), over(2)]));
+        }
+        image
+            .save(std::path::Path::new(&folder).join(name))
+            .unwrap();
+    }
+}
