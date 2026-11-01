@@ -32,7 +32,15 @@ use alo_strings::Direction;
 use crate::RecordLook;
 pub(crate) use crate::approval_testing::hour;
 use crate::approval_testing::{archiving, keeping_in};
-pub(crate) use crate::approval_testing::{noon, words};
+pub(crate) use crate::approval_testing::noon;
+
+/// Every sentence the machine can say, with the record window's own words
+/// declared as a running shell declares them (`crate::booting`).
+pub(crate) fn words() -> alo_strings::Strings {
+    let mut vocabulary = alo_saying::everything_this_machine_can_say().unwrap();
+    crate::the_records_words::declare_the_records_words(&mut vocabulary).unwrap();
+    alo_strings::Strings::of(vocabulary)
+}
 
 /// The ordinary light look, read left to right.
 pub(crate) fn light() -> RecordLook {

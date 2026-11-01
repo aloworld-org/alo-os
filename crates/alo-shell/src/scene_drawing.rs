@@ -208,6 +208,25 @@ where
                 .map_err(submission)?,
         ),
     };
+    // **The record window, uploaded with the rest** since the redesign the
+    // owner approved on 2026-11-01 made it one raster, as Settings is.
+    let record_washed: Option<(R::TextureId, Rectangle<i32, Physical>)> = match native
+        .record
+        .and_then(crate::record_raster::RecordPicture::washed)
+    {
+        None => None,
+        Some(raster) => Some(
+            renderer
+                .import_memory(
+                    &raster.pixels,
+                    Fourcc::Abgr8888,
+                    (raster.area.size.w, raster.area.size.h).into(),
+                    false,
+                )
+                .map(|texture| (texture, raster.area))
+                .map_err(submission)?,
+        ),
+    };
     // **Settings, uploaded with the rest** since the redesign of 2026-10-31
     // made it one raster: a rounded window with a shadow, and rings and
     // switches that are partial coverage.
@@ -368,7 +387,7 @@ where
     // Above every client and control, so no window covers what the machine
     // did; below the question and the indicator.
     if let Some(record) = native.record.filter(|record| !record.is_empty()) {
-        record.paint(&mut frame)?;
+        record.paint(&mut frame, record_washed.as_ref())?;
     }
     // Above every client, the desktop and the record, so no window covers a
     // setting being changed; below the question and the indicator.

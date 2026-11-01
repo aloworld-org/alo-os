@@ -1,51 +1,51 @@
-//! The record window laid out and rasterised for one output.
+//! The record window laid out and rasterised for one output, as the owner
+//! approved it on 2026-11-01 (`560:142`, `560:316`, `560:490`).
 //!
 //! # What is drawn
 //!
-//! While the window is closed, **nothing**. While an account is open, one tall
-//! panel: first every sentence the record says about itself
-//! (`alo_recounting::Account::said` — whether anything answered, whether this is
-//! all of it, whether the record goes all the way back, whether it is what it
-//! says it is, what could not be read), and under a rule the entries, most
-//! recent first, each with its clause at its head and the machine's own words
-//! after it (`crate::record_lines`). While a refusal is open, the panel holds
-//! that sentence and nothing else.
-//!
-//! The record's sentences about itself are drawn above the entries and never
-//! move with them, so no view of the account hides that it is incomplete.
-//!
-//! # A refusal is drawn as plainly as what ran
-//!
-//! Every entry is laid out by the same code, in the same type, the same two
-//! colours and the same spacing, whatever became of it. There is no dimming, no
-//! collapsing and no second style for what was stopped, because a record that
-//! showed its successes more plainly than its refusals could not answer what a
-//! security review asks.
+//! While the window is closed, **nothing**. While it is open, one window in one
+//! raster (`crate::record_frame_drawn`): its title strip, *What alo did* and
+//! the sentence under it, everything the record says about itself, today's
+//! counts (`crate::record_header`), and under a rule **the list** — newest
+//! first, each day under its own heading in a card of its own, each entry as
+//! `crate::record_entry_drawn` draws it — and the footer. While a refusal is
+//! open, the heading and the refuser's sentence, and no list.
 //!
 //! # Every entry is drawn whole or not at all
 //!
-//! An entry that does not fit below the last one waits for the view to move;
-//! it is never cut. When entries are out of view, a rail on the trailing edge
-//! says where the view is — a shape, so no sentence is needed and none is
-//! invented. A window that cannot hold the record's own sentences and the entry
-//! at the top of the view **refuses the frame** ([`RenderError::RecordScene`]).
+//! An entry that does not fit above the footer waits for the view to move; it
+//! is never cut, where the design's frame shows its last card running under
+//! the footer — the window's choice since 2026-10-17, kept because a view that
+//! moves by whole entries cannot hide half of one. When entries are out of
+//! view, a rail on the trailing edge says where the view is. A window that
+//! cannot hold its header and the entry at the top of the view **refuses the
+//! frame** ([`RenderError::RecordScene`]).
 //!
 //! # What it reads
 //!
-//! `crate::RecordShows`, the person's vocabulary, and `alo-appearance`'s tokens.
-//! Deep teal is not among the colours: it means the agent acting, and this
-//! window is a person reading.
+//! `crate::RecordShows`, the person's vocabulary, the person's formats and
+//! `crate::record_palette`'s colours. Every clause, remark and refusal is the
+//! record's own or `alo-recounting`'s; the window's own words are
+//! `crate::the_records_words`.
 
-use alo_strings::{Direction, Strings};
+use alo_strings::{Counting, Direction, Filling, Strings};
 use cosmic_text::FontSystem;
-use smithay::utils::{Physical, Rectangle};
+use smithay::utils::Rectangle;
 
 use crate::display_scale::DisplayScale;
-use crate::painted::{Inked, Solid};
-use crate::painted_text::Shaped;
+use crate::painted::Washed;
 use crate::record_clock::RecordClock;
+use crate::record_entry_drawn::{TheColumns, TheWindowsWords, shaped, the_time};
+use crate::record_header::{ACount, TheHeaderSays, placed};
+use crate::record_icons::ARecordIcon;
+use crate::record_kinds::{EntryKind, Today};
 use crate::record_lines::{EntryWords, newest_first};
-use crate::record_room::{Room, framed, rule};
+use crate::record_measures as m;
+use crate::record_palette::RecordPalette;
+use crate::record_room::Room;
+use crate::settings_canvas::{Area, Canvas};
+use crate::settings_type::{TheType, written};
+use crate::the_records_words as w;
 use crate::{RecordLook, RecordShows, RenderError, WindowControlLabels};
 
 /// One piece of text as drawn.
@@ -53,8 +53,8 @@ use crate::{RecordLook, RecordShows, RenderError, WindowControlLabels};
 pub(crate) struct TextDrawn {
     /// The text inked, exactly as it arrived.
     pub(crate) text: String,
-    /// Its box.
-    pub(crate) area: Rectangle<i32, Physical>,
+    /// Its box, where it is drawn.
+    pub(crate) area: Area,
 }
 
 /// One entry as drawn.
@@ -62,16 +62,30 @@ pub(crate) struct TextDrawn {
 pub(crate) struct EntryDrawn {
     /// The words it was drawn from.
     pub(crate) words: EntryWords,
+    /// Which of the design's kinds it was drawn as.
+    pub(crate) kind: EntryKind,
+    /// Its row in its card.
+    pub(crate) area: Area,
+    /// Its icon's tile.
+    pub(crate) icon: Area,
     /// The day above it, when it is the first of its day in view.
     pub(crate) day: Option<TextDrawn>,
-    /// The time of day at its head, before the clause.
+    /// The date beside that day.
+    pub(crate) date: Option<TextDrawn>,
+    /// The time of day, at its head.
     pub(crate) time: Option<TextDrawn>,
-    /// The clause at its head.
-    pub(crate) clause: TextDrawn,
     /// Whose authority it was under, when the record names anybody.
     pub(crate) agent: Option<TextDrawn>,
+    /// The clause at its head.
+    pub(crate) clause: TextDrawn,
     /// Everything after, in order.
     pub(crate) after: Vec<TextDrawn>,
+    /// That the person said yes.
+    pub(crate) approved: Option<TextDrawn>,
+    /// *Refused*.
+    pub(crate) refused: Option<TextDrawn>,
+    /// *Already sent*.
+    pub(crate) already_sent: Option<TextDrawn>,
 }
 
 /// The window for one output size, ready to paint.
@@ -79,24 +93,28 @@ pub(crate) struct EntryDrawn {
 pub(crate) struct RecordPicture {
     /// The output size it was laid out for.
     pub(crate) size: (i32, i32),
-    /// The panel, when anything is drawn.
-    pub(crate) panel: Option<Rectangle<i32, Physical>>,
+    /// The window, when anything is drawn.
+    pub(crate) panel: Option<Area>,
+    /// Close's target, when the window is drawn.
+    pub(crate) close: Option<Area>,
+    /// The window and everything in it, as one raster.
+    pub(crate) washed: Option<Washed>,
     /// The refusal, when one is drawn instead of an account.
     pub(crate) refusal: Option<TextDrawn>,
-    /// What the record says about itself, above the entries.
+    /// What the record says about itself, above the list.
     pub(crate) remarks: Vec<TextDrawn>,
+    /// Today's counts.
+    pub(crate) counts: Vec<TextDrawn>,
     /// The entries in view, most recent first.
     pub(crate) entries: Vec<EntryDrawn>,
+    /// Each day's card in view, in order.
+    pub(crate) cards: Vec<Area>,
     /// Whether more recent entries are out of view above.
     pub(crate) more_recent_out_of_view: bool,
     /// Whether older entries are out of view below.
     pub(crate) older_out_of_view: bool,
     /// The rail, when anything is out of view: its track and where the view is.
-    pub(crate) rail: Option<(Rectangle<i32, Physical>, Rectangle<i32, Physical>)>,
-    /// Flat shapes, painted first.
-    pub(crate) solids: Vec<Solid>,
-    /// Text, painted after the shapes.
-    pub(crate) inked: Vec<Inked>,
+    pub(crate) rail: Option<(Area, Area)>,
 }
 
 impl RecordPicture {
@@ -105,35 +123,63 @@ impl RecordPicture {
         Self {
             size,
             panel: None,
+            close: None,
+            washed: None,
             refusal: None,
             remarks: Vec::new(),
+            counts: Vec::new(),
             entries: Vec::new(),
+            cards: Vec::new(),
             more_recent_out_of_view: false,
             older_out_of_view: false,
             rail: None,
-            solids: Vec::new(),
-            inked: Vec::new(),
         }
     }
 
     /// Whether nothing at all is drawn.
-    pub(crate) fn is_empty(&self) -> bool {
-        self.panel.is_none() && self.solids.is_empty() && self.inked.is_empty()
+    pub(crate) const fn is_empty(&self) -> bool {
+        self.washed.is_none()
     }
+}
+
+/// One of the window's own words, in the person's language.
+fn said(strings: &Strings, word: alo_strings::Word) -> String {
+    strings.say(&word.key(), &Filling::nothing()).into_text()
+}
+
+/// Today's counts, in the order the design draws them.
+fn todays_counts(strings: &Strings, today: Today, palette: RecordPalette) -> Vec<ACount> {
+    let count = |counted: w::Counted, how_many: u64| {
+        strings
+            .count(&counted.key(), &Counting::of(how_many), &Filling::nothing())
+            .into_text()
+    };
+    vec![
+        ACount {
+            icon: ARecordIcon::Allowed,
+            colour: palette.allowed,
+            said: count(w::CHANGES_YOU_ALLOWED, today.allowed),
+        },
+        ACount {
+            icon: ARecordIcon::Left,
+            colour: palette.secondary,
+            said: count(w::REQUESTS_THAT_LEFT, today.left),
+        },
+        ACount {
+            icon: ARecordIcon::RefusedSmall,
+            colour: palette.refused,
+            said: count(w::REFUSED_TODAY, today.refused),
+        },
+    ]
 }
 
 /// Lay the window out for an output of `size` drawn at `display`, and
 /// rasterise it.
 ///
-/// Every measure in the window goes through the person's text size and the
-/// display's scale together, so on a 200 per cent screen the record is the
-/// same size to the eye as the Dock beside it. At 100 nothing changes.
-///
 /// # Errors
 /// [`RenderError::RecordScene`] when the window is open and the output is
-/// larger than any this window is laid out for, too small for a panel, or
-/// cannot hold the record's own sentences and the entry at the top of the view
-/// whole.
+/// larger than any this window is laid out for, too small for it, or cannot
+/// hold its header and the entry at the top of the view whole.
 pub(crate) fn picture(
     shows: RecordShows<'_>,
     strings: &Strings,
@@ -144,240 +190,254 @@ pub(crate) fn picture(
     display: DisplayScale,
 ) -> Result<RecordPicture, RenderError> {
     let mut drawn = RecordPicture::empty(size);
-    match shows {
-        RecordShows::Nothing => Ok(drawn),
-        RecordShows::Refusal(why) => {
-            let room = Room::on(size, look, display)?;
-            let said = why.said(strings).into_text();
-            let shaped = room.shaped(&mut labels.fonts, &said, room.inner);
-            let panel_height = 2 * room.pad + shaped.height;
-            if panel_height > size.1 - 2 * room.margin {
-                return Err(RenderError::RecordScene);
-            }
-            let top = (size.1 - panel_height) / 2;
-            let panel = Rectangle::new((room.left, top).into(), (room.width, panel_height).into());
-            framed(&mut drawn.solids, panel, room.measure.px(2), room.palette);
-            drawn.panel = Some(panel);
-            drawn.refusal = Some(placed(
-                &mut drawn.inked,
-                shaped,
-                said,
-                room.text_x,
-                top + room.pad,
-            ));
-            Ok(drawn)
-        }
+    let palette = RecordPalette::of(look.scheme, look.contrast);
+    let (says, account) = match shows {
+        RecordShows::Nothing => return Ok(drawn),
+        RecordShows::Refusal(why) => (
+            TheHeaderSays {
+                heading: said(strings, w::WHAT_ALO_DID),
+                under_it: why.said(strings).into_text(),
+                remarks: Vec::new(),
+                today: None,
+            },
+            None,
+        ),
         RecordShows::Account {
             account,
             moved_past,
-        } => {
-            let room = Room::on(size, look, display)?;
-            let top = room.margin;
-            let bottom = size.1 - room.margin - room.pad;
-            let panel = Rectangle::new(
-                (room.left, top).into(),
-                (room.width, size.1 - 2 * room.margin).into(),
-            );
-            framed(&mut drawn.solids, panel, room.measure.px(2), room.palette);
-            drawn.panel = Some(panel);
-
-            let fonts = &mut labels.fonts;
-            let mut y = top + room.pad;
-            for said in account.said(strings) {
-                let text = said.into_text();
-                let shaped = room.shaped(fonts, &text, room.inner);
-                if y + shaped.height > bottom {
-                    return Err(RenderError::RecordScene);
-                }
-                let height = shaped.height;
-                drawn
-                    .remarks
-                    .push(placed(&mut drawn.inked, shaped, text, room.text_x, y));
-                y += height + room.gap;
-            }
-            y += room.gap;
-            rule(&mut drawn.solids, room, y);
-            y += room.hairline + 2 * room.gap;
-            let entries_top = y;
-
-            // **The entries that could be in view, and the one time column
-            // they share.** No entry is shorter than one line, so no more than
-            // this many can fit; their times are measured before any is placed,
-            // so every clause starts at one edge whatever its minutes are.
-            let most = usize::try_from((bottom - y) / room.measure.px(24)).unwrap_or(0) + 1;
-            let in_view: Vec<EntryWords> = newest_first(account, moved_past, strings, clock)
-                .take(most)
-                .collect();
-            let room = with_one_time_column(fonts, room, &in_view);
-            for words in in_view {
-                let Some(entry) = entry_at(fonts, words, room, look.reading, y, bottom) else {
-                    if drawn.entries.is_empty() {
-                        return Err(RenderError::RecordScene);
-                    }
-                    break;
-                };
-                let (entry, height, inked) = entry;
-                drawn.inked.extend(inked);
-                drawn.entries.push(entry);
-                y += height + room.gap;
-                rule(&mut drawn.solids, room, y);
-                y += room.hairline + room.gap;
-            }
-
+        } => (
+                TheHeaderSays {
+                    heading: said(strings, w::WHAT_ALO_DID),
+                    under_it: said(strings, w::WHAT_IS_IN_IT),
+                    remarks: account
+                        .said(strings)
+                        .into_iter()
+                        .map(alo_strings::Said::into_text)
+                        .collect(),
+                    today: Some((
+                        strings
+                            .say(&alo_formats::words::TODAY.key(), &Filling::nothing())
+                            .into_text(),
+                        todays_counts(strings, Today::in_the(account, clock), palette),
+                    )),
+                },
+                Some((account, moved_past)),
+            ),
+    };
+    let room = Room::on(size, look, display)?;
+    let mut canvas = Canvas::over(room.canvas(size));
+    if room.reading == Direction::RightToLeft {
+        canvas.turned_round(room.window);
+    }
+    let fonts = &mut labels.fonts;
+    let frame = crate::record_frame_drawn::drawn(
+        &mut canvas,
+        fonts,
+        room,
+        palette,
+        (&says.heading, &said(strings, w::KEPT_ON_THIS_COMPUTER)),
+    );
+    let header =
+        crate::record_header::drawn(&mut canvas, fonts, room, palette, &says, frame.footer_top)
+            .ok_or(RenderError::RecordScene)?;
+    drawn.panel = Some(room.window);
+    drawn.close = Some(frame.close);
+    drawn.remarks = header.remarks;
+    drawn.counts = header.counts;
+    match account {
+        None => drawn.refusal = Some(header.under_it),
+        Some((account, moved_past)) => {
+            let (top_pad, foot_pad) = m::THE_LIST_PADS;
+            let list = (header.bottom + room.px(top_pad), frame.footer_top - room.px(foot_pad));
+            let (refused, already_sent) = (said(strings, w::REFUSED), said(strings, w::ALREADY_SENT));
+            let words = TheWindowsWords {
+                refused: &refused,
+                already_sent: &already_sent,
+            };
+            the_list(
+                &mut canvas,
+                fonts,
+                (room, palette),
+                newest_first(account, moved_past, strings, clock),
+                words,
+                list,
+                &mut drawn,
+            )?;
             let total = account.how_many();
             drawn.more_recent_out_of_view = moved_past > 0 && total > 0;
             drawn.older_out_of_view = moved_past + drawn.entries.len() < total;
             if drawn.more_recent_out_of_view || drawn.older_out_of_view {
-                let track = Rectangle::new(
-                    (room.rail_x, entries_top).into(),
-                    (room.rail, (bottom - entries_top).max(room.rail)).into(),
-                );
-                let height = track.size.h;
-                let at = |entries: usize| (height as usize * entries / total.max(1)) as i32;
-                let thumb = Rectangle::new(
-                    (room.rail_x, entries_top + at(moved_past)).into(),
-                    (room.rail, at(drawn.entries.len()).max(room.measure.px(8))).into(),
-                );
-                framed(&mut drawn.solids, track, room.measure.px(1), room.palette);
-                drawn.solids.push(Solid {
-                    area: thumb,
-                    colour: room.palette.ink,
-                });
-                drawn.rail = Some((track, thumb));
+                drawn.rail = Some(the_rail(
+                    &mut canvas,
+                    (room, palette),
+                    list,
+                    (moved_past, drawn.entries.len(), total),
+                ));
             }
-            Ok(drawn)
         }
     }
+    drawn.washed = Some(canvas.washed());
+    Ok(drawn)
 }
 
-/// The room with its time column wide enough for every time in `in_view`:
-/// the design's 56 at the least, and the widest time and a gap either side
-/// of it where a region writes a wider one.
-fn with_one_time_column(fonts: &mut FontSystem, room: Room, in_view: &[EntryWords]) -> Room {
+/// The list between `list.0` and `list.1`: each day's heading and card, and
+/// as many entries as fit whole.
+fn the_list(
+    canvas: &mut Canvas,
+    fonts: &mut FontSystem,
+    (room, palette): (Room, RecordPalette),
+    entries: impl Iterator<Item = EntryWords>,
+    words: TheWindowsWords<'_>,
+    (top, bottom): (i32, i32),
+    drawn: &mut RecordPicture,
+) -> Result<(), RenderError> {
+    let px = |at_one: i32| room.px(at_one);
+    let most = usize::try_from((bottom - top) / px(48)).unwrap_or(0) + 1;
+    let in_view: Vec<EntryWords> = entries.take(most).collect();
+    // **One time column for every entry in view**, measured before any is
+    // placed, so every icon and clause starts at one edge whatever the
+    // minutes are — the design's 44 at the least.
     let widest = in_view
         .iter()
-        .map(|words| {
-            words
-                .time
-                .as_deref()
-                .map_or(0, |time| room.shaped(fonts, time, room.inner).width)
-        })
+        .filter_map(|words| words.time.as_deref())
+        .map(|time| the_time(fonts, room, palette, time).width_of_box)
         .max()
         .unwrap_or(0);
-    Room {
-        time_column: room.time_column.max(widest + 2 * room.gap),
-        ..room
+    let columns = TheColumns {
+        left: room.body.loc.x + px(m::PAD),
+        wide: room.body.size.w - 2 * px(m::PAD),
+        time: px(m::THE_TIME_COLUMN).max(widest),
+    };
+    let (day_tall, day_in, day_gap) = m::A_DAY;
+    let mut y = top;
+    let mut card_top: Option<i32> = None;
+    for entry_words in in_view {
+        let day = entry_words.day.clone();
+        let date = entry_words.date.clone();
+        let starts_a_card = day.is_some() || card_top.is_none();
+        let heading = if day.is_some() {
+            px(day_tall) + px(m::DAY_TO_CARD)
+        } else {
+            0
+        };
+        let before = match (starts_a_card, card_top) {
+            (true, Some(_)) => px(m::BETWEEN_DAYS),
+            (false, _) => room.hairline,
+            (true, None) => 0,
+        };
+        let entry = shaped(fonts, room, palette, columns, (entry_words, words));
+        if y + before + heading + entry.height > bottom {
+            if drawn.entries.is_empty() {
+                return Err(RenderError::RecordScene);
+            }
+            break;
+        }
+        if starts_a_card {
+            if let Some(from) = card_top.take() {
+                a_card(canvas, (room, palette), columns, (from, y), drawn);
+            }
+            y += before;
+        }
+        let mut day_drawn = None;
+        let mut date_drawn = None;
+        if let Some(day) = day {
+            let x = columns.left + px(day_in);
+            let shaped_day = written(
+                fonts,
+                &day,
+                TheType::Label,
+                columns.wide,
+                room.measure,
+                (palette.surface, palette.ink),
+            )
+            .cropped_to_its_ink();
+            let after_day = x + shaped_day.width_of_box + px(day_gap);
+            day_drawn = Some(placed(canvas, room, &shaped_day, &day, x, y));
+            if let Some(date) = date {
+                let shaped_date = written(
+                    fonts,
+                    &date,
+                    TheType::Label,
+                    columns.wide,
+                    room.measure,
+                    (palette.surface, palette.muted),
+                )
+                .cropped_to_its_ink();
+                date_drawn = Some(placed(canvas, room, &shaped_date, &date, after_day, y));
+            }
+            y += heading;
+        }
+        if starts_a_card {
+            card_top = Some(y);
+        } else {
+            canvas.fill(
+                Rectangle::new(
+                    (columns.left, y).into(),
+                    (columns.wide, room.hairline).into(),
+                ),
+                0.0,
+                palette.edge,
+                1.0,
+            );
+            y += room.hairline;
+        }
+        let height = entry.height;
+        let mut entry_drawn = entry.drawn(canvas, room, palette, columns, y);
+        entry_drawn.day = day_drawn;
+        entry_drawn.date = date_drawn;
+        drawn.entries.push(entry_drawn);
+        y += height;
     }
+    if let Some(from) = card_top {
+        a_card(canvas, (room, palette), columns, (from, y), drawn);
+    }
+    Ok(())
 }
 
-/// One entry laid out from `y`, or [`None`] when it does not fit whole above
-/// `bottom`.
-fn entry_at(
-    fonts: &mut FontSystem,
-    words: EntryWords,
-    room: Room,
-    reading: Direction,
-    y: i32,
-    bottom: i32,
-) -> Option<(EntryDrawn, i32, Vec<Inked>)> {
-    let (after_x, after_width) = room.after_box(reading);
-    // **The day is a line of its own, across the whole of the text**, above
-    // the entry it heads — frame `82:887`'s scope line, once per day.
-    let day = words
-        .day
-        .as_deref()
-        .map(|day| room.shaped(fonts, day, room.inner));
-    let day_height = day.as_ref().map_or(0, |shaped| shaped.height + room.gap);
-    // **The time leads the head row, in the reading direction**, and the
-    // clause takes what is left of it: `17:38  alo shortened the
-    // introduction`. Cropped to its ink, so the gap after it is the gap the
-    // design draws rather than whatever the box was wrapped inside.
-    let time = words
-        .time
-        .as_deref()
-        .map(|time| room.shaped(fonts, time, room.inner).cropped_to_its_ink());
-    let time_room = time.as_ref().map_or(0, |shaped| {
-        room.time_column.max(shaped.width_of_box + 2 * room.gap)
-    });
-    let clause_width = (room.inner - time_room).max(room.measure.px(80));
-    let clause = room.shaped(fonts, &words.clause, clause_width);
-    let agent = words
-        .agent
-        .as_deref()
-        .map(|name| room.shaped(fonts, name, after_width));
-    let after: Vec<Shaped> = words
-        .after
-        .iter()
-        .map(|text| room.shaped(fonts, text, after_width))
-        .collect();
-    let head_height = clause
-        .height
-        .max(time.as_ref().map_or(0, |shaped| shaped.height));
-    let height = day_height
-        + head_height
-        + agent.as_ref().map_or(0, |shaped| shaped.height)
-        + after.iter().map(|shaped| shaped.height).sum::<i32>();
-    if y + height > bottom {
-        return None;
-    }
-    let mut inked = Vec::new();
-    let mut at = y;
-    let day = match (day, &words.day) {
-        (Some(shaped), Some(said)) => {
-            let drawn = placed(&mut inked, shaped, said.clone(), room.text_x, at);
-            at += day_height;
-            Some(drawn)
-        }
-        _ => None,
-    };
-    let (time_x, clause_x) = match reading {
-        Direction::RightToLeft => (
-            room.text_x + room.inner - time.as_ref().map_or(0, |shaped| shaped.width_of_box),
-            room.text_x + room.inner - time_room - clause_width,
-        ),
-        Direction::LeftToRight => (room.text_x, room.text_x + time_room),
-    };
-    let time = match (time, &words.time) {
-        (Some(shaped), Some(said)) => Some(placed(&mut inked, shaped, said.clone(), time_x, at)),
-        _ => None,
-    };
-    let clause = placed(&mut inked, clause, words.clause.clone(), clause_x, at);
-    at += head_height;
-    let agent = match (agent, &words.agent) {
-        (Some(shaped), Some(name)) => {
-            let rows = shaped.height;
-            let drawn = placed(&mut inked, shaped, name.clone(), after_x, at);
-            at += rows;
-            Some(drawn)
-        }
-        _ => None,
-    };
-    let mut after_drawn = Vec::new();
-    for (shaped, text) in after.into_iter().zip(words.after.iter()) {
-        let rows = shaped.height;
-        after_drawn.push(placed(&mut inked, shaped, text.clone(), after_x, at));
-        at += rows;
-    }
-    Some((
-        EntryDrawn {
-            words,
-            day,
-            time,
-            clause,
-            agent,
-            after: after_drawn,
-        },
-        height,
-        inked,
-    ))
+/// A day's card round `from` to `to`: its edge, which is all of it the ground
+/// does not already draw.
+fn a_card(
+    canvas: &mut Canvas,
+    (room, palette): (Room, RecordPalette),
+    columns: TheColumns,
+    (from, to): (i32, i32),
+    drawn: &mut RecordPicture,
+) {
+    let card = Rectangle::new(
+        (columns.left, from).into(),
+        (columns.wide, to - from).into(),
+    );
+    canvas.border(
+        card,
+        room.px(m::A_CARDS_CORNER) as f32,
+        room.hairline as f32,
+        palette.edge,
+    );
+    drawn.cards.push(room.as_drawn(card));
 }
 
-/// Text placed whole at (`x`, `y`): it was measured to fit, so nothing is cut.
-fn placed(inked: &mut Vec<Inked>, shaped: Shaped, text: String, x: i32, y: i32) -> TextDrawn {
-    let area = Rectangle::new((x, y).into(), (shaped.width_of_box, shaped.height).into());
-    let bottom = y + shaped.height;
-    inked.extend(shaped.placed(x, y, bottom));
-    TextDrawn { text, area }
+/// The rail on the trailing edge of the list, and where the view is on it.
+fn the_rail(
+    canvas: &mut Canvas,
+    (room, palette): (Room, RecordPalette),
+    (top, bottom): (i32, i32),
+    (moved_past, in_view, total): (usize, usize, usize),
+) -> (Area, Area) {
+    let (wide, from_the_edge) = m::THE_RAIL;
+    let x = room.body.loc.x + room.body.size.w - room.px(from_the_edge) - room.px(wide);
+    let tall = (bottom - top).max(room.px(wide));
+    let track = Rectangle::new((x, top).into(), (room.px(wide), tall).into());
+    let at = |entries: usize| {
+        i32::try_from(usize::try_from(tall).unwrap_or(0) * entries / total.max(1)).unwrap_or(0)
+    };
+    let thumb = Rectangle::new(
+        (x, top + at(moved_past)).into(),
+        (room.px(wide), at(in_view).max(room.px(8))).into(),
+    );
+    let round = room.px(wide) as f32 / 2.0;
+    canvas.fill(track, round, palette.edge, 1.0);
+    canvas.fill(thumb, round, palette.muted, 1.0);
+    (room.as_drawn(track), room.as_drawn(thumb))
 }
 
 #[cfg(test)]

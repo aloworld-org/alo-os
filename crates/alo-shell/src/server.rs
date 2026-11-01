@@ -535,6 +535,9 @@ pub struct Server {
     /// Not an `Option` for `settings`' reason: *shut* is a state the window
     /// already has.
     pub(crate) record: crate::RecordWindow,
+    /// **Where the record window and its Close were drawn on the last frame**,
+    /// for the press after it (`crate::a_press_on_the_record`).
+    pub(crate) the_records_places: Option<crate::a_press_on_the_record::TheRecordsPlaces>,
     /// **Where this machine keeps its record**, told by the desktop, or why it
     /// could not say.
     ///
@@ -797,6 +800,8 @@ impl Server {
             settings_places: None,
             // Shut, and a chord or a row in Settings is what opens it.
             record: crate::RecordWindow::on_an_output(),
+            // Nothing drawn yet, so nothing to press.
+            the_records_places: None,
             // Nobody has told this seat where the record is kept.
             recounting: None,
             // Nobody has told this seat how this person writes a time.

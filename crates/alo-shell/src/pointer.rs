@@ -249,6 +249,13 @@ impl Server {
                 .map(|pointer| pointer.location)
         {
             let at = (location.x as i32, location.y as i32).into();
+            // **The record window first, while it is open**: it is drawn over
+            // every application, so a press on it is its own — Close closes
+            // it — and never reaches what is behind.
+            if self.a_press_on_the_record(at) {
+                self.a_press_landed_on_the_furniture();
+                return Ok(false);
+            }
             if self.the_dock_takes_this_press(at) {
                 // **Counted where it was taken**, so *three clicks and nothing
                 // happened* can be told from *three clicks and none of them was
