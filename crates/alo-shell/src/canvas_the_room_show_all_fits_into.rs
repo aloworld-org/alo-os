@@ -106,13 +106,13 @@ fn beside(
         Rectangle::new((to_x, top).into(), (right - to_x, room.size.h).into()),
     ];
     let area = |it: &Rectangle<i32, Physical>| i64::from(it.size.w) * i64::from(it.size.h);
+    // Reversed, because `max_by_key` keeps the last of equals and the tie-break
+    // above wants the first.
     pieces
         .into_iter()
         .filter(|it| it.size.w > 0 && it.size.h > 0)
-        .fold(None, |best: Option<Rectangle<i32, Physical>>, it| match best {
-            Some(kept) if area(&kept) >= area(&it) => Some(kept),
-            _ => Some(it),
-        })
+        .rev()
+        .max_by_key(area)
         .unwrap_or(room)
 }
 

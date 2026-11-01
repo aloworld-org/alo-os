@@ -115,10 +115,9 @@ impl crate::Server {
         let clear = the_room_left_clear(output, controls);
         // The output and the scale it is measured at are one display's: both are
         // written together, by the draw of the display that drew last.
-        let margin = crate::display_scale::DisplayScale::of_per_cent(
-            self.the_scale_edges_are_measured_at,
-        )
-        .px(THE_MARGIN_SHOW_ALL_LEAVES);
+        let margin =
+            crate::display_scale::DisplayScale::of_per_cent(self.the_scale_edges_are_measured_at)
+                .px(THE_MARGIN_SHOW_ALL_LEAVES);
         inside_the_margin(clear, margin)
     }
 }
