@@ -480,7 +480,7 @@ pub const THE_NAMES: [Word; 5] = [
 ];
 
 /// Every word that is a line or a sentence of its own.
-pub const THE_SENTENCES: [Word; 42] = [
+pub const THE_SENTENCES: [Word; 44] = [
     READ_SENTENCE,
     INSTALLED,
     INSTALLED_UNSANDBOXED,
@@ -499,6 +499,8 @@ pub const THE_SENTENCES: [Word; 42] = [
     NOWHERE_TO_REACH,
     DID_NOT_ANSWER,
     VERB_SENTENCE,
+    VERB_CHANGES,
+    VERB_LEAVES,
     OPENS_THE_WEB_CHOSEN,
     OPENS_THE_WEB_SHIPPED,
     OPENS_THE_WEB_INSTEAD,
@@ -664,8 +666,28 @@ pub const EVERY_CATEGORY: [Word; 9] = [
     DOCUMENTS,
 ];
 
+/// What `install_application` changes, under the action on the approval card.
+pub const VERB_CHANGES: Word = Word::saying(
+    "software.verb.install-application.changes",
+    "Downloads this application and installs it for everyone who uses this computer.",
+)
+.noting(
+    "Shown on the card a person answers before alo installs an application, beside a tick. \
+     'For everyone' is true: it is installed for the whole computer, not one account. Held to \
+     it by a test.",
+);
+/// What `install_application` leaves alone.
+pub const VERB_LEAVES: Word = Word::saying(
+    "software.verb.install-application.leaves",
+    "It is given no access to your files, and no other application is updated or removed.",
+)
+.noting(
+    "Shown beside VERB_CHANGES. A newly installed application can reach nothing the person has \
+     not granted it. Held to it by a test.",
+);
+
 /// Every string this crate can say.
-pub const EVERY_WORD: [Word; 47] = [
+pub const EVERY_WORD: [Word; 49] = [
     VERB_PURPOSE,
     VERB_APPLICATION,
     VERB_SOURCE,
@@ -689,6 +711,8 @@ pub const EVERY_WORD: [Word; 47] = [
     NOWHERE_TO_REACH,
     DID_NOT_ANSWER,
     VERB_SENTENCE,
+    VERB_CHANGES,
+    VERB_LEAVES,
     OPENS_THE_WEB_CHOSEN,
     OPENS_THE_WEB_SHIPPED,
     OPENS_THE_WEB_INSTEAD,

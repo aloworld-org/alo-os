@@ -207,12 +207,18 @@ applications.verb.arrange-application.argument.where	where on the screen the win
 applications.verb.arrange-application.purpose	put an application's window somewhere on the screen
 applications.verb.arrange-application.sentence	put {application} {where}
 applications.verb.close-application.argument.application	which application to ask to close
+applications.verb.close-application.changes	Asks each of its windows to close.
+applications.verb.close-application.leaves	Nothing is closed by force: the application decides, and other applications are not asked.
 applications.verb.close-application.purpose	ask an application to close, exactly as pressing its close button does
 applications.verb.close-application.sentence	ask {application} to close
 applications.verb.focus-application.argument.application	which application to bring to the front
+applications.verb.focus-application.changes	Brings its most recent window to the front and gives it the keyboard.
+applications.verb.focus-application.leaves	Nothing is started or closed.
 applications.verb.focus-application.purpose	bring an application that is already running to the front
 applications.verb.focus-application.sentence	bring {application} to the front
 applications.verb.open-application.argument.application	which application to start
+applications.verb.open-application.changes	Opens it, or brings its window to the front if it is already open.
+applications.verb.open-application.leaves	No second copy is started, and no other window is moved or closed.
 applications.verb.open-application.purpose	start an application, so it is running and on the screen
 applications.verb.open-application.sentence	open {application}
 applications.where.left-half	on the left half of the screen
@@ -1805,6 +1811,8 @@ software.the-applications	Applications
 software.update-offered	A newer version of {application} is ready. It is updated when you choose, and never while it is open
 software.updated	{application} is updated. Nothing else was closed or restarted
 software.verb.install-application.application	the application to install, by its identifier
+software.verb.install-application.changes	Downloads this application and installs it for everyone who uses this computer.
+software.verb.install-application.leaves	It is given no access to your files, and no other application is updated or removed.
 software.verb.install-application.purpose	install an application from a place this machine installs applications from
 software.verb.install-application.sentence	install {application} from {source}
 software.verb.install-application.source	the place to install it from, by the name this machine gives that place

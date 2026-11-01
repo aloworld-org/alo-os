@@ -249,7 +249,8 @@ fn install_application() -> Result<Verb, VerbError> {
              person approves this one installation by the sentence naming it and its place",
         ),
         words::VERB_SENTENCE,
-    )
+    )?
+    .changing(words::VERB_CHANGES, Some(words::VERB_LEAVES))
 }
 
 /// The installation a person approved, from the authority that approval

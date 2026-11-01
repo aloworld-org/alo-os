@@ -369,8 +369,43 @@ one-line action and one row the card is 237 before the lines below.
 already exist — the one being renamed or moved — so the tile holds the plain
 file icon of the shared-file chip (`549:163`), at the tile's 20.
 
-**The lines saying what will and will not change (`549:209`)** are decided and
-are built separately, each sentence held to a test that runs its verb.
+**The lines saying what will and will not change (`549:209`), built
+2026-11-01.** Each change verb declares two short sentences
+(`alo_capability::Verb::changing`), which cross the person's door as
+`changes` and `leaves` and are drawn under the rows: a 16 tick in
+`text/secondary`, 8, then the words in Body/Medium, 12 under what is above
+them. Side by side, 20 apart, when both fit on one line, as the frame draws
+them; **one under the other, 4 apart, when they do not — a departure the
+frame does not draw**, because a translation or a longer sentence may not fit
+on one line. With the frame's own action, row and line the card is **271**,
+the frame's own height.
+
+Every change the daemon offers says both, and each sentence is held by a test
+that runs the verb and checks the claim
+(`crates/alo-turn/tests/every_change_this_machine_offers_says_what_it_does.rs`
+names where):
+
+| Verb | What it changes | What it leaves alone |
+|---|---|---|
+| `rename_file` | Gives one file a new name, in the folder it is in. | What is in it stays the same, and no other file is changed or replaced. |
+| `move_file` | Moves one file into another folder, keeping its name. | What is in it stays the same, and no other file is changed or replaced. |
+| `archive_folder` | Makes one new file: an archive of the folder. | The folder and everything in it stay as they are, and no file is replaced. |
+| `open_application` | Opens it, or brings its window to the front if it is already open. | No second copy is started, and no other window is moved or closed. |
+| `focus_application` | Brings its most recent window to the front and gives it the keyboard. | Nothing is started or closed. |
+| `close_application` | Asks each of its windows to close. | Nothing is closed by force: the application decides, and other applications are not asked. |
+| `install_application` | Downloads this application and installs it for everyone who uses this computer. | It is given no access to your files, and no other application is updated or removed. |
+
+**Not yet said, and why** — these verbs are declared in the workspace and the
+daemon does not offer them, so no card can show them today:
+`arrange_application`, `set_the_scheme` and `follow_the_clock` have nothing
+that carries them out; `picture_of_the_screen` has no capture behind it;
+`convert_document`, `print_document`, the three printer verbs and the three
+network verbs are carried out by crates the daemon does not reach yet; the two
+text-editor adapter verbs are declared through the adapter contract, where a
+new field is a change to a public surface; and pressing a control
+(`accessible.activate_control`) does whatever the application makes that
+control do, which no sentence of ours can promise. Each is reported to the
+owner rather than given a softer sentence.
 
 **One departure, written down here**: the card has no shadow of its own. The
 panel rasteriser draws one shadow, the window's, and a second under one card is

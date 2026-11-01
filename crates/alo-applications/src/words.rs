@@ -492,11 +492,60 @@ pub const KEPT_NOT_REPLACED: Word = Word::saying(
      is the product's name and is never translated.",
 );
 
+/// What `open_application` changes, under the action on the approval card.
+pub const OPEN_APPLICATION_CHANGES: Word = Word::saying(
+    "applications.verb.open-application.changes",
+    "Opens it, or brings its window to the front if it is already open.",
+)
+.noting(
+    "Shown on the card a person answers before alo opens an application, beside a tick. 'It' \
+     is the application named in the sentence above. Held to it by a test.",
+);
+/// What `open_application` leaves alone.
+pub const OPEN_APPLICATION_LEAVES: Word = Word::saying(
+    "applications.verb.open-application.leaves",
+    "No second copy is started, and no other window is moved or closed.",
+)
+.noting("Shown beside OPEN_APPLICATION_CHANGES. Held to it by a test.");
+/// What `focus_application` changes.
+pub const FOCUS_APPLICATION_CHANGES: Word = Word::saying(
+    "applications.verb.focus-application.changes",
+    "Brings its most recent window to the front and gives it the keyboard.",
+)
+.noting(
+    "Shown on the card a person answers before alo brings an application to the front. 'The \
+     keyboard' means that what the person types next goes to that window. Held to it by a test.",
+);
+/// What `focus_application` leaves alone.
+pub const FOCUS_APPLICATION_LEAVES: Word = Word::saying(
+    "applications.verb.focus-application.leaves",
+    "Nothing is started or closed.",
+)
+.noting("Shown beside FOCUS_APPLICATION_CHANGES. Held to it by a test.");
+/// What `close_application` changes.
+pub const CLOSE_APPLICATION_CHANGES: Word = Word::saying(
+    "applications.verb.close-application.changes",
+    "Asks each of its windows to close.",
+)
+.noting(
+    "Shown on the card a person answers before alo asks an application to close. 'Asks' \
+     matters: the application is asked, never made to. Held to it by a test.",
+);
+/// What `close_application` leaves alone.
+pub const CLOSE_APPLICATION_LEAVES: Word = Word::saying(
+    "applications.verb.close-application.leaves",
+    "Nothing is closed by force: the application decides, and other applications are not asked.",
+)
+.noting(
+    "Shown beside CLOSE_APPLICATION_CHANGES. Whether the application then closes, asks to save \
+     first, or stays open is up to the application. Held to it by a test.",
+);
+
 /// Every string this crate can say, in the order a translator meets them: what
 /// it could not reach, what could not join the list, how one is shown, the four
 /// verbs, the arrangements one of them offers, what opens what, and what is said
 /// about the person's own file of those choices.
-pub const EVERY_WORD: [Word; 40] = [
+pub const EVERY_WORD: [Word; 46] = [
     NOT_INSTALLED,
     NO_WINDOW,
     IT_DID_NOT,
@@ -537,6 +586,12 @@ pub const EVERY_WORD: [Word; 40] = [
     KEPT_NOT_WRITTEN,
     KEPT_NOT_EXPRESSIBLE,
     KEPT_NOT_REPLACED,
+    OPEN_APPLICATION_CHANGES,
+    OPEN_APPLICATION_LEAVES,
+    FOCUS_APPLICATION_CHANGES,
+    FOCUS_APPLICATION_LEAVES,
+    CLOSE_APPLICATION_CHANGES,
+    CLOSE_APPLICATION_LEAVES,
 ];
 
 /// Why this crate's own words could not be declared.
