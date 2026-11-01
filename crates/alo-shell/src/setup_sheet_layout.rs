@@ -56,8 +56,44 @@ pub const THE_ACTION_IS: (i32, i32) = (160, 48);
 /// From the left of one action to the left of the next.
 const THE_ACTIONS_ARE_APART_BY: i32 = 172;
 
-/// *Accessibility*, at the bottom left: `160 × 48` at `(40, 876)`.
+/// *Accessibility*, at the bottom left: at `(40, 876)`.
 const ACCESSIBILITY_SITS_AT: (i32, i32) = (40, 876);
+
+/// *Accessibility*'s own size: `140 × 44`, a white control in a hairline with
+/// its icon, as the approved first start draws it (`562:350`, 2026-11-01). It
+/// was `160 × 48` and a word alone before that.
+pub const ACCESSIBILITY_IS: (i32, i32) = (140, 44);
+
+/// How a sheet's rows sit: each its own card, or together in one.
+///
+/// **Grouped is the approved first start of 2026-11-01** (`562:342`, `562:462`,
+/// `562:508`): one card in a hairline at corner 12, its rows touching and
+/// divided by a hairline — 72 tall for the overview's three, 106 for a row
+/// that holds a field. Every other sheet keeps the cards the earlier capture
+/// drew, 85 tall and 95 apart.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TheRowsAre {
+    /// Each its own card, 95 apart.
+    Apart,
+    /// Together in one card, each this tall.
+    Grouped(i32),
+}
+
+/// The gaps of a grouped sheet, measured off `562:356`: 12 under the eyebrow
+/// and under the title, 28 under the introduction, 12 under the card and 28
+/// under the note.
+mod grouped {
+    /// Eyebrow to title: `28 - 16 = 12`.
+    pub(super) const AFTER_THE_EYEBROW: i32 = 12;
+    /// Title to introduction: `84 - 72 = 12`.
+    pub(super) const AFTER_THE_TITLE: i32 = 12;
+    /// Introduction to the card: `137 - 109 = 28`.
+    pub(super) const AFTER_THE_INTRODUCTION: i32 = 28;
+    /// The card to the note: `367 - 355 = 12`.
+    pub(super) const AFTER_THE_CHOICES: i32 = 12;
+    /// The note to the actions: `417 - 389 = 28`.
+    pub(super) const AFTER_THE_CONSEQUENCE: i32 = 28;
+}
 
 /// How far the accessibility control's top sits above the bottom edge:
 /// `960 - 876 = 84`.
@@ -195,6 +231,8 @@ pub struct TheTextIsTall {
     pub choices: usize,
     /// How many actions this sheet offers.
     pub actions: usize,
+    /// How the rows sit: apart, or grouped in one card.
+    pub rows: TheRowsAre,
 }
 
 /// Everything on a setup sheet, placed.
@@ -214,6 +252,9 @@ pub struct SetupSheetLayout {
     pub introduction: Rectangle<i32, Logical>,
     /// Each choice row, in order.
     pub choices: Vec<Rectangle<i32, Logical>>,
+    /// The one card a grouped sheet's rows are in, and [`None`] where each row
+    /// is its own card.
+    pub group: Option<Rectangle<i32, Logical>>,
     /// What this sheet's answer means, under the choices.
     pub consequence: Rectangle<i32, Logical>,
     /// Each action, in order: the first is the one that goes on.
@@ -245,8 +286,14 @@ pub fn setup_sheet_laid_out_as(
     tall: TheTextIsTall,
     close: HowClose,
 ) -> Option<SetupSheetLayout> {
-    // The capture's gaps are all 16, so one figure stands for each of them.
+    // The capture's gaps are all 16, so one figure stands for each of them;
+    // a grouped sheet has the approved first start's own, unless tightened.
     let between = close.between_blocks();
+    let tight = close == HowClose::Tightened;
+    let gap = |captured: i32, approved: i32| match (tall.rows, tight) {
+        (TheRowsAre::Grouped(_), false) => approved,
+        _ => between.min(captured),
+    };
     if screen.w < THE_SMALLEST_SHEET_IS.0 || screen.h < THE_SMALLEST_SHEET_IS.1 {
         return None;
     }
@@ -267,33 +314,68 @@ pub fn setup_sheet_laid_out_as(
 
     let eyebrow = line(top, THE_EYEBROW_IS_TALL);
     let title = line(
-        eyebrow.loc.y + eyebrow.size.h + between.min(gaps::AFTER_THE_EYEBROW),
+        eyebrow.loc.y
+            + eyebrow.size.h
+            + gap(gaps::AFTER_THE_EYEBROW, grouped::AFTER_THE_EYEBROW),
         tall.title,
     );
-    let introduction = line(title.loc.y + title.size.h + between, tall.introduction);
+    let introduction = line(
+        title.loc.y + title.size.h + gap(between, grouped::AFTER_THE_TITLE),
+        tall.introduction,
+    );
 
-    let choices_begin =
-        introduction.loc.y + introduction.size.h + between.min(gaps::AFTER_THE_INTRODUCTION);
-    let choices: Vec<_> = (0..tall.choices)
-        .map(|which| {
-            #[expect(
-                clippy::cast_possible_truncation,
-                clippy::cast_possible_wrap,
-                reason = "a sheet offers a handful of choices, never two billion"
-            )]
-            let which = which as i32;
-            Rectangle::new(
-                Point::from((left, choices_begin + which * close.choices_apart())),
-                Size::from((column_wide, THE_CHOICE_IS.1)),
-            )
-        })
-        .collect();
-    let choices_end = choices
-        .last()
-        .map_or(choices_begin, |last| last.loc.y + last.size.h);
+    let choices_begin = introduction.loc.y
+        + introduction.size.h
+        + gap(gaps::AFTER_THE_INTRODUCTION, grouped::AFTER_THE_INTRODUCTION);
+    #[expect(
+        clippy::cast_possible_truncation,
+        clippy::cast_possible_wrap,
+        reason = "a sheet offers a handful of choices, never two billion"
+    )]
+    let how_many = tall.choices as i32;
+    let (choices, group): (Vec<_>, _) = match tall.rows {
+        TheRowsAre::Apart => (
+            (0..how_many)
+                .map(|which| {
+                    Rectangle::new(
+                        Point::from((left, choices_begin + which * close.choices_apart())),
+                        Size::from((column_wide, THE_CHOICE_IS.1)),
+                    )
+                })
+                .collect(),
+            None,
+        ),
+        // **One card, its rows inside its hairline and touching**: a row is
+        // the card's width less the hairline each side, and the card is the
+        // rows and the hairline above and below them.
+        TheRowsAre::Grouped(row_tall) => (
+            (0..how_many)
+                .map(|which| {
+                    Rectangle::new(
+                        Point::from((left + 1, choices_begin + 1 + which * row_tall)),
+                        Size::from((column_wide - 2, row_tall)),
+                    )
+                })
+                .collect(),
+            (how_many > 0).then(|| {
+                Rectangle::new(
+                    Point::from((left, choices_begin)),
+                    Size::from((column_wide, how_many * row_tall + 2)),
+                )
+            }),
+        ),
+    };
+    let choices_end = group.map_or_else(
+        || {
+            choices
+                .last()
+                .map_or(choices_begin, |last| last.loc.y + last.size.h)
+        },
+        |group| group.loc.y + group.size.h,
+    );
 
     let consequence = line(
-        choices_end + between.min(gaps::AFTER_THE_CHOICES),
+        choices_end + gap(gaps::AFTER_THE_CHOICES, grouped::AFTER_THE_CHOICES),
         if tall.consequence > 0 {
             tall.consequence.max(THE_CONSEQUENCE_IS_TALL)
         } else {
@@ -303,9 +385,11 @@ pub fn setup_sheet_laid_out_as(
     // A sheet with nothing to say skips both the box and the gap after it,
     // which is what puts `185:10770`'s actions 16 below its choices.
     let actions_top = if tall.consequence > 0 {
-        consequence.loc.y + consequence.size.h + between.min(gaps::AFTER_THE_CONSEQUENCE)
+        consequence.loc.y
+            + consequence.size.h
+            + gap(gaps::AFTER_THE_CONSEQUENCE, grouped::AFTER_THE_CONSEQUENCE)
     } else {
-        choices_end + between.min(gaps::AFTER_THE_CHOICES)
+        choices_end + gap(gaps::AFTER_THE_CHOICES, grouped::AFTER_THE_CONSEQUENCE)
     };
     let actions: Vec<_> = (0..tall.actions)
         .map(|which| {
@@ -330,7 +414,7 @@ pub fn setup_sheet_laid_out_as(
             ACCESSIBILITY_SITS_AT.0.min(screen.w / 8),
             screen.h - ACCESSIBILITY_SITS_ABOVE_THE_EDGE_BY,
         )),
-        Size::from(THE_ACTION_IS),
+        Size::from(ACCESSIBILITY_IS),
     );
     // **Never under *Accessibility*.** On a narrow screen the footer's 640
     // reached back over the control at the bottom left — at 640 wide it began
@@ -374,6 +458,7 @@ pub fn setup_sheet_laid_out_as(
         title,
         introduction,
         choices,
+        group,
         consequence,
         actions,
         accessibility,

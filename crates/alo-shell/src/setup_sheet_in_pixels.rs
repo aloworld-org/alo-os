@@ -39,6 +39,8 @@ pub(crate) struct SetupSheetInPixels {
     pub(crate) introduction: Rectangle<i32, Physical>,
     /// Each choice row, in order.
     pub(crate) choices: Vec<Rectangle<i32, Physical>>,
+    /// The one card a grouped sheet's rows are in.
+    pub(crate) group: Option<Rectangle<i32, Physical>>,
     /// What this sheet's answer means.
     pub(crate) consequence: Rectangle<i32, Physical>,
     /// Each action, in order.
@@ -101,6 +103,7 @@ pub(crate) fn laid_out_as(
             consequence: up(tall.consequence),
             choices: tall.choices,
             actions: tall.actions,
+            rows: tall.rows,
         },
         close,
     )?;
@@ -114,6 +117,7 @@ pub(crate) fn laid_out_as(
         title: px(at.title),
         introduction: px(at.introduction),
         choices: at.choices.iter().map(|it| px(*it)).collect(),
+        group: at.group.map(px),
         consequence: px(at.consequence),
         actions: at.actions.iter().map(|it| px(*it)).collect(),
         accessibility: px(at.accessibility),

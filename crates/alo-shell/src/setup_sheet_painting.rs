@@ -88,6 +88,7 @@ pub(crate) fn a_sheet(
             consequence: 0,
             choices: rows,
             actions: 2,
+            rows: crate::setup_sheet_layout::TheRowsAre::Apart,
         },
         fewest,
     )

@@ -138,6 +138,7 @@ pub(crate) fn drawn(
             // this screen can do yet, so it draws the one it can act on.
             choices: 1,
             actions: 1,
+            rows: crate::setup_sheet_layout::TheRowsAre::Apart,
         },
         1,
     )

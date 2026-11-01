@@ -23,6 +23,7 @@ fn your_name() -> TheTextIsTall {
         consequence: 22,
         choices: 2,
         actions: 2,
+        rows: crate::setup_sheet_layout::TheRowsAre::Apart,
     }
 }
 
@@ -35,6 +36,7 @@ fn add_a_pin() -> TheTextIsTall {
         consequence: 22,
         choices: 2,
         actions: 2,
+        rows: crate::setup_sheet_layout::TheRowsAre::Apart,
     }
 }
 
@@ -231,6 +233,7 @@ fn a_sheet_that_cannot_hold_its_contents_is_refused() {
                 consequence: 22,
                 choices: 2,
                 actions: 2,
+                rows: crate::setup_sheet_layout::TheRowsAre::Apart,
             }
         )
         .is_none(),
@@ -294,6 +297,7 @@ fn a_sheet_with_no_consequence_puts_its_actions_under_its_choices() {
             consequence: 0,
             choices: 3,
             actions: 2,
+            rows: crate::setup_sheet_layout::TheRowsAre::Apart,
         },
     );
     assert_eq!(at.choices.len(), 3, "`371:30583` holds three choices");
@@ -325,6 +329,7 @@ fn a_sheet_with_no_consequence_puts_its_actions_under_its_choices() {
             consequence: 22,
             choices: 3,
             actions: 2,
+            rows: crate::setup_sheet_layout::TheRowsAre::Apart,
         },
     );
     assert!(

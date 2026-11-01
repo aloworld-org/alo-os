@@ -95,6 +95,7 @@ pub(crate) fn drawn(
             consequence: 0,
             choices: sheet.offered.window().len(),
             actions: 2,
+            rows: crate::setup_sheet_layout::TheRowsAre::Apart,
         },
         1,
     )
