@@ -751,6 +751,8 @@ files.refused.would-create	{verb} would put something at {path}, and {why} — a
 files.verb.archive-folder.argument.folder	the folder to make an archive of
 files.verb.archive-folder.argument.into	the folder the archive goes into
 files.verb.archive-folder.argument.name	what to call the archive, ending in .zip
+files.verb.archive-folder.changes	Makes one new file: an archive of the folder.
+files.verb.archive-folder.leaves	The folder and everything in it stay as they are, and no file is replaced.
 files.verb.archive-folder.purpose	make one archive file out of a folder
 files.verb.archive-folder.sentence	make an archive of {folder} called {name}, in {into}
 files.verb.find-in-folder.argument.folder	the folder to look in
@@ -763,6 +765,8 @@ files.verb.list-folder.purpose	list what is in a folder
 files.verb.list-folder.sentence	list what is in {folder}
 files.verb.move-file.argument.file	the file to move
 files.verb.move-file.argument.into	the folder it goes into
+files.verb.move-file.changes	Moves one file into another folder, keeping its name.
+files.verb.move-file.leaves	What is in it stays the same, and no other file is changed or replaced.
 files.verb.move-file.purpose	move a file into a folder
 files.verb.move-file.sentence	move {file} into {into}
 files.verb.read-file.argument.file	the file to read
@@ -770,6 +774,8 @@ files.verb.read-file.purpose	read what is in a file
 files.verb.read-file.sentence	read what is in {file}
 files.verb.rename-file.argument.file	the file to rename
 files.verb.rename-file.argument.name	what to call it instead
+files.verb.rename-file.changes	Gives one file a new name, in the folder it is in.
+files.verb.rename-file.leaves	What is in it stays the same, and no other file is changed or replaced.
 files.verb.rename-file.purpose	give a file a different name, where it already is
 files.verb.rename-file.sentence	rename {file} to {name}
 finding.contents.not-all-kept	More different words than the {most} an index keeps, so only the first {most} were kept.
