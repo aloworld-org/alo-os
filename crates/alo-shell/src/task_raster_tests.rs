@@ -1255,8 +1255,7 @@ fn what_a_change_does_is_written_under_the_action_side_by_side() {
     // From the action, because a taller card scrolls the whole view.
     let [_, action_before, allow_before, _, _] = the_cards_ink(&without);
     assert!(
-        allow.area.loc.y - action.area.loc.y
-            > allow_before.area.loc.y - action_before.area.loc.y,
+        allow.area.loc.y - action.area.loc.y > allow_before.area.loc.y - action_before.area.loc.y,
         "the answers did not move down from the action for the line"
     );
 }
