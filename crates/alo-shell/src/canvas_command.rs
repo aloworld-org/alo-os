@@ -128,6 +128,17 @@ impl Server {
                 self.show_all_on_the_canvas()
                     .ok_or(CanvasCommandError::NothingToShow)?;
             }
+            Action::FitTheWindowInFront => {
+                // **Nothing in front on the canvas is not a fault**, for the
+                // reason zooming at the end of the ladder is not: pressing it
+                // with nothing open, or with a task window in front, is an
+                // ordinary thing to do, and the screen shows nothing moved.
+                // No output is the one refusal, as for every zoom by key.
+                if self.surfaces.popups.output_size.is_none() {
+                    return Err(CanvasCommandError::NoOutput);
+                }
+                let _ = self.fit_the_window_in_front_in_view();
+            }
             Action::ReturnTheCanvasToLifeSize => {
                 // **Holding the middle of the screen**, as a zoom by key does
                 // and for the same reason: a chord has no pointer, and the

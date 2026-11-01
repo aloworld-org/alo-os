@@ -78,13 +78,24 @@ impl crate::Server {
     /// frames are spread further apart than this canvas can zoom out to hold —
     /// each refused rather than shown as a canvas that moved somewhere arbitrary.
     pub fn show_all_on_the_canvas(&mut self) -> Option<Camera> {
-        let room = self.surfaces.popups.output_size?;
-        let viewport = Size::checked(u32::try_from(room.w).ok()?, u32::try_from(room.h).ok()?)?;
         // **And alo's terminal**, which is a window on the canvas since ADR
         // 0145 and is not a client, so it is not among the surfaces above.
         let mut frames = self.the_frames_on_the_plane();
         frames.extend(self.the_terminal_as_a_frame());
-        let span = alo_canvas::plane::reached_by(&frames, self.the_place_now())?;
+        self.look_at_these_frames(&frames)
+    }
+
+    /// Fit these frames on the screen, into the room *Show all* fits into, and
+    /// look at them — the arithmetic *Show all* and *fit the selected window*
+    /// share.
+    ///
+    /// # Errors
+    /// [`None`] with no frames on the Place being looked at, with no output, or
+    /// where they are spread further than this canvas can zoom out to hold.
+    pub(crate) fn look_at_these_frames(&mut self, frames: &[Frame]) -> Option<Camera> {
+        let room = self.surfaces.popups.output_size?;
+        let viewport = Size::checked(u32::try_from(room.w).ok()?, u32::try_from(room.h).ok()?)?;
+        let span = alo_canvas::plane::reached_by(frames, self.the_place_now())?;
         let showing = self
             .the_room_show_all_fits_into()
             .and_then(|clear| {

@@ -1201,7 +1201,7 @@ Each `[[changed]]` has exactly two keys:
   `"MinimiseWindow"`, `"MaximiseWindow"`, `"SnapLeft"`, `"SnapRight"`,
   `"NextWindow"`, `"PreviousWindow"`, `"NextApplication"`,
   `"PreviousApplication"`, `"ZoomTheCanvasIn"`, `"ZoomTheCanvasOut"`,
-  `"ShowAllOnTheCanvas"` or `"ReturnTheCanvasToLifeSize"` (added
+  `"ShowAllOnTheCanvas"`, `"ReturnTheCanvasToLifeSize"` or `"FitTheWindowInFront"` (added
   2026-11-01). The list here is not the whole of `alo_shortcuts::Action::ALL`,
   which is the authority. **An action named twice is read as its last entry.**
 - **`chord`** — `{ modifiers = [...], key = "..." }`, or no `chord` at all,
