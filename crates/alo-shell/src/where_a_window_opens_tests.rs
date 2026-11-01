@@ -248,3 +248,51 @@ fn a_control_that_only_clips_the_handle_is_allowed() {
         "a control clipping one corner should not have moved the window"
     );
 }
+
+/// **Never exactly on top.** With nothing active the middle is tried first;
+/// a window already there and a second already stepped from it once leave no
+/// corner free on that diagonal until the third step — and the answer is on
+/// nobody's corner, whichever road reached it.
+#[test]
+fn it_never_opens_exactly_on_top_of_another_window() {
+    let view = a_view();
+    let middle = Point::from((
+        view.loc.x + (view.size.w - wanted().w) / 2,
+        view.loc.y + (view.size.h - wanted().h) / 2,
+    ));
+    let first = Rectangle::new(middle, wanted());
+    let stepped = Rectangle::new(
+        Point::from((
+            middle.x + A_DELIBERATE_OFFSET,
+            middle.y + A_DELIBERATE_OFFSET,
+        )),
+        wanted(),
+    );
+    let open = [first, stepped];
+    let where_it_goes =
+        where_a_window_opens(view, &open, None, wanted(), Direction::LeftToRight, &[]);
+    assert!(
+        open.iter().all(|window| window.loc != where_it_goes),
+        "{where_it_goes:?} is exactly where an open window is"
+    );
+}
+
+/// **Repeated openings in a full view never land two on one corner**: each
+/// new window is placed against every window opened before it, the way the
+/// host places them one pass at a time.
+#[test]
+fn many_openings_in_a_full_view_never_share_a_corner() {
+    let view = a_view();
+    let big = Size::from((1200, 700));
+    let mut open: Vec<Rectangle<i32, Logical>> = Vec::new();
+    for _ in 0..12 {
+        let active = open.last().copied();
+        let at = where_a_window_opens(view, &open, active, big, Direction::LeftToRight, &[]);
+        assert!(
+            open.iter().all(|window| window.loc != at),
+            "{at:?} landed exactly on an open window after {} openings",
+            open.len()
+        );
+        open.push(Rectangle::new(at, big));
+    }
+}

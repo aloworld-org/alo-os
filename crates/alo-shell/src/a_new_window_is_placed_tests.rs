@@ -128,3 +128,44 @@ fn a_control_that_does_not_divide_evenly_is_rounded_outwards() {
         "and never less than what it covers"
     );
 }
+
+/// **alo's own windows reach the placer on the plane**, panned and zoomed the
+/// way a fixed control is, and an empty one is not a window.
+#[test]
+fn alos_own_windows_are_moved_onto_the_plane() {
+    use super::alos_own_windows;
+    let terminal = Rectangle::<i32, Physical>::new((48, 116).into(), (560, 476).into());
+    let task = Rectangle::<i32, Physical>::new((624, 116).into(), (768, 516).into());
+    let nothing = Rectangle::<i32, Physical>::new((0, 0).into(), (0, 0).into());
+    let (on_the_plane, tasks) = alos_own_windows(
+        Some(terminal),
+        &[task, nothing],
+        alo_canvas::At { x: 300, y: 200 },
+        0.5,
+    );
+    let on_the_plane = on_the_plane.expect("the terminal is a window");
+    assert_eq!((on_the_plane.loc.x, on_the_plane.loc.y), (300 + 96, 200 + 232));
+    assert_eq!((on_the_plane.size.w, on_the_plane.size.h), (1120, 952));
+    assert_eq!(tasks.len(), 1, "an empty rectangle is not a window");
+    assert_eq!((tasks[0].loc.x, tasks[0].loc.y), (300 + 1248, 200 + 232));
+}
+
+/// **A new window opens beside alo's terminal, not on it** — the round-2
+/// frame `557:144`: the terminal at the left, the next window 16 to its right.
+#[test]
+fn a_new_window_opens_beside_alos_terminal() {
+    use super::alos_own_windows;
+    let terminal = Rectangle::<i32, Physical>::new((48, 116).into(), (560, 476).into());
+    let (terminal, _) = alos_own_windows(Some(terminal), &[], alo_canvas::At { x: 0, y: 0 }, 1.0);
+    let terminal = terminal.expect("the terminal is a window");
+    let view = smithay::utils::Rectangle::new((0, 0).into(), (1440, 960).into());
+    let at = crate::where_a_window_opens(
+        view,
+        &[terminal],
+        Some(terminal),
+        smithay::utils::Size::from((560, 476)),
+        alo_strings::Direction::LeftToRight,
+        &[],
+    );
+    assert_eq!((at.x, at.y), (48 + 560 + 16, 116));
+}
