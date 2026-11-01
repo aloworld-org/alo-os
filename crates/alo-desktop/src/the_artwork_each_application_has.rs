@@ -48,9 +48,11 @@ pub struct HowItWent {
     pub named_none: usize,
     /// Applications whose named icon is nowhere on this machine.
     pub named_one_that_is_not_here: usize,
-    /// Applications whose only artwork is scalable, which nothing here can
-    /// rasterise. See `alo-icons`, *PNG only*.
-    pub only_scalable: usize,
+    /// Of those that drew a picture, how many drew it from a scalable one.
+    ///
+    /// **Until 2026-11-01 these were letters**: nothing here could draw an
+    /// SVG, and this count was *have only a scalable one*. ADR 0144.
+    pub drew_from_a_scalable_one: usize,
     /// Applications whose artwork is on disk and would not decode.
     ///
     /// **Its own count rather than folded into the one above.** A file that is
@@ -91,18 +93,18 @@ pub fn the_artwork_each_application_has(
             went.named_none += 1;
             continue;
         };
-        let at = match alo_icons::the_icon_called(calls_it, icons, wanted) {
-            WhatWasFound::APicture(at) => at,
-            WhatWasFound::OnlyScalable => {
-                went.only_scalable += 1;
-                continue;
+        let found = alo_icons::the_icon_called(calls_it, icons, wanted);
+        let picture = match &found {
+            WhatWasFound::APicture(at) => decoded(at),
+            WhatWasFound::AScalablePicture(at) => {
+                crate::a_scalable_icon_drawn::drawn(at, wanted * A_SCALABLE_ONE_IS_DRAWN_AT)
             }
             WhatWasFound::Nothing => {
                 went.named_one_that_is_not_here += 1;
                 continue;
             }
         };
-        let Some(picture) = decoded(&at) else {
+        let Some(picture) = picture else {
             went.would_not_decode += 1;
             continue;
         };
@@ -116,9 +118,21 @@ pub fn the_artwork_each_application_has(
         };
         artwork.draws(known_as, picture);
         went.drew_a_picture += 1;
+        if matches!(found, WhatWasFound::AScalablePicture(_)) {
+            went.drew_from_a_scalable_one += 1;
+        }
     }
     (artwork, went)
 }
+
+/// **How many times the Dock's logical size a scalable icon is drawn at.**
+///
+/// A picture is handed over at its own size and scaled where it is drawn, by
+/// the surface that knows the display. A PNG is picked at least as large as
+/// asked; a scalable one has no size of its own, so it is given one that
+/// stays sharp on a display at twice the density, and is scaled down on any
+/// other — which loses nothing a person can see.
+const A_SCALABLE_ONE_IS_DRAWN_AT: u32 = 2;
 
 /// One file's pixels, or [`None`] where it would not become any.
 ///
