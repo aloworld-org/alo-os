@@ -49,7 +49,7 @@ use crate::the_first_start::{TheFirstStart, Went};
 /// No `Debug`: it holds what is being typed, password included.
 pub struct SignInScreen<K: Knocking> {
     /// What this machine's accounts let the screen stand at.
-    stands: Stands<K>,
+    stands: WhatItStandsAt<K>,
     /// The person's language, for every sentence shown.
     strings: Strings,
     /// What has been typed.
@@ -62,7 +62,7 @@ pub struct SignInScreen<K: Knocking> {
 }
 
 /// What the screen stands at, derived once from the greeting.
-enum Stands<K: Knocking> {
+enum WhatItStandsAt<K: Knocking> {
     /// A name and a password are asked for.
     SignIn(Greeting<K>),
     /// **Nobody has an account yet, and the language comes first.**
@@ -180,18 +180,20 @@ impl<K: Knocking> SignInScreen<K> {
     #[must_use]
     pub fn of(greeting: Result<Greeting<K>, NotReadable>, strings: Strings) -> Self {
         let stands = match greeting {
-            Err(why) => Stands::Unreadable(why.said(&strings), why),
+            Err(why) => WhatItStandsAt::Unreadable(why.said(&strings), why),
             Ok(greeting) => match greeting.standing() {
                 Standing::MakeAnAccount => match Standing::MakeAnAccount.said(&strings) {
-                    Some(said) => {
-                        Stands::FirstStart(Box::new(TheFirstStart::arriving(None)), said, greeting)
-                    }
+                    Some(said) => WhatItStandsAt::FirstStart(
+                        Box::new(TheFirstStart::arriving(None)),
+                        said,
+                        greeting,
+                    ),
                     // `alo-greeting` always words this standing; were it ever
                     // not to, asking for a name is the honest fallback —
                     // `alo-accounts` refuses every one on an empty machine.
-                    None => Stands::SignIn(greeting),
+                    None => WhatItStandsAt::SignIn(greeting),
                 },
-                Standing::SignIn => Stands::SignIn(greeting),
+                Standing::SignIn => WhatItStandsAt::SignIn(greeting),
             },
         };
         // **The field a person can see is the field their keys go into.**
@@ -208,13 +210,13 @@ impl<K: Knocking> SignInScreen<K> {
             // name its own person — `agentd.toml` and `accounts.toml`
             // disagreeing — and there is a name to be asked for. Starting on
             // the password there would leave nobody able to supply it.
-            Stands::SignIn(greeting) if greeting.whose_name().is_some() => {
+            WhatItStandsAt::SignIn(greeting) if greeting.whose_name().is_some() => {
                 SignInEntry::waiting_for_a_password()
             }
-            Stands::SignIn(_)
-            | Stands::FirstStart(_, _, _)
-            | Stands::MakeAnAccount(..)
-            | Stands::Unreadable(_, _) => SignInEntry::empty(),
+            WhatItStandsAt::SignIn(_)
+            | WhatItStandsAt::FirstStart(_, _, _)
+            | WhatItStandsAt::MakeAnAccount(..)
+            | WhatItStandsAt::Unreadable(_, _) => SignInEntry::empty(),
         };
         Self {
             stands,
@@ -229,7 +231,7 @@ impl<K: Knocking> SignInScreen<K> {
     /// arrive with — or [`None`] where it keeps universal time or none.
     #[must_use]
     pub fn where_the_machine_is(mut self, region: Option<alo_formats::RegionCode>) -> Self {
-        if let Stands::FirstStart(first_start, _, _) = &mut self.stands {
+        if let WhatItStandsAt::FirstStart(first_start, _, _) = &mut self.stands {
             first_start.on_a_machine_in(region);
         }
         self
@@ -239,7 +241,7 @@ impl<K: Knocking> SignInScreen<K> {
     /// `xkeyboard-config`'s catalogue for, for the keyboard sheet.
     #[must_use]
     pub fn naming_keyboards_with(mut self, names: alo_keyboards::TheKeyboardNames) -> Self {
-        if let Stands::FirstStart(first_start, _, _) = &mut self.stands {
+        if let WhatItStandsAt::FirstStart(first_start, _, _) = &mut self.stands {
             first_start.naming_keyboards_with(names);
         }
         self
@@ -254,10 +256,10 @@ impl<K: Knocking> SignInScreen<K> {
     /// drift apart again.
     fn draws_one_field(&self) -> bool {
         match &self.stands {
-            Stands::SignIn(greeting) => greeting.whose_name().is_some(),
-            Stands::FirstStart(_, _, _) | Stands::MakeAnAccount(..) | Stands::Unreadable(_, _) => {
-                false
-            }
+            WhatItStandsAt::SignIn(greeting) => greeting.whose_name().is_some(),
+            WhatItStandsAt::FirstStart(_, _, _)
+            | WhatItStandsAt::MakeAnAccount(..)
+            | WhatItStandsAt::Unreadable(_, _) => false,
         }
     }
     /// One key press, and what became of the screen.
@@ -274,12 +276,12 @@ impl<K: Knocking> SignInScreen<K> {
         // It is a list rather than two fields, so `SignInEntry` has nothing to
         // say about it — handing an arrow to a password field would be the
         // wrong question asked of the wrong screen.
-        if matches!(self.stands, Stands::FirstStart(_, _, _)) {
+        if matches!(self.stands, WhatItStandsAt::FirstStart(_, _, _)) {
             return self.on_the_first_start(key);
         }
         // **The first account's sheets take their own keys**: a name, then a
         // secret typed twice, and the buttons on the way (`crate::the_first_account`).
-        if matches!(self.stands, Stands::MakeAnAccount(..)) {
+        if matches!(self.stands, WhatItStandsAt::MakeAnAccount(..)) {
             return self.on_the_first_account(|account| account.pressed(key));
         }
         // **A screen with one field has no other field to move to.** The
@@ -315,7 +317,7 @@ impl<K: Knocking> SignInScreen<K> {
         let password = self.entry.password().to_owned();
         self.entry.forgotten();
         let greeted = match &mut self.stands {
-            Stands::SignIn(greeting) => {
+            WhatItStandsAt::SignIn(greeting) => {
                 // **The name is the one this machine already knows.** The
                 // returning screen draws no name field -- it says *alo,
                 // disan* above a single `Enter your PIN` -- so there is
@@ -338,7 +340,9 @@ impl<K: Knocking> SignInScreen<K> {
             // `pressed` hands their keys to their own sheets before an entry
             // sees them. Named rather than caught, so adding a state is a
             // compiler error here.
-            Stands::FirstStart(_, _, _) | Stands::MakeAnAccount(..) | Stands::Unreadable(_, _) => {
+            WhatItStandsAt::FirstStart(_, _, _)
+            | WhatItStandsAt::MakeAnAccount(..)
+            | WhatItStandsAt::Unreadable(_, _) => {
                 return Signing::Still(Box::new(self));
             }
         };
@@ -372,16 +376,17 @@ impl<K: Knocking> SignInScreen<K> {
     #[must_use]
     pub(crate) fn pressed_on_a_sheet(self, on: OnASheet) -> Signing<K> {
         match (&self.stands, on) {
-            (Stands::FirstStart(_, _, _), _) => {
+            (WhatItStandsAt::FirstStart(_, _, _), _) => {
                 self.the_first_start_does(|first_start| first_start.pressed_on(on))
             }
-            (Stands::MakeAnAccount(..), OnASheet::WayOn) => {
+            (WhatItStandsAt::MakeAnAccount(..), OnASheet::WayOn) => {
                 self.on_the_first_account(TheFirstAccount::way_on)
             }
-            (Stands::MakeAnAccount(..), OnASheet::WayBack) => {
+            (WhatItStandsAt::MakeAnAccount(..), OnASheet::WayBack) => {
                 self.on_the_first_account(TheFirstAccount::way_back)
             }
-            (Stands::MakeAnAccount(..), _) | (Stands::SignIn(_) | Stands::Unreadable(_, _), _) => {
+            (WhatItStandsAt::MakeAnAccount(..), _)
+            | (WhatItStandsAt::SignIn(_) | WhatItStandsAt::Unreadable(_, _), _) => {
                 Signing::Still(Box::new(self))
             }
         }
@@ -397,7 +402,8 @@ impl<K: Knocking> SignInScreen<K> {
         mut self,
         then: impl FnOnce(&mut TheFirstAccount) -> AccountWent,
     ) -> Signing<K> {
-        let Stands::MakeAnAccount(said, greeting, first_start, mut account) = self.stands else {
+        let WhatItStandsAt::MakeAnAccount(said, greeting, first_start, mut account) = self.stands
+        else {
             return Signing::Still(Box::new(self));
         };
         let went = then(&mut account);
@@ -406,12 +412,12 @@ impl<K: Knocking> SignInScreen<K> {
                 // **Typing starts a new attempt, so the last one stops
                 // speaking** — the rule the sign-in screen keeps.
                 self.said = None;
-                self.stands = Stands::MakeAnAccount(said, greeting, first_start, account);
+                self.stands = WhatItStandsAt::MakeAnAccount(said, greeting, first_start, account);
                 Signing::Still(Box::new(self))
             }
             AccountWent::BackToTheFirstStart => {
                 self.said = None;
-                self.stands = Stands::FirstStart(first_start, said, greeting);
+                self.stands = WhatItStandsAt::FirstStart(first_start, said, greeting);
                 Signing::Still(Box::new(self))
             }
             AccountWent::MakeIt => {
@@ -420,7 +426,7 @@ impl<K: Knocking> SignInScreen<K> {
                 account.the_attempt_is_over();
                 let mut greeting = greeting;
                 let greeted = greeting.makes_an_account(&name, &secret);
-                self.stands = Stands::MakeAnAccount(said, greeting, first_start, account);
+                self.stands = WhatItStandsAt::MakeAnAccount(said, greeting, first_start, account);
                 self.answered(greeted)
             }
         }
@@ -428,7 +434,7 @@ impl<K: Knocking> SignInScreen<K> {
 
     /// `then` done to the first-start sheets, and the screen it leaves.
     fn the_first_start_does(mut self, then: impl FnOnce(&mut TheFirstStart) -> Went) -> Signing<K> {
-        let Stands::FirstStart(mut first_start, said, greeting) = self.stands else {
+        let WhatItStandsAt::FirstStart(mut first_start, said, greeting) = self.stands else {
             return Signing::Still(Box::new(self));
         };
         let went = then(&mut first_start);
@@ -439,10 +445,13 @@ impl<K: Knocking> SignInScreen<K> {
             .collect();
         self.strings.prefers(&chosen);
         self.stands = match went {
-            Went::Onward => {
-                Stands::MakeAnAccount(said, greeting, first_start, TheFirstAccount::arriving())
-            }
-            Went::Stayed => Stands::FirstStart(first_start, said, greeting),
+            Went::Onward => WhatItStandsAt::MakeAnAccount(
+                said,
+                greeting,
+                first_start,
+                TheFirstAccount::arriving(),
+            ),
+            Went::Stayed => WhatItStandsAt::FirstStart(first_start, said, greeting),
         };
         Signing::Still(Box::new(self))
     }
@@ -452,10 +461,12 @@ impl<K: Knocking> SignInScreen<K> {
     #[must_use]
     pub fn the_region_chosen(&self) -> Option<&str> {
         match &self.stands {
-            Stands::FirstStart(first_start, _, _) => first_start
+            WhatItStandsAt::FirstStart(first_start, _, _) => first_start
                 .the_region_chosen()
                 .map(alo_formats::RegionCode::code),
-            Stands::SignIn(_) | Stands::MakeAnAccount(..) | Stands::Unreadable(_, _) => None,
+            WhatItStandsAt::SignIn(_)
+            | WhatItStandsAt::MakeAnAccount(..)
+            | WhatItStandsAt::Unreadable(_, _) => None,
         }
     }
 
@@ -464,8 +475,10 @@ impl<K: Knocking> SignInScreen<K> {
     #[must_use]
     pub fn the_zone_chosen(&self) -> Option<&str> {
         match &self.stands {
-            Stands::FirstStart(first_start, _, _) => first_start.the_zone_chosen(),
-            Stands::SignIn(_) | Stands::MakeAnAccount(..) | Stands::Unreadable(_, _) => None,
+            WhatItStandsAt::FirstStart(first_start, _, _) => first_start.the_zone_chosen(),
+            WhatItStandsAt::SignIn(_)
+            | WhatItStandsAt::MakeAnAccount(..)
+            | WhatItStandsAt::Unreadable(_, _) => None,
         }
     }
 
@@ -475,8 +488,10 @@ impl<K: Knocking> SignInScreen<K> {
     #[must_use]
     pub fn the_keyboard_chosen(&self) -> Option<alo_keyboards::Layout> {
         match &self.stands {
-            Stands::FirstStart(first_start, _, _) => first_start.the_keyboard_chosen(),
-            Stands::SignIn(_) | Stands::MakeAnAccount(..) | Stands::Unreadable(_, _) => None,
+            WhatItStandsAt::FirstStart(first_start, _, _) => first_start.the_keyboard_chosen(),
+            WhatItStandsAt::SignIn(_)
+            | WhatItStandsAt::MakeAnAccount(..)
+            | WhatItStandsAt::Unreadable(_, _) => None,
         }
     }
 
@@ -491,8 +506,10 @@ impl<K: Knocking> SignInScreen<K> {
     #[must_use]
     pub fn the_language_chosen(&self) -> Option<&str> {
         match &self.stands {
-            Stands::FirstStart(first_start, _, _) => first_start.the_language_chosen(),
-            Stands::SignIn(_) | Stands::MakeAnAccount(..) | Stands::Unreadable(_, _) => None,
+            WhatItStandsAt::FirstStart(first_start, _, _) => first_start.the_language_chosen(),
+            WhatItStandsAt::SignIn(_)
+            | WhatItStandsAt::MakeAnAccount(..)
+            | WhatItStandsAt::Unreadable(_, _) => None,
         }
     }
 
@@ -511,7 +528,7 @@ impl<K: Knocking> SignInScreen<K> {
     /// What the screen draws now.
     pub fn shows(&self) -> SignInShows<'_> {
         match &self.stands {
-            Stands::SignIn(greeting) => SignInShows::Fields {
+            WhatItStandsAt::SignIn(greeting) => SignInShows::Fields {
                 whose: greeting.whose_name().unwrap_or_default(),
                 name: self.entry.name(),
                 password_typed: self.entry.has_password(),
@@ -521,7 +538,7 @@ impl<K: Knocking> SignInScreen<K> {
             // **Fields, not a sentence.** This answered `Sentence` until
             // 2026-10-13, which is why a machine with no accounts showed
             // *make an account* and offered nowhere to make one.
-            Stands::MakeAnAccount(_, _, _, account) => SignInShows::FirstAccount {
+            WhatItStandsAt::MakeAnAccount(_, _, _, account) => SignInShows::FirstAccount {
                 account: account.shown(),
                 // **Only what an attempt answered.** This also passed the
                 // standing sentence — *nobody has an account yet* — which is
@@ -531,8 +548,8 @@ impl<K: Knocking> SignInScreen<K> {
                 // greeting speaks only when something was tried.
                 said: self.said.as_ref(),
             },
-            Stands::FirstStart(first_start, _, _) => SignInShows::FirstStart(first_start),
-            Stands::Unreadable(said, _) => SignInShows::Sentence(said),
+            WhatItStandsAt::FirstStart(first_start, _, _) => SignInShows::FirstStart(first_start),
+            WhatItStandsAt::Unreadable(said, _) => SignInShows::Sentence(said),
         }
     }
 
@@ -544,10 +561,10 @@ impl<K: Knocking> SignInScreen<K> {
     /// has anywhere to put it.
     pub fn for_the_maintainer(&self) -> Option<String> {
         match &self.stands {
-            Stands::Unreadable(_, why) => Some(why.to_string()),
-            Stands::FirstStart(_, _, _) | Stands::SignIn(_) | Stands::MakeAnAccount(..) => {
-                self.trouble.as_ref().map(ToString::to_string)
-            }
+            WhatItStandsAt::Unreadable(_, why) => Some(why.to_string()),
+            WhatItStandsAt::FirstStart(_, _, _)
+            | WhatItStandsAt::SignIn(_)
+            | WhatItStandsAt::MakeAnAccount(..) => self.trouble.as_ref().map(ToString::to_string),
         }
     }
 

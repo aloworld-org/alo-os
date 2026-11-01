@@ -131,6 +131,6 @@ fn at_one_hundred_every_sheet_is_the_pixels_main_drew() {
             0x401c_dd65_b3ab_db9f,
             0x4a19_2fe8_edb5_21c0,
         ],
-        "a first-start sheet at 100 per cent is not the pixels main drew: {hashes:#x?}"
+        "a first-start sheet at 100 per cent is not the pixels main drew: {hashes:x?}"
     );
 }
