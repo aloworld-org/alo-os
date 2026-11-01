@@ -197,8 +197,21 @@ impl TheFirstAccount {
         self.entered()
     }
 
-    /// The secret is forgotten after an attempt, whatever it answered; the
-    /// name stays, for `crate::sign_in_entry`'s first-account reason.
+    /// The secret is forgotten after an attempt, whatever it answered, and
+    /// **the name stays**.
+    ///
+    /// The sign-in entry clears the name too, and its reason is a real one —
+    /// *a screen that kept a refused name on it would hand the next person at
+    /// this machine a hint about the last*. **On this road there is no last
+    /// person**: `Greeting::makes_an_account` refuses outright when the
+    /// accounts store is not empty, so a name here can only be the name of
+    /// whoever is standing there typing it.
+    ///
+    /// What clearing it costs was measured on a booted machine on 2026-10-18:
+    /// a refusal arrived **with the name field wiped**, and a person's first
+    /// act on their own machine was to type their name twice. The secret still
+    /// goes: a refusal that left a password in memory would be one that kept
+    /// it.
     pub(crate) fn the_attempt_is_over(&mut self) {
         self.forget_the_secrets();
         self.on = OnTheSheet::Field(0);

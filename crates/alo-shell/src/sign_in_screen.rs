@@ -307,10 +307,10 @@ impl<K: Knocking> SignInScreen<K> {
         // memory would be a refusal that kept it.
         //
         // **The name goes with it when somebody is signing in, and stays when
-        // this is the machine's first account.** `Entry::the_secret_is_forgotten`
-        // carries the argument: clearing the name protects the *last* person
-        // at a shared screen, and the first-account sheet is reached only when
-        // there is no last person.
+        // this is the machine's first account.**
+        // `TheFirstAccount::the_attempt_is_over` carries the argument: clearing
+        // the name protects the *last* person at a shared screen, and the
+        // first-account sheets are reached only when there is no last person.
         let name = self.entry.name().to_owned();
         let password = self.entry.password().to_owned();
         self.entry.forgotten();
