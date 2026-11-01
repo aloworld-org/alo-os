@@ -88,7 +88,14 @@ fn beside(
     room: Rectangle<i32, Physical>,
     control: Rectangle<i32, Physical>,
 ) -> Rectangle<i32, Physical> {
-    let Some(covered) = room.intersection(control) else {
+    // **A meeting is not a cover.** smithay's `intersection` answers a rectangle
+    // of no width or no height for two that only touch, and for a control of no
+    // extent inside the room — an empty panel's column — and either would split
+    // the room around nothing. The unit test caught the second on the gate.
+    let Some(covered) = room
+        .intersection(control)
+        .filter(|it| it.size.w > 0 && it.size.h > 0)
+    else {
         return room;
     };
     let (left, top) = (room.loc.x, room.loc.y);
