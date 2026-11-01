@@ -17,12 +17,12 @@
 use cosmic_text::FontSystem;
 use smithay::utils::Rectangle;
 
-use crate::the_records_icons::ARecordIcon;
 use crate::record_measures as m;
 use crate::record_palette::RecordPalette;
 use crate::record_room::Room;
 use crate::settings_canvas::{AShadow, Area, Canvas};
 use crate::settings_type::{TheType, written};
+use crate::the_records_icons::ARecordIcon;
 
 /// *Elevation/Floating*, as `560:176` casts it: 16 down, 40 of blur, 4 in,
 /// 14 per cent.
@@ -127,8 +127,7 @@ fn the_strip(
     ARecordIcon::WhatAloDid.drawn(canvas, tile, palette.ink);
     let (title_x, title_y) = m::THE_TITLE;
     let (target, from_the_end, (mark_x, mark_y), mark) = m::CLOSE;
-    let room_for_it =
-        room.window.size.w - px(title_x) - px(target) - px(from_the_end) - px(8);
+    let room_for_it = room.window.size.w - px(title_x) - px(target) - px(from_the_end) - px(8);
     let shaped = written(
         fonts,
         title,
@@ -184,7 +183,7 @@ fn the_footer(
         1.0,
     );
     let middle = |height: i32| top + (tall - height) / 2;
-    ARecordIcon::Kept.drawn(
+    ARecordIcon::Padlock.drawn(
         canvas,
         Rectangle::new(
             (room.body.loc.x + px(m::PAD), middle(px(icon))).into(),

@@ -29,7 +29,7 @@ pub(crate) enum ARecordIcon {
     /// Beside the agent's name at the head of an entry.
     Agent,
     /// The footer: kept on this computer.
-    Kept,
+    Padlock,
     /// The window's own icon, in its title strip.
     WhatAloDid,
     /// Close, at the strip's end.
@@ -46,7 +46,7 @@ impl ARecordIcon {
         Self::RefusedSmall,
         Self::Left,
         Self::Agent,
-        Self::Kept,
+        Self::Padlock,
         Self::WhatAloDid,
         Self::Close,
     ];
@@ -61,7 +61,7 @@ impl ARecordIcon {
             Self::RefusedSmall => include_str!("../icons/the-record/refused-small.svg"),
             Self::Left => include_str!("../icons/the-record/left.svg"),
             Self::Agent => include_str!("../icons/the-record/agent.svg"),
-            Self::Kept => include_str!("../icons/the-record/kept.svg"),
+            Self::Padlock => include_str!("../icons/the-record/kept.svg"),
             Self::WhatAloDid => include_str!("../icons/the-record/what-alo-did.svg"),
             Self::Close => include_str!("../icons/the-record/close.svg"),
         }

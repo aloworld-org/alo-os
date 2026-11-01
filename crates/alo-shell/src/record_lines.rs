@@ -87,9 +87,11 @@ pub(crate) fn newest_first<'a>(
             let day = clock.formats.day_of(told.at(), clock.now);
             let heading = if day.is_some() && day != the_day_above {
                 day.as_ref().map(|day| {
+                    // **Beside a day named in words**, and not beside one
+                    // that is already its date.
                     let date = match day {
-                        TheDay::Today | TheDay::Yesterday => clock.formats.date_of(told.at()),
                         TheDay::On(_) => None,
+                        _ => clock.formats.date_of(told.at()),
                     };
                     (day.said(strings), date)
                 })

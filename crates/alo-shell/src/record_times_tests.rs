@@ -11,7 +11,8 @@
     clippy::unwrap_used,
     clippy::panic,
     clippy::expect_used,
-    reason = "in a test, a panic on an unexpected None, Err or variant is the failure being reported"
+    clippy::indexing_slicing,
+    reason = "in a test, a panic on an unexpected None, Err, variant or index is the failure being reported"
 )]
 
 use std::time::Duration;
@@ -49,7 +50,10 @@ fn drawn(window: &RecordWindow, clock: RecordClock<'_>) -> RecordPicture {
 
 /// Every entry's day and date, newest first, from the top of the record — as
 /// a view that held all of it would head them.
-fn the_days(window: &RecordWindow, clock: RecordClock<'_>) -> Vec<(Option<String>, Option<String>)> {
+fn the_days(
+    window: &RecordWindow,
+    clock: RecordClock<'_>,
+) -> Vec<(Option<String>, Option<String>)> {
     let RecordShows::Account { account, .. } = window.shows() else {
         panic!("no account");
     };
@@ -209,11 +213,7 @@ fn choosing_a_region_changes_the_records_times() {
     };
     assert_eq!(first(&british), "01:30");
     assert_ne!(first(&british), first(&american));
-    assert!(
-        first(&american).starts_with("1:30"),
-        "{}",
-        first(&american)
-    );
+    assert!(first(&american).starts_with("1:30"), "{}", first(&american));
 }
 
 /// **The first entry in view keeps its day**, even when the entry above it —
@@ -237,7 +237,10 @@ fn the_first_entry_in_view_says_its_day() {
         Some("Today")
     );
     assert_eq!(
-        picture.entries[0].time.as_ref().map(|time| time.text.as_str()),
+        picture.entries[0]
+            .time
+            .as_ref()
+            .map(|time| time.text.as_str()),
         Some("00:30")
     );
     if let Some(next) = picture.entries.get(1) {

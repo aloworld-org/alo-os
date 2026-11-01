@@ -37,7 +37,6 @@ use crate::painted::Washed;
 use crate::record_clock::RecordClock;
 use crate::record_entry_drawn::{TheColumns, TheWindowsWords, shaped, the_time};
 use crate::record_header::{ACount, TheHeaderSays, placed};
-use crate::the_records_icons::ARecordIcon;
 use crate::record_kinds::{EntryKind, Today};
 use crate::record_lines::{EntryWords, newest_first};
 use crate::record_measures as m;
@@ -45,6 +44,7 @@ use crate::record_palette::RecordPalette;
 use crate::record_room::Room;
 use crate::settings_canvas::{Area, Canvas};
 use crate::settings_type::{TheType, written};
+use crate::the_records_icons::ARecordIcon;
 use crate::the_records_words as w;
 use crate::{RecordLook, RecordShows, RenderError, WindowControlLabels};
 
@@ -197,21 +197,21 @@ pub(crate) fn picture(
             account,
             moved_past,
         } => (
-                TheHeaderSays {
-                    heading: sentences.title.clone(),
-                    under_it: sentences.introduction.clone(),
-                    remarks: account
-                        .said(strings)
-                        .into_iter()
-                        .map(alo_strings::Said::into_text)
-                        .collect(),
-                    today: Some((
-                        sentences.today.clone(),
-                        todays_counts(strings, Today::in_the(account, clock), palette),
-                    )),
-                },
-                Some((account, moved_past)),
-            ),
+            TheHeaderSays {
+                heading: sentences.title.clone(),
+                under_it: sentences.introduction.clone(),
+                remarks: account
+                    .said(strings)
+                    .into_iter()
+                    .map(alo_strings::Said::into_text)
+                    .collect(),
+                today: Some((
+                    sentences.today.clone(),
+                    todays_counts(strings, Today::in_the(account, clock), palette),
+                )),
+            },
+            Some((account, moved_past)),
+        ),
     };
     let room = Room::on(size, look, display)?;
     let mut canvas = Canvas::over(room.canvas(size));
@@ -237,7 +237,10 @@ pub(crate) fn picture(
         None => drawn.refusal = Some(header.under_it),
         Some((account, moved_past)) => {
             let (top_pad, foot_pad) = m::THE_LIST_PADS;
-            let list = (header.bottom + room.px(top_pad), frame.footer_top - room.px(foot_pad));
+            let list = (
+                header.bottom + room.px(top_pad),
+                frame.footer_top - room.px(foot_pad),
+            );
             let words = TheWindowsWords {
                 refused: &sentences.refused,
                 already_sent: &sentences.already_sent,
@@ -288,9 +291,10 @@ fn the_list(
     let widest = in_view
         .iter()
         .map(|words| {
-            words.time.as_deref().map_or(0, |time| {
-                the_time(fonts, room, palette, time).width_of_box
-            })
+            words
+                .time
+                .as_deref()
+                .map_or(0, |time| the_time(fonts, room, palette, time).width_of_box)
         })
         .max()
         .unwrap_or(0);

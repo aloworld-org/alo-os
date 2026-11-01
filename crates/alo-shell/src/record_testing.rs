@@ -31,8 +31,8 @@ use alo_strings::Direction;
 
 use crate::RecordLook;
 pub(crate) use crate::approval_testing::hour;
-use crate::approval_testing::{archiving, keeping_in};
 pub(crate) use crate::approval_testing::noon;
+use crate::approval_testing::{archiving, keeping_in};
 
 /// Every sentence the machine can say, with the record window's own words
 /// declared as a running shell declares them (`crate::booting`).

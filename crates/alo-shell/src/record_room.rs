@@ -83,7 +83,10 @@ impl Room {
         if wide < px(THE_LEAST.0) || tall < px(THE_LEAST.1) {
             return Err(RenderError::RecordScene);
         }
-        let window = Rectangle::new(((width - wide) / 2, foot - tall).into(), (wide, tall).into());
+        let window = Rectangle::new(
+            ((width - wide) / 2, foot - tall).into(),
+            (wide, tall).into(),
+        );
         let (strip_at, strip_tall) = m::THE_STRIP;
         let strip = Rectangle::new(
             (window.loc.x, window.loc.y + px(strip_at)).into(),
@@ -158,11 +161,23 @@ mod tests {
     #[test]
     fn both_frames_come_out_of_the_rule() {
         let big = Room::on((1440, 960), light(), DisplayScale::ONE).unwrap();
-        assert_eq!(big.window, Rectangle::new((280, 56).into(), (880, 796).into()));
-        assert_eq!(big.body, Rectangle::new((280, 100).into(), (880, 752).into()));
-        assert_eq!(big.strip, Rectangle::new((280, 68).into(), (880, 32).into()));
+        assert_eq!(
+            big.window,
+            Rectangle::new((280, 56).into(), (880, 796).into())
+        );
+        assert_eq!(
+            big.body,
+            Rectangle::new((280, 100).into(), (880, 752).into())
+        );
+        assert_eq!(
+            big.strip,
+            Rectangle::new((280, 68).into(), (880, 32).into())
+        );
         let small = Room::on((1280, 800), light(), DisplayScale::ONE).unwrap();
-        assert_eq!(small.window, Rectangle::new((200, 40).into(), (880, 652).into()));
+        assert_eq!(
+            small.window,
+            Rectangle::new((200, 40).into(), (880, 652).into())
+        );
     }
 
     /// **At 200 per cent it is twice the size, in the same place to the

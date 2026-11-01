@@ -47,9 +47,15 @@ fn the_record_files() -> Vec<(String, Vec<(usize, String)>)> {
         [
             "nested_record.rs",
             "record_clock.rs",
+            "record_entry_drawn.rs",
+            "record_frame_drawn.rs",
+            "record_header.rs",
             "record_keys.rs",
+            "record_kinds.rs",
             "record_lines.rs",
+            "record_measures.rs",
             "record_paint.rs",
+            "record_palette.rs",
             "record_raster.rs",
             "record_room.rs",
             "record_seat.rs",
@@ -136,6 +142,15 @@ fn names(line: &str, word: &str) -> bool {
 /// files declares a word, fills a gap, looks a key up, formats text or holds a
 /// string literal a person could end up reading. The one literal allowed is a
 /// lint's `reason`, which no person using the machine reads.
+///
+/// **Since 2026-11-01 the window has a few words of its own**, which the
+/// owner approved with its design (`560:142`): its title, the sentence under
+/// it, the footer, *Already sent*, *Refused*, and today's three counts. They
+/// are declared and looked up in `the_records_words.rs` — outside this list,
+/// beside the shell's other surfaces' words — and handed in, so this test
+/// still holds of every file here: none of them says anything. None of those
+/// words describes an entry, and the counts are numbers of entries that the
+/// list under them can be checked against.
 #[test]
 fn the_record_window_writes_no_words_of_its_own() {
     for (named, code) in the_record_files() {
@@ -238,6 +253,22 @@ fn no_filter_that_could_hide_a_refusal_and_no_search() {
                 "collapse",
                 "refusals",
             ] {
+                // **Today's counts count today, and narrow nothing drawn.**
+                // `record_kinds.rs` reads which of the account's entries are
+                // today's to number them beside *Today* (`560:195`, approved
+                // on 2026-11-01); every entry is still drawn, which
+                // `record_raster_tests` checks by walking the whole account,
+                // and the numbers are checked against the list. So *today* is
+                // allowed in this one file, and the filter that counts.
+                let counts_today =
+                    named == "record_kinds.rs" && (narrowing == "today" || narrowing == ".filter(");
+                // And the header and the list say *today* where they hold or
+                // draw those counts, which is naming them, not narrowing.
+                let names_the_counts = narrowing == "today"
+                    && ["record_header.rs", "record_raster.rs"].contains(&named.as_str());
+                if counts_today || names_the_counts {
+                    continue;
+                }
                 assert!(
                     !lowered.contains(narrowing),
                     "{named}:{which} narrows what the record answered (`{narrowing}`): {line}"

@@ -19,7 +19,6 @@ use smithay::utils::Rectangle;
 
 use crate::painted_text::Shaped;
 use crate::record_header::placed;
-use crate::the_records_icons::ARecordIcon;
 use crate::record_kinds::EntryKind;
 use crate::record_lines::EntryWords;
 use crate::record_measures as m;
@@ -28,6 +27,7 @@ use crate::record_raster::{EntryDrawn, TextDrawn};
 use crate::record_room::Room;
 use crate::settings_canvas::Canvas;
 use crate::settings_type::{TheType, written};
+use crate::the_records_icons::ARecordIcon;
 
 /// The words the window adds to an entry, in the person's language.
 #[derive(Debug, Clone, Copy)]
@@ -162,9 +162,9 @@ pub(crate) fn shaped(
         .cropped_to_its_ink()
     });
     let clause_wide = content
-        - agent.as_ref().map_or(0, |name| {
-            px(mark) + 2 * px(after_mark) + name.width_of_box
-        });
+        - agent
+            .as_ref()
+            .map_or(0, |name| px(mark) + 2 * px(after_mark) + name.width_of_box);
     let clause = written(
         fonts,
         &words.clause,
@@ -354,14 +354,7 @@ impl AnEntryShaped {
             .approved
             .as_ref()
             .zip(self.words.approved.as_deref())
-            .map(|said| {
-                row.mark(
-                    canvas,
-                    room,
-                    said,
-                    (ARecordIcon::Allowed, palette.allowed),
-                )
-            });
+            .map(|said| row.mark(canvas, room, said, (ARecordIcon::Allowed, palette.allowed)));
         let refused = self.refused.as_ref().map(|(shaped, text)| {
             row.mark(
                 canvas,

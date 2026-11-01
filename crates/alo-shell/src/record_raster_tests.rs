@@ -227,7 +227,10 @@ fn what_was_refused_is_drawn_as_plainly_as_what_ran() {
         Outcome::HeldBack,
         Outcome::Ran,
     ] {
-        assert!(seen.contains(&refused), "{refused:?} is not drawn: {seen:?}");
+        assert!(
+            seen.contains(&refused),
+            "{refused:?} is not drawn: {seen:?}"
+        );
     }
 }
 
@@ -348,7 +351,11 @@ fn what_ran_says_the_person_said_yes_and_nothing_refused_does() {
         .iter()
         .find(|entry| entry.words.outcome == Outcome::ThePersonSaidNo)
         .unwrap();
-    assert_eq!(declined.after.len(), 1, "only what they declined: {declined:#?}");
+    assert_eq!(
+        declined.after.len(),
+        1,
+        "only what they declined: {declined:#?}"
+    );
 }
 
 /// **What left says it is already sent**, at the end of its head row, and
@@ -418,7 +425,7 @@ fn at_1440_it_is_where_the_frame_draws_it() {
     assert_eq!(first.area.loc.x, 320);
     assert_eq!(first.time.as_ref().unwrap().area.loc.x, 340);
     assert_eq!(first.icon.loc.x, 400);
-    assert_eq!(first.icon.size, (32, 32).into());
+    assert_eq!((first.icon.size.w, first.icon.size.h), (32, 32));
     // The agent's mark (12) and 6, the name and 6, where there is a name.
     let named = first
         .agent
@@ -427,7 +434,11 @@ fn at_1440_it_is_where_the_frame_draws_it() {
     assert_eq!(first.clause.area.loc.x, 448 + named);
     let day = first.day.as_ref().unwrap();
     assert_eq!(day.area.loc.x, 324);
-    assert_eq!(day.area.loc.y + 28, card.loc.y, "18 tall and 10 above the card");
+    assert_eq!(
+        day.area.loc.y + 28,
+        card.loc.y,
+        "18 tall and 10 above the card"
+    );
 }
 
 /// **The record's sentences about itself stay above every view**, and a view

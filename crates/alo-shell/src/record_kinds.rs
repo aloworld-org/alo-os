@@ -21,8 +21,8 @@ use std::time::SystemTime;
 
 use alo_recounting::{Account, Outcome};
 
-use crate::record_clock::RecordClock;
 use crate::TheDay;
+use crate::record_clock::RecordClock;
 
 /// What kind of entry the design draws an outcome as.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -88,8 +88,7 @@ impl Today {
     /// Today's counts in `account`, *today* being the person's own day as
     /// `clock` says it is.
     pub(crate) fn in_the(account: &Account, clock: RecordClock<'_>) -> Self {
-        let is_today =
-            |at: SystemTime| clock.formats.day_of(at, clock.now) == Some(TheDay::Today);
+        let is_today = |at: SystemTime| clock.formats.day_of(at, clock.now) == Some(TheDay::Today);
         account
             .told()
             .iter()
@@ -140,7 +139,10 @@ mod tests {
         };
         let today = Today::in_the(account, crate::record_testing::a_clock());
         assert_eq!(today.allowed, 1, "{today:?}");
-        assert_eq!(today.left, 2, "one asked for and one alo OS's own: {today:?}");
+        assert_eq!(
+            today.left, 2,
+            "one asked for and one alo OS's own: {today:?}"
+        );
         assert_eq!(today.refused, 4, "{today:?}");
         let refused = account
             .told()

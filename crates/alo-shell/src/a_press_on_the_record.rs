@@ -62,7 +62,11 @@ mod tests {
 
     /// A display with the record window open on the afternoon, drawn where
     /// the 1440 × 960 frame draws it.
-    fn open() -> (tempfile::TempDir, crate::record_testing::Kept, crate::Server) {
+    fn open() -> (
+        tempfile::TempDir,
+        crate::record_testing::Kept,
+        crate::Server,
+    ) {
         let runtime = tempfile::tempdir().unwrap();
         std::fs::set_permissions(runtime.path(), std::fs::Permissions::from_mode(0o700)).unwrap();
         let mut server = crate::Server::bind(runtime.path(), "record-press").unwrap();

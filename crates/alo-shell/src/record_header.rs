@@ -11,13 +11,13 @@
 use cosmic_text::FontSystem;
 use smithay::utils::Rectangle;
 
-use crate::the_records_icons::ARecordIcon;
 use crate::record_measures as m;
 use crate::record_palette::RecordPalette;
 use crate::record_raster::TextDrawn;
 use crate::record_room::Room;
 use crate::settings_canvas::Canvas;
 use crate::settings_type::{TheType, written};
+use crate::the_records_icons::ARecordIcon;
 
 /// One of today's counts: its icon, its colour, and what it says.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -107,7 +107,15 @@ pub(crate) fn drawn(
     let mut counts = Vec::new();
     if let Some((today, each)) = &says.today {
         y += px(m::BEFORE_THE_COUNTS);
-        y = the_counts(canvas, fonts, room, palette, (today, each), (x, y), &mut counts);
+        y = the_counts(
+            canvas,
+            fonts,
+            room,
+            palette,
+            (today, each),
+            (x, y),
+            &mut counts,
+        );
     }
     y += px(m::BEFORE_THE_RULE);
     canvas.fill(
