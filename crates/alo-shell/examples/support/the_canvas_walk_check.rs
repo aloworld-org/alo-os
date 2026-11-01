@@ -292,12 +292,25 @@ fn walk_it(
     // a drag that moved the wrong frame would draw a plausible canvas.
     let dragged = frames.first().ok_or("a frame to drag")?.clone();
     let before = alo_shell::window_buffer_origin(&dragged);
-    // The band is directly above the frame and as wide as it
-    // (`alo_shell::the_names_band`), so its middle is half a band above the
-    // frame's own top edge. Computed from the two public numbers rather than read
-    // from the shell's private getter, which is also what keeps this fixture
-    // honest about aiming where a person would.
-    let band = (before.x + 8.0, before.y - alo_shell::the_names_band() / 2.0);
+    // **Where a person drags it from: the middle of the edge's drag area, as
+    // the edge is shown.** Titles are shown always since 2026-11-01 (the
+    // owner's first answer), so every frame's edge is laid out shown — and a
+    // frame narrower than the compact edge has that edge centred over it, its
+    // drag area to the left of the frame and Minimise over the frame's own
+    // corner. This aimed 8 in from that corner until then, where the resting
+    // edge drags. Computed from the public layout (`alo_shell::edge_of`) at
+    // this walk's own viewport, which is also what keeps this fixture honest
+    // about aiming where a person would.
+    let shown = alo_shell::edge_of(
+        alo_shell::where_a_window_is(&dragged),
+        alo_shell::Decorations::TheShellDraws,
+        true,
+        alo_shell::the_usable_output(VIEWPORT.into(), 100),
+    );
+    let band = (
+        f64::from(shown.drag.loc.x) + f64::from(shown.drag.size.w) / 2.0,
+        f64::from(shown.drag.loc.y) + f64::from(shown.drag.size.h) / 2.0,
+    );
     server.pointer_motion(band.0, band.1, 1)?;
     if server.pointer_button(BTN_LEFT, ButtonState::Pressed, 2)? {
         return Err("a press on the shell's own name band was delivered to a client".into());
