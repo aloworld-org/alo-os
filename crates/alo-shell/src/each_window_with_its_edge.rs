@@ -156,3 +156,7 @@ pub(crate) fn the_edges_of_no_run<'a, T>(
 #[cfg(test)]
 #[path = "each_window_with_its_edge_tests.rs"]
 mod tests;
+
+#[cfg(test)]
+#[path = "windows_told_apart_tests.rs"]
+mod windows_told_apart_tests;

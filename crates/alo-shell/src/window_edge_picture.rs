@@ -319,6 +319,13 @@ impl EdgePicture {
         &self.whole
     }
 
+    /// The flat shapes and the inked text, in the order [`Self::paint`] draws
+    /// them — for a test that composites the picture without a renderer.
+    #[cfg(test)]
+    pub(crate) fn flat(&self) -> (&[Solid], &[Inked]) {
+        (&self.solids, &self.inked)
+    }
+
     /// Draw it: the shapes, then the text, in that order.
     pub(crate) fn paint(&self, frame: &mut impl Frame) -> Result<(), RenderError> {
         painted::paint(frame, &self.solids, &self.inked)
