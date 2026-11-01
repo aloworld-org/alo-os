@@ -568,6 +568,15 @@ pub struct Server {
     /// Told rather than read for `settings_places`' reason: the description
     /// that names the record's path is a file, and this crate opens none.
     pub(crate) recounting: Option<Result<alo_recounting::Recounting, alo_recounting::NotRecounted>>,
+    /// **Where this person's places to return to are, and their home**, told
+    /// by the desktop at sign-in for *Put back* (`crate::a_put_back_from_the_record`).
+    pub(crate) places_kept: Option<(std::path::PathBuf, std::path::PathBuf)>,
+    /// The change whose *Put back…* was pressed, until the frame loop makes
+    /// its plan.
+    pub(crate) plan_asked: Option<usize>,
+    /// The place and folders a person confirmed, until the frame loop asks
+    /// the service.
+    pub(crate) put_back_asked: Option<(String, Vec<String>)>,
     /// **How this person writes a time and a day**, told by the desktop at
     /// sign-in and again by Settings when they choose a region.
     ///
@@ -846,6 +855,10 @@ impl Server {
             the_records_places: None,
             // Nobody has told this seat where the record is kept.
             recounting: None,
+            // Nor where the places to return to are, and nothing is asked.
+            places_kept: None,
+            plan_asked: None,
+            put_back_asked: None,
             // Nobody has told this seat how this person writes a time.
             formats: crate::TheirFormats::of(alo_formats::Chosen::default(), None),
             formats_untold: false,

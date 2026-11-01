@@ -379,6 +379,29 @@ pub trait TheDesktop {
         None
     }
 
+    /// Where this person's places to return to are kept, and their home —
+    /// asked once as the session starts, for *Put back* in the record window.
+    ///
+    /// `None` by default: a desktop not taught to say leaves every change
+    /// offering nothing rather than a button that cannot work.
+    fn the_places_kept(&mut self) -> Option<(std::path::PathBuf, std::path::PathBuf)> {
+        None
+    }
+
+    /// Ask the service that writes the record to put `folders` back from the
+    /// place named `place` (`put-back` on the person's door), **without
+    /// waiting**: the answer is [`Self::put_back_answered`]'s.
+    ///
+    /// Does nothing by default, and then nothing is ever answered — so the
+    /// confirmation says *Putting back…* and nothing changes.
+    fn put_back(&mut self, _place: &str, _folders: &[String]) {}
+
+    /// What the service answered the last [`Self::put_back`], once: the
+    /// sentences it said, or why nothing was put back. [`None`] until it has.
+    fn put_back_answered(&mut self) -> Option<Result<Vec<String>, String>> {
+        None
+    }
+
     /// **How this person writes a time and a day**, asked for once as the
     /// session starts: what they chose in `formats.toml` and the language they
     /// read.
@@ -637,6 +660,11 @@ impl crate::DirectSession {
             // breath.
             if let Some(recounting) = desktop.the_recounting() {
                 server.the_record_is_kept(recounting);
+            }
+            // And where this person's places to return to are, for *Put back*
+            // in the record window, for the same reason.
+            if let Some((whose, home)) = desktop.the_places_kept() {
+                server.the_places_are_kept(whose, home);
             }
             // And how this person writes a time, for the same reason and in the
             // same breath. `crate::the_formats_are_told` says why there is one
@@ -1303,6 +1331,21 @@ impl LoopInput for Desk<'_> {
             }
         }
 
+        // **Put back, from the record window**: the plan is made here, where
+        // the person's words are; the request is handed to the desktop, which
+        // asks the service on a thread of its own — copying a folder takes
+        // as long as it takes, and no frame waits for it — and the answer is
+        // told back when it comes.
+        if let Some(at) = server.take_the_plan_asked() {
+            server.the_plan_is_made(at, self.strings);
+        }
+        if let Some((place, folders)) = server.take_the_put_back_asked() {
+            self.desktop.put_back(&place, &folders);
+        }
+        if let Some(answer) = self.desktop.put_back_answered() {
+            server.that_put_back_answered(answer);
+        }
+
         for request in server.take_what_was_asked_of_alo() {
             if let Some(task) = self.desktop.a_task_for(&request) {
                 let which = server.tasks_mut().and_now_this_one(task);
@@ -1805,11 +1848,12 @@ impl LoopInput for Desk<'_> {
         );
         // **Where the record window went, for the press after this frame**:
         // laid out where the display's scale is known, and nowhere else.
-        server.the_record_was_drawn(pictures.record.as_ref().and_then(|record| {
-            record.panel.zip(record.close).map(|(window, close)| {
-                crate::a_press_on_the_record::TheRecordsPlaces { window, close }
-            })
-        }));
+        server.the_record_was_drawn(
+            pictures
+                .record
+                .as_ref()
+                .and_then(crate::a_press_on_the_record::TheRecordsPlaces::of),
+        );
         // **A window this person has open that this frame did not draw.**
         //
         // **Here, and not where the placement is made.** It stood beside

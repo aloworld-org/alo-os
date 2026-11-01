@@ -104,6 +104,10 @@ alo-accounts = { path = "../alo-accounts" }
 # in Settings knocks at. Named by the crate that owns the door rather than
 # spelled here, and keyed by the same one kernel question as the grants above.
 alo-changing = { path = "../alo-changing" }
+# Put back from the record window: where this person's places are, and the
+# request to the service that writes the record, on the person's own door.
+alo-as-it-was = { path = "../alo-as-it-was" }
+alo-protocol = { path = "../alo-protocol" }
 # The windows a person put aside. Held here because the panel at the edge is
 # drawn from it, and empty because nothing in this binary puts one aside yet.
 alo-put-aside = { path = "../alo-put-aside" }

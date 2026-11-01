@@ -88,6 +88,18 @@ pub(crate) const BETWEEN_LINES: i32 = 4;
 /// 6 before its words.
 pub(crate) const THE_MARKS: (i32, i32, i32, i32, i32) = (4, 16, 12, 14, 6);
 
+/// *Put back…* (`560:242`): 40 tall, corner 12, its 16 icon 18 in, its words
+/// 8 after it, 20 to spare at the end.
+pub(crate) const THE_BUTTON: (i32, i32, i32, i32, i32, i32) = (40, 12, 18, 16, 8, 20);
+/// The confirmation (`560:763`): corner 10; 14 above, 16 either side and
+/// below; 8 between what is in it.
+pub(crate) const THE_CONFIRMATION: (i32, i32, i32, i32, i32) = (10, 14, 16, 16, 8);
+/// Its two buttons (`560:767`, `560:769`): 48 tall, 26 either side of the
+/// words, corner 12, 8 apart, 6 more above them.
+pub(crate) const ITS_BUTTONS: (i32, i32, i32, i32, i32) = (48, 26, 12, 8, 6);
+/// Where the keyboard is, round a button: 2 thick, 2 off it.
+pub(crate) const THE_KEYBOARDS_RING: (i32, i32) = (2, 2);
+
 /// The footer: 52 tall, its 14 icon at (40, 19), its words at (62, 18).
 pub(crate) const THE_FOOTER: (i32, i32, i32, i32) = (52, 19, 14, 62);
 /// The rail that says where the view is, when anything is out of it: 4 wide,

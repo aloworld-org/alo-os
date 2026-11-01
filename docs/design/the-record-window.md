@@ -88,5 +88,41 @@ window's own edge `#738294`, ink `#fffcf8`, secondary `#cbd5e1`, muted
 - **The window does not move.** It is drawn where the rule above puts it, over
   the applications, as it always has been; it is not yet one of the windows a
   person arranges.
-- **Put back** (`560:241`, `560:664`) is the next change: this one draws no
-  button, so nothing on the screen offers what it cannot do.
+- **Put back** (`560:241`, `560:664`) is drawn since the change after this
+  one — see below.
+
+## Put back
+
+The owner's answer of 2026-11-01: *a button in the record window, confirmed on
+a sheet (`560:664`), doing exactly what `alo-back` does* — with the three
+readings the coordinator settled that day, recorded in `docs/features.md`.
+
+| | figure |
+|---|---|
+| *Put back…* (`560:242`) | 40 tall, `bg/surface` in a 1 `border/default`, corner 12; the 16 icon `560:243` 18 in, its words SemiBold 13 8 after it, 20 to spare; at the head row's end, 20 in from the card's edge |
+| the confirmation (`560:763`) | under the change's lines, the content column's width; `bg/canvas` in a 1 `border/default`, corner **10**; 14 above, 16 either side and below, 8 between |
+| its question | SemiBold 14 / 22 `text/primary` — *Put {folder} back as it was on {date} at {time}?*, or *these folders* for more than one |
+| its lines | Regular 14 / 22 `text/secondary`: one per folder, *What is in {folder} now is kept beside it, as {aside}.*, then *Putting back is written in this list too.* |
+| its buttons (`560:767`, `560:769`) | 6 more above; 48 tall, 26 either side of the words, corner 12, 8 apart; *Put back* `text/primary` filled with `bg/surface` words, *Cancel* white in a hairline |
+| where the keyboard is | a ring 2 thick, 2 off the button |
+
+**Readings taken, for the owner to overrule:**
+
+- **The question names the moment, not what changed.** The frame's second
+  sentence — *invoice-march.pdf becomes march-invoice.pdf again* — needs the
+  two sides of the change compared, which nothing on this machine does yet
+  (ADR 0045); the confirmation names each folder and where what is in it now
+  will be, which is what `alo-back` shows.
+- **Every folder the change's turn touched goes back**, worked out from the
+  paths its changes were given: a folder it moved something into is itself, a
+  file is its folder, one inside another is the outer one.
+- **A change that cannot be put back says why in a plain line** under it —
+  *older than Put back*, or *no longer on this computer* — and draws no
+  button.
+- **The keyboard**: Tab and Shift+Tab move between the changes that offer
+  *Put back…*, bringing each to the top of the view; Enter or Space presses;
+  on the confirmation Tab moves between its two buttons and Escape is
+  *Cancel*.
+- **While it is done**, the buttons give way to *Putting back…*; when it is
+  done the record is read again, so the putting back is its newest line; when
+  nothing went back, the confirmation stays and says why.

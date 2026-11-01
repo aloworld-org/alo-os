@@ -330,6 +330,8 @@ pub struct Told {
     kept_as: Option<Line>,
     /// For a putting back: the moment its place was kept, and its folders.
     put_back: Option<(SystemTime, Vec<Line>)>,
+    /// Every path what ran was given, as the record kept it.
+    touched: Vec<std::path::PathBuf>,
 }
 
 impl Told {
@@ -380,7 +382,26 @@ impl Told {
                     .is_some_and(|what| what.effect() == alo_capability::Effect::Change),
             kept_as: entry.kept_before_it().cloned(),
             put_back,
+            touched: entry
+                .what()
+                .filter(|_| happened.ran())
+                .map(|what| {
+                    what.arguments()
+                        .values()
+                        .filter_map(alo_record::Written::as_path)
+                        .map(std::path::Path::to_path_buf)
+                        .collect()
+                })
+                .unwrap_or_default(),
         }
+    }
+
+    /// Every path what ran was given — a file it renamed, a folder it moved
+    /// something into — as the record kept them. Empty for everything that did
+    /// not run. What *Put back* works out which folders a change touched from.
+    #[must_use]
+    pub fn touched(&self) -> &[std::path::PathBuf] {
+        &self.touched
     }
 
     /// Whether this ran a change, rather than a read — what a person could

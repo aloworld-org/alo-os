@@ -651,8 +651,10 @@ file carries it with a tier.*
   back both, the sheet names each, and if one cannot go back none does; and
   **putting back is written in the list too**, by the service that writes it,
   from the window and from `alo-back` alike, so both roads leave the same
-  entry. The record and the service are built (2026-11-01); the button and its
-  sheet are the next change
+  entry. **Built 2026-11-01**: the record and the service, and in the record
+  window *Put back…* at the end of each change that can be put back, the
+  confirmation under it, Tab and Enter to reach both, and a plain line under a
+  change that cannot be put back saying why
 - ★ **Scrollback you can move along, not only read.** In a session you asked to
   be able to undo, every command is a place you can return to: scroll up, choose
   one, and your files are as they were before it ran. *In every other terminal scrollback is a

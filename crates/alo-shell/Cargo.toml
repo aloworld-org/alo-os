@@ -165,6 +165,10 @@ alo-nearby = { path = "../alo-nearby" }
 # and nothing narrower, so the record window has no filter that could hide a
 # refusal. Read, never written — `tests/record_source.rs` holds it to that.
 alo-record = { path = "../alo-record" }
+# Put back, from the record window: the places a person can return to and what
+# going back would do, read as `alo-back` reads them to show it. The act itself
+# is the service's (`put-back`), so nothing here changes a folder.
+alo-as-it-was = { path = "../alo-as-it-was" }
 # Afterwards, ask what it did: the account `alo_recounting::Recounting` reads
 # off the disk and hands the compositor. This crate draws that account and
 # words nothing in it.

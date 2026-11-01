@@ -12,6 +12,12 @@
 //!   is in front of the person;
 //! - **nothing that writes**, because there is nothing on the record a person
 //!   could edit from a screen that shows it.
+//!
+//! **And since 2026-11-01, the keyboard's road to *Put back***: Tab and
+//! Shift+Tab move between the changes that offer it, and Enter or Space
+//! presses — and on the confirmation, Tab moves between its two buttons and
+//! Escape is *Cancel*. Putting back changes the person's folders, not the
+//! record; the service that writes the record writes it down.
 
 use smithay::input::keyboard::{Keysym, ModifiersState};
 
@@ -28,8 +34,15 @@ pub enum RecordKey {
     Oldest,
     /// Read the record off the disk again. F5.
     ReadAgain,
-    /// Close the window. Escape.
+    /// Close the window, or the confirmation while it is open. Escape.
     Close,
+    /// The next change that offers *Put back…*, or the other button on the
+    /// confirmation. Tab.
+    NextPutBack,
+    /// The one before. Shift+Tab.
+    PreviousPutBack,
+    /// Press what the keyboard is on. Enter, or Space.
+    Press,
     /// Anything else, which does nothing at all.
     Nothing,
 }
@@ -53,6 +66,10 @@ impl RecordKey {
             Keysym::End | Keysym::KP_End => Self::Oldest,
             Keysym::F5 => Self::ReadAgain,
             Keysym::Escape => Self::Close,
+            Keysym::Tab if held.shift => Self::PreviousPutBack,
+            Keysym::Tab => Self::NextPutBack,
+            Keysym::ISO_Left_Tab => Self::PreviousPutBack,
+            Keysym::Return | Keysym::KP_Enter | Keysym::space => Self::Press,
             _ => Self::Nothing,
         }
     }
@@ -80,13 +97,19 @@ mod tests {
             (Keysym::End, RecordKey::Oldest),
             (Keysym::F5, RecordKey::ReadAgain),
             (Keysym::Escape, RecordKey::Close),
+            (Keysym::Tab, RecordKey::NextPutBack),
+            (Keysym::ISO_Left_Tab, RecordKey::PreviousPutBack),
+            (Keysym::Return, RecordKey::Press),
+            (Keysym::KP_Enter, RecordKey::Press),
+            (Keysym::space, RecordKey::Press),
         ] {
             assert_eq!(RecordKey::of(symbol, &held), meant, "{symbol:?}");
         }
     }
 
-    /// **No key types, deletes or narrows.** Letters, Delete, Backspace and
-    /// Enter do nothing, so there is no search, no filter and no edit.
+    /// **No key types, deletes or narrows.** Letters, Delete and Backspace do
+    /// nothing, so there is no search, no filter and no edit. (Enter, Space
+    /// and Tab are the keyboard's road to *Put back* since 2026-11-01.)
     #[test]
     fn no_key_types_deletes_or_narrows() {
         let held = nothing_held();
@@ -96,9 +119,6 @@ mod tests {
             Keysym::f,
             Keysym::Delete,
             Keysym::BackSpace,
-            Keysym::Return,
-            Keysym::Tab,
-            Keysym::space,
             Keysym::NoSymbol,
         ] {
             assert_eq!(

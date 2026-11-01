@@ -86,6 +86,12 @@ pub(crate) struct EntryDrawn {
     pub(crate) refused: Option<TextDrawn>,
     /// *Already sent*.
     pub(crate) already_sent: Option<TextDrawn>,
+    /// *Put back…*, where it is drawn.
+    pub(crate) put_back_button: Option<Area>,
+    /// Why it cannot be put back, where that is the answer.
+    pub(crate) why_not: Option<TextDrawn>,
+    /// The confirmation, while it is open under it.
+    pub(crate) confirmation: Option<crate::record_put_back_drawn::TheConfirmationDrawn>,
 }
 
 /// The window for one output size, ready to paint.
@@ -196,6 +202,7 @@ pub(crate) fn picture(
         RecordShows::Account {
             account,
             moved_past,
+            put_back,
         } => (
             TheHeaderSays {
                 heading: sentences.title.clone(),
@@ -210,7 +217,7 @@ pub(crate) fn picture(
                     todays_counts(strings, Today::in_the(account, clock), palette),
                 )),
             },
-            Some((account, moved_past)),
+            Some((account, moved_past, put_back)),
         ),
     };
     let room = Room::on(size, look, display)?;
@@ -235,7 +242,7 @@ pub(crate) fn picture(
     drawn.counts = header.counts;
     match account {
         None => drawn.refusal = Some(header.under_it),
-        Some((account, moved_past)) => {
+        Some((account, moved_past, put_back)) => {
             let (top_pad, foot_pad) = m::THE_LIST_PADS;
             let list = (
                 header.bottom + room.px(top_pad),
@@ -249,7 +256,7 @@ pub(crate) fn picture(
                 &mut canvas,
                 fonts,
                 (room, palette),
-                newest_first(account, moved_past, strings, clock),
+                newest_first(account, (moved_past, put_back), strings, clock),
                 words,
                 list,
                 &mut drawn,

@@ -104,13 +104,104 @@ pub const REFUSED_TODAY: Counted = Counted {
 };
 
 /// Every sentence this file declares, in the order a translator meets them.
-pub const THE_RECORDS_WORDS: [Word; 5] = [
+pub const THE_RECORDS_WORDS: [Word; 15] = [
     WHAT_ALO_DID,
     WHAT_IS_IN_IT,
     ALREADY_SENT,
     REFUSED,
     KEPT_ON_THIS_COMPUTER,
+    PUT_BACK_ASKS_FIRST,
+    PUT_ONE_BACK,
+    PUT_THESE_BACK,
+    KEPT_BESIDE_IT,
+    WRITTEN_DOWN_TOO,
+    PUT_BACK,
+    CANCEL,
+    PUTTING_BACK,
+    OLDER_THAN_PUT_BACK,
+    NO_LONGER_KEPT,
 ];
+
+/// The button at the end of a change that can be put back (`560:242`).
+pub const PUT_BACK_ASKS_FIRST: Word = Word::saying("the-record.put-back-asks", "Put back…").noting(
+    "A button at the end of one change in the record window. It asks first: pressing it \
+         opens a short confirmation, and nothing changes until the person confirms. The three \
+         dots say that it asks.",
+);
+
+/// The confirmation's question, for one folder (`560:764`).
+pub const PUT_ONE_BACK: Word = Word::saying(
+    "the-record.put-one-back",
+    "Put {folder} back as it was on {date} at {time}?",
+)
+.noting(
+    "The question on the confirmation in the record window. {folder} is a folder's name on this \
+     computer and is never translated. {date} and {time} are already written the way the person's \
+     region writes them: the moment this computer kept the folder, before the change.",
+);
+
+/// The confirmation's question, for several folders.
+pub const PUT_THESE_BACK: Word = Word::saying(
+    "the-record.put-these-back",
+    "Put these folders back as they were on {date} at {time}?",
+)
+.noting(
+    "The question on the confirmation in the record window when the change touched several \
+     folders, which go back together or not at all; each is named on its own line below. {date} \
+     and {time} are already written the way the person's region writes them.",
+);
+
+/// Where what is in a folder now will be.
+pub const KEPT_BESIDE_IT: Word = Word::saying(
+    "the-record.kept-beside-it",
+    "What is in {folder} now is kept beside it, as {aside}.",
+)
+.noting(
+    "One line per folder on the confirmation: nothing is deleted by putting back, and this says \
+     where what is there now can be found afterwards. {folder} and {aside} are names on this \
+     computer and are never translated.",
+);
+
+/// That putting back is recorded.
+pub const WRITTEN_DOWN_TOO: Word = Word::saying(
+    "the-record.written-down-too",
+    "Putting back is written in this list too.",
+)
+.noting("The last line of the confirmation in the record window, the list being that window.");
+
+/// The confirmation's way on.
+pub const PUT_BACK: Word = Word::saying("the-record.put-back", "Put back").noting(
+    "A button on the confirmation in the record window. It returns the folders to how they \
+     were. Keep it short, like a button.",
+);
+
+/// The confirmation's way back.
+pub const CANCEL: Word = Word::saying("the-record.cancel", "Cancel")
+    .noting("A button beside \"Put back\" on the confirmation. Nothing is changed.");
+
+/// While the service puts the folders back.
+pub const PUTTING_BACK: Word = Word::saying("the-record.putting-back", "Putting back…")
+    .noting("Shown on the confirmation while the folders are being put back.");
+
+/// A change written down before Put back existed.
+pub const OLDER_THAN_PUT_BACK: Word = Word::saying(
+    "the-record.older-than-put-back",
+    "This entry is older than Put back, so it cannot be put back from here.",
+)
+.noting(
+    "Under a change in the record window that was written down before this computer started \
+     noting, beside each change, what it kept to put it back. \"Put back\" is the button's name.",
+);
+
+/// What was kept has been let go of.
+pub const NO_LONGER_KEPT: Word = Word::saying(
+    "the-record.no-longer-kept",
+    "What was kept before this is no longer on this computer, so it cannot be put back.",
+)
+.noting(
+    "Under a change in the record window whose kept copy this computer has let go of — it keeps \
+     them only for as long as the person chose, or until the disk needs the room.",
+);
 
 /// Every count this file declares, in the order they are drawn.
 pub const THE_RECORDS_COUNTS: [Counted; 3] =
@@ -137,6 +228,20 @@ pub(crate) struct TheRecordsSentences {
     /// *Today*, beside today's counts — `alo-formats`' word, the one the day
     /// headings use.
     pub(crate) today: String,
+    /// *Put back…*, at the end of a change that can be put back.
+    pub(crate) put_back_asks: String,
+    /// *Put back*, on the confirmation.
+    pub(crate) put_back: String,
+    /// *Cancel*, on the confirmation.
+    pub(crate) cancel: String,
+    /// *Putting back…*, while it is done.
+    pub(crate) putting_back: String,
+    /// The last line of the confirmation.
+    pub(crate) written_down_too: String,
+    /// Under a change written down before Put back existed.
+    pub(crate) older: String,
+    /// Under a change whose kept copy is gone.
+    pub(crate) no_longer_kept: String,
 }
 
 impl TheRecordsSentences {
@@ -154,8 +259,48 @@ impl TheRecordsSentences {
             refused: said(REFUSED),
             already_sent: said(ALREADY_SENT),
             today: said(alo_formats::words::TODAY),
+            put_back_asks: said(PUT_BACK_ASKS_FIRST),
+            put_back: said(PUT_BACK),
+            cancel: said(CANCEL),
+            putting_back: said(PUTTING_BACK),
+            written_down_too: said(WRITTEN_DOWN_TOO),
+            older: said(OLDER_THAN_PUT_BACK),
+            no_longer_kept: said(NO_LONGER_KEPT),
         }
     }
+}
+
+/// The confirmation's question and its line per folder, in `strings`'
+/// language: `folders` as (name, set-aside name), the moment as the person
+/// writes a date and a time.
+pub(crate) fn the_question(
+    strings: &alo_strings::Strings,
+    folders: &[(String, String)],
+    (date, time): (&str, &str),
+) -> (String, Vec<String>) {
+    let when = |filling: alo_strings::Filling| filling.and("date", date).and("time", time);
+    let question = match folders {
+        [(only, _)] => strings.say(
+            &PUT_ONE_BACK.key(),
+            &when(alo_strings::Filling::of("folder", only.clone())),
+        ),
+        _ => strings.say(
+            &PUT_THESE_BACK.key(),
+            &when(alo_strings::Filling::nothing()),
+        ),
+    };
+    let beside = folders
+        .iter()
+        .map(|(folder, aside)| {
+            strings
+                .say(
+                    &KEPT_BESIDE_IT.key(),
+                    &alo_strings::Filling::of("folder", folder.clone()).and("aside", aside.clone()),
+                )
+                .into_text()
+        })
+        .collect();
+    (question.into_text(), beside)
 }
 
 /// One of today's counts, `how_many`, in `strings`' language.

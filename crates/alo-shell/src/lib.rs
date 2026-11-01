@@ -107,6 +107,7 @@ mod a_press_on_the_record;
 mod a_press_on_the_sign_in_screen;
 mod a_provider_being_added_is_drawn;
 pub mod a_provider_is_added_in_settings;
+mod a_put_back_from_the_record;
 mod a_sheet_that_fits;
 mod a_task_window_hands_on_a_chord;
 /// Scrolling a task window's conversation.
@@ -341,6 +342,7 @@ mod popup_placement;
 mod popups;
 mod presentation;
 mod putting_a_window_aside;
+mod putting_back_from_the_record;
 mod readback;
 mod record_clock;
 mod record_entry_drawn;
@@ -352,6 +354,7 @@ mod record_lines;
 mod record_measures;
 mod record_paint;
 mod record_palette;
+mod record_put_back_drawn;
 mod record_raster;
 mod record_room;
 mod record_seat;
@@ -832,6 +835,9 @@ pub use offscreen::{PreparedScanout, render_control_scanout, render_scanout};
 pub use output_metadata::OutputMetadata;
 pub use popups::Popup;
 pub use presentation::{FrameTarget, RenderError};
+pub use putting_back_from_the_record::{
+    OnTheConfirmation, PutBackHere, ThePlan, ThePutBack, TheSheet,
+};
 pub use readback::{ReadbackError, RowOrder, ScanoutPixels, readback_xrgb};
 pub use record_clock::RecordClock;
 pub use record_keys::RecordKey;
