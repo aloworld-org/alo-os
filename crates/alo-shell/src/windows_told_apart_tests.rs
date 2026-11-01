@@ -9,8 +9,9 @@
 //! design's own figures; it is not a screenshot of a booted machine.
 //!
 //! With `ALO_ROUND_2_PICTURES` set to a folder, each frame is also written
-//! there as a PPM, which is how the rendered-against-design pictures for the
-//! owner are made.
+//! there as a PNG, which is how the rendered-against-design pictures for the
+//! owner are made — a check somebody runs by hand; what runs on every build is
+//! the assertions.
 #![expect(
     clippy::expect_used,
     reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
@@ -226,13 +227,19 @@ fn written(frame: &[[f32; 3]], size: (i32, i32), name: &str) {
     let Some(folder) = std::env::var_os("ALO_ROUND_2_PICTURES") else {
         return;
     };
-    let mut bytes = format!("P6\n{} {}\n255\n", size.0, size.1).into_bytes();
-    for y in 0..size.1 {
-        for x in 0..size.0 {
-            bytes.extend_from_slice(&at(frame, size, x, y));
-        }
+    let (Ok(wide), Ok(tall)) = (u32::try_from(size.0), u32::try_from(size.1)) else {
+        return;
+    };
+    let mut image = image::RgbImage::new(wide, tall);
+    for (x, y, pixel) in image.enumerate_pixels_mut() {
+        let (Ok(x), Ok(y)) = (i32::try_from(x), i32::try_from(y)) else {
+            continue;
+        };
+        *pixel = image::Rgb(at(frame, size, x, y));
     }
-    std::fs::write(std::path::Path::new(&folder).join(name), bytes).expect("written");
+    image
+        .save(std::path::Path::new(&folder).join(name))
+        .expect("written");
 }
 
 /// **At both sizes the focused window's strip is white and the others' cream,
@@ -285,9 +292,9 @@ fn the_three_windows_are_told_apart_at_both_sizes() {
             &frame,
             size,
             if at_1440 {
-                "windows-told-apart-1440x960.ppm"
+                "windows-told-apart-1440x960-rendered.png"
             } else {
-                "windows-told-apart-1280x800.ppm"
+                "windows-told-apart-1280x800-rendered.png"
             },
         );
     }
