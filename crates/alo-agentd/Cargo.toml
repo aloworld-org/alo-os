@@ -65,6 +65,10 @@ alo-turn = { path = "../alo-turn" }
 # nothing on a machine does yet. `the_bracket_this_turn_takes` answers what the
 # daemon knows instead, and the mapping waits for whoever can compare.
 alo-kept-undo = { path = "../alo-kept-undo" }
+# Putting folders back, at the person's request (`putting_back`): the places
+# this person can return to, and the act `alo-back` does, together or not at
+# all. Unprivileged — this service runs as the person.
+alo-as-it-was = { path = "../alo-as-it-was" }
 # The three acts and the one-word answers the compositor's door speaks
 # (ADR 0108). `crate::at_the_compositors_door` is the one implementation that
 # reaches a real socket; the trait is `alo-turn`'s.

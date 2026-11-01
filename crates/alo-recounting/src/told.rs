@@ -125,6 +125,11 @@ pub enum Outcome {
     PutBack,
     /// The person asked for something to be put back and it did not happen.
     NotPutBack,
+    /// The person put folders back as they were, from a place this machine
+    /// kept — from the record window or in their own terminal.
+    FoldersPutBack,
+    /// The person asked for folders to be put back, and none of them were.
+    FoldersNotPutBack,
     /// The machine let go of what it kept for these turns, because how far back
     /// an undo reaches no longer reached them (ADR 0045, the first term).
     LetGoOutsideTheWindow,
@@ -178,6 +183,10 @@ impl Outcome {
             Happened::Undone {
                 failed: Some(_), ..
             } => Self::NotPutBack,
+            Happened::PutBack { failed: None, .. } => Self::FoldersPutBack,
+            Happened::PutBack {
+                failed: Some(_), ..
+            } => Self::FoldersNotPutBack,
             Happened::LetGo {
                 why: WhyLetGo::OutsideTheWindow,
                 ..
@@ -223,6 +232,8 @@ impl Outcome {
             Self::StoppedBySleep => words::STOPPED_BY_SLEEP,
             Self::PutBack => words::PUT_BACK,
             Self::NotPutBack => words::NOT_PUT_BACK,
+            Self::FoldersPutBack => words::FOLDERS_PUT_BACK,
+            Self::FoldersNotPutBack => words::FOLDERS_NOT_PUT_BACK,
             Self::LetGoOutsideTheWindow => words::LET_GO_OUTSIDE_THE_WINDOW,
             Self::LetGoTheDiskNeededTheRoom => words::LET_GO_THE_DISK_NEEDED_THE_ROOM,
             Self::LetGoThePersonAskedToForget => words::LET_GO_THE_PERSON_ASKED_TO_FORGET,
@@ -313,6 +324,12 @@ pub struct Told {
     /// The moment of the entry an undo put back — absent for everything that
     /// is not an undo.
     undid: Option<SystemTime>,
+    /// Whether what ran changed something rather than only reading it.
+    changed: bool,
+    /// The place this machine kept before it, by name — absent when none was.
+    kept_as: Option<Line>,
+    /// For a putting back: the moment its place was kept, and its folders.
+    put_back: Option<(SystemTime, Vec<Line>)>,
 }
 
 impl Told {
@@ -330,12 +347,23 @@ impl Told {
         let what = entry
             .what()
             .or_else(|| happened.undid().map(|(_, what)| what));
+        // **A putting back reads what its place was kept for under its
+        // clause**, copied into the entry when it was written.
+        let (kept_for, put_back) = match happened {
+            Happened::PutBack {
+                taken,
+                did,
+                folders,
+                ..
+            } => (Some(did.clone()), Some((*taken, folders.clone()))),
+            _ => (None, None),
+        };
         Self {
             at: entry.at(),
             agent: entry.agent().cloned(),
             outcome: Outcome::of(happened),
             verb: what.map(|what| what.verb().clone()),
-            sentence: what.map(|what| what.sentence().clone()),
+            sentence: what.map(|what| what.sentence().clone()).or(kept_for),
             because: happened.why_stopped().cloned(),
             asked_for: match happened {
                 Happened::TurnedAway { verb, .. } => Some(verb.clone()),
@@ -346,7 +374,37 @@ impl Told {
             against: happened.against().to_vec(),
             approved: Approved::of(happened),
             undid: happened.undid().map(|(at, _)| at),
+            changed: happened.ran()
+                && entry
+                    .what()
+                    .is_some_and(|what| what.effect() == alo_capability::Effect::Change),
+            kept_as: entry.kept_before_it().cloned(),
+            put_back,
         }
+    }
+
+    /// Whether this ran a change, rather than a read — what a person could
+    /// want put back.
+    #[must_use]
+    pub fn changed(&self) -> bool {
+        self.changed
+    }
+
+    /// The name of the place this machine kept before it, when one was — what
+    /// putting it back is asked from. [`None`] for every entry written before
+    /// 2026-11-01 and for every change a turn kept no place for.
+    #[must_use]
+    pub fn kept_as(&self) -> Option<&Line> {
+        self.kept_as.as_ref()
+    }
+
+    /// For a putting back: when its place was kept, and the folders, in the
+    /// order they were named. [`None`] for everything else.
+    #[must_use]
+    pub fn put_back(&self) -> Option<(SystemTime, &[Line])> {
+        self.put_back
+            .as_ref()
+            .map(|(taken, folders)| (*taken, folders.as_slice()))
     }
 
     /// That the person at this machine was shown what ran and said yes to it.

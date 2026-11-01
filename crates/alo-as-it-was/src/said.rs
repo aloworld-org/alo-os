@@ -47,6 +47,10 @@ impl NotGoingBack {
                 words::NOWHERE_TO_SET_ASIDE,
                 Filling::of("at", at.display().to_string()),
             ),
+            Self::OneInsideAnother { inner } => (
+                words::ONE_INSIDE_ANOTHER,
+                Filling::of("folder", inner.display().to_string()),
+            ),
             Self::NotCopied { why } => (words::NOT_COPIED, Filling::of("why", why.clone())),
             Self::NotSwapped { why } => (words::NOT_SWAPPED, Filling::of("why", why.clone())),
             Self::SetAsideUnderTheWorkingName { folder, at, why } => (

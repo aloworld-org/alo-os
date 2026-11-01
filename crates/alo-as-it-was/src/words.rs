@@ -233,8 +233,33 @@ pub const SET_ASIDE_UNDER_THE_WORKING_NAME: Word = Word::saying(
      sentence in English from this machine's kernel.",
 );
 
+/// Two folders to go back together are one inside the other.
+pub const ONE_INSIDE_ANOTHER: Word = Word::saying(
+    "as-it-was.one-inside-another",
+    "{folder} is inside another folder being put back with it, so none of them has been changed",
+)
+.noting(
+    "Folders asked to go back together go back together or not at all, and one inside another \
+     cannot: putting the outer one back carries the inner one with it. Nothing was changed. \
+     {folder} is a path on this machine and is never translated.",
+);
+
+/// Putting back is always written down, and the service that writes it could
+/// not be reached.
+pub const NOT_WITHOUT_THE_RECORD: Word = Word::saying(
+    "as-it-was.not-without-the-record",
+    "the service that keeps this machine's record could not be reached, so nothing has been put \
+     back: putting back is always written down. {why}",
+)
+.noting(
+    "Said in the person's own terminal. Putting a folder back is written into the list of what \
+     happened on this machine, by the one service that writes that list, and when it cannot be \
+     reached nothing is changed rather than changed without a record. {why} is a technical \
+     sentence in English from this machine.",
+);
+
 /// Everything this crate can say.
-pub const EVERY_WORD: [Word; 19] = [
+pub const EVERY_WORD: [Word; 21] = [
     NOTHING_IS_KEPT,
     WHAT_YOU_CAN_RETURN_TO,
     HOW_TO_ASK,
@@ -254,6 +279,8 @@ pub const EVERY_WORD: [Word; 19] = [
     NOT_COPIED,
     NOT_SWAPPED,
     SET_ASIDE_UNDER_THE_WORKING_NAME,
+    ONE_INSIDE_ANOTHER,
+    NOT_WITHOUT_THE_RECORD,
 ];
 
 /// Why this crate's own words could not be declared.

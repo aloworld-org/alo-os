@@ -115,6 +115,23 @@ pub(crate) enum Asked {
     /// by `alo_agentd::TheTurnsBracket` at an approval, which is a different
     /// moment for a different reason.
     APlaceToReturnTo,
+    /// The person asks for folders to be put back as they were, from a place
+    /// this service kept — from the record window, or from `alo-back` in their
+    /// terminal.
+    ///
+    /// Added 2026-11-01, additively. **A person's and never an agent's**:
+    /// there is no verb that puts back and there is not going to be one (ADR
+    /// 0045's second term), and an agent that could send this could choose
+    /// which of a person's changes to reverse. `place` is the place's name as
+    /// the record's `kept_as` or `alo-back`'s list gives it — opaque, and
+    /// found among this person's places or refused. `folders` are absolute
+    /// paths in their home, and go back together or not at all.
+    PutBack {
+        /// The place, by its name.
+        place: String,
+        /// Every folder to put back.
+        folders: Vec<String>,
+    },
     /// The desktop asks to be told what this service's indicator shows, now
     /// and every time it changes (ADR 0134).
     ///

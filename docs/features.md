@@ -637,6 +637,21 @@ file carries it with a tier.*
   because *it forgets everything that was not an agent*, further down this file,
   is not spent on this: nothing is watched, outcomes are kept because you asked
   for them*
+- **Put back, from the list of what alo did.** A change alo made is put back
+  from the record window with **one button and one confirmation**, which does
+  exactly what `alo-back` does in the terminal. *The owner's answer of
+  2026-11-01: "Put back is a button in the record window, confirmed on a sheet
+  (`560:664`). It does exactly what `alo-back` does."* Three readings were
+  settled the same day by the coordinator as engineering that makes that
+  promise true, and are written here so they can be disagreed with: **a change
+  names the place kept before it** — the record's `kept_as`, a link rather than
+  a guess, and an entry older than it offers no button and says so; **every
+  folder the change touched goes back, together or not at all** — a move puts
+  back both, the sheet names each, and if one cannot go back none does; and
+  **putting back is written in the list too**, by the service that writes it,
+  from the window and from `alo-back` alike, so both roads leave the same
+  entry. The record and the service are built (2026-11-01); the button and its
+  sheet are the next change
 - ★ **Scrollback you can move along, not only read.** In a session you asked to
   be able to undo, every command is a place you can return to: scroll up, choose
   one, and your files are as they were before it ran. *In every other terminal scrollback is a

@@ -196,6 +196,37 @@ impl<'a, 'm, 't> Holding<'a, 'm, 't> {
         }
     }
 
+    /// Write down that the person put folders back, or asked to — through
+    /// whatever holds the machine, as the other entries of the person's own
+    /// are.
+    ///
+    /// # Errors
+    ///
+    /// [`NotKept`] when the record could not be written; the service stops.
+    pub fn folders_were_put_back(
+        &mut self,
+        kept: (SystemTime, &str),
+        folders: &[String],
+        failed: Option<&str>,
+        now: SystemTime,
+    ) -> Result<(), NotKept> {
+        match self {
+            Self::ATurn { turning, .. } => {
+                turning.folders_were_put_back(kept, folders, failed, now)
+            }
+            Self::Nobody(machine) => machine.folders_were_put_back(kept, folders, failed, now),
+            Self::TheNetwork { doorway, .. } => {
+                if let Some(arriving) = doorway.turn() {
+                    arriving.folders_were_put_back(kept, folders, failed, now)
+                } else if let Some(machine) = doorway.machine() {
+                    machine.folders_were_put_back(kept, folders, failed, now)
+                } else {
+                    Err(the_machine_was_lost())
+                }
+            }
+        }
+    }
+
     /// Write down that a pairing with another machine was kept.
     ///
     /// The person's own door confirms a pairing whether or not a turn — local

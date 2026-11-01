@@ -138,6 +138,10 @@ impl FromAnAgent {
             // could send it would have a road to a provider that nothing shows.
             | Asked::TheirOwnQuestion { .. }
             | Asked::APlaceToReturnTo
+            // **There is no verb that puts back**, and an agent that could ask
+            // for this could choose which of a person's changes to reverse —
+            // ADR 0045's second term names exactly that as forbidden.
+            | Asked::PutBack { .. }
             // What leaves is shown to the person, and watching it is theirs.
             | Asked::WatchWhatLeaves {} => Err(NotUnderstood::NotForAnAgent),
         }
