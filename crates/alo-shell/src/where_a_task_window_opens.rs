@@ -27,13 +27,13 @@
 //! physical pixels and a surface on the plane would need the camera applied to
 //! its texture.
 //!
-//! **Whether a task window ought to live on the canvas instead is a real
-//! question and it is not answered here.** The design draws it with an external
-//! window edge, which every canvas window has; it also draws the two desktop
-//! windows that way, and those are screen-space. Naming it rather than
-//! deciding it: a task window that panned away under a person who dragged the
-//! canvas would be a different product decision from one that stayed put, and
-//! the owner has not made it.
+//! **A task window belongs on the canvas, and this file does not put it there
+//! yet.** This paragraph used to say the question was the owner's and unmade.
+//! The owner made it on 2026-11-01 ([ADR
+//! 0145](../../../docs/decisions/0145-alos-own-windows-live-on-the-canvas.md)):
+//! alo's own windows pan and zoom with the canvas like every application's. What
+//! is described above and below is the screen-space placement that stands until
+//! the task-window stage of that ADR lands.
 //!
 //! # In the display's pixels, sized through its scale
 //!
