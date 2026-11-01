@@ -410,3 +410,63 @@ fn the_keyboard_puts_the_window_in_the_panel_rather_than_hiding_it()
     );
     Ok(())
 }
+
+/// **Super+Enter puts the window in front into full screen and takes it out
+/// again**, and the client is told `Fullscreen` rather than `Maximized`.
+///
+/// The design's *enter or leave full screen*. Full screen was reachable only by
+/// an application asking for it until 2026-11-01. The toggle follows the
+/// requested mode, so two presses with no acknowledgement between them are in
+/// and out, as maximise's are.
+#[test]
+fn super_enter_fills_the_screen_and_gives_it_back() -> Result<(), Box<dyn std::error::Error>> {
+    let f = Fixture::keyboard();
+    let mut app = mapped(&f);
+    f.focus(Some(0))?;
+    f.render((33, 32), false, 1)?;
+    app.sync();
+    let chord = Shortcuts::shipped()
+        .chord_for(Action::FillTheScreen)
+        .ok_or("full screen ships with a chord")?;
+    for filling in [true, false, true, false] {
+        assert_eq!(
+            dispatch(&f, &Shortcuts::shipped(), chord)?,
+            Some(Action::FillTheScreen)
+        );
+        app.sync();
+        assert_eq!(app.events.fullscreen.last(), Some(&filling));
+        assert_ne!(
+            app.events.maximized.last(),
+            Some(&true),
+            "full screen told the client it was maximised"
+        );
+    }
+    Ok(())
+}
+
+/// **Super+Enter with no window in front refuses by name**, and with no output
+/// it refuses without telling the client anything — the refusal halves.
+#[test]
+fn super_enter_refuses_with_nothing_in_front_or_nowhere_to_fill()
+-> Result<(), Box<dyn std::error::Error>> {
+    let f = Fixture::keyboard();
+    let mut app = mapped(&f);
+    assert!(matches!(
+        command(&f, Action::FillTheScreen),
+        Err(WindowCommandError::NoFocusedWindow)
+    ));
+    f.focus(Some(0))?;
+    app.sync();
+    let told = app.events.fullscreen.len();
+    assert!(matches!(
+        command(&f, Action::FillTheScreen),
+        Err(WindowCommandError::FullScreen(_))
+    ));
+    app.sync();
+    assert_eq!(
+        app.events.fullscreen.len(),
+        told,
+        "a refused full screen reached the client"
+    );
+    Ok(())
+}

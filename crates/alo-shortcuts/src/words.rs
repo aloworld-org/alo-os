@@ -135,6 +135,17 @@ pub const MINIMISE_WINDOW: Word =
              naturally spoken on its own.",
     );
 
+/// What [`crate::Action::FillTheScreen`] does.
+pub const FILL_THE_SCREEN: Word = Word::saying(
+    "shortcuts.action.fill-the-screen",
+    "Enter or leave full screen",
+)
+.noting(
+    "One shortcut does both: the window fills the whole screen and the Dock gives way to it, \
+     and pressing it again puts the window back. Not the same as maximising, which keeps the \
+     Dock and the window's own title bar.",
+);
+
 /// What [`crate::Action::MaximiseWindow`] does.
 pub const MAXIMISE_WINDOW: Word = Word::saying(
     "shortcuts.action.maximise-window",
@@ -535,6 +546,7 @@ pub const EVERY_WORD: [Word; 60] = [
     CLOSE_WINDOW,
     MINIMISE_WINDOW,
     MAXIMISE_WINDOW,
+    FILL_THE_SCREEN,
     SNAP_LEFT,
     SNAP_RIGHT,
     NEXT_WINDOW,

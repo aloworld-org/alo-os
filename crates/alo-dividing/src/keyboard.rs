@@ -57,6 +57,7 @@ pub const fn side_for(action: Action) -> Option<Side> {
         | Action::WindowOptions
         | Action::MinimiseWindow
         | Action::MaximiseWindow
+        | Action::FillTheScreen
         | Action::NextWindow
         | Action::PreviousWindow
         | Action::NextApplication

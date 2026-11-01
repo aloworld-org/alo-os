@@ -87,6 +87,8 @@ const SHIPPED: [(Action, Chord); 25] = [
     (Action::CloseWindow, Chord::shipped(ALT, Key::F4)),
     (Action::MinimiseWindow, Chord::shipped(SUPER, Key::Down)),
     (Action::MaximiseWindow, Chord::shipped(SUPER, Key::Up)),
+    // **`⊞`+Enter, the design's *enter or leave full screen*.**
+    (Action::FillTheScreen, Chord::shipped(SUPER, Key::Enter)),
     (Action::SnapLeft, Chord::shipped(SUPER, Key::Left)),
     (Action::SnapRight, Chord::shipped(SUPER, Key::Right)),
     (Action::NextWindow, Chord::shipped(ALT, Key::Tab)),
