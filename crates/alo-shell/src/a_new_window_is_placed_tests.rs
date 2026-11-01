@@ -144,7 +144,10 @@ fn alos_own_windows_are_moved_onto_the_plane() {
         0.5,
     );
     let on_the_plane = on_the_plane.expect("the terminal is a window");
-    assert_eq!((on_the_plane.loc.x, on_the_plane.loc.y), (300 + 96, 200 + 232));
+    assert_eq!(
+        (on_the_plane.loc.x, on_the_plane.loc.y),
+        (300 + 96, 200 + 232)
+    );
     assert_eq!((on_the_plane.size.w, on_the_plane.size.h), (1120, 952));
     assert_eq!(tasks.len(), 1, "an empty rectangle is not a window");
     assert_eq!((tasks[0].loc.x, tasks[0].loc.y), (300 + 1248, 200 + 232));
