@@ -38,6 +38,7 @@
 //! Super+Tab away — background applications must not steal focus.
 
 use smithay::reexports::wayland_server::Resource as _;
+use smithay::utils::IsAlive as _;
 use smithay::reexports::wayland_server::protocol::wl_surface::WlSurface;
 
 /// How many new windows the shell remembers between two looks.

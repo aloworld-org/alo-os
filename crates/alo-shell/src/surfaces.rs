@@ -432,7 +432,7 @@ impl Surfaces {
     pub(crate) fn prune(&mut self) {
         self.windows.retain(|window| window.surface.alive());
         self.just_mapped
-            .retain(smithay::reexports::wayland_server::Resource::alive);
+            .retain(smithay::utils::IsAlive::alive);
         self.prune_window_move();
         self.prune_window_resize();
         self.prune_window_modes();
