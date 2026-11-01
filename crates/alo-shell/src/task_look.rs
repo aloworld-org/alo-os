@@ -107,6 +107,10 @@ pub(crate) struct TaskPalette {
     pub(crate) the_one_button: [u8; 3],
     /// The arrow or square on that button.
     pub(crate) on_the_one_button: [u8; 3],
+    /// The approval card's row of choices — `bg/canvas`, the ground behind
+    /// windows, which is `DesktopPalette::ground` (see the note above about
+    /// that name).
+    pub(crate) canvas: [u8; 3],
 }
 
 /// A role's colour as three bytes.
@@ -142,6 +146,7 @@ impl TaskPalette {
             alo: rgb_of(Role::AccentDefault),
             the_one_button: desktop.ink,
             on_the_one_button: desktop.dock,
+            canvas: desktop.ground,
         })
     }
 }

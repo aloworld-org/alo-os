@@ -301,6 +301,60 @@ a press and the keyboard all read.
 it is secondary — both are 48 high, both carry a border, and neither is hidden
 behind a disclosure.
 
+**Superseded for the approval card by the frame below**, which the owner
+approved on 2026-10-31. The closing question (ADR 0139) still borrows this
+card and its 104-wide Deny.
+
+## The approval card, as approved — `549:193`, 920 wide
+
+Card `549:193` in frame `549:135` *alo window · Waiting for your permission ·
+1440×960 · Light*, page `544:30910`. **Measured with the Figma connector's
+`get_design_context` on 2026-11-01, once, by hand**; what holds the build to
+it on every build is `crates/alo-shell/src/the_approval_card_tests.rs` (the
+figures) and `task_raster_tests.rs` (what is drawn), and neither asks Figma.
+
+The card: `bg/surface`, a 1 `border/default` hairline, corner 18, shadow
+*Elevation/Quiet* (0, 8, blur 24, `#07131F` at 8%), a column, clipped.
+
+| Part | Node | Figures | Style | In the frame |
+|---|---|---|---|---|
+| Who is asking | `549:194` | row, gap 8, pt 16, px 20; mark 12 | Label/Small, `accent/default` | *alo is asking to* |
+| What will change | `549:198` | column, gap 12, pt 6, pb 16, px 20 | | |
+| · the action | `549:199` | full width | Heading/Medium, `text/primary` | *Save a new file in Presentations* |
+| · the file | `549:200` | `bg/cool`, corner 12, p 12, gap 12; a 40 white tile, corner 10, holding a 20 *plusFile* | name SemiBold 14/22; path System/Mono 12/18 `text/muted` | *Launch presentation.odp* · *Presentations / Launch presentation.odp* |
+| · what changes | `549:209` | row, gap 20; each a 16 *check*, 8, then words | Body/Medium, `text/primary` | *Creates one file.* · *Existing files will not be changed.* |
+| Choices | `549:220` | `bg/canvas`, a 1 `border/default` rule above, px 20, py 14, gap 8 | | |
+| · Allow once | | **144** × 48, Primary, corner 12 | Label/Medium on `text/primary` | |
+| · Deny | | **144** × 48, Quiet, corner 12 | Label/Medium | |
+| · beside them | `549:226` | after a flexible space, to 20 from the right | Body/Medium, `text/muted` | *Allows this one action. alo asks again next time.* |
+
+**Allow once and Deny are now the same width**, 144 each: the approved frame
+draws *equally reachable* as equally sized, which replaces the earlier card's
+104-wide Deny.
+
+### What is built, and what is not
+
+Built in `crates/alo-shell/src/the_approval_card.rs` and `task_raster.rs`:
+the card's white and hairline at corner 18, *alo is asking to* with alo's mark
+(`crates/alo-shell/icons/the-approval-card/alo-mark.svg`, the design's own
+export), the action in Heading/Medium — the very sentence the person approves —
+and the row of choices in `bg/canvas` under its rule, with both answers 144 and
+the line beside them. With a one-line action the card is **161** tall
+(16 + 16 + 6 + 30 + 16, then 1 + 14 + 48 + 14).
+
+**Not built, because nothing on the machine knows them**: the file row
+(`549:200`) and the lines saying what will and will not change (`549:209`). A
+change reaches the shell as one sentence (`alo_protocol::Standing`), which
+carries neither the file it names nor what it leaves alone, and no verb
+declares what it leaves alone (`docs/contracts/agent-verbs.md`, *The shape of a
+verb*). Both are additions to a public contract, and the second is a sentence
+per verb that promises a person something, so they wait for the owner's
+decision. The card leaves no empty room for them.
+
+**One departure, written down here**: the card has no shadow of its own. The
+panel rasteriser draws one shadow, the window's, and a second under one card is
+a change to that rasteriser rather than to this card.
+
 ### The action component both popovers and the card are built from
 
 `AskAloAction`, two styles, 48 high, radius `radius/md`, border

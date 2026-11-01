@@ -48,6 +48,7 @@ use crate::dock_surface::{APanelsShapes, AWell, a_panel};
 use crate::painted::Washed;
 use crate::task_look::TaskPalette;
 use crate::task_text::AStyle;
+use crate::the_approval_card::{self as card, TheCard};
 
 /// One task window on a display: where it is, and how much it holds.
 ///
@@ -168,6 +169,24 @@ const THE_STATUS_IS_WIDE: u32 = 260;
 /// How much taller a card is for its two answers: the gap above the row, and
 /// the row.
 const THE_ANSWERS_TAKE: u32 = m::GAP + m::A_CONTROL_IS;
+
+/// Where a card's two answers were placed, measured while the font system was
+/// free, for their labels to be centred on them once the panel is made.
+#[derive(Debug, Clone, Copy)]
+struct TheAnswersPlace {
+    /// Allow once's left edge, in the window.
+    left: u32,
+    /// The row's top, in the window.
+    row: u32,
+    /// Allow once's label, measured.
+    allow_is: u32,
+    /// Deny's label, measured.
+    deny_is: u32,
+    /// Deny's button.
+    deny_is_wide: u32,
+    /// The ground Deny's label is written on.
+    deny_ground: [u8; 3],
+}
 
 /// Rasterise the furniture of a task window of this size, at this corner, on a
 /// display drawn at `scale`.
@@ -304,9 +323,40 @@ pub(crate) fn furniture(
     // `alo_tasks::TheBlocks` owns the stacking, the sides and the widths, and
     // takes the heights it is told. This measures them.
     let row_is_wide = rows.conversation.wide;
-    let heights: Vec<(alo_tasks::WhoseBlock, u32)> = said
+    // **An approval card's action, measured in the heading size it is drawn
+    // in** (`crate::the_approval_card`), for the cards there are; [`None`] for
+    // every other block.
+    let the_cards: Vec<Option<TheCard>> = said
         .iter()
         .map(|one| {
+            one.answers.and_then(|answers| answers.asking)?;
+            let inside = row_is_wide.saturating_sub(m::INSIDE_THE_CONVERSATION * 2);
+            let wide = one.whose.how_wide().min(inside);
+            let tall = crate::task_text::how_tall(
+                fonts,
+                crate::task_text::ToWrite {
+                    words: one.words,
+                    marks: one.marks,
+                    style: AStyle::Heading,
+                    ground: palette.surface,
+                    ink: palette.ink,
+                },
+                px(TheCard::the_actions_room(wide)),
+                measure,
+            );
+            Some(TheCard {
+                wide,
+                the_action_is_tall: logical(i32::try_from(tall).unwrap_or(i32::MAX)),
+            })
+        })
+        .collect();
+    let heights: Vec<(alo_tasks::WhoseBlock, u32)> = said
+        .iter()
+        .zip(&the_cards)
+        .map(|(one, card)| {
+            if let Some(card) = card {
+                return (one.whose, card.tall());
+            }
             let inside = row_is_wide.saturating_sub(m::INSIDE_THE_CONVERSATION * 2);
             let wide = one.whose.how_wide().min(inside);
             // A bubble's padding comes off the width its words get, so a
@@ -382,20 +432,36 @@ pub(crate) fn furniture(
     let mut the_answers: Vec<AWell> = Vec::new();
     let mut rings = vec![field];
     let mut outlines: Vec<Rectangle<i32, Physical>> = Vec::new();
-    let mut where_the_answers_are: Option<(u32, u32, u32, u32)> = None;
-    for (one, block) in said.iter().zip(blocks.each()) {
+    let mut where_the_answers_are: Option<TheAnswersPlace> = None;
+    for ((one, block), the_card) in said.iter().zip(blocks.each()).zip(&the_cards) {
         let Some(answers) = one.answers else {
             continue;
+        };
+        // **On the approved card the answers have a row of their own**, 20 in
+        // from the card's side and both 144 wide; on the closing question
+        // they sit at the foot of its card as they always have.
+        let (in_the_content, inset, deny_is_wide, deny_ground) = match the_card {
+            Some(the_card) => (
+                block.from_the_top + the_card.the_answers(),
+                card::BESIDE,
+                card::AN_ANSWER_IS_WIDE,
+                palette.surface,
+            ),
+            None => (
+                (block.from_the_top + block.tall)
+                    .saturating_sub(m::INSIDE_A_BLOCK + m::A_CONTROL_IS),
+                m::INSIDE_A_BLOCK,
+                m::DENY_IS_WIDE,
+                palette.cool,
+            ),
         };
         // **The row of answers is drawn whole or not at all.** Half a button
         // is a target a person can see and cannot be sure of pressing; the
         // keyboard still reaches both while the row is scrolled out of view.
-        let in_the_content =
-            (block.from_the_top + block.tall).saturating_sub(m::INSIDE_A_BLOCK + m::A_CONTROL_IS);
         if in_the_content < scrolled || in_the_content + m::A_CONTROL_IS > scrolled + view {
             continue;
         }
-        let left = m::INSIDE_THE_CONVERSATION + block.from_the_left + m::INSIDE_A_BLOCK;
+        let left = m::INSIDE_THE_CONVERSATION + block.from_the_left + inset;
         let down = top_of_the_column + in_the_content - scrolled;
         // **Each label measured here, to be centred on its button later.** The
         // font system is free now; once the writer below takes it, it is not.
@@ -420,8 +486,15 @@ pub(crate) fn furniture(
             palette.surface,
             m::ALLOW_ONCE_IS_WIDE,
         );
-        let deny_is = width_of(answers.deny, palette.cool, palette.ink, m::DENY_IS_WIDE);
-        where_the_answers_are = Some((left, down, allow_is, deny_is));
+        let deny_is = width_of(answers.deny, deny_ground, palette.ink, deny_is_wide);
+        where_the_answers_are = Some(TheAnswersPlace {
+            left,
+            row: down,
+            allow_is,
+            deny_is,
+            deny_is_wide,
+            deny_ground,
+        });
         let (ax, ay) = inside(left, down);
         let allow = Rectangle::new(
             (ax, ay).into(),
@@ -430,7 +503,7 @@ pub(crate) fn furniture(
         let (dx, dy) = inside(left + m::ALLOW_ONCE_IS_WIDE + m::GAP, down);
         let deny = Rectangle::new(
             (dx, dy).into(),
-            (px(m::DENY_IS_WIDE), px(m::A_CONTROL_IS)).into(),
+            (px(deny_is_wide), px(m::A_CONTROL_IS)).into(),
         );
         the_answers.push(AWell {
             at: allow,
@@ -450,8 +523,78 @@ pub(crate) fn furniture(
         }
     }
 
-    for block in blocks.each() {
-        if !block.whose.is_in_a_bubble() || !block.is_in_view(scrolled, view) {
+    // **The approved card's own grounds**, cut to the view as a bubble is: its
+    // hairline, its white, its `bg/canvas` row of choices squared off where it
+    // meets the white, and the hairline over that row. Drawn in that order,
+    // each over the last (`crate::dock_surface::AGround`).
+    let mut grounds: Vec<crate::dock_surface::AGround> = Vec::new();
+    for (block, the_card) in blocks.each().iter().zip(&the_cards) {
+        let Some(the_card) = the_card else {
+            continue;
+        };
+        if !block.is_in_view(scrolled, view) {
+            continue;
+        }
+        let x = m::INSIDE_THE_CONVERSATION + block.from_the_left;
+        let top = top_of_the_column + block.from_the_top;
+        // One rounded ground, from `from` down `tall` in the card and `inset`
+        // in from its sides, cut to the view — or nothing where none of it is
+        // in the view.
+        let mut ground = |from: u32, tall: u32, inset: u32, corner: u32, colour: [u8; 3]| {
+            let starts = (top + from).saturating_sub(scrolled).max(the_view.0);
+            let ends = (top + from + tall).saturating_sub(scrolled).min(the_view.1);
+            if ends <= starts {
+                return;
+            }
+            let (gx, gy) = inside(x + inset, starts);
+            grounds.push(crate::dock_surface::AGround {
+                well: AWell {
+                    at: Rectangle::new(
+                        (gx, gy).into(),
+                        (
+                            px(the_card.wide.saturating_sub(inset * 2)),
+                            px(ends - starts),
+                        )
+                            .into(),
+                    ),
+                    corner,
+                },
+                colour,
+            });
+        };
+        let hair = card::A_HAIRLINE;
+        let the_white_corner = card::THE_CARDS_CORNER - hair;
+        let the_row = the_card.the_choices() + hair;
+        let the_rows_height = the_card.tall().saturating_sub(the_row + hair);
+        ground(0, the_card.tall(), 0, card::THE_CARDS_CORNER, palette.edge);
+        ground(
+            hair,
+            the_card.tall().saturating_sub(hair * 2),
+            hair,
+            the_white_corner,
+            palette.surface,
+        );
+        ground(
+            the_row,
+            the_rows_height,
+            hair,
+            the_white_corner,
+            palette.canvas,
+        );
+        // Square where the row meets the white: only its foot is rounded.
+        ground(
+            the_row,
+            the_white_corner.min(the_rows_height),
+            hair,
+            0,
+            palette.canvas,
+        );
+        ground(the_card.the_choices(), hair, hair, 0, palette.edge);
+    }
+
+    for (block, the_card) in blocks.each().iter().zip(&the_cards) {
+        if !block.whose.is_in_a_bubble() || !block.is_in_view(scrolled, view) || the_card.is_some()
+        {
             continue;
         }
         // **Cut to the view**, top and bottom: a bubble scrolled half out of
@@ -492,6 +635,7 @@ pub(crate) fn furniture(
                 wells: &the_answers,
                 outlines: &outlines,
                 colour: palette.ink,
+                grounds: &grounds,
             },
         },
     )
@@ -580,6 +724,32 @@ pub(crate) fn furniture(
                 palette.ink_quiet,
             );
         }
+    }
+
+    // **alo's mark on each approval card**, beside *alo is asking to* and
+    // centred on that line — drawn whole or not at all, as the answers are.
+    for (block, the_card) in blocks.each().iter().zip(&the_cards) {
+        let Some(the_card) = the_card else {
+            continue;
+        };
+        let line = block.from_the_top + the_card.who_is_asking();
+        if line < scrolled || line + card::WHO_IS_ASKING_IS_TALL > scrolled + view {
+            continue;
+        }
+        let down = top_of_the_column + line - scrolled
+            + (card::WHO_IS_ASKING_IS_TALL - card::THE_MARK_IS) / 2;
+        let (mx, my) = inside(
+            m::INSIDE_THE_CONVERSATION + block.from_the_left + card::BESIDE,
+            down,
+        );
+        crate::the_approval_cards_mark::ink_the_mark(
+            &mut panel,
+            Rectangle::new(
+                (mx, my).into(),
+                (px(card::THE_MARK_IS), px(card::THE_MARK_IS)).into(),
+            ),
+            palette.alo,
+        );
     }
 
     // **The words, inked onto the ground each sits on.** Each is placed from the
@@ -805,8 +975,89 @@ pub(crate) fn furniture(
         None,
     );
 
-    for (one, block) in said.iter().zip(blocks.each()) {
+    for ((one, block), the_card) in said.iter().zip(blocks.each()).zip(&the_cards) {
         if !block.is_in_view(scrolled, view) {
+            continue;
+        }
+        if let (Some(the_card), Some(answers)) = (the_card, one.answers) {
+            // **The approved card**: who is asking, then the action in heading
+            // size, each cut to the view like any words in the conversation.
+            let top = top_of_the_column + block.from_the_top;
+            let left = m::INSIDE_THE_CONVERSATION + block.from_the_left;
+            let room = TheCard::the_actions_room(the_card.wide);
+            let after_the_mark = card::THE_MARK_IS + card::AFTER_THE_MARK;
+            write(
+                answers.asking.unwrap_or_default(),
+                &[],
+                AStyle::SmallLabel,
+                palette.surface,
+                palette.alo,
+                left + card::BESIDE + after_the_mark,
+                (top + the_card.who_is_asking(), card::WHO_IS_ASKING_IS_TALL),
+                room.saturating_sub(after_the_mark),
+                false,
+                Some((scrolled, the_view)),
+            );
+            write(
+                one.words,
+                one.marks,
+                AStyle::Heading,
+                palette.surface,
+                palette.ink,
+                left + card::BESIDE,
+                (top + the_card.the_action(), the_card.the_action_is_tall),
+                room,
+                false,
+                Some((scrolled, the_view)),
+            );
+            if let Some(place) = where_the_answers_are {
+                let centred = |button: u32, label: u32| button.saturating_sub(label) / 2;
+                write(
+                    answers.allow_once,
+                    &[],
+                    AStyle::Label,
+                    palette.ink,
+                    palette.surface,
+                    place.left + centred(m::ALLOW_ONCE_IS_WIDE, place.allow_is),
+                    (place.row, m::A_CONTROL_IS),
+                    (place.allow_is + 2).min(m::ALLOW_ONCE_IS_WIDE),
+                    false,
+                    None,
+                );
+                let deny_starts = place.left + m::ALLOW_ONCE_IS_WIDE + m::GAP;
+                write(
+                    answers.deny,
+                    &[],
+                    AStyle::Label,
+                    place.deny_ground,
+                    palette.ink,
+                    deny_starts + centred(place.deny_is_wide, place.deny_is),
+                    (place.row, m::A_CONTROL_IS),
+                    (place.deny_is + 2).min(place.deny_is_wide),
+                    false,
+                    None,
+                );
+                // And beside them, what allowing once means.
+                // **Only where it fits on the row**: on a window too narrow
+                // for it, the answers keep the row and this is not written.
+                let (beside, its_room) = the_card.the_line_beside();
+                let once = answers
+                    .once
+                    .filter(|_| its_room >= card::THE_LEAST_ROOM_BESIDE)
+                    .unwrap_or_default();
+                write(
+                    once,
+                    &[],
+                    AStyle::SmallBody,
+                    palette.canvas,
+                    palette.ink_quiet,
+                    left + beside,
+                    (place.row, m::A_CONTROL_IS),
+                    its_room,
+                    true,
+                    None,
+                );
+            }
             continue;
         }
         let padding = if block.whose.is_in_a_bubble() {
@@ -840,8 +1091,16 @@ pub(crate) fn furniture(
         // **The two labels, in the design's Label/Medium**, each on its own
         // button's ground: white on the navy of Allow once, navy on the card
         // under Deny.
-        if let (Some(answers), Some((left, row, allow_is, deny_is))) =
-            (one.answers, where_the_answers_are)
+        if let (
+            Some(answers),
+            Some(TheAnswersPlace {
+                left,
+                row,
+                allow_is,
+                deny_is,
+                ..
+            }),
+        ) = (one.answers, where_the_answers_are)
         {
             // Centred on the button: the label's own width, measured above,
             // and the half of what is left over on each side. Two pixels of

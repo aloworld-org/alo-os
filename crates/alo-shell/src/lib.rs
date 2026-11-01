@@ -496,6 +496,10 @@ pub mod the_regions_offered;
 /// The reply box's five icons, read from the design file's SVG and drawn at
 /// the display's scale.
 mod the_reply_boxs_icons;
+/// The approval card's layout, measured off the approved frame.
+mod the_approval_card;
+/// The alo mark at the top of the approval card.
+mod the_approval_cards_mark;
 pub mod the_reply_boxs_words;
 mod the_session_holds_its_screens;
 mod the_settings_icons;

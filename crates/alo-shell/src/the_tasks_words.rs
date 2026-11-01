@@ -68,6 +68,10 @@ struct ATasksWords {
     allow_once: String,
     /// *Deny*, said once for this task.
     deny: String,
+    /// *alo is asking to*, at the top of the approval card.
+    asking: String,
+    /// *Allows this one action. alo asks again next time.*, beside the answers.
+    once: String,
     /// Which answer the keyboard is on, and [`None`] until the person moves.
     selected: Option<crate::a_change_waiting_reaches_the_person::WhichAnswer>,
     /// Which of `said` carries *Stop and close* and *Cancel*: the question
@@ -167,6 +171,8 @@ impl TheTasksWords {
                     }),
                     allow_once: say(crate::the_cards_words::ALLOW_ONCE),
                     deny: say(crate::the_cards_words::DENY),
+                    asking: say(crate::the_cards_words::ALO_IS_ASKING_TO),
+                    once: say(crate::the_cards_words::ALLOWS_THIS_ONE_ACTION),
                     selected,
                     closing_after: None,
                     stop_and_close: String::new(),
@@ -252,6 +258,8 @@ impl TheTasksWords {
                                 allow_once: &one.allow_once,
                                 deny: &one.deny,
                                 selected: one.selected,
+                                asking: Some(&one.asking),
+                                once: Some(&one.once),
                             })
                         } else if one.closing_after == Some(at) {
                             // **The approval card's two answers, with the
@@ -260,6 +268,11 @@ impl TheTasksWords {
                                 allow_once: &one.stop_and_close,
                                 deny: &one.cancel,
                                 selected: one.closing_selected,
+                                // **The card it has**: the approval card's
+                                // own lines say *alo is asking to*, which
+                                // this question is not.
+                                asking: None,
+                                once: None,
                             })
                         } else {
                             None

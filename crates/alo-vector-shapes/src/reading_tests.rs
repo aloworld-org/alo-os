@@ -138,3 +138,73 @@ fn an_svg_that_draws_nothing_is_refused() {
     let svg = r#"<svg viewBox="0 0 28 28"><g id="empty"></g></svg>"#;
     assert_eq!(AShape::read(svg), Err(NotAShape::NothingDrawn));
 }
+
+/// The alo mark, exactly as the design file exports it for `549:195`: a group
+/// clipped to a rectangle the size of the whole `viewBox`.
+const THE_MARK: &str = include_str!("../../alo-shell/icons/the-approval-card/alo-mark.svg");
+
+/// **A clip that cuts nothing reads**, and draws exactly the path it holds.
+#[test]
+fn a_clip_the_size_of_the_view_reads() {
+    let shape = AShape::read(THE_MARK);
+    assert!(shape.is_ok(), "{shape:?}");
+    let shape = shape.unwrap_or_else(|_| unreachable!());
+    assert_eq!(shape.its_box(), (12.0, 12.0));
+    assert_eq!(shape.colours(), [[0x0f, 0x6b, 0x72]]);
+}
+
+/// The mark's file with its clip's rectangle changed to this one.
+fn the_mark_clipped_to(rect: &str) -> String {
+    THE_MARK.replace(r#"<rect width="12" height="12" fill="white"/>"#, rect)
+}
+
+/// **A clip that would cut anything is refused**: this crate does not apply
+/// one, so drawing past it would draw what the file hides.
+#[test]
+fn a_clip_smaller_than_the_view_is_refused() {
+    let control = the_mark_clipped_to(r#"<rect width="12" height="12" fill="white"/>"#);
+    assert!(
+        AShape::read(&control).is_ok(),
+        "the control: the replacement found nothing"
+    );
+    assert_ne!(
+        the_mark_clipped_to("<rect/>"),
+        THE_MARK,
+        "the control: the clip's rectangle is not where this test looks for it"
+    );
+    for smaller in [
+        r#"<rect width="6" height="12" fill="white"/>"#,
+        r#"<rect x="1" width="12" height="12" fill="white"/>"#,
+        r#"<rect width="12" fill="white"/>"#,
+    ] {
+        assert!(
+            matches!(
+                AShape::read(&the_mark_clipped_to(smaller)),
+                Err(NotAShape::AClipThisCannotDraw(_))
+            ),
+            "{smaller} was read as cutting nothing"
+        );
+    }
+}
+
+/// **A clip nobody defined is refused**, and so is a rectangle drawn outside
+/// a clip, and a path inside the `<defs>`.
+#[test]
+fn an_undefined_clip_and_a_drawn_rectangle_are_refused() {
+    let undefined = THE_MARK.replace("url(#clip0_0_32)", "url(#nowhere)");
+    assert_eq!(
+        AShape::read(&undefined),
+        Err(NotAShape::AClipThisCannotDraw("nowhere".to_owned()))
+    );
+    let drawn = r#"<svg viewBox="0 0 12 12"><rect width="12" height="12" fill="white"/></svg>"#;
+    assert_eq!(
+        AShape::read(drawn),
+        Err(NotAShape::AnElementNotDrawn("rect".to_owned()))
+    );
+    let a_path_in_the_defs =
+        r##"<svg viewBox="0 0 12 12"><defs><path d="M0 0H12" stroke="#000000"/></defs></svg>"##;
+    assert_eq!(
+        AShape::read(a_path_in_the_defs),
+        Err(NotAShape::AnElementNotDrawn("path".to_owned()))
+    );
+}
