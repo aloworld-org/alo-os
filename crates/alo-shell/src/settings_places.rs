@@ -182,9 +182,13 @@ impl SettingsPlaces {
 /// a test's own folder and the machine's in step without a second place to
 /// name.
 pub(crate) fn the_names_beside(pairings: &Path) -> PathBuf {
+    // The file's own name, from the one constant that says where it is: this
+    // crate names no settings file of its own (`tests/settings_source.rs`).
+    // That constant always has a file name; the test below holds the answer
+    // to the daemon's own path.
     let named = Path::new(alo_remembering::THE_MACHINE_NAMES)
         .file_name()
-        .unwrap_or_else(|| std::ffi::OsStr::new("machine-names.toml"));
+        .unwrap_or_default();
     pairings.with_file_name(named)
 }
 
