@@ -67,8 +67,10 @@ pub(crate) const INSIDE_THE_PANEL: f32 = 26.0 / 680.0;
 /// How wide the panel is as a share of the display.
 const THE_PANEL_IS_WIDE: f32 = 680.0 / 1440.0;
 
-/// How far down the display the panel's top sits.
-const THE_PANEL_BEGINS: f32 = 208.0 / 960.0;
+/// How far down the display the panel's top sits: **21.7 per cent**, the one
+/// share that gives both frames' tops — 208 of 960 and 174 of 800. 208 / 960
+/// alone gives 173 at 800.
+const THE_PANEL_BEGINS: f32 = 0.217;
 
 /// The most of the display's height the panel takes before its list scrolls.
 const AT_MOST: f32 = 3.0 / 5.0;

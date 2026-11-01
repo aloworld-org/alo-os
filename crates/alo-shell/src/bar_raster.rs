@@ -197,10 +197,13 @@ pub(crate) fn picture(
     );
     canvas.fill(places.panel, corner, palette.edge, 1.0);
     let line = scale.px(1).max(1);
+    // **`bg/surface`, which is the Dock's ground and not a window's.** The
+    // window ground is the canvas's cream (`Role::Ground`); `561:276` fills the
+    // panel white, as the Dock is, and every word on it is shaped on that.
     canvas.fill(
         shrunk(places.panel, line),
         corner - line as f32,
-        palette.ground,
+        palette.dock,
         1.0,
     );
 
@@ -222,7 +225,7 @@ pub(crate) fn picture(
         bar.words.heading,
         TheType::Title,
         (heading.loc.x, heading.loc.y + px(5), title_room),
-        (palette.ground, palette.ink),
+        (palette.dock, palette.ink),
     );
     canvas.fill(places.close, px(A_WELLS_CORNER) as f32, palette.badge, 1.0);
     ALaunchersIcon::Close.drawn(&mut canvas, centred(places.close, px(16)), palette.ink);
@@ -273,7 +276,7 @@ pub(crate) fn picture(
             places.origin.loc.y,
             places.origin.size.w,
         ),
-        (palette.ground, palette.ink_quiet),
+        (palette.dock, palette.ink_quiet),
     );
 
     // **Each application found** (`561:324`): tinted in the accent where the
@@ -293,7 +296,7 @@ pub(crate) fn picture(
         let ([gr, gg, gb], [ar, ag, ab]) = (ground, accent);
         [mix(gr, ar), mix(gg, ag), mix(gb, ab)]
     };
-    let chosen_ground = tinted(palette.ground, palette.accent);
+    let chosen_ground = tinted(palette.dock, palette.accent);
     let chosen = bar.chosen.unwrap_or(0);
     for (which, at) in &places.rows {
         let Some(result) = bar.results.get(*which) else {
@@ -304,7 +307,7 @@ pub(crate) fn picture(
             canvas.fill(*at, px(A_WELLS_CORNER) as f32, chosen_ground, 1.0);
             chosen_ground
         } else {
-            palette.ground
+            palette.dock
         };
         let (icon, icon_corner, icon_in) = AN_ICON_IS;
         let tile = Rectangle::new(
@@ -348,7 +351,7 @@ pub(crate) fn picture(
                 &mut canvas,
                 cap,
                 px(A_KEY_CAPS_CORNER),
-                palette.ground,
+                palette.dock,
                 key_line,
             );
             ALaunchersIcon::Enter.drawn(&mut canvas, centred(cap, px(12)), secondary);
@@ -384,7 +387,7 @@ pub(crate) fn picture(
             canvas.fill(at, px(A_WELLS_CORNER) as f32, chosen_ground, 1.0);
             chosen_ground
         } else {
-            palette.ground
+            palette.dock
         };
         let (icon, icon_corner, icon_in) = AN_ICON_IS;
         let tile = Rectangle::new(
@@ -447,7 +450,7 @@ pub(crate) fn picture(
             &mut canvas,
             cap,
             px(A_KEY_CAPS_CORNER),
-            palette.ground,
+            palette.dock,
             key_line,
         );
         icon.drawn(&mut canvas, centred(cap, px(12)), secondary);
@@ -459,14 +462,14 @@ pub(crate) fn picture(
         bar.words.choose,
         TheType::SmallLabel,
         (x, y + px(1), keys.size.w / 3),
-        (palette.ground, palette.ink_quiet),
+        (palette.dock, palette.ink_quiet),
     ) + px(16);
     let cap = Rectangle::new((x, y).into(), (px(26), px(18)).into());
     a_key_cap(
         &mut canvas,
         cap,
         px(A_KEY_CAPS_CORNER),
-        palette.ground,
+        palette.dock,
         key_line,
     );
     ALaunchersIcon::Enter.drawn(&mut canvas, centred(cap, px(12)), secondary);
@@ -477,7 +480,7 @@ pub(crate) fn picture(
         bar.words.open,
         TheType::SmallLabel,
         (x, y + px(1), keys.size.w / 3),
-        (palette.ground, palette.ink_quiet),
+        (palette.dock, palette.ink_quiet),
     ) + px(16);
     let esc_wide =
         crate::painted_text::how_wide(fonts, bar.words.esc, TheType::SmallLabel.metrics(measure));
@@ -489,7 +492,7 @@ pub(crate) fn picture(
         &mut canvas,
         cap,
         px(A_KEY_CAPS_CORNER),
-        palette.ground,
+        palette.dock,
         key_line,
     );
     say(
@@ -498,7 +501,7 @@ pub(crate) fn picture(
         bar.words.esc,
         TheType::SmallLabel,
         (cap.loc.x + px(7), cap.loc.y + px(3), esc_wide + px(2)),
-        (palette.ground, secondary),
+        (palette.dock, secondary),
     );
     say(
         &mut canvas,
@@ -510,7 +513,7 @@ pub(crate) fn picture(
             keys.loc.y + px(9),
             keys.size.w / 3,
         ),
-        (palette.ground, palette.ink_quiet),
+        (palette.dock, palette.ink_quiet),
     );
 
     Some(BarPicture {
