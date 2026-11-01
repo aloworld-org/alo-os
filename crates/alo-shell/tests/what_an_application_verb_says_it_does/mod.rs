@@ -150,6 +150,16 @@ fn focusing_does_what_it_says_and_leaves_what_it_says() {
         "the words changed without this test"
     );
     let (f, mut editor, mut files) = an_editor_and_files();
+    // The files window, as the compositor holds it: the one mapped second,
+    // which a new window's place at the back of the list makes the last.
+    let before = front_to_back(&f);
+    let its_window = before.last().cloned();
+    assert_eq!(before.len(), 2, "the control: two windows");
+    assert_ne!(
+        before.first().cloned(),
+        its_window,
+        "the control: it was not in front"
+    );
     let answer = f.backend(|s| s.carrying_out(&Acting::Focus(the("org.kde.dolphin"))));
     assert_eq!(answer, Answer::Acted);
     editor.sync();
@@ -160,10 +170,8 @@ fn focusing_does_what_it_says_and_leaves_what_it_says() {
         "its window did not get the keyboard"
     );
     assert_eq!(
-        front_to_back(&f)
-            .first()
-            .map(|it| smithay::reexports::wayland_server::Resource::id(it).protocol_id()),
-        Some(files.surface.id().protocol_id()),
+        front_to_back(&f).first().cloned(),
+        its_window,
         "its window is not in front"
     );
     assert_eq!(starts_waiting(&f), 0, "something was started");
