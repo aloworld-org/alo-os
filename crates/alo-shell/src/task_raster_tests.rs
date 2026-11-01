@@ -1040,12 +1040,12 @@ fn the_line_beside_the_answers_is_on_the_canvas() {
 /// The control is the card the closing question keeps, which draws none.
 #[test]
 fn alos_mark_is_drawn_on_the_approved_card() {
-    let teal = |panel: &crate::painted::Washed| {
-        panel.pixels.chunks_exact(4).any(|pixel| {
-            let [r, g, b, _] = <[u8; 4]>::try_from(pixel).unwrap_or([0; 4]);
-            g > r.saturating_add(40) && b > r.saturating_add(40) && g < 200
-        })
-    };
+    let teal =
+        |panel: &crate::painted::Washed| {
+            panel.pixels.as_chunks::<4>().0.iter().any(|&[r, g, b, _]| {
+                g > r.saturating_add(40) && b > r.saturating_add(40) && g < 200
+            })
+        };
     assert!(
         !teal(&with_a_card(None, true).panel),
         "the control: something teal was already in the panel"

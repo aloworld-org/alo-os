@@ -51,9 +51,9 @@ fn the_mark_is_inked_inside_its_box() {
     );
     let mut inside = 0;
     let mut outside = 0;
-    for (at, pixel) in panel.pixels.chunks_exact(4).enumerate() {
+    for (at, [red, ..]) in panel.pixels.as_chunks::<4>().0.iter().enumerate() {
         let (x, y) = (at % 32, at / 32);
-        if pixel.first() != Some(&255) {
+        if *red != 255 {
             if (10..22).contains(&x) && (10..22).contains(&y) {
                 inside += 1;
             } else {
