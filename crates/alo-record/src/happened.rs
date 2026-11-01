@@ -633,6 +633,40 @@ pub enum Happened {
         /// when it did.
         failed: Option<Line>,
     },
+    /// The person put folders back as they were, from a place this machine
+    /// kept — or asked to, and was told why nothing changed.
+    ///
+    /// **Both roads write it**: *Put back* in the record window, and `alo-back`
+    /// in the person's own terminal, each through the service that writes this
+    /// record (`docs/contracts/daemon-protocol.md`, `put-back`). Added
+    /// 2026-11-01 for the owner's answer that putting back *is written in this
+    /// list too*.
+    ///
+    /// Not [`Happened::Undone`], which is written only from an entry that
+    /// [`Happened::Ran`] and copies its call: a place is kept before a turn's
+    /// first change **and** before each command a person types in a session they
+    /// asked to be able to undo (ADR 0130), and the second has no entry to copy.
+    /// What every place does have is the moment it was kept and the sentence it
+    /// was kept for — `kept.json`'s own two fields — and those are copied in,
+    /// for [`Happened::Undone`]'s reason: a place is let go of in time, and a
+    /// name that pointed at one would become a line about nothing.
+    ///
+    /// **All or nothing**: `folders` went back together, or `failed` says why
+    /// none of them did. **No agent, and no field for one**: putting back is
+    /// the person's own act, and there is no verb that does it.
+    ///
+    /// Additive, and `format` stays `1`.
+    PutBack {
+        /// The moment the place was kept.
+        taken: SystemTime,
+        /// What it was kept for, in the sentence written down then.
+        did: Line,
+        /// Every folder put back, or asked to be — absolute paths.
+        folders: Vec<Line>,
+        /// Why none of them went back, in the words the person was shown —
+        /// absent when they did.
+        failed: Option<Line>,
+    },
     /// The machine let go of what it had kept for one or more changing turns,
     /// so they can no longer be put back
     /// ([ADR 0045](../../../docs/decisions/0045-what-undoing-rewinds-to.md),
@@ -710,6 +744,7 @@ impl Happened {
             | Self::RolledBack { .. }
             | Self::Brokered { .. }
             | Self::Undone { .. }
+            | Self::PutBack { .. }
             | Self::WorkspaceOpened { .. }
             | Self::LetGo { .. }
             | Self::AnsweredForAnotherMachine { .. } => None,
@@ -742,6 +777,7 @@ impl Happened {
             | Self::Brokered { .. }
             | Self::SleptThrough { .. }
             | Self::Undone { .. }
+            | Self::PutBack { .. }
             | Self::WorkspaceOpened { .. }
             | Self::LetGo { .. }
             | Self::NotBounded { .. }
@@ -780,6 +816,7 @@ impl Happened {
             | Self::Brokered { .. }
             | Self::SleptThrough { .. }
             | Self::Undone { .. }
+            | Self::PutBack { .. }
             | Self::WorkspaceOpened { .. }
             | Self::LetGo { .. }
             | Self::NotBounded { .. }
@@ -843,6 +880,10 @@ impl Happened {
                     failed: Some(_),
                     ..
                 }
+                | Self::PutBack {
+                    failed: Some(_),
+                    ..
+                }
         )
     }
 
@@ -878,6 +919,7 @@ impl Happened {
             | Self::Brokered { .. }
             | Self::SleptThrough { .. }
             | Self::Undone { .. }
+            | Self::PutBack { .. }
             | Self::WorkspaceOpened { .. }
             | Self::LetGo { .. }
             | Self::NotBounded { .. }
@@ -913,6 +955,9 @@ impl Happened {
             }
             | Self::Undone {
                 failed: Some(why), ..
+            }
+            | Self::PutBack {
+                failed: Some(why), ..
             } => Some(why),
             Self::Ran { .. }
             | Self::AnsweredHere { .. }
@@ -923,6 +968,7 @@ impl Happened {
             | Self::Brokered { .. }
             | Self::SleptThrough { stopped: None, .. }
             | Self::Undone { failed: None, .. }
+            | Self::PutBack { failed: None, .. }
             | Self::WorkspaceOpened { .. }
             | Self::LetGo { .. }
             | Self::Left { .. }
@@ -949,6 +995,7 @@ impl Happened {
             | Self::RolledBack { .. }
             | Self::SleptThrough { .. }
             | Self::Undone { .. }
+            | Self::PutBack { .. }
             | Self::WorkspaceOpened { .. }
             | Self::LetGo { .. }
             | Self::NotBounded { .. }
@@ -977,6 +1024,7 @@ impl Happened {
             | Self::Brokered { .. }
             | Self::SleptThrough { .. }
             | Self::Undone { .. }
+            | Self::PutBack { .. }
             | Self::WorkspaceOpened { .. }
             | Self::LetGo { .. }
             | Self::NotBounded { .. }
@@ -1011,6 +1059,7 @@ impl Happened {
             | Self::Brokered { .. }
             | Self::SleptThrough { .. }
             | Self::Undone { .. }
+            | Self::PutBack { .. }
             | Self::WorkspaceOpened { .. }
             | Self::LetGo { .. }
             | Self::NotBounded { .. }
@@ -1044,6 +1093,7 @@ impl Happened {
             | Self::Brokered { .. }
             | Self::SleptThrough { .. }
             | Self::Undone { .. }
+            | Self::PutBack { .. }
             | Self::WorkspaceOpened { .. }
             | Self::LetGo { .. }
             | Self::NotBounded { .. }
@@ -1385,6 +1435,21 @@ mod tests {
             },
             undone(None),
             undone(Some("something this would put back has changed since")),
+            Happened::PutBack {
+                taken: SystemTime::UNIX_EPOCH,
+                did: Line::of("move march.pdf into Archive"),
+                folders: vec![
+                    Line::of("/home/alo/Documents"),
+                    Line::of("/home/alo/Archive"),
+                ],
+                failed: None,
+            },
+            Happened::PutBack {
+                taken: SystemTime::UNIX_EPOCH,
+                did: Line::of("move march.pdf into Archive"),
+                folders: vec![Line::of("/home/alo/Documents")],
+                failed: Some(Line::of("Documents was not there when that place was kept")),
+            },
         ] {
             let written = serde_json::to_string(&happened).unwrap_or_default();
             assert_eq!(

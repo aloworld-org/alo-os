@@ -413,3 +413,96 @@ fn only_the_last_rename_failing_says_the_folder_went_back() {
         "and it is the one where only the last rename failed, which is last on the list"
     );
 }
+
+/// **Two folders go back together**: a change that touched both — a move from
+/// one into the other — is put back as one act, and each keeps what it held
+/// since beside it.
+#[test]
+fn two_folders_go_back_together() {
+    let machine = AMachine::called("together");
+    let from = machine.a_folder("Documents", "in Documents");
+    let into = machine.a_folder("Archive", "in Archive");
+    let place = machine.a_place_kept("1000-7-a-turn", at(1_700_000_000));
+    std::fs::write(from.join("a-file"), "moved away").unwrap();
+    std::fs::write(into.join("a-file"), "moved here").unwrap();
+
+    let before = place.join("before");
+    let goes = [
+        what_would_go_back(&before, &from, &machine.home(), at(1), at(NOW)).unwrap(),
+        what_would_go_back(&before, &into, &machine.home(), at(1), at(NOW)).unwrap(),
+    ];
+    super::go_back_together(&goes).unwrap();
+
+    assert_eq!(machine.what_it_says(&from.join("a-file")), "in Documents");
+    assert_eq!(machine.what_it_says(&into.join("a-file")), "in Archive");
+    for one in &goes {
+        assert!(one.what_was_here().is_dir(), "{:?} set aside", one.folder());
+    }
+}
+
+/// **If one cannot go back, none does** — the copy of the second fails, and
+/// the first, already copied out, is not swapped and its copy is taken away.
+#[test]
+fn if_one_cannot_go_back_none_does() {
+    let machine = AMachine::called("none");
+    let first = machine.a_folder("Documents", "in Documents");
+    let second = machine.a_folder("Archive", "in Archive");
+    let place = machine.a_place_kept("1000-7-a-turn", at(1_700_000_000));
+    std::fs::write(first.join("a-file"), "changed since").unwrap();
+    std::fs::write(second.join("a-file"), "changed since").unwrap();
+
+    let before = place.join("before");
+    let goes = [
+        what_would_go_back(&before, &first, &machine.home(), at(1), at(NOW)).unwrap(),
+        what_would_go_back(&before, &second, &machine.home(), at(1), at(NOW)).unwrap(),
+    ];
+    // What the second would be copied from is gone by the time it is copied.
+    std::fs::remove_dir_all(before.join("Archive")).unwrap();
+
+    let refused = super::go_back_together(&goes).unwrap_err();
+    assert!(refused.folder.ends_with("Archive"), "{refused:?}");
+    assert!(
+        matches!(refused.why, NotGoingBack::NotCopied { .. }),
+        "{refused:?}"
+    );
+    assert_eq!(machine.what_it_says(&first.join("a-file")), "changed since");
+    assert_eq!(
+        machine.what_it_says(&second.join("a-file")),
+        "changed since"
+    );
+    for one in &goes {
+        assert!(!one.what_was_here().exists(), "nothing was set aside");
+        let working = format!(
+            "{}.{BEING_PUT_BACK}",
+            one.folder().file_name().unwrap().to_string_lossy()
+        );
+        assert!(
+            !one.folder().with_file_name(working).exists(),
+            "no working copy was left behind"
+        );
+    }
+}
+
+/// **One folder inside another is refused before anything is touched.**
+#[test]
+fn one_inside_another_is_refused_and_nothing_changes() {
+    let machine = AMachine::called("inside");
+    let outer = machine.a_folder("Documents", "outer");
+    let inner = outer.join("2026");
+    std::fs::create_dir_all(&inner).unwrap();
+    std::fs::write(inner.join("a-file"), "inner").unwrap();
+    let place = machine.a_place_kept("1000-7-a-turn", at(1_700_000_000));
+    std::fs::write(outer.join("a-file"), "changed since").unwrap();
+
+    let before = place.join("before");
+    let goes = [
+        what_would_go_back(&before, &outer, &machine.home(), at(1), at(NOW)).unwrap(),
+        what_would_go_back(&before, &inner, &machine.home(), at(1), at(NOW)).unwrap(),
+    ];
+    let refused = super::go_back_together(&goes).unwrap_err();
+    assert!(
+        matches!(&refused.why, NotGoingBack::OneInsideAnother { inner: at } if at.ends_with("2026")),
+        "{refused:?}"
+    );
+    assert_eq!(machine.what_it_says(&outer.join("a-file")), "changed since");
+}

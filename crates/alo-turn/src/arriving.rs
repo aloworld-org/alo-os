@@ -524,6 +524,29 @@ impl<'a, 'm> Arriving<'a, 'm> {
             .keeping(Entry::a_workspace_was_opened(workspace, answers_at, now))
     }
 
+    /// Write down that the person put folders back, while this remote turn
+    /// holds the machine.
+    ///
+    /// [`crate::Machine::folders_were_put_back`] with a remote turn in front of
+    /// it, not stamped with this turn's origin: the person here did it.
+    ///
+    /// # Errors
+    ///
+    /// [`alo_keeping::NotKept`] when the record could not be written, and the
+    /// turn is closed by it.
+    pub fn folders_were_put_back(
+        &mut self,
+        kept: (SystemTime, &str),
+        folders: &[String],
+        failed: Option<&str>,
+        now: SystemTime,
+    ) -> Result<(), alo_keeping::NotKept> {
+        match Entry::put_back(kept, folders, failed, now) {
+            Some(entry) => self.turning.keeping(entry),
+            None => Ok(()),
+        }
+    }
+
     /// The sentence for a pairing that has ended, if it has.
     ///
     /// `None` while the pairing stands, which is the ordinary answer and costs

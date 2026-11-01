@@ -92,6 +92,15 @@ pub enum ToAPerson {
         /// of one moment.
         why_not: Option<Wording>,
     },
+    /// Every folder they asked for is as it was, and it is written down.
+    ///
+    /// One sentence per folder, in their language: which folder, and where
+    /// what was in it is now. When any could not go back the answer is
+    /// [`ToAPerson::Refused`] instead, and none was changed.
+    PutBack {
+        /// One sentence per folder.
+        said: Vec<Wording>,
+    },
     /// The change they declined is written down, and nothing ran.
     Declined,
     /// What is granted was read again, and this is how many grants that came to.
@@ -497,6 +506,7 @@ impl ToAPerson {
             Told::APlaceToReturnTo { kept, why_not } => {
                 Ok(Self::APlaceToReturnTo { kept, why_not })
             }
+            Told::PutBack { said } => Ok(Self::PutBack { said }),
             Told::Declined {} => Ok(Self::Declined),
             Told::Granted { holding } => Ok(Self::Granted { holding }),
             Told::Refused(wording) => Ok(Self::Refused(wording)),
@@ -590,6 +600,7 @@ impl From<ToAPerson> for Told {
             ToAPerson::APlaceToReturnTo { kept, why_not } => {
                 Self::APlaceToReturnTo { kept, why_not }
             }
+            ToAPerson::PutBack { said } => Self::PutBack { said },
             ToAPerson::Declined => Self::Declined {},
             ToAPerson::Granted { holding } => Self::Granted { holding },
             ToAPerson::Refused(wording) => Self::Refused(wording),

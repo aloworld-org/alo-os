@@ -89,6 +89,13 @@ pub(crate) enum Told {
         #[serde(default, skip_serializing_if = "Option::is_none")]
         why_not: Option<Wording>,
     },
+    /// Every folder asked for was put back and written down; one sentence for
+    /// each, saying where what was in it now is. A refusal is `refused`, and
+    /// then none was changed.
+    PutBack {
+        /// One sentence per folder.
+        said: Vec<Wording>,
+    },
     /// The person said no, and it is written down.
     ///
     /// Nothing is carried about why, because nothing was asked: *no* is the

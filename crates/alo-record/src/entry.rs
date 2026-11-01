@@ -78,6 +78,18 @@ pub struct Entry {
     /// exactly as it was written.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     told: Vec<Line>,
+    /// The place this machine kept before the change, by the name of its
+    /// directory — the link from what ran to what can put it back
+    /// (`docs/contracts/kept-undo-folder.md`).
+    ///
+    /// Written on what a changing turn ran once that turn's place was kept,
+    /// and on nothing else. Absent — not present and empty — when none was:
+    /// an entry written before 2026-11-01, a turn that kept nothing, a read.
+    /// The name is **opaque**, as the contract says every place's name is:
+    /// nothing parses it, and a reader that has never heard of the field
+    /// ignores it.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    kept_as: Option<Line>,
 }
 
 impl Entry {
@@ -94,7 +106,50 @@ impl Entry {
             happened,
             origin: None,
             told: Vec::new(),
+            kept_as: None,
         }
+    }
+
+    /// This entry, with the place kept before it, by that place's name.
+    ///
+    /// A stamp, for [`Entry::from_another_machine`]'s reason: it adds where the
+    /// change can be put back from and cannot change what happened.
+    #[must_use]
+    pub fn kept_as(mut self, place: &str) -> Self {
+        self.kept_as = Some(Line::of(place));
+        self
+    }
+
+    /// The name of the place kept before this, when one was.
+    #[must_use]
+    pub fn kept_before_it(&self) -> Option<&Line> {
+        self.kept_as.as_ref()
+    }
+
+    /// The person put `folders` back as they were from the place kept at
+    /// `taken` for `did` — or asked to, and `failed` is the sentence they were
+    /// shown when none of them went back.
+    ///
+    /// [`None`] when `folders` is empty: putting back nothing is not an act.
+    /// Additive; `format` stays `1`.
+    #[must_use]
+    pub fn put_back(
+        (taken, did): (SystemTime, &str),
+        folders: &[String],
+        failed: Option<&str>,
+        at: SystemTime,
+    ) -> Option<Self> {
+        (!folders.is_empty()).then(|| {
+            Self::new(
+                at,
+                Happened::PutBack {
+                    taken,
+                    did: Line::of(did),
+                    folders: folders.iter().map(|folder| Line::of(folder)).collect(),
+                    failed: failed.map(Line::of),
+                },
+            )
+        })
     }
 
     /// This entry, as something a paired machine caused (ADR 0003).
@@ -1352,6 +1407,69 @@ mod tests {
         );
         assert!(!written.contains("agent"), "{written}");
         assert_eq!(serde_json::from_str::<Entry>(&written).unwrap(), entry);
+    }
+
+    /// **A change carries the place kept before it, and a record without one
+    /// reads back exactly as it was.** The field is absent, not empty, on an
+    /// entry nothing was kept for — so every entry written before 2026-11-01
+    /// is still byte for byte what it was.
+    #[test]
+    fn a_change_names_the_place_kept_before_it_and_only_then() {
+        let plain = a_file_an_agent_moved();
+        let written = serde_json::to_string(&plain).unwrap();
+        assert!(!written.contains("kept_as"), "{written}");
+        assert_eq!(plain.kept_before_it(), None);
+
+        let linked = a_file_an_agent_moved().kept_as("1793502334-812-1");
+        let written = serde_json::to_string(&linked).unwrap();
+        assert!(
+            written.contains(r#""kept_as":"1793502334-812-1""#),
+            "{written}"
+        );
+        let read: Entry = serde_json::from_str(&written).unwrap();
+        assert_eq!(
+            read.kept_before_it().map(Line::as_str),
+            Some("1793502334-812-1")
+        );
+        assert_eq!(read.happened(), plain.happened());
+    }
+
+    /// **Putting back names every folder and nobody**, is refused when it
+    /// names none, and a failed one is a refusal a review finds.
+    #[test]
+    fn putting_back_names_its_folders_and_nobody() {
+        let folders = [
+            "/home/alo/Documents".to_owned(),
+            "/home/alo/Archive".to_owned(),
+        ];
+        let done = Entry::put_back(
+            (noon(), "move march.pdf into Archive"),
+            &folders,
+            None,
+            noon(),
+        )
+        .unwrap();
+        assert_eq!(done.agent(), None);
+        assert!(!done.happened().was_stopped());
+        assert!(!done.happened().ran());
+        let written = serde_json::to_string(&done).unwrap();
+        assert!(written.contains(r#""put-back":{"#), "{written}");
+        assert!(!written.contains("agent"), "{written}");
+        assert_eq!(serde_json::from_str::<Entry>(&written).unwrap(), done);
+
+        let refused = Entry::put_back(
+            (noon(), "move march.pdf into Archive"),
+            &folders,
+            Some("nothing was changed"),
+            noon(),
+        )
+        .unwrap();
+        assert!(refused.happened().was_stopped());
+        assert_eq!(
+            refused.happened().why_stopped().map(Line::as_str),
+            Some("nothing was changed")
+        );
+        assert_eq!(Entry::put_back((noon(), "x"), &[], None, noon()), None);
     }
 
     /// One change an agent really made: proposed, approved once, redeemed and

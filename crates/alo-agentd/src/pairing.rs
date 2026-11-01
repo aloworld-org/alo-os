@@ -154,6 +154,7 @@ impl AboutAPairing {
             | FromAPerson::Advertised
             | FromAPerson::TheirOwnQuestion { .. }
             | FromAPerson::APlaceToReturnTo
+            | FromAPerson::PutBack { .. }
             | FromAPerson::WatchWhatLeaves => None,
         }
     }

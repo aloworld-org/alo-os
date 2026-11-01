@@ -46,7 +46,8 @@ impl EntryKind {
             Outcome::Ran
             | Outcome::RanACommand
             | Outcome::MachineChangeHandedOn
-            | Outcome::PutBack => Self::Changed,
+            | Outcome::PutBack
+            | Outcome::FoldersPutBack => Self::Changed,
             Outcome::Left | Outcome::LeftOnItsOwn => Self::Left,
             Outcome::NobodyWasAsked
             | Outcome::ThePersonSaidNo
@@ -57,7 +58,8 @@ impl EntryKind {
             | Outcome::ACommandWasNotRun
             | Outcome::HeldBack
             | Outcome::MachineChangeRefused
-            | Outcome::NotPutBack => Self::Refused,
+            | Outcome::NotPutBack
+            | Outcome::FoldersNotPutBack => Self::Refused,
             Outcome::AnsweredHere
             | Outcome::AnsweredForAnotherMachine
             | Outcome::GrantsNotReadAgain

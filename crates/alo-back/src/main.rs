@@ -31,6 +31,20 @@
 //! `$?`, this is a command somebody ran on purpose. Zero when the folder went
 //! back, non-zero when it did not — so it can be used in a script by the person
 //! whose files they are.
+//!
+//! # It is written down
+//!
+//! Since 2026-11-01 the putting back is done by the service that writes this
+//! machine's record (`put-back` on the person's door,
+//! `docs/contracts/daemon-protocol.md`), which runs as this same person, does
+//! exactly what this command used to do itself, and writes a `put-back` entry
+//! — the owner's answer that putting back *is written in this list too*, for
+//! both of a person's roads. **A service that cannot be reached changes
+//! nothing**, and this says so: putting back is always written down. The one
+//! difference a script can see: the rare go-back whose folder went back but
+//! whose old contents kept their working name now ends in zero, with the
+//! sentence saying where they are, because the service answers that it went
+//! back.
 
 //! # And it runs on Linux
 //!
@@ -41,12 +55,18 @@
 /// What this command does on the machine alo OS is for.
 #[cfg(target_os = "linux")]
 mod putting_back {
-    use std::io::{BufRead, Write};
+    use std::io::{BufRead, BufReader, Write};
+    use std::os::unix::net::UnixStream;
     use std::path::{Path, PathBuf};
     use std::process::ExitCode;
-    use std::time::SystemTime;
+    use std::time::{Duration, SystemTime};
 
-    use alo_as_it_was::{Places, go_back, what_would_go_back, where_this_person_keeps, words};
+    use alo_as_it_was::{Places, what_would_go_back, where_this_person_keeps, words};
+    use alo_protocol::{FromAPerson, ToAPerson, where_the_door_is};
+
+    /// How long the service is waited for: a folder is copied before it goes
+    /// back, so this is the copy's time and not a network's.
+    const PATIENCE: Duration = Duration::from_secs(30 * 60);
     use alo_saying::Loaded;
     use alo_strings::{Filling, Strings};
 
@@ -150,29 +170,82 @@ mod putting_back {
             return ExitCode::FAILURE;
         }
 
-        match go_back(&goes) {
-            Ok(()) => {
-                say(
-                    strings,
-                    words::IT_IS_AS_IT_WAS,
-                    &Filling::of("folder", goes.folder().display().to_string())
-                        .and("aside", goes.what_was_here().display().to_string()),
-                );
+        // **Through the service that writes the record**, and not here: the
+        // owner's answer of 2026-11-01 is that putting back is written in the
+        // list of what happened, and that list has one writer. The service
+        // runs as this same person and does exactly what this command did —
+        // `alo_as_it_was::go_back_together` — and writes it down. A service
+        // that cannot be reached changes nothing: putting back is always
+        // written down.
+        match the_service_puts_back(named, goes.folder(), strings) {
+            Ok(ToAPerson::PutBack { said }) => {
+                for wording in said {
+                    println!("{}", wording.text());
+                }
                 ExitCode::SUCCESS
             }
+            Ok(ToAPerson::Refused(wording)) => {
+                eprintln!("{}", wording.text());
+                ExitCode::FAILURE
+            }
+            // An answer that is not about putting back says nothing a person
+            // could act on, so the sentence stands without one.
+            Ok(_) => {
+                say_why_not(strings, "");
+                ExitCode::FAILURE
+            }
             Err(why) => {
-                eprintln!("{}", why.said(strings).text());
-                // **Half-done is not success.** The folder did go back, so the exit
-                // code says something happened — but the person was told the final
-                // name is wrong, and a script that treated this as a clean go-back
-                // would be wrong about where the old contents are.
-                if why.the_folder_went_back() {
-                    ExitCode::from(2)
-                } else {
-                    ExitCode::FAILURE
-                }
+                say_why_not(strings, &why);
+                ExitCode::FAILURE
             }
         }
+    }
+
+    /// Ask the service to put `folder` back from the place `named`, and its
+    /// answer.
+    ///
+    /// **No moment and no command on the wire**, as the protocol's person
+    /// door has it: the place by its name, and the folder.
+    fn the_service_puts_back(
+        named: &str,
+        folder: &Path,
+        strings: &Strings,
+    ) -> Result<ToAPerson, String> {
+        let at = where_the_door_is::the_door_of(rustix::process::getuid().as_raw());
+        let stream = UnixStream::connect(&at).map_err(|why| why.to_string())?;
+        // **Patient**, because a folder is copied out of the place before it
+        // goes back, and a large one takes as long as its copy takes.
+        stream
+            .set_read_timeout(Some(PATIENCE))
+            .map_err(|why| why.to_string())?;
+        let line = FromAPerson::PutBack {
+            place: named.to_owned(),
+            folders: vec![folder.display().to_string()],
+        }
+        .written()
+        .map_err(|why| why.to_string())?;
+        (&stream)
+            .write_all(line.as_bytes())
+            .and_then(|()| (&stream).write_all(b"\n"))
+            .map_err(|why| why.to_string())?;
+        let mut answer = String::new();
+        BufReader::new(&stream)
+            .read_line(&mut answer)
+            .map_err(|why| why.to_string())?;
+        ToAPerson::read(answer.trim_end()).map_err(|why| why.said(strings).into_text())
+    }
+
+    /// Say that nothing was put back because the record could not be told.
+    fn say_why_not(strings: &Strings, why: &str) {
+        eprintln!(
+            "{}",
+            strings
+                .say(
+                    &words::NOT_WITHOUT_THE_RECORD.key(),
+                    &Filling::of("why", why.to_owned())
+                )
+                .text()
+        );
     }
 
     /// Ask, and answer whether they typed the folder's own name.

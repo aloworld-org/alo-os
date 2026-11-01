@@ -247,6 +247,14 @@ pub enum FromAPerson {
     ///
     /// ADR 0130 option B. Carries nothing: the moment is the whole request.
     APlaceToReturnTo,
+    /// Folders put back as they were, from a place this service kept, all of
+    /// them or none — and written into the record either way.
+    PutBack {
+        /// The place, by its name.
+        place: String,
+        /// Every folder to put back, as absolute paths.
+        folders: Vec<String>,
+    },
     /// The desktop asks to be told what this service's indicator shows, now
     /// and every time it changes (ADR 0134). The connection it is asked on is
     /// given over to that and answers nothing else.
@@ -286,6 +294,7 @@ impl FromAPerson {
             Asked::Advertised {} => Ok(Self::Advertised),
             Asked::TheirOwnQuestion { question } => Ok(Self::TheirOwnQuestion { question }),
             Asked::APlaceToReturnTo => Ok(Self::APlaceToReturnTo),
+            Asked::PutBack { place, folders } => Ok(Self::PutBack { place, folders }),
             Asked::WatchWhatLeaves {} => Ok(Self::WatchWhatLeaves),
             Asked::Read { .. } | Asked::Propose { .. } | Asked::Ask { .. } => {
                 Err(NotUnderstood::NotForAPerson)
@@ -325,6 +334,7 @@ impl FromAPerson {
             | Self::Advertised
             | Self::TheirOwnQuestion { .. }
             | Self::APlaceToReturnTo
+            | Self::PutBack { .. }
             | Self::WatchWhatLeaves => None,
         }
     }
@@ -407,6 +417,7 @@ impl From<FromAPerson> for Asked {
             FromAPerson::Advertised => Self::Advertised {},
             FromAPerson::TheirOwnQuestion { question } => Self::TheirOwnQuestion { question },
             FromAPerson::APlaceToReturnTo => Self::APlaceToReturnTo,
+            FromAPerson::PutBack { place, folders } => Self::PutBack { place, folders },
             FromAPerson::WatchWhatLeaves => Self::WatchWhatLeaves {},
         }
     }
@@ -446,6 +457,39 @@ mod tests {
         assert!(
             !granted.is_a_question_about_the_turn(),
             "saying what is granted has changed is not a question about the turn"
+        );
+    }
+
+    /// **Putting back is the person's and never an agent's**: it reads on the
+    /// person's door, round trips, answers no number — and an agent sending
+    /// the very same line is refused.
+    #[test]
+    fn putting_back_is_the_persons_and_never_an_agents() {
+        let line = r#"{"format":1,"asks":{"put-back":{"place":"1793502334-812-1","folders":["/home/alo/Documents","/home/alo/Archive"]}}}"#;
+        let asked = FromAPerson::read(line).unwrap();
+        assert_eq!(
+            asked,
+            FromAPerson::PutBack {
+                place: "1793502334-812-1".to_owned(),
+                folders: vec![
+                    "/home/alo/Documents".to_owned(),
+                    "/home/alo/Archive".to_owned()
+                ],
+            }
+        );
+        assert_eq!(asked.number(), None);
+        assert!(!asked.is_yes());
+        assert_eq!(FromAPerson::read(&asked.written().unwrap()).unwrap(), asked);
+        assert_eq!(
+            crate::FromAnAgent::read(line),
+            Err(NotUnderstood::NotForAnAgent)
+        );
+        // Nothing names a moment, here as anywhere on this door.
+        assert!(
+            FromAPerson::read(
+                r#"{"format":1,"asks":{"put-back":{"place":"p","folders":[],"at":1}}}"#
+            )
+            .is_err()
         );
     }
 

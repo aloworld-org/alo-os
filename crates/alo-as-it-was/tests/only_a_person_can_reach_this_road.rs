@@ -60,6 +60,27 @@ const MAY: [(&str, &str); 2] = [
     ("alo-as-it-was", "where the act is declared"),
 ];
 
+/// The single files elsewhere that may name it, with why each one may — named
+/// by file, never by crate, because both crates are ones an agent reaches and
+/// letting either in whole would let the next file in unseen.
+///
+/// **Put back from the record window, 2026-11-01**: the owner's promise is a
+/// button that does exactly what `alo-back` does, and the record has one
+/// writer, so the service that writes it does the act and writes it down.
+/// It is still the person's road and never an agent's: the request exists only
+/// on the person's own door, and the agent door refuses it before it is read
+/// (`alo-protocol`'s `putting_back_is_the_persons_and_never_an_agents`).
+const MAY_FILES: [(&str, &str); 1] = [(
+    "alo-agentd/src/putting_back.rs",
+    "the person's put-back request, answered on their own door and written down",
+)];
+
+/// Whether `file` is one of [`MAY_FILES`].
+fn may_name_it(file: &Path, crates: &Path) -> bool {
+    file.strip_prefix(crates)
+        .is_ok_and(|inside| MAY_FILES.iter().any(|(may, _)| inside == Path::new(may)))
+}
+
 /// This repository's root, from this crate's manifest.
 fn the_repository() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR"))
@@ -117,6 +138,9 @@ fn nothing_but_the_command_a_person_types_puts_a_folder_back() {
             let text = std::fs::read_to_string(&file)
                 .unwrap_or_else(|why| panic!("{} was not read: {why}", file.display()));
             read += 1;
+            if may_name_it(&file, &crates) {
+                continue;
+            }
             for act in THE_ACT {
                 if text.contains(&format!("alo_as_it_was::{act}"))
                     || text.contains(&format!("as_it_was::putting_back::{act}"))
@@ -140,10 +164,34 @@ fn nothing_but_the_command_a_person_types_puts_a_folder_back() {
         found.is_empty(),
         "putting a person's folder back is a road only they may take — ADR 0045 \
          term 2: *there is no agent verb that undoes, and none that proposes an \
-         undo*. {} place(s) outside {:?} reach it:\n\n- {}",
+         undo*. {} place(s) outside {:?} and {:?} reach it:\n\n- {}",
         found.len(),
         MAY.map(|(named, _)| named),
+        MAY_FILES.map(|(named, _)| named),
         found.join("\n- ")
+    );
+}
+
+/// **Every file allowed by name exists and names the act**, so a permit for a
+/// file that moved or stopped needing it is found rather than left open for
+/// whatever takes its path next.
+#[test]
+fn every_file_allowed_by_name_still_needs_it() {
+    let crates = the_repository().join("crates");
+    for (may, why) in MAY_FILES {
+        let text = std::fs::read_to_string(crates.join(may))
+            .unwrap_or_else(|failed| panic!("{may} ({why}) was not read: {failed}"));
+        assert!(
+            THE_ACT
+                .iter()
+                .any(|act| text.contains(&format!("alo_as_it_was::{act}"))),
+            "{may} is allowed to name the act ({why}) and no longer does"
+        );
+        assert!(may_name_it(&crates.join(may), &crates), "{may}");
+    }
+    assert!(
+        !may_name_it(&crates.join("alo-agentd/src/doing.rs"), &crates),
+        "a file of an allowed one's crate is not allowed with it"
     );
 }
 

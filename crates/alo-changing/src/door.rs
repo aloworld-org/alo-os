@@ -157,6 +157,7 @@ impl TheDaemonsDoor {
             | ToAPerson::DidAndCannotBeUndone(_)
             | ToAPerson::Waiting { .. }
             | ToAPerson::APlaceToReturnTo { .. }
+            | ToAPerson::PutBack { .. }
             | ToAPerson::Declined
             | ToAPerson::Pairing(_)
             | ToAPerson::Confirmed { .. }

@@ -491,6 +491,36 @@ part most likely to be got wrong.
 asked for — it is a person's own machine doing what they turned on in Settings —
 so no grant is consulted and nothing waits for an approval.
 
+### `put-back` — the person puts folders back as they were
+
+```json
+{"put-back":{"place":"1793502334-812-1","folders":["/home/alo/Documents","/home/alo/Archive"]}}
+```
+
+Added 2026-11-01, additively. The person asks for folders to be put back as
+they were from a place this service kept — from *Put back* in the record
+window, or from `alo-back` in their terminal. `place` is the place's name as
+the record's `kept_as` or `alo-back`'s list gives it, and is found among this
+person's places or refused; `folders` are absolute paths in their home.
+
+**It does exactly what `alo-back` does**, for every folder, **together or not
+at all**: each is planned against the place, and the plans are carried out by
+copying every folder out first, swapping every one, and only then naming what
+was in each — so one that cannot go back leaves every folder as it was. What is
+in a folder now is renamed beside it, never deleted. **It is written down**,
+either way, as one `put-back` entry (`docs/contracts/record-file.md`); a place
+not among this person's is refused with nothing written, because there is no
+moment or sentence to write and nothing was touched.
+
+The answer is `put-back`, whose `said` is one sentence per folder in the shape
+every sentence on this door has, saying where what was in it now is — or
+`refused` with the sentence saying why none went back.
+**An agent sending this is refused**: there is no verb that puts back and
+there is not going to be one — an agent that could ask for this could choose
+which of a person's changes to reverse, which ADR 0045's second term names as
+forbidden. **Nothing names a moment**, as everywhere on this door: the service
+reads its own clock.
+
 ### `their-own-question` — a question the person asked themselves
 
 ```json

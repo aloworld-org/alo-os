@@ -65,8 +65,8 @@ Every entry carries `at` and `happened`. `happened` is tagged with what kind of
 thing it was — `ran`, `stopped`, `turned-away`, `answered-here`,
 `never-put-anywhere`, `grants-not-read-again`, `paired`, `workspace-opened`,
 `not-bounded`, `ran-a-command`, `a-command-was-not-run`, `left`,
-`held-back`, `left-on-its-own`, `updated`, `rolled-back`, `brokered`, `slept-through` — and the fields under it depend on
-that tag.
+`held-back`, `left-on-its-own`, `updated`, `rolled-back`, `brokered`, `slept-through`,
+`undone`, `let-go`, `put-back` — and the fields under it depend on that tag.
 `crates/alo-record` is the shape as working code; ADR 0001 §7 is why each of
 them is kept.
 
@@ -176,6 +176,32 @@ table of what can never be undone, and why, is `alo-keeping-up`'s
 ([ADR 0045](../decisions/0045-what-undoing-rewinds-to.md) point 1), and a reader
 of this file learns from an `undone` entry that something was put back, never
 that it could have been.
+
+**`put-back` is the person putting folders back as they were**, added
+2026-11-01 and additive (`format` stays `1`), for the owner's answer that
+putting back *is written in this list too*. It is written by `alo-agentd` —
+this record's one writer — when the person asks on its own door (`put-back`,
+`docs/contracts/daemon-protocol.md`), from the record window or from `alo-back`
+in their terminal, so both roads leave the same entry. It carries `taken`, the
+moment the place was kept; `did`, the sentence the place was kept for,
+**copied** off the place's note for `undone`'s reason; `folders`, every folder
+asked for, as absolute paths; and `failed`, absent (`null`) when they went back
+and otherwise the sentence the person was shown. **All or nothing**: when
+`failed` is present none of the folders changed. It is not `undone`, which is
+written only from an entry that `ran`: a place is kept before a turn's first
+change and also before a command a person typed (ADR 0130), which has no entry
+to copy. **No `agent` and no field for one**: putting back is the person's
+act, and there is no verb that does it. A failed one is a refusal a reader
+looking for refusals finds.
+
+**`kept_as` names the place kept before a change**, added 2026-11-01 and
+additive. Any entry may carry it, a string, and today what a changing turn
+**ran** carries it once that turn's place was kept: the name of the place's
+directory under `/var/lib/alo-undo/<person>/` (`docs/contracts/kept-undo-folder.md`).
+It is the link from a change to what can put it back — not a guess by moment
+or sentence — and it is **opaque**: nothing parses it. Absent, not present and
+empty, on every entry nothing was kept for, so every entry written before it
+existed reads back byte for byte; an entry without it offers no *Put back*.
 
 **`let-go` is what the machine was keeping being removed**, added 2026-09-21 and
 additive ([ADR 0045](../decisions/0045-what-undoing-rewinds-to.md), the first

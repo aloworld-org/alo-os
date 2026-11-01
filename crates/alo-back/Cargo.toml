@@ -28,6 +28,10 @@ alo-saying = { path = "../alo-saying" }
 # Saying one of those words.
 alo-strings = { path = "../alo-strings" }
 
+# The service that writes the record, which does the putting back so that it
+# is written down (`put-back` on the person's door).
+alo-protocol = { path = "../alo-protocol" }
+
 # Whose places these are.
 rustix = { workspace = true, features = ["process"] }
 

@@ -205,6 +205,13 @@ pub fn what_a_person_said(
             now,
             strings,
         )),
+        // **Folders put back, at the person's request** — from the record
+        // window or `alo-back` — answered whether or not a turn holds the
+        // machine, and written down through whatever holds it
+        // (`crate::putting_back`).
+        Ok(FromAPerson::PutBack { place, folders }) => {
+            crate::putting_back::put_back(&place, &folders, holding, strings, now)
+        }
         Ok(answered) => {
             // A pairing is neither the turn's nor the grants file's, and it
             // is answered whether or not a turn holds the machine: the
@@ -301,6 +308,8 @@ fn answered_to(
         // A place to return to is answered before this, for the same reason
         // the knock is: it is the person's own and not the turn's.
         | FromAPerson::APlaceToReturnTo
+        // Putting back too, for the same reason.
+        | FromAPerson::PutBack { .. }
         // Watching what leaves is answered by the serving loop, which gives
         // the connection over to it (`crate::watchers`).
         | FromAPerson::WatchWhatLeaves => {
@@ -326,6 +335,16 @@ fn answered_to(
                     .map(|change| change.proposal.sentence(strings).into_text());
                 if let Some(said) = said {
                     bracket.before_a_change(&said);
+                }
+                // **And the turn is told the place's name**, so what runs is
+                // written down with it: the link *Put back* is asked from
+                // (`alo_record::Entry::kept_as`), not a guess by moment.
+                if let Some(named) = bracket
+                    .taken_at()
+                    .and_then(std::path::Path::file_name)
+                    .and_then(std::ffi::OsStr::to_str)
+                {
+                    turning.a_place_was_kept(named);
                 }
                 match turning.approving(waiting, grants, now) {
                     Ok(answer) => the_change_did(
