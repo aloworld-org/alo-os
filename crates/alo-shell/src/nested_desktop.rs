@@ -408,7 +408,7 @@ impl Nested {
 /// Every native picture in one desktop frame.
 pub(crate) struct DesktopPictures {
     /// alo's own terminal, when one is open and could be drawn.
-    pub(crate) terminal: Option<crate::the_terminals_cells_are_drawn::TerminalPicture>,
+    pub(crate) terminal: Option<crate::the_terminal_on_the_plane::TheTerminalOnTheScreen>,
     /// The egress indicator.
     pub(crate) status: EgressStatusPicture,
     /// What on this machine is watching or listening.
@@ -501,7 +501,7 @@ pub(crate) fn frame_pictures(
     //
     // So the lane draws it, says what went wrong if it did, and hands over the
     // result.
-    terminal: Option<crate::the_terminals_cells_are_drawn::TerminalPicture>,
+    terminal: Option<crate::the_terminal_on_the_plane::TheTerminalOnTheScreen>,
 ) -> Result<DesktopPictures, RenderError> {
     let running = running_shows(desktop.running, desktop.strings);
     let filling = filling_shows(desktop.filling, desktop.strings);

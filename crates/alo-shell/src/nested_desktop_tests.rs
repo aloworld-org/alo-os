@@ -583,13 +583,18 @@ fn every_picture_a_frame_holds_reaches_the_layers_a_display_paints() {
             a_diff: None,
             the_strip: crate::the_terminals_strip::WhatTheStripSays::ONLY_WHERE_IT_RUNS,
         },
-        size,
+        (1040, 800),
         1.0,
         alo_appearance::Scheme::Light,
         &the_terminals_words,
         None,
     )
     .unwrap();
+    // On the canvas since ADR 0145: one picture, put where the camera says.
+    let terminal = crate::the_terminal_on_the_plane::TheTerminalOnTheScreen {
+        raster: crate::the_terminal_on_the_plane::flattened(&terminal).unwrap(),
+        drawn_at: smithay::utils::Rectangle::new((400, 140).into(), (1120, 880).into()),
+    };
 
     let with_one = frame_pictures(frame, None, None, &mut labels, size, Some(terminal)).unwrap();
     let layers = with_one.layers(&[]);

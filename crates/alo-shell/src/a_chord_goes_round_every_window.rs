@@ -107,7 +107,13 @@ impl crate::Server {
                 let _ = self.the_person_goes_to_this_window(&surface);
             }
             Some(AStop::AnApplication(app)) => self.go_to_this_application(&app),
-            Some(AStop::TheTerminal) => self.the_person_went_to(AKindOfWindow::TheTerminal),
+            Some(AStop::TheTerminal) => {
+                self.the_person_went_to(AKindOfWindow::TheTerminal);
+                // **The view goes to it** where it is out of sight on the
+                // canvas, rather than the keys going to a window nobody can see
+                // (ADR 0145).
+                let _ = self.the_view_goes_to_the_terminal();
+            }
             Some(AStop::ATask(which)) => {
                 self.the_composer.it_gave_the_keyboard_up();
                 self.this_task_took_the_keyboard(which);

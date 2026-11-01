@@ -254,9 +254,24 @@ pub struct Server {
     /// how every machine starts. Nothing opens one on a person's behalf.
     pub(crate) alos_own_terminal: Option<crate::the_terminal_a_person_opened::TheTerminal>,
     /// Where alo's own terminal was last drawn, in the display's pixels, for a
-    /// press to be tested against. [`None`] before it is drawn.
+    /// press to be tested against. [`None`] before it is drawn, and while it is
+    /// on a Place nobody is looking at.
     pub(crate) where_the_terminal_is:
         Option<smithay::utils::Rectangle<i32, smithay::utils::Physical>>,
+    /// Where alo's own terminal is **on the canvas**, and which Place it is on.
+    ///
+    /// [ADR 0145](../../../docs/decisions/0145-alos-own-windows-live-on-the-canvas.md):
+    /// a window on the plane like any application's, in the plane's units.
+    /// [`None`] before it has been placed, which happens on the first frame
+    /// after it opens; `crate::the_terminal_on_the_plane` holds the rule.
+    pub(crate) the_terminal_on_the_plane: Option<(
+        smithay::utils::Rectangle<i32, smithay::utils::Logical>,
+        alo_canvas::Place,
+    )>,
+    /// The number the canvas knows alo's terminal by, taken from the same
+    /// counter as every client window's so the two can never collide — the
+    /// identity *Show all* counts it under.
+    pub(crate) the_terminals_number: u64,
     /// Which kind of window is in front of which: the applications, the
     /// terminal and the task windows (`crate::which_window_is_in_front`).
     pub(crate) which_is_in_front: crate::which_window_is_in_front::WhichIsInFront,
@@ -774,6 +789,8 @@ impl Server {
             the_terminal: None,
             alos_own_terminal: None,
             where_the_terminal_is: None,
+            the_terminal_on_the_plane: None,
+            the_terminals_number: crate::window_number::reserve(),
             which_is_in_front: crate::which_window_is_in_front::WhichIsInFront::default(),
             // Nobody has said whose desktop this is; the stand-up does.
             whose_desktop: None,

@@ -89,8 +89,12 @@ where
     if let Some(capturing) = native.capturing {
         capturing.validate(size)?;
     }
+    // **Not against the output**: alo's terminal is a window on the canvas and
+    // may sit partly off this display or off it altogether, which the renderer
+    // clips (ADR 0145). What is refused is a picture whose pixels do not match
+    // the size it says.
     if let Some(terminal) = native.terminal {
-        terminal.validate(size)?;
+        terminal.validate()?;
     }
     // One of these two is always empty: the plain arrow and the double-headed one
     // over a frame's resize band are the same kind of thing, and only one cursor
@@ -202,12 +206,12 @@ where
     let edge_textures = crate::each_window_with_its_edge::uploaded(renderer, native.edges)?;
     let task_edge_textures =
         crate::each_window_with_its_edge::uploaded(renderer, native.task_edges)?;
-    // **The terminal's body, uploaded with the rest** for the same reason: its
-    // rounded panel and shadow are a raster, and the frame below borrows the
-    // renderer.
+    // **The terminal, uploaded with the rest** for the same reason: it is one
+    // raster — body, cells and strip — since it became a window on the canvas,
+    // and the frame below borrows the renderer.
     let terminal_washed: Option<(R::TextureId, Rectangle<i32, Physical>)> = match native
         .terminal
-        .and_then(crate::the_terminals_cells_are_drawn::TerminalPicture::washed)
+        .map(crate::the_terminal_on_the_plane::TheTerminalOnTheScreen::washed)
     {
         None => None,
         Some(raster) => Some(
@@ -418,7 +422,7 @@ where
             // then the card a person approves a change on, covered by a
             // terminal opened earlier.
             crate::which_window_is_in_front::AKindOfWindow::TheTerminal => {
-                if let Some(terminal) = native.terminal.filter(|drawn| !drawn.is_empty()) {
+                if let Some(terminal) = native.terminal {
                     terminal.paint(&mut frame, terminal_washed.as_ref())?;
                 }
             }

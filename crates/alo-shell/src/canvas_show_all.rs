@@ -80,7 +80,10 @@ impl crate::Server {
     pub fn show_all_on_the_canvas(&mut self) -> Option<Camera> {
         let room = self.surfaces.popups.output_size?;
         let viewport = Size::checked(u32::try_from(room.w).ok()?, u32::try_from(room.h).ok()?)?;
-        let frames = self.the_frames_on_the_plane();
+        // **And alo's terminal**, which is a window on the canvas since ADR
+        // 0145 and is not a client, so it is not among the surfaces above.
+        let mut frames = self.the_frames_on_the_plane();
+        frames.extend(self.the_terminal_as_a_frame());
         let span = alo_canvas::plane::reached_by(&frames, self.the_place_now())?;
         let showing = self
             .the_room_show_all_fits_into()
