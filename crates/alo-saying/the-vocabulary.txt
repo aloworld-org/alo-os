@@ -1676,6 +1676,7 @@ shortcuts.action.next-application	Next application
 shortcuts.action.next-window	Next window
 shortcuts.action.previous-application	Previous application
 shortcuts.action.previous-window	Previous window
+shortcuts.action.return-the-canvas-to-life-size	Return the canvas to 100%
 shortcuts.action.see-what-alo-did	See what alo did
 shortcuts.action.settings	Open Settings
 shortcuts.action.show-all-on-the-canvas	Show all windows on the canvas

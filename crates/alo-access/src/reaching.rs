@@ -173,6 +173,7 @@ pub const fn the_tab_stop_for(action: Action) -> Surface {
         Action::ZoomTheCanvasIn
         | Action::ZoomTheCanvasOut
         | Action::ShowAllOnTheCanvas
+        | Action::ReturnTheCanvasToLifeSize
         | Action::GoBackOnThisPlace
         // **Moving the keyboard between the parts of the screen is reached
         // from the work**, because that is where a person is when they need
