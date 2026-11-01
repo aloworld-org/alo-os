@@ -150,7 +150,8 @@ fn alos_own_windows_are_moved_onto_the_plane() {
     );
     assert_eq!((on_the_plane.size.w, on_the_plane.size.h), (1120, 952));
     assert_eq!(tasks.len(), 1, "an empty rectangle is not a window");
-    assert_eq!((tasks[0].loc.x, tasks[0].loc.y), (300 + 1248, 200 + 232));
+    let task = tasks.first().expect("the task window is a window");
+    assert_eq!((task.loc.x, task.loc.y), (300 + 1248, 200 + 232));
 }
 
 /// **A new window opens beside alo's terminal, not on it** — the round-2

@@ -146,10 +146,7 @@ fn alos_own_windows(
     tasks_front_first: &[Rectangle<i32, Physical>],
     at: alo_canvas::At,
     zoom: f64,
-) -> (
-    Option<Rectangle<i32, Logical>>,
-    Vec<Rectangle<i32, Logical>>,
-) {
+) -> AlosOwnWindows {
     let terminal = terminal
         .filter(|window| window.size.w > 0 && window.size.h > 0)
         .and_then(|window| onto_the_plane(window, at, zoom));
@@ -160,6 +157,13 @@ fn alos_own_windows(
         .collect();
     (terminal, tasks)
 }
+
+/// alo's terminal, where one is open, and its task windows front first — on
+/// the plane.
+type AlosOwnWindows = (
+    Option<Rectangle<i32, Logical>>,
+    Vec<Rectangle<i32, Logical>>,
+);
 
 impl Server {
     /// Place every window that has an extent and has never been placed.
