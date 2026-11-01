@@ -314,6 +314,10 @@ pub fn what_this_machine_can_say() -> Result<Strings, WouldNotStand> {
         .map_err(|why| WouldNotStand::Words(why.to_string()))?;
     crate::the_reply_boxs_words::declare_the_reply_boxs_words(&mut vocabulary)
         .map_err(|why| WouldNotStand::Words(why.to_string()))?;
+    // **The record window's own words** — its title, the sentence under it,
+    // today's counts and its footer — declared for the note above.
+    crate::the_records_words::declare_the_records_words(&mut vocabulary)
+        .map_err(|why| WouldNotStand::Words(why.to_string()))?;
     // **Every translation this machine has, put on the words**, so a language
     // chosen on the first-start sheet — and the one a person's desktop is
     // given from it — is spoken wherever a translation exists. Until
