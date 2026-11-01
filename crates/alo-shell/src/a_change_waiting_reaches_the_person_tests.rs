@@ -104,7 +104,7 @@ fn a_waiting_change_is_put_in_front_of_the_person() {
 /// when the question is answered.
 #[test]
 fn what_a_change_touches_arrives_with_it_and_goes_when_it_is_answered() {
-    let wire = r#"{"number":7,"sentence":{"text":"Rename march.pdf","came_from":"the-source"},"touches":[{"path":"/home/anna/Invoices/march.pdf"}]}"#;
+    let wire = r#"{"number":7,"sentence":{"text":"Rename march.pdf","came_from":"the-source"},"touches":[{"path":"/home/anna/Invoices/march.pdf"}],"changes":{"text":"Gives one file a new name.","came_from":"the-source"},"leaves":{"text":"No other file is changed.","came_from":"the-source"}}"#;
     let touching: Standing = serde_json::from_str(wire)
         .unwrap_or_else(|why| panic!("a waiting change did not read from {wire}: {why}"));
     let daemon = ADaemon::holding(vec![touching]);
@@ -122,10 +122,22 @@ fn what_a_change_touches_arrives_with_it_and_goes_when_it_is_answered() {
             "/home/anna/Invoices/march.pdf".to_owned()
         )]
     );
+    assert_eq!(
+        waiting.does(),
+        (
+            Some("Gives one file a new name."),
+            Some("No other file is changed.")
+        )
+    );
     waiting.deny(&mut task, &daemon);
     assert!(
         waiting.touches().is_empty(),
         "the rows outlived the question"
+    );
+    assert_eq!(
+        waiting.does(),
+        (None, None),
+        "what it does outlived the question"
     );
 }
 

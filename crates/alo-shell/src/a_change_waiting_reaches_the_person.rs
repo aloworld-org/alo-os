@@ -74,6 +74,10 @@ pub struct AChangeWaiting {
     /// the approval card's rows naming each file (frame `549:135`). Empty
     /// when nothing is asked, and for a change that touches no file.
     touches: Vec<alo_changing::Touched>,
+    /// What the change does and what it leaves alone, as its verb words them
+    /// (`549:209`), already in the person's language. Empty when nothing is
+    /// asked, or for a verb that says nothing.
+    does: (Option<String>, Option<String>),
 }
 
 /// The two answers, in reading order.
@@ -122,6 +126,7 @@ impl AChangeWaiting {
             selected: None,
             the_turn: None,
             touches: Vec::new(),
+            does: (None, None),
         }
     }
 
@@ -186,6 +191,10 @@ impl AChangeWaiting {
         );
         self.number = Some(first.number());
         self.touches = first.touches().to_vec();
+        self.does = (
+            first.changes().map(|it| it.text().to_owned()),
+            first.leaves().map(|it| it.text().to_owned()),
+        );
         task.is_asking(sentence.clone());
         task.alo_says(Turn::alo_proposing(sentence));
         WhatArrived::AQuestion
@@ -199,6 +208,7 @@ impl AChangeWaiting {
         let number = self.number.take()?;
         self.selected = None;
         self.touches.clear();
+        self.does = (None, None);
         task.allow_once();
         let answered = daemon.approve(number);
         // **Only now does the agent go**: the change was carried out inside
@@ -212,6 +222,7 @@ impl AChangeWaiting {
         let number = self.number.take()?;
         self.selected = None;
         self.touches.clear();
+        self.does = (None, None);
         task.deny();
         let answered = daemon.decline(number);
         self.the_turn = None;
@@ -229,8 +240,17 @@ impl AChangeWaiting {
         self.number.take()?;
         self.selected = None;
         self.touches.clear();
+        self.does = (None, None);
         task.the_question_lapsed();
         self.the_turn.take()
+    }
+
+    /// What the change in front of the person does, and what it leaves alone,
+    /// as its verb words them — nothing for either when no change is asked or
+    /// its verb says nothing.
+    #[must_use]
+    pub fn does(&self) -> (Option<&str>, Option<&str>) {
+        (self.does.0.as_deref(), self.does.1.as_deref())
     }
 
     /// What the change in front of the person touches, and nothing when no

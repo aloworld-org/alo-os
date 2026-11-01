@@ -1079,4 +1079,46 @@ mod tests {
             Err(VerbError::ArgumentWithoutPurpose { .. })
         ));
     }
+
+    /// **Only a change says what it changes, and in words with no gap**: the
+    /// same sentences stand for every call, and a read changes nothing.
+    #[test]
+    fn what_a_change_changes_is_said_by_a_change_only_and_names_no_argument() {
+        let changes = Word::saying("testing.verb.changes", "Gives one file a new name.");
+        let leaves = Word::saying("testing.verb.leaves", "No other file is changed.");
+        assert!(matches!(
+            list().unwrap().changing(changes, Some(leaves)),
+            Err(VerbError::AReadChangesNothing { .. })
+        ));
+        let rename = || {
+            Verb::checked(
+                "rename_it",
+                saying("rename a thing"),
+                Effect::Change,
+                vec![folder(), name()],
+                Requires::grants_over(["folder"]),
+                saying("rename {folder} to {name}"),
+            )
+            .unwrap()
+        };
+        let said = rename().changing(changes, Some(leaves)).unwrap();
+        assert_eq!(
+            said.what_it_changes().map(Word::says),
+            Some("Gives one file a new name.")
+        );
+        assert_eq!(
+            said.what_it_leaves().map(Word::says),
+            Some("No other file is changed.")
+        );
+        assert!(rename().what_it_changes().is_none());
+        let with_a_gap = Word::saying("testing.verb.gap", "Renames {folder}.");
+        assert!(matches!(
+            rename().changing(with_a_gap, None),
+            Err(VerbError::WhatItChangesHasAGap { .. })
+        ));
+        assert!(matches!(
+            rename().changing(changes, Some(with_a_gap)),
+            Err(VerbError::WhatItChangesHasAGap { .. })
+        ));
+    }
 }

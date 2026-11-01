@@ -21,24 +21,30 @@ pub(crate) const THE_MARK: &str = include_str!("../icons/the-approval-card/alo-m
 /// The file icon, as the design exported it.
 pub(crate) const THE_FILE: &str = include_str!("../icons/the-approval-card/file.svg");
 
-/// One of the card's two pieces of artwork.
+/// The tick, as the design exported it.
+pub(crate) const THE_TICK: &str = include_str!("../icons/the-approval-card/check.svg");
+
+/// One of the card's pieces of artwork.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum ACardsIcon {
     /// alo's mark.
     TheMark,
     /// A file.
     AFile,
+    /// The tick before what a change does and leaves alone (`549:211`).
+    ATick,
 }
 
 impl ACardsIcon {
-    /// Both, in the order the card draws them.
-    pub(crate) const ALL: [Self; 2] = [Self::TheMark, Self::AFile];
+    /// Every one, in the order the card draws them.
+    pub(crate) const ALL: [Self; 3] = [Self::TheMark, Self::AFile, Self::ATick];
 
     /// The file, as the design exported it.
     pub(crate) const fn svg(self) -> &'static str {
         match self {
             Self::TheMark => THE_MARK,
             Self::AFile => THE_FILE,
+            Self::ATick => THE_TICK,
         }
     }
 
@@ -47,6 +53,7 @@ impl ACardsIcon {
         match self {
             Self::TheMark => "alo-mark.svg",
             Self::AFile => "file.svg",
+            Self::ATick => "check.svg",
         }
     }
 
@@ -55,8 +62,8 @@ impl ACardsIcon {
     /// [`None`] for a file `alo_vector_shapes` refused, which is said once on
     /// the error stream and which this module's tests refuse on every build.
     pub(crate) fn shape(self) -> Option<&'static AShape> {
-        static READ: OnceLock<[Option<AShape>; 2]> = OnceLock::new();
-        let [mark, file] = READ.get_or_init(|| {
+        static READ: OnceLock<[Option<AShape>; 3]> = OnceLock::new();
+        let [mark, file, tick] = READ.get_or_init(|| {
             ACardsIcon::ALL.map(|icon| match AShape::read(icon.svg()) {
                 Ok(shape) => Some(shape),
                 Err(why) => {
@@ -71,6 +78,7 @@ impl ACardsIcon {
         match self {
             Self::TheMark => mark.as_ref(),
             Self::AFile => file.as_ref(),
+            Self::ATick => tick.as_ref(),
         }
     }
 }

@@ -12,6 +12,7 @@ fn the_frames_card_adds_up_to_its_own_height() {
         wide: 920,
         the_action_is_tall: 30,
         rows: 0,
+        what_it_does_is_tall: 0,
     };
     assert_eq!(card.who_is_asking(), 16);
     assert_eq!(card.the_action(), 38);
@@ -28,6 +29,7 @@ fn the_answers_are_equal_and_the_line_beside_them_keeps_to_the_card() {
         wide: 920,
         the_action_is_tall: 30,
         rows: 0,
+        what_it_does_is_tall: 0,
     };
     assert_eq!(
         card.deny() - super::BESIDE,
@@ -47,6 +49,7 @@ fn a_longer_action_moves_the_answers_down() {
         wide: 920,
         the_action_is_tall: 30,
         rows: 0,
+        what_it_does_is_tall: 0,
     };
     let two = TheCard {
         the_action_is_tall: 60,
@@ -65,6 +68,7 @@ fn a_row_naming_a_file_is_where_the_frame_draws_it() {
         wide: 920,
         the_action_is_tall: 30,
         rows: 1,
+        what_it_does_is_tall: 0,
     };
     assert_eq!(card.a_row(0), 38 + 30 + 12);
     assert_eq!(card.the_choices(), 38 + 30 + 12 + 64 + 16);
@@ -75,4 +79,29 @@ fn a_row_naming_a_file_is_where_the_frame_draws_it() {
     let two = TheCard { rows: 2, ..card };
     assert_eq!(two.a_row(1) - two.a_row(0), 64 + 12);
     assert_eq!(two.tall() - card.tall(), 64 + 12);
+}
+
+/// **The frame's whole card adds up**: with its one-line action, its one
+/// file row and its one line of what it does — 22, both sentences side by
+/// side — the card is 16 + 16 + 6 + 30 + 12 + 64 + 12 + 22 + 16 + 77 = 271,
+/// which is the frame's own card.
+#[test]
+fn the_frames_whole_card_adds_up() {
+    let card = TheCard {
+        wide: 920,
+        the_action_is_tall: 30,
+        rows: 1,
+        what_it_does_is_tall: 22,
+    };
+    assert_eq!(card.what_it_does(), 38 + 30 + 12 + 64 + 12);
+    assert_eq!(card.tall(), 271);
+    let nothing_said = TheCard {
+        what_it_does_is_tall: 0,
+        ..card
+    };
+    assert_eq!(
+        card.tall() - nothing_said.tall(),
+        12 + 22,
+        "a verb that says nothing still kept room for it"
+    );
 }

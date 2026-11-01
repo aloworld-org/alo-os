@@ -76,6 +76,8 @@ struct ATasksWords {
     once: String,
     /// One row for each thing the change waiting touches (`549:200`).
     touches: Vec<crate::task_text::ATouchedRow>,
+    /// What the change waiting does and leaves alone (`549:209`).
+    does: (Option<String>, Option<String>),
     /// Which answer the keyboard is on, and [`None`] until the person moves.
     selected: Option<crate::a_change_waiting_reaches_the_person::WhichAnswer>,
     /// Which of `said` carries *Stop and close* and *Cancel*: the question
@@ -179,6 +181,7 @@ impl TheTasksWords {
                     asking: say(crate::the_cards_words::ALO_IS_ASKING_TO),
                     once: say(crate::the_cards_words::ALLOWS_THIS_ONE_ACTION),
                     touches: Vec::new(),
+                    does: (None, None),
                     selected,
                     closing_after: None,
                     stop_and_close: String::new(),
@@ -247,6 +250,20 @@ impl TheTasksWords {
         self
     }
 
+    /// **And what the change waiting does and leaves alone**, on the asking
+    /// task's card. Nothing for a task that is not asking.
+    pub(crate) fn with_what_the_change_does(
+        mut self,
+        (changes, leaves): (Option<&str>, Option<&str>),
+    ) -> Self {
+        for one in &mut self.each {
+            if one.answers_after.is_some() {
+                one.does = (changes.map(str::to_owned), leaves.map(str::to_owned));
+            }
+        }
+        self
+    }
+
     /// The task windows a frame draws, borrowing these words.
     pub(crate) fn as_displayed(&self) -> Vec<ATaskOnTheDisplay<'_>> {
         self.each
@@ -288,6 +305,7 @@ impl TheTasksWords {
                                 asking: Some(&one.asking),
                                 once: Some(&one.once),
                                 touches: &one.touches,
+                                does: (one.does.0.as_deref(), one.does.1.as_deref()),
                             })
                         } else if one.closing_after == Some(at) {
                             // **The approval card's two answers, with the
@@ -302,6 +320,7 @@ impl TheTasksWords {
                                 asking: None,
                                 once: None,
                                 touches: &[],
+                                does: (None, None),
                             })
                         } else {
                             None

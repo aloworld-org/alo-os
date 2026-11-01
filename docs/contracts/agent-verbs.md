@@ -20,6 +20,7 @@ Every verb declares:
 | `args` | Typed, each with a purpose. Validated at the boundary before anything runs. |
 | `requires` | Which grant must be held for this call to be possible at all. |
 | `sentence` | The approval sentence, with a gap per argument, filled **from the validated arguments**. A declared string. |
+| `changes`, `leaves` | **A `change` only, added 2026-11-01, additively.** One short sentence saying what every call of it changes, and one saying what it leaves alone — declared strings with no gaps, shown under the action on the approval card. **Each must be exactly true of what the verb does**, and the crate that carries the verb out holds it to that with a test that runs the verb and checks the claim. A verb whose honest sentence would be uncertain says so to whoever reviews it rather than saying something softer. They authorise nothing: what is approved is still `sentence`. `alo_capability::Verb::changing`. |
 
 Two rules that are easy to state and easy to violate:
 

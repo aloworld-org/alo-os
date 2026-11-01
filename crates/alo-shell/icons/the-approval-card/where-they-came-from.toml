@@ -23,3 +23,10 @@ names = "a file, in the tile of a row naming a file the change touches. The fram
 node = "549:163"
 drawn_at = 20
 colour = "#274C68"
+
+[[icon]]
+svg = "check.svg"
+names = "the tick before each line saying what a change does and what it leaves alone"
+node = "549:212"
+drawn_at = 16
+colour = "#274C68"

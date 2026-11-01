@@ -257,6 +257,26 @@ mod tests {
         );
     }
 
+    /// **A change says what its verb says it changes and leaves alone**, and
+    /// a message written before the two reads back as one saying neither.
+    #[test]
+    fn a_change_says_what_its_verb_does_and_an_older_message_says_nothing() {
+        let (approvals, strings) = a_change_waiting();
+        let standing = Standing::of(the_change(&approvals), &strings, the_moment());
+        assert_eq!(
+            standing.changes().map(Wording::text),
+            Some("Gives one file a new name, in the folder it is in.")
+        );
+        assert_eq!(
+            standing.leaves().map(Wording::text),
+            Some("What is in it stays the same, and no other file is changed or replaced.")
+        );
+        let older =
+            r#"{"number":7,"sentence":{"text":"…","came_from":"the-source"},"lapses_in":300}"#;
+        let back: Standing = serde_json::from_str(older).unwrap();
+        assert!(back.changes().is_none() && back.leaves().is_none());
+    }
+
     /// What is written is what is read back.
     #[test]
     fn a_change_waiting_reads_back_as_what_was_written() {
