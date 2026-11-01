@@ -921,8 +921,12 @@ fn the_status_is_teal_only_while_alo_is_working() {
     let files = two_files();
     let mut fonts = cosmic_text::FontSystem::new();
     let at = Rectangle::new((120, 80).into(), (1040, 800).into());
-    let teal = crate::task_look::TaskPalette::of(a_look()).expect("a palette").alo;
-    let navy = crate::task_look::TaskPalette::of(a_look()).expect("a palette").ink;
+    let teal = crate::task_look::TaskPalette::of(a_look())
+        .expect("a palette")
+        .alo;
+    let navy = crate::task_look::TaskPalette::of(a_look())
+        .expect("a palette")
+        .ink;
     let mut drawn = |working: bool| {
         let words = crate::task_text::TheWordsInATaskWindow {
             status: "Complete",

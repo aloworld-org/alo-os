@@ -417,7 +417,11 @@ fn the_keyboards_outline_stays_on_the_row_it_marks() {
         let on_the_edge = pixel(&drawn, chosen.loc.x, mid_y);
         let outside = pixel(&drawn, chosen.loc.x - 2, mid_y);
         let ink = SettingsPalette::of(light()).unwrap().ink;
-        assert_eq!(&on_the_edge[..3], &ink[..], "{size:?}: the outline is on the edge");
+        assert_eq!(
+            &on_the_edge[..3],
+            &ink[..],
+            "{size:?}: the outline is on the edge"
+        );
         assert_ne!(
             &outside[..3],
             &ink[..],
