@@ -95,6 +95,12 @@ fn auf_deutsch() -> Strings {
                 words::SHOW_ALL_ON_THE_CANVAS,
                 "Alle Fenster der Arbeitsfläche zeigen",
             ),
+            // German sets a space before the per cent sign, which is why the
+            // translator's note asks for the language's own way of writing one.
+            (
+                words::RETURN_THE_CANVAS_TO_LIFE_SIZE,
+                "Arbeitsfläche auf 100 % zurücksetzen",
+            ),
             // *Place* is the canvas's own word and this translation keeps it as
             // a noun a person reads rather than borrowing `Arbeitsfläche`, which
             // this fixture already uses for the canvas itself. A window moved to

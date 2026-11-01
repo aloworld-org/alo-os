@@ -163,6 +163,20 @@ pub enum Action {
     ZoomTheCanvasOut,
     /// Show every window on the canvas at once.
     ShowAllOnTheCanvas,
+    /// Put the canvas back to 100 %, its standard scale.
+    ///
+    /// **Promised and missing until 2026-11-01**, when a booted machine was
+    /// pressed `⊞`+1 and nothing happened, 15 and 30 seconds later.
+    /// `docs/design/the-shortcuts-and-the-edges.md` puts *Return the canvas to
+    /// 100%* among the four canvas shortcuts to teach first, and
+    /// `docs/design/the-canvas-as-a-workspace.md` §4 names *100%* among the
+    /// essential zoom commands. [`Self::ZoomTheCanvasIn`] and
+    /// [`Self::ZoomTheCanvasOut`] had a road; this one had none.
+    ///
+    /// **This makes an existing promise true rather than adding one**: the
+    /// command and its key are the design's, and a person can rebind or clear
+    /// it in Settings like every other action here.
+    ReturnTheCanvasToLifeSize,
     /// Send the window in front to the next Place.
     ///
     /// **The road a person who cannot drag takes**, which is why it is a
@@ -212,7 +226,7 @@ impl Action {
     /// Everything a shortcut can do, in the order a settings panel lists them:
     /// the six that summon something, then the five done to the window in
     /// front, then the four for moving between windows and applications, then
-    /// the canvas's five, then the two that move the keyboard between the
+    /// the canvas's six, then the two that move the keyboard between the
     /// parts of the screen.
     ///
     /// **The sentence above counts, and it had stopped.** It read *the three
@@ -242,6 +256,7 @@ impl Action {
         Self::ZoomTheCanvasIn,
         Self::ZoomTheCanvasOut,
         Self::ShowAllOnTheCanvas,
+        Self::ReturnTheCanvasToLifeSize,
         Self::MoveTheWindowToTheNextPlace,
         Self::GoBackOnThisPlace,
         Self::TheNextArea,
@@ -272,6 +287,7 @@ impl Action {
             Self::ZoomTheCanvasIn => words::ZOOM_THE_CANVAS_IN,
             Self::ZoomTheCanvasOut => words::ZOOM_THE_CANVAS_OUT,
             Self::ShowAllOnTheCanvas => words::SHOW_ALL_ON_THE_CANVAS,
+            Self::ReturnTheCanvasToLifeSize => words::RETURN_THE_CANVAS_TO_LIFE_SIZE,
             Self::MoveTheWindowToTheNextPlace => words::MOVE_THE_WINDOW_TO_THE_NEXT_PLACE,
             Self::GoBackOnThisPlace => words::GO_BACK_ON_THIS_PLACE,
             Self::TheNextArea => words::THE_NEXT_AREA,

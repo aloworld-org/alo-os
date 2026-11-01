@@ -118,6 +118,67 @@ fn zoom_has_a_keyboard_route_and_one_press_is_one_rung() {
     assert_eq!(zoom(&f), 1000, "in and out again is exactly life size");
 }
 
+/// **`⊞`+1 returns the canvas to 100 %, from in, from out and from Show all.**
+///
+/// A booted machine on 2026-11-01 was pressed `⊞`+1 and nothing happened: no
+/// action was bound to it. The chord is read from the shipped defaults, so this
+/// fails if the design's key stops reaching the action.
+#[test]
+fn the_canvas_returns_to_one_hundred_per_cent() {
+    let f = fixture();
+    let _app = mapped(&f);
+    let back = Action::ReturnTheCanvasToLifeSize;
+
+    for _ in 0..3 {
+        assert!(command(&f, Action::ZoomTheCanvasIn).is_some());
+    }
+    assert_eq!(zoom(&f), 3000);
+    assert_eq!(command(&f, back), Some(back));
+    assert_eq!(zoom(&f), 1000, "from zoomed in");
+
+    for _ in 0..4 {
+        assert!(command(&f, Action::ZoomTheCanvasOut).is_some());
+    }
+    assert_eq!(zoom(&f), 400);
+    assert_eq!(command(&f, back), Some(back));
+    assert_eq!(zoom(&f), 1000, "from zoomed out");
+
+    // Show all leaves the zoom between rungs, which is where a person most
+    // often wants to come back from.
+    assert!(f.backend(|s| s.pan_the_canvas(-4000, -3000)).is_some());
+    assert!(command(&f, Action::ShowAllOnTheCanvas).is_some());
+    assert_ne!(zoom(&f), 1000, "Show all of one small window was life size");
+    assert_eq!(command(&f, back), Some(back));
+    assert_eq!(zoom(&f), 1000, "from Show all");
+}
+
+/// **Returning to 100 % holds the middle of the screen**, as every zoom by key
+/// does, and **at 100 % already it moves nothing** and is not refused.
+#[test]
+fn returning_to_one_hundred_per_cent_holds_the_middle_and_is_quiet_at_it() {
+    let f = fixture();
+    let _app = mapped(&f);
+    let middle = (VIEWPORT.0 / 2, VIEWPORT.1 / 2);
+
+    let before = f.backend(|s| s.the_camera());
+    assert_eq!(
+        command(&f, Action::ReturnTheCanvasToLifeSize),
+        Some(Action::ReturnTheCanvasToLifeSize),
+        "pressing it at 100 % already was refused"
+    );
+    assert_eq!(f.backend(|s| s.the_camera()), before, "at 100 % it moved");
+
+    assert!(command(&f, Action::ZoomTheCanvasIn).is_some());
+    assert!(command(&f, Action::ZoomTheCanvasIn).is_some());
+    let under = f.backend(move |s| s.the_camera().plane_of(middle));
+    assert!(command(&f, Action::ReturnTheCanvasToLifeSize).is_some());
+    assert_eq!(
+        f.backend(move |s| s.the_camera().plane_of(middle)),
+        under,
+        "returning to 100 % moved what was in the middle of the screen"
+    );
+}
+
 /// **A keyboard zoom holds the middle of the viewport still.**
 ///
 /// The first acceptance sentence, for the route that has no pointer to be centred

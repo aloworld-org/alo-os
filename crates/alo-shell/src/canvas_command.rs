@@ -2,8 +2,8 @@
 //!
 //! `docs/autonomy/the-smallest-canvas-worth-showing.md` task 6 asks for one:
 //! *zoom has a keyboard route*. The chords are
-//! `docs/design/the-shortcuts-and-the-edges.md`'s — `⊞`+Plus, `⊞`+Minus and
-//! `⊞`+0 — and they are `alo_shortcuts::Action`s like any other, so a person can
+//! `docs/design/the-shortcuts-and-the-edges.md`'s — `⊞`+Plus, `⊞`+Minus,
+//! `⊞`+0, and since 2026-11-01 `⊞`+1 to return to 100 % — and they are `alo_shortcuts::Action`s like any other, so a person can
 //! move them in Settings and nothing here knows which keys they ended up on.
 //!
 //! # This layers the way `crate::window_command` does
@@ -31,6 +31,7 @@
 
 use std::time::SystemTime;
 
+use alo_canvas::Zoom;
 use alo_shortcuts::{Action, Chord, Shortcuts};
 
 use crate::Server;
@@ -126,6 +127,23 @@ impl Server {
             Action::ShowAllOnTheCanvas => {
                 self.show_all_on_the_canvas()
                     .ok_or(CanvasCommandError::NothingToShow)?;
+            }
+            Action::ReturnTheCanvasToLifeSize => {
+                // **Holding the middle of the screen**, as a zoom by key does
+                // and for the same reason: a chord has no pointer, and the
+                // middle is what somebody looking at the screen is looking at.
+                //
+                // Already at 100 % is not a fault, for the reason zooming in at
+                // the end of the ladder is not: the screen already shows there
+                // is nothing to do, and a refusal would make key repeat a stream
+                // of faults.
+                let middle = self
+                    .the_middle_of_the_viewport()
+                    .ok_or(CanvasCommandError::NoOutput)?;
+                if self.the_camera().zoom() != Zoom::LIFE_SIZE {
+                    self.zoom_the_canvas(Zoom::LIFE_SIZE, middle)
+                        .ok_or(CanvasCommandError::NothingToShow)?;
+                }
             }
             Action::MoveTheWindowToTheNextPlace => {
                 // **The keyboard road of `the-canvas-and-its-places.md` task 3.**

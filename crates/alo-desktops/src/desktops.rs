@@ -220,9 +220,9 @@ mod tests {
     #[test]
     fn the_chords_belong_to_the_person() {
         let mut desktops = Desktops::default();
-        assert_eq!(desktops.chords().bound().count(), 11);
-        assert!(desktops.chords_mut().unbind(Switch::Next));
         assert_eq!(desktops.chords().bound().count(), 10);
+        assert!(desktops.chords_mut().unbind(Switch::Next));
+        assert_eq!(desktops.chords().bound().count(), 9);
         assert_eq!(
             Desktops::with(DesktopChords::none())
                 .chords()
