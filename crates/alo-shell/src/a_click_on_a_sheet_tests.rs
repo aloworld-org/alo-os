@@ -72,11 +72,10 @@ fn which_sheet(signing: &Option<Signing<ADoor>>) -> &'static str {
             Sheet::Keyboard(_) => "keyboard",
             Sheet::Zone(_) => "zone",
         },
-        SignInShows::FirstAccount {
-            field: crate::SignInField::Name,
-            ..
-        } => "name",
-        SignInShows::FirstAccount { .. } => "pin",
+        SignInShows::FirstAccount { account, .. } => match account.sheet {
+            crate::TheAccountSheet::Name => "name",
+            crate::TheAccountSheet::Secret(_) => "pin",
+        },
         SignInShows::Fields { .. } | SignInShows::Sentence(_) => "something else",
     }
 }

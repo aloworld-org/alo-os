@@ -92,6 +92,47 @@ impl AFirstStartIcon {
         .and_then(Option::as_ref)
     }
 
+    /// This icon centred on a rounded tile of `tile` colour, `at` being the
+    /// tile, on `ground` — the overview's rows (`562:365`: 36 at corner 10,
+    /// the icon 18 inside). [`None`] where [`Self::inked`] is.
+    pub(crate) fn inked_on_a_tile(
+        self,
+        at: Rectangle<i32, Physical>,
+        (corner, side): (f64, i32),
+        (ground, tile, ink): ([u8; 3], [u8; 3], [u8; 3]),
+    ) -> Option<Inked> {
+        let icon_at = Rectangle::new(
+            (
+                at.loc.x + (at.size.w - side) / 2,
+                at.loc.y + (at.size.h - side) / 2,
+            )
+                .into(),
+            (side, side).into(),
+        );
+        let icon = self.inked(icon_at, tile, ink)?;
+        let wide = at.size.w;
+        let mut pixels = Vec::with_capacity(usize::try_from(wide * at.size.h).unwrap_or(0));
+        for y in 0..at.size.h {
+            for x in 0..wide {
+                let (px, py) = (f64::from(at.loc.x + x) + 0.5, f64::from(at.loc.y + y) + 0.5);
+                let on_the_tile = crate::sign_in_surface::coverage(
+                    crate::sign_in_surface::how_far(px, py, at, corner),
+                );
+                let (ix, iy) = (at.loc.x + x - icon_at.loc.x, at.loc.y + y - icon_at.loc.y);
+                let under = if ix >= 0 && iy >= 0 && ix < side && iy < side {
+                    usize::try_from(iy * side + ix)
+                        .ok()
+                        .and_then(|it| icon.pixels.get(it).copied())
+                        .unwrap_or(tile)
+                } else {
+                    tile
+                };
+                pixels.push(crate::sign_in_surface::mixed(ground, under, on_the_tile));
+            }
+        }
+        Some(Inked { area: at, pixels })
+    }
+
     /// This icon in `at`, its square in the picture's pixels, in `ink` on
     /// `ground`. [`None`] for a square with no pixels or a file not read.
     pub(crate) fn inked(
@@ -101,7 +142,10 @@ impl AFirstStartIcon {
         ink: [u8; 3],
     ) -> Option<Inked> {
         let shape = self.shape()?;
-        let (wide, tall) = (u32::try_from(at.size.w).ok()?, u32::try_from(at.size.h).ok()?);
+        let (wide, tall) = (
+            u32::try_from(at.size.w).ok()?,
+            u32::try_from(at.size.h).ok()?,
+        );
         if wide == 0 || tall == 0 {
             return None;
         }

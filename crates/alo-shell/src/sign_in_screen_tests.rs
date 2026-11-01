@@ -413,6 +413,9 @@ fn a_machine_with_nobody_on_it_is_offered_a_sheet_and_refused_without_a_store() 
         SignInKey::Enter,
         SignInKey::Letter('b'),
         SignInKey::Enter,
+        // The secret again, as the PIN sheet asks.
+        SignInKey::Letter('b'),
+        SignInKey::Enter,
     ] {
         screen = still(screen.pressed(key));
     }
@@ -429,7 +432,7 @@ fn a_machine_with_nobody_on_it_is_offered_a_sheet_and_refused_without_a_store() 
         heard.borrow().is_empty(),
         "a refused account still knocked at the door"
     );
-    assert!(matches!(screen.stands, Stands::MakeAnAccount(_, _)));
+    assert!(matches!(screen.stands, Stands::MakeAnAccount(..)));
 }
 
 /// **Accounts that would not be read show `alo-greeting`'s sentence, take no
@@ -498,6 +501,9 @@ fn every_sentence_the_screen_can_show_is_collected_and_none_is_written_here() {
         SignInKey::Enter,
         SignInKey::Letter('a'),
         SignInKey::Enter,
+        SignInKey::Letter('b'),
+        SignInKey::Enter,
+        // The secret again, as the PIN sheet asks.
         SignInKey::Letter('b'),
         SignInKey::Enter,
     ] {

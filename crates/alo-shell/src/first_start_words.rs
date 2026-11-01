@@ -96,6 +96,76 @@ pub const PIN_CONSEQUENCE: Word = Word::saying(
     "Under the choices on the PIN sheet. It says the PIN is this machine's and goes nowhere else.",
 );
 
+/// The PIN typed again (`562:535`).
+pub const PIN_AGAIN: Word = Word::saying("shell.first-start.pin.again", "Confirm PIN")
+    .noting("The label above the second field on the PIN sheet, where the PIN is typed again.");
+
+/// What the second field says before anything is typed (`562:538`).
+pub const AGAIN_HINT: Word = Word::saying("shell.first-start.again.hint", "Enter it again")
+    .noting("Inside the empty second field, where a PIN or a password is typed a second time.");
+
+/// The PIN sheet's way to a password instead (`186:10737`'s own decline).
+pub const USE_PASSWORD_ONLY: Word =
+    Word::saying("shell.first-start.pin.password-only", "Use password only").noting(
+        "The second button on the PIN sheet. It does not skip having a secret: it asks for a \
+     password instead of a PIN, on the next sheet.",
+    );
+
+/// The password sheet's small line.
+pub const PASSWORD_EYEBROW: Word =
+    Word::saying("shell.first-start.password.eyebrow", "sign-in password").noting(
+        "A short line above the heading on the sheet where a person chooses a password instead \
+         of a PIN. Lower case, like the other quiet labels.",
+    );
+
+/// The password sheet's heading.
+pub const PASSWORD_TITLE: Word =
+    Word::saying("shell.first-start.password.title", "Choose a password.").noting(
+        "The heading of the sheet a person reaches by choosing Use password only on the PIN \
+         sheet. Every account has a secret, so this is not optional.",
+    );
+
+/// What a password is for.
+pub const PASSWORD_INTRODUCTION: Word = Word::saying(
+    "shell.first-start.password.introduction",
+    "You type it to sign in on this computer, and when something here asks for your permission.",
+)
+.noting("Under the heading on the password sheet, saying what the password is for.");
+
+/// The row a password is typed into.
+pub const PASSWORD_CHOICE: Word = Word::saying("shell.first-start.password.choice", "Password")
+    .noting("The label above the field a person types their new password into.");
+
+/// What that row says before anything is typed.
+pub const PASSWORD_HINT: Word = Word::saying("shell.first-start.password.hint", "Enter a password")
+    .noting("Inside the empty password field, telling a person what to type.");
+
+/// The password typed again.
+pub const PASSWORD_AGAIN: Word =
+    Word::saying("shell.first-start.password.again", "Confirm password")
+        .noting("The label above the second field on the password sheet.");
+
+/// What a password means for this machine.
+pub const PASSWORD_CONSEQUENCE: Word = Word::saying(
+    "shell.first-start.password.consequence",
+    "Your password stays on this computer. It is never sent anywhere.",
+)
+.noting("Under the fields on the password sheet. It is true: the password is kept as a hash in a file on this machine.");
+
+/// The action that makes the account with a password.
+pub const SAVE_PASSWORD: Word = Word::saying("shell.first-start.password.save", "Save password")
+    .noting("The action on the password sheet that keeps the password and makes the account.");
+
+/// Said when the two fields differ.
+pub const THEY_DIFFER: Word = Word::saying(
+    "shell.first-start.again.differs",
+    "The two do not match. Type it again in the second field.",
+)
+.noting(
+    "Shown under the fields when a PIN or a password was typed differently the second time. The \
+     second field has been emptied; the first is kept.",
+);
+
 /// The action that goes on to the next sheet.
 pub const CONTINUE: Word = Word::saying("shell.first-start.continue", "Continue")
     .noting("The action that accepts what is on this sheet and goes on to the next.");
@@ -207,6 +277,17 @@ pub const OVERVIEW_INTRODUCTION: Word = Word::saying(
 pub const ROW_LANGUAGE: Word = Word::saying("shell.first-start.overview.language", "Language")
     .noting("A row label on the first screen; the language currently chosen is written under it.");
 
+/// The note under the overview's rows (`562:395`).
+pub const OVERVIEW_NOTE: Word = Word::saying(
+    "shell.first-start.overview.note",
+    "The region decides how dates and times are written. It is chosen apart from the language.",
+)
+.noting(
+    "Under the three rows on the first screen — language, region and keyboard — beside a small \
+     information mark. Says what the region row is for, so nobody thinks it changes the \
+     language.",
+);
+
 /// The overview's region row.
 pub const ROW_REGION: Word = Word::saying("shell.first-start.overview.region", "Region").noting(
     "A row label on the first screen; the country or region currently chosen is written under \
@@ -303,7 +384,7 @@ pub const SELECTED: Word = Word::saying("shell.first-start.selected", "Selected"
      word. Keep it a single word if your language has one.",
 );
 /// Every string these sheets draw.
-pub const FIRST_START_WORDS: [Word; 41] = [
+pub const FIRST_START_WORDS: [Word; 54] = [
     STAGE,
     NAME_EYEBROW,
     NAME_TITLE,
@@ -333,6 +414,19 @@ pub const FIRST_START_WORDS: [Word; 41] = [
     USE_THIS_REGION,
     OVERVIEW_TITLE,
     OVERVIEW_INTRODUCTION,
+    OVERVIEW_NOTE,
+    PIN_AGAIN,
+    AGAIN_HINT,
+    USE_PASSWORD_ONLY,
+    PASSWORD_EYEBROW,
+    PASSWORD_TITLE,
+    PASSWORD_INTRODUCTION,
+    PASSWORD_CHOICE,
+    PASSWORD_HINT,
+    PASSWORD_AGAIN,
+    PASSWORD_CONSEQUENCE,
+    SAVE_PASSWORD,
+    THEY_DIFFER,
     ROW_LANGUAGE,
     ROW_REGION,
     ROW_KEYBOARD,

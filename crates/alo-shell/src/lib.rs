@@ -476,6 +476,8 @@ mod the_door_on_the_desktop;
 mod the_edge_takes_the_keyboard;
 /// The egress indicator's two arrows, from the design file's SVG.
 mod the_egress_indicators_arrows;
+mod the_first_account;
+pub use the_first_account::{ASecret, OnTheSheet, TheAccountSheet, TheAccountShown};
 pub mod the_first_start;
 mod the_first_starts_icons;
 mod the_formats_are_told;

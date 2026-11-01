@@ -8,13 +8,17 @@
 
 use cosmic_text::FontSystem;
 
-use crate::setup_sheet_painting::{TheSheetSays, a_sheet, two_lines};
+use crate::setup_sheet_painting::{TheSheetSays, a_grouped_row, a_sheet};
 use crate::setup_sheet_surface::{TheMarks, TheRing};
 use crate::sign_in_raster::{Measure, SignInPicture};
 use crate::sign_in_surface::TheColours;
 use crate::the_first_start::{Row, TheFirstStart};
+use crate::the_first_starts_icons::AFirstStartIcon;
 use crate::the_languages_offered::WhereTheRingIs;
 use crate::{RenderError, first_start_words as say};
+
+/// How tall each of the overview's rows is: `562:364`'s 72.
+const THE_ROW_IS_TALL: i32 = 72;
 
 /// Draw the overview.
 ///
@@ -36,6 +40,7 @@ pub(crate) fn drawn(
         say_it(say::OVERVIEW_INTRODUCTION),
     );
     let (go_on, go_back) = (say_it(say::CONTINUE), say_it(say::BACK));
+    let note = say_it(say::OVERVIEW_NOTE);
     let on = Row::ALL
         .iter()
         .position(|it| *it == first_start.row())
@@ -52,6 +57,8 @@ pub(crate) fn drawn(
             title: &title,
             introduction: &introduction,
             actions: [&go_on, &go_back],
+            rows: crate::setup_sheet_layout::TheRowsAre::Grouped(THE_ROW_IS_TALL),
+            note: Some((AFirstStartIcon::Info, &note)),
         },
         (Row::ALL.len(), 1),
         |rows| TheMarks {
@@ -95,11 +102,16 @@ pub(crate) fn drawn(
                 first_start.the_name_of(&first_start.the_keyboard()),
             ),
         };
-        two_lines(
+        let icon = match row {
+            Row::Language => AFirstStartIcon::Language,
+            Row::Region => AFirstStartIcon::Region,
+            Row::Keyboard => AFirstStartIcon::Keyboard,
+        };
+        a_grouped_row(
             &mut drawn,
             fonts,
             *card,
-            (&label, &set_to),
+            (icon, &label, &set_to),
             colours,
             measure,
         );

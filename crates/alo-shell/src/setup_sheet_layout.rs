@@ -325,9 +325,7 @@ pub fn setup_sheet_laid_out_as(
 
     let eyebrow = line(top, THE_EYEBROW_IS_TALL);
     let title = line(
-        eyebrow.loc.y
-            + eyebrow.size.h
-            + gap(gaps::AFTER_THE_EYEBROW, grouped::AFTER_THE_EYEBROW),
+        eyebrow.loc.y + eyebrow.size.h + gap(gaps::AFTER_THE_EYEBROW, grouped::AFTER_THE_EYEBROW),
         tall.title,
     );
     let introduction = line(
@@ -337,7 +335,10 @@ pub fn setup_sheet_laid_out_as(
 
     let choices_begin = introduction.loc.y
         + introduction.size.h
-        + gap(gaps::AFTER_THE_INTRODUCTION, grouped::AFTER_THE_INTRODUCTION);
+        + gap(
+            gaps::AFTER_THE_INTRODUCTION,
+            grouped::AFTER_THE_INTRODUCTION,
+        );
     #[expect(
         clippy::cast_possible_truncation,
         clippy::cast_possible_wrap,

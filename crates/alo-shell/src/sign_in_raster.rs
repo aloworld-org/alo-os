@@ -205,20 +205,10 @@ pub(crate) fn picture(
         // top to bottom in a column at the left, where the sign-in screen is
         // answered in one place at the middle. `crate::setup_sheet_layout`
         // places it and `crate::first_start_sheet` fills it.
-        SignInShows::FirstAccount {
-            name,
-            password_typed,
-            field,
-            said,
-        } => {
+        SignInShows::FirstAccount { account, said } => {
             // **At the screen's own scale, or the largest that still holds the
             // sheet** — see `crate::a_scale_held_to_what_draws`.
-            let sheet = crate::first_start_sheet::FirstStartSheet {
-                on_the_pin: matches!(field, SignInField::Password) || password_typed,
-                typed: name,
-                password_typed,
-                said,
-            };
+            let sheet = crate::first_start_sheet::FirstStartSheet { account, said };
             let colours = crate::sign_in_surface::TheColours::of(look.contrast, look.scheme);
             return crate::a_scale_held_to_what_draws::at_the_largest_that_draws(display, |at| {
                 crate::first_start_sheet::drawn(

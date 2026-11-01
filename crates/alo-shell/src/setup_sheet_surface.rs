@@ -214,22 +214,24 @@ pub(crate) fn setup_sheet_surface(
                     TheFields::InEveryRow { focused: Some(it) } if it == which
                 );
                 let field_corner = f64::from(A_FIELDS_CORNER_IS) * scale.x;
-                colour = if focused {
-                    let outer = crate::sign_in_surface::coverage(
-                        crate::sign_in_surface::how_far(px, py, *field, field_corner),
-                    );
-                    let mut it = crate::sign_in_surface::mixed(colour, colours.entry, outer);
-                    let inner = crate::sign_in_surface::coverage(crate::sign_in_surface::how_far(
-                        px,
-                        py,
-                        crate::sign_in_surface::inset(*field, hairline * 2.0),
-                        (field_corner - hairline * 2.0).max(0.0),
-                    ));
-                    it = crate::sign_in_surface::mixed(it, colours.ink, outer - inner);
-                    it
-                } else {
-                    in_a_hairline(colour, (px, py), *field, field_corner, hairline, colours)
-                };
+                colour =
+                    if focused {
+                        let outer = crate::sign_in_surface::coverage(
+                            crate::sign_in_surface::how_far(px, py, *field, field_corner),
+                        );
+                        let mut it = crate::sign_in_surface::mixed(colour, colours.entry, outer);
+                        let inner =
+                            crate::sign_in_surface::coverage(crate::sign_in_surface::how_far(
+                                px,
+                                py,
+                                crate::sign_in_surface::inset(*field, hairline * 2.0),
+                                (field_corner - hairline * 2.0).max(0.0),
+                            ));
+                        it = crate::sign_in_surface::mixed(it, colours.ink, outer - inner);
+                        it
+                    } else {
+                        in_a_hairline(colour, (px, py), *field, field_corner, hairline, colours)
+                    };
             }
             // **Accessibility, as a control in a hairline** (`562:350`).
             colour = in_a_hairline(colour, (px, py), accessibility, corner, hairline, colours);
@@ -324,14 +326,15 @@ pub(crate) fn setup_sheet_surface(
                 let on_a_grouped_row = group.is_some() && matches!(ring, TheRing::OnAChoice(_));
                 if let (true, Some(row)) = (on_a_grouped_row, around) {
                     let thick = f64::from(THE_RING_IS_THICK) * scale.x;
-                    let on_the_ring = crate::sign_in_surface::coverage(
-                        crate::sign_in_surface::how_far(px, py, *row, corner),
-                    ) - crate::sign_in_surface::coverage(crate::sign_in_surface::how_far(
-                        px,
-                        py,
-                        crate::sign_in_surface::inset(*row, thick),
-                        (corner - thick).max(0.0),
-                    ));
+                    let on_the_ring =
+                        crate::sign_in_surface::coverage(crate::sign_in_surface::how_far(
+                            px, py, *row, corner,
+                        )) - crate::sign_in_surface::coverage(crate::sign_in_surface::how_far(
+                            px,
+                            py,
+                            crate::sign_in_surface::inset(*row, thick),
+                            (corner - thick).max(0.0),
+                        ));
                     if on_the_ring > 0.0 {
                         colour = crate::sign_in_surface::mixed(colour, colours.ink, on_the_ring);
                     }
