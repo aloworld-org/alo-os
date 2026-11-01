@@ -61,6 +61,12 @@ pub struct Standing {
     /// remote turn reads back exactly as it was written.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     from: Option<String>,
+    /// Every file, folder and application the change touches, in the order
+    /// its call names them (`crate::touching`). Added 2026-11-01, additively:
+    /// absent, not empty, for a change that touches none, and a message
+    /// written before it reads back exactly as it was written.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    touches: Vec<crate::Touched>,
 }
 
 impl Standing {
@@ -79,7 +85,21 @@ impl Standing {
                 .lapses_in(now)
                 .map(|left| left.as_secs().max(1)),
             from: None,
+            touches: waiting
+                .proposal
+                .call()
+                .asks()
+                .iter()
+                .filter_map(crate::Touched::of)
+                .collect(),
         }
+    }
+
+    /// Every file, folder and application this change touches — empty for one
+    /// that touches none, and for a message written before 2026-11-01.
+    #[must_use]
+    pub fn touches(&self) -> &[crate::Touched] {
+        &self.touches
     }
 
     /// This change, as one a paired machine proposed (ADR 0003).
@@ -175,6 +195,35 @@ mod tests {
         assert_eq!(
             Standing::of(waiting, &strings, the_moment()),
             Standing::of(waiting, &strings, the_moment())
+        );
+    }
+
+    /// **A change names the file it touches**, from what its call asks the
+    /// grants about; a message written before the field reads back as one
+    /// touching nothing, and one that touches nothing writes no field at all.
+    #[test]
+    fn a_change_names_what_it_touches_and_an_older_message_reads_as_before() {
+        let (approvals, strings) = a_change_waiting();
+        let standing = Standing::of(the_change(&approvals), &strings, the_moment());
+        assert_eq!(
+            standing.touches(),
+            [crate::Touched::Path(
+                "/home/anna/Invoices/march.pdf".to_owned()
+            )]
+        );
+        let written = serde_json::to_string(&standing).unwrap();
+        assert!(
+            written.contains(r#""touches":[{"path":"/home/anna/Invoices/march.pdf"}]"#),
+            "{written}"
+        );
+
+        let older =
+            r#"{"number":7,"sentence":{"text":"…","came_from":"the-source"},"lapses_in":300}"#;
+        let back: Standing = serde_json::from_str(older).unwrap();
+        assert!(back.touches().is_empty());
+        assert!(
+            !serde_json::to_string(&back).unwrap().contains("touches"),
+            "a change touching nothing wrote the field"
         );
     }
 

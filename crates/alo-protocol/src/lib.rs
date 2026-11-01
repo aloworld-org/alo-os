@@ -147,6 +147,7 @@ mod thing;
 mod to_a_person;
 mod to_an_agent;
 mod told;
+mod touching;
 pub mod where_the_door_is;
 mod wording;
 pub mod words;
@@ -168,6 +169,7 @@ pub use standing::Standing;
 pub use thing::{Kind, Thing};
 pub use to_a_person::ToAPerson;
 pub use to_an_agent::ToAnAgent;
+pub use touching::Touched;
 pub use wording::{CameFrom, Wording};
 pub use words::{
     EVERY_WORD, EVERY_WORD_ABOUT_THE_DOOR, Word, WordsError, declare_into, protocol_words,

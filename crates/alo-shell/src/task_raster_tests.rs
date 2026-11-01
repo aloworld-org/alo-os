@@ -556,7 +556,7 @@ fn with_a_card(
     selected: Option<crate::a_change_waiting_reaches_the_person::WhichAnswer>,
     answering: bool,
 ) -> TaskPicture {
-    a_window_with_a_card(selected, answering, None)
+    a_window_with_a_card(selected, answering, None, &[])
 }
 
 /// The design's frame with a change waiting at the end of it, drawn as the
@@ -564,7 +564,12 @@ fn with_a_card(
 fn with_the_approved_card(
     selected: Option<crate::a_change_waiting_reaches_the_person::WhichAnswer>,
 ) -> TaskPicture {
-    a_window_with_a_card(selected, true, Some(("alo is asking to", APPROVED_ONCE)))
+    a_window_with_a_card(
+        selected,
+        true,
+        Some(("alo is asking to", APPROVED_ONCE)),
+        &[],
+    )
 }
 
 /// *Allows this one action. alo asks again next time.*
@@ -575,6 +580,7 @@ fn a_window_with_a_card(
     selected: Option<crate::a_change_waiting_reaches_the_person::WhichAnswer>,
     answering: bool,
     approved: Option<(&'static str, &'static str)>,
+    touches: &[crate::task_text::ATouchedRow],
 ) -> TaskPicture {
     let files = two_files();
     let mut said = what_was_said();
@@ -588,6 +594,7 @@ fn a_window_with_a_card(
             selected,
             asking: approved.map(|(asking, _)| asking),
             once: approved.map(|(_, once)| once),
+            touches,
         }),
     });
     let mut fonts = cosmic_text::FontSystem::new();
@@ -1119,4 +1126,87 @@ fn the_status_is_teal_only_while_alo_is_working() {
     assert!(working.contains(&teal), "alo at work is teal");
     assert!(!finished.contains(&teal), "a finished task drew teal");
     assert!(finished.contains(&navy), "and its status is navy");
+}
+
+/// The approved card with these rows naming what the change touches.
+fn with_the_approved_card_touching(touches: &[crate::task_text::ATouchedRow]) -> TaskPicture {
+    a_window_with_a_card(
+        None,
+        true,
+        Some(("alo is asking to", APPROVED_ONCE)),
+        touches,
+    )
+}
+
+/// One row naming `march.pdf` in the person's Invoices folder.
+fn march() -> crate::task_text::ATouchedRow {
+    crate::task_text::ATouchedRow::of(
+        &alo_changing::Touched::Path("/home/anna/Invoices/march.pdf".to_owned()),
+        Some(std::path::Path::new("/home/anna")),
+    )
+}
+
+/// **The file a change touches has a row, under the action and above the
+/// answers** (`549:200`): its name, then where it is, and the answers move
+/// down by exactly the row and the 12 above it.
+#[test]
+fn the_file_a_change_touches_has_a_row_between_the_action_and_the_answers() {
+    let without = with_the_approved_card(None);
+    let with = with_the_approved_card_touching(&[march()]);
+    assert_eq!(
+        with.inked.len(),
+        without.inked.len() + 2,
+        "the file's name and where it is were not both written"
+    );
+    let at = |back: usize| {
+        with.inked
+            .get(with.inked.len() - back)
+            .expect("a piece of ink the order says is there")
+    };
+    let (action, name, where_it_is, allow) = (at(7), at(6), at(5), at(4));
+    assert!(action.area.loc.y + action.area.size.h <= name.area.loc.y);
+    assert!(name.area.loc.y + name.area.size.h <= where_it_is.area.loc.y);
+    assert!(where_it_is.area.loc.y + where_it_is.area.size.h <= allow.area.loc.y);
+    // Measured from the action, because the conversation opens at its newest
+    // words and a taller card scrolls the whole view.
+    let [_, action_before, allow_before, _, _] = the_cards_ink(&without);
+    assert_eq!(
+        (allow.area.loc.y - action.area.loc.y)
+            - (allow_before.area.loc.y - action_before.area.loc.y),
+        64 + 12,
+        "the answers did not move down from the action by the row"
+    );
+    const COOL: [u8; 3] = [0xEE, 0xF2, 0xF4];
+    assert!(
+        where_it_is.pixels.contains(&COOL) && name.pixels.contains(&COOL),
+        "the row's words are not on its bg/cool"
+    );
+}
+
+/// **Where a file is reads from the person's home**, as the frame writes
+/// `Presentations / Launch presentation.odp`; outside the home it is the
+/// whole path, and an application has a name and no place.
+#[test]
+fn where_a_file_is_is_written_from_home() {
+    assert_eq!(march().name, "march.pdf");
+    assert_eq!(march().where_it_is, "Invoices / march.pdf");
+    let outside = crate::task_text::ATouchedRow::of(
+        &alo_changing::Touched::Path("/srv/shared/report.pdf".to_owned()),
+        Some(std::path::Path::new("/home/anna")),
+    );
+    assert_eq!(outside.where_it_is, "/srv/shared/report.pdf");
+    let editor = crate::task_text::ATouchedRow::of(
+        &alo_changing::Touched::Application("org.gnome.TextEditor".to_owned()),
+        Some(std::path::Path::new("/home/anna")),
+    );
+    assert_eq!(editor.name, "org.gnome.TextEditor");
+    assert!(editor.where_it_is.is_empty() && !editor.is_a_path);
+
+    let with = with_the_approved_card_touching(&[editor]);
+    let without = with_the_approved_card(None);
+    assert_eq!(
+        with.inked.len(),
+        without.inked.len() + 1,
+        "an application's row wrote a place it does not have"
+    );
 }

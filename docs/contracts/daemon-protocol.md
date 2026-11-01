@@ -747,6 +747,23 @@ and the answer stops the change at the moment it would have run.
 {"waiting":{"changes":[{"number":7,"sentence":{"text":"…","came_from":"translation"},"lapses_in":300,"from":"the reception machine"}]}}
 ```
 
+A change in `proposed` or `waiting` carries **`touches`**: every file, folder
+and application its call names, in the order the call names them — exactly
+what the grants are asked about when it runs (`alo_capability::Call::asks`), so
+it can name nothing the change does not reach. A path is `{"path": …}`, written
+as it was given; an application is `{"application": …}`, by its identifier.
+Something the machine has that is not a path or an application (the screen, a
+printer) is not listed: the sentence names it. **Added 2026-11-01, additively,
+by the owner's decision of that day**, for the approval card's row naming the
+file. It is absent, not empty, for a change that touches nothing, and `format`
+does not change: a message written before it reads back as a change touching
+nothing. It is information for the person and authorises nothing — what is
+approved is still the sentence and the number.
+
+```json
+{"waiting":{"changes":[{"number":7,"sentence":{"text":"…","came_from":"translation"},"lapses_in":300,"touches":[{"path":"/home/anna/Invoices/march.pdf"}]}]}}
+```
+
 `answered` carries where the answer came from, and there is no shape without it:
 `docs/features.md` promises *where the answer came from is said where the answer
 appears*, and this is the last boundary at which that could be lost.

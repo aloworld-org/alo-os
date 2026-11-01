@@ -70,6 +70,10 @@ pub struct AChangeWaiting {
     /// before: the change is carried out inside the turn, so closing this
     /// first would end the turn under the very answer it was waiting for.
     the_turn: Option<std::os::unix::net::UnixStream>,
+    /// What the change in front of the person touches, as the daemon said —
+    /// the approval card's rows naming each file (frame `549:135`). Empty
+    /// when nothing is asked, and for a change that touches no file.
+    touches: Vec<alo_changing::Touched>,
 }
 
 /// The two answers, in reading order.
@@ -117,6 +121,7 @@ impl AChangeWaiting {
             // **Nothing preselected**, here as well as after every answer.
             selected: None,
             the_turn: None,
+            touches: Vec::new(),
         }
     }
 
@@ -180,6 +185,7 @@ impl AChangeWaiting {
             said.filter(|said| !it_only_announces(said, &sentence)),
         );
         self.number = Some(first.number());
+        self.touches = first.touches().to_vec();
         task.is_asking(sentence.clone());
         task.alo_says(Turn::alo_proposing(sentence));
         WhatArrived::AQuestion
@@ -192,6 +198,7 @@ impl AChangeWaiting {
     pub fn allow_once(&mut self, task: &mut ATask, daemon: &dyn Answering) -> Option<Answered> {
         let number = self.number.take()?;
         self.selected = None;
+        self.touches.clear();
         task.allow_once();
         let answered = daemon.approve(number);
         // **Only now does the agent go**: the change was carried out inside
@@ -204,6 +211,7 @@ impl AChangeWaiting {
     pub fn deny(&mut self, task: &mut ATask, daemon: &dyn Answering) -> Option<Answered> {
         let number = self.number.take()?;
         self.selected = None;
+        self.touches.clear();
         task.deny();
         let answered = daemon.decline(number);
         self.the_turn = None;
@@ -220,8 +228,16 @@ impl AChangeWaiting {
     ) -> Option<std::os::unix::net::UnixStream> {
         self.number.take()?;
         self.selected = None;
+        self.touches.clear();
         task.the_question_lapsed();
         self.the_turn.take()
+    }
+
+    /// What the change in front of the person touches, and nothing when no
+    /// change is.
+    #[must_use]
+    pub fn touches(&self) -> &[alo_changing::Touched] {
+        &self.touches
     }
 
     /// Which answer their keyboard is on, and [`None`] until they move to one.

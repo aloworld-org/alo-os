@@ -43,6 +43,8 @@ fn each_style_is_the_designs_own_figures() {
         (AStyle::Body, 16.0, 25.0),
         (AStyle::SmallBody, 14.0, 22.0),
         (AStyle::Destination, 12.0, 22.0),
+        (AStyle::AFilesName, 14.0, 22.0),
+        (AStyle::WhereAFileIs, 12.0, 18.0),
     ] {
         let metrics = style.metrics(ordinary());
         assert!(
@@ -72,6 +74,8 @@ fn both_the_size_and_the_leading_scale_with_the_text_size() {
         AStyle::Body,
         AStyle::SmallBody,
         AStyle::Destination,
+        AStyle::AFilesName,
+        AStyle::WhereAFileIs,
     ] {
         let one = style.metrics(ordinary());
         let two = style.metrics(twice());

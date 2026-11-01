@@ -301,11 +301,23 @@ fn measured_and_inked(
 /// other sentence on this machine, so a measurement and a drawing cannot
 /// disagree about the same string.
 pub(crate) fn how_wide(fonts: &mut FontSystem, text: &str, metrics: Metrics) -> i32 {
+    how_wide_as(fonts, text, metrics, &alos_own_text())
+}
+
+/// How wide this text wants to be in the face and weight `attrs` asks for —
+/// [`how_wide`] for text that is not drawn in alo's own face at its own
+/// weight, such as where a file is, in the bundled mono.
+pub(crate) fn how_wide_as(
+    fonts: &mut FontSystem,
+    text: &str,
+    metrics: Metrics,
+    attrs: &Attrs<'_>,
+) -> i32 {
     let mut buffer = Buffer::new(fonts, metrics);
     // No wrapping and no width: the natural run, however long.
     buffer.set_wrap(fonts, Wrap::None);
     buffer.set_size(fonts, None, None);
-    buffer.set_text(fonts, text, &alos_own_text(), Shaping::Advanced);
+    buffer.set_text(fonts, text, attrs, Shaping::Advanced);
     buffer.shape_until_scroll(fonts, false);
     #[expect(
         clippy::cast_possible_truncation,

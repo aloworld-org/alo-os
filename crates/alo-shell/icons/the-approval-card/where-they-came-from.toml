@@ -1,0 +1,25 @@
+# Where the approval card's artwork came from.
+#
+# Taken from the design file on 2026-11-01 with the Figma connector's
+# `get_design_context` on the approved frame `549:135` *alo window · Waiting for
+# your permission · 1440×960 · Light* (page `544:30910`), whose asset links were
+# downloaded with curl and committed byte for byte.
+# `crates/alo-shell/src/the_approval_cards_icons_tests.rs` reads this file.
+
+file = "nDxyF5Ho9oC4RObjVzwBNJ"
+fetched = "2026-11-01"
+frame = "549:135"
+
+[[icon]]
+svg = "alo-mark.svg"
+names = "the alo mark beside *alo is asking to*; the same component is the speaker mark beside *alo* on a reply (549:189)"
+node = "549:195"
+drawn_at = 12
+colour = "#0F6B72"
+
+[[icon]]
+svg = "file.svg"
+names = "a file, in the tile of a row naming a file the change touches. The frame's own tile draws plusFile (549:202) for a change that makes a new file; a row names a file that may already exist, so the plain file icon of the shared-file chip (549:163) is drawn, at the tile's 20"
+node = "549:163"
+drawn_at = 20
+colour = "#274C68"
