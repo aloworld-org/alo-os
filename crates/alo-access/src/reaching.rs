@@ -175,6 +175,7 @@ pub const fn the_tab_stop_for(action: Action) -> Surface {
         | Action::ShowAllOnTheCanvas
         | Action::ReturnTheCanvasToLifeSize
         | Action::GoBackOnThisPlace
+        | Action::GoForwardOnThisPlace
         // **Moving the keyboard between the parts of the screen is reached
         // from the work**, because that is where a person is when they need
         // it: the whole point of the two is to get *out* of the canvas without

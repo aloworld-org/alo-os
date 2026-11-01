@@ -583,6 +583,20 @@ pub struct Server {
     /// cursor is needed at all — without one the chord is a toggle between two
     /// canvases rather than a walk.
     pub(crate) walking_back_from: Option<std::time::SystemTime>,
+    /// **What each step back left**, newest last, for stepping forward again:
+    /// the Place, the canvas as it stood before the step, and where the walk's
+    /// cursor stood then. Emptied by a rearrangement the person made, which is
+    /// what ends a walk. `crate::canvas_a_place_remembers_time`.
+    pub(crate) what_going_back_left: Vec<(
+        alo_canvas::Place,
+        alo_arranging::Arrangement,
+        Option<std::time::SystemTime>,
+    )>,
+    /// **The canvas a step of the walk put back**, so that the save the
+    /// desktop makes of it is recognised as the walk's own echo rather than as
+    /// the person rearranging — which would end the walk, and turn the second
+    /// press of *go back* into a step forward.
+    pub(crate) the_walk_left_the_canvas: Option<alo_arranging::Arrangement>,
     /// **What a touchpad gesture means, as `alo-desktops` recognises it.**
     ///
     /// One recogniser for the seat: at most one gesture is in flight at a
@@ -840,6 +854,8 @@ impl Server {
             remembered: alo_arranging::Arrangement::fresh(),
             // Nobody is walking backwards through anything yet.
             walking_back_from: None,
+            what_going_back_left: Vec::new(),
+            the_walk_left_the_canvas: None,
             desk: crate::server_desk::Desk::new(),
         })
     }

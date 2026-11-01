@@ -524,7 +524,7 @@ pub const KEPT_NOT_REPLACED: Word = Word::saying(
 /// the shortcuts do, what is held down, the keys that print a word, why a
 /// combination was refused, what one chord wanted twice says, and then what is
 /// said about the person's own file.
-pub const EVERY_WORD: [Word; 59] = [
+pub const EVERY_WORD: [Word; 60] = [
     THE_AGENT,
     LAUNCHER,
     SETTINGS,
@@ -547,6 +547,7 @@ pub const EVERY_WORD: [Word; 59] = [
     RETURN_THE_CANVAS_TO_LIFE_SIZE,
     MOVE_THE_WINDOW_TO_THE_NEXT_PLACE,
     GO_BACK_ON_THIS_PLACE,
+    GO_FORWARD_ON_THIS_PLACE,
     THE_NEXT_AREA,
     THE_PREVIOUS_AREA,
     SUPER,
@@ -652,6 +653,17 @@ pub const GO_BACK_ON_THIS_PLACE: Word = Word::saying(
      ago, and leaves every other surface alone. One step back each time it is pressed, so \
      pressing it twice goes back twice. *Place* is the person's own named surface on the \
      canvas, the same word the other Place shortcuts use, and not a location in the world.",
+);
+
+/// What [`crate::Action::GoForwardOnThisPlace`] does.
+pub const GO_FORWARD_ON_THIS_PLACE: Word = Word::saying(
+    "shortcuts.action.go-forward-on-this-place",
+    "Put this Place forward again",
+)
+.noting(
+    "The opposite of shortcuts.action.go-back-on-this-place, as redo is the opposite of undo: it \
+     takes back the last step back, and pressing it again takes back the one before. It stops \
+     where the person started going back.",
 );
 
 /// What [`crate::Action::TheNextArea`] does.
