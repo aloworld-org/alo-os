@@ -717,14 +717,20 @@ pub(crate) fn furniture(
         false,
         None,
     );
-    // **The status in teal while alo is working**, which is the caller's
-    // wording and this crate's colour: ADR 0067's teal marks alo acting.
+    // **The status in teal while alo is working, and only then**, which is the
+    // caller's wording and this crate's colour: ADR 0067's teal marks alo
+    // acting. *Complete* was drawn teal too until 2026-11-01; the approved
+    // design draws it, and *Waiting for your permission*, in navy.
     write(
         words.status,
         &[],
         AStyle::Label,
         palette.surface,
-        palette.alo,
+        if words.alo_is_working {
+            palette.alo
+        } else {
+            palette.ink
+        },
         // **In its own column on the right**, which is what the design draws
         // and what stops it painting over the title.
         rows.heading

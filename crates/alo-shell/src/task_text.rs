@@ -130,6 +130,14 @@ pub struct TheWordsInATaskWindow<'a> {
     pub kind: &'a str,
     /// What is happening — *alo is working*, *Waiting for your permission*.
     pub status: &'a str,
+    /// Whether that is alo at work, which is the one status drawn in teal.
+    ///
+    /// **Teal is alo acting and nothing else** (ADR 0067). *Complete* and
+    /// *Waiting for your permission* are drawn in navy, as the designs the
+    /// owner approved draw them (`alo-window-complete`, and the waiting
+    /// frame): a finished task is not alo acting, and a waiting one is waiting
+    /// for the person.
+    pub alo_is_working: bool,
     /// Which model answers.
     pub model: &'a str,
     /// Where the processing happens — *On this computer*.
