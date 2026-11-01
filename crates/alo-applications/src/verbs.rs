@@ -210,6 +210,10 @@ fn open_application() -> Result<Verb, VerbError> {
         )],
         Requires::grants_over(["application"]),
         words::OPEN_APPLICATION_SENTENCE,
+    )?
+    .changing(
+        words::OPEN_APPLICATION_CHANGES,
+        Some(words::OPEN_APPLICATION_LEAVES),
     )
 }
 
@@ -226,6 +230,10 @@ fn focus_application() -> Result<Verb, VerbError> {
         )],
         Requires::grants_over(["application"]),
         words::FOCUS_APPLICATION_SENTENCE,
+    )?
+    .changing(
+        words::FOCUS_APPLICATION_CHANGES,
+        Some(words::FOCUS_APPLICATION_LEAVES),
     )
 }
 
@@ -242,6 +250,10 @@ fn close_application() -> Result<Verb, VerbError> {
         )],
         Requires::grants_over(["application"]),
         words::CLOSE_APPLICATION_SENTENCE,
+    )?
+    .changing(
+        words::CLOSE_APPLICATION_CHANGES,
+        Some(words::CLOSE_APPLICATION_LEAVES),
     )
 }
 
