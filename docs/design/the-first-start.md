@@ -30,6 +30,49 @@ onboarding part, read directly from the file.
 **Two of three machines have no Figma access**, so whoever draws these screens
 needs this document rather than the file.
 
+## Round 2: the first start as approved, 2026-11-01
+
+**The owner approved the improved first-start screens on 2026-11-01** — page
+`554:2`: *Start with your language* `562:342` (and at 1280 × 800 `562:402`),
+*What should we call you?* `562:462`, *Add a PIN?* `562:508`, beside the
+originals copied at `561:465`, `561:486`, `561:507`. Read off the live file
+that day:
+
+| | figure |
+|---|---|
+| eyebrow → title → introduction → card | 12, 12, **28** (`562:356`) |
+| card → note → actions | **12**, **28** |
+| the card | one, 600 wide, `bg/surface` in a 1 `border/default` hairline, corner **12**; its rows touch, divided by a hairline |
+| the overview's rows | **72** tall: a 36 `bg/cool` tile at corner 10 holding an 18 icon, the name SemiBold 14 / 22 at 68, what it is set to Regular 14 in `text/secondary` ending 16 before an 18 chevron in `text/muted` |
+| the focused row | **2 of `text/primary` on the row's own edge**, inside the card |
+| a field's row | **106** tall: the label SemiBold 13 / 18 in `text/secondary` at (15, 15); the field 48 tall at (15, 41), 32 narrower than the row, corner 10, a 1 hairline — **2 of the ink where the keyboard is** |
+| the note | a 16 icon in `text/muted`, the words Regular 14 / 22 at 28 |
+| *Accessibility* | **140 × 44** at (40, 876), white in a hairline, corner 12, a 16 icon at (17, 14) and its word at 41 |
+| actions | 160 × 48, 172 apart, corner 12 |
+
+**What it changes, and the readings taken:**
+
+- **The overview's three rows are one grouped card** with their icons and
+  chevrons; the region's note says what the region is for.
+- **The name sheet holds the name alone.** The design's *Profile picture ·
+  optional* row is not drawn: *the owner removed it for now* (2026-11-01).
+- **The PIN is typed twice** (`562:534`, *Confirm PIN*), and two that differ make
+  no account: the second is emptied and the note says so.
+- **Use password only asks for a password**, on a sheet the design does not
+  draw: the PIN sheet's composition with *Choose a password.*, *Password* and
+  *Confirm password*, *Save password* and *Back* to the PIN. **It is not
+  optional** — every account has a secret (the owner's answer) — so it has no
+  `Optional ·` eyebrow and its way back is *Back*, the decline wording this
+  document already gives a step that returns.
+- **Back on the name sheet returns to the overview** as it was left.
+- **Accessibility is drawn as the design's control on every list and account
+  sheet.** A press on it still opens nothing, as on the sign-in screen: the
+  surface it opens does not exist yet, which is recorded rather than hidden.
+- **Both buttons are 160**, where the design draws *Use password only* 172:
+  its words fit in 160 at every size this was drawn at.
+- **The title stays at 32 / 44**, the size these sheets already draw it, where
+  the frames draw 36 / 44 with a −0.8 tracking.
+
 ## Settled by the owner, 2026-10-06
 
 **All three questions below were put to the owner and answered, and none of the

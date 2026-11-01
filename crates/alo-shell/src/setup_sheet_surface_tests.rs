@@ -23,6 +23,7 @@ fn drawn() -> (
             consequence: 22,
             choices: 2,
             actions: 2,
+            rows: crate::setup_sheet_layout::TheRowsAre::Apart,
         },
     )
     .expect("the reference sheet lays out");
@@ -148,6 +149,7 @@ fn a_sheet_with_no_area_draws_nothing() {
             consequence: 22,
             choices: 1,
             actions: 1,
+            rows: crate::setup_sheet_layout::TheRowsAre::Apart,
         },
     )
     .expect("lays out");
@@ -197,6 +199,7 @@ mod a_chosen_row_is_two_pixels_of_ink {
                 consequence: 0,
                 choices: 3,
                 actions: 2,
+                rows: crate::setup_sheet_layout::TheRowsAre::Apart,
             },
         )
         .expect("the reference sheet lays out");
@@ -204,7 +207,11 @@ mod a_chosen_row_is_two_pixels_of_ink {
             &at,
             (at.sheet.size.w, at.sheet.size.h),
             designed(),
-            crate::setup_sheet_surface::TheMarks { chosen, ring: None },
+            crate::setup_sheet_surface::TheMarks {
+                chosen,
+                ring: None,
+                fields: crate::setup_sheet_surface::TheFields::None,
+            },
             Scale::from(1.0),
         )
         .expect("a sheet with area draws");

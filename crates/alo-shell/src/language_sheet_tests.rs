@@ -142,6 +142,7 @@ fn the_sheet_draws_the_same_number_of_rows_the_window_offers() {
             consequence: 0,
             choices: rows,
             actions: 2,
+            rows: crate::setup_sheet_layout::TheRowsAre::Apart,
         },
     )
     .expect("the reference sheet lays out");

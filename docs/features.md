@@ -1161,6 +1161,17 @@ Settled against the design file and verified against the refreshed snapshot;
   They are not interchangeable — `Not now`, `Cancel`, `Back`, `Use password
   only`, `Use password for now`, `Done`. A build must not normalise them into
   one.
+- **Skipping the PIN asks for a password instead, so every account has a
+  secret.** *Use password only* on the PIN sheet leads to a sheet that asks
+  for a password typed twice, with *Back* to the PIN; a PIN is typed twice as
+  well, and two that differ make no account. *The owner's answer of
+  2026-11-01: "Skipping the PIN asks for a password instead, so every account
+  has a secret. Remove 'Use password only' pointing at nothing; add the
+  password step."*
+- **The name sheet asks for the name alone, for now.** The approved design
+  (`562:462`) draws a *Profile picture · optional* row under it; *the owner
+  removed it from the name screen for now* on 2026-11-01, so nothing about a
+  picture is asked or offered at the first start.
 - ★ **One selection border: 2 logical pixels of navy, plus the word.**
   `#102A43`, with `Selected` beside it, and the former 1.5px access-screen
   border was a leftover. **Keyboard focus stays a separate mark** — an outer

@@ -1,0 +1,54 @@
+# Where the first start's icons came from.
+#
+# Exported from the design file on 2026-11-01 with the Figma plugin API's
+# `exportAsync({ format: 'SVG_STRING' })` on each icon's own frame, in the
+# first-start screens the owner approved that day (`562:342`, `562:462`,
+# `562:508`). Each viewBox is the icon's whole frame. `language.svg` came with
+# a clip to its own frame, which clips nothing and is left out, because
+# `alo_vector_shapes` draws paths and nothing else.
+#
+# The colours in the files are the design's light values; what is drawn is
+# the sheet's colour for where each is used.
+
+file = "nDxyF5Ho9oC4RObjVzwBNJ"
+fetched = "2026-11-01"
+
+[[icon]]
+svg = "language.svg"
+node = "562:366"
+frame = 18
+
+[[icon]]
+svg = "region.svg"
+node = "562:374"
+frame = 18
+
+[[icon]]
+svg = "keyboard.svg"
+node = "562:383"
+frame = 18
+
+[[icon]]
+svg = "chevron.svg"
+node = "562:370"
+frame = 18
+
+[[icon]]
+svg = "info.svg"
+node = "562:392"
+frame = 16
+
+[[icon]]
+svg = "computer.svg"
+node = "562:498"
+frame = 16
+
+[[icon]]
+svg = "lock.svg"
+node = "562:541"
+frame = 16
+
+[[icon]]
+svg = "accessibility.svg"
+node = "562:351"
+frame = 16

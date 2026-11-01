@@ -188,7 +188,10 @@ fn a_fresh_machine_makes_its_first_account_and_signs_in() {
     let mut screen = at_the_name_sheet(screen);
     let store = kept.path().join("accounts.toml");
 
+    // **The PIN typed twice**, as the approved sheet asks (`562:508`).
     let mut keys: Vec<SignInKey> = "ada".chars().map(SignInKey::Letter).collect();
+    keys.push(SignInKey::Enter);
+    keys.extend("the-one-they-chose".chars().map(SignInKey::Letter));
     keys.push(SignInKey::Enter);
     keys.extend("the-one-they-chose".chars().map(SignInKey::Letter));
     keys.push(SignInKey::Enter);

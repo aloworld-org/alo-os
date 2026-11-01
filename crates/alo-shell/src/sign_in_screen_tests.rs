@@ -413,6 +413,9 @@ fn a_machine_with_nobody_on_it_is_offered_a_sheet_and_refused_without_a_store() 
         SignInKey::Enter,
         SignInKey::Letter('b'),
         SignInKey::Enter,
+        // The secret again, as the PIN sheet asks.
+        SignInKey::Letter('b'),
+        SignInKey::Enter,
     ] {
         screen = still(screen.pressed(key));
     }
@@ -429,7 +432,7 @@ fn a_machine_with_nobody_on_it_is_offered_a_sheet_and_refused_without_a_store() 
         heard.borrow().is_empty(),
         "a refused account still knocked at the door"
     );
-    assert!(matches!(screen.stands, Stands::MakeAnAccount(_, _)));
+    assert!(matches!(screen.stands, WhatItStandsAt::MakeAnAccount(..)));
 }
 
 /// **Accounts that would not be read show `alo-greeting`'s sentence, take no
@@ -498,6 +501,9 @@ fn every_sentence_the_screen_can_show_is_collected_and_none_is_written_here() {
         SignInKey::Enter,
         SignInKey::Letter('a'),
         SignInKey::Enter,
+        SignInKey::Letter('b'),
+        SignInKey::Enter,
+        // The secret again, as the PIN sheet asks.
         SignInKey::Letter('b'),
         SignInKey::Enter,
     ] {
@@ -637,6 +643,14 @@ fn at_the_first_account_sheet() -> SignInScreen<CountingDoor> {
     screen
 }
 
+/// The name on the first-account sheets, and whether either secret is typed.
+fn the_account_on(screen: &SignInScreen<CountingDoor>) -> (String, (bool, bool)) {
+    match screen.shows() {
+        SignInShows::FirstAccount { account, .. } => (account.name.to_owned(), account.typed),
+        other => panic!("not on the first-account sheets: {other:?}"),
+    }
+}
+
 /// **A refused first account keeps the name the person typed.**
 ///
 /// Measured on a booted machine on 2026-10-18 and it cost a person their
@@ -650,26 +664,30 @@ fn at_the_first_account_sheet() -> SignInScreen<CountingDoor> {
 #[test]
 fn a_refused_first_account_keeps_the_name_and_forgets_the_secret() {
     let mut screen = at_the_first_account_sheet();
-    assert_eq!(screen.entry.name(), "dis", "the premise: a name is typed");
+    assert_eq!(
+        the_account_on(&screen).0,
+        "dis",
+        "the premise: a name is typed"
+    );
 
-    // Enter moves to the secret; Enter again submits an empty one.
-    screen = still(screen.pressed(SignInKey::Enter));
-    screen = still(screen.pressed(SignInKey::Enter));
+    // Enter moves to the secret, Enter to typing it again, and Enter submits
+    // the two — empty both times — since the secret is typed twice
+    // (`562:508`).
+    for _ in 0..3 {
+        screen = still(screen.pressed(SignInKey::Enter));
+    }
 
     assert!(
         sentence(&screen).is_some(),
         "an empty secret was not refused, so this test is not about a refusal"
     );
+    let (name, typed) = the_account_on(&screen);
     assert_eq!(
-        screen.entry.name(),
-        "dis",
+        name, "dis",
         "a refusal took the name away, so a person types it again because they \
          pressed Enter once too often"
     );
-    assert!(
-        !screen.entry.has_password(),
-        "a refusal kept the secret in memory"
-    );
+    assert_eq!(typed, (false, false), "a refusal kept the secret in memory");
 }
 
 /// **A refusal stops speaking the moment the person types again.**
@@ -682,8 +700,9 @@ fn a_refused_first_account_keeps_the_name_and_forgets_the_secret() {
 #[test]
 fn a_refusal_does_not_follow_the_person_to_the_next_thing_they_type() {
     let mut screen = at_the_first_account_sheet();
-    screen = still(screen.pressed(SignInKey::Enter));
-    screen = still(screen.pressed(SignInKey::Enter));
+    for _ in 0..3 {
+        screen = still(screen.pressed(SignInKey::Enter));
+    }
     assert!(
         sentence(&screen).is_some(),
         "the premise: something was refused and the screen is saying so"

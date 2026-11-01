@@ -70,6 +70,7 @@ pub(crate) fn drawn(
             consequence: 0,
             choices: offered.rows().len(),
             actions: 2,
+            rows: crate::setup_sheet_layout::TheRowsAre::Apart,
         },
         1,
     )
@@ -95,6 +96,7 @@ pub(crate) fn drawn(
                         Some(crate::setup_sheet_surface::TheRing::OnAnAction(0))
                     }
                 },
+                fields: crate::setup_sheet_surface::TheFields::None,
             },
             Scale::from(measure.display().factor()),
         ),

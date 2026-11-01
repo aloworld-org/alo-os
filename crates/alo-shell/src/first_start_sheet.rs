@@ -1,21 +1,28 @@
-//! A first-start sheet, filled and drawn.
+//! The first account's sheets, filled and drawn — as the owner approved them on
+//! 2026-11-01: *What should we call you?* (`562:462`) and *Add a PIN?*
+//! (`562:508`), and the password sheet *Use password only* leads to.
 //!
-//! `crate::setup_sheet_layout` says where everything on a setup sheet goes and
-//! `crate::setup_sheet_surface` draws its cards and buttons. This is what puts
-//! words in them — the two account sheets of the journey `ROOTS.md`
-//! inventories, which are the ones standing between a machine that knows
-//! nobody and a person who can use it.
+//! `crate::setup_sheet_layout` places a sheet, `crate::setup_sheet_surface`
+//! draws its card, its fields and its buttons, and
+//! `crate::setup_sheet_painting::a_sheet` letters what every sheet has. This is
+//! what is in the rows: each a label over a field, in one card.
 //!
 //! # Two sheets, because one cannot make an account
 //!
-//! `alo_greeting::makes_an_account` takes a name **and** a password, and the
-//! design splits them: *10 · Your name* asks for the name and *11a · Add a
-//! PIN* asks for the secret. So the smallest thing that actually makes an
-//! account is both sheets and the step between them, and a single sheet would
-//! have been a surface that could not finish.
+//! `alo_greeting::makes_an_account` takes a name **and** a secret, and the
+//! design asks for them on two sheets; `crate::the_first_account` is the state
+//! between them, and the road to a password instead of a PIN.
 //!
-//! Which sheet is showing is read from where the keyboard is: the name field
-//! means the first, the password field means the second.
+//! # The profile picture is not here
+//!
+//! The approved name sheet draws a second row, *Profile picture · optional*.
+//! **The owner removed it for now** (2026-11-01), so the card holds the name
+//! alone.
+//!
+//! # A secret is never drawn
+//!
+//! A field with a secret in it shows four dots however much is typed, and an
+//! empty one its invitation: the rule `crate::sign_in_raster` keeps.
 //!
 //! # The words are the vocabulary's
 //!
@@ -23,27 +30,42 @@
 //! `Strings`. Nothing here is English.
 
 use cosmic_text::FontSystem;
-use smithay::utils::{Rectangle, Scale};
+use smithay::utils::{Physical, Rectangle};
 
-use crate::a_sheet_that_fits::{ItFits, the_sheet_that_fits};
 use crate::painted::Solid;
 use crate::painted_text::sentence;
-use crate::setup_sheet_in_pixels::the_column_in_pixels;
-use crate::setup_sheet_layout::TheTextIsTall;
+use crate::setup_sheet_layout::TheRowsAre;
+use crate::setup_sheet_painting::{TheSheetSays, a_sheet};
+use crate::setup_sheet_surface::{TheFields, TheMarks, TheRing};
 use crate::sign_in_raster::{Measure, SignInPicture};
 use crate::sign_in_surface::TheColours;
+use crate::the_first_account::{ASecret, OnTheSheet, TheAccountSheet, TheAccountShown};
+use crate::the_first_starts_icons::AFirstStartIcon;
 use crate::{RenderError, first_start_words as say};
 
-/// What a first-start sheet is showing.
+/// How tall a row holding a field is: `562:484`'s 106.
+const A_FIELDS_ROW_IS_TALL: i32 = 106;
+
+/// What a secret is shown as, however long: four dots.
+const A_SECRET_IS_SHOWN_AS: &str = "\u{2022}\u{2022}\u{2022}\u{2022}";
+
+/// What a first-account sheet is showing.
 pub(crate) struct FirstStartSheet<'a> {
-    /// Whether the PIN sheet is up rather than the name sheet.
-    pub(crate) on_the_pin: bool,
-    /// The name as typed, which the name sheet shows in its own row.
-    pub(crate) typed: &'a str,
-    /// Whether anything is typed in the secret. **Never how much.**
-    pub(crate) password_typed: bool,
+    /// The account being asked for, as it is drawn.
+    pub(crate) account: TheAccountShown<'a>,
     /// What this machine last said about making an account.
     pub(crate) said: Option<&'a alo_strings::Said>,
+}
+
+/// One of a sheet's rows: its label, what its field shows, and whether that is
+/// the invitation rather than something typed.
+struct ARow {
+    /// The label over the field.
+    label: String,
+    /// What the field shows.
+    shows: String,
+    /// Whether that is the invitation to type rather than what was typed.
+    inviting: bool,
 }
 
 /// Draw the sheet that is showing.
@@ -59,268 +81,167 @@ pub(crate) fn drawn(
     colours: TheColours,
     measure: &Measure,
 ) -> Result<SignInPicture, RenderError> {
-    let (width, height) = size;
     let nothing = alo_strings::Filling::nothing();
-    let say_it = |word: alo_strings::Word| words.say(&word.key(), &nothing);
-
-    // The words first, because their height decides where everything sits.
-    let (eyebrow, title, introduction, choice, hint, consequence, action) = if sheet.on_the_pin {
-        (
-            say_it(say::PIN_EYEBROW),
-            say_it(say::PIN_TITLE),
-            say_it(say::PIN_INTRODUCTION),
-            say_it(say::PIN_CHOICE),
-            say_it(say::PIN_HINT),
-            say_it(say::PIN_CONSEQUENCE),
-            say_it(say::SAVE),
-        )
-    } else {
-        (
+    let say_it = |word: alo_strings::Word| words.say(&word.key(), &nothing).into_text();
+    let account = sheet.account;
+    let (secret_typed, again_typed) = account.typed;
+    let a_secret = |label: alo_strings::Word, typed: bool, hint: alo_strings::Word| ARow {
+        label: say_it(label),
+        shows: if typed {
+            A_SECRET_IS_SHOWN_AS.to_owned()
+        } else {
+            say_it(hint)
+        },
+        inviting: !typed,
+    };
+    let (eyebrow, title, introduction, rows, note, actions) = match account.sheet {
+        TheAccountSheet::Name => (
             say_it(say::NAME_EYEBROW),
             say_it(say::NAME_TITLE),
             say_it(say::NAME_INTRODUCTION),
-            say_it(say::NAME_CHOICE),
-            say_it(say::NAME_HINT),
-            say_it(say::NAME_CONSEQUENCE),
-            say_it(say::CONTINUE),
-        )
+            vec![ARow {
+                label: say_it(say::NAME_CHOICE),
+                shows: if account.name.is_empty() {
+                    say_it(say::NAME_HINT)
+                } else {
+                    account.name.to_owned()
+                },
+                inviting: account.name.is_empty(),
+            }],
+            (AFirstStartIcon::Computer, say_it(say::NAME_CONSEQUENCE)),
+            [say_it(say::CONTINUE), say_it(say::BACK)],
+        ),
+        TheAccountSheet::Secret(ASecret::Pin) => (
+            say_it(say::PIN_EYEBROW),
+            say_it(say::PIN_TITLE),
+            say_it(say::PIN_INTRODUCTION),
+            vec![
+                a_secret(say::PIN_CHOICE, secret_typed, say::PIN_HINT),
+                a_secret(say::PIN_AGAIN, again_typed, say::AGAIN_HINT),
+            ],
+            (AFirstStartIcon::Lock, say_it(say::PIN_CONSEQUENCE)),
+            [say_it(say::SAVE), say_it(say::USE_PASSWORD_ONLY)],
+        ),
+        TheAccountSheet::Secret(ASecret::Password) => (
+            say_it(say::PASSWORD_EYEBROW),
+            say_it(say::PASSWORD_TITLE),
+            say_it(say::PASSWORD_INTRODUCTION),
+            vec![
+                a_secret(say::PASSWORD_CHOICE, secret_typed, say::PASSWORD_HINT),
+                a_secret(say::PASSWORD_AGAIN, again_typed, say::AGAIN_HINT),
+            ],
+            (AFirstStartIcon::Lock, say_it(say::PASSWORD_CONSEQUENCE)),
+            [say_it(say::SAVE_PASSWORD), say_it(say::BACK)],
+        ),
     };
-
-    // **Shaped before it is placed.** The title wraps and the introduction
-    // wraps, in a language this code has never seen, so their heights are
-    // measured and handed to the layout rather than assumed — which is what
-    // stops a longer heading being drawn over the choices.
-    let column = the_column_in_pixels(width, measure.display());
-    let shaped_introduction = sentence(
-        fonts,
-        introduction.text(),
-        column,
-        measure.metrics(),
-        colours.ground,
-        colours.ink,
-    );
-
-    // **The consequence is measured too.** It is one line in the design and
-    // two in a language that needs more words, and a fixed 22 drew the sentence
-    // straight through the button below it — which is what a fresh machine
-    // showed the first time this was rendered.
+    // **What the machine last said, or that the two differed, before what the
+    // sheet means** — one line under the card, which is where a person looks
+    // after pressing the way on.
+    let (icon, means) = note;
     let under = sheet.said.map_or_else(
-        || consequence.text().to_owned(),
+        || {
+            if account.they_differed {
+                say_it(say::THEY_DIFFER)
+            } else {
+                means.clone()
+            }
+        },
         |said| said.text().to_owned(),
     );
-    let shaped_consequence = sentence(
+    let (focused, ring) = match account.on {
+        OnTheSheet::Field(it) => (Some(it), None),
+        OnTheSheet::WayOn => (None, Some(TheRing::OnAnAction(0))),
+        OnTheSheet::WayBack => (None, Some(TheRing::OnAnAction(1))),
+    };
+    let how_many = rows.len();
+    let [go_on, go_back] = &actions;
+    let (mut drawn, at, _) = a_sheet(
+        &TheSheetSays {
+            eyebrow: &eyebrow,
+            title: &title,
+            introduction: &introduction,
+            actions: [go_on, go_back],
+            rows: TheRowsAre::Grouped(A_FIELDS_ROW_IS_TALL),
+            note: Some((icon, &under)),
+        },
+        (how_many, how_many),
+        |_| TheMarks {
+            chosen: None,
+            ring,
+            fields: TheFields::InEveryRow { focused },
+        },
         fonts,
-        &under,
-        column,
-        measure.metrics(),
-        colours.ground,
-        colours.muted,
-    );
-
-    // **Fitted to the screen**, which on these sheets can only tighten: the
-    // one row is the field a person types into (`crate::a_sheet_that_fits`).
-    let Some(ItFits {
-        laid,
-        title: shaped_title,
-        ..
-    }) = the_sheet_that_fits(
-        fonts,
-        title.text(),
+        words,
+        size,
         colours,
         measure,
-        size,
-        TheTextIsTall {
-            title: 0,
-            introduction: shaped_introduction.height,
-            consequence: shaped_consequence.height,
-            // One row on each sheet takes what is typed. The design's second
-            // row is a profile picture and a confirmation, neither of which
-            // this screen can do yet, so it draws the one it can act on.
-            choices: 1,
-            actions: 1,
-        },
-        1,
-    )
-    else {
-        return Err(RenderError::SignInScene);
-    };
-
-    let mut drawn = SignInPicture {
-        size,
-        surface: crate::setup_sheet_surface::setup_sheet_surface(
-            &laid.logical,
-            size,
-            colours,
-            crate::setup_sheet_surface::TheMarks::default(),
-            Scale::from(measure.display().factor()),
-        ),
-        solids: Vec::new(),
-        inked: Vec::new(),
-        controls: Vec::new(),
-    };
-    let at = laid.pixels;
+    )?;
     // **What a press can land on is what was just drawn**, in its pixels.
     drawn.controls = crate::a_press_on_a_setup_sheet::the_controls_of(&at, |which| which);
-
-    crate::painted_text::line(
-        &mut drawn.inked,
-        height,
-        fonts,
-        say_it(say::STAGE).text(),
-        at.stage,
-        measure.label_metrics(),
-        colours.ground,
-        colours.muted,
-    );
-    crate::painted_text::line(
-        &mut drawn.inked,
-        height,
-        fonts,
-        eyebrow.text(),
-        at.eyebrow,
-        measure.label_metrics(),
-        colours.ground,
-        colours.muted,
-    );
-    // The title and the introduction were already shaped above, to place
-    // everything below them; drawn here from the same shapes rather than
-    // shaped twice, so what was measured is what appears.
-    drawn.inked.extend(shaped_title.cropped_to_its_ink().placed(
-        at.title.loc.x,
-        at.title.loc.y,
-        height,
-    ));
-    drawn
-        .inked
-        .extend(shaped_introduction.cropped_to_its_ink().placed(
-            at.introduction.loc.x,
-            at.introduction.loc.y,
-            height,
-        ));
-
-    // The one row that takes what is typed: its label, then either what was
-    // typed or the invitation to type.
-    if let Some(card) = at.choices.first() {
-        let inside = measure.px(21);
-        crate::painted_text::line(
-            &mut drawn.inked,
-            height,
+    let height = drawn.size.1;
+    for (which, (row, card)) in rows.iter().zip(at.choices.iter()).enumerate() {
+        // The label, 15 in and 15 down, in `text/secondary` (`562:485`).
+        let label = sentence(
             fonts,
-            choice.text(),
-            Rectangle::new(
-                (card.loc.x + inside, card.loc.y + measure.px(17)).into(),
-                (card.size.w - 2 * inside, measure.px(25)).into(),
-            ),
-            measure.metrics(),
+            &row.label,
+            (card.size.w - measure.px(30)).max(1),
+            measure.field_label_metrics(),
             colours.entry,
-            colours.ink,
-        );
-        // **What is typed, and on the PIN sheet never how much.** The name is
-        // shown because a person is naming themselves and must see it; the
-        // secret is shown as one band however long it is, which is the rule
-        // `crate::sign_in_raster` already keeps.
-        let below = Rectangle::new(
-            (card.loc.x + inside, card.loc.y + measure.px(46)).into(),
-            (card.size.w - 2 * inside, measure.px(22)).into(),
-        );
-        if sheet.on_the_pin {
-            if sheet.password_typed {
-                let dot = measure.px(8);
-                for which in 0..4 {
-                    drawn.solids.push(Solid {
-                        area: Rectangle::new(
-                            (below.loc.x + which * (dot + measure.px(8)), below.loc.y).into(),
-                            (dot, dot).into(),
-                        ),
-                        colour: colours.ink,
-                    });
-                }
-            } else {
-                crate::painted_text::line(
-                    &mut drawn.inked,
-                    height,
-                    fonts,
-                    hint.text(),
-                    below,
-                    measure.metrics(),
-                    colours.entry,
-                    colours.muted,
-                );
-            }
-        } else if sheet.typed.is_empty() {
-            crate::painted_text::line(
-                &mut drawn.inked,
-                height,
-                fonts,
-                hint.text(),
-                below,
-                measure.metrics(),
-                colours.entry,
-                colours.muted,
-            );
-        } else {
-            crate::painted_text::line(
-                &mut drawn.inked,
-                height,
-                fonts,
-                sheet.typed,
-                below,
-                measure.metrics(),
-                colours.entry,
-                colours.ink,
-            );
-        }
-    }
-
-    // What this sheet's answer means, or what the machine last said about an
-    // attempt — drawn from the shape that was measured, so what decided the
-    // layout is what appears in it.
-    drawn
-        .inked
-        .extend(shaped_consequence.cropped_to_its_ink().placed(
-            at.consequence.loc.x,
-            at.consequence.loc.y,
-            height,
-        ));
-
-    // The way on, lettered on its filled ground. **Centred**, because a label
-    // placed at a button's own left sits against its corner.
-    if let Some(button) = at.actions.first() {
-        let shaped = sentence(
-            fonts,
-            action.text(),
-            button.size.w,
-            measure.label_metrics(),
-            colours.ink,
-            colours.ground,
+            colours.secondary,
         )
         .cropped_to_its_ink();
-        let x = button.loc.x + (button.size.w - shaped.width).max(0) / 2;
-        let y = button.loc.y + (button.size.h - shaped.height).max(0) / 2;
-        drawn.inked.extend(shaped.placed(x, y, height));
+        drawn.inked.extend(label.placed(
+            card.loc.x + measure.px(15),
+            card.loc.y + measure.px(15),
+            height,
+        ));
+        // What the field shows, 16 into it and centred down it.
+        let field = the_field_in_pixels(*card, measure.display());
+        let shown = sentence(
+            fonts,
+            &row.shows,
+            (field.size.w - measure.px(32)).max(1),
+            measure.metrics(),
+            colours.entry,
+            if row.inviting {
+                colours.muted
+            } else {
+                colours.ink
+            },
+        )
+        .cropped_to_its_ink();
+        let x = field.loc.x + measure.px(16);
+        let y = field.loc.y + (field.size.h - shown.height).max(0) / 2;
+        let typed_wide = if row.inviting { 0 } else { shown.width };
+        drawn.inked.extend(shown.placed(x, y, height));
+        // **The caret where the keyboard is**, after what was typed.
+        if focused == Some(which) {
+            drawn.solids.push(Solid {
+                area: Rectangle::new(
+                    (
+                        x + typed_wide + measure.px(1),
+                        field.loc.y + (field.size.h - measure.px(20)) / 2,
+                    )
+                        .into(),
+                    (measure.px(2), measure.px(20)).into(),
+                ),
+                colour: colours.ink,
+            });
+        }
     }
-    crate::painted_text::line(
-        &mut drawn.inked,
-        height,
-        fonts,
-        say_it(crate::sign_in_words::ACCESSIBILITY).text(),
-        at.accessibility,
-        measure.label_metrics(),
-        colours.ground,
-        colours.ink,
-    );
-    crate::painted_text::line(
-        &mut drawn.inked,
-        height,
-        fonts,
-        say_it(say::FOOTER).text(),
-        at.footer,
-        measure.label_metrics(),
-        colours.ground,
-        colours.muted,
-    );
-
     Ok(drawn)
+}
+
+/// The field inside a row, in the picture's pixels — the rule
+/// `crate::setup_sheet_layout::the_field_in` keeps in logical units.
+fn the_field_in_pixels(
+    row: Rectangle<i32, Physical>,
+    display: crate::display_scale::DisplayScale,
+) -> Rectangle<i32, Physical> {
+    Rectangle::new(
+        (row.loc.x + display.px(15), row.loc.y + display.px(41)).into(),
+        ((row.size.w - display.px(32)).max(0), display.px(48)).into(),
+    )
 }
 
 #[cfg(test)]

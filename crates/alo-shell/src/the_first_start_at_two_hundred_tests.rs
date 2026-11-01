@@ -46,12 +46,16 @@ fn at_two_hundred_every_line_of_every_sheet_is_twice_its_size_and_place() {
         assert_eq!((surface.area.size.w, surface.area.size.h), (2880, 1920));
         assert_eq!(surface.area.loc.x, 0);
         assert_eq!(surface.area.loc.y, 0);
-        // And the solids too, such as the PIN's dots.
+        // And the solids too, such as the PIN's dots: **exactly twice as
+        // wide, and as near twice as far across as a line of type is.** Since
+        // 2026-11-01 one solid follows type — the caret after what was typed
+        // in a field — and type at 32 is not exactly type at 16 doubled.
+        assert_eq!(one.solids.len(), two.solids.len(), "on {keys:?}");
         for (small, large) in one.solids.iter().zip(&two.solids) {
-            assert_eq!(
-                (2 * small.area.loc.x, 2 * small.area.size.w),
-                (large.area.loc.x, large.area.size.w),
-                "on {keys:?}"
+            assert_eq!(2 * small.area.size.w, large.area.size.w, "on {keys:?}");
+            assert!(
+                (2 * small.area.loc.x - large.area.loc.x).abs() <= NEARLY,
+                "on {keys:?}: {small:?} at one is {large:?} at two"
             );
         }
     }

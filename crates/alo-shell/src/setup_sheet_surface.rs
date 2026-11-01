@@ -51,7 +51,30 @@ pub(crate) struct TheMarks {
     pub(crate) chosen: Option<usize>,
     /// Where the focus ring is, and [`None`] on a sheet with no list.
     pub(crate) ring: Option<TheRing>,
+    /// Whether each row holds a field a person types into, and which one has
+    /// the keyboard.
+    pub(crate) fields: TheFields,
 }
+
+/// The fields a grouped sheet's rows hold — `562:486`, `562:532`, `562:536`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub(crate) enum TheFields {
+    /// The rows hold no field.
+    #[default]
+    None,
+    /// Every row holds one, and this one has the keyboard: a two-unit ink
+    /// outline where every other has the hairline.
+    InEveryRow {
+        /// The row whose field has the keyboard, if any.
+        focused: Option<usize>,
+    },
+}
+
+/// A grouped card's corner, and a grouped sheet's buttons': `562:363`'s 12.
+const A_GROUPED_CORNER_IS: i32 = 12;
+
+/// A field's corner inside a grouped row: `562:486`'s 10.
+const A_FIELDS_CORNER_IS: i32 = 10;
 
 /// How far outside a card the focus ring sits.
 const THE_RING_IS_OUT_BY: f32 = 4.0;
@@ -98,13 +121,47 @@ pub(crate) fn setup_sheet_surface(
     // The same wallpaper the sign-in screen draws, on the same ground.
     let ground = alo_folded_light::the_wallpaper(w, h, colours.ground);
 
-    let corner = f64::from(THE_CORNER_IS) * scale.x;
     let hairline = f64::from(THE_HAIRLINE_IS) * scale.x;
-    let cards: Vec<Rectangle<i32, Physical>> = at
-        .choices
-        .iter()
-        .map(|it| it.to_physical_precise_round::<f64, i32>(scale))
-        .collect();
+    let in_pixels = |it: &Rectangle<i32, smithay::utils::Logical>| {
+        it.to_physical_precise_round::<f64, i32>(scale)
+    };
+    // **One card for a grouped sheet's rows**, its rows divided by a hairline
+    // and none of them a card of its own (`562:363`).
+    let group = at.group.as_ref().map(in_pixels);
+    let corner = if group.is_some() {
+        f64::from(A_GROUPED_CORNER_IS) * scale.x
+    } else {
+        f64::from(THE_CORNER_IS) * scale.x
+    };
+    let rows: Vec<Rectangle<i32, Physical>> = at.choices.iter().map(in_pixels).collect();
+    let cards: Vec<Rectangle<i32, Physical>> = if group.is_some() {
+        Vec::new()
+    } else {
+        rows.clone()
+    };
+    let dividers: Vec<Rectangle<i32, Physical>> = if group.is_some() {
+        at.choices
+            .iter()
+            .skip(1)
+            .map(|row| {
+                in_pixels(&Rectangle::new(
+                    row.loc,
+                    smithay::utils::Size::from((row.size.w, 1)),
+                ))
+            })
+            .collect()
+    } else {
+        Vec::new()
+    };
+    let fields: Vec<Rectangle<i32, Physical>> = match marks.fields {
+        TheFields::None => Vec::new(),
+        TheFields::InEveryRow { .. } => at
+            .choices
+            .iter()
+            .map(|row| in_pixels(&crate::setup_sheet_layout::the_field_in(*row)))
+            .collect(),
+    };
+    let accessibility = in_pixels(&at.accessibility);
     // **Only the first action is filled.** The design draws *Continue* and
     // *Save PIN* on a navy ground and *Back* and *Use password only* as an
     // outline, which is how a person tells the way on from the way back
@@ -135,6 +192,49 @@ pub(crate) fn setup_sheet_surface(
                 .get(((y * w + x) as usize).min(ground.len().saturating_sub(1)))
                 .copied()
                 .unwrap_or(colours.ground);
+
+            // **The grouped card**: the surface in a hairline, once, and a
+            // hairline between each row and the one above it.
+            if let Some(group) = group {
+                colour = in_a_hairline(colour, (px, py), group, corner, hairline, colours);
+                for divider in &dividers {
+                    let on = crate::sign_in_surface::coverage(crate::sign_in_surface::how_far(
+                        px, py, *divider, 0.0,
+                    ));
+                    if on > 0.0 {
+                        colour = crate::sign_in_surface::mixed(colour, colours.border, on);
+                    }
+                }
+            }
+            // **A field in each row**, the hairline at rest and two of the ink
+            // where the keyboard is.
+            for (which, field) in fields.iter().enumerate() {
+                let focused = matches!(
+                    marks.fields,
+                    TheFields::InEveryRow { focused: Some(it) } if it == which
+                );
+                let field_corner = f64::from(A_FIELDS_CORNER_IS) * scale.x;
+                colour =
+                    if focused {
+                        let outer = crate::sign_in_surface::coverage(
+                            crate::sign_in_surface::how_far(px, py, *field, field_corner),
+                        );
+                        let mut it = crate::sign_in_surface::mixed(colour, colours.entry, outer);
+                        let inner =
+                            crate::sign_in_surface::coverage(crate::sign_in_surface::how_far(
+                                px,
+                                py,
+                                crate::sign_in_surface::inset(*field, hairline * 2.0),
+                                (field_corner - hairline * 2.0).max(0.0),
+                            ));
+                        it = crate::sign_in_surface::mixed(it, colours.ink, outer - inner);
+                        it
+                    } else {
+                        in_a_hairline(colour, (px, py), *field, field_corner, hairline, colours)
+                    };
+            }
+            // **Accessibility, as a control in a hairline** (`562:350`).
+            colour = in_a_hairline(colour, (px, py), accessibility, corner, hairline, colours);
 
             // A card behind each choice: the surface, then its edge.
             for (which, card) in cards.iter().enumerate() {
@@ -217,10 +317,28 @@ pub(crate) fn setup_sheet_surface(
             // both rather than one painted over the other.
             if let Some(ring) = marks.ring {
                 let around = match ring {
-                    TheRing::OnAChoice(which) => cards.get(which),
+                    TheRing::OnAChoice(which) => rows.get(which),
                     TheRing::OnAnAction(which) => buttons.get(which),
                 };
-                if let Some(around) = around {
+                // **On a grouped row the ring is the row's own edge**: two of
+                // the ink round the row, inside the card (`562:364`), where a
+                // card of its own wears it standing off.
+                let on_a_grouped_row = group.is_some() && matches!(ring, TheRing::OnAChoice(_));
+                if let (true, Some(row)) = (on_a_grouped_row, around) {
+                    let thick = f64::from(THE_RING_IS_THICK) * scale.x;
+                    let on_the_ring =
+                        crate::sign_in_surface::coverage(crate::sign_in_surface::how_far(
+                            px, py, *row, corner,
+                        )) - crate::sign_in_surface::coverage(crate::sign_in_surface::how_far(
+                            px,
+                            py,
+                            crate::sign_in_surface::inset(*row, thick),
+                            (corner - thick).max(0.0),
+                        ));
+                    if on_the_ring > 0.0 {
+                        colour = crate::sign_in_surface::mixed(colour, colours.ink, on_the_ring);
+                    }
+                } else if let Some(around) = around {
                     let out_by = f64::from(THE_RING_IS_OUT_BY) * scale.x;
                     let thick = f64::from(THE_RING_IS_THICK) * scale.x;
                     let outer = crate::sign_in_surface::inset(*around, -(out_by + thick));
@@ -240,6 +358,36 @@ pub(crate) fn setup_sheet_surface(
         }
     }
     Some(Washed { area, pixels })
+}
+
+/// `colour` with a surface in a hairline over it, where `(px, py)` is on
+/// `shape`: the entry's own colour inside, the border's on its edge.
+fn in_a_hairline(
+    colour: [u8; 3],
+    (px, py): (f64, f64),
+    shape: Rectangle<i32, Physical>,
+    corner: f64,
+    hairline: f64,
+    colours: TheColours,
+) -> [u8; 3] {
+    let inside =
+        crate::sign_in_surface::coverage(crate::sign_in_surface::how_far(px, py, shape, corner));
+    if inside <= 0.0 {
+        return colour;
+    }
+    let colour = crate::sign_in_surface::mixed(colour, colours.entry, inside);
+    let inner = crate::sign_in_surface::coverage(crate::sign_in_surface::how_far(
+        px,
+        py,
+        crate::sign_in_surface::inset(shape, hairline),
+        (corner - hairline).max(0.0),
+    ));
+    let ring = inside - inner;
+    if ring > 0.0 {
+        crate::sign_in_surface::mixed(colour, colours.border, ring)
+    } else {
+        colour
+    }
 }
 
 #[cfg(test)]

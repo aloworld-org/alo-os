@@ -14,6 +14,7 @@ const TALL: TheTextIsTall = TheTextIsTall {
     consequence: 22,
     choices: 2,
     actions: 2,
+    rows: crate::setup_sheet_layout::TheRowsAre::Apart,
 };
 
 /// The four numbers of a rectangle, whatever it is measured in.

@@ -95,6 +95,7 @@ fn as_captured_the_keyboard_sheet_does_not_fit_1024_by_768() {
         consequence: 0,
         choices: 4,
         actions: 2,
+        rows: crate::setup_sheet_layout::TheRowsAre::Apart,
     };
     assert!(setup_sheet_laid_out(Size::from((1024, 768)), keyboard_sheet).is_none());
     assert!(
