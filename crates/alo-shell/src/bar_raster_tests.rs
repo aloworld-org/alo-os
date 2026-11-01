@@ -1,6 +1,8 @@
 #![expect(
     clippy::expect_used,
-    reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
+    clippy::indexing_slicing,
+    reason = "in a test, a panic on an unexpected None, Err or missing pixel is the failure \
+              being reported"
 )]
 //! The launcher drawn: the panel where it was laid out and wholly on the
 //! display, no grey band under the line beneath the field, the chosen row in
@@ -187,10 +189,10 @@ fn only_alos_own_row_is_teal() {
 #[test]
 fn the_screen_behind_is_dimmed_and_still_seen() {
     let drawn = a_launcher(Size::from((1280, 800)), &dolphin(), None, true).expect("drawn");
-    let (area, colour, opacity) = drawn.veil;
+    let (area, colour, per_cent) = drawn.veil;
     assert_eq!(area, Rectangle::from_size(Size::from((1280, 800))));
     assert_eq!(colour, [0xFA, 0xF7, 0xF2]);
-    assert!((opacity - 0.45).abs() < f32::EPSILON);
+    assert_eq!(per_cent, 45);
 }
 
 /// **The launcher at both of the approved frames' sizes**, written as a PNG
@@ -209,7 +211,8 @@ fn the_launcher_draws_at_both_frames_sizes_and_can_be_looked_at() {
             u32::try_from(size.0).expect("a width"),
             u32::try_from(size.1).expect("a height"),
         );
-        let (_, [vr, vg, vb], opacity) = drawn.veil;
+        let (_, [vr, vg, vb], per_cent) = drawn.veil;
+        let opacity = f32::from(per_cent) / 100.0;
         let mix = |over: u8, under: u8, alpha: f32| {
             #[expect(
                 clippy::cast_possible_truncation,

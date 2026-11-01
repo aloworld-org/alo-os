@@ -229,8 +229,8 @@ impl DesktopPicture {
         // colour at 45 % over everything drawn so far, the Dock included, and
         // the panel over that. Everything on the panel is in its raster.
         if let Some(picture) = self.the_bar.as_ref() {
-            let (area, colour, opacity) = picture.veil;
-            crate::painted::veil(frame, area, colour, opacity)?;
+            let (area, colour, per_cent) = picture.veil;
+            crate::painted::veil(frame, area, colour, f32::from(per_cent) / 100.0)?;
             if let Some((texture, area)) = the_bar {
                 crate::painted::wash(frame, texture, *area)?;
             }

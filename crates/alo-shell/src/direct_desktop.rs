@@ -1586,7 +1586,7 @@ impl LoopInput for Desk<'_> {
                 .say(&word.key(), &alo_strings::Filling::nothing())
                 .into_text()
         };
-        let launcher_words = [
+        let [heading, open_it, choose, open, close, esc] = [
             say(alo_dock::words::THE_LAUNCHERS_HEADING),
             say(alo_dock::words::OPEN_IT),
             say(alo_dock::words::THE_KEYS_CHOOSE),
@@ -1614,12 +1614,12 @@ impl LoopInput for Desk<'_> {
             chosen: server.which_row_in_the_bar,
             display: size,
             words: crate::bar_raster::TheLaunchersWords {
-                heading: &launcher_words[0],
-                open_it: &launcher_words[1],
-                choose: &launcher_words[2],
-                open: &launcher_words[3],
-                close: &launcher_words[4],
-                esc: &launcher_words[5],
+                heading: &heading,
+                open_it: &open_it,
+                choose: &choose,
+                open: &open,
+                close: &close,
+                esc: &esc,
             },
             asks: asking_about.as_ref().map(|(asking, what_it_is, from)| {
                 crate::bar_raster::TheAskRow {

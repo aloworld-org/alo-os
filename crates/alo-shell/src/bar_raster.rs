@@ -19,7 +19,7 @@
 //! # The screen behind is dimmed, not blurred
 //!
 //! `561:308` lays the canvas colour over everything at 45 % and blurs it by 4.
-//! The dimming is drawn — [`BarPicture::veil`], a translucent fill over the
+//! The dimming is drawn — `BarPicture::veil`, a translucent fill over the
 //! whole display, under the panel and over the windows and the Dock. **The blur
 //! is not**: no surface in this shell blurs what is behind it, and reading the
 //! frame back to blur it is a renderer change of its own. Recorded in
@@ -96,10 +96,11 @@ pub struct TheBarOnTheDisplay<'a> {
 }
 
 /// The launcher as one washed panel, over a dimmed screen.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct BarPicture {
     /// The dimming over the whole display: where, what colour and how much.
-    pub(crate) veil: (Rectangle<i32, Physical>, [u8; 3], f32),
+    /// The opacity is in per cent, so the picture compares exactly.
+    pub(crate) veil: (Rectangle<i32, Physical>, [u8; 3], u8),
     /// The panel, with everything on it drawn in.
     pub(crate) panel: Washed,
     /// Where everything is, for the press that comes after the draw.
@@ -107,7 +108,7 @@ pub(crate) struct BarPicture {
 }
 
 /// How much of the canvas colour lies over the screen: `561:308`'s 45 %.
-const THE_VEIL_IS: f32 = 0.45;
+const THE_VEIL_IS: u8 = 45;
 
 /// The panel's corner, `radius/lg`.
 const THE_PANELS_CORNER: u32 = 18;

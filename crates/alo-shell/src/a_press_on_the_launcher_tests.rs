@@ -115,7 +115,7 @@ fn enter_on_the_ask_row_asks_alo() {
         crate::the_composer_a_person_types_in::WhatTheComposerDid::TheyAsked("files".to_owned())
     );
     assert_eq!(
-        server.tasks_mut().take_what_was_asked_of_alo(),
+        server.take_what_was_asked_of_alo(),
         vec!["files".to_owned()]
     );
 }
