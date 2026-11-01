@@ -171,26 +171,70 @@ fn a_context_this_code_has_never_heard_of_is_still_searched() {
 }
 
 #[test]
-fn an_icon_that_is_only_scalable_says_so_rather_than_saying_nothing() {
+fn an_icon_that_is_only_scalable_is_found_as_a_scalable_picture() {
     let place = an_icon_tree_holding(&["hicolor/scalable/apps/thing.svg"]);
     assert_eq!(
-        the_icon_called("thing", &[place], 48),
-        WhatWasFound::OnlyScalable,
-        "*there is no icon* and *there is one we cannot read* are different facts about a \
-         machine, and a report that cannot tell them apart cannot say how much of this works"
+        the_icon_called("thing", std::slice::from_ref(&place), 48),
+        WhatWasFound::AScalablePicture(place.join("hicolor/scalable/apps/thing.svg")),
+        "an application whose only artwork is scalable was given no artwork at all"
+    );
+}
+
+/// **Laid out as a Flatpak export is**: Dolphin's Flatpak ships its icon as
+/// `share/icons/hicolor/scalable/apps/org.kde.dolphin.svg` and nothing else,
+/// which is what drew it as a letter on a booted machine on 2026-11-01.
+#[test]
+fn a_flatpaks_scalable_only_icon_is_found_under_its_export() {
+    let root = an_icon_tree_holding(&[
+        "var/lib/flatpak/exports/share/icons/hicolor/scalable/apps/org.kde.dolphin.svg",
+    ]);
+    let exports = root.join("var/lib/flatpak/exports/share");
+    let data_dirs = std::ffi::OsString::from(format!("{}:/nowhere/share", exports.display()));
+    let places = where_icons_live(
+        None,
+        Some(std::ffi::OsStr::new("/nowhere")),
+        Some(&data_dirs),
+    );
+    assert_eq!(
+        the_icon_called("org.kde.dolphin", &places, 48),
+        WhatWasFound::AScalablePicture(
+            exports.join("icons/hicolor/scalable/apps/org.kde.dolphin.svg")
+        )
     );
 }
 
 #[test]
-fn a_picture_is_preferred_over_a_scalable_copy_of_the_same_icon() {
+fn a_scalable_copy_is_preferred_over_a_picture_too_small() {
     let place = an_icon_tree_holding(&[
         "hicolor/scalable/apps/thing.svg",
         "hicolor/32x32/apps/thing.png",
     ]);
     assert_eq!(
-        the_icon_called("thing", std::slice::from_ref(&place), 48).path(),
-        Some(place.join("hicolor/32x32/apps/thing.png").as_path()),
-        "a 32 that can be decoded beats a scalable one that cannot"
+        the_icon_called("thing", std::slice::from_ref(&place), 48),
+        WhatWasFound::AScalablePicture(place.join("hicolor/scalable/apps/thing.svg")),
+        "a 32 scaled up to 48 is soft, and a scalable copy is drawn at 48"
+    );
+}
+
+#[test]
+fn a_picture_large_enough_is_preferred_over_a_scalable_copy() {
+    let place = an_icon_tree_holding(&[
+        "hicolor/scalable/apps/thing.svg",
+        "hicolor/64x64/apps/thing.png",
+    ]);
+    assert_eq!(
+        the_icon_called("thing", std::slice::from_ref(&place), 48),
+        WhatWasFound::APicture(place.join("hicolor/64x64/apps/thing.png")),
+        "the application's own drawn pixels at a size that reaches were passed over"
+    );
+}
+
+#[test]
+fn a_picture_too_small_is_still_taken_where_nothing_else_is() {
+    let place = an_icon_tree_holding(&["hicolor/32x32/apps/thing.png"]);
+    assert_eq!(
+        the_icon_called("thing", std::slice::from_ref(&place), 48),
+        WhatWasFound::APicture(place.join("hicolor/32x32/apps/thing.png"))
     );
 }
 

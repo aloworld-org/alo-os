@@ -43,7 +43,7 @@ const NOTHING: Modifiers = Modifiers::none();
 /// puts every one of them back through [`Chord::checked`]: the shipped list is
 /// held to the rules a person's own bindings are held to, or the rules are
 /// advice.
-const SHIPPED: [(Action, Chord); 23] = [
+const SHIPPED: [(Action, Chord); 24] = [
     (Action::TheAgent, Chord::shipped(SUPER, Key::A)),
     (Action::Launcher, Chord::shipped(SUPER, Key::Space)),
     (Action::Settings, Chord::shipped(SUPER, Key::I)),
@@ -106,6 +106,14 @@ const SHIPPED: [(Action, Chord); 23] = [
     (
         Action::ShowAllOnTheCanvas,
         Chord::shipped(SUPER, Key::Digit0),
+    ),
+    // **`⊞`+1, beside Show all's `⊞`+0**, as the design's table puts the two.
+    // `alo_desktops::DesktopChords` also offers `Super`+1 to switch desktops,
+    // and gives way to any chord a system shortcut holds, so nothing there is
+    // taken from a person: the shell does not use that list.
+    (
+        Action::ReturnTheCanvasToLifeSize,
+        Chord::shipped(SUPER, Key::Digit1),
     ),
     // **Shift beside the key that moves between Places**, so the window goes
     // where the person would have gone. `docs/features.md` promises that the

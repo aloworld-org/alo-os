@@ -1035,6 +1035,7 @@ fn a_tasks_words() -> crate::task_text::TheWordsInATaskWindow<'static> {
         title: "Prepare the launch presentation",
         kind: "alo task",
         status: "alo is working",
+        alo_is_working: true,
         model: "SmolLM2 1.7B",
         destination: "On this computer",
         invitation: "Reply to alo\u{2026}",

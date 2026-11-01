@@ -132,8 +132,66 @@ const A_REACHABLE_CORNER: (i32, i32) = (44, 24);
 ///
 /// **`active` is the window being worked in**, where there is one. [`None`] is
 /// rule 6's case and a true answer, not a missing argument.
+///
+/// **And never exactly on top of another window.** Every road below can arrive
+/// at a corner some window already has — the restart at the view's corner, or
+/// a step from the middle onto a window that was itself stepped there — and a
+/// window exactly over another hides every pixel of it, its title strip
+/// included, which is the one placement `where-a-new-window-opens.md` forbids
+/// outright (*never exactly on top*). So the answer is stepped on by the same
+/// deliberate offset until it is on nobody's corner.
 #[must_use]
 pub fn where_a_window_opens(
+    view: Rectangle<i32, Logical>,
+    open: &[Rectangle<i32, Logical>],
+    active: Option<Rectangle<i32, Logical>>,
+    wanted: Size<i32, Logical>,
+    reading: Direction,
+    fixed: &[Rectangle<i32, Logical>],
+) -> Point<i32, Logical> {
+    let chosen = the_first_choice(view, open, active, wanted, reading, fixed);
+    not_exactly_on_another(chosen, view, open, wanted, fixed)
+}
+
+/// Step `at` by the deliberate offset until no open window starts there,
+/// restarting in the view when a step would leave it — rule 7's own rule.
+///
+/// Bounded by how many steps the view holds, twice over: a view so full that
+/// every reachable corner is taken is answered with the last corner tried
+/// rather than with no answer, because rule 5 never declines to open a window.
+fn not_exactly_on_another(
+    at: Point<i32, Logical>,
+    view: Rectangle<i32, Logical>,
+    open: &[Rectangle<i32, Logical>],
+    wanted: Size<i32, Logical>,
+    fixed: &[Rectangle<i32, Logical>],
+) -> Point<i32, Logical> {
+    let taken = |at: Point<i32, Logical>| open.iter().any(|window| window.loc == at);
+    let mut at = at;
+    for _ in 0..the_most_steps_a_view_holds(view).saturating_mul(2) {
+        if !taken(at) {
+            return at;
+        }
+        let stepped = Point::from((at.x + A_DELIBERATE_OFFSET, at.y + A_DELIBERATE_OFFSET));
+        at = if is_reachable_in(stepped, wanted, view, fixed) {
+            stepped
+        } else {
+            // Back to the view's corner, then one step in from it, so a corner
+            // that is itself taken is not chosen again on the next turn.
+            let start = the_view_starts_here(view, wanted, fixed);
+            if taken(start) {
+                Point::from((start.x + A_SMALL_GAP, start.y + A_DELIBERATE_OFFSET))
+            } else {
+                start
+            }
+        };
+    }
+    at
+}
+
+/// Rules 3, 5, 6 and 7, before the last check that nothing lands exactly on
+/// another window.
+fn the_first_choice(
     view: Rectangle<i32, Logical>,
     open: &[Rectangle<i32, Logical>],
     active: Option<Rectangle<i32, Logical>>,

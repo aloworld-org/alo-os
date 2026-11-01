@@ -131,6 +131,40 @@ fn onto_the_plane(
     )
 }
 
+/// alo's own windows — its terminal and its task windows — moved onto the
+/// plane, front first: the order they are drawn in, last opened in front.
+///
+/// **They are windows a new one must open beside, not on.** Until 2026-11-01
+/// the placer was handed the applications' windows alone, so with alo's
+/// terminal open and nothing else a new application opened in the middle of
+/// the view — on top of the terminal — and the round-2 frames (`557:144`) draw
+/// it beside. Both are kept in the display's pixels
+/// (`crate::where_a_task_window_opens`, `crate::the_terminal_a_person_opened`),
+/// so the camera is applied exactly as it is to a fixed control.
+fn alos_own_windows(
+    terminal: Option<Rectangle<i32, Physical>>,
+    tasks_front_first: &[Rectangle<i32, Physical>],
+    at: alo_canvas::At,
+    zoom: f64,
+) -> AlosOwnWindows {
+    let terminal = terminal
+        .filter(|window| window.size.w > 0 && window.size.h > 0)
+        .and_then(|window| onto_the_plane(window, at, zoom));
+    let tasks = tasks_front_first
+        .iter()
+        .filter(|window| window.size.w > 0 && window.size.h > 0)
+        .filter_map(|window| onto_the_plane(*window, at, zoom))
+        .collect();
+    (terminal, tasks)
+}
+
+/// alo's terminal, where one is open, and its task windows front first — on
+/// the plane.
+type AlosOwnWindows = (
+    Option<Rectangle<i32, Logical>>,
+    Vec<Rectangle<i32, Logical>>,
+);
+
 impl Server {
     /// Place every window that has an extent and has never been placed.
     ///
@@ -225,13 +259,27 @@ impl Server {
             .filter(|surface| !crate::has_been_placed(surface))
             .cloned()
             .collect();
+        // **alo's own windows, which are on whatever Place is shown** — they
+        // are drawn in the display's pixels over every Place, so they are in
+        // the way of a new window wherever it opens.
+        let mut tasks: Vec<(crate::the_tasks_a_person_opened::WhichTask, _)> =
+            self.tasks().each_open_window();
+        tasks.reverse();
+        let (terminal, task_windows) = alos_own_windows(
+            self.where_the_terminal_is
+                .filter(|_| self.alos_own_terminal().is_some()),
+            &tasks.iter().map(|(_, window)| *window).collect::<Vec<_>>(),
+            at,
+            zoom,
+        );
+        let in_front = self.which_is_in_front().top_to_bottom();
         let mut placed = 0;
         for surface in waiting {
             let place = crate::canvas_place::the_place_of(&surface);
             // **Every window on the same Place, read fresh for each.** Fresh
             // because the window placed on the last pass is now somewhere, and
             // the next one has to see it.
-            let open: Vec<Rectangle<i32, Logical>> = self
+            let applications: Vec<Rectangle<i32, Logical>> = self
                 .mapped_surfaces()
                 .filter(|other| *other != &surface)
                 .filter(|other| crate::canvas_place::the_place_of(other) == place)
@@ -243,7 +291,25 @@ impl Server {
             // — and *beside the active window* would then mean *beside
             // itself*. Front-to-back stacking answers what a person means by
             // the window they were working in, and cannot name the new one.
-            let active = open.first().copied();
+            //
+            // **And the frontmost of every kind, in the order the person put
+            // them** (`crate::which_window_is_in_front`): a person working in
+            // alo's terminal gets the new window beside the terminal.
+            let active = in_front.into_iter().find_map(|kind| match kind {
+                crate::which_window_is_in_front::AKindOfWindow::TaskWindows => {
+                    task_windows.first().copied()
+                }
+                crate::which_window_is_in_front::AKindOfWindow::TheTerminal => terminal,
+                crate::which_window_is_in_front::AKindOfWindow::Applications => {
+                    applications.first().copied()
+                }
+            });
+            let open: Vec<Rectangle<i32, Logical>> = applications
+                .iter()
+                .copied()
+                .chain(terminal)
+                .chain(task_windows.iter().copied())
+                .collect();
             // **Up, not rounded**, and this one stays mine: a window wanting
             // 100.4 is given 101 of room, because rounding a *wanted* size
             // down would let the placer call a gap big enough when the window

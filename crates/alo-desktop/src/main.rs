@@ -52,6 +52,9 @@ mod this_machines_own_addresses;
 mod a_provider_a_person_added_is_saved;
 
 #[cfg(target_os = "linux")]
+mod a_scalable_icon_drawn;
+
+#[cfg(target_os = "linux")]
 mod the_artwork_each_application_has;
 
 #[cfg(target_os = "linux")]
@@ -733,6 +736,14 @@ mod running {
         /// the file these two read. All three locate it the same way, and a
         /// change to any one of them has to move the other two or this machine
         /// will save a provider it cannot find.
+        fn where_a_question_would_go(&self) -> Option<alo_models::InferenceSource> {
+            let at = alo_choosing::where_it_is(
+                std::env::var_os("XDG_CONFIG_HOME").as_deref(),
+                std::env::var_os("HOME").as_deref(),
+            )?;
+            alo_choosing::what_answers_here(&at)
+        }
+
         fn anything_is_chosen_to_answer(&self) -> bool {
             let Some(at) = alo_choosing::where_it_is(
                 std::env::var_os("XDG_CONFIG_HOME").as_deref(),
@@ -1445,19 +1456,20 @@ mod running {
                 not_read.why()
             );
         }
-        // **Said out loud because a Dock of letters has four causes.** ADR 0101
+        // **Said out loud because a Dock of letters has three causes.** ADR 0101
         // is the owner's ruling that an application draws its own icon and a
         // letter is the fallback; when a machine shows letters anyway, this is
         // the line that says whether its entries named no icon, named one that
-        // is not installed, named a scalable one nothing here can rasterise, or
-        // named one that would not decode. Without it the four are one symptom.
+        // is not installed, or named one that would not decode. Without it the
+        // three are one symptom. A fourth — *only a scalable one* — was a cause
+        // until ADR 0144, and the count of those now drawn says it is not.
         eprintln!(
-            "alo-desktop: {} applications draw their own icon; {} named none, {} named one that \
-             is not on this machine, {} have only a scalable one, {} would not decode",
+            "alo-desktop: {} applications draw their own icon ({} from a scalable one); {} named \
+             none, {} named one that is not on this machine, {} would not decode",
             offers.artwork_went.drew_a_picture,
+            offers.artwork_went.drew_from_a_scalable_one,
             offers.artwork_went.named_none,
             offers.artwork_went.named_one_that_is_not_here,
-            offers.artwork_went.only_scalable,
             offers.artwork_went.would_not_decode,
         );
         // **What the chord opens, in the order it tries them.** Since

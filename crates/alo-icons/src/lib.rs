@@ -33,27 +33,28 @@
 //! A name is told from a path by whether it is absolute, which is the
 //! specification's own rule and not a guess about what names look like.
 //!
-//! # PNG only, and that is a scope cut rather than a shortcut
+//! # A picture of pixels or a scalable one, and which is which
 //!
-//! An icon theme holds `.png` and `.svg`, and this crate offers only the PNG.
-//! The reason is that nothing in this repository can rasterise an SVG: ADR 0101
-//! grants approval to bring a rasteriser in *through the normal dependency and
-//! ADR process*, and that has not happened. Offering an SVG path to a caller
-//! that cannot decode it would move the failure one crate further from the
-//! cause and leave the Dock drawing a letter either way.
+//! An icon theme holds `.png` and `.svg`, and this crate offers both, saying
+//! which it found: [`WhatWasFound::APicture`] or
+//! [`WhatWasFound::AScalablePicture`]. Decoding either is the caller's job.
 //!
-//! So an application whose only artwork is scalable keeps its first letter
-//! today, and [`WhatWasFound::OnlyScalable`] says so **as its own answer**
-//! rather than as [`None`] — because *there is no icon* and *there is one and we
-//! cannot read it* are different facts about a machine, and a report that
-//! cannot tell them apart cannot say how much of this works.
+//! **Until 2026-11-01 this offered only the PNG**, because nothing in this
+//! repository could rasterise an application's SVG. A booted machine showed
+//! the cost: Dolphin's Flatpak exports only
+//! `hicolor/scalable/apps/org.kde.dolphin.svg`, so the Dock drew it as a
+//! letter. [ADR 0144](../../../docs/decisions/0144-an-applications-scalable-icon-is-drawn-by-resvg.md)
+//! brought the rasteriser in.
 //!
-//! # Sizes: the nearest at least as large, then the largest below
+//! # Sizes: the nearest at least as large, then a scalable one, then the
+//! largest below
 //!
 //! The Dock draws artwork into a box of a known size. Asked for 48 on a theme
 //! holding 32, 64 and 256, this answers **64**: scaling a picture down loses
-//! nothing a person sees, and scaling one up is visibly soft. Only where
-//! nothing is large enough does it take the largest that is smaller.
+//! nothing a person sees, and scaling one up is visibly soft. Where no picture
+//! is large enough, **a scalable one is taken before a smaller picture**,
+//! because it is drawn at the size asked for and is never soft. Only where
+//! there is neither does it take the largest picture that is smaller.
 //!
 //! # What this crate does not do
 //!
@@ -114,21 +115,18 @@ pub fn where_icons_live(
 
 /// What came of looking for one application's icon.
 ///
-/// **Three answers and not two**, because the two that are not a file are
-/// different facts about the machine and a caller reporting *how many
-/// applications have artwork* has to be able to tell them apart. Collapsing
-/// them into [`None`] would make a machine whose icons are all scalable
-/// indistinguishable from one with no icons installed at all.
+/// **Three answers**, because a caller decodes a picture of pixels and a
+/// scalable one differently, and reports a machine with neither apart from
+/// both.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum WhatWasFound {
     /// A PNG, at this path. The nearest size at least as large as was asked
-    /// for, or the largest there is where nothing reaches it.
+    /// for, or the largest there is where nothing reaches it and there is no
+    /// scalable copy.
     APicture(PathBuf),
-    /// Artwork exists for this name and every copy of it is scalable.
-    ///
-    /// The Dock draws the first letter, as it does for an application with no
-    /// artwork — but the machine is not the same, and this says which it is.
-    OnlyScalable,
+    /// An SVG, at this path: no PNG reached the size asked for, and this is
+    /// drawn at that size.
+    AScalablePicture(PathBuf),
     /// Nothing anywhere is called this.
     Nothing,
 }
@@ -138,8 +136,8 @@ impl WhatWasFound {
     #[must_use]
     pub fn path(&self) -> Option<&Path> {
         match self {
-            Self::APicture(at) => Some(at),
-            Self::OnlyScalable | Self::Nothing => None,
+            Self::APicture(at) | Self::AScalablePicture(at) => Some(at),
+            Self::Nothing => None,
         }
     }
 }
@@ -162,26 +160,31 @@ pub fn the_icon_called(named: &str, places: &[PathBuf], wanted: u32) -> WhatWasF
     if given.is_absolute() {
         return match (given.is_file(), is_scalable(given)) {
             (true, false) => WhatWasFound::APicture(given.to_path_buf()),
-            (true, true) => WhatWasFound::OnlyScalable,
+            (true, true) => WhatWasFound::AScalablePicture(given.to_path_buf()),
             (false, _) => WhatWasFound::Nothing,
         };
     }
 
     let mut best: Option<(u32, PathBuf)> = None;
-    let mut scalable = false;
+    // The first scalable copy, in the order of `places`: an earlier directory
+    // wins, as it does for pictures.
+    let mut scalable: Option<PathBuf> = None;
     for place in places {
         for candidate in candidates_under(place, named) {
             if is_scalable(&candidate.at) {
-                scalable = true;
+                scalable.get_or_insert(candidate.at);
                 continue;
             }
             best = better_of(best, (candidate.across, candidate.at), wanted);
         }
     }
-    match best {
-        Some((_, at)) => WhatWasFound::APicture(at),
-        None if scalable => WhatWasFound::OnlyScalable,
-        None => WhatWasFound::Nothing,
+    match (best, scalable) {
+        // A picture large enough: scaled down, nothing is lost.
+        (Some((across, at)), _) if across >= wanted => WhatWasFound::APicture(at),
+        // Otherwise a scalable one, drawn at exactly the size asked for.
+        (_, Some(at)) => WhatWasFound::AScalablePicture(at),
+        (Some((_, at)), None) => WhatWasFound::APicture(at),
+        (None, None) => WhatWasFound::Nothing,
     }
 }
 
@@ -257,7 +260,7 @@ fn candidates_under(place: &Path, named: &str) -> Vec<Candidate> {
 /// How wide a size directory says its contents are.
 ///
 /// `48x48` is 48, and so is `48`. `scalable` and anything unreadable are `0`,
-/// which is below every real size — and an SVG is refused before its size is
+/// which is below every real size — and an SVG is set aside before its size is
 /// ever compared, so nothing turns on `scalable` having a number.
 fn how_wide(at: &Path) -> u32 {
     let Some(named) = at.file_name().and_then(std::ffi::OsStr::to_str) else {

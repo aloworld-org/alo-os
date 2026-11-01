@@ -1,0 +1,59 @@
+# Where the launcher's icons came from.
+#
+# Exported from the design file on 2026-11-01 with the Figma plugin API's
+# `exportAsync({ format: 'SVG_STRING' })` on each icon's own frame, in the
+# launcher the owner approved that day (`561:275`, *Find, open, or ask · the
+# launcher*), and committed as it answered. Each file's viewBox is the icon's
+# whole frame, so the artwork is drawn into that square and nothing else.
+#
+# The alo mark is the path alone from the tile `561:340`; its ground — the
+# 32 × 32 `accent/soft` square at corner 8 — is drawn by the launcher, not by
+# this file, so a person's appearance can colour it.
+#
+# The colours in the files are the design's light values. What is drawn is the
+# palette's colour for where each is used.
+
+file = "nDxyF5Ho9oC4RObjVzwBNJ"
+fetched = "2026-11-01"
+
+[[icon]]
+svg = "close.svg"
+names = "Close, at the heading's end"
+node = "561:313"
+frame = 16
+
+[[icon]]
+svg = "search.svg"
+names = "the field's search mark"
+node = "561:316"
+frame = 20
+
+[[icon]]
+svg = "enter.svg"
+names = "Enter, on a key cap"
+node = "561:335"
+frame = 12
+
+[[icon]]
+svg = "up.svg"
+names = "Up, on a key cap"
+node = "561:354"
+frame = 12
+
+[[icon]]
+svg = "down.svg"
+names = "Down, on a key cap"
+node = "561:357"
+frame = 12
+
+[[icon]]
+svg = "cloud.svg"
+names = "where an answer would come from, under Ask alo"
+node = "561:348"
+frame = 14
+
+[[icon]]
+svg = "alo.svg"
+names = "alo's mark, on the Ask alo row"
+node = "561:340"
+frame = 32

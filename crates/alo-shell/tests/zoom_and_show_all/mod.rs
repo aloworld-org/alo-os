@@ -118,6 +118,68 @@ fn zoom_has_a_keyboard_route_and_one_press_is_one_rung() {
     assert_eq!(zoom(&f), 1000, "in and out again is exactly life size");
 }
 
+/// **`⊞`+1 returns the canvas to 100 %, from in, from out and from Show all.**
+///
+/// A booted machine on 2026-11-01 was pressed `⊞`+1 and nothing happened: no
+/// action was bound to it. The chord is read from the shipped defaults, so this
+/// fails if the design's key stops reaching the action.
+#[test]
+fn the_canvas_returns_to_one_hundred_per_cent() {
+    let f = fixture();
+    let _app = mapped(&f);
+    let back = Action::ReturnTheCanvasToLifeSize;
+
+    for _ in 0..3 {
+        assert!(command(&f, Action::ZoomTheCanvasIn).is_some());
+    }
+    assert_eq!(zoom(&f), 3000);
+    assert_eq!(command(&f, back), Some(back));
+    assert_eq!(zoom(&f), 1000, "from zoomed in");
+
+    // 700, 500, 400: three rungs out from life size.
+    for _ in 0..3 {
+        assert!(command(&f, Action::ZoomTheCanvasOut).is_some());
+    }
+    assert_eq!(zoom(&f), 400);
+    assert_eq!(command(&f, back), Some(back));
+    assert_eq!(zoom(&f), 1000, "from zoomed out");
+
+    // Show all leaves the zoom between rungs, which is where a person most
+    // often wants to come back from.
+    assert!(f.backend(|s| s.pan_the_canvas(-4000, -3000)).is_some());
+    assert!(command(&f, Action::ShowAllOnTheCanvas).is_some());
+    assert_ne!(zoom(&f), 1000, "Show all of one small window was life size");
+    assert_eq!(command(&f, back), Some(back));
+    assert_eq!(zoom(&f), 1000, "from Show all");
+}
+
+/// **Returning to 100 % holds the middle of the screen**, as every zoom by key
+/// does, and **at 100 % already it moves nothing** and is not refused.
+#[test]
+fn returning_to_one_hundred_per_cent_holds_the_middle_and_is_quiet_at_it() {
+    let f = fixture();
+    let _app = mapped(&f);
+    let middle = (VIEWPORT.0 / 2, VIEWPORT.1 / 2);
+
+    let before = f.backend(|s| s.the_camera());
+    assert_eq!(
+        command(&f, Action::ReturnTheCanvasToLifeSize),
+        Some(Action::ReturnTheCanvasToLifeSize),
+        "pressing it at 100 % already was refused"
+    );
+    assert_eq!(f.backend(|s| s.the_camera()), before, "at 100 % it moved");
+
+    assert!(command(&f, Action::ZoomTheCanvasIn).is_some());
+    assert!(command(&f, Action::ZoomTheCanvasIn).is_some());
+    let under = f.backend(move |s| s.the_camera().plane_of(middle));
+    assert!(command(&f, Action::ReturnTheCanvasToLifeSize).is_some());
+    assert_eq!(
+        f.backend(move |s| s.the_camera().plane_of(middle)),
+        under,
+        "returning to 100 % moved what was in the middle of the screen"
+    );
+}
+
 /// **A keyboard zoom holds the middle of the viewport still.**
 ///
 /// The first acceptance sentence, for the route that has no pointer to be centred
@@ -234,6 +296,134 @@ fn show_all_leaves_every_frame_inside_the_viewport() {
             left >= 0 && top >= 0,
             "a frame starts off the top-left at ({left}, {top})"
         );
+        assert!(
+            right <= VIEWPORT.0 && bottom <= VIEWPORT.1,
+            "a frame is clipped, ending at ({right}, {bottom})"
+        );
+    }
+}
+
+/// How thick the Dock's band is in the tests below.
+const DOCK: i32 = 64;
+
+/// The margin *Show all* leaves at one-to-one: `space/8`, 32 logical pixels.
+const MARGIN: i32 = 32;
+
+/// Tell the server a Dock was drawn along the bottom, as the desktop's draw
+/// does. There is no draw in a headless fixture, so the band is handed in, in
+/// the shape `direct_desktop` hands it.
+fn a_dock_was_drawn_along_the_bottom(f: &Fixture) {
+    f.backend(|s| {
+        s.the_fixed_controls_were_drawn(
+            "the-one-display",
+            alo_shell::FixedControlsDrawn {
+                dock_band: Some(smithay::utils::Rectangle::new(
+                    (0, VIEWPORT.1 - DOCK).into(),
+                    (VIEWPORT.0, DOCK).into(),
+                )),
+                panel_reserved: smithay::utils::Rectangle::default(),
+                what_is_leaving: None,
+                top_controls: None,
+            },
+            alo_appearance::TextScale::ordinary(),
+        );
+    });
+}
+
+/// Every open frame's two corners on the screen, as the camera now draws them.
+fn the_corners_on_the_screen(f: &Fixture) -> Vec<((i32, i32), (i32, i32))> {
+    f.backend(|s| {
+        s.the_frames_on_the_plane()
+            .into_iter()
+            .filter_map(|frame| {
+                Some((
+                    s.the_camera().screen_of(frame.at())?,
+                    s.the_camera().screen_of(frame.opposite()?)?,
+                ))
+            })
+            .collect::<Vec<_>>()
+    })
+}
+
+/// **Show all stops above the Dock, a margin inside the screen** — the fault a
+/// booted machine showed on 2026-11-01, where one window was magnified to the
+/// whole screen and ran under the Dock.
+///
+/// One window open is the case that showed it, because one window is fitted by
+/// magnifying it. *Within a plane unit's worth of a pixel* is the tolerance:
+/// the camera sits on whole plane units, so the margin is kept to that.
+#[test]
+fn show_all_stops_above_the_dock_with_a_margin_on_every_side() {
+    let f = fixture();
+    let _app = mapped(&f);
+    a_dock_was_drawn_along_the_bottom(&f);
+
+    assert!(command(&f, Action::ShowAllOnTheCanvas).is_some());
+
+    let corners = the_corners_on_the_screen(&f);
+    assert_eq!(corners.len(), 1, "Show all was asked about one frame");
+    let quantum = i32::try_from(zoom(&f).div_ceil(1000)).expect("a zoom of a few thousandths");
+    for ((left, top), (right, bottom)) in corners {
+        assert!(
+            left >= MARGIN - quantum && top >= MARGIN - quantum,
+            "the frame starts inside the margin at ({left}, {top})"
+        );
+        assert!(
+            right <= VIEWPORT.0 - MARGIN + quantum,
+            "the frame runs into the right margin, to {right}"
+        );
+        assert!(
+            bottom <= VIEWPORT.1 - DOCK - MARGIN + quantum,
+            "the frame runs under the Dock or its margin, to {bottom}"
+        );
+    }
+}
+
+/// **Show all with no Dock drawn still leaves the margin**, so the fix is the
+/// margin as well as the Dock, and a screen with no fixed controls at all is
+/// not filled edge to edge either.
+#[test]
+fn show_all_with_nothing_drawn_still_leaves_a_margin() {
+    let f = fixture();
+    let _app = mapped(&f);
+    assert!(command(&f, Action::ShowAllOnTheCanvas).is_some());
+    let quantum = i32::try_from(zoom(&f).div_ceil(1000)).expect("a zoom of a few thousandths");
+    for ((left, top), (right, bottom)) in the_corners_on_the_screen(&f) {
+        assert!(left >= MARGIN - quantum && top >= MARGIN - quantum);
+        assert!(right <= VIEWPORT.0 - MARGIN + quantum);
+        assert!(bottom <= VIEWPORT.1 - MARGIN + quantum);
+    }
+}
+
+/// **A spread too wide for the clear room is still shown, across the whole
+/// screen**, because *Show all* is how a person gets a window back and the drag
+/// rule lets a window go as far as the whole output can hold.
+///
+/// The second frame is put further down than the room above the Dock can hold
+/// at the furthest zoom out, and inside what the whole output can.
+#[test]
+fn a_spread_too_wide_for_the_clear_room_is_still_shown_on_the_whole_screen() {
+    let f = fixture();
+    let _near = mapped(&f);
+    let _far = mapped(&f);
+    a_dock_was_drawn_along_the_bottom(&f);
+    let far = f
+        .backend(|s| s.mapped_surfaces().last().cloned())
+        .expect("two frames are mapped");
+    let reach = f
+        .backend(|s| s.as_far_as_show_all_reaches())
+        .expect("an output to fit into");
+    // Under the whole output's reach by a little, and so well over what the
+    // room above the Dock, less its margins, can hold.
+    let down = i32::try_from(reach.height()).expect("a reach on the plane") - 1_000;
+    assert!(f.backend(move |s| s.place_window(&far, (0, down)).is_ok()));
+
+    assert!(
+        command(&f, Action::ShowAllOnTheCanvas).is_some(),
+        "Show all refused a spread a drag is allowed to make"
+    );
+    for ((left, top), (right, bottom)) in the_corners_on_the_screen(&f) {
+        assert!(left >= 0 && top >= 0, "a frame starts off the screen");
         assert!(
             right <= VIEWPORT.0 && bottom <= VIEWPORT.1,
             "a frame is clipped, ending at ({right}, {bottom})"

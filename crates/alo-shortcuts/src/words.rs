@@ -217,6 +217,16 @@ pub const SHOW_ALL_ON_THE_CANVAS: Word = Word::saying(
      larger than whatever is on it.",
 );
 
+/// What [`crate::Action::ReturnTheCanvasToLifeSize`] does.
+pub const RETURN_THE_CANVAS_TO_LIFE_SIZE: Word = Word::saying(
+    "shortcuts.action.return-the-canvas-to-life-size",
+    "Return the canvas to 100%",
+)
+.noting(
+    "Puts the canvas back to its standard scale, where a window is drawn at its own size, after \
+     zooming in or out. Write the percentage the way your language writes one.",
+);
+
 // ---------------------------------------------------------------------------
 // What is held down — [`crate::Modifier`]. Four words, and three of them are
 // printed differently on the keyboards this will run on.
@@ -514,7 +524,7 @@ pub const KEPT_NOT_REPLACED: Word = Word::saying(
 /// the shortcuts do, what is held down, the keys that print a word, why a
 /// combination was refused, what one chord wanted twice says, and then what is
 /// said about the person's own file.
-pub const EVERY_WORD: [Word; 58] = [
+pub const EVERY_WORD: [Word; 59] = [
     THE_AGENT,
     LAUNCHER,
     SETTINGS,
@@ -534,6 +544,7 @@ pub const EVERY_WORD: [Word; 58] = [
     ZOOM_THE_CANVAS_IN,
     ZOOM_THE_CANVAS_OUT,
     SHOW_ALL_ON_THE_CANVAS,
+    RETURN_THE_CANVAS_TO_LIFE_SIZE,
     MOVE_THE_WINDOW_TO_THE_NEXT_PLACE,
     GO_BACK_ON_THIS_PLACE,
     THE_NEXT_AREA,

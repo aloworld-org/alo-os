@@ -1,123 +1,170 @@
-//! That the Bar lands where the design draws it at the reference size, and
-//! stays usable on screens the design never drew.
-
+//! The launcher laid out at both of the approved frames' sizes, figure for
+//! figure, and the rules that hold where no frame was drawn.
 #![expect(
     clippy::expect_used,
     reason = "in a test, a panic on an unexpected None is the failure being reported"
 )]
 
-use smithay::utils::Size;
+use super::*;
 
-use super::{A_TARGET_IS_TALL, where_the_bar_opens};
-use crate::display_scale::DisplayScale;
-
-/// A target's height on a one-to-one display.
-fn tall() -> i32 {
-    DisplayScale::ONE.px(A_TARGET_IS_TALL)
-}
-
-/// The size every number in the design document was read at.
-const THE_REFERENCE: (i32, i32) = (1440, 960);
-
-/// **At the size the design was drawn, the arithmetic lands on the design.**
-///
-/// This is the whole licence for deriving the rest by proportion: a rule that
-/// does not reproduce the frame it came from is not a rule, it is a different
-/// layout. Tolerances are a pixel or two because a proportion rounds.
-#[test]
-fn at_the_reference_size_it_is_what_the_frame_draws() {
-    let places = where_the_bar_opens(Size::from(THE_REFERENCE), DisplayScale::ONE)
-        .expect("the reference fits");
-
-    assert_eq!(
-        (places.panel.size.w, places.panel.size.h),
-        (680, 390),
-        "the panel is not the size the frame draws"
-    );
-    assert_eq!(places.panel.loc.x, 380, "the panel is not centred as drawn");
-    assert_eq!(
-        places.panel.loc.y, 208,
-        "the panel does not begin where drawn"
-    );
-    assert_eq!(
-        places.field.size.w, 632,
-        "the field is not the panel less its air on both sides"
-    );
-    assert_eq!(places.field.size.h, tall());
-    assert_eq!(
-        (places.first_row.size.w, places.first_row.size.h),
-        (places.field.size.w, places.field.size.h),
-        "a row is not the same box as the field, which is what the design says it is"
-    );
-    assert_eq!(places.row_to_row, 68, "the rows are not 68 apart as drawn");
-}
-
-/// **The list scrolls rather than being capped**: at the reference the design
-/// draws a fourth row cut off, so three fit wholly and the rest scroll.
-#[test]
-fn only_whole_rows_are_counted_as_fitting() {
-    let places = where_the_bar_opens(Size::from(THE_REFERENCE), DisplayScale::ONE)
-        .expect("the reference fits");
-    let last = places.first_row.loc.y + places.row_to_row * (places.rows_that_fit as i32 - 1);
-    assert!(
-        last + tall() <= places.panel.loc.y + places.panel.size.h,
-        "the last row counted as fitting runs past the panel, so a person is shown half a row"
-    );
-    let one_more = last + places.row_to_row;
-    assert!(
-        one_more + tall() > places.panel.loc.y + places.panel.size.h,
-        "another whole row would have fitted and was not counted, so the panel has dead space"
-    );
-}
-
-/// **A target keeps its size on every screen; the panel does not.**
-///
-/// This is the division the design document names: what a person points at is
-/// a measure, what holds it is a proportion. On a 4K panel the Bar is wider
-/// and the rows are the same height, which is why a row stays a thing you can
-/// hit.
-#[test]
-fn the_panel_scales_and_the_targets_do_not() {
-    let small = where_the_bar_opens(Size::from((1280, 800)), DisplayScale::ONE)
-        .expect("a small laptop fits");
-    let large =
-        where_the_bar_opens(Size::from((3840, 2160)), DisplayScale::ONE).expect("a 4K panel fits");
-
-    assert!(
-        large.panel.size.w > small.panel.size.w * 2,
-        "the panel did not grow with the display: {} against {}",
-        large.panel.size.w,
-        small.panel.size.w
-    );
-    assert_eq!(
-        (small.field.size.h, large.field.size.h),
-        (tall(), tall()),
-        "the field's height changed with the screen, so a target is not a target any more"
-    );
-    assert!(
-        large.rows_that_fit > small.rows_that_fit,
-        "a taller screen shows no more results than a short one"
-    );
-    for places in [small, large] {
-        assert!(
-            places.panel.loc.x > 0 && places.panel.loc.y > 0,
-            "the panel is off the top or the left of the display"
-        );
+/// One result and the row that asks — what both frames draw.
+fn as_drawn() -> WhatItHolds {
+    WhatItHolds {
+        found: 1,
+        asks: true,
+        chosen: None,
     }
 }
 
-/// **A display too small for the panel is told so**, rather than being given a
-/// Bar squeezed into nothing.
+/// Laid out on a display of `size` at one to one.
+fn at(size: (i32, i32), holds: WhatItHolds) -> TheBarsPlaces {
+    where_the_bar_opens(Size::from(size), DisplayScale::ONE, holds).expect("this display holds it")
+}
+
+/// **At 1440 × 960 it is `561:309`, figure for figure.**
 #[test]
-fn a_display_too_small_has_no_bar() {
-    assert!(
-        where_the_bar_opens(Size::from((320, 200)), DisplayScale::ONE).is_none(),
-        "a display far too small was given a panel anyway"
+fn at_1440_it_is_what_the_frame_draws() {
+    let places = at((1440, 960), as_drawn());
+    assert_eq!(
+        places.panel,
+        Rectangle::new((380, 208).into(), (680, 360).into())
     );
-    // **The control**: one step up from the refusal still answers, so the
-    // refusal above is about the size and not about the function.
-    assert!(
-        where_the_bar_opens(Size::from((1024, 600)), DisplayScale::ONE).is_some(),
-        "a small but ordinary display was refused, so the rule refuses more than it should"
+    assert_eq!(
+        places.heading,
+        Rectangle::new((406, 234).into(), (628, 40).into())
     );
+    assert_eq!(
+        places.close,
+        Rectangle::new((986, 234).into(), (48, 40).into())
+    );
+    assert_eq!(
+        places.field,
+        Rectangle::new((406, 286).into(), (628, 56).into())
+    );
+    assert_eq!(
+        places.origin,
+        Rectangle::new((406, 354).into(), (628, 18).into())
+    );
+    assert_eq!(
+        places.rows,
+        vec![(0, Rectangle::new((406, 384).into(), (628, 56).into()))]
+    );
+    assert_eq!(
+        places.hairline,
+        Some(Rectangle::new((406, 444).into(), (628, 1).into()))
+    );
+    assert_eq!(
+        places.ask,
+        Some(Rectangle::new((406, 449).into(), (628, 64).into()))
+    );
+    assert_eq!(
+        places.keys,
+        Rectangle::new((406, 525).into(), (628, 28).into())
+    );
+}
+
+/// **At 1280 × 800 it is `561:404`**: a narrower panel, the same measures.
+#[test]
+fn at_1280_it_is_what_the_frame_draws() {
+    let places = at((1280, 800), as_drawn());
+    assert_eq!(
+        places.panel,
+        Rectangle::new((338, 174).into(), (604, 357).into())
+    );
+    assert_eq!(
+        places.field,
+        Rectangle::new((361, 249).into(), (558, 56).into())
+    );
+    assert_eq!(places.origin.loc.y, 174 + 143);
+    assert_eq!(places.rows.first().map(|(_, at)| at.loc.y), Some(174 + 173));
+    assert_eq!(places.keys.loc.y, 174 + 314);
+}
+
+/// **No row that asks, no hairline and no room for it**: with AI set to *Not
+/// at all*, the panel is shorter by exactly the ask row and the line over it.
+#[test]
+fn without_the_ask_row_the_panel_holds_only_what_it_shows() {
+    let with = at((1440, 960), as_drawn());
+    let without = at(
+        (1440, 960),
+        WhatItHolds {
+            asks: false,
+            ..as_drawn()
+        },
+    );
+    assert!(without.ask.is_none() && without.hairline.is_none());
+    assert_eq!(with.panel.size.h - without.panel.size.h, 4 + 1 + 4 + 64);
+}
+
+/// **Nothing found and the row that asks: no hairline over it**, because there
+/// is nothing above to separate it from.
+#[test]
+fn nothing_found_puts_the_ask_row_first() {
+    let places = at(
+        (1440, 960),
+        WhatItHolds {
+            found: 0,
+            asks: true,
+            chosen: None,
+        },
+    );
+    assert!(places.rows.is_empty() && places.hairline.is_none());
+    assert_eq!(places.ask.map(|ask| ask.loc.y), Some(384));
+}
+
+/// **A long list scrolls, and the row the keyboard is on is in view**, with the
+/// row that asks and the keys still on the panel.
+#[test]
+fn a_long_list_scrolls_to_the_chosen_row_and_never_off_the_panel() {
+    let many = WhatItHolds {
+        found: 30,
+        asks: true,
+        chosen: Some(25),
+    };
+    let places = at((1280, 800), many);
+    assert!(places.rows.len() < 30, "the list is not all shown");
+    assert!(
+        places.rows.iter().any(|(which, _)| *which == 25),
+        "the chosen row is shown: {:?}",
+        places
+            .rows
+            .iter()
+            .map(|(which, _)| which)
+            .collect::<Vec<_>>()
+    );
+    let bottom = places.panel.loc.y + places.panel.size.h;
+    assert!(
+        bottom <= 800 * 3 / 5 + places.panel.loc.y,
+        "the panel stops growing"
+    );
+    assert!(places.keys.loc.y + places.keys.size.h <= bottom);
+}
+
+/// **At 200 every measure is twice itself and every share is the same share**,
+/// so a dense display draws the same launcher sharper.
+#[test]
+fn at_two_hundred_every_place_is_exactly_twice() {
+    let one = at((1440, 960), as_drawn());
+    let two = where_the_bar_opens(
+        Size::from((2880, 1920)),
+        DisplayScale::of_per_cent(200),
+        as_drawn(),
+    )
+    .expect("this display holds it");
+    let doubled = |it: Rectangle<i32, Physical>| {
+        Rectangle::<i32, Physical>::new(
+            (it.loc.x * 2, it.loc.y * 2).into(),
+            (it.size.w * 2, it.size.h * 2).into(),
+        )
+    };
+    assert_eq!(two.panel, doubled(one.panel));
+    assert_eq!(two.field, doubled(one.field));
+    assert_eq!(two.keys, doubled(one.keys));
+    assert_eq!(two.field.size.h, 112);
+}
+
+/// **A display too small has no launcher** rather than one squeezed onto it.
+#[test]
+fn a_display_too_small_has_none() {
+    assert!(where_the_bar_opens(Size::from((200, 160)), DisplayScale::ONE, as_drawn()).is_none());
 }

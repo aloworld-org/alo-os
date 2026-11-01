@@ -610,10 +610,20 @@ dock.announced.focused	focused
 dock.announced.open	{app}, {windows} open
 dock.announced.some-put-aside	{app}, {windows} open, {aside} minimised
 dock.announced.where	on the canvas, {across} across and {down} down
+dock.bar.ask	Ask alo “{what}”
+dock.bar.ask.new-task	a new task
 dock.bar.found.applications	On this computer  ·  {how_many} applications
 dock.bar.found.one-application	On this computer  ·  {how_many} application
+dock.bar.heading	Find, open, or ask
+dock.bar.keys.choose	choose
+dock.bar.keys.close	close
+dock.bar.keys.esc	Esc
+dock.bar.keys.open	open
 dock.bar.nothing-can-answer	On this computer  ·  nothing is chosen yet to answer questions
 dock.bar.row.application	{what}  ·  Application
+dock.bar.row.kind	Application
+dock.bar.row.kind-and-what	Application  ·  {what}
+dock.bar.row.open	Open
 dock.composer.key	alo
 dock.composer.prompt	Find, open, or ask…
 dock.edge	Where the dock goes
@@ -1676,6 +1686,7 @@ shortcuts.action.next-application	Next application
 shortcuts.action.next-window	Next window
 shortcuts.action.previous-application	Previous application
 shortcuts.action.previous-window	Previous window
+shortcuts.action.return-the-canvas-to-life-size	Return the canvas to 100%
 shortcuts.action.see-what-alo-did	See what alo did
 shortcuts.action.settings	Open Settings
 shortcuts.action.show-all-on-the-canvas	Show all windows on the canvas

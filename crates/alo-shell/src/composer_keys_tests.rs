@@ -147,14 +147,32 @@ fn shift_and_a_letter_still_types() {
     );
 }
 
-/// **Keys with no letter in them do nothing.**
+/// **Keys with no letter in them do nothing**, except Up and Down, which walk
+/// the launcher's rows (`the_arrows_choose_rather_than_type`).
 #[test]
 fn keys_with_no_letter_do_nothing() {
-    for symbol in [Keysym::F6, Keysym::Shift_L, Keysym::Up, Keysym::Caps_Lock] {
+    for symbol in [Keysym::F6, Keysym::Shift_L, Keysym::Left, Keysym::Caps_Lock] {
         assert_eq!(
             ComposerKey::of(symbol, &nothing_held(), Composing::No),
             ComposerKey::Nothing,
             "{symbol:?}"
+        );
+    }
+}
+
+/// **The arrows choose a row in the launcher** (`561:351`'s *↑ ↓ choose*), on
+/// the keypad as well, and are never typed into the field as letters.
+#[test]
+fn the_arrows_choose_rather_than_type() {
+    for (symbol, meant) in [
+        (Keysym::Up, ComposerKey::Up),
+        (Keysym::KP_Up, ComposerKey::Up),
+        (Keysym::Down, ComposerKey::Down),
+        (Keysym::KP_Down, ComposerKey::Down),
+    ] {
+        assert_eq!(
+            ComposerKey::of(symbol, &nothing_held(), Composing::No),
+            meant
         );
     }
 }

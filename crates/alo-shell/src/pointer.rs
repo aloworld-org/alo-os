@@ -249,7 +249,14 @@ impl Server {
                 .map(|pointer| pointer.location)
         {
             let at = (location.x as i32, location.y as i32).into();
-            // **The record window first, while it is open**: it is drawn over
+            // **The launcher before everything**, while it is open: it lies
+            // over a dimmed screen, the Dock included, so a press anywhere is
+            // its own — on Close or the screen around it, it closes.
+            if self.a_press_on_the_launcher(at) {
+                self.a_press_landed_on_the_furniture();
+                return Ok(false);
+            }
+            // **Then the record window, while it is open**: it is drawn over
             // every application, so a press on it is its own — Close closes
             // it — and never reaches what is behind.
             if self.a_press_on_the_record(at) {
@@ -566,6 +573,11 @@ impl Server {
             if self.ctrl_is_held() {
                 return Ok(self.zoom_the_plane_by_scroll(&frame));
             }
+            // **Shift turns a mouse wheel sideways**, the design's *pan
+            // sideways with a mouse* — `crate::canvas_shift_wheel`. Only here,
+            // over empty canvas: over an application the scroll above is that
+            // application's, Shift and all.
+            let frame = crate::canvas_shift_wheel::as_the_canvas_pans(frame, self.shift_is_held());
             return Ok(self.pan_the_plane_by_scroll(&frame));
         }
         pointer.time = frame.time;
