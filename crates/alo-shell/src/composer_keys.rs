@@ -51,6 +51,10 @@ pub enum ComposerKey {
     Ask,
     /// Take back everything typed and leave the field.
     Clear,
+    /// Up: the row above, in the launcher's list.
+    Up,
+    /// Down: the row below, in the launcher's list.
+    Down,
     /// Anything else, which does nothing at all.
     Nothing,
 }
@@ -73,6 +77,10 @@ impl ComposerKey {
         match symbol {
             Keysym::BackSpace => return Self::Erase,
             Keysym::Escape => return Self::Clear,
+            // **The launcher's ↑ ↓ *choose***, which its foot names
+            // (`561:351`). Not a letter, so held keys make no difference.
+            Keysym::Up | Keysym::KP_Up => return Self::Up,
+            Keysym::Down | Keysym::KP_Down => return Self::Down,
             Keysym::Return | Keysym::KP_Enter => {
                 if held.shift {
                     return Self::NewLine;

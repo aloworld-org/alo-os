@@ -2,135 +2,176 @@
     clippy::expect_used,
     reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
 )]
-//! **The panel that is rasterised covers the panel that was laid out.**
+//! The launcher drawn: the panel where it was laid out and wholly on the
+//! display, no grey band under the line beneath the field, the chosen row in
+//! the accent's tint, the row that asks alo with alo's mark in teal, and the
+//! screen behind dimmed.
 //!
-//! There was no test here at all, and the one construction site of
-//! `TheBarOnTheDisplay` is a frame loop no test runs — which is how the Bar
-//! shipped drawing its panel at **less than half** the width it had asked for.
-//!
-//! Measured on a booted machine on 2026-10-23, on a 1280-wide display: the
-//! layout asked for a panel 604 wide at x=338, and the texture came back 276
-//! wide, ending at x=604. The field and the status line were laid out
-//! correctly and ran straight out of the panel onto bare canvas.
-//!
-//! The cause was one argument. `dock_surface::ADocksSurface::room` is **the
-//! screen**, and the rasteriser clamps the texture to it so a shadow cannot
-//! run off the display — `right = (x + w + reach).min(room.0)`. The Bar
-//! passed its own panel's size there, so the clamp cut the panel off at its
-//! own width. `dock_raster` has always passed the display and says so on the
-//! field; the Bar was the one caller that did not.
+//! **The first of these is a regression it once had**: measured on a booted
+//! machine on 2026-10-23, a panel 604 wide was drawn 276 wide, because the
+//! rasteriser was handed the panel's size where it wanted the display's.
 
 use super::*;
-use crate::where_the_bar_opens::where_the_bar_opens;
-
-/// Where the Bar is laid out on `display` at one to one.
-fn laid_out(display: Size<i32, Physical>) -> TheBarsPlaces {
-    where_the_bar_opens(display, DisplayScale::ONE).expect("this display holds a Bar")
-}
+use crate::the_bar_finds::{AResult, WhatARowDoes};
 use cosmic_text::FontSystem;
 use smithay::utils::Size;
 
-/// A palette that does not depend on a person's settings.
+/// A palette that does not depend on a person's settings: indigo, light.
 fn a_palette() -> crate::desktop_look::DesktopPalette {
     crate::desktop_look::DesktopPalette::of(
         alo_appearance::Scheme::Light,
         alo_appearance::Accent::Indigo.on(alo_appearance::Scheme::Light),
         crate::Contrast::AsDesigned,
     )
-    // **Indigo and not deep teal.** Deep teal is `Reserved` — it means the
-    // agent acting and a person may not choose it, which `AccentError` says
-    // and this test found out by asking for it.
-    .expect("indigo is one of the four accents a person may choose")
+    .expect("indigo is one of the accents a person may choose")
 }
 
-/// The Bar as the frame loop builds it, for one display size at one to one.
-fn a_bar(display: Size<i32, Physical>) -> Option<BarPicture> {
-    let mut fonts = FontSystem::new();
+/// The shell's own faces and nothing else.
+fn fonts() -> FontSystem {
+    crate::WindowControlLabels::new()
+        .map(|labels| labels.fonts)
+        .expect("the shell's own fonts load")
+}
+
+/// Dolphin, found, as `561:324` draws it.
+fn dolphin() -> Vec<AResult> {
+    vec![AResult {
+        shown: "Dolphin  \u{b7}  Application".to_owned(),
+        name: "Dolphin".to_owned(),
+        kind: "Application  \u{b7}  Files".to_owned(),
+        does: WhatARowDoes::OpensAnApplication("org.kde.dolphin".to_owned()),
+    }]
+}
+
+/// The launcher as the frame builds it, with the design's own words.
+fn a_launcher(
+    display: Size<i32, Physical>,
+    results: &[AResult],
+    chosen: Option<usize>,
+    asks: bool,
+) -> Option<BarPicture> {
     picture(
         &TheBarOnTheDisplay {
-            typed: "hello",
-            origin: "On this computer",
-            results: &[],
-            chosen: None,
+            typed: "files",
+            origin: "On this computer  \u{b7}  1 application",
+            results,
+            chosen,
             display,
+            words: TheLaunchersWords {
+                heading: "Find, open, or ask",
+                open_it: "Open",
+                choose: "choose",
+                open: "open",
+                close: "close",
+                esc: "Esc",
+            },
+            asks: asks.then_some(TheAskRow {
+                asking: "Ask alo \u{201c}files\u{201d}",
+                what_it_is: "a new task",
+                from: "by openai, which has not said where it runs",
+            }),
+            artwork: None,
         },
         a_palette(),
-        &mut fonts,
+        [0xFA, 0xF7, 0xF2],
+        &mut fonts(),
         DisplayScale::ONE,
     )
 }
 
-/// **The texture covers the whole panel, on every display size.**
-///
-/// The far edge is the one that was wrong, and it is the one a clamp against
-/// the wrong number cuts, so it is asserted by name rather than by comparing
-/// a width — a width can be right while the panel sits in the wrong place.
+/// The pixel at `(x, y)` of the panel's raster.
+fn pixel(drawn: &BarPicture, x: i32, y: i32) -> [u8; 4] {
+    let area = drawn.panel.area;
+    let at = usize::try_from(((y - area.loc.y) * area.size.w + (x - area.loc.x)) * 4)
+        .expect("inside the raster");
+    let mut it = [0_u8; 4];
+    it.copy_from_slice(&drawn.panel.pixels[at..at + 4]);
+    it
+}
+
+/// **The texture covers the whole panel, and stays on the display, at every
+/// size** — the regression this file was written for.
 #[test]
-fn the_rasterised_panel_covers_the_panel_that_was_laid_out() {
+fn the_rasterised_panel_covers_the_panel_and_stays_on_the_display() {
     for (w, h) in [(1280, 800), (1440, 960), (1920, 1080), (2560, 1440)] {
         let display = Size::from((w, h));
-        let places = laid_out(display);
-        let drawn = a_bar(display).expect("a Bar that was laid out can be drawn");
-
-        let wanted_right = places.panel.loc.x + places.panel.size.w;
-        let drawn_right = drawn.panel.area.loc.x + drawn.panel.area.size.w;
+        let drawn = a_launcher(display, &dolphin(), None, true).expect("drawn");
+        let panel = drawn.places.panel;
+        let area = drawn.panel.area;
+        assert!(area.loc.x <= panel.loc.x && area.loc.y <= panel.loc.y, "{w}x{h}");
         assert!(
-            drawn_right >= wanted_right,
-            "on {w}x{h} the layout asked for a panel reaching x={wanted_right} and the texture \
-             stops at x={drawn_right} — the panel is cut off and everything inside it draws onto \
-             bare canvas"
+            area.loc.x + area.size.w >= panel.loc.x + panel.size.w
+                && area.loc.y + area.size.h >= panel.loc.y + panel.size.h,
+            "{w}x{h}: the panel is cut off"
         );
-        let wanted_bottom = places.panel.loc.y + places.panel.size.h;
-        let drawn_bottom = drawn.panel.area.loc.y + drawn.panel.area.size.h;
-        assert!(
-            drawn_bottom >= wanted_bottom,
-            "on {w}x{h} the panel is cut off at the bottom: wanted y={wanted_bottom}, \
-             got y={drawn_bottom}"
-        );
-        assert!(
-            drawn.panel.area.loc.x <= places.panel.loc.x,
-            "on {w}x{h} the texture starts after the panel does, so its leading edge is cut"
-        );
+        assert!(area.loc.x >= 0 && area.loc.y >= 0, "{w}x{h}");
+        assert!(area.loc.x + area.size.w <= w && area.loc.y + area.size.h <= h, "{w}x{h}");
     }
 }
 
-/// **The field a person types into is inside the panel it is drawn on.**
-///
-/// The control at the other end. The assertion above would pass on a texture
-/// that covered the whole display, which is a different fault — and this one
-/// is what a person actually saw: a field laid out past the edge of its own
-/// panel.
+/// **No grey band.** The line under the field sits on the panel's own white:
+/// every pixel of its box that is not a letter is the panel's ground.
 #[test]
-fn the_field_sits_inside_the_panel() {
-    let display = Size::from((1280, 800));
-    let places = laid_out(display);
-    let drawn = a_bar(display).expect("a Bar that was laid out can be drawn");
-
-    let field_right = places.field.loc.x + places.field.size.w;
-    let panel_right = drawn.panel.area.loc.x + drawn.panel.area.size.w;
-    assert!(
-        field_right <= panel_right,
-        "the field reaches x={field_right} and the drawn panel ends at x={panel_right}, so what \
-         a person types is drawn on bare canvas"
-    );
+fn the_line_under_the_field_has_no_band_behind_it() {
+    let drawn = a_launcher(Size::from((1440, 960)), &dolphin(), None, true).expect("drawn");
+    let origin = drawn.places.origin;
+    let white = [0xFF, 0xFF, 0xFF, 0xFF];
+    let grey = [0xEE, 0xF2, 0xF4, 0xFF];
+    for x in origin.loc.x..origin.loc.x + origin.size.w {
+        for y in origin.loc.y..origin.loc.y + origin.size.h {
+            assert_ne!(pixel(&drawn, x, y), grey, "a grey band at ({x}, {y})");
+        }
+    }
+    // Past the words, the line's box is the panel itself.
+    let end = origin.loc.x + origin.size.w - 2;
+    assert_eq!(pixel(&drawn, end, origin.loc.y + 9), white);
 }
 
-/// **The texture is never wider than the display**, which is what `room` is
-/// for: a shadow that ran off the screen would be a buffer nobody can show.
+/// **The chosen row is tinted in the accent and the others are not**; with
+/// the keyboard on the row that asks, that row is the tinted one.
 #[test]
-fn the_texture_stays_on_the_display() {
-    let display = Size::from((1280, 800));
-    let drawn = a_bar(display).expect("a Bar that was laid out can be drawn");
-    assert!(
-        drawn.panel.area.loc.x >= 0 && drawn.panel.area.loc.y >= 0,
-        "the texture starts off the display"
-    );
-    assert!(
-        drawn.panel.area.loc.x + drawn.panel.area.size.w <= display.w,
-        "the texture runs off the right of the display"
-    );
-    assert!(
-        drawn.panel.area.loc.y + drawn.panel.area.size.h <= display.h,
-        "the texture runs off the bottom of the display"
-    );
+fn the_row_the_keyboard_is_on_is_tinted() {
+    let rows = dolphin();
+    let on_dolphin = a_launcher(Size::from((1440, 960)), &rows, None, true).expect("drawn");
+    let on_asking = a_launcher(Size::from((1440, 960)), &rows, Some(1), true).expect("drawn");
+    let row = on_dolphin.places.rows[0].1;
+    let ask = on_dolphin.places.ask.expect("offered");
+    let (row_at, ask_at) = ((row.loc.x + 300, row.loc.y + 3), (ask.loc.x + 300, ask.loc.y + 3));
+    let white = [0xFF, 0xFF, 0xFF, 0xFF];
+    assert_ne!(pixel(&on_dolphin, row_at.0, row_at.1), white, "the chosen row is tinted");
+    assert_eq!(pixel(&on_dolphin, ask_at.0, ask_at.1), white, "the other is not");
+    assert_eq!(pixel(&on_asking, row_at.0, row_at.1), white);
+    assert_ne!(pixel(&on_asking, ask_at.0, ask_at.1), white);
+}
+
+/// **The row that asks carries alo's mark in teal, on its own tile** — and
+/// teal appears nowhere else on the launcher, which is ADR 0067's reservation.
+#[test]
+fn only_alos_own_row_is_teal() {
+    let teal = {
+        let it = alo_appearance::Role::AccentDefault.colour();
+        [it.red(), it.green(), it.blue()]
+    };
+    let with = a_launcher(Size::from((1440, 960)), &dolphin(), None, true).expect("drawn");
+    let without = a_launcher(Size::from((1440, 960)), &dolphin(), None, false).expect("drawn");
+    let has_teal = |drawn: &BarPicture| {
+        drawn
+            .panel
+            .pixels
+            .chunks(4)
+            .any(|it| it[..3] == teal[..] && it[3] == 255)
+    };
+    assert!(has_teal(&with), "alo's mark is drawn");
+    assert!(!has_teal(&without), "teal with no row of alo's");
+}
+
+/// **The screen behind is dimmed toward the canvas, not covered**: the whole
+/// display, at 45 %.
+#[test]
+fn the_screen_behind_is_dimmed_and_still_seen() {
+    let drawn = a_launcher(Size::from((1280, 800)), &dolphin(), None, true).expect("drawn");
+    let (area, colour, opacity) = drawn.veil;
+    assert_eq!(area, Rectangle::from_size(Size::from((1280, 800))));
+    assert_eq!(colour, [0xFA, 0xF7, 0xF2]);
+    assert!((opacity - 0.45).abs() < f32::EPSILON);
 }

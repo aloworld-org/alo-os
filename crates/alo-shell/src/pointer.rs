@@ -249,6 +249,13 @@ impl Server {
                 .map(|pointer| pointer.location)
         {
             let at = (location.x as i32, location.y as i32).into();
+            // **The launcher before everything**, while it is open: it lies
+            // over a dimmed screen, the Dock included, so a press anywhere is
+            // its own — on Close or the screen around it, it closes.
+            if self.a_press_on_the_launcher(at) {
+                self.a_press_landed_on_the_furniture();
+                return Ok(false);
+            }
             if self.the_dock_takes_this_press(at) {
                 // **Counted where it was taken**, so *three clicks and nothing
                 // happened* can be told from *three clicks and none of them was

@@ -83,7 +83,11 @@ impl crate::Server {
                     WhatTheReplyBoxDid::ItChanged
                 }
             }
-            ComposerKey::Nothing => WhatTheReplyBoxDid::Nothing,
+            // **The arrows choose a row in the launcher, and nothing here**:
+            // a task's reply box is one line of words with no list under it.
+            ComposerKey::Nothing | ComposerKey::Up | ComposerKey::Down => {
+                WhatTheReplyBoxDid::Nothing
+            }
         }
     }
 }

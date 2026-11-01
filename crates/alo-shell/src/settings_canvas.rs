@@ -232,6 +232,31 @@ impl Canvas {
         });
     }
 
+    /// A picture with its own alpha — an application's icon — at (`x`, `y`),
+    /// `wide` pixels across, composited over what is there.
+    ///
+    /// `rgba` is straight red, green, blue and alpha, row by row, as
+    /// `alo_dock::artwork::APicture` holds it.
+    pub(crate) fn picture(&mut self, x: i32, y: i32, wide: i32, rgba: &[u8]) {
+        if wide <= 0 {
+            return;
+        }
+        let tall = i32::try_from(rgba.len() / 4).unwrap_or(0) / wide;
+        let x = self
+            .turned(Rectangle::new((x, y).into(), (wide, tall).into()))
+            .loc
+            .x;
+        let bounds = Rectangle::new((x, y).into(), (wide, tall).into());
+        self.each(bounds, |px, py| {
+            let (ax, ay) = (px.floor() as i32 - x, py.floor() as i32 - y);
+            let at = usize::try_from((ay * wide + ax) * 4).ok()?;
+            let &[red, green, blue, alpha] = rgba.get(at..at + 4)? else {
+                return None;
+            };
+            Some(([red, green, blue], f32::from(alpha) / 255.0))
+        });
+    }
+
     /// Words already inked onto their own ground, copied in whole at
     /// (`x`, `y`) and cut to the clip.
     ///

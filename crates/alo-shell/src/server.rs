@@ -363,6 +363,10 @@ pub struct Server {
     /// [`None`] is somebody typing rather than choosing, which is every frame
     /// until they press an arrow.
     pub(crate) which_row_in_the_bar: Option<usize>,
+    /// Where the launcher was drawn on the last frame, for the press that
+    /// comes after it (`crate::a_press_on_the_launcher`). [`None`] while it is
+    /// shut, or on a display too small to hold it.
+    pub(crate) the_launchers_places: Option<crate::where_the_bar_opens::TheBarsPlaces>,
     /// What the Settings entry is called, in this person's language.
     ///
     /// **Kept because a search has to match what is drawn.** A native entry has
@@ -766,6 +770,7 @@ impl Server {
             // hands already are.
             which_area_has_the_keyboard: None,
             which_row_in_the_bar: None,
+            the_launchers_places: None,
             which_slot_on_the_bar: None,
             the_settings_entry_is_called: String::new(),
             the_applications_entry_is_called: String::new(),

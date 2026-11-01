@@ -126,7 +126,11 @@ impl TheComposer {
                 self.has_the_keyboard = false;
                 WhatTheComposerDid::ItWasLeft
             }
-            ComposerKey::Nothing => WhatTheComposerDid::Nothing,
+            // **The arrows move the launcher's choice, which is the
+            // `Server`'s**: the field itself does not change.
+            ComposerKey::Nothing | ComposerKey::Up | ComposerKey::Down => {
+                WhatTheComposerDid::Nothing
+            }
         }
     }
 
@@ -219,8 +223,36 @@ impl crate::Server {
         // routed here while the Bar is shut would open an application from
         // text nobody is looking at. Tested rather than argued:
         // `enter_does_nothing_when_the_bar_does_not_have_the_keyboard`.
+        // **Up and Down choose a row**: every application found, then the row
+        // that asks alo where it is offered — the order the launcher draws
+        // them in, and the one its foot names, *↑ ↓ choose*.
+        if matches!(key, ComposerKey::Up | ComposerKey::Down) {
+            if !self.the_composer.has_the_keyboard() {
+                return WhatTheComposerDid::Nothing;
+            }
+            let rows = self.how_many_rows_the_launcher_has();
+            if rows == 0 {
+                return WhatTheComposerDid::Nothing;
+            }
+            let now = self.which_row_in_the_bar.unwrap_or(0);
+            let next = if key == ComposerKey::Down {
+                (now + 1).min(rows - 1)
+            } else if self.which_row_in_the_bar.is_none() {
+                0
+            } else {
+                now.saturating_sub(1)
+            };
+            self.which_row_in_the_bar = Some(next);
+            return WhatTheComposerDid::ItChanged;
+        }
+        // **What is typed changes what is found**, so a row chosen among the
+        // old results is not carried onto the new ones.
+        if matches!(key, ComposerKey::Letter(_) | ComposerKey::Erase) {
+            self.which_row_in_the_bar = None;
+        }
         if key == ComposerKey::Ask
             && self.the_composer.has_the_keyboard()
+            && !self.the_ask_row_is_chosen()
             && let Some(identifier) = self.what_the_bar_would_open()
             && let Ok(application) = alo_dock::AppId::named(&identifier)
         {

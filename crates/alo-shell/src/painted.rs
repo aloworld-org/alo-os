@@ -132,6 +132,35 @@ pub(crate) fn wash<F: Frame>(
         .map_err(|error| RenderError::Submission(format!("wash a raster: {error}")))
 }
 
+/// One rectangle of one colour laid **over** what is there at `opacity` — the
+/// dimming behind the launcher, where the screen is still seen through it.
+///
+/// **Not a [`Solid`]**, which is opaque by its own definition: a person must
+/// still see their windows behind the launcher, as the design draws them.
+pub(crate) fn veil(
+    frame: &mut impl Frame,
+    area: Rectangle<i32, Physical>,
+    colour: [u8; 3],
+    opacity: f32,
+) -> Result<(), RenderError> {
+    if area.size.w <= 0 || area.size.h <= 0 {
+        return Ok(());
+    }
+    let [red, green, blue] = colour;
+    frame
+        .draw_solid(
+            area,
+            &[Rectangle::from_size(area.size)],
+            Color32F::new(
+                f32::from(red) / 255.0,
+                f32::from(green) / 255.0,
+                f32::from(blue) / 255.0,
+                opacity.clamp(0.0, 1.0),
+            ),
+        )
+        .map_err(|error| RenderError::Submission(format!("dim what is behind: {error}")))
+}
+
 /// One opaque rectangle.
 fn solid_run(
     frame: &mut impl Frame,

@@ -224,11 +224,16 @@ impl DesktopPicture {
         // caught on the day it was added**, which is the same fault that file
         // was written for: a picture laid out, rastered, carried on every
         // frame, and read by nothing here. The market cost a release that way.
+        //
+        // **Over a dimmed screen** since 2026-11-01 (`561:308`): the canvas
+        // colour at 45 % over everything drawn so far, the Dock included, and
+        // the panel over that. Everything on the panel is in its raster.
         if let Some(picture) = self.the_bar.as_ref() {
+            let (area, colour, opacity) = picture.veil;
+            crate::painted::veil(frame, area, colour, opacity)?;
             if let Some((texture, area)) = the_bar {
                 crate::painted::wash(frame, texture, *area)?;
             }
-            crate::painted::paint(frame, &[], &picture.inked)?;
         }
         for window in [&self.running, &self.filling] {
             if !window.is_empty() {

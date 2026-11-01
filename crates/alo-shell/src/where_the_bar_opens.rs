@@ -1,71 +1,68 @@
-//! Where the alo Bar's open panel goes, and where everything inside it sits.
+//! Where the launcher's panel goes, and where everything inside it sits.
 //!
-//! **Arithmetic from the display's own size, not the design's.** Every number
-//! here is derived from `docs/design/the-alo-bar-when-it-is-open.md`, which
-//! read them off `alo Bar / Open` (`81:890`) at the design's reference size of
-//! 1440 × 960 — and that is a size no machine has. `CLAUDE.md`: *a figure taken
-//! from a frame becomes a proportion or a named rule, never a constant that
-//! holds only at the size somebody drew.*
+//! **The launcher the owner approved on 2026-11-01** — `561:275` at 1440 × 960
+//! and `561:370` at 1280 × 800, *Find, open, or ask · the launcher*. Every
+//! figure below was read off those two frames on that day and is recorded in
+//! `docs/design/the-alo-bar-when-it-is-open.md`.
 //!
-//! # What is a proportion and what is a measure
+//! # What is a proportion, what is a measure, and what is a rule
 //!
-//! The **panel** is a proportion: 47.2% of the display's width, its top 21.7%
-//! of the way down. A panel in logical pixels would be a third of a small
-//! screen and a stamp on a large one.
+//! The **panel's width and top** are proportions of the display — 47.2 % of its
+//! width (680 of 1440, 604 of 1280) and 21.7 % of the way down (208 of 960, 174
+//! of 800), centred across. The **air inside it** is a proportion of the panel:
+//! its width over 26 (26 at 680, 23 at 604).
 //!
-//! The **field and each row** are a measure — `A_TARGET_IS_TALL` — because
-//! they are things a person points at, and a target does not shrink with the
-//! screen it is on. The design draws a row as **exactly the box the field is**,
-//! which is it saying that a row is a thing you act on, drawn at the size of
-//! the thing you type into.
+//! **Everything a person reads or points at is a measure**, logical and passed
+//! through `crate::display_scale::DisplayScale` once: the heading's 40, the
+//! field's 56, an application's row of 56 and the row that asks alo of 64, the
+//! line of 18 under the field, the 12 between things, the 4 between rows, the
+//! key hints' 28 and the 15 of air under them. Both frames draw these at the
+//! same sizes on panels of different widths, which is what says they are
+//! measures and not shares of the panel.
 //!
-//! # A measure passes through the display's scale; a proportion does not
-//!
-//! Every measure here is **logical**, and reaches the display through
-//! `crate::display_scale::DisplayScale` — so on a screen drawn at 200 per cent
-//! the field is 112 pixels tall, the same size to the eye as 56 on an ordinary
-//! one, and the Bar no longer looks half the size of the Dock beside it. A
-//! proportion needs no such step: a share of the display's pixels is already
-//! the same share on a dense one. At 100 every conversion is the identity, so
-//! an ordinary screen lays out exactly as it did before the Bar took a scale.
-//!
-//! # The list runs past the bottom, and that is the design
-//!
-//! Four rows are drawn into a panel 390 tall and the fourth begins at 379, so
-//! it is cut. The design is showing a list that **scrolls**, which is why
-//! nothing here caps the rows to what fits: `crate::the_bar_finds` returns
-//! every match, and this says which of them are on the screen.
+//! **The panel's height is a rule**: it holds what it shows, and no more —
+//! `561:309` is 360 tall at 1440 and `561:404` 357 at 1280, for one result and
+//! the row that asks. It stops growing at three fifths of the display, and the
+//! list scrolls inside it from there, keeping the row the keyboard is on in
+//! view.
 
 use smithay::utils::{Physical, Rectangle, Size};
 
 use crate::display_scale::DisplayScale;
 
-/// How tall a thing a person points at is, in logical pixels.
-///
-/// The field, and every row. Named rather than repeated because the design
-/// draws them as one box at one size, and two numbers would let them drift.
+/// How tall a thing a person points at is: the field, and an application's
+/// row. 56 in both frames.
 pub(crate) const A_TARGET_IS_TALL: u32 = 56;
 
-/// The gap between a row and the next, and between the field and the line
-/// under it. 12 at the reference size, and it is a measure rather than a
-/// proportion for the reason the target is.
+/// How tall the row that asks alo is: 64, for its second line.
+pub(crate) const THE_ASK_ROW_IS_TALL: u32 = 64;
+
+/// The gap between the heading, the field, the line under it, the list and
+/// the keys: 12.
 pub(crate) const BETWEEN_THINGS: u32 = 12;
 
-/// How tall the line under the field is, the one that says where the results
-/// came from. 18 at the reference, and a measure for the reason the target is:
-/// it holds a line of words, and words do not shrink with the screen.
+/// The gap between one row and the next, and either side of the hairline over
+/// the row that asks: 4 (`561:338` at 60 under a row of 56, the ask row at 65).
+pub(crate) const BETWEEN_ROWS: u32 = 4;
+
+/// How tall the heading is: 40, the close control's height.
+pub(crate) const THE_HEADING_IS_TALL: u32 = 40;
+
+/// The close control: 48 wide, the heading's 40 tall (`561:312`).
+pub(crate) const THE_CLOSE_CONTROL_IS: (u32, u32) = (48, 40);
+
+/// How tall the line under the field is: 18.
 pub(crate) const THE_ORIGIN_LINE_IS_TALL: u32 = 18;
 
-/// How much shorter the heading above the field is than a target less the gap
-/// under it: the design's heading is 40 at the reference, taken from the target
-/// so that one measure moves them all.
-const THE_HEADING_IS_SHORTER: u32 = 4;
+/// How tall the row of key hints is: 28 (`561:351`).
+pub(crate) const THE_KEYS_ARE_TALL: u32 = 28;
 
-/// How much air there is inside the panel, all the way round.
-///
-/// 25 at the reference, which is the panel's own width over 27.2 — so it grows
-/// with the panel rather than staying a hairline on a large screen.
-pub(crate) const INSIDE_THE_PANEL: f32 = 1.0 / 27.2;
+/// The air under the key hints, to the panel's edge: 15 in both frames,
+/// where the air on every other side is a share of the panel's width.
+pub(crate) const UNDER_THE_KEYS: u32 = 15;
+
+/// How much air there is inside the panel, as a share of its width: 26 at 680.
+pub(crate) const INSIDE_THE_PANEL: f32 = 26.0 / 680.0;
 
 /// How wide the panel is as a share of the display.
 const THE_PANEL_IS_WIDE: f32 = 680.0 / 1440.0;
@@ -73,97 +70,175 @@ const THE_PANEL_IS_WIDE: f32 = 680.0 / 1440.0;
 /// How far down the display the panel's top sits.
 const THE_PANEL_BEGINS: f32 = 208.0 / 960.0;
 
-/// How tall the panel is as a share of the display.
-const THE_PANEL_IS_TALL: f32 = 390.0 / 960.0;
+/// The most of the display's height the panel takes before its list scrolls.
+const AT_MOST: f32 = 3.0 / 5.0;
 
-/// Where the Bar and everything in it is, on a display of this size.
+/// What the launcher holds, which is all its height depends on.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct WhatItHolds {
+    /// How many applications were found.
+    pub(crate) found: usize,
+    /// Whether the row that asks alo is offered.
+    pub(crate) asks: bool,
+    /// Which row the keyboard is on: an application's, or past the last of
+    /// them, the row that asks.
+    pub(crate) chosen: Option<usize>,
+}
+
+/// Where the launcher and everything in it is, on a display of this size.
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TheBarsPlaces {
     /// The panel itself.
     pub panel: Rectangle<i32, Physical>,
+    /// The heading's line, across the panel's inside.
+    pub heading: Rectangle<i32, Physical>,
+    /// The close control, at the heading's end.
+    pub close: Rectangle<i32, Physical>,
     /// The field somebody types into.
     pub field: Rectangle<i32, Physical>,
     /// The line that says where the results came from.
     pub origin: Rectangle<i32, Physical>,
-    /// Where the first row begins, and how wide every row is.
-    pub first_row: Rectangle<i32, Physical>,
-    /// How far down from one row to the next.
-    pub row_to_row: i32,
-    /// The scale every measure above went through, so the raster draws the
-    /// corners, the ring and the words at the scale the rows were laid out at
+    /// Each application row shown, with which result it is.
+    pub rows: Vec<(usize, Rectangle<i32, Physical>)>,
+    /// The hairline over the row that asks, where there is one.
+    pub hairline: Option<Rectangle<i32, Physical>>,
+    /// The row that asks alo, where it is offered.
+    pub ask: Option<Rectangle<i32, Physical>>,
+    /// The row of key hints.
+    pub keys: Rectangle<i32, Physical>,
+    /// The scale every measure above went through, so the raster draws at it
     /// rather than asking a second time.
     pub(crate) scale: DisplayScale,
-    /// How many rows are wholly on the panel.
-    ///
-    /// **Whole ones only.** The design draws a fourth row cut off by the
-    /// panel's edge, which says the list scrolls; a row half drawn is a row a
-    /// person cannot read, so this counts what can be read and the surface
-    /// scrolls for the rest.
-    pub rows_that_fit: usize,
 }
 
-/// Work out where the Bar goes on a display this size, drawn at `scale`.
+/// Work out where the launcher goes on a display this size, drawn at `scale`,
+/// holding `holds`.
 ///
-/// [`None`] for a display too small to hold the panel at all — which is a real
-/// answer rather than a clamp: a Bar squeezed onto a screen it does not fit is
-/// a surface a person cannot use, and the caller can say so instead of drawing
-/// one.
+/// [`None`] for a display too small to hold the panel and one row at all — a
+/// real answer rather than a clamp: a launcher squeezed onto a screen it does
+/// not fit is a surface a person cannot use, and the caller draws none.
 pub(crate) fn where_the_bar_opens(
     display: Size<i32, Physical>,
     scale: DisplayScale,
+    holds: WhatItHolds,
 ) -> Option<TheBarsPlaces> {
-    let target = scale.px(A_TARGET_IS_TALL);
-    let between = scale.px(BETWEEN_THINGS);
-    let origin_is = scale.px(THE_ORIGIN_LINE_IS_TALL);
-    let across = (display.w as f32 * THE_PANEL_IS_WIDE).round() as i32;
-    let down = (display.h as f32 * THE_PANEL_IS_TALL).round() as i32;
-    let inset = (across as f32 * INSIDE_THE_PANEL).round().max(1.0) as i32;
-
-    // The panel has to hold its own air twice over, the field, and at least one
-    // whole row — anything less is a surface with nothing on it.
-    let least = inset * 2 + target * 2 + between * 3;
-    if across <= inset * 2 || down < least {
+    let px = |logical: u32| scale.px(logical);
+    #[expect(
+        clippy::cast_possible_truncation,
+        reason = "a share of a display's pixels is well inside an i32"
+    )]
+    let share = |of: i32, share: f32| (of as f32 * share).round() as i32;
+    let across = share(display.w, THE_PANEL_IS_WIDE);
+    let inset = share(across, INSIDE_THE_PANEL).max(1);
+    let inner = across - inset * 2;
+    let left = (display.w - across) / 2;
+    let top = share(display.h, THE_PANEL_BEGINS);
+    if inner <= px(THE_CLOSE_CONTROL_IS.0) {
         return None;
     }
 
-    let left = (display.w - across) / 2;
-    let top = (display.h as f32 * THE_PANEL_BEGINS).round() as i32;
+    let heading = Rectangle::new(
+        (left + inset, top + inset).into(),
+        (inner, px(THE_HEADING_IS_TALL)).into(),
+    );
+    let close = Rectangle::new(
+        (
+            left + inset + inner - px(THE_CLOSE_CONTROL_IS.0),
+            top + inset,
+        )
+            .into(),
+        (px(THE_CLOSE_CONTROL_IS.0), px(THE_CLOSE_CONTROL_IS.1)).into(),
+    );
+    let field_top = heading.loc.y + heading.size.h + px(BETWEEN_THINGS);
+    let field = Rectangle::new(
+        (left + inset, field_top).into(),
+        (inner, px(A_TARGET_IS_TALL)).into(),
+    );
+    let origin_top = field_top + field.size.h + px(BETWEEN_THINGS);
+    let origin = Rectangle::new(
+        (left + inset, origin_top).into(),
+        (inner, px(THE_ORIGIN_LINE_IS_TALL)).into(),
+    );
+    let list_top = origin_top + origin.size.h + px(BETWEEN_THINGS);
+
+    // **What is under the list, and what the list may have.** The keys and the
+    // air under them always; the hairline and the ask row when it is offered.
+    let after_the_list = px(BETWEEN_THINGS) + px(THE_KEYS_ARE_TALL) + px(UNDER_THE_KEYS);
+    let asking = if holds.asks {
+        let above = if holds.found > 0 {
+            px(BETWEEN_ROWS) * 2 + scale.px(1).max(1)
+        } else {
+            0
+        };
+        above + px(THE_ASK_ROW_IS_TALL)
+    } else {
+        0
+    };
+    let a_row = px(A_TARGET_IS_TALL);
+    let row_to_row = a_row + px(BETWEEN_ROWS);
+    let most_down = share(display.h, AT_MOST);
+    let room_for_rows = most_down - (list_top - top) - after_the_list - asking;
+    if room_for_rows < 0 || (holds.found > 0 && room_for_rows < a_row) {
+        return None;
+    }
+    // Whole rows only: a row half drawn is a row a person cannot read.
+    let fit = usize::try_from((room_for_rows + px(BETWEEN_ROWS)) / row_to_row)
+        .unwrap_or(0)
+        .min(holds.found);
+    // **The row the keyboard is on is always in view**: an application's row
+    // past the last that fits scrolls the list, and the row that asks is never
+    // scrolled away.
+    let first = match holds.chosen {
+        Some(chosen) if chosen < holds.found && fit > 0 && chosen >= fit => chosen + 1 - fit,
+        _ => 0,
+    };
+    let mut y = list_top;
+    let rows: Vec<(usize, Rectangle<i32, Physical>)> = (first..first + fit)
+        .map(|which| {
+            let at = Rectangle::new((left + inset, y).into(), (inner, a_row).into());
+            y += row_to_row;
+            (which, at)
+        })
+        .collect();
+    // Back to the bottom of the last row shown.
+    let mut bottom = rows
+        .last()
+        .map_or(list_top, |(_, at)| at.loc.y + at.size.h);
+    let mut hairline = None;
+    let ask = holds.asks.then(|| {
+        if !rows.is_empty() {
+            let line = Rectangle::new(
+                (left + inset, bottom + px(BETWEEN_ROWS)).into(),
+                (inner, scale.px(1).max(1)).into(),
+            );
+            bottom = line.loc.y + line.size.h + px(BETWEEN_ROWS);
+            hairline = Some(line);
+        }
+        let at = Rectangle::new(
+            (left + inset, bottom).into(),
+            (inner, px(THE_ASK_ROW_IS_TALL)).into(),
+        );
+        bottom = at.loc.y + at.size.h;
+        at
+    });
+    let keys = Rectangle::new(
+        (left + inset, bottom + px(BETWEEN_THINGS)).into(),
+        (inner, px(THE_KEYS_ARE_TALL)).into(),
+    );
+    let down = keys.loc.y + keys.size.h + px(UNDER_THE_KEYS) - top;
     let panel = Rectangle::new((left, top).into(), (across, down).into());
-    // **The content is a share of the panel, not the panel less its air twice
-    // over**, and the difference is two pixels at the reference size which
-    // says something real: the frame insets the content by 25 on the left and
-    // leaves 23 on the right, because the panel's own width carries a hairline
-    // the content does not sit inside. Deriving the width by subtraction would
-    // be inventing a symmetry the design does not have.
-    let inner = (across as f32 * (632.0 / 680.0)).round() as i32;
-
-    // Down the panel: the heading, the field, the line, then the rows. The
-    // heading's own height is the design's 40 at the reference, taken as the
-    // target's height less the gap so that one measure moves them all.
-    let heading = scale.px(A_TARGET_IS_TALL - BETWEEN_THINGS - THE_HEADING_IS_SHORTER);
-    let field_top = top + inset + heading + between;
-    let field = Rectangle::new((left + inset, field_top).into(), (inner, target).into());
-    let origin_top = field_top + target + between;
-    let origin = Rectangle::new((left + inset, origin_top).into(), (inner, origin_is).into());
-    let rows_top = origin_top + origin_is + between;
-    let first_row = Rectangle::new((left + inset, rows_top).into(), (inner, target).into());
-
-    let row_to_row = target + between;
-    // **Measured to the panel's own edge and not to the air inside it.** The
-    // frame draws its third row ending 23 short of the bottom and its fourth
-    // cut off, which is the list saying it scrolls — insetting the bottom as
-    // well would count two where the design shows three.
-    let room = (top + down) - rows_top;
-    let rows_that_fit = usize::try_from(((room + between) / row_to_row).max(0)).unwrap_or(0);
 
     Some(TheBarsPlaces {
         panel,
+        heading,
+        close,
         field,
         origin,
-        first_row,
-        row_to_row,
+        rows,
+        hairline,
+        ask,
+        keys,
         scale,
-        rows_that_fit,
     })
 }
 
