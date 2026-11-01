@@ -28,7 +28,7 @@
 //! record's own or `alo-recounting`'s; the window's own words are
 //! `crate::the_records_words`.
 
-use alo_strings::{Counting, Direction, Filling, Strings};
+use alo_strings::{Direction, Strings};
 use cosmic_text::FontSystem;
 use smithay::utils::Rectangle;
 
@@ -142,33 +142,23 @@ impl RecordPicture {
     }
 }
 
-/// One of the window's own words, in the person's language.
-fn said(strings: &Strings, word: alo_strings::Word) -> String {
-    strings.say(&word.key(), &Filling::nothing()).into_text()
-}
-
 /// Today's counts, in the order the design draws them.
 fn todays_counts(strings: &Strings, today: Today, palette: RecordPalette) -> Vec<ACount> {
-    let count = |counted: w::Counted, how_many: u64| {
-        strings
-            .count(&counted.key(), &Counting::of(how_many), &Filling::nothing())
-            .into_text()
-    };
     vec![
         ACount {
             icon: ARecordIcon::Allowed,
             colour: palette.allowed,
-            said: count(w::CHANGES_YOU_ALLOWED, today.allowed),
+            said: w::counted(strings, w::CHANGES_YOU_ALLOWED, today.allowed),
         },
         ACount {
             icon: ARecordIcon::Left,
             colour: palette.secondary,
-            said: count(w::REQUESTS_THAT_LEFT, today.left),
+            said: w::counted(strings, w::REQUESTS_THAT_LEFT, today.left),
         },
         ACount {
             icon: ARecordIcon::RefusedSmall,
             colour: palette.refused,
-            said: count(w::REFUSED_TODAY, today.refused),
+            said: w::counted(strings, w::REFUSED_TODAY, today.refused),
         },
     ]
 }
@@ -191,11 +181,12 @@ pub(crate) fn picture(
 ) -> Result<RecordPicture, RenderError> {
     let mut drawn = RecordPicture::empty(size);
     let palette = RecordPalette::of(look.scheme, look.contrast);
+    let sentences = w::TheRecordsSentences::of(strings);
     let (says, account) = match shows {
         RecordShows::Nothing => return Ok(drawn),
         RecordShows::Refusal(why) => (
             TheHeaderSays {
-                heading: said(strings, w::WHAT_ALO_DID),
+                heading: sentences.title.clone(),
                 under_it: why.said(strings).into_text(),
                 remarks: Vec::new(),
                 today: None,
@@ -207,17 +198,15 @@ pub(crate) fn picture(
             moved_past,
         } => (
                 TheHeaderSays {
-                    heading: said(strings, w::WHAT_ALO_DID),
-                    under_it: said(strings, w::WHAT_IS_IN_IT),
+                    heading: sentences.title.clone(),
+                    under_it: sentences.introduction.clone(),
                     remarks: account
                         .said(strings)
                         .into_iter()
                         .map(alo_strings::Said::into_text)
                         .collect(),
                     today: Some((
-                        strings
-                            .say(&alo_formats::words::TODAY.key(), &Filling::nothing())
-                            .into_text(),
+                        sentences.today.clone(),
                         todays_counts(strings, Today::in_the(account, clock), palette),
                     )),
                 },
@@ -235,7 +224,7 @@ pub(crate) fn picture(
         fonts,
         room,
         palette,
-        (&says.heading, &said(strings, w::KEPT_ON_THIS_COMPUTER)),
+        (&says.heading, &sentences.footer),
     );
     let header =
         crate::record_header::drawn(&mut canvas, fonts, room, palette, &says, frame.footer_top)
@@ -249,10 +238,9 @@ pub(crate) fn picture(
         Some((account, moved_past)) => {
             let (top_pad, foot_pad) = m::THE_LIST_PADS;
             let list = (header.bottom + room.px(top_pad), frame.footer_top - room.px(foot_pad));
-            let (refused, already_sent) = (said(strings, w::REFUSED), said(strings, w::ALREADY_SENT));
             let words = TheWindowsWords {
-                refused: &refused,
-                already_sent: &already_sent,
+                refused: &sentences.refused,
+                already_sent: &sentences.already_sent,
             };
             the_list(
                 &mut canvas,
@@ -299,8 +287,11 @@ fn the_list(
     // minutes are — the design's 44 at the least.
     let widest = in_view
         .iter()
-        .filter_map(|words| words.time.as_deref())
-        .map(|time| the_time(fonts, room, palette, time).width_of_box)
+        .map(|words| {
+            words.time.as_deref().map_or(0, |time| {
+                the_time(fonts, room, palette, time).width_of_box
+            })
+        })
         .max()
         .unwrap_or(0);
     let columns = TheColumns {

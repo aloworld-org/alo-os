@@ -116,6 +116,59 @@ pub const THE_RECORDS_WORDS: [Word; 5] = [
 pub const THE_RECORDS_COUNTS: [Counted; 3] =
     [CHANGES_YOU_ALLOWED, REQUESTS_THAT_LEFT, REFUSED_TODAY];
 
+/// The window's own words in the person's language, looked up once a frame.
+///
+/// **Here, beside their declarations, and not in the window's files**:
+/// `tests/record_source.rs` holds every `record_*` file to saying nothing of
+/// its own, so the window is handed its few sentences rather than looking any
+/// up — and what it is handed is exactly this list.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct TheRecordsSentences {
+    /// The title, in the strip and as the heading.
+    pub(crate) title: String,
+    /// The sentence under the heading.
+    pub(crate) introduction: String,
+    /// The footer.
+    pub(crate) footer: String,
+    /// *Refused*.
+    pub(crate) refused: String,
+    /// *Already sent*.
+    pub(crate) already_sent: String,
+    /// *Today*, beside today's counts — `alo-formats`' word, the one the day
+    /// headings use.
+    pub(crate) today: String,
+}
+
+impl TheRecordsSentences {
+    /// Every sentence, in `strings`' language.
+    pub(crate) fn of(strings: &alo_strings::Strings) -> Self {
+        let said = |word: Word| {
+            strings
+                .say(&word.key(), &alo_strings::Filling::nothing())
+                .into_text()
+        };
+        Self {
+            title: said(WHAT_ALO_DID),
+            introduction: said(WHAT_IS_IN_IT),
+            footer: said(KEPT_ON_THIS_COMPUTER),
+            refused: said(REFUSED),
+            already_sent: said(ALREADY_SENT),
+            today: said(alo_formats::words::TODAY),
+        }
+    }
+}
+
+/// One of today's counts, `how_many`, in `strings`' language.
+pub(crate) fn counted(strings: &alo_strings::Strings, counted: Counted, how_many: u64) -> String {
+    strings
+        .count(
+            &counted.key(),
+            &alo_strings::Counting::of(how_many),
+            &alo_strings::Filling::nothing(),
+        )
+        .into_text()
+}
+
 /// Why this file's words could not be declared.
 #[derive(Debug, thiserror::Error, PartialEq, Eq)]
 pub enum TheRecordsWordsError {
