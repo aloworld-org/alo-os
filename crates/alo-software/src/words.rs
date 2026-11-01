@@ -480,7 +480,7 @@ pub const THE_NAMES: [Word; 5] = [
 ];
 
 /// Every word that is a line or a sentence of its own.
-pub const THE_SENTENCES: [Word; 42] = [
+pub const THE_SENTENCES: [Word; 44] = [
     READ_SENTENCE,
     INSTALLED,
     INSTALLED_UNSANDBOXED,
@@ -499,6 +499,8 @@ pub const THE_SENTENCES: [Word; 42] = [
     NOWHERE_TO_REACH,
     DID_NOT_ANSWER,
     VERB_SENTENCE,
+    VERB_CHANGES,
+    VERB_LEAVES,
     OPENS_THE_WEB_CHOSEN,
     OPENS_THE_WEB_SHIPPED,
     OPENS_THE_WEB_INSTEAD,
@@ -686,8 +688,6 @@ pub const VERB_LEAVES: Word = Word::saying(
 
 /// Every string this crate can say.
 pub const EVERY_WORD: [Word; 49] = [
-    VERB_CHANGES,
-    VERB_LEAVES,
     VERB_PURPOSE,
     VERB_APPLICATION,
     VERB_SOURCE,
@@ -711,6 +711,8 @@ pub const EVERY_WORD: [Word; 49] = [
     NOWHERE_TO_REACH,
     DID_NOT_ANSWER,
     VERB_SENTENCE,
+    VERB_CHANGES,
+    VERB_LEAVES,
     OPENS_THE_WEB_CHOSEN,
     OPENS_THE_WEB_SHIPPED,
     OPENS_THE_WEB_INSTEAD,
