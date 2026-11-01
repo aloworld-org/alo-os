@@ -86,9 +86,11 @@ alo-launching = { path = "../alo-launching" }
 # Where the icon one of them named actually is, by the icon theme rules.
 alo-icons = { path = "../alo-icons" }
 # The one decoder in this workspace, already pinned by alo-shell at the same
-# version. PNG only here: nothing in this repository rasterises an SVG, and
-# ADR 0101 puts a rasteriser behind the dependency and ADR process.
+# version, for an application's PNG icon.
 image = { version = "=0.25.10", default-features = false, features = ["png"] }
+# An application's SVG icon, drawn into pixels (ADR 0144). Without text and
+# raster images, so an icon can make this desktop open no other file.
+resvg = { version = "=0.45.1", default-features = false }
 
 # Where this person's grants and pairings are kept, which Settings reads at the
 # moment a person opens it. For those two paths only: `this_persons_grants`

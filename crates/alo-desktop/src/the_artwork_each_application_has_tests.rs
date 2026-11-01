@@ -143,8 +143,56 @@ fn an_application_naming_an_icon_that_is_not_here_is_counted_apart() {
     assert_eq!(went.named_none, 0);
 }
 
+/// **Dolphin, laid out as its Flatpak exports it**: the entry under
+/// `exports/share/applications`, and only a scalable icon under
+/// `exports/share/icons/hicolor/scalable/apps`. On a booted machine on
+/// 2026-11-01 the Dock drew it as a letter.
 #[test]
-fn an_application_whose_only_artwork_is_scalable_is_counted_apart_again() {
+fn a_flatpak_whose_only_icon_is_scalable_draws_it() {
+    let root = somewhere_of_its_own("flatpak");
+    let exports = root.join("var/lib/flatpak/exports/share");
+    let applications = exports.join("applications");
+    let apps = exports.join("icons/hicolor/scalable/apps");
+    std::fs::create_dir_all(&applications).unwrap();
+    std::fs::create_dir_all(&apps).unwrap();
+    std::fs::write(
+        applications.join("org.kde.dolphin.desktop"),
+        "[Desktop Entry]\nType=Application\nName=Dolphin\nIcon=org.kde.dolphin\n",
+    )
+    .unwrap();
+    std::fs::write(
+        apps.join("org.kde.dolphin.svg"),
+        br##"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
+            <rect width="16" height="16" rx="3" fill="#1d99f3"/></svg>"##,
+    )
+    .unwrap();
+    let data_dirs = std::ffi::OsString::from(exports.as_os_str());
+    let icons = alo_icons::where_icons_live(None, Some(root.join("home").as_os_str()), Some(&data_dirs));
+
+    let (artwork, went) = the_artwork_each_application_has(&[applications], &icons, 48);
+
+    let drawn = artwork.of(&AppId::named("org.kde.dolphin").unwrap());
+    assert!(drawn.is_some(), "Dolphin is drawn as a letter again: {went:?}");
+    let drawn = drawn.unwrap();
+    assert_eq!(
+        (drawn.across(), drawn.down()),
+        (96, 96),
+        "drawn at twice the Dock's size, sharp on a dense display"
+    );
+    let middle = ((48 * 96 + 48) * 4) as usize;
+    assert_eq!(
+        drawn.pixels().get(middle..middle + 4),
+        Some(&[0x1d_u8, 0x99, 0xf3, 255][..]),
+        "the icon's own colour is not where the icon is"
+    );
+    assert_eq!((went.drew_a_picture, went.drew_from_a_scalable_one), (1, 1));
+    assert_eq!(went.would_not_decode, 0);
+}
+
+/// **A scalable icon that will not draw is counted as one that would not
+/// decode**, and costs no other application its icon.
+#[test]
+fn a_scalable_icon_that_will_not_draw_is_counted() {
     let entries = an_entry("vector", Some("vector"));
     let icons = somewhere_of_its_own("icons");
     let apps = icons.join("hicolor/scalable/apps");
@@ -153,11 +201,7 @@ fn an_application_whose_only_artwork_is_scalable_is_counted_apart_again() {
 
     let (artwork, went) = the_artwork_each_application_has(&[entries], &[icons], 48);
     assert!(artwork.is_empty());
-    assert_eq!(
-        went.only_scalable, 1,
-        "nothing here rasterises an SVG, and saying so is how a report can tell a machine \
-         with no artwork from one whose artwork we cannot read"
-    );
+    assert_eq!(went.would_not_decode, 1);
     assert_eq!(went.named_one_that_is_not_here, 0);
 }
 
