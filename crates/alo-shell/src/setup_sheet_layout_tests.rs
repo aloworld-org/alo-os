@@ -264,6 +264,7 @@ fn a_sheet_of_any_shape_lays_out() {
                 consequence: 22,
                 choices,
                 actions,
+                rows: crate::setup_sheet_layout::TheRowsAre::Apart,
             },
         );
         assert_eq!(at.choices.len(), choices);

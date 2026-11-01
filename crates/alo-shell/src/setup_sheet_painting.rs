@@ -137,22 +137,23 @@ pub(crate) fn a_grouped_row(
     )
     .cropped_to_its_ink();
     let value_ends = chevron_at - measure.px(16);
+    let value_width = value.width;
+    let value_top = middle(value.height);
     drawn
         .inked
-        .extend(value.placed(value_ends - value.width, middle(value.height), height));
+        .extend(value.placed(value_ends - value_width, value_top, height));
     let label_at = row.loc.x + measure.px(67);
     let name = sentence(
         fonts,
         label,
-        (value_ends - value.width - measure.px(16) - label_at).max(1),
+        (value_ends - value_width - measure.px(16) - label_at).max(1),
         measure.metrics_of_a_row(),
         colours.entry,
         colours.ink,
     )
     .cropped_to_its_ink();
-    drawn
-        .inked
-        .extend(name.placed(label_at, middle(name.height), height));
+    let name_top = middle(name.height);
+    drawn.inked.extend(name.placed(label_at, name_top, height));
 }
 
 /// The note under a sheet's rows: its icon, then its words, in the muted ink on
