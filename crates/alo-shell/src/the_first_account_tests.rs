@@ -63,7 +63,10 @@ fn skipping_the_pin_asks_for_a_password_and_back_returns() {
     account.pressed(SignInKey::Enter);
     typed(&mut account, "48");
     assert_eq!(account.way_back(), Went::Stayed);
-    assert_eq!(account.shown().sheet, TheAccountSheet::Secret(ASecret::Password));
+    assert_eq!(
+        account.shown().sheet,
+        TheAccountSheet::Secret(ASecret::Password)
+    );
     assert_eq!(account.typed(), (false, false), "the PIN is forgotten");
     assert_eq!(account.name(), "anna", "the name is kept");
     typed(&mut account, "correct horse");
@@ -101,7 +104,10 @@ fn tab_reaches_both_buttons_and_enter_presses_them() {
     account.pressed(SignInKey::OtherField);
     assert_eq!(account.shown().on, OnTheSheet::WayBack);
     assert_eq!(account.pressed(SignInKey::Enter), Went::Stayed);
-    assert_eq!(account.shown().sheet, TheAccountSheet::Secret(ASecret::Password));
+    assert_eq!(
+        account.shown().sheet,
+        TheAccountSheet::Secret(ASecret::Password)
+    );
     account.pressed(SignInKey::Earlier);
     assert_eq!(account.shown().on, OnTheSheet::WayBack);
 }
