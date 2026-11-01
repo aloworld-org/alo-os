@@ -24,7 +24,7 @@
 //! viewport, in the crate's usual way.
 
 use alo_canvas::{At, Camera, Frame, Size};
-use smithay::utils::{Logical, Point, Rectangle};
+use smithay::utils::{Logical, Physical, Point, Rectangle};
 
 impl crate::Server {
     /// Every mapped frame, as the canvas sees it.
@@ -63,6 +63,16 @@ impl crate::Server {
 
     /// Fit every frame on the screen at once, and look at it.
     ///
+    /// **Into the room the fixed controls leave clear, a margin inside it** —
+    /// `crate::canvas_the_room_show_all_fits_into`. Until 2026-11-01 the fit was
+    /// given the whole output, so one window open was magnified to the screen's
+    /// full size and ran under the Dock.
+    ///
+    /// Where the frames are spread too far for that room even at the furthest
+    /// zoom out, they are fitted across the whole output instead, as they always
+    /// were. That is the reach `crate::canvas_never_lost` holds a drag to, so a
+    /// window a person was allowed to put somewhere is never one this refuses.
+    ///
     /// # Errors
     /// [`None`] with no frames open, with no output to show them on, or where the
     /// frames are spread further apart than this canvas can zoom out to hold —
@@ -72,9 +82,44 @@ impl crate::Server {
         let viewport = Size::checked(u32::try_from(room.w).ok()?, u32::try_from(room.h).ok()?)?;
         let frames = self.the_frames_on_the_plane();
         let span = alo_canvas::plane::reached_by(&frames, self.the_place_now())?;
-        let showing = Camera::showing(span, viewport)?;
+        let showing = self
+            .the_room_show_all_fits_into()
+            .and_then(|clear| {
+                let inside = Size::checked(
+                    u32::try_from(clear.size.w).ok()?,
+                    u32::try_from(clear.size.h).ok()?,
+                )?;
+                // Fitted to the clear room as though it began at the screen's
+                // corner, then moved by where it really begins.
+                Camera::showing(span, inside)?.panned_by(-clear.loc.x, -clear.loc.y)
+            })
+            .or_else(|| Camera::showing(span, viewport))?;
         self.set_the_camera(showing);
         Some(showing)
+    }
+
+    /// The part of the output *Show all* fits into, in its pixels: clear of the
+    /// fixed controls the last draw laid out, and a margin inside that.
+    ///
+    /// [`None`] with no output, or where the margin would leave nothing — a very
+    /// small screen — in which case the caller fits the whole output.
+    pub(crate) fn the_room_show_all_fits_into(&self) -> Option<Rectangle<i32, Physical>> {
+        use crate::canvas_the_room_show_all_fits_into::{
+            THE_MARGIN_SHOW_ALL_LEAVES, inside_the_margin, the_room_left_clear,
+        };
+        let size = self.surfaces.popups.output_size?;
+        let output = Rectangle::new((0, 0).into(), size);
+        let controls = self
+            .the_controls_of_the_display_for(None)
+            .map_or(&[][..], crate::canvas_fixed_controls::FixedControls::bounds);
+        let clear = the_room_left_clear(output, controls);
+        // The output and the scale it is measured at are one display's: both are
+        // written together, by the draw of the display that drew last.
+        let margin = crate::display_scale::DisplayScale::of_per_cent(
+            self.the_scale_edges_are_measured_at,
+        )
+        .px(THE_MARGIN_SHOW_ALL_LEAVES);
+        inside_the_margin(clear, margin)
     }
 }
 
