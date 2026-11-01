@@ -26,8 +26,14 @@ fn a_gradient_is_drawn_from_one_colour_to_the_other() {
     let left = at(picture.pixels(), 32, 0, 16);
     let right = at(picture.pixels(), 32, 31, 16);
     assert_eq!(left[3], 255, "the icon's edge was not covered");
-    assert!(left[0] > 200 && left[2] < 55, "the left is not red: {left:?}");
-    assert!(right[2] > 200 && right[0] < 55, "the right is not blue: {right:?}");
+    assert!(
+        left[0] > 200 && left[2] < 55,
+        "the left is not red: {left:?}"
+    );
+    assert!(
+        right[2] > 200 && right[0] < 55,
+        "the right is not blue: {right:?}"
+    );
 }
 
 /// **Straight colour, as the Dock composites it**: half-covered red is red at
@@ -49,9 +55,21 @@ fn a_wide_icon_is_centred_and_keeps_its_proportions() {
     let svg = br##"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 10">
         <rect width="20" height="10" fill="#000000"/></svg>"##;
     let picture = drawn_from(svg, 20).unwrap();
-    assert_eq!(at(picture.pixels(), 20, 10, 0)[3], 0, "it was stretched to fill");
-    assert_eq!(at(picture.pixels(), 20, 10, 10)[3], 255, "the middle is empty");
-    assert_eq!(at(picture.pixels(), 20, 10, 19)[3], 0, "it was stretched to fill");
+    assert_eq!(
+        at(picture.pixels(), 20, 10, 0)[3],
+        0,
+        "it was stretched to fill"
+    );
+    assert_eq!(
+        at(picture.pixels(), 20, 10, 10)[3],
+        255,
+        "the middle is empty"
+    );
+    assert_eq!(
+        at(picture.pixels(), 20, 10, 19)[3],
+        0,
+        "it was stretched to fill"
+    );
 }
 
 /// **What is not an SVG is no picture**, and says so rather than panicking.
@@ -59,7 +77,10 @@ fn a_wide_icon_is_centred_and_keeps_its_proportions() {
 fn rubbish_is_no_picture() {
     assert!(drawn_from(b"not an svg", 48).is_none());
     assert!(drawn_from(b"", 48).is_none());
-    assert!(drawn_from(b"<svg/>", 48).is_none(), "an SVG with no size was drawn");
+    assert!(
+        drawn_from(b"<svg/>", 48).is_none(),
+        "an SVG with no size was drawn"
+    );
 }
 
 /// **A file larger than any icon is not read.**

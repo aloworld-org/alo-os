@@ -167,12 +167,16 @@ fn a_flatpak_whose_only_icon_is_scalable_draws_it() {
     )
     .unwrap();
     let data_dirs = std::ffi::OsString::from(exports.as_os_str());
-    let icons = alo_icons::where_icons_live(None, Some(root.join("home").as_os_str()), Some(&data_dirs));
+    let icons =
+        alo_icons::where_icons_live(None, Some(root.join("home").as_os_str()), Some(&data_dirs));
 
     let (artwork, went) = the_artwork_each_application_has(&[applications], &icons, 48);
 
     let drawn = artwork.of(&AppId::named("org.kde.dolphin").unwrap());
-    assert!(drawn.is_some(), "Dolphin is drawn as a letter again: {went:?}");
+    assert!(
+        drawn.is_some(),
+        "Dolphin is drawn as a letter again: {went:?}"
+    );
     let drawn = drawn.unwrap();
     assert_eq!(
         (drawn.across(), drawn.down()),

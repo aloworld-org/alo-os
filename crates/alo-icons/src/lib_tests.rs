@@ -190,7 +190,11 @@ fn a_flatpaks_scalable_only_icon_is_found_under_its_export() {
     ]);
     let exports = root.join("var/lib/flatpak/exports/share");
     let data_dirs = std::ffi::OsString::from(format!("{}:/nowhere/share", exports.display()));
-    let places = where_icons_live(None, Some(std::ffi::OsStr::new("/nowhere")), Some(&data_dirs));
+    let places = where_icons_live(
+        None,
+        Some(std::ffi::OsStr::new("/nowhere")),
+        Some(&data_dirs),
+    );
     assert_eq!(
         the_icon_called("org.kde.dolphin", &places, 48),
         WhatWasFound::AScalablePicture(
