@@ -187,6 +187,14 @@ pub enum Action {
     /// command and its key are the design's, and a person can rebind or clear
     /// it in Settings like every other action here.
     ReturnTheCanvasToLifeSize,
+    /// Fit the window in front in view: zoom and pan so it fills the room the
+    /// fixed controls leave, with the margin *Show all* leaves.
+    ///
+    /// **Promised and missing until 2026-11-01**: the design gives *Fit the
+    /// selected window in view* `⊞`+2, and `the-canvas-as-a-workspace.md` §4
+    /// names *fit selection*. With no multi-selection yet, the selection is the
+    /// window in front. This makes an existing promise true.
+    FitTheWindowInFront,
     /// Send the window in front to the next Place.
     ///
     /// **The road a person who cannot drag takes**, which is why it is a
@@ -244,7 +252,7 @@ impl Action {
     /// Everything a shortcut can do, in the order a settings panel lists them:
     /// the six that summon something, then the seven done to the window in
     /// front, then the four for moving between windows and applications, then
-    /// the canvas's seven, then the two that move the keyboard between the
+    /// the canvas's eight, then the two that move the keyboard between the
     /// parts of the screen.
     ///
     /// **The sentence above counts, and it had stopped.** It read *the three
@@ -276,6 +284,7 @@ impl Action {
         Self::ZoomTheCanvasOut,
         Self::ShowAllOnTheCanvas,
         Self::ReturnTheCanvasToLifeSize,
+        Self::FitTheWindowInFront,
         Self::MoveTheWindowToTheNextPlace,
         Self::GoBackOnThisPlace,
         Self::GoForwardOnThisPlace,
@@ -309,6 +318,7 @@ impl Action {
             Self::ZoomTheCanvasOut => words::ZOOM_THE_CANVAS_OUT,
             Self::ShowAllOnTheCanvas => words::SHOW_ALL_ON_THE_CANVAS,
             Self::ReturnTheCanvasToLifeSize => words::RETURN_THE_CANVAS_TO_LIFE_SIZE,
+            Self::FitTheWindowInFront => words::FIT_THE_WINDOW_IN_FRONT,
             Self::MoveTheWindowToTheNextPlace => words::MOVE_THE_WINDOW_TO_THE_NEXT_PLACE,
             Self::GoBackOnThisPlace => words::GO_BACK_ON_THIS_PLACE,
             Self::GoForwardOnThisPlace => words::GO_FORWARD_ON_THIS_PLACE,

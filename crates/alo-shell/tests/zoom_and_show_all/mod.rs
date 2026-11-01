@@ -379,6 +379,83 @@ fn show_all_stops_above_the_dock_with_a_margin_on_every_side() {
     }
 }
 
+/// **`⊞`+2 fits the window in front in view**: it fills the room above the Dock
+/// to the margin on at least one side, and goes off it on none.
+///
+/// Two windows open and only the one in front is fitted, which is what tells
+/// this from *Show all*: the other window is left out of the fit, so the window
+/// in front is drawn larger than *Show all* draws it.
+#[test]
+fn super_two_fits_the_window_in_front_in_view() {
+    let f = fixture();
+    let _behind = mapped(&f);
+    let _front = mapped(&f);
+    a_dock_was_drawn_along_the_bottom(&f);
+    // The window behind, far enough away that *Show all* has to zoom out.
+    let behind = f
+        .backend(|s| s.mapped_surfaces().last().cloned())
+        .expect("two windows");
+    assert!(f.backend(move |s| s.place_window(&behind, (3000, 2000)).is_ok()));
+    assert!(command(&f, Action::ShowAllOnTheCanvas).is_some());
+    let showing_all = zoom(&f);
+
+    assert_eq!(
+        command(&f, Action::FitTheWindowInFront),
+        Some(Action::FitTheWindowInFront)
+    );
+    assert!(
+        zoom(&f) > showing_all,
+        "fitting one window zoomed no further in than showing both"
+    );
+    let (left, top, right, bottom) = f.backend(|s| {
+        let front = s
+            .mapped_surfaces()
+            .next()
+            .cloned()
+            .expect("a window in front");
+        let on_the_plane = alo_shell::where_a_window_is(&front);
+        let corner = |x: i32, y: i32| {
+            s.the_camera()
+                .screen_of(alo_canvas::At::checked(x, y).expect("on the plane"))
+                .expect("on the screen")
+        };
+        let (left, top) = corner(on_the_plane.loc.x, on_the_plane.loc.y);
+        let (right, bottom) = corner(
+            on_the_plane.loc.x + on_the_plane.size.w,
+            on_the_plane.loc.y + on_the_plane.size.h,
+        );
+        (left, top, right, bottom)
+    });
+    let quantum = i32::try_from(zoom(&f).div_ceil(1000)).expect("a zoom of a few thousandths");
+    let (room_right, room_bottom) = (VIEWPORT.0 - MARGIN, VIEWPORT.1 - DOCK - MARGIN);
+    assert!(left >= MARGIN - quantum && top >= MARGIN - quantum);
+    assert!(
+        right <= room_right + quantum && bottom <= room_bottom + quantum,
+        "the window was fitted off the room, to ({right}, {bottom})"
+    );
+    // Centred in the room, within the camera's whole-unit step.
+    let middle = ((left + right) / 2, (top + bottom) / 2);
+    let room_middle = ((MARGIN + room_right) / 2, (MARGIN + room_bottom) / 2);
+    assert!(
+        (middle.0 - room_middle.0).abs() <= 2 * quantum
+            && (middle.1 - room_middle.1).abs() <= 2 * quantum,
+        "the window is not in the middle of the room: {middle:?} against {room_middle:?}"
+    );
+}
+
+/// **`⊞`+2 with nothing open moves nothing and is not refused** — the refusal
+/// half: the screen already shows there is nothing to fit.
+#[test]
+fn super_two_with_nothing_open_moves_nothing() {
+    let f = fixture();
+    let before = f.backend(|s| s.the_camera());
+    assert_eq!(
+        command(&f, Action::FitTheWindowInFront),
+        Some(Action::FitTheWindowInFront)
+    );
+    assert_eq!(f.backend(|s| s.the_camera()), before);
+}
+
 /// **Show all with no Dock drawn still leaves the margin**, so the fix is the
 /// margin as well as the Dock, and a screen with no fixed controls at all is
 /// not filled edge to edge either.

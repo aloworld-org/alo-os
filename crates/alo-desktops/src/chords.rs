@@ -23,9 +23,12 @@
 //! # What is shipped
 //!
 //! `Super+PageDown` and `Super+PageUp` for the next and previous desktop, and
-//! `Super+2` … `Super+9` for the second to the ninth by number. None of the ten
+//! `Super+3` … `Super+9` for the third to the ninth by number. None of the nine
 //! is a chord `alo_shortcuts::Defaults` ships, which the test at the bottom of
 //! this file holds against the real list rather than against a copy of it.
+//!
+//! **`Super+2` went the same way the same day**, for the design's *fit the
+//! selected window in view*, for the same reason and with the same cost: none.
 //!
 //! **`Super+1` was here until 2026-11-01**, for the first desktop. The design's
 //! own table (`docs/design/the-shortcuts-and-the-edges.md`) gives `⊞`+1 to
@@ -46,7 +49,7 @@ use crate::switching::Switch;
 ///
 /// Held in the order they were bound, which is the order a shortcuts panel lists
 /// them. A `Vec` rather than a map because `alo_shortcuts::Chord` is deliberately
-/// not `Ord` or `Hash` — it is a thing a person presses, not a key — and ten
+/// not `Ord` or `Hash` — it is a thing a person presses, not a key — and nine
 /// of them are not worth a second ordering of somebody else's type.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct DesktopChords {
@@ -61,7 +64,7 @@ impl DesktopChords {
         Self { bound: Vec::new() }
     }
 
-    /// The ten chords alo OS ships.
+    /// The nine chords alo OS ships.
     ///
     /// # Errors
     /// [`ChordError`], which the list below cannot cause — every one of them
@@ -76,10 +79,9 @@ impl DesktopChords {
         chords
             .bound
             .push((Chord::checked(held, Key::PageUp)?, Switch::Previous));
-        // Not `Super+1`: that is the canvas's, by the design. See this file's
+        // Not `Super+1` or `Super+2`: those are the canvas's, by the design. See this file's
         // header.
         for (number, key) in [
-            (2, Key::Digit2),
             (3, Key::Digit3),
             (4, Key::Digit4),
             (5, Key::Digit5),
@@ -204,7 +206,7 @@ mod tests {
     fn the_shipped_chords_take_nothing_a_shortcut_already_has() {
         let chords = DesktopChords::as_shipped().unwrap();
         let shortcuts = Shortcuts::shipped();
-        assert_eq!(chords.bound().count(), 10);
+        assert_eq!(chords.bound().count(), 9);
         for (chord, switch) in chords.bound() {
             assert_eq!(shortcuts.action_for(chord), None, "{switch:?}");
             assert_eq!(chords.switch_for(&shortcuts, chord), Some(switch));
@@ -221,9 +223,18 @@ mod tests {
             shortcuts.action_for(chord(Key::Digit1)),
             Some(Action::ReturnTheCanvasToLifeSize)
         );
+        // Nor the second: `Super+2` fits the selected window.
         assert_eq!(
             chords.chord_for(Switch::To(Position::numbered(2).unwrap())),
-            Some(chord(Key::Digit2))
+            None
+        );
+        assert_eq!(
+            shortcuts.action_for(chord(Key::Digit2)),
+            Some(Action::FitTheWindowInFront)
+        );
+        assert_eq!(
+            chords.chord_for(Switch::To(Position::numbered(3).unwrap())),
+            Some(chord(Key::Digit3))
         );
         // Nothing reaches a tenth desktop from the keyboard, and the row of
         // digits is why: there is no Super+10.
@@ -265,9 +276,9 @@ mod tests {
         let shortcuts = Shortcuts::shipped();
         let mut chords = DesktopChords::as_shipped().unwrap();
         assert_eq!(
-            chords.bind(&shortcuts, chord(Key::Digit2), Switch::Next),
+            chords.bind(&shortcuts, chord(Key::Digit3), Switch::Next),
             Err(Refused::ChordIsASwitch(Switch::To(
-                Position::numbered(2).unwrap()
+                Position::numbered(3).unwrap()
             )))
         );
         // Binding a chord to what it already does changes nothing and is not a
@@ -275,11 +286,11 @@ mod tests {
         chords
             .bind(
                 &shortcuts,
-                chord(Key::Digit2),
-                Switch::To(Position::numbered(2).unwrap()),
+                chord(Key::Digit3),
+                Switch::To(Position::numbered(3).unwrap()),
             )
             .unwrap();
-        assert_eq!(chords.bound().count(), 10);
+        assert_eq!(chords.bound().count(), 9);
 
         // Moving *next desktop* to another chord leaves the old one free.
         chords
@@ -287,7 +298,7 @@ mod tests {
             .unwrap();
         assert_eq!(chords.chord_for(Switch::Next), Some(chord(Key::Period)));
         assert_eq!(chords.switch_for(&shortcuts, chord(Key::PageDown)), None);
-        assert_eq!(chords.bound().count(), 10);
+        assert_eq!(chords.bound().count(), 9);
     }
 
     /// A chord for a desktop no display can have is refused, and a switch can

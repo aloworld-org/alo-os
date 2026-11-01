@@ -238,6 +238,16 @@ pub const RETURN_THE_CANVAS_TO_LIFE_SIZE: Word = Word::saying(
      zooming in or out. Write the percentage the way your language writes one.",
 );
 
+/// What [`crate::Action::FitTheWindowInFront`] does.
+pub const FIT_THE_WINDOW_IN_FRONT: Word = Word::saying(
+    "shortcuts.action.fit-the-window-in-front",
+    "Fit the selected window in view",
+)
+.noting(
+    "Zooms and moves the canvas so that the window being worked in fills the screen, with a \
+     margin round it. The window itself keeps its size; only the view changes.",
+);
+
 // ---------------------------------------------------------------------------
 // What is held down — [`crate::Modifier`]. Four words, and three of them are
 // printed differently on the keyboards this will run on.
@@ -535,7 +545,7 @@ pub const KEPT_NOT_REPLACED: Word = Word::saying(
 /// the shortcuts do, what is held down, the keys that print a word, why a
 /// combination was refused, what one chord wanted twice says, and then what is
 /// said about the person's own file.
-pub const EVERY_WORD: [Word; 61] = [
+pub const EVERY_WORD: [Word; 62] = [
     THE_AGENT,
     LAUNCHER,
     SETTINGS,
@@ -557,6 +567,7 @@ pub const EVERY_WORD: [Word; 61] = [
     ZOOM_THE_CANVAS_OUT,
     SHOW_ALL_ON_THE_CANVAS,
     RETURN_THE_CANVAS_TO_LIFE_SIZE,
+    FIT_THE_WINDOW_IN_FRONT,
     MOVE_THE_WINDOW_TO_THE_NEXT_PLACE,
     GO_BACK_ON_THIS_PLACE,
     GO_FORWARD_ON_THIS_PLACE,

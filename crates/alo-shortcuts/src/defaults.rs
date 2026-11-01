@@ -43,7 +43,7 @@ const NOTHING: Modifiers = Modifiers::none();
 /// puts every one of them back through [`Chord::checked`]: the shipped list is
 /// held to the rules a person's own bindings are held to, or the rules are
 /// advice.
-const SHIPPED: [(Action, Chord); 26] = [
+const SHIPPED: [(Action, Chord); 27] = [
     (Action::TheAgent, Chord::shipped(SUPER, Key::A)),
     (Action::Launcher, Chord::shipped(SUPER, Key::Space)),
     (Action::Settings, Chord::shipped(SUPER, Key::I)),
@@ -116,6 +116,12 @@ const SHIPPED: [(Action, Chord); 26] = [
     (
         Action::ReturnTheCanvasToLifeSize,
         Chord::shipped(SUPER, Key::Digit1),
+    ),
+    // **`⊞`+2, the design's *fit the selected window in view*.** The desktop
+    // chords give way here as they do on `⊞`+1.
+    (
+        Action::FitTheWindowInFront,
+        Chord::shipped(SUPER, Key::Digit2),
     ),
     // **Shift beside the key that moves between Places**, so the window goes
     // where the person would have gone. `docs/features.md` promises that the

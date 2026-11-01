@@ -264,14 +264,21 @@ fn switching_is_a_gesture_or_a_shortcut() {
     );
 
     // A chord for a desktop by number, read as the desktop it reaches.
+    //
+    // **The third, because `Super`+1 and `Super`+2 are the canvas's** since
+    // 2026-11-01 — return to 100% and fit the selected window, by the design —
+    // and a system shortcut wins the chord. `crate::chords`' header says so.
+    let third = desktops.on_mut(laptop).unwrap().add().unwrap();
     let numbered = desktops
         .chords()
-        .switch_for(&shortcuts, chord(Key::Digit2))
+        .switch_for(&shortcuts, chord(Key::Digit3))
         .unwrap();
-    assert_eq!(numbered.said(&strings).text(), "Desktop 2");
+    assert_eq!(numbered.said(&strings).text(), "Desktop 3");
+    assert_eq!(desktops.on_mut(laptop).unwrap().switch(numbered), Ok(third));
     assert_eq!(
-        desktops.on_mut(laptop).unwrap().switch(numbered),
-        Ok(second)
+        desktops.chords().switch_for(&shortcuts, chord(Key::Digit2)),
+        None,
+        "a desktop chord answered on a key the canvas holds"
     );
 
     // **A chord a system shortcut holds is not a desktop chord.** The person

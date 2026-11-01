@@ -54,6 +54,7 @@ pub(crate) const fn sends_the_keyboard_to_a_window(action: Action) -> bool {
         | Action::ZoomTheCanvasOut
         | Action::ShowAllOnTheCanvas
         | Action::ReturnTheCanvasToLifeSize
+        | Action::FitTheWindowInFront
         | Action::MoveTheWindowToTheNextPlace
         | Action::GoBackOnThisPlace
         | Action::GoForwardOnThisPlace => false,

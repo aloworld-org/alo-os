@@ -74,6 +74,7 @@ pub const fn side_for(action: Action) -> Option<Side> {
         // Returning the canvas to 100 % is the same kind of thing as zooming
         // it: what is seen changes, and no display's room is shared out.
         | Action::ReturnTheCanvasToLifeSize
+        | Action::FitTheWindowInFront
         // Moving a window to another Place is not a division of this screen: it
         // changes which surface the window is on, not which part of a screen it
         // occupies. `alo-dividing`'s four Places are halves and quarters of one

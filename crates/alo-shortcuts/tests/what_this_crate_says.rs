@@ -102,6 +102,10 @@ fn auf_deutsch() -> Strings {
                 words::RETURN_THE_CANVAS_TO_LIFE_SIZE,
                 "Arbeitsfläche auf 100 % zurücksetzen",
             ),
+            (
+                words::FIT_THE_WINDOW_IN_FRONT,
+                "Ausgewähltes Fenster einpassen",
+            ),
             // *Place* is the canvas's own word and this translation keeps it as
             // a noun a person reads rather than borrowing `Arbeitsfläche`, which
             // this fixture already uses for the canvas itself. A window moved to
@@ -285,6 +289,10 @@ fn the_whole_panel_is_read_in_the_language_the_person_reads() {
             (
                 "Arbeitsfläche auf 100 % zurücksetzen".to_owned(),
                 "Super+1".to_owned(),
+            ),
+            (
+                "Ausgewähltes Fenster einpassen".to_owned(),
+                "Super+2".to_owned(),
             ),
             (
                 "Fenster auf die nächste Fläche verschieben".to_owned(),
