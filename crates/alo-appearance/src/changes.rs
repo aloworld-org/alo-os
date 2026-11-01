@@ -23,6 +23,7 @@ use crate::display::DisplayId;
 use crate::lock::Lock;
 use crate::scheme::Following;
 use crate::text::TextScale;
+use crate::titles::WindowTitles;
 
 /// One thing a person can change, for a settings panel that offers *put it
 /// back*.
@@ -39,6 +40,8 @@ pub enum Setting {
     Text,
     /// Which of the five accents the shell follows.
     Accent,
+    /// Whether a window's title is always on its edge.
+    WindowTitles,
 }
 
 /// Everything a person has changed about how their machine looks.
@@ -61,6 +64,7 @@ pub struct Changes {
     text: Option<TextScale>,
     /// Which accent they chose.
     accent: Option<Accent>,
+    window_titles: Option<WindowTitles>,
 }
 
 impl Changes {
@@ -80,6 +84,7 @@ impl Changes {
             && self.following.is_none()
             && self.text.is_none()
             && self.accent.is_none()
+            && self.window_titles.is_none()
     }
 
     /// Put this behind the windows, on every display they have not singled out.
@@ -121,6 +126,11 @@ impl Changes {
         self.accent = Some(accent);
     }
 
+    /// Show window titles always, or only when pointed at.
+    pub fn set_window_titles(&mut self, titles: WindowTitles) {
+        self.window_titles = Some(titles);
+    }
+
     /// Forget that this was ever changed, which puts it back to what the
     /// running release ships.
     ///
@@ -132,6 +142,7 @@ impl Changes {
             Setting::Following => self.following.take().is_some(),
             Setting::Text => self.text.take().is_some(),
             Setting::Accent => self.accent.take().is_some(),
+            Setting::WindowTitles => self.window_titles.take().is_some(),
         }
     }
 
@@ -196,6 +207,12 @@ impl Changes {
     pub fn accent(&self) -> Option<Accent> {
         self.accent
     }
+
+    /// When window titles are shown, if the person said.
+    #[must_use]
+    pub fn window_titles(&self) -> Option<WindowTitles> {
+        self.window_titles
+    }
 }
 
 /// Changes as a settings file holds them: everything untouched is absent rather
@@ -220,6 +237,9 @@ struct Written {
     /// Which accent the shell follows.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     accent: Option<Accent>,
+    /// When window titles are shown.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    window_titles: Option<WindowTitles>,
 }
 
 impl From<Written> for Changes {
@@ -234,6 +254,7 @@ impl From<Written> for Changes {
             following: written.following,
             text: written.text,
             accent: written.accent,
+            window_titles: written.window_titles,
         };
         for (display, background) in written.displays {
             changes.set_background_on(display, background);
@@ -251,6 +272,7 @@ impl From<Changes> for Written {
             following: changes.following,
             text: changes.text,
             accent: changes.accent,
+            window_titles: changes.window_titles,
         }
     }
 }
@@ -295,6 +317,8 @@ mod tests {
         changes.set_text(TextScale::percent(125).unwrap());
         changes.set_accent(Accent::Rose);
         assert_eq!(changes.accent(), Some(Accent::Rose));
+        changes.set_window_titles(WindowTitles::WhenPointedAt);
+        assert_eq!(changes.window_titles(), Some(WindowTitles::WhenPointedAt));
         assert!(!changes.is_untouched());
 
         for setting in [
@@ -303,6 +327,7 @@ mod tests {
             Setting::Following,
             Setting::Text,
             Setting::Accent,
+            Setting::WindowTitles,
         ] {
             assert!(changes.forget(setting), "{setting:?} was there to forget");
             assert!(!changes.forget(setting), "and is not there twice");

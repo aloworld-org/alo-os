@@ -121,6 +121,11 @@ impl Appearance {
         self.changes.set_accent(accent);
     }
 
+    /// Show window titles always, or only when pointed at.
+    pub fn set_window_titles(&mut self, titles: crate::titles::WindowTitles) {
+        self.changes.set_window_titles(titles);
+    }
+
     /// Put one setting back to what this release ships.
     ///
     /// Says whether there was anything to put back.
@@ -196,6 +201,17 @@ impl Appearance {
     #[must_use]
     pub fn accent(&self) -> Accent {
         self.changes.accent().unwrap_or(self.shipped.accent())
+    }
+
+    /// When window titles are shown: the person's choice, or always.
+    ///
+    /// **Not part of [`Shipped`]**, whose constructor is a public surface that
+    /// changes additively: the shipped answer is
+    /// [`WindowTitles::default`](crate::titles::WindowTitles::default), the
+    /// owner's *always visible* of 2026-11-01.
+    #[must_use]
+    pub fn window_titles(&self) -> crate::titles::WindowTitles {
+        self.changes.window_titles().unwrap_or_default()
     }
 
     /// The accent as a colour, at this time of day.

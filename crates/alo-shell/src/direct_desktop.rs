@@ -51,6 +51,15 @@ pub trait TheDesktop {
     /// display probe is exactly that.
     fn refreshed(&mut self) {}
 
+    /// When this person's windows show their titles, as their own settings say.
+    ///
+    /// Asked once, when the desktop stands up; Settings tells the seat again
+    /// whenever the person changes it. **Always by default**, which is what
+    /// this release ships and what a desktop of fixed values draws.
+    fn the_window_titles(&self) -> alo_appearance::WindowTitles {
+        alo_appearance::WindowTitles::default()
+    }
+
     /// What this seat has made of a person's input, offered every frame.
     ///
     /// **Offered rather than printed**, because this crate is a compositor and

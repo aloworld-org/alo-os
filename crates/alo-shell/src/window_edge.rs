@@ -137,13 +137,28 @@ const THE_DRAG_RESTS_AT: i32 = 28;
 /// How tall that resting band is.
 const THE_DRAG_RESTS_TALL: i32 = 12;
 
-/// Where the title starts **inside the drag region**, measured from
-/// `398:26250`: `x = 30` of a drag region that itself starts at 8, so 38 of
-/// the edge.
-const THE_TITLE_STARTS_AT: i32 = 30;
+/// Where the title starts across the edge, from its leading end.
+///
+/// **38, measured off `554:30`** in the edge the owner approved on 2026-11-01
+/// (`Proposed / Window edge (title kept visible)`, `554:56`): the application's
+/// icon at 14, 16 wide, then 8 of room, then the title. The older capture put
+/// the title at 82 — after a 44-wide Move target with its own glyph — and the
+/// approved edge draws the icon where that glyph was. The Move target is still
+/// there to press and to reach with the keyboard; what a person sees in it is
+/// the application's icon rather than a grip.
+const THE_TITLE_STARTS_AT: i32 = 38;
 
-/// Where the title's box starts down the region, measured from `398:26250`.
+/// Where the title's box starts down the region, measured from `554:30` and
+/// `398:26250` alike.
 const THE_TITLE_SITS_AT: i32 = 19;
+
+/// Where the application's icon sits on the edge, measured off `554:26`: 14
+/// across from the edge's leading end and 20 down the region, which is 8 down
+/// the visible strip — `(32 - 16) / 2`, centred.
+const THE_ICON_SITS_AT: (i32, i32) = (14, 20);
+
+/// How big the application's icon is drawn on the edge: `554:26` is 16 × 16.
+pub const THE_ICON_IS: i32 = 16;
 
 /// Who draws a window's header.
 ///
@@ -223,6 +238,10 @@ pub struct WindowEdge {
     /// Where the window's title is drawn, when the shell draws it and the edge
     /// is revealed.
     pub title: Option<Point<i32, Logical>>,
+    /// Where the application's icon is drawn, in the same case as the title:
+    /// a shell-decorated window whose edge is shown. 16 × 16, inside the Move
+    /// target, which is what pressing it reaches.
+    pub icon: Option<Rectangle<i32, Logical>>,
     /// The controls, in the order they are drawn, left to right.
     pub controls: Vec<EdgeControl>,
 }
@@ -545,11 +564,26 @@ pub fn edge_of(
     //
     // Only where the shell draws the decorations, as before: an application
     // with its own header has its own title.
-    let title = (revealed && decorations == Decorations::TheShellDraws).then(|| {
+    //
+    // **At 38 since 2026-11-01**, after the application's icon, which the
+    // approved edge draws in the Move target's place (`554:24`). Still clear of
+    // every action: the first one starts at the trailing walk, and
+    // `the_room_a_title_has` measures to one gap before it.
+    let shown_by_the_shell = revealed && decorations == Decorations::TheShellDraws;
+    let title = shown_by_the_shell.then(|| {
         Point::from((
-            drag.loc.x + A_TARGET_IS + BETWEEN_TARGETS + THE_TITLE_STARTS_AT,
+            region.loc.x + THE_TITLE_STARTS_AT,
             region.loc.y + THE_TITLE_SITS_AT,
         ))
+    });
+    let icon = shown_by_the_shell.then(|| {
+        Rectangle::new(
+            Point::from((
+                region.loc.x + THE_ICON_SITS_AT.0,
+                region.loc.y + THE_ICON_SITS_AT.1,
+            )),
+            Size::from((THE_ICON_IS, THE_ICON_IS)),
+        )
     });
 
     WindowEdge {
@@ -558,6 +592,7 @@ pub fn edge_of(
         drag,
         grip,
         title,
+        icon,
         controls,
     }
 }

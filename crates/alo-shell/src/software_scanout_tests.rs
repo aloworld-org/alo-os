@@ -407,7 +407,7 @@ fn a_frame_with_no_scene_but_a_layer_on_it_is_drawn() {
 fn both_windows_edges_reach_the_bytes_a_display_would_scan_out() {
     use crate::window_edge::{Decorations, edge_of};
     use crate::window_edge_paint::Pointing;
-    use crate::window_edge_picture::{EdgePicture, OverTheEdge};
+    use crate::window_edge_picture::{EdgePicture, OverTheEdge, TheWindow};
     use smithay::utils::Logical;
 
     /// Both bundled faces, as the shell loads them and as
@@ -437,7 +437,7 @@ fn both_windows_edges_reach_the_bytes_a_display_would_scan_out() {
         ),
         Pointing::default(),
         OverTheEdge::default(),
-        None,
+        TheWindow::default(),
         &mut faces,
         size,
         100,
@@ -452,7 +452,7 @@ fn both_windows_edges_reach_the_bytes_a_display_would_scan_out() {
         ),
         Pointing::default(),
         OverTheEdge::default(),
-        None,
+        TheWindow::default(),
         &mut faces,
         size,
         100,

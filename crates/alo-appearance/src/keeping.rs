@@ -48,6 +48,7 @@ const KEYS: &[&str] = &[
     "following",
     "text",
     "accent",
+    "window_titles",
 ];
 
 impl Kept for Changes {
@@ -165,6 +166,7 @@ mod tests {
         ));
         changes.set_text(TextScale::percent(150).unwrap());
         changes.set_accent(Accent::Moss);
+        changes.set_window_titles(crate::titles::WindowTitles::WhenPointedAt);
         changes
     }
 

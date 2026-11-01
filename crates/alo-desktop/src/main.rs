@@ -277,6 +277,13 @@ mod running {
         /// what is pinned — so this is the path the whole of `alo_dock::keeping`
         /// is given, and not a path of the pins' own.
         dock_at: Option<std::path::PathBuf>,
+        /// When this person's windows show their titles, read from their
+        /// `appearance.toml` once at sign-in.
+        ///
+        /// **A file that does not read is the shipped answer** — every title
+        /// shown — and Settings says why it did not read when it is opened,
+        /// as it does for every other appearance setting.
+        window_titles: alo_appearance::WindowTitles,
         /// Where the dock is, and so where the status area is.
         dock: alo_dock::Dock,
         /// The windows this person has put aside, which the panel at the edge
@@ -514,10 +521,22 @@ mod running {
                      the defaults are worked out at every sign-in"
                 );
             }
+            let window_titles = alo_choosing::where_the_folder_is(
+                std::env::var_os("XDG_CONFIG_HOME").as_deref(),
+                std::env::var_os("HOME").as_deref(),
+            )
+            .map_or_else(alo_appearance::WindowTitles::default, |folder| {
+                alo_appearance::keeping::at_sign_in(
+                    &folder.join(alo_appearance::keeping::THE_FILE),
+                )
+                .0
+                .window_titles()
+            });
             Ok(Self {
                 layout_at,
                 shortcuts_at,
                 dock_at,
+                window_titles,
                 dock: alo_dock::Dock::shipped(),
                 put_aside: alo_put_aside::Panel::new(),
                 // Nobody is looking at anything yet, which is what a session starts as.
@@ -589,6 +608,11 @@ mod running {
     const HOW_OFTEN: std::time::Duration = std::time::Duration::from_secs(1);
 
     impl TheDesktop for ThisPersonsDesktop {
+        /// When this person's windows show their titles, as read at sign-in.
+        fn the_window_titles(&self) -> alo_appearance::WindowTitles {
+            self.window_titles
+        }
+
         /// Where this person's settings are kept, so a chord can open them.
         ///
         /// **Answered rather than `None`, which is what makes `⊞`+`I` do

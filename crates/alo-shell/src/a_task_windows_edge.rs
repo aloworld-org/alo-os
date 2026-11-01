@@ -72,7 +72,7 @@ pub(crate) fn every_task_windows_edge(
         .tasks()
         .each_open_window()
         .into_iter()
-        .filter_map(|(_, window)| {
+        .filter_map(|(which, window)| {
             let edge = the_edge_of_a_task_window(a_window_in_the_edges_units(window, scale), room);
             let pointing = pointing_at(
                 &edge,
@@ -86,7 +86,17 @@ pub(crate) fn every_task_windows_edge(
                     menu: None,
                     showing: None,
                 },
-                None,
+                // **No title and no body from the edge**: a task window carries
+                // its own title inside it and draws its own body. Its look is
+                // the focused one while it is the window the keys go to.
+                crate::window_edge_picture::TheWindow {
+                    look: crate::window_edge_look::WhichLook::of(
+                        server.the_kind_in_front()
+                            == crate::which_window_is_in_front::AKindOfWindow::TaskWindows
+                            && server.tasks().the_one_in_front() == Some(which),
+                    ),
+                    ..crate::window_edge_picture::TheWindow::default()
+                },
                 fonts,
                 output,
                 scale,

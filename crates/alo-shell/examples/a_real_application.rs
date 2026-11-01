@@ -280,7 +280,10 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                         }),
                         showing: None,
                     },
-                    title.its_own_words(),
+                    alo_shell::TheWindow {
+                        title: title.its_own_words(),
+                        ..alo_shell::TheWindow::default()
+                    },
                     &mut faces,
                     (THE_OUTPUT_IS.0, THE_OUTPUT_IS.1),
                     100,

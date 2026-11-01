@@ -44,26 +44,23 @@
 //! responsibility from a rectangle. [`WindowEdge::title`](crate::WindowEdge::title) is
 //! where it goes and a caller with fonts puts it there.
 //!
-//! **Corner radii.** The design rounds the strip at 8 and the region at 12,
-//! and this draws rectangles. Said plainly rather than quietly ignored: the
-//! strip's corners are square until something draws rounded ones.
+//! **The strip itself.** Since 2026-11-01 its top corners are rounded at 10
+//! (`554:25`), which a rectangle cannot be, so `crate::the_title_strip_drawn`
+//! draws it as a raster and this draws what sits on it.
 
 use alo_appearance::{Colour, Role};
 use smithay::utils::{Logical, Rectangle};
 
 use crate::window_edge::{EdgeControl, OnTheEdge, WindowEdge};
+use crate::window_edge_look::WhichLook;
 
 /// One rectangle to fill, and what to fill it with.
 pub type Solid = (Rectangle<i32, Logical>, Colour);
 
-/// How thick the strip's border is.
-///
-/// `border border-solid` in the design, which is one logical unit.
-const THE_BORDER_IS: i32 = 1;
 
 /// How thick the keyboard-focus ring is.
 ///
-/// **Two, and not [`THE_BORDER_IS`].** Measured from `414:27609` on
+/// **Two, and not the strip's one-unit line.** Measured from `414:27609` on
 /// 2026-10-12: at the ring's middle row the rendered pixels read
 /// `#ffffff #102a43 #102a43 #ffffff` — the ink exactly, twice, with no
 /// partial values either side, so it is two units and not one spread over
@@ -83,20 +80,19 @@ pub struct Pointing {
 
 /// Everything to fill for this edge, in the order it is drawn.
 ///
-/// Back to front: the strip, then each control's highlight, then its artwork,
-/// then any focus outline. A caller fills them in order and gets the design.
+/// Back to front: each control's highlight, then its artwork, then any focus
+/// outline. A caller fills them in order and gets the design.
+///
+/// **The strip is not here any more.** Its top corners are rounded at 10 since
+/// the owner approved `554:56` on 2026-11-01, and a rounded corner is partial
+/// coverage a rectangle cannot be, so it is a raster:
+/// `crate::the_title_strip_drawn`. What is here is drawn over it.
+///
+/// `look` is which window this is — the one the person's typing goes to, or
+/// another — and decides the controls' ink (`crate::window_edge_look`).
 #[must_use]
-pub fn solids(edge: &WindowEdge, pointing: Pointing) -> Vec<Solid> {
+pub fn solids(edge: &WindowEdge, pointing: Pointing, look: WhichLook) -> Vec<Solid> {
     let mut solids = Vec::new();
-
-    if let Some(strip) = edge.strip {
-        // The border first and the surface inside it, which draws a one-unit
-        // frame without needing a stroke the renderer does not have.
-        solids.push((strip, Role::BorderDefault.colour()));
-        if let Some(inside) = inset(strip, THE_BORDER_IS) {
-            solids.push((inside, Role::BgSurface.colour()));
-        }
-    }
 
     // The grip: quiet at rest and a mark when revealed, and **`text/muted`
     // either way**. The contract says *navy human controls* and the grip is
@@ -104,6 +100,8 @@ pub fn solids(edge: &WindowEdge, pointing: Pointing) -> Vec<Solid> {
     // `text/muted` and not `text/primary`.
     solids.extend(grip_of(edge));
 
+    let [red, green, blue] = look.colours().ink;
+    let ink_of_the_look = Colour::of(red, green, blue);
     for control in &edge.controls {
         if pointing.hovered == Some(control.does) {
             solids.push((control.highlight, Role::BgCool.colour()));
@@ -111,9 +109,12 @@ pub fn solids(edge: &WindowEdge, pointing: Pointing) -> Vec<Solid> {
         let ink = if pointing.hovered == Some(control.does) && control.does == OnTheEdge::Close {
             // **Only Close, and only hovered.** Measured: `status/danger`
             // resolves on the Close-hover variant and on no other.
-            Role::StatusDanger
+            Role::StatusDanger.colour()
         } else {
-            Role::TextPrimary
+            // **Navy on the focused window, muted on every other**, by the
+            // board `557:456`: *title, icon and controls in text/muted — still
+            // readable, still 44 × 44.*
+            ink_of_the_look
         };
         // **Move draws no artwork of its own**, because `grip_of` above already
         // drew its mark: the design's *Move window / 14px glyph* is the same
@@ -138,12 +139,29 @@ pub fn solids(edge: &WindowEdge, pointing: Pointing) -> Vec<Solid> {
 }
 
 /// The grip, drawn as the design draws it in each state.
+///
+/// **Nothing, on an edge that shows the application's icon**: the approved
+/// edge (`554:24`) draws the icon where the grip's mark was, inside the Move
+/// target, and two marks in one place would be two answers to *what is this*.
+/// An edge with no icon to show keeps the mark — `the_grip_mark`.
 fn grip_of(edge: &WindowEdge) -> Vec<Solid> {
     let quiet = Role::TextMuted.colour();
     if edge.strip.is_none() {
         // At rest it is the whole mark: a 24 × 2 bar.
         return vec![(edge.grip, quiet)];
     }
+    if edge.icon.is_some() {
+        return Vec::new();
+    }
+    the_grip_mark(edge)
+}
+
+/// The revealed grip's two bars, for an edge with no icon in its place — an
+/// application with its own header, or a shell-drawn window whose application
+/// has no icon this machine knows.
+#[must_use]
+pub(crate) fn the_grip_mark(edge: &WindowEdge) -> Vec<Solid> {
+    let quiet = Role::TextMuted.colour();
     // Revealed it is a 14 × 14 mark. Two bars, which is what a grip is: the
     // affordance says *this is the part you pull*, and two lines say it in
     // the space the design gives.
@@ -168,8 +186,7 @@ fn grip_of(edge: &WindowEdge) -> Vec<Solid> {
 /// marks would be a renderer nobody asked for. **The shapes are the design's
 /// and the fidelity is this renderer's**, which is a limitation worth naming
 /// rather than a choice worth defending.
-fn artwork_of(control: &EdgeControl, ink: Role) -> Vec<Solid> {
-    let colour = ink.colour();
+fn artwork_of(control: &EdgeControl, colour: Colour) -> Vec<Solid> {
     let at = control.artwork.loc;
     let size = control.artwork.size.w;
     let thick = 2;
@@ -236,11 +253,6 @@ fn outline_of(around: Rectangle<i32, Logical>, ink: Role) -> Vec<Solid> {
     ]
 }
 
-/// A rectangle shrunk by `by` on every side, or [`None`] if nothing is left.
-fn inset(of: Rectangle<i32, Logical>, by: i32) -> Option<Rectangle<i32, Logical>> {
-    let (w, h) = (of.size.w - by * 2, of.size.h - by * 2);
-    (w > 0 && h > 0).then(|| Rectangle::new((of.loc.x + by, of.loc.y + by).into(), (w, h).into()))
-}
 
 #[cfg(test)]
 #[path = "window_edge_paint_tests.rs"]

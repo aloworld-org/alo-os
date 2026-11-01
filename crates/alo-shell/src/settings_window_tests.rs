@@ -244,6 +244,8 @@ fn every_setting_the_machine_has_is_in_one_window() {
         .into_iter()
         .map(SettingsRow::LightOrDark)
         .chain(Accent::ALL.into_iter().map(SettingsRow::Accent))
+        // **Then the titles switch**, under *Windows*.
+        .chain(std::iter::once(SettingsRow::WindowTitles))
         .collect();
     // **The Dock's four edges, then what it does when a window needs the
     // room**: where it sits is chosen in Settings again (`docs/features.md`).
@@ -653,6 +655,41 @@ fn appearance_changes_nothing_its_crate_would_not() {
         0,
         "a change of accent knocked on the daemon"
     );
+}
+
+/// **The window titles switch turns over and is kept**, and turns back: the
+/// owner's *always* as shipped, and the quieter edge as the person's choice.
+#[test]
+fn the_titles_switch_turns_over_and_back_and_is_kept_each_time() {
+    let machine = a_persons_machine("titles");
+    let strings = words();
+    let door = CountingDoor::revoking();
+    let mut window = machine.opened();
+    let at = machine.kept(alo_appearance::keeping::THE_FILE);
+    assert_eq!(
+        window.window_titles(),
+        Some(alo_appearance::WindowTitles::Always),
+        "a machine nobody changed shows every title"
+    );
+    for expected in [
+        alo_appearance::WindowTitles::WhenPointedAt,
+        alo_appearance::WindowTitles::Always,
+    ] {
+        assert_eq!(
+            chosen(&mut window, &SettingsRow::WindowTitles, &strings, &door),
+            Some(SettingsDid::Kept(
+                SettingsSection::Appearance,
+                SettingsKept::Written
+            ))
+        );
+        assert_eq!(window.window_titles(), Some(expected));
+        assert_eq!(
+            alo_appearance::keeping::at_sign_in(&at).0.window_titles(),
+            expected,
+            "what a sign-in reads back"
+        );
+    }
+    assert_eq!(door.knocks.get(), 0, "a title switch knocked on the daemon");
 }
 
 /// **The dock changes nothing `alo-dock` would not.**

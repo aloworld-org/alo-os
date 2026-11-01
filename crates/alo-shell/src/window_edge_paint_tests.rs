@@ -12,6 +12,7 @@
 
 use super::*;
 use crate::window_edge::{Decorations, edge_of};
+use crate::window_edge_look::WhichLook;
 use smithay::utils::{Point, Size};
 
 /// A window whose edge is the design's 600 specimen at the origin.
@@ -41,7 +42,7 @@ fn at_rest_the_edge_draws_one_quiet_bar() {
         false,
         smithay::utils::Size::from((1920, 1080)),
     );
-    let drawn = solids(&edge, Pointing::default());
+    let drawn = solids(&edge, Pointing::default(), WhichLook::Focused);
     assert_eq!(drawn.len(), 1, "{drawn:?}");
     assert_eq!(drawn[0].0.size, Size::from((24, 2)));
     assert_eq!(colours(&drawn), vec![(0x59, 0x6B, 0x78)], "text/muted");
@@ -59,7 +60,7 @@ fn an_unpointed_control_draws_only_its_artwork() {
         true,
         smithay::utils::Size::from((1920, 1080)),
     );
-    let drawn = solids(&edge, Pointing::default());
+    let drawn = solids(&edge, Pointing::default(), WhichLook::Focused);
     for control in &edge.controls {
         assert!(
             !drawn.iter().any(|(rect, _)| *rect == control.target),
@@ -90,6 +91,7 @@ fn only_the_hovered_control_is_highlighted() {
             hovered: Some(OnTheEdge::Maximise),
             focused: None,
         },
+    WhichLook::Focused,
     );
     let highlights: Vec<_> = edge
         .controls
@@ -119,7 +121,7 @@ fn only_close_and_only_hovered_is_danger_coloured() {
     );
     const DANGER: (u8, u8, u8) = (0xB4, 0x23, 0x18);
 
-    let resting = solids(&edge, Pointing::default());
+    let resting = solids(&edge, Pointing::default(), WhichLook::Focused);
     assert!(!colours(&resting).contains(&DANGER), "danger at rest");
 
     for hovered in [OnTheEdge::Minimise, OnTheEdge::Maximise] {
@@ -129,6 +131,7 @@ fn only_close_and_only_hovered_is_danger_coloured() {
                 hovered: Some(hovered),
                 focused: None,
             },
+        WhichLook::Focused,
         );
         assert!(
             !colours(&drawn).contains(&DANGER),
@@ -142,6 +145,7 @@ fn only_close_and_only_hovered_is_danger_coloured() {
             hovered: Some(OnTheEdge::Close),
             focused: None,
         },
+    WhichLook::Focused,
     );
     assert!(
         colours(&closing).contains(&DANGER),
@@ -176,6 +180,7 @@ fn nothing_on_the_edge_is_ever_teal() {
                         hovered,
                         focused: hovered,
                     },
+                WhichLook::Focused,
                 );
                 for teal in TEAL {
                     assert!(
@@ -188,21 +193,50 @@ fn nothing_on_the_edge_is_ever_teal() {
     }
 }
 
-/// **The revealed strip is white inside a `border/default` frame.**
+/// **The strip is no longer a flat rectangle here.** Its top corners are
+/// rounded at 10 (`554:25`), so it is drawn by `crate::the_title_strip_drawn`
+/// and this draws only what sits on it. A square strip filled here as well
+/// would be painted over the rounded one and undo its corners.
 #[test]
-fn the_revealed_strip_is_a_surface_in_a_border() {
+fn the_revealed_strip_is_left_to_the_raster_that_rounds_it() {
     let edge = edge_of(
         specimen(),
         Decorations::TheShellDraws,
         true,
         smithay::utils::Size::from((1920, 1080)),
     );
-    let drawn = solids(&edge, Pointing::default());
+    let drawn = solids(&edge, Pointing::default(), WhichLook::Focused);
     let strip = edge.strip.expect("revealed");
-    assert_eq!(drawn[0].0, strip);
-    assert_eq!(colours(&drawn)[0], (0xE7, 0xEB, 0xEF), "border/default");
-    assert_eq!(drawn[1].0.size, Size::from((598, 30)), "one unit inside");
-    assert_eq!(colours(&drawn)[1], (0xFF, 0xFF, 0xFF), "bg/surface");
+    assert!(
+        !drawn
+            .iter()
+            .any(|(rect, _)| rect.size.w >= strip.size.w - 2),
+        "a strip-wide rectangle was filled over the rounded strip: {drawn:?}"
+    );
+    assert!(!drawn.is_empty(), "the controls' artwork is still drawn");
+}
+
+/// **The focused window's controls are navy, every other's muted** — the
+/// board `557:456`, *title, icon and controls in text/muted — still readable,
+/// still 44 × 44*. Their targets do not move or shrink.
+#[test]
+fn an_unfocused_windows_controls_are_muted_and_keep_their_size() {
+    let edge = edge_of(
+        specimen(),
+        Decorations::TheShellDraws,
+        true,
+        smithay::utils::Size::from((1920, 1080)),
+    );
+    let focused = solids(&edge, Pointing::default(), WhichLook::Focused);
+    let quiet = solids(&edge, Pointing::default(), WhichLook::NotFocused);
+    assert!(colours(&focused).contains(&(0x10, 0x2A, 0x43)), "text/primary");
+    assert!(!colours(&quiet).contains(&(0x10, 0x2A, 0x43)), "no navy");
+    assert!(colours(&quiet).contains(&(0x59, 0x6B, 0x78)), "text/muted");
+    let shapes = |drawn: &[Solid]| drawn.iter().map(|(rect, _)| *rect).collect::<Vec<_>>();
+    assert_eq!(shapes(&focused), shapes(&quiet), "only the colour changes");
+    for control in &edge.controls {
+        assert_eq!(control.target.size, Size::from((44, 44)));
+    }
 }
 
 /// **Nothing is drawn outside the edge's own region.** The contract's *never
@@ -224,6 +258,7 @@ fn nothing_is_drawn_over_the_application() {
                 hovered: Some(OnTheEdge::Close),
                 focused: Some(OnTheEdge::Close),
             },
+        WhichLook::Focused,
         );
         for (rect, _) in &drawn {
             assert!(
@@ -252,13 +287,14 @@ fn no_window_buttons_are_drawn_for_an_application_that_has_its_own() {
         vec![OnTheEdge::Move, OnTheEdge::Menu]
     );
     // And hovering what is not there changes nothing.
-    let drawn = solids(&edge, Pointing::default());
+    let drawn = solids(&edge, Pointing::default(), WhichLook::Focused);
     let closing = solids(
         &edge,
         Pointing {
             hovered: Some(OnTheEdge::Close),
             focused: None,
         },
+    WhichLook::Focused,
     );
     assert_eq!(drawn, closing, "a control that is not there was drawn");
 }
@@ -299,6 +335,7 @@ fn the_focus_ring_is_the_whole_target_and_two_units_thick() {
             hovered: None,
             focused: Some(OnTheEdge::Close),
         },
+    WhichLook::Focused,
     );
     let quiet = solids(
         &edge,
@@ -306,6 +343,7 @@ fn the_focus_ring_is_the_whole_target_and_two_units_thick() {
             hovered: None,
             focused: None,
         },
+    WhichLook::Focused,
     );
     // Everything the ring added, and nothing else: the difference between the
     // two draws rather than a guess at which solids are the ring.
@@ -385,6 +423,7 @@ fn hover_still_fills_the_thirty_two_by_twenty_eight() {
             hovered: Some(OnTheEdge::Close),
             focused: None,
         },
+    WhichLook::Focused,
     );
     assert!(
         drawn

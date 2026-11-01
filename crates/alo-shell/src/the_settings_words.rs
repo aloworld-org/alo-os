@@ -506,6 +506,33 @@ pub const GIVES_WAY_IS: Word = Word::saying(
 )
 .noting("Under the choice for the Dock that gives way when a window needs the room.");
 
+/// The heading over how windows look.
+pub const WINDOWS: Word = Word::saying("settings.windows", "Windows").noting(
+    "A heading over the settings for how the windows on the screen look. Sentence case. Not the \
+     name of any product: windows as in the rectangles applications are shown in.",
+);
+
+/// Show a window's title only while the pointer is on it.
+pub const SHOW_THE_TITLE_ONLY_WHEN_POINTED_AT: Word = Word::saying(
+    "settings.windows.title-when-pointed-at",
+    "Show the title only when I point at it",
+)
+.noting(
+    "A switch. Off, the name of every window is always shown on the strip across its top. On, \
+     the strip appears only while the pointer or the keyboard is on that edge of the window. \
+     Spoken by the person, so first person.",
+);
+
+/// What the switch above does.
+pub const SHOW_THE_TITLE_ONLY_WHEN_POINTED_AT_IS: Word = Word::saying(
+    "settings.windows.title-when-pointed-at.is",
+    "Off, every window shows its name and its application's icon along its top edge.",
+)
+.noting(
+    "Under the switch Show the title only when I point at it. Says what is on the screen while \
+     the switch is off, which is how this computer comes.",
+);
+
 /// Choose a country or region from the list.
 pub const CHOOSE_A_COUNTRY: Word = Word::saying(
     "settings.region.choose",
@@ -634,7 +661,7 @@ pub const AS_A_PERCENTAGE: Word = Word::saying("settings.access.percent", "{perc
 /// The length is written out so that adding a word above and forgetting it
 /// here does not compile — a word declared and left out of this list reaches a
 /// person as its own key.
-pub const THE_WINDOWS_WORDS: [Word; 90] = [
+pub const THE_WINDOWS_WORDS: [Word; 93] = [
     SETTINGS,
     EVERYTHING_IN_ONE_PLACE,
     THE_GROUP_ALO,
@@ -710,6 +737,9 @@ pub const THE_WINDOWS_WORDS: [Word; 90] = [
     TOP,
     ALWAYS_SHOWN_IS,
     GIVES_WAY_IS,
+    WINDOWS,
+    SHOW_THE_TITLE_ONLY_WHEN_POINTED_AT,
+    SHOW_THE_TITLE_ONLY_WHEN_POINTED_AT_IS,
     CHOOSE_A_COUNTRY,
     ALL_COUNTRIES,
     ALL_TIME_ZONES,

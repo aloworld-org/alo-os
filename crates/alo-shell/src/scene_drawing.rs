@@ -109,16 +109,25 @@ where
     // drawn at it; the arrow and every native layer below are drawn at `1.0`,
     // because the viewport does not resize when a person zooms.
     let zoom = crate::scene::drawn_at(camera);
+    // **Which window each run of elements is**, so each window is painted
+    // with its own edge: `crate::each_window_with_its_edge`.
+    let mut runs = Vec::new();
     for (surface, location) in crate::scene::trees(roots, popups, camera) {
         let mut tree = drawing::import_at(
             renderer,
-            &[surface],
+            std::slice::from_ref(&surface),
             damage,
             location.to_physical(1.0),
             zoom,
         )?;
         drawing.elements.append(&mut tree.elements);
         drawing.surfaces.append(&mut tree.surfaces);
+        crate::each_window_with_its_edge::a_surface_was_imported(
+            &mut runs,
+            roots,
+            &surface,
+            drawing.elements.len(),
+        );
     }
     let cursor_drawing = if let crate::Cursor::Surface { surface, location } = cursor {
         Some(drawing::import_at(
@@ -188,6 +197,11 @@ where
             })
             .collect::<Result<_, _>>()?,
     };
+    // **Every edge's rasters, uploaded with the rest**: the line and shadow
+    // round each window, its rounded strip, and its icon.
+    let edge_textures = crate::each_window_with_its_edge::uploaded(renderer, native.edges)?;
+    let task_edge_textures =
+        crate::each_window_with_its_edge::uploaded(renderer, native.task_edges)?;
     // **The terminal's body, uploaded with the rest** for the same reason: its
     // rounded panel and shadow are a raster, and the frame below borrows the
     // renderer.
@@ -309,8 +323,39 @@ where
     for kind in native.in_front.bottom_to_top() {
         match kind {
             crate::which_window_is_in_front::AKindOfWindow::Applications => {
-                draw_render_elements(&mut frame, zoom, &drawing.elements, &[damage])
-                    .map_err(submission)?;
+                // **Each window from the back, with its own edge**: what goes
+                // under it, the window, then what goes over it — so the window
+                // in front covers the edge behind it
+                // (`crate::each_window_with_its_edge`).
+                for run in runs.iter().rev() {
+                    let its = crate::each_window_with_its_edge::the_edges_of(
+                        Some(&run.window),
+                        native.edges,
+                        &edge_textures,
+                    );
+                    for (_, textures) in its {
+                        crate::each_window_with_its_edge::wash_all(&mut frame, &textures.behind)?;
+                    }
+                    if let Some(elements) = drawing.elements.get(run.elements.clone()) {
+                        draw_render_elements(&mut frame, zoom, elements, &[damage])
+                            .map_err(submission)?;
+                    }
+                    let its = crate::each_window_with_its_edge::the_edges_of(
+                        Some(&run.window),
+                        native.edges,
+                        &edge_textures,
+                    );
+                    for (edge, textures) in its {
+                        crate::each_window_with_its_edge::wash_all(&mut frame, &textures.over)?;
+                        edge.paint(&mut frame)?;
+                    }
+                }
+                // **Anything imported after the last window**, which the
+                // walk above cannot name: drawn as every element was before.
+                let named = runs.last().map_or(0, |run| run.elements.end);
+                if let Some(rest) = drawing.elements.get(named..) {
+                    draw_render_elements(&mut frame, zoom, rest, &[damage]).map_err(submission)?;
+                }
                 if let Some(controls) = native.scene {
                     controls.paint(&mut frame, scene_washed.as_ref())?;
                 }
@@ -328,7 +373,16 @@ where
                 // a machine with a graphics card drew no window edge whatever,
                 // while the pixman path drew them correctly and every test
                 // passed.
-                for edge in native.edges {
+                //
+                // **Only an edge whose window was not among the runs** is drawn
+                // here now; every other was drawn with its window above.
+                for (edge, textures) in crate::each_window_with_its_edge::the_edges_of_no_run(
+                    &runs,
+                    native.edges,
+                    &edge_textures,
+                ) {
+                    crate::each_window_with_its_edge::wash_all(&mut frame, &textures.behind)?;
+                    crate::each_window_with_its_edge::wash_all(&mut frame, &textures.over)?;
                     edge.paint(&mut frame)?;
                 }
             }
@@ -353,7 +407,9 @@ where
                 if !the_tasks_are_in_front && let Some(desktop) = native.desktop {
                     desktop.paint_the_tasks(&mut frame, &washed)?;
                 }
-                for task_edge in native.task_edges {
+                for (task_edge, textures) in native.task_edges.iter().zip(&task_edge_textures) {
+                    crate::each_window_with_its_edge::wash_all(&mut frame, &textures.behind)?;
+                    crate::each_window_with_its_edge::wash_all(&mut frame, &textures.over)?;
                     task_edge.paint(&mut frame)?;
                 }
             }
