@@ -294,7 +294,8 @@ fn no_filter_that_could_hide_a_refusal_and_no_search() {
 
 /// **Both roads reach one account.** The whole surface calls
 /// `Recounting::show` once, in the window's private read, and the plain road,
-/// the agent's road and reading again all go through that one read — so asking
+/// the agent's road, reading again and reading again once something has been
+/// put back all go through that one read — so asking
 /// the agent cannot reach a second telling, and there is no second door to the
 /// record.
 #[test]
@@ -320,8 +321,9 @@ fn both_roads_reach_the_one_account() {
     assert_eq!(named, "record_window.rs");
     assert!(line.contains("recounting.show("), "{line}");
     assert_eq!(
-        read, ["record_window.rs"; 3],
-        "the plain road, the agent's road and reading again"
+        read, ["record_window.rs"; 4],
+        "the plain road, the agent's road, reading again, and reading again once \
+         something has been put back"
     );
 
     let window = the_code_of_file("record_window.rs");
