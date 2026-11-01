@@ -76,7 +76,10 @@ impl crate::Server {
     /// Read from the seat's own modifier state, like
     /// `crate::canvas_wheel_zoom::ctrl_is_held` — one answer to *is Shift down*,
     /// rather than a second record kept beside the first.
-    fn shift_is_held(&self) -> bool {
+    ///
+    /// **Also what `crate::canvas_shift_wheel` asks**, for *Shift + wheel pans
+    /// sideways*: one answer for both of Shift's canvas meanings.
+    pub(crate) fn shift_is_held(&self) -> bool {
         self.surfaces
             .keyboard
             .as_ref()

@@ -23,20 +23,15 @@
 //! *scrolling inside an application scrolls that application*, and what Shift
 //! means there is the application's business.
 
-use smithay::{backend::input::AxisSource, input::pointer::AxisFrame};
+//!
+//! # Whether Shift is held is asked of one place
+//!
+//! `Server::shift_is_held` in `crate::canvas_arrow_pan`, which already answers
+//! it for *pan faster*. A second copy here was written first and refused by the
+//! compiler, which is the right outcome: two answers to *is Shift down* is how
+//! one of them ends up reading a different keyboard.
 
-impl crate::Server {
-    /// Whether Shift is held right now, as the keyboard sees it.
-    ///
-    /// [`false`] with no keyboard, for the reason `Server::ctrl_is_held` gives:
-    /// a machine with no keyboard is holding no modifier.
-    pub(crate) fn shift_is_held(&self) -> bool {
-        self.surfaces
-            .keyboard
-            .as_ref()
-            .is_some_and(|keyboard| keyboard.handle.modifier_state().shift)
-    }
-}
+use smithay::{backend::input::AxisSource, input::pointer::AxisFrame};
 
 /// This scroll as the canvas pans by it: a mouse wheel's turn made sideways when
 /// Shift is held, and every other scroll unchanged.
