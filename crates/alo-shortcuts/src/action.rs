@@ -145,6 +145,16 @@ pub enum Action {
     MinimiseWindow,
     /// Make the window in front fill the screen, or put it back.
     MaximiseWindow,
+    /// Make the window in front fill the whole screen, with the Dock and the
+    /// panel giving way to it, or put it back.
+    ///
+    /// **Promised and missing until 2026-11-01.** The design gives *Enter or
+    /// leave full screen* `⊞`+Enter, and full screen itself was built on
+    /// 2026-09-30 for an application that asks for it — so a person could not
+    /// ask for it from the keyboard. Maximise is not this: a maximised window
+    /// keeps its own title bar and the Dock stays. This makes an existing
+    /// promise true.
+    FillTheScreen,
     /// Snap the window in front to the left half of the screen.
     SnapLeft,
     /// Snap the window in front to the right half of the screen.
@@ -200,6 +210,14 @@ pub enum Action {
     /// cannot drag: `docs/autonomy/the-canvas-and-its-places.md` says *neither
     /// road is the only road*.
     GoBackOnThisPlace,
+    /// Step forward again: undo the last [`Self::GoBackOnThisPlace`].
+    ///
+    /// **Redo, on the design's `⊞`+Shift+Z**, beside going back on `⊞`+Z —
+    /// `docs/design/the-shortcuts-and-the-edges.md` gives the two as *undo a
+    /// canvas action* and *redo it*. Missing until 2026-11-01, when a person
+    /// who stepped back twice could not step forward again without moving a
+    /// window by hand. This makes an existing promise true.
+    GoForwardOnThisPlace,
     /// Move the keyboard on to the next part of the screen.
     ///
     /// The canvas, the Dock, the panel of put-aside windows, notifications and
@@ -224,9 +242,9 @@ pub enum Action {
 
 impl Action {
     /// Everything a shortcut can do, in the order a settings panel lists them:
-    /// the six that summon something, then the five done to the window in
+    /// the six that summon something, then the seven done to the window in
     /// front, then the four for moving between windows and applications, then
-    /// the canvas's six, then the two that move the keyboard between the
+    /// the canvas's seven, then the two that move the keyboard between the
     /// parts of the screen.
     ///
     /// **The sentence above counts, and it had stopped.** It read *the three
@@ -247,6 +265,7 @@ impl Action {
         Self::WindowOptions,
         Self::MinimiseWindow,
         Self::MaximiseWindow,
+        Self::FillTheScreen,
         Self::SnapLeft,
         Self::SnapRight,
         Self::NextWindow,
@@ -259,6 +278,7 @@ impl Action {
         Self::ReturnTheCanvasToLifeSize,
         Self::MoveTheWindowToTheNextPlace,
         Self::GoBackOnThisPlace,
+        Self::GoForwardOnThisPlace,
         Self::TheNextArea,
         Self::ThePreviousArea,
     ];
@@ -278,6 +298,7 @@ impl Action {
             Self::WindowOptions => words::WINDOW_OPTIONS,
             Self::MinimiseWindow => words::MINIMISE_WINDOW,
             Self::MaximiseWindow => words::MAXIMISE_WINDOW,
+            Self::FillTheScreen => words::FILL_THE_SCREEN,
             Self::SnapLeft => words::SNAP_LEFT,
             Self::SnapRight => words::SNAP_RIGHT,
             Self::NextWindow => words::NEXT_WINDOW,
@@ -290,6 +311,7 @@ impl Action {
             Self::ReturnTheCanvasToLifeSize => words::RETURN_THE_CANVAS_TO_LIFE_SIZE,
             Self::MoveTheWindowToTheNextPlace => words::MOVE_THE_WINDOW_TO_THE_NEXT_PLACE,
             Self::GoBackOnThisPlace => words::GO_BACK_ON_THIS_PLACE,
+            Self::GoForwardOnThisPlace => words::GO_FORWARD_ON_THIS_PLACE,
             Self::TheNextArea => words::THE_NEXT_AREA,
             Self::ThePreviousArea => words::THE_PREVIOUS_AREA,
         }

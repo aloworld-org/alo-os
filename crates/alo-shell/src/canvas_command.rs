@@ -171,6 +171,11 @@ impl Server {
                 // and the screen already shows that nothing moved.
                 self.go_back_on_this_place(now);
             }
+            Action::GoForwardOnThisPlace => {
+                // **Redo, beside undo.** Nothing to step forward to is not a
+                // fault either, for the same reason.
+                self.go_forward_on_this_place();
+            }
             _ => {
                 return self
                     .dispatch_window_command(shortcuts, chord)

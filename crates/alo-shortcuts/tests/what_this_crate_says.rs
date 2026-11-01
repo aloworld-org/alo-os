@@ -70,6 +70,7 @@ fn auf_deutsch() -> Strings {
                 words::MAXIMISE_WINDOW,
                 "Fenster maximieren oder zurücksetzen",
             ),
+            (words::FILL_THE_SCREEN, "Vollbild ein- oder ausschalten"),
             (words::SNAP_LEFT, "Fenster auf die linke Hälfte legen"),
             (words::SNAP_RIGHT, "Fenster auf die rechte Hälfte legen"),
             (words::NEXT_WINDOW, "Nächstes Fenster"),
@@ -119,6 +120,10 @@ fn auf_deutsch() -> Strings {
                 words::GO_BACK_ON_THIS_PLACE,
                 "Diese Fläche wiederherstellen, wie sie war",
             ),
+            (
+                words::GO_FORWARD_ON_THIS_PLACE,
+                "Diese Fläche wieder vorwärtsstellen",
+            ),
             // **Bildschirmbereich, not *Landmarke*.** A screen reader's German
             // documentation says *Bereich*, and this row is read by somebody
             // using one: the word they already know beats a loan word that is
@@ -144,6 +149,7 @@ fn auf_deutsch() -> Strings {
             (words::SHIFT, "Umschalt"),
             (words::SPACE, "Leertaste"),
             (words::TAB, "Tabulator"),
+            (words::ENTER, "Eingabe"),
             (words::DELETE, "Entf"),
             (words::INSERT, "Einfg"),
             (words::HOME, "Pos1"),
@@ -243,6 +249,10 @@ fn the_whole_panel_is_read_in_the_language_the_person_reads() {
                 "Super+Pfeil hoch".to_owned()
             ),
             (
+                "Vollbild ein- oder ausschalten".to_owned(),
+                "Super+Eingabe".to_owned()
+            ),
+            (
                 "Fenster auf die linke Hälfte legen".to_owned(),
                 "Super+Pfeil links".to_owned()
             ),
@@ -282,6 +292,10 @@ fn the_whole_panel_is_read_in_the_language_the_person_reads() {
             ),
             (
                 "Diese Fläche wiederherstellen, wie sie war".to_owned(),
+                "Super+Z".to_owned(),
+            ),
+            (
+                "Diese Fläche wieder vorwärtsstellen".to_owned(),
                 "Super+Umschalt+Z".to_owned(),
             ),
             (

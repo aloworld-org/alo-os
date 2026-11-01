@@ -47,6 +47,7 @@ pub(crate) const fn sends_the_keyboard_to_a_window(action: Action) -> bool {
         | Action::CloseWindow
         | Action::MinimiseWindow
         | Action::MaximiseWindow
+        | Action::FillTheScreen
         | Action::SnapLeft
         | Action::SnapRight
         | Action::ZoomTheCanvasIn
@@ -54,7 +55,8 @@ pub(crate) const fn sends_the_keyboard_to_a_window(action: Action) -> bool {
         | Action::ShowAllOnTheCanvas
         | Action::ReturnTheCanvasToLifeSize
         | Action::MoveTheWindowToTheNextPlace
-        | Action::GoBackOnThisPlace => false,
+        | Action::GoBackOnThisPlace
+        | Action::GoForwardOnThisPlace => false,
     }
 }
 

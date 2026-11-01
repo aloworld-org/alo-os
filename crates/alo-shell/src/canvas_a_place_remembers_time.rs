@@ -70,12 +70,28 @@ impl Server {
     /// changed, which is where it already decides to write the file.
     pub fn these_places_remember(&mut self, series: &Arrangement) {
         self.remembered = series.clone();
+        // **The walk's own echo does not end it.** A step back moves windows,
+        // so the desktop sees the layout change and keeps it, and tells the seat
+        // — and until 2026-11-01 that ended the walk, so on a real machine the
+        // second press of *go back* found the canvas just left as the newest
+        // thing held and went forward to it: a toggle, exactly the fault the
+        // cursor below was written to end. Only the tests, which keep no layout
+        // between presses, saw a walk.
+        let the_walk_put_this_back = self
+            .the_walk_left_the_canvas
+            .take()
+            .is_some_and(|left| left == self.the_arrangement_now());
+        if the_walk_put_this_back {
+            return;
+        }
         // **A new series ends a walk.** The session is told one only where the
         // layout actually changed, and a layout that changed while somebody was
         // stepping backwards changed because they moved something: they are
         // arranging again, not walking, and the next press should start from
-        // what is in front of them.
+        // what is in front of them. Stepping forward ends with it, as redo does
+        // after an edit everywhere.
         self.walking_back_from = None;
+        self.what_going_back_left.clear();
     }
 
     /// What they remember now, for whoever has to carry it forward.
@@ -126,15 +142,12 @@ impl Server {
     /// series means the person moved something themselves and is no longer
     /// walking their own past.
     ///
-    /// # What has no road yet, said rather than discovered
+    /// # Forward is [`Self::go_forward_on_this_place`]
     ///
-    /// **Forward.** The state a walk leaves behind is held, so nothing is
-    /// destroyed and the acceptance's second clause is met — but no chord
-    /// reaches it, so a person who steps back twice cannot step forward again
-    /// without rearranging. Stepping forward is the ribbon's own gesture
-    /// (*letting go restores what the person picks*), and the ribbon is
-    /// `[v1.1]`. This is named here so the next reader finds it as a gap with a
-    /// reason rather than as an oversight.
+    /// This said *forward has no road*, because stepping forward was taken to
+    /// be the `[v1.1]` ribbon's gesture. The design gives it a key of its own —
+    /// `⊞`+Shift+Z, *redo it*, beside `⊞`+Z — and tiers were removed on
+    /// 2026-10-12 (ADR 0105), so it was built on 2026-11-01.
     pub fn go_back_on_this_place(&mut self, now: SystemTime) -> bool {
         let place = self.the_place_now();
         let showing = self.walking_back_from;
@@ -147,22 +160,54 @@ impl Server {
         else {
             return false;
         };
+        // **What this step leaves, kept for stepping forward again**, with
+        // where the cursor stood — taken before anything moves.
+        let left = self.the_arrangement_now();
         if !self.remembered.as_it_was(place, when, now) {
             return false;
         }
+        self.what_going_back_left.push((place, left, showing));
         self.walking_back_from = Some(when);
-        self.put_this_place_back_as_it_is_remembered(place);
+        let remembered = self.remembered.clone();
+        self.put_this_place_back_as(place, &remembered);
         true
     }
 
-    /// Move the frames on this Place to where the arrangement now says they
-    /// were, and look where it says the person was looking.
+    /// Undo the last step back on this Place, and say whether it moved.
+    ///
+    /// **Redo, as `⊞`+Shift+Z is everywhere else**: each press undoes one
+    /// press of [`Self::go_back_on_this_place`], newest first, until the walk
+    /// is back where it began. `false` where there is nothing to step forward
+    /// to — no walk, a walk on another Place, or one already undone — which is
+    /// an ordinary thing to press, as going back with nothing held is.
+    ///
+    /// A rearrangement the person makes ends the walk and empties what it
+    /// could step forward to, as an edit after an undo does in every editor.
+    pub fn go_forward_on_this_place(&mut self) -> bool {
+        let place = self.the_place_now();
+        if self
+            .what_going_back_left
+            .last()
+            .is_none_or(|(on, _, _)| *on != place)
+        {
+            return false;
+        }
+        let Some((_, left, cursor)) = self.what_going_back_left.pop() else {
+            return false;
+        };
+        self.walking_back_from = cursor;
+        self.put_this_place_back_as(place, &left);
+        true
+    }
+
+    /// Move the frames on this Place to where `as_it_was` says they were, and
+    /// look where it says the person was looking.
     ///
     /// **Only this Place's frames.** A Place remembering time means the others
     /// stay where they are, which is the shape question task 8 answered from
     /// its own title: a session-wide series would make going back move every
     /// Place at once, which is the opposite of what Places are for.
-    fn put_this_place_back_as_it_is_remembered(&mut self, place: alo_canvas::Place) {
+    fn put_this_place_back_as(&mut self, place: alo_canvas::Place, as_it_was: &Arrangement) {
         // Collected before anything moves, because placing a window borrows the
         // server that the next lookup needs.
         let moving: Vec<_> = self
@@ -171,7 +216,7 @@ impl Server {
             .cloned()
             .filter_map(|frame| {
                 let app_id = self.the_app_id_of(&frame)?;
-                let was = self.remembered.where_it_was(place, &app_id)?;
+                let was = as_it_was.where_it_was(place, &app_id)?;
                 Some((frame, was.normal().0))
             })
             .collect();
@@ -184,9 +229,12 @@ impl Server {
             }
             let _ = self.place_window(&frame, (at.x, at.y));
         }
-        if let Some(camera) = self.remembered.camera_on(place) {
+        if let Some(camera) = as_it_was.camera_on(place) {
             self.look_at_the_canvas(camera.at());
         }
+        // **Noted, so the save of it is known as this walk's echo.** See
+        // `Self::these_places_remember`.
+        self.the_walk_left_the_canvas = Some(self.the_arrangement_now());
     }
 }
 

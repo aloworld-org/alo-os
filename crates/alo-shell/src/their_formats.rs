@@ -203,6 +203,16 @@ impl TheirFormats {
         self.regionally().time(hour, minute)
     }
 
+    /// **The date `at` falls on**, written as they write one — what the record
+    /// window draws beside *Today* and *Yesterday* (`560:212`).
+    #[must_use]
+    pub fn date_of(&self, at: SystemTime) -> Option<String> {
+        let then = self.day(at)?;
+        let month = u8::try_from(then.month()).ok()?;
+        let day = u8::try_from(then.day()).ok()?;
+        self.regionally().date(i32::from(then.year()), month, day)
+    }
+
     /// **Which day `at` was, seen from `now`**: today, yesterday, or a date.
     ///
     /// A moment after today — a clock that was wrong when it was written — is

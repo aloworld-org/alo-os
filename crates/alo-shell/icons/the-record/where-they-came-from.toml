@@ -1,0 +1,79 @@
+# Where the record window's icons came from.
+#
+# Exported from the design file on 2026-11-01 with the Figma plugin API's
+# `exportAsync({ format: 'SVG_STRING' })` on each icon's own frame, in the
+# record window the owner approved that day (`560:142`, *What alo did*), and
+# committed as it answered. Each file's viewBox is the icon's whole frame, so
+# the artwork is drawn into that square and nothing else.
+#
+# Three files lost a wrapper on the way in, and nothing that draws: a
+# `clip-path` group whose clip is the whole frame (agent, refused-small), and in
+# what-alo-did the 16 x 16 `bg/cool` tile at corner 4, which the window draws
+# itself so a person's appearance can colour it. The clip there was the
+# 12 x 12 inside the tile, which every path already is.
+#
+# The colours in the files are the design's light values. What is drawn is the
+# palette's colour for where each is used.
+
+file = "nDxyF5Ho9oC4RObjVzwBNJ"
+fetched = "2026-11-01"
+
+[[icon]]
+svg = "changed.svg"
+names = "an entry where a file of the person's was changed"
+node = "560:219"
+frame = 16
+
+[[icon]]
+svg = "sent.svg"
+names = "an entry where something left this computer"
+node = "560:250"
+frame = 16
+
+[[icon]]
+svg = "refused.svg"
+names = "an entry that was refused"
+node = "560:270"
+frame = 16
+
+[[icon]]
+svg = "allowed.svg"
+names = "the change you allowed, on its badge and on today's count"
+node = "560:232"
+frame = 14
+
+[[icon]]
+svg = "refused-small.svg"
+names = "Refused, on its badge and on today's count"
+node = "560:282"
+frame = 14
+
+[[icon]]
+svg = "left.svg"
+names = "requests that left this computer, on today's count"
+node = "560:202"
+frame = 14
+
+[[icon]]
+svg = "agent.svg"
+names = "beside the agent's name at the head of an entry"
+node = "560:225"
+frame = 12
+
+[[icon]]
+svg = "kept.svg"
+names = "the footer: kept on this computer"
+node = "560:312"
+frame = 14
+
+[[icon]]
+svg = "what-alo-did.svg"
+names = "the window's own icon, in its title strip"
+node = "I560:177;554:26"
+frame = 16
+
+[[icon]]
+svg = "close.svg"
+names = "Close, at the title strip's end"
+node = "I560:177;554:38"
+frame = 14
