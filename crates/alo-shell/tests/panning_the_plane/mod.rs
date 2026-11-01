@@ -515,3 +515,35 @@ fn an_arrow_at_the_edge_of_the_plane_is_not_handed_on() {
         "a pan past the plane's edge moved the camera anyway"
     );
 }
+
+/// **Shift and a mouse wheel pan the canvas sideways**, the design's *pan
+/// sideways with a mouse*, and **letting Shift go turns the wheel back**.
+///
+/// Missing until 2026-11-01: a mouse wheel turns one way only, so a person with
+/// an ordinary mouse could pan up and down and never across. Both halves are
+/// asserted each time — the axis that moved and the one that did not — because a
+/// wheel that panned both ways would pass a test that only watched one.
+#[test]
+fn shift_and_a_wheel_pan_the_plane_sideways() {
+    let f = on_a_screen();
+    looking(&f, (0, 0), 1000);
+    motion(&f, (10.0, 10.0));
+
+    let before = looking_at(&f);
+    assert!(f.key(SHIFT, KeyState::Pressed).is_ok());
+    assert!(scroll(&f, (0.0, 45.0)), "Shift and a wheel moved nothing");
+    let across = looking_at(&f);
+    assert_eq!(
+        across,
+        (before.0 + 45, before.1),
+        "Shift and a wheel did not pan sideways, and only sideways"
+    );
+
+    assert!(f.key(SHIFT, KeyState::Released).is_ok());
+    assert!(scroll(&f, (0.0, 45.0)));
+    assert_eq!(
+        looking_at(&f),
+        (across.0, across.1 + 45),
+        "with Shift let go the wheel did not pan down again"
+    );
+}
