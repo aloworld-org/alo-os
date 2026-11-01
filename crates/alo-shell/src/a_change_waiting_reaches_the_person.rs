@@ -121,6 +121,7 @@ impl AChangeWaiting {
             // **Nothing preselected**, here as well as after every answer.
             selected: None,
             the_turn: None,
+            touches: Vec::new(),
         }
     }
 
