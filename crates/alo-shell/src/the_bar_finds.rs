@@ -59,8 +59,15 @@ use alo_dock::words;
 /// One row in the Bar.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AResult {
-    /// What a person reads, which the design draws as `Name · where it is`.
+    /// What a person reads, which the design draws as `Name · where it is` —
+    /// the whole row in one string, for whoever says it aloud.
     pub shown: String,
+    /// The name alone, which the launcher draws at SemiBold (`561:330`).
+    pub name: String,
+    /// What kind of thing it is, which the launcher draws after the name in the
+    /// muted ink (`561:331`): *Application*, or *Application · File Manager*
+    /// where the application says what it is.
+    pub kind: String,
     /// What carrying it out does.
     pub does: WhatARowDoes,
 }
@@ -104,6 +111,21 @@ pub(crate) fn what_the_bar_finds(
                     &Filling::of("what", readable(identifier, called)),
                 )
                 .into_text(),
+            name: readable(identifier, called).to_owned(),
+            // **What the application says it is, in its own words** — its
+            // entry's generic name, the first of what `are` holds — and the
+            // word *Application* alone where it says nothing.
+            kind: match are.get(identifier).and_then(|what| what.first()) {
+                Some(what) if !what.trim().is_empty() => strings
+                    .say(
+                        &words::AN_APPLICATION_THAT_IS.key(),
+                        &Filling::of("what", what.clone()),
+                    )
+                    .into_text(),
+                _ => strings
+                    .say(&words::AN_APPLICATION.key(), &Filling::nothing())
+                    .into_text(),
+            },
             does: WhatARowDoes::OpensAnApplication(identifier.clone()),
         })
         .collect()

@@ -341,6 +341,17 @@ pub trait TheDesktop {
         false
     }
 
+    /// Where a question asked now would go: the source this person chose, or
+    /// nothing — nothing chosen, or AI set to *Not at all*.
+    ///
+    /// **What the launcher's row that asks alo says under itself**, in
+    /// `alo-models`' own sentence. [`None`] by default, which is the honest
+    /// answer of a desktop that has not been taught to read the choice, and
+    /// hides that row.
+    fn where_a_question_would_go(&self) -> Option<alo_models::InferenceSource> {
+        None
+    }
+
     /// opened a person's settings file would be a compositor measuring.
     fn the_settings_places(&mut self) -> Option<crate::SettingsPlaces> {
         None
@@ -1569,12 +1580,60 @@ impl LoopInput for Desk<'_> {
         // **Where it goes is worked out where it is drawn**, by
         // `crate::bar_raster`, because that is where this display's scale is
         // known; a display too small for it draws no Bar there.
+        // **The launcher's own words, and the row that asks alo** — the owner's
+        // answer of 2026-11-01: *the launcher shows an "Ask alo '…'" row under
+        // the results, saying where the answer would come from, and hidden when
+        // AI is set to "Not at all".* Where it would come from is
+        // `alo-models`' own sentence about the source chosen, the one a task
+        // window shows; nothing chosen, or *Not at all*, is no row.
+        let say = |word: alo_strings::Word| {
+            self.strings
+                .say(&word.key(), &alo_strings::Filling::nothing())
+                .into_text()
+        };
+        let [heading, open_it, choose, open, close, esc] = [
+            say(alo_dock::words::THE_LAUNCHERS_HEADING),
+            say(alo_dock::words::OPEN_IT),
+            say(alo_dock::words::THE_KEYS_CHOOSE),
+            say(alo_dock::words::THE_KEY_OPENS),
+            say(alo_dock::words::THE_KEY_CLOSES),
+            say(alo_dock::words::ESC),
+        ];
+        let asking_about = self.desktop.where_a_question_would_go().map(|source| {
+            (
+                self.strings
+                    .say(
+                        &alo_dock::words::ASK_ALO_ABOUT.key(),
+                        &alo_strings::Filling::of("what", typed_into_the_bar.trim().to_owned()),
+                    )
+                    .into_text(),
+                say(alo_dock::words::A_NEW_TASK),
+                source.said(self.strings).into_text(),
+            )
+        });
+        let what_each_draws = std::sync::Arc::clone(&server.what_each_application_draws);
         let the_bar = bar_is_open.then(|| crate::bar_raster::TheBarOnTheDisplay {
             typed: &typed_into_the_bar,
             origin: &where_from,
             results: &found,
             chosen: server.which_row_in_the_bar,
             display: size,
+            words: crate::bar_raster::TheLaunchersWords {
+                heading: &heading,
+                open_it: &open_it,
+                choose: &choose,
+                open: &open,
+                close: &close,
+                esc: &esc,
+            },
+            asks: asking_about.as_ref().map(|(asking, what_it_is, from)| {
+                crate::bar_raster::TheAskRow {
+                    asking,
+                    what_it_is,
+                    from,
+                }
+            }),
+            artwork: Some(&what_each_draws),
         });
         // **An `Arc` of its own, lent to the frame.** The frame holds the
         // reference for as long as it lives and this lane uses the server
@@ -1717,6 +1776,15 @@ impl LoopInput for Desk<'_> {
             (size.w, size.h),
             terminal,
         )?;
+        // **Where the launcher went, for the press after this frame**: laid
+        // out where the display's scale is known, and nowhere else.
+        server.the_launcher_was_drawn(
+            pictures
+                .desktop
+                .the_bar
+                .as_ref()
+                .map(|bar| bar.places.clone()),
+        );
         // **A window this person has open that this frame did not draw.**
         //
         // **Here, and not where the placement is made.** It stood beside

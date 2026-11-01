@@ -647,6 +647,79 @@ pub const NOTHING_CAN_ANSWER_A_QUESTION: Word = Word::saying(
     "The line under the Bar's field, in the place where the count of applications otherwise goes,      and worded to the same shape so the two read as one line changing rather than two different      lines. It is about questions only: typing the name of an application still opens it, and      those rows are visible below this line. Not a failure and not an error — nobody has chosen      yet. A person chooses in Settings.",
 );
 
+// ---------------------------------------------------------------------------
+// The launcher as the owner approved it on 2026-11-01 (`561:275`, *Find, open,
+// or ask · the launcher*): a heading, each row's kind beside its name, the
+// hint on the chosen row, the row that asks alo, and the keys along the foot.
+// ---------------------------------------------------------------------------
+
+/// The launcher's heading, over the field.
+pub const THE_LAUNCHERS_HEADING: Word = Word::saying("dock.bar.heading", "Find, open, or ask")
+    .noting(
+        "The heading of the panel that opens when somebody types in the Dock's field. The same \
+         three things as the field's own prompt, dock.composer.prompt — find something, open \
+         something, or ask alo — and without its ellipsis, because here it names the panel. Keep \
+         all three.",
+    );
+
+/// What kind of thing an application row is, beside its name.
+pub const AN_APPLICATION: Word = Word::saying("dock.bar.row.kind", "Application").noting(
+    "Drawn after an application's name in the launcher's list, after a middle dot, so an \
+     application and a document can be told apart at a glance. One word.",
+);
+
+/// What kind of thing a row is, and what the application says it is.
+pub const AN_APPLICATION_THAT_IS: Word =
+    Word::saying("dock.bar.row.kind-and-what", "Application  \u{b7}  {what}").noting(
+        "As dock.bar.row.kind, followed by what the application itself says it is — its own \
+         generic name, such as File Manager — which is the application's own words and is never \
+         translated here. The separator is a middle dot with two spaces each side.",
+    );
+
+/// The hint on the chosen row: Enter opens it.
+pub const OPEN_IT: Word = Word::saying("dock.bar.row.open", "Open").noting(
+    "Small, at the end of the chosen row in the launcher, beside a drawing of the Enter key: \
+     pressing Enter opens this. One word, the verb.",
+);
+
+/// The row that hands what was typed to alo.
+pub const ASK_ALO_ABOUT: Word = Word::saying("dock.bar.ask", "Ask alo \u{201c}{what}\u{201d}")
+    .noting(
+        "The last row of the launcher's list. {what} is exactly what the person typed and is \
+         never translated. alo is the assistant's name and is written in lower case. Use the \
+         quotation marks of your language.",
+    );
+
+/// What asking does.
+pub const A_NEW_TASK: Word = Word::saying("dock.bar.ask.new-task", "a new task").noting(
+    "Beside Ask alo, after a middle dot: asking opens a new task window where alo works on it. \
+     Lower case, a short noun phrase.",
+);
+
+/// The foot of the launcher: the arrow keys choose.
+pub const THE_KEYS_CHOOSE: Word = Word::saying("dock.bar.keys.choose", "choose").noting(
+    "At the foot of the launcher, after drawings of the Up and Down keys: they choose a row. \
+     One lower-case word.",
+);
+
+/// The foot of the launcher: Enter opens.
+pub const THE_KEY_OPENS: Word = Word::saying("dock.bar.keys.open", "open").noting(
+    "At the foot of the launcher, after a drawing of the Enter key: it opens the chosen row. \
+     One lower-case word.",
+);
+
+/// The foot of the launcher: Escape closes.
+pub const THE_KEY_CLOSES: Word = Word::saying("dock.bar.keys.close", "close").noting(
+    "At the foot of the launcher, after the Escape key's name: it closes the launcher. One \
+     lower-case word.",
+);
+
+/// The Escape key's name, on its key cap.
+pub const ESC: Word = Word::saying("dock.bar.keys.esc", "Esc").noting(
+    "The name printed on the Escape key, drawn on a small key cap. Use what keyboards sold in \
+     your language print on that key.",
+);
+
 /// Every string this crate can say, in the order a translator meets them: the
 /// two answers about whether it gives way, where the dock keeps its names, the
 /// two refusals, what is said about the person's own file, what a reader is
@@ -657,7 +730,7 @@ pub const NOTHING_CAN_ANSWER_A_QUESTION: Word = Word::saying(
 /// beside the other settings' words because this list's order is the order a
 /// translator meets them in, and a translator who has already done this file
 /// should find the new ones together rather than hunting a diff.
-pub const EVERY_WORD: [Word; 46] = [
+pub const EVERY_WORD: [Word; 56] = [
     AN_APPLICATION_ROW,
     APPLICATIONS_HERE,
     ONE_APPLICATION_HERE,
@@ -704,6 +777,16 @@ pub const EVERY_WORD: [Word; 46] = [
     HISTORY,
     SETTINGS_ON_THE_DOCK,
     APPLICATIONS_ON_THE_DOCK,
+    THE_LAUNCHERS_HEADING,
+    AN_APPLICATION,
+    AN_APPLICATION_THAT_IS,
+    OPEN_IT,
+    ASK_ALO_ABOUT,
+    A_NEW_TASK,
+    THE_KEYS_CHOOSE,
+    THE_KEY_OPENS,
+    THE_KEY_CLOSES,
+    ESC,
 ];
 
 /// Why this crate's own words could not be declared.

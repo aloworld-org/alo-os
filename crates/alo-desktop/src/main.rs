@@ -736,6 +736,14 @@ mod running {
         /// the file these two read. All three locate it the same way, and a
         /// change to any one of them has to move the other two or this machine
         /// will save a provider it cannot find.
+        fn where_a_question_would_go(&self) -> Option<alo_models::InferenceSource> {
+            let at = alo_choosing::where_it_is(
+                std::env::var_os("XDG_CONFIG_HOME").as_deref(),
+                std::env::var_os("HOME").as_deref(),
+            )?;
+            alo_choosing::what_answers_here(&at)
+        }
+
         fn anything_is_chosen_to_answer(&self) -> bool {
             let Some(at) = alo_choosing::where_it_is(
                 std::env::var_os("XDG_CONFIG_HOME").as_deref(),
