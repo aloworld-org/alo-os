@@ -391,7 +391,7 @@ fn the_focus_ring_is_the_whole_target_and_two_units_thick() {
 
     // **The strip's own border is a different line and did not move.** The two
     // shared a constant before this, so a change to either moved the other.
-    assert_eq!(THE_BORDER_IS, 1);
+    assert_eq!(crate::window_edge_look::A_LINE_IS, 1);
     assert_eq!(A_FOCUS_RING_IS, 2);
 }
 
