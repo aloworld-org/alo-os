@@ -74,6 +74,8 @@ struct ATasksWords {
     asking: String,
     /// *Allows this one action. alo asks again next time.*, beside the answers.
     once: String,
+    /// One row for each thing the change waiting touches (`549:200`).
+    touches: Vec<crate::task_text::ATouchedRow>,
     /// Which answer the keyboard is on, and [`None`] until the person moves.
     selected: Option<crate::a_change_waiting_reaches_the_person::WhichAnswer>,
     /// Which of `said` carries *Stop and close* and *Cancel*: the question
@@ -176,6 +178,7 @@ impl TheTasksWords {
                     deny: say(crate::the_cards_words::DENY),
                     asking: say(crate::the_cards_words::ALO_IS_ASKING_TO),
                     once: say(crate::the_cards_words::ALLOWS_THIS_ONE_ACTION),
+                    touches: Vec::new(),
                     selected,
                     closing_after: None,
                     stop_and_close: String::new(),
@@ -224,6 +227,26 @@ impl TheTasksWords {
         self
     }
 
+    /// **And what the change waiting touches**, as rows on the asking task's
+    /// card — one per file, folder or application, named and placed from
+    /// `home` (`crate::task_text::ATouchedRow`). Nothing for a task that is
+    /// not asking.
+    pub(crate) fn with_what_the_change_touches(
+        mut self,
+        touches: &[alo_changing::Touched],
+        home: Option<&std::path::Path>,
+    ) -> Self {
+        for one in &mut self.each {
+            if one.answers_after.is_some() {
+                one.touches = touches
+                    .iter()
+                    .map(|it| crate::task_text::ATouchedRow::of(it, home))
+                    .collect();
+            }
+        }
+        self
+    }
+
     /// The task windows a frame draws, borrowing these words.
     pub(crate) fn as_displayed(&self) -> Vec<ATaskOnTheDisplay<'_>> {
         self.each
@@ -264,6 +287,7 @@ impl TheTasksWords {
                                 selected: one.selected,
                                 asking: Some(&one.asking),
                                 once: Some(&one.once),
+                                touches: &one.touches,
                             })
                         } else if one.closing_after == Some(at) {
                             // **The approval card's two answers, with the
@@ -277,6 +301,7 @@ impl TheTasksWords {
                                 // this question is not.
                                 asking: None,
                                 once: None,
+                                touches: &[],
                             })
                         } else {
                             None

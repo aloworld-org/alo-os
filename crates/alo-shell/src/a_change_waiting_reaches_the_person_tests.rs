@@ -100,6 +100,35 @@ fn a_waiting_change_is_put_in_front_of_the_person() {
     );
 }
 
+/// **What the change touches comes with it**, as the daemon said it, and goes
+/// when the question is answered.
+#[test]
+fn what_a_change_touches_arrives_with_it_and_goes_when_it_is_answered() {
+    let wire = r#"{"number":7,"sentence":{"text":"Rename march.pdf","came_from":"the-source"},"touches":[{"path":"/home/anna/Invoices/march.pdf"}]}"#;
+    let touching: Standing = serde_json::from_str(wire)
+        .unwrap_or_else(|why| panic!("a waiting change did not read from {wire}: {why}"));
+    let daemon = ADaemon::holding(vec![touching]);
+    let mut task = a_task();
+    let mut waiting = AChangeWaiting::nothing_yet();
+    assert!(
+        waiting.touches().is_empty(),
+        "the control: nothing asked yet"
+    );
+
+    waiting.arrived(&mut task, &daemon);
+    assert_eq!(
+        waiting.touches(),
+        [alo_changing::Touched::Path(
+            "/home/anna/Invoices/march.pdf".to_owned()
+        )]
+    );
+    waiting.deny(&mut task, &daemon);
+    assert!(
+        waiting.touches().is_empty(),
+        "the rows outlived the question"
+    );
+}
+
 /// **The number answered is the number the daemon gave**, which is the one
 /// thing a surface cannot read off the screen.
 #[test]

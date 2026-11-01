@@ -1498,7 +1498,14 @@ impl LoopInput for Desk<'_> {
             self.strings,
             server.the_change_waiting.selected(),
         )
-        .with_the_closing_question(server.closing_asked, self.strings);
+        .with_the_closing_question(server.closing_asked, self.strings)
+        .with_what_the_change_touches(
+            server.the_change_waiting.touches(),
+            server
+                .settings_places
+                .as_ref()
+                .and_then(crate::SettingsPlaces::home),
+        );
         let the_task_windows = the_tasks_words.as_displayed();
         // **A copy of the market window for the frame, and only while it is
         // open.**

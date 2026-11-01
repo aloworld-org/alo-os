@@ -68,6 +68,10 @@ pub(crate) enum AStyle {
     SmallBody,
     /// Where the processing happens. 12 / 22, which is none of the five.
     Destination,
+    /// A file's name on an approval card's row (`549:207`): SemiBold 14 / 22.
+    AFilesName,
+    /// Where that file is (`549:208`): System/Mono, Geist Mono Medium 12 / 18.
+    WhereAFileIs,
 }
 
 impl AStyle {
@@ -80,6 +84,8 @@ impl AStyle {
             Self::Body => (16.0, 25.0),
             Self::SmallBody => (14.0, 22.0),
             Self::Destination => (12.0, 22.0),
+            Self::AFilesName => (14.0, 22.0),
+            Self::WhereAFileIs => (12.0, 18.0),
         }
     }
 
@@ -91,15 +97,23 @@ impl AStyle {
     /// told from its ordinary words.
     pub(crate) const fn weight(self) -> Weight {
         match self {
-            Self::Heading | Self::Label | Self::SmallLabel => ALOS_OWN_WEIGHT,
+            Self::Heading | Self::Label | Self::SmallLabel | Self::AFilesName => ALOS_OWN_WEIGHT,
             Self::Body | Self::SmallBody | Self::Destination => REGULAR,
+            // Geist Mono Medium, the design's System/Mono.
+            Self::WhereAFileIs => Weight(500),
         }
     }
 
-    /// How text in this style is asked for: alo's own face at its weight.
+    /// How text in this style is asked for: alo's own face at its weight, and
+    /// the bundled mono for where a file is.
     pub(crate) fn attrs<'a>(self) -> Attrs<'a> {
+        let face = if matches!(self, Self::WhereAFileIs) {
+            crate::painted_text::ALOS_OWN_MONO
+        } else {
+            ALOS_OWN_FACE
+        };
         Attrs::new()
-            .family(Family::Name(ALOS_OWN_FACE))
+            .family(Family::Name(face))
             .weight(self.weight())
     }
 
@@ -201,6 +215,57 @@ pub struct TheTwoAnswers<'a> {
     /// *Allows this one action. alo asks again next time.*, beside the
     /// answers on an approval card.
     pub once: Option<&'a str>,
+    /// One row for each file, folder or application the change touches
+    /// (`549:200`), under the action. Empty for the closing question and for
+    /// a change that touches none.
+    pub touches: &'a [ATouchedRow],
+}
+
+/// One row on an approval card naming something the change touches.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ATouchedRow {
+    /// Its own name: the file's or folder's, or the application's identifier.
+    pub name: String,
+    /// Where it is: the path from the person's home, `Presentations / Launch
+    /// presentation.odp` as the frame draws it, or the whole path outside it.
+    /// Empty for an application, which is somewhere only by name.
+    pub where_it_is: String,
+    /// Whether it is a file or folder, which draws the file icon in its tile.
+    pub is_a_path: bool,
+}
+
+impl ATouchedRow {
+    /// The row for one thing a change touches, with `home` the person's home
+    /// folder where the session knows it.
+    #[must_use]
+    pub fn of(touched: &alo_changing::Touched, home: Option<&std::path::Path>) -> Self {
+        match touched {
+            alo_changing::Touched::Path(path) => {
+                let at = std::path::Path::new(path);
+                let name = at
+                    .file_name()
+                    .map_or_else(|| path.clone(), |it| it.to_string_lossy().into_owned());
+                let where_it_is = match home.and_then(|home| at.strip_prefix(home).ok()) {
+                    Some(inside) if !inside.as_os_str().is_empty() => inside
+                        .components()
+                        .map(|part| part.as_os_str().to_string_lossy().into_owned())
+                        .collect::<Vec<_>>()
+                        .join(" / "),
+                    _ => path.clone(),
+                };
+                Self {
+                    name,
+                    where_it_is,
+                    is_a_path: true,
+                }
+            }
+            alo_changing::Touched::Application(id) => Self {
+                name: id.clone(),
+                where_it_is: String::new(),
+                is_a_path: false,
+            },
+        }
+    }
 }
 
 /// One thing to be written into the window.

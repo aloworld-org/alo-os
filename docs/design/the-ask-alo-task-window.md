@@ -348,14 +348,29 @@ and the row of choices in `bg/canvas` under its rule, with both answers 144 and
 the line beside them. With a one-line action the card is **161** tall
 (16 + 16 + 6 + 30 + 16, then 1 + 14 + 48 + 14).
 
-**Not built, because nothing on the machine knows them**: the file row
-(`549:200`) and the lines saying what will and will not change (`549:209`). A
-change reaches the shell as one sentence (`alo_protocol::Standing`), which
-carries neither the file it names nor what it leaves alone, and no verb
-declares what it leaves alone (`docs/contracts/agent-verbs.md`, *The shape of a
-verb*). Both are additions to a public contract, and the second is a sentence
-per verb that promises a person something, so they wait for the owner's
-decision. The card leaves no empty room for them.
+**The owner decided both on 2026-11-01: "yes, add both".** Until then they
+were not built, because a change reached the shell as one sentence and no verb
+declared what it leaves alone.
+
+**The file row (`549:200`), built 2026-11-01.** What a change touches crosses
+the person's door as `touches` on a waiting change, additively
+(`docs/contracts/daemon-protocol.md`, `alo_protocol::Touched`): every path and
+application its call asks the grants about. The card draws one row for each,
+12 under what is above it: `bg/cool`, corner 12, 12 inside; a 40 white tile at
+corner 10 holding the file icon at 20; the name in SemiBold 14/22; 2 under it,
+where it is in Geist Mono Medium 12/18 and `text/muted`, written from the
+person's home as the frame writes it (`Invoices / march.pdf`) and as the whole
+path outside it. Both lines are one line each, cut with an ellipsis. An
+application's row has its identifier as its name and no second line. With a
+one-line action and one row the card is 237 before the lines below.
+
+**One departure in the row, written down here**: the frame's tile holds
+*plusFile* (`549:202`), the icon for a new file. A row names a file that may
+already exist — the one being renamed or moved — so the tile holds the plain
+file icon of the shared-file chip (`549:163`), at the tile's 20.
+
+**The lines saying what will and will not change (`549:209`)** are decided and
+are built separately, each sentence held to a test that runs its verb.
 
 **One departure, written down here**: the card has no shadow of its own. The
 panel rasteriser draws one shadow, the window's, and a second under one card is

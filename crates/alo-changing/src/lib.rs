@@ -114,7 +114,7 @@ pub mod words;
 /// **Unix only, as the wire is**: `alo-protocol` is a Unix dependency of this
 /// crate, because the daemon's door is a Unix socket.
 #[cfg(unix)]
-pub use alo_protocol::{Done, Standing};
+pub use alo_protocol::{Done, Standing, Touched};
 #[cfg(unix)]
 pub use answered::Answered;
 #[cfg(unix)]

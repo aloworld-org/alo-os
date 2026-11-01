@@ -10,21 +10,16 @@
 //!    Label/Small and alo's teal; 16 above it and 20 in from each side.
 //! 2. **The action**, in Heading/Medium — the very sentence the person
 //!    approves (ADR 0001 §5), 6 under that line and 16 above what follows.
-//! 3. **The choices**, on a row of their own in `bg/canvas` under a hairline:
+//! 3. **A row for each thing it touches** (`549:200`), 12 under what is above
+//!    it: `bg/cool`, corner 12, 12 inside; a 40 white tile at corner 10 with
+//!    the file icon; then the name in SemiBold 14/22 and, 2 under it, where it
+//!    is in Geist Mono 12/18 and `text/muted`. Added 2026-11-01 by the owner's
+//!    decision, which put what a change touches on the wire
+//!    (`alo_protocol::Touched`).
+//! 4. **The choices**, on a row of their own in `bg/canvas` under a hairline:
 //!    14 above and below, *Allow once* (Primary) and *Deny* (Quiet) **both 144
 //!    wide**, 8 apart, and *Allows this one action. alo asks again next time.*
 //!    in Body/Medium and `text/muted` at the far end.
-//!
-//! **Two parts of the frame are not drawn, and they are not drawn because
-//! nothing on this machine knows them yet**, not because they were left out:
-//! the row naming the file the change is about (`549:200`), and the lines
-//! saying what will and will not change (`549:209`). A change reaches the shell
-//! as one sentence (`alo_protocol::Standing`); the file it names and what it
-//! leaves alone are not carried, and what each verb leaves alone is not
-//! declared anywhere (`docs/contracts/agent-verbs.md`, *The shape of a verb*).
-//! Both are additions to a public contract, and the second is a sentence per
-//! verb that promises a person something — the owner's to decide. The card
-//! keeps the room for neither, so it is no taller than what it says.
 //!
 //! Everything here is a logical measure, converted through the display's scale
 //! where it is drawn (`crate::task_raster`).
@@ -67,9 +62,53 @@ pub(crate) struct TheCard {
     /// How tall the action's words are, as measured in Heading/Medium at
     /// [`Self::the_actions_room`].
     pub(crate) the_action_is_tall: u32,
+    /// How many rows naming what the change touches it has.
+    pub(crate) rows: u32,
 }
 
+/// The most rows a card draws. No verb on the list names more than three
+/// things; the bound is for a message that claims more, which must not make a
+/// card taller than any window.
+pub(crate) const THE_MOST_ROWS: usize = 4;
+/// Above each row naming what the change touches.
+pub(crate) const ABOVE_A_ROW: u32 = 12;
+/// A row naming what the change touches: 12, the 40 tile, 12.
+pub(crate) const A_ROW_IS_TALL: u32 = 64;
+/// Inside a row, round its tile and its words.
+pub(crate) const INSIDE_A_ROW: u32 = 12;
+/// A row's corner.
+pub(crate) const A_ROWS_CORNER: u32 = 12;
+/// The white tile at the start of a row.
+pub(crate) const A_TILE_IS: u32 = 40;
+/// The tile's corner.
+pub(crate) const A_TILES_CORNER: u32 = 10;
+/// The file icon in the tile.
+pub(crate) const THE_ICON_IN_A_TILE: u32 = 20;
+/// The name's line: SemiBold 14/22.
+pub(crate) const A_NAME_IS_TALL: u32 = 22;
+/// Between the name and where it is.
+pub(crate) const UNDER_THE_NAME: u32 = 2;
+/// Where it is: Geist Mono 12/18.
+pub(crate) const WHERE_IT_IS_TALL: u32 = 18;
+
 impl TheCard {
+    /// Where row `which` starts, down, counted from nought.
+    pub(crate) const fn a_row(self, which: u32) -> u32 {
+        self.the_action()
+            + self.the_action_is_tall
+            + ABOVE_A_ROW
+            + which * (A_ROW_IS_TALL + ABOVE_A_ROW)
+    }
+
+    /// Where the words in a row start, across, and how much room they have.
+    pub(crate) const fn a_rows_words(self) -> (u32, u32) {
+        let starts = BESIDE + INSIDE_A_ROW + A_TILE_IS + INSIDE_A_ROW;
+        (
+            starts,
+            self.wide.saturating_sub(starts + INSIDE_A_ROW + BESIDE),
+        )
+    }
+
     /// The room the action's words have across: the card less its sides.
     pub(crate) const fn the_actions_room(wide: u32) -> u32 {
         wide.saturating_sub(BESIDE * 2)
@@ -87,7 +126,10 @@ impl TheCard {
 
     /// Where the row of choices starts, down — its hairline.
     pub(crate) const fn the_choices(self) -> u32 {
-        self.the_action() + self.the_action_is_tall + BELOW_THE_ACTION
+        self.the_action()
+            + self.the_action_is_tall
+            + self.rows * (ABOVE_A_ROW + A_ROW_IS_TALL)
+            + BELOW_THE_ACTION
     }
 
     /// Where the two answers start, down.

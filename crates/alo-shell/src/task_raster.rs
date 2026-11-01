@@ -329,7 +329,8 @@ pub(crate) fn furniture(
     let the_cards: Vec<Option<TheCard>> = said
         .iter()
         .map(|one| {
-            one.answers.and_then(|answers| answers.asking)?;
+            let answers = one.answers?;
+            answers.asking?;
             let inside = row_is_wide.saturating_sub(m::INSIDE_THE_CONVERSATION * 2);
             let wide = one.whose.how_wide().min(inside);
             let tall = crate::task_text::how_tall(
@@ -347,6 +348,7 @@ pub(crate) fn furniture(
             Some(TheCard {
                 wide,
                 the_action_is_tall: logical(i32::try_from(tall).unwrap_or(i32::MAX)),
+                rows: u32::try_from(answers.touches.len().min(card::THE_MOST_ROWS)).unwrap_or(0),
             })
         })
         .collect();
@@ -540,27 +542,35 @@ pub(crate) fn furniture(
         // One rounded ground, from `from` down `tall` in the card and `inset`
         // in from its sides, cut to the view — or nothing where none of it is
         // in the view.
-        let mut ground = |from: u32, tall: u32, inset: u32, corner: u32, colour: [u8; 3]| {
+        // `across` is where it starts in the card and how wide it is.
+        let mut ground_at = |from: u32,
+                             tall: u32,
+                             across: (u32, u32),
+                             corner: u32,
+                             colour: [u8; 3]| {
             let starts = (top + from).saturating_sub(scrolled).max(the_view.0);
             let ends = (top + from + tall).saturating_sub(scrolled).min(the_view.1);
             if ends <= starts {
                 return;
             }
-            let (gx, gy) = inside(x + inset, starts);
+            let (gx, gy) = inside(x + across.0, starts);
             grounds.push(crate::dock_surface::AGround {
                 well: AWell {
-                    at: Rectangle::new(
-                        (gx, gy).into(),
-                        (
-                            px(the_card.wide.saturating_sub(inset * 2)),
-                            px(ends - starts),
-                        )
-                            .into(),
-                    ),
+                    at: Rectangle::new((gx, gy).into(), (px(across.1), px(ends - starts)).into()),
                     corner,
                 },
                 colour,
             });
+        };
+        let wide = the_card.wide;
+        let mut ground = |from: u32, tall: u32, inset: u32, corner: u32, colour: [u8; 3]| {
+            ground_at(
+                from,
+                tall,
+                (inset, wide.saturating_sub(inset * 2)),
+                corner,
+                colour,
+            );
         };
         let hair = card::A_HAIRLINE;
         let the_white_corner = card::THE_CARDS_CORNER - hair;
@@ -590,6 +600,25 @@ pub(crate) fn furniture(
             palette.canvas,
         );
         ground(the_card.the_choices(), hair, hair, 0, palette.edge);
+        // **A row for each thing the change touches**, in `bg/cool`, with its
+        // white tile (`549:200`).
+        for which in 0..the_card.rows {
+            let row = the_card.a_row(which);
+            ground_at(
+                row,
+                card::A_ROW_IS_TALL,
+                (card::BESIDE, wide.saturating_sub(card::BESIDE * 2)),
+                card::A_ROWS_CORNER,
+                palette.cool,
+            );
+            ground_at(
+                row + card::INSIDE_A_ROW,
+                card::A_TILE_IS,
+                (card::BESIDE + card::INSIDE_A_ROW, card::A_TILE_IS),
+                card::A_TILES_CORNER,
+                palette.surface,
+            );
+        }
     }
 
     for (block, the_card) in blocks.each().iter().zip(&the_cards) {
@@ -742,14 +771,68 @@ pub(crate) fn furniture(
             m::INSIDE_THE_CONVERSATION + block.from_the_left + card::BESIDE,
             down,
         );
-        crate::the_approval_cards_mark::ink_the_mark(
+        crate::the_approval_cards_icons::ink_a_cards_icon(
             &mut panel,
+            crate::the_approval_cards_icons::ACardsIcon::TheMark,
             Rectangle::new(
                 (mx, my).into(),
                 (px(card::THE_MARK_IS), px(card::THE_MARK_IS)).into(),
             ),
             palette.alo,
         );
+    }
+
+    // **The file icon in each row's tile**, at the tile's 20 and in its
+    // proportions, drawn whole or not at all.
+    for ((one, block), the_card) in said.iter().zip(blocks.each()).zip(&the_cards) {
+        let (Some(the_card), Some(answers)) = (the_card, one.answers) else {
+            continue;
+        };
+        for (which, row) in (0..the_card.rows).zip(answers.touches) {
+            if !row.is_a_path {
+                continue;
+            }
+            let tile = block.from_the_top + the_card.a_row(which) + card::INSIDE_A_ROW;
+            if tile < scrolled || tile + card::A_TILE_IS > scrolled + view {
+                continue;
+            }
+            let Some(shape) = crate::the_approval_cards_icons::ACardsIcon::AFile.shape() else {
+                continue;
+            };
+            // The file's own box, drawn so its taller side is the tile's icon.
+            let (wide, tall) = shape.its_box();
+            let side = px(card::THE_ICON_IN_A_TILE);
+            #[expect(
+                clippy::cast_possible_truncation,
+                reason = "an icon is a few dozen pixels at any display's scale"
+            )]
+            let (iw, ih) = if tall >= wide {
+                (
+                    (f64::from(side) * f64::from(wide / tall)).round() as i32,
+                    side,
+                )
+            } else {
+                (
+                    side,
+                    (f64::from(side) * f64::from(tall / wide)).round() as i32,
+                )
+            };
+            let tile_left = m::INSIDE_THE_CONVERSATION
+                + block.from_the_left
+                + card::BESIDE
+                + card::INSIDE_A_ROW;
+            let (tx, ty) = inside(tile_left, top_of_the_column + tile - scrolled);
+            let tile_is = px(card::A_TILE_IS);
+            crate::the_approval_cards_icons::ink_a_cards_icon(
+                &mut panel,
+                crate::the_approval_cards_icons::ACardsIcon::AFile,
+                Rectangle::new(
+                    (tx + (tile_is - iw) / 2, ty + (tile_is - ih) / 2).into(),
+                    (iw, ih).into(),
+                ),
+                palette.ink_secondary,
+            );
+        }
     }
 
     // **The words, inked onto the ground each sits on.** Each is placed from the
@@ -778,6 +861,33 @@ pub(crate) fn furniture(
         px(the_titles_room).saturating_sub(1),
         AStyle::Heading.metrics(measure),
     );
+    // **Each row's name and where it is, one line each**, fitted as the title
+    // is and in the face each is drawn in: a long path ends in an ellipsis
+    // rather than running over the row beneath it. Fitted here because the
+    // writer below holds the font system.
+    let mut the_rows_shown: Vec<Vec<(String, String)>> = Vec::new();
+    for (one, the_card) in said.iter().zip(&the_cards) {
+        let mut rows = Vec::new();
+        if let (Some(the_card), Some(answers)) = (the_card, one.answers) {
+            let room = px(the_card.a_rows_words().1).saturating_sub(1);
+            for row in answers.touches.iter().take(card::THE_MOST_ROWS) {
+                let mut fit = |style: AStyle, text: &str| {
+                    crate::window_edge_title::fitted_as(
+                        fonts,
+                        text,
+                        room,
+                        style.metrics(measure),
+                        &style.attrs(),
+                    )
+                    .shown
+                };
+                let name = fit(AStyle::AFilesName, &row.name);
+                let where_it_is = fit(AStyle::WhereAFileIs, &row.where_it_is);
+                rows.push((name, where_it_is));
+            }
+        }
+        the_rows_shown.push(rows);
+    }
 
     // **Centred in the band it is given, from its own measured height.** Not
     // from a half-of-a-leading constant: the height depends on the font, the
@@ -981,7 +1091,12 @@ pub(crate) fn furniture(
         None,
     );
 
-    for ((one, block), the_card) in said.iter().zip(blocks.each()).zip(&the_cards) {
+    for (((one, block), the_card), rows_shown) in said
+        .iter()
+        .zip(blocks.each())
+        .zip(&the_cards)
+        .zip(&the_rows_shown)
+    {
         if !block.is_in_view(scrolled, view) {
             continue;
         }
@@ -1016,6 +1131,49 @@ pub(crate) fn furniture(
                 false,
                 Some((scrolled, the_view)),
             );
+            // **Each thing it touches**: its name, and under it where it is,
+            // on the row's `bg/cool`, centred together in the row as the
+            // frame draws them. An application has a name and no place.
+            let (words_start, words_room) = the_card.a_rows_words();
+            for (which, (name, where_it_is)) in (0..the_card.rows).zip(rows_shown) {
+                let row_top = top + the_card.a_row(which);
+                let (name_top, name_tall) = if where_it_is.is_empty() {
+                    (row_top, card::A_ROW_IS_TALL)
+                } else {
+                    let both = card::A_NAME_IS_TALL + card::UNDER_THE_NAME + card::WHERE_IT_IS_TALL;
+                    (
+                        row_top + (card::A_ROW_IS_TALL - both) / 2,
+                        card::A_NAME_IS_TALL,
+                    )
+                };
+                write(
+                    name,
+                    &[],
+                    AStyle::AFilesName,
+                    palette.cool,
+                    palette.ink,
+                    left + words_start,
+                    (name_top, name_tall),
+                    words_room,
+                    false,
+                    Some((scrolled, the_view)),
+                );
+                write(
+                    where_it_is,
+                    &[],
+                    AStyle::WhereAFileIs,
+                    palette.cool,
+                    palette.ink_quiet,
+                    left + words_start,
+                    (
+                        name_top + card::A_NAME_IS_TALL + card::UNDER_THE_NAME,
+                        card::WHERE_IT_IS_TALL,
+                    ),
+                    words_room,
+                    false,
+                    Some((scrolled, the_view)),
+                );
+            }
             if let Some(place) = where_the_answers_are {
                 let centred = |button: u32, label: u32| button.saturating_sub(label) / 2;
                 write(

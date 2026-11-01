@@ -77,6 +77,25 @@ pub struct FittedTitle {
 /// and costs one measurement.
 #[must_use]
 pub fn fitted(fonts: &mut FontSystem, title: &str, room: i32, metrics: Metrics) -> FittedTitle {
+    fitted_as(
+        fonts,
+        title,
+        room,
+        metrics,
+        &crate::painted_text::alos_own_text(),
+    )
+}
+
+/// [`fitted`], measured in the face and weight `attrs` asks for — for one
+/// line drawn in another face, such as where a file is on an approval card.
+#[must_use]
+pub(crate) fn fitted_as(
+    fonts: &mut FontSystem,
+    title: &str,
+    room: i32,
+    metrics: Metrics,
+    attrs: &cosmic_text::Attrs<'_>,
+) -> FittedTitle {
     let whole = title.to_owned();
     if room <= 0 {
         return FittedTitle {
@@ -85,7 +104,7 @@ pub fn fitted(fonts: &mut FontSystem, title: &str, room: i32, metrics: Metrics) 
             cut: !title.is_empty(),
         };
     }
-    if crate::painted_text::how_wide(fonts, title, metrics) <= room {
+    if crate::painted_text::how_wide_as(fonts, title, metrics, attrs) <= room {
         return FittedTitle {
             shown: whole.clone(),
             whole,
@@ -115,7 +134,7 @@ pub fn fitted(fonts: &mut FontSystem, title: &str, room: i32, metrics: Metrics) 
             break;
         };
         let candidate = format!("{prefix}{AN_ELLIPSIS}");
-        if crate::painted_text::how_wide(fonts, &candidate, metrics) <= room {
+        if crate::painted_text::how_wide_as(fonts, &candidate, metrics, attrs) <= room {
             fits = probe;
         } else {
             beyond = probe;
