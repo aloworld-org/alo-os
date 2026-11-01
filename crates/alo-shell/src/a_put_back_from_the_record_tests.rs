@@ -2,6 +2,7 @@
 //! for the confirmation, Enter again to ask — and what the service answers.
 #![expect(
     clippy::unwrap_used,
+    clippy::expect_used,
     clippy::panic,
     reason = "in a test, a panic on an unexpected None, Err or variant is the failure being reported"
 )]

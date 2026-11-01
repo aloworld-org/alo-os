@@ -158,7 +158,6 @@ pub(crate) fn folders_of<'a>(
 /// What putting back the change at `at` would do, read from the person's
 /// places under `whose` and their `home` — or why it cannot be done, in their
 /// words.
-#[must_use]
 pub(crate) fn the_plan(
     account: &Account,
     at: usize,
