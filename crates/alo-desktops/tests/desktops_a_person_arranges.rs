@@ -311,7 +311,7 @@ fn switching_is_a_gesture_or_a_shortcut() {
         desktops.on_mut(laptop).unwrap().switch(Switch::Next),
         Err(Refused::NoDesktopThatWay(Switch::Next))
     );
-    assert_eq!(desktops.on(laptop).unwrap().current(), second);
+    assert_eq!(desktops.on(laptop).unwrap().current(), third);
 }
 
 /// **Each desktop keeps its own divisions.** A pair of windows split into halves
