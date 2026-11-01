@@ -10,6 +10,7 @@ mod a_keyboard_recovers_a_hidden_frame;
 mod a_place_remembers_time;
 mod a_restore_travels;
 mod a_surface_says_how_big_it_is_drawn;
+mod a_window_the_person_opened;
 mod a_window_that_fills_the_screen;
 mod cursor;
 mod direct_keyboard;

@@ -186,6 +186,14 @@ pub(crate) struct Surfaces {
     data_device: DataDeviceState,
     /// Live toplevel roots in front-to-back stacking order.
     windows: Vec<Window>,
+    /// **The windows that came onto the screen since the shell last looked**,
+    /// oldest first: each toplevel's buffer arriving after it had none.
+    ///
+    /// Read and emptied by `Server::what_the_person_opened_comes_in_front`
+    /// (`crate::a_window_the_person_opened`), which is where a window a person
+    /// just opened is brought in front. Kept here because only a commit knows
+    /// the moment a window maps, and only the server can move it in front.
+    pub(crate) just_mapped: Vec<WlSurface>,
     /// **Which Place the person is looking at.**
     ///
     /// One home, not two. A new toplevel is created here, on `Surfaces`, so the
@@ -370,6 +378,7 @@ impl Surfaces {
             dmabuf_global: None,
             handed_over: Vec::new(),
             windows: Vec::new(),
+            just_mapped: Vec::new(),
             // A machine that has never been used is looking at its first Place.
             cameras: std::collections::BTreeMap::new(),
             place: alo_canvas::Place::FIRST,
@@ -422,6 +431,8 @@ impl Surfaces {
     /// Remove resources whose client disappeared without orderly destruction.
     pub(crate) fn prune(&mut self) {
         self.windows.retain(|window| window.surface.alive());
+        self.just_mapped
+            .retain(smithay::reexports::wayland_server::Resource::alive);
         self.prune_window_move();
         self.prune_window_resize();
         self.prune_window_modes();
@@ -556,8 +567,11 @@ impl CompositorHandler for Surfaces {
         };
         let has_buffer =
             with_renderer_surface_state(surface, |state| state.buffer().is_some()).unwrap_or(false);
+        let mut it_just_mapped = false;
         if has_buffer {
+            let was_mapped = window.mapped;
             window.mapped = window.surface.ensure_configured();
+            it_just_mapped = !was_mapped && window.mapped;
         } else if window.mapped {
             window.visibility = Default::default();
             window.mapped = false;
@@ -587,6 +601,9 @@ impl CompositorHandler for Surfaces {
                 ]);
             });
             window.surface.send_configure();
+        }
+        if it_just_mapped {
+            self.it_just_mapped(surface);
         }
         self.prune_window_move();
         self.commit_window_resize(surface);
