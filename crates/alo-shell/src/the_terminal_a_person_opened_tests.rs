@@ -296,9 +296,13 @@ fn the_shell_is_told_the_grid_the_window_has_room_for() {
 
     // The display the design's own frames are the size of.
     let display = (1440, 1040);
-    let (wanted, _) =
-        crate::the_terminals_cells_are_drawn::the_grid_that_fits(&mut fonts, display, 1.0, 1_000)
-            .expect("this display has room for a terminal");
+    let (wanted, _) = crate::the_terminals_cells_are_drawn::the_grid_that_fits(
+        &mut fonts,
+        the_window_on(display),
+        1.0,
+        1_000,
+    )
+    .expect("this display has room for a terminal");
     // **The expected figures come from the drawing**, not from this test. A
     // literal here would keep passing after somebody changed the insets.
     assert!(
@@ -308,7 +312,12 @@ fn the_shell_is_told_the_grid_the_window_has_room_for() {
     );
 
     assert!(
-        server.the_terminal_fits_its_window(&mut fonts, display, 1.0),
+        server.the_terminal_fits_its_window(
+            &mut fonts,
+            display,
+            1.0,
+            alo_strings::Direction::LeftToRight
+        ),
         "the terminal did not take the size its window has room for"
     );
     let terminal = server.alos_own_terminal().expect("it is still open");
@@ -356,16 +365,31 @@ fn fitting_the_same_window_twice_changes_nothing() {
 
     let display = (1440, 1040);
     assert!(
-        server.the_terminal_fits_its_window(&mut fonts, display, 1.0),
+        server.the_terminal_fits_its_window(
+            &mut fonts,
+            display,
+            1.0,
+            alo_strings::Direction::LeftToRight
+        ),
         "the first fit should change the size"
     );
     assert!(
-        !server.the_terminal_fits_its_window(&mut fonts, display, 1.0),
+        !server.the_terminal_fits_its_window(
+            &mut fonts,
+            display,
+            1.0,
+            alo_strings::Direction::LeftToRight
+        ),
         "fitting the same window again reported a change, so every frame would resize the grid \
          and signal the program"
     );
     assert!(
-        !server.the_terminal_fits_its_window(&mut fonts, display, 1.0),
+        !server.the_terminal_fits_its_window(
+            &mut fonts,
+            display,
+            1.0,
+            alo_strings::Direction::LeftToRight
+        ),
         "and again"
     );
 }
@@ -381,12 +405,20 @@ fn a_denser_display_fits_fewer_cells() {
         .expect("the bundled faces load")
         .fonts;
     let display = (1440, 1040);
-    let (at_one, cell_at_one) =
-        crate::the_terminals_cells_are_drawn::the_grid_that_fits(&mut fonts, display, 1.0, 100)
-            .expect("a grid");
-    let (at_two, cell_at_two) =
-        crate::the_terminals_cells_are_drawn::the_grid_that_fits(&mut fonts, display, 2.0, 100)
-            .expect("a grid");
+    let (at_one, cell_at_one) = crate::the_terminals_cells_are_drawn::the_grid_that_fits(
+        &mut fonts,
+        the_window_on(display),
+        1.0,
+        100,
+    )
+    .expect("a grid");
+    let (at_two, cell_at_two) = crate::the_terminals_cells_are_drawn::the_grid_that_fits(
+        &mut fonts,
+        the_window_on(display),
+        2.0,
+        100,
+    )
+    .expect("a grid");
     assert!(
         at_two.columns() < at_one.columns(),
         "a denser display fitted {} columns against {} at the ordinary scale; bigger letters \
@@ -428,4 +460,13 @@ fn the_cell_told_to_the_child_is_no_longer_zero() {
         u16::try_from(alo_terminal::measures::A_LINE).expect("two digits"),
         "the cell's height should be the design's own line height at scale one"
     );
+}
+
+/// The size a terminal opens at on a display this big: the share the design
+/// draws it at. Since ADR 0145 the grid is the window's, so a test asks for the
+/// window first.
+fn the_window_on(display: (i32, i32)) -> (i32, i32) {
+    let (window, _) = crate::the_terminals_cells_are_drawn::where_the_window_goes(display, 1.0)
+        .expect("this display has room for a terminal");
+    (window.size.w, window.size.h)
 }

@@ -134,7 +134,10 @@ fn a_control_that_does_not_divide_evenly_is_rounded_outwards() {
 #[test]
 fn alos_own_windows_are_moved_onto_the_plane() {
     use super::alos_own_windows;
-    let terminal = Rectangle::<i32, Physical>::new((48, 116).into(), (560, 476).into());
+    // **The terminal is already on the plane** (ADR 0145), so it arrives as it
+    // is, however the camera is panned or zoomed.
+    let terminal =
+        Rectangle::<i32, smithay::utils::Logical>::new((48, 116).into(), (560, 476).into());
     let task = Rectangle::<i32, Physical>::new((624, 116).into(), (768, 516).into());
     let nothing = Rectangle::<i32, Physical>::new((0, 0).into(), (0, 0).into());
     let (on_the_plane, tasks) = alos_own_windows(
@@ -143,12 +146,7 @@ fn alos_own_windows_are_moved_onto_the_plane() {
         alo_canvas::At { x: 300, y: 200 },
         0.5,
     );
-    let on_the_plane = on_the_plane.expect("the terminal is a window");
-    assert_eq!(
-        (on_the_plane.loc.x, on_the_plane.loc.y),
-        (300 + 96, 200 + 232)
-    );
-    assert_eq!((on_the_plane.size.w, on_the_plane.size.h), (1120, 952));
+    assert_eq!(on_the_plane, Some(terminal), "the terminal was moved again");
     assert_eq!(tasks.len(), 1, "an empty rectangle is not a window");
     let task = tasks.first().expect("the task window is a window");
     assert_eq!((task.loc.x, task.loc.y), (300 + 1248, 200 + 232));
@@ -159,7 +157,8 @@ fn alos_own_windows_are_moved_onto_the_plane() {
 #[test]
 fn a_new_window_opens_beside_alos_terminal() {
     use super::alos_own_windows;
-    let terminal = Rectangle::<i32, Physical>::new((48, 116).into(), (560, 476).into());
+    let terminal =
+        Rectangle::<i32, smithay::utils::Logical>::new((48, 116).into(), (560, 476).into());
     let (terminal, _) = alos_own_windows(Some(terminal), &[], alo_canvas::At { x: 0, y: 0 }, 1.0);
     let terminal = terminal.expect("the terminal is a window");
     let view = smithay::utils::Rectangle::new((0, 0).into(), (1440, 960).into());

@@ -113,6 +113,10 @@ impl crate::Server {
             // `crate::which_window_is_in_front` — so the keys it now takes go
             // to a window the person can see.
             self.the_person_went_to(crate::which_window_is_in_front::AKindOfWindow::TheTerminal);
+            // **And the view goes to it** if it is somewhere else on the
+            // canvas: a terminal is a window on the canvas since ADR 0145, and
+            // the one a person reaches for may be out of sight.
+            let _ = self.the_view_goes_to_the_terminal();
             return true;
         }
         // **Falling back to the installed one is deliberate and is not a

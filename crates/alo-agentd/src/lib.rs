@@ -286,6 +286,8 @@ pub mod permitted_places;
 #[cfg(target_os = "linux")]
 pub mod place;
 #[cfg(target_os = "linux")]
+pub mod putting_back;
+#[cfg(target_os = "linux")]
 pub mod questioned;
 #[cfg(target_os = "linux")]
 pub mod questions;

@@ -353,6 +353,31 @@ pub const PUT_BACK: Word = Word::saying(
      the assistant had done, in the words the person approved at the time.",
 );
 
+/// The person put folders back as they were, from a place this machine kept.
+pub const FOLDERS_PUT_BACK: Word = Word::saying(
+    "recounting.outcome.folders-put-back",
+    "you put these folders back as they were when this was kept",
+)
+.noting(
+    "Read at the head of one line of a record somebody is reading back. The person themselves \
+     returned one or more folders to how they were at an earlier moment this machine kept, \
+     either from the record window or in their own terminal. What was in them since is kept \
+     beside them, not deleted. The folders and what the moment was kept for are on the lines \
+     beneath.",
+);
+
+/// The person asked for folders to be put back, and none of them were.
+pub const FOLDERS_NOT_PUT_BACK: Word = Word::saying(
+    "recounting.outcome.folders-not-put-back",
+    "you asked for these folders to be put back, and none of them were changed",
+)
+.noting(
+    "Read at the head of one line of a record somebody is reading back. The person asked for one \
+     or more folders to be returned to how they were at an earlier moment, and the machine \
+     changed none of them — all go back together or none do. The reason they were shown is \
+     beside this line.",
+);
+
 /// The person asked for something to be put back, and it did not happen.
 pub const NOT_PUT_BACK: Word = Word::saying(
     "recounting.outcome.not-put-back",
@@ -547,7 +572,7 @@ pub const LET_GO_THE_PERSON_ASKED_TO_FORGET: Word = Word::saying(
 );
 
 /// Every string this crate can say, in the order a translator meets them.
-pub const EVERY_WORD: [Word; 36] = [
+pub const EVERY_WORD: [Word; 38] = [
     RAN,
     NOBODY_WAS_ASKED,
     THE_PERSON_SAID_NO,
@@ -573,6 +598,8 @@ pub const EVERY_WORD: [Word; 36] = [
     STOPPED_BY_SLEEP,
     PUT_BACK,
     NOT_PUT_BACK,
+    FOLDERS_PUT_BACK,
+    FOLDERS_NOT_PUT_BACK,
     LET_GO_OUTSIDE_THE_WINDOW,
     LET_GO_THE_DISK_NEEDED_THE_ROOM,
     LET_GO_THE_PERSON_ASKED_TO_FORGET,
@@ -591,7 +618,7 @@ pub const EVERY_WORD: [Word; 36] = [
 /// Named apart from the rest so the tests below can hold each group to the rule
 /// that is actually its own: a clause is read beside a sentence and does not end
 /// in a full stop, and a refusal says what to do next.
-pub const EVERY_OUTCOME: [Word; 28] = [
+pub const EVERY_OUTCOME: [Word; 30] = [
     RAN,
     NOBODY_WAS_ASKED,
     THE_PERSON_SAID_NO,
@@ -617,6 +644,8 @@ pub const EVERY_OUTCOME: [Word; 28] = [
     STOPPED_BY_SLEEP,
     PUT_BACK,
     NOT_PUT_BACK,
+    FOLDERS_PUT_BACK,
+    FOLDERS_NOT_PUT_BACK,
     LET_GO_OUTSIDE_THE_WINDOW,
     LET_GO_THE_DISK_NEEDED_THE_ROOM,
     LET_GO_THE_PERSON_ASKED_TO_FORGET,

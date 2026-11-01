@@ -130,6 +130,11 @@ pub struct Turning<'a, 'm> {
     /// number it waits under: put, approved, or declined. Lapsing is read
     /// off the change at the moment it is asked about.
     became: Vec<(u64, Became)>,
+    /// The place the service kept before this turn's first change, by name,
+    /// once it has kept one — stamped on everything this turn runs after it
+    /// (`alo_record::Entry::kept_as`), which is the link *Put back* is asked
+    /// from.
+    kept_as: Option<String>,
 }
 
 impl<'a, 'm> Turning<'a, 'm> {
@@ -164,6 +169,7 @@ impl<'a, 'm> Turning<'a, 'm> {
             lost_a_thread: false,
             origin: None,
             became: Vec::new(),
+            kept_as: None,
         })
     }
 
@@ -196,7 +202,20 @@ impl<'a, 'm> Turning<'a, 'm> {
             lost_a_thread: false,
             origin: Some(origin.clone()),
             became: Vec::new(),
+            kept_as: None,
         })
+    }
+
+    /// The service kept a place to return to before this turn's first change,
+    /// under `named`.
+    ///
+    /// **Told, not found out**: the place is taken by the service that holds
+    /// this turn (`alo-agentd`'s bracket), at the approval, and this crate
+    /// opens no folder to see. Everything this turn runs from now on is
+    /// written down with the name, so the record says which place each change
+    /// can be put back from — a link, not a guess by moment or by sentence.
+    pub fn a_place_was_kept(&mut self, named: &str) {
+        self.kept_as = Some(named.to_owned());
     }
 
     /// A read, which answers inside the turn.
@@ -367,6 +386,12 @@ impl<'a, 'm> Turning<'a, 'm> {
         now: SystemTime,
     ) -> Result<WhatAVerbDid, NotDone> {
         let (entry, outcome) = self.inside_a_boundary(authorised, grants, now);
+        // **What ran carries the place kept before it**; a refusal at the
+        // boundary changed nothing and carries none.
+        let entry = match &self.kept_as {
+            Some(named) if entry.happened().ran() => entry.kept_as(named),
+            _ => entry,
+        };
         self.writing_down(entry)?;
         outcome
     }
@@ -693,6 +718,30 @@ impl<'a, 'm> Turning<'a, 'm> {
         now: SystemTime,
     ) -> Result<(), alo_keeping::NotKept> {
         self.keeping(Entry::a_workspace_was_opened(workspace, answers_at, now))
+    }
+
+    /// Write down that the person put folders back, while this turn holds the
+    /// machine.
+    ///
+    /// [`crate::Machine::folders_were_put_back`] for the rounds where a local
+    /// turn holds the machine: a person puts back whether or not their agent is
+    /// in a turn. The entry is the person's own — no agent.
+    ///
+    /// # Errors
+    ///
+    /// [`alo_keeping::NotKept`] when the record could not be written, and the
+    /// turn is closed by it.
+    pub fn folders_were_put_back(
+        &mut self,
+        kept: (SystemTime, &str),
+        folders: &[String],
+        failed: Option<&str>,
+        now: SystemTime,
+    ) -> Result<(), alo_keeping::NotKept> {
+        match Entry::put_back(kept, folders, failed, now) {
+            Some(entry) => self.keeping(entry),
+            None => Ok(()),
+        }
     }
 
     /// Write down what became of this turn when the machine woke from a sleep
@@ -1129,6 +1178,51 @@ mod tests {
         let entry = record.everything().next().unwrap();
         assert!(entry.happened().ran());
         assert!(entry.happened().from_approval().is_some());
+    }
+
+    /// **A change run after the service kept a place names it; before, it
+    /// names none.** The name is the link *Put back* is asked from.
+    #[test]
+    fn a_change_names_the_place_kept_before_it() {
+        let mut record = Record::default();
+        on_a_machine(
+            "kept-as",
+            &mut record,
+            |turning, grants, folder, invoice| {
+                let first = turning
+                    .proposing("rename_file", &renaming(invoice), grants, hour(), noon())
+                    .unwrap();
+                turning.approving(first, grants, noon()).unwrap();
+                turning.a_place_was_kept("1793502334-812-1");
+                let april = folder.join("april.pdf");
+                fs::write(&april, "April, 3920.00").unwrap();
+                let second = turning
+                    .proposing(
+                        "rename_file",
+                        &[
+                            ("file", as_given(&april)),
+                            ("name", Given::text("april-final.pdf")),
+                        ],
+                        grants,
+                        hour(),
+                        noon(),
+                    )
+                    .unwrap();
+                turning.approving(second, grants, noon()).unwrap();
+            },
+        );
+        let entries: Vec<&Entry> = record.everything().collect();
+        assert_eq!(
+            entries.first().and_then(|entry| entry.kept_before_it()),
+            None
+        );
+        let later: Vec<_> = entries
+            .iter()
+            .skip(1)
+            .filter(|entry| entry.happened().ran())
+            .map(|entry| entry.kept_before_it().map(alo_record::Line::as_str))
+            .collect();
+        assert_eq!(later, [Some("1793502334-812-1")]);
     }
 
     /// **What became of a change is answered by the turn that put it**:

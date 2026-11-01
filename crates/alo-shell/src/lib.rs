@@ -535,6 +535,9 @@ mod the_tasks_words;
 /// the keyboard. The compositor holds it because ADR 0114 says the compositor
 /// draws it, and ADR 0113's gutter could not be promised by an application.
 mod the_terminal_a_person_opened;
+/// alo's terminal as a window on the canvas: where it is on the plane, and
+/// where that puts it on a display (ADR 0145).
+mod the_terminal_on_the_plane;
 /// alo's own terminal, drawn: the window, its transcript and the cells in it.
 /// Every figure comes from `alo_terminal::measures` through this display's own
 /// scale; the window's size is a share of the display, because the design's

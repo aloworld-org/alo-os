@@ -80,7 +80,7 @@ pub(crate) struct NativeLayers<'a> {
     /// **A window rather than furniture**, which is why it is its own layer:
     /// the Dock, the status area and a notification each sit above whatever a
     /// client maps, and a terminal does not — it is a window among windows.
-    pub(crate) terminal: Option<&'a crate::the_terminals_cells_are_drawn::TerminalPicture>,
+    pub(crate) terminal: Option<&'a crate::the_terminal_on_the_plane::TheTerminalOnTheScreen>,
 }
 
 impl NativeLayers<'_> {

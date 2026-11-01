@@ -466,6 +466,12 @@ impl crate::Server {
     /// window, and from behind an application a person had clicked.
     pub(crate) fn the_terminal_is_taking_the_keys(&self) -> bool {
         self.the_kind_in_front() == crate::which_window_is_in_front::AKindOfWindow::TheTerminal
+            // **And only on the Place being looked at** (ADR 0145): a terminal
+            // on another Place is out of sight, and keys typed into a window
+            // nobody can see are keys lost. One not placed yet is on this one.
+            && self
+                .the_terminal_on_the_plane
+                .is_none_or(|(_, place)| place == self.the_place_now())
     }
 
     /// Whether alo's own terminal is open and drawn under this point.
@@ -579,22 +585,34 @@ impl crate::Server {
         fonts: &mut cosmic_text::FontSystem,
         size: (i32, i32),
         scale: f64,
+        reading: alo_strings::Direction,
     ) -> bool {
+        // **Given a place on the canvas first**, once, the first frame after it
+        // opens — `crate::the_terminal_on_the_plane` (ADR 0145).
+        let _ = self.the_terminal_is_placed(size, scale, reading);
+        // **Where it is drawn, kept for a press to be tested against** — the
+        // same plane rectangle through the same camera the drawing uses, so the
+        // terminal a person sees and the one they can press cannot come apart.
+        let camera = self.the_camera();
+        let on_the_plane = self.where_the_terminal_is_on_the_plane();
+        self.where_the_terminal_is = on_the_plane
+            .map(|window| crate::the_terminal_on_the_plane::on_the_screen(window, camera));
         let Some(terminal) = self.alos_own_terminal.as_mut() else {
-            self.where_the_terminal_is = None;
             return false;
         };
-        // **Where it is drawn, kept for a press to be tested against** — the
-        // same function the drawing places it with, so the terminal a person
-        // sees and the one they can press cannot come apart.
-        self.where_the_terminal_is =
-            crate::the_terminals_cells_are_drawn::where_the_window_goes(size, scale)
-                .map(|(window, _)| window);
+        // **The window's own size, not the display's**, so zooming the canvas
+        // never re-flows what the shell has printed.
+        let Some(window) = self.the_terminal_on_the_plane.map(|(window, _)| window) else {
+            return false;
+        };
         // **The scrollback it already keeps**, so laying the grid out again
         // never silently changes how much a person can scroll back to.
         let remembered = terminal.screen().size().remembered();
         match crate::the_terminals_cells_are_drawn::the_grid_that_fits(
-            fonts, size, scale, remembered,
+            fonts,
+            (window.size.w, window.size.h),
+            scale,
+            remembered,
         ) {
             Ok((grid, cell)) => terminal.laid_out_again(grid, cell),
             // **A window with no room for a cell leaves the terminal alone.**

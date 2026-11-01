@@ -162,6 +162,15 @@ pub enum NotGoingBack {
         why: String,
     },
 
+    /// Two of the folders to go back together are one inside the other.
+    ///
+    /// Refused before anything is copied: going back is a swap of a whole
+    /// folder, so the outer one's swap would carry the inner one with it.
+    #[error("{inner} is inside another folder being put back with it")]
+    OneInsideAnother {
+        /// The inner one.
+        inner: PathBuf,
+    },
     /// The folder went back and what was there could not be renamed.
     ///
     /// The folder **is** as it was — the swap succeeded. What failed is giving
@@ -352,6 +361,127 @@ pub fn go_back(goes: &WhatGoesBack) -> Result<(), NotGoingBack> {
             why: why.to_string(),
         }
     })
+}
+
+/// Why several folders were not put back together: which one, and why.
+#[derive(Debug, thiserror::Error)]
+#[error("{folder}: {why}")]
+pub struct NoneWentBack {
+    /// The folder that stopped it.
+    pub folder: PathBuf,
+    /// Why.
+    pub why: NotGoingBack,
+}
+
+/// Put several folders back **together, or none of them**.
+///
+/// The owner's answer of 2026-11-01: a change that touched two folders — a
+/// move, from one into another — goes back as one act, and if any folder
+/// cannot be put back the person is told which and none is changed. So it is
+/// [`go_back`]'s three steps, each done for every folder before the next:
+///
+/// 1. **every copy**, out of the snapshot under its working name — a copy that
+///    fails takes every copy made so far away again, and nothing has changed;
+/// 2. **every swap**, one atomic call each — a swap that fails swaps back the
+///    ones already made, so every folder is what it was, and the copies go;
+/// 3. **every rename** of what was there to its final name — by now every
+///    folder **is** as it was, and a rename that fails is
+///    [`NotGoingBack::SetAsideUnderTheWorkingName`], as it is for one folder.
+///
+/// # Errors
+/// [`NoneWentBack`] naming the folder that stopped it. Every refusal leaves
+/// every folder as it was except
+/// [`NotGoingBack::SetAsideUnderTheWorkingName`], where all of them went back.
+pub fn go_back_together(goes: &[WhatGoesBack]) -> Result<(), NoneWentBack> {
+    // **One folder inside another is refused before anything is touched**:
+    // swapping the outer one first would carry the inner one with it, and the
+    // second swap would act on a folder that is no longer the one approved.
+    for (at, one) in goes.iter().enumerate() {
+        for other in goes.iter().skip(at + 1) {
+            if one.folder.starts_with(&other.folder) || other.folder.starts_with(&one.folder) {
+                return Err(NoneWentBack {
+                    folder: one.folder.clone(),
+                    why: NotGoingBack::OneInsideAnother {
+                        inner: if one.folder.starts_with(&other.folder) {
+                            one.folder.clone()
+                        } else {
+                            other.folder.clone()
+                        },
+                    },
+                });
+            }
+        }
+    }
+    let mut copied: Vec<&WhatGoesBack> = Vec::new();
+    for one in goes {
+        if let Err(why) = copied_out(one) {
+            for made in copied {
+                let _ = removing::removed(&made.staging);
+            }
+            return Err(NoneWentBack {
+                folder: one.folder.clone(),
+                why,
+            });
+        }
+        copied.push(one);
+    }
+    let mut swapped: Vec<&WhatGoesBack> = Vec::new();
+    for one in goes {
+        if let Err(why) = renameat_with(CWD, &one.staging, CWD, &one.folder, RenameFlags::EXCHANGE)
+        {
+            // **Swapped back**, the same call the other way: each folder is
+            // what it was the instant before, and no name is ever missing.
+            for made in swapped.iter().rev() {
+                let _ = renameat_with(CWD, &made.staging, CWD, &made.folder, RenameFlags::EXCHANGE);
+            }
+            for made in goes {
+                let _ = removing::removed(&made.staging);
+            }
+            return Err(NoneWentBack {
+                folder: one.folder.clone(),
+                why: NotGoingBack::NotSwapped {
+                    why: why.to_string(),
+                },
+            });
+        }
+        swapped.push(one);
+    }
+    let mut first_failed = None;
+    for one in goes {
+        if let Err(why) = std::fs::rename(&one.staging, &one.what_was_here) {
+            first_failed.get_or_insert(NoneWentBack {
+                folder: one.folder.clone(),
+                why: NotGoingBack::SetAsideUnderTheWorkingName {
+                    folder: one.folder.clone(),
+                    at: one.staging.clone(),
+                    why: why.to_string(),
+                },
+            });
+        }
+    }
+    first_failed.map_or(Ok(()), Err)
+}
+
+/// [`go_back`]'s first step for one folder: the copy out of the snapshot,
+/// under its working name, or nothing.
+fn copied_out(goes: &WhatGoesBack) -> Result<(), NotGoingBack> {
+    let said = Command::new(THE_PROGRAM)
+        .args(THE_ARGUMENTS)
+        .arg(&goes.from)
+        .arg(&goes.staging)
+        .output();
+    match said {
+        Err(why) => Err(NotGoingBack::NotCopied {
+            why: why.to_string(),
+        }),
+        Ok(done) if !done.status.success() => {
+            let _ = removing::removed(&goes.staging);
+            Err(NotGoingBack::NotCopied {
+                why: String::from_utf8_lossy(&done.stderr).trim_end().to_owned(),
+            })
+        }
+        Ok(_) => Ok(()),
+    }
 }
 
 /// A name beside this one, with a suffix.

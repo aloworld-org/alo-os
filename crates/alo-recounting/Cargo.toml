@@ -37,10 +37,13 @@ thiserror = { workspace = true }
 serde = { workspace = true }
 toml = { workspace = true }
 
-[dev-dependencies]
-# The calls, grants and approvals this crate's own tests make entries out of.
-# Nothing here decides anything about a capability.
+# Whether a verb that ran changed the machine — the one fact that decides
+# whether an entry can be put back. Read off the verb's own declaration;
+# nothing here decides anything about a capability. Its tests also make their
+# calls, grants and approvals out of it.
 alo-capability = { path = "../alo-capability" }
+
+[dev-dependencies]
 
 # What it takes to stand a whole turn up in the acceptance test: the
 # invocation, the verbs, and a boundary. The record it leaves behind is the

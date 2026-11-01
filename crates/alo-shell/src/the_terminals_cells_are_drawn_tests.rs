@@ -67,12 +67,35 @@ fn picture_with_a_shell_called(
             a_diff: None,
             the_strip: crate::the_terminals_strip::WhatTheStripSays::ONLY_WHERE_IT_RUNS,
         },
-        size,
+        the_window_on(size).ok_or(NothingToDrawWith::TheresNoRoom)?,
         scale,
         scheme,
         &the_words(),
         Some(called),
     )
+}
+
+/// The size a terminal opens at on a display this big.
+///
+/// **Every test here names a display, and the picture is a window's** since
+/// ADR 0145 put the terminal on the canvas: it opens at the share of the
+/// display the design draws it at, and its picture is laid out at that size.
+/// [`None`] for a display too small to hold one.
+fn the_window_on(display: (i32, i32)) -> Option<(i32, i32)> {
+    where_the_window_goes(display, 1.0).map(|(window, _)| (window.size.w, window.size.h))
+}
+
+/// Where the window and its transcript are in the picture of a terminal opened
+/// on a display this big, at this scale.
+fn drawn_where(
+    display: (i32, i32),
+    scale: f64,
+) -> Option<(
+    smithay::utils::Rectangle<i32, smithay::utils::Physical>,
+    smithay::utils::Rectangle<i32, smithay::utils::Physical>,
+)> {
+    let laid = super::laid_out(the_window_on(display)?, scale)?;
+    Some((laid.window, laid.transcript))
 }
 
 /// The drawing, with the vocabulary supplied.
@@ -99,7 +122,7 @@ fn picture(
             a_diff: None,
             the_strip: crate::the_terminals_strip::WhatTheStripSays::ONLY_WHERE_IT_RUNS,
         },
-        size,
+        the_window_on(size).ok_or(NothingToDrawWith::TheresNoRoom)?,
         scale,
         scheme,
         &the_words(),
@@ -146,7 +169,7 @@ fn ink_in(drawn: &TerminalPicture, ground: [u8; 3]) -> usize {
 /// The transcript's left edge, its inset, and the terminal's gutter. Anything
 /// drawn to the left of this is the terminal's own and not a program's.
 fn where_the_cells_begin() -> i32 {
-    let (_, transcript) = where_the_window_goes(A_DISPLAY, 1.0).expect("a window fits");
+    let (_, transcript) = drawn_where(A_DISPLAY, 1.0).expect("a window fits");
     transcript.loc.x + measures::AN_INSET.cast_signed() + measures::A_GUTTER.cast_signed()
 }
 
@@ -230,7 +253,7 @@ fn the_terminal_is_a_window_that_can_be_told_from_the_desktop() {
         Scheme::Light,
     )
     .expect("a terminal");
-    let (window, _) = where_the_window_goes(A_DISPLAY, 1.0).expect("a window on this display");
+    let (window, _) = drawn_where(A_DISPLAY, 1.0).expect("a window on this display");
     let canvas = alo_appearance::Role::BgCanvas.colour();
     let canvas = [canvas.red(), canvas.green(), canvas.blue()];
 
@@ -358,7 +381,7 @@ fn the_window_is_centred_on_the_display() {
 /// number cannot be caught being wrong; two that must agree can.*
 #[test]
 fn the_transcript_agrees_with_the_measures() {
-    let (window, transcript) = where_the_window_goes(A_DISPLAY, 1.0).expect("a window");
+    let (window, transcript) = drawn_where(A_DISPLAY, 1.0).expect("a window");
     assert_eq!(
         u32::try_from(transcript.size.h).expect("a positive height"),
         measures::transcript_height_in(800),
@@ -384,8 +407,8 @@ fn the_transcript_agrees_with_the_measures() {
 /// fault `CLAUDE.md` names.
 #[test]
 fn the_furniture_scales_with_the_display() {
-    let (at_one_window, at_one) = where_the_window_goes(A_DISPLAY, 1.0).expect("a window");
-    let (at_two_window, at_two) = where_the_window_goes(A_DISPLAY, 2.0).expect("a window");
+    let (at_one_window, at_one) = drawn_where(A_DISPLAY, 1.0).expect("a window");
+    let (at_two_window, at_two) = drawn_where(A_DISPLAY, 2.0).expect("a window");
     assert_eq!(
         at_one_window.size, at_two_window.size,
         "the window is a share of the display and must not change with the scale"
@@ -481,7 +504,7 @@ fn everything_drawn_is_inside_the_display() {
         };
         checked += 1;
         assert!(
-            drawn.validate(size.into()).is_ok(),
+            drawn.validate(drawn.size.into()).is_ok(),
             "a terminal laid out for {size:?} draws outside it"
         );
         assert!(!drawn.is_empty(), "a drawn terminal has nothing in it");
@@ -524,7 +547,7 @@ fn columns_are_counted_from_the_room_available() {
     assert_eq!(cell.columns_in(0), 0);
     assert!(cell.columns_in(1_000) > cell.columns_in(500));
 
-    let (_, transcript) = where_the_window_goes(A_DISPLAY, 1.0).expect("a window");
+    let (_, transcript) = drawn_where(A_DISPLAY, 1.0).expect("a window");
     let room = transcript.size.w - i32::try_from(measures::AN_INSET).expect("small") * 2;
     assert_eq!(room, 990, "the design's own source-region width");
     assert!(
@@ -718,7 +741,7 @@ fn a_drawn_cursor_stays_inside_the_display() {
         )
         .expect("a terminal");
         assert!(
-            drawn.validate(A_DISPLAY.into()).is_ok(),
+            drawn.validate(drawn.size.into()).is_ok(),
             "the cursor at column {column} draws outside the display"
         );
     }
@@ -855,7 +878,7 @@ fn a_coloured_background_is_painted_behind_its_run_alone() {
         "there should be exactly one blue background, for the one run that asked"
     );
     // Four cells of `blue`, so its width is four cells and not the whole line.
-    let (_, transcript) = where_the_window_goes(A_DISPLAY, 1.0).expect("a window");
+    let (_, transcript) = drawn_where(A_DISPLAY, 1.0).expect("a window");
     let its_width = behind.first().expect("the one blue background").area.size.w;
     assert!(
         its_width < transcript.size.w / 4,
@@ -1052,8 +1075,14 @@ fn nothing_a_program_wrote_reaches_the_gutter() {
 #[test]
 fn the_grid_is_the_gutter_narrower_than_the_region() {
     let mut fonts = the_shells_own_fonts();
-    let (grid, _) = the_grid_that_fits(&mut fonts, A_DISPLAY, 1.0, 100).expect("a grid fits");
-    let (_, transcript) = where_the_window_goes(A_DISPLAY, 1.0).expect("a window fits");
+    let (grid, _) = the_grid_that_fits(
+        &mut fonts,
+        the_window_on(A_DISPLAY).expect("a window"),
+        1.0,
+        100,
+    )
+    .expect("a grid fits");
+    let (_, transcript) = drawn_where(A_DISPLAY, 1.0).expect("a window fits");
 
     let cell = how_big_a_cell_is(&mut fonts, the_designs_metrics(1.0)).expect("a cell");
     let whole_region = transcript.size.w - measures::AN_INSET.cast_signed() * 2;
@@ -1251,7 +1280,7 @@ fn a_bold_cell_is_the_same_width_as_an_ordinary_one() {
 /// The band is the last `A_NOTE` rows of the window above the `BELOW_THE_NOTE`
 /// under it, so anything inked there is the note and nothing else reaches it.
 fn ink_under_the_transcript(drawn: &TerminalPicture, ground: [u8; 3]) -> usize {
-    let (window, transcript) = where_the_window_goes(A_DISPLAY, 1.0).expect("a window fits");
+    let (window, transcript) = drawn_where(A_DISPLAY, 1.0).expect("a window fits");
     let below = transcript.loc.y + transcript.size.h;
     let _ = window;
     drawn
@@ -1333,7 +1362,7 @@ fn the_note_is_drawn_muted_rather_than_as_output() {
 
     let muted = alo_appearance::Role::TextMuted.colour();
     let muted = [muted.red(), muted.green(), muted.blue()];
-    let (_, transcript) = where_the_window_goes(A_DISPLAY, 1.0).expect("a window fits");
+    let (_, transcript) = drawn_where(A_DISPLAY, 1.0).expect("a window fits");
     let below = transcript.loc.y + transcript.size.h;
 
     let darkest = drawn
@@ -1372,7 +1401,7 @@ fn picture_showing_a_result(
             a_diff: None,
             the_strip: crate::the_terminals_strip::WhatTheStripSays::ONLY_WHERE_IT_RUNS,
         },
-        A_DISPLAY,
+        the_window_on(A_DISPLAY).expect("a window"),
         1.0,
         Scheme::Light,
         &the_words(),
@@ -1495,7 +1524,7 @@ fn saying_something_draws_the_sentence_and_not_only_its_gutter_word() {
                 a_diff: None,
                 the_strip: crate::the_terminals_strip::WhatTheStripSays::ONLY_WHERE_IT_RUNS,
             },
-            A_DISPLAY,
+            the_window_on(A_DISPLAY).expect("a window"),
             1.0,
             Scheme::Light,
             &the_words(),
@@ -1567,7 +1596,7 @@ fn a_recognised_results_lines_are_drawn_where_the_transcripts_text_goes() {
                 a_diff: None,
                 the_strip: crate::the_terminals_strip::WhatTheStripSays::ONLY_WHERE_IT_RUNS,
             },
-            A_DISPLAY,
+            the_window_on(A_DISPLAY).expect("a window"),
             1.0,
             Scheme::Light,
             &the_words(),
@@ -1644,7 +1673,7 @@ fn a_result_pushes_alos_line_down_rather_than_sharing_its_region() {
                 a_diff: None,
                 the_strip: crate::the_terminals_strip::WhatTheStripSays::ONLY_WHERE_IT_RUNS,
             },
-            A_DISPLAY,
+            the_window_on(A_DISPLAY).expect("a window"),
             1.0,
             Scheme::Light,
             &the_words(),

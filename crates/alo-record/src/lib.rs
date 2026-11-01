@@ -31,6 +31,7 @@
 //! | [`Happened::Brokered`] | The privileged broker handed a system verb on under an approval, or refused the request ([`brokered`]) |
 //! | [`Happened::SleptThrough`] | A turn was under way when the machine slept, and carried on or was stopped when it woke |
 //! | [`Happened::Undone`] | The person put back what an agent had changed, or asked to and it did not happen ([ADR 0045](../../../docs/decisions/0045-what-undoing-rewinds-to.md)) |
+//! | [`Happened::PutBack`] | The person put folders back as they were from a place this machine kept, through the record window or `alo-back` — or asked to, and none went back |
 //!
 //! # The two with nobody in them
 //!

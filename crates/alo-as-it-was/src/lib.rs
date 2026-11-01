@@ -87,5 +87,7 @@ pub mod testing;
 
 pub use places::{APlaceKept, Places, where_this_person_keeps};
 #[cfg(target_os = "linux")]
-pub use putting_back::{NotGoingBack, WhatGoesBack, go_back, what_would_go_back};
+pub use putting_back::{
+    NoneWentBack, NotGoingBack, WhatGoesBack, go_back, go_back_together, what_would_go_back,
+};
 pub use words::{EVERY_WORD, WordsError, as_it_was_words, declare_into};

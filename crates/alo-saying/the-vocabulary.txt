@@ -238,8 +238,10 @@ as-it-was.not-copied	the folder could not be copied out of that place, and nothi
 as-it-was.not-in-that-place	{folder} was not there when that place was kept, so there is nothing to put back
 as-it-was.not-in-your-home	{folder} is not inside your own home, and this puts back nothing else
 as-it-was.not-swapped	the folder has not been put back and nothing has been changed: {why}
+as-it-was.not-without-the-record	the service that keeps this machine's record could not be reached, so nothing has been put back: putting back is always written down. {why}
 as-it-was.nothing-is-kept	alo has not kept any place for you to return to on this machine
 as-it-was.nowhere-to-set-aside	{at} is already there, so what is in the folder now has nowhere to go — move it out of the way first
+as-it-was.one-inside-another	{folder} is inside another folder being put back with it, so none of them has been changed
 as-it-was.one-is-half-done	{at} is still there from a go-back that did not finish — look at what is in it, then move it out of the way
 as-it-was.set-aside-under-the-working-name	{folder} is as it was, but what was in it is still at {at} rather than where this said it would be: {why}
 as-it-was.something-was-not-read	something kept on this machine could not be read, and has been left exactly where it is: {why}
@@ -1640,6 +1642,8 @@ recounting.outcome.a-command-was-not-run	the agent asked to run a command and it
 recounting.outcome.answered-for-another-machine	a machine you paired with asked a question and it was answered on this machine
 recounting.outcome.answered-here	the agent asked a question and it was answered on this machine
 recounting.outcome.carried-on-after-sleep	the machine went to sleep while the agent was working on this, and the work carried on when it woke
+recounting.outcome.folders-not-put-back	you asked for these folders to be put back, and none of them were changed
+recounting.outcome.folders-put-back	you put these folders back as they were when this was kept
 recounting.outcome.grants-not-read-again	what you have granted could not be read again, so this machine went on with the list it already had
 recounting.outcome.held-back	something would have left this machine and was not allowed to, so nothing left
 recounting.outcome.left	something left this machine

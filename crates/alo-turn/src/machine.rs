@@ -626,6 +626,35 @@ impl<'a> Machine<'a> {
             .keep(Entry::a_workspace_was_opened(workspace, answers_at, now))
     }
 
+    /// Write down that the person put `folders` back as they were from the
+    /// place kept at `kept.0` for `kept.1` — or asked to, and `failed` is the
+    /// sentence they were shown when none went back.
+    ///
+    /// Called by the service that holds this machine, from the person's own
+    /// door (`put-back`), for both of the person's roads: the record window and
+    /// `alo-back`. **Nothing a caller passes in can name an authority**, for
+    /// [`Machine::a_pairing_was_kept`]'s reason: a moment, a sentence copied
+    /// off the place, paths and a refusal — and no agent can send the request.
+    /// See [`alo_record::Entry::put_back`]. Nothing is written for no folders,
+    /// which is not an act.
+    ///
+    /// # Errors
+    ///
+    /// [`alo_keeping::NotKept`] when the record could not be written. A
+    /// service that meets this has stopped keeping evidence and stops.
+    pub fn folders_were_put_back(
+        &mut self,
+        kept: (std::time::SystemTime, &str),
+        folders: &[String],
+        failed: Option<&str>,
+        now: std::time::SystemTime,
+    ) -> Result<(), alo_keeping::NotKept> {
+        match Entry::put_back(kept, folders, failed, now) {
+            Some(entry) => self.kept.keep(entry),
+            None => Ok(()),
+        }
+    }
+
     /// Shorten this machine's record under the rule it is kept by.
     ///
     /// Public, because the caller is the service that holds the machine and

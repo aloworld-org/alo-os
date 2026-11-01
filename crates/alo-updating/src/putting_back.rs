@@ -101,7 +101,8 @@ pub fn what_was_done(entry: &Entry) -> WhatWasDone {
         | Happened::GrantsNotReadAgain { .. }
         | Happened::LeftOnItsOwn { .. }
         | Happened::LetGo { .. }
-        | Happened::Undone { .. } => WhatWasDone::NotAnAgents,
+        | Happened::Undone { .. }
+        | Happened::PutBack { .. } => WhatWasDone::NotAnAgents,
     }
 }
 
