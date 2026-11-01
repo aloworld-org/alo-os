@@ -20,13 +20,21 @@
 //! # Only the bands round the window
 //!
 //! The window covers its own middle, so a raster of it would be pixels nobody
-//! sees, computed every frame. This draws the four bands between the window and
-//! the shadow's reach — top, bottom, left and right — and nothing inside.
+//! sees. This draws the four bands between the window and the shadow's reach —
+//! top, bottom, left and right — and nothing inside.
+//!
+//! # Made once for a size and a look
+//!
+//! The bands are made with the window at the origin and kept by
+//! `crate::window_rasters_kept`, which moves and clips them each frame: a
+//! shadow worked out again on every frame was the CPU's whole cost of this
+//! file, on a machine promised to need no graphics card.
 
 use smithay::utils::{Physical, Rectangle};
 
 use crate::painted::Washed;
 use crate::window_edge_look::{A_LINE_IS, WhichLook};
+use crate::window_rasters_kept::{TheKey, Which, kept_or_made, placed};
 
 /// The shadow's colour, `#07131f`, as every raised surface in this crate has it.
 const THE_SHADOWS_COLOUR: [u8; 3] = [0x07, 0x13, 0x1F];
@@ -53,6 +61,26 @@ pub(crate) fn round_the_window(
     } else {
         1.0
     };
+    let key = TheKey::of(Which::Round, (window.size.w, window.size.h), scale, look);
+    let size = (window.size.w, window.size.h);
+    let kept = kept_or_made(key, || made_at_the_origin(size, scale, look));
+    let reach = the_reach(scale, look);
+    placed(&kept, (window.loc.x - reach, window.loc.y - reach), output)
+}
+
+/// How far the line and shadow reach beyond the window, in pixels.
+fn the_reach(scale: f64, look: WhichLook) -> i32 {
+    let (line, falls, blurs, spreads) = the_measures(scale, look);
+    #[expect(
+        clippy::cast_possible_truncation,
+        reason = "a reach of a few dozen pixels is well inside an i32"
+    )]
+    let reach = (falls.abs() + blurs + spreads.max(0.0) + line).ceil() as i32;
+    reach
+}
+
+/// The line, and how far the shadow falls, blurs and spreads, in pixels.
+fn the_measures(scale: f64, look: WhichLook) -> (f32, f32, f32, f32) {
     let at = |logical: i32| -> f32 {
         #[expect(
             clippy::cast_possible_truncation,
@@ -61,14 +89,23 @@ pub(crate) fn round_the_window(
         let it = (f64::from(logical) * scale) as f32;
         it
     };
-    let line = at(A_LINE_IS).round().max(1.0);
     let shadow = look.shadow();
-    let (falls, blurs, spreads) = (
+    (
+        at(A_LINE_IS).round().max(1.0),
         at(shadow.falls),
         at(shadow.blurs).max(1.0),
         at(shadow.spreads),
-    );
+    )
+}
+
+/// The four bands round a window of `size`, the window at (reach, reach): the
+/// rasters `crate::window_rasters_kept` keeps. Unclipped — the frame clips.
+pub(crate) fn made_at_the_origin(size: (i32, i32), scale: f64, look: WhichLook) -> Vec<Washed> {
+    let (line, falls, blurs, spreads) = the_measures(scale, look);
+    let shadow = look.shadow();
     let edge = look.colours().edge;
+    let reach = the_reach(scale, look);
+    let window = Rectangle::<i32, Physical>::new((reach, reach).into(), size.into());
 
     let (left, top) = (window.loc.x as f32, window.loc.y as f32);
     let (right, bottom) = (left + window.size.w as f32, top + window.size.h as f32);
@@ -81,19 +118,10 @@ pub(crate) fn round_the_window(
         ring.2 + spreads,
         ring.3 + spreads + falls,
     );
-    #[expect(
-        clippy::cast_possible_truncation,
-        reason = "a reach of a few dozen pixels is well inside an i32"
-    )]
-    let reach = (falls.abs() + blurs + spreads.max(0.0) + line).ceil() as i32;
-
     let outer = Rectangle::<i32, Physical>::new(
-        (window.loc.x - reach, window.loc.y - reach).into(),
+        (0, 0).into(),
         (window.size.w + reach * 2, window.size.h + reach * 2).into(),
     );
-    let Some(outer) = outer.intersection(Rectangle::from_size(output.into())) else {
-        return Vec::new();
-    };
     let (ox, oy) = (outer.loc.x, outer.loc.y);
     let (or, ob) = (ox + outer.size.w, oy + outer.size.h);
     let (wx, wy) = (window.loc.x.max(ox), window.loc.y.max(oy));

@@ -656,6 +656,7 @@ mod window_name_band;
 mod window_number;
 mod window_placement;
 mod window_raise;
+mod window_rasters_kept;
 mod window_resize;
 mod window_size;
 mod window_switch;
