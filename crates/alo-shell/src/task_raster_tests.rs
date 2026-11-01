@@ -42,6 +42,7 @@ pub(super) fn the_words(files: &[String]) -> crate::task_text::TheWordsInATaskWi
         title: "Prepare the launch presentation",
         kind: "alo task \u{b7} Work",
         status: "alo is working",
+        alo_is_working: true,
         model: "SmolLM2 1.7B",
         destination: "On this computer",
         invitation: "Reply to alo or change the direction\u{2026}",
@@ -378,6 +379,7 @@ fn the_words_are_drawn_and_an_empty_window_draws_none() {
         title: "",
         kind: "",
         status: "",
+        alo_is_working: false,
         model: "",
         destination: "",
         invitation: "",
@@ -510,6 +512,7 @@ fn a_persons_words_are_drawn_further_right_than_alos() {
         title: "",
         kind: "",
         status: "",
+        alo_is_working: false,
         model: "",
         destination: "",
         invitation: "",
@@ -907,4 +910,53 @@ fn a_long_title_keeps_to_one_line_and_ends_in_an_ellipsis() {
             .shown
             .ends_with(crate::window_edge_title::AN_ELLIPSIS)
     );
+}
+
+/// **Teal is alo at work and nothing else.** *Complete* and *Waiting for your
+/// permission* are drawn in navy, as the owner's approved designs draw them;
+/// only *alo is working* is teal. The same words, two states, and the ink is
+/// the only thing that changes.
+#[test]
+fn the_status_is_teal_only_while_alo_is_working() {
+    let files = two_files();
+    let mut fonts = cosmic_text::FontSystem::new();
+    let at = Rectangle::new((120, 80).into(), (1040, 800).into());
+    let teal = crate::task_look::TaskPalette::of(a_look())
+        .expect("a palette")
+        .alo;
+    let navy = crate::task_look::TaskPalette::of(a_look())
+        .expect("a palette")
+        .ink;
+    let mut drawn = |working: bool| {
+        let words = crate::task_text::TheWordsInATaskWindow {
+            status: "Complete",
+            alo_is_working: working,
+            ..the_words(&files)
+        };
+        furniture(
+            at,
+            a_look(),
+            2,
+            &words,
+            &[],
+            alo_tasks::TheScroll::at_the_newest(),
+            alo_tasks::TheOneButton::Send,
+            false,
+            &mut fonts,
+            crate::display_scale::DisplayScale::ONE,
+        )
+        .expect("the design's size")
+    };
+    let ink_of = |picture: &TaskPicture| -> Vec<[u8; 3]> {
+        picture
+            .inked
+            .iter()
+            .flat_map(|one| one.pixels.iter().copied())
+            .collect()
+    };
+    let working = ink_of(&drawn(true));
+    let finished = ink_of(&drawn(false));
+    assert!(working.contains(&teal), "alo at work is teal");
+    assert!(!finished.contains(&teal), "a finished task drew teal");
+    assert!(finished.contains(&navy), "and its status is navy");
 }

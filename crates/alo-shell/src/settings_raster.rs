@@ -370,8 +370,16 @@ fn scrolled_to(target: Option<&ATargetDrawn>, tall: i32, view: i32) -> i32 {
     scrolled.clamp(0, most)
 }
 
-/// The keyboard's outline round `area`, standing off it, doubled while
-/// Settings waits for a chord.
+/// The keyboard's outline on `area`'s own edge, doubled while Settings waits
+/// for a chord.
+///
+/// **On the edge, not round it.** Until 2026-11-01 the outline stood two units
+/// off the row and two thick, so it was eight units wider and taller than what
+/// it marked: on the side column it reached past the chosen category's own
+/// pill to the column's edge, the first thing a person saw on opening Settings
+/// and the one thing the design (`551:*`) does not draw. It is the same navy,
+/// the same thickness, and still on every row the keyboard reaches; it is no
+/// bigger than the row.
 fn a_focus_ring(
     canvas: &mut Canvas,
     area: Area,
@@ -381,28 +389,23 @@ fn a_focus_ring(
     doubled: bool,
 ) {
     let px = |logical: u32| measure.px(i32::try_from(logical).unwrap_or(i32::MAX));
-    let (thick, off) = (px(m::THE_FOCUS_RING), px(m::THE_FOCUS_RING_STANDS_OFF));
-    let ring = Rectangle::new(
-        (area.loc.x - off - thick, area.loc.y - off - thick).into(),
-        (
-            area.size.w + 2 * (off + thick),
-            area.size.h + 2 * (off + thick),
-        )
-            .into(),
-    );
+    let thick = px(m::THE_FOCUS_RING);
     let inner = px(corner);
-    canvas.border(
-        ring,
-        (inner + off + thick) as f32,
-        thick as f32,
-        palette.ink,
-    );
+    canvas.border(area, inner as f32, thick as f32, palette.ink);
     if doubled {
+        // A second ring one ring's width inside the first, so waiting for a
+        // chord still reads differently from an ordinary focus.
+        let gap = 2 * thick;
         let inside = Rectangle::new(
-            (area.loc.x + off, area.loc.y + off).into(),
-            (area.size.w - 2 * off, area.size.h - 2 * off).into(),
+            (area.loc.x + gap, area.loc.y + gap).into(),
+            (area.size.w - 2 * gap, area.size.h - 2 * gap).into(),
         );
-        canvas.border(inside, inner as f32, thick as f32, palette.ink);
+        canvas.border(
+            inside,
+            (inner - gap).max(0) as f32,
+            thick as f32,
+            palette.ink,
+        );
     }
 }
 
