@@ -1852,6 +1852,62 @@ fn light_and_dark_and_the_text_size_are_kept_as_alo_appearance_keeps_them() {
     );
 }
 
+/// **A paired computer is shown by the name the person gave it**, in *alo and
+/// AI* and in the list of what alo can reach — and by its identity only when
+/// it has none. Until 2026-11-01 Settings never read the names file the daemon
+/// keeps beside the pairings, so it was always the 32-character identity.
+#[test]
+fn a_paired_computer_is_shown_by_its_name() {
+    let machine = a_persons_machine("paired-by-name");
+    let unnamed = machine.opened();
+    let titles = |window: &SettingsWindow, category| -> Vec<String> {
+        rows_drawn(&the_page_at(window, category, &words(), noon()))
+            .into_iter()
+            .map(|row| row.title.clone())
+            .collect()
+    };
+    assert!(
+        titles(&unnamed, SettingsCategory::AloAndAi).contains(&RECEPTION.to_owned()),
+        "the control: with no name given, the identity is what is shown"
+    );
+
+    let mut names = alo_remembering::MachineNames::none();
+    names.name(
+        alo_nearby::MachineId::read(RECEPTION).unwrap(),
+        alo_remembering::MachineName::checked("Reception").unwrap(),
+    );
+    alo_remembering::machine_names_kept(
+        &crate::settings_places::the_names_beside(&machine.pairings()),
+        &names,
+    )
+    .unwrap();
+    let named = machine.opened();
+
+    for category in [
+        SettingsCategory::AloAndAi,
+        SettingsCategory::FoldersAloCanUse,
+    ] {
+        let shown = titles(&named, category);
+        assert!(
+            shown.contains(&"Reception".to_owned()),
+            "{category:?} does not show the paired computer by its name: {shown:?}"
+        );
+        assert!(
+            !shown.contains(&RECEPTION.to_owned()),
+            "{category:?} still shows the identity: {shown:?}"
+        );
+    }
+    // **What is chosen and revoked is still the identity**: the name is only
+    // what is shown.
+    assert!(
+        named
+            .rows(noon())
+            .contains(&SettingsRow::Answer(SettingsChoice::Paired(
+                RECEPTION.to_owned()
+            )))
+    );
+}
+
 /// **A provider saved from the form is on the page at once, and chosen**,
 /// without closing Settings. Until 2026-11-01 the page was read only when
 /// Settings opened, and a booted machine showed the new provider only after

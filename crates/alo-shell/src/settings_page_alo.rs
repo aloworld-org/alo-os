@@ -191,10 +191,18 @@ fn a_choice_under(
             }
             row
         }
-        SettingsChoice::Brought(name) | SettingsChoice::Paired(name) => ARow::named(
+        SettingsChoice::Brought(name) => ARow::named(
             Some(SettingsRow::Answer(choice.clone())),
             kind,
             name.clone(),
+        ),
+        // **By the name the person gave it**, and by its identity only when
+        // they gave none — the choice itself still carries the identity, which
+        // is what is written down and what the pairing is asked about.
+        SettingsChoice::Paired(machine) => ARow::named(
+            Some(SettingsRow::Answer(choice.clone())),
+            kind,
+            open.granted.what_a_machine_is_called(machine),
         ),
         SettingsChoice::NotAtAll => ARow::named(
             Some(SettingsRow::Answer(SettingsChoice::NotAtAll)),

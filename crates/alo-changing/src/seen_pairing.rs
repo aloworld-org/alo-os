@@ -51,6 +51,22 @@ impl SeenPairing {
         }
     }
 
+    /// The row a pairing read off the daemon's own file is, with the name the
+    /// person here gave that machine, read off the daemon's names file
+    /// (`alo_remembering::machine_names_remembered`).
+    ///
+    /// **The name the pairing is shown by, never what it is revoked by**: the
+    /// revocation names [`Self::machine`] whatever the row is called.
+    #[must_use]
+    pub fn named(pairing: &Pairing, names: &alo_remembering::MachineNames) -> Self {
+        Self {
+            with: pairing.with().clone(),
+            called: names
+                .called(pairing.with())
+                .map(|name| name.as_str().to_owned()),
+        }
+    }
+
     /// Every pairing kept at this path that has not ended, as rows.
     ///
     /// A machine that has paired with nothing yet has no file, and that is an
@@ -91,8 +107,8 @@ impl SeenPairing {
         &self.with
     }
 
-    /// What the person here called that machine, when the row came from the
-    /// daemon and they gave it a name.
+    /// What the person here called that machine, when they gave it a name and
+    /// the row came from the daemon or was [`Self::named`] from its names file.
     #[must_use]
     pub fn called(&self) -> Option<&str> {
         self.called.as_deref()
