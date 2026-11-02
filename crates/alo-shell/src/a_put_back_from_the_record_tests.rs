@@ -68,6 +68,70 @@ fn tab_enter_enter_asks_the_service() {
     assert_eq!(server.take_the_put_back_asked(), None);
 }
 
+/// The record window as `server` has it, drawn on a display of `size` at
+/// `scale`, with the bundled faces.
+fn drawn_at(
+    server: &Server,
+    size: (i32, i32),
+    scale: crate::display_scale::DisplayScale,
+) -> Result<crate::record_raster::RecordPicture, crate::RenderError> {
+    let mut labels = crate::WindowControlLabels::new().unwrap();
+    crate::record_raster::picture(
+        server.record.shows(),
+        &words(),
+        &mut labels,
+        size,
+        crate::record_testing::light(),
+        crate::record_testing::a_clock(),
+        scale,
+    )
+}
+
+/// **Tab, then Enter, draws on the displays people have** — the booted
+/// machine of 2026-11-02 (qemu, 1280 × 800) ended its whole desktop on the
+/// frame after Enter, because the record refused to draw the change with its
+/// confirmation open. Every step of the walk is drawn, on every display here,
+/// and on each the confirmation's buttons are inside the window.
+#[test]
+fn tab_then_enter_draws_on_every_display() {
+    use crate::display_scale::DisplayScale;
+    let displays = [
+        ((1280, 800), DisplayScale::ONE),
+        ((1366, 768), DisplayScale::ONE),
+        ((1024, 768), DisplayScale::ONE),
+        ((1440, 960), DisplayScale::ONE),
+        ((1920, 1080), DisplayScale::ONE),
+        ((2560, 1600), DisplayScale::of_per_cent(200)),
+        ((2880, 1800), DisplayScale::of_per_cent(200)),
+    ];
+    for (size, scale) in displays {
+        let change = a_change_with_a_place_kept();
+        let (_runtime, mut server) = open(&change);
+        drawn_at(&server, size, scale)
+            .unwrap_or_else(|why| panic!("{size:?}: the window as opened: {why:?}"));
+        pressed(&mut server, RecordKey::NextPutBack, &change);
+        drawn_at(&server, size, scale)
+            .unwrap_or_else(|why| panic!("{size:?}: the keyboard on Put back: {why:?}"));
+        pressed(&mut server, RecordKey::Press, &change);
+        let at = server.take_the_plan_asked().unwrap();
+        server.the_plan_is_made(at, &words());
+        let picture = drawn_at(&server, size, scale)
+            .unwrap_or_else(|why| panic!("{size:?}: the confirmation open: {why:?}"));
+        let panel = picture.panel.unwrap();
+        let shown = picture
+            .entries
+            .iter()
+            .find_map(|entry| entry.confirmation.clone())
+            .unwrap_or_else(|| panic!("{size:?}: the confirmation is not drawn"));
+        for button in [shown.put_back.unwrap(), shown.cancel.unwrap()] {
+            assert!(
+                panel.contains_rect(button),
+                "{size:?}: a button of the confirmation is outside the window: {button:?} in {panel:?}"
+            );
+        }
+    }
+}
+
 /// **Nothing put back keeps the confirmation open, saying why**, with the
 /// keyboard on *Cancel*; Escape closes it and not the window.
 #[test]

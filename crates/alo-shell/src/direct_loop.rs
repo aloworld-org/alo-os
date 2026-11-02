@@ -85,6 +85,22 @@ pub struct DirectLoopResult {
     pub flush: Option<Result<(), std::io::Error>>,
 }
 
+impl DirectLoopResult {
+    /// **Whether the display ended on a fault** — anything but a clean stop or
+    /// the seat handing the display on.
+    ///
+    /// The desktop exits as a failure on this, so the machine starts it again,
+    /// and as a success otherwise, which is the road to the sign-in screen.
+    /// Until 2026-11-02 every end was a success, and a frame that could not be
+    /// drawn signed the person out and closed every window they had.
+    #[must_use]
+    pub fn ended_on_a_fault(&self) -> bool {
+        self.outcome
+            .as_ref()
+            .is_err_and(|why| !why.is_the_seat_handing_the_display_on())
+    }
+}
+
 impl crate::DirectSession {
     /// Run one direct output lifetime with a caller-owned current GLES renderer.
     ///

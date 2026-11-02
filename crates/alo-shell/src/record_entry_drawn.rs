@@ -318,6 +318,12 @@ impl TheMarksRow {
 }
 
 impl AnEntryShaped {
+    /// Whether its confirmation is open under it — the part of it a person
+    /// must be able to reach, at its end.
+    pub(crate) const fn ends_in_a_confirmation(&self) -> bool {
+        self.confirmation.is_some()
+    }
+
     /// Draw it with its top at `y` in a card laid out as `columns`.
     pub(crate) fn drawn(
         self,

@@ -248,7 +248,18 @@ mod running {
                     stood.input.opened_and_not_drawn
                 );
                 eprintln!("alo-desktop: the display has ended: {:?}", stood.display);
-                ExitCode::SUCCESS
+                // **A display that ended on a fault is a failure, never a
+                // sign-out.** Until 2026-11-02 every end was success, and
+                // success is the road `OnSuccess=` takes to the sign-in
+                // screen: a frame that could not be drawn signed the person
+                // out and closed every window they had. A failure is what
+                // `Restart=on-failure` brings the desktop back from. The seat
+                // handing the display on is not a fault, and stays success.
+                if stood.display.ended_on_a_fault() {
+                    ExitCode::FAILURE
+                } else {
+                    ExitCode::SUCCESS
+                }
             }
             Err(why) => {
                 eprintln!("alo-desktop: this session cannot have a desktop: {why}");

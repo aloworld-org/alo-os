@@ -1858,6 +1858,14 @@ impl LoopInput for Desk<'_> {
             (size.w, size.h),
             terminal,
         )?;
+        // **A record window that could not be drawn is closed, not the
+        // desktop** — see `crate::a_surface_that_cannot_draw`.
+        if let Some(why) = &pictures.record_refused {
+            server.the_record_could_not_be_drawn(&named, why);
+        }
+        if let Some(why) = &pictures.approval_refused {
+            crate::Server::a_question_could_not_be_drawn(&named, why);
+        }
         // **Where the launcher went, for the press after this frame**: laid
         // out where the display's scale is known, and nowhere else.
         server.the_launcher_was_drawn(
@@ -2031,6 +2039,11 @@ impl LoopInput for Desk<'_> {
                 (size.w, size.h),
                 its_terminal,
             )?;
+            // **On this display too**, for the reason the first display's
+            // own note gives.
+            if let Some(why) = &its_pictures.record_refused {
+                server.the_record_could_not_be_drawn(&named, why);
+            }
             // **This display's own edges**, at this display's own scale. One
             // list shared with the display above would be right for whichever
             // it was built against and silently wrong here — an edge is pixels
@@ -2263,7 +2276,7 @@ impl LoopInput for Desk<'_> {
         //
         // `settings_raster::picture` answers an empty picture for a shut
         // window, so this costs a shut desktop one call and draws nothing.
-        let settings = crate::settings_raster::picture(
+        let settings = match crate::settings_raster::picture(
             server.the_settings_window(),
             frame.strings,
             self.labels,
@@ -2294,7 +2307,15 @@ impl LoopInput for Desk<'_> {
             // **This display's scale**, the one its Dock is drawn at, read off
             // the frame rather than asked again.
             crate::display_scale::DisplayScale::of_per_cent(frame.display_scale),
-        )?;
+        ) {
+            Ok(drawn) => Some(drawn),
+            // **Settings that cannot be drawn are closed, not the desktop** —
+            // see `crate::a_surface_that_cannot_draw`.
+            Err(why) => {
+                server.settings_could_not_be_drawn(&named, &why);
+                None
+            }
+        };
         // **The frame is drawn through the per-display road, with one display
         // on it.** `more-than-one-display-plan.md` task 4. This desk builds one
         // target today; `discover_every_atomic_output` is what will make it
@@ -2314,7 +2335,7 @@ impl LoopInput for Desk<'_> {
         let mut layered = Layered {
             target,
             layers: NativeLayers {
-                settings: Some(&settings),
+                settings: settings.as_ref(),
                 task_edges: &task_edges,
                 // **The order the person's windows are in**, the same one a
                 // press and the keyboard read (`crate::which_window_is_in_front`).

@@ -499,11 +499,15 @@ fn the_records_sentences_stay_above_every_view_and_no_entry_is_cut() {
     assert!(low_thumb.loc.y > thumb.loc.y);
 }
 
-/// **A window that cannot hold an entry whole refuses the frame**, as does an
-/// output larger than any the window is laid out for, and a picture laid out
-/// for one output is refused on another.
+/// **An output too small to lay the window out on refuses the frame**, as
+/// does one larger than any the window is laid out for, and a picture laid
+/// out for one output is refused on another.
+///
+/// An entry taller than the list is not among them since 2026-11-02: it is
+/// drawn clipped to the list (`an_entry_taller_than_the_list_is_drawn_clipped`),
+/// because refusing it ended the whole desktop on a 1280 × 800 machine.
 #[test]
-fn a_window_that_cannot_hold_an_entry_whole_refuses_rather_than_cutting() {
+fn a_window_that_cannot_be_laid_out_refuses() {
     let kept = an_afternoon_kept();
     let window = opened(&kept);
     let strings = words();
@@ -540,6 +544,57 @@ fn a_window_that_cannot_hold_an_entry_whole_refuses_rather_than_cutting() {
         drawn.validate((1280, 720).into()),
         Err(RenderError::RecordScene)
     ));
+}
+
+/// **An entry taller than the list is drawn, clipped to the list**, with its
+/// confirmation's end in view — the two buttons a person needs — and nothing
+/// of it outside the list's rows.
+#[test]
+fn an_entry_taller_than_the_list_is_drawn_clipped() {
+    let change = crate::record_testing::a_change_with_a_place_kept();
+    let mut window = crate::RecordWindow::on_an_output();
+    window.opened_by_hand(&change.kept.recounting());
+    window.the_places_are(vec![crate::record_testing::A_PLACE.to_owned()]);
+    let crate::RecordShows::Account { account, .. } = window.shows() else {
+        panic!("no account");
+    };
+    let at = account
+        .told()
+        .iter()
+        .position(alo_recounting::Told::changed)
+        .unwrap();
+    window.the_confirmation_opens(
+        at,
+        Ok(crate::ThePlan {
+            place: crate::record_testing::A_PLACE.to_owned(),
+            taken: std::time::SystemTime::UNIX_EPOCH
+                + std::time::Duration::from_secs(1_760_000_000),
+            folders: vec!["/home/alo/invoices".into(), "/home/alo/archive".into()],
+            asides: vec![
+                "/home/alo/invoices.alo-was-here-1".into(),
+                "/home/alo/archive.alo-was-here-1".into(),
+            ],
+        }),
+    );
+    let mut labels = WindowControlLabels::new().unwrap();
+    // The smallest output the window is laid out on at all: the list there
+    // holds far less than the change and its confirmation.
+    let drawn = picture(
+        window.shows(),
+        &words(),
+        &mut labels,
+        (1280, 640),
+        light(),
+        a_clock(),
+        crate::display_scale::DisplayScale::ONE,
+    )
+    .expect("an entry taller than the list refused the frame");
+    assert_eq!(drawn.entries.len(), 1);
+    let panel = drawn.panel.unwrap();
+    let shown = drawn.entries[0].confirmation.clone().unwrap();
+    for button in [shown.put_back.unwrap(), shown.cancel.unwrap()] {
+        assert!(panel.contains_rect(button), "{button:?} outside {panel:?}");
+    }
 }
 
 /// **A closed window draws nothing**, and a refusal is drawn as the refuser's

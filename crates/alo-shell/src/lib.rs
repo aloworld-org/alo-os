@@ -109,6 +109,7 @@ mod a_provider_being_added_is_drawn;
 pub mod a_provider_is_added_in_settings;
 mod a_put_back_from_the_record;
 mod a_sheet_that_fits;
+mod a_surface_that_cannot_draw;
 mod a_task_window_hands_on_a_chord;
 /// Scrolling a task window's conversation.
 mod a_task_window_scrolls;
