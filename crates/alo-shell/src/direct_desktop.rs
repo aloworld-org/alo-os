@@ -1848,6 +1848,10 @@ impl LoopInput for Desk<'_> {
             frame,
             self.strings,
         );
+        // **Where the question closing asks was drawn, for the press after
+        // this frame**: laid out where the display's scale is known, and
+        // nowhere else.
+        server.the_question_was_drawn(terminal.as_ref().and_then(|terminal| terminal.question));
         // **The record window, while it is open**, in this frame and on
         // this display. A chord or a row in Settings opens it.
         let pictures = crate::nested_desktop::frame_pictures(
@@ -1919,6 +1923,14 @@ impl LoopInput for Desk<'_> {
         let task_edges = crate::a_task_windows_edge::every_task_windows_edge(
             server,
             &mut self.labels.fonts,
+            this_display.1,
+            u32::from(this_display.0),
+        );
+        // **And alo's terminal's**: its title, its icon and Close, drawn with
+        // the terminal wherever it is in the order (`crate::the_terminals_edge`).
+        let terminal_edge = server.the_terminals_edge_picture(
+            &mut self.labels.fonts,
+            self.strings,
             this_display.1,
             u32::from(this_display.0),
         );
@@ -2316,6 +2328,7 @@ impl LoopInput for Desk<'_> {
             layers: NativeLayers {
                 settings: Some(&settings),
                 task_edges: &task_edges,
+                terminal_edge: terminal_edge.as_slice(),
                 // **The order the person's windows are in**, the same one a
                 // press and the keyboard read (`crate::which_window_is_in_front`).
                 in_front: server.which_is_in_front(),
@@ -2552,6 +2565,9 @@ pub(crate) fn drawn_terminal(
                 runs: alo_terminal::WhereTheShellRuns::OnThisMachine,
                 who: server.whose_desktop_this_is(),
             },
+            // **Focused while the keys go to it**, as its edge is: the two
+            // looks every window wears (`crate::window_edge_look`).
+            look: crate::window_edge_look::WhichLook::of(server.the_terminal_is_taking_the_keys()),
         },
         (window.size.w, window.size.h),
         scale,
@@ -2565,7 +2581,7 @@ pub(crate) fn drawn_terminal(
             return None;
         }
     };
-    let Some(raster) = crate::the_terminal_on_the_plane::flattened(&drawn) else {
+    let Some(mut raster) = crate::the_terminal_on_the_plane::flattened(&drawn) else {
         eprintln!(
             "alo-shell: alo's own terminal could not be drawn on {named}: a part of its picture \
              was laid out outside the picture"
@@ -2574,15 +2590,50 @@ pub(crate) fn drawn_terminal(
     };
     // The picture reaches past the window by its shadow, so where it lands is
     // the window grown by that reach, on the plane, through the camera.
-    let reach =
-        crate::the_terminals_cells_are_drawn::laid_out((window.size.w, window.size.h), scale)
-            .map_or(0, |laid| laid.reach);
+    let laid = crate::the_terminals_cells_are_drawn::laid_out((window.size.w, window.size.h), scale);
+    let reach = laid.map_or(0, |laid| laid.reach);
     let with_its_shadow = smithay::utils::Rectangle::new(
         (window.loc.x - reach, window.loc.y - reach).into(),
         (raster.area.size.w, raster.area.size.h).into(),
     );
+    let drawn_at = crate::the_terminal_on_the_plane::on_the_screen(with_its_shadow, camera);
+    // **The question closing asks, while it is open**, drawn into the same
+    // raster so it pans and zooms with the window (`crate::closing_the_terminal`).
+    let question = server
+        .the_question_closing_asks()
+        .zip(laid)
+        .and_then(|(on, laid)| {
+            let [question, close_anyway, cancel] =
+                crate::the_terminals_question_drawn::ItsWords::the_terminals_own(says);
+            let display =
+                crate::display_scale::DisplayScale::of_per_cent(server.the_scale_of_display(named));
+            crate::the_terminals_question_drawn::the_question(
+                &mut labels.fonts,
+                crate::the_terminals_question_drawn::ItsWords {
+                    question: &question,
+                    close_anyway: &close_anyway,
+                    cancel: &cancel,
+                },
+                on,
+                laid.transcript,
+                (
+                    crate::desktop_look::Measure::of(frame.look.scale()).on(display),
+                    display.px(1),
+                ),
+            )
+        })
+        .map(|drawn| {
+            crate::painted_flat::laid_over(&mut raster, &drawn.raster);
+            crate::the_terminals_question_drawn::WhereTheQuestionIs {
+                drawn_at,
+                picture: (raster.area.size.w, raster.area.size.h),
+                close_anyway: drawn.close_anyway,
+                cancel: drawn.cancel,
+            }
+        });
     Some(crate::the_terminal_on_the_plane::TheTerminalOnTheScreen {
-        drawn_at: crate::the_terminal_on_the_plane::on_the_screen(with_its_shadow, camera),
+        drawn_at,
         raster,
+        question,
     })
 }

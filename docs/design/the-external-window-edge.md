@@ -364,9 +364,9 @@ window behind it.
 
 ### Not yet true on a booted machine
 
-- **alo's own terminal has no edge yet** — `the-terminal-window.md` records why
-  (*not yet a window on the canvas that any of those could act on*), and the
-  approved frame draws one. It is the next piece, not this one.
+- ~~**alo's own terminal has no edge yet**~~ — built 2026-11-01, with its icon,
+  *Terminal* and Close, in both looks; `the-terminal-window.md` records it and
+  why Minimise and Maximise are not on it yet.
 - **The dark appearance is not drawn**: `557:*` are light frames only.
 
 ## What this supersedes — settled 2026-10-09

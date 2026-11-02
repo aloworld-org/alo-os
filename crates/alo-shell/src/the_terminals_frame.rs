@@ -77,28 +77,42 @@ impl TheTerminalsColours {
 }
 
 /// The window's body: its rounded panel, the hairline round it and the shadow
-/// under it, as one raster on a display `room` big at `scale`.
+/// under it, as one raster on a display `room` big at `scale`, **in a look**.
 ///
-/// **The Dock's rasteriser with the floating look**, so a change to how a
-/// corner or a shadow is drawn reaches this panel and the Dock together. The
-/// raster reaches past the window by the shadow's room and is kept on the
-/// display, so a window near an edge loses the shadow off the screen rather
-/// than the frame.
+/// Focused — the window the keys go to — it has the `border/strong` hairline
+/// and `Elevation/Floating`; otherwise the `border/default` hairline and
+/// `Elevation/Quiet`: the two looks the owner approved on 2026-11-01 for every
+/// window (`557:213`, `557:149`), applied to alo's own as ADR 0145 asks. The
+/// panel's own white is the same in both: what is inside a window is never
+/// dimmed.
+///
+/// **The Dock's rasteriser**, so a change to how a corner or a shadow is drawn
+/// reaches this panel and the Dock together. The raster reaches past the window
+/// by the shadow's room and is kept on the display, so a window near an edge
+/// loses the shadow off the screen rather than the frame.
 ///
 /// [`None`] for a window with no area, which is a window that cannot be drawn
 /// rather than a failure.
-pub(crate) fn the_body(
+pub(crate) fn the_body_in(
     window: Rectangle<i32, Physical>,
     room: (i32, i32),
     scale: f64,
     colours: TheTerminalsColours,
+    look: crate::window_edge_look::WhichLook,
 ) -> Option<Washed> {
+    let (hairline, raised) = match look {
+        crate::window_edge_look::WhichLook::Focused => (
+            crate::window_edge_look::BORDER_STRONG,
+            HowItIsRaised::FLOATING,
+        ),
+        crate::window_edge_look::WhichLook::NotFocused => (colours.hairline, HowItIsRaised::QUIET),
+    };
     a_panel(
         window,
         colours.ground,
-        colours.hairline,
+        hairline,
         room,
-        HowItIsRaised::FLOATING.at(scale),
+        raised.at(scale),
         APanelsShapes {
             circles: &[],
             circle: colours.ground,

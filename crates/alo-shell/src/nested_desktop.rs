@@ -450,6 +450,7 @@ impl DesktopPictures {
             // **Set by the caller that knows**: the direct backend hands the
             // task windows' edges and the order the person's windows are in.
             task_edges: &[],
+            terminal_edge: &[],
             in_front: crate::which_window_is_in_front::WhichIsInFront::AS_IT_WAS,
             desktop: Some(&self.desktop),
             record: self.record.as_ref(),

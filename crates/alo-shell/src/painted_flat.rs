@@ -13,6 +13,64 @@ use smithay::utils::Rectangle;
 
 use crate::painted::{Inked, Solid, Washed};
 
+/// `top` laid over `base`, both straight RGBA, each pixel composited *over*:
+/// so a card with rounded corners drawn on a window keeps the window under its
+/// corners. `top` is placed at its own area's corner, in `base`'s pixels, and
+/// what falls outside `base` is left out.
+pub(crate) fn laid_over(base: &mut Washed, top: &Washed) {
+    let (Ok(base_w), Ok(base_h)) = (
+        usize::try_from(base.area.size.w),
+        usize::try_from(base.area.size.h),
+    ) else {
+        return;
+    };
+    let Ok(top_w) = usize::try_from(top.area.size.w) else {
+        return;
+    };
+    for (n, pixel) in top.pixels.chunks_exact(4).enumerate() {
+        let (Ok(dx), Ok(dy)) = (i32::try_from(n % top_w.max(1)), i32::try_from(n / top_w.max(1)))
+        else {
+            return;
+        };
+        let (x, y) = (top.area.loc.x + dx, top.area.loc.y + dy);
+        let (Ok(x), Ok(y)) = (usize::try_from(x), usize::try_from(y)) else {
+            continue;
+        };
+        if x >= base_w || y >= base_h {
+            continue;
+        }
+        let at = (y * base_w + x) * 4;
+        let Some(under) = base.pixels.get_mut(at..at + 4) else {
+            continue;
+        };
+        let alpha = f32::from(pixel[3]) / 255.0;
+        if alpha <= 0.0 {
+            continue;
+        }
+        let below = f32::from(under[3]) / 255.0;
+        let out = alpha + below * (1.0 - alpha);
+        for channel in 0..3 {
+            let mixed = (f32::from(pixel[channel]) * alpha
+                + f32::from(under[channel]) * below * (1.0 - alpha))
+                / out.max(f32::EPSILON);
+            #[expect(
+                clippy::cast_possible_truncation,
+                clippy::cast_sign_loss,
+                reason = "a mix of two bytes, clamped to a byte"
+            )]
+            let byte = mixed.round().clamp(0.0, 255.0) as u8;
+            under[channel] = byte;
+        }
+        #[expect(
+            clippy::cast_possible_truncation,
+            clippy::cast_sign_loss,
+            reason = "an alpha of nought to one, as a byte"
+        )]
+        let byte = (out * 255.0).round().clamp(0.0, 255.0) as u8;
+        under[3] = byte;
+    }
+}
+
 /// The parts painted into one raster `size` big, in the order they are drawn:
 /// the body, then the shapes, then each list of text in turn. The shapes and
 /// the text are opaque, so each replaces what is under it.

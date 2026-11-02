@@ -60,6 +60,7 @@ pub mod what_is_blocking_it;
 pub mod what_the_kernel_says;
 pub mod what_the_shell_says_about_the_prompt;
 pub mod what_the_strip_says;
+pub mod whether_a_command_is_running;
 #[cfg(target_os = "linux")]
 mod where_a_shell_starts;
 pub mod where_the_integration_stands;
@@ -93,6 +94,7 @@ pub use what_a_command_will_do::{WhatACommandWillDo, WorthSeeing};
 pub use what_alo_said::{AloSLine, AloSRemark, WhatAloSaid};
 pub use what_is_blocking_it::{WhatIsBlockingIt, what_is_blocking};
 pub use what_the_strip_says::{WhereTheShellRuns, the_folder_as_a_person_reads_it};
+pub use whether_a_command_is_running::IsACommandRunning;
 #[cfg(target_os = "linux")]
 pub use where_a_shell_starts::{WhereItStarts, WhyNotHome};
 pub use who_is_speaking::{ARegion, WhoIsSpeaking, regions_of};

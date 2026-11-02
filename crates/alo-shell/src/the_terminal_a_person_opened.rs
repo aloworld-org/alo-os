@@ -398,6 +398,21 @@ impl TheTerminal {
         self.finished
     }
 
+    /// The shell's process number, for a test that checks it has gone.
+    #[cfg(test)]
+    pub(crate) fn the_shells_process(&self) -> u32 {
+        self.shell.the_shell_itself()
+    }
+
+    /// Whether a command the person started holds the terminal, asked of the
+    /// kernel now. A shell that has gone runs nothing.
+    pub(crate) fn is_a_command_running(&self) -> alo_terminal::IsACommandRunning {
+        if self.finished {
+            return alo_terminal::IsACommandRunning::No;
+        }
+        self.shell.is_a_command_running()
+    }
+
     /// What the shell running here is called, for the note under the
     /// transcript.
     ///
@@ -650,6 +665,12 @@ impl crate::Server {
         typed: alo_terminal::what_a_person_typed::WhatWasTyped,
         held: alo_terminal::what_a_person_typed::Held,
     ) -> bool {
+        // **The question closing asks takes the keys while it is open**, so a
+        // key meant for it never reaches the command it asks about
+        // (`crate::closing_the_terminal`).
+        if self.a_key_reached_the_question(typed) {
+            return true;
+        }
         self.alos_own_terminal
             .as_mut()
             .is_some_and(|terminal| terminal.a_person_typed_a_key(typed, held))

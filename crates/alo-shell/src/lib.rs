@@ -555,6 +555,16 @@ mod the_terminals_frame;
 /// The strip across the top of alo's own terminal: the folder the shell is in,
 /// where the shell runs, and who is signed in.
 mod the_terminals_strip;
+/// alo's terminal's window edge: its icon, its title and Close, in the focused
+/// or unfocused look, following the camera.
+mod the_terminals_edge;
+/// The terminal's icon on its edge: a navy tile with the prompt mark.
+mod the_terminals_icon;
+/// Closing alo's terminal: at once when idle, after a question when a command
+/// is running.
+mod closing_the_terminal;
+/// The question closing the terminal asks, drawn on the terminal's window.
+mod the_terminals_question_drawn;
 mod the_title_strip_drawn;
 mod the_window_edge_is_pointed_at;
 mod the_window_edge_reveals;

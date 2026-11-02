@@ -51,6 +51,9 @@ pub(crate) struct NativeLayers<'a> {
     /// Every task window's edge, painted with the task windows wherever they
     /// are in [`Self::in_front`]'s order.
     pub(crate) task_edges: &'a [crate::window_edge_picture::EdgePicture],
+    /// alo's terminal's edge — none or one — painted with the terminal
+    /// wherever it is in [`Self::in_front`]'s order (`crate::the_terminals_edge`).
+    pub(crate) terminal_edge: &'a [crate::window_edge_picture::EdgePicture],
     /// Which kind of window is in front of which — the applications, the
     /// terminal, the task windows — and so the order they are painted in
     /// (`crate::which_window_is_in_front`, the owner's decision of 2026-10-31).
@@ -94,6 +97,7 @@ impl NativeLayers<'_> {
             scene: None,
             edges: &[],
             task_edges: &[],
+            terminal_edge: &[],
             in_front: crate::which_window_is_in_front::WhichIsInFront::AS_IT_WAS,
             desktop: None,
             record: None,
@@ -112,6 +116,7 @@ impl NativeLayers<'_> {
         self.scene.is_none()
             && self.edges.is_empty()
             && self.task_edges.is_empty()
+            && self.terminal_edge.is_empty()
             && self.desktop.is_none()
             && self.record.is_none()
             && self.settings.is_none()

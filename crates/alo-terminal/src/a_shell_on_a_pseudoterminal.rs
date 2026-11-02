@@ -401,6 +401,18 @@ impl AShellOnAPseudoterminal {
         u32::try_from(who.as_raw_nonzero().get()).ok()
     }
 
+    /// Whether a command the person started holds this terminal now.
+    ///
+    /// Asked of the kernel at the moment it is called, and only then: it is
+    /// what closing the window asks before it ends anything.
+    /// [`crate::whether_a_command_is_running`] says what *running* means and
+    /// what it does not see.
+    #[cfg(target_os = "linux")]
+    #[must_use]
+    pub fn is_a_command_running(&self) -> crate::IsACommandRunning {
+        crate::IsACommandRunning::of(self.the_command_in_front(), self.the_shell_itself())
+    }
+
     /// Why the command in front is waiting, from what this machine can find
     /// out about it.
     ///
