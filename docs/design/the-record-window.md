@@ -77,6 +77,13 @@ window's own edge `#738294`, ink `#fffcf8`, secondary `#cbd5e1`, muted
   changes the person said yes to, what left this computer, and what was
   refused, today in the person's own day. They narrow nothing — every entry is
   still in the list — and a test checks them against it.
+- **Whether anything has been removed is said once**, by the sentence under
+  the heading — *… Nothing has been removed from this list.* The record's own
+  sentence saying the same (*this is everything that has happened on this
+  machine — nothing has been removed from it*) is not drawn under it; a booted
+  machine showed both on 2026-11-02. Where the oldest part has aged out, the
+  heading's sentence drops its promise and the record's own sentence says how
+  far back the list goes.
 - **The machine's sentence is drawn in the body's type**, Regular 14, where the
   frame sets a file change's line in Medium 12; one style for every line keeps
   a refusal's reason and a change's path equally plain.

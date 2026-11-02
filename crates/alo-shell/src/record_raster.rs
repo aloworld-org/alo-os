@@ -206,12 +206,19 @@ pub(crate) fn picture(
         } => (
             TheHeaderSays {
                 heading: sentences.title.clone(),
-                under_it: sentences.introduction.clone(),
-                remarks: account
-                    .said(strings)
-                    .into_iter()
-                    .map(alo_strings::Said::into_text)
-                    .collect(),
+                // **Whether anything has been removed is said once.** The
+                // heading's sentence promises *nothing has been removed* where
+                // that is true, so the record's own sentence saying the same
+                // is not drawn under it — on 2026-11-02 a booted machine said
+                // it twice in two sets of words. Where the oldest part has
+                // aged out, the heading drops its promise and the record's
+                // sentence says how far back it goes.
+                under_it: if account.goes_all_the_way_back() {
+                    sentences.introduction.clone()
+                } else {
+                    sentences.introduction_not_all_of_it.clone()
+                },
+                remarks: the_remarks(account, strings),
                 today: Some((
                     sentences.today.clone(),
                     todays_counts(strings, Today::in_the(account, clock), palette),
@@ -276,6 +283,17 @@ pub(crate) fn picture(
     }
     drawn.washed = Some(canvas.washed());
     Ok(drawn)
+}
+
+/// What the record says about itself under the heading: everything but where
+/// it begins, which the heading says while that is everything, and then where
+/// it begins once it is not.
+fn the_remarks(account: &alo_recounting::Account, strings: &Strings) -> Vec<String> {
+    let mut said = account.said_besides_its_beginning(strings);
+    if !account.goes_all_the_way_back() {
+        said.push(account.said_about_its_beginning(strings));
+    }
+    said.into_iter().map(alo_strings::Said::into_text).collect()
 }
 
 /// The list between `list.0` and `list.1`: each day's heading and card, and

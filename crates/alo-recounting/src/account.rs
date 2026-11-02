@@ -233,6 +233,33 @@ impl Account {
         said.extend(self.damage.said(strings));
         said
     }
+
+    /// What [`Account::said`] says about where the record begins: that it is
+    /// everything, or that it does not go all the way back.
+    ///
+    /// Apart from the rest for a surface whose own heading already says
+    /// whether anything has been removed — the record window's does — so the
+    /// same promise is not made twice in two sets of words.
+    #[must_use]
+    pub fn said_about_its_beginning(&self, strings: &Strings) -> Said {
+        self.head.said(strings)
+    }
+
+    /// Everything [`Account::said`] says except where the record begins, in
+    /// the same order.
+    #[must_use]
+    pub fn said_besides_its_beginning(&self, strings: &Strings) -> Vec<Said> {
+        let mut said = Vec::new();
+        if self.is_empty() {
+            said.push(strings.say(&words::NOTHING_TO_TELL.key(), &Filling::nothing()));
+        }
+        if !self.is_all_that_answered() {
+            said.push(strings.say(&words::ONLY_THE_MOST_RECENT.key(), &Filling::nothing()));
+        }
+        said.extend(self.disagreement.said(strings));
+        said.extend(self.damage.said(strings));
+        said
+    }
 }
 
 #[cfg(test)]

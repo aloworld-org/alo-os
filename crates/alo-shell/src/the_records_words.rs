@@ -103,10 +103,24 @@ pub const REFUSED_TODAY: Counted = Counted {
            to do today were refused, so did not happen. {how_many} is the number.",
 };
 
+/// The sentence under the heading when the record does not go all the way
+/// back: [`WHAT_IS_IN_IT`] without its promise, because the promise would be
+/// false, and the record's own sentence saying so follows it.
+pub const WHAT_IS_IN_IT_NOW: Word = Word::saying(
+    "the-record.introduction-not-all-of-it",
+    "Every change alo made, everything that left this computer, and every request that was \
+     refused — newest first.",
+)
+.noting(
+    "Under the title of the record window, when the oldest part of the record has aged out. The \
+     sentence after it says how far back the list goes.",
+);
+
 /// Every sentence this file declares, in the order a translator meets them.
-pub const THE_RECORDS_WORDS: [Word; 15] = [
+pub const THE_RECORDS_WORDS: [Word; 16] = [
     WHAT_ALO_DID,
     WHAT_IS_IN_IT,
+    WHAT_IS_IN_IT_NOW,
     ALREADY_SENT,
     REFUSED,
     KEPT_ON_THIS_COMPUTER,
@@ -219,6 +233,9 @@ pub(crate) struct TheRecordsSentences {
     pub(crate) title: String,
     /// The sentence under the heading.
     pub(crate) introduction: String,
+    /// The sentence under the heading when the record does not go all the
+    /// way back.
+    pub(crate) introduction_not_all_of_it: String,
     /// The footer.
     pub(crate) footer: String,
     /// *Refused*.
@@ -255,6 +272,7 @@ impl TheRecordsSentences {
         Self {
             title: said(WHAT_ALO_DID),
             introduction: said(WHAT_IS_IN_IT),
+            introduction_not_all_of_it: said(WHAT_IS_IN_IT_NOW),
             footer: said(KEPT_ON_THIS_COMPUTER),
             refused: said(REFUSED),
             already_sent: said(ALREADY_SENT),
