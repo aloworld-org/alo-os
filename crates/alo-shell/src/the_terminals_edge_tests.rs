@@ -141,7 +141,10 @@ fn a_press_on_the_edge_brings_the_terminal_in_front() {
         Some(AKindOfWindow::TheTerminal)
     );
     press_at(&mut server, title.x + 8, title.y + 6);
-    assert!(server.alos_own_terminal().is_some(), "a press on the title closed it");
+    assert!(
+        server.alos_own_terminal().is_some(),
+        "a press on the title closed it"
+    );
     assert!(server.the_terminal_is_taking_the_keys());
 }
 

@@ -28,8 +28,10 @@ pub(crate) fn laid_over(base: &mut Washed, top: &Washed) {
         return;
     };
     for (n, [red, green, blue, opacity]) in top.pixels.as_chunks::<4>().0.iter().enumerate() {
-        let (Ok(dx), Ok(dy)) = (i32::try_from(n % top_w.max(1)), i32::try_from(n / top_w.max(1)))
-        else {
+        let (Ok(dx), Ok(dy)) = (
+            i32::try_from(n % top_w.max(1)),
+            i32::try_from(n / top_w.max(1)),
+        ) else {
             return;
         };
         let (x, y) = (top.area.loc.x + dx, top.area.loc.y + dy);

@@ -4,7 +4,10 @@ use super::IsACommandRunning;
 #[test]
 fn only_the_shell_in_front_is_idle() {
     assert_eq!(IsACommandRunning::of(Some(400), 400), IsACommandRunning::No);
-    assert_eq!(IsACommandRunning::of(Some(401), 400), IsACommandRunning::Yes);
+    assert_eq!(
+        IsACommandRunning::of(Some(401), 400),
+        IsACommandRunning::Yes
+    );
     assert_eq!(
         IsACommandRunning::of(None, 400),
         IsACommandRunning::NobodyCanTell

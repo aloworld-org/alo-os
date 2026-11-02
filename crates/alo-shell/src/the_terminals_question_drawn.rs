@@ -141,7 +141,8 @@ pub(crate) fn the_question(
     };
     let anyway = label(fonts, words.close_anyway, (colours.ink, colours.surface));
     let cancel = label(fonts, words.cancel, (colours.surface, colours.ink));
-    let height = px(above) + question.height + px(between) + px(buttons_above) + px(tall) + px(below);
+    let height =
+        px(above) + question.height + px(between) + px(buttons_above) + px(tall) + px(below);
     // **Room for the keyboard's ring** round the buttons, inside the raster.
     let (ring, off) = m::THE_KEYBOARDS_RING;
     let reach = px(ring) + px(off);
@@ -159,7 +160,10 @@ pub(crate) fn the_question(
     canvas.words(left, card.loc.y + px(above), &question);
     let row = card.loc.y + px(above) + question.height + px(between) + px(buttons_above);
     let mut x = left;
-    let mut a_button = |canvas: &mut Canvas, shaped: &crate::painted_text::Shaped, (fill, edge): ([u8; 3], [u8; 3]), chosen: bool| {
+    let mut a_button = |canvas: &mut Canvas,
+                        shaped: &crate::painted_text::Shaped,
+                        (fill, edge): ([u8; 3], [u8; 3]),
+                        chosen: bool| {
         let it = Rectangle::<i32, Physical>::new(
             (x, row).into(),
             (shaped.width_of_box + 2 * px(pad), px(tall)).into(),

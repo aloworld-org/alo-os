@@ -36,7 +36,10 @@ fn drawn(on: OnTheQuestion) -> super::TheQuestionDrawn {
 fn it_is_drawn_inside_the_transcript_with_two_buttons() {
     let it = drawn(OnTheQuestion::Cancel);
     let transcript = a_transcript();
-    assert!(transcript.contains_rect(it.raster.area), "it spills out of the transcript");
+    assert!(
+        transcript.contains_rect(it.raster.area),
+        "it spills out of the transcript"
+    );
     assert!(it.raster.area.contains_rect(it.close_anyway));
     assert!(it.raster.area.contains_rect(it.cancel));
     assert_eq!(it.close_anyway.size.h, 48);

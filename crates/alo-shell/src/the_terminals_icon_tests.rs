@@ -30,7 +30,11 @@ fn the_tile_follows_the_displays_scale() {
 #[test]
 fn it_is_a_navy_tile_with_a_white_mark() {
     let icon = the_terminals_icon(64).expect("a tile is drawn");
-    assert_eq!(at(&icon, 2, 32), [0x10, 0x2A, 0x43, 0xFF], "the tile is navy");
+    assert_eq!(
+        at(&icon, 2, 32),
+        [0x10, 0x2A, 0x43, 0xFF],
+        "the tile is navy"
+    );
     assert!(at(&icon, 0, 0)[3] < 0xFF, "the corner is rounded");
     let white = (0..64)
         .flat_map(|y| (0..64).map(move |x| (x, y)))
@@ -45,7 +49,10 @@ fn it_is_a_navy_tile_with_a_white_mark() {
     for n in 0..64 {
         for (x, y) in [(n, 0), (n, 63), (0, n), (63, n)] {
             let [r, g, b, _] = at(&icon, x, y);
-            assert!(r < 0x80 && g < 0x80 && b < 0x80, "the mark reaches the edge at ({x}, {y})");
+            assert!(
+                r < 0x80 && g < 0x80 && b < 0x80,
+                "the mark reaches the edge at ({x}, {y})"
+            );
         }
     }
 }

@@ -42,10 +42,8 @@ fn until_it_reads(server: &mut crate::Server, wanted: IsACommandRunning) -> bool
 /// Type `text` and Enter at the terminal, through the keyboard's own road.
 fn typed(server: &mut crate::Server, text: &str) {
     for character in text.chars() {
-        let _ = server.a_key_reached_alos_own_terminal(
-            WhatWasTyped::Character(character),
-            Held::default(),
-        );
+        let _ = server
+            .a_key_reached_alos_own_terminal(WhatWasTyped::Character(character), Held::default());
     }
     let _ = server
         .a_key_reached_alos_own_terminal(WhatWasTyped::Named(ANamedKey::Enter), Held::default());
@@ -87,9 +85,15 @@ fn an_idle_terminal_closes_at_once() {
         .alos_own_terminal()
         .expect("a terminal")
         .the_shells_process();
-    assert_eq!(server.the_person_closes_the_terminal(), WhatClosingDid::Closed);
+    assert_eq!(
+        server.the_person_closes_the_terminal(),
+        WhatClosingDid::Closed
+    );
     assert!(server.alos_own_terminal().is_none());
-    assert!(server.the_question_closing_asks().is_none(), "nothing was asked");
+    assert!(
+        server.the_question_closing_asks().is_none(),
+        "nothing was asked"
+    );
     assert!(server.where_the_terminal_is_on_the_plane().is_none());
     assert!(it_goes(shell), "the shell outlived its window");
 }
@@ -99,7 +103,10 @@ fn an_idle_terminal_closes_at_once() {
 #[test]
 fn a_running_command_is_asked_about_first() {
     let (_directory, mut server) = with_a_command_running("alo-closing-asks");
-    assert_eq!(server.the_person_closes_the_terminal(), WhatClosingDid::Asked);
+    assert_eq!(
+        server.the_person_closes_the_terminal(),
+        WhatClosingDid::Asked
+    );
     assert_eq!(
         server.the_question_closing_asks(),
         Some(OnTheQuestion::Cancel)
@@ -122,23 +129,40 @@ fn cancel_and_escape_leave_everything_running() {
         .expect("a terminal")
         .the_shells_process();
 
-    assert_eq!(server.the_person_closes_the_terminal(), WhatClosingDid::Asked);
+    assert_eq!(
+        server.the_person_closes_the_terminal(),
+        WhatClosingDid::Asked
+    );
     server.the_question_is_answered(OnTheQuestion::Cancel);
     assert!(server.the_question_closing_asks().is_none());
 
-    assert_eq!(server.the_person_closes_the_terminal(), WhatClosingDid::Asked);
+    assert_eq!(
+        server.the_person_closes_the_terminal(),
+        WhatClosingDid::Asked
+    );
     // **A key that is not one of the question's is taken and does nothing**:
     // it does not reach `cat`, and it does not answer.
     assert!(server.a_key_reached_alos_own_terminal(WhatWasTyped::Character('q'), Held::default()));
     assert!(server.the_question_closing_asks().is_some());
-    assert!(server.a_key_reached_alos_own_terminal(
-        WhatWasTyped::Named(ANamedKey::Escape),
-        Held::default()
-    ));
-    assert!(server.the_question_closing_asks().is_none(), "Escape is Cancel");
+    assert!(
+        server.a_key_reached_alos_own_terminal(
+            WhatWasTyped::Named(ANamedKey::Escape),
+            Held::default()
+        )
+    );
+    assert!(
+        server.the_question_closing_asks().is_none(),
+        "Escape is Cancel"
+    );
 
-    let terminal = server.alos_own_terminal().expect("the terminal is still open");
-    assert_eq!(terminal.the_shells_process(), shell, "the shell was replaced");
+    let terminal = server
+        .alos_own_terminal()
+        .expect("the terminal is still open");
+    assert_eq!(
+        terminal.the_shells_process(),
+        shell,
+        "the shell was replaced"
+    );
     assert_eq!(
         terminal.is_a_command_running(),
         IsACommandRunning::Yes,
@@ -156,7 +180,10 @@ fn close_anyway_ends_the_terminal_and_its_command() {
         .alos_own_terminal()
         .expect("a terminal")
         .the_shells_process();
-    assert_eq!(server.the_person_closes_the_terminal(), WhatClosingDid::Asked);
+    assert_eq!(
+        server.the_person_closes_the_terminal(),
+        WhatClosingDid::Asked
+    );
     let _ = server
         .a_key_reached_alos_own_terminal(WhatWasTyped::Named(ANamedKey::Tab), Held::default());
     assert_eq!(

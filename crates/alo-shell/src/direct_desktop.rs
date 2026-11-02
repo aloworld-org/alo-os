@@ -2590,7 +2590,8 @@ pub(crate) fn drawn_terminal(
     };
     // The picture reaches past the window by its shadow, so where it lands is
     // the window grown by that reach, on the plane, through the camera.
-    let laid = crate::the_terminals_cells_are_drawn::laid_out((window.size.w, window.size.h), scale);
+    let laid =
+        crate::the_terminals_cells_are_drawn::laid_out((window.size.w, window.size.h), scale);
     let reach = laid.map_or(0, |laid| laid.reach);
     let with_its_shadow = smithay::utils::Rectangle::new(
         (window.loc.x - reach, window.loc.y - reach).into(),

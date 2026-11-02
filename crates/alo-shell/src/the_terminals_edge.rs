@@ -105,7 +105,9 @@ impl Server {
             // look as this strip.
             crate::window_edge_picture::TheWindow {
                 title: Some(title.text()),
-                look: crate::window_edge_look::WhichLook::of(self.the_terminal_is_taking_the_keys()),
+                look: crate::window_edge_look::WhichLook::of(
+                    self.the_terminal_is_taking_the_keys(),
+                ),
                 icon: icon.as_ref(),
                 body: None,
             },
@@ -120,7 +122,9 @@ impl Server {
     pub(crate) fn the_terminals_edge_is_under(&self, at: Point<i32, Logical>) -> bool {
         let scale = self.the_scale_an_edge_is_measured_at();
         self.the_terminals_edge(self.the_room_an_edge_is_clamped_in(), scale)
-            .is_some_and(|edge| what_is_under(&edge, a_point_in_the_edges_units(at, scale)).is_some())
+            .is_some_and(|edge| {
+                what_is_under(&edge, a_point_in_the_edges_units(at, scale)).is_some()
+            })
     }
 
     /// A press at `at`, in the display's pixels, offered to the terminal's
@@ -148,7 +152,9 @@ impl Server {
             ) => {
                 self.the_composer.it_gave_the_keyboard_up();
                 self.the_keyboard_is_now_in(None);
-                self.the_person_went_to(crate::which_window_is_in_front::AKindOfWindow::TheTerminal);
+                self.the_person_went_to(
+                    crate::which_window_is_in_front::AKindOfWindow::TheTerminal,
+                );
                 true
             }
         }
