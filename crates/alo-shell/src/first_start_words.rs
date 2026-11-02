@@ -73,11 +73,21 @@ pub const PIN_TITLE: Word = Word::saying("shell.first-start.pin.title", "Add a P
     .noting("The heading of the sheet where a person chooses a PIN. A question, and declinable.");
 
 /// What a PIN is for.
+///
+/// **The design's second sentence is not said** — *Keep your password for the
+/// situations that require it* (`562:508`). A person who chooses a PIN here is
+/// never asked for a password, so there is none to keep; the PIN is the
+/// account's one secret, and *Use password only* is the way to a password
+/// instead. A new key rather than a reworded one (ADR 0068): a translation of
+/// the old sentence promises a password, and would still say so.
 pub const PIN_INTRODUCTION: Word = Word::saying(
-    "shell.first-start.pin.introduction",
-    "Use a PIN to sign in on this computer. Keep your password for the situations that require it.",
+    "shell.first-start.pin.what-it-is-for",
+    "Use a PIN to sign in on this computer.",
 )
-.noting("Under the heading on the PIN sheet, saying what a PIN is for and that it does not replace a password.");
+.noting(
+    "Under the heading on the PIN sheet, saying what a PIN is for. A person who chooses a PIN \
+     has no password on this computer, so this must not mention keeping one.",
+);
 
 /// The row a new PIN is typed into.
 pub const PIN_CHOICE: Word = Word::saying("shell.first-start.pin.choice", "New PIN")
