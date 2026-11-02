@@ -328,11 +328,25 @@ fn the_list(
             (true, None) => 0,
         };
         let entry = shaped(fonts, room, palette, columns, (entry_words, words));
-        if y + before + heading + entry.height > bottom {
-            if drawn.entries.is_empty() {
-                return Err(RenderError::RecordScene);
-            }
+        // **The first entry is drawn even when it is taller than the list**,
+        // clipped to it. Until 2026-11-02 it refused the frame, and on a
+        // 1280 × 800 machine a change with its Put back confirmation open is
+        // 376 tall in a list of 307 — so the refusal ended the whole desktop.
+        // An entry whose confirmation is open is drawn with its **end** in
+        // view, because the end is where the question and its two buttons are;
+        // any other is drawn from its top. Nothing after it is drawn.
+        let too_tall = y + before + heading + entry.height > bottom;
+        if too_tall && !drawn.entries.is_empty() {
             break;
+        }
+        if too_tall {
+            if entry.ends_in_a_confirmation() {
+                y = bottom - (before + heading + entry.height);
+            }
+            canvas.clipped_to(Rectangle::new(
+                (room.window.loc.x, top).into(),
+                (room.window.size.w, bottom - top).into(),
+            ));
         }
         if starts_a_card {
             if let Some(from) = card_top.take() {
@@ -387,12 +401,24 @@ fn the_list(
         let mut entry_drawn = entry.drawn(canvas, room, palette, columns, y);
         entry_drawn.day = day_drawn;
         entry_drawn.date = date_drawn;
+        if too_tall {
+            // A button clipped out of the list is not there to press.
+            if let Some(at) = entry_drawn.put_back_button
+                && (at.loc.y < top || at.loc.y + at.size.h > bottom)
+            {
+                entry_drawn.put_back_button = None;
+            }
+        }
         drawn.entries.push(entry_drawn);
         y += height;
+        if too_tall {
+            break;
+        }
     }
     if let Some(from) = card_top {
         a_card(canvas, (room, palette), columns, (from, y), drawn);
     }
+    canvas.unclipped();
     Ok(())
 }
 

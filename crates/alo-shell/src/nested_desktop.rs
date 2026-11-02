@@ -423,6 +423,13 @@ pub(crate) struct DesktopPictures {
     pub(crate) record: Option<crate::record_raster::RecordPicture>,
     /// A question, when the frame carries one.
     pub(crate) approval: Option<crate::approval_raster::ApprovalPicture>,
+    /// **Why the record window was left out of this frame**, when it was open
+    /// and could not be drawn. One window that cannot be laid out is that
+    /// window's problem: the frame is drawn without it, and whoever holds the
+    /// window closes it and says why (`crate::a_surface_that_cannot_draw`).
+    pub(crate) record_refused: Option<RenderError>,
+    /// **Why the question was left out of this frame**, for the same reason.
+    pub(crate) approval_refused: Option<RenderError>,
 }
 
 impl DesktopPictures {
@@ -615,8 +622,14 @@ pub(crate) fn frame_pictures(
     // backends build a frame's pictures.
     drawn.top_controls =
         crate::top_controls_region::after_the_indicator(drawn.top_controls, status.band);
-    let record = match record {
-        Some(record) => Some(crate::record_raster::picture(
+    // **The record and the question are left out rather than refusing the
+    // frame.** Until 2026-11-02 a `?` here ended the whole desktop when the
+    // record could not lay out its Put back confirmation on a 1280 × 800
+    // machine: the loop stopped, the desktop exited as though signed out, and
+    // the person lost every window. A window that cannot be drawn is that
+    // window's problem; the Dock and everything else are still drawn.
+    let (record, record_refused) = match record.map(|record| {
+        crate::record_raster::picture(
             record.window.shows(),
             record.strings,
             labels,
@@ -625,11 +638,14 @@ pub(crate) fn frame_pictures(
             record.clock,
             // **This display's scale**, the one its Dock is drawn at.
             crate::display_scale::DisplayScale::of_per_cent(desktop.display_scale),
-        )?),
-        None => None,
+        )
+    }) {
+        Some(Ok(drawn)) => (Some(drawn), None),
+        Some(Err(why)) => (None, Some(why)),
+        None => (None, None),
     };
-    let approval = match approval {
-        Some(approval) => Some(crate::approval_raster::picture(
+    let (approval, approval_refused) = match approval.map(|approval| {
+        crate::approval_raster::picture(
             approval.screen.shows(),
             approval.strings,
             labels,
@@ -637,8 +653,11 @@ pub(crate) fn frame_pictures(
             approval.look,
             // **This display's scale**, the one its Dock is drawn at.
             crate::display_scale::DisplayScale::of_per_cent(desktop.display_scale),
-        )?),
-        None => None,
+        )
+    }) {
+        Some(Ok(drawn)) => (Some(drawn), None),
+        Some(Err(why)) => (None, Some(why)),
+        None => (None, None),
     };
     Ok(DesktopPictures {
         terminal,
@@ -649,6 +668,8 @@ pub(crate) fn frame_pictures(
         desktop: drawn,
         record,
         approval,
+        record_refused,
+        approval_refused,
     })
 }
 
