@@ -210,6 +210,8 @@ where
         crate::each_window_with_its_edge::uploaded(renderer, native.terminal_edge)?;
     let settings_edge_textures =
         crate::each_window_with_its_edge::uploaded(renderer, native.settings_edge)?;
+    let records_edge_textures =
+        crate::each_window_with_its_edge::uploaded(renderer, native.records_edge)?;
     // **The terminal, uploaded with the rest** for the same reason: it is one
     // raster — body, cells and strip — since it became a window on the canvas,
     // and the frame below borrows the renderer.
@@ -453,6 +455,21 @@ where
                     edge.paint(&mut frame)?;
                 }
             }
+            // **The record window, a window among windows** since ADR 0145's
+            // fourth stage, with its edge over it.
+            crate::which_window_is_in_front::AKindOfWindow::TheRecord => {
+                if let Some(record) = native
+                    .record
+                    .filter(|record| !record.is_empty() && record.is_on_the_canvas())
+                {
+                    record.paint(&mut frame, record_washed.as_ref())?;
+                }
+                for (edge, textures) in native.records_edge.iter().zip(&records_edge_textures) {
+                    crate::each_window_with_its_edge::wash_all(&mut frame, &textures.behind)?;
+                    crate::each_window_with_its_edge::wash_all(&mut frame, &textures.over)?;
+                    edge.paint(&mut frame)?;
+                }
+            }
             crate::which_window_is_in_front::AKindOfWindow::TaskWindows => {
                 if let Some(desktop) = native.desktop {
                     desktop.paint_the_tasks(&mut frame, &washed, camera)?;
@@ -471,9 +488,13 @@ where
     if let Some(desktop) = native.desktop {
         desktop.paint(&mut frame, &washed)?;
     }
-    // Above every client and control, so no window covers what the machine
-    // did; below the question and the indicator.
-    if let Some(record) = native.record.filter(|record| !record.is_empty()) {
+    // **The record fixed to the display**, which only the nested lane still
+    // draws: above every client and control; below the question and the
+    // indicator. The record on the canvas was drawn among the windows above.
+    if let Some(record) = native
+        .record
+        .filter(|record| !record.is_empty() && !record.is_on_the_canvas())
+    {
         record.paint(&mut frame, record_washed.as_ref())?;
     }
     // **Settings fixed to the display**, which only the nested lane still

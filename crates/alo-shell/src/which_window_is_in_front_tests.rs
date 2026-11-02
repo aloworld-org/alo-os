@@ -39,6 +39,7 @@ fn as_it_was_the_task_windows_are_in_front() {
             AKindOfWindow::Applications,
             AKindOfWindow::TheTerminal,
             AKindOfWindow::TaskWindows,
+            AKindOfWindow::TheRecord,
             AKindOfWindow::Settings
         ]
     );
@@ -54,6 +55,7 @@ fn the_kind_gone_to_comes_in_front_and_the_others_keep_their_order() {
         [
             AKindOfWindow::TheTerminal,
             AKindOfWindow::TaskWindows,
+            AKindOfWindow::TheRecord,
             AKindOfWindow::Settings,
             AKindOfWindow::Applications
         ]
@@ -65,6 +67,7 @@ fn the_kind_gone_to_comes_in_front_and_the_others_keep_their_order() {
         [
             AKindOfWindow::Applications,
             AKindOfWindow::Settings,
+            AKindOfWindow::TheRecord,
             AKindOfWindow::TaskWindows,
             AKindOfWindow::TheTerminal
         ],
