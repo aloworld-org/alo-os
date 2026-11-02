@@ -153,11 +153,19 @@ fn at_two_hundred_percent_the_corner_is_twice_as_round() {
 
 /// **A shadow falls below the window and fades**, darker just under it than
 /// further away, and there is no shadow above it to speak of — the design's
-/// offset is (0, 16), straight down.
+/// offset is (0, 16), straight down. Held in the focused look, whose shadow
+/// this is.
 #[test]
 fn a_shadow_falls_below_the_window_and_fades() {
     let window = a_window();
-    let body = a_body(window, A_DISPLAY, 1.0);
+    let body = the_body_in(
+        window,
+        A_DISPLAY,
+        1.0,
+        TheTerminalsColours::of(Scheme::Light),
+        WhichLook::Focused,
+    )
+    .expect("a window with area has a body");
     let middle = window.loc.x + window.size.w / 2;
     let below = window.loc.y + window.size.h;
     let near = pixel(&body, middle, below + 4)[3];
