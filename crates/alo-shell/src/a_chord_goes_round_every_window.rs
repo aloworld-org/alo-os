@@ -41,6 +41,8 @@ pub(crate) enum AStop {
     TheTerminal,
     /// A task window.
     ATask(WhichTask),
+    /// Settings, while it is open (ADR 0145, stage 3).
+    Settings,
 }
 
 /// The stop after `at` in `stops`, going `direction`; [`None`] when there is
@@ -93,7 +95,8 @@ impl crate::Server {
             .into_iter()
             .map(|(which, _)| which)
             .collect();
-        if !a_terminal && tasks.is_empty() {
+        let settings = self.settings.is_open();
+        if !a_terminal && tasks.is_empty() && !settings {
             return false;
         }
         let mut stops = self.the_applications_stops(by_application);
@@ -101,6 +104,12 @@ impl crate::Server {
             stops.push(AStop::TheTerminal);
         }
         stops.extend(tasks.into_iter().map(AStop::ATask));
+        // **Settings last**, after the task windows: the order alo's own
+        // windows joined the canvas in, so the walk a person has learned keeps
+        // its shape and gains one stop at its end.
+        if settings {
+            stops.push(AStop::Settings);
+        }
         let here = self.the_stop_with_the_keyboard(by_application);
         match the_next_stop(&stops, here.as_ref(), direction) {
             Some(AStop::AWindow(surface)) => {
@@ -121,6 +130,7 @@ impl crate::Server {
                 // first — a task window is on the canvas since ADR 0145.
                 let _ = self.the_view_goes_to_this_task(which);
             }
+            Some(AStop::Settings) => self.the_person_went_to_settings(),
             None => {}
         }
         true
@@ -146,6 +156,9 @@ impl crate::Server {
 
     /// Where the keyboard is, as a stop on the walk.
     fn the_stop_with_the_keyboard(&self, by_application: bool) -> Option<AStop> {
+        if self.settings_is_taking_the_keys() {
+            return Some(AStop::Settings);
+        }
         if let Some(which) = self.the_task_with_the_keyboard {
             return Some(AStop::ATask(which));
         }

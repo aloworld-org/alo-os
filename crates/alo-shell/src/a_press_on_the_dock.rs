@@ -681,6 +681,8 @@ impl crate::Server {
                 window.the_zones_are_those_of(self.the_formats());
                 self.settings = window;
                 self.settings_places = Some(places);
+                // **And goes to it**, as the chord does (ADR 0145).
+                self.the_person_went_to_settings();
             }
             alo_dock::ANativeAction::Applications => self.the_market_opens(),
         }

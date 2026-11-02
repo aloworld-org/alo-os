@@ -280,6 +280,25 @@ pub struct Server {
     /// (`crate::the_terminals_question_drawn`).
     pub(crate) where_the_question_was_drawn:
         Option<crate::the_terminals_question_drawn::WhereTheQuestionIs>,
+    /// Where Settings is **on the canvas** — its corner — and which Place it is
+    /// on, from the first frame after it opens until it is shut
+    /// (`crate::settings_on_the_plane`, ADR 0145).
+    pub(crate) settings_on_the_plane: Option<(
+        smithay::utils::Point<i32, smithay::utils::Logical>,
+        alo_canvas::Place,
+    )>,
+    /// How big Settings was when it was last drawn, for *Show all*: its size is
+    /// the design's rule for the display it is on, worked out each frame.
+    pub(crate) how_big_settings_was: smithay::utils::Size<i32, smithay::utils::Logical>,
+    /// Settings as the last frame drew it, for a press.
+    pub(crate) settings_as_drawn: Option<crate::settings_as_drawn::SettingsAsDrawn>,
+    /// The number the canvas knows Settings by, from the counter every
+    /// window's number comes from.
+    pub(crate) the_settings_number: u64,
+    /// A press on a row or an entry of Settings, waiting to be carried out as
+    /// Enter by the lane that holds the person's words
+    /// (`crate::a_click_reaches_settings`).
+    pub(crate) a_click_waits_for_settings: Option<crate::SettingsPress>,
     /// Which kind of window is in front of which: the applications, the
     /// terminal and the task windows (`crate::which_window_is_in_front`).
     pub(crate) which_is_in_front: crate::which_window_is_in_front::WhichIsInFront,
@@ -810,6 +829,11 @@ impl Server {
             the_terminals_number: crate::window_number::reserve(),
             closing_the_terminal: None,
             where_the_question_was_drawn: None,
+            settings_on_the_plane: None,
+            how_big_settings_was: smithay::utils::Size::from((0, 0)),
+            settings_as_drawn: None,
+            the_settings_number: crate::window_number::reserve(),
+            a_click_waits_for_settings: None,
             which_is_in_front: crate::which_window_is_in_front::WhichIsInFront::default(),
             // Nobody has said whose desktop this is; the stand-up does.
             whose_desktop: None,

@@ -71,9 +71,16 @@ impl Server {
     /// Asked per input batch by whoever drives the lane, because the answer
     /// changes on a keystroke: the press that closes the window is the last one
     /// Settings takes.
+    ///
+    /// **And only while it is the window in front** (ADR 0145, stage 3): a
+    /// window on the canvas takes the keys when it is in front, as the
+    /// terminal and the task windows do, and one the person put behind an
+    /// application gives the keys to that application. Opening Settings brings
+    /// it in front, so a person who opened it types into it as before.
     #[must_use]
     pub fn settings_is_taking_the_keys(&self) -> bool {
         self.settings.is_open()
+            && self.the_kind_in_front() == crate::which_window_is_in_front::AKindOfWindow::Settings
     }
 }
 
@@ -148,6 +155,19 @@ pub(crate) fn the_key_settings_took(
             if server.a_key_fills_in_the_provider(press.filling).is_some() {
                 return Ok(());
             }
+            // **A chord reaches its action from Settings too** (ADR 0145): a
+            // window on the canvas is one Super+Tab away from the others, and a
+            // person must be able to leave it by the keyboard. Only a press that
+            // means nothing to Settings — Control, Alt or the logo key held —
+            // and only while Settings is not waiting for a chord to bind, which
+            // is the one time such a press is Settings' own.
+            if press.key == crate::SettingsKey::Nothing
+                && !server.settings.is_waiting_for_a_chord()
+                && let Some(chord) = a_bound_chord(server, &press)
+            {
+                let _ = server.the_chord_does_what_it_names(chord);
+                return Ok(());
+            }
             the_press_is_carried_out(server, press, strings);
             Ok(())
         }
@@ -155,6 +175,33 @@ pub(crate) fn the_key_settings_took(
         // not. None of the three is something Settings does.
         Ok(None) | Err(InputError::InvalidKey) => Ok(()),
         Err(error) => Err(error),
+    }
+}
+
+/// The chord a press makes, where the person has bound it to something.
+fn a_bound_chord(server: &Server, press: &crate::SettingsPress) -> Option<alo_shortcuts::Chord> {
+    let (modifiers, key) = press.chord?;
+    let chord = alo_shortcuts::Chord::checked(modifiers, key).ok()?;
+    server
+        .shortcuts
+        .as_ref()?
+        .action_for(chord)
+        .is_some()
+        .then_some(chord)
+}
+
+/// **A press on a row or an entry of Settings, carried out as Enter** — the
+/// same steps a key takes from here on, so a click and a key cannot disagree
+/// about what a row does (`crate::settings_pointed_at`).
+///
+/// The pointer lane finds what was pressed and moves the keyboard to it; it
+/// cannot carry the press out itself, because a refusal is worded in the
+/// person's language and only this lane holds their words. So the press waits
+/// on the server and is taken here, after every input event, by whichever
+/// road the event went.
+pub(crate) fn a_click_is_carried_out(server: &mut Server, strings: &Strings) {
+    if let Some(press) = server.a_click_waits_for_settings.take() {
+        the_press_is_carried_out(server, press, strings);
     }
 }
 

@@ -571,6 +571,12 @@ impl SettingsWindow {
         self.open.as_ref()
     }
 
+    /// Settings, while it is open, for the pointer to move the keyboard's place
+    /// in it (`crate::settings_pointed_at`).
+    pub(crate) const fn open_mut(&mut self) -> Option<&mut Open> {
+        self.open.as_mut()
+    }
+
     /// How the machine looks as Settings holds it — what the compositor draws
     /// from the moment a change is kept, because the two are one process.
     #[must_use]

@@ -22,13 +22,21 @@ use crate::settings_raster::SettingsPicture;
 impl SettingsPicture {
     /// Refuse a frame Settings was not laid out for, before anything is
     /// imported or drawn.
+    ///
+    /// **A window on the canvas is laid out in a room of its own** and may sit
+    /// partly off the display, so it is held to its own room rather than to the
+    /// output: every pixel of the raster inside the room it was laid out for.
     pub(crate) fn validate(&self, size: Size<i32, Physical>) -> Result<(), RenderError> {
-        let output: Rectangle<i32, Physical> = Rectangle::from_size(size);
+        let room: Rectangle<i32, Physical> = if self.is_on_the_canvas() {
+            Rectangle::from_size(self.size.into())
+        } else {
+            Rectangle::from_size(size)
+        };
         let inside = self
             .washed
             .as_ref()
-            .is_none_or(|washed| output.contains_rect(washed.area));
-        if (size.w, size.h) == self.size && inside {
+            .is_none_or(|washed| room.contains_rect(washed.area));
+        if (self.is_on_the_canvas() || (size.w, size.h) == self.size) && inside {
             Ok(())
         } else {
             Err(RenderError::SettingsScene)
@@ -48,9 +56,33 @@ impl SettingsPicture {
         frame: &mut F,
         window: Option<&(F::TextureId, Rectangle<i32, Physical>)>,
     ) -> Result<(), RenderError> {
-        if let Some((texture, area)) = window {
-            crate::painted::wash(frame, texture, *area)?;
+        let Some((texture, area)) = window else {
+            return Ok(());
+        };
+        // **Through the camera**, for a window on the canvas: the raster is a
+        // part of its room, so where it lands is that part of where the room
+        // lands, scaled by the zoom.
+        match self.drawn_at {
+            Some(room) => {
+                let (across, down) = (self.size.0.max(1), self.size.1.max(1));
+                let out = |from: i32, start: i32, seen: i32, all: i32| -> i32 {
+                    i32::try_from(
+                        i64::from(start) + i64::from(from) * i64::from(seen) / i64::from(all),
+                    )
+                    .unwrap_or(start)
+                };
+                let left = out(area.loc.x, room.loc.x, room.size.w, across);
+                let top = out(area.loc.y, room.loc.y, room.size.h, down);
+                let right = out(area.loc.x + area.size.w, room.loc.x, room.size.w, across);
+                let bottom = out(area.loc.y + area.size.h, room.loc.y, room.size.h, down);
+                crate::painted::wash_scaled(
+                    frame,
+                    texture,
+                    (area.size.w, area.size.h),
+                    Rectangle::new((left, top).into(), (right - left, bottom - top).into()),
+                )
+            }
+            None => crate::painted::wash(frame, texture, *area),
         }
-        Ok(())
     }
 }

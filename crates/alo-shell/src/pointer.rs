@@ -291,6 +291,19 @@ impl Server {
             // of it, and a press on what a person sees must not reach a task
             // window behind it.
             let in_front_here = self.the_kind_under(location);
+            // **A press on Settings is Settings'** since it joined the canvas
+            // (ADR 0145, stage 3): its edge first, then what it is on — a
+            // category, a row, an entry — and never the application behind it.
+            if in_front_here == Some(crate::which_window_is_in_front::AKindOfWindow::Settings) {
+                if let Some(at) = self.where_the_pointer_is_in_logical_pixels()
+                    && self.a_press_on_the_settings_edge(at)
+                {
+                    return Ok(false);
+                }
+                if self.a_press_on_settings(on_the_screen) {
+                    return Ok(false);
+                }
+            }
             if in_front_here == Some(crate::which_window_is_in_front::AKindOfWindow::TaskWindows) {
                 // **A task window's edge before the window**: it is drawn
                 // above the task window, so a press on it is the edge's.

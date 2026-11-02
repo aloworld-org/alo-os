@@ -49,13 +49,18 @@ pub(crate) enum AKindOfWindow {
     TheTerminal,
     /// alo's task windows.
     TaskWindows,
+    /// Settings, a window on the canvas since ADR 0145's third stage.
+    Settings,
 }
 
-/// The three kinds, bottom to top.
+/// How many kinds of window there are.
+const HOW_MANY: usize = 4;
+
+/// The kinds, bottom to top.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) struct WhichIsInFront {
     /// Bottom first, the kind in front last.
-    bottom_to_top: [AKindOfWindow; 3],
+    bottom_to_top: [AKindOfWindow; HOW_MANY],
 }
 
 impl Default for WhichIsInFront {
@@ -66,35 +71,38 @@ impl Default for WhichIsInFront {
 
 impl WhichIsInFront {
     /// **The order there was before 2026-10-31**: applications, the terminal
-    /// over them, and task windows over both. A machine where nobody has gone
-    /// anywhere yet draws exactly what it drew.
+    /// over them, and task windows over both — and Settings over all of them,
+    /// where it was drawn before it joined the canvas. A machine where nobody
+    /// has gone anywhere yet draws exactly what it drew.
     pub(crate) const AS_IT_WAS: Self = Self {
         bottom_to_top: [
             AKindOfWindow::Applications,
             AKindOfWindow::TheTerminal,
             AKindOfWindow::TaskWindows,
+            AKindOfWindow::Settings,
         ],
     };
 
-    /// The three kinds, bottom to top: the order they are painted in.
-    pub(crate) const fn bottom_to_top(self) -> [AKindOfWindow; 3] {
+    /// The kinds, bottom to top: the order they are painted in.
+    pub(crate) const fn bottom_to_top(self) -> [AKindOfWindow; HOW_MANY] {
         self.bottom_to_top
     }
 
-    /// The three kinds, top to bottom: the order a press asks them in.
-    pub(crate) fn top_to_bottom(self) -> [AKindOfWindow; 3] {
-        let [bottom, middle, top] = self.bottom_to_top;
-        [top, middle, bottom]
+    /// The kinds, top to bottom: the order a press asks them in.
+    pub(crate) fn top_to_bottom(self) -> [AKindOfWindow; HOW_MANY] {
+        let mut order = self.bottom_to_top;
+        order.reverse();
+        order
     }
 
-    /// This kind comes in front of the other two, which keep their order
-    /// behind it.
+    /// This kind comes in front of the others, which keep their order behind
+    /// it.
     pub(crate) fn comes_to_the_front(&mut self, kind: AKindOfWindow) {
         let others = self
             .bottom_to_top
             .into_iter()
             .filter(|other| *other != kind);
-        let mut order = [kind; 3];
+        let mut order = [kind; HOW_MANY];
         for (slot, other) in order.iter_mut().zip(others) {
             *slot = other;
         }
@@ -107,9 +115,15 @@ impl WhichIsInFront {
     /// in front above the Dock until they became windows on the canvas (ADR
     /// 0145), and a window on the canvas is under the Dock wherever it is in
     /// the order.
+    ///
+    /// **Settings is left out of the question**: it is open far less often
+    /// than it is shut, and a shut window is not in front of anything.
     #[cfg(test)]
     pub(crate) fn the_task_windows_are_in_front(self) -> bool {
-        self.top_to_bottom().first() == Some(&AKindOfWindow::TaskWindows)
+        self.top_to_bottom()
+            .into_iter()
+            .find(|kind| *kind != AKindOfWindow::Settings)
+            == Some(AKindOfWindow::TaskWindows)
     }
 }
 
@@ -151,6 +165,9 @@ impl crate::Server {
                 AKindOfWindow::TheTerminal => self
                     .alos_own_terminal()
                     .is_some_and(|terminal| !terminal.has_finished()),
+                // **Settings while it is open and on the Place being looked
+                // at** (ADR 0145): one on another Place is out of sight.
+                AKindOfWindow::Settings => self.settings_is_open_here(),
                 AKindOfWindow::Applications => true,
             })
             .unwrap_or(AKindOfWindow::Applications)
@@ -200,6 +217,10 @@ impl crate::Server {
                 AKindOfWindow::TheTerminal => {
                     self.the_terminal_is_under(on_the_screen)
                         || self.the_terminals_edge_is_under(on_an_edge)
+                }
+                AKindOfWindow::Settings => {
+                    self.settings_is_under(on_the_screen)
+                        || self.the_settings_edge_is_under(on_an_edge)
                 }
                 AKindOfWindow::Applications => {
                     self.the_window_under(location).is_some()

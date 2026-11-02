@@ -38,7 +38,8 @@ fn as_it_was_the_task_windows_are_in_front() {
         [
             AKindOfWindow::Applications,
             AKindOfWindow::TheTerminal,
-            AKindOfWindow::TaskWindows
+            AKindOfWindow::TaskWindows,
+            AKindOfWindow::Settings
         ]
     );
     assert!(order.the_task_windows_are_in_front());
@@ -53,6 +54,7 @@ fn the_kind_gone_to_comes_in_front_and_the_others_keep_their_order() {
         [
             AKindOfWindow::TheTerminal,
             AKindOfWindow::TaskWindows,
+            AKindOfWindow::Settings,
             AKindOfWindow::Applications
         ]
     );
@@ -62,6 +64,7 @@ fn the_kind_gone_to_comes_in_front_and_the_others_keep_their_order() {
         order.top_to_bottom(),
         [
             AKindOfWindow::Applications,
+            AKindOfWindow::Settings,
             AKindOfWindow::TaskWindows,
             AKindOfWindow::TheTerminal
         ],

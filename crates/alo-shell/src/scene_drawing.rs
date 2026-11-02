@@ -208,6 +208,8 @@ where
         crate::each_window_with_its_edge::uploaded(renderer, native.task_edges)?;
     let terminal_edge_textures =
         crate::each_window_with_its_edge::uploaded(renderer, native.terminal_edge)?;
+    let settings_edge_textures =
+        crate::each_window_with_its_edge::uploaded(renderer, native.settings_edge)?;
     // **The terminal, uploaded with the rest** for the same reason: it is one
     // raster — body, cells and strip — since it became a window on the canvas,
     // and the frame below borrows the renderer.
@@ -435,6 +437,22 @@ where
                     edge.paint(&mut frame)?;
                 }
             }
+            // **Settings, a window among windows** since ADR 0145's third
+            // stage: under the Dock, in the order the person put the windows
+            // in, with its edge over it.
+            crate::which_window_is_in_front::AKindOfWindow::Settings => {
+                if let Some(settings) = native
+                    .settings
+                    .filter(|settings| !settings.is_empty() && settings.is_on_the_canvas())
+                {
+                    settings.paint(&mut frame, settings_washed.as_ref())?;
+                }
+                for (edge, textures) in native.settings_edge.iter().zip(&settings_edge_textures) {
+                    crate::each_window_with_its_edge::wash_all(&mut frame, &textures.behind)?;
+                    crate::each_window_with_its_edge::wash_all(&mut frame, &textures.over)?;
+                    edge.paint(&mut frame)?;
+                }
+            }
             crate::which_window_is_in_front::AKindOfWindow::TaskWindows => {
                 if let Some(desktop) = native.desktop {
                     desktop.paint_the_tasks(&mut frame, &washed, camera)?;
@@ -458,9 +476,14 @@ where
     if let Some(record) = native.record.filter(|record| !record.is_empty()) {
         record.paint(&mut frame, record_washed.as_ref())?;
     }
-    // Above every client, the desktop and the record, so no window covers a
-    // setting being changed; below the question and the indicator.
-    if let Some(settings) = native.settings.filter(|settings| !settings.is_empty()) {
+    // **Settings fixed to the display**, which only the nested lane still
+    // draws: above every client, the desktop and the record; below the
+    // question and the indicator. Settings on the canvas was drawn among the
+    // windows above.
+    if let Some(settings) = native
+        .settings
+        .filter(|settings| !settings.is_empty() && !settings.is_on_the_canvas())
+    {
         settings.paint(&mut frame, settings_washed.as_ref())?;
     }
     // Above every client and control, so no window covers the sentence a

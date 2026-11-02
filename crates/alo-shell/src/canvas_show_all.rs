@@ -84,6 +84,8 @@ impl crate::Server {
         frames.extend(self.the_terminal_as_a_frame());
         // And the task windows, on the canvas since stage 2 of ADR 0145.
         frames.extend(self.the_task_windows_as_frames());
+        // And Settings, on the canvas since stage 3.
+        frames.extend(self.settings_as_a_frame());
         self.look_at_these_frames(&frames)
     }
 

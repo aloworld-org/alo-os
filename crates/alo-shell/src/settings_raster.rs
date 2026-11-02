@@ -86,11 +86,16 @@ pub(crate) struct SettingsPicture {
     pub(crate) list: Option<Area>,
     /// Every entry of that list in view, where it is drawn.
     pub(crate) entries: Vec<(crate::SettingsRow, Area)>,
+    /// **Where the camera puts the raster on the display**, when Settings is a
+    /// window on the canvas (ADR 0145): the picture is laid out in a room of
+    /// its own and drawn there, scaled by the zoom. [`None`] draws the raster
+    /// where it was laid out, which is the nested lane's fixed Settings.
+    pub(crate) drawn_at: Option<smithay::utils::Rectangle<i32, smithay::utils::Physical>>,
 }
 
 impl SettingsPicture {
     /// Nothing drawn, for an output of `size`.
-    const fn empty(size: (i32, i32)) -> Self {
+    pub(crate) const fn empty(size: (i32, i32)) -> Self {
         Self {
             size,
             panel: None,
@@ -102,7 +107,14 @@ impl SettingsPicture {
             out_of_view: false,
             list: None,
             entries: Vec::new(),
+            drawn_at: None,
         }
+    }
+
+    /// Whether this is a window on the canvas, drawn through the camera
+    /// among the windows rather than fixed above them.
+    pub(crate) const fn is_on_the_canvas(&self) -> bool {
+        self.drawn_at.is_some()
     }
 
     /// Whether nothing at all is drawn.
