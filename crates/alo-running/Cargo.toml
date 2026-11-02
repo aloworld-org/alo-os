@@ -26,6 +26,10 @@ alo-keeping = { path = "../alo-keeping" }
 # are `alo-capability`'s, and `failing.rs` says why they are not this crate's.
 alo-strings = { path = "../alo-strings" }
 thiserror = { workspace = true }
+# Asking whether the person's input has anything in it before reading it, so a
+# `try` in the background of a terminal is not stopped by it
+# (`carrying_what_it_says.rs`).
+rustix = { workspace = true, features = ["event"] }
 
 [lints]
 workspace = true
@@ -41,3 +45,6 @@ path = "src/bin/alo-enter-the-box.rs"
 # The tests write an entry down and read it back as JSON, which is how an
 # absence is held to being an absence.
 serde_json = { workspace = true }
+# A terminal for the carrier to be in the background of, which is the one way
+# to reproduce what stopped `try` on a booted machine on 2026-11-02.
+rustix = { workspace = true, features = ["pty"] }
