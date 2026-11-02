@@ -7,9 +7,10 @@ use super::{across_at, the_terminals_icon};
 
 /// One pixel of a picture, red green blue alpha.
 fn at(picture: &alo_dock::artwork::APicture, x: u32, y: u32) -> [u8; 4] {
-    let i = ((y * picture.across() + x) * 4) as usize;
-    let p = picture.pixels();
-    [p[i], p[i + 1], p[i + 2], p[i + 3]]
+    let i = usize::try_from((y * picture.across() + x) * 4).expect("a place in the picture");
+    let mut out = [0; 4];
+    out.copy_from_slice(picture.pixels().get(i..i + 4).expect("a pixel"));
+    out
 }
 
 /// **The tile is the design's 16 at 100 per cent, and 32 at 200**: drawn

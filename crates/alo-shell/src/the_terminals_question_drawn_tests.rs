@@ -58,7 +58,7 @@ fn the_ring_is_round_the_button_the_keyboard_is_on() {
         let at = usize::try_from(((y - area.loc.y) * area.size.w + (x - area.loc.x)) * 4)
             .expect("inside");
         let mut out = [0; 4];
-        out.copy_from_slice(&drawn.raster.pixels[at..at + 4]);
+        out.copy_from_slice(drawn.raster.pixels.get(at..at + 4).expect("a pixel"));
         out
     };
     let on_cancel = drawn(OnTheQuestion::Cancel);

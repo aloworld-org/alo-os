@@ -27,7 +27,7 @@ pub(crate) fn laid_over(base: &mut Washed, top: &Washed) {
     let Ok(top_w) = usize::try_from(top.area.size.w) else {
         return;
     };
-    for (n, pixel) in top.pixels.chunks_exact(4).enumerate() {
+    for (n, [red, green, blue, opacity]) in top.pixels.as_chunks::<4>().0.iter().enumerate() {
         let (Ok(dx), Ok(dy)) = (i32::try_from(n % top_w.max(1)), i32::try_from(n / top_w.max(1)))
         else {
             return;
@@ -40,18 +40,19 @@ pub(crate) fn laid_over(base: &mut Washed, top: &Washed) {
             continue;
         }
         let at = (y * base_w + x) * 4;
-        let Some(under) = base.pixels.get_mut(at..at + 4) else {
+        let Some([under_red, under_green, under_blue, under_opacity]) =
+            base.pixels.get_mut(at..at + 4)
+        else {
             continue;
         };
-        let alpha = f32::from(pixel[3]) / 255.0;
+        let alpha = f32::from(*opacity) / 255.0;
         if alpha <= 0.0 {
             continue;
         }
-        let below = f32::from(under[3]) / 255.0;
+        let below = f32::from(*under_opacity) / 255.0;
         let out = alpha + below * (1.0 - alpha);
-        for channel in 0..3 {
-            let mixed = (f32::from(pixel[channel]) * alpha
-                + f32::from(under[channel]) * below * (1.0 - alpha))
+        let mix = |over: u8, under: u8| -> u8 {
+            let mixed = (f32::from(over) * alpha + f32::from(under) * below * (1.0 - alpha))
                 / out.max(f32::EPSILON);
             #[expect(
                 clippy::cast_possible_truncation,
@@ -59,15 +60,18 @@ pub(crate) fn laid_over(base: &mut Washed, top: &Washed) {
                 reason = "a mix of two bytes, clamped to a byte"
             )]
             let byte = mixed.round().clamp(0.0, 255.0) as u8;
-            under[channel] = byte;
-        }
+            byte
+        };
+        *under_red = mix(*red, *under_red);
+        *under_green = mix(*green, *under_green);
+        *under_blue = mix(*blue, *under_blue);
         #[expect(
             clippy::cast_possible_truncation,
             clippy::cast_sign_loss,
             reason = "an alpha of nought to one, as a byte"
         )]
         let byte = (out * 255.0).round().clamp(0.0, 255.0) as u8;
-        under[3] = byte;
+        *under_opacity = byte;
     }
 }
 
