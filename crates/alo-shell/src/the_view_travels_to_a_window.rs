@@ -14,7 +14,7 @@ use smithay::utils::{Logical, Physical, Rectangle};
 impl crate::Server {
     /// Take the view to `window` on the plane, on `its_place`. Answers whether
     /// the view moved — its Place, its camera, or both.
-    pub(crate) fn the_view_travels_to(
+    pub(crate) fn the_view_travels_to_this(
         &mut self,
         window: Rectangle<i32, Logical>,
         its_place: Place,

@@ -155,8 +155,8 @@ impl crate::Server {
         if let Some((at, place)) = self.the_record_on_the_plane
             && self.record.is_open()
         {
-            let _ =
-                self.the_view_travels_to(Rectangle::new(at, self.how_big_the_record_was), place);
+            let _ = self
+                .the_view_travels_to_this(Rectangle::new(at, self.how_big_the_record_was), place);
         }
     }
 }
