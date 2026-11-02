@@ -311,6 +311,17 @@ impl Server {
                     self.dispatch_settings_command(&shortcuts, chord, &mut window, &places, now);
                 self.settings = window;
                 self.settings_places = Some(places);
+                // **Opening Settings goes to it** (ADR 0145): it comes in front
+                // with the keys, and the view travels to it where it is out of
+                // sight, as the chord for any window does.
+                if matches!(
+                    did,
+                    Ok(Some(
+                        crate::settings_command::WhatTheChordDid::SettingsOpened(_)
+                    ))
+                ) {
+                    self.the_person_went_to_settings();
+                }
                 match did {
                     Ok(what) => (Ok(what.map(|_| ())), None),
                     Err(why) => {

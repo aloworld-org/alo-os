@@ -1047,6 +1047,12 @@ impl LoopInput for Desk<'_> {
                 } else {
                     server.libinput_update(update, extent)
                 };
+                // **A press on a row of Settings is chosen here**, as Enter
+                // chooses it, by whichever road the press went: the pointer
+                // found the row and moved the keyboard to it, and this lane
+                // holds the words a refusal is said in
+                // (`crate::a_click_reaches_settings`).
+                crate::a_key_reaches_settings::a_click_is_carried_out(server, strings);
                 match went {
                     Ok(()) => Ok(()),
                     // **The machine did not understand one event and goes on
@@ -2288,11 +2294,38 @@ impl LoopInput for Desk<'_> {
         //
         // `settings_raster::picture` answers an empty picture for a shut
         // window, so this costs a shut desktop one call and draws nothing.
+        // **Settings is a window on the canvas** (ADR 0145, stage 3): placed
+        // once where a new window goes, laid out in a room of its own the size
+        // the design's rule gives this display, and drawn where the camera puts
+        // that room. A display with no room for it at all keeps the old road,
+        // laid out on the display, where Settings that cannot be drawn is
+        // closed rather than the desktop (#1087).
+        let display = crate::display_scale::DisplayScale::of_per_cent(frame.display_scale);
+        let sizes = crate::settings_on_the_plane::how_big_settings_is(
+            (size.w, size.h),
+            frame.look.scale(),
+            display,
+        );
+        if let Some(sizes) = sizes {
+            let _ = server.settings_is_placed(sizes.window, (size.w, size.h), frame.look.reading());
+        }
+        let room_on_screen =
+            sizes.and_then(|sizes| server.where_the_settings_room_is_drawn(&named, sizes));
+        let shut = crate::SettingsWindow::closed();
+        let settings_window = if server.settings_is_open_here() {
+            server.the_settings_window()
+        } else {
+            // Shut, or on another Place and so out of sight: nothing of it is
+            // drawn here.
+            &shut
+        };
         let settings = match crate::settings_raster::picture(
-            server.the_settings_window(),
+            settings_window,
             frame.strings,
             self.labels,
-            (size.w, size.h),
+            room_on_screen
+                .and(sizes)
+                .map_or((size.w, size.h), |sizes| sizes.room),
             crate::SettingsLook {
                 scheme: frame.look.scheme(),
                 scale: frame.look.scale(),
@@ -2318,9 +2351,12 @@ impl LoopInput for Desk<'_> {
             }),
             // **This display's scale**, the one its Dock is drawn at, read off
             // the frame rather than asked again.
-            crate::display_scale::DisplayScale::of_per_cent(frame.display_scale),
+            display,
         ) {
-            Ok(drawn) => Some(drawn),
+            Ok(mut drawn) => {
+                drawn.drawn_at = room_on_screen;
+                Some(drawn)
+            }
             // **Settings that cannot be drawn are closed, not the desktop** —
             // see `crate::a_surface_that_cannot_draw`.
             Err(why) => {
@@ -2328,6 +2364,16 @@ impl LoopInput for Desk<'_> {
                 None
             }
         };
+        server.settings_was_drawn(settings.as_ref().zip(room_on_screen).and_then(
+            |(settings, room)| crate::settings_as_drawn::SettingsAsDrawn::of(settings, room),
+        ));
+        // **Its edge**, laid out over the window where this frame drew it.
+        let settings_edge = server.the_settings_edge_picture(
+            &mut self.labels.fonts,
+            self.strings,
+            (size.w, size.h),
+            u32::from(frame.display_scale),
+        );
         // **The frame is drawn through the per-display road, with one display
         // on it.** `more-than-one-display-plan.md` task 4. This desk builds one
         // target today; `discover_every_atomic_output` is what will make it
@@ -2350,6 +2396,7 @@ impl LoopInput for Desk<'_> {
                 settings: settings.as_ref(),
                 task_edges: &task_edges,
                 terminal_edge: terminal_edge.as_slice(),
+                settings_edge: settings_edge.as_slice(),
                 // **The order the person's windows are in**, the same one a
                 // press and the keyboard read (`crate::which_window_is_in_front`).
                 in_front: server.which_is_in_front(),
