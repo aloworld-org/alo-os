@@ -332,6 +332,7 @@ mod output_metadata;
 mod output_retirement;
 mod overview_sheet;
 mod painted;
+mod painted_flat;
 mod painted_text;
 mod painted_text_wrapping;
 mod panel_raster;
@@ -463,7 +464,7 @@ mod surfaces;
 /// Everything on the Dock that a person reads, said once a frame.
 mod tab_moves_among_the_bars_controls;
 /// The order a desktop's task windows are painted in: each one whole.
-mod task_layers;
+mod task_windows_on_the_plane;
 /// The colours a task window draws in, mapped from the design's tokens.
 mod task_look;
 /// A task window's furniture, rasterised.

@@ -117,6 +117,9 @@ impl crate::Server {
             Some(AStop::ATask(which)) => {
                 self.the_composer.it_gave_the_keyboard_up();
                 self.this_task_took_the_keyboard(which);
+                // **The view goes to it** where it is out of sight, its Place
+                // first — a task window is on the canvas since ADR 0145.
+                let _ = self.the_view_goes_to_this_task(which);
             }
             None => {}
         }

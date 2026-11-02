@@ -61,7 +61,7 @@ impl crate::Server {
         at: Point<i32, Physical>,
         frame: &AxisFrame,
     ) -> Option<bool> {
-        let which = self.tasks().the_one_under(at)?;
+        let which = self.the_task_window_under(at)?;
         Some(self.the_conversation_scrolled(which, how_far_back(frame)))
     }
 

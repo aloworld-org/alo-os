@@ -397,11 +397,25 @@ pub(crate) fn picture(
     // window's problem: refusing the whole frame would take the desktop down with
     // it — including the Dock a person needs in order to close the window that
     // caused it.
+    //
+    // **Each laid out at its own size, in a picture of its own, and flattened
+    // into one raster** — since task windows went onto the canvas (ADR 0145).
+    // `task.at` is the window on the plane; the picture is laid out with the
+    // window inset by its shadow's reach, and the painter puts the whole raster
+    // where the camera says, scaled by its zoom. **This file still reads no
+    // camera**: where a window lands on the screen is the painter's question,
+    // which is what keeps this the viewport layer.
+    let a_task_windows_reach = crate::how_a_panel_is_raised::HowItIsRaised::THE_DOCKS
+        .at(crate::display_scale::DisplayScale::of_per_cent(display_scale).factor())
+        .reach()
+        .max(0);
     let tasks = tasks
         .iter()
         .filter_map(|task| {
+            let reach = a_task_windows_reach;
+            let laid_out_at = smithay::utils::Rectangle::new((reach, reach).into(), task.at.size);
             crate::task_raster::furniture(
-                task.at,
+                laid_out_at,
                 look,
                 task.how_many_files,
                 &task.words,
@@ -415,9 +429,22 @@ pub(crate) fn picture(
                 crate::display_scale::DisplayScale::of_per_cent(display_scale),
             )
             .ok()
-            .map(|picture| crate::task_raster::TaskPicture {
-                place: task.place,
-                ..picture
+            .and_then(|picture| {
+                let room = (task.at.size.w + reach, task.at.size.h + reach);
+                let one = crate::painted_flat::flattened(
+                    room,
+                    Some(&picture.panel),
+                    &[],
+                    &[&picture.inked],
+                )?;
+                Some(crate::task_raster::TaskPicture {
+                    place: task.place,
+                    panel: one,
+                    inked: Vec::new(),
+                    at: task.at,
+                    reach,
+                    ..picture
+                })
             })
         })
         .collect();

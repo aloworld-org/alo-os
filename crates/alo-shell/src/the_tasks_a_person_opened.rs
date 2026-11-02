@@ -82,6 +82,10 @@ pub struct TheTasks {
     /// window's position is the shell's, and putting a screen rectangle inside
     /// the model would be the shell's state kept in the wrong crate.
     placed: Vec<ItsWindow>,
+    /// The Place a window placed now goes on: the one the person is looking
+    /// at, told by the frame before it places anything. [`None`] is the first
+    /// Place, which is the one every session starts on.
+    opening_on: Option<alo_canvas::Place>,
 }
 
 /// Where one task's window is.
@@ -89,8 +93,11 @@ pub struct TheTasks {
 enum ItsWindow {
     /// Asked for, and not yet placed.
     NowhereYet,
-    /// On the screen, here.
-    At(Rectangle<i32, Physical>),
+    /// **On the canvas, here, on this Place** — since ADR 0145. The rectangle
+    /// is in the plane's units, which are the display's pixels at 100 % with
+    /// the canvas unmoved; `crate::task_windows_on_the_plane` puts it on a
+    /// screen through the camera.
+    At(Rectangle<i32, Physical>, alo_canvas::Place),
     /// The person closed it.
     ///
     /// **Its place in the list is kept**, and that is the point of this state
@@ -102,11 +109,19 @@ enum ItsWindow {
 }
 
 impl ItsWindow {
-    /// Where it is on the screen, if anywhere.
+    /// Where it is on the plane, if anywhere.
     const fn on_the_screen(self) -> Option<Rectangle<i32, Physical>> {
         match self {
-            Self::At(at) => Some(at),
+            Self::At(at, _) => Some(at),
             Self::NowhereYet | Self::Closed => None,
+        }
+    }
+
+    /// Where it is on the plane, if it is on this Place.
+    fn on(self, place: alo_canvas::Place) -> Option<Rectangle<i32, Physical>> {
+        match self {
+            Self::At(at, its) if its == place => Some(at),
+            _ => None,
         }
     }
 }
@@ -231,6 +246,8 @@ impl TheTasks {
         let scale = crate::display_scale::DisplayScale::of_per_cent(display_scale);
         debug_assert_eq!(self.open.len(), self.placed.len());
         let mut placed = 0;
+        // **Beside the windows on the Place it opens on**, and no other.
+        let on = self.opening_on.unwrap_or(alo_canvas::Place::FIRST);
         for which in 0..self.placed.len() {
             // **Only a window nothing has placed**: one on the screen stays
             // where it is, and a closed one is never put back.
@@ -245,7 +262,7 @@ impl TheTasks {
                 .placed
                 .iter()
                 .rev()
-                .filter_map(|window| window.on_the_screen())
+                .filter_map(|window| window.on(on))
                 .map(|at| {
                     Rectangle::new((at.loc.x, at.loc.y).into(), (at.size.w, at.size.h).into())
                 })
@@ -259,11 +276,54 @@ impl TheTasks {
                 continue;
             };
             if let Some(slot) = self.placed.get_mut(which) {
-                *slot = ItsWindow::At(crate::where_a_task_window_opens::as_a_frame_draws_it(at));
+                *slot = ItsWindow::At(
+                    crate::where_a_task_window_opens::as_a_frame_draws_it(at),
+                    on,
+                );
                 placed += 1;
             }
         }
         placed
+    }
+
+    /// The Place a window placed from now on goes on — the one the person is
+    /// looking at (ADR 0145).
+    pub(crate) fn new_windows_open_on(&mut self, place: alo_canvas::Place) {
+        self.opening_on = Some(place);
+    }
+
+    /// Every window on this Place and the task it is, oldest first, on the
+    /// plane.
+    #[must_use]
+    pub(crate) fn each_open_window_on(
+        &self,
+        place: alo_canvas::Place,
+    ) -> Vec<(WhichTask, Rectangle<i32, Physical>)> {
+        self.placed
+            .iter()
+            .enumerate()
+            .filter_map(|(at, window)| window.on(place).map(|on| (WhichTask(at), on)))
+            .collect()
+    }
+
+    /// Where each task's window is on this Place, in the order the tasks
+    /// opened, and [`None`] for one not placed, closed, or on another Place —
+    /// which is a window this frame does not draw.
+    #[must_use]
+    pub(crate) fn where_each_went_on(
+        &self,
+        place: alo_canvas::Place,
+    ) -> Vec<Option<Rectangle<i32, Physical>>> {
+        self.placed.iter().map(|window| window.on(place)).collect()
+    }
+
+    /// Which Place this task's window is on, once it is placed.
+    #[must_use]
+    pub(crate) fn the_place_of(&self, which: WhichTask) -> Option<alo_canvas::Place> {
+        match self.placed.get(which.at()) {
+            Some(ItsWindow::At(_, place)) => Some(*place),
+            _ => None,
+        }
     }
 
     /// One task, to read.

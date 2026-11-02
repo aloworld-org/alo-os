@@ -339,10 +339,10 @@ where
     // order, so what is drawn on top is what a press reaches and what the keys
     // go to.
     //
-    // **The task windows in front are painted with the desktop**, above the
-    // Dock, as they always were. Behind, they are painted here, under the
-    // window the person went to and under the Dock.
-    let the_tasks_are_in_front = native.in_front.the_task_windows_are_in_front();
+    // **The task windows are painted here in front or behind**, under the Dock
+    // either way, through the camera: they are windows on the canvas since ADR
+    // 0145. While in front they were painted with the desktop, above the Dock,
+    // until then.
     for kind in native.in_front.bottom_to_top() {
         match kind {
             crate::which_window_is_in_front::AKindOfWindow::Applications => {
@@ -427,8 +427,8 @@ where
                 }
             }
             crate::which_window_is_in_front::AKindOfWindow::TaskWindows => {
-                if !the_tasks_are_in_front && let Some(desktop) = native.desktop {
-                    desktop.paint_the_tasks(&mut frame, &washed)?;
+                if let Some(desktop) = native.desktop {
+                    desktop.paint_the_tasks(&mut frame, &washed, camera)?;
                 }
                 for (task_edge, textures) in native.task_edges.iter().zip(&task_edge_textures) {
                     crate::each_window_with_its_edge::wash_all(&mut frame, &textures.behind)?;
@@ -439,10 +439,10 @@ where
         }
     }
     // Above every client and control: the dock is furniture no window covers,
-    // and the task windows, when they are in front, are above it; below the
-    // record, the question and the indicator.
+    // a task window included; below the record, the question and the
+    // indicator.
     if let Some(desktop) = native.desktop {
-        desktop.paint(&mut frame, &washed, the_tasks_are_in_front)?;
+        desktop.paint(&mut frame, &washed)?;
     }
     // Above every client and control, so no window covers what the machine
     // did; below the question and the indicator.

@@ -112,53 +112,12 @@ pub(crate) fn flattened(picture: &TerminalPicture) -> Option<Washed> {
         return None;
     }
     picture.validate((width, height).into()).ok()?;
-    let (w, h) = (usize::try_from(width).ok()?, usize::try_from(height).ok()?);
-    let mut pixels = vec![0_u8; w.checked_mul(h)?.checked_mul(4)?];
-    let at = |x: i32, y: i32| -> Option<usize> {
-        let (x, y) = (usize::try_from(x).ok()?, usize::try_from(y).ok()?);
-        (x < w && y < h).then(|| (y * w + x) * 4)
-    };
-    if let Some(panel) = &picture.panel {
-        let across = usize::try_from(panel.area.size.w).ok()?;
-        for (row, line) in panel.pixels.chunks(across.max(1) * 4).enumerate() {
-            let y = panel.area.loc.y + i32::try_from(row).ok()?;
-            let Some(start) = at(panel.area.loc.x, y) else {
-                continue;
-            };
-            let end = start + line.len();
-            if let Some(into) = pixels.get_mut(start..end) {
-                into.copy_from_slice(line);
-            }
-        }
-    }
-    for solid in &picture.solids {
-        let [r, g, b] = solid.colour;
-        for y in solid.area.loc.y..solid.area.loc.y + solid.area.size.h {
-            for x in solid.area.loc.x..solid.area.loc.x + solid.area.size.w {
-                if let Some(i) = at(x, y)
-                    && let Some(into) = pixels.get_mut(i..i + 4)
-                {
-                    into.copy_from_slice(&[r, g, b, 255]);
-                }
-            }
-        }
-    }
-    for inked in picture.inked.iter().chain(&picture.strip) {
-        let across = usize::try_from(inked.area.size.w).ok()?.max(1);
-        for (n, [r, g, b]) in inked.pixels.iter().enumerate() {
-            let x = inked.area.loc.x + i32::try_from(n % across).ok()?;
-            let y = inked.area.loc.y + i32::try_from(n / across).ok()?;
-            if let Some(i) = at(x, y)
-                && let Some(into) = pixels.get_mut(i..i + 4)
-            {
-                into.copy_from_slice(&[*r, *g, *b, 255]);
-            }
-        }
-    }
-    Some(Washed {
-        area: Rectangle::from_size((width, height).into()),
-        pixels,
-    })
+    crate::painted_flat::flattened(
+        (width, height),
+        picture.panel.as_ref(),
+        &picture.solids,
+        &[&picture.inked, &picture.strip],
+    )
 }
 
 /// Where a window on the plane is drawn on a display looking through `camera`.

@@ -16,8 +16,8 @@
 //! (`crate::which_window_is_in_front`). When selecting several lands, this
 //! fits the selection instead.
 //!
-//! A task window is not on the canvas yet (ADR 0145's second stage), so with a
-//! task window in front there is nothing on the canvas to fit and nothing moves.
+//! A task window is on the canvas since ADR 0145's second stage, so with one in
+//! front it is the one fitted.
 //!
 //! # The same fit as *Show all*, of one window
 //!
@@ -49,7 +49,7 @@ impl crate::Server {
                     .into_iter()
                     .find(|frame| frame.id() == number)
             }
-            AKindOfWindow::TaskWindows => None,
+            AKindOfWindow::TaskWindows => self.the_task_window_in_front_as_a_frame(),
         }
     }
 

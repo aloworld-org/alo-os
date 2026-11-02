@@ -129,8 +129,8 @@ fn a_control_that_does_not_divide_evenly_is_rounded_outwards() {
     );
 }
 
-/// **alo's own windows reach the placer on the plane**, panned and zoomed the
-/// way a fixed control is, and an empty one is not a window.
+/// **alo's own windows reach the placer on the plane as they are** — both
+/// are on the plane since ADR 0145 — and an empty one is not a window.
 #[test]
 fn alos_own_windows_are_moved_onto_the_plane() {
     use super::alos_own_windows;
@@ -140,16 +140,15 @@ fn alos_own_windows_are_moved_onto_the_plane() {
         Rectangle::<i32, smithay::utils::Logical>::new((48, 116).into(), (560, 476).into());
     let task = Rectangle::<i32, Physical>::new((624, 116).into(), (768, 516).into());
     let nothing = Rectangle::<i32, Physical>::new((0, 0).into(), (0, 0).into());
-    let (on_the_plane, tasks) = alos_own_windows(
-        Some(terminal),
-        &[task, nothing],
-        alo_canvas::At { x: 300, y: 200 },
-        0.5,
-    );
+    let (on_the_plane, tasks) = alos_own_windows(Some(terminal), &[task, nothing]);
     assert_eq!(on_the_plane, Some(terminal), "the terminal was moved again");
     assert_eq!(tasks.len(), 1, "an empty rectangle is not a window");
     let task = tasks.first().expect("the task window is a window");
-    assert_eq!((task.loc.x, task.loc.y), (300 + 1248, 200 + 232));
+    assert_eq!(
+        (task.loc.x, task.loc.y),
+        (624, 116),
+        "a task window was moved again"
+    );
 }
 
 /// **A new window opens beside alo's terminal, not on it** — the round-2
@@ -159,7 +158,7 @@ fn a_new_window_opens_beside_alos_terminal() {
     use super::alos_own_windows;
     let terminal =
         Rectangle::<i32, smithay::utils::Logical>::new((48, 116).into(), (560, 476).into());
-    let (terminal, _) = alos_own_windows(Some(terminal), &[], alo_canvas::At { x: 0, y: 0 }, 1.0);
+    let (terminal, _) = alos_own_windows(Some(terminal), &[]);
     let terminal = terminal.expect("the terminal is a window");
     let view = smithay::utils::Rectangle::new((0, 0).into(), (1440, 960).into());
     let at = crate::where_a_window_opens(

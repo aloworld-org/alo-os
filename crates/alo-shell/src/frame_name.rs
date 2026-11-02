@@ -144,8 +144,7 @@ impl crate::Server {
         // Each task window on the screen and its title, which is the
         // person's own request (`alo_tasks::ATask::in_the_panel`).
         let tasks: Vec<(crate::the_tasks_a_person_opened::WhichTask, String)> = self
-            .tasks()
-            .each_open_window()
+            .the_task_windows_on_the_plane()
             .into_iter()
             .filter_map(|(which, _)| {
                 let title = self.tasks().the(which)?.in_the_panel().request;

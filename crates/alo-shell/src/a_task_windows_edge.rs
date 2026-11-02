@@ -69,8 +69,7 @@ pub(crate) fn every_task_windows_edge(
     let room = crate::window_edge::the_usable_output(Size::from(output), scale);
     let pointer = server.where_the_pointer_is_in_logical_pixels();
     server
-        .tasks()
-        .each_open_window()
+        .the_task_windows_on_the_screen()
         .into_iter()
         .filter_map(|(which, window)| {
             let edge = the_edge_of_a_task_window(a_window_in_the_edges_units(window, scale), room);
@@ -112,8 +111,7 @@ impl Server {
         let room = self.the_room_an_edge_is_clamped_in();
         let scale = self.the_scale_an_edge_is_measured_at();
         let at = a_point_in_the_edges_units(at, scale);
-        self.tasks()
-            .each_open_window()
+        self.the_task_windows_on_the_screen()
             .into_iter()
             .any(|(_, window)| {
                 let edge =
@@ -132,7 +130,8 @@ impl Server {
         let room = self.the_room_an_edge_is_clamped_in();
         let scale = self.the_scale_an_edge_is_measured_at();
         let at = a_point_in_the_edges_units(at, scale);
-        let open: Vec<(WhichTask, Rectangle<i32, Physical>)> = self.tasks().each_open_window();
+        let open: Vec<(WhichTask, Rectangle<i32, Physical>)> =
+            self.the_task_windows_on_the_screen();
         for (which, window) in open.into_iter().rev() {
             let edge = the_edge_of_a_task_window(a_window_in_the_edges_units(window, scale), room);
             match what_is_under(&edge, at) {

@@ -27,13 +27,14 @@
 //! physical pixels and a surface on the plane would need the camera applied to
 //! its texture.
 //!
-//! **A task window belongs on the canvas, and this file does not put it there
-//! yet.** This paragraph used to say the question was the owner's and unmade.
-//! The owner made it on 2026-11-01 ([ADR
-//! 0145](../../../docs/decisions/0145-alos-own-windows-live-on-the-canvas.md)):
-//! alo's own windows pan and zoom with the canvas like every application's. What
-//! is described above and below is the screen-space placement that stands until
-//! the task-window stage of that ADR lands.
+//! **A task window is on the canvas.** This paragraph used to say the question
+//! was the owner's and unmade. The owner made it on 2026-11-01 ([ADR
+//! 0145](../../../docs/decisions/0145-alos-own-windows-live-on-the-canvas.md)),
+//! and the second stage of that ADR built it: the view handed to this file is
+//! the part of the **plane** the camera shows, and the rectangle it answers is
+//! on the plane. At 100 % with the canvas unmoved that is exactly the display's
+//! pixels, which is why nothing here had to change.
+//! `crate::task_windows_on_the_plane` is where a task window meets a screen.
 //!
 //! # In the display's pixels, sized through its scale
 //!
