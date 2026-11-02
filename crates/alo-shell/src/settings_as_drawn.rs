@@ -65,32 +65,12 @@ impl SettingsAsDrawn {
 
     /// A point on the display, carried back into the picture.
     fn into_the_picture(&self, at: Point<i32, Physical>) -> Option<Point<i32, Physical>> {
-        let seen = self.room_on_screen;
-        if seen.size.w <= 0 || seen.size.h <= 0 {
-            return None;
-        }
-        let back = |from: i32, start: i32, seen: i32, room: i32| -> Option<i32> {
-            i32::try_from(i64::from(from - start) * i64::from(room) / i64::from(seen)).ok()
-        };
-        Some(Point::from((
-            back(at.x, seen.loc.x, seen.size.w, self.room.0)?,
-            back(at.y, seen.loc.y, seen.size.h, self.room.1)?,
-        )))
+        crate::a_room_through_the_camera::in_the_room(at, self.room, self.room_on_screen)
     }
 
     /// A rectangle in the picture, where it is seen on the display.
     fn on_the_screen(&self, area: Area) -> Rectangle<i32, Physical> {
-        let seen = self.room_on_screen;
-        let (across, down) = (self.room.0.max(1), self.room.1.max(1));
-        let out = |from: i32, start: i32, seen: i32, room: i32| -> i32 {
-            i32::try_from(i64::from(start) + i64::from(from) * i64::from(seen) / i64::from(room))
-                .unwrap_or(start)
-        };
-        let left = out(area.loc.x, seen.loc.x, seen.size.w, across);
-        let top = out(area.loc.y, seen.loc.y, seen.size.h, down);
-        let right = out(area.loc.x + area.size.w, seen.loc.x, seen.size.w, across);
-        let bottom = out(area.loc.y + area.size.h, seen.loc.y, seen.size.h, down);
-        Rectangle::new((left, top).into(), (right - left, bottom - top).into())
+        crate::a_room_through_the_camera::on_the_screen(area, self.room, self.room_on_screen)
     }
 
     /// The window, where it is seen on the display: what its edge sits on.
