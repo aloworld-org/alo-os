@@ -26,6 +26,10 @@ alo-keeping = { path = "../alo-keeping" }
 # are `alo-capability`'s, and `failing.rs` says why they are not this crate's.
 alo-strings = { path = "../alo-strings" }
 thiserror = { workspace = true }
+# Asking whether the person's input has anything in it before reading it, so a
+# `try` in the background of a terminal is not stopped by it
+# (`carrying_what_it_says.rs`).
+rustix = { workspace = true, features = ["event"] }
 
 [lints]
 workspace = true

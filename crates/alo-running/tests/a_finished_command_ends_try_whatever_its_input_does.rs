@@ -75,16 +75,28 @@ fn the_carrier_when_one_is_asked_for() {
 /// The carrier, under `timeout` exactly as the booted machine's measurement
 /// ran it, from a shell whose input is `input`. Says the shell's report of how
 /// `timeout` ended, what the carrier printed, and how long it took.
-fn carried_under_a_timeout(script: &str, input: Stdio) -> (Option<i32>, String, Duration) {
+///
+/// `a_terminal` says the input is one, and then it is made the shell's
+/// controlling terminal, as the person's shell has; `setsid` refuses to make
+/// anything else one, so a pipe is given a session with no terminal at all.
+fn carried_under_a_timeout(
+    script: &str,
+    input: Stdio,
+    a_terminal: bool,
+) -> (Option<i32>, String, Duration) {
     let this = std::env::current_exe().expect("this test binary to have a path");
     let began = Instant::now();
-    let finished = Command::new("setsid")
-        // A session of its own whose controlling terminal is its input, when
-        // its input is a terminal — which is what the person's shell has.
-        .args(["--ctty", "--wait", "sh", "-c"])
+    let mut setsid = Command::new("setsid");
+    if a_terminal {
+        setsid.arg("--ctty");
+    }
+    let finished = setsid
+        .args(["--wait", "sh", "-c"])
+        // The report on a line of its own: the test harness inside does not
+        // end its own last line before the carrier exits.
         .arg(
             "timeout \"$1\" \"$2\" --exact the_carrier_when_one_is_asked_for --nocapture \
-             --test-threads=1; echo \"timeout-ended=$?\"",
+             --test-threads=1; ended=$?; echo; echo \"timeout-ended=$ended\"",
         )
         .args(["sh", GIVEN])
         .arg(this)
@@ -127,7 +139,7 @@ fn a_terminal_nobody_types_at() -> (std::fs::File, Stdio) {
 fn a_command_that_never_reads_ends_try_in_the_background_of_a_terminal() {
     let (far_end, near_end) = a_terminal_nobody_types_at();
     let (code, said, took) =
-        carried_under_a_timeout(&format!("exit {THE_COMMANDS_OWN}"), near_end);
+        carried_under_a_timeout(&format!("exit {THE_COMMANDS_OWN}"), near_end, true);
     drop(far_end);
 
     assert_ne!(
@@ -144,8 +156,11 @@ fn a_command_that_never_reads_ends_try_in_the_background_of_a_terminal() {
 #[test]
 fn a_command_that_never_reads_ends_try_while_its_input_stays_open() {
     let (reader, writer) = std::io::pipe().expect("a pipe");
-    let (code, said, took) =
-        carried_under_a_timeout(&format!("exit {THE_COMMANDS_OWN}"), Stdio::from(reader));
+    let (code, said, took) = carried_under_a_timeout(
+        &format!("exit {THE_COMMANDS_OWN}"),
+        Stdio::from(reader),
+        false,
+    );
     drop(writer);
 
     assert_ne!(
@@ -168,6 +183,7 @@ fn input_that_is_sent_still_reaches_the_command() {
     let (code, said, _) = carried_under_a_timeout(
         &format!("read line; echo \"heard: $line\"; exit {THE_COMMANDS_OWN}"),
         Stdio::from(reader),
+        false,
     );
 
     assert_eq!(code, Some(THE_COMMANDS_OWN), "{said}");
