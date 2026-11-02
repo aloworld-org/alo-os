@@ -85,7 +85,13 @@ const SHIPPED: [(Action, Chord); 27] = [
     // which is a collision invisible from inside this one.
     (Action::WindowOptions, Chord::shipped(ALT, Key::F3)),
     (Action::CloseWindow, Chord::shipped(ALT, Key::F4)),
-    (Action::MinimiseWindow, Chord::shipped(SUPER, Key::Down)),
+    // **`⊞`+M, the design's *minimize to the fixed panel*.** The owner's choice
+    // of 2026-11-01, of three put to them: it was `⊞`+Down, the Windows habit,
+    // and the design's table gives `⊞`+M. One action holds one shipped chord, so
+    // keeping both would have needed a second action or a change to the
+    // settings file's format; the owner chose the design, and `⊞`+Down is left
+    // unbound for anyone who wants it back to set in Settings.
+    (Action::MinimiseWindow, Chord::shipped(SUPER, Key::M)),
     (Action::MaximiseWindow, Chord::shipped(SUPER, Key::Up)),
     // **`⊞`+Enter, the design's *enter or leave full screen*.**
     (Action::FillTheScreen, Chord::shipped(SUPER, Key::Enter)),
@@ -307,7 +313,7 @@ mod tests {
         };
         assert_eq!(said(Action::CloseWindow), "Alt+F4");
         assert_eq!(said(Action::MaximiseWindow), "Super+Up");
-        assert_eq!(said(Action::MinimiseWindow), "Super+Down");
+        assert_eq!(said(Action::MinimiseWindow), "Super+M");
         assert_eq!(said(Action::SnapLeft), "Super+Left");
         assert_eq!(said(Action::SnapRight), "Super+Right");
         assert_eq!(said(Action::NextWindow), "Alt+Tab");
