@@ -244,10 +244,7 @@ fn the_whole_panel_is_read_in_the_language_the_person_reads() {
             ),
             ("Fenster schließen".to_owned(), "Alt+F4".to_owned()),
             ("Fensteroptionen anzeigen".to_owned(), "Alt+F3".to_owned()),
-            (
-                "Fenster minimieren".to_owned(),
-                "Super+M".to_owned()
-            ),
+            ("Fenster minimieren".to_owned(), "Super+M".to_owned()),
             (
                 "Fenster maximieren oder zurücksetzen".to_owned(),
                 "Super+Pfeil hoch".to_owned()
