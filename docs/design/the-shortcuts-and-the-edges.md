@@ -140,6 +140,11 @@ so these are named rather than left for somebody to meet:
   reaching for their old habit would offer their windows to an agent instead of
   clearing the screen. It is the highest-consequence of the three.
 - **`⊞` + M minimises everything on Windows** and one window here.
+  **Shipped since 2026-11-01, by the owner's choice that day**: minimise
+  moved from `⊞` + Down, the Windows habit for one window, to `⊞` + M as this
+  table says. One action holds one shipped key, so keeping both would have
+  needed a second action or a change to the settings file's format. `⊞` + Down
+  now does nothing by default, and anyone can set it again in Settings.
 - **`⊞` alone opens the alo Bar**, where Windows opens its own menu. That one is
   probably correct — it is the same *kind* of thing in the same place — and is
   listed for completeness.
