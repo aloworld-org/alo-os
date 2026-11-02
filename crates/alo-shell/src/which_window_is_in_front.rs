@@ -51,10 +51,12 @@ pub(crate) enum AKindOfWindow {
     TaskWindows,
     /// Settings, a window on the canvas since ADR 0145's third stage.
     Settings,
+    /// The record window, on the canvas since ADR 0145's fourth stage.
+    TheRecord,
 }
 
 /// How many kinds of window there are.
-const HOW_MANY: usize = 4;
+const HOW_MANY: usize = 5;
 
 /// The kinds, bottom to top.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -71,14 +73,15 @@ impl Default for WhichIsInFront {
 
 impl WhichIsInFront {
     /// **The order there was before 2026-10-31**: applications, the terminal
-    /// over them, and task windows over both — and Settings over all of them,
-    /// where it was drawn before it joined the canvas. A machine where nobody
-    /// has gone anywhere yet draws exactly what it drew.
+    /// over them, and task windows over both — and the record and Settings over
+    /// all of them, in the order they were drawn before they joined the canvas.
+    /// A machine where nobody has gone anywhere yet draws exactly what it drew.
     pub(crate) const AS_IT_WAS: Self = Self {
         bottom_to_top: [
             AKindOfWindow::Applications,
             AKindOfWindow::TheTerminal,
             AKindOfWindow::TaskWindows,
+            AKindOfWindow::TheRecord,
             AKindOfWindow::Settings,
         ],
     };
@@ -122,7 +125,7 @@ impl WhichIsInFront {
     pub(crate) fn the_task_windows_are_in_front(self) -> bool {
         self.top_to_bottom()
             .into_iter()
-            .find(|kind| *kind != AKindOfWindow::Settings)
+            .find(|kind| !matches!(kind, AKindOfWindow::Settings | AKindOfWindow::TheRecord))
             == Some(AKindOfWindow::TaskWindows)
     }
 }
@@ -168,6 +171,7 @@ impl crate::Server {
                 // **Settings while it is open and on the Place being looked
                 // at** (ADR 0145): one on another Place is out of sight.
                 AKindOfWindow::Settings => self.settings_is_open_here(),
+                AKindOfWindow::TheRecord => self.the_record_is_open_here(),
                 AKindOfWindow::Applications => true,
             })
             .unwrap_or(AKindOfWindow::Applications)
@@ -221,6 +225,10 @@ impl crate::Server {
                 AKindOfWindow::Settings => {
                     self.settings_is_under(on_the_screen)
                         || self.the_settings_edge_is_under(on_an_edge)
+                }
+                AKindOfWindow::TheRecord => {
+                    self.the_record_is_under(on_the_screen)
+                        || self.the_records_edge_is_under(on_an_edge)
                 }
                 AKindOfWindow::Applications => {
                     self.the_window_under(location).is_some()

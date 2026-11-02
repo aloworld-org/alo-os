@@ -101,6 +101,9 @@ pub(crate) struct RecordPicture {
     pub(crate) size: (i32, i32),
     /// The window, when anything is drawn.
     pub(crate) panel: Option<Area>,
+    /// The body under the title strip's band, when the window is drawn: what
+    /// the canvas edge sits on.
+    pub(crate) body: Option<Area>,
     /// Close's target, when the window is drawn.
     pub(crate) close: Option<Area>,
     /// The window and everything in it, as one raster.
@@ -121,14 +124,24 @@ pub(crate) struct RecordPicture {
     pub(crate) older_out_of_view: bool,
     /// The rail, when anything is out of view: its track and where the view is.
     pub(crate) rail: Option<(Area, Area)>,
+    /// **Where the camera puts the raster's room on the display**, when the
+    /// record is a window on the canvas (ADR 0145, stage 4). [`None`] draws the
+    /// raster where it was laid out, which is the nested lane's fixed record.
+    pub(crate) drawn_at: Option<smithay::utils::Rectangle<i32, smithay::utils::Physical>>,
 }
 
 impl RecordPicture {
+    /// Whether this is a window on the canvas, drawn among the windows.
+    pub(crate) const fn is_on_the_canvas(&self) -> bool {
+        self.drawn_at.is_some()
+    }
+
     /// Nothing drawn, for an output of `size`.
-    fn empty(size: (i32, i32)) -> Self {
+    pub(crate) const fn empty(size: (i32, i32)) -> Self {
         Self {
             size,
             panel: None,
+            body: None,
             close: None,
             washed: None,
             refusal: None,
@@ -139,6 +152,7 @@ impl RecordPicture {
             more_recent_out_of_view: false,
             older_out_of_view: false,
             rail: None,
+            drawn_at: None,
         }
     }
 
@@ -185,6 +199,47 @@ pub(crate) fn picture(
     clock: RecordClock<'_>,
     display: DisplayScale,
 ) -> Result<RecordPicture, RenderError> {
+    picture_with(
+        shows,
+        strings,
+        labels,
+        (TheRecordsRoom::TheDisplay(size), look, display),
+        clock,
+        crate::record_frame_drawn::TheStrip::ItsOwn,
+    )
+}
+
+/// Where the record is laid out.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum TheRecordsRoom {
+    /// On a display this big, where the display's rule puts it.
+    TheDisplay((i32, i32)),
+    /// **In a room of its own**, a window this big with room for its shadow
+    /// round it, as the canvas draws it (ADR 0145, stage 4).
+    ItsOwn((i32, i32)),
+}
+
+/// The record laid out as [`picture`] lays it out — on a display, or in a room
+/// of its own — with its title strip drawn by `strip`: itself, or left to the
+/// canvas edge with the body in the look the window wears.
+///
+/// # Errors
+/// As [`picture`].
+pub(crate) fn picture_with(
+    shows: RecordShows<'_>,
+    strings: &Strings,
+    labels: &mut WindowControlLabels,
+    (place, look, display): (TheRecordsRoom, RecordLook, DisplayScale),
+    clock: RecordClock<'_>,
+    strip: crate::record_frame_drawn::TheStrip,
+) -> Result<RecordPicture, RenderError> {
+    let (room, size) = match place {
+        TheRecordsRoom::TheDisplay(size) => (Room::on(size, look, display), size),
+        TheRecordsRoom::ItsOwn(window) => match Room::around(window, look, display) {
+            Ok((room, size)) => (Ok(room), size),
+            Err(why) => (Err(why), window),
+        },
+    };
     let mut drawn = RecordPicture::empty(size);
     let palette = RecordPalette::of(look.scheme, look.contrast);
     let sentences = w::TheRecordsSentences::of(strings);
@@ -220,7 +275,7 @@ pub(crate) fn picture(
             Some((account, moved_past, put_back)),
         ),
     };
-    let room = Room::on(size, look, display)?;
+    let room = room?;
     let mut canvas = Canvas::over(room.canvas(size));
     if room.reading == Direction::RightToLeft {
         canvas.turned_round(room.window);
@@ -229,14 +284,15 @@ pub(crate) fn picture(
     let frame = crate::record_frame_drawn::drawn(
         &mut canvas,
         fonts,
-        room,
-        palette,
+        (room, palette),
         (&says.heading, &sentences.footer),
+        strip,
     );
     let header =
         crate::record_header::drawn(&mut canvas, fonts, room, palette, &says, frame.footer_top)
             .ok_or(RenderError::RecordScene)?;
     drawn.panel = Some(room.window);
+    drawn.body = Some(room.body);
     drawn.close = Some(frame.close);
     drawn.remarks = header.remarks;
     drawn.counts = header.counts;

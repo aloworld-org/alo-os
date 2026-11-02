@@ -43,6 +43,8 @@ pub(crate) enum AStop {
     ATask(WhichTask),
     /// Settings, while it is open (ADR 0145, stage 3).
     Settings,
+    /// The record window, while it is open (ADR 0145, stage 4).
+    TheRecord,
 }
 
 /// The stop after `at` in `stops`, going `direction`; [`None`] when there is
@@ -96,7 +98,8 @@ impl crate::Server {
             .map(|(which, _)| which)
             .collect();
         let settings = self.settings.is_open();
-        if !a_terminal && tasks.is_empty() && !settings {
+        let the_record = self.record.is_open();
+        if !a_terminal && tasks.is_empty() && !settings && !the_record {
             return false;
         }
         let mut stops = self.the_applications_stops(by_application);
@@ -109,6 +112,9 @@ impl crate::Server {
         // its shape and gains one stop at its end.
         if settings {
             stops.push(AStop::Settings);
+        }
+        if the_record {
+            stops.push(AStop::TheRecord);
         }
         let here = self.the_stop_with_the_keyboard(by_application);
         match the_next_stop(&stops, here.as_ref(), direction) {
@@ -131,6 +137,7 @@ impl crate::Server {
                 let _ = self.the_view_goes_to_this_task(which);
             }
             Some(AStop::Settings) => self.the_person_went_to_settings(),
+            Some(AStop::TheRecord) => self.the_person_went_to_the_record(),
             None => {}
         }
         true
@@ -158,6 +165,9 @@ impl crate::Server {
     fn the_stop_with_the_keyboard(&self, by_application: bool) -> Option<AStop> {
         if self.settings_is_taking_the_keys() {
             return Some(AStop::Settings);
+        }
+        if self.the_record_is_taking_the_keys() {
+            return Some(AStop::TheRecord);
         }
         if let Some(which) = self.the_task_with_the_keyboard {
             return Some(AStop::ATask(which));

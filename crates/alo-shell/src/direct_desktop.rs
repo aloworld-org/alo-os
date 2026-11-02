@@ -1858,16 +1858,26 @@ impl LoopInput for Desk<'_> {
         // this frame**: laid out where the display's scale is known, and
         // nowhere else.
         server.the_question_was_drawn(terminal.as_ref().and_then(|terminal| terminal.question));
-        // **The record window, while it is open**, in this frame and on
-        // this display. A chord or a row in Settings opens it.
-        let pictures = crate::nested_desktop::frame_pictures(
+        // **The record window, while it is open**, as a window on the canvas
+        // (ADR 0145, stage 4) — drawn here rather than among the desktop's
+        // own pictures, because it is placed and seen through the camera.
+        let the_record = crate::the_record_drawn_on_the_canvas::the_record_drawn(
+            server,
+            self.labels,
             frame,
-            server.the_records_frame(frame.strings, frame.look),
+            ((size.w, size.h), &named),
+        )?;
+        let mut pictures = crate::nested_desktop::frame_pictures(
+            frame,
+            None,
             None,
             self.labels,
             (size.w, size.h),
             terminal,
         )?;
+        server.where_the_records_body_was_drawn = the_record.as_ref().and_then(|drawn| drawn.body);
+        let the_records_places = the_record.as_ref().and_then(|drawn| drawn.places.clone());
+        pictures.record = the_record.map(|drawn| drawn.picture);
         // **Where the launcher went, for the press after this frame**: laid
         // out where the display's scale is known, and nowhere else.
         server.the_launcher_was_drawn(
@@ -1879,12 +1889,7 @@ impl LoopInput for Desk<'_> {
         );
         // **Where the record window went, for the press after this frame**:
         // laid out where the display's scale is known, and nowhere else.
-        server.the_record_was_drawn(
-            pictures
-                .record
-                .as_ref()
-                .and_then(crate::a_press_on_the_record::TheRecordsPlaces::of),
-        );
+        server.the_record_was_drawn(the_records_places);
         // **A window this person has open that this frame did not draw.**
         //
         // **Here, and not where the placement is made.** It stood beside
@@ -2041,9 +2046,12 @@ impl LoopInput for Desk<'_> {
                 frame,
                 self.strings,
             );
+            // **No record here**: it is a window on the canvas since ADR 0145's
+            // fourth stage, and a window is on the display the loop holds, as
+            // Settings and the task windows are.
             let its_pictures = crate::nested_desktop::frame_pictures(
                 frame,
-                server.the_records_frame(frame.strings, frame.look),
+                None,
                 None,
                 self.labels,
                 (size.w, size.h),
@@ -2351,6 +2359,19 @@ impl LoopInput for Desk<'_> {
             (size.w, size.h),
             u32::from(frame.display_scale),
         );
+        // **And the record's**, laid out over its body where this frame drew
+        // it (`crate::record_edge`).
+        let records_edge = server.the_records_edge_picture(
+            &mut self.labels.fonts,
+            self.strings,
+            ((size.w, size.h), u32::from(frame.display_scale)),
+            crate::RecordLook {
+                scheme: frame.look.scheme(),
+                scale: frame.look.scale(),
+                reading: frame.look.reading(),
+                contrast: frame.look.contrast(),
+            },
+        );
         // **The frame is drawn through the per-display road, with one display
         // on it.** `more-than-one-display-plan.md` task 4. This desk builds one
         // target today; `discover_every_atomic_output` is what will make it
@@ -2374,6 +2395,7 @@ impl LoopInput for Desk<'_> {
                 task_edges: &task_edges,
                 terminal_edge: terminal_edge.as_slice(),
                 settings_edge: settings_edge.as_slice(),
+                records_edge: records_edge.as_slice(),
                 // **The order the person's windows are in**, the same one a
                 // press and the keyboard read (`crate::which_window_is_in_front`).
                 in_front: server.which_is_in_front(),

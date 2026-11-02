@@ -28,6 +28,26 @@ use crate::the_records_icons::ARecordIcon;
 /// 14 per cent.
 const FLOATING: (i32, i32, i32, f32) = (16, 40, -4, 0.14);
 
+/// *Elevation/Quiet*, the shadow every window the keys are not going to casts
+/// (`crate::window_edge_look`): 8 down, 24 of blur, none in, 8 per cent.
+const QUIET: (i32, i32, i32, f32) = (8, 24, 0, 0.08);
+
+/// Who draws the window's title strip.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum TheStrip {
+    /// The window draws its own, in the focused look — the record fixed to the
+    /// display, as the nested lane still draws it.
+    ItsOwn,
+    /// **The canvas edge draws it** (ADR 0145, stage 4): the band is left to
+    /// `crate::an_alo_windows_edge`, the edge every one of alo's windows wears,
+    /// and the body wears the focused look while the keys go to the window and
+    /// the unfocused one otherwise.
+    TheCanvasEdge {
+        /// Whether the keys go to the window.
+        focused: bool,
+    },
+}
+
 /// What the frame drew that something else needs to know about.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) struct TheFrameDrawn {
@@ -42,9 +62,9 @@ pub(crate) struct TheFrameDrawn {
 pub(crate) fn drawn(
     canvas: &mut Canvas,
     fonts: &mut FontSystem,
-    room: Room,
-    palette: RecordPalette,
+    (room, palette): (Room, RecordPalette),
     (title, footer): (&str, &str),
+    strip: TheStrip,
 ) -> TheFrameDrawn {
     let px = |at_one: i32| room.px(at_one);
     let whole = Rectangle::new(
@@ -55,7 +75,11 @@ pub(crate) fn drawn(
         )
             .into(),
     );
-    let (falls, blurs, spreads, darkness) = FLOATING;
+    let focused = match strip {
+        TheStrip::ItsOwn => true,
+        TheStrip::TheCanvasEdge { focused } => focused,
+    };
+    let (falls, blurs, spreads, darkness) = if focused { FLOATING } else { QUIET };
     canvas.shadow(
         whole,
         px(m::THE_BODYS_CORNER) as f32,
@@ -66,11 +90,16 @@ pub(crate) fn drawn(
             darkness,
         },
     );
-    the_strip(canvas, fonts, room, palette, title);
+    if strip == TheStrip::ItsOwn {
+        the_strip(canvas, fonts, room, palette, title);
+    }
     let line = room.hairline as f32;
     let corner = px(m::THE_BODYS_CORNER) as f32;
     canvas.fill(room.body, corner, palette.surface, 1.0);
-    canvas.border(room.body, corner, line, palette.frame);
+    // **The body's line in the look it wears**: `border/strong` focused,
+    // `border/default` not — the two looks every window wears.
+    let body_line = if focused { palette.frame } else { palette.edge };
+    canvas.border(room.body, corner, line, body_line);
     let footer_top = the_footer(canvas, fonts, room, palette, footer);
     let (target, from_the_end, _, _) = m::CLOSE;
     let close = room.as_drawn(Rectangle::new(

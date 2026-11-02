@@ -85,11 +85,47 @@ window's own edge `#738294`, ink `#fffcf8`, secondary `#cbd5e1`, muted
   that does nothing is worse than none. **Close is drawn and works**, by
   pointer and by Escape. A press anywhere else on the window is the window's
   and reaches nothing behind it.
-- **The window does not move.** It is drawn where the rule above puts it, over
-  the applications, as it always has been; it is not yet one of the windows a
-  person arranges.
+- ~~**The window does not move.**~~ *Superseded on 2026-11-01 by
+  [ADR 0145](../decisions/0145-alos-own-windows-live-on-the-canvas.md): the
+  record is a window on the canvas — see the next section.*
 - **Put back** (`560:241`, `560:664`) is drawn since the change after this
   one — see below.
+
+## On the canvas — built 2026-11-01
+
+ADR 0145, stage 4 of 4: the record is a window on the canvas like an
+application's.
+
+- **Its size is still the rule above** for the display it is on — 880 × 796 at
+  most — and **everything inside it is where the rule puts it**: it is laid out
+  in a room of its own, the window at the shadow's reach from the room's corner,
+  so #1071's layout and #1082's Put back confirmation are unchanged. **Its place
+  is the canvas's**: placed once where a new window goes, on the Place being
+  looked at, and it stays there until it is shut.
+- It pans and zooms with the canvas; on another Place it is not drawn, not
+  pressed and takes no keys; *Show all* and Super+2 count it; Super+R, the row
+  in Settings and Super+Tab bring it in front and take the view to it, its Place
+  first, without moving it.
+- **It is drawn among the windows**, under the Dock and every fixed control, in
+  the order the person put them in. The egress indicator stays above everything
+  at the top left.
+- **It takes the keys while it is in front**, and keeps every key it had —
+  Up, Down, Home, End, F5, Tab, Shift+Tab, Enter, Space and Escape, Escape
+  closing the confirmation first. A chord with Control, Alt or the logo key,
+  which means nothing to it, now reaches its action, so Super+Tab leaves it.
+- **A press is found where the camera drew it**: Put back, the confirmation's
+  two buttons and the window itself are carried onto the display each frame.
+- **Its title strip is now the canvas edge** every one of alo's windows wears
+  (`an_alo_windows_edge.rs`) — the same band, strip, icon, title and Close at
+  the same figures the window drew for itself — and it now has **the unfocused
+  look** too: a cream strip, a muted title, a `border/default` body line and
+  the quiet shadow while the keys are elsewhere. Close shuts the window, as the
+  strip's own Close did. *A reading:* at a zoom other than 100 % the edge keeps
+  its size round a body of whatever size the zoom makes it, as an application's
+  edge does, so it no longer sits exactly in the window's own band.
+- **Opening the record still closes Settings**, as it always has. That order
+  was the only safe one while both were fixed to the display; on the canvas they
+  could stand side by side, and whether they should is not decided here.
 
 ## Put back
 

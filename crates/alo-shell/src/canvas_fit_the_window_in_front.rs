@@ -51,6 +51,7 @@ impl crate::Server {
             }
             AKindOfWindow::TaskWindows => self.the_task_window_in_front_as_a_frame(),
             AKindOfWindow::Settings => self.settings_as_a_frame(),
+            AKindOfWindow::TheRecord => self.the_record_as_a_frame(),
         }
     }
 

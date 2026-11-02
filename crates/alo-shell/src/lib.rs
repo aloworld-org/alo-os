@@ -352,6 +352,8 @@ mod putting_a_window_aside;
 mod putting_back_from_the_record;
 mod readback;
 mod record_clock;
+/// The record's window edge: its icon, its title and Close.
+mod record_edge;
 mod record_entry_drawn;
 mod record_frame_drawn;
 mod record_header;
@@ -359,6 +361,8 @@ mod record_keys;
 mod record_kinds;
 mod record_lines;
 mod record_measures;
+/// The record window as a window on the canvas (ADR 0145, stage 4).
+mod record_on_the_plane;
 mod record_paint;
 mod record_palette;
 mod record_put_back_drawn;
@@ -514,6 +518,10 @@ mod the_edge_takes_the_keyboard;
 /// The egress indicator's two arrows, from the design file's SVG.
 mod the_egress_indicators_arrows;
 mod the_first_account;
+/// The record drawn as a window on the canvas, for one frame.
+mod the_record_drawn_on_the_canvas;
+/// The view travelling to a window of alo's rather than the window moving.
+mod the_view_travels_to_a_window;
 pub use the_first_account::{ASecret, OnTheSheet, TheAccountSheet, TheAccountShown};
 /// Closing alo's terminal: at once when idle, after a question when a command
 /// is running.

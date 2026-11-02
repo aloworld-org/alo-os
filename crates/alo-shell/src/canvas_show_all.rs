@@ -86,6 +86,8 @@ impl crate::Server {
         frames.extend(self.the_task_windows_as_frames());
         // And Settings, on the canvas since stage 3.
         frames.extend(self.settings_as_a_frame());
+        // And the record window, on the canvas since stage 4.
+        frames.extend(self.the_record_as_a_frame());
         self.look_at_these_frames(&frames)
     }
 
