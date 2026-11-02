@@ -254,6 +254,8 @@ mod a_click_reaches_settings;
 mod a_press_on_the_one_button;
 /// The edge over one of alo's own windows.
 mod an_alo_windows_edge;
+/// A window of alo's laid out in a room of its own, seen through the camera.
+mod a_room_through_the_camera;
 /// Where the application door's socket goes, and what it refuses rather than
 /// serve. Public because `docs/contracts/application-door.md` publishes the
 /// path and the modes, and a test holds this crate to that document.
