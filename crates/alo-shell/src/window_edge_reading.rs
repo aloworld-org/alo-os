@@ -185,6 +185,10 @@ pub fn the_controls_of(decorations: Decorations, fits: HowItFits) -> Vec<OnTheEd
         // **Close only**, at either width: minimise and maximise wait for the
         // right-hand panel to hold a task, and a task window does not move.
         (Decorations::ATaskWindow, _) => vec![OnTheEdge::Close],
+        // **Close only** on alo's own windows for now: nothing can minimise,
+        // maximise or move one yet, and a control that reaches nothing would
+        // look live (`Decorations::AlosOwnWindow`).
+        (Decorations::AlosOwnWindow, _) => vec![OnTheEdge::Close],
     }
 }
 

@@ -206,6 +206,8 @@ where
     let edge_textures = crate::each_window_with_its_edge::uploaded(renderer, native.edges)?;
     let task_edge_textures =
         crate::each_window_with_its_edge::uploaded(renderer, native.task_edges)?;
+    let terminal_edge_textures =
+        crate::each_window_with_its_edge::uploaded(renderer, native.terminal_edge)?;
     // **The terminal, uploaded with the rest** for the same reason: it is one
     // raster — body, cells and strip — since it became a window on the canvas,
     // and the frame below borrows the renderer.
@@ -424,6 +426,13 @@ where
             crate::which_window_is_in_front::AKindOfWindow::TheTerminal => {
                 if let Some(terminal) = native.terminal {
                     terminal.paint(&mut frame, terminal_washed.as_ref())?;
+                }
+                // **Its edge with it**, above its body, so a window in front
+                // of the terminal covers its edge too.
+                for (edge, textures) in native.terminal_edge.iter().zip(&terminal_edge_textures) {
+                    crate::each_window_with_its_edge::wash_all(&mut frame, &textures.behind)?;
+                    crate::each_window_with_its_edge::wash_all(&mut frame, &textures.over)?;
+                    edge.paint(&mut frame)?;
                 }
             }
             crate::which_window_is_in_front::AKindOfWindow::TaskWindows => {

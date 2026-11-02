@@ -617,3 +617,57 @@ fn a_home_that_does_not_exist_starts_the_shell_at_the_top_of_the_disk() {
         "with no home to start in, the shell is not at the top of the disk"
     );
 }
+
+/// Ask until `wanted` is the answer, or the deadline passes.
+fn until_it_reads(
+    shell: &mut AShellOnAPseudoterminal,
+    screen: &mut TerminalOutput,
+    wanted: crate::IsACommandRunning,
+) -> bool {
+    for _ in 0..200 {
+        drop(shell.what_it_wrote(screen));
+        if shell.is_a_command_running() == wanted {
+            return true;
+        }
+        std::thread::sleep(Duration::from_millis(25));
+    }
+    false
+}
+
+/// **At a prompt nothing is running; while `cat` holds the terminal something
+/// is; and when it ends nothing is again.** The definition closing asks by
+/// (`crate::whether_a_command_is_running`), held to a real shell on a real
+/// pseudoterminal both ways, so a reader that answered *running* always, or
+/// never, fails one half.
+#[test]
+fn a_command_holding_the_terminal_is_running_and_a_prompt_is_not() {
+    use crate::IsACommandRunning;
+    let mut shell = AShellOnAPseudoterminal::running(
+        HowBig::of(80, 24, 100).expect("a terminal"),
+        "/bin/sh",
+        &["-s"],
+    )
+    .expect("a shell starts on a pseudoterminal");
+    let mut screen = a_screen();
+
+    // **Idle first**, once the shell has taken its own terminal: right after it
+    // starts the group in front may not be its own yet.
+    assert!(
+        until_it_reads(&mut shell, &mut screen, IsACommandRunning::No),
+        "a shell at its prompt never read as idle"
+    );
+    shell
+        .a_person_typed(b"cat\n")
+        .expect("what a person types reaches the shell");
+    assert!(
+        until_it_reads(&mut shell, &mut screen, IsACommandRunning::Yes),
+        "`cat` holding the terminal never read as running"
+    );
+    shell
+        .a_person_typed(&[0x04])
+        .expect("what a person types reaches the shell");
+    assert!(
+        until_it_reads(&mut shell, &mut screen, IsACommandRunning::No),
+        "`cat` ended and the terminal still reads as running"
+    );
+}

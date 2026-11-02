@@ -1224,6 +1224,10 @@ pub(crate) struct Shows<'a> {
     /// What the strip across the top says: the folder the shell is in, where
     /// it runs and who is signed in. `crate::the_terminals_strip` draws it.
     pub(crate) the_strip: crate::the_terminals_strip::WhatTheStripSays<'a>,
+    /// Which look the window wears: focused while the keys go to it, which
+    /// draws its body's hairline and shadow as every window's are
+    /// (`crate::window_edge_look`).
+    pub(crate) look: crate::window_edge_look::WhichLook,
 }
 
 /// What joins the parts of a recognised result's summary.
@@ -1261,6 +1265,7 @@ pub(crate) fn picture(
         a_benchmark,
         a_diff,
         the_strip,
+        look,
     } = shows;
     let LaidOut {
         window,
@@ -1675,7 +1680,7 @@ pub(crate) fn picture(
     // on the panel's own white in the design's render, so that solid is the
     // same colour as the panel and is kept because each run's ground is laid
     // on it.
-    let panel = crate::the_terminals_frame::the_body(window, size, scale, colours);
+    let panel = crate::the_terminals_frame::the_body_in(window, size, scale, colours, look);
     let mut solids = vec![Solid {
         area: transcript,
         colour: ground,

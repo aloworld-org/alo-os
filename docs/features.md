@@ -367,6 +367,7 @@ file carries it with a tier.*
 - File associations — what opens what, changeable by a person
 - A text editor and an image viewer, so a fresh machine is not helpless
 - **A terminal.** Law 2 forbids the *agent* running arbitrary commands; it says nothing about a person, and an operating system that does not trust its owner with a shell is a toy
+- **The terminal window closes like any window, and never ends your work without asking.** It wears the same edge as every application's window — its icon, *Terminal* and **Close**, in the focused look while you are typing into it and the quieter one otherwise. **Close ends the terminal at once when the shell is idle; when a command is still running, it first asks "A command is still running. Close anyway?"** — *Close anyway* or *Cancel*, and Escape is Cancel. Cancel leaves the terminal open and the command running. *Running* means the terminal is held by a command rather than by the shell's prompt, asked of the machine at the moment you press Close; where the machine will not say, it asks rather than guesses. *The owner's decision of 2026-11-01. Minimise and maximise are drawn on the design's edge and not yet on the terminal's, because nothing can do either to it yet.* Recorded in [`design/the-terminal-window.md`](design/the-terminal-window.md)
 - ★ **Ask alo from the command line, and it acts.** One command, typed at your
   own prompt like any other: it answers a question, and when you ask for
   something done it finds what you meant, **proposes the command**, says **what

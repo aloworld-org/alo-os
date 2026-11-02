@@ -80,6 +80,17 @@ impl HowItIsRaised {
         darkness: 36.0 / 255.0,
     };
 
+    /// `Elevation/Quiet` on a `radius/lg` panel: one of alo's own windows that
+    /// the keys are not going to — `557:149`, the unfocused terminal's body,
+    /// whose shadow `crate::window_edge_look` records as 8 down, 24 blur, 8 %.
+    pub(crate) const QUIET: Self = Self {
+        corner: 18,
+        falls: 8,
+        blurs: 24,
+        spreads: 0,
+        darkness: 0.08,
+    };
+
     /// A tooltip: the selection bar's, `166:8846`, which the owner chose for the
     /// Dock's names on 2026-10-29. A 7 corner and **no shadow**: the design's
     /// tooltip has none, so `falls`, `blurs` and `darkness` are nought rather

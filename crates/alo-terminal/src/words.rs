@@ -479,11 +479,40 @@ pub const ON_THIS_MACHINE: Word = Word::saying("terminal.where.this-machine", "L
      about where the program runs, not about a local network or a local language.",
 );
 
+/// The terminal window's title, on its edge.
+pub const TERMINAL: Word = Word::saying("terminal.window.title", "Terminal").noting(
+    "The title on the edge of alo's own terminal window, beside its icon, as an application's \
+     name is shown on its window. One word: the name of the window, not a sentence.",
+);
+
+/// Asked when a person closes the terminal while a command is still running.
+pub const A_COMMAND_IS_STILL_RUNNING: Word = Word::saying(
+    "terminal.close.still-running",
+    "A command is still running. Close anyway?",
+)
+.noting(
+    "Asked when a person presses Close on the terminal window while a program they started in \
+     it has not finished. Closing ends that program. Below it are two buttons: \"Close \
+     anyway\" and \"Cancel\". Cancel leaves the terminal and the program running.",
+);
+
+/// The button that closes the terminal and ends what is running in it.
+pub const CLOSE_ANYWAY: Word = Word::saying("terminal.close.anyway", "Close anyway").noting(
+    "A button under \"A command is still running. Close anyway?\". Pressing it closes the \
+     terminal window and ends the program that was still running in it.",
+);
+
+/// The button that closes only the question.
+pub const CANCEL: Word = Word::saying("terminal.close.cancel", "Cancel").noting(
+    "A button under \"A command is still running. Close anyway?\". Pressing it, or Escape, \
+     closes only the question: the terminal stays open and the program keeps running.",
+);
+
 /// Every string this crate can say, in the order this file declares them.
 ///
 /// The array is what a test reads down and what [`declare_into`] walks, so a
 /// word declared above and left out here is a string nothing can look up.
-pub const EVERY_WORD: [Word; 32] = [
+pub const EVERY_WORD: [Word; 36] = [
     A_PLACE_TO_RETURN_TO,
     WHAT_KEEPING_ONE_COSTS,
     A_PROGRAM,
@@ -516,6 +545,10 @@ pub const EVERY_WORD: [Word; 32] = [
     NOWHERE_TO_ADD_IT,
     IT_WOULD_NOT_TAKE_THE_CHANGE,
     ON_THIS_MACHINE,
+    TERMINAL,
+    A_COMMAND_IS_STILL_RUNNING,
+    CLOSE_ANYWAY,
+    CANCEL,
 ];
 
 /// How many lines a recognised diff took away.

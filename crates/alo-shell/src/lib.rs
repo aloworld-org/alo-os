@@ -500,6 +500,9 @@ mod the_edge_takes_the_keyboard;
 mod the_egress_indicators_arrows;
 mod the_first_account;
 pub use the_first_account::{ASecret, OnTheSheet, TheAccountSheet, TheAccountShown};
+/// Closing alo's terminal: at once when idle, after a question when a command
+/// is running.
+mod closing_the_terminal;
 pub mod the_first_start;
 mod the_first_starts_icons;
 mod the_formats_are_told;
@@ -548,10 +551,17 @@ mod the_terminal_on_the_plane;
 /// scale; the window's size is a share of the display, because the design's
 /// 1040x800 is what it was drawn at and not what a window is.
 mod the_terminals_cells_are_drawn;
+/// alo's terminal's window edge: its icon, its title and Close, in the focused
+/// or unfocused look, following the camera.
+mod the_terminals_edge;
 /// The terminal window's own body: the panel its transcript sits on and the
 /// hairline round it, in the design's colours, so the terminal reads as a window
 /// rather than as text on the desktop.
 mod the_terminals_frame;
+/// The terminal's icon on its edge: a navy tile with the prompt mark.
+mod the_terminals_icon;
+/// The question closing the terminal asks, drawn on the terminal's window.
+mod the_terminals_question_drawn;
 /// The strip across the top of alo's own terminal: the folder the shell is in,
 /// where the shell runs, and who is signed in.
 mod the_terminals_strip;

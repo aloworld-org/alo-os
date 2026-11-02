@@ -15,8 +15,9 @@
 use alo_appearance::{Role, Scheme};
 use smithay::utils::{Physical, Rectangle};
 
-use super::{TheTerminalsColours, the_body};
+use super::{TheTerminalsColours, the_body_in};
 use crate::painted::Washed;
+use crate::window_edge_look::WhichLook;
 
 /// A role as the three bytes a picture is painted in.
 fn rgb(role: Role) -> [u8; 3] {
@@ -32,10 +33,16 @@ fn a_window() -> Rectangle<i32, Physical> {
     Rectangle::new((200, 120).into(), (1040, 800).into())
 }
 
-/// The light body of a window, at this scale.
+/// The light body of a window the keys are not going to, at this scale.
 fn a_body(window: Rectangle<i32, Physical>, room: (i32, i32), scale: f64) -> Washed {
-    the_body(window, room, scale, TheTerminalsColours::of(Scheme::Light))
-        .expect("a window with area has a body")
+    the_body_in(
+        window,
+        room,
+        scale,
+        TheTerminalsColours::of(Scheme::Light),
+        WhichLook::NotFocused,
+    )
+    .expect("a window with area has a body")
 }
 
 /// The four bytes at this point of the display, read out of the raster.
@@ -146,11 +153,19 @@ fn at_two_hundred_percent_the_corner_is_twice_as_round() {
 
 /// **A shadow falls below the window and fades**, darker just under it than
 /// further away, and there is no shadow above it to speak of — the design's
-/// offset is (0, 16), straight down.
+/// offset is (0, 16), straight down. Held in the focused look, whose shadow
+/// this is.
 #[test]
 fn a_shadow_falls_below_the_window_and_fades() {
     let window = a_window();
-    let body = a_body(window, A_DISPLAY, 1.0);
+    let body = the_body_in(
+        window,
+        A_DISPLAY,
+        1.0,
+        TheTerminalsColours::of(Scheme::Light),
+        WhichLook::Focused,
+    )
+    .expect("a window with area has a body");
     let middle = window.loc.x + window.size.w / 2;
     let below = window.loc.y + window.size.h;
     let near = pixel(&body, middle, below + 4)[3];
@@ -212,12 +227,35 @@ fn the_body_is_kept_on_the_display() {
 fn a_window_with_no_room_draws_no_body() {
     let colours = TheTerminalsColours::of(Scheme::Light);
     assert!(
-        the_body(
+        the_body_in(
             Rectangle::new((0, 0).into(), (0, 800).into()),
             A_DISPLAY,
             1.0,
-            colours
+            colours,
+            WhichLook::Focused
         )
         .is_none()
+    );
+}
+
+/// **The focused look is the approved one**: the hairline is `border/strong`
+/// and the shadow just under the window is darker than the unfocused one's —
+/// the two looks every window wears (`557:213`, `557:149`).
+#[test]
+fn the_focused_body_has_the_strong_hairline_and_the_deeper_shadow() {
+    let window = a_window();
+    let colours = TheTerminalsColours::of(Scheme::Light);
+    let focused = the_body_in(window, A_DISPLAY, 1.0, colours, WhichLook::Focused)
+        .expect("a window with area has a body");
+    let quiet = a_body(window, A_DISPLAY, 1.0);
+    let middle = window.loc.x + window.size.w / 2;
+    let [r, g, b, _] = pixel(&focused, middle, window.loc.y);
+    assert_eq!([r, g, b], crate::window_edge_look::BORDER_STRONG);
+    let [r, g, b, _] = pixel(&quiet, middle, window.loc.y);
+    assert_eq!([r, g, b], colours.hairline);
+    let below = window.loc.y + window.size.h + 12;
+    assert!(
+        pixel(&focused, middle, below)[3] > pixel(&quiet, middle, below)[3],
+        "the focused window is not raised higher than the unfocused one"
     );
 }
