@@ -108,11 +108,15 @@ fn every_clause_drawn_is_the_vocabularys_and_none_is_this_crates() {
         );
     }
 
-    // And what the record says about itself is its own sentences, in order.
+    // And what the record says about itself is its own sentences, in order —
+    // all but where it begins, which the heading says while the record is
+    // everything.
     let window = opened(&kept);
     let picture = drawn(&window);
-    let remarks: Vec<String> = account_of(&window)
-        .said(&strings)
+    let account = account_of(&window);
+    assert!(account.goes_all_the_way_back());
+    let remarks: Vec<String> = account
+        .said_besides_its_beginning(&strings)
         .into_iter()
         .map(alo_strings::Said::into_text)
         .collect();
@@ -122,7 +126,30 @@ fn every_clause_drawn_is_the_vocabularys_and_none_is_this_crates() {
         .map(|text| text.text.clone())
         .collect();
     assert_eq!(drawn_remarks, remarks);
-    assert!(!remarks.is_empty());
+}
+
+/// **Whether anything has been removed is said once** — by the heading's
+/// sentence, *Nothing has been removed from this list*, and not again in the
+/// record's own words under it, which a booted machine drew on 2026-11-02.
+#[test]
+fn whether_anything_was_removed_is_said_once() {
+    let kept = an_afternoon_kept();
+    let strings = words();
+    let window = opened(&kept);
+    let picture = drawn(&window);
+    let account = account_of(&window);
+    let its_own = account.said_about_its_beginning(&strings).into_text();
+    assert!(
+        !picture.remarks.iter().any(|remark| remark.text == its_own),
+        "the record's own sentence about what was removed is drawn under a heading that \
+         already says it: {its_own}"
+    );
+    // The heading's sentence is the one that says it.
+    assert!(
+        crate::the_records_words::TheRecordsSentences::of(&strings)
+            .introduction
+            .ends_with("Nothing has been removed from this list."),
+    );
 }
 
 /// **Newest first, in the order the record has them**, and inside one view each
