@@ -148,7 +148,14 @@ impl Server {
 
     /// Whether a task window is the thing taking keys right now.
     pub fn a_task_is_taking_the_keys(&self) -> bool {
-        self.the_task_with_the_keyboard.is_some()
+        self.the_task_with_the_keyboard.is_some_and(|which| {
+            // **Only on the Place being looked at** (ADR 0145): a task window
+            // on another Place is out of sight, and keys typed into a window
+            // nobody can see are keys lost. One not placed yet is on this one.
+            self.tasks()
+                .the_place_of(which)
+                .is_none_or(|place| place == self.the_place_now())
+        })
     }
 
     /// This task window takes the keyboard — because the person just asked for

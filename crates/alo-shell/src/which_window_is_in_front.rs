@@ -102,6 +102,12 @@ impl WhichIsInFront {
     }
 
     /// Whether the task windows are in front of both other kinds.
+    ///
+    /// **Only the tests ask now.** The painter asked it to paint task windows
+    /// in front above the Dock until they became windows on the canvas (ADR
+    /// 0145), and a window on the canvas is under the Dock wherever it is in
+    /// the order.
+    #[cfg(test)]
     pub(crate) fn the_task_windows_are_in_front(self) -> bool {
         self.top_to_bottom().first() == Some(&AKindOfWindow::TaskWindows)
     }
@@ -188,7 +194,7 @@ impl crate::Server {
             .into_iter()
             .find(|kind| match kind {
                 AKindOfWindow::TaskWindows => {
-                    self.tasks().the_one_under(on_the_screen).is_some()
+                    self.the_task_window_under(on_the_screen).is_some()
                         || self.a_task_windows_edge_is_under(on_an_edge)
                 }
                 AKindOfWindow::TheTerminal => self.the_terminal_is_under(on_the_screen),

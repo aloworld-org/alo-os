@@ -15,37 +15,37 @@ use crate::desktop_raster::DesktopPicture;
 use crate::painted::Washed;
 
 impl DesktopPicture {
-    /// **The task windows alone**, for a frame where the person has gone to
-    /// the terminal or an application and the task windows are drawn behind
-    /// it. `washed` is [`Self::washed`]'s textures, as [`Self::paint`] takes
-    /// them; the task windows' are the first.
+    /// **The task windows**, each one raster, oldest first so the last opened
+    /// is in front, put where `camera` draws them and scaled by its zoom.
+    ///
+    /// **Windows on the canvas since ADR 0145**, so they are painted among the
+    /// windows — under the Dock and every fixed control, wherever they are in
+    /// the order the person put the windows in — and never above the Dock,
+    /// where they were painted while in front until then. `washed` is
+    /// [`Self::washed`]'s textures; the task windows' are the first.
+    ///
+    /// Each picture was flattened by `crate::desktop_raster`, its panel and its
+    /// words in one raster, so a window is painted whole before the next and
+    /// the window in front covers the words of the one behind. A module of its
+    /// own, `task_layers`, held that order while a window was two layers; with
+    /// one raster there is no order inside a window left to hold, and it went.
     pub(crate) fn paint_the_tasks<F: Frame>(
         &self,
         frame: &mut F,
         washed: &[(F::TextureId, smithay::utils::Rectangle<i32, Physical>)],
+        camera: alo_canvas::Camera,
     ) -> Result<(), RenderError> {
-        let tasks: Vec<_> = washed.iter().take(self.tasks.len()).collect();
-        self.the_tasks_in_order(frame, tasks)
-    }
-
-    /// Each task window whole, its panel then its words, oldest first.
-    fn the_tasks_in_order<F: Frame>(
-        &self,
-        frame: &mut F,
-        tasks: Vec<&(F::TextureId, smithay::utils::Rectangle<i32, Physical>)>,
-    ) -> Result<(), RenderError> {
-        for layer in crate::task_layers::in_painting_order(
-            self.tasks.iter().map(|task| task.inked.as_slice()),
-            tasks,
-        ) {
-            match layer {
-                crate::task_layers::TaskLayer::Panel((texture, area)) => {
-                    crate::painted::wash(frame, texture, *area)?;
-                }
-                crate::task_layers::TaskLayer::Words(inked) => {
-                    crate::painted::paint(frame, &[], inked)?;
-                }
-            }
+        for (task, (texture, area)) in self.tasks.iter().zip(washed) {
+            let with_its_shadow = smithay::utils::Rectangle::<i32, smithay::utils::Logical>::new(
+                (task.at.loc.x - task.reach, task.at.loc.y - task.reach).into(),
+                (area.size.w, area.size.h).into(),
+            );
+            crate::painted::wash_scaled(
+                frame,
+                texture,
+                (area.size.w, area.size.h),
+                crate::the_terminal_on_the_plane::on_the_screen(with_its_shadow, camera),
+            )?;
         }
         Ok(())
     }
@@ -119,16 +119,13 @@ impl DesktopPicture {
     /// the same order. Each is drawn **before** the flat shapes that sit on it,
     /// because the Dock's surface is what its icons and its words are drawn on.
     ///
-    /// `with_the_tasks` is whether the task windows are painted here, above the
-    /// Dock, which is where they go **while they are in front**. When the
-    /// person has gone to the terminal or an application, the painter draws
-    /// them earlier, behind those, with [`Self::paint_the_tasks`]
-    /// (`crate::which_window_is_in_front`, the owner's decision of 2026-10-31).
+    /// The task windows are not painted here: they are windows on the canvas,
+    /// under the Dock, and [`Self::paint_the_tasks`] paints them among the
+    /// windows (ADR 0145).
     pub(crate) fn paint<F: Frame>(
         &self,
         frame: &mut F,
         washed: &[(F::TextureId, smithay::utils::Rectangle<i32, Physical>)],
-        with_the_tasks: bool,
     ) -> Result<(), RenderError> {
         // **The first is the Dock's own surface and goes under its contents.**
         // Anything after it is a panel opened *from* the Dock — the overflow
@@ -136,9 +133,10 @@ impl DesktopPicture {
         let mut washed = washed.iter();
         // **The tasks come off the front by count**, which is the one thing
         // that makes the rest of this positional read safe — see `Self::washed`.
-        let tasks: Vec<_> = (0..self.tasks.len())
-            .filter_map(|_| washed.next())
-            .collect();
+        // They are painted by `Self::paint_the_tasks`, among the windows.
+        for _ in 0..self.tasks.len() {
+            let _ = washed.next();
+        }
         // **One more exactly when there is a market**, which is what
         // `Self::washed` yielded in this position.
         let market = self.market.as_ref().and_then(|_| washed.next());
@@ -168,29 +166,18 @@ impl DesktopPicture {
         // their areas are kept apart rather than ordered. An empty panel has no
         // solids, so a person who has put nothing aside is painted nothing.
         crate::painted::paint(frame, &self.panel.solids, &[])?;
-        // **Task windows above the Dock, with the other two shell windows.**
-        // They are the same kind of thing — a window the shell draws rather
-        // than a client's — and the two desktop windows have been painted above
-        // the Dock since before this. Whether a task window should instead give
-        // way to the Dock is a placement question, and
-        // `docs/design/where-a-new-window-opens.md` is where it would be
-        // settled; it is not settled here and this does not pretend to.
-        // **Each window whole — its panel, then its words — before the next**,
-        // so the window in front covers the words of the one behind it.
-        // `crate::task_layers` says why the order matters and is where it is
-        // tested; it was every panel first and every window's words after them,
-        // which put the first window's words over the second window's panel.
+        // **No task windows here.** They were painted here, above the Dock,
+        // while they were in front, until they became windows on the canvas
+        // (ADR 0145): a window on the canvas is under the Dock and every fixed
+        // control, and `Self::paint_the_tasks` paints them among the windows.
         //
-        // **The words were once missing altogether, and no test could have said
-        // so.** They were shaped, measured, placed and asserted —
-        // `the_words_are_drawn_and_an_empty_window_draws_none` holds the count at
-        // twelve — and the list never reached a frame. What found it was looking
-        // at a picture of a real draw, which is what `examples/desktop_check.rs`
-        // exists for and says so in its own header: *it needs eyes, and eyes
-        // need pictures.*
-        if with_the_tasks {
-            self.the_tasks_in_order(frame, tasks)?;
-        }
+        // **Their words were once missing altogether, and no test could have
+        // said so.** They were shaped, measured, placed and asserted —
+        // `the_words_are_drawn_and_an_empty_window_draws_none` holds the count
+        // at twelve — and the list never reached a frame. What found it was
+        // looking at a picture of a real draw, which is what
+        // `examples/desktop_check.rs` exists for: *it needs eyes, and eyes need
+        // pictures.* The words are in each window's one raster now.
         // **The market, and until 2026-10-18 nothing painted it at all.**
         //
         // `DesktopPicture::market` was laid out by

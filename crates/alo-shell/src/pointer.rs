@@ -304,7 +304,7 @@ impl Server {
                 if self.a_press_on_a_one_button(on_the_screen) {
                     return Ok(false);
                 }
-                if let Some(which) = self.tasks().the_one_under(on_the_screen) {
+                if let Some(which) = self.the_task_window_under(on_the_screen) {
                     self.the_composer.it_gave_the_keyboard_up();
                     self.this_task_took_the_keyboard(which);
                     return Ok(false);

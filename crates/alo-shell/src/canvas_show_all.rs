@@ -82,6 +82,8 @@ impl crate::Server {
         // 0145 and is not a client, so it is not among the surfaces above.
         let mut frames = self.the_frames_on_the_plane();
         frames.extend(self.the_terminal_as_a_frame());
+        // And the task windows, on the canvas since stage 2 of ADR 0145.
+        frames.extend(self.the_task_windows_as_frames());
         self.look_at_these_frames(&frames)
     }
 

@@ -140,21 +140,24 @@ fn onto_the_plane(
 /// the view — on top of the terminal — and the round-2 frames (`557:144`) draw
 /// it beside.
 ///
-/// **The terminal is already on the plane** since ADR 0145 put it there, so it
-/// is handed in as it is. The task windows are still kept in the display's
-/// pixels (`crate::where_a_task_window_opens`) until their own stage of that
-/// ADR, so the camera is applied to them exactly as it is to a fixed control.
+/// **Both are already on the plane** since ADR 0145 put them there — the
+/// terminal in stage 1, the task windows in stage 2 — so they are handed in as
+/// they are, with no camera applied: a camera applied here would be applied
+/// twice.
 fn alos_own_windows(
     terminal: Option<Rectangle<i32, Logical>>,
     tasks_front_first: &[Rectangle<i32, Physical>],
-    at: alo_canvas::At,
-    zoom: f64,
 ) -> AlosOwnWindows {
     let terminal = terminal.filter(|window| window.size.w > 0 && window.size.h > 0);
     let tasks = tasks_front_first
         .iter()
         .filter(|window| window.size.w > 0 && window.size.h > 0)
-        .filter_map(|window| onto_the_plane(*window, at, zoom))
+        .map(|window| {
+            Rectangle::new(
+                (window.loc.x, window.loc.y).into(),
+                (window.size.w, window.size.h).into(),
+            )
+        })
         .collect();
     (terminal, tasks)
 }
@@ -260,18 +263,15 @@ impl Server {
             .filter(|surface| !crate::has_been_placed(surface))
             .cloned()
             .collect();
-        // **alo's own windows.** The terminal is on the plane, on the Place it
-        // opened on, and is in the way only while that Place is shown. The
-        // task windows are still drawn in the display's pixels over every
-        // Place, so they are in the way wherever a new window opens.
+        // **alo's own windows**, on the plane and on the Place being shown,
+        // each in the way only while its Place is the one a new window opens
+        // on (ADR 0145).
         let mut tasks: Vec<(crate::the_tasks_a_person_opened::WhichTask, _)> =
-            self.tasks().each_open_window();
+            self.the_task_windows_on_the_plane();
         tasks.reverse();
         let (terminal, task_windows) = alos_own_windows(
             self.where_the_terminal_is_on_the_plane(),
             &tasks.iter().map(|(_, window)| *window).collect::<Vec<_>>(),
-            at,
-            zoom,
         );
         let in_front = self.which_is_in_front().top_to_bottom();
         let mut placed = 0;

@@ -50,7 +50,11 @@ impl crate::Server {
     /// A press at `at` on the screen, offered to the task windows' one
     /// buttons, newest first. Answers whether one showing **Stop** took it.
     pub(crate) fn a_press_on_a_one_button(&mut self, at: Point<i32, Physical>) -> bool {
-        let open = self.tasks().each_open_window();
+        // **On the plane, where the windows and their buttons are laid out**
+        // (ADR 0145): the press is taken back through the camera rather than
+        // the button brought forward, so it lands at any zoom.
+        let open = self.the_task_windows_on_the_plane();
+        let at = self.the_plane_point_under(at);
         // **The scale the windows were last drawn at**, the same answer a
         // press on a task window's edge is measured with.
         let scale = DisplayScale::of_per_cent(self.the_scale_edges_are_measured_at);

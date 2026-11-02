@@ -101,8 +101,14 @@ pub(crate) enum NoTaskPicture {
 pub(crate) struct TaskPicture {
     /// The panel and every rounded shape on it, in one raster.
     pub(crate) panel: Washed,
-    /// Where the window itself sits.
+    /// Where the window itself sits: as laid out by [`furniture`], and **on the
+    /// plane** once `crate::desktop_raster` has flattened the picture for the
+    /// canvas (ADR 0145).
     pub(crate) at: Rectangle<i32, Physical>,
+    /// How far the picture reaches past the window above and to its left —
+    /// its shadow — so the painter can put the raster's corner that far up and
+    /// left of the window. Nought for a picture laid out in place.
+    pub(crate) reach: i32,
     /// Its words, painted after its panel.
     ///
     /// **Separate from the panel's raster.** The panel is one texture with its
@@ -1475,6 +1481,7 @@ pub(crate) fn furniture(
         inked,
         the_conversation: (the_newest, view),
         place: 0,
+        reach: 0,
     })
 }
 

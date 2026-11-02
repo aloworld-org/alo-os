@@ -1521,14 +1521,35 @@ impl LoopInput for Desk<'_> {
         // beside it. `crate::where_a_task_window_opens` records that, and
         // records that whether it ought to live on the canvas instead is a
         // question the owner has not answered.
+        //
+        // **That question was answered on 2026-11-01** (ADR 0145): a task
+        // window is a window on the canvas. So it is placed in the view the
+        // camera shows, on the plane, on the Place being looked at. `the_view`
+        // below stays the display's for the market, which is not on the
+        // canvas.
         let the_view = smithay::utils::Rectangle::new((0, 0).into(), (size.w, size.h).into());
+        let the_view_on_the_plane = {
+            let camera = server.the_camera();
+            let zoom = crate::scene::drawn_at(camera);
+            #[expect(
+                clippy::cast_possible_truncation,
+                reason = "a display divided by a zoom of at least a twentieth fits an i32"
+            )]
+            let seen = (
+                (f64::from(size.w) / zoom) as i32,
+                (f64::from(size.h) / zoom) as i32,
+            );
+            smithay::utils::Rectangle::new((camera.at().x, camera.at().y).into(), seen.into())
+        };
         // **At this display's scale**, so a window opened on a dense screen asks
         // for twice the pixels. Asked here because the frame has not been told
         // its scale yet; `Server::the_scale_of_display` is the one lookup it
         // will be told from.
         let this_displays_scale = server.the_scale_of_display(&named);
+        let the_place_now = server.the_place_now();
+        server.tasks_mut().new_windows_open_on(the_place_now);
         server.tasks_mut().put_whatever_has_nowhere_to_be(
-            the_view,
+            the_view_on_the_plane,
             frame.look.reading(),
             &[],
             this_displays_scale,
@@ -1537,7 +1558,7 @@ impl LoopInput for Desk<'_> {
         // The raster borrows these strings.
         let the_tasks_words = crate::the_tasks_words::TheTasksWords::said(
             server.tasks().each(),
-            &server.tasks().where_each_went(),
+            &server.tasks().where_each_went_on(the_place_now),
             self.strings,
             server.the_change_waiting.selected(),
         )

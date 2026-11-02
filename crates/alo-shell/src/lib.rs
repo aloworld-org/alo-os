@@ -332,6 +332,7 @@ mod output_metadata;
 mod output_retirement;
 mod overview_sheet;
 mod painted;
+mod painted_flat;
 mod painted_text;
 mod painted_text_wrapping;
 mod panel_raster;
@@ -462,8 +463,6 @@ mod stopping_what_was_asked;
 mod surfaces;
 /// Everything on the Dock that a person reads, said once a frame.
 mod tab_moves_among_the_bars_controls;
-/// The order a desktop's task windows are painted in: each one whole.
-mod task_layers;
 /// The colours a task window draws in, mapped from the design's tokens.
 mod task_look;
 /// A task window's furniture, rasterised.
@@ -475,6 +474,8 @@ pub mod task_raster;
 /// it puts in one. `examples/desktop_check.rs` is the first such caller outside
 /// this crate.
 pub mod task_text;
+/// Task windows on the canvas: where they meet a screen (ADR 0145).
+mod task_windows_on_the_plane;
 pub mod the_application_door;
 pub mod the_application_doors_place;
 /// The approval card's layout, measured off the approved frame.
