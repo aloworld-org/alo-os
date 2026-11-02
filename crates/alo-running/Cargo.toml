@@ -41,3 +41,6 @@ path = "src/bin/alo-enter-the-box.rs"
 # The tests write an entry down and read it back as JSON, which is how an
 # absence is held to being an absence.
 serde_json = { workspace = true }
+# A terminal for the carrier to be in the background of, which is the one way
+# to reproduce what stopped `try` on a booted machine on 2026-11-02.
+rustix = { workspace = true, features = ["pty"] }
