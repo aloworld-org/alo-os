@@ -64,7 +64,7 @@ impl SettingsAsDrawn {
     }
 
     /// A point on the display, carried back into the picture.
-    fn into_the_picture(&self, at: Point<i32, Physical>) -> Option<Point<i32, Physical>> {
+    fn in_the_picture(&self, at: Point<i32, Physical>) -> Option<Point<i32, Physical>> {
         crate::a_room_through_the_camera::in_the_room(at, self.room, self.room_on_screen)
     }
 
@@ -80,7 +80,7 @@ impl SettingsAsDrawn {
 
     /// Whether the window is under `at`, a point on the display.
     pub(crate) fn is_under(&self, at: Point<i32, Physical>) -> bool {
-        self.into_the_picture(at)
+        self.in_the_picture(at)
             .is_some_and(|point| self.panel.contains(point))
     }
 
@@ -91,7 +91,7 @@ impl SettingsAsDrawn {
     /// column's categories, then the page's rows. A row is only found inside
     /// the window, so the part of one scrolled under the window's edge is not.
     pub(crate) fn what_is_under(&self, at: Point<i32, Physical>) -> Option<PointedAt> {
-        let point = self.into_the_picture(at)?;
+        let point = self.in_the_picture(at)?;
         if !self.panel.contains(point) {
             return None;
         }
