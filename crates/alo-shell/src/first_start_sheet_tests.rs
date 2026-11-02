@@ -175,6 +175,47 @@ fn two_secrets_of_different_lengths_are_the_same_sheet() {
     );
 }
 
+/// **The PIN sheet promises no password it never asks for.**
+///
+/// It said *Keep your password for the situations that require it*, as the
+/// design does, on a road where a person who chooses a PIN is never asked for
+/// a password (the walk on `main` `8263ddcb`, 2026-11-01). Walked the way a
+/// person does: the name, then the PIN sheet, and what it is told there.
+#[test]
+fn the_pin_sheet_promises_no_password_it_never_asks_for() {
+    let (_kept, screen) = a_fresh_machine();
+    let mut screen = at_the_name_sheet(screen);
+    for key in "ada"
+        .chars()
+        .map(SignInKey::Letter)
+        .chain([SignInKey::Enter])
+    {
+        screen = match screen.pressed(key) {
+            Signing::Still(screen) => *screen,
+            Signing::HandedOver(_) => panic!("nothing should sign in at the name"),
+        };
+    }
+    let crate::SignInShows::FirstAccount { account, .. } = screen.shows() else {
+        panic!("the name did not lead to the PIN sheet");
+    };
+    assert_eq!(
+        account.sheet,
+        crate::TheAccountSheet::Secret(crate::ASecret::Pin)
+    );
+    let said = screen
+        .words()
+        .say(
+            &crate::first_start_words::PIN_INTRODUCTION.key(),
+            &alo_strings::Filling::nothing(),
+        )
+        .into_text();
+    assert_eq!(said, "Use a PIN to sign in on this computer.");
+    assert!(
+        !said.to_lowercase().contains("password"),
+        "the PIN sheet speaks of a password this road never asks for: {said}"
+    );
+}
+
 /// **A fresh machine makes its first account and signs somebody in.**
 ///
 /// The whole road, end to end, through the real screen: a name, a secret, and

@@ -64,6 +64,14 @@ that day:
   optional** — every account has a secret (the owner's answer) — so it has no
   `Optional ·` eyebrow and its way back is *Back*, the decline wording this
   document already gives a step that returns.
+- **The PIN sheet's introduction is its first sentence only**: *Use a PIN to
+  sign in on this computer.* The frame's second sentence, *Keep your password
+  for the situations that require it* (`562:508`, and `186:10737` before it),
+  **assumes a password step this setup does not have**: a person who chooses a
+  PIN is never asked for a password, so the sentence promised one that does not
+  exist. Found on the walk of `main` `8263ddcb` (qemu, 2026-11-01). Not
+  replaced with words of our own; **for the owner**: whether the frame should
+  say something in its place, such as where *Use password only* leads.
 - **Back on the name sheet returns to the overview** as it was left.
 - **Accessibility is drawn as the design's control on every list and account
   sheet.** A press on it still opens nothing, as on the sign-in screen: the
