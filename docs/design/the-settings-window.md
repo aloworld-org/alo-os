@@ -211,6 +211,46 @@ with:
   and **Enter** on *Give alo a folder*, which is the first row there while
   nothing is given.
 
+## On the canvas, with the pointer — built 2026-11-01
+
+[ADR 0145](../decisions/0145-alos-own-windows-live-on-the-canvas.md), stage 3:
+Settings is a window on the canvas like an application's.
+
+- **Its size is still the rule above**, for the display it is on and the
+  person's text size — so a larger text size still makes it larger. **Its place
+  is the canvas's**: the first frame after it opens puts it where a new window
+  goes (`where-a-new-window-opens.md`) on the Place being looked at, and there
+  it stays. It pans and zooms with the canvas; on another Place it is not drawn,
+  not pressed and takes no keys; *Show all* and Super+2 count it; the chord, the
+  Dock and Super+Tab bring it in front and take the view to it (its Place
+  first) without moving it.
+- **It is drawn among the windows**, under the Dock and every fixed control, in
+  the order the person put the windows in. The egress indicator stays above
+  everything at the top left.
+- **It takes the keys while it is the window in front** — opening it brings it
+  in front, so a person who opens it types into it exactly as before; one put
+  behind an application gives that application the keys. A chord with Control,
+  Alt or the logo key, which means nothing to Settings, now reaches its action
+  from inside it, so Super+Tab leaves it — except while Settings waits for a
+  chord to bind, when it is Settings'.
+- **A press reaches it.** A category shows its page with the keyboard on it, as
+  Up and Down do; a row or a list entry takes the keyboard and is **chosen as
+  Enter chooses it**, by the steps a key takes (`a_key_reaches_settings.rs`), so
+  a click and a key cannot disagree about a row; a press beside an open list
+  closes it, as Escape does. Presses are found in the positions each frame
+  already recorded — categories, rows in view, list entries — carried back
+  through the camera, so what is pressed is what is seen at any zoom. **While a
+  provider is being filled in** the page is the form, which is the keyboard's;
+  a press there brings Settings in front and does nothing else.
+- **It wears the window edge** every one of alo's windows wears
+  (`an_alo_windows_edge.rs`): *Settings* and **Close**, in the focused look
+  while it has the keys. Close shuts it as Escape does, giving up a provider
+  form that is open; nothing is written by closing it. *Readings, for the owner
+  to overrule:* **the edge has no icon** — the design draws none for Settings,
+  and the grip's mark stands in its place as for an application whose icon this
+  machine does not know — and **no Minimise or Maximise**, which nothing can do
+  to Settings yet.
+
 ## What is drawn and not built
 
 The design draws choices this computer does not have yet. **They are drawn as
