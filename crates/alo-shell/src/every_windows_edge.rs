@@ -63,7 +63,7 @@ pub(crate) fn every_windows_edge(
             // at twice its window's distance from the corner
             // (`crate::an_edge_in_its_displays_units`).
             let window = crate::an_edge_in_its_displays_units::a_window_in_the_edges_units(
-                crate::window_placement::where_a_window_is(surface),
+                server.where_a_window_is_drawn(surface),
                 scale,
             );
             let edge = crate::window_edge::edge_of(

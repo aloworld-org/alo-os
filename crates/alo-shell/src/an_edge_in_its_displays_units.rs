@@ -62,6 +62,36 @@ pub(crate) fn a_point_in_the_edges_units(
 }
 
 impl crate::Server {
+    /// Where an application's window is **drawn**, in the display's pixels:
+    /// its rectangle on the plane, moved and scaled by the canvas camera.
+    ///
+    /// **The one road every edge takes to its window**, since 2026-11-01. Until
+    /// then the draw, a press, a press in the menu, the pointer revealing an
+    /// edge and the keyboard arriving on one each read `where_a_window_is`,
+    /// which is the window on the **plane**, as though it were on the screen —
+    /// so the moment a person panned or zoomed, every window's edge, line and
+    /// shadow stayed where the window had been at 100 % and the window moved
+    /// away from it. The window itself has always been drawn through the
+    /// camera (`crate::scene::trees`); now its edge is drawn through the same
+    /// arithmetic (`crate::the_terminal_on_the_plane::on_the_screen`).
+    ///
+    /// The edge's own furniture is not zoomed: a title and its controls stay
+    /// the size the display draws them at, round a window of whatever size the
+    /// zoom makes it, which is what a design canvas does with a frame's name.
+    pub(crate) fn where_a_window_is_drawn(
+        &self,
+        surface: &smithay::reexports::wayland_server::protocol::wl_surface::WlSurface,
+    ) -> Rectangle<i32, Logical> {
+        let drawn = crate::the_terminal_on_the_plane::on_the_screen(
+            crate::where_a_window_is(surface),
+            self.the_camera(),
+        );
+        Rectangle::new(
+            (drawn.loc.x, drawn.loc.y).into(),
+            (drawn.size.w, drawn.size.h).into(),
+        )
+    }
+
     /// The scale an edge is laid out at for a press, a reveal or the keyboard:
     /// the last drawn display's, in per cent. See this file's header.
     pub(crate) fn the_scale_an_edge_is_measured_at(&self) -> u32 {

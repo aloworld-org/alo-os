@@ -210,7 +210,7 @@ impl crate::Server {
                 .map_or_else(Revealing::covered, |(_, machine)| *machine);
             let edge = crate::window_edge::edge_of(
                 crate::an_edge_in_its_displays_units::a_window_in_the_edges_units(
-                    crate::where_a_window_is(&surface),
+                    self.where_a_window_is_drawn(&surface),
                     scale,
                 ),
                 decorations,

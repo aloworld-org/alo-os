@@ -34,6 +34,7 @@ mod super_i_opens_settings;
 mod support;
 mod text_a_person_did_not_type_on_a_keyboard;
 mod the_canvas_is_where_they_left_it;
+mod the_edge_follows_the_camera;
 mod the_world_is_a_step_out;
 mod what_an_application_verb_says_it_does;
 mod window_activation;
