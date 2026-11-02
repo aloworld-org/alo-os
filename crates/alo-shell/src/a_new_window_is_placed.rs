@@ -274,6 +274,8 @@ impl Server {
             &tasks.iter().map(|(_, window)| *window).collect::<Vec<_>>(),
         );
         let in_front = self.which_is_in_front().top_to_bottom();
+        // **And Settings**, a window on the canvas since ADR 0145's third stage.
+        let settings = self.where_settings_is_on_the_plane();
         let mut placed = 0;
         for surface in waiting {
             let place = crate::canvas_place::the_place_of(&surface);
@@ -301,6 +303,7 @@ impl Server {
                     task_windows.first().copied()
                 }
                 crate::which_window_is_in_front::AKindOfWindow::TheTerminal => terminal,
+                crate::which_window_is_in_front::AKindOfWindow::Settings => settings,
                 crate::which_window_is_in_front::AKindOfWindow::Applications => {
                     applications.first().copied()
                 }
@@ -309,6 +312,7 @@ impl Server {
                 .iter()
                 .copied()
                 .chain(terminal)
+                .chain(settings)
                 .chain(task_windows.iter().copied())
                 .collect();
             // **Up, not rounded**, and this one stays mine: a window wanting

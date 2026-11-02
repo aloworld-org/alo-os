@@ -252,10 +252,10 @@ mod a_chord_goes_round_every_window;
 mod a_click_reaches_settings;
 /// A press on a task window's one button: Stop (ADR 0139).
 mod a_press_on_the_one_button;
-/// The edge over one of alo's own windows.
-mod an_alo_windows_edge;
 /// A window of alo's laid out in a room of its own, seen through the camera.
 mod a_room_through_the_camera;
+/// The edge over one of alo's own windows.
+mod an_alo_windows_edge;
 /// Where the application door's socket goes, and what it refuses rather than
 /// serve. Public because `docs/contracts/application-door.md` publishes the
 /// path and the modes, and a test holds this crate to that document.
