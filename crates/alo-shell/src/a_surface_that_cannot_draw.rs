@@ -33,6 +33,19 @@ impl crate::Server {
         self.record.closed();
     }
 
+    /// A question could not be drawn on `display`: say why in the log.
+    ///
+    /// Not closed here, because a question is not this server's to close: it
+    /// is waiting for the person's answer, and the agent that asked it is
+    /// still waiting too. It is left out of this frame, and asked again on the
+    /// next.
+    pub(crate) fn a_question_could_not_be_drawn(display: &str, why: &RenderError) {
+        eprintln!(
+            "alo-shell: a question could not be drawn on {display} ({why:?}), so this frame is \
+             drawn without it"
+        );
+    }
+
     /// Settings could not be drawn on `display`: close it, for the same
     /// reason, and say why in the log.
     pub(crate) fn settings_could_not_be_drawn(&mut self, display: &str, why: &RenderError) {

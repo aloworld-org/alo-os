@@ -1863,6 +1863,9 @@ impl LoopInput for Desk<'_> {
         if let Some(why) = &pictures.record_refused {
             server.the_record_could_not_be_drawn(&named, why);
         }
+        if let Some(why) = &pictures.approval_refused {
+            crate::Server::a_question_could_not_be_drawn(&named, why);
+        }
         // **Where the launcher went, for the press after this frame**: laid
         // out where the display's scale is known, and nowhere else.
         server.the_launcher_was_drawn(
