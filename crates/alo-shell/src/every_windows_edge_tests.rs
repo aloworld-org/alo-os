@@ -73,3 +73,33 @@ fn every_display_is_asked_at_its_own_scale() {
         "a scale is asked of the server again instead of read from the frame"
     );
 }
+
+/// **Every road that lays an edge out reads the window where it is drawn**,
+/// through the canvas camera, and none reads the plane rectangle as though it
+/// were the screen.
+///
+/// The draw cannot be driven end to end without a renderer, so this holds the
+/// wiring as text; `tests/the_edge_follows_the_camera` drives the reveal, which
+/// reads the same function, with a real pointer at three pans and zooms.
+#[test]
+fn every_edge_road_reads_the_window_where_it_is_drawn() {
+    let here = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
+    for file in [
+        "every_windows_edge.rs",
+        "a_press_on_an_edge.rs",
+        "a_press_in_the_menu.rs",
+        "the_window_edge_reveals.rs",
+        "the_edge_takes_the_keyboard.rs",
+    ] {
+        let text = std::fs::read_to_string(here.join(file)).expect("a file this crate ships");
+        assert!(
+            text.contains("where_a_window_is_drawn("),
+            "{file} lays an edge out without asking where the window is drawn"
+        );
+        assert!(
+            !text.contains("where_a_window_is(surface)")
+                && !text.contains("where_a_window_is(&surface)"),
+            "{file} reads the window's plane rectangle as though it were on the screen"
+        );
+    }
+}
