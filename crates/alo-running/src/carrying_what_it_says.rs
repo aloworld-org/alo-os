@@ -67,12 +67,9 @@ pub fn carried_until_it_ends(
         Carrying::ToThePerson => {
             if let Some(mut into_it) = input {
                 // **Not waited for.** A terminal never ends, so a thread
-                // copying from it is still reading when the command is done,
+                // copying from it is still waiting when the command is done,
                 // and it ends with this process.
-                std::thread::spawn(move || {
-                    let mut from = std::io::stdin();
-                    copied(&mut from, &mut into_it);
-                });
+                std::thread::spawn(move || offered_as_it_arrives(&mut into_it));
             }
             let mut out = std::io::stdout();
             let mut err = std::io::stderr();
@@ -104,6 +101,64 @@ fn both_carried(
         }
         child.wait()
     })
+}
+
+/// Carry the person's input into the command, **reading only what has
+/// arrived**.
+///
+/// # Why it waits to be told, rather than reading
+///
+/// This used to read this process's input straight away, whether or not the
+/// command ever wanted any. A process that reads its terminal from a
+/// **background** process group is stopped by the terminal (`SIGTTIN`), all of
+/// it, so `try` was stopped before its command could end. That is every `try`
+/// run by `timeout`, which gives what it runs a process group of its own, and
+/// every `try … &` at a prompt. Measured on a booted machine on 2026-11-02
+/// (main `8263ddcb`, once): every boxed run under `timeout 60` ended 124 with no
+/// output, `/usr/bin/true` included.
+///
+/// So it asks first whether anything is there to read, which a terminal answers
+/// without stopping anybody, and reads only when something is. A command run
+/// in the background now ends when it ends, as any other program run so would;
+/// if the person types while it runs, the read is what the terminal stops, as
+/// it would stop `cat &`.
+///
+/// # When it ends
+///
+/// At the end of the input — the command is then told its input is over — or
+/// when the command will take no more. Neither is waited for by the caller.
+fn offered_as_it_arrives(into_it: &mut std::process::ChildStdin) {
+    use rustix::event::{PollFd, PollFlags, poll};
+    use rustix::io::{Errno, read};
+    use std::os::fd::AsFd;
+
+    let from = std::io::stdin();
+    let from = from.as_fd();
+    let mut arrived = [0_u8; 8192];
+    loop {
+        let mut asking = [PollFd::new(&from, PollFlags::IN)];
+        match poll(&mut asking, None) {
+            // Readable, or hung up, or broken: in every case a read now does
+            // not wait, and a hang-up or a fault reads as the end.
+            Ok(_) => {}
+            // Asked again rather than read: a read now could be the one the
+            // terminal stops.
+            Err(Errno::INTR) => continue,
+            Err(_) => return,
+        }
+        let length = match read(from, &mut arrived) {
+            Ok(0) => return,
+            Ok(length) => length,
+            Err(Errno::INTR | Errno::AGAIN) => continue,
+            Err(_) => return,
+        };
+        let Some(these) = arrived.get(..length) else {
+            return;
+        };
+        if into_it.write_all(these).is_err() || into_it.flush().is_err() {
+            return;
+        }
+    }
 }
 
 /// Copy until the end, and flush.
