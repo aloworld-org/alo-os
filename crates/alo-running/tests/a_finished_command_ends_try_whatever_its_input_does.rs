@@ -126,8 +126,8 @@ fn a_terminal_nobody_types_at() -> Result<(std::fs::File, Stdio), String> {
         .map_err(|why| format!("no terminal could be opened: {why}"))?;
     grantpt(&far_end).map_err(|why| format!("the terminal was not granted: {why}"))?;
     unlockpt(&far_end).map_err(|why| format!("the terminal was not unlocked: {why}"))?;
-    let near_end = ptsname(&far_end, Vec::new())
-        .map_err(|why| format!("the terminal has no name: {why}"))?;
+    let near_end =
+        ptsname(&far_end, Vec::new()).map_err(|why| format!("the terminal has no name: {why}"))?;
     let near_end = std::fs::OpenOptions::new()
         .read(true)
         .write(true)
