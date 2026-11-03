@@ -747,16 +747,91 @@ next reader learns that it was decided rather than missed.
 
 **Also not built, each for a reason:**
 
-- **the external window edge** above the body (1040×44, `479:28999`): it is an
-  interactive surface — drag, minimise, maximise, close — and this terminal is
-  not yet a window on the canvas that any of those could act on. Controls that
-  reach nothing would look live.
+- ~~**the external window edge** above the body~~ — **built 2026-11-01**, see
+  *The window edge, and closing*, below. It was held back while the terminal
+  was not yet a window on the canvas that any of its controls could act on.
 - **the strip's menu** — *search, new session, settings*, the three dots at
   (936, 6), 44×44. Nothing it names exists for it to open, so it would look
   live and reach nothing. Its room is kept, so the words beside it do not move
   when it arrives.
 - **the dark body**, which has not been read: the dark pair in `500:29477` is
   owed. The dark ground and ink are the ones drawn before.
+
+## The window edge, and closing — built 2026-11-01
+
+**Why now.** A walk on a booted machine (main `8263ddcb`, 2026-11-01) showed the
+terminal on the canvas zooming correctly and **with no title strip or edge**:
+the one window with no Close.
+
+**What the design draws.** The approved frame `557:148`, *Window · Terminal ·
+not focused*, carries the same `Proposed / Window edge (title kept visible)`
+instance (`557:150`, 560 × 44) that Dolphin wears, read off the live file that
+day:
+
+| | node | figure |
+|---|---|---|
+| strip | `I557:150;554:41` | 560 × 32 at y 12 |
+| icon | `I557:150;554:42` | 16 × 16 at (14, 20) |
+| title | `I557:150;554:46` | *Terminal*, at (38, 19) |
+| Minimise, Maximise, Close | `554:47`, `554:50`, `554:53` | 44 × 44 at 416, 464, 512 |
+
+The icon's fill cannot be asked of an instance's child, so it was **read off the
+frame's render, pixel by pixel**: a 16 × 16 tile of `#102a43` (`text/primary`)
+with corners of about 4, and a white prompt-and-line mark about 10 across,
+centred. The mark is `icons/settings/terminal.svg` — the design's own terminal
+artwork — drawn into a 14 frame (`crates/alo-shell/src/the_terminals_icon.rs`).
+
+**Built**, through the application edge itself (`window_edge::edge_of`,
+`EdgePicture`, `window_edge_pointing`), laid out from where the camera draws
+the terminal, so it pans and zooms with it as #1084 made every application's
+edge do (`crates/alo-shell/src/the_terminals_edge.rs`):
+
+- the strip, the icon and *Terminal* (`terminal.window.title`, externalised);
+- **Close**;
+- the focused look while the keys go to the terminal and the unfocused one
+  otherwise — on the strip, and on the body's hairline and shadow, which now
+  follow the same two looks (`border/strong` and `Elevation/Floating` focused;
+  `border/default` and `Elevation/Quiet` not).
+
+**Not built, and why:** Minimise and Maximise. Nothing can minimise or maximise
+the terminal yet, and a control that reaches nothing looks live and is not —
+the rule the task window's Close-only edge keeps. They arrive with something to
+do. **Readings, recorded so they can be disagreed with:** the edge is always
+shown, even where a person chose *show the title only when I point at it*,
+because it carries the only Close this window has; and the terminal's edge is
+drawn on the display the loop holds, as task windows' are, not on a second one.
+
+### Closing — the owner's decision of 2026-11-01
+
+*"Close ends the terminal at once when the shell is idle; when a command is
+still running, it first asks 'A command is still running. Close anyway?' —
+Close anyway / Cancel, Escape is Cancel."*
+
+- **Running** is defined, not inferred: the terminal's foreground process group
+  is not the shell's own (`tcgetpgrp` on the pseudoterminal, asked at the moment
+  Close is pressed — `crates/alo-terminal/src/whether_a_command_is_running.rs`).
+  A shell with job control hands the terminal to each command it starts and
+  takes it back when the command ends, so this is the shell exactly when the
+  person is at a prompt. **A terminal that will not say is asked about**, never
+  ended blind. Two limits, said rather than hidden: a job sent to the background
+  with `&` does not hold the terminal and does not count; a shell started with
+  job control turned off reads idle while it runs something.
+- **Cancel, or Escape, changes nothing**: the question closes, the terminal
+  stays, the command keeps running. Any other key while the question is open is
+  taken by it, so nothing typed at the question reaches the command.
+- **The keyboard starts on Cancel** — the button that loses nothing. *A reading:*
+  the decision names the buttons and Escape, not where the keyboard starts. Tab
+  and the left and right arrows go between the two; Enter or Space presses.
+- **How it looks is a reading too**, because the design draws no such question:
+  the record window's own confirmation (`560:763`, approved the same day) — a
+  rounded box in `bg/canvas` with a `border/default` hairline, the question in
+  Body/Medium SemiBold, a filled *Close anyway* and an outlined *Cancel*, 48
+  tall, a ring round the one the keyboard is on — drawn across the top of the
+  transcript, inside the terminal's own picture, so it pans and zooms with the
+  window. Its colours are the light ones in both appearances, as the edge's are.
+- **Closing ends the shell**: the terminal is dropped, which sends the shell
+  `SIGHUP` and, if it does not go within forty polls, `SIGKILL`. Ctrl+Alt+T then
+  opens a new one, placed where a new window goes.
 
 ## The strip across the top, built 2026-10-28
 

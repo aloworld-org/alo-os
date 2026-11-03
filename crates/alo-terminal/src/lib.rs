@@ -63,6 +63,7 @@ pub mod what_the_strip_says;
 #[cfg(target_os = "linux")]
 mod where_a_shell_starts;
 pub mod where_the_integration_stands;
+pub mod whether_a_command_is_running;
 pub mod who_is_speaking;
 pub mod why_a_command_is_waiting;
 pub mod words;
@@ -95,6 +96,7 @@ pub use what_is_blocking_it::{WhatIsBlockingIt, what_is_blocking};
 pub use what_the_strip_says::{WhereTheShellRuns, the_folder_as_a_person_reads_it};
 #[cfg(target_os = "linux")]
 pub use where_a_shell_starts::{WhereItStarts, WhyNotHome};
+pub use whether_a_command_is_running::IsACommandRunning;
 pub use who_is_speaking::{ARegion, WhoIsSpeaking, regions_of};
 pub use why_a_command_is_waiting::{
     TheEvidence, WhatItReadsFrom, WhyItIsWaiting, why_it_is_waiting,

@@ -217,14 +217,23 @@ fn a_notch(server: &mut Server, back: Back, time: u32) -> Result<bool, Box<dyn s
 ///
 /// The kept frame stores B, G, R and a zero (`crate::readback`), and this
 /// fixture's desktop is the shipped appearance at 09:41, which is light.
+///
+/// **And the focused look's hairline**, `border/strong` `#cbd5e1`, since the
+/// terminal wears the two window looks (2026-11-01): the terminal this fixture
+/// types into has the keys, so its hairline is the focused one. Left out, the
+/// hairline down both sides lit every row and the fixture saw *0 rows gained*
+/// — the same fault the shadow below once caused. It is not one of the twelve
+/// roles (`window_edge_look` names it once in the crate), so it is written here.
 fn is_the_windows_own(pixel: &[u8; 4]) -> bool {
     let [blue, green, red, _] = *pixel;
+    const BORDER_STRONG: [u8; 3] = [0xCB, 0xD5, 0xE1];
     [
         alo_appearance::Role::BgSurface.colour(),
         alo_appearance::Role::BorderDefault.colour(),
     ]
     .iter()
     .any(|it| [blue, green, red] == [it.blue(), it.green(), it.red()])
+        || [red, green, blue] == BORDER_STRONG
 }
 
 /// Whether a pixel is the window's shadow falling on the bare desktop: the

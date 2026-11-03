@@ -32,8 +32,8 @@
 //! # What this does not do yet
 //!
 //! The terminal cannot be dragged or resized: it had no handle before this and
-//! has none now. The window edge, title and focused look of canvas windows are
-//! the window-look lane's, and reach this window when it has one.
+//! has none now. Its window edge — icon, title and Close, in the focused or
+//! unfocused look — is `crate::the_terminals_edge`'s.
 
 use alo_canvas::Camera;
 use alo_strings::Direction;
@@ -52,6 +52,9 @@ pub(crate) struct TheTerminalOnTheScreen {
     /// Where the picture lands on this display, scaled by the camera's zoom.
     /// May reach past the display on any side, or miss it altogether.
     pub(crate) drawn_at: Rectangle<i32, Physical>,
+    /// Where the question closing asks was drawn into the picture, while it
+    /// is open (`crate::closing_the_terminal`).
+    pub(crate) question: Option<crate::the_terminals_question_drawn::WhereTheQuestionIs>,
 }
 
 impl TheTerminalOnTheScreen {

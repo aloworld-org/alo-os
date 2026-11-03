@@ -179,6 +179,16 @@ pub enum Decorations {
     /// minimise and maximise come with the right-hand panel, and a task window
     /// does not move. `crate::a_task_windows_edge` draws and presses it.
     ATaskWindow,
+    /// One of alo's own windows that is an application in its own right — the
+    /// terminal first (ADR 0145): **its title and its icon, and Close**.
+    ///
+    /// The approved frame `557:148` draws the terminal under the same edge as
+    /// Dolphin, with *Terminal* and its icon. Minimise and maximise are drawn
+    /// there too and are **not drawn here yet**: nothing can minimise or
+    /// maximise one of alo's windows, and a control that reaches nothing looks
+    /// live and is not. There is no Move either, because these windows cannot
+    /// be dragged yet. `crate::the_terminals_edge` draws and presses it.
+    AlosOwnWindow,
 }
 
 /// What one control on the edge does.
@@ -569,7 +579,13 @@ pub fn edge_of(
     // approved edge draws in the Move target's place (`554:24`). Still clear of
     // every action: the first one starts at the trailing walk, and
     // `the_room_a_title_has` measures to one gap before it.
-    let shown_by_the_shell = revealed && decorations == Decorations::TheShellDraws;
+    // **And on alo's own windows**, which have no header of their own: the
+    // terminal's title and icon are drawn here as an application's are.
+    let shown_by_the_shell = revealed
+        && matches!(
+            decorations,
+            Decorations::TheShellDraws | Decorations::AlosOwnWindow
+        );
     let title = shown_by_the_shell.then(|| {
         Point::from((
             region.loc.x + THE_TITLE_STARTS_AT,

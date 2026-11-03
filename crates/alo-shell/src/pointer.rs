@@ -314,6 +314,16 @@ impl Server {
             // the keyboard**, and goes no further: the terminal is the shell's,
             // so a press on it was never a press on an application behind it.
             if in_front_here == Some(crate::which_window_is_in_front::AKindOfWindow::TheTerminal) {
+                // **Its edge first**, which carries Close, and then the
+                // question closing asks, whose two buttons are drawn on it.
+                if let Some(at) = self.where_the_pointer_is_in_logical_pixels()
+                    && self.a_press_on_the_terminals_edge(at)
+                {
+                    return Ok(false);
+                }
+                if self.a_press_on_the_question(on_the_screen) {
+                    return Ok(false);
+                }
                 self.the_composer.it_gave_the_keyboard_up();
                 self.the_keyboard_is_now_in(None);
                 self.the_person_went_to(

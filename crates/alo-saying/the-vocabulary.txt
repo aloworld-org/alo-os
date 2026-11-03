@@ -1864,6 +1864,9 @@ terminal.a-place-to-return-to	keep a place to return to before each command, so 
 terminal.benchmark.from-hyperfine	hyperfine output
 terminal.benchmark.lower	{what} · {percent}% lower in this comparison
 terminal.benchmark.scale	Same linear scale · Lower is faster
+terminal.close.anyway	Close anyway
+terminal.close.cancel	Cancel
+terminal.close.still-running	A command is still running. Close anyway?
 terminal.diff.additions#one	{additions} addition
 terminal.diff.additions#other	{additions} additions
 terminal.diff.from-git-diff	git diff output
@@ -1902,6 +1905,7 @@ terminal.who.alo	alo
 terminal.who.program	program
 terminal.who.system	system
 terminal.who.you	you
+terminal.window.title	Terminal
 their-folders.not-a-name-a-folder-can-have	One of the folder names cannot be used as a folder. The machine made the others and left this one out
 their-folders.the-disk-would-not	This machine would not make one of the folders. The person's home folder may be full, or may not be theirs to write in
 their-folders.the-record-was-not-written	The folders were made, and the note saying which folder is which was not. Applications will fall back to looking for English names

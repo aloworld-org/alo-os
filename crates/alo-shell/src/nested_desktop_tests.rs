@@ -582,6 +582,7 @@ fn every_picture_a_frame_holds_reaches_the_layers_a_display_paints() {
             a_benchmark: None,
             a_diff: None,
             the_strip: crate::the_terminals_strip::WhatTheStripSays::ONLY_WHERE_IT_RUNS,
+            look: crate::window_edge_look::WhichLook::NotFocused,
         },
         (1040, 800),
         1.0,
@@ -594,6 +595,7 @@ fn every_picture_a_frame_holds_reaches_the_layers_a_display_paints() {
     let terminal = crate::the_terminal_on_the_plane::TheTerminalOnTheScreen {
         raster: crate::the_terminal_on_the_plane::flattened(&terminal).unwrap(),
         drawn_at: smithay::utils::Rectangle::new((400, 140).into(), (1120, 880).into()),
+        question: None,
     };
 
     let with_one = frame_pictures(frame, None, None, &mut labels, size, Some(terminal)).unwrap();

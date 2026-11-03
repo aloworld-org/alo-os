@@ -272,6 +272,14 @@ pub struct Server {
     /// counter as every client window's so the two can never collide — the
     /// identity *Show all* counts it under.
     pub(crate) the_terminals_number: u64,
+    /// The question closing the terminal asks while a command is running, and
+    /// where the keyboard is on it — or [`None`] when nothing is asked
+    /// (`crate::closing_the_terminal`).
+    pub(crate) closing_the_terminal: Option<crate::closing_the_terminal::OnTheQuestion>,
+    /// Where that question's two buttons were last drawn, for a press
+    /// (`crate::the_terminals_question_drawn`).
+    pub(crate) where_the_question_was_drawn:
+        Option<crate::the_terminals_question_drawn::WhereTheQuestionIs>,
     /// Which kind of window is in front of which: the applications, the
     /// terminal and the task windows (`crate::which_window_is_in_front`).
     pub(crate) which_is_in_front: crate::which_window_is_in_front::WhichIsInFront,
@@ -800,6 +808,8 @@ impl Server {
             where_the_terminal_is: None,
             the_terminal_on_the_plane: None,
             the_terminals_number: crate::window_number::reserve(),
+            closing_the_terminal: None,
+            where_the_question_was_drawn: None,
             which_is_in_front: crate::which_window_is_in_front::WhichIsInFront::default(),
             // Nobody has said whose desktop this is; the stand-up does.
             whose_desktop: None,

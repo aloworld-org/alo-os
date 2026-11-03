@@ -65,6 +65,7 @@ fn every_word_in_a_group() -> impl Iterator<Item = Word> {
         .chain(ABOUT_THE_SHELL_INTEGRATION)
         .chain(ABOUT_KEEPING_A_PLACE)
         .chain(IN_THE_STRIP)
+        .chain(ABOUT_THE_WINDOW)
 }
 
 /// **Every word in the array is in exactly one group.**
@@ -198,6 +199,28 @@ const ABOUT_KEEPING_A_PLACE: [Word; 2] = [A_PLACE_TO_RETURN_TO, WHAT_KEEPING_ONE
 /// `Local` takes beside a name.
 const IN_THE_STRIP: [Word; 1] = [ON_THIS_MACHINE];
 
+/// The words about the window itself: its title on its edge, and the question
+/// closing it asks while a command is running, with its two buttons.
+const ABOUT_THE_WINDOW: [Word; 4] = [TERMINAL, A_COMMAND_IS_STILL_RUNNING, CLOSE_ANYWAY, CANCEL];
+
+/// **The question is a question and its buttons are short**: it ends in a
+/// question mark, and each button is at most two words, held in English where
+/// it is checkable — a button that wraps is one a person cannot read at a
+/// glance.
+#[test]
+fn the_closing_question_asks_and_its_buttons_are_short() {
+    assert!(A_COMMAND_IS_STILL_RUNNING.says().ends_with('?'));
+    for button in [CLOSE_ANYWAY, CANCEL] {
+        assert!(
+            button.says().split(' ').count() <= 2,
+            "{} is {:?}",
+            button.named(),
+            button.says()
+        );
+    }
+    assert!(!TERMINAL.says().contains(' '), "the title is one word");
+}
+
 /// **Each word in the strip is one word**, held in English where it is
 /// checkable, for the gutter's reason: the room is narrow and a phrase would
 /// push the name out of it.
@@ -265,7 +288,8 @@ fn the_groups_are_the_whole_list() {
             + ABOUT_A_DIFF_A_PROGRAM_PRINTED.len()
             + ABOUT_THE_SHELL_INTEGRATION.len()
             + ABOUT_KEEPING_A_PLACE.len()
-            + IN_THE_STRIP.len(),
+            + IN_THE_STRIP.len()
+            + ABOUT_THE_WINDOW.len(),
         EVERY_WORD.len(),
         "a word is declared and in no group, so no rule is applied to it"
     );
