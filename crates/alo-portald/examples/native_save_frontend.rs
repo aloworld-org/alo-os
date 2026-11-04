@@ -5,6 +5,7 @@
 //! `.flatpak-info` fixture. Arguments: private bus address and private state folder.
 
 #[cfg(target_os = "linux")]
+/// The Linux-only real frontend assembled for a private verification session.
 mod check {
     use alo_portals::{Allowed, Backend, KeepsSecrets, NotKept, Request, Sandboxes};
     use std::os::unix::fs::{DirBuilderExt, MetadataExt};
