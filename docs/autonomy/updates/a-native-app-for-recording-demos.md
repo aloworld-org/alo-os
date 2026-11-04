@@ -49,6 +49,14 @@ native UI was also driven through selection, preflight at explicitly selected
 These checks run again in `.github/workflows/studio.yml`; the diagnostic source
 and its environment variable do not exist in an ordinary installed build.
 
+`packaging/verify-pipewire.sh` also passed against a real private PipeWire 1.0.5
+server publishing generated video. It verifies that a preview can hand its
+existing socket connection to a recording pipeline without reconnecting the
+protocol, then pauses, resumes, finalizes and decodes the resulting video.
+Hardware monitors are disabled, and this fixture never opens a microphone.
+This check is also in the dedicated CI workflow; it does not stand in for the
+operating system's stream producer or permission picker.
+
 A hand-operated native UI walk also opened a recorded video for playback and
 saved a byte-identical copy through the file chooser while retaining the
 original. Those export clicks were a one-off check, not yet a CI assertion.

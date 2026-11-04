@@ -72,6 +72,11 @@ reset, path traversal, empty recordings, and overwrite prevention. The optional
 encoder, pauses and resumes, finalizes the container, and decodes it to EOS.
 The X11 diagnostic source is absent from ordinary installed builds.
 
+`packaging/verify-pipewire.sh` additionally captures generated video over a
+real, private PipeWire socket. It verifies the preview-to-record connection
+handoff, pause/resume, finalization, and decoding. Hardware monitors are disabled
+in that isolated server; it does not access the desktop or microphone.
+
 `packaging/verify-native.sh` also drives the actual native UI through source
 selection, quality preflight, countdown, pause/resume, completion, and a durable
 library entry. It runs only a `verification` feature build on an isolated Xvfb
