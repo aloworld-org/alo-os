@@ -181,6 +181,22 @@ impl State {
                 workspace.set_visible(false);
             }
         });
+        let keyboard = gtk::EventControllerKey::new();
+        let own = self.clone();
+        keyboard.connect_key_pressed(move |_, key, _, _| {
+            if key == gtk::gdk::Key::space
+                && matches!(
+                    own.session.borrow().phase(),
+                    Phase::Recording | Phase::Paused
+                )
+            {
+                own.pause();
+                glib::Propagation::Stop
+            } else {
+                glib::Propagation::Proceed
+            }
+        });
+        bar.add_controller(keyboard);
         bar.present();
         *self.bar.borrow_mut() = Some((bar, timer, pause));
     }

@@ -18,7 +18,7 @@ bar=''
 xdotool key ctrl+n
 accepted_warning=false
 for attempt in $(seq 1 150); do
-  bar=$(xdotool search --name 'alo Studio.*Recording' | head -1) || true
+  bar=$(xdotool search --onlyvisible --name 'alo Studio.*Recording' | head -1) || true
   [[ -z "$bar" ]] || break
   # Only this app exists on the isolated display. Its untitled modal receives
   # focus when the measured sample is slow. Deliberately choose Record anyway.
@@ -57,6 +57,15 @@ assert clip['duration_ms'] >= 1000, clip
 assert (folder / (clip['id'] + '.webm')).stat().st_size > 1024
 print('PASS: GUI source selection, preflight, countdown, recording controls, finalization, and library save')
 PY
+for attempt in $(seq 1 100); do
+  win=$(xdotool search --onlyvisible --name '^alo Studio$' | head -1) || true
+  [[ -z "$win" ]] || break
+  sleep .1
+done
+if [[ -z "$win" ]]; then
+  echo 'The completed recording did not return to a visible review window.' >&2
+  exit 1
+fi
 xdotool windowfocus "$win"
 xdotool key ctrl+l
 sleep .3
