@@ -1,6 +1,6 @@
 //! A parent-death signal and a persistent supervisor own every frame publisher.
 
-use super::{Pending, endpoint, pending};
+use super::{Pending, endpoint, pending, reply};
 use alo_capture_protocol::{
     MediaNode, Request, Response, Source, read_message, receive_descriptor, write_message,
 };
@@ -52,14 +52,18 @@ pub fn start(wayland: PathBuf, source: Source, application: String) -> io::Resul
         let mut input = None;
         let stopping = Arc::new(AtomicBool::new(false));
         let result = (|| {
+            reply::check(&cancelled)?;
             let mut frames = endpoint::connect(&wayland)?;
+            reply::check(&cancelled)?;
             write_message(
                 &mut frames,
                 &Request::Start {
                     source: source.id.clone(),
                 },
             )?;
-            let Response::Started { width, height } = read_message(&mut frames)? else {
+            let response = reply::line(&mut frames, &cancelled, Duration::from_secs(5))?;
+            let Response::Started { width, height } = read_message(&mut response.as_slice())?
+            else {
                 return Err(io::Error::other("the chosen source ended"));
             };
             if (width, height) != (source.width, source.height) {
@@ -90,6 +94,7 @@ pub fn start(wayland: PathBuf, source: Source, application: String) -> io::Resul
             let mut command = crate::ATool::named("/usr/bin/setpriv")
                 .asking(&arguments)
                 .started_here();
+            reply::check(&cancelled)?;
             child = Some(
                 command
                     .stdin(Stdio::from(OwnedFd::from(frames)))
@@ -97,7 +102,8 @@ pub fn start(wayland: PathBuf, source: Source, application: String) -> io::Resul
                     .stderr(Stdio::inherit())
                     .spawn()?,
             );
-            let node = read_message::<MediaNode>(&mut answer)?;
+            let response = reply::line(&mut answer, &cancelled, Duration::from_secs(7))?;
+            let node = read_message::<MediaNode>(&mut response.as_slice())?;
             if cancelled.load(Ordering::Acquire) {
                 return Err(io::Error::new(
                     io::ErrorKind::Interrupted,
