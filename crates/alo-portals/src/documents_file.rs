@@ -90,7 +90,7 @@ pub(crate) fn write(at: &Path, journal: &Journal) -> io::Result<()> {
             "document bookkeeping is too large",
         ));
     }
-    let fresh = at.with_extension(format!("{}-new", rustix::process::getpid().as_raw()));
+    let fresh = at.with_extension(format!("{}-new", rustix::process::getpid().as_raw_pid()));
     // Only this frontend writes the journal. A stale sibling is its own failed
     // replacement; create_new still refuses links and other competing objects.
     match std::fs::remove_file(&fresh) {
