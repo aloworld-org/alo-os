@@ -200,6 +200,10 @@ pub(crate) fn run_with_input(
             }
         }
     })();
+    // Capture ends before cleanup, even when a lost seat cannot disable scanout.
+    if let Some(capture) = &mut server.capture {
+        capture.stop();
+    }
     // **The lane's own displays retire before the loop's.** `retire_output`
     // below withdraws every display's global, so anything that still has a
     // backend to disable has to have disabled it by then; see
