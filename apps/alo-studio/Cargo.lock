@@ -8,6 +8,8 @@ version = "0.1.0"
 dependencies = [
  "ashpd",
  "enumflags2",
+ "futures-channel",
+ "futures-util",
  "gstreamer",
  "gstreamer-app",
  "gstreamer-video",

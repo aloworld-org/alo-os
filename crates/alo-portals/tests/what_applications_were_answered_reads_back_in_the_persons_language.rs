@@ -178,6 +178,7 @@ mod the_file {
             KeptOutcome::FilesChosen { .. } => "files-chosen".to_owned(),
             KeptOutcome::ScreenShared { .. } => "screen-shared".to_owned(),
             KeptOutcome::Cancelled => "cancelled".to_owned(),
+            KeptOutcome::CapturePrepared => "capture-prepared".to_owned(),
             KeptOutcome::Refused { why } => format!(
                 "refused/{}",
                 match why {
@@ -232,6 +233,7 @@ mod the_file {
     /// One of every kept outcome, to the depth that picks a sentence.
     fn every_kept_outcome() -> Vec<KeptOutcome> {
         let mut every = vec![
+            KeptOutcome::CapturePrepared,
             KeptOutcome::FilesChosen {
                 against: Vec::new(),
             },
@@ -319,7 +321,7 @@ mod the_file {
         let outcomes = every_kept_outcome();
         let kinds: BTreeSet<String> = outcomes.iter().map(kind_of).collect();
         assert_eq!(kinds.len(), outcomes.len(), "each kind once");
-        assert_eq!(kinds.len(), 36);
+        assert_eq!(kinds.len(), 37);
 
         let mut lines = Vec::new();
         let mut second = 0;

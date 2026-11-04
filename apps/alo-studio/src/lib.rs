@@ -5,6 +5,7 @@
 
 pub mod model;
 pub mod performance;
+mod permission_lifetime;
 pub mod portal;
 pub mod recorder;
 pub mod storage;

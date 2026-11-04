@@ -26,6 +26,8 @@ pub struct MediaError(pub String);
 
 /// The event the UI must respond to, polled without blocking its main thread.
 pub enum Event {
+    /// A live source ended; seal captured video and stop the microphone.
+    SourceEnded(String),
     /// The WebM trailer has been written and the file can be committed.
     Finished,
     /// The source or encoder failed. The pending file is preserved.
@@ -36,6 +38,7 @@ pub enum Event {
 
 /// One pipeline, stopped before its permission-scoped remote can be closed.
 pub struct Recorder {
+    source_ended: bool,
     pipeline: gst::Pipeline,
     bus: gst::Bus,
     frame: Arc<Mutex<Option<Frame>>>,
@@ -124,7 +127,7 @@ impl Recorder {
         // This is a fixed engine configuration. No filename, device name, or
         // other person-supplied text is interpolated into the pipeline parser.
         let video = if path.is_some() {
-            "! videoconvert ! videoscale ! videorate ! capsfilter name=size ! tee name=frames \
+            "! queue name=video-input max-size-buffers=2 max-size-bytes=0 max-size-time=0 ! videoconvert ! videoscale ! videorate ! capsfilter name=size ! tee name=frames \
              frames. ! queue name=record-buffer max-size-time=2000000000 max-size-bytes=0 max-size-buffers=0 ! vp9enc name=encoder deadline=1 cpu-used=8 threads=4 target-bitrate=4500000 keyframe-max-dist=60 \
              ! queue ! webmmux name=container ! filesink name=output \
              frames. ! queue leaky=downstream max-size-buffers=1 ! videoconvert ! videoscale ! video/x-raw,format=RGBA,width=640,pixel-aspect-ratio=1/1 ! appsink name=preview sync=false max-buffers=1 drop=true"
@@ -133,12 +136,14 @@ impl Recorder {
         };
         let audio_source = match &source {
             #[cfg(feature = "verification")]
-            Input::VerificationDisplay(_) => "audiotestsrc is-live=true wave=sine volume=0.05",
+            Input::VerificationDisplay(_) => {
+                "audiotestsrc name=microphone is-live=true wave=sine volume=0.05"
+            }
             _ => "pulsesrc name=microphone client-name=alo-Studio do-timestamp=true",
         };
         let audio = if microphone && path.is_some() {
             format!(
-                " {audio_source} ! queue ! audioconvert ! audioresample ! audio/x-raw,rate=48000,channels=1 ! opusenc bitrate=96000 ! queue ! container."
+                " {audio_source} ! queue name=audio-input ! audioconvert ! audioresample ! audio/x-raw,rate=48000,channels=1 ! opusenc bitrate=96000 ! queue ! container."
             )
         } else {
             String::new()
@@ -234,6 +239,7 @@ impl Recorder {
             return Err(failed(error));
         }
         Ok(Self {
+            source_ended: false,
             pipeline,
             bus,
             frame,
@@ -284,6 +290,38 @@ impl Recorder {
         self.finishing = true;
         Ok(())
     }
+    /// Stop all live inputs, then drain only queued media into the WebM trailer.
+    /// This also works after a revoked PipeWire source can no longer deliver EOS.
+    pub fn finish_after_source_ended(&mut self) -> Result<(), MediaError> {
+        if self.finishing {
+            return Ok(());
+        }
+        let mut inputs = Vec::new();
+        for (name, queue) in [("source", "video-input"), ("microphone", "audio-input")] {
+            if let Some(source) = self.pipeline.by_name(name) {
+                source.set_locked_state(true);
+                source.set_state(gst::State::Null).map_err(failed)?;
+                if let Some(queue) = self.pipeline.by_name(queue) {
+                    source.unlink(&queue);
+                    inputs.push(queue);
+                }
+            }
+        }
+        self.source_ended = true;
+        self.resume()?;
+        for queue in inputs {
+            if !queue
+                .static_pad("sink")
+                .is_some_and(|pad| pad.send_event(gst::event::Eos::new()))
+            {
+                return Err(MediaError(t(
+                    "The recording could not finish. Its temporary file has been kept.",
+                )));
+            }
+        }
+        self.finishing = true;
+        Ok(())
+    }
     /// Read errors and EOS without blocking the interface.
     pub fn poll(&self) -> Option<Event> {
         if !self.finishing && self.fell_behind.swap(false, Ordering::Relaxed) {
@@ -293,6 +331,21 @@ impl Recorder {
             match message.view() {
                 gst::MessageView::Eos(_) => return Some(Event::Finished),
                 gst::MessageView::Error(error) => {
+                    let live_input = error.src().is_some_and(|origin| {
+                        ["source", "microphone"]
+                            .iter()
+                            .filter_map(|name| self.pipeline.by_name(name))
+                            .any(|source| {
+                                origin == source.upcast_ref::<gst::Object>()
+                                    || origin.has_as_ancestor(&source)
+                            })
+                    });
+                    if live_input {
+                        if self.source_ended {
+                            continue;
+                        }
+                        return Some(Event::SourceEnded(error.error().to_string()));
+                    }
                     return Some(Event::Failed(error.error().to_string()));
                 }
                 _ => {}

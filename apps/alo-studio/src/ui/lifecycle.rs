@@ -275,6 +275,14 @@ impl State {
         self.render();
     }
     pub(super) fn poll(self: &Rc<Self>) {
+        if self.capture.borrow().as_ref().is_some_and(Capture::ended)
+            && !matches!(
+                self.session.borrow().phase(),
+                Phase::Finishing | Phase::Review | Phase::Ready
+            )
+        {
+            self.source_ended();
+        }
         let frame = self.engine.borrow().as_ref().and_then(Recorder::frame);
         if let Some(frame) = frame {
             if let Some((width, height)) = self
@@ -311,6 +319,10 @@ impl State {
         }
         let event = self.engine.borrow().as_ref().and_then(Recorder::poll);
         match event {
+            Some(Event::SourceEnded(why)) => {
+                eprintln!("The live recording input ended: {why}");
+                self.source_ended();
+            }
             Some(Event::Finished) if self.session.borrow().busy() => self.completed(),
             Some(Event::Finished) => self.failed(&t("The selected source stopped sharing. Please select it again.")),
             Some(Event::Failed(error)) => self.failed(&format!("{} {error}", t("Recording stopped because the source or audio device could not continue. Any temporary video has been kept."))),
@@ -329,6 +341,35 @@ impl State {
         self.view.timer.set_label(&time);
         if let Some((_, timer, _)) = self.bar.borrow().as_ref() {
             timer.set_label(&time);
+        }
+    }
+    /// A lost permission or source seals queued video and stops microphone input.
+    fn source_ended(self: &Rc<Self>) {
+        let phase = self.session.borrow().phase();
+        if phase == Phase::Finishing {
+            return;
+        }
+        if !matches!(phase, Phase::Recording | Phase::Paused) {
+            self.failed(&t(
+                "Screen sharing ended. Please select a screen or window again.",
+            ));
+            return;
+        }
+        let result = self
+            .engine
+            .borrow_mut()
+            .as_mut()
+            .map(Recorder::finish_after_source_ended);
+        match result {
+            Some(Ok(())) => {
+                let _ = self.session.borrow_mut().finishing(Instant::now());
+                self.finish_started.set(Some(Instant::now()));
+                self.view.microphone.set_active(false);
+                self.notice(&t("Screen sharing ended. Your recording is being saved."));
+                self.render();
+            }
+            Some(Err(why)) => self.failed(&why.to_string()),
+            None => self.failed(&t("The recording engine has stopped.")),
         }
     }
     pub(super) fn completed(self: &Rc<Self>) {

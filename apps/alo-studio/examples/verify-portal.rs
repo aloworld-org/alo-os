@@ -42,7 +42,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
             match recorder.poll() {
                 Some(Event::Finished) => break,
-                Some(Event::Failed(error)) => return Err(error.into()),
+                Some(Event::Failed(error) | Event::SourceEnded(error)) => return Err(error.into()),
                 Some(Event::FellBehind) => return Err("Portal recording fell behind".into()),
                 None => {}
             }

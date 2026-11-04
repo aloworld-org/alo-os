@@ -3,7 +3,7 @@
 use std::os::fd::{AsRawFd, OwnedFd, RawFd};
 
 use ashpd::desktop::{
-    PersistMode, Session,
+    PersistMode,
     screencast::{CursorMode, Screencast, SelectSourcesOptions, SourceType},
 };
 
@@ -13,7 +13,7 @@ use crate::model::SourceKind;
 pub struct Capture {
     #[cfg(feature = "verification")]
     pub(crate) verification_display: Option<String>,
-    session: Option<Session<Screencast>>,
+    permission: Option<crate::permission_lifetime::Permission>,
     remote: OwnedFd,
     /// The one selected stream on the permission-scoped PipeWire remote.
     pub node: u32,
@@ -24,21 +24,15 @@ pub struct Capture {
 }
 
 impl Capture {
+    /// A closed source permission stops all live inputs before finalization.
+    pub fn ended(&self) -> bool {
+        self.permission
+            .as_ref()
+            .is_some_and(|permission| permission.ended())
+    }
     /// The descriptor is borrowed, not transferred to the encoder.
     pub fn fd(&self) -> RawFd {
         self.remote.as_raw_fd()
-    }
-}
-
-impl Drop for Capture {
-    fn drop(&mut self) {
-        if let Some(session) = self.session.take() {
-            gtk::glib::MainContext::default().spawn_local(async move {
-                if let Err(error) = session.close().await {
-                    eprintln!("Closing the screen session: {error}");
-                }
-            });
-        }
     }
 }
 
@@ -52,7 +46,7 @@ pub async fn choose(kind: SourceKind) -> Result<Capture, ashpd::Error> {
             .map_err(ashpd::Error::IO)?
             .into();
         return Ok(Capture {
-            session: None,
+            permission: None,
             remote,
             node: 0,
             width: 1280,
@@ -62,6 +56,8 @@ pub async fn choose(kind: SourceKind) -> Result<Capture, ashpd::Error> {
     }
     let portal = Screencast::new().await?;
     let session = portal.create_session(Default::default()).await?;
+    let permission = crate::permission_lifetime::Permission::watch(session).await?;
+    let session = permission.session();
     let source = match kind {
         SourceKind::Screen => SourceType::Monitor,
         SourceKind::Window => SourceType::Window,
@@ -70,7 +66,7 @@ pub async fn choose(kind: SourceKind) -> Result<Capture, ashpd::Error> {
         // Waiting for SelectSources' response is essential: Start may not race it.
         portal
             .select_sources(
-                &session,
+                session,
                 SelectSourcesOptions::default()
                     .set_sources(Some(enumflags2::BitFlags::from(source)))
                     .set_multiple(false)
@@ -80,7 +76,7 @@ pub async fn choose(kind: SourceKind) -> Result<Capture, ashpd::Error> {
             .await?
             .response()?;
         let answer = portal
-            .start(&session, None, Default::default())
+            .start(session, None, Default::default())
             .await?
             .response()?;
         let stream = answer
@@ -90,7 +86,7 @@ pub async fn choose(kind: SourceKind) -> Result<Capture, ashpd::Error> {
         // Unknown is not Full HD. The negotiated preview caps supply the actual size.
         let (width, height) = stream.size().unwrap_or((0, 0));
         let remote = portal
-            .open_pipe_wire_remote(&session, Default::default())
+            .open_pipe_wire_remote(session, Default::default())
             .await?;
         Ok::<_, ashpd::Error>((remote, stream.pipe_wire_node_id(), width, height))
     }
@@ -98,16 +94,13 @@ pub async fn choose(kind: SourceKind) -> Result<Capture, ashpd::Error> {
     let (remote, node, width, height) = match granted {
         Ok(granted) => granted,
         Err(error) => {
-            if let Err(why) = session.close().await {
-                eprintln!("Closing an unselected screen session: {why}");
-            }
             return Err(error);
         }
     };
     Ok(Capture {
         #[cfg(feature = "verification")]
         verification_display: None,
-        session: Some(session),
+        permission: Some(permission),
         remote,
         node,
         width,

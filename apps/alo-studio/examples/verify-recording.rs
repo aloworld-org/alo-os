@@ -62,7 +62,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             recorder.pause()?;
             paused = true;
         }
-        if elapsed > Duration::from_secs(3) && !resumed {
+        if std::env::var_os("ALO_STUDIO_VERIFY_SOURCE_END").is_some()
+            && elapsed > Duration::from_millis(2500)
+            && !finishing
+        {
+            recorder.finish_after_source_ended()?;
+            finishing = true;
+        }
+        if elapsed > Duration::from_secs(3) && !resumed && !finishing {
             recorder.resume()?;
             resumed = true;
         }
@@ -72,7 +79,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
         match recorder.poll() {
             Some(Event::Finished) => break,
-            Some(Event::Failed(error)) => return Err(error.into()),
+            Some(Event::Failed(error) | Event::SourceEnded(error)) => return Err(error.into()),
             Some(Event::FellBehind) => return Err("The recording could not keep up".into()),
             None => {}
         }
