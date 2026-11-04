@@ -79,5 +79,12 @@ display. Synthetic sound exercises Opus without opening a physical microphone.
 These checks run in `.github/workflows/studio.yml`; they do not prove the
 Wayland permission picker works on alo OS or replace a physical-machine walk.
 
+The separate `verify-portal` example exercises the production ScreenCast and
+PipeWire path on an explicitly selected desktop. It is not the Xvfb fixture.
+Build it with `--features verification --example verify-portal`, then run it
+with an output `.webm` path from that desktop's own session. It still needs a
+working screen-sharing service; the software-only wlr backend in this WSL
+environment refused stream creation, as recorded in the task report.
+
 User-facing copy goes through the gettext domain `alo-studio`. Translators can
 provide standard gettext catalogues without changing the recording code.

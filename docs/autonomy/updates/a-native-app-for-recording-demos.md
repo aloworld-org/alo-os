@@ -59,6 +59,16 @@ Native screenshots and a recording of that walk are kept as local evidence.
 The Flatpak was built from vendored, locked Rust dependencies inside the GNOME
 49 SDK, and AppStream composition and desktop-entry validation succeeded.
 
+An additional one-off `verify-portal` diagnostic reached CreateSession,
+SelectSources and Start on isolated Sway 1.9 with xdg-desktop-portal-wlr 0.7.1.
+Start refused before supplying a stream: the backend reported no valid
+screencopy format with the software pixman renderer. An independent `grim`
+screenshot worked. This resembles the backend's documented
+[pixman limitation](https://github.com/emersion/xdg-desktop-portal-wlr/issues/289),
+but it does not establish a successful portal recording. That diagnostic is
+built by CI and requires a functioning capture desktop to run; it is not
+reported as a passing recording check on this machine.
+
 ## What is still required before market availability
 
 **alo OS does not currently serve `org.freedesktop.portal.ScreenCast`.**
