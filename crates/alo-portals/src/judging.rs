@@ -30,6 +30,60 @@ use crate::portal::Portal;
 use crate::refused::Refused;
 use crate::request::Request;
 
+#[cfg(test)]
+#[cfg(target_os = "linux")]
+#[expect(
+    clippy::unwrap_used,
+    reason = "an unexpected refusal is this regression test's failure"
+)]
+mod choice_tests {
+    use super::*;
+    use alo_capability::{Grant, Reach};
+    use std::{path::Path, time::Duration};
+
+    #[test]
+    fn an_older_folder_grant_cannot_replace_a_revoked_file_selection() {
+        let now = SystemTime::now();
+        let application = Applicant::named("org.aloworld.Studio");
+        let mut grants = Grants::default();
+        let broad = grants.grant(
+            Grant::checked_for(
+                &application.grantee(),
+                Reach::Folder("/Videos".into()),
+                now,
+                Duration::from_secs(3600),
+            )
+            .unwrap(),
+        );
+        let selected = grants.grant(
+            Grant::checked_for(
+                &application.grantee(),
+                Reach::File("/Videos/demo.webm".into()),
+                now,
+                Duration::from_secs(3600),
+            )
+            .unwrap(),
+        );
+        let request = Request::over(
+            application.as_str(),
+            Portal::FileChooser,
+            Path::new("/Videos/demo.webm"),
+        )
+        .unwrap();
+        assert_eq!(request.judged(&grants, now).unwrap().against(), [broad]);
+        assert_eq!(
+            request
+                .judged_choice(&grants, selected, now)
+                .unwrap()
+                .against(),
+            [selected]
+        );
+        grants.revoke(selected);
+        assert!(request.judged(&grants, now).is_ok());
+        assert!(request.judged_choice(&grants, selected, now).is_none());
+    }
+}
+
 /// A request the grants allowed, and the grants that allowed it.
 ///
 /// Carries every grant it was allowed by, in the order the request named what
@@ -75,20 +129,7 @@ impl Request {
         id: GrantId,
         now: SystemTime,
     ) -> Option<Allowed> {
-        let held = grants.active_at(now).find(|held| held.id == id)?;
-        if !held.grant.is_for(&self.application().grantee())
-            || self
-                .wanted()
-                .iter()
-                .any(|ask| !held.grant.permits(ask, now))
-        {
-            return None;
-        }
-        Some(Allowed {
-            application: self.application().clone(),
-            portal: self.portal(),
-            against: vec![id],
-        })
+        self.judged(&grants.limited_to(id), now).ok()
     }
 
     /// Whether the grants allow this request at this moment, and by which
