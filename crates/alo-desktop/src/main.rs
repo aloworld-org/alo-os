@@ -46,6 +46,9 @@
 mod readings;
 
 #[cfg(target_os = "linux")]
+mod media_activity;
+
+#[cfg(target_os = "linux")]
 mod this_machines_own_addresses;
 
 #[cfg(target_os = "linux")]
@@ -270,6 +273,8 @@ mod running {
 
     /// Everything on this person's desktop, as the crates that own each said it.
     struct ThisPersonsDesktop {
+        /// The media server's current uses, or an explicit unavailable reading.
+        media_activity: crate::media_activity::MediaActivity,
         /// Where this person's canvas layout is kept, if they have a folder.
         ///
         /// **[`None`] is a real session and not a fault.** A login with no home
@@ -553,6 +558,7 @@ mod running {
             });
             Ok(Self {
                 layout_at,
+                media_activity: crate::media_activity::MediaActivity::new(),
                 shortcuts_at,
                 dock_at,
                 window_titles,
@@ -1246,6 +1252,7 @@ mod running {
         /// does change is the next successful reading, which is the truth
         /// arriving late rather than an absence arriving early.
         fn refreshed(&mut self) {
+            self.media_activity.refresh();
             // **What is leaving is shown on every frame, before the throttle.**
             // The readings below are a clock and four numbers and are worth
             // taking a few times a second; a line on the egress indicator is
@@ -1380,13 +1387,8 @@ mod running {
                 egress: &self.egress,
                 running: &self.running,
                 filling: &self.filling,
-                // **Nothing is watching or listening, and that is read rather
-                // than assumed** — `alo_in_use::InUse::read_from` asks the
-                // machine's media server, and nothing on a machine with no
-                // applications on it yet has a camera or a microphone open.
-                // Asking the server for real belongs with the other readings
-                // this binary hands over, task 15 of the shell plan.
-                in_use: &[],
+                in_use: self.media_activity.lines(),
+                in_use_problem: self.media_activity.problem(),
                 // **Nothing has sent one**, which is different from holding
                 // them: `alo_notifying::arrives` is where a notification
                 // becomes one to show, and nothing on this machine calls it

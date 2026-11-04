@@ -632,6 +632,7 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
         running: &running,
         filling: &filling,
         in_use: &[],
+        in_use_problem: None,
         notifications: &[],
         capturing: None,
         division: &division,

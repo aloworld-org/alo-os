@@ -712,6 +712,7 @@ dependencies = [
  "alo-egress",
  "alo-formats",
  "alo-icons",
+ "alo-in-use",
  "alo-indicator",
  "alo-installed",
  "alo-interfaces",
