@@ -145,7 +145,7 @@ pub fn read_message<T: DeserializeOwned>(reader: &mut impl Read) -> io::Result<T
     for _ in 0..MAX_MESSAGE_BYTES {
         let mut byte = [0];
         reader.read_exact(&mut byte)?;
-        if byte == [b'\n'] {
+        if byte == *b"\n" {
             return serde_json::from_slice(&bytes).map_err(io::Error::other);
         }
         bytes.extend(byte);
