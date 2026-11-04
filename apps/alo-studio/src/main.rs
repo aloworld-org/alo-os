@@ -3,6 +3,7 @@
 use gtk::prelude::*;
 
 fn main() -> gtk::glib::ExitCode {
+    gtk::glib::set_application_name("alo Studio");
     let application = gtk::Application::builder()
         .application_id(alo_studio::APPLICATION_ID)
         .build();

@@ -173,6 +173,14 @@ impl State {
                 glib::Propagation::Proceed
             }
         });
+        let workspace = self.view.window.downgrade();
+        bar.connect_is_active_notify(move |bar| {
+            if bar.is_active()
+                && let Some(workspace) = workspace.upgrade()
+            {
+                workspace.set_visible(false);
+            }
+        });
         bar.present();
         *self.bar.borrow_mut() = Some((bar, timer, pause));
     }
@@ -180,5 +188,22 @@ impl State {
         if let Some((bar, _, _)) = self.bar.borrow_mut().take() {
             bar.close();
         }
+    }
+    /// Keep the controls available until the review workspace has regained focus.
+    pub(super) fn show_workspace(&self) {
+        self.view.window.present();
+        let Some((bar, _, _)) = self.bar.borrow_mut().take() else {
+            return;
+        };
+        let workspace = self.view.window.clone();
+        let waiting = Instant::now();
+        glib::timeout_add_local(Duration::from_millis(25), move || {
+            if workspace.is_active() || waiting.elapsed() > Duration::from_secs(5) {
+                bar.close();
+                glib::ControlFlow::Break
+            } else {
+                glib::ControlFlow::Continue
+            }
+        });
     }
 }

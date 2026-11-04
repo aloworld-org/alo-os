@@ -295,7 +295,11 @@ impl Recorder {
                 source.set_locked_state(true);
                 source.set_state(gst::State::Null).map_err(failed)?;
                 if let Some(queue) = self.pipeline.by_name(queue) {
-                    source.unlink(&queue);
+                    if let Some(sink) = queue.static_pad("sink")
+                        && let Some(upstream) = sink.peer()
+                    {
+                        upstream.unlink(&sink).map_err(failed)?;
+                    }
                     inputs.push(queue);
                 }
             }

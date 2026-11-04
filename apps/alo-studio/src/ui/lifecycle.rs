@@ -222,7 +222,6 @@ impl State {
         match result {
             Ok(()) => {
                 self.show_bar();
-                self.view.window.minimize();
             }
             Err(error) => {
                 self.release_capture();
@@ -410,10 +409,14 @@ impl State {
             Ok(clip) => {
                 let _ = self.session.borrow_mut().finished();
                 self.view.microphone.set_active(false);
-                self.close_bar();
-                self.open_clip(&clip);
-                self.refresh_library();
-                if self.close_after_save.get() { self.view.window.close(); } else { self.view.window.present(); }
+                if self.close_after_save.get() {
+                    self.close_bar();
+                    self.view.window.close();
+                } else {
+                    self.open_clip(&clip);
+                    self.refresh_library();
+                    self.show_workspace();
+                }
             }
             Err(error) => self.failed(&format!("{} {error}", t("The video could not be added to your library. Its temporary file has been kept."))),
         }
@@ -425,8 +428,7 @@ impl State {
         self.release_capture();
         self.session.borrow_mut().reset();
         self.view.microphone.set_active(false);
-        self.close_bar();
-        self.view.window.present();
+        self.show_workspace();
         self.notice(message);
         self.render();
     }

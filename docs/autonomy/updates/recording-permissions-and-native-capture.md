@@ -14,6 +14,11 @@ scoped purpose of `PW_PERM_L` in PipeWire's
 [permission header](https://github.com/PipeWire/pipewire/blob/1.4.11/src/pipewire/permission.h).
 Validation of that correction is pending. Review visibility after finishing is
 also still under investigation.
+The recording bar now hides the workspace only after taking focus. Completion
+reopens the workspace and keeps the controls until review has regained focus,
+avoiding the compositor's persistent minimized state. GTK's application name is
+set to `alo Studio` for native dialog titles. Validation of this UI handoff is
+pending.
 
 The first booted source request reached the real GTK picker but its unparented
 dialog opened behind Studio. The follow-up exports the actual caller window,
