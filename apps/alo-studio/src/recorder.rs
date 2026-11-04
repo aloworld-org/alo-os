@@ -117,7 +117,9 @@ impl Recorder {
         gst::init().map_err(failed)?;
         let source_text = match &source {
             Input::PipeWire { .. } => {
-                "pipewiresrc name=source do-timestamp=true keepalive-time=1000"
+                // Queued frames must own their bytes when Finish disconnects
+                // the PipeWire stream and releases its shared buffer pool.
+                "pipewiresrc name=source do-timestamp=true keepalive-time=1000 always-copy=true"
             }
             #[cfg(feature = "verification")]
             Input::VerificationDisplay(_) => {
@@ -128,7 +130,7 @@ impl Recorder {
         // other person-supplied text is interpolated into the pipeline parser.
         let video = if path.is_some() {
             "! queue name=video-input max-size-buffers=2 max-size-bytes=0 max-size-time=0 ! videoconvert ! videoscale ! videorate ! capsfilter name=size ! tee name=frames \
-             frames. ! queue name=record-buffer max-size-time=2000000000 max-size-bytes=0 max-size-buffers=0 ! vp9enc name=encoder deadline=1 cpu-used=8 threads=4 target-bitrate=4500000 keyframe-max-dist=60 \
+             frames. ! queue name=record-buffer max-size-time=2000000000 max-size-bytes=134217728 max-size-buffers=0 ! vp9enc name=encoder deadline=1 cpu-used=8 threads=4 target-bitrate=4500000 keyframe-max-dist=60 \
              ! queue ! webmmux name=container ! filesink name=output \
              frames. ! queue leaky=downstream max-size-buffers=1 ! videoconvert ! videoscale ! video/x-raw,format=RGBA,width=640,pixel-aspect-ratio=1/1 ! appsink name=preview sync=false max-buffers=1 drop=true"
         } else {

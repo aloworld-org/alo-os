@@ -117,6 +117,11 @@ preview but exposed ordinary EOS finalization waiting forever on this provider.
 A one-off run using the existing input-stop and queue-drain path passed,
 including decoded output (`/tmp/tmp.F9WsWrhhFb`). Finish now uses that same
 path, stopping video and microphone before draining queued media.
+The expanded check then caught a native crash in `video-input:src` during
+shutdown. PipeWire input now copies engine-owned buffers before they enter
+asynchronous queues, so stopping a stream cannot invalidate queued pixels. The
+encoding queue also has a 128 MiB byte bound in addition to its two-second
+limit. The native-publisher check remains pending until that full path passes.
 The app CI also builds that actual native publisher and passes
 its non-16:9 output through Studio's preview, recording, pause/resume and decode
 probe, checking that a 1280×800 source previews at 640×400. This is a permanent
