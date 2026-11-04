@@ -138,13 +138,13 @@ fn identify(name: &str, ended: &AtomicBool) -> io::Result<MediaNode> {
             let Some(props) = global.props else {
                 return;
             };
-            if props.get("node.name") == Some(name.as_str()) {
-                if let Some(serial) = props.get("object.serial").and_then(|s| s.parse().ok()) {
-                    seen.set(Some(MediaNode {
-                        id: global.id,
-                        serial,
-                    }));
-                }
+            if props.get("node.name") == Some(name.as_str())
+                && let Some(serial) = props.get("object.serial").and_then(|s| s.parse().ok())
+            {
+                seen.set(Some(MediaNode {
+                    id: global.id,
+                    serial,
+                }));
             }
         })
         .register();

@@ -2511,6 +2511,33 @@ struct Layered<'a> {
 }
 
 impl FrameTarget for Layered<'_> {
+    fn capture_forbidden(&self) -> bool {
+        matches!(
+            self.layers.scene,
+            Some(
+                crate::scene_native::NativeScene::Lock(_)
+                    | crate::scene_native::NativeScene::SignIn(_)
+                    | crate::scene_native::NativeScene::Recovery(_)
+            )
+        )
+    }
+    fn capture_output(&mut self, wanted: bool) {
+        self.target.capture_output(wanted);
+    }
+    fn captured_output(&mut self) -> Option<std::sync::Arc<[u8]>> {
+        self.target.captured_output()
+    }
+    fn capture_window(
+        &mut self,
+        size: Size<i32, Physical>,
+        root: &WlSurface,
+        popups: &[Popup],
+        cursor: &Cursor,
+        camera: alo_canvas::Camera,
+    ) -> Result<std::sync::Arc<[u8]>, RenderError> {
+        self.target
+            .capture_window(size, root, popups, cursor, camera)
+    }
     fn metadata(&self) -> Result<crate::OutputMetadata, RenderError> {
         self.target.metadata()
     }

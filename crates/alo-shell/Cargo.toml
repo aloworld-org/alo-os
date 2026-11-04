@@ -213,6 +213,8 @@ unicode-segmentation = "1.13"
 alo-vector-shapes = { path = "../alo-vector-shapes" }
 smithay = { version = "=0.7.0", default-features = false, features = ["wayland_frontend", "renderer_gl", "backend_winit", "backend_session_libseat", "backend_libinput", "backend_udev", "use_system_lib", "desktop", "renderer_pixman"] }
 rustix.workspace = true
+alo-capture-protocol = { path = "../alo-capture-protocol" }
+getrandom.workspace = true
 thiserror.workspace = true
 # The accessibility bus the tree is answered on. The bus is the rented
 # at-spi2's (ADR 0011) and this crate serves its own surfaces on it; no

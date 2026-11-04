@@ -175,9 +175,12 @@ mod canvas_space_drag;
 mod canvas_the_room_show_all_fits_into;
 mod canvas_the_world;
 mod canvas_wheel_zoom;
+mod capture_authority;
 mod capture_flatten;
 mod capture_paint;
 mod capture_raster;
+mod capture_sources;
+mod capture_transport;
 /// What one key press means in the Dock's composer.
 pub mod composer_keys;
 mod cursor;

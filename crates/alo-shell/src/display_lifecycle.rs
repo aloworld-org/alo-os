@@ -131,6 +131,9 @@ impl crate::Server {
     /// Its division is remembered under the name it arrived with, so the same
     /// screen coming back finds it. Nothing is closed and no window is moved.
     pub(crate) fn the_display_retired(&mut self) {
+        if let Some(capture) = &mut self.capture {
+            capture.stop();
+        }
         // **Every display, because this is the session's output going away.**
         // It was one display's until 2026-10-05 and could only ever have been:
         // the number was a constant. A caller retiring the backend is retiring
@@ -149,6 +152,9 @@ impl crate::Server {
         let Some(named) = self.desk.name_of(which).map(str::to_owned) else {
             return;
         };
+        if let Some(capture) = &mut self.capture {
+            capture.retire(&named);
+        }
         // **Every popup on the display that is going is dismissed first.**
         // `more-than-one-display-plan.md` task 6's second clause. A popup is
         // constrained to the screen its parent is on, so a screen that is

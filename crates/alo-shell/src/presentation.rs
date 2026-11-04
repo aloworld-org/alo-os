@@ -169,6 +169,32 @@ pub enum RenderError {
 /// on import, draw or submit failure and must not dispatch client requests.
 /// No returned surface receives a presentation-time guarantee.
 pub trait FrameTarget {
+    /// Exclusive lock, sign-in and recovery scenes end desktop capture first.
+    fn capture_forbidden(&self) -> bool {
+        false
+    }
+    /// Request a copy of the next successfully submitted complete output only.
+    /// Custom backends opt in explicitly; no frame is guessed from another output.
+    fn capture_output(&mut self, _wanted: bool) {}
+    /// Take the requested submitted BGRx frame, retaining at most one copy.
+    fn captured_output(&mut self) -> Option<std::sync::Arc<[u8]>> {
+        None
+    }
+    /// Render only the selected window tree and its popups into a private target.
+    /// No native desktop layer or other application's window may enter this frame.
+    ///
+    /// # Errors
+    /// An unsupported backend, import failure, or invalid private target size.
+    fn capture_window(
+        &mut self,
+        _size: Size<i32, Physical>,
+        _root: &WlSurface,
+        _popups: &[crate::Popup],
+        _cursor: &crate::Cursor,
+        _camera: alo_canvas::Camera,
+    ) -> Result<std::sync::Arc<[u8]>, RenderError> {
+        Err(RenderError::ControlsUnsupported)
+    }
     /// Submit a complete reader with its strip, clients, popups and cursor.
     /// Refuse unsupported content; never silently submit only the strip.
     /// No dispatch or publication is allowed during this transaction.
