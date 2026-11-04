@@ -44,7 +44,7 @@ pub enum StorageError {
         source: std::io::Error,
     },
     /// Metadata has an unknown or damaged shape.
-    #[error("{} {0}", t("The recording information could not be read:"))]
+    #[error("{message} {0}", message = t("The recording information could not be read:"))]
     Metadata(#[from] serde_json::Error),
     /// A path-like identity from damaged metadata must never escape the library.
     #[error("{}", t("The recording has an invalid identifier."))]
