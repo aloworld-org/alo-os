@@ -173,8 +173,7 @@ impl CaptureSources {
         for window in self.windows.iter().filter(|w| w.feed.wanted()) {
             let geometry = crate::scene::geometry(&window.root);
             let origin = crate::window_buffer_origin(&window.root) + geometry.loc.to_f64();
-            let camera = alo_canvas::At::checked(origin.x.round() as i32, origin.y.round() as i32)
-                .and_then(|at| alo_canvas::Camera::new().looking_at(at));
+            let camera = window_camera(origin.x, origin.y);
             let Some(camera) = camera else {
                 window.feed.stop();
                 continue;
@@ -250,6 +249,16 @@ fn extent(side: f64) -> u32 {
     }
 }
 
+/// Reject unrepresentable client geometry before converting to canvas integers.
+fn window_camera(x: f64, y: f64) -> Option<alo_canvas::Camera> {
+    let limit = f64::from(alo_canvas::plane::FURTHEST);
+    if ![x, y].iter().all(|at| at.is_finite() && at.abs() <= limit) {
+        return None;
+    }
+    alo_canvas::At::checked(x.round() as i32, y.round() as i32)
+        .and_then(|at| alo_canvas::Camera::new().looking_at(at))
+}
+
 impl Server {
     /// Expose capture only after sign-in; a failed endpoint leaves the desktop usable.
     pub(super) fn enable_capture(&mut self) -> io::Result<()> {
@@ -260,6 +269,21 @@ impl Server {
 
 #[cfg(test)]
 mod tests {
+    /// Hostile full-range geometry never reaches a saturating cast or integer abs.
+    #[test]
+    fn private_capture_origins_are_checked_before_integer_conversion() {
+        for at in [
+            f64::NAN,
+            f64::INFINITY,
+            f64::from(i32::MIN),
+            1.0e40,
+            1_000_000.1,
+        ] {
+            assert!(super::window_camera(at, 0.0).is_none());
+            assert!(super::window_camera(0.0, at).is_none());
+        }
+        assert!(super::window_camera(-1_000_000.0, 1_000_000.0).is_some());
+    }
     /// Fractional logical extents round outwards; non-finite or huge sizes refuse.
     #[test]
     fn private_capture_extents_are_bounded_before_allocation() {
