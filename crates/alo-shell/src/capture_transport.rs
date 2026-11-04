@@ -161,7 +161,7 @@ fn serve(mut stream: UnixStream, shared: &Shared) -> io::Result<()> {
             let sources = shared
                 .sources
                 .lock()
-                .map_err(io::Error::other)?
+                .map_err(|_| io::Error::other("capture catalogue is unavailable"))?
                 .values()
                 .filter(|feed| feed.live.load(Ordering::Acquire))
                 .map(|feed| feed.source.clone())
@@ -171,7 +171,7 @@ fn serve(mut stream: UnixStream, shared: &Shared) -> io::Result<()> {
         Request::Start { source } => shared
             .sources
             .lock()
-            .map_err(io::Error::other)?
+            .map_err(|_| io::Error::other("capture catalogue is unavailable"))?
             .get(&source)
             .cloned(),
     };
@@ -196,7 +196,11 @@ fn serve(mut stream: UnixStream, shared: &Shared) -> io::Result<()> {
             }
             checked = std::time::Instant::now();
         }
-        let frame = feed.frame.lock().map_err(io::Error::other)?.clone();
+        let frame = feed
+            .frame
+            .lock()
+            .map_err(|_| io::Error::other("capture frame is unavailable"))?
+            .clone();
         if let Some(frame) = frame {
             stream.write_all(&frame)?;
         }

@@ -60,7 +60,7 @@ impl Authority {
         }
         DBusProxy::new(&self.bus)
             .and_then(|daemon| {
-                daemon.get_name_owner(BusName::try_from("org.freedesktop.portal.Desktop")?)
+                Ok(daemon.get_name_owner(BusName::try_from("org.freedesktop.portal.Desktop")?)?)
             })
             .is_ok_and(|owner| owner == self.owner)
     }
