@@ -17,5 +17,21 @@ bookkeeping file cannot independently authorise an export.
 Permanent private-bus checks cover request ownership, disconnection,
 cancellation, an unavailable chooser, and failed document export. These use a
 controlled picker fixture and do not prove the real native dialog or FUSE
-sandbox export. Validation is pending. A booted alo recording and microphone
-hardware walk have not been completed by this prerequisite.
+sandbox export. These checks and the scoped portal, capability, remembering,
+changing, and capture transport checks passed at `4c3f13ae`; this is not a full
+workspace gate.
+
+A one-off integration probe at `67191b9f` used the real GTK chooser, Documents
+FUSE export, process identification, and installed `org.aloworld.Studio` Flatpak
+on a private host session. The sandbox copied a 25,512-byte generated video to
+the exact selected file. Reopening the exported document for writing succeeded;
+after removing its grant through the same locked grants store, reopening from
+the sandbox was denied. The exported file and private original remained byte
+identical, SHA-256
+`7b331c332173c7c8dce2d34c7f5a8da28d99e648bcc234be51e030eb96e00877`.
+Evidence is local to `/root/alo-studio-native-save.KWXSbb`. This one-off probe
+does not run in CI; the two verification clients live in `alo-portald/examples`.
+
+A person reaches this through Studio's Save action. The image still needs the
+native backend and document services configured. A booted alo recording and
+microphone hardware walk have not been completed by this prerequisite.
