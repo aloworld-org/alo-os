@@ -4,6 +4,17 @@ The owner authorised OS integration and a booted recording walk for alo Studio.
 This work is on `app/alo-studio`; market publication remains separate. Booted
 acceptance is in progress and is not established by the host checks below.
 
+Current booted status: the recording controls respond and a file is saved, but
+decode found only one frame for a longer recording. This is not an accepted
+recording. The native CI probe now uses the actual descriptor-preparation helper
+and requires continuous frames, rather than consuming an ordinary socket. The
+selected node also receives PipeWire's explicit link permission, while all
+other current and future registry objects remain hidden. This follows the
+scoped purpose of `PW_PERM_L` in PipeWire's
+[permission header](https://github.com/PipeWire/pipewire/blob/1.4.11/src/pipewire/permission.h).
+Validation of that correction is pending. Review visibility after finishing is
+also still under investigation.
+
 The first booted source request reached the real GTK picker but its unparented
 dialog opened behind Studio. The follow-up exports the actual caller window,
 adds the compositor's standard XDG parent protocol and admits a new dialog only

@@ -16,7 +16,7 @@ alo-capture-protocol = { path = "../alo-capture-protocol" }
 [target.'cfg(target_os = "linux")'.dependencies]
 # The exact upstream binding and its two ADR 0146 safe wrappers. This helper is
 # built against the image's own libc; the public portal daemon stays static.
-pipewire = { version = "=0.10.0", path = "../../engines/pipewire", features = ["v0_3_65"] }
+pipewire = { version = "=0.10.0", path = "../../engines/pipewire", features = ["v0_3_77"] }
 
 [lints]
 workspace = true

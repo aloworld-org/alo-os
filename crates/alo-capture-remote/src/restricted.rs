@@ -108,7 +108,10 @@ pub fn restricted_remote(selected: MediaNode, application: &str) -> io::Result<O
     core.update_self_permissions(&[
         Permission::new(pw::core::PW_ID_CORE, rwx),
         Permission::new(factory, PermissionFlags::R),
-        Permission::new(selected.id, rwx),
+        // The consuming client's own future node stays hidden by the default
+        // rule. L lets that node link to this exact source without making any
+        // additional registry object visible (PipeWire permission.h, 0.3.77).
+        Permission::new(selected.id, rwx | PermissionFlags::L),
         Permission::new(u32::MAX, PermissionFlags::empty()),
     ])?;
     roundtrip(main_loop.loop_(), &core)?;

@@ -40,6 +40,8 @@ if [[ -n "${ALO_STUDIO_CAPTURE_PROVIDER:-}" ]]; then
     sleep .1
   done
   node=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["id"])' "$scratch/publisher.json")
+  export ALO_STUDIO_VERIFY_NODE_SERIAL
+  ALO_STUDIO_VERIFY_NODE_SERIAL=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["serial"])' "$scratch/publisher.json")
   export ALO_STUDIO_EXPECT_PREVIEW_HEIGHT=400
 else
   gst-launch-1.0 -q videotestsrc is-live=true pattern=ball ! video/x-raw,format=RGBx,width=640,height=360,framerate=30/1 ! pipewiresink mode=provide stream-properties='props,node.name=studio-pipewire-fixture,media.class=Video/Source' > "$scratch/source.log" 2>&1 &

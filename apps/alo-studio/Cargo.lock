@@ -15,6 +15,7 @@ dependencies = [
  "gstreamer-app",
  "gstreamer-video",
  "gtk4",
+ "rustix",
  "serde",
  "serde_json",
  "thiserror",

@@ -1,10 +1,10 @@
 name: alo Studio
 on:
   pull_request:
-    paths: ['apps/alo-studio/**', 'crates/alo-capture-provider/**', 'crates/alo-capture-protocol/**', 'engines/pipewire/**', 'Cargo.toml', 'Cargo.lock', '.github/workflows/studio.yml']
+    paths: ['apps/alo-studio/**', 'crates/alo-capture-provider/**', 'crates/alo-capture-remote/**', 'crates/alo-capture-protocol/**', 'engines/pipewire/**', 'Cargo.toml', 'Cargo.lock', '.github/workflows/studio.yml']
   push:
     branches: [main]
-    paths: ['apps/alo-studio/**', 'crates/alo-capture-provider/**', 'crates/alo-capture-protocol/**', 'engines/pipewire/**', 'Cargo.toml', 'Cargo.lock', '.github/workflows/studio.yml']
+    paths: ['apps/alo-studio/**', 'crates/alo-capture-provider/**', 'crates/alo-capture-remote/**', 'crates/alo-capture-protocol/**', 'engines/pipewire/**', 'Cargo.toml', 'Cargo.lock', '.github/workflows/studio.yml']
   workflow_dispatch:
 permissions:
   contents: read
@@ -41,11 +41,12 @@ jobs:
         run: bash apps/alo-studio/packaging/verify-native.sh
       - name: Keep the actual PipeWire connection alive from preview to recording
         run: bash apps/alo-studio/packaging/verify-pipewire.sh
-      - name: Build the native compositor publisher
+      - name: Build the native capture publisher and permission-scoped remote
         env:
           CARGO_TARGET_DIR: ${{ github.workspace }}/apps/alo-studio/target
-        run: cargo +1.97.0 build --locked -p alo-capture-provider
+        run: cargo +1.97.0 build --locked -p alo-capture-provider -p alo-capture-remote
       - name: Preview, record and decode the native publisher without changing aspect ratio
         env:
           ALO_STUDIO_CAPTURE_PROVIDER: ${{ github.workspace }}/apps/alo-studio/target/debug/alo-capture-provider
+          ALO_STUDIO_CAPTURE_REMOTE: ${{ github.workspace }}/apps/alo-studio/target/debug/alo-capture-remote
         run: bash apps/alo-studio/packaging/verify-pipewire.sh

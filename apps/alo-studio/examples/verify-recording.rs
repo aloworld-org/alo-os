@@ -3,9 +3,18 @@
 
 use alo_studio::recorder::{Event, Input, Recorder};
 use gst::prelude::*;
-use std::os::{fd::AsRawFd, unix::net::UnixStream};
+use std::os::{
+    fd::{AsRawFd, OwnedFd},
+    unix::net::UnixStream,
+};
 use std::path::PathBuf;
+use std::process::{Command, Stdio};
 use std::time::{Duration, Instant};
+
+// Integration-only reuse of the OS wire codec. Independent installed builds
+// never compile this example or require the OS source tree.
+#[path = "../../../crates/alo-capture-protocol/src/descriptor.rs"]
+pub mod descriptor;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let output = std::env::args()
@@ -16,7 +25,25 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let socket = std::env::args()
             .nth(3)
             .ok_or("Pass the isolated PipeWire socket path")?;
-        Some((node.parse::<u32>()?, UnixStream::connect(socket)?))
+        let node = node.parse::<u32>()?;
+        let descriptor: OwnedFd =
+            if let Some(helper) = std::env::var_os("ALO_STUDIO_CAPTURE_REMOTE") {
+                let serial = std::env::var("ALO_STUDIO_VERIFY_NODE_SERIAL")?;
+                let (receiving, output) = UnixStream::pair()?;
+                receiving.set_read_timeout(Some(Duration::from_secs(15)))?;
+                let mut child = Command::new(helper)
+                    .args([node.to_string(), serial, "org.aloworld.Studio".to_owned()])
+                    .stdout(Stdio::from(OwnedFd::from(output)))
+                    .spawn()?;
+                let received = descriptor::receive_descriptor(&receiving)?;
+                if !child.wait()?.success() {
+                    return Err("Preparing the selected-node connection failed".into());
+                }
+                received
+            } else {
+                UnixStream::connect(socket)?.into()
+            };
+        Some((node, descriptor))
     } else {
         None
     };
@@ -100,8 +127,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         std::thread::sleep(Duration::from_millis(25));
     }
     drop(recorder);
-    if frames == 0 {
-        return Err("No real preview frames arrived".into());
+    if frames < 15 {
+        return Err("The recording did not deliver continuous preview frames".into());
     }
     if std::fs::metadata(&output)?.len() < 1024 {
         return Err("The recording is empty".into());
