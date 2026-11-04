@@ -37,6 +37,12 @@ pub(super) fn save(own: Rc<State>) {
         own.view.review.save.set_sensitive(false);
         let source = gio::File::for_path(path);
         let callback = own.clone();
+        // A large export continues if the person closes the last window.
+        let hold = own
+            .view
+            .window
+            .application()
+            .map(|application| application.hold());
         source.copy_async(
             &destination,
             gio::FileCopyFlags::OVERWRITE,
@@ -44,6 +50,7 @@ pub(super) fn save(own: Rc<State>) {
             gio::Cancellable::NONE,
             None,
             move |result| {
+                let _keep_running = hold;
                 callback.view.review.save.set_sensitive(true);
                 match result {
                     Ok(()) => callback.notice(&t(

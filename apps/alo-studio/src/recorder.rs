@@ -53,6 +53,10 @@ pub enum Input {
 
 impl From<&Capture> for Input {
     fn from(capture: &Capture) -> Self {
+        #[cfg(feature = "verification")]
+        if let Some(display) = &capture.verification_display {
+            return Self::VerificationDisplay(display.clone());
+        }
         Self::PipeWire {
             fd: capture.fd(),
             node: capture.node,

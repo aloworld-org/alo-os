@@ -11,6 +11,8 @@ use crate::model::SourceKind;
 
 /// A granted source. Its remote and permission session outlive every frame read.
 pub struct Capture {
+    #[cfg(feature = "verification")]
+    pub(crate) verification_display: Option<String>,
     session: Option<Session<Screencast>>,
     remote: OwnedFd,
     /// The one selected stream on the permission-scoped PipeWire remote.
@@ -42,6 +44,22 @@ impl Drop for Capture {
 
 /// Ask anew for every recording. No restore token or ambient screen permission.
 pub async fn choose(kind: SourceKind) -> Result<Capture, ashpd::Error> {
+    // Only explicit verification builds can select the isolated Xvfb fixture.
+    // This branch and its environment variable do not exist in a Flatpak build.
+    #[cfg(feature = "verification")]
+    if let Ok(display) = std::env::var("ALO_STUDIO_VERIFY_DISPLAY") {
+        let remote = std::fs::File::open("/dev/null")
+            .map_err(ashpd::Error::IO)?
+            .into();
+        return Ok(Capture {
+            session: None,
+            remote,
+            node: 0,
+            width: 1280,
+            height: 960,
+            verification_display: Some(display),
+        });
+    }
     let portal = Screencast::new().await?;
     let session = portal.create_session(Default::default()).await?;
     let source = match kind {
@@ -87,6 +105,8 @@ pub async fn choose(kind: SourceKind) -> Result<Capture, ashpd::Error> {
         }
     };
     Ok(Capture {
+        #[cfg(feature = "verification")]
+        verification_display: None,
         session: Some(session),
         remote,
         node,

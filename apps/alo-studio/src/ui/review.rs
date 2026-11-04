@@ -6,7 +6,7 @@ use gtk::prelude::*;
 
 #[derive(Clone)]
 pub struct Review {
-    pub root: gtk::ScrolledWindow,
+    pub root: gtk::Box,
     pub video: gtk::Video,
     pub title: gtk::Entry,
     pub details: gtk::Label,
@@ -27,11 +27,14 @@ impl Review {
         ));
         let video = gtk::Video::builder().autoplay(false).hexpand(true).build();
         video.add_css_class("review-video");
-        let frame = gtk::AspectFrame::builder()
-            .ratio(16.0 / 9.0)
-            .obey_child(false)
-            .child(&video)
-            .build();
+        // A video's metadata must not move the title or Save button when it
+        // arrives. Overlay children do not change the placeholder's measure.
+        let frame = gtk::Overlay::new();
+        let space = gtk::Box::new(gtk::Orientation::Vertical, 0);
+        space.set_height_request(300);
+        frame.set_child(Some(&space));
+        video.set_vexpand(true);
+        frame.add_overlay(&video);
         content.append(&frame);
         let title = gtk::Entry::builder()
             .placeholder_text(t("Name your recording"))
@@ -54,17 +57,25 @@ impl Review {
         let delete = icon_button("user-trash-symbolic", "Delete this recording");
         delete.add_css_class("flat");
         row.append(&delete);
-        content.append(&row);
+        let root = gtk::Box::new(gtk::Orientation::Vertical, 0);
+        let scroll = gtk::ScrolledWindow::builder()
+            .hscrollbar_policy(gtk::PolicyType::Never)
+            .vexpand(true)
+            .child(&content)
+            .build();
+        root.append(&scroll);
+        row.set_margin_start(34);
+        row.set_margin_end(34);
+        row.set_margin_bottom(12);
+        root.append(&row);
         let note = label(
             "The original stays in your library. Saving a copy never uploads it.",
             "footnote",
         );
         note.set_wrap(true);
-        content.append(&note);
-        let root = gtk::ScrolledWindow::builder()
-            .hscrollbar_policy(gtk::PolicyType::Never)
-            .child(&content)
-            .build();
+        note.set_margin_start(34);
+        note.set_margin_bottom(18);
+        root.append(&note);
         Self {
             root,
             video,

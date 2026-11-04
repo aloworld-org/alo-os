@@ -16,7 +16,7 @@ jobs:
       - name: Native libraries and test display
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends libgtk-4-dev libgtk-4-media-gstreamer libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev gstreamer1.0-tools gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-pipewire gstreamer1.0-pulseaudio xvfb dbus-x11 appstream-util desktop-file-utils
+          sudo apt-get install -y --no-install-recommends libgtk-4-dev libgtk-4-media-gstreamer libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev gstreamer1.0-tools gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-pipewire gstreamer1.0-pulseaudio xvfb xdotool dbus-x11 appstream-util desktop-file-utils
       - name: Rust toolchain
         run: rustup toolchain install 1.97.0 --profile minimal --component rustfmt --component clippy
       - uses: Swatinem/rust-cache@v2
@@ -36,5 +36,6 @@ jobs:
         run: |
           cargo +1.97.0 build --locked
           cargo +1.97.0 build --locked --features verification --examples
+          cargo +1.97.0 build --locked --features verification
       - name: Record, pause, finalize, and decode a real framebuffer
         run: bash apps/alo-studio/packaging/verify-native.sh

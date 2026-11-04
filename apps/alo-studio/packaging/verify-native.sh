@@ -18,12 +18,14 @@ export DISPLAY="localhost:$(cat "$scratch/display")"
 export GDK_BACKEND=x11
 export GSK_RENDERER=cairo
 export XDG_DATA_HOME="$scratch/data"
+export ALO_STUDIO_VERIFY_DISPLAY="$DISPLAY"
 export NO_AT_BRIDGE=1
 dbus-run-session -- "$build_target/debug/alo-studio" >"$scratch/app.log" 2>&1 &
 app_pid=$!
 sleep 3
 if ! kill -0 "$app_pid"; then head -30 "$scratch/app.log"; exit 1; fi
 "$build_target/debug/examples/verify-recording" "$scratch/display.webm"
+bash "$app_dir/packaging/verify-ui.sh" "$scratch"
 desktop-file-validate "$app_dir/data/org.aloworld.Studio.desktop"
 appstream-util validate-relax --nonet "$app_dir/data/org.aloworld.Studio.metainfo.xml"
 if grep -E 'panicked|CRITICAL|Theme parser error' "$scratch/app.log"; then

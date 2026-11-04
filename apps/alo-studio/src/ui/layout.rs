@@ -326,13 +326,6 @@ pub fn build(application: &gtk::Application) -> View {
     settings.set_margin_end(34);
     settings.set_margin_bottom(12);
     record_page.append(&settings);
-    let footnote = label(
-        "No account. No uploads. Just your work, beautifully clear.",
-        "footnote",
-    );
-    footnote.set_margin_start(34);
-    footnote.set_margin_bottom(18);
-    record_page.append(&footnote);
 
     let library_page = gtk::Box::new(gtk::Orientation::Vertical, 16);
     library_page.add_css_class("workspace");

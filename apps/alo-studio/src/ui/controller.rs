@@ -598,6 +598,7 @@ impl State {
         self.render();
     }
     fn failed(&self, message: &str) {
+        self.close_after_save.set(false);
         self.finish_started.set(None);
         self.release_capture();
         self.session.borrow_mut().reset();
