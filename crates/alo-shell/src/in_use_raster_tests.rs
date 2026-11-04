@@ -88,7 +88,10 @@ fn a_failed_reading_draws_its_translated_explanation_instead_of_silence() {
     )
     .unwrap();
     assert_eq!(picture.rows.len(), 1);
-    assert_eq!(picture.rows[0].sentence, problem.said(&strings).text());
+    assert_eq!(
+        picture.rows.first().unwrap().sentence,
+        problem.said(&strings).text()
+    );
     assert!(!picture.inked.is_empty());
 }
 
