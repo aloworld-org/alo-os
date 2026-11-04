@@ -59,18 +59,36 @@ impl Core {
     ///
     /// # Errors
     /// An oversized permission count, a missing client, or PipeWire's method error.
-    pub fn update_self_permissions(&self, permissions: &[crate::permissions::Permission]) -> std::io::Result<()> {
-        let count = u32::try_from(permissions.len()).map_err(|_| std::io::Error::new(std::io::ErrorKind::InvalidInput, "too many PipeWire permissions"))?;
+    pub fn update_self_permissions(
+        &self,
+        permissions: &[crate::permissions::Permission],
+    ) -> std::io::Result<()> {
+        let count = u32::try_from(permissions.len()).map_err(|_| {
+            std::io::Error::new(
+                std::io::ErrorKind::InvalidInput,
+                "too many PipeWire permissions",
+            )
+        })?;
         // SAFETY: the borrowed core is live throughout this call. Its client
         // is borrowed only for the method call and is never independently freed.
         let client = unsafe { pw_sys::pw_core_get_client(self.as_raw_ptr()) };
-        if client.is_null() { return Err(std::io::Error::other("PipeWire returned no client")); }
+        if client.is_null() {
+            return Err(std::io::Error::other("PipeWire returned no client"));
+        }
         // SAFETY: Permission is repr(transparent) over pw_permission; count
         // fits u32 and the complete slice stays alive until the call returns.
         let result = unsafe {
-            spa_interface_call_method!(client, pw_sys::pw_client_methods, update_permissions, count, permissions.as_ptr().cast())
+            spa_interface_call_method!(
+                client,
+                pw_sys::pw_client_methods,
+                update_permissions,
+                count,
+                permissions.as_ptr().cast()
+            )
         };
-        if result < 0 { return Err(std::io::Error::from_raw_os_error(result.saturating_neg())); }
+        if result < 0 {
+            return Err(std::io::Error::from_raw_os_error(result.saturating_neg()));
+        }
         Ok(())
     }
 

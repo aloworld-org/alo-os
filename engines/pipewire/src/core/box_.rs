@@ -56,7 +56,9 @@ impl<'c> CoreBox<'c> {
         // ownership and detaches this descriptor from the core on success.
         let descriptor = unsafe { pw_sys::pw_core_steal_fd(self.as_raw_ptr()) };
         if descriptor < 0 {
-            return Err(std::io::Error::from_raw_os_error(descriptor.saturating_neg()));
+            return Err(std::io::Error::from_raw_os_error(
+                descriptor.saturating_neg(),
+            ));
         }
         // SAFETY: the successful steal returns one live, newly owned fd.
         // CoreBox's normal Drop still destroys the now-detached core.
