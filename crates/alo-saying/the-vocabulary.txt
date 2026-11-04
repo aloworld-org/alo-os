@@ -1494,11 +1494,26 @@ picking.nothing-above	This is as far up as the picker goes. Open one of the fold
 picking.nothing-there	That folder is not there any more. Go back, and pick another one
 picking.the-whole-machine	The agent is never granted the whole machine. Open a folder, and pick the folder you actually mean
 picking.would-not-be-read	This machine would not open that folder. Pick a folder you can open yourself, or ask whoever looks after this machine
+portals.answer.capture-unavailable	The selected screen or window could not be shared; choose it again to retry
+portals.answer.dialog-cancelled	The request was cancelled; nothing was shared
+portals.answer.dialog-unavailable	The selection window could not be opened; nothing was shared
+portals.answer.document-unavailable	The selected file could not be shared with the application
+portals.answer.files-chosen	The files you selected were shared with {application}
+portals.answer.screen-shared	Your selected screen or window is being shared with {application}
 portals.answered.appearance-read	{application} read your appearance settings, such as light or dark
 portals.answered.appearance-sent	{application} was told your appearance settings changed, such as from light to dark
 portals.answered.network-read	{application} read whether this machine is connected, and whether the connection is metered
 portals.answered.opened-in	{application} had a file it was granted handed to {opener} to open
 portals.answered.secret-handed-over	{application} was given its own secret from your keyring
+portals.capture.body	Choose what to share. Sharing ends when you stop recording or remove this permission in Settings.
+portals.capture.cancel	Cancel
+portals.capture.confirm	Share
+portals.capture.prepared	Screen sharing is ready for your choice; nothing is being shared yet
+portals.capture.screen	Screen
+portals.capture.source	Source
+portals.capture.subtitle	{application} would like to record your selected source
+portals.capture.title	Share a screen or window
+portals.capture.window	Application window
 portals.not-a-request.could-lead-elsewhere	A path with .. in it can lead somewhere else, so a request names a file by its own path
 portals.not-a-request.needs-a-path	This portal is about a file, so a request to it has to say which file
 portals.not-a-request.no-application	A request has to say which application is asking, and this one said none
