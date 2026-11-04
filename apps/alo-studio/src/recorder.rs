@@ -155,6 +155,9 @@ impl Recorder {
             .map_err(failed)?
             .downcast::<gst::Pipeline>()
             .map_err(|_| MediaError(t("The recording engine could not start.")))?;
+        // Preview and recording share a permission-scoped PipeWire core. Keep
+        // their timelines independent of clock resets in that shared graph.
+        pipeline.use_clock(Some(&gst::SystemClock::obtain()));
         let by_name = |name| {
             pipeline.by_name(name).ok_or_else(|| {
                 MediaError(format!(
