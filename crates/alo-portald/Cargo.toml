@@ -68,6 +68,11 @@ alo-opening = { path = "../alo-opening" }
 # did not parse from a machine nobody has touched.
 tempfile = "3"
 
+[target.'cfg(target_os = "linux")'.dev-dependencies]
+# Private-bus native integration probes, never included in the shipped daemon.
+zbus = { version = "5.19", default-features = false, features = ["async-io", "blocking-api"] }
+url = "2.5"
+
 [[bin]]
 name = "alo-portald"
 path = "src/main.rs"
