@@ -17,7 +17,8 @@ use std::{
 pub fn send_descriptor(socket: &impl AsFd, descriptor: BorrowedFd<'_>) -> io::Result<()> {
     let mut space = [MaybeUninit::uninit(); rustix::cmsg_space!(ScmRights(1))];
     let mut control = SendAncillaryBuffer::new(&mut space);
-    if !control.push(SendAncillaryMessage::ScmRights(&[descriptor])) {
+    let descriptors = [descriptor];
+    if !control.push(SendAncillaryMessage::ScmRights(&descriptors)) {
         return Err(io::ErrorKind::InvalidInput.into());
     }
     let sent = sendmsg(
