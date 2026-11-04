@@ -122,6 +122,14 @@ shutdown. PipeWire input now copies engine-owned buffers before they enter
 asynchronous queues, so stopping a stream cannot invalidate queued pixels. The
 encoding queue also has a 128 MiB byte bound in addition to its two-second
 limit. The native-publisher check remains pending until that full path passes.
+That complete check passed locally and in app CI at `e747b594`, including
+preview, pause/resume, finalization and decode. Local evidence is
+`/tmp/tmp.Nt7iX8YTly`.
+The newer guest media stack still negotiated an invalid pixel aspect ratio
+despite the publisher declaration. A one-off guest pipeline reproduced the
+invalid ratio and confirmed that a source-side square-pixel constraint delivers
+frames at 640×400. Studio now applies that input constraint as well; guest logs
+are under `/home/alo/StudioVerification/format-diagnostics`.
 The app CI also builds that actual native publisher and passes
 its non-16:9 output through Studio's preview, recording, pause/resume and decode
 probe, checking that a 1280×800 source previews at 640×400. This is a permanent
