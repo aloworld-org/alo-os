@@ -1,0 +1,83 @@
+/* Native GTK configuration. This is not an HTML surface or a web renderer. */
+@define-color ink #202638;
+@define-color muted #777b87;
+@define-color paper #fbfaf8;
+@define-color accent #6558dc;
+@define-color line #e8e6e2;
+
+window.studio { background: @paper; color: @ink; font-family: "Inter", "Noto Sans", sans-serif; font-size: 13px; }
+.studio-header { background: @paper; box-shadow: none; border-bottom: 1px solid @line; min-height: 34px; }
+.studio-header label { font-size: 12px; color: @muted; }
+.sidebar { background: #f4f2ee; border-right: 1px solid @line; padding: 24px 14px 14px; }
+.brand { margin: 0 6px 32px; }
+.brand-name { font-size: 19px; font-weight: 750; letter-spacing: -0.5px; }
+.brand-caption { font-size: 10px; color: @muted; margin-top: 3px; }
+button { border-radius: 9px; border: 1px solid @line; background: white; color: @ink; padding: 10px 14px; box-shadow: 0 1px 2px alpha(black, 0.02); font-weight: 550; transition: background 130ms ease; }
+button:hover { background: #f2f0fc; }
+button:active { background: #e9e5fb; }
+button:focus-visible, entry:focus-visible, dropdown:focus-visible { outline: 3px solid alpha(@accent, 0.4); outline-offset: 3px; }
+button:disabled { opacity: 0.45; }
+.nav-button { background: transparent; border-color: transparent; box-shadow: none; padding: 11px 12px; }
+.nav-button .card-title { font-size: 12px; }
+.nav-button label.muted { font-size: 0; }
+.nav-button image { color: #73717c; }
+.nav-button:hover { background: #ece8e2; }
+.nav-button.nav-active { background: white; border-color: #e8e4de; box-shadow: 0 2px 3px alpha(black, 0.025); }
+.nav-active image { color: @accent; }
+.library-count { color: #95929b; font-size: 10px; margin: 6px 12px; }
+.privacy-note { margin: 20px 8px; }
+.privacy-note image { color: #8d869d; margin-bottom: 2px; }
+.privacy-note .card-title { font-size: 11px; }
+.privacy-note .muted { font-size: 11px; line-height: 1.6; }
+.help-button { color: #83808a; font-size: 10px; padding: 10px 4px; }
+.workspace { padding: 28px 34px 20px; }
+.eyebrow { font-size: 9px; letter-spacing: 1.3px; font-weight: 650; color: #8e8a98; }
+.local-badge { color: #6b7471; background: #f0f3ef; border-radius: 20px; padding: 6px 10px; font-size: 10px; }
+.page-title { font-size: 32px; font-weight: 750; letter-spacing: -1.3px; margin-top: 24px; margin-bottom: 8px; }
+.page-subtitle { color: @muted; font-size: 12px; margin-bottom: 25px; }
+.stage { background: #192031; border-radius: 15px; border: 1px solid #283044; }
+.stage picture { border-radius: 15px; }
+.stage-icon { color: #a5a3be; margin-bottom: 3px; }
+.stage-title { color: #ececf5; font-size: 18px; font-weight: 550; }
+.stage-subtitle { color: #8e94a7; font-size: 11px; }
+.stage-tag { margin: 17px; color: #a8adc0; font-size: 8px; letter-spacing: 1.4px; font-weight: 650; }
+.preview-footer { padding: 12px 1px 24px; }
+.status { color: #8a8792; font-size: 10px; }
+.status.recording { color: #d3485e; }
+.timer { font-family: "JetBrains Mono", monospace; color: #6c6879; font-size: 12px; letter-spacing: 1px; }
+.section-heading { color: #8d8796; font-size: 9px; font-weight: 650; letter-spacing: 1.2px; margin-bottom: 12px; }
+.source-card { padding: 16px; border-radius: 11px; background: white; box-shadow: none; }
+.source-card:checked { border-color: #9487e2; background: #f3f0fd; box-shadow: inset 0 0 0 1px #9487e2; }
+.source-card:checked image { color: @accent; }
+.card-title { font-size: 12px; font-weight: 650; }
+.muted { color: @muted; font-size: 10px; font-weight: 400; }
+.source-description { color: #97929d; font-size: 10px; margin: 10px 1px 17px; }
+.sound-row { background: white; border: 1px solid @line; border-radius: 11px; padding: 14px 16px; }
+.sound-row image { color: #8d879c; margin-right: 4px; }
+switch { border-radius: 20px; min-width: 36px; min-height: 20px; background: #ddd9e2; border: none; }
+switch:checked { background: @accent; }
+switch slider { min-width: 16px; min-height: 16px; border-radius: 20px; border: none; background: white; margin: 2px; box-shadow: 0 1px 2px alpha(black, 0.15); }
+.settings-row { margin-top: 20px; }
+dropdown > button { font-size: 10px; color: #716a7d; padding: 8px 9px; min-height: 22px; background: transparent; box-shadow: none; }
+button.primary { background: @accent; color: white; border-color: @accent; padding: 12px 20px; font-weight: 650; box-shadow: 0 3px 5px alpha(@accent, 0.14); }
+button.primary:hover { background: #5546cb; }
+button.primary:disabled { background: #a79fdc; border-color: #a79fdc; }
+button.recording-stop { background: #cf4057; border-color: #cf4057; }
+button.recording-stop:hover { background: #b93349; }
+.footnote { font-size: 9px; color: #a29ba8; margin-top: 18px; }
+.countdown-number { background: alpha(#101623, 0.75); border-radius: 15px; color: white; font-size: 96px; font-weight: 750; }
+.notice { background: #f0edf9; border-bottom: 1px solid #e1dbf1; padding: 10px 18px; color: #564b70; }
+.notice-text { font-size: 11px; }
+.notice button { padding: 4px; min-height: 16px; }
+.review-video { background: #192031; border-radius: 14px; min-height: 260px; }
+entry.clip-title { background: transparent; border: none; border-bottom: 1px solid @line; border-radius: 0; padding: 10px 0; font-size: 22px; font-weight: 650; box-shadow: none; }
+.recording-list { background: transparent; }
+.recording-list row { background: white; border: 1px solid @line; border-radius: 11px; margin-bottom: 9px; }
+.recording-list row:hover { background: #f5f2ff; }
+.clip-row { padding: 14px; }
+.clip-row picture { border-radius: 6px; background: #eae6f2; }
+.clip-row .card-title { margin-bottom: 5px; }
+.empty-library { padding: 60px 20px; color: @muted; }
+.control-bar { background: @paper; padding: 14px; }
+.control-bar .timer { font-size: 18px; }
+.control-bar button { padding: 8px 12px; }

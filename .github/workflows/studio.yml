@@ -1,0 +1,40 @@
+name: alo Studio
+on:
+  pull_request:
+    paths: ['apps/alo-studio/**', '.github/workflows/studio.yml']
+  push:
+    branches: [main]
+    paths: ['apps/alo-studio/**', '.github/workflows/studio.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Native libraries and test display
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends libgtk-4-dev libgtk-4-media-gstreamer libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev gstreamer1.0-tools gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-pipewire gstreamer1.0-pulseaudio xvfb dbus-x11 appstream-util desktop-file-utils
+      - name: Rust toolchain
+        run: rustup toolchain install 1.97.0 --profile minimal --component rustfmt --component clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: apps/alo-studio
+      - name: Format
+        working-directory: apps/alo-studio
+        run: cargo +1.97.0 fmt --all --check
+      - name: Clippy
+        working-directory: apps/alo-studio
+        run: cargo +1.97.0 clippy --locked --all-targets --features verification -- -D warnings
+      - name: Lifecycle and storage refusal tests
+        working-directory: apps/alo-studio
+        run: cargo +1.97.0 test --locked
+      - name: Build the real app and framebuffer recording probe
+        working-directory: apps/alo-studio
+        run: |
+          cargo +1.97.0 build --locked
+          cargo +1.97.0 build --locked --features verification --examples
+      - name: Record, pause, finalize, and decode a real framebuffer
+        run: bash apps/alo-studio/packaging/verify-native.sh

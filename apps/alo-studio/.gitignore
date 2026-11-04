@@ -1,0 +1,7 @@
+/target/
+/vendor/
+/.flatpak-builder/
+/build/
+/repo/
+*.flatpak
+*.tar.xz

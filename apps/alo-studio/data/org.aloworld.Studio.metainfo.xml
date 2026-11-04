@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>org.aloworld.Studio</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-3.0-or-later</project_license>
+  <name>alo Studio</name>
+  <summary>Record your screen. Make things clear.</summary>
+  <developer id="org.aloworld"><name>alo</name></developer>
+  <description>
+    <p>A quiet, native screen recorder. Choose a screen or a window, add your microphone if you want, and make a clear recording without an account.</p>
+    <p>A live preview shows exactly what you selected. A countdown gives you time to get ready. Pause when you need a moment, then finish and watch your video back.</p>
+    <p>Your original is saved in a private library on your device. Give it a name and save a copy wherever you choose. Nothing is uploaded.</p>
+    <ul>
+      <li>Record one screen or one window, selected through your desktop's permission picker.</li>
+      <li>Optional microphone audio, off at the start of every recording.</li>
+      <li>1080p, 720p, or original size at 30 frames per second.</li>
+      <li>Pause, resume, and finish from a compact control window.</li>
+      <li>Preview, rename, find, save, and delete recordings.</li>
+      <li>Royalty-free VP9 video and Opus audio in WebM.</li>
+    </ul>
+  </description>
+  <launchable type="desktop-id">org.aloworld.Studio.desktop</launchable>
+  <url type="homepage">https://github.com/aloworld-org/alo-os/tree/main/apps/alo-studio</url>
+  <url type="bugtracker">https://github.com/aloworld-org/alo-os/issues</url>
+  <content_rating type="oars-1.1"/>
+  <releases><release version="0.1.0" date="2026-11-04"><description><p>The first complete recording workflow: select, record, pause, preview, and save on your device.</p></description></release></releases>
+  <supports><control>pointing</control><control>keyboard</control></supports>
+  <requires><display_length compare="ge">780</display_length></requires>
+</component>
