@@ -138,6 +138,18 @@ impl ThisMachine {
 }
 
 impl TheMachine for ThisMachine {
+    fn strings(&self) -> Option<alo_strings::Strings> {
+        let vocabulary = alo_saying::everything_this_machine_can_say().ok()?;
+        let loaded = alo_saying::Loaded::at(vocabulary, alo_saying::the_translations());
+        for line in loaded.damage().lines() {
+            eprintln!("Portal language bundle: {line}");
+        }
+        let mut strings = loaded.into_strings();
+        let settings =
+            alo_choosing::Settings::at(&self.theirs.join(alo_choosing::THE_SETTINGS)).ok()?;
+        strings.prefers(settings.languages());
+        Some(strings)
+    }
     /// The grants as they are now, or [`None`] when the file cannot be read.
     ///
     /// A file that is not there is **not** an empty list of grants: a machine

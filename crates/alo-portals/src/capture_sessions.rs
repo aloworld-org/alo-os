@@ -5,7 +5,6 @@ use alo_capability::GrantId;
 use alo_media_server::capture::Stream;
 use std::{
     collections::BTreeMap,
-    path::PathBuf,
     sync::{
         Arc, Mutex, PoisonError,
         atomic::{AtomicBool, Ordering},
@@ -59,7 +58,7 @@ pub(super) struct Running {
 
 /// A bounded service-owned list; bus objects contain session data, not a backend.
 #[derive(Default)]
-pub(super) struct Sessions(Mutex<BTreeMap<OwnedObjectPath, Arc<Session>>>);
+pub(super) struct Sessions(Mutex<BTreeMap<String, Arc<Session>>>);
 
 impl Sessions {
     /// Service shutdown stops publishers before releasing the public bus name.
@@ -86,12 +85,12 @@ impl Sessions {
                 "too many recording sessions".into(),
             ));
         }
-        if all.contains_key(&session.path) {
+        if all.contains_key(session.path.as_str()) {
             return Err(fdo::Error::InvalidArgs(
                 "session token already in use".into(),
             ));
         }
-        all.insert(session.path.clone(), session);
+        all.insert(session.path.as_str().to_owned(), session);
         Ok(())
     }
     /// Every operation rechecks both the connection and its authenticated sandbox.
@@ -99,7 +98,7 @@ impl Sessions {
         self.0
             .lock()
             .ok()?
-            .get(path)
+            .get(path.as_str())
             .filter(|session| {
                 session.owner == *asked.sender()
                     && Some(session.application.as_str()) == asked.application()
@@ -180,7 +179,7 @@ impl Sessions {
         self.0
             .lock()
             .unwrap_or_else(PoisonError::into_inner)
-            .remove(&session.path);
+            .remove(session.path.as_str());
         let _removed = bus
             .object_server()
             .remove::<SessionObject, _>(session.path.as_ref())
