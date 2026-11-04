@@ -26,6 +26,10 @@ pub struct Stream {
 }
 
 impl Stream {
+    /// Stop delivery immediately; the persistent supervisor reaps its publisher.
+    pub fn stop(&self) {
+        self.stopping.store(true, Ordering::Release);
+    }
     /// Whether the compositor input or media worker has ended.
     pub fn ended(&self) -> bool {
         self.stopping.load(Ordering::Acquire)

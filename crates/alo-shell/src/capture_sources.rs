@@ -105,10 +105,7 @@ impl CaptureSources {
             .take(MAX_SOURCES.saturating_sub(self.monitors.len()))
         {
             let geometry = crate::scene::geometry(root);
-            let dimensions = (
-                u32::try_from(geometry.size.w).unwrap_or(0),
-                u32::try_from(geometry.size.h).unwrap_or(0),
-            );
+            let dimensions = (extent(geometry.size.w), extent(geometry.size.h));
             let Some(mapping) = server.surfaces.window_visibility(root) else {
                 continue;
             };
@@ -176,12 +173,33 @@ impl CaptureSources {
                 window.feed.source.height as i32,
             )
                 .into();
-            // A window's private target contains no cursor tree owned by another app.
+            // Embed only the compositor's arrow; no other app's cursor tree enters.
+            let looking = if server.screens.is_some() { named } else { "" };
+            let cursor = server
+                .surfaces
+                .pointer
+                .as_ref()
+                .and_then(|pointer| {
+                    let at = server.surfaces.camera_of(looking).plane_of((
+                        pointer.location.x.floor() as i32,
+                        pointer.location.y.floor() as i32,
+                    ))?;
+                    let x = f64::from(at.x) - origin.x;
+                    let y = f64::from(at.y) - origin.y;
+                    (x >= 0.0
+                        && y >= 0.0
+                        && x < f64::from(window.feed.source.width)
+                        && y < f64::from(window.feed.source.height))
+                    .then_some(crate::Cursor::Arrow {
+                        location: (x, y).into(),
+                    })
+                })
+                .unwrap_or(crate::Cursor::Default);
             match target.capture_window(
                 size,
                 &window.root,
                 &server.popup_surfaces(),
-                &crate::Cursor::Default,
+                &cursor,
                 camera,
             ) {
                 Ok(pixels) => window.feed.publish(pixels),
@@ -209,6 +227,15 @@ impl CaptureSources {
         self.monitors.clear();
         self.windows.clear();
         self.endpoint.catalogue(std::iter::empty());
+    }
+}
+
+/// Validate fractional logical geometry before rounding the private pixel extent.
+fn extent(side: f64) -> u32 {
+    if side.is_finite() && side > 0.0 && side <= 16_384.0 {
+        side.ceil() as u32
+    } else {
+        0
     }
 }
 

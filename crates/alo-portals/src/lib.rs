@@ -86,17 +86,16 @@
 //! On Linux, `serving::Backend::serve_on` answers `org.freedesktop.portal.Secret`,
 //! `org.freedesktop.portal.OpenURI` and `org.freedesktop.portal.Settings` on a
 //! session bus, from the decisions
-//! above and nothing else, and registers **no other portal**:
+//! above, plus the native SaveFile and session-scoped ScreenCast frontends:
 //! `docs/contracts/portals.md` lists which portals this machine answers and
 //! which it does not yet, and [`Portal::answered_on_the_bus`] is that list in
 //! code.
 //!
 //! # What is not here
 //!
-//! **No dialog.** A portal whose answer needs one — the file chooser above all,
-//! which is the desktop lane's — is not served, rather than answered yes. **No grant is made
-//! here**: making one is a person's act, and nothing in this crate holds a
-//! `&mut Grants`. **No v1 portal** — USB, global shortcuts, launchers, remote
+//! Native selection is rented from GTK; only a fresh confirmed choice can ask
+//! the machine's writer to add a grant. Judging still goes through the one
+//! capability policy. **No v1 portal** — USB, global shortcuts, launchers, remote
 //! desktop — is listed, refused or otherwise: a portal this machine does not
 //! offer is not a portal it lists.
 
@@ -140,6 +139,10 @@ mod asked;
 #[cfg(target_os = "linux")]
 mod caller;
 #[cfg(target_os = "linux")]
+mod capture_choice;
+#[cfg(target_os = "linux")]
+mod capture_sessions;
+#[cfg(target_os = "linux")]
 mod dialog_request;
 #[cfg(target_os = "linux")]
 mod documents;
@@ -155,6 +158,8 @@ mod network_monitor_portal;
 mod open_uri_portal;
 #[cfg(target_os = "linux")]
 mod opening;
+#[cfg(target_os = "linux")]
+mod screen_cast_portal;
 // **Gated with its module**, which it was not until 2026-10-19. The module is
 // Linux-only and this re-export was not, so `alo-portals` did not compile for
 // Windows at all from #635 until now — and the only build that targets Windows

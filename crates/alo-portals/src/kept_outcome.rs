@@ -31,6 +31,8 @@ use crate::refused::Refused;
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "answer", rename_all = "kebab-case")]
 pub enum KeptOutcome {
+    /// A screen session was configured without exposing any screen content.
+    CapturePrepared,
     /// The application was handed its own secret, allowed by these grants.
     SecretHandedOver {
         /// The grant behind each thing the request was for.
@@ -106,7 +108,8 @@ impl KeptOutcome {
             | Self::AppearanceSent { .. }
             | Self::NetworkRead { .. }
             | Self::FilesChosen { .. }
-            | Self::ScreenShared { .. } => false,
+            | Self::ScreenShared { .. }
+            | Self::CapturePrepared => false,
             Self::Cancelled => true,
             Self::Refused { .. }
             | Self::NotARequest { .. }
@@ -156,6 +159,7 @@ impl From<&Outcome> for KeptOutcome {
             Outcome::ScreenShared(allowed) => Self::ScreenShared {
                 against: allowed.against().to_vec(),
             },
+            Outcome::CapturePrepared => Self::CapturePrepared,
             Outcome::Cancelled => Self::Cancelled,
             Outcome::SecretHandedOver(allowed) => Self::SecretHandedOver {
                 against: allowed.against().to_vec(),

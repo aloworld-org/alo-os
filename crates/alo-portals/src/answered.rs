@@ -94,6 +94,8 @@ impl Answered {
 /// What a request was answered with.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Outcome {
+    /// Session setup succeeded without handing over screen contents.
+    CapturePrepared,
     /// The Secret portal handed the application its own secret.
     ///
     /// Kept before the secret is written to what the application handed over.
@@ -147,7 +149,8 @@ impl Outcome {
             | Self::AppearanceSent(_)
             | Self::NetworkRead(_)
             | Self::FilesChosen(_)
-            | Self::ScreenShared(_) => 0,
+            | Self::ScreenShared(_)
+            | Self::CapturePrepared => 0,
             Self::Cancelled => 1,
             Self::Refused(_)
             | Self::NotARequest(_)
@@ -167,6 +170,9 @@ impl Outcome {
     #[must_use]
     pub fn said(&self, strings: &Strings) -> Said {
         match self {
+            Self::CapturePrepared => {
+                strings.say(&words::CAPTURE_PREPARED.key(), &Filling::nothing())
+            }
             Self::FilesChosen(allowed) => strings.say(
                 &words::FILES_CHOSEN.key(),
                 &Filling::of("application", allowed.application().as_str()),

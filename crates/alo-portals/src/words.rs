@@ -491,7 +491,16 @@ pub const LINES_NOT_READ: Counted = Counted {
 pub const CLAUSES: [Word; 3] = [NOBODY_NAMED, WHAT_IT_ASKED_FOR, THAT_KIND_OF_FILE];
 
 /// Every string this crate can say, in the order this file declares them.
-pub const EVERY_WORD: [Word; 54] = [
+pub const EVERY_WORD: [Word; 63] = [
+    CAPTURE_PREPARED,
+    SHARE_TITLE,
+    SHARE_SUBTITLE,
+    SHARE_BODY,
+    SHARE_SOURCE,
+    SHARE_CONFIRM,
+    SHARE_CANCEL,
+    SHARE_SCREEN,
+    SHARE_WINDOW,
     FILES_CHOSEN,
     SCREEN_SHARED,
     DIALOG_CANCELLED,
@@ -578,6 +587,34 @@ pub const CAPTURE_UNAVAILABLE: Word = Word::saying(
     "portals.answer.capture-unavailable",
     "The selected screen or window could not be shared; choose it again to retry",
 );
+
+/// Session setup has not yet exposed pixels.
+pub const CAPTURE_PREPARED: Word = Word::saying(
+    "portals.capture.prepared",
+    "Screen sharing is ready for your choice; nothing is being shared yet",
+);
+/// Native source chooser heading.
+pub const SHARE_TITLE: Word = Word::saying("portals.capture.title", "Share a screen or window");
+/// The authenticated application's request, never text supplied by that app.
+pub const SHARE_SUBTITLE: Word = Word::saying(
+    "portals.capture.subtitle",
+    "{application} would like to record your selected source",
+);
+/// Scope and revocation, visible before the person confirms.
+pub const SHARE_BODY: Word = Word::saying(
+    "portals.capture.body",
+    "Choose what to share. Sharing ends when you stop recording or remove this permission in Settings.",
+);
+/// The native source dropdown's label.
+pub const SHARE_SOURCE: Word = Word::saying("portals.capture.source", "Source");
+/// Explicit start consent.
+pub const SHARE_CONFIRM: Word = Word::saying("portals.capture.confirm", "Share");
+/// Native source chooser dismissal.
+pub const SHARE_CANCEL: Word = Word::saying("portals.capture.cancel", "Cancel");
+/// A screen's prefix before its compositor-provided name.
+pub const SHARE_SCREEN: Word = Word::saying("portals.capture.screen", "Screen");
+/// A window's prefix before its application-provided title.
+pub const SHARE_WINDOW: Word = Word::saying("portals.capture.window", "Application window");
 
 /// Why this crate's own words could not be declared.
 ///

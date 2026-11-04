@@ -64,6 +64,8 @@ pub struct Backend {
     native_requests: Arc<crate::dialog_request::NativeRequests>,
     /// Document exports derived from the person's grants.
     documents: Arc<crate::documents::Documents>,
+    /// Recording sessions share this frontend's lifetime and central grant policy.
+    capture_sessions: Arc<crate::capture_sessions::Sessions>,
 }
 
 impl Backend {
@@ -83,6 +85,7 @@ impl Backend {
             record,
             native_requests: Arc::default(),
             documents: Arc::default(),
+            capture_sessions: Arc::default(),
         }
     }
 
@@ -97,6 +100,13 @@ impl Backend {
     pub fn serve_on(self, address: &str) -> Result<Served, NotServed> {
         let connection = zbus::blocking::connection::Builder::address(address)
             .map_err(|_| NotServed::NotAnAddress)?
+            .serve_at(
+                THE_PORTALS_OBJECT,
+                crate::screen_cast_portal::ScreenCastPortal {
+                    backend: self.clone(),
+                },
+            )
+            .map_err(|_| NotServed::Unreachable)?
             .serve_at(
                 THE_PORTALS_OBJECT,
                 crate::file_chooser_portal::FileChooserPortal {
@@ -143,12 +153,18 @@ impl Backend {
         let bus = connection.inner().clone();
         let seen = crate::appearance_settings::read(self.machine()).ok();
         let native_requests = self.native_requests.clone();
+        let capture_sessions = self.capture_sessions.clone();
+        let machine = self.machine.clone();
         let native_backend = self.clone();
         let native_bus = bus.clone();
         bus.executor()
             .spawn(
                 async move {
                     while !native_backend.native_requests().stopped() {
+                        native_backend
+                            .capture_sessions()
+                            .refresh(&native_bus, &native_backend)
+                            .await;
                         native_backend
                             .documents()
                             .refresh(&native_bus, &native_backend)
@@ -168,6 +184,8 @@ impl Backend {
             stop: Some(stop),
             watching: Some(watching),
             native_requests,
+            capture_sessions,
+            machine,
         })
     }
 
@@ -200,10 +218,18 @@ impl Backend {
     pub(crate) fn documents(&self) -> &crate::documents::Documents {
         &self.documents
     }
+    /// Bounded recording sessions and their supervised native stream lifetimes.
+    pub(crate) fn capture_sessions(&self) -> &crate::capture_sessions::Sessions {
+        &self.capture_sessions
+    }
 }
 
 /// The backend, answering, for as long as this is held.
 pub struct Served {
+    /// End publishers and remove session grants before the service disappears.
+    capture_sessions: Arc<crate::capture_sessions::Sessions>,
+    /// The actual writer for those exact session grants.
+    machine: Arc<dyn TheMachine>,
     /// The connection the portals are served on; dropping it stops them.
     connection: zbus::blocking::Connection,
     /// Dropped to stop the thread watching how the machine looks.
@@ -218,6 +244,7 @@ pub struct Served {
 impl Drop for Served {
     fn drop(&mut self) {
         self.native_requests.stop();
+        self.capture_sessions.stop(self.machine.as_ref());
         let _released = self.connection.release_name(THE_PORTALS_NAME);
         drop(self.stop.take());
         if let Some(watching) = self.watching.take() {

@@ -31,6 +31,11 @@ pub use alo_networks::Reaching;
 
 /// What the backend reads about this machine.
 pub trait TheMachine: Send + Sync {
+    /// The person's loaded language bundle for trusted native chooser sentences.
+    /// A minimal embedding can use this crate's source-language vocabulary.
+    fn strings(&self) -> Option<alo_strings::Strings> {
+        Some(alo_strings::Strings::of(crate::words::portal_words().ok()?))
+    }
     /// The grants, as they are now — [`None`] when they cannot be read.
     fn grants(&self) -> Option<Grants>;
 
