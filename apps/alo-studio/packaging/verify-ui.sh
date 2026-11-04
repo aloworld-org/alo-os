@@ -8,11 +8,25 @@ xdotool windowfocus "$win"
 xdotool key ctrl+shift+r
 sleep 2
 # Choose 720p explicitly in this software-rendered test environment. Production
-# still offers the person's choice, and its performance refusal stays intact.
+# still offers the person's choice and warns about a slow sample.
 xdotool mousemove --window "$win" 300 780 click 1
 xdotool key Down Return
 xdotool key ctrl+shift+r
-if ! bar=$(timeout 15s xdotool search --sync --name 'alo Studio.*Recording' | head -1); then
+bar=''
+accepted_warning=false
+for attempt in $(seq 1 150); do
+  bar=$(xdotool search --name 'alo Studio.*Recording' | head -1) || true
+  [[ -z "$bar" ]] || break
+  # Only this app exists on the isolated display. Its untitled modal receives
+  # focus when the measured sample is slow. Deliberately choose Record anyway.
+  focus=$(xdotool getwindowfocus)
+  if [[ "$focus" != "$win" && "$focus" != 1 && "$accepted_warning" == false ]]; then
+    xdotool key Tab Return
+    accepted_warning=true
+  fi
+  sleep .1
+done
+if [[ -z "$bar" ]]; then
   if command -v import >/dev/null; then import -window "$win" "$scratch/ui-failure.png"; fi
   head -50 "$scratch/app.log"
   echo 'The GUI did not reach its recording controls.' >&2
