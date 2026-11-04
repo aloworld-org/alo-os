@@ -1,5 +1,6 @@
 //! Public ScreenCast protocol. Each session is bound to its original bus owner.
 
+#[path = "screen_cast_start.rs"]
 mod starting;
 
 use crate::{
