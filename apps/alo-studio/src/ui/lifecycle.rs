@@ -207,7 +207,8 @@ impl State {
             let path = library
                 .pending(&clip.id)
                 .map_err(|error| error.to_string())?;
-            self.engine.borrow_mut().take();
+            // Keep the preview's PipeWire core alive while the new pipeline
+            // attaches. A borrowed socket cannot be reopened as a fresh client.
             let engine = Recorder::record(capture.into(), &path, width, height, microphone)
                 .map_err(|error| error.to_string())?;
             *self.engine.borrow_mut() = Some(engine);

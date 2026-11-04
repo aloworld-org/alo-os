@@ -3,6 +3,7 @@
 
 use alo_studio::recorder::{Event, Input, Recorder};
 use gst::prelude::*;
+use std::os::{fd::AsRawFd, unix::net::UnixStream};
 use std::path::PathBuf;
 use std::time::{Duration, Instant};
 
@@ -11,10 +12,42 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .nth(1)
         .map(PathBuf::from)
         .ok_or("Pass an output .webm path")?;
-    let display = std::env::var("DISPLAY")?;
+    let remote = if let Some(node) = std::env::args().nth(2) {
+        let socket = std::env::args()
+            .nth(3)
+            .ok_or("Pass the isolated PipeWire socket path")?;
+        Some((node.parse::<u32>()?, UnixStream::connect(socket)?))
+    } else {
+        None
+    };
+    let display = std::env::var("DISPLAY").unwrap_or_default();
+    let source = || match &remote {
+        Some((node, socket)) => Input::PipeWire {
+            fd: socket.as_raw_fd(),
+            node: *node,
+        },
+        None => Input::VerificationDisplay(display.clone()),
+    };
+    // A PipeWire fixture never opens the real microphone. Opus is exercised
+    // separately by the Xvfb source's synthetic audio.
+    let microphone = remote.is_none();
     alo_studio::performance::check(640, 360)?;
-    let mut recorder =
-        Recorder::record(Input::VerificationDisplay(display), &output, 640, 360, true)?;
+    let preview = Recorder::preview(source())?;
+    let preview_started = Instant::now();
+    loop {
+        if preview.frame().is_some() {
+            break;
+        }
+        if let Some(Event::Failed(error)) = preview.poll() {
+            return Err(error.into());
+        }
+        if preview_started.elapsed() > Duration::from_secs(8) {
+            return Err("No preview frame arrived".into());
+        }
+        std::thread::sleep(Duration::from_millis(25));
+    }
+    let mut recorder = Recorder::record(source(), &output, 640, 360, microphone)?;
+    drop(preview);
     let started = Instant::now();
     let mut paused = false;
     let mut resumed = false;
@@ -56,11 +89,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         return Err("The recording is empty".into());
     }
     // Decoding proves the muxed output is a usable video, not just a nonempty file.
-    let pipeline = gst::parse::launch(
-        "filesrc name=input ! matroskademux name=demux demux.video_0 ! queue ! vp9dec ! fakesink sync=false demux.audio_0 ! queue ! opusdec ! fakesink sync=false",
-    )?
-    .downcast::<gst::Pipeline>()
-    .map_err(|_| "No decoder pipeline")?;
+    let decode = if microphone {
+        "filesrc name=input ! matroskademux name=demux demux.video_0 ! queue ! vp9dec ! fakesink sync=false demux.audio_0 ! queue ! opusdec ! fakesink sync=false"
+    } else {
+        "filesrc name=input ! matroskademux ! vp9dec ! fakesink sync=false"
+    };
+    let pipeline = gst::parse::launch(decode)?
+        .downcast::<gst::Pipeline>()
+        .map_err(|_| "No decoder pipeline")?;
     pipeline
         .by_name("input")
         .ok_or("No input")?
@@ -87,8 +123,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         return Err("Paused time was included in the recording".into());
     }
     println!(
-        "PASS: {frames} preview frames; pause/resume; EOS; {} bytes; VP9 + synthetic Opus/WebM decoded to completion",
-        std::fs::metadata(&output)?.len()
+        "PASS: {frames} preview frames; preview-to-record handoff; pause/resume; EOS; {} bytes; {streams} decoded to completion",
+        std::fs::metadata(&output)?.len(),
+        streams = if microphone {
+            "VP9 + synthetic Opus/WebM"
+        } else {
+            "PipeWire VP9/WebM"
+        }
     );
     Ok(())
 }

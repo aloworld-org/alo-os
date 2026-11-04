@@ -13,6 +13,9 @@ xdotool mousemove --window "$win" 300 780 click 1
 xdotool key Down Return
 xdotool key ctrl+shift+r
 bar=''
+# The global shortcut must respect the disabled New recording button while
+# checking/counting down, rather than invalidating an in-flight capture.
+xdotool key ctrl+n
 accepted_warning=false
 for attempt in $(seq 1 150); do
   bar=$(xdotool search --name 'alo Studio.*Recording' | head -1) || true

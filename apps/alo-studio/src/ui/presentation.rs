@@ -8,7 +8,12 @@ impl State {
         self.view.banner.set_reveal_child(true);
     }
     pub(super) fn new_recording(self: &Rc<Self>) {
-        if self.session.borrow().busy() {
+        if self.session.borrow().busy()
+            || matches!(
+                self.session.borrow().phase(),
+                Phase::Choosing | Phase::Checking | Phase::Countdown(_)
+            )
+        {
             self.view.window.present();
             return;
         }
