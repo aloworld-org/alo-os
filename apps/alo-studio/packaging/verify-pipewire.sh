@@ -5,6 +5,7 @@ set -euo pipefail
 if [[ "${1:-}" != --session ]]; then
   app_dir="$(cd -- "$(dirname -- "$0")/.." && pwd)"
   scratch=$(mktemp -d)
+  printf 'PipeWire verification evidence: %s\n' "$scratch"
   export XDG_RUNTIME_DIR="$scratch/run" XDG_CONFIG_HOME="$scratch/config" XDG_STATE_HOME="$scratch/state"
   mkdir -m 700 "$XDG_RUNTIME_DIR"
   mkdir -p "$XDG_CONFIG_HOME/wireplumber/main.lua.d"

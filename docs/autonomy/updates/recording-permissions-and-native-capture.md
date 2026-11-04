@@ -112,7 +112,12 @@ under `/var/lib/alo-studio-verification` inside the private guest.
 
 The booted media trace then showed a missing pixel aspect ratio negotiating as
 `1/2147483647`, overflowing preview scaling. The native publisher now declares
-square pixels. The app CI also builds that actual native publisher and passes
+square pixels. The first run of the new native-publisher CI check reached
+preview but exposed ordinary EOS finalization waiting forever on this provider.
+A one-off run using the existing input-stop and queue-drain path passed,
+including decoded output (`/tmp/tmp.F9WsWrhhFb`). Finish now uses that same
+path, stopping video and microphone before draining queued media.
+The app CI also builds that actual native publisher and passes
 its non-16:9 output through Studio's preview, recording, pause/resume and decode
 probe, checking that a 1280×800 source previews at 640×400. This is a permanent
 CI check, with validation pending. Consent discovery now includes both Flatpak

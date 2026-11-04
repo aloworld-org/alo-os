@@ -275,20 +275,11 @@ impl Recorder {
             .map(|_| ())
             .map_err(failed)
     }
-    /// Seal the container. Only EOS, observed on the bus, means it is finished.
+    /// Stop live inputs and seal queued media. Only bus EOS means it is finished.
     pub fn finish(&mut self) -> Result<(), MediaError> {
-        if self.finishing {
-            return Ok(());
-        }
-        // A paused pipeline needs to run to deliver EOS and flush the muxer.
-        self.resume()?;
-        if !self.pipeline.send_event(gst::event::Eos::new()) {
-            return Err(MediaError(t(
-                "The recording could not finish. Its temporary file has been kept.",
-            )));
-        }
-        self.finishing = true;
-        Ok(())
+        // A native PipeWire provider need not forward a downstream EOS request.
+        // Closing video and microphone first also makes Finish stop capture now.
+        self.finish_after_source_ended()
     }
     /// Stop all live inputs, then drain only queued media into the WebM trailer.
     /// This also works after a revoked PipeWire source can no longer deliver EOS.
