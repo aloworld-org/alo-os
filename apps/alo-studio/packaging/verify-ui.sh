@@ -3,7 +3,7 @@ set -euo pipefail
 # The caller owns an isolated Xvfb display and a verification-feature build.
 # No real screen permission or physical microphone is used in this fixture.
 scratch="$1"
-win=$(timeout 15s xdotool search --sync --name '^alo Studio$' | head -1)
+win=$(timeout 15s xdotool search --sync --onlyvisible --name '^alo Studio$' | head -1)
 xdotool windowfocus "$win"
 xdotool key ctrl+shift+r
 sleep 2
