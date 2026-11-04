@@ -33,7 +33,7 @@ mod tests {
 
     fn video_frame(progress: &mut Progress, start_ms: u64) {
         let mut buffer = gst::Buffer::new();
-        let data = buffer.get_mut().expect("a new buffer is writable");
+        let data = buffer.make_mut();
         data.set_pts(gst::ClockTime::from_mseconds(start_ms));
         data.set_duration(gst::ClockTime::from_mseconds(33));
         progress.observe(data);
@@ -45,12 +45,13 @@ mod tests {
     }
 
     #[test]
-    fn one_frame_cannot_be_reported_as_a_long_recording() {
-        gst::init().expect("the media engine starts");
+    fn one_frame_cannot_be_reported_as_a_long_recording() -> Result<(), gst::glib::Error> {
+        gst::init()?;
         let mut progress = Progress::default();
         video_frame(&mut progress, 5000);
         assert_eq!(progress.duration(), Some(Duration::from_millis(33)));
         video_frame(&mut progress, 5033);
         assert_eq!(progress.duration(), Some(Duration::from_millis(66)));
+        Ok(())
     }
 }
