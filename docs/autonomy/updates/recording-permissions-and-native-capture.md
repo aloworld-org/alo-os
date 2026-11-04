@@ -158,3 +158,13 @@ The native SaveFile and actual sandbox export/revocation proof are recorded in
 image will exercise the installed app, native picker, recording, playback,
 export, revocation and lock together. Nothing here claims production image,
 kernel, or physical hardware acceptance.
+
+The booted guest has not passed recording acceptance. Its first saved clip
+decoded to one frame despite an advancing recording timer. A one-off trace of
+the actual native publisher on the guest's PipeWire 1.4.11 stack then showed
+successive compositor arrivals stamped at zero. The publisher now explicitly
+uses GStreamer's system clock for arrival timestamps, independently of whether
+its output graph has a consumer. Validation of that change is pending. The
+permanent app CI probe exercises the real publisher and restricted descriptor,
+requires continuous preview frames, and decodes the resulting recording; the
+guest trace itself is a one-off investigation, not an automated acceptance.
