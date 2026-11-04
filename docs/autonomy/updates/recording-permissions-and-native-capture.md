@@ -168,3 +168,12 @@ its output graph has a consumer. Validation of that change is pending. The
 permanent app CI probe exercises the real publisher and restricted descriptor,
 requires continuous preview frames, and decodes the resulting recording; the
 guest trace itself is a one-off investigation, not an automated acceptance.
+
+The one-off guest transport comparison now passed with the clock change:
+30 frames reached EOS over 4.45 seconds, against nine frames and a timeout
+with the preceding publisher. Guest evidence is in
+`/home/alo/StudioVerification/provider-monotonic-diagnostics`. Full Studio
+acceptance is still pending. Studio also measures duration from encoded video
+packets and refuses a completed recording with no timed video frames; an
+advancing interface clock alone can no longer become saved clip metadata.
+The empty-video and one-frame regressions are permanent app unit tests.

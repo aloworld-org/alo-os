@@ -44,6 +44,7 @@ pub struct Recorder {
     frame: Arc<Mutex<Option<Frame>>>,
     finishing: bool,
     fell_behind: Arc<AtomicBool>,
+    video: Option<Arc<Mutex<crate::recorded_video::Progress>>>,
 }
 
 /// The pipeline's source, separately selected for explicit diagnostic builds.
@@ -184,6 +185,24 @@ impl Recorder {
             by_name("output")?.set_property("location", path.to_string_lossy().as_ref());
         }
         let fell_behind = Arc::new(AtomicBool::new(false));
+        let video = if path.is_some() {
+            let progress = Arc::new(Mutex::new(crate::recorded_video::Progress::default()));
+            let recording = progress.clone();
+            let encoded = by_name("encoder")?
+                .static_pad("src")
+                .ok_or_else(|| MediaError(t("The video encoder is unavailable.")))?;
+            encoded.add_probe(gst::PadProbeType::BUFFER, move |_, info| {
+                if let Some(buffer) = info.buffer()
+                    && let Ok(mut progress) = recording.lock()
+                {
+                    progress.observe(buffer);
+                }
+                gst::PadProbeReturn::Ok
+            });
+            Some(progress)
+        } else {
+            None
+        };
         if let Some(queue) = pipeline.by_name("record-buffer") {
             let stalled = fell_behind.clone();
             queue.connect("overrun", false, move |_| {
@@ -247,7 +266,12 @@ impl Recorder {
             frame,
             finishing: false,
             fell_behind,
+            video,
         })
+    }
+    /// The duration actually encoded, available before stopping the engine.
+    pub fn recorded_duration(&self) -> Option<std::time::Duration> {
+        self.video.as_ref()?.lock().ok()?.duration()
     }
     /// The newest frame only. Slow UI painting never builds an unbounded queue.
     pub fn frame(&self) -> Option<Frame> {
@@ -326,7 +350,17 @@ impl Recorder {
         }
         while let Some(message) = self.bus.pop() {
             match message.view() {
-                gst::MessageView::Eos(_) => return Some(Event::Finished),
+                gst::MessageView::Eos(_) => {
+                    return Some(
+                        if self.video.is_some() && self.recorded_duration().is_none() {
+                            Event::Failed(t(
+                                "No video frames were recorded. Please choose your source again.",
+                            ))
+                        } else {
+                            Event::Finished
+                        },
+                    );
+                }
                 gst::MessageView::Error(error) => {
                     let live_input = error.src().is_some_and(|origin| {
                         ["source", "microphone"]

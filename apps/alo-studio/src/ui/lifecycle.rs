@@ -383,6 +383,11 @@ impl State {
     }
     pub(super) fn completed(self: &Rc<Self>) {
         self.finish_started.set(None);
+        let recorded_duration = self
+            .engine
+            .borrow()
+            .as_ref()
+            .and_then(Recorder::recorded_duration);
         self.release_capture();
         if self.session.borrow().phase() != Phase::Finishing {
             let _ = self.session.borrow_mut().finishing(Instant::now());
@@ -392,10 +397,10 @@ impl State {
             let clip = clip
                 .as_mut()
                 .ok_or_else(|| t("No recording was returned."))?;
-            clip.duration_ms = self
-                .session
-                .borrow()
-                .elapsed_at(Instant::now())
+            clip.duration_ms = recorded_duration
+                .ok_or_else(|| {
+                    t("No video frames were recorded. Please choose your source again.")
+                })?
                 .as_millis()
                 .min(u128::from(u64::MAX)) as u64;
             let library = self

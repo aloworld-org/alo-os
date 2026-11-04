@@ -8,6 +8,7 @@ mod parent_window;
 pub mod performance;
 mod permission_lifetime;
 pub mod portal;
+mod recorded_video;
 pub mod recorder;
 pub mod storage;
 pub mod ui;
