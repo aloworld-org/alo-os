@@ -52,7 +52,7 @@ pub struct Source {
 #[serde(tag = "request", rename_all = "kebab-case", deny_unknown_fields)]
 pub enum Request {
     /// Describe only this person's current capturable sources.
-    Sources,
+    Sources {},
     /// Open the exact source the person just selected; closing ends the stream.
     Start {
         /// The exact lifetime-bound handle returned in the catalogue.
@@ -77,7 +77,7 @@ pub enum Response {
         height: u32,
     },
     /// The selected object disappeared or cannot be captured.
-    Unavailable,
+    Unavailable {},
 }
 
 /// The actual media node, including its non-recycled PipeWire object serial.
