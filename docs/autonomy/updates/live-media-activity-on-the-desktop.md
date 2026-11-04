@@ -15,5 +15,11 @@ The new failure surface uses the existing translated `NotHeard` vocabulary.
 
 The complete capture and save integration remains in progress. No booted alo
 recording, permission revocation, or microphone hardware walk is claimed by
-this prerequisite change. Validation results will be recorded after the scoped
-checks run; existing app checks are not evidence for these OS changes.
+this prerequisite change.
+
+On `54289a4b`, workspace formatting, workspace Clippy with warnings denied, and
+workspace rustdoc with warnings denied passed locally. The two media activity
+tests and eight indicator rendering tests passed. The tests remain in the
+normal workspace suite; the local run selected those tests and did not run the
+full suite or build an image. Later permission changes need their own checks;
+these results do not establish native capture or sandboxed export.

@@ -31,8 +31,13 @@ pub(super) fn save(own: Rc<State>) {
             .filters(&filters)
             .default_filter(&filter)
             .build();
-        let Ok(destination) = dialog.save_future(Some(&own.view.window)).await else {
-            return;
+        let destination = match dialog.save_future(Some(&own.view.window)).await {
+            Ok(destination) => destination,
+            Err(error) if error.matches(gtk::DialogError::Dismissed) || error.matches(gtk::DialogError::Cancelled) => return,
+            Err(_) => {
+                own.notice(&t("The save window could not open. Your recording is safe in your library. Please try again."));
+                return;
+            },
         };
         own.view.review.save.set_sensitive(false);
         let source = gio::File::for_path(path);

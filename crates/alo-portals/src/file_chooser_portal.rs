@@ -310,10 +310,7 @@ async fn choose(
 
 /// Canonicalise the chosen file or its existing parent without creating anything.
 fn selected_path(uri: &str) -> Result<PathBuf, ()> {
-    let path = url::Url::parse(uri)
-        .map_err(|_| ())?
-        .to_file_path()
-        .map_err(|()| ())?;
+    let path = url::Url::parse(uri).map_err(|_| ())?.to_file_path()?;
     match path.symlink_metadata() {
         Ok(_) => {
             let path = path.canonicalize().map_err(|_| ())?;
