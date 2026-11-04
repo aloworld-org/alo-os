@@ -6,19 +6,27 @@ use std::{
     time::{Duration, Instant},
 };
 
+/// Minimum interval between complete graph requests.
 const INTERVAL: Duration = Duration::from_millis(250);
+/// A slower reading no longer describes what is happening now.
 const STALE: Duration = Duration::from_secs(2);
+/// A complete graph, or the reason it could not be read.
 type Reading = Result<InUse, NotHeard>;
 
 /// The latest complete reading and one bounded outstanding request.
 pub(crate) struct MediaActivity {
+    /// Rows derived from the latest successful graph.
     lines: Vec<Line>,
+    /// Why that graph is not currently known.
     problem: Option<NotHeard>,
+    /// The sole outstanding worker's bounded handoff.
     pending: Option<Receiver<Reading>>,
+    /// When that worker started, also used to limit request frequency.
     started: Option<Instant>,
 }
 
 impl MediaActivity {
+    /// Start visibly unknown until the server answers.
     pub(crate) fn new() -> Self {
         Self {
             lines: Vec::new(),
@@ -27,9 +35,11 @@ impl MediaActivity {
             started: None,
         }
     }
+    /// Current rows for the renderer.
     pub(crate) fn lines(&self) -> &[Line] {
         &self.lines
     }
+    /// The failure the renderer must display instead of silence.
     pub(crate) fn problem(&self) -> Option<&NotHeard> {
         self.problem.as_ref()
     }
@@ -79,6 +89,7 @@ impl MediaActivity {
             }
         }
     }
+    /// Replace the complete reading; a failure cannot retain a quiet status.
     fn accept(&mut self, reading: Reading) {
         match reading {
             Ok(reading) => {
@@ -96,6 +107,7 @@ impl MediaActivity {
     }
 }
 
+/// Preserve a diagnostic behind the existing translated failure vocabulary.
 fn unavailable(said: &str) -> NotHeard {
     NotHeard::NoAnswer {
         said: said.to_owned(),
