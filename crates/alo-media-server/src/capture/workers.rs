@@ -61,7 +61,8 @@ pub fn start(wayland: PathBuf, source: Source, application: String) -> io::Resul
                     source: source.id.clone(),
                 },
             )?;
-            let response = reply::line(&mut frames, &cancelled, Duration::from_secs(5))?;
+            let response = reply::line(&mut frames, &cancelled, Duration::from_secs(5))
+                .map_err(|why| io::Error::new(why.kind(), format!("compositor source: {why}")))?;
             let Response::Started { width, height } = read_message(&mut response.as_slice())?
             else {
                 return Err(io::Error::other("the chosen source ended"));
@@ -102,7 +103,11 @@ pub fn start(wayland: PathBuf, source: Source, application: String) -> io::Resul
                     .stderr(Stdio::inherit())
                     .spawn()?,
             );
-            let response = reply::line(&mut answer, &cancelled, Duration::from_secs(7))?;
+            // Only the publisher keeps stdout open: an early exit must produce
+            // EOF immediately instead of leaving setup waiting on our own copy.
+            drop(command);
+            let response = reply::line(&mut answer, &cancelled, Duration::from_secs(7))
+                .map_err(|why| io::Error::new(why.kind(), format!("video publisher: {why}")))?;
             let node = read_message::<MediaNode>(&mut response.as_slice())?;
             if cancelled.load(Ordering::Acquire) {
                 return Err(io::Error::new(

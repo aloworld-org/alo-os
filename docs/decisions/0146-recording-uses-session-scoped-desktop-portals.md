@@ -2,6 +2,8 @@
 
 Date: 2026-11-04
 
+**Status:** Proposed
+
 The owner asked for a separate native demo recorder with screen or window
 selection, optional microphone audio, preview, and saving. Completing its OS
 integration and walking it on a booted alo system are authorised. Market
