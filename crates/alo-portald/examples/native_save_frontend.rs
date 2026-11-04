@@ -30,6 +30,7 @@ mod check {
         let mut args = std::env::args().skip(1);
         let address = args.next().ok_or("a private bus address is required")?;
         let state = PathBuf::from(args.next().ok_or("a private state directory is required")?);
+        let application = args.next();
         if !state.is_absolute() || args.next().is_some() {
             return Err("use a bus address and an absolute private state directory".into());
         }
@@ -46,6 +47,26 @@ mod check {
             return Err(
                 "the probe state directory must already be private and owned by this login".into(),
             );
+        }
+        if address == "--revoke" {
+            let application = application.ok_or("the application to revoke is required")?;
+            let (_, removed) = alo_remembering::updated(
+                &state.join("grants.toml"),
+                SystemTime::now(),
+                |grants| {
+                    Ok::<_, alo_remembering::NotRemembered>(grants.revoke_everything_for(
+                        &alo_capability::Applicant::named(&application).grantee(),
+                    ))
+                },
+            )?;
+            if removed == 0 {
+                return Err("no selected permission was found to revoke".into());
+            }
+            println!("native-save-grant-revoked: {removed}");
+            return Ok(());
+        }
+        if application.is_some() {
+            return Err("unexpected native frontend arguments".into());
         }
         let machine = alo_portald::ThisMachine::reading(state.join("grants.toml"), state.clone());
         let record = alo_portals::AnswersFile::opened(&state.join("answers.jsonl"))?;

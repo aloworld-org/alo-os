@@ -13,6 +13,33 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let source = std::env::args()
         .nth(1)
         .ok_or("a private test recording is required")?;
+    if source == "--check-write" {
+        let uri = std::env::args()
+            .nth(2)
+            .ok_or("an exported document URI is required")?;
+        let expected = std::env::args()
+            .nth(3)
+            .ok_or("expected access is required")?;
+        let path = url::Url::parse(&uri)?
+            .to_file_path()
+            .map_err(|()| "the document URI is not local")?;
+        let access = std::fs::OpenOptions::new().write(true).open(path);
+        match (expected.as_str(), access) {
+            ("allowed", Ok(_)) => {}
+            ("denied", Err(why))
+                if matches!(
+                    why.kind(),
+                    std::io::ErrorKind::NotFound | std::io::ErrorKind::PermissionDenied
+                ) => {}
+            ("allowed", Err(why)) => {
+                return Err(format!("the selected export was not writable: {why}").into());
+            }
+            ("denied", Ok(_)) => return Err("the export remained writable after revocation".into()),
+            _ => return Err("the access check did not produce the expected result".into()),
+        }
+        println!("native-save-access: {expected}");
+        return Ok(());
+    }
     let client = Connection::session()?;
     let sender = client
         .unique_name()

@@ -50,13 +50,11 @@ pub fn restricted_remote(selected: MediaNode, application: &str) -> io::Result<O
     }
     let main_loop = pw::main_loop::MainLoopBox::new(None).map_err(failed)?;
     let context = pw::context::ContextBox::new(main_loop.loop_(), None).map_err(failed)?;
-    let core = context
-        .connect(Some(pw::properties! {
-            "application.name" => "alo capture remote",
-            "pipewire.access.portal.app_id" => application,
-            "pipewire.access.portal.media_roles" => "",
-        }))
-        .map_err(failed)?;
+    let mut properties = pw::properties::PropertiesBox::new();
+    properties.insert("application.name", "alo capture remote");
+    properties.insert("pipewire.access.portal.app_id", application);
+    properties.insert("pipewire.access.portal.media_roles", "");
+    let core = context.connect(Some(properties)).map_err(failed)?;
     let registry = core.get_registry().map_err(failed)?;
     let snapshot = Rc::new(RefCell::new(Snapshot::default()));
     let seen = snapshot.clone();
