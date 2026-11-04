@@ -186,7 +186,7 @@ async fn wayland(bus: &zbus::Connection) -> Result<PathBuf, Unanswered> {
 pub(super) async fn resolved<T>(
     mut pending: alo_media_server::capture::Pending<T>,
 ) -> Result<T, Unanswered> {
-    let until = Instant::now() + Duration::from_secs(20);
+    let until = Instant::now() + Duration::from_secs(40);
     loop {
         if let Some(result) = pending.try_result() {
             return result.map_err(|why| {

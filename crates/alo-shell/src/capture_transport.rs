@@ -5,7 +5,7 @@ use alo_capture_protocol::{
 };
 use std::{
     collections::BTreeMap,
-    io::{self, Write},
+    io,
     os::unix::net::{UnixListener, UnixStream},
     path::{Path, PathBuf},
     sync::{
@@ -219,20 +219,26 @@ fn serve(mut stream: UnixStream, shared: &Shared) -> io::Result<()> {
         },
     )?;
     let mut checked = std::time::Instant::now();
-    while !shared.stopped.load(Ordering::Acquire) && feed.live.load(Ordering::Acquire) {
+    let mut sharing = || {
+        if shared.stopped.load(Ordering::Acquire) || !feed.live.load(Ordering::Acquire) {
+            return false;
+        }
         if checked.elapsed() >= Duration::from_millis(250) {
             if !authority.current() {
-                break;
+                return false;
             }
             checked = std::time::Instant::now();
         }
+        true
+    };
+    while sharing() {
         let frame = feed
             .frame
             .lock()
             .map_err(|_| io::Error::other("capture frame is unavailable"))?
             .clone();
         if let Some(frame) = frame {
-            stream.write_all(&frame)?;
+            super::capture_delivery::write_frame(&mut stream, &frame, &mut sharing)?;
         }
         std::thread::sleep(Duration::from_millis(33));
     }

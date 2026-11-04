@@ -82,7 +82,7 @@ pub fn start(wayland: PathBuf, source: Source, application: String) -> io::Resul
                     .collect::<String>()
             );
             let (mut answer, output) = UnixStream::pair()?;
-            answer.set_read_timeout(Some(Duration::from_secs(7)))?;
+            answer.set_read_timeout(Some(Duration::from_secs(30)))?;
             let arguments = [
                 "--pdeathsig=KILL".to_owned(),
                 "--".to_owned(),
@@ -106,7 +106,9 @@ pub fn start(wayland: PathBuf, source: Source, application: String) -> io::Resul
             // Only the publisher keeps stdout open: an early exit must produce
             // EOF immediately instead of leaving setup waiting on our own copy.
             drop(command);
-            let response = reply::line(&mut answer, &cancelled, Duration::from_secs(7))
+            // First-use engine discovery can take twenty seconds on a software
+            // rendered desktop. Cancellation still interrupts every short read.
+            let response = reply::line(&mut answer, &cancelled, Duration::from_secs(30))
                 .map_err(|why| io::Error::new(why.kind(), format!("video publisher: {why}")))?;
             let node = read_message::<MediaNode>(&mut response.as_slice())?;
             if cancelled.load(Ordering::Acquire) {

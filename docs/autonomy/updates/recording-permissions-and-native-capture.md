@@ -8,8 +8,10 @@ The first booted source request reached the real GTK picker but its unparented
 dialog opened behind Studio. The follow-up exports the actual caller window,
 adds the compositor's standard XDG parent protocol and admits a new dialog only
 when its explicit parent holds focus. Wire checks cover the focused parent,
-background parent, revoked export and unknown handle. Validation of that
-follow-up is pending. Picker labels use display size and packaged application
+background parent, revoked export and unknown handle. All 12 parent/focus wire
+checks and the full 413-test client-lifecycle suite passed at `530994a9`.
+The installed app's chooser now opens in front on the private booted desktop.
+Picker labels use display size and packaged application
 names with authenticated identifiers rather than compositor device names.
 
 The public ScreenCast frontend identifies the Flatpak caller through the bus,
@@ -51,7 +53,9 @@ Checks and their scope:
   recording handoff passed at `7d0782ca`. The additional permanent native probe
   ends sharing while paused and decodes the saved VP9/Opus clip. Local evidence:
   `/tmp/tmp.RW4W0BXY2Y` and `/tmp/tmp.rnib8AdSuQ`. Generated audio is not evidence
-  of a physical microphone.
+  of a physical microphone. The complete scoped gate passed again at
+  `338a0544`, including the new caller-window export; local evidence is
+  `/tmp/tmp.CIjA2mny2r` and `/tmp/tmp.hf6ThuF1Lg`.
 - A one-off private PipeWire check at `b7e2a272` exposed only the selected node,
   hiding an existing unrelated node and another created after handoff.
   `/root/alo-studio-restricted-remote.2E2KYY` holds its local evidence.
@@ -73,13 +77,35 @@ Checks and their scope:
   `/tmp/alo-studio-permission-verification.log` and
   `/tmp/alo-studio-capture-final-clippy.log`; the checks are repository tests,
   while these particular local invocations are one-off verification.
-- The dedicated app CI job passed at `d8fcb765`. The OS CI run
+- The dedicated app CI job passed at `530994a9`. The OS CI run
   `41895386015` stopped while building workspace test executables because its
-  runner ran out of disk space. This does not establish a full workspace pass.
-- The latest locally built Flatpak bundle is 1,069,280 bytes, SHA-256
-  `f31e8e397b1949183dbc801b31df6d664c624b531b93b985b54efa45707c79ab`.
+  runner ran out of disk space. The subsequent run `41912137856` reached all
+  12,620 tests and identified two additional change-owned failures: the ADR
+  lacked its status, and the language snapshot omitted 15 new portal keys.
+  Both are corrected; the next CI result is pending. The runner's declared
+  permissions-test failure was also present. No full workspace pass is claimed.
+- The latest locally built Flatpak bundle is 1,079,112 bytes, SHA-256
+  `22b93a168a26a623bdaa5cc5374151c60124e7aba733e41f896fceb719f867e2`.
   Its installed build excludes the verification feature. It has not been
   published to an application source or the live catalogue.
+
+The private booted desktop has the installed GNOME 49 runtime and the bundle
+above. Native picker cancellation recorded cancellation and left no publisher
+or recording. Screen selection reaches the trusted chooser, but opening the
+chosen source currently times out before preview. Recording, playback, export,
+revocation and lock acceptance remain pending while that failure is diagnosed.
+
+The startup trace located two deadlines behind that failure: first-use native
+engine discovery took about 21 seconds in the software-emulated guest, beyond
+the publisher's seven-second setup limit. A warm retry then reached the engine
+but received a truncated frame after the compositor's one-second write limit.
+Setup now allows 30 seconds inside a 40-second cancellable operation. Frame
+delivery preserves its offset across short waits and checks source lifetime and
+portal ownership while a consumer is blocked. It retains one in-flight frame
+beside the newest slot. Two permanent real-socket tests cover a reader starting
+after one second and revocation of a reader that never drains. Validation and
+the next booted retry are pending. The startup traces are one-off local evidence
+under `/var/lib/alo-studio-verification` inside the private guest.
 
 The native SaveFile and actual sandbox export/revocation proof are recorded in
 `native-save-dialog-for-sandboxed-recordings.md`. An isolated private branch
