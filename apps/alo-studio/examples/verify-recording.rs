@@ -31,12 +31,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // A PipeWire fixture never opens the real microphone. Opus is exercised
     // separately by the Xvfb source's synthetic audio.
     let microphone = remote.is_none();
-    alo_studio::performance::check(640, 360)?;
     let preview = Recorder::preview(source())?;
     let preview_started = Instant::now();
-    loop {
-        if preview.frame().is_some() {
-            break;
+    let preview_frame = loop {
+        if let Some(frame) = preview.frame() {
+            break frame;
         }
         if let Some(Event::Failed(error)) = preview.poll() {
             return Err(error.into());
@@ -45,8 +44,20 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             return Err("No preview frame arrived".into());
         }
         std::thread::sleep(Duration::from_millis(25));
+    };
+    if let Ok(expected) = std::env::var("ALO_STUDIO_EXPECT_PREVIEW_HEIGHT")
+        && (preview_frame.width != 640 || preview_frame.height != expected.parse::<i32>()?)
+    {
+        return Err("The preview changed the source's aspect ratio".into());
     }
-    let mut recorder = Recorder::record(source(), &output, 640, 360, microphone)?;
+    alo_studio::performance::check(preview_frame.width, preview_frame.height)?;
+    let mut recorder = Recorder::record(
+        source(),
+        &output,
+        preview_frame.width,
+        preview_frame.height,
+        microphone,
+    )?;
     drop(preview);
     let started = Instant::now();
     let mut paused = false;

@@ -92,8 +92,8 @@ Checks and their scope:
 The private booted desktop has the installed GNOME 49 runtime and the bundle
 above. Native picker cancellation recorded cancellation and left no publisher
 or recording. Screen selection reaches the trusted chooser, but opening the
-chosen source currently times out before preview. Recording, playback, export,
-revocation and lock acceptance remain pending while that failure is diagnosed.
+chosen source now opens, but preview exposed a format-negotiation failure.
+Recording, playback, export, revocation and lock acceptance remain pending.
 
 The startup trace located two deadlines behind that failure: first-use native
 engine discovery took about 21 seconds in the software-emulated guest, beyond
@@ -102,10 +102,22 @@ but received a truncated frame after the compositor's one-second write limit.
 Setup now allows 30 seconds inside a 40-second cancellable operation. Frame
 delivery preserves its offset across short waits and checks source lifetime and
 portal ownership while a consumer is blocked. It retains one in-flight frame
-beside the newest slot. Two permanent real-socket tests cover a reader starting
-after one second and revocation of a reader that never drains. Validation and
-the next booted retry are pending. The startup traces are one-off local evidence
+beside the newest slot. Both permanent real-socket tests passed at `1f068c4a`:
+a reader starting after one second and revocation of a reader that never drains.
+All 295 tests and doctests in the scoped media-server, portal, architecture and
+language suites passed; formatting and scoped clippy denied warnings. These
+checks live in the repository. Logs are `/tmp/alo-studio-delivery-tests.log` and
+`/tmp/alo-studio-startup-tests.log`. The startup traces are one-off local evidence
 under `/var/lib/alo-studio-verification` inside the private guest.
+
+The booted media trace then showed a missing pixel aspect ratio negotiating as
+`1/2147483647`, overflowing preview scaling. The native publisher now declares
+square pixels. The app CI also builds that actual native publisher and passes
+its non-16:9 output through Studio's preview, recording, pause/resume and decode
+probe, checking that a 1280×800 source previews at 640×400. This is a permanent
+CI check, with validation pending. Consent discovery now includes both Flatpak
+installations using the existing desktop-entry helper. Preview failures use
+accurate plain-language copy and reset the source-selection hint.
 
 The native SaveFile and actual sandbox export/revocation proof are recorded in
 `native-save-dialog-for-sandboxed-recordings.md`. An isolated private branch

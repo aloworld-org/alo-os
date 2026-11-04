@@ -41,6 +41,7 @@ pub(super) fn run() -> Result<(), Box<dyn std::error::Error>> {
                 .field("width", i32::try_from(width)?)
                 .field("height", i32::try_from(height)?)
                 .field("framerate", gst::Fraction::new(0, 1))
+                .field("pixel-aspect-ratio", gst::Fraction::new(1, 1))
                 .build(),
         )
         .build();

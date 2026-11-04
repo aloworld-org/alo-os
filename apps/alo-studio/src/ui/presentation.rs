@@ -52,6 +52,11 @@ impl State {
     }
     pub(super) fn render(&self) {
         let phase = self.session.borrow().phase();
+        if phase == Phase::Ready {
+            self.view.source_name.set_label(&t(
+                "You choose exactly what can be seen in the system picker.",
+            ));
+        }
         let changing = matches!(phase, Phase::Ready | Phase::Selected | Phase::Review);
         for widget in [
             &self.view.screen.clone().upcast::<gtk::Widget>(),

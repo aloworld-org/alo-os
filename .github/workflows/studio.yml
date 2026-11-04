@@ -1,10 +1,10 @@
 name: alo Studio
 on:
   pull_request:
-    paths: ['apps/alo-studio/**', '.github/workflows/studio.yml']
+    paths: ['apps/alo-studio/**', 'crates/alo-capture-provider/**', 'crates/alo-capture-protocol/**', 'engines/pipewire/**', 'Cargo.toml', 'Cargo.lock', '.github/workflows/studio.yml']
   push:
     branches: [main]
-    paths: ['apps/alo-studio/**', '.github/workflows/studio.yml']
+    paths: ['apps/alo-studio/**', 'crates/alo-capture-provider/**', 'crates/alo-capture-protocol/**', 'engines/pipewire/**', 'Cargo.toml', 'Cargo.lock', '.github/workflows/studio.yml']
   workflow_dispatch:
 permissions:
   contents: read
@@ -16,7 +16,7 @@ jobs:
       - name: Native libraries and test display
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends libgtk-4-dev libgtk-4-media-gstreamer libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev gstreamer1.0-tools gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-pipewire gstreamer1.0-pulseaudio pipewire pipewire-bin wireplumber xvfb xdotool dbus-x11 appstream-util desktop-file-utils
+          sudo apt-get install -y --no-install-recommends libgtk-4-dev libgtk-4-media-gstreamer libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libpipewire-0.3-dev libspa-0.2-dev libclang-dev gstreamer1.0-tools gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-pipewire gstreamer1.0-pulseaudio pipewire pipewire-bin wireplumber xvfb xdotool dbus-x11 appstream-util desktop-file-utils
       - name: Rust toolchain
         run: rustup toolchain install 1.97.0 --profile minimal --component rustfmt --component clippy
       - uses: Swatinem/rust-cache@v2
@@ -40,4 +40,12 @@ jobs:
       - name: Record, pause, finalize, and decode a real framebuffer
         run: bash apps/alo-studio/packaging/verify-native.sh
       - name: Keep the actual PipeWire connection alive from preview to recording
+        run: bash apps/alo-studio/packaging/verify-pipewire.sh
+      - name: Build the native compositor publisher
+        env:
+          CARGO_TARGET_DIR: ${{ github.workspace }}/apps/alo-studio/target
+        run: cargo +1.97.0 build --locked -p alo-capture-provider
+      - name: Preview, record and decode the native publisher without changing aspect ratio
+        env:
+          ALO_STUDIO_CAPTURE_PROVIDER: ${{ github.workspace }}/apps/alo-studio/target/debug/alo-capture-provider
         run: bash apps/alo-studio/packaging/verify-pipewire.sh

@@ -324,8 +324,18 @@ impl State {
                 self.source_ended();
             }
             Some(Event::Finished) if self.session.borrow().busy() => self.completed(),
-            Some(Event::Finished) => self.failed(&t("The selected source stopped sharing. Please select it again.")),
-            Some(Event::Failed(error)) => self.failed(&format!("{} {error}", t("Recording stopped because the source or audio device could not continue. Any temporary video has been kept."))),
+            Some(Event::Finished) => self.failed(&t(
+                "The selected source stopped sharing. Please select it again.",
+            )),
+            Some(Event::Failed(error)) => {
+                eprintln!("Recording media error: {error}");
+                let message = if self.session.borrow().busy() {
+                    "Recording stopped because the source or audio device could not continue. Any temporary video has been kept."
+                } else {
+                    "The selected source could not be previewed. Please choose it again. Nothing was recorded."
+                };
+                self.failed(&t(message));
+            }
             Some(Event::FellBehind) => {
                 self.notice(&t("This device could not keep up. Recording has stopped and the video captured so far is being saved. Try 720p for the next recording."));
                 self.stop();

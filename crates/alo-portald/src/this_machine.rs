@@ -93,13 +93,21 @@ impl ThisMachine {
     /// point of the trait this implements.
     #[must_use]
     pub fn reading(grants: impl Into<PathBuf>, theirs: impl Into<PathBuf>) -> Self {
+        let home = std::env::var_os("HOME");
+        let data_home = std::env::var_os("XDG_DATA_HOME");
+        let data_dirs = alo_installed::with_what_flatpak_exports(
+            Path::new(alo_installed::THE_MACHINES_INSTALLATION),
+            home.as_deref().map(Path::new),
+            data_home.as_deref(),
+            std::env::var_os("XDG_DATA_DIRS").as_deref(),
+        );
         Self::reading_entries_in(
             grants,
             theirs,
             alo_installed::where_entries_live(
-                std::env::var_os("HOME").as_deref().map(Path::new),
-                std::env::var_os("XDG_DATA_HOME").as_deref(),
-                std::env::var_os("XDG_DATA_DIRS").as_deref(),
+                home.as_deref().map(Path::new),
+                data_home.as_deref(),
+                Some(&data_dirs),
             ),
         )
     }

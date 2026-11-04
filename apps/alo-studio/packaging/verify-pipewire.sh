@@ -27,10 +27,25 @@ for attempt in $(seq 1 50); do
   [[ ! -S "$XDG_RUNTIME_DIR/pipewire-0" ]] || break
   sleep .1
 done
-gst-launch-1.0 -q videotestsrc is-live=true pattern=ball ! video/x-raw,format=RGBx,width=640,height=360,framerate=30/1 ! pipewiresink mode=provide stream-properties='props,node.name=studio-pipewire-fixture,media.class=Video/Source' > "$scratch/source.log" 2>&1 &
-source_pid=$!
-sleep 2
-pw-dump > "$scratch/nodes.json"
-node=$(python3 -c 'import json,sys; print(next(n["id"] for n in json.load(open(sys.argv[1])) if n.get("info",{}).get("props",{}).get("node.name")=="studio-pipewire-fixture"))' "$scratch/nodes.json")
+if [[ -n "${ALO_STUDIO_CAPTURE_PROVIDER:-}" ]]; then
+  # The actual compositor publisher must preserve square pixels across the
+  # PipeWire bridge, including a source whose aspect ratio differs from 16:9.
+  gst-launch-1.0 -q videotestsrc is-live=true pattern=ball ! video/x-raw,format=BGRx,width=1280,height=800,framerate=30/1 ! fdsink fd=1 2> "$scratch/input.log" |
+    "$ALO_STUDIO_CAPTURE_PROVIDER" 1280 800 studio-pipewire-fixture org.aloworld.Studio > "$scratch/publisher.json" 2> "$scratch/source.log" &
+  source_pid=$!
+  for attempt in $(seq 1 350); do
+    [[ ! -s "$scratch/publisher.json" ]] || break
+    kill -0 "$source_pid" 2>/dev/null || break
+    sleep .1
+  done
+  node=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["id"])' "$scratch/publisher.json")
+  export ALO_STUDIO_EXPECT_PREVIEW_HEIGHT=400
+else
+  gst-launch-1.0 -q videotestsrc is-live=true pattern=ball ! video/x-raw,format=RGBx,width=640,height=360,framerate=30/1 ! pipewiresink mode=provide stream-properties='props,node.name=studio-pipewire-fixture,media.class=Video/Source' > "$scratch/source.log" 2>&1 &
+  source_pid=$!
+  sleep 2
+  pw-dump > "$scratch/nodes.json"
+  node=$(python3 -c 'import json,sys; print(next(n["id"] for n in json.load(open(sys.argv[1])) if n.get("info",{}).get("props",{}).get("node.name")=="studio-pipewire-fixture"))' "$scratch/nodes.json")
+fi
 timeout 25s "$build_target/debug/examples/verify-recording" "$scratch/pipewire.webm" "$node" "$XDG_RUNTIME_DIR/pipewire-0"
 printf 'PipeWire verification evidence: %s\n' "$scratch"
