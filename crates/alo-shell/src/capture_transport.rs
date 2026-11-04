@@ -86,6 +86,25 @@ struct Shared {
     stopped: AtomicBool,
 }
 
+impl Shared {
+    /// Reserve a consumer with atomics supported by both pinned Rust toolchains.
+    fn admit(&self) -> bool {
+        let mut seen = self.active.load(Ordering::Acquire);
+        while seen < MAX_CONSUMERS {
+            match self.active.compare_exchange_weak(
+                seen,
+                seen + 1,
+                Ordering::AcqRel,
+                Ordering::Acquire,
+            ) {
+                Ok(_) => return true,
+                Err(current) => seen = current,
+            }
+        }
+        false
+    }
+}
+
 /// Own the endpoint inside the compositor's fresh, private Wayland directory.
 pub(super) struct Endpoint {
     /// Only this exact path is removed at destruction.
@@ -111,13 +130,7 @@ impl Endpoint {
                 while !workers.stopped.load(Ordering::Acquire) {
                     match listener.accept() {
                         Ok((stream, _)) => {
-                            if workers
-                                .active
-                                .fetch_update(Ordering::AcqRel, Ordering::Acquire, |n| {
-                                    (n < MAX_CONSUMERS).then_some(n + 1)
-                                })
-                                .is_err()
-                            {
+                            if !workers.admit() {
                                 continue;
                             }
                             let owner = Worker(workers.clone());

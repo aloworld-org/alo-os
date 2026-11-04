@@ -34,6 +34,22 @@ pub(crate) struct NativeRequests {
 }
 
 impl NativeRequests {
+    /// Reserve a dialog with atomics supported by both pinned Rust toolchains.
+    fn admit(&self) -> bool {
+        let mut seen = self.active.load(Ordering::Acquire);
+        while seen < MAX_PENDING {
+            match self.active.compare_exchange_weak(
+                seen,
+                seen + 1,
+                Ordering::AcqRel,
+                Ordering::Acquire,
+            ) {
+                Ok(_) => return true,
+                Err(current) => seen = current,
+            }
+        }
+        false
+    }
     /// End pending dialogs when the frontend stops serving.
     pub(crate) fn stop(&self) {
         self.stopping.store(true, Ordering::Release);
@@ -58,13 +74,7 @@ impl NativeRequests {
             );
             return Err(fdo::Error::Failed("the portal service is stopping".into()));
         }
-        if self
-            .active
-            .fetch_update(Ordering::AcqRel, Ordering::Acquire, |active| {
-                (active < MAX_PENDING).then_some(active + 1)
-            })
-            .is_err()
-        {
+        if !self.admit() {
             let _kept = asked.recorded(
                 backend,
                 Outcome::Unanswered(crate::Unanswered::DialogUnavailable),

@@ -69,11 +69,9 @@ impl Drop for Admission {
 fn pending<T: Send + 'static>(
     run: impl FnOnce(Arc<AtomicBool>, SyncSender<io::Result<T>>) + Send + 'static,
 ) -> io::Result<Pending<T>> {
-    ACTIVE
-        .fetch_update(Ordering::AcqRel, Ordering::Acquire, |n| {
-            (n < 16).then_some(n + 1)
-        })
-        .map_err(|_| io::Error::other("too many capture operations"))?;
+    if !admit() {
+        return Err(io::Error::other("too many capture operations"));
+    }
     let admission = Admission;
     let cancelled = Arc::new(AtomicBool::new(false));
     let stopping = cancelled.clone();
@@ -89,4 +87,16 @@ fn pending<T: Send + 'static>(
         cancelled,
         delivered: false,
     })
+}
+
+/// Reserve a worker with atomics supported by both pinned stable and nightly.
+fn admit() -> bool {
+    let mut seen = ACTIVE.load(Ordering::Acquire);
+    while seen < 16 {
+        match ACTIVE.compare_exchange_weak(seen, seen + 1, Ordering::AcqRel, Ordering::Acquire) {
+            Ok(_) => return true,
+            Err(current) => seen = current,
+        }
+    }
+    false
 }
