@@ -22,6 +22,14 @@ withdrawn when the grant is revoked. A dialog cancellation is recorded as a
 person's cancellation, distinct from an unavailable backend or a policy refusal.
 No broad home-directory access is added to the recorder.
 
+The recorder exports its actual caller window through the standard XDG foreign
+parent protocol while a native source dialog is open. The compositor delegates
+the protocol's revocable handles to Smithay. A newly mapped dialog may follow
+an explicitly exported parent only while that parent holds the keyboard;
+unknown, revoked and background-parent handles confer no focus. This window
+relationship grants no screen or file access. Consent still passes through the
+same authenticated portal request and central grants policy.
+
 Each recording requires fresh source selection. There is no stored source,
 restore token, or always-allow selection. The compositor publishes only the
 selected source, and only to the authenticated portal service. Source handles

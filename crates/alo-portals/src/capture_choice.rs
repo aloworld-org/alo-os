@@ -45,6 +45,11 @@ pub(super) async fn choose(
             .text()
             .to_owned()
     };
+    let screens = sources
+        .iter()
+        .filter(|source| source.kind == SourceKind::Monitor)
+        .count();
+    let mut screen_number = 0;
     let entries: Vec<_> = sources
         .iter()
         .map(|source| {
@@ -52,7 +57,15 @@ pub(super) async fn choose(
                 SourceKind::Monitor => words::SHARE_SCREEN,
                 SourceKind::Window => words::SHARE_WINDOW,
             });
-            let label = if source.name.is_empty() {
+            let label = if source.kind == SourceKind::Monitor {
+                screen_number += 1;
+                let screen = if screens == 1 {
+                    kind
+                } else {
+                    format!("{kind} {screen_number}")
+                };
+                format!("{screen} · {} × {}", source.width, source.height)
+            } else if source.name.is_empty() {
                 kind
             } else {
                 format!("{kind} · {}", source.name)
@@ -84,10 +97,21 @@ pub(super) async fn choose(
         ),
     ]);
     let title = say(words::SHARE_TITLE);
+    let application_id = request.asked.application().unwrap_or("");
+    let application_name = backend
+        .machine()
+        .applications()
+        .and_then(|applications| {
+            applications
+                .installed
+                .knows(application_id)
+                .map(|application| application.shown(&strings))
+        })
+        .unwrap_or_else(|| application_id.to_owned());
     let subtitle = strings
         .say(
             &words::SHARE_SUBTITLE.key(),
-            &alo_strings::Filling::of("application", request.asked.application().unwrap_or("")),
+            &alo_strings::Filling::of("application", application_name),
         )
         .text()
         .to_owned();

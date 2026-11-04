@@ -20,13 +20,14 @@ flatpak install --user ./alo-studio-0.1.0.flatpak
 flatpak run org.aloworld.Studio
 ```
 
-The current alo OS portal service does not implement `ScreenCast`; its file
-chooser is also not served. **This app's source selection and export therefore
-cannot yet be claimed working inside alo OS.** The recorder uses standard
-desktop interfaces and can be installed on a desktop that provides them. This
-is an OS integration requirement, not something an application can safely
-replace with unrestricted access. The live market entry is deliberately not
-added until an actual signed application source serves the package.
+This branch adds alo OS's native screen/window picker and SaveFile frontend.
+Capture follows the selected source's lifetime, and removing its permission
+ends sharing. Export grants access to the exact chosen file through the
+Documents portal. The integration report records which checks have passed and
+the remaining booted-system acceptance work; implementing these services alone
+does not establish that the complete recording flow works on an installed OS.
+The live market entry remains separate until a signed application source serves
+the package.
 
 ## Run from source
 

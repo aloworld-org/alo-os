@@ -4,6 +4,14 @@ The owner authorised OS integration and a booted recording walk for alo Studio.
 This work is on `app/alo-studio`; market publication remains separate. Booted
 acceptance is in progress and is not established by the host checks below.
 
+The first booted source request reached the real GTK picker but its unparented
+dialog opened behind Studio. The follow-up exports the actual caller window,
+adds the compositor's standard XDG parent protocol and admits a new dialog only
+when its explicit parent holds focus. Wire checks cover the focused parent,
+background parent, revoked export and unknown handle. Validation of that
+follow-up is pending. Picker labels use display size and packaged application
+names with authenticated identifiers rather than compositor device names.
+
 The public ScreenCast frontend identifies the Flatpak caller through the bus,
 binds its session to that unique connection, and asks the GTK backend for a
 fresh source choice. It makes a session grant on the existing permissions list,
@@ -55,8 +63,23 @@ Checks and their scope:
 - Permanent real-bus checks cover session ownership, unsupported modes,
   repeated selection and missing compositor refusal. Frame-state checks cover
   allocation bounds, live source interest and a busy handoff slot. Process
-  authentication checks use a real bus and a different kernel PID. Final
-  validation of these latest checks is still running.
+  authentication checks use a real bus and a different kernel PID. At
+  `d8fcb765`, all 594 tests and doctests across the seven permission, portal,
+  capture-protocol, activity, and storage crates passed. The separate shell
+  checks passed 24 capture/state tests, 12 direct-target tests, five direct-loop
+  tests, and nine scanout tests. The media-server suite passed all 13 tests,
+  including cancellation with an incomplete native response. Scoped clippy
+  denied warnings, and workspace formatting was clean. Local logs are
+  `/tmp/alo-studio-permission-verification.log` and
+  `/tmp/alo-studio-capture-final-clippy.log`; the checks are repository tests,
+  while these particular local invocations are one-off verification.
+- The dedicated app CI job passed at `d8fcb765`. The OS CI run
+  `41895386015` stopped while building workspace test executables because its
+  runner ran out of disk space. This does not establish a full workspace pass.
+- The latest locally built Flatpak bundle is 1,069,280 bytes, SHA-256
+  `f31e8e397b1949183dbc801b31df6d664c624b531b93b985b54efa45707c79ab`.
+  Its installed build excludes the verification feature. It has not been
+  published to an application source or the live catalogue.
 
 The native SaveFile and actual sandbox export/revocation proof are recorded in
 `native-save-dialog-for-sandboxed-recordings.md`. An isolated private branch

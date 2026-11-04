@@ -1,8 +1,9 @@
 # Native saving for a sandboxed recording app
 
 The owner authorised alo Studio's OS integration and a booted recording walk on
-2026-11-04. This change supplies the save-dialog prerequisite while capture
-integration remains in progress. Market publication is separate.
+2026-11-04. This change supplies the native save dialog and exact document
+permissions. Capture integration is described in
+`recording-permissions-and-native-capture.md`. Market publication is separate.
 
 The frontend identifies the bus caller, opens the rented GTK save chooser, makes
 an exact file grant, records the answer, and uses the Documents portal to expose
@@ -32,6 +33,8 @@ identical, SHA-256
 Evidence is local to `/root/alo-studio-native-save.KWXSbb`. This one-off probe
 does not run in CI; the two verification clients live in `alo-portald/examples`.
 
-A person reaches this through Studio's Save action. The image still needs the
-native backend and document services configured. A booted alo recording and
-microphone hardware walk have not been completed by this prerequisite.
+A person reaches this through Studio's Save action. The image recipe installs
+the native backend and document services while retaining alo's public portal
+authority. The booted recording walkthrough is tracked in the capture report;
+this prerequisite alone does not establish booted-system or microphone hardware
+acceptance.

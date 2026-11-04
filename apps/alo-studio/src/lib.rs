@@ -4,6 +4,7 @@
 //! through the desktop portal for each recording; the microphone starts off.
 
 pub mod model;
+mod parent_window;
 pub mod performance;
 mod permission_lifetime;
 pub mod portal;

@@ -31,6 +31,9 @@
 //! - **a new window of the application the person is in**, while the
 //!   applications are in front: a dialog a press in that application opened.
 //!   Its own window holds the keyboard, so the new one is the person's too.
+//!   This includes a dialog from another process when the focused window
+//!   explicitly exported a parent handle for it. An unrelated or background
+//!   parent's dialog does not take focus.
 //!
 //! **An application the agent opened is not brought in front**, which is
 //! `crate::which_window_is_in_front`'s *only a person's own road moves it*. A
@@ -40,6 +43,7 @@
 use smithay::reexports::wayland_server::Resource as _;
 use smithay::reexports::wayland_server::protocol::wl_surface::WlSurface;
 use smithay::utils::IsAlive as _;
+use smithay::wayland::{compositor::with_states, shell::xdg::XdgToplevelSurfaceData};
 
 /// How many new windows the shell remembers between two looks.
 ///
@@ -124,10 +128,17 @@ impl crate::Server {
         else {
             return false;
         };
-        focused != *surface
-            && focused
-                .client()
-                .is_some_and(|client| surface.client().is_some_and(|other| other == client))
+        let same_client = focused
+            .client()
+            .is_some_and(|client| surface.client().is_some_and(|other| other == client));
+        let parent_is_focused = with_states(surface, |states| {
+            states
+                .data_map
+                .get::<XdgToplevelSurfaceData>()
+                .and_then(|role| role.lock().ok()?.parent.clone())
+                .is_some_and(|parent| parent == focused)
+        });
+        focused != *surface && (same_client || parent_is_focused)
     }
 
     /// **Whether the applications are drawn in front of alo's terminal and

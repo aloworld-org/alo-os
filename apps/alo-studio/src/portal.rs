@@ -37,7 +37,10 @@ impl Capture {
 }
 
 /// Ask anew for every recording. No restore token or ambient screen permission.
-pub async fn choose(kind: SourceKind) -> Result<Capture, ashpd::Error> {
+pub async fn choose(
+    kind: SourceKind,
+    window: Option<&gtk::Window>,
+) -> Result<Capture, ashpd::Error> {
     // Only explicit verification builds can select the isolated Xvfb fixture.
     // This branch and its environment variable do not exist in a Flatpak build.
     #[cfg(feature = "verification")]
@@ -54,6 +57,10 @@ pub async fn choose(kind: SourceKind) -> Result<Capture, ashpd::Error> {
             verification_display: Some(display),
         });
     }
+    let parent = match window {
+        Some(window) => crate::parent_window::Parent::export(window).await,
+        None => None,
+    };
     let portal = Screencast::new().await?;
     let session = portal.create_session(Default::default()).await?;
     let permission = crate::permission_lifetime::Permission::watch(session).await?;
@@ -76,7 +83,11 @@ pub async fn choose(kind: SourceKind) -> Result<Capture, ashpd::Error> {
             .await?
             .response()?;
         let answer = portal
-            .start(session, None, Default::default())
+            .start(
+                session,
+                parent.as_ref().map(|parent| parent.identifier()),
+                Default::default(),
+            )
             .await?
             .response()?;
         let stream = answer

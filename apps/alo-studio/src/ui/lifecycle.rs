@@ -34,7 +34,7 @@ impl State {
         let own = self.clone();
         let kind = self.kind.get();
         glib::MainContext::default().spawn_local(async move {
-            match crate::portal::choose(kind).await {
+            match crate::portal::choose(kind, Some(own.view.window.upcast_ref())).await {
                 Ok(capture) if !own.closed.get() => {
                     match Recorder::preview((&capture).into()) {
                         Ok(engine) => {

@@ -15,6 +15,7 @@ verification = []
 
 [dependencies]
 gtk = { package = "gtk4", version = "0.10", features = ["v4_14"] }
+gdk-wayland = { package = "gdk4-wayland", version = "0.10" }
 gst = { package = "gstreamer", version = "0.24", features = ["v1_22"] }
 gst-app = { package = "gstreamer-app", version = "0.24", features = ["v1_22"] }
 gst-video = { package = "gstreamer-video", version = "0.24", features = ["v1_22"] }

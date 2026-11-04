@@ -19,7 +19,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .ok_or("Pass an output .webm path")?;
     gtk::init()?;
     gtk::glib::MainContext::default().block_on(async {
-        let capture = portal::choose(SourceKind::Screen).await?;
+        let capture = portal::choose(SourceKind::Screen, None).await?;
         let preview = Recorder::preview((&capture).into())?;
         let mut size = None;
         for _ in 0..100 {
