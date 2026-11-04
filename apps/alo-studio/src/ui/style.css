@@ -1,6 +1,6 @@
 /* Native GTK configuration. This is not an HTML surface or a web renderer. */
 @define-color ink #202638;
-@define-color muted #777b87;
+@define-color muted #6c6877;
 @define-color paper #fbfaf8;
 @define-color accent #6558dc;
 @define-color line #e8e6e2;
@@ -24,7 +24,7 @@ button:disabled { opacity: 0.45; }
 .nav-button:hover { background: #ece8e2; }
 .nav-button.nav-active { background: white; border-color: #e8e4de; box-shadow: 0 2px 3px alpha(black, 0.025); }
 .nav-active image { color: @accent; }
-.library-count { color: #95929b; font-size: 10px; margin: 6px 12px; }
+.library-count { color: #76717f; font-size: 11px; margin: 6px 12px; }
 .privacy-note { margin: 20px 8px; }
 .privacy-note image { color: #8d869d; margin-bottom: 2px; }
 .privacy-note .card-title { font-size: 11px; }
@@ -50,8 +50,8 @@ button:disabled { opacity: 0.45; }
 .source-card:checked { border-color: #9487e2; background: #f3f0fd; box-shadow: inset 0 0 0 1px #9487e2; }
 .source-card:checked image { color: @accent; }
 .card-title { font-size: 12px; font-weight: 650; }
-.muted { color: @muted; font-size: 10px; font-weight: 400; }
-.source-description { color: #97929d; font-size: 10px; margin: 10px 1px 17px; }
+.muted { color: @muted; font-size: 11px; font-weight: 400; }
+.source-description { color: #76717f; font-size: 11px; margin: 10px 1px 17px; }
 .sound-row { background: white; border: 1px solid @line; border-radius: 11px; padding: 14px 16px; }
 .sound-row image { color: #8d879c; margin-right: 4px; }
 switch { border-radius: 20px; min-width: 36px; min-height: 20px; background: #ddd9e2; border: none; }
@@ -64,7 +64,7 @@ button.primary:hover { background: #5546cb; }
 button.primary:disabled { background: #a79fdc; border-color: #a79fdc; }
 button.recording-stop { background: #cf4057; border-color: #cf4057; }
 button.recording-stop:hover { background: #b93349; }
-.footnote { font-size: 9px; color: #a29ba8; margin-top: 18px; }
+.footnote { font-size: 10px; color: #76717f; margin-top: 18px; }
 .countdown-number { background: alpha(#101623, 0.75); border-radius: 15px; color: white; font-size: 96px; font-weight: 750; }
 .notice { background: #f0edf9; border-bottom: 1px solid #e1dbf1; padding: 10px 18px; color: #564b70; }
 .notice-text { font-size: 11px; }

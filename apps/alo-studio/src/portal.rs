@@ -48,34 +48,48 @@ pub async fn choose(kind: SourceKind) -> Result<Capture, ashpd::Error> {
         SourceKind::Screen => SourceType::Monitor,
         SourceKind::Window => SourceType::Window,
     };
-    // Waiting for SelectSources' response is essential: Start may not race it.
-    portal
-        .select_sources(
-            &session,
-            SelectSourcesOptions::default()
-                .set_sources(Some(enumflags2::BitFlags::from(source)))
-                .set_multiple(false)
-                .set_cursor_mode(CursorMode::Embedded)
-                .set_persist_mode(PersistMode::DoNot),
-        )
-        .await?
-        .response()?;
-    let answer = portal
-        .start(&session, None, Default::default())
-        .await?
-        .response()?;
-    let stream = answer
-        .streams()
-        .first()
-        .ok_or_else(|| ashpd::Error::NoResponse)?;
-    let (width, height) = stream.size().unwrap_or((1920, 1080));
-    let remote = portal
-        .open_pipe_wire_remote(&session, Default::default())
-        .await?;
+    let granted = async {
+        // Waiting for SelectSources' response is essential: Start may not race it.
+        portal
+            .select_sources(
+                &session,
+                SelectSourcesOptions::default()
+                    .set_sources(Some(enumflags2::BitFlags::from(source)))
+                    .set_multiple(false)
+                    .set_cursor_mode(CursorMode::Embedded)
+                    .set_persist_mode(PersistMode::DoNot),
+            )
+            .await?
+            .response()?;
+        let answer = portal
+            .start(&session, None, Default::default())
+            .await?
+            .response()?;
+        let stream = answer
+            .streams()
+            .first()
+            .ok_or_else(|| ashpd::Error::NoResponse)?;
+        // Unknown is not Full HD. The negotiated preview caps supply the actual size.
+        let (width, height) = stream.size().unwrap_or((0, 0));
+        let remote = portal
+            .open_pipe_wire_remote(&session, Default::default())
+            .await?;
+        Ok::<_, ashpd::Error>((remote, stream.pipe_wire_node_id(), width, height))
+    }
+    .await;
+    let (remote, node, width, height) = match granted {
+        Ok(granted) => granted,
+        Err(error) => {
+            if let Err(why) = session.close().await {
+                eprintln!("Closing an unselected screen session: {why}");
+            }
+            return Err(error);
+        }
+    };
     Ok(Capture {
         session: Some(session),
         remote,
-        node: stream.pipe_wire_node_id(),
+        node,
         width,
         height,
     })

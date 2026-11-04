@@ -122,6 +122,11 @@ impl Library {
             return Err(StorageError::EmptyVideo);
         }
         let video = self.video(&clip.id)?;
+        OpenOptions::new()
+            .write(true)
+            .open(&pending)
+            .and_then(|file| file.sync_all())
+            .map_err(|error| io(&pending, error))?;
         // hard_link fails if the destination exists: unlike rename, it cannot
         // replace an existing video on Unix. Both files are in this directory.
         fs::hard_link(&pending, &video).map_err(|error| io(&video, error))?;

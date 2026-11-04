@@ -4,6 +4,7 @@
 //! through the desktop portal for each recording; the microphone starts off.
 
 pub mod model;
+pub mod performance;
 pub mod portal;
 pub mod recorder;
 pub mod storage;

@@ -1,6 +1,7 @@
 //! GStreamer supplies capture, VP9, Opus and WebM. No codec is implemented here.
 
 use std::path::Path;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 
 use gst::prelude::*;
@@ -28,6 +29,8 @@ pub enum Event {
     Finished,
     /// The source or encoder failed. The pending file is preserved.
     Failed(String),
+    /// A bounded queue filled: finish the clip instead of degrading it silently.
+    FellBehind,
 }
 
 /// One pipeline, stopped before its permission-scoped remote can be closed.
@@ -36,6 +39,7 @@ pub struct Recorder {
     bus: gst::Bus,
     frame: Arc<Mutex<Option<Frame>>>,
     finishing: bool,
+    fell_behind: Arc<AtomicBool>,
 }
 
 /// The pipeline's source, separately selected for explicit diagnostic builds.
@@ -114,16 +118,23 @@ impl Recorder {
         // other person-supplied text is interpolated into the pipeline parser.
         let video = if path.is_some() {
             "! videoconvert ! videoscale ! videorate ! capsfilter name=size ! tee name=frames \
-             frames. ! queue max-size-time=2000000000 ! vp9enc name=encoder deadline=1 cpu-used=8 threads=4 target-bitrate=4500000 keyframe-max-dist=60 \
+             frames. ! queue name=record-buffer max-size-time=2000000000 max-size-bytes=0 max-size-buffers=0 ! vp9enc name=encoder deadline=1 cpu-used=8 threads=4 target-bitrate=4500000 keyframe-max-dist=60 \
              ! queue ! webmmux name=container ! filesink name=output \
              frames. ! queue leaky=downstream max-size-buffers=1 ! videoconvert ! videoscale ! video/x-raw,format=RGBA,width=640,pixel-aspect-ratio=1/1 ! appsink name=preview sync=false max-buffers=1 drop=true"
         } else {
             "! videoconvert ! videoscale ! video/x-raw,format=RGBA,width=640,pixel-aspect-ratio=1/1 ! appsink name=preview sync=false max-buffers=1 drop=true"
         };
+        let audio_source = match &source {
+            #[cfg(feature = "verification")]
+            Input::VerificationDisplay(_) => "audiotestsrc is-live=true wave=sine volume=0.05",
+            _ => "pulsesrc name=microphone client-name=alo-Studio do-timestamp=true",
+        };
         let audio = if microphone && path.is_some() {
-            " pulsesrc name=microphone client-name=alo-Studio do-timestamp=true ! queue ! audioconvert ! audioresample ! audio/x-raw,rate=48000,channels=1 ! opusenc bitrate=96000 ! queue ! container."
+            format!(
+                " {audio_source} ! queue ! audioconvert ! audioresample ! audio/x-raw,rate=48000,channels=1 ! opusenc bitrate=96000 ! queue ! container."
+            )
         } else {
-            ""
+            String::new()
         };
         let pipeline = gst::parse::launch(&format!("{source_text} {video} {audio}"))
             .map_err(failed)?
@@ -154,6 +165,14 @@ impl Recorder {
                 .build();
             by_name("size")?.set_property("caps", &caps);
             by_name("output")?.set_property("location", path.to_string_lossy().as_ref());
+        }
+        let fell_behind = Arc::new(AtomicBool::new(false));
+        if let Some(queue) = pipeline.by_name("record-buffer") {
+            let stalled = fell_behind.clone();
+            queue.connect("overrun", false, move |_| {
+                stalled.store(true, Ordering::Relaxed);
+                None
+            });
         }
         let frame = Arc::new(Mutex::new(None));
         let receiving = frame.clone();
@@ -209,11 +228,22 @@ impl Recorder {
             bus,
             frame,
             finishing: false,
+            fell_behind,
         })
     }
     /// The newest frame only. Slow UI painting never builds an unbounded queue.
     pub fn frame(&self) -> Option<Frame> {
         self.frame.lock().ok()?.take()
+    }
+    /// The negotiated source dimensions, before preview scaling.
+    pub fn source_size(&self) -> Option<(i32, i32)> {
+        let caps = self
+            .pipeline
+            .by_name("source")?
+            .static_pad("src")?
+            .current_caps()?;
+        let info = gst_video::VideoInfo::from_caps(&caps).ok()?;
+        Some((info.width() as i32, info.height() as i32))
     }
     /// Freeze both streams together; the microphone stops reading while paused.
     pub fn pause(&self) -> Result<(), MediaError> {
@@ -246,6 +276,9 @@ impl Recorder {
     }
     /// Read errors and EOS without blocking the interface.
     pub fn poll(&self) -> Option<Event> {
+        if !self.finishing && self.fell_behind.swap(false, Ordering::Relaxed) {
+            return Some(Event::FellBehind);
+        }
         while let Some(message) = self.bus.pop() {
             match message.view() {
                 gst::MessageView::Eos(_) => return Some(Event::Finished),

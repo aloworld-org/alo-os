@@ -56,6 +56,8 @@ pub enum Phase {
     Choosing,
     /// The selected source can be previewed, but nothing is being saved.
     Selected,
+    /// Check that the chosen size can be encoded before writing any video.
+    Checking,
     /// A countdown precedes the first frame written.
     Countdown(u8),
     /// Video, and microphone only if chosen, are being saved.
@@ -117,6 +119,18 @@ impl Session {
     /// The person chose a source. No microphone starts here.
     pub fn selected(&mut self) {
         self.phase = Phase::Selected;
+    }
+    /// Benchmark the selected size without opening the microphone.
+    pub fn checking(&mut self) -> Result<(), InvalidTransition> {
+        self.require(&[Phase::Selected])?;
+        self.phase = Phase::Checking;
+        Ok(())
+    }
+    /// Open an existing recording without inheriting the last recording's sound.
+    pub fn reviewing(&mut self) {
+        self.phase = Phase::Review;
+        self.microphone = false;
+        self.running_since = None;
     }
     /// A cancelled or failed source selection reads no screen.
     pub fn reset(&mut self) {

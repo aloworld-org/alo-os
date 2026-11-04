@@ -275,7 +275,7 @@ impl State {
         let phase = self.session.borrow().phase();
         match phase {
             Phase::Ready => self.choose(),
-            Phase::Selected => self.countdown(),
+            Phase::Selected => self.preflight(),
             Phase::Recording | Phase::Paused => self.stop(),
             Phase::Review => self.new_recording(),
             _ => {}
@@ -315,10 +315,85 @@ impl State {
                     eprintln!("Screen selection: {error}");
                     own.session.borrow_mut().reset();
                     own.view.microphone.set_active(false);
-                    own.notice(&t("No source was selected. If the system picker did not appear, this desktop's screen-recording service is unavailable. Nothing was recorded."));
+                    let message = match error {
+                        ashpd::Error::Response(ashpd::desktop::ResponseError::Cancelled) => "Selection cancelled. Nothing was recorded.",
+                        ashpd::Error::PortalNotFound(_) => "This desktop does not provide screen recording yet. Nothing was recorded.",
+                        _ => "The selected source could not be opened. Check your desktop's screen-sharing permission, then try again. Nothing was recorded.",
+                    };
+                    own.notice(&t(message));
                 }
             }
             own.render();
+        });
+    }
+    fn selected_size(&self) -> Result<(i32, i32), String> {
+        let quality = match self.view.quality.selected() {
+            1 => Quality::Hd,
+            2 => Quality::Original,
+            _ => Quality::FullHd,
+        };
+        let size = self
+            .engine
+            .borrow()
+            .as_ref()
+            .and_then(Recorder::source_size)
+            .ok_or_else(|| t("Please wait for the live preview, then try again."))?;
+        quality.size(size.0, size.1).map_err(t)
+    }
+    fn preflight(self: &Rc<Self>) {
+        let (width, height) = match self.selected_size() {
+            Ok(size) => size,
+            Err(error) => {
+                self.notice(&error);
+                return;
+            }
+        };
+        if self.session.borrow_mut().checking().is_err() {
+            return;
+        }
+        self.render();
+        let (sending, receiving) = std::sync::mpsc::sync_channel(1);
+        let worker = std::thread::Builder::new()
+            .name("studio-quality-check".to_owned())
+            .spawn(move || {
+                let _ = sending.send(crate::performance::check(width, height));
+            });
+        if let Err(error) = worker {
+            self.session.borrow_mut().selected();
+            self.notice(&error.to_string());
+            self.render();
+            return;
+        }
+        let weak = Rc::downgrade(self);
+        glib::timeout_add_local(Duration::from_millis(50), move || {
+            let Some(own) = weak.upgrade() else {
+                return glib::ControlFlow::Break;
+            };
+            if own.closed.get() || own.session.borrow().phase() != Phase::Checking {
+                return glib::ControlFlow::Break;
+            }
+            match receiving.try_recv() {
+                Ok(result) => {
+                    own.session.borrow_mut().selected();
+                    match result {
+                        Ok(()) => own.countdown(),
+                        Err(error) => {
+                            own.notice(&error.to_string());
+                            own.render();
+                        }
+                    }
+                    glib::ControlFlow::Break
+                }
+                Err(std::sync::mpsc::TryRecvError::Empty) => glib::ControlFlow::Continue,
+                Err(std::sync::mpsc::TryRecvError::Disconnected) => {
+                    own.session.borrow_mut().selected();
+                    own.notice(&t(
+                        "Recording quality could not be checked. Please try again.",
+                    ));
+                    own.render();
+                    glib::ControlFlow::Break
+                }
+            }
         });
     }
     fn countdown(self: &Rc<Self>) {
@@ -358,17 +433,13 @@ impl State {
         self.render();
     }
     fn start(self: &Rc<Self>) {
-        let quality = match self.view.quality.selected() {
-            1 => Quality::Hd,
-            2 => Quality::Original,
-            _ => Quality::FullHd,
-        };
+        let size = self.selected_size();
         let result = (|| {
             let capture = self.capture.borrow();
             let capture = capture
                 .as_ref()
                 .ok_or_else(|| t("Please choose your screen again."))?;
-            let (width, height) = quality.size(capture.width, capture.height).map_err(t)?;
+            let (width, height) = size?;
             let library = self
                 .library
                 .as_ref()
@@ -472,6 +543,10 @@ impl State {
             Some(Event::Finished) if self.session.borrow().busy() => self.completed(),
             Some(Event::Finished) => self.failed(&t("The selected source stopped sharing. Please select it again.")),
             Some(Event::Failed(error)) => self.failed(&format!("{} {error}", t("Recording stopped because the source or audio device could not continue. Any temporary video has been kept."))),
+            Some(Event::FellBehind) => {
+                self.notice(&t("This device could not keep up. Recording has stopped and the video captured so far is being saved. Try 720p for the next recording."));
+                self.stop();
+            }
             None => {}
         }
         if let Some(started) = self.finish_started.get()
@@ -574,6 +649,10 @@ impl State {
             ),
             Phase::Choosing => ("Choosing…", "Waiting for your selection"),
             Phase::Selected => ("Start recording", "●  Preview only · not recording"),
+            Phase::Checking => (
+                "Checking…",
+                "Checking that this recording size will run smoothly…",
+            ),
             Phase::Countdown(_) => (
                 "Starting…",
                 "Get ready. Recording starts after the countdown.",
@@ -588,7 +667,7 @@ impl State {
             self.library.is_some()
                 && !matches!(
                     phase,
-                    Phase::Choosing | Phase::Countdown(_) | Phase::Finishing
+                    Phase::Choosing | Phase::Checking | Phase::Countdown(_) | Phase::Finishing
                 ),
         );
         self.view.status.set_label(&t(status));
@@ -659,6 +738,7 @@ impl State {
             return;
         };
         self.release_capture();
+        self.session.borrow_mut().reviewing();
         if let Ok(video) = library.video(&clip.id) {
             self.view
                 .review
@@ -790,84 +870,5 @@ fn date(seconds: u64) -> String {
         .unwrap_or_else(|_| seconds.to_string())
 }
 
-// Export callbacks are kept here until the native asynchronous save operation
-// has been selected; their implementation lives in the module below.
-mod exports {
-    use super::*;
-    pub(super) fn save(own: Rc<State>) {
-        let Some(clip) = own.clip.borrow().clone() else {
-            return;
-        };
-        let Some(library) = &own.library else {
-            return;
-        };
-        let Ok(path) = library.video(&clip.id) else {
-            return;
-        };
-        let name = format!(
-            "{}.webm",
-            clip.title
-                .chars()
-                .filter(|character| !character.is_control() && !matches!(character, '/' | '\\'))
-                .take(100)
-                .collect::<String>()
-        );
-        glib::MainContext::default().spawn_local(async move {
-            let filter = gtk::FileFilter::new();
-            filter.set_name(Some(&t("WebM video")));
-            filter.add_mime_type("video/webm");
-            let filters = gio::ListStore::new::<gtk::FileFilter>();
-            filters.append(&filter);
-            let dialog = gtk::FileDialog::builder()
-                .title(t("Save your recording"))
-                .initial_name(name)
-                .filters(&filters)
-                .default_filter(&filter)
-                .build();
-            let Ok(destination) = dialog.save_future(Some(&own.view.window)).await else {
-                return;
-            };
-            own.view.review.save.set_sensitive(false);
-            let source = gio::File::for_path(path);
-            let callback = own.clone();
-            source.copy_async(
-                &destination,
-                gio::FileCopyFlags::OVERWRITE,
-                glib::Priority::DEFAULT,
-                gio::Cancellable::NONE,
-                None,
-                move |result| {
-                    callback.view.review.save.set_sensitive(true);
-                    match result {
-                        Ok(()) => callback.notice(&t(
-                            "Your copy is saved. The original is still in your library.",
-                        )),
-                        Err(error) => callback.notice(&format!(
-                            "{} {error}",
-                            t("The copy could not be saved. Your original is safe in the library.")
-                        )),
-                    }
-                },
-            );
-        });
-    }
-    pub(super) fn delete(own: Rc<State>) {
-        let Some(clip) = own.clip.borrow().clone() else {
-            return;
-        };
-        glib::MainContext::default().spawn_local(async move {
-            let answer = gtk::AlertDialog::builder().message(t("Delete this recording?"))
-                .detail(t("It will be removed from your library. Any copies you saved elsewhere stay where they are."))
-                .buttons([t("Keep video"), t("Delete")]).cancel_button(0).default_button(0).build()
-                .choose_future(Some(&own.view.window)).await;
-            if answer != Ok(1) { return; }
-            own.view.review.video.set_media_stream(gtk::MediaStream::NONE);
-            if let Some(library) = &own.library {
-                match library.remove(&clip.id) {
-                    Ok(()) => { own.clip.borrow_mut().take(); own.show_library(); },
-                    Err(error) => own.notice(&format!("{} {error}", t("The recording could not be removed."))),
-                }
-            }
-        });
-    }
-}
+#[path = "exports.rs"]
+mod exports;

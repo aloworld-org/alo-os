@@ -12,13 +12,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .map(PathBuf::from)
         .ok_or("Pass an output .webm path")?;
     let display = std::env::var("DISPLAY")?;
-    let mut recorder = Recorder::record(
-        Input::VerificationDisplay(display),
-        &output,
-        640,
-        360,
-        false,
-    )?;
+    alo_studio::performance::check(640, 360)?;
+    let mut recorder =
+        Recorder::record(Input::VerificationDisplay(display), &output, 640, 360, true)?;
     let started = Instant::now();
     let mut paused = false;
     let mut resumed = false;
@@ -44,6 +40,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         match recorder.poll() {
             Some(Event::Finished) => break,
             Some(Event::Failed(error)) => return Err(error.into()),
+            Some(Event::FellBehind) => return Err("The recording could not keep up".into()),
             None => {}
         }
         if elapsed > Duration::from_secs(20) {
@@ -60,7 +57,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     // Decoding proves the muxed output is a usable video, not just a nonempty file.
     let pipeline = gst::parse::launch(
-        "filesrc name=input ! matroskademux ! vp9dec ! videoconvert ! fakesink sync=false",
+        "filesrc name=input ! matroskademux name=demux demux.video_0 ! queue ! vp9dec ! fakesink sync=false demux.audio_0 ! queue ! opusdec ! fakesink sync=false",
     )?
     .downcast::<gst::Pipeline>()
     .map_err(|_| "No decoder pipeline")?;
@@ -81,10 +78,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         gst::MessageView::Error(error) => Err(error.error().to_string()),
         _ => Err("No decoding result".to_owned()),
     };
+    let duration = pipeline
+        .query_duration::<gst::ClockTime>()
+        .ok_or("No video duration")?;
     pipeline.set_state(gst::State::Null)?;
     result?;
+    if duration > gst::ClockTime::from_mseconds(4700) {
+        return Err("Paused time was included in the recording".into());
+    }
     println!(
-        "PASS: {frames} preview frames; pause/resume; EOS; {} bytes; VP9/WebM decoded to completion",
+        "PASS: {frames} preview frames; pause/resume; EOS; {} bytes; VP9 + synthetic Opus/WebM decoded to completion",
         std::fs::metadata(&output)?.len()
     );
     Ok(())
