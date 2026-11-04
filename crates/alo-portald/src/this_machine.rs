@@ -370,7 +370,7 @@ mod tests {
         let agent = grants.grant(
             Grant::checked_until_removed(
                 &Grantee::named("assistant"),
-                Reach::Facility(Facility::ScreenContinuously),
+                Reach::Folder(folder.path().to_path_buf()),
                 now,
                 alo_capability::ATerminalForTheAgent::NotAtAll,
             )
