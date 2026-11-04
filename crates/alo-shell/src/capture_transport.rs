@@ -208,3 +208,65 @@ fn serve(mut stream: UnixStream, shared: &Shared) -> io::Result<()> {
     }
     Ok(())
 }
+
+#[cfg(test)]
+#[expect(
+    clippy::unwrap_used,
+    reason = "unexpected frame-state failures fail these tests"
+)]
+mod tests {
+    use super::*;
+
+    /// No consumer means no retained frame; a stopped identity cannot restart.
+    #[test]
+    fn frames_require_live_interest_and_never_accumulate_a_queue() {
+        let feed = Feed::new(Source {
+            id: "generation-1".into(),
+            name: "screen".into(),
+            kind: alo_capture_protocol::SourceKind::Monitor,
+            width: 1,
+            height: 1,
+        });
+        feed.publish(Arc::from([1, 2, 3, 0]));
+        assert!(feed.frame.lock().unwrap().is_none());
+        feed.consuming.store(1, Ordering::Release);
+        for red in 0..100 {
+            feed.publish(Arc::from([0, 0, red, 0]));
+        }
+        assert_eq!(
+            feed.frame.lock().unwrap().as_deref().map(|f| f.as_ref()),
+            Some([0, 0, 99, 0].as_slice())
+        );
+        feed.stop();
+        assert!(!feed.wanted());
+        feed.publish(Arc::from([255; 4]));
+        assert_eq!(
+            feed.frame.lock().unwrap().as_deref().map(|f| f.as_ref()),
+            Some([0, 0, 99, 0].as_slice())
+        );
+    }
+
+    /// A socket writer holding its snapshot lock cannot stall the render thread.
+    #[test]
+    fn a_busy_frame_slot_drops_the_new_frame_without_waiting() {
+        let feed = Feed::new(Source {
+            id: "generation-2".into(),
+            name: "screen".into(),
+            kind: alo_capture_protocol::SourceKind::Monitor,
+            width: 1,
+            height: 1,
+        });
+        feed.consuming.store(1, Ordering::Release);
+        let locked = feed.frame.lock().unwrap();
+        let publishing = feed.clone();
+        let (sent, received) = std::sync::mpsc::channel();
+        let worker = std::thread::spawn(move || {
+            publishing.publish(Arc::from([0; 4]));
+            sent.send(()).unwrap();
+        });
+        assert!(received.recv_timeout(Duration::from_secs(1)).is_ok());
+        assert!(locked.is_none());
+        drop(locked);
+        worker.join().unwrap();
+    }
+}

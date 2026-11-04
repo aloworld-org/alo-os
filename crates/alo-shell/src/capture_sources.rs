@@ -239,6 +239,18 @@ fn extent(side: f64) -> u32 {
     }
 }
 
+#[cfg(test)]
+mod tests {
+    /// Fractional logical extents round outwards; non-finite or huge sizes refuse.
+    #[test]
+    fn private_capture_extents_are_bounded_before_allocation() {
+        assert_eq!(super::extent(640.25), 641);
+        for side in [0.0, -1.0, f64::NAN, f64::INFINITY, 16_384.01] {
+            assert_eq!(super::extent(side), 0);
+        }
+    }
+}
+
 impl Server {
     /// Expose capture only after sign-in; a failed endpoint leaves the desktop usable.
     pub(super) fn enable_capture(&mut self) -> io::Result<()> {

@@ -350,6 +350,54 @@ fn the_local_hour_and_minute() -> Option<(u8, u8)> {
 mod tests {
     use super::*;
 
+    /// Recovery removes only session-scoped application screen grants.
+    #[test]
+    fn abandoned_recording_grants_do_not_survive_a_frontend_restart() {
+        use alo_capability::{Applicant, Facility, Grant, Grantee, Grants, Reach};
+        let folder = tempfile::tempdir().unwrap();
+        let path = folder.path().join("grants.toml");
+        let now = SystemTime::now();
+        let mut grants = Grants::default();
+        let capture = grants.grant(
+            Grant::checked_until_removed(
+                &Applicant::named("org.aloworld.Studio").grantee(),
+                Reach::Facility(Facility::ScreenContinuously),
+                now,
+                alo_capability::ATerminalForTheAgent::NotAtAll,
+            )
+            .unwrap(),
+        );
+        let agent = grants.grant(
+            Grant::checked_until_removed(
+                &Grantee::named("assistant"),
+                Reach::Facility(Facility::ScreenContinuously),
+                now,
+                alo_capability::ATerminalForTheAgent::NotAtAll,
+            )
+            .unwrap(),
+        );
+        let file = grants.grant(
+            Grant::checked_until_removed(
+                &Applicant::named("org.aloworld.Studio").grantee(),
+                Reach::File(folder.path().join("demo.webm")),
+                now,
+                alo_capability::ATerminalForTheAgent::NotAtAll,
+            )
+            .unwrap(),
+        );
+        alo_remembering::kept(&path, &grants, now).unwrap();
+        let machine = ThisMachine::reading(&path, folder.path());
+        assert!(machine.begin_capture_sessions());
+        let remaining: Vec<_> = machine
+            .grants()
+            .unwrap()
+            .active_at(now)
+            .map(|held| held.id)
+            .collect();
+        assert!(!remaining.contains(&capture));
+        assert_eq!(remaining, [agent, file]);
+    }
+
     /// **A machine reads nothing when it is made**, which is what makes a
     /// revocation felt at the next request rather than at the next restart.
     ///

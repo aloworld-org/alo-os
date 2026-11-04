@@ -94,6 +94,9 @@ mod on_the_bus {
     mod native_save_checks {
         include!("support/native_save_checks.rs");
     }
+    mod recording_session_checks {
+        include!("support/recording_session_checks.rs");
+    }
     use std::collections::HashMap;
     use std::fs::File;
     use std::os::fd::AsFd;
