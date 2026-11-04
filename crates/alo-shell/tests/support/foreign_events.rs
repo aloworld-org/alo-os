@@ -6,76 +6,76 @@
 
 use super::{Application, Events};
 use wayland_client::{Connection, Dispatch, QueueHandle, delegate_noop};
-use wayland_protocols::xdg::foreign::zv2::client::{
-    zxdg_exported_v2::{self, ZxdgExportedV2},
-    zxdg_exporter_v2::ZxdgExporterV2,
-    zxdg_imported_v2::{self, ZxdgImportedV2},
-    zxdg_importer_v2::ZxdgImporterV2,
+use wayland_protocols::xdg::foreign::zv1::client::{
+    zxdg_exported_v1::{self, ZxdgExportedV1},
+    zxdg_exporter_v1::ZxdgExporterV1,
+    zxdg_imported_v1::{self, ZxdgImportedV1},
+    zxdg_importer_v1::ZxdgImporterV1,
 };
 
-impl Dispatch<ZxdgExportedV2, ()> for Events {
+impl Dispatch<ZxdgExportedV1, ()> for Events {
     fn event(
         state: &mut Self,
-        _: &ZxdgExportedV2,
-        event: zxdg_exported_v2::Event,
+        _: &ZxdgExportedV1,
+        event: zxdg_exported_v1::Event,
         _: &(),
         _: &Connection,
         _: &QueueHandle<Self>,
     ) {
-        if let zxdg_exported_v2::Event::Handle { handle } = event {
+        if let zxdg_exported_v1::Event::Handle { handle } = event {
             state.exported_parent = Some(handle);
         }
     }
 }
 
-impl Dispatch<ZxdgImportedV2, ()> for Events {
+impl Dispatch<ZxdgImportedV1, ()> for Events {
     fn event(
         state: &mut Self,
-        _: &ZxdgImportedV2,
-        event: zxdg_imported_v2::Event,
+        _: &ZxdgImportedV1,
+        event: zxdg_imported_v1::Event,
         _: &(),
         _: &Connection,
         _: &QueueHandle<Self>,
     ) {
-        if matches!(event, zxdg_imported_v2::Event::Destroyed) {
+        if matches!(event, zxdg_imported_v1::Event::Destroyed) {
             state.invalidated_parents += 1;
         }
     }
 }
 
-delegate_noop!(Events: ignore ZxdgExporterV2);
-delegate_noop!(Events: ignore ZxdgImporterV2);
+delegate_noop!(Events: ignore ZxdgExporterV1);
+delegate_noop!(Events: ignore ZxdgImporterV1);
 
 impl Application {
     /// Export this exact toplevel, retaining the revocable protocol object.
-    pub fn export_parent(&mut self) -> (ZxdgExportedV2, String) {
+    pub fn export_parent(&mut self) -> (ZxdgExportedV1, String) {
         let qh = self.queue.handle();
         let name = self
             .events
             .globals
             .iter()
-            .find(|(_, interface, _)| interface == "zxdg_exporter_v2")
+            .find(|(_, interface, _)| interface == "zxdg_exporter_v1")
             .unwrap()
             .0;
-        let exporter: ZxdgExporterV2 = self.registry.bind(name, 1, &qh, ());
+        let exporter: ZxdgExporterV1 = self.registry.bind(name, 1, &qh, ());
         self.events.exported_parent = None;
-        let exported = exporter.export_toplevel(&self.surface, &qh, ());
+        let exported = exporter.export(&self.surface, &qh, ());
         self.sync();
         (exported, self.events.exported_parent.clone().unwrap())
     }
 
     /// Import a different client's handle and parent this client's own window.
-    pub fn import_parent(&mut self, handle: &str) -> ZxdgImportedV2 {
+    pub fn import_parent(&mut self, handle: &str) -> ZxdgImportedV1 {
         let qh = self.queue.handle();
         let name = self
             .events
             .globals
             .iter()
-            .find(|(_, interface, _)| interface == "zxdg_importer_v2")
+            .find(|(_, interface, _)| interface == "zxdg_importer_v1")
             .unwrap()
             .0;
-        let importer: ZxdgImporterV2 = self.registry.bind(name, 1, &qh, ());
-        let imported = importer.import_toplevel(handle.to_owned(), &qh, ());
+        let importer: ZxdgImporterV1 = self.registry.bind(name, 1, &qh, ());
+        let imported = importer.import(handle.to_owned(), &qh, ());
         imported.set_parent_of(&self.surface);
         self.sync();
         imported

@@ -169,6 +169,54 @@ fn an_unknown_parent_handle_cannot_raise_a_new_dialog() {
     assert!(dialog.events.keyboard.surfaces.is_empty());
 }
 
+/// Destroying the caller window invalidates a handle even if its export object survives.
+#[test]
+fn a_destroyed_parent_window_cannot_raise_a_new_dialog() {
+    let (f, mut editor) = a_desktop_where_the_person_asked_for(None, true);
+    let (_exported, handle) = editor.export_parent();
+    let mut dialog = Application::new(&f);
+    let _imported = dialog.import_parent(&handle);
+    editor.toplevel.destroy();
+    editor.xdg.destroy();
+    editor.surface.destroy();
+    editor.sync();
+    dialog.sync();
+    dialog.configure();
+    dialog.attach();
+    dialog.sync();
+    f.backend(|s| s.what_the_person_opened_comes_in_front());
+    dialog.sync();
+    assert_eq!(dialog.events.invalidated_parents, 1);
+    assert!(dialog.events.keyboard.surfaces.is_empty());
+}
+
+/// Replacing an import is not undone when the earlier export is later closed.
+#[test]
+fn an_old_export_does_not_revoke_a_replacement_relationship() {
+    let (f, mut editor) = a_desktop_where_the_person_asked_for(None, true);
+    let (old_export, old_handle) = editor.export_parent();
+    let (_current_export, current_handle) = editor.export_parent();
+    let before = front_to_back(&f);
+    let mut dialog = Application::new(&f);
+    let _old_import = dialog.import_parent(&old_handle);
+    let _current_import = dialog.import_parent(&current_handle);
+    old_export.destroy();
+    editor.sync();
+    dialog.sync();
+    dialog.configure();
+    dialog.attach();
+    dialog.sync();
+    let child = the_new_one(&f, &before);
+    f.backend(|s| s.what_the_person_opened_comes_in_front());
+    dialog.sync();
+    assert_eq!(dialog.events.invalidated_parents, 1);
+    assert_eq!(the_front_one(&f), Some(child));
+    assert_eq!(
+        dialog.events.keyboard.surfaces.last(),
+        Some(&dialog.surface.id().protocol_id())
+    );
+}
+
 /// **The application the person started comes in front with the keyboard.**
 #[test]
 fn the_application_the_person_started_comes_in_front_with_the_keyboard() {

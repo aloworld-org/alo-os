@@ -5,7 +5,7 @@ use smithay::{
     backend::renderer::utils::{on_commit_buffer_handler, with_renderer_surface_state},
     delegate_compositor, delegate_data_device, delegate_pointer_gestures, delegate_shm,
     delegate_text_input_manager, delegate_viewporter, delegate_xdg_decoration,
-    delegate_xdg_foreign, delegate_xdg_shell,
+    delegate_xdg_shell,
     input::{Seat, SeatHandler, SeatState, pointer::CursorImageStatus},
     reexports::wayland_server::{
         Client, DisplayHandle,
@@ -33,7 +33,6 @@ use smithay::{
         shm::{ShmHandler, ShmState},
         text_input::TextInputManagerState,
         viewporter::ViewporterState,
-        xdg_foreign::{XdgForeignHandler, XdgForeignState},
     },
 };
 
@@ -162,7 +161,7 @@ pub(crate) struct Surfaces {
     /// XDG shell role and configure tracking.
     xdg: XdgShellState,
     /// Revocable handles associate a trusted portal's dialog with its caller.
-    xdg_foreign: XdgForeignState,
+    parent_windows: parent_windows::ParentWindows,
     /// The display this shell's globals were made on.
     ///
     /// Kept because `set_data_device_focus` needs one every time the keyboard
@@ -358,7 +357,7 @@ impl Surfaces {
             compositor: CompositorState::new::<Self>(display),
             shm: ShmState::new::<Self>(display, vec![]),
             xdg: XdgShellState::new::<Self>(display),
-            xdg_foreign: XdgForeignState::new::<Self>(display),
+            parent_windows: parent_windows::ParentWindows::new(display),
             xdg_decoration: XdgDecorationState::new::<Self>(display),
             display: display.clone(),
             // Copy and paste. The global alone is not enough: see
@@ -548,6 +547,10 @@ impl CompositorHandler for Surfaces {
         &mut self.compositor
     }
 
+    fn destroyed(&mut self, surface: &WlSurface) {
+        self.parent_surface_destroyed(surface);
+    }
+
     fn client_compositor_state<'a>(&self, client: &'a Client) -> &'a CompositorClientState {
         // Server owns insertion exclusively. A wrong data type is an internal
         // invariant violation, never a client-controlled request. Fail closed
@@ -657,6 +660,7 @@ impl XdgShellHandler for Surfaces {
         });
     }
     fn toplevel_destroyed(&mut self, surface: ToplevelSurface) {
+        self.parent_surface_destroyed(surface.wl_surface());
         self.windows.retain(|w| w.surface != surface);
     }
     fn new_popup(&mut self, surface: PopupSurface, positioner: PositionerState) {
@@ -862,12 +866,8 @@ delegate_data_device!(Surfaces);
 delegate_shm!(Surfaces);
 delegate_xdg_shell!(Surfaces);
 
-impl XdgForeignHandler for Surfaces {
-    fn xdg_foreign_state(&mut self) -> &mut XdgForeignState {
-        &mut self.xdg_foreign
-    }
-}
-delegate_xdg_foreign!(Surfaces);
+#[path = "parent_windows.rs"]
+mod parent_windows;
 
 delegate_pointer_gestures!(Surfaces);
 delegate_viewporter!(Surfaces);
