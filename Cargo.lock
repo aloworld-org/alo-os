@@ -1313,6 +1313,9 @@ dependencies = [
 name = "alo-media-server"
 version = "0.0.1"
 dependencies = [
+ "alo-capture-protocol",
+ "getrandom 0.3.4",
+ "rustix 1.1.4",
  "serde_json",
  "thiserror 2.0.20",
 ]
