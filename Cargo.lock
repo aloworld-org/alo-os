@@ -1793,6 +1793,7 @@ dependencies = [
  "alo-keeping",
  "alo-keeping-up",
  "alo-keyboards",
+ "alo-keyring-fixture",
  "alo-locking",
  "alo-measuring",
  "alo-models",
