@@ -7,6 +7,7 @@ use std::sync::{Arc, Mutex};
 use gst::prelude::*;
 
 use crate::portal::Capture;
+use crate::words::t;
 
 /// A real frame for the on-screen preview, copied away from the streaming thread.
 pub struct Frame {
@@ -81,7 +82,9 @@ impl Recorder {
         ] {
             if gst::ElementFactory::find(name).is_none() {
                 return Err(MediaError(format!(
-                    "A required recording component is missing ({name}). Please reinstall alo Studio."
+                    "{} ({name}). {}",
+                    t("A required recording component is missing"),
+                    t("Please reinstall alo Studio.")
                 )));
             }
         }
@@ -143,11 +146,14 @@ impl Recorder {
         let pipeline = gst::parse::launch(&format!("{source_text} {video} {audio}"))
             .map_err(failed)?
             .downcast::<gst::Pipeline>()
-            .map_err(|_| MediaError("The recording engine could not start.".to_owned()))?;
+            .map_err(|_| MediaError(t("The recording engine could not start.")))?;
         let by_name = |name| {
-            pipeline
-                .by_name(name)
-                .ok_or_else(|| MediaError(format!("The recording engine has no {name}.")))
+            pipeline.by_name(name).ok_or_else(|| {
+                MediaError(format!(
+                    "{} ({name}).",
+                    t("A recording component is unavailable")
+                ))
+            })
         };
         let element = by_name("source")?;
         match source {
@@ -182,7 +188,7 @@ impl Recorder {
         let receiving = frame.clone();
         let sink = by_name("preview")?
             .downcast::<gst_app::AppSink>()
-            .map_err(|_| MediaError("The preview could not start.".to_owned()))?;
+            .map_err(|_| MediaError(t("The preview could not start.")))?;
         sink.set_callbacks(
             gst_app::AppSinkCallbacks::builder()
                 .new_sample(move |sink| {
@@ -220,9 +226,9 @@ impl Recorder {
                 })
                 .build(),
         );
-        let bus = pipeline.bus().ok_or_else(|| {
-            MediaError("The recording engine cannot report its state.".to_owned())
-        })?;
+        let bus = pipeline
+            .bus()
+            .ok_or_else(|| MediaError(t("The recording engine cannot report its state.")))?;
         if let Err(error) = pipeline.set_state(gst::State::Playing) {
             let _ = pipeline.set_state(gst::State::Null);
             return Err(failed(error));
@@ -271,9 +277,9 @@ impl Recorder {
         // A paused pipeline needs to run to deliver EOS and flush the muxer.
         self.resume()?;
         if !self.pipeline.send_event(gst::event::Eos::new()) {
-            return Err(MediaError(
-                "The recording could not finish. Its temporary file has been kept.".to_owned(),
-            ));
+            return Err(MediaError(t(
+                "The recording could not finish. Its temporary file has been kept.",
+            )));
         }
         self.finishing = true;
         Ok(())

@@ -8,6 +8,23 @@ the application has no network permission. VP9 and Opus are encoded into WebM,
 following alo OS's encoding decision. Your original stays in the app's private
 library even after you export a copy.
 
+![The native recording workspace](data/screenshots/studio.png)
+
+## Install a built package
+
+```sh
+flatpak install --user ./alo-studio-0.1.0.flatpak
+flatpak run org.aloworld.Studio
+```
+
+The current alo OS portal service does not implement `ScreenCast`; its file
+chooser is also not served. **This app's source selection and export therefore
+cannot yet be claimed working inside alo OS.** The recorder uses standard
+desktop interfaces and can be installed on a desktop that provides them. This
+is an OS integration requirement, not something an application can safely
+replace with unrestricted access. The live market entry is deliberately not
+added until an actual signed application source serves the package.
+
 ## Run from source
 
 Requires Rust 1.97+, GTK 4.14+, GStreamer 1.22+, and the PipeWire, VP9, Opus,
@@ -51,6 +68,13 @@ reset, path traversal, empty recordings, and overwrite prevention. The optional
 `verify-recording` example records a real X11 display through the production
 encoder, pauses and resumes, finalizes the container, and decodes it to EOS.
 The X11 diagnostic source is absent from ordinary installed builds.
+
+`packaging/verify-native.sh` also drives the actual native UI through source
+selection, quality preflight, countdown, pause/resume, completion, and a durable
+library entry. It runs only a `verification` feature build on an isolated Xvfb
+display. Synthetic sound exercises Opus without opening a physical microphone.
+These checks run in `.github/workflows/studio.yml`; they do not prove the
+Wayland permission picker works on alo OS or replace a physical-machine walk.
 
 User-facing copy goes through the gettext domain `alo-studio`. Translators can
 provide standard gettext catalogues without changing the recording code.

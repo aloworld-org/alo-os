@@ -353,6 +353,7 @@ file carries it with a tier.*
 - Screenshots: whole screen, one window, a selected region — to a file or the clipboard
 - Annotate a screenshot without opening anything else
 - **Screen recording**, with audio, to a file
+- **alo Studio**, a separate application available through the application market: choose a screen or a window, optionally add microphone audio for this recording, pause and resume, preview the video, and save a copy. The microphone starts off for each recording; videos stay on the device until the person shares them. Requested by the owner on 2026-11-04.
 - Screen sharing for calls
 - ★ **A visible indicator whenever the screen, camera or microphone is in use** — by any application, including ours. Law 1 is about egress; this is the same instinct applied to the room you are sitting in
 

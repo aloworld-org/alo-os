@@ -7,8 +7,13 @@ win=$(timeout 15s xdotool search --sync --name '^alo Studio$' | head -1)
 xdotool windowfocus "$win"
 xdotool key ctrl+shift+r
 sleep 2
+# Choose 720p explicitly in this software-rendered test environment. Production
+# still offers the person's choice, and its performance refusal stays intact.
+xdotool mousemove --window "$win" 300 780 click 1
+xdotool key Down Return
 xdotool key ctrl+shift+r
 if ! bar=$(timeout 15s xdotool search --sync --name 'alo Studio.*Recording' | head -1); then
+  if command -v import >/dev/null; then import -window "$win" "$scratch/ui-failure.png"; fi
   head -50 "$scratch/app.log"
   echo 'The GUI did not reach its recording controls.' >&2
   exit 1

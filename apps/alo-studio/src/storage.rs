@@ -5,6 +5,7 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
+use crate::words::t;
 use serde::{Deserialize, Serialize};
 
 /// A completed recording in this application's private library.
@@ -43,13 +44,16 @@ pub enum StorageError {
         source: std::io::Error,
     },
     /// Metadata has an unknown or damaged shape.
-    #[error("The recording information could not be read: {0}")]
+    #[error("{} {0}", t("The recording information could not be read:"))]
     Metadata(#[from] serde_json::Error),
     /// A path-like identity from damaged metadata must never escape the library.
-    #[error("The recording has an invalid identifier.")]
+    #[error("{}", t("The recording has an invalid identifier."))]
     InvalidIdentity,
     /// The encoder produced nothing, so this cannot become a completed clip.
-    #[error("No video frames were saved. Please choose the source again and retry.")]
+    #[error(
+        "{}",
+        t("No video frames were saved. Please choose the source again and retry.")
+    )]
     EmptyVideo,
 }
 
@@ -103,7 +107,7 @@ impl Library {
             .map_err(|error| io(&pending, error))?;
         Ok(Clip {
             id,
-            title: "Untitled recording".to_owned(),
+            title: t("Untitled recording"),
             created: now.as_secs(),
             duration_ms: 0,
             width,
