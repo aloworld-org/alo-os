@@ -68,7 +68,7 @@ pub fn start(wayland: PathBuf, source: Source, application: String) -> io::Resul
             frames.set_read_timeout(None)?;
             input = Some(frames.try_clone()?);
             let mut random = [0; 24];
-            getrandom::fill(&mut random).map_err(io::Error::other)?;
+            getrandom::fill(&mut random).map_err(|why| io::Error::other(why.to_string()))?;
             let name = format!(
                 "alo-capture-{}",
                 random

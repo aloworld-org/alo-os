@@ -39,7 +39,7 @@ impl CaptureSources {
     /// Capture is explicitly enabled at the person's desktop entry point.
     pub(super) fn bind(wayland: &std::path::Path) -> io::Result<Self> {
         let mut random = [0; 24];
-        getrandom::fill(&mut random).map_err(io::Error::other)?;
+        getrandom::fill(&mut random).map_err(|why| io::Error::other(why.to_string()))?;
         let generation = random.iter().map(|b| format!("{b:02x}")).collect();
         Ok(Self {
             endpoint: Endpoint::bind(wayland)?,
