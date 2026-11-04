@@ -116,7 +116,7 @@ mod written;
 #[cfg(unix)]
 pub use how_code_runs::{THE_LEVEL, the_level_kept, the_level_remembered};
 #[cfg(unix)]
-pub use keeping::{THE_FOLDER, THE_GRANTS, kept, remembered};
+pub use keeping::{THE_FOLDER, THE_GRANTS, kept, remembered, updated};
 #[cfg(unix)]
 pub use machine_names::{THE_MACHINE_NAMES, machine_names_kept, machine_names_remembered};
 pub use named::{LONGEST_NAME, MachineName, NotAName};

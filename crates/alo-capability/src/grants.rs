@@ -121,7 +121,7 @@ pub struct Held {
 }
 
 /// Every grant on this machine.
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Grants {
     /// The next handle to hand out. Kept so that ids stay unique across a
     /// restart, since the list is written down and read back.
