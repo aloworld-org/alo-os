@@ -3,6 +3,9 @@
 A separate native application for recording a demo: pick a screen or window,
 optionally add your microphone, record, pause, preview, and save a copy.
 
+A short quality check warns if the chosen size may run slowly. You can choose
+another size or explicitly record anyway; the app never changes it silently.
+
 The microphone starts **off for every recording**. Videos stay on this device;
 the application has no network permission. VP9 and Opus are encoded into WebM,
 following alo OS's encoding decision. Your original stays in the app's private

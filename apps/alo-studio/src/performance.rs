@@ -5,10 +5,18 @@ use crate::words::t;
 use gst::prelude::*;
 use std::time::{Duration, Instant};
 
+/// Advice from a short sample; the person still chooses their recording size.
+pub enum Assessment {
+    /// The sample encoded faster than its playback time.
+    Ready,
+    /// The sample was slow, so continuing needs an explicit choice.
+    Demanding,
+}
+
 /// Encode 1.5 seconds of frames without reading a screen, microphone, or file.
 /// This is a preflight, not a claim that arbitrary future content has a fixed
 /// cost. The recording queue also stops a real recording if its encoder stalls.
-pub fn check(width: i32, height: i32) -> Result<(), MediaError> {
+pub fn check(width: i32, height: i32) -> Result<Assessment, MediaError> {
     gst::init().map_err(|error| MediaError(error.to_string()))?;
     let element = gst::parse::launch("videotestsrc num-buffers=45 pattern=smpte ! capsfilter name=size ! videoconvert ! vp9enc deadline=1 cpu-used=8 threads=4 target-bitrate=4500000 ! fakesink sync=false")
         .map_err(|error| MediaError(error.to_string()))?;
@@ -38,14 +46,14 @@ pub fn check(width: i32, height: i32) -> Result<(), MediaError> {
     let elapsed = started.elapsed();
     let _ = pipeline.set_state(gst::State::Null);
     match message.as_ref().map(|message| message.view()) {
-        Some(gst::MessageView::Eos(_)) if elapsed <= Duration::from_millis(1400) => Ok(()),
+        Some(gst::MessageView::Eos(_)) if elapsed <= Duration::from_millis(1400) => {
+            Ok(Assessment::Ready)
+        }
         Some(gst::MessageView::Error(error)) => Err(MediaError(format!(
             "{} {}",
             t("Recording quality could not be checked."),
             error.error()
         ))),
-        _ => Err(MediaError(t(
-            "This recording size is too demanding right now. Choose 720p, close other busy applications, or select a smaller window. Nothing has been recorded.",
-        ))),
+        _ => Ok(Assessment::Demanding),
     }
 }

@@ -19,6 +19,10 @@ recording, counts down, pauses and resumes, then saves a finalized original
 into a private library. The person can play it back, rename it, search the
 library, save a copy using the system file chooser, or deliberately delete it.
 
+The quality check is advice: a slow result offers another size or an explicit
+choice to record anyway. It does not forbid the person's chosen size. This was
+changed after the final UI check exposed how variable CPU contention can be.
+
 The microphone is off for every new recording and is never opened by a
 preview or quality check. A running recording that fills its bounded encoder
 queue stops and saves what it has instead of silently lowering quality. The

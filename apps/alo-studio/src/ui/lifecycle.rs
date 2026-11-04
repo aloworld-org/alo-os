@@ -111,10 +111,14 @@ impl State {
             }
             match receiving.try_recv() {
                 Ok(result) => {
-                    own.session.borrow_mut().selected();
                     match result {
-                        Ok(()) => own.countdown(),
+                        Ok(crate::performance::Assessment::Ready) => {
+                            own.session.borrow_mut().selected();
+                            own.countdown();
+                        }
+                        Ok(crate::performance::Assessment::Demanding) => own.confirm_quality(),
                         Err(error) => {
+                            own.session.borrow_mut().selected();
                             own.notice(&error.to_string());
                             own.render();
                         }
@@ -131,6 +135,20 @@ impl State {
                     glib::ControlFlow::Break
                 }
             }
+        });
+    }
+    fn confirm_quality(self: &Rc<Self>) {
+        let own = self.clone();
+        glib::MainContext::default().spawn_local(async move {
+            let answer = gtk::AlertDialog::builder()
+                .message(t("Recording may be slower at this size"))
+                .detail(t("The short quality check ran slowly. You can choose a smaller size or continue with your selection. If the encoder falls behind, alo Studio will stop and save the video it has recorded."))
+                .buttons([t("Choose another size"), t("Record anyway")])
+                .cancel_button(0).default_button(0).build()
+                .choose_future(Some(&own.view.window)).await;
+            if own.closed.get() || own.session.borrow().phase() != Phase::Checking { return; }
+            own.session.borrow_mut().selected();
+            if answer == Ok(1) { own.countdown(); } else { own.render(); }
         });
     }
     pub(super) fn countdown(self: &Rc<Self>) {
