@@ -674,8 +674,14 @@ RUN dnf install --assumeyes --setopt=install_weak_deps=False \
  && test -f /usr/share/X11/xkb/rules/evdev.xml
 
 RUN dnf install --assumeyes --setopt=install_weak_deps=False \
-      pipewire pipewire-utils wireplumber \
+      pipewire pipewire-utils pipewire-pulseaudio wireplumber \
+      xdg-desktop-portal xdg-desktop-portal-gtk \
  && dnf clean all \
+ && systemctl --global mask xdg-desktop-portal.service \
+ && systemctl --global enable pipewire.socket pipewire-pulse.socket wireplumber.service \
+ && test -x /usr/bin/setpriv \
+ && test -x /usr/libexec/xdg-desktop-portal-gtk \
+ && test -x /usr/libexec/xdg-document-portal \
  && test -x /usr/bin/pw-dump \
  && test -x /usr/bin/wpctl \
  && least=0.5 \
@@ -1041,6 +1047,7 @@ COPY image/usr/lib/systemd/system/ /usr/lib/systemd/system/
 # the thing is not the thing*, in the one place where the thing is a file being
 # somewhere.
 COPY image/usr/lib/systemd/user/ /usr/lib/systemd/user/
+COPY image/usr/share/dbus-1/services/org.freedesktop.portal.Desktop.service /usr/share/dbus-1/services/org.freedesktop.portal.Desktop.service
 COPY image/usr/lib/sysusers.d/ /usr/lib/sysusers.d/
 COPY image/usr/lib/tmpfiles.d/ /usr/lib/tmpfiles.d/
 # The greeter's PAM stack, which is what gives it a logind session and so a

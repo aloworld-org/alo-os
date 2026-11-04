@@ -150,6 +150,10 @@ impl Backend {
                 _ => NotServed::Unreachable,
             })?;
         let (stop, stopped) = channel();
+        self.capture_sessions.ready.store(
+            self.machine.begin_capture_sessions(),
+            std::sync::atomic::Ordering::Release,
+        );
         let bus = connection.inner().clone();
         let seen = crate::appearance_settings::read(self.machine()).ok();
         let native_requests = self.native_requests.clone();

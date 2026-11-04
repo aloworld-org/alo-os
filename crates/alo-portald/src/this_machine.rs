@@ -138,6 +138,32 @@ impl ThisMachine {
 }
 
 impl TheMachine for ThisMachine {
+    fn begin_capture_sessions(&self) -> bool {
+        let now = SystemTime::now();
+        alo_remembering::updated(&self.grants, now, |grants| {
+            let abandoned: Vec<_> = grants
+                .active_at(now)
+                .filter(|held| {
+                    held.grant.grantee.is_an_application()
+                        && matches!(
+                            &held.grant.reach,
+                            alo_capability::Reach::Facility(
+                                alo_capability::Facility::ScreenContinuously
+                            )
+                        )
+                })
+                .map(|held| held.id)
+                .collect();
+            for id in abandoned {
+                grants.revoke(id);
+            }
+            Ok::<_, alo_remembering::NotRemembered>(())
+        })
+        .map_err(|why| {
+            eprintln!("alo-portald: recording permissions could not be recovered: {why}")
+        })
+        .is_ok()
+    }
     fn strings(&self) -> Option<alo_strings::Strings> {
         let vocabulary = alo_saying::everything_this_machine_can_say().ok()?;
         let loaded = alo_saying::Loaded::at(vocabulary, alo_saying::the_translations());

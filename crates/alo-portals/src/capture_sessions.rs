@@ -58,12 +58,18 @@ pub(super) struct Running {
 
 /// A bounded service-owned list; bus objects contain session data, not a backend.
 #[derive(Default)]
-pub(super) struct Sessions(Mutex<BTreeMap<String, Arc<Session>>>);
+pub(super) struct Sessions {
+    /// No new session is admitted until abandoned grants have been removed.
+    pub(super) ready: AtomicBool,
+    /// Bounded mapping of original caller paths to their session identities.
+    all: Mutex<BTreeMap<String, Arc<Session>>>,
+}
 
 impl Sessions {
     /// Service shutdown stops publishers before releasing the public bus name.
     pub(super) fn stop(&self, machine: &dyn crate::TheMachine) {
-        let all = std::mem::take(&mut *self.0.lock().unwrap_or_else(PoisonError::into_inner));
+        self.ready.store(false, Ordering::Release);
+        let all = std::mem::take(&mut *self.all.lock().unwrap_or_else(PoisonError::into_inner));
         for session in all.values() {
             session.closed.store(true, Ordering::Release);
             if let Some(running) = session
@@ -79,7 +85,12 @@ impl Sessions {
     }
     /// Insert before responding to CreateSession; reject duplicates and overload.
     pub(super) fn insert(&self, session: Arc<Session>) -> fdo::Result<()> {
-        let mut all = self.0.lock().unwrap_or_else(PoisonError::into_inner);
+        if !self.ready.load(Ordering::Acquire) {
+            return Err(fdo::Error::Failed(
+                "recording permission recovery is unavailable".into(),
+            ));
+        }
+        let mut all = self.all.lock().unwrap_or_else(PoisonError::into_inner);
         if all.len() >= 8 {
             return Err(fdo::Error::LimitsExceeded(
                 "too many recording sessions".into(),
@@ -95,7 +106,7 @@ impl Sessions {
     }
     /// Every operation rechecks both the connection and its authenticated sandbox.
     pub(super) fn owned(&self, path: &OwnedObjectPath, asked: &Asked) -> Option<Arc<Session>> {
-        self.0
+        self.all
             .lock()
             .ok()?
             .get(path.as_str())
@@ -109,7 +120,7 @@ impl Sessions {
     /// Reconcile source lifetime and grants before allowing another frame interval.
     pub(super) async fn refresh(&self, bus: &zbus::Connection, backend: &Backend) {
         let all: Vec<_> = self
-            .0
+            .all
             .lock()
             .unwrap_or_else(PoisonError::into_inner)
             .values()
@@ -176,7 +187,7 @@ impl Sessions {
                 >::new(),),
             )
             .await;
-        self.0
+        self.all
             .lock()
             .unwrap_or_else(PoisonError::into_inner)
             .remove(session.path.as_str());

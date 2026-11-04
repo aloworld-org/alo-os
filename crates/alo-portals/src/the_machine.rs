@@ -31,6 +31,12 @@ pub use alo_networks::Reaching;
 
 /// What the backend reads about this machine.
 pub trait TheMachine: Send + Sync {
+    /// Remove abandoned application capture grants after owning the public bus name.
+    /// Capture grants belong to this service's sessions and never restore a choice.
+    /// Failure keeps capture unavailable while the other portals remain usable.
+    fn begin_capture_sessions(&self) -> bool {
+        true
+    }
     /// The person's loaded language bundle for trusted native chooser sentences.
     /// A minimal embedding can use this crate's source-language vocabulary.
     fn strings(&self) -> Option<alo_strings::Strings> {
