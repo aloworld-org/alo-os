@@ -4,6 +4,13 @@ app_dir="$(cd -- "$(dirname -- "$0")/.." && pwd)"
 build_target="${CARGO_TARGET_DIR:-$app_dir/target}"
 scratch="$(mktemp -d)"
 cleanup() {
+  result=$?
+  if [[ "$result" != 0 ]]; then
+    printf 'Native verification failed (%s). Evidence: %s\n' "$result" "$scratch" >&2
+    for log in "$scratch/xvfb.log" "$scratch/app.log"; do
+      if [[ -f "$log" ]]; then tail -n 35 "$log" >&2; fi
+    done
+  fi
   if [[ -n "${app_pid:-}" ]]; then kill "$app_pid" 2>/dev/null || true; fi
   if [[ -n "${display_pid:-}" ]]; then kill "$display_pid" 2>/dev/null || true; fi
 }
@@ -12,8 +19,15 @@ trap cleanup EXIT
 # avoids altering that shared directory or an existing graphical session.
 Xvfb -displayfd 3 -screen 0 1280x960x24 -nolisten unix -nolisten local -listen tcp -ac 3>"$scratch/display" >"$scratch/xvfb.log" 2>&1 &
 display_pid=$!
-for attempt in $(seq 1 40); do [[ -s "$scratch/display" ]] && break; sleep 0.1; done
-if [[ ! -s "$scratch/display" ]]; then head -20 "$scratch/xvfb.log"; exit 1; fi
+for attempt in $(seq 1 150); do
+  [[ ! -s "$scratch/display" ]] || break
+  kill -0 "$display_pid" 2>/dev/null || break
+  sleep .1
+done
+if [[ ! -s "$scratch/display" ]]; then
+  echo 'The private test display did not report readiness.' >&2
+  exit 1
+fi
 export DISPLAY="localhost:$(cat "$scratch/display")"
 export GDK_BACKEND=x11
 export GSK_RENDERER=cairo
