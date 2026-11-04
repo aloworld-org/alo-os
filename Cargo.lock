@@ -1435,10 +1435,13 @@ dependencies = [
  "alo-opening",
  "alo-saying",
  "alo-strings",
+ "async-io",
+ "futures-lite",
  "rustix 1.1.4",
  "serde",
  "serde_json",
  "thiserror 2.0.20",
+ "url",
  "zbus",
 ]
 

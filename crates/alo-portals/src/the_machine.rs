@@ -34,6 +34,29 @@ pub trait TheMachine: Send + Sync {
     /// The grants, as they are now — [`None`] when they cannot be read.
     fn grants(&self) -> Option<Grants>;
 
+    /// Keep a grant made by the person in a trusted native dialog.
+    ///
+    /// No dialog is pre-approved by an existing grant. `None` refuses the
+    /// choice when it cannot be kept; the default has no writer.
+    fn grant_choice(
+        &self,
+        _application: &str,
+        _reach: alo_capability::Reach,
+    ) -> Option<(Grants, alo_capability::GrantId)> {
+        None
+    }
+
+    /// Remove precisely the grant made by an ended or failed request.
+    /// `false` means it could not be removed; it never means success.
+    fn revoke_choice(&self, _id: alo_capability::GrantId) -> bool {
+        false
+    }
+
+    /// The private journal mapping document exports to grants, if configured.
+    fn document_permissions_file(&self) -> Option<std::path::PathBuf> {
+        None
+    }
+
     /// What is installed, what applications declare and what the person
     /// chose, as they are now — [`None`] when any of them cannot be read.
     fn applications(&self) -> Option<Applications>;

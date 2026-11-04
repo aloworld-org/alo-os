@@ -175,6 +175,9 @@ mod the_file {
             KeptOutcome::AppearanceRead { .. } => "appearance-read".to_owned(),
             KeptOutcome::AppearanceSent { .. } => "appearance-sent".to_owned(),
             KeptOutcome::NetworkRead { .. } => "network-read".to_owned(),
+            KeptOutcome::FilesChosen { .. } => "files-chosen".to_owned(),
+            KeptOutcome::ScreenShared { .. } => "screen-shared".to_owned(),
+            KeptOutcome::Cancelled => "cancelled".to_owned(),
             KeptOutcome::Refused { why } => format!(
                 "refused/{}",
                 match why {
@@ -218,6 +221,9 @@ mod the_file {
                     Unanswered::NoSuchSetting => "no-such-setting",
                     Unanswered::AppearanceUnread => "appearance-unread",
                     Unanswered::NetworkUnread => "network-unread",
+                    Unanswered::DialogUnavailable => "dialog-unavailable",
+                    Unanswered::DocumentUnavailable => "document-unavailable",
+                    Unanswered::CaptureUnavailable => "capture-unavailable",
                 }
             ),
         }
@@ -226,6 +232,13 @@ mod the_file {
     /// One of every kept outcome, to the depth that picks a sentence.
     fn every_kept_outcome() -> Vec<KeptOutcome> {
         let mut every = vec![
+            KeptOutcome::FilesChosen {
+                against: Vec::new(),
+            },
+            KeptOutcome::ScreenShared {
+                against: Vec::new(),
+            },
+            KeptOutcome::Cancelled,
             KeptOutcome::SecretHandedOver {
                 against: Vec::new(),
             },
@@ -286,6 +299,9 @@ mod the_file {
             Unanswered::NoSuchSetting,
             Unanswered::AppearanceUnread,
             Unanswered::NetworkUnread,
+            Unanswered::DialogUnavailable,
+            Unanswered::DocumentUnavailable,
+            Unanswered::CaptureUnavailable,
         ] {
             every.push(KeptOutcome::Unanswered { why });
         }

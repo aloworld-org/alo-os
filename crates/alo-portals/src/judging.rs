@@ -67,6 +67,30 @@ impl Allowed {
 }
 
 impl Request {
+    /// Judge the exact grant made in a native choice, never an older broad grant.
+    #[cfg(target_os = "linux")]
+    pub(crate) fn judged_choice(
+        &self,
+        grants: &Grants,
+        id: GrantId,
+        now: SystemTime,
+    ) -> Option<Allowed> {
+        let held = grants.active_at(now).find(|held| held.id == id)?;
+        if !held.grant.is_for(&self.application().grantee())
+            || self
+                .wanted()
+                .iter()
+                .any(|ask| !held.grant.permits(ask, now))
+        {
+            return None;
+        }
+        Some(Allowed {
+            application: self.application().clone(),
+            portal: self.portal(),
+            against: vec![id],
+        })
+    }
+
     /// Whether the grants allow this request at this moment, and by which
     /// grants — or why not.
     ///

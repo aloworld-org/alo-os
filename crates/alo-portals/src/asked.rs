@@ -113,6 +113,16 @@ impl Asked {
         self.application.as_deref()
     }
 
+    /// The bus owner authenticated when this request arrived.
+    pub(crate) fn sender(&self) -> &OwnedUniqueName {
+        &self.sender
+    }
+
+    /// The predictable handle whose lifetime belongs to this request.
+    pub(crate) fn handle(&self) -> &OwnedObjectPath {
+        &self.handle
+    }
+
     /// Record `outcome`, send it as the response — or the refusal, when it was
     /// not recorded — and give back the handle.
     ///
@@ -154,15 +164,26 @@ impl Asked {
         connection: &zbus::Connection,
         response: u32,
     ) -> fdo::Result<OwnedObjectPath> {
+        self.responded_with(connection, response, HashMap::new())
+            .await
+    }
+
+    /// Send selected results only after the answer has been recorded.
+    pub(crate) async fn responded_with(
+        &self,
+        connection: &zbus::Connection,
+        response: u32,
+        results: HashMap<String, OwnedValue>,
+    ) -> fdo::Result<OwnedObjectPath> {
         connection
             .emit_signal(
                 Some(BusName::Unique(self.sender.as_ref())),
                 self.handle.as_ref(),
                 A_REQUEST,
                 "Response",
-                &(response, HashMap::<String, OwnedValue>::new()),
+                &(response, results),
             )
             .await?;
-        Ok(self.handle)
+        Ok(self.handle.clone())
     }
 }

@@ -150,6 +150,38 @@ impl TheMachine for ThisMachine {
         alo_remembering::remembered(&self.grants, SystemTime::now()).ok()
     }
 
+    fn grant_choice(
+        &self,
+        application: &str,
+        reach: alo_capability::Reach,
+    ) -> Option<(alo_capability::Grants, alo_capability::GrantId)> {
+        let now = SystemTime::now();
+        let grant = alo_capability::Grant::checked_until_removed(
+            &alo_capability::Applicant::named(application).grantee(),
+            reach,
+            now,
+            alo_capability::ATerminalForTheAgent::NotAtAll,
+        )
+        .ok()?;
+        alo_remembering::updated(&self.grants, now, |grants| {
+            Ok::<_, alo_remembering::NotRemembered>(grants.grant(grant))
+        })
+        .map_err(|why| eprintln!("alo-portald: the selected permission could not be kept: {why}"))
+        .ok()
+    }
+
+    fn revoke_choice(&self, id: alo_capability::GrantId) -> bool {
+        alo_remembering::updated(&self.grants, SystemTime::now(), |grants| {
+            Ok::<_, alo_remembering::NotRemembered>(grants.revoke(id))
+        })
+        .map_err(|why| eprintln!("alo-portald: the ended permission could not be removed: {why}"))
+        .is_ok()
+    }
+
+    fn document_permissions_file(&self) -> Option<std::path::PathBuf> {
+        Some(self.grants.with_extension("documents.json"))
+    }
+
     /// What is installed, what each declares it opens, and what the person
     /// chose — read now, and never held between requests.
     ///

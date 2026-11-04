@@ -140,6 +140,14 @@ mod asked;
 #[cfg(target_os = "linux")]
 mod caller;
 #[cfg(target_os = "linux")]
+mod dialog_request;
+#[cfg(target_os = "linux")]
+mod documents;
+#[cfg(target_os = "linux")]
+mod documents_file;
+#[cfg(target_os = "linux")]
+mod file_chooser_portal;
+#[cfg(target_os = "linux")]
 pub mod held_process;
 #[cfg(target_os = "linux")]
 mod network_monitor_portal;

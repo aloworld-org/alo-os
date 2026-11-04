@@ -491,7 +491,13 @@ pub const LINES_NOT_READ: Counted = Counted {
 pub const CLAUSES: [Word; 3] = [NOBODY_NAMED, WHAT_IT_ASKED_FOR, THAT_KIND_OF_FILE];
 
 /// Every string this crate can say, in the order this file declares them.
-pub const EVERY_WORD: [Word; 48] = [
+pub const EVERY_WORD: [Word; 54] = [
+    FILES_CHOSEN,
+    SCREEN_SHARED,
+    DIALOG_CANCELLED,
+    DIALOG_UNAVAILABLE,
+    DOCUMENT_UNAVAILABLE,
+    CAPTURE_UNAVAILABLE,
     FILE_CHOOSER,
     OPEN_WITH,
     NOTIFICATIONS,
@@ -541,6 +547,37 @@ pub const EVERY_WORD: [Word; 48] = [
     WHOLE,
     SHORTENED,
 ];
+
+/// A native file selection was granted.
+pub const FILES_CHOSEN: Word = Word::saying(
+    "portals.answer.files-chosen",
+    "The files you selected were shared with {application}",
+);
+/// A source was shared for the current session.
+pub const SCREEN_SHARED: Word = Word::saying(
+    "portals.answer.screen-shared",
+    "Your selected screen or window is being shared with {application}",
+);
+/// Cancelling a dialog is distinct from a policy refusal.
+pub const DIALOG_CANCELLED: Word = Word::saying(
+    "portals.answer.dialog-cancelled",
+    "The request was cancelled; nothing was shared",
+);
+/// The trusted native picker did not answer.
+pub const DIALOG_UNAVAILABLE: Word = Word::saying(
+    "portals.answer.dialog-unavailable",
+    "The selection window could not be opened; nothing was shared",
+);
+/// Sandbox file export failed.
+pub const DOCUMENT_UNAVAILABLE: Word = Word::saying(
+    "portals.answer.document-unavailable",
+    "The selected file could not be shared with the application",
+);
+/// A selected capture source could not be opened.
+pub const CAPTURE_UNAVAILABLE: Word = Word::saying(
+    "portals.answer.capture-unavailable",
+    "The selected screen or window could not be shared; choose it again to retry",
+);
 
 /// Why this crate's own words could not be declared.
 ///

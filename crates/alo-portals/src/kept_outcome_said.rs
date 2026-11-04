@@ -42,6 +42,9 @@ impl KeptOutcome {
     ) -> Said {
         let asked = naming(application, strings);
         match self {
+            Self::FilesChosen { .. } => strings.say(&words::FILES_CHOSEN.key(), &asked),
+            Self::ScreenShared { .. } => strings.say(&words::SCREEN_SHARED.key(), &asked),
+            Self::Cancelled => strings.say(&words::DIALOG_CANCELLED.key(), &Filling::nothing()),
             Self::SecretHandedOver { .. } => strings.say(&words::SECRET_HANDED_OVER.key(), &asked),
             Self::Opened { opener, .. } => strings.say(
                 &words::OPENED_IN.key(),

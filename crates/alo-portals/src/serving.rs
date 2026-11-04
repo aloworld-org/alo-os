@@ -3,7 +3,7 @@
 //! `org.freedesktop.portal.*` is the contract every Linux application already
 //! speaks. [`Backend::serve_on`] owns `org.freedesktop.portal.Desktop` on the
 //! bus it is given and answers, at `/org/freedesktop/portal/desktop`, **only the
-//! portals whose answers were decided without a dialog**:
+//! portals implemented by this frontend**:
 //!
 //! | Interface | Answered from |
 //! |---|---|
@@ -11,6 +11,7 @@
 //! | `org.freedesktop.portal.OpenURI` | *what opens what* (`crate::open_uri_portal`) |
 //! | `org.freedesktop.portal.Settings` | what the person set for how the machine looks (`crate::settings_portal`) |
 //! | `org.freedesktop.portal.NetworkMonitor` | how far this machine reaches (`crate::network_monitor_portal`) |
+//! | `org.freedesktop.portal.FileChooser` | the native Save dialog, file grants, and Documents export |
 //!
 //! Every other portal is not registered, so the bus itself tells an application
 //! nothing answers it — [`crate::Portal::answered_on_the_bus`] is the list, and
@@ -59,6 +60,10 @@ pub struct Backend {
     sandboxes: Sandboxes,
     /// Where every answer is written.
     record: Arc<dyn Recording>,
+    /// Bounded native requests, cancelled when this service stops.
+    native_requests: Arc<crate::dialog_request::NativeRequests>,
+    /// Document exports derived from the person's grants.
+    documents: Arc<crate::documents::Documents>,
 }
 
 impl Backend {
@@ -76,6 +81,8 @@ impl Backend {
             keyring,
             sandboxes,
             record,
+            native_requests: Arc::default(),
+            documents: Arc::default(),
         }
     }
 
@@ -90,6 +97,13 @@ impl Backend {
     pub fn serve_on(self, address: &str) -> Result<Served, NotServed> {
         let connection = zbus::blocking::connection::Builder::address(address)
             .map_err(|_| NotServed::NotAnAddress)?
+            .serve_at(
+                THE_PORTALS_OBJECT,
+                crate::file_chooser_portal::FileChooserPortal {
+                    backend: self.clone(),
+                },
+            )
+            .map_err(|_| NotServed::Unreachable)?
             .serve_at(
                 THE_PORTALS_OBJECT,
                 SecretPortal {
@@ -128,6 +142,23 @@ impl Backend {
         let (stop, stopped) = channel();
         let bus = connection.inner().clone();
         let seen = crate::appearance_settings::read(self.machine()).ok();
+        let native_requests = self.native_requests.clone();
+        let native_backend = self.clone();
+        let native_bus = bus.clone();
+        bus.executor()
+            .spawn(
+                async move {
+                    while !native_backend.native_requests().stopped() {
+                        native_backend
+                            .documents()
+                            .refresh(&native_bus, &native_backend)
+                            .await;
+                        async_io::Timer::after(std::time::Duration::from_millis(100)).await;
+                    }
+                },
+                "alo-document-permissions",
+            )
+            .detach();
         let watching = std::thread::Builder::new()
             .name("alo-portals-appearance".to_owned())
             .spawn(move || crate::watching_appearance::watch(&bus, &self, seen, &stopped))
@@ -136,6 +167,7 @@ impl Backend {
             connection,
             stop: Some(stop),
             watching: Some(watching),
+            native_requests,
         })
     }
 
@@ -158,6 +190,16 @@ impl Backend {
     pub(crate) fn record(&self) -> &dyn Recording {
         self.record.as_ref()
     }
+
+    /// Native dialog admission and cancellation share this service's lifetime.
+    pub(crate) fn native_requests(&self) -> &Arc<crate::dialog_request::NativeRequests> {
+        &self.native_requests
+    }
+
+    /// The document permission materialisations governed by this service.
+    pub(crate) fn documents(&self) -> &crate::documents::Documents {
+        &self.documents
+    }
 }
 
 /// The backend, answering, for as long as this is held.
@@ -169,10 +211,14 @@ pub struct Served {
     /// That thread, waited for when this is dropped, so nothing is sent on
     /// the portals' behalf after they stop answering.
     watching: Option<JoinHandle<()>>,
+    /// Stop dialog tasks before releasing the public frontend name.
+    native_requests: Arc<crate::dialog_request::NativeRequests>,
 }
 
 impl Drop for Served {
     fn drop(&mut self) {
+        self.native_requests.stop();
+        let _released = self.connection.release_name(THE_PORTALS_NAME);
         drop(self.stop.take());
         if let Some(watching) = self.watching.take() {
             // A watcher that panicked has already stopped, which is all that

@@ -65,13 +65,15 @@ on that path, sent to the caller.
   and underscores, 1 to 64 of them. Any other token is refused on the call with
   `org.freedesktop.DBus.Error.InvalidArgs`, because no handle can be made from
   it. With no token, the backend makes one.
-- **The response is sent before the method returns**, because every answer here
-  is decided while the call is handled. Listen on the predicted handle before
-  calling, as the specification advises and GTK, libportal and libsecret do.
+- **Listen before calling**, as the specification advises. Immediate answers
+  can precede the method reply. Native selection returns its handle immediately
+  and sends its response after the dialog ends. Only the requesting bus owner
+  can `Close` that handle; disconnecting also ends its pending dialog.
 - **`response` is `0`** when what was asked was done, and **`2`** for every
-  refusal and every request that could not be done. It is never `1`, *cancelled
-  by the user*, because no person is asked anything here.
-- **`results` is empty** in every response.
+  refusal and every request that could not be done. A cancelled native chooser
+  is `1`; a backend that cannot open is `2`.
+- **`results`** includes exported document URIs for a successful save selection.
+  Refusals and cancellations carry no results.
 
 Every request that reaches the backend, including every refusal, is recorded
 before its response is sent. The record names the application whenever the
@@ -94,7 +96,12 @@ and a file handed to its opener, only after the answer has been recorded.
 | network monitor | `org.freedesktop.portal.NetworkMonitor` | 3 | Whether this machine reaches anything, and whether the way out is metered, from what NetworkManager reports at the moment of asking (`alo_networks::WhatIsReached`) and from nothing else. `GetAvailable() -> b`: whether anything is reached — a sign-in page in the way counts, because an application that wants to show one needs the connection used; nothing the network manager has worked out does not. `GetMetered() -> b`: **true where the machine does not know**, as well as where it is metered or guessed to be, because an application reads this before spending somebody's data. `GetConnectivity() -> u`: `1` local, `2` limited, `3` captive portal, `4` full — GLib's `GNetworkConnectivity` numbering, which is **not** NetworkManager's: the two swap `2` and `3`, and the mapping is `alo_portals::network_state`'s, never a number passed through. A network manager that has not worked out how far the machine reaches is `1` and `GetAvailable` is `false`; GLib has no *unknown* and none is invented. `GetStatus() -> a{sv}`: `available`, `metered` and `connectivity` read at one moment. **`CanReach(s hostname, u port)` is never answered**, to any caller, granted or not: answering means sending a packet to a host an application named, and it would let an application read a person's network one name at a time. It is `org.freedesktop.portal.Error.NotAllowed`. Every other method needs a grant of the `network-state` facility to that application. Without one — or from a program with no sandbox — every method replies `org.freedesktop.portal.Error.NotAllowed`, in the same words as a machine whose network manager is not answering, so a refused application learns nothing it would not learn from a machine that cannot see its own network. Grants that could not be read are `org.freedesktop.portal.Error.Failed`. Every read and every refusal is recorded with the application named, and an answer the record did not keep is not sent. The `changed` signal is declared and **never sent**: nothing here watches the network manager for changes, so an application that reads on its own schedule is answered correctly and one that waits for the signal waits. |
 | open-with and default applications | `org.freedesktop.portal.OpenURI` | 3 | `OpenFile(s parent_window, h fd, a{sv} options)`: the file behind `fd` is opened in the application that opens its kind, which is the person's choice or the first installed application declaring it. The file's kind is read from its bytes. Needs a grant over the file **and** a grant over that application, and the file is not read until the first is found. The application is asked to open the file through D-Bus activation (`org.freedesktop.Application.Open`), and the response is `0` only if it answered. `OpenURI` (a web link) and `OpenDirectory` (a file's folder) are answered `2`, because nothing on this machine decides yet what opens either. `writable`, `ask` and `activation_token` are accepted and not read. |
 
+| file chooser and documents | `org.freedesktop.portal.FileChooser` | 1 | `SaveFile(s parent_window, s title, a{sv} options)` opens the rented native chooser. A selection makes an exact file grant on the existing permissions list, records it, and uses the Documents portal to give only that file to the authenticated sandbox. It grants no folder or home access. Cancellation is `1`; unavailable services and export failures are `2`. Closing or abandoning the request cancels it. Revocation of the exact grant withdraws its document permissions. `OpenFile` is explicitly refused and multi-file save is not advertised. |
+
 ## Not answered yet
+
+The file chooser above currently supports `SaveFile`. `OpenFile` is explicitly
+answered `2`; multi-file save is not advertised by its version-one interface.
 
 These are **not registered** on the bus. An application that calls one gets
 the bus's own `org.freedesktop.DBus.Error.UnknownInterface` or `UnknownMethod`.
@@ -104,7 +111,6 @@ reaches exists.
 
 | Portal | Why not yet |
 |---|---|
-| file chooser and documents | Choosing a file is a dialog, and the dialog belongs to the desktop lane. |
 | notifications | A notification is something the desktop draws, and nothing is wired from this backend to the desktop yet. |
 | print | Printing asks the person about the printer and pages in a dialog. |
 | screenshot | Taking a picture of the screen shows the person what is being taken before the application gets it, which is a dialog. |
