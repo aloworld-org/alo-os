@@ -114,7 +114,18 @@ impl CaptureSources {
                     && Arc::ptr_eq(&w.mapping, &mapping)
                     && (w.feed.source.width, w.feed.source.height) == dimensions
             }) {
-                self.windows.push(previous.remove(index));
+                let window = previous.remove(index);
+                window.feed.named(
+                    server
+                        .the_name_of(root)
+                        .its_own_words()
+                        .unwrap_or("")
+                        .chars()
+                        .filter(|c| !c.is_control())
+                        .take(160)
+                        .collect(),
+                );
+                self.windows.push(window);
             } else if let Some(feed) = self.source(
                 server
                     .the_name_of(root)
@@ -239,6 +250,14 @@ fn extent(side: f64) -> u32 {
     }
 }
 
+impl Server {
+    /// Expose capture only after sign-in; a failed endpoint leaves the desktop usable.
+    pub(super) fn enable_capture(&mut self) -> io::Result<()> {
+        self.capture = Some(CaptureSources::bind(&self.socket.path)?);
+        Ok(())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     /// Fractional logical extents round outwards; non-finite or huge sizes refuse.
@@ -248,13 +267,5 @@ mod tests {
         for side in [0.0, -1.0, f64::NAN, f64::INFINITY, 16_384.01] {
             assert_eq!(super::extent(side), 0);
         }
-    }
-}
-
-impl Server {
-    /// Expose capture only after sign-in; a failed endpoint leaves the desktop usable.
-    pub(super) fn enable_capture(&mut self) -> io::Result<()> {
-        self.capture = Some(CaptureSources::bind(&self.socket.path)?);
-        Ok(())
     }
 }

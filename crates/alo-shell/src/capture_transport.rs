@@ -22,6 +22,8 @@ const MAX_CONSUMERS: usize = 4;
 pub(super) struct Feed {
     /// The exact source identity and fixed caps presented to the native picker.
     pub(super) source: Source,
+    /// A changing window title does not replace its mapping or stop recording.
+    name: Mutex<String>,
     /// Unmapping, resize, retirement, locking or shutdown invalidates old handles.
     live: AtomicBool,
     /// No pixel copy occurs while nobody is consuming this source.
@@ -34,11 +36,26 @@ impl Feed {
     /// Register a source without allocating any pixels.
     pub(super) fn new(source: Source) -> Arc<Self> {
         Arc::new(Self {
+            name: Mutex::new(source.name.clone()),
             source,
             live: AtomicBool::new(true),
             consuming: AtomicUsize::new(0),
             frame: Mutex::new(None),
         })
+    }
+    /// Refresh display text without waiting for catalogue serialization.
+    pub(super) fn named(&self, name: String) {
+        if let Ok(mut current) = self.name.try_lock() {
+            *current = name;
+        }
+    }
+    /// Source metadata contains current text and the original lifetime identity.
+    fn description(&self) -> Source {
+        let mut source = self.source.clone();
+        if let Ok(name) = self.name.lock() {
+            source.name = name.clone();
+        }
+        source
     }
     /// Whether a native chooser has selected this exact live source.
     pub(super) fn wanted(&self) -> bool {
@@ -164,7 +181,7 @@ fn serve(mut stream: UnixStream, shared: &Shared) -> io::Result<()> {
                 .map_err(|_| io::Error::other("capture catalogue is unavailable"))?
                 .values()
                 .filter(|feed| feed.live.load(Ordering::Acquire))
-                .map(|feed| feed.source.clone())
+                .map(|feed| feed.description())
                 .collect();
             return write_message(&mut stream, &Response::Sources { sources });
         }
@@ -234,14 +251,14 @@ mod tests {
             feed.publish(Arc::from([0, 0, red, 0]));
         }
         assert_eq!(
-            feed.frame.lock().unwrap().as_deref().map(|f| f.as_ref()),
+            feed.frame.lock().unwrap().as_deref(),
             Some([0, 0, 99, 0].as_slice())
         );
         feed.stop();
         assert!(!feed.wanted());
         feed.publish(Arc::from([255; 4]));
         assert_eq!(
-            feed.frame.lock().unwrap().as_deref().map(|f| f.as_ref()),
+            feed.frame.lock().unwrap().as_deref(),
             Some([0, 0, 99, 0].as_slice())
         );
     }
