@@ -1,6 +1,7 @@
 [workspace]
 resolver = "3"
 members = [
+  "crates/alo-capture-provider",
   "crates/alo-capture-remote",
   "crates/alo-capture-protocol",
   "crates/alo-folded-light",
