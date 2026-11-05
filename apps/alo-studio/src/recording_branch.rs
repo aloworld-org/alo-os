@@ -152,6 +152,10 @@ pub(crate) fn attach(
         )
         .map_err(failed)?;
         bin.sync_state_with_parent().map_err(failed)?;
+        #[cfg(feature = "verification")]
+        if std::env::var_os("ALO_STUDIO_VERIFY_PREPARE_DELAY").is_some() {
+            std::thread::sleep(std::time::Duration::from_millis(100));
+        }
         // Opening the microphone can take time. The blocked tee and upstream
         // queues still contain preview frames from before it was ready. They
         // must not become the recording's first images while sound starts now.
@@ -167,7 +171,10 @@ pub(crate) fn attach(
                 {
                     gst::PadProbeReturn::Remove
                 } else {
-                    gst::PadProbeReturn::Drop
+                    // The Rust probe owns this buffer and consumes it here.
+                    // Handled avoids asking older GStreamer cores to unref
+                    // the already-consumed buffer a second time.
+                    gst::PadProbeReturn::Handled
                 }
             })
             .is_none()

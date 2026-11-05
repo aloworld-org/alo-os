@@ -27,13 +27,13 @@ pub(crate) fn receive(
         .ok_or_else(|| MediaError(t("The selected source is unavailable.")))?
         .add_probe(gst::PadProbeType::BUFFER, move |_, info| {
             if paused.load(Ordering::Relaxed) {
-                return gst::PadProbeReturn::Drop;
+                return gst::PadProbeReturn::Handled;
             }
             let Some(pipeline) = pipeline.upgrade() else {
-                return gst::PadProbeReturn::Drop;
+                return gst::PadProbeReturn::Handled;
             };
             let Some(arrived) = pipeline.current_running_time() else {
-                return gst::PadProbeReturn::Drop;
+                return gst::PadProbeReturn::Handled;
             };
             if let Some(buffer) = info.buffer_mut() {
                 let buffer = buffer.make_mut();

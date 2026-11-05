@@ -34,11 +34,12 @@ export GSK_RENDERER=cairo
 export XDG_DATA_HOME="$scratch/data"
 export ALO_STUDIO_VERIFY_DISPLAY="$DISPLAY"
 export NO_AT_BRIDGE=1
+export G_DEBUG=fatal-criticals
 dbus-run-session -- "$build_target/debug/alo-studio" >"$scratch/app.log" 2>&1 &
 app_pid=$!
 sleep 3
 if ! kill -0 "$app_pid"; then head -30 "$scratch/app.log"; exit 1; fi
-"$build_target/debug/examples/verify-recording" "$scratch/display.webm"
+ALO_STUDIO_VERIFY_PREPARE_DELAY=1 "$build_target/debug/examples/verify-recording" "$scratch/display.webm"
 ALO_STUDIO_VERIFY_LIGHTWEIGHT=1 "$build_target/debug/examples/verify-recording" "$scratch/display-lightweight.webm"
 ALO_STUDIO_VERIFY_SOURCE_END=1 "$build_target/debug/examples/verify-recording" "$scratch/source-ended-while-paused.webm"
 bash "$app_dir/packaging/verify-ui.sh" "$scratch"
