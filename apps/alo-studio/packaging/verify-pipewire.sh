@@ -17,6 +17,13 @@ fi
 scratch="$2"
 build_target="$3"
 cleanup() {
+  result=$?
+  if [[ "$result" != 0 ]]; then
+    printf 'PipeWire verification failed (%s). Evidence: %s\n' "$result" "$scratch" >&2
+    for log in pipewire manager source pulse input; do
+      if [[ -f "$scratch/$log.log" ]]; then tail -n 20 "$scratch/$log.log" >&2; fi
+    done
+  fi
   for process in ${source_pid:-} ${pulse_pid:-} ${manager_pid:-} ${pipewire_pid:-}; do
     kill "$process" 2>/dev/null || true
   done
@@ -31,6 +38,7 @@ for attempt in $(seq 1 50); do
   sleep .1
 done
 start_source() {
+source_name="studio-pipewire-fixture-$RANDOM-$RANDOM"
 publisher=(env)
 if [[ -n "${ALO_STUDIO_PUBLISHER_PLUGIN_PATH:-}" ]]; then
   publisher+=("GST_PLUGIN_PATH_1_0=$ALO_STUDIO_PUBLISHER_PLUGIN_PATH" "GST_REGISTRY=$scratch/publisher-registry.bin" "ALO_CAPTURE_REQUIRE_PRIVATE_PLUGIN=1")
@@ -40,7 +48,7 @@ if [[ -n "${ALO_STUDIO_CAPTURE_PROVIDER:-}" ]]; then
   # PipeWire bridge, including a source whose aspect ratio differs from 16:9.
   : > "$scratch/publisher.json"
   gst-launch-1.0 -q videotestsrc is-live=true pattern=ball ! video/x-raw,format=BGRx,width=1280,height=800,framerate=30/1 ! fdsink fd=1 2> "$scratch/input.log" |
-    "${publisher[@]}" "$ALO_STUDIO_CAPTURE_PROVIDER" 1280 800 studio-pipewire-fixture org.aloworld.Studio > "$scratch/publisher.json" 2> "$scratch/source.log" &
+    "${publisher[@]}" "$ALO_STUDIO_CAPTURE_PROVIDER" 1280 800 "$source_name" org.aloworld.Studio > "$scratch/publisher.json" 2> "$scratch/source.log" &
   source_pid=$!
   for attempt in $(seq 1 350); do
     [[ ! -s "$scratch/publisher.json" ]] || break
@@ -52,11 +60,17 @@ if [[ -n "${ALO_STUDIO_CAPTURE_PROVIDER:-}" ]]; then
   ALO_STUDIO_VERIFY_NODE_SERIAL=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["serial"])' "$scratch/publisher.json")
   export ALO_STUDIO_EXPECT_PREVIEW_HEIGHT=400
 else
-  "${publisher[@]}" gst-launch-1.0 -q videotestsrc is-live=true pattern=ball ! video/x-raw,format=RGBx,width=640,height=360,framerate=30/1 ! pipewiresink mode=provide stream-properties='props,node.name=studio-pipewire-fixture,media.class=Video/Source' > "$scratch/source.log" 2>&1 &
+  "${publisher[@]}" gst-launch-1.0 -q videotestsrc is-live=true pattern=ball ! video/x-raw,format=RGBx,width=640,height=360,framerate=30/1 ! pipewiresink mode=provide stream-properties="props,node.name=$source_name,media.class=Video/Source" > "$scratch/source.log" 2>&1 &
   source_pid=$!
-  sleep 2
-  pw-dump > "$scratch/nodes.json"
-  node=$(python3 -c 'import json,sys; print(next(n["id"] for n in json.load(open(sys.argv[1])) if n.get("info",{}).get("props",{}).get("node.name")=="studio-pipewire-fixture"))' "$scratch/nodes.json")
+  node=
+  for attempt in $(seq 1 100); do
+    pw-dump > "$scratch/nodes.json"
+    node=$(python3 -c 'import json,sys; print(next((n["id"] for n in json.load(open(sys.argv[1])) if n.get("info",{}).get("props",{}).get("node.name")==sys.argv[2]), ""))' "$scratch/nodes.json" "$source_name")
+    [[ -z "$node" ]] || break
+    kill -0 "$source_pid" 2>/dev/null || { cat "$scratch/source.log" >&2; exit 1; }
+    sleep .1
+  done
+  [[ -n "$node" ]] || { echo 'The private publisher did not become ready.' >&2; exit 1; }
 fi
 }
 

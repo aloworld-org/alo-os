@@ -28,7 +28,6 @@ fn capture_workers_and_native_services_are_in_the_recipe() {
     assert!(activation.contains("Exec=/usr/bin/false"));
     assert!(activation.contains("SystemdService=xdg-desktop-portal.service"));
     let portal_unit = include_str!("../../../image/usr/lib/systemd/system/alo-portald.service");
-    assert!(portal_unit.contains("Environment=ALO_CAPTURE_REQUIRE_PRIVATE_PLUGIN=1"));
     assert!(portal_unit.contains("CacheDirectory=alo-capture-provider"));
     assert!(portal_unit.contains("CacheDirectoryMode=0700"));
     assert!(

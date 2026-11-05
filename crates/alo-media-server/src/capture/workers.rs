@@ -92,9 +92,7 @@ pub fn start(wayland: PathBuf, source: Source, application: String) -> io::Resul
                 name,
                 application,
             ];
-            let mut command = crate::ATool::named("/usr/bin/setpriv")
-                .asking(&arguments)
-                .started_here();
+            let mut command = super::publisher::tool(&arguments).started_here();
             reply::check(&cancelled)?;
             child = Some(
                 command

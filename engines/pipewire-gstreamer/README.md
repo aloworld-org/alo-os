@@ -20,8 +20,11 @@ the imported C source files remain unchanged. Device discovery and DMA-DRM-speci
 extensions are omitted. The native frame bridge uses shared-memory BGRx.
 
 The image installs the plugin privately in
-`/usr/lib/alo-capture-provider/gstreamer-1.0`. Only `alo-portald` and its capture
-worker receive that search path and a separate private registry cache. The
+`/usr/lib/alo-capture-provider/gstreamer-1.0`. The publisher launcher explicitly
+gives its capture worker that search path, a separate private registry cache,
+and the requirement to use the pinned engine. These settings survive its clean
+process environment; other tools inherit none of them. The portal unit creates
+the cache directory for its own user with mode 0700. The
 worker checks the selected plugin's filename and pinned version before opening
 a stream. A missing or substituted private plugin is a refusal. Other programs
 continue to use the distribution plugin.
