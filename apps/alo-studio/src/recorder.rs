@@ -43,7 +43,6 @@ pub struct Recorder {
     bus: gst::Bus,
     frame: Arc<Mutex<Option<Frame>>>,
     preview_visible: Arc<AtomicBool>,
-    video_ready: Arc<AtomicBool>,
     finishing: bool,
     fell_behind: Arc<AtomicBool>,
     video: Option<Arc<Mutex<crate::recorded_video::Progress>>>,
@@ -170,10 +169,7 @@ impl Recorder {
             height,
             frame_rate,
             audio,
-            crate::recording_branch::Signals {
-                fell_behind: self.fell_behind.clone(),
-                video_ready: self.video_ready.clone(),
-            },
+            self.fell_behind.clone(),
         )?);
         Ok(())
     }
@@ -183,9 +179,10 @@ impl Recorder {
             Input::PipeWire { .. } => {
                 // Queued frames must own their bytes when Finish disconnects
                 // the PipeWire stream and releases its shared buffer pool.
-                // Preserve live scheduling while excluding cached keepalive
-                // frames, whose clock domain differs in older plugins.
-                "pipewiresrc name=source do-timestamp=true always-copy=true keepalive-time=0 resend-last=false ! video/x-raw,pixel-aspect-ratio=1/1"
+                // The native publisher supplies live frames. PipeWire 1.4's
+                // keepalive path mixes absolute clock time into a running-time
+                // stream, scheduling later buffers hours into the future.
+                "pipewiresrc name=source do-timestamp=true always-copy=true ! video/x-raw,pixel-aspect-ratio=1/1"
             }
             #[cfg(feature = "verification")]
             Input::VerificationDisplay(_) => {
@@ -194,7 +191,7 @@ impl Recorder {
         };
         let pipeline = gst::parse::launch(&format!(
             "{source_text} ! queue name=video-input max-size-buffers=2 max-size-bytes=0 max-size-time=0 ! tee name=frames \
-             frames. ! queue name=preview-input leaky=downstream max-size-buffers=1 max-size-bytes=0 max-size-time=0 ! videoconvert ! videoscale ! video/x-raw,format=RGBA,width=[1,640],height=[1,480],pixel-aspect-ratio=1/1 ! appsink name=preview sync=false async=false max-buffers=1 drop=true"
+             frames. ! queue leaky=downstream max-size-buffers=1 max-size-bytes=0 max-size-time=0 ! videoconvert ! videoscale ! video/x-raw,format=RGBA,width=[1,640],height=[1,480],pixel-aspect-ratio=1/1 ! appsink name=preview sync=false async=false max-buffers=1 drop=true"
         )).map_err(failed)?.downcast::<gst::Pipeline>()
             .map_err(|_| MediaError(t("The recording engine could not start.")))?;
         // Preview and recording share a permission-scoped PipeWire core. Keep
@@ -226,25 +223,6 @@ impl Recorder {
         }
         let fell_behind = Arc::new(AtomicBool::new(false));
         let preview_visible = Arc::new(AtomicBool::new(true));
-        let video_ready = Arc::new(AtomicBool::new(false));
-        let converting_preview = preview_visible.clone();
-        let encoding_video = video_ready.clone();
-        by_name("preview-input")?
-            .static_pad("src")
-            .and_then(|pad| {
-                pad.add_probe(gst::PadProbeType::BUFFER, move |_, _| {
-                    if converting_preview.load(Ordering::Relaxed)
-                        || !encoding_video.load(Ordering::Acquire)
-                    {
-                        gst::PadProbeReturn::Ok
-                    } else {
-                        // Consume queued native frames before conversion. The
-                        // capture stream and its recording branch keep running.
-                        gst::PadProbeReturn::Handled
-                    }
-                })
-            })
-            .ok_or_else(|| MediaError(t("The preview could not start.")))?;
         let showing_preview = preview_visible.clone();
         let frame = Arc::new(Mutex::new(None));
         let receiving = frame.clone();
@@ -319,7 +297,6 @@ impl Recorder {
             bus,
             frame,
             preview_visible,
-            video_ready,
             finishing: false,
             fell_behind,
             video: None,
@@ -345,7 +322,7 @@ impl Recorder {
     pub fn frame(&self) -> Option<Frame> {
         self.frame.lock().ok()?.take()
     }
-    /// Skip conversion and copying while the workspace is hidden. Native
+    /// Skip copying UI preview images while its workspace is hidden. Native
     /// capture buffers keep draining and encoding continues independently.
     pub fn set_preview_visible(&self, visible: bool) {
         self.preview_visible.store(visible, Ordering::Relaxed);
@@ -362,7 +339,6 @@ impl Recorder {
     }
     /// Freeze both streams together; the microphone stops reading while paused.
     pub fn pause(&self) -> Result<(), MediaError> {
-        self.video_ready.store(false, Ordering::Release);
         self.paused.store(true, Ordering::Relaxed);
         if let Err(error) = self.pipeline.set_state(gst::State::Paused) {
             self.paused.store(false, Ordering::Relaxed);
@@ -372,7 +348,6 @@ impl Recorder {
     }
     /// Continue both streams on the same pipeline clock.
     pub fn resume(&self) -> Result<(), MediaError> {
-        self.video_ready.store(false, Ordering::Release);
         self.pipeline
             .set_state(gst::State::Playing)
             .map_err(failed)?;
@@ -524,7 +499,6 @@ mod tests {
             bus,
             frame: Arc::new(Mutex::new(None)),
             preview_visible: Arc::new(AtomicBool::new(true)),
-            video_ready: Arc::new(AtomicBool::new(false)),
             finishing: false,
             fell_behind: Arc::new(AtomicBool::new(false)),
             video: None,

@@ -17,11 +17,6 @@ pub(crate) enum Audio {
     Generated,
 }
 
-pub(crate) struct Signals {
-    pub(crate) fell_behind: Arc<AtomicBool>,
-    pub(crate) video_ready: Arc<AtomicBool>,
-}
-
 pub(crate) fn attach(
     pipeline: &gst::Pipeline,
     path: &Path,
@@ -29,12 +24,8 @@ pub(crate) fn attach(
     height: i32,
     frame_rate: i32,
     audio: Audio,
-    signals: Signals,
+    fell_behind: Arc<AtomicBool>,
 ) -> Result<Arc<Mutex<Progress>>, MediaError> {
-    let Signals {
-        fell_behind,
-        video_ready,
-    } = signals;
     #[cfg(feature = "verification")]
     let generated_audio = matches!(audio, Audio::Generated);
     let audio_source = match audio {
@@ -116,9 +107,6 @@ pub(crate) fn attach(
                 && let Ok(mut progress) = observed.lock()
             {
                 progress.observe(buffer);
-                if buffer.pts().is_some() && buffer.duration().is_some() {
-                    video_ready.store(true, Ordering::Release);
-                }
             }
             gst::PadProbeReturn::Ok
         });
