@@ -22,6 +22,8 @@ pub enum Quality {
     Hd,
     /// The full source's dimensions.
     Original,
+    /// A smaller, less frequent image for devices with limited processing power.
+    Lightweight,
 }
 
 impl Quality {
@@ -34,6 +36,7 @@ impl Quality {
             Self::FullHd => (1920.0_f64, 1080.0_f64),
             Self::Hd => (1280.0, 720.0),
             Self::Original => (f64::from(width), f64::from(height)),
+            Self::Lightweight => (640.0, 360.0),
         };
         let scale = (max_width / f64::from(width))
             .min(max_height / f64::from(height))
@@ -44,6 +47,14 @@ impl Quality {
             even(f64::from(width) * scale),
             even(f64::from(height) * scale),
         ))
+    }
+
+    /// The chosen frame-rate ceiling. Slower sources never duplicate frames.
+    pub fn frame_rate(self) -> i32 {
+        match self {
+            Self::Lightweight => 5,
+            _ => 30,
+        }
     }
 }
 
@@ -320,5 +331,9 @@ mod tests {
         assert_eq!(Quality::FullHd.size(800, 600), Ok((800, 600)));
         assert_eq!(Quality::FullHd.size(1080, 1920), Ok((606, 1080)));
         assert!(Quality::Hd.size(0, 0).is_err());
+        assert_eq!(Quality::Lightweight.size(600, 438), Ok((492, 360)));
+        assert_eq!(Quality::Lightweight.size(320, 240), Ok((320, 240)));
+        assert_eq!(Quality::Lightweight.frame_rate(), 5);
+        assert_eq!(Quality::FullHd.frame_rate(), 30);
     }
 }

@@ -63,19 +63,22 @@ impl State {
             own.render();
         });
     }
-    pub(super) fn selected_size(&self) -> Result<(i32, i32), String> {
-        let quality = match self.view.quality.selected() {
+    fn selected_quality(&self) -> Quality {
+        match self.view.quality.selected() {
             1 => Quality::Hd,
             2 => Quality::Original,
+            3 => Quality::Lightweight,
             _ => Quality::FullHd,
-        };
+        }
+    }
+    pub(super) fn selected_size(&self) -> Result<(i32, i32), String> {
         let size = self
             .engine
             .borrow()
             .as_ref()
             .and_then(Recorder::source_size)
             .ok_or_else(|| t("Please wait for the live preview, then try again."))?;
-        quality.size(size.0, size.1).map_err(t)
+        self.selected_quality().size(size.0, size.1).map_err(t)
     }
     pub(super) fn preflight(self: &Rc<Self>) {
         let (width, height) = match self.selected_size() {
@@ -88,12 +91,13 @@ impl State {
         if self.session.borrow_mut().checking().is_err() {
             return;
         }
+        let frame_rate = self.selected_quality().frame_rate();
         self.render();
         let (sending, receiving) = std::sync::mpsc::sync_channel(1);
         let worker = std::thread::Builder::new()
             .name("studio-quality-check".to_owned())
             .spawn(move || {
-                let _ = sending.send(crate::performance::check(width, height));
+                let _ = sending.send(crate::performance::check(width, height, frame_rate));
             });
         if let Err(error) = worker {
             self.session.borrow_mut().selected();
@@ -211,7 +215,13 @@ impl State {
                 .borrow_mut()
                 .as_mut()
                 .ok_or_else(|| t("Please select your source again."))?
-                .start_recording(&path, width, height, microphone)
+                .start_recording(
+                    &path,
+                    width,
+                    height,
+                    self.selected_quality().frame_rate(),
+                    microphone,
+                )
                 .map_err(|error| error.to_string())?;
             *self.clip.borrow_mut() = Some(clip);
             self.session

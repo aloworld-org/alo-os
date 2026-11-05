@@ -98,16 +98,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     if pulse_audio {
         std::thread::sleep(Duration::from_secs(3));
     }
-    alo_studio::performance::check(preview_frame.width, preview_frame.height)?;
-    if generated_audio {
-        recorder.start_with_generated_audio(&output, preview_frame.width, preview_frame.height)?;
+    let quality = if std::env::var_os("ALO_STUDIO_VERIFY_LIGHTWEIGHT").is_some() {
+        alo_studio::model::Quality::Lightweight
     } else {
-        recorder.start_recording(
-            &output,
-            preview_frame.width,
-            preview_frame.height,
-            microphone,
-        )?;
+        alo_studio::model::Quality::Original
+    };
+    let (width, height) = quality.size(preview_frame.width, preview_frame.height)?;
+    let frame_rate = quality.frame_rate();
+    alo_studio::performance::check(width, height, frame_rate)?;
+    if generated_audio {
+        recorder.start_with_generated_audio(&output, width, height, frame_rate)?;
+    } else {
+        recorder.start_recording(&output, width, height, frame_rate, microphone)?;
     }
     let started = Instant::now();
     let mut paused = false;
@@ -224,8 +226,25 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let duration = pipeline
         .query_duration::<gst::ClockTime>()
         .ok_or("No video duration")?;
+    let caps = pipeline
+        .by_name("video")
+        .and_then(|element| element.static_pad("src"))
+        .and_then(|pad| pad.current_caps())
+        .ok_or("No decoded video format")?;
+    let video_info = gst_video::VideoInfo::from_caps(&caps)?;
     pipeline.set_state(gst::State::Null)?;
     result?;
+    if video_info.width() != width as u32
+        || video_info.height() != height as u32
+        || video_info.fps() <= gst::Fraction::new(0, 1)
+        || video_info.fps() > gst::Fraction::new(frame_rate, 1)
+    {
+        return Err("The recording did not preserve the chosen size and frame-rate ceiling".into());
+    }
+    println!(
+        "Decoded video: {width} × {height}, {} fps",
+        video_info.fps()
+    );
     if microphone {
         let video = first[0].load(Ordering::Relaxed);
         let audio = first[1].load(Ordering::Relaxed);

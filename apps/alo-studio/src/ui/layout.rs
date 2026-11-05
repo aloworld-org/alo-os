@@ -297,6 +297,7 @@ pub fn build(application: &gtk::Application) -> View {
         &t("1080p · up to 30 fps"),
         &t("720p · up to 30 fps"),
         &t("Original size · up to 30 fps"),
+        &t("360p · up to 5 fps"),
     ]);
     quality.set_tooltip_text(Some(&t(
         "Recording quality. Smaller sources keep their original size.",

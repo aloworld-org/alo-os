@@ -106,4 +106,9 @@ done
 pactl set-default-source studio-private-audio.monitor
 start_source
 ALO_STUDIO_VERIFY_PULSE_AUDIO=1 timeout 35s "$build_target/debug/examples/verify-recording" "$scratch/pipewire-with-microphone.webm" "$node" "$XDG_RUNTIME_DIR/pipewire-0"
+kill "$source_pid" 2>/dev/null || true
+wait "$source_pid" 2>/dev/null || true
+unset source_pid
+start_source
+ALO_STUDIO_VERIFY_LIGHTWEIGHT=1 ALO_STUDIO_VERIFY_PULSE_AUDIO=1 timeout 35s "$build_target/debug/examples/verify-recording" "$scratch/pipewire-lightweight-with-microphone.webm" "$node" "$XDG_RUNTIME_DIR/pipewire-0"
 printf 'PipeWire verification evidence: %s\n' "$scratch"

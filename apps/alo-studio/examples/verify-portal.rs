@@ -49,7 +49,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
         let (width, height) = size.ok_or("No real portal preview frame arrived")?;
         let (width, height) = Quality::Hd.size(width, height)?;
-        recorder.start_recording(&output, width, height, false)?;
+        recorder.start_recording(&output, width, height, 30, false)?;
         let started = Instant::now();
         let mut finishing = false;
         let mut frames = 0;

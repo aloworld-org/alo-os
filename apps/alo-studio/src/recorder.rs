@@ -101,12 +101,13 @@ impl Recorder {
     pub fn preview(source: Input) -> Result<Self, MediaError> {
         Self::build(source)
     }
-    /// Begin encoding on the same stream that supplied the preview.
+    /// Begin encoding on the preview's stream, at the chosen 1–30 fps ceiling.
     pub fn start_recording(
         &mut self,
         path: &Path,
         width: i32,
         height: i32,
+        frame_rate: i32,
         microphone: bool,
     ) -> Result<(), MediaError> {
         let audio = if microphone {
@@ -116,6 +117,7 @@ impl Recorder {
                     path,
                     width,
                     height,
+                    frame_rate,
                     crate::recording_branch::Audio::Generated,
                 );
             }
@@ -123,7 +125,7 @@ impl Recorder {
         } else {
             crate::recording_branch::Audio::Off
         };
-        self.start_with_audio(path, width, height, audio)
+        self.start_with_audio(path, width, height, frame_rate, audio)
     }
     /// Exercise the selected stream with generated sound, without hardware.
     #[cfg(feature = "verification")]
@@ -132,11 +134,13 @@ impl Recorder {
         path: &Path,
         width: i32,
         height: i32,
+        frame_rate: i32,
     ) -> Result<(), MediaError> {
         self.start_with_audio(
             path,
             width,
             height,
+            frame_rate,
             crate::recording_branch::Audio::Generated,
         )
     }
@@ -145,17 +149,24 @@ impl Recorder {
         path: &Path,
         width: i32,
         height: i32,
+        frame_rate: i32,
         audio: crate::recording_branch::Audio,
     ) -> Result<(), MediaError> {
         if self.video.is_some() || self.finishing || self.source_ended || width <= 0 || height <= 0
         {
             return Err(MediaError(t("Please select a source for a new recording.")));
         }
+        if !(1..=30).contains(&frame_rate) {
+            return Err(MediaError(t(
+                "Please choose a frame rate between 1 and 30 fps.",
+            )));
+        }
         self.video = Some(crate::recording_branch::attach(
             &self.pipeline,
             path,
             width,
             height,
+            frame_rate,
             audio,
             self.fell_behind.clone(),
         )?);

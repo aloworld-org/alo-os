@@ -22,6 +22,7 @@ pub(crate) fn attach(
     path: &Path,
     width: i32,
     height: i32,
+    frame_rate: i32,
     audio: Audio,
     fell_behind: Arc<AtomicBool>,
 ) -> Result<Arc<Mutex<Progress>>, MediaError> {
@@ -38,10 +39,10 @@ pub(crate) fn attach(
     let audio = audio_source.map(|source| format!(
         " {source} ! queue name=audio-input ! audioconvert ! audioresample ! audio/x-raw,rate=48000,channels=1 ! opusenc bitrate=96000 ! queue ! container."
     )).unwrap_or_default();
-    // Thirty frames per second is a ceiling; a slow source never creates
-    // duplicate work. Filenames and dimensions are assigned as properties.
+    // Drop frames before conversion and scaling so a lower chosen rate reduces
+    // processing work as well as the encoder's load.
     let bin = gst::parse::bin_from_description(&format!(
-        "queue name=record-entry max-size-buffers=2 max-size-bytes=0 max-size-time=0 ! capsfilter name=record-format ! videoconvert ! videoscale ! videorate skip-to-first=true drop-only=true ! capsfilter name=size \
+        "queue name=record-entry max-size-buffers=2 max-size-bytes=0 max-size-time=0 ! capsfilter name=record-format ! videorate skip-to-first=true drop-only=true ! videoconvert ! videoscale ! capsfilter name=size \
          ! queue name=record-buffer max-size-time=0 max-size-bytes=134217728 max-size-buffers=60 ! vp9enc name=encoder deadline=1 cpu-used=8 threads=4 lag-in-frames=0 target-bitrate=4500000 keyframe-max-dist=60 \
          ! queue ! webmmux name=container offset-to-zero=true ! filesink name=output async=false {audio}"
     ), true).map_err(failed)?;
@@ -56,9 +57,9 @@ pub(crate) fn attach(
     let tee = pipeline
         .by_name("frames")
         .ok_or_else(|| MediaError(t("The selected source is unavailable.")))?;
-    // An active preview may already have negotiated a fixed rate below 30.
+    // An active preview may have negotiated a rate below the chosen ceiling.
     // Drop-only conversion must preserve that rate rather than demand an upsample.
-    let ceiling = gst::Fraction::new(30, 1);
+    let ceiling = gst::Fraction::new(frame_rate, 1);
     let selected = tee
         .static_pad("sink")
         .and_then(|pad| pad.current_caps())
