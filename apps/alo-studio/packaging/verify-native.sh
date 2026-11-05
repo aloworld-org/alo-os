@@ -11,7 +11,16 @@ cleanup() {
       if [[ -f "$log" ]]; then tail -n 35 "$log" >&2; fi
     done
   fi
-  if [[ -n "${app_pid:-}" ]]; then kill "$app_pid" 2>/dev/null || true; fi
+  if [[ -s "$scratch/app-group" ]]; then
+    app_group=$(tr -d '[:space:]' < "$scratch/app-group")
+    own_group=$(ps -o pgid= -p "$$" | tr -d '[:space:]')
+    if [[ "$app_group" =~ ^[0-9]+$ && "$app_group" -gt 1 && "$app_group" != "$own_group" ]]; then
+      kill -TERM -- "-$app_group" 2>/dev/null || true
+    fi
+  elif [[ -n "${app_pid:-}" ]]; then
+    kill "$app_pid" 2>/dev/null || true
+  fi
+  if [[ -n "${app_runner_pid:-}" ]]; then wait "$app_runner_pid" 2>/dev/null || true; fi
   if [[ -n "${display_pid:-}" ]]; then kill "$display_pid" 2>/dev/null || true; fi
 }
 trap cleanup EXIT
@@ -35,9 +44,11 @@ export XDG_DATA_HOME="$scratch/data"
 export ALO_STUDIO_VERIFY_DISPLAY="$DISPLAY"
 export NO_AT_BRIDGE=1
 export G_DEBUG=fatal-criticals
-dbus-run-session -- "$build_target/debug/alo-studio" >"$scratch/app.log" 2>&1 &
-app_pid=$!
+setsid --wait dbus-run-session -- bash -c 'printf "%s\n" "$$" > "$1/app-pid"; ps -o pgid= -p "$$" > "$1/app-group"; exec "$2"' studio-verification "$scratch" "$build_target/debug/alo-studio" >"$scratch/app.log" 2>&1 &
+app_runner_pid=$!
 sleep 3
+if [[ ! -s "$scratch/app-pid" ]]; then head -30 "$scratch/app.log"; exit 1; fi
+app_pid=$(cat "$scratch/app-pid")
 if ! kill -0 "$app_pid"; then head -30 "$scratch/app.log"; exit 1; fi
 ALO_STUDIO_VERIFY_PREPARE_DELAY=1 "$build_target/debug/examples/verify-recording" "$scratch/display.webm"
 ALO_STUDIO_VERIFY_LIGHTWEIGHT=1 "$build_target/debug/examples/verify-recording" "$scratch/display-lightweight.webm"
