@@ -7,6 +7,7 @@ use alo_studio::{
     recorder::{Event, Recorder},
 };
 use gst::prelude::*;
+use gtk::gdk::prelude::TextureExt;
 use std::{
     path::PathBuf,
     time::{Duration, Instant},
