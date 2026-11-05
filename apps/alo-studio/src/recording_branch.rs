@@ -29,7 +29,12 @@ pub(crate) fn attach(
     let audio_source = match audio {
         Audio::Off => None,
         Audio::Microphone => {
-            Some("pulsesrc name=microphone client-name=alo-Studio do-timestamp=true")
+            // Recording tolerates more scheduling jitter than a live call. The
+            // two-second ring still reads in 20 ms chunks; it does not wait for
+            // the ring to fill before supplying sound.
+            Some(
+                "pulsesrc name=microphone client-name=alo-Studio do-timestamp=true buffer-time=2000000 latency-time=20000",
+            )
         }
         #[cfg(feature = "verification")]
         Audio::Generated => Some(
@@ -37,7 +42,7 @@ pub(crate) fn attach(
         ),
     };
     let audio = audio_source.map(|source| format!(
-        " {source} ! queue name=audio-input ! audioconvert ! audioresample ! audio/x-raw,rate=48000,channels=1 ! opusenc bitrate=96000 ! queue ! container."
+        " {source} ! queue name=audio-input ! audioconvert ! audioresample ! audio/x-raw,rate=48000,channels=1 ! opusenc bitrate=96000 ! queue name=audio-buffer max-size-time=10000000000 max-size-bytes=1048576 max-size-buffers=0 ! container."
     )).unwrap_or_default();
     // Drop frames before conversion and scaling so a lower chosen rate reduces
     // processing work as well as the encoder's load.
@@ -92,10 +97,21 @@ pub(crate) fn attach(
             }
             gst::PadProbeReturn::Ok
         });
+    // The muxer waits for video while a slow encoder starts. Keep up to ten
+    // seconds of compressed sound (also capped at 1 MiB), rather than letting
+    // its default one-second queue block microphone capture. Both queues still
+    // request a controlled finish when full.
+    let video_fell_behind = fell_behind.clone();
     by_name("record-buffer")?.connect("overrun", false, move |_| {
-        fell_behind.store(true, Ordering::Relaxed);
+        video_fell_behind.store(true, Ordering::Relaxed);
         None
     });
+    if let Some(buffer) = bin.by_name("audio-buffer") {
+        buffer.connect("overrun", false, move |_| {
+            fell_behind.store(true, Ordering::Relaxed);
+            None
+        });
+    }
     let sink = bin
         .static_pad("sink")
         .ok_or_else(|| MediaError(t("The recording could not be connected.")))?;
