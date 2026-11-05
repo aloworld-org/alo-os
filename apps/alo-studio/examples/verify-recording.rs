@@ -58,6 +58,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // A PipeWire fixture never opens the real microphone. Opus is exercised
     // separately by the Xvfb source's synthetic audio.
     let microphone = remote.is_none();
+    // Software-emulated OS guests need a longer observation window. The
+    // default CI timing and minimum continuous-frame requirement stay strict.
+    let time_scale: u64 = match std::env::var("ALO_STUDIO_VERIFY_TIME_SCALE") {
+        Ok(value) => value.parse()?,
+        Err(_) => 1,
+    };
+    if !(1..=6).contains(&time_scale) {
+        return Err("The verification time scale must be between one and six".into());
+    }
     let preview = Recorder::preview(source())?;
     let preview_started = Instant::now();
     let preview_frame = loop {
@@ -67,7 +76,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         if let Some(Event::Failed(error)) = preview.poll() {
             return Err(error.into());
         }
-        if preview_started.elapsed() > Duration::from_secs(8) {
+        if preview_started.elapsed() > Duration::from_secs(8 * time_scale) {
             return Err("No preview frame arrived".into());
         }
         std::thread::sleep(Duration::from_millis(25));
@@ -96,22 +105,22 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             frames += 1;
         }
         let elapsed = started.elapsed();
-        if elapsed > Duration::from_secs(2) && !paused {
+        if elapsed > Duration::from_secs(2 * time_scale) && !paused {
             recorder.pause()?;
             paused = true;
         }
         if std::env::var_os("ALO_STUDIO_VERIFY_SOURCE_END").is_some()
-            && elapsed > Duration::from_millis(2500)
+            && elapsed > Duration::from_millis(2500 * time_scale)
             && !finishing
         {
             recorder.finish_after_source_ended()?;
             finishing = true;
         }
-        if elapsed > Duration::from_secs(3) && !resumed && !finishing {
+        if elapsed > Duration::from_secs(3 * time_scale) && !resumed && !finishing {
             recorder.resume()?;
             resumed = true;
         }
-        if elapsed > Duration::from_secs(5) && !finishing {
+        if elapsed > Duration::from_secs(5 * time_scale) && !finishing {
             recorder.finish()?;
             finishing = true;
         }
@@ -121,14 +130,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             Some(Event::FellBehind) => return Err("The recording could not keep up".into()),
             None => {}
         }
-        if elapsed > Duration::from_secs(20) {
+        if elapsed > Duration::from_secs(20 * time_scale) {
             return Err("The pipeline failed to finalize".into());
         }
         std::thread::sleep(Duration::from_millis(25));
     }
     drop(recorder);
     if frames < 15 {
-        return Err("The recording did not deliver continuous preview frames".into());
+        return Err(format!(
+            "The recording delivered {frames} preview frames; at least 15 are required"
+        )
+        .into());
     }
     if std::fs::metadata(&output)?.len() < 1024 {
         return Err("The recording is empty".into());
@@ -150,7 +162,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let bus = pipeline.bus().ok_or("No bus")?;
     let message = bus
         .timed_pop_filtered(
-            gst::ClockTime::from_seconds(15),
+            gst::ClockTime::from_seconds(15 * time_scale),
             &[gst::MessageType::Eos, gst::MessageType::Error],
         )
         .ok_or("Decoding timed out")?;
@@ -164,7 +176,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .ok_or("No video duration")?;
     pipeline.set_state(gst::State::Null)?;
     result?;
-    if duration > gst::ClockTime::from_mseconds(4700) {
+    if duration > gst::ClockTime::from_mseconds(4000 * time_scale + 700) {
         return Err("Paused time was included in the recording".into());
     }
     println!(
