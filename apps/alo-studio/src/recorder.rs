@@ -120,7 +120,10 @@ impl Recorder {
             Input::PipeWire { .. } => {
                 // Queued frames must own their bytes when Finish disconnects
                 // the PipeWire stream and releases its shared buffer pool.
-                "pipewiresrc name=source do-timestamp=true keepalive-time=1000 always-copy=true ! video/x-raw,pixel-aspect-ratio=1/1"
+                // The native publisher supplies live frames. PipeWire 1.4's
+                // keepalive path mixes absolute clock time into a running-time
+                // stream, scheduling later buffers hours into the future.
+                "pipewiresrc name=source do-timestamp=true always-copy=true ! video/x-raw,pixel-aspect-ratio=1/1"
             }
             #[cfg(feature = "verification")]
             Input::VerificationDisplay(_) => {
