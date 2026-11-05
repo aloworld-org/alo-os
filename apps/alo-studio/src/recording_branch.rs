@@ -44,7 +44,7 @@ pub(crate) fn attach(
         ),
     };
     let audio = audio_source.map(|source| format!(
-        " {source} ! queue name=audio-input ! audioconvert ! audioresample ! audio/x-raw,rate=48000,channels=1 ! opusenc bitrate=96000 ! queue name=audio-buffer max-size-time=10000000000 max-size-bytes=1048576 max-size-buffers=0 ! container."
+        " {source} ! queue name=audio-input ! audioconvert ! audioresample ! audio/x-raw,rate=48000,channels=1 ! opusenc bitrate=96000 ! queue name=audio-buffer ! container."
     )).unwrap_or_default();
     // Drop frames before conversion and scaling so a lower chosen rate reduces
     // processing work as well as the encoder's load.
@@ -68,6 +68,7 @@ pub(crate) fn attach(
         crate::verification_audio::delay(&source, pipeline)?;
     }
     let start = crate::recording_start::Start::observe(&bin)?;
+    crate::audio_buffering::prepare(&bin, fell_behind.clone())?;
     let tee = pipeline
         .by_name("frames")
         .ok_or_else(|| MediaError(t("The selected source is unavailable.")))?;
@@ -106,32 +107,12 @@ pub(crate) fn attach(
             }
             gst::PadProbeReturn::Ok
         });
-    // The muxer waits for video while a slow encoder starts. Keep up to ten
-    // seconds of compressed sound (also capped at 1 MiB), rather than letting
-    // its default one-second queue block microphone capture. Both queues still
-    // request a controlled finish when full.
-    let video_fell_behind = fell_behind.clone();
+    // Retained video remains bounded independently of audio buffering.
+    let video_fell_behind = fell_behind;
     by_name("record-buffer")?.connect("overrun", false, move |_| {
         video_fell_behind.store(true, Ordering::Relaxed);
         None
     });
-    if let Some(buffer) = bin.by_name("audio-buffer") {
-        buffer.connect("overrun", false, move |values| {
-            if let Some(queue) = values
-                .first()
-                .and_then(|value| value.get::<gst::Element>().ok())
-            {
-                eprintln!(
-                    "Microphone queue limit: {} buffers, {} bytes, {} ns",
-                    queue.property::<u32>("current-level-buffers"),
-                    queue.property::<u32>("current-level-bytes"),
-                    queue.property::<u64>("current-level-time")
-                );
-            }
-            fell_behind.store(true, Ordering::Relaxed);
-            None
-        });
-    }
     let sink = bin
         .static_pad("sink")
         .ok_or_else(|| MediaError(t("The recording could not be connected.")))?;

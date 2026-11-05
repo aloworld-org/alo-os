@@ -3,6 +3,7 @@
 //! The installed app has no network permission. Screen access is requested
 //! through the desktop portal for each recording; the microphone starts off.
 
+mod audio_buffering;
 mod capture_timing;
 pub mod completed_media;
 pub mod model;

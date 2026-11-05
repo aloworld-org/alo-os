@@ -387,6 +387,27 @@ the software VM; its results are diagnostic only. A later bounded sampler reads
 only the selected processes every four seconds. Temporary timing instrumentation
 is external to the package and will be removed before installed acceptance.
 
+The later one-time native trace localized microphone backpressure to the raw
+`audio-input` queue. It declared itself full with 3 buffers (5,760 bytes) but
+1.789 seconds of timestamp span. Other readings contained 13–60 buffers at its
+one-second limit. Microphone pushes then blocked for 0.78–1.0 seconds, followed
+by 111,360 dropped samples. The compressed queue was not full in this run.
+Changing the encoded buffer alone had left this earlier bottleneck in place.
+
+Both audio queues now count retained buffers and bytes, with no timestamp-span
+limit. Input retains at most 200 buffers; encoded audio retains at most 500;
+each is additionally limited to 1 MiB. Either full queue requests a controlled
+finish. A GStreamer regression holds the consumer, sends three small buffers
+with a timestamp hole, and verifies they do not fill the queue; sending the
+actual count limit must still request a stop. This runs with application tests.
+
+The UI now distinguishes input preparation from recording. The timer and Pause
+wait for the first fresh video admitted to the chosen audio timeline, while
+Stop remains available. Hidden preview conversion stops, but the final retained
+preview remains available for the recording thumbnail. At `332962c5`, formatting,
+clippy, 18 tests, the GTK flow including thumbnail validation, and all eight
+PipeWire cases pass. This precedes validation of the audio-queue change.
+
 The dedicated application CI passed at `df655460`, `e5810d12`, and `21c303eb`,
 including the new isolated microphone fixture. Broader OS acceptance remains open;
 there is no full-workspace, production-image, or physical-hardware pass here.

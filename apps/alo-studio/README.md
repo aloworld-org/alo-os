@@ -19,8 +19,11 @@ While the recording controls are open and the workspace is hidden, preview
 conversion stops so more processing time is available for recording.
 Video starts after the microphone supplies its first timestamped sample, so a
 slow microphone startup does not encode earlier preview frames. Bounded audio
-buffers absorb short video-encoder stalls; reaching
-either recording buffer's limit still requests a controlled stop.
+buffers absorb short processing stalls. Audio queues are bounded by actual
+buffer counts and bytes, so timestamp gaps do not masquerade as retained data.
+Raw audio retains at most 200 buffers and encoded audio at most 500; each queue
+also has a 1 MiB ceiling. Reaching any recording queue's limit requests a
+controlled stop.
 The controls show Starting while inputs open. The timer and Pause become active
 after fresh video joins the chosen audio timeline; Stop remains available.
 
