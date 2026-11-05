@@ -32,7 +32,7 @@ pub enum Event {
     Finished,
     /// The source or encoder failed. The pending file is preserved.
     Failed(String),
-    /// A bounded queue filled: finish the clip instead of degrading it silently.
+    /// Video or microphone capture fell behind: seal the captured media.
     FellBehind,
 }
 
@@ -398,6 +398,28 @@ impl Recorder {
                     }
                     return Some(Event::Failed(error.error().to_string()));
                 }
+                gst::MessageView::Warning(warning)
+                    if !self.finishing
+                        && warning.error().matches(gst::CoreError::Clock)
+                        && self
+                            .pipeline
+                            .by_name("microphone")
+                            .is_some_and(|microphone| {
+                                warning.src().is_some_and(|origin| {
+                                    origin == microphone.upcast_ref::<gst::Object>()
+                                        || origin.has_as_ancestor(&microphone)
+                                })
+                            }) =>
+                {
+                    // GstAudioBaseSrc reports lost samples as CORE/CLOCK, not
+                    // as an error. Do not silently continue with broken audio.
+                    eprintln!(
+                        "Microphone capture fell behind: {} ({:?})",
+                        warning.error(),
+                        warning.debug()
+                    );
+                    return Some(Event::FellBehind);
+                }
                 _ => {}
             }
         }
@@ -416,4 +438,89 @@ impl Drop for Recorder {
 
 fn failed(error: impl std::fmt::Display) -> MediaError {
     MediaError(error.to_string())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn idle() -> Result<Recorder, Box<dyn std::error::Error>> {
+        gst::init()?;
+        let pipeline = gst::parse::launch(
+            "fakesrc name=microphone ! fakesink fakesrc name=source ! fakesink",
+        )?
+        .downcast::<gst::Pipeline>()
+        .map_err(|_| "No test pipeline")?;
+        let bus = pipeline.bus().ok_or("No test bus")?;
+        Ok(Recorder {
+            source_ended: false,
+            pipeline,
+            bus,
+            frame: Arc::new(Mutex::new(None)),
+            finishing: false,
+            fell_behind: Arc::new(AtomicBool::new(false)),
+            video: None,
+            paused: Arc::new(AtomicBool::new(false)),
+            #[cfg(feature = "verification")]
+            generated_audio: false,
+        })
+    }
+
+    #[test]
+    fn lost_microphone_samples_request_a_controlled_finish()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let recorder = idle()?;
+        let microphone = recorder
+            .pipeline
+            .by_name("microphone")
+            .ok_or("No microphone")?;
+        recorder.bus.post(
+            gst::message::Warning::builder(gst::CoreError::Clock, "Lost audio samples")
+                .src(&microphone)
+                .build(),
+        )?;
+        assert!(matches!(recorder.poll(), Some(Event::FellBehind)));
+        assert!(recorder.poll().is_none());
+        Ok(())
+    }
+
+    #[test]
+    fn unrelated_warnings_do_not_stop_recording() -> Result<(), Box<dyn std::error::Error>> {
+        let recorder = idle()?;
+        let microphone = recorder
+            .pipeline
+            .by_name("microphone")
+            .ok_or("No microphone")?;
+        let source = recorder.pipeline.by_name("source").ok_or("No source")?;
+        for message in [
+            gst::message::Warning::builder(gst::CoreError::Clock, "Other clock warning")
+                .src(&source)
+                .build(),
+            gst::message::Warning::builder(gst::StreamError::Failed, "Other audio warning")
+                .src(&microphone)
+                .build(),
+        ] {
+            recorder.bus.post(message)?;
+        }
+        assert!(recorder.poll().is_none());
+        Ok(())
+    }
+
+    #[test]
+    fn audio_warning_does_not_interrupt_finalization() -> Result<(), Box<dyn std::error::Error>> {
+        let mut recorder = idle()?;
+        recorder.finishing = true;
+        let microphone = recorder
+            .pipeline
+            .by_name("microphone")
+            .ok_or("No microphone")?;
+        recorder.bus.post(
+            gst::message::Warning::builder(gst::CoreError::Clock, "Late audio warning")
+                .src(&microphone)
+                .build(),
+        )?;
+        recorder.bus.post(gst::message::Eos::new())?;
+        assert!(matches!(recorder.poll(), Some(Event::Finished)));
+        Ok(())
+    }
 }

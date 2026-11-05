@@ -130,8 +130,17 @@ timestamps coincide, but video is sparse. Its evidence is
 
 The native desktop does not expose a live lock transition. Lock policy,
 exclusive-scene capture refusal, and nested lock components are tested; a booted
-desktop-lock recording test cannot be claimed. Desktop locking is treated as a
-separate OS change pending the owner's scope clarification.
+desktop-lock recording test cannot be claimed. The owner confirmed that desktop
+locking belongs in a separate OS change. The owner also confirmed that only the
+current software VM is available, so the remaining recording-quality investigation
+continues there; physical-hardware performance remains unverified.
+
+Microphone sample loss is reported by GStreamer as a `CORE/CLOCK` warning from
+the microphone element. Studio now treats that specific warning like encoder
+overload: stop capture, drain the media already queued, and explain that the
+device could not keep up. Other warnings and warnings during finalization do
+not interrupt saving. This prevents silent continuation after audio loss; it
+does not establish recording quality in the software VM.
 
 The dedicated application CI passed at `df655460`, `e5810d12`, and `21c303eb`,
 including the new isolated microphone fixture. Broader OS acceptance remains open;

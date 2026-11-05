@@ -352,7 +352,7 @@ impl State {
                 self.failed(&t(message));
             }
             Some(Event::FellBehind) => {
-                self.notice(&t("This device could not keep up. Recording has stopped and the video captured so far is being saved. Try 720p for the next recording."));
+                self.notice(&t("This device could not keep up with recording. The video captured so far is being saved. Try recording a smaller window or closing other applications."));
                 self.stop();
             }
             None => {}
