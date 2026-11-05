@@ -88,7 +88,9 @@ kill "$source_pid" 2>/dev/null || true
 wait "$source_pid" 2>/dev/null || true
 unset source_pid
 start_source
-ALO_STUDIO_VERIFY_GENERATED_AUDIO=1 timeout 25s "$build_target/debug/examples/verify-recording" "$scratch/pipewire-with-audio.webm" "$node" "$XDG_RUNTIME_DIR/pipewire-0"
+# A later audio onset must discard earlier preview frames, rather than letting
+# WebM reject their timestamps after the first audio packet sets its origin.
+ALO_STUDIO_VERIFY_GENERATED_AUDIO=1 ALO_STUDIO_VERIFY_AUDIO_OFFSET_NS=750000000 timeout 25s "$build_target/debug/examples/verify-recording" "$scratch/pipewire-with-audio.webm" "$node" "$XDG_RUNTIME_DIR/pipewire-0"
 kill "$source_pid" 2>/dev/null || true
 wait "$source_pid" 2>/dev/null || true
 unset source_pid

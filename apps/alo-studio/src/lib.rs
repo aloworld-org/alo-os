@@ -13,6 +13,7 @@ pub mod portal;
 mod recorded_video;
 pub mod recorder;
 mod recording_branch;
+mod recording_start;
 pub mod storage;
 pub mod ui;
 pub mod words;

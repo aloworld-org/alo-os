@@ -59,6 +59,14 @@ pub(crate) fn attach(
             ))
         })
     };
+    #[cfg(feature = "verification")]
+    if let Some(source) = bin.by_name("microphone")
+        && matches!(audio, Audio::Generated)
+        && let Ok(offset) = std::env::var("ALO_STUDIO_VERIFY_AUDIO_OFFSET_NS")
+    {
+        source.set_property("timestamp-offset", offset.parse::<i64>().map_err(failed)?);
+    }
+    let start = crate::recording_start::Start::observe(&bin)?;
     let tee = pipeline
         .by_name("frames")
         .ok_or_else(|| MediaError(t("The selected source is unavailable.")))?;
@@ -156,31 +164,12 @@ pub(crate) fn attach(
         if std::env::var_os("ALO_STUDIO_VERIFY_PREPARE_DELAY").is_some() {
             std::thread::sleep(std::time::Duration::from_millis(100));
         }
-        // Opening the microphone can take time. The blocked tee and upstream
-        // queues still contain preview frames from before it was ready. They
-        // must not become the recording's first images while sound starts now.
+        // State synchronization does not wait for a live microphone's first
+        // sample. Gate video on that actual sample as well as branch readiness.
         let ready = pipeline.current_running_time().ok_or_else(|| {
             MediaError(t("The recording clock is unavailable. Please try again."))
         })?;
-        if sink
-            .add_probe(gst::PadProbeType::BUFFER, move |_, info| {
-                if info
-                    .buffer()
-                    .and_then(|buffer| buffer.pts())
-                    .is_some_and(|stamp| stamp >= ready)
-                {
-                    gst::PadProbeReturn::Remove
-                } else {
-                    // The Rust probe owns this buffer and consumes it here.
-                    // Handled avoids asking older GStreamer cores to unref
-                    // the already-consumed buffer a second time.
-                    gst::PadProbeReturn::Handled
-                }
-            })
-            .is_none()
-        {
-            return Err(MediaError(t("The recording could not be prepared.")));
-        }
+        start.admit_video(&sink, ready)?;
         Ok(())
     })();
     if result.is_err() {

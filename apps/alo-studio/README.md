@@ -15,8 +15,9 @@ If encoding falls behind or microphone samples are lost, Studio stops and saves
 the captured portion with a clear explanation.
 Preview and recording share one permission-scoped capture stream; starting the
 encoder does not reconnect the selected source.
-Frames queued while the recording branch opens its microphone are excluded from
-the recording. Bounded audio buffers absorb short video-encoder stalls; reaching
+Video starts after the microphone supplies its first timestamped sample, so a
+slow microphone startup does not encode earlier preview frames. Bounded audio
+buffers absorb short video-encoder stalls; reaching
 either recording buffer's limit still requests a controlled stop.
 
 The microphone starts **off for every recording**. Videos stay on this device;

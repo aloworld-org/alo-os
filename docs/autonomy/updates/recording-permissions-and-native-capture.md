@@ -367,6 +367,26 @@ audio/video continuity in the software VM, production-image and physical-machine
 acceptance, then signed application-market publication. Desktop locking remains
 the separately authorised OS change.
 
+### Recording startup investigation — 2026-11-05
+
+This makes the existing recording promise true: selected video and microphone
+must begin on the same media timeline. A one-time trace of the installed package
+confirmed that live microphone state synchronization returned before its first
+sample. Video entered encoding at 50.652 seconds of pipeline running time; the
+first microphone sample was timestamped 59.040 seconds. Earlier video was then
+rejected by the WebM writer. Waiting only for branch state synchronization did
+not establish media readiness.
+
+The recording branch now observes the actual first audio buffer and excludes
+video preceding both that timestamp and branch readiness. The generated-audio
+PipeWire case starts audio 750 ms later to exercise the timing boundary on every
+application CI run. Installed VM validation of this change is still pending.
+
+The initial process sampler was too expensive for acceptance measurements in
+the software VM; its results are diagnostic only. A later bounded sampler reads
+only the selected processes every four seconds. Temporary timing instrumentation
+is external to the package and will be removed before installed acceptance.
+
 The dedicated application CI passed at `df655460`, `e5810d12`, and `21c303eb`,
 including the new isolated microphone fixture. Broader OS acceptance remains open;
 there is no full-workspace, production-image, or physical-hardware pass here.
