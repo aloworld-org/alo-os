@@ -53,11 +53,23 @@ pub(crate) fn attach(
             ))
         })
     };
+    let tee = pipeline
+        .by_name("frames")
+        .ok_or_else(|| MediaError(t("The selected source is unavailable.")))?;
+    // An active preview may already have negotiated a fixed rate below 30.
+    // Drop-only conversion must preserve that rate rather than demand an upsample.
+    let ceiling = gst::Fraction::new(30, 1);
+    let rate = tee
+        .static_pad("sink")
+        .and_then(|pad| pad.current_caps())
+        .and_then(|caps| caps.structure(0)?.get::<gst::Fraction>("framerate").ok())
+        .filter(|rate| *rate > gst::Fraction::new(0, 1) && *rate < ceiling)
+        .unwrap_or(ceiling);
     let caps = gst::Caps::builder("video/x-raw")
         .field("format", "I420")
         .field("width", width)
         .field("height", height)
-        .field("framerate", gst::Fraction::new(30, 1))
+        .field("framerate", rate)
         .field("pixel-aspect-ratio", gst::Fraction::new(1, 1))
         .build();
     by_name("size")?.set_property("caps", &caps);
@@ -79,9 +91,6 @@ pub(crate) fn attach(
         fell_behind.store(true, Ordering::Relaxed);
         None
     });
-    let tee = pipeline
-        .by_name("frames")
-        .ok_or_else(|| MediaError(t("The selected source is unavailable.")))?;
     let sink = bin
         .static_pad("sink")
         .ok_or_else(|| MediaError(t("The recording could not be connected.")))?;
