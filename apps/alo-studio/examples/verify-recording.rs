@@ -139,6 +139,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut finishing = false;
     let mut preview_hidden = false;
     let mut preview_restored = false;
+    let mut duration_before_hiding = Duration::ZERO;
     let mut frames = 0_u64;
     let mut frames_after_resume = 0_u64;
     loop {
@@ -156,11 +157,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
         if elapsed > Duration::from_millis(500 * time_scale) && !preview_hidden {
+            duration_before_hiding = recorder.recorded_duration().unwrap_or(Duration::ZERO);
             recorder.set_preview_visible(false);
             preview_hidden = true;
         }
         if elapsed > Duration::from_millis(1600 * time_scale) && !preview_restored {
-            if recorder.recorded_duration().is_none() {
+            if recorder
+                .recorded_duration()
+                .is_none_or(|duration| duration <= duration_before_hiding)
+            {
                 return Err("Hiding the preview interrupted video encoding".into());
             }
             recorder.set_preview_visible(true);

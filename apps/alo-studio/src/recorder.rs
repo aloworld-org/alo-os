@@ -191,7 +191,7 @@ impl Recorder {
         };
         let pipeline = gst::parse::launch(&format!(
             "{source_text} ! queue name=video-input max-size-buffers=2 max-size-bytes=0 max-size-time=0 ! tee name=frames \
-             frames. ! queue leaky=downstream max-size-buffers=1 max-size-bytes=0 max-size-time=0 ! videoconvert ! videoscale ! video/x-raw,format=RGBA,width=[1,640],height=[1,480],pixel-aspect-ratio=1/1 ! appsink name=preview sync=false async=false max-buffers=1 drop=true"
+             frames. ! queue name=preview-input leaky=downstream max-size-buffers=1 max-size-bytes=0 max-size-time=0 ! videoconvert ! videoscale ! video/x-raw,format=RGBA,width=[1,640],height=[1,480],pixel-aspect-ratio=1/1 ! appsink name=preview sync=false async=false max-buffers=1 drop=true"
         )).map_err(failed)?.downcast::<gst::Pipeline>()
             .map_err(|_| MediaError(t("The recording engine could not start.")))?;
         // Preview and recording share a permission-scoped PipeWire core. Keep
@@ -223,6 +223,21 @@ impl Recorder {
         }
         let fell_behind = Arc::new(AtomicBool::new(false));
         let preview_visible = Arc::new(AtomicBool::new(true));
+        let converting_preview = preview_visible.clone();
+        by_name("preview-input")?
+            .static_pad("src")
+            .and_then(|pad| {
+                pad.add_probe(gst::PadProbeType::BUFFER, move |_, _| {
+                    if converting_preview.load(Ordering::Relaxed) {
+                        gst::PadProbeReturn::Ok
+                    } else {
+                        // Consume queued native frames before conversion. The
+                        // capture stream and its recording branch keep running.
+                        gst::PadProbeReturn::Handled
+                    }
+                })
+            })
+            .ok_or_else(|| MediaError(t("The preview could not start.")))?;
         let showing_preview = preview_visible.clone();
         let frame = Arc::new(Mutex::new(None));
         let receiving = frame.clone();
@@ -322,7 +337,7 @@ impl Recorder {
     pub fn frame(&self) -> Option<Frame> {
         self.frame.lock().ok()?.take()
     }
-    /// Skip copying UI preview images while its workspace is hidden. Native
+    /// Skip conversion and copying while the workspace is hidden. Native
     /// capture buffers keep draining and encoding continues independently.
     pub fn set_preview_visible(&self, visible: bool) {
         self.preview_visible.store(visible, Ordering::Relaxed);

@@ -18,7 +18,8 @@ the captured portion with a clear explanation.
 Preview and recording share one permission-scoped capture stream; starting the
 encoder does not reconnect the selected source.
 While the recording controls are open and the workspace is hidden, Studio skips
-copying UI preview images so more processing time is available for recording.
+converting and copying UI preview images. Capture keeps draining independently
+of those images so more processing time is available for recording.
 Video starts after the microphone supplies its first timestamped sample, so a
 slow microphone startup does not encode earlier preview frames. Bounded audio
 buffers absorb short processing stalls. Audio queues are bounded by actual
