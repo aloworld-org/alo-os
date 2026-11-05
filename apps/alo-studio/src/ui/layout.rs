@@ -254,6 +254,7 @@ pub fn build(application: &gtk::Application) -> View {
     )));
     screen.set_active(true);
     screen.add_css_class("source-card");
+    screen.update_property(&[gtk::accessible::Property::Label(&t("A screen"))]);
     let one_window = gtk::ToggleButton::new();
     one_window.set_child(Some(&card(
         "focus-windows-symbolic",
@@ -262,6 +263,7 @@ pub fn build(application: &gtk::Application) -> View {
     )));
     one_window.set_group(Some(&screen));
     one_window.add_css_class("source-card");
+    one_window.update_property(&[gtk::accessible::Property::Label(&t("A window"))]);
     cards.append(&screen);
     cards.append(&one_window);
     workspace.append(&cards);

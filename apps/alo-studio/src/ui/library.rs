@@ -98,6 +98,11 @@ impl State {
                 .tooltip_text(t("Open recording"))
                 .build();
             let own = self.clone();
+            play.update_property(&[gtk::accessible::Property::Label(&format!(
+                "{}: {}",
+                t("Open recording"),
+                clip.title
+            ))]);
             play.connect_clicked(move |_| own.open_clip(&clip));
             content.append(&play);
             row.set_child(Some(&content));

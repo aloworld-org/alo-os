@@ -233,7 +233,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!(
         "PASS: {frames} preview frames; preview-to-record handoff; pause/resume; EOS; {} bytes; {streams} decoded to completion",
         std::fs::metadata(&output)?.len(),
-        streams = if microphone {
+        streams = if pulse_audio {
+            "VP9 + isolated PulseAudio/Opus/WebM"
+        } else if microphone {
             "VP9 + synthetic Opus/WebM"
         } else {
             "PipeWire VP9/WebM"

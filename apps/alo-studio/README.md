@@ -84,6 +84,10 @@ real, private PipeWire socket. It verifies attaching the recorder to the running
 preview, pause/resume, finalization, and decoding, with and without generated
 Opus audio. Hardware monitors are disabled in that isolated server; it does not
 access the desktop or microphone.
+The same fixture also checks `pulsesrc` against an isolated PulseAudio server and
+virtual monitor, after allowing the preview to run. Decoded audio and video must
+start within 250 ms. This check additionally needs `pipewire-pulse` and
+`pulseaudio-utils`; it never selects a physical audio device.
 With `ALO_STUDIO_CAPTURE_PROVIDER` and `ALO_STUDIO_CAPTURE_REMOTE`, the same
 probe uses the native publisher and the actual restricted descriptor helper.
 That integration fixture requires the full repository checkout for its shared

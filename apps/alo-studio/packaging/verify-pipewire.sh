@@ -15,7 +15,7 @@ fi
 scratch="$2"
 build_target="$3"
 cleanup() {
-  for process in ${source_pid:-} ${manager_pid:-} ${pipewire_pid:-}; do
+  for process in ${source_pid:-} ${pulse_pid:-} ${manager_pid:-} ${pipewire_pid:-}; do
     kill "$process" 2>/dev/null || true
   done
 }
@@ -64,4 +64,26 @@ wait "$source_pid" 2>/dev/null || true
 unset source_pid
 start_source
 ALO_STUDIO_VERIFY_GENERATED_AUDIO=1 timeout 25s "$build_target/debug/examples/verify-recording" "$scratch/pipewire-with-audio.webm" "$node" "$XDG_RUNTIME_DIR/pipewire-0"
+kill "$source_pid" 2>/dev/null || true
+wait "$source_pid" 2>/dev/null || true
+unset source_pid
+# Exercise the microphone implementation through a private Pulse server and a
+# virtual monitor. Its socket and default source never refer to host hardware.
+export PULSE_SERVER="unix:$XDG_RUNTIME_DIR/pulse/native"
+pipewire-pulse > "$scratch/pulse.log" 2>&1 &
+pulse_pid=$!
+for attempt in $(seq 1 100); do
+  pactl info > "$scratch/pulse-info.txt" 2>&1 && break
+  kill -0 "$pulse_pid" 2>/dev/null || { cat "$scratch/pulse.log" >&2; exit 1; }
+  sleep .1
+done
+pactl load-module module-null-sink sink_name=studio-private-audio > "$scratch/audio-module.txt"
+for attempt in $(seq 1 100); do
+  pactl list short sources > "$scratch/audio-sources.txt"
+  grep -q studio-private-audio.monitor "$scratch/audio-sources.txt" && break
+  sleep .1
+done
+pactl set-default-source studio-private-audio.monitor
+start_source
+ALO_STUDIO_VERIFY_PULSE_AUDIO=1 timeout 35s "$build_target/debug/examples/verify-recording" "$scratch/pipewire-with-microphone.webm" "$node" "$XDG_RUNTIME_DIR/pipewire-0"
 printf 'PipeWire verification evidence: %s\n' "$scratch"
