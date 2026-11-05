@@ -9,10 +9,15 @@ Recording preserves incoming frame timing, up to 30 frames per second. A slow
 source does not generate duplicate frames just to reach that ceiling.
 The explicit **360p · up to 5 fps** option reduces work on slower devices.
 The quality check uses the selected size and frame rate; the default stays 1080p.
+Quality and countdown options stay visible as direct choices. Alt + 1, Alt + 7,
+Alt + O, and Alt + 3 select 1080p, 720p, original size, and 360p respectively.
 If encoding falls behind or microphone samples are lost, Studio stops and saves
 the captured portion with a clear explanation.
 Preview and recording share one permission-scoped capture stream; starting the
 encoder does not reconnect the selected source.
+Frames queued while the recording branch opens its microphone are excluded from
+the recording. Bounded audio buffers absorb short video-encoder stalls; reaching
+either recording buffer's limit still requests a controlled stop.
 
 The microphone starts **off for every recording**. Videos stay on this device;
 the application has no network permission. VP9 and Opus are encoded into WebM,

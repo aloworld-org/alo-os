@@ -232,8 +232,49 @@ Its low-resource recording decoded at 576 x 360, 5 fps with coincident first
 audio/video timestamps. Preserved native evidence is
 `/root/alo-studio-engine-container-evidence/tmp.tUxpVGa2KA`.
 These checks run again in `.github/workflows/studio.yml`; VM observations are
-one-off measurements. The lower-resource package's real-portal walk remains
-required before quality acceptance.
+one-off measurements. Both dedicated recording CI job `127135984023` and the
+broader OS gate `127135983754` passed on `318eda56`.
+
+The rebuilt package is 1,089,312 bytes, SHA-256
+`87b95fdf9117c89330e0f1004a8142a70c17a036ff70736d2ac69f394741d083`,
+with Flatpak commit
+`453cba692a7b177d045bb1132db0ff3e0ea21ef69734ee3b17c30f5736c9b0bb`.
+It is installed normally in the VM. The lower-resource package's real-portal
+walk remains required before quality acceptance.
+
+The installed GTK menus did not open reliably during the VM walk. Quality and
+countdown now use visible toggle-button choices, including keyboard mnemonics
+for quality. The actual installed app selected 360p/5 fps, no countdown, and the
+microphone through those controls, then opened the native window chooser.
+Its package SHA-256 was
+`6d8026d6c7e4210d5a84676179a8030d056ee7d9c408a79dce297f26665cffa8`,
+Flatpak commit
+`8120dc911b932f431d97e8e65c3213bc9c0ff06ca0afce19206363f1f4391dee`.
+
+That recording still stopped on microphone sample loss before Pause succeeded.
+Clip `1793870158-802110353-2` decodes to 18 video frames at 494 x 360, 5 fps and
+216 audio buffers. Video starts at zero; audio starts at 9.5945 seconds. The
+container lasts 16.833 seconds; video metadata reports 10.093 seconds. Evidence
+is `D:\\alo-studio-verification\\installed-lightweight-audio-stall`, SHA-256
+`cd0d92f997842d238b95acd6f3a97f761559c30ff00a38b05b7e7ef580ca192c`.
+This is failed quality acceptance, not a microphone pause/resume pass.
+
+The resulting changes increase the microphone's bounded ring to two seconds
+with 20 ms reads, and retain up to ten seconds/1 MiB of compressed audio while
+video starts. Filling either recording queue requests a controlled finish.
+Recording also excludes preview frames queued before the new branch is ready;
+opening the microphone must not include earlier preview images in saved video.
+Space shortcuts run before focused button actions. The fixture starts
+WirePlumber only after PipeWire's socket exists, addressing an observed startup
+race rather than retrying a failed recording.
+
+At `ad6147b0`, formatting, clippy, 15 tests, the actual GTK recording flow, and
+all eight pinned-base recording cases passed locally. GTK/framebuffer evidence
+is `/tmp/tmp.MJWPZzPC1V`; ordinary PipeWire evidence is `/tmp/tmp.WFi4xIIfru`;
+native publisher evidence is `/tmp/tmp.Auh5biNyDa`. The low-resource microphone
+tracks start 33.5 ms apart in the ordinary fixture and 102.5 ms apart through
+the restricted native descriptor. These repeat in dedicated recording CI.
+The updated SDK build and another actual VM measurement remain in progress.
 
 The dedicated application CI passed at `df655460`, `e5810d12`, and `21c303eb`,
 including the new isolated microphone fixture. Broader OS acceptance remains open;
