@@ -117,6 +117,7 @@ impl State {
         self.view.record.set_label(&t(button));
         self.view.record.set_sensitive(
             self.library.is_some()
+                && (phase != Phase::Selected || !self.view.placeholder.is_visible())
                 && !matches!(
                     phase,
                     Phase::Choosing | Phase::Checking | Phase::Countdown(_) | Phase::Finishing

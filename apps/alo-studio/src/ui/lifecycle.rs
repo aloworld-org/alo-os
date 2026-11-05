@@ -340,6 +340,7 @@ impl State {
             self.view.preview.set_paintable(Some(&texture));
             self.view.placeholder.set_visible(false);
             if first_frame {
+                self.render();
                 let preview = self.view.preview.clone();
                 let pixels = (frame.width, frame.height);
                 glib::timeout_add_local_once(Duration::from_secs(1), move || {
