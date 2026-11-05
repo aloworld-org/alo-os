@@ -64,9 +64,8 @@ pub(crate) fn attach(
     #[cfg(feature = "verification")]
     if let Some(source) = bin.by_name("microphone")
         && generated_audio
-        && let Ok(offset) = std::env::var("ALO_STUDIO_VERIFY_AUDIO_OFFSET_NS")
     {
-        source.set_property("timestamp-offset", offset.parse::<i64>().map_err(failed)?);
+        crate::verification_audio::delay(&source, pipeline)?;
     }
     let start = crate::recording_start::Start::observe(&bin)?;
     let tee = pipeline

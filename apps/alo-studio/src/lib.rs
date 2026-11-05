@@ -16,6 +16,8 @@ mod recording_branch;
 mod recording_start;
 pub mod storage;
 pub mod ui;
+#[cfg(feature = "verification")]
+mod verification_audio;
 pub mod words;
 
 /// The same identity is used by the portal, desktop entry, and Flatpak.
