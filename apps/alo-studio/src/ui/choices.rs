@@ -22,7 +22,7 @@ impl Choices {
         let selected = Rc::new(Cell::new(0));
         let mut first = None;
         for (index, (label, description)) in options.iter().enumerate() {
-            let button = gtk::ToggleButton::with_label(&t(label));
+            let button = gtk::ToggleButton::with_mnemonic(&t(label));
             button.add_css_class("setting-choice");
             button.set_tooltip_text(Some(&t(description)));
             button.update_property(&[gtk::accessible::Property::Label(&t(description))]);
