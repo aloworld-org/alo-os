@@ -42,7 +42,7 @@ pub struct Recorder {
     pipeline: gst::Pipeline,
     bus: gst::Bus,
     frame: Arc<Mutex<Option<Frame>>>,
-    preview_gate: gst::Element,
+    preview_visible: Arc<AtomicBool>,
     finishing: bool,
     fell_behind: Arc<AtomicBool>,
     video: Option<Arc<Mutex<crate::recorded_video::Progress>>>,
@@ -85,7 +85,6 @@ impl Recorder {
             "vp9enc",
             "webmmux",
             "appsink",
-            "valve",
             "opusenc",
             "filesink",
         ] {
@@ -192,7 +191,7 @@ impl Recorder {
         };
         let pipeline = gst::parse::launch(&format!(
             "{source_text} ! queue name=video-input max-size-buffers=2 max-size-bytes=0 max-size-time=0 ! tee name=frames \
-             frames. ! queue leaky=downstream max-size-buffers=1 max-size-bytes=0 max-size-time=0 ! valve name=preview-gate drop-mode=transform-to-gap ! videoconvert ! videoscale ! video/x-raw,format=RGBA,width=[1,640],height=[1,480],pixel-aspect-ratio=1/1 ! appsink name=preview sync=false async=false max-buffers=1 drop=true"
+             frames. ! queue leaky=downstream max-size-buffers=1 max-size-bytes=0 max-size-time=0 ! videoconvert ! videoscale ! video/x-raw,format=RGBA,width=[1,640],height=[1,480],pixel-aspect-ratio=1/1 ! appsink name=preview sync=false async=false max-buffers=1 drop=true"
         )).map_err(failed)?.downcast::<gst::Pipeline>()
             .map_err(|_| MediaError(t("The recording engine could not start.")))?;
         // Preview and recording share a permission-scoped PipeWire core. Keep
@@ -223,7 +222,8 @@ impl Recorder {
             }
         }
         let fell_behind = Arc::new(AtomicBool::new(false));
-        let preview_gate = by_name("preview-gate")?;
+        let preview_visible = Arc::new(AtomicBool::new(true));
+        let showing_preview = preview_visible.clone();
         let frame = Arc::new(Mutex::new(None));
         let receiving = frame.clone();
         let sink = by_name("preview")?
@@ -233,6 +233,11 @@ impl Recorder {
             gst_app::AppSinkCallbacks::builder()
                 .new_sample(move |sink| {
                     let sample = sink.pull_sample().map_err(|_| gst::FlowError::Eos)?;
+                    // Keep draining the native stream even when the workspace
+                    // is hidden. Skip mapping and copying images nobody sees.
+                    if !showing_preview.load(Ordering::Relaxed) {
+                        return Ok(gst::FlowSuccess::Ok);
+                    }
                     let caps = sample.caps().ok_or(gst::FlowError::Error)?;
                     let info =
                         gst_video::VideoInfo::from_caps(caps).map_err(|_| gst::FlowError::Error)?;
@@ -291,7 +296,7 @@ impl Recorder {
             pipeline,
             bus,
             frame,
-            preview_gate,
+            preview_visible,
             finishing: false,
             fell_behind,
             video: None,
@@ -317,10 +322,10 @@ impl Recorder {
     pub fn frame(&self) -> Option<Frame> {
         self.frame.lock().ok()?.take()
     }
-    /// Skip preview conversion while its workspace is hidden. Capture and
-    /// encoding keep running, and preview events still reach the sink.
+    /// Skip copying UI preview images while its workspace is hidden. Native
+    /// capture buffers keep draining and encoding continues independently.
     pub fn set_preview_visible(&self, visible: bool) {
-        self.preview_gate.set_property("drop", !visible);
+        self.preview_visible.store(visible, Ordering::Relaxed);
     }
     /// The negotiated source dimensions, before preview scaling.
     pub fn source_size(&self) -> Option<(i32, i32)> {
@@ -481,13 +486,12 @@ mod tests {
         .downcast::<gst::Pipeline>()
         .map_err(|_| "No test pipeline")?;
         let bus = pipeline.bus().ok_or("No test bus")?;
-        let preview_gate = gst::ElementFactory::make("valve").build()?;
         Ok(Recorder {
             source_ended: false,
             pipeline,
             bus,
             frame: Arc::new(Mutex::new(None)),
-            preview_gate,
+            preview_visible: Arc::new(AtomicBool::new(true)),
             finishing: false,
             fell_behind: Arc::new(AtomicBool::new(false)),
             video: None,

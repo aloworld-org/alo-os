@@ -148,7 +148,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 && !preview_restored
                 && elapsed > Duration::from_millis(900 * time_scale)
             {
-                return Err("A hidden preview continued converting frames".into());
+                return Err("A hidden preview continued preparing UI images".into());
             }
             frames += 1;
             if resumed && !finishing {
