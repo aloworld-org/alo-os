@@ -3,6 +3,8 @@
 use gtk::prelude::*;
 
 fn main() -> gtk::glib::ExitCode {
+    // Native dialogs without an explicit GtkApplication use this Wayland ID.
+    gtk::glib::set_prgname(Some(alo_studio::APPLICATION_ID));
     gtk::glib::set_application_name("alo Studio");
     let application = gtk::Application::builder()
         .application_id(alo_studio::APPLICATION_ID)
