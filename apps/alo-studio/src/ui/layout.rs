@@ -16,8 +16,8 @@ pub struct View {
     pub one_window: gtk::ToggleButton,
     pub microphone: gtk::Switch,
     pub microphone_text: gtk::Label,
-    pub quality: gtk::DropDown,
-    pub countdown: gtk::DropDown,
+    pub quality: super::choices::Choices,
+    pub countdown: super::choices::Choices,
     pub preview: gtk::Picture,
     pub placeholder: gtk::Box,
     pub countdown_number: gtk::Label,
@@ -291,40 +291,44 @@ pub fn build(application: &gtk::Application) -> View {
     microphone.update_property(&[gtk::accessible::Property::Label(&t("Record microphone"))]);
     sound.append(&microphone);
     workspace.append(&sound);
-    let settings = gtk::Box::new(gtk::Orientation::Horizontal, 12);
+    let settings = gtk::Box::new(gtk::Orientation::Vertical, 10);
     settings.add_css_class("settings-row");
-    let quality = gtk::DropDown::from_strings(&[
-        &t("1080p · up to 30 fps"),
-        &t("720p · up to 30 fps"),
-        &t("Original size · up to 30 fps"),
-        &t("360p · up to 5 fps"),
-    ]);
-    quality.set_tooltip_text(Some(&t(
-        "Recording quality. Smaller sources keep their original size.",
+    let quality = super::choices::Choices::new(
+        "Quality",
+        &[
+            ("1080p", "1080p, up to 30 fps"),
+            ("720p", "720p, up to 30 fps"),
+            ("Original", "Original size, up to 30 fps"),
+            ("360p · 5 fps", "360p, up to 5 fps"),
+        ],
+    );
+    quality.widget.set_tooltip_text(Some(&t(
+        "Smaller sources keep their original size. The chosen frame rate is a ceiling.",
     )));
-    quality.update_property(&[gtk::accessible::Property::Label(&t("Recording quality"))]);
-    let countdown = gtk::DropDown::from_strings(&[
-        &t("3-second countdown"),
-        &t("5-second countdown"),
-        &t("No countdown"),
-    ]);
-    countdown.update_property(&[gtk::accessible::Property::Label(&t(
-        "Countdown before recording",
-    ))]);
-    settings.append(&quality);
-    settings.append(&countdown);
+    let countdown = super::choices::Choices::new(
+        "Countdown",
+        &[
+            ("3 sec", "3-second countdown"),
+            ("5 sec", "5-second countdown"),
+            ("Off", "No countdown"),
+        ],
+    );
+    settings.append(&quality.widget);
+    let actions = gtk::Box::new(gtk::Orientation::Horizontal, 12);
+    actions.append(&countdown.widget);
     let gap = gtk::Box::new(gtk::Orientation::Horizontal, 0);
     gap.set_hexpand(true);
-    settings.append(&gap);
+    actions.append(&gap);
     let cancel = gtk::Button::with_label(&t("Cancel"));
     cancel.set_visible(false);
-    settings.append(&cancel);
+    actions.append(&cancel);
     let pause = gtk::Button::with_label(&t("Pause"));
     pause.set_visible(false);
-    settings.append(&pause);
+    actions.append(&pause);
     let record = gtk::Button::with_label(&t("Choose a screen"));
     record.add_css_class("primary");
-    settings.append(&record);
+    actions.append(&record);
+    settings.append(&actions);
     settings.set_margin_start(34);
     settings.set_margin_end(34);
     settings.set_margin_bottom(12);

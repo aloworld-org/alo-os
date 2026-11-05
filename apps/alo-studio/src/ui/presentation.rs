@@ -62,8 +62,8 @@ impl State {
             &self.view.screen.clone().upcast::<gtk::Widget>(),
             &self.view.one_window.clone().upcast(),
             &self.view.microphone.clone().upcast(),
-            &self.view.quality.clone().upcast(),
-            &self.view.countdown.clone().upcast(),
+            &self.view.quality.widget.clone().upcast(),
+            &self.view.countdown.widget.clone().upcast(),
         ] {
             widget.set_sensitive(changing);
         }

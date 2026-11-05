@@ -1,5 +1,6 @@
 //! Native GTK surfaces and the actions that join them to the recording engine.
 
+mod choices;
 mod controller;
 mod layout;
 mod review;

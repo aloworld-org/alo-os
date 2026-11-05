@@ -58,7 +58,9 @@ switch { border-radius: 20px; min-width: 36px; min-height: 20px; background: #dd
 switch:checked { background: @accent; }
 switch slider { min-width: 16px; min-height: 16px; border-radius: 20px; border: none; background: white; margin: 2px; box-shadow: 0 1px 2px alpha(black, 0.15); }
 .settings-row { margin-top: 20px; }
-dropdown > button { font-size: 10px; color: #716a7d; padding: 8px 9px; min-height: 22px; background: transparent; box-shadow: none; }
+.setting-label { font-size: 10px; color: @muted; margin-right: 4px; }
+button.setting-choice { font-size: 10px; color: #716a7d; padding: 8px 11px; min-height: 20px; background: transparent; box-shadow: none; }
+button.setting-choice:checked { color: #5646ba; background: #f1eefd; border-color: #a99be8; }
 button.primary { background: @accent; color: white; border-color: @accent; padding: 12px 20px; font-weight: 650; box-shadow: 0 3px 5px alpha(@accent, 0.14); }
 button.primary:hover { background: #5546cb; }
 button.primary:disabled { background: #a79fdc; border-color: #a79fdc; }

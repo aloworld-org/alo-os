@@ -7,10 +7,7 @@ win=$(timeout 15s xdotool search --sync --onlyvisible --name '^alo Studio$' | he
 xdotool windowfocus "$win"
 xdotool key ctrl+shift+r
 sleep 2
-# Choose 720p explicitly in this software-rendered test environment. Production
-# still offers the person's choice and warns about a slow sample.
-xdotool mousemove --window "$win" 300 780 click 1
-xdotool key Down Return
+# Exercise the default profile, including an explicit quality warning if needed.
 xdotool key ctrl+shift+r
 bar=''
 # The global shortcut must respect the disabled New recording button while
