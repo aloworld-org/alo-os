@@ -1,10 +1,10 @@
 name: alo Studio
 on:
   pull_request:
-    paths: ['apps/alo-studio/**', 'crates/alo-capture-provider/**', 'crates/alo-capture-remote/**', 'crates/alo-capture-protocol/**', 'engines/pipewire/**', 'engines/pipewire-gstreamer/**', 'image/Containerfile', 'image/usr/lib/systemd/system/alo-portald.service', 'Cargo.toml', 'Cargo.lock', '.github/workflows/studio.yml']
+    paths: ['apps/alo-studio/**', 'crates/alo-capture-provider/**', 'crates/alo-capture-remote/**', 'crates/alo-capture-protocol/**', 'crates/alo-media-server/**', 'engines/pipewire/**', 'engines/pipewire-gstreamer/**', 'image/Containerfile', 'image/usr/lib/systemd/system/alo-portald.service', 'Cargo.toml', 'Cargo.lock', '.github/workflows/studio.yml']
   push:
     branches: [main]
-    paths: ['apps/alo-studio/**', 'crates/alo-capture-provider/**', 'crates/alo-capture-remote/**', 'crates/alo-capture-protocol/**', 'engines/pipewire/**', 'engines/pipewire-gstreamer/**', 'image/Containerfile', 'image/usr/lib/systemd/system/alo-portald.service', 'Cargo.toml', 'Cargo.lock', '.github/workflows/studio.yml']
+    paths: ['apps/alo-studio/**', 'crates/alo-capture-provider/**', 'crates/alo-capture-remote/**', 'crates/alo-capture-protocol/**', 'crates/alo-media-server/**', 'engines/pipewire/**', 'engines/pipewire-gstreamer/**', 'image/Containerfile', 'image/usr/lib/systemd/system/alo-portald.service', 'Cargo.toml', 'Cargo.lock', '.github/workflows/studio.yml']
   workflow_dispatch:
 permissions:
   contents: read

@@ -185,7 +185,7 @@ source-permission or demonstration-quality acceptance result.
 
 The integration now packages that engine privately for the publisher, with
 upstream's buffer-release race fix `2770143f506a92e242f8a5b8b870929b515b48c0`.
-The installed portal unit requests it explicitly, and the worker refuses an
+The sanitized publisher launcher supplies its fixed settings explicitly, and the worker refuses an
 unexpected filename or version. The distribution's daemon and other programs'
 plugins remain separate. New container checks target the image's pinned base
 and the stricter resume assertion. Their results and a real-portal microphone
