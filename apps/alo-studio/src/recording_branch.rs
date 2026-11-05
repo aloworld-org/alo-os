@@ -41,7 +41,7 @@ pub(crate) fn attach(
     // Thirty frames per second is a ceiling; a slow source never creates
     // duplicate work. Filenames and dimensions are assigned as properties.
     let bin = gst::parse::bin_from_description(&format!(
-        "queue name=record-entry max-size-buffers=2 max-size-bytes=0 max-size-time=0 ! videoconvert ! videoscale ! videorate skip-to-first=true drop-only=true ! capsfilter name=size \
+        "queue name=record-entry max-size-buffers=2 max-size-bytes=0 max-size-time=0 ! capsfilter name=record-format ! videoconvert ! videoscale ! videorate skip-to-first=true drop-only=true ! capsfilter name=size \
          ! queue name=record-buffer max-size-time=0 max-size-bytes=134217728 max-size-buffers=60 ! vp9enc name=encoder deadline=1 cpu-used=8 threads=4 lag-in-frames=0 target-bitrate=4500000 keyframe-max-dist=60 \
          ! queue ! webmmux name=container offset-to-zero=true ! filesink name=output async=false {audio}"
     ), true).map_err(failed)?;
@@ -59,10 +59,14 @@ pub(crate) fn attach(
     // An active preview may already have negotiated a fixed rate below 30.
     // Drop-only conversion must preserve that rate rather than demand an upsample.
     let ceiling = gst::Fraction::new(30, 1);
-    let rate = tee
+    let selected = tee
         .static_pad("sink")
         .and_then(|pad| pad.current_caps())
-        .and_then(|caps| caps.structure(0)?.get::<gst::Fraction>("framerate").ok())
+        .ok_or_else(|| MediaError(t("Please wait for the live preview, then try again.")))?;
+    by_name("record-format")?.set_property("caps", &selected);
+    let rate = selected
+        .structure(0)
+        .and_then(|structure| structure.get::<gst::Fraction>("framerate").ok())
         .filter(|rate| *rate > gst::Fraction::new(0, 1) && *rate < ceiling)
         .unwrap_or(ceiling);
     let caps = gst::Caps::builder("video/x-raw")
@@ -97,6 +101,24 @@ pub(crate) fn attach(
     let pad = tee
         .request_pad_simple("src_%u")
         .ok_or_else(|| MediaError(t("The recording could not be connected.")))?;
+    // Conversion belongs to this branch. Never ask the already selected native
+    // stream to reconnect when an encoder negotiates its output size or rate.
+    if pad
+        .add_probe(gst::PadProbeType::EVENT_UPSTREAM, |_, info| {
+            if info
+                .event()
+                .is_some_and(|event| matches!(event.view(), gst::EventView::Reconfigure(_)))
+            {
+                gst::PadProbeReturn::Drop
+            } else {
+                gst::PadProbeReturn::Ok
+            }
+        })
+        .is_none()
+    {
+        tee.release_request_pad(&pad);
+        return Err(MediaError(t("The recording could not be prepared.")));
+    }
     let Some(blocked) = pad.add_probe(gst::PadProbeType::BLOCK_DOWNSTREAM, |_, _| {
         gst::PadProbeReturn::Ok
     }) else {
@@ -107,7 +129,11 @@ pub(crate) fn attach(
     // state. The selected source and preview never disconnect or restart.
     let result = (|| {
         pipeline.add(&bin).map_err(failed)?;
-        pad.link(&sink).map_err(failed)?;
+        pad.link_full(
+            &sink,
+            gst::PadLinkCheck::DEFAULT | gst::PadLinkCheck::NO_RECONFIGURE,
+        )
+        .map_err(failed)?;
         bin.sync_state_with_parent().map_err(failed)?;
         Ok(())
     })();

@@ -151,18 +151,6 @@ impl Recorder {
         {
             return Err(MediaError(t("Please select a source for a new recording.")));
         }
-        // The portal selected a fixed native format. Keep downstream encoder
-        // negotiation from reconfiguring that permission-scoped PipeWire node.
-        let selected = self
-            .pipeline
-            .by_name("source")
-            .and_then(|source| source.static_pad("src"))
-            .and_then(|pad| pad.current_caps())
-            .ok_or_else(|| MediaError(t("Please wait for the live preview, then try again.")))?;
-        self.pipeline
-            .by_name("selected-format")
-            .ok_or_else(|| MediaError(t("The selected source is unavailable.")))?
-            .set_property("caps", &selected);
         self.video = Some(crate::recording_branch::attach(
             &self.pipeline,
             path,
@@ -190,7 +178,7 @@ impl Recorder {
             }
         };
         let pipeline = gst::parse::launch(&format!(
-            "{source_text} ! capsfilter name=selected-format ! queue name=video-input max-size-buffers=2 max-size-bytes=0 max-size-time=0 ! tee name=frames \
+            "{source_text} ! queue name=video-input max-size-buffers=2 max-size-bytes=0 max-size-time=0 ! tee name=frames \
              frames. ! queue leaky=downstream max-size-buffers=1 max-size-bytes=0 max-size-time=0 ! videoconvert ! videoscale ! video/x-raw,format=RGBA,width=[1,640],height=[1,480],pixel-aspect-ratio=1/1 ! appsink name=preview sync=false async=false max-buffers=1 drop=true"
         )).map_err(failed)?.downcast::<gst::Pipeline>()
             .map_err(|_| MediaError(t("The recording engine could not start.")))?;
