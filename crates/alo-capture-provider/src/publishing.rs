@@ -33,7 +33,7 @@ pub(super) fn run() -> Result<(), Box<dyn std::error::Error>> {
     pipeline.use_clock(Some(&gst::SystemClock::obtain()));
     let source = gst_app::AppSrc::builder()
         .is_live(true)
-        .do_timestamp(true)
+        .do_timestamp(false)
         .format(gst::Format::Time)
         .max_buffers(2)
         .max_bytes(0)
@@ -51,6 +51,10 @@ pub(super) fn run() -> Result<(), Box<dyn std::error::Error>> {
         .build();
     let sink = gst::ElementFactory::make("pipewiresink")
         .property_from_str("mode", "provide")
+        // PipeWire's header carries monotonic capture time, not this
+        // GStreamer pipeline's running time. Do not schedule that absolute
+        // timestamp as a relative presentation time in the publisher.
+        .property("sync", false)
         .property(
             "stream-properties",
             gst::Structure::builder("props")
@@ -113,15 +117,18 @@ fn valid(value: &str) -> bool {
             .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'.' | b'-' | b'_'))
 }
 
-/// A frame is timestamped at arrival by GStreamer, keeping microphone time aligned.
+/// Stamp capture arrivals in the monotonic domain shared by PipeWire clients.
 fn feed(source: gst_app::AppSrc, bytes: usize) -> io::Result<()> {
     let mut input = io::stdin().lock();
+    let clock = gst::SystemClock::obtain();
     loop {
         let mut frame = vec![0; bytes];
         input.read_exact(&mut frame)?;
-        source
-            .push_buffer(gst::Buffer::from_mut_slice(frame))
-            .map_err(io::Error::other)?;
+        let mut frame = gst::Buffer::from_mut_slice(frame);
+        let captured = clock.time();
+        frame.make_mut().set_pts(captured);
+        frame.make_mut().set_dts(captured);
+        source.push_buffer(frame).map_err(io::Error::other)?;
     }
 }
 
