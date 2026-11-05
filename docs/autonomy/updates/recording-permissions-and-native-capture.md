@@ -5,11 +5,13 @@ Work remains on `app/alo-studio`, with a draft review. Market publication,
 signed distribution, production-image acceptance, and physical-hardware
 acceptance are separate. The complete booted walk is **not yet accepted**.
 
-Current result: native permissions, the installable application, and the scoped
-automated checks are implemented and passing. The software VM completes static
-window recording controls and saves verified media, but the final animated-window
-microphone run still loses samples. Studio stops and preserves that partial video.
-This remains a draft and is not demonstration-quality or market-release acceptance.
+Current result: native permissions and the installable application are implemented.
+Formatting, clippy, 19 application tests, the GTK flow, and eight scoped PipeWire
+cases pass at application source `b4196118`; CI for that source is still running.
+The optimized installed package completes animated-window recording with microphone,
+Pause, Resume, and Finish, and saves playable media with accurate duration.
+Decoded video and audio still contain substantial gaps. Demonstration-quality
+acceptance fails, and the review remains a draft with no market publication.
 
 ## Implemented boundaries
 
@@ -380,7 +382,7 @@ not establish media readiness.
 The recording branch now observes the actual first audio buffer and excludes
 video preceding both that timestamp and branch readiness. The generated-audio
 PipeWire case starts audio 750 ms later to exercise the timing boundary on every
-application CI run. Installed VM validation of this change is still pending.
+application CI run. This fixture does not establish an installed VM quality pass.
 
 The initial process sampler was too expensive for acceptance measurements in
 the software VM; its results are diagnostic only. A later bounded sampler reads
@@ -403,10 +405,128 @@ actual count limit must still request a stop. This runs with application tests.
 
 The UI now distinguishes input preparation from recording. The timer and Pause
 wait for the first fresh video admitted to the chosen audio timeline, while
-Stop remains available. Hidden preview conversion stops, but the final retained
-preview remains available for the recording thumbnail. At `332962c5`, formatting,
+Stop remains available. The hidden workspace skips copying preview images, but
+the final retained preview remains available for the thumbnail. At `332962c5`, formatting,
 clippy, 18 tests, the GTK flow including thumbnail validation, and all eight
 PipeWire cases pass. This precedes validation of the audio-queue change.
+
+At `c4204e56`, formatting, clippy, all 19 application tests, the GTK recording
+flow, and all eight PipeWire cases pass. GTK evidence is `/tmp/tmp.H8cjh6tiyC`;
+ordinary publisher evidence is `/tmp/tmp.x4AhiEEECu`; native publisher evidence
+is `/tmp/tmp.Oy91h5TAfB`. A one-time mutation restoring the one-second timestamp
+limit makes the new audio regression fail with only 2 buffers (3,840 bytes).
+The actual count-bound refusal occurs at 200 buffers (384,000 bytes). Mutation
+evidence is `/root/studio-audio-queue-regression.D7qteq`; the unmodified source
+was rebuilt afterwards and its 19 tests pass again.
+
+The optimized package from that source is 1,091,832 bytes, SHA-256
+`99b51a89d748db14fe5e713930badd31ba0c8f9de098b3dc60b753f1b9a5c486`,
+Flatpak commit
+`a26da56b163b9705820737488c50f4f3baef0c4f0a57af9117068657f0dd439e`.
+The installed animated-window recording from this package is
+`1793893260-395891604-2`, preserved in
+`D:\\alo-studio-verification\\installed-bounded-audio-acceptance`.
+Audio begins at zero and video at 6 ms. All 664 decoded audio buffers are
+continuous, and the library/header agree at 13,260 ms. However, the raw queue
+actually reaches its 200-buffer limit and Studio stops before Pause. Video
+contains 26 frames, ends at 8.876 seconds, and has an uncovered gap of 819 ms.
+Continuous audio and correct duration do not make this a quality pass.
+
+Dedicated CI's first attempt at this source passed formatting, clippy and all
+19 tests, then timed out while starting Xvfb, before launching the application.
+Its job `127341663295` was rerun; the rerun has reached the native publisher
+build after passing the GTK flow. This is not an application test waiver.
+
+### Encoder and recording-controls follow-up
+
+The explicit 360p/5 fps choice now uses Opus complexity zero, retaining the
+48 kHz mono format and 96 kbit/s target bitrate. Other profiles retain
+complexity ten. Two ten-second audio measurements in the installed runtime
+took 5.848/5.889 seconds at complexity ten and 1.997/2.608 seconds at zero.
+VP9 row multithreading is enabled for recording and preflight. Reducing VP9's
+thread count did not improve the measured workload, so it remains four.
+These measurements justify narrower processing changes; they do not establish
+native recording quality.
+
+The recording bar now hides the workspace when mapped, even when the selected
+demonstration window retains focus. New Recording cannot re-present the busy
+workspace during preflight or countdown. The preview keeps draining native
+samples and skips copying images while hidden; a valve that stopped forwarding
+preview buffers was removed. The saved thumbnail retains the last preview.
+The GTK check requires the workspace to stay hidden while controls are open,
+and the media fixture checks encoding continues during hidden preview.
+
+Application actions now expose actual enabled states, and Pause exposes the
+actual lifecycle state. Absolute pause-state requests pass through the same
+pause/resume implementation as the buttons. Start becomes available after the
+first visible preview image. These changes permit bounded application commands
+during recording without repeatedly traversing the accessibility tree.
+
+The native development-binary run `1793897421-903215198-2` completed Start,
+Pause, Resume, and Finish without a recording-queue refusal. It contains 68
+video frames (36 distinct images), 1,478 audio buffers, and matching library
+and header duration of 37,480 ms. Video begins at 30 ms; audio begins at zero.
+However, uncovered gaps reach 7.515 seconds for video and 3.5 seconds for audio;
+video ends at 29.255 seconds while audio continues to 37.48 seconds.
+This is a functional completion and a failed quality check. It uses a normal
+feature-set development binary, not the final optimized installed executable.
+Evidence is `D:\\alo-studio-verification\\installed-command-controlled-recording`;
+the WebM SHA-256 is
+`c91da84e313ed568bb7ffc82bbad95665f5b2519b5350ff9d87f884a97dced5d`.
+
+The verification-only delayed-audio fixture now measures actual first delivery
+and shifts its timeline by that observed delay. A one-time mutation removing
+the startup gate fails with audio at 752.5 ms and video at zero. The earlier
+`audiotestsrc` timestamp-offset setting did not produce the intended delay;
+the corrected measurement is documented in
+`docs/misreadings/a-delay-setting-did-not-delay-the-fixture.md`.
+
+At application source `b4196118`, formatting, clippy, all 19 tests, the strict
+GTK flow, and all eight pinned-base PipeWire cases pass. GTK evidence is
+`/tmp/tmp.3CVbN7UfuS`; ordinary publisher evidence is `/tmp/tmp.m89CCdQT4A`;
+native publisher evidence is `/tmp/tmp.ebRms6JmIf`. The runner now closes its
+own process group, including its private accessibility/D-Bus helpers. Older
+helpers belonging only to these Studio fixtures were removed after exhausting
+the host's per-user watcher limit. No wider session cleanup was performed.
+
+The optimized bundle from application source `b4196118` has SHA-256
+`fc30dd088b14daeac496c2554183ea756b9fc03f70afd9df9e85751ab7b0b106`
+and Flatpak commit
+`15a0491b0fbdd7bc2071874a7b1b628d30843315282c2c7a2ff454c9cd588c63`.
+The bundle is 1,101,864 bytes and is installed normally in the private VM.
+No timing preload or development executable is used for this installed run.
+Animated-window clip `1793898614-661320853-2` completes Start, absolute Pause,
+absolute Resume, and Finish. It decodes to 47 video frames (36 distinct images)
+at 452 x 360, up to 5 fps, and 1,473 audio buffers. Library and header duration
+both equal 33,720 ms; decoded playback reports 33.74 seconds including packet
+padding. Audio begins at zero; video begins at 588 ms, outside the fixture's
+250 ms startup allowance. Video's largest uncovered gap is 11.775 seconds and
+audio's is 2.16 seconds. Video ends at 25.523 seconds while audio continues to
+33.72 seconds. This is a failed startup/continuity quality measurement, despite
+functional completion and a playable saved file.
+
+Evidence is `D:\\alo-studio-verification\\installed-optimized-native-recording`;
+the WebM SHA-256 is
+`2ac341a8fd013bd95749ab736924feb038d0b0cd60d3fe09fdff87110dbfb0c1`.
+The native picker log confirms the animated demonstration window was explicitly
+selected. During Pause the microphone input node is idle. After Finish the
+global graph has no audio input streams and no native capture worker remains.
+Pause is disabled with its state reset. One immediate post-save command query
+timed out at 15 seconds; the later query returned the expected completed state.
+Neither query result changes the failed media-quality result.
+
+The development executable and timing preload have been removed. The normal
+installed application remains running, and the separate demonstration fixture
+is stopped. Normal SSH service is restored, the temporary authorized key is
+removed, and both private SSH and evidence-HTTP host forwarding rules are
+closed. The VM disk, completed recordings, and earlier partial files remain.
+The staged OS overlay is still temporary and will not survive a reboot.
+
+Native motion and audio continuity, production-image acceptance, and signed
+market distribution remain open. The current VM is the only available OS test
+machine; isolated-fixture results do not substitute for its failed quality
+measurement. No further OS-engine or virtual-machine configuration change is
+claimed as a fix. Desktop locking remains a separate OS change.
 
 The dedicated application CI passed at `df655460`, `e5810d12`, and `21c303eb`,
 including the new isolated microphone fixture. Broader OS acceptance remains open;
