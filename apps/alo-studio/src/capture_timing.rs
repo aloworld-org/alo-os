@@ -12,13 +12,12 @@ pub(crate) fn receive(
     source: &gst::Element,
     paused: Arc<AtomicBool>,
 ) -> Result<(), MediaError> {
-    // Frames already arrive live from the selected source. The plugin's
-    // pseudo-live clock scheduling can interpret a remote time base as a
-    // future presentation deadline, blocking the stream before our queues.
+    // The selected source supplies live frames. Keep live scheduling; cached
+    // keepalive frames are disabled when constructing the source instead.
     source.set_property(
         "stream-properties",
         gst::Structure::builder("props")
-            .field("stream.is-live", false)
+            .field("stream.is-live", true)
             .build(),
     );
     let pipeline = pipeline.downgrade();
