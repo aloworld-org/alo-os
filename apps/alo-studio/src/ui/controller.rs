@@ -176,6 +176,20 @@ fn connect(state: &Rc<State>, application: &gtk::Application) {
         } else {
             gio::SimpleAction::new(name, None)
         };
+        if name == "pause" {
+            let own = state.clone();
+            action.connect_change_state(move |_, value| {
+                let Some(paused) = value.and_then(|value| value.get::<bool>()) else {
+                    return;
+                };
+                let phase = own.session.borrow().phase();
+                if matches!(phase, Phase::Recording | Phase::Paused)
+                    && paused != (phase == Phase::Paused)
+                {
+                    own.pause();
+                }
+            });
+        }
         let own = state.clone();
         action.connect_activate(move |_, _| match name {
             "new" => own.new_recording(),
