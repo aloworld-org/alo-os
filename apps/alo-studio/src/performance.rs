@@ -18,12 +18,13 @@ pub enum Assessment {
 /// cost. The recording queue also stops a real recording if its encoder stalls.
 pub fn check(width: i32, height: i32) -> Result<Assessment, MediaError> {
     gst::init().map_err(|error| MediaError(error.to_string()))?;
-    let element = gst::parse::launch("videotestsrc num-buffers=45 pattern=smpte ! capsfilter name=size ! videoconvert ! vp9enc deadline=1 cpu-used=8 threads=4 target-bitrate=4500000 ! fakesink sync=false")
+    let element = gst::parse::launch("videotestsrc num-buffers=45 pattern=smpte ! capsfilter name=size ! videoconvert ! vp9enc deadline=1 cpu-used=8 threads=4 lag-in-frames=0 target-bitrate=4500000 ! fakesink sync=false")
         .map_err(|error| MediaError(error.to_string()))?;
     let pipeline = element
         .downcast::<gst::Pipeline>()
         .map_err(|_| MediaError(t("Recording quality could not be checked.")))?;
     let caps = gst::Caps::builder("video/x-raw")
+        .field("format", "I420")
         .field("width", width)
         .field("height", height)
         .field("framerate", gst::Fraction::new(30, 1))

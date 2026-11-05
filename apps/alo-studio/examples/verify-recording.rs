@@ -176,6 +176,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .ok_or("No video duration")?;
     pipeline.set_state(gst::State::Null)?;
     result?;
+    if duration < gst::ClockTime::from_seconds(time_scale) {
+        return Err("The decoded recording is too short for the observed capture".into());
+    }
     if duration > gst::ClockTime::from_mseconds(4000 * time_scale + 700) {
         return Err("Paused time was included in the recording".into());
     }
