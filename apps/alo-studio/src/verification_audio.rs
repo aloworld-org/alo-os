@@ -18,7 +18,7 @@ pub(crate) fn delay(source: &gst::Element, pipeline: &gst::Pipeline) -> Result<(
     // microphone that changes state before it can supply timestamped samples.
     source.set_property("do-timestamp", false);
     let pipeline = pipeline.downgrade();
-    let mut offset = None;
+    let offset = std::sync::OnceLock::new();
     source
         .static_pad("src")
         .and_then(|pad| {
@@ -29,7 +29,7 @@ pub(crate) fn delay(source: &gst::Element, pipeline: &gst::Pipeline) -> Result<(
                 let Some(stamp) = buffer.pts() else {
                     return gst::PadProbeReturn::Ok;
                 };
-                let adjustment = *offset.get_or_insert_with(|| {
+                let adjustment = *offset.get_or_init(|| {
                     std::thread::sleep(std::time::Duration::from_millis(delay));
                     pipeline
                         .upgrade()
