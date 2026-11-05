@@ -180,10 +180,8 @@ impl State {
             }
         });
         let workspace = self.view.window.downgrade();
-        bar.connect_is_active_notify(move |bar| {
-            if bar.is_active()
-                && let Some(workspace) = workspace.upgrade()
-            {
+        bar.connect_map(move |_| {
+            if let Some(workspace) = workspace.upgrade() {
                 workspace.set_visible(false);
             }
         });

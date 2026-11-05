@@ -39,6 +39,10 @@ if [[ -z "$bar" ]]; then
 fi
 xdotool windowfocus "$bar"
 sleep 1
+if xdotool search --onlyvisible --name '^alo Studio$' >/dev/null 2>&1; then
+  echo 'The recording workspace stayed visible after its controls appeared.' >&2
+  exit 1
+fi
 xdotool key space
 sleep 1
 xdotool key space
