@@ -175,6 +175,8 @@ fn connect(state: &Rc<State>, application: &gtk::Application) {
         application.set_accels_for_action(&format!("app.{name}"), &keys);
     }
     let keyboard = gtk::EventControllerKey::new();
+    // Consume the recording shortcut before a focused button also handles Space.
+    keyboard.set_propagation_phase(gtk::PropagationPhase::Capture);
     let own = state.clone();
     keyboard.connect_key_pressed(move |_, key, _, _| {
         let phase = own.session.borrow().phase();

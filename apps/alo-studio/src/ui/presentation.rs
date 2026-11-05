@@ -182,6 +182,7 @@ impl State {
             }
         });
         let keyboard = gtk::EventControllerKey::new();
+        keyboard.set_propagation_phase(gtk::PropagationPhase::Capture);
         let own = self.clone();
         keyboard.connect_key_pressed(move |_, key, _, _| {
             if key == gtk::gdk::Key::space
