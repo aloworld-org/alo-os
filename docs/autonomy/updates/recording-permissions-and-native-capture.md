@@ -5,6 +5,12 @@ Work remains on `app/alo-studio`, with a draft review. Market publication,
 signed distribution, production-image acceptance, and physical-hardware
 acceptance are separate. The complete booted walk is **not yet accepted**.
 
+Current result: native permissions, the installable application, and the scoped
+automated checks are implemented and passing. The software VM completes static
+window recording controls and saves verified media, but the final animated-window
+microphone run still loses samples. Studio stops and preserves that partial video.
+This remains a draft and is not demonstration-quality or market-release acceptance.
+
 ## Implemented boundaries
 
 alo's public portal identifies the Flatpak caller through its bus connection
@@ -32,8 +38,10 @@ from ordinary installed builds.
 
 ## Recording behavior
 
-Saved duration comes from encoded packets. Empty video cannot become a completed
-library entry. Preview dimensions are bounded without enlarging small sources.
+Saved duration is read from the completed media by GStreamer discovery, off the
+UI thread with a 15-second deadline. Missing, damaged, empty, or audio-only media
+is refused; failure preserves the temporary file. Preview dimensions are bounded
+without enlarging small sources.
 Recording preserves incoming timing, up to 30 frames per second, and does not
 invent duplicate frames for a slow source. A quality check offers an explicit
 choice before recording on a slow device.
@@ -42,7 +50,7 @@ The latest implementation keeps the selected capture stream connected from
 preview through recording. It attaches the encoder and optional audio branch to
 the running pipeline with a blocked tee pad, retaining the negotiated source
 rate when below 30. Finish stops inputs, then drains queued media into WebM.
-Encoded frames are bounded by both frame count and 128 MiB. Microphone recording
+Queued raw video is bounded by both frame count and 128 MiB. Microphone recording
 starts off for every new recording. Native dialogs share Studio's application ID.
 
 ## Verification and current limits
@@ -275,6 +283,89 @@ native publisher evidence is `/tmp/tmp.Auh5biNyDa`. The low-resource microphone
 tracks start 33.5 ms apart in the ordinary fixture and 102.5 ms apart through
 the restricted native descriptor. These repeat in dedicated recording CI.
 The updated SDK build and another actual VM measurement remain in progress.
+
+The next normally installed package, SHA-256
+`8d5b4afb8165777d8e72d92b5d277e6a9365b9628c44fd1236888caa34586e80`,
+at Flatpak commit
+`cec0977b8c0985cc311ca44493ffb211fc9c690a9a45b6e3e0ef828027458dab`,
+completed Start, Pause, Resume, and Finish with microphone enabled. Both tracks
+start at zero and no microphone sample-loss warning was logged for that run.
+Clip `1793871577-829297835-2` decodes to 27 video frames at 476 x 360, 5 fps and
+863 audio buffers over 19.3 seconds. Video ends at 17.767 seconds; metadata
+incorrectly reports 24.306 seconds. WebM SHA-256 is
+`df587c7d6dae8aaa709441973c1c253c06d279beb513daf068852aa2580ac9d7`.
+Evidence is `D:\\alo-studio-verification\\installed-verified-window-microphone`.
+
+The thumbnail establishes that the chooser's default had changed to Studio
+itself. This proves that selected window's lifecycle, not the demonstration
+window's recording quality. The final walk explicitly selects the demonstration
+window before Share. Sparse video and the duration discrepancy prevent a quality
+acceptance claim for this run.
+
+At `298342a5`, the application reads completed-file duration with GstDiscoverer
+instead of estimating it from encoder packets. Discovery runs on a worker after
+capture has closed. It must succeed before the library entry is committed.
+Formatting, clippy and 16 tests pass, including damaged/missing media refusal.
+Header discovery and decoded-stream duration queries differ in final packet
+padding. Each must fit the observed active recording window; the GTK flow
+requires its saved metadata to equal discovery exactly.
+
+The normally installed duration-fix package has SHA-256
+`dc40d06a9531ac1f5ab3eb8ec1080277f3d73f1943b2ce4735ef2d5b58f4accc`,
+Flatpak commit
+`ef9024952e3a78a2f28afd8151f85eb67a3785088cbd58994b37cae5e0c97514`.
+It explicitly selected the demonstration window and completed the microphone
+Start/Pause/Resume/Finish flow. Clip `1793873010-622283278-2` has 41 video frames
+at 494 x 360, 5 fps and 762 audio buffers. Both tracks start at zero. The header
+and metadata both report 17,320 ms; decoded playback reports 17,340 ms.
+Its thumbnail contains only the intended demonstration window. WebM SHA-256 is
+`b9b00839a925963e0b753775b75fb5441523e5b2f2cda10849318cad8311d2d1`;
+evidence is `D:\\alo-studio-verification\\installed-demonstration-window-microphone`.
+No microphone sample-loss warning was logged, but decoded timestamps still have
+gaps (up to 4.764 seconds between video-frame coverage and 2.1 seconds between
+audio-buffer coverage). Functional completion does not establish smooth motion
+or uninterrupted audio in this software VM.
+
+An intermittent host `gst_mini_object_unref(NULL)` critical was traced to pad
+buffer handling, not discovery. Filtered buffers now return `Handled`, letting
+the Rust binding consume each buffer once. `verify-native.sh` makes critical
+warnings fatal and deliberately delays branch preparation to exercise stale
+preview-frame filtering. At `199acff6`, formatting, clippy, 16 tests, this strict
+GTK flow, and all eight pinned-base media cases pass. GTK evidence is
+`/tmp/tmp.N8pHi8Hy0H`; ordinary PipeWire evidence is `/tmp/tmp.ZQInBFEzb6`;
+native publisher evidence is `/tmp/tmp.wiYFAu8H63`. The dedicated CI job
+`127183816629` also passed. The workspace screenshot now shows the actual current
+application, including direct quality and countdown controls.
+
+The resulting package is 1,094,736 bytes, SHA-256
+`93a4f0e3e4fe58af1ce142ce3efd955b35b3f0030c2a356b2fc02e9e0ba0f6d5`,
+Flatpak commit
+`ab0047617e27ee70a3c03827559ca0e139c531f17a75269b83cfc0ddbdbcf8ee`.
+It is installed normally in the VM. The final explicitly selected animated-window
+measurement used a separate GTK fixture with a visible, running spinner.
+Clip `1793875272-784685961-2` contains 13 distinct decoded video frames at
+452 x 360, 5 fps and 281 audio buffers. Both tracks start at zero. Its header
+and library metadata agree at 10,060 ms; decoded playback reports 10,080 ms.
+Video ends at 3.439 seconds, while audio ends at 10.06 seconds. The guest reports
+111,360 dropped microphone samples, and Studio automatically stops and saves.
+Pause did not complete before that stop. This is a failed motion/audio quality
+check, despite successful file finalization and accurate duration.
+
+Evidence is `D:\\alo-studio-verification\\installed-animated-window-validation`.
+The thumbnail confirms the intended animated demonstration window; the decoded
+frames are distinct. WebM SHA-256 is
+`1d2fd6cdf1a994dd6471cd1116fca32d9aa0608554f5f3e8d21d15593892507f`.
+The post-stop graph has no input streams and no capture workers remain. The
+normal SSH service was restored, the temporary verification key removed, and
+its private host forwarding rule closed. The application and evidence remain
+on the private VM disk; its staged OS overlay is temporary and will not survive
+a reboot. Only this software VM was available, as confirmed by the owner.
+
+Both dedicated recording CI (`127183816629`) and the broader OS gate
+(`127184154863`) pass on `199acff6`. Remaining release work is animated-source
+audio/video continuity in the software VM, production-image and physical-machine
+acceptance, then signed application-market publication. Desktop locking remains
+the separately authorised OS change.
 
 The dedicated application CI passed at `df655460`, `e5810d12`, and `21c303eb`,
 including the new isolated microphone fixture. Broader OS acceptance remains open;
