@@ -9,6 +9,10 @@ use std::os::{
 };
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
+use std::sync::{
+    Arc,
+    atomic::{AtomicU64, Ordering},
+};
 use std::time::{Duration, Instant};
 
 // Integration-only reuse of the OS wire codec. Independent installed builds
@@ -58,7 +62,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // A PipeWire fixture never opens the real microphone. The second pass adds
     // a generated tone to exercise simultaneous video and audio on that source.
     let generated_audio = std::env::var_os("ALO_STUDIO_VERIFY_GENERATED_AUDIO").is_some();
-    let microphone = remote.is_none() || generated_audio;
+    let pulse_audio = std::env::var_os("ALO_STUDIO_VERIFY_PULSE_AUDIO").is_some();
+    let microphone = remote.is_none() || generated_audio || pulse_audio;
     // Software-emulated OS guests need a longer observation window. The
     // default CI timing and minimum continuous-frame requirement stay strict.
     let time_scale: u64 = match std::env::var("ALO_STUDIO_VERIFY_TIME_SCALE") {
@@ -86,6 +91,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         && (preview_frame.width != 640 || preview_frame.height != expected.parse::<i32>()?)
     {
         return Err("The preview changed the source's aspect ratio".into());
+    }
+    // An actual audio source joins an already running preview, as it does after
+    // the person's quality check. A private Pulse server must be selected by
+    // the caller; this opt-in diagnostic can otherwise open a real microphone.
+    if pulse_audio {
+        std::thread::sleep(Duration::from_secs(3));
     }
     alo_studio::performance::check(preview_frame.width, preview_frame.height)?;
     if generated_audio {
@@ -155,9 +166,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     // Decoding proves the muxed output is a usable video, not just a nonempty file.
     let decode = if microphone {
-        "filesrc name=input ! matroskademux name=demux demux.video_0 ! queue ! vp9dec ! fakesink sync=false demux.audio_0 ! queue ! opusdec ! fakesink sync=false"
+        "filesrc name=input ! matroskademux name=demux demux.video_0 ! queue ! vp9dec name=video ! fakesink sync=false async=false demux.audio_0 ! queue ! opusdec name=audio ! fakesink sync=false async=false"
     } else {
-        "filesrc name=input ! matroskademux ! vp9dec ! fakesink sync=false"
+        "filesrc name=input ! matroskademux ! vp9dec name=video ! fakesink sync=false async=false"
     };
     let pipeline = gst::parse::launch(decode)?
         .downcast::<gst::Pipeline>()
@@ -166,6 +177,24 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .by_name("input")
         .ok_or("No input")?
         .set_property("location", output.to_string_lossy().as_ref());
+    let first = [
+        Arc::new(AtomicU64::new(u64::MAX)),
+        Arc::new(AtomicU64::new(u64::MAX)),
+    ];
+    for (name, first) in ["video", "audio"].into_iter().zip(first.iter()) {
+        if let Some(decoder) = pipeline.by_name(name) {
+            let first = first.clone();
+            decoder
+                .static_pad("src")
+                .ok_or("No decoded output")?
+                .add_probe(gst::PadProbeType::BUFFER, move |_, info| {
+                    if let Some(stamp) = info.buffer().and_then(|buffer| buffer.pts()) {
+                        first.fetch_min(stamp.nseconds(), Ordering::Relaxed);
+                    }
+                    gst::PadProbeReturn::Ok
+                });
+        }
+    }
     pipeline.set_state(gst::State::Playing)?;
     let bus = pipeline.bus().ok_or("No bus")?;
     let message = bus
@@ -184,6 +213,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .ok_or("No video duration")?;
     pipeline.set_state(gst::State::Null)?;
     result?;
+    if microphone {
+        let video = first[0].load(Ordering::Relaxed);
+        let audio = first[1].load(Ordering::Relaxed);
+        if video == u64::MAX || audio == u64::MAX {
+            return Err("Both video and audio must decode actual buffers".into());
+        }
+        println!("Decoded first video/audio timestamps: {video} / {audio} ns");
+        if video.abs_diff(audio) > 250_000_000 * time_scale {
+            return Err("Video and microphone did not start on the same timeline".into());
+        }
+    }
     if duration < gst::ClockTime::from_seconds(time_scale) {
         return Err("The decoded recording is too short for the observed capture".into());
     }
