@@ -284,6 +284,7 @@ impl State {
         }
         let frame = self.engine.borrow().as_ref().and_then(Recorder::frame);
         if let Some(frame) = frame {
+            let first_frame = self.view.placeholder.is_visible();
             if let Some((width, height)) = self
                 .engine
                 .borrow()
@@ -308,6 +309,19 @@ impl State {
             );
             self.view.preview.set_paintable(Some(&texture));
             self.view.placeholder.set_visible(false);
+            if first_frame {
+                let preview = self.view.preview.clone();
+                let pixels = (frame.width, frame.height);
+                glib::timeout_add_local_once(Duration::from_secs(1), move || {
+                    eprintln!(
+                        "Studio preview: {} x {} pixels, display area {} x {}",
+                        pixels.0,
+                        pixels.1,
+                        preview.width(),
+                        preview.height()
+                    );
+                });
+            }
             if let (Some(clip), Some(library)) = (self.clip.borrow().as_ref(), &self.library)
                 && let Ok(path) = library.thumbnail(&clip.id)
                 && !path.exists()
