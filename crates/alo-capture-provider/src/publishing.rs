@@ -26,6 +26,7 @@ pub(super) fn run() -> Result<(), Box<dyn std::error::Error>> {
     }
     let bytes = frame_bytes(width, height)?;
     gst::init()?;
+    crate::private_engine::verify()?;
     let pipeline = gst::Pipeline::new();
     // This worker drives video from compositor arrivals. Its PipeWire output
     // clock can remain at zero until a consumer starts the graph, which would

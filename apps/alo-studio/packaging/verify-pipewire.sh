@@ -10,6 +10,8 @@ if [[ "${1:-}" != --session ]]; then
   mkdir -m 700 "$XDG_RUNTIME_DIR"
   mkdir -p "$XDG_CONFIG_HOME/wireplumber/main.lua.d"
   printf 'alsa_monitor.enabled = false\nv4l2_monitor.enabled = false\nlibcamera_monitor.enabled = false\n' > "$XDG_CONFIG_HOME/wireplumber/main.lua.d/89-studio-fixture.lua"
+  mkdir -p "$XDG_CONFIG_HOME/wireplumber/wireplumber.conf.d"
+  printf 'wireplumber.profiles = { main = { hardware.audio = disabled hardware.bluetooth = disabled hardware.video-capture = disabled } }\n' > "$XDG_CONFIG_HOME/wireplumber/wireplumber.conf.d/89-studio-fixture.conf"
   exec dbus-run-session -- bash "$0" --session "$scratch" "${CARGO_TARGET_DIR:-$app_dir/target}"
 fi
 scratch="$2"
@@ -29,12 +31,16 @@ for attempt in $(seq 1 50); do
   sleep .1
 done
 start_source() {
+publisher=(env)
+if [[ -n "${ALO_STUDIO_PUBLISHER_PLUGIN_PATH:-}" ]]; then
+  publisher+=("GST_PLUGIN_PATH_1_0=$ALO_STUDIO_PUBLISHER_PLUGIN_PATH" "GST_REGISTRY=$scratch/publisher-registry.bin" "ALO_CAPTURE_REQUIRE_PRIVATE_PLUGIN=1")
+fi
 if [[ -n "${ALO_STUDIO_CAPTURE_PROVIDER:-}" ]]; then
   # The actual compositor publisher must preserve square pixels across the
   # PipeWire bridge, including a source whose aspect ratio differs from 16:9.
   : > "$scratch/publisher.json"
   gst-launch-1.0 -q videotestsrc is-live=true pattern=ball ! video/x-raw,format=BGRx,width=1280,height=800,framerate=30/1 ! fdsink fd=1 2> "$scratch/input.log" |
-    "$ALO_STUDIO_CAPTURE_PROVIDER" 1280 800 studio-pipewire-fixture org.aloworld.Studio > "$scratch/publisher.json" 2> "$scratch/source.log" &
+    "${publisher[@]}" "$ALO_STUDIO_CAPTURE_PROVIDER" 1280 800 studio-pipewire-fixture org.aloworld.Studio > "$scratch/publisher.json" 2> "$scratch/source.log" &
   source_pid=$!
   for attempt in $(seq 1 350); do
     [[ ! -s "$scratch/publisher.json" ]] || break
@@ -46,7 +52,7 @@ if [[ -n "${ALO_STUDIO_CAPTURE_PROVIDER:-}" ]]; then
   ALO_STUDIO_VERIFY_NODE_SERIAL=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["serial"])' "$scratch/publisher.json")
   export ALO_STUDIO_EXPECT_PREVIEW_HEIGHT=400
 else
-  gst-launch-1.0 -q videotestsrc is-live=true pattern=ball ! video/x-raw,format=RGBx,width=640,height=360,framerate=30/1 ! pipewiresink mode=provide stream-properties='props,node.name=studio-pipewire-fixture,media.class=Video/Source' > "$scratch/source.log" 2>&1 &
+  "${publisher[@]}" gst-launch-1.0 -q videotestsrc is-live=true pattern=ball ! video/x-raw,format=RGBx,width=640,height=360,framerate=30/1 ! pipewiresink mode=provide stream-properties='props,node.name=studio-pipewire-fixture,media.class=Video/Source' > "$scratch/source.log" 2>&1 &
   source_pid=$!
   sleep 2
   pw-dump > "$scratch/nodes.json"

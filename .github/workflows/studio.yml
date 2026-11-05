@@ -1,10 +1,10 @@
 name: alo Studio
 on:
   pull_request:
-    paths: ['apps/alo-studio/**', 'crates/alo-capture-provider/**', 'crates/alo-capture-remote/**', 'crates/alo-capture-protocol/**', 'engines/pipewire/**', 'Cargo.toml', 'Cargo.lock', '.github/workflows/studio.yml']
+    paths: ['apps/alo-studio/**', 'crates/alo-capture-provider/**', 'crates/alo-capture-remote/**', 'crates/alo-capture-protocol/**', 'engines/pipewire/**', 'engines/pipewire-gstreamer/**', 'image/Containerfile', 'image/usr/lib/systemd/system/alo-portald.service', 'Cargo.toml', 'Cargo.lock', '.github/workflows/studio.yml']
   push:
     branches: [main]
-    paths: ['apps/alo-studio/**', 'crates/alo-capture-provider/**', 'crates/alo-capture-remote/**', 'crates/alo-capture-protocol/**', 'engines/pipewire/**', 'Cargo.toml', 'Cargo.lock', '.github/workflows/studio.yml']
+    paths: ['apps/alo-studio/**', 'crates/alo-capture-provider/**', 'crates/alo-capture-remote/**', 'crates/alo-capture-protocol/**', 'engines/pipewire/**', 'engines/pipewire-gstreamer/**', 'image/Containerfile', 'image/usr/lib/systemd/system/alo-portald.service', 'Cargo.toml', 'Cargo.lock', '.github/workflows/studio.yml']
   workflow_dispatch:
 permissions:
   contents: read
@@ -39,14 +39,14 @@ jobs:
           cargo +1.97.0 build --locked --features verification
       - name: Record, pause, finalize, and decode a real framebuffer
         run: bash apps/alo-studio/packaging/verify-native.sh
-      - name: Keep the actual PipeWire connection alive from preview to recording
-        run: bash apps/alo-studio/packaging/verify-pipewire.sh
       - name: Build the native capture publisher and permission-scoped remote
         env:
           CARGO_TARGET_DIR: ${{ github.workspace }}/apps/alo-studio/target
         run: cargo +1.97.0 build --locked -p alo-capture-provider -p alo-capture-remote
-      - name: Preview, record and decode the native publisher without changing aspect ratio
-        env:
-          ALO_STUDIO_CAPTURE_PROVIDER: ${{ github.workspace }}/apps/alo-studio/target/debug/alo-capture-provider
-          ALO_STUDIO_CAPTURE_REMOTE: ${{ github.workspace }}/apps/alo-studio/target/debug/alo-capture-remote
-        run: bash apps/alo-studio/packaging/verify-pipewire.sh
+      - name: Build the capture plugin against the image's pinned base
+        run: |
+          base=$(sed -n 's/^ARG THE_BASE=//p' image/Containerfile)
+          [[ "$base" == *@sha256:* ]]
+          docker build --build-arg "THE_BASE=$base" -f engines/pipewire-gstreamer/verification.Containerfile -t studio-capture-verification .
+      - name: Record, pause, resume and decode through the pinned native publisher
+        run: docker run --rm --network=none -v "$PWD:/source:ro" studio-capture-verification

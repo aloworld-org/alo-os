@@ -88,6 +88,14 @@ must survive pause/resume; closing or revoking its session must still remove it.
 Remove the private copy when the OS's packaged plugin supplies the required
 lifecycle behavior. An isolated plugin trial is not a booted acceptance pass.
 
+The private copy also carries upstream's buffer-release race fix
+[`2770143f506a92e242f8a5b8b870929b515b48c0`](https://github.com/PipeWire/pipewire/commit/2770143f506a92e242f8a5b8b870929b515b48c0).
+It acquires the PipeWire loop lock before inspecting the buffer that the loop
+may concurrently remove. Keep this as a separately checksummed upstream patch,
+applied to a build copy; retain the imported source unchanged. The plugin from
+1.6.9 was evaluated but requires SPA format definitions absent from the OS's
+1.4 headers, so it is not a drop-in replacement for this pinned base.
+
 Permanent checks must cover caller and session ownership, cancellation,
 revocation, stale selections, unknown media activity, and refusal without a
 record. A real private PipeWire server must prove both the selected stream's

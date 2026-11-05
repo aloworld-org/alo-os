@@ -1,6 +1,8 @@
 //! A native-libc worker; the public portal daemon never links a media engine.
 
 #[cfg(target_os = "linux")]
+mod private_engine;
+#[cfg(target_os = "linux")]
 mod publishing;
 
 #[cfg(target_os = "linux")]

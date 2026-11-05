@@ -162,6 +162,35 @@ cause. The trial was reverted to the original CPU configuration. Console
 evidence is `D:\\alo-studio-verification\\cpu-evaluation-console.log`; the five
 staged OS binaries were backed up and checksum-verified before restoration.
 
+The updated package above is installed normally after restoration, at Flatpak
+commit `a37cad8275c79da1d998bab7adfe7c153fa4c5938f3faf9c3c32e12c2762bafd`.
+The private test disk had two serial login services sharing one terminal; the
+duplicate was masked. The first-boot application installer was also stopped
+during capture diagnostics. Neither adjustment changes the application.
+
+An isolated guest transport reproduction exposed a publisher lifecycle failure:
+the distribution's PipeWire 1.4.11 GStreamer sink exits with `all buffers have
+been removed`. A warmed run delivered seven preview frames, then none after
+Resume. The strengthened probe now requires at least two fresh frames after
+Resume; the older aggregate-frame check could accept only pre-pause frames.
+The same stricter check also exposed the host's older distribution fixture.
+
+The upstream owned-buffer plugin at `ee2c6eb41ebab02c91faeb567cba86ece44dd996`
+survived the guest reproduction: 44 preview frames, including 27 after Resume,
+and VP9/WebM decoded to EOS. Its trial binary SHA-256 is
+`88959dd93b3046e2d16ad5609444cfe7e4e4236e0ce0b5240cbaa758b7aeffe7`.
+Evidence is `D:\\alo-studio-verification\\guest-transport-owned-buffer-prototype`.
+This used generated frames and a diagnostic PipeWire connection; it is not a
+source-permission or demonstration-quality acceptance result.
+
+The integration now packages that engine privately for the publisher, with
+upstream's buffer-release race fix `2770143f506a92e242f8a5b8b870929b515b48c0`.
+The installed portal unit requests it explicitly, and the worker refuses an
+unexpected filename or version. The distribution's daemon and other programs'
+plugins remain separate. New container checks target the image's pinned base
+and the stricter resume assertion. Their results and a real-portal microphone
+walk remain required before acceptance.
+
 The dedicated application CI passed at `df655460`, `e5810d12`, and `21c303eb`,
 including the new isolated microphone fixture. Broader OS acceptance remains open;
 there is no full-workspace, production-image, or physical-hardware pass here.

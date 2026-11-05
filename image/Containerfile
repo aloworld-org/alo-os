@@ -239,7 +239,7 @@ FROM ${THE_BASE} AS shell
 ARG THE_STABLE
 
 RUN dnf install --assumeyes --setopt=install_weak_deps=False \
-      gcc \
+      gcc patch \
       wayland-devel libinput-devel libseat-devel libxkbcommon-devel \
       pixman-devel mesa-libEGL-devel mesa-libgbm-devel systemd-devel \
       pipewire-devel clang-libs gstreamer1-devel gstreamer1-plugins-base-devel \
@@ -286,7 +286,8 @@ WORKDIR /alo-os
 
 # No `--target`: the host triple of this stage is the base's own, which is the
 # whole point of building here.
-RUN cargo build --release --package alo-shell --package alo-desktop --package alo-capture-remote --package alo-capture-provider \
+RUN bash engines/pipewire-gstreamer/build.sh target/native-capture-plugin \
+ && cargo build --release --package alo-shell --package alo-desktop --package alo-capture-remote --package alo-capture-provider \
  && test -x target/release/alo-compositor \
  && test -x target/release/alo-desktop \
  && test -x target/release/alo-capture-remote \
@@ -503,6 +504,8 @@ COPY --from=shell /alo-os/target/release/alo-compositor /usr/bin/alo-compositor
 COPY --from=shell /alo-os/target/release/alo-desktop /usr/bin/alo-desktop
 COPY --from=shell /alo-os/target/release/alo-capture-remote /usr/libexec/alo-capture-remote
 COPY --from=shell /alo-os/target/release/alo-capture-provider /usr/libexec/alo-capture-provider
+COPY --from=shell /alo-os/target/native-capture-plugin/libgstpipewire.so /usr/lib/alo-capture-provider/gstreamer-1.0/libgstpipewire.so
+COPY engines/pipewire-gstreamer/COPYING /usr/share/licenses/alo-capture-provider/pipewire-gstreamer
 
 # The converting service is in libexec for the same reason (ADR 0039): systemd
 # starts it when something knocks on its socket, and nobody runs it by hand.

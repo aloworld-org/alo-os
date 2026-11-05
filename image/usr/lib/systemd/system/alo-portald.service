@@ -56,6 +56,14 @@ Environment=DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus
 Environment=HOME=/home/alo
 Environment=XDG_STATE_HOME=/home/alo/.local/state
 
+# The publisher owns its video buffers through pause/resume. Its private engine
+# and registry never replace the distribution plugin for other applications.
+Environment=GST_PLUGIN_PATH_1_0=/usr/lib/alo-capture-provider/gstreamer-1.0
+Environment=GST_REGISTRY=/var/cache/alo-capture-provider/registry.bin
+Environment=ALO_CAPTURE_REQUIRE_PRIVATE_PLUGIN=1
+CacheDirectory=alo-capture-provider
+CacheDirectoryMode=0700
+
 # It holds no privilege at all. It answers questions about a person's own
 # machine, on that person's own bus, as that person — there is nothing here a
 # capability would buy, and saying so is what makes that a fact rather than a
