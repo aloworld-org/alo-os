@@ -169,12 +169,14 @@ fn connect(state: &Rc<State>, application: &gtk::Application) {
         ("new", vec!["<Primary>n"]),
         ("library", vec!["<Primary>l"]),
         ("record", vec!["<Primary><Shift>r"]),
+        ("pause", vec![]),
     ] {
         let action = gio::SimpleAction::new(name, None);
         let own = state.clone();
         action.connect_activate(move |_, _| match name {
             "new" => own.new_recording(),
             "library" => own.show_library(),
+            "pause" => own.pause(),
             _ => own.primary(),
         });
         application.add_action(&action);

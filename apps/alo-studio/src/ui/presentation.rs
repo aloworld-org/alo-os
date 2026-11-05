@@ -122,6 +122,21 @@ impl State {
                     Phase::Choosing | Phase::Checking | Phase::Countdown(_) | Phase::Finishing
                 ),
         );
+        if let Some(application) = self.view.window.application() {
+            for (name, enabled) in [
+                ("new", changing),
+                ("library", changing),
+                ("record", self.view.record.is_sensitive()),
+                ("pause", matches!(phase, Phase::Recording | Phase::Paused)),
+            ] {
+                if let Some(action) = application
+                    .lookup_action(name)
+                    .and_then(|action| action.downcast::<gtk::gio::SimpleAction>().ok())
+                {
+                    action.set_enabled(enabled);
+                }
+            }
+        }
         self.view.status.set_label(&t(status));
         if phase == Phase::Recording {
             self.view.status.add_css_class("recording");
