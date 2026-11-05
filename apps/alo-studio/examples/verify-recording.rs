@@ -241,15 +241,29 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         Arc::new(AtomicU64::new(u64::MAX)),
         Arc::new(AtomicU64::new(u64::MAX)),
     ];
-    for (name, first) in ["video", "audio"].into_iter().zip(first.iter()) {
+    let end = [Arc::new(AtomicU64::new(0)), Arc::new(AtomicU64::new(0))];
+    for ((name, first), end) in ["video", "audio"]
+        .into_iter()
+        .zip(first.iter())
+        .zip(end.iter())
+    {
         if let Some(decoder) = pipeline.by_name(name) {
             let first = first.clone();
+            let end = end.clone();
             decoder
                 .static_pad("src")
                 .ok_or("No decoded output")?
                 .add_probe(gst::PadProbeType::BUFFER, move |_, info| {
-                    if let Some(stamp) = info.buffer().and_then(|buffer| buffer.pts()) {
+                    if let Some(buffer) = info.buffer()
+                        && let Some(stamp) = buffer.pts()
+                    {
                         first.fetch_min(stamp.nseconds(), Ordering::Relaxed);
+                        if let Some(duration) = buffer.duration() {
+                            end.fetch_max(
+                                stamp.saturating_add(duration).nseconds(),
+                                Ordering::Relaxed,
+                            );
+                        }
                     }
                     gst::PadProbeReturn::Ok
                 });
@@ -308,6 +322,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         println!("Decoded first video/audio timestamps: {video} / {audio} ns");
         if video.abs_diff(audio) > 250_000_000 * time_scale {
             return Err("Video and microphone did not start on the same timeline".into());
+        }
+        if std::env::var_os("ALO_STUDIO_VERIFY_STOP_DELAY").is_some() {
+            let video = end[0].load(Ordering::Relaxed);
+            let audio = end[1].load(Ordering::Relaxed);
+            println!("Decoded final video/audio coverage: {video} / {audio} ns");
+            if video == 0 || audio == 0 || video.abs_diff(audio) > 350_000_000 {
+                return Err("Slow video shutdown extended the microphone recording".into());
+            }
         }
     }
     if duration < gst::ClockTime::from_seconds(time_scale) {

@@ -51,7 +51,7 @@ if [[ ! -s "$scratch/app-pid" ]]; then head -30 "$scratch/app.log"; exit 1; fi
 app_pid=$(cat "$scratch/app-pid")
 if ! kill -0 "$app_pid"; then head -30 "$scratch/app.log"; exit 1; fi
 ALO_STUDIO_VERIFY_PREPARE_DELAY=1 "$build_target/debug/examples/verify-recording" "$scratch/display.webm"
-ALO_STUDIO_VERIFY_LIGHTWEIGHT=1 "$build_target/debug/examples/verify-recording" "$scratch/display-lightweight.webm"
+ALO_STUDIO_VERIFY_STOP_DELAY=1 ALO_STUDIO_VERIFY_LIGHTWEIGHT=1 "$build_target/debug/examples/verify-recording" "$scratch/display-lightweight.webm"
 ALO_STUDIO_VERIFY_SOURCE_END=1 "$build_target/debug/examples/verify-recording" "$scratch/source-ended-while-paused.webm"
 bash "$app_dir/packaging/verify-ui.sh" "$scratch"
 desktop-file-validate "$app_dir/data/org.aloworld.Studio.desktop"

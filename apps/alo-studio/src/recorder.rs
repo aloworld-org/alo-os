@@ -366,11 +366,18 @@ impl Recorder {
         if self.finishing {
             return Ok(());
         }
+        // Stop admitting video at Finish, then close the microphone before a
+        // slow native video disconnect can extend the audio recording.
+        self.paused.store(true, Ordering::Relaxed);
         let mut inputs = Vec::new();
-        for (name, queue) in [("source", "video-input"), ("microphone", "audio-input")] {
+        for (name, queue) in [("microphone", "audio-input"), ("source", "video-input")] {
             if let Some(source) = self.pipeline.by_name(name) {
                 source.set_locked_state(true);
                 source.set_state(gst::State::Null).map_err(failed)?;
+                #[cfg(feature = "verification")]
+                if name == "source" && std::env::var_os("ALO_STUDIO_VERIFY_STOP_DELAY").is_some() {
+                    std::thread::sleep(std::time::Duration::from_millis(750));
+                }
                 if let Some(queue) = self.pipeline.by_name(queue) {
                     if let Some(sink) = queue.static_pad("sink")
                         && let Some(upstream) = sink.peer()
