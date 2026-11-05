@@ -243,8 +243,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     pipeline.set_state(gst::State::Null)?;
     result?;
     let saved_duration = alo_studio::completed_media::duration(&output)?;
-    if saved_duration.as_millis() != u128::from(duration.mseconds()) {
-        return Err("Completed-file discovery disagrees with decoded playback duration".into());
+    // The header and a demuxer duration query can differ by final audio padding.
+    // Allow one 20 ms Opus packet plus WebM timestamp rounding, never seconds.
+    if saved_duration
+        .as_millis()
+        .abs_diff(u128::from(duration.mseconds()))
+        > 25
+    {
+        return Err(format!(
+            "Completed-file duration {saved_duration:?} disagrees with decoded playback {duration}"
+        )
+        .into());
     }
     if video_info.width() != width as u32
         || video_info.height() != height as u32
