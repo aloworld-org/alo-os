@@ -68,6 +68,12 @@ pub fn open(application: &gtk::Application) {
 
 fn connect(state: &Rc<State>, application: &gtk::Application) {
     let own = state.clone();
+    state.view.window.connect_visible_notify(move |window| {
+        if let Some(engine) = own.engine.borrow().as_ref() {
+            engine.set_preview_visible(window.is_visible());
+        }
+    });
+    let own = state.clone();
     state.view.record.connect_clicked(move |_| own.primary());
     let own = state.clone();
     state.view.pause.connect_clicked(move |_| own.pause());

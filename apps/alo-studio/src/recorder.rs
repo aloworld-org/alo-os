@@ -42,6 +42,7 @@ pub struct Recorder {
     pipeline: gst::Pipeline,
     bus: gst::Bus,
     frame: Arc<Mutex<Option<Frame>>>,
+    preview_gate: gst::Element,
     finishing: bool,
     fell_behind: Arc<AtomicBool>,
     video: Option<Arc<Mutex<crate::recorded_video::Progress>>>,
@@ -84,6 +85,7 @@ impl Recorder {
             "vp9enc",
             "webmmux",
             "appsink",
+            "valve",
             "opusenc",
             "filesink",
         ] {
@@ -190,7 +192,7 @@ impl Recorder {
         };
         let pipeline = gst::parse::launch(&format!(
             "{source_text} ! queue name=video-input max-size-buffers=2 max-size-bytes=0 max-size-time=0 ! tee name=frames \
-             frames. ! queue leaky=downstream max-size-buffers=1 max-size-bytes=0 max-size-time=0 ! videoconvert ! videoscale ! video/x-raw,format=RGBA,width=[1,640],height=[1,480],pixel-aspect-ratio=1/1 ! appsink name=preview sync=false async=false max-buffers=1 drop=true"
+             frames. ! queue leaky=downstream max-size-buffers=1 max-size-bytes=0 max-size-time=0 ! valve name=preview-gate drop-mode=transform-to-gap ! videoconvert ! videoscale ! video/x-raw,format=RGBA,width=[1,640],height=[1,480],pixel-aspect-ratio=1/1 ! appsink name=preview sync=false async=false max-buffers=1 drop=true"
         )).map_err(failed)?.downcast::<gst::Pipeline>()
             .map_err(|_| MediaError(t("The recording engine could not start.")))?;
         // Preview and recording share a permission-scoped PipeWire core. Keep
@@ -221,6 +223,7 @@ impl Recorder {
             }
         }
         let fell_behind = Arc::new(AtomicBool::new(false));
+        let preview_gate = by_name("preview-gate")?;
         let frame = Arc::new(Mutex::new(None));
         let receiving = frame.clone();
         let sink = by_name("preview")?
@@ -288,6 +291,7 @@ impl Recorder {
             pipeline,
             bus,
             frame,
+            preview_gate,
             finishing: false,
             fell_behind,
             video: None,
@@ -303,6 +307,14 @@ impl Recorder {
     /// The newest frame only. Slow UI painting never builds an unbounded queue.
     pub fn frame(&self) -> Option<Frame> {
         self.frame.lock().ok()?.take()
+    }
+    /// Skip preview conversion while its workspace is hidden. Capture and
+    /// encoding keep running, and preview events still reach the sink.
+    pub fn set_preview_visible(&self, visible: bool) {
+        self.preview_gate.set_property("drop", !visible);
+        if !visible && let Ok(mut frame) = self.frame.lock() {
+            frame.take();
+        }
     }
     /// The negotiated source dimensions, before preview scaling.
     pub fn source_size(&self) -> Option<(i32, i32)> {

@@ -11,7 +11,7 @@ use std::path::PathBuf;
 use std::process::{Command, Stdio};
 use std::sync::{
     Arc,
-    atomic::{AtomicU64, Ordering},
+    atomic::{AtomicBool, AtomicU64, Ordering},
 };
 use std::time::{Duration, Instant};
 
@@ -33,6 +33,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .nth(1)
         .map(PathBuf::from)
         .ok_or("Pass an output .webm path")?;
+    gst::init()?;
+    gst::log::set_threshold_for_name("matroskamux", gst::DebugLevel::Error);
+    let rejected_timestamps = Arc::new(AtomicBool::new(false));
+    let rejected = rejected_timestamps.clone();
+    let timing_log = gst::log::add_log_function(move |category, level, _, _, _, _, _| {
+        if category.name() == "matroskamux" && level == gst::DebugLevel::Error {
+            rejected.store(true, Ordering::Relaxed);
+        }
+    });
     let remote = if let Some(node) = std::env::args().nth(2) {
         let socket = std::env::args()
             .nth(3)
@@ -123,16 +132,35 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut paused = false;
     let mut resumed = false;
     let mut finishing = false;
+    let mut preview_hidden = false;
+    let mut preview_restored = false;
     let mut frames = 0_u64;
     let mut frames_after_resume = 0_u64;
     loop {
+        let elapsed = started.elapsed();
         if recorder.frame().is_some() {
+            if preview_hidden
+                && !preview_restored
+                && elapsed > Duration::from_millis(900 * time_scale)
+            {
+                return Err("A hidden preview continued converting frames".into());
+            }
             frames += 1;
             if resumed && !finishing {
                 frames_after_resume += 1;
             }
         }
-        let elapsed = started.elapsed();
+        if elapsed > Duration::from_millis(500 * time_scale) && !preview_hidden {
+            recorder.set_preview_visible(false);
+            preview_hidden = true;
+        }
+        if elapsed > Duration::from_millis(1600 * time_scale) && !preview_restored {
+            if recorder.recorded_duration().is_none() {
+                return Err("Hiding the preview interrupted video encoding".into());
+            }
+            recorder.set_preview_visible(true);
+            preview_restored = true;
+        }
         if elapsed > Duration::from_secs(2 * time_scale) && !paused {
             recorder.pause()?;
             paused = true;
@@ -169,6 +197,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         std::thread::sleep(Duration::from_millis(25));
     }
     drop(recorder);
+    gst::log::remove_log_function(timing_log);
+    if rejected_timestamps.load(Ordering::Relaxed) {
+        return Err("The WebM writer rejected recorded timestamps".into());
+    }
     if resumed && frames_after_resume < 2 {
         return Err(format!(
             "The selected source delivered {frames_after_resume} frames after Resume; at least two new frames are required"
