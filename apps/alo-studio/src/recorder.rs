@@ -171,7 +171,8 @@ impl Recorder {
             })
         };
         let element = by_name("source")?;
-        let paused = Arc::new(AtomicBool::new(false));
+        // Do not timestamp a preroll buffer before Playing assigns the base time.
+        let paused = Arc::new(AtomicBool::new(true));
         match source {
             Input::PipeWire { fd, node } => {
                 element.set_property("fd", fd);
@@ -269,6 +270,7 @@ impl Recorder {
             let _ = pipeline.set_state(gst::State::Null);
             return Err(failed(error));
         }
+        paused.store(false, Ordering::Relaxed);
         Ok(Self {
             source_ended: false,
             pipeline,
@@ -402,6 +404,7 @@ impl Recorder {
 
 impl Drop for Recorder {
     fn drop(&mut self) {
+        self.paused.store(true, Ordering::Relaxed);
         if let Err(error) = self.pipeline.set_state(gst::State::Null) {
             eprintln!("Stopping the recording engine: {error}");
         }

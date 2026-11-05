@@ -127,7 +127,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         match recorder.poll() {
             Some(Event::Finished) => break,
             Some(Event::Failed(error) | Event::SourceEnded(error)) => return Err(error.into()),
-            Some(Event::FellBehind) => return Err("The recording could not keep up".into()),
+            Some(Event::FellBehind) => {
+                return Err(format!(
+                    "The recording could not keep up: {frames} preview frames in {elapsed:?}, encoded {:?}",
+                    recorder.recorded_duration()
+                ).into());
+            }
             None => {}
         }
         if elapsed > Duration::from_secs(20 * time_scale) {
