@@ -114,9 +114,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut resumed = false;
     let mut finishing = false;
     let mut frames = 0_u64;
+    let mut frames_after_resume = 0_u64;
     loop {
         if recorder.frame().is_some() {
             frames += 1;
+            if resumed && !finishing {
+                frames_after_resume += 1;
+            }
         }
         let elapsed = started.elapsed();
         if elapsed > Duration::from_secs(2 * time_scale) && !paused {
@@ -155,6 +159,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         std::thread::sleep(Duration::from_millis(25));
     }
     drop(recorder);
+    if resumed && frames_after_resume < 2 {
+        return Err(format!(
+            "The selected source delivered {frames_after_resume} frames after Resume; at least two new frames are required"
+        )
+        .into());
+    }
+    if resumed {
+        println!("Frames received after Resume: {frames_after_resume}");
+    }
     if frames < 15 {
         return Err(format!(
             "The recording delivered {frames} preview frames; at least 15 are required"

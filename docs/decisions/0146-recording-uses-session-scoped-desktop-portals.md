@@ -74,6 +74,20 @@ forbid unsafe code. The vendored changes, provenance, and removal condition
 
 ## Evidence required
 
+The booted PipeWire 1.4.11 publisher was observed to terminate with
+`all buffers have been removed` during an isolated recorder lifecycle. Its
+GStreamer sink treats the consumer's link removal as a fatal provider failure.
+Upstream commit
+[`ee2c6eb41ebab02c91faeb567cba86ece44dd996`](https://github.com/PipeWire/pipewire/commit/ee2c6eb41ebab02c91faeb567cba86ece44dd996)
+changes buffer ownership so a provided source can survive link removal.
+Before adding an application-specific recovery state machine, evaluate that
+rented plugin in isolation. If adopted, pin its exact source and license,
+package it privately for the capture worker, and retain the existing PipeWire
+daemon and permission-scoped descriptor protocol. The provider's node identity
+must survive pause/resume; closing or revoking its session must still remove it.
+Remove the private copy when the OS's packaged plugin supplies the required
+lifecycle behavior. An isolated plugin trial is not a booted acceptance pass.
+
 Permanent checks must cover caller and session ownership, cancellation,
 revocation, stale selections, unknown media activity, and refusal without a
 record. A real private PipeWire server must prove both the selected stream's
