@@ -55,9 +55,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         },
         None => Input::VerificationDisplay(display.clone()),
     };
-    // A PipeWire fixture never opens the real microphone. Opus is exercised
-    // separately by the Xvfb source's synthetic audio.
-    let microphone = remote.is_none();
+    // A PipeWire fixture never opens the real microphone. The second pass adds
+    // a generated tone to exercise simultaneous video and audio on that source.
+    let generated_audio = std::env::var_os("ALO_STUDIO_VERIFY_GENERATED_AUDIO").is_some();
+    let microphone = remote.is_none() || generated_audio;
     // Software-emulated OS guests need a longer observation window. The
     // default CI timing and minimum continuous-frame requirement stay strict.
     let time_scale: u64 = match std::env::var("ALO_STUDIO_VERIFY_TIME_SCALE") {
@@ -87,13 +88,22 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         return Err("The preview changed the source's aspect ratio".into());
     }
     alo_studio::performance::check(preview_frame.width, preview_frame.height)?;
-    let mut recorder = Recorder::record(
-        source(),
-        &output,
-        preview_frame.width,
-        preview_frame.height,
-        microphone,
-    )?;
+    let mut recorder = if generated_audio {
+        Recorder::record_with_generated_audio(
+            source(),
+            &output,
+            preview_frame.width,
+            preview_frame.height,
+        )?
+    } else {
+        Recorder::record(
+            source(),
+            &output,
+            preview_frame.width,
+            preview_frame.height,
+            microphone,
+        )?
+    };
     drop(preview);
     let started = Instant::now();
     let mut paused = false;

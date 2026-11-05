@@ -57,6 +57,13 @@ pub enum Input {
     VerificationDisplay(String),
 }
 
+enum Audio {
+    Off,
+    Microphone,
+    #[cfg(feature = "verification")]
+    Generated,
+}
+
 impl From<&Capture> for Input {
     fn from(capture: &Capture) -> Self {
         #[cfg(feature = "verification")]
@@ -97,7 +104,7 @@ impl Recorder {
     }
     /// Start a source-only preview. A microphone is never part of this pipeline.
     pub fn preview(source: Input) -> Result<Self, MediaError> {
-        Self::build(source, None, 0, 0, false)
+        Self::build(source, None, 0, 0, Audio::Off)
     }
     /// Start writing only the size and microphone choice the person confirmed.
     pub fn record(
@@ -107,14 +114,30 @@ impl Recorder {
         height: i32,
         microphone: bool,
     ) -> Result<Self, MediaError> {
-        Self::build(source, Some(path), width, height, microphone)
+        let audio = match (microphone, &source) {
+            (false, _) => Audio::Off,
+            #[cfg(feature = "verification")]
+            (true, Input::VerificationDisplay(_)) => Audio::Generated,
+            _ => Audio::Microphone,
+        };
+        Self::build(source, Some(path), width, height, audio)
+    }
+    /// Exercise the real video source with generated audio, without hardware.
+    #[cfg(feature = "verification")]
+    pub fn record_with_generated_audio(
+        source: Input,
+        path: &Path,
+        width: i32,
+        height: i32,
+    ) -> Result<Self, MediaError> {
+        Self::build(source, Some(path), width, height, Audio::Generated)
     }
     fn build(
         source: Input,
         path: Option<&Path>,
         width: i32,
         height: i32,
-        microphone: bool,
+        audio: Audio,
     ) -> Result<Self, MediaError> {
         gst::init().map_err(failed)?;
         let source_text = match &source {
@@ -145,14 +168,17 @@ impl Recorder {
         } else {
             "! videoconvert ! videoscale ! video/x-raw,format=RGBA,width=[1,640],height=[1,480],pixel-aspect-ratio=1/1 ! appsink name=preview sync=false async=false max-buffers=1 drop=true"
         };
-        let audio_source = match &source {
-            #[cfg(feature = "verification")]
-            Input::VerificationDisplay(_) => {
-                "audiotestsrc name=microphone is-live=true wave=sine volume=0.05"
+        let audio_source = match audio {
+            Audio::Off => None,
+            Audio::Microphone => {
+                Some("pulsesrc name=microphone client-name=alo-Studio do-timestamp=true")
             }
-            _ => "pulsesrc name=microphone client-name=alo-Studio do-timestamp=true",
+            #[cfg(feature = "verification")]
+            Audio::Generated => {
+                Some("audiotestsrc name=microphone is-live=true wave=sine volume=0.05")
+            }
         };
-        let audio = if microphone && path.is_some() {
+        let audio = if let (Some(audio_source), Some(_)) = (audio_source, path) {
             format!(
                 " {audio_source} ! queue name=audio-input ! audioconvert ! audioresample ! audio/x-raw,rate=48000,channels=1 ! opusenc bitrate=96000 ! queue ! container."
             )

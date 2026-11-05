@@ -51,4 +51,5 @@ else
   node=$(python3 -c 'import json,sys; print(next(n["id"] for n in json.load(open(sys.argv[1])) if n.get("info",{}).get("props",{}).get("node.name")=="studio-pipewire-fixture"))' "$scratch/nodes.json")
 fi
 timeout 25s "$build_target/debug/examples/verify-recording" "$scratch/pipewire.webm" "$node" "$XDG_RUNTIME_DIR/pipewire-0"
+ALO_STUDIO_VERIFY_GENERATED_AUDIO=1 timeout 25s "$build_target/debug/examples/verify-recording" "$scratch/pipewire-with-audio.webm" "$node" "$XDG_RUNTIME_DIR/pipewire-0"
 printf 'PipeWire verification evidence: %s\n' "$scratch"
