@@ -6,12 +6,15 @@ use crate::words::t;
 use gtk::prelude::*;
 
 #[derive(Clone)]
+/// One mutually exclusive setting, with its options visible and focusable.
 pub struct Choices {
+    /// The row disabled while recording settings cannot change.
     pub widget: gtk::Box,
     selected: Rc<Cell<u32>>,
 }
 
 impl Choices {
+    /// Create the options; each description is also its accessible name.
     pub fn new(title: &str, options: &[(&str, &str)]) -> Self {
         let widget = gtk::Box::new(gtk::Orientation::Horizontal, 8);
         widget.set_accessible_role(gtk::AccessibleRole::Group);
@@ -42,6 +45,7 @@ impl Choices {
         Self { widget, selected }
     }
 
+    /// The active option's index, initially the first option.
     pub fn selected(&self) -> u32 {
         self.selected.get()
     }
