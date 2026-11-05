@@ -133,13 +133,17 @@ impl Recorder {
         };
         // This is a fixed engine configuration. No filename, device name, or
         // other person-supplied text is interpolated into the pipeline parser.
+        // Preserve the selected source's timing without inventing duplicate
+        // frames when it updates slowly. Thirty frames per second is a ceiling.
+        // Preview bounds also avoid enlarging a small window or allocating an
+        // excessively tall texture for a portrait source.
         let video = if path.is_some() {
-            "! queue name=video-input max-size-buffers=2 max-size-bytes=0 max-size-time=0 ! videoconvert ! videoscale ! videorate skip-to-first=true ! capsfilter name=size ! tee name=frames \
+            "! queue name=video-input max-size-buffers=2 max-size-bytes=0 max-size-time=0 ! videoconvert ! videoscale ! videorate skip-to-first=true drop-only=true ! capsfilter name=size ! tee name=frames \
              frames. ! queue name=record-buffer max-size-time=0 max-size-bytes=134217728 max-size-buffers=60 ! vp9enc name=encoder deadline=1 cpu-used=8 threads=4 lag-in-frames=0 target-bitrate=4500000 keyframe-max-dist=60 \
              ! queue ! webmmux name=container offset-to-zero=true ! filesink name=output async=false \
-             frames. ! queue leaky=downstream max-size-buffers=1 ! videoconvert ! videoscale ! video/x-raw,format=RGBA,width=640,pixel-aspect-ratio=1/1 ! appsink name=preview sync=false async=false max-buffers=1 drop=true"
+             frames. ! queue leaky=downstream max-size-buffers=1 ! videoconvert ! videoscale ! video/x-raw,format=RGBA,width=[1,640],height=[1,480],pixel-aspect-ratio=1/1 ! appsink name=preview sync=false async=false max-buffers=1 drop=true"
         } else {
-            "! videoconvert ! videoscale ! video/x-raw,format=RGBA,width=640,pixel-aspect-ratio=1/1 ! appsink name=preview sync=false async=false max-buffers=1 drop=true"
+            "! videoconvert ! videoscale ! video/x-raw,format=RGBA,width=[1,640],height=[1,480],pixel-aspect-ratio=1/1 ! appsink name=preview sync=false async=false max-buffers=1 drop=true"
         };
         let audio_source = match &source {
             #[cfg(feature = "verification")]

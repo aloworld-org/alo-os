@@ -5,6 +5,8 @@ optionally add your microphone, record, pause, preview, and save a copy.
 
 A short quality check warns if the chosen size may run slowly. You can choose
 another size or explicitly record anyway; the app never changes it silently.
+Recording preserves incoming frame timing, up to 30 frames per second. A slow
+source does not generate duplicate frames just to reach that ceiling.
 
 The microphone starts **off for every recording**. Videos stay on this device;
 the application has no network permission. VP9 and Opus are encoded into WebM,

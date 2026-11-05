@@ -292,9 +292,9 @@ pub fn build(application: &gtk::Application) -> View {
     let settings = gtk::Box::new(gtk::Orientation::Horizontal, 12);
     settings.add_css_class("settings-row");
     let quality = gtk::DropDown::from_strings(&[
-        &t("1080p · 30 fps"),
-        &t("720p · 30 fps"),
-        &t("Original size · 30 fps"),
+        &t("1080p · up to 30 fps"),
+        &t("720p · up to 30 fps"),
+        &t("Original size · up to 30 fps"),
     ]);
     quality.set_tooltip_text(Some(&t(
         "Recording quality. Smaller sources keep their original size.",
