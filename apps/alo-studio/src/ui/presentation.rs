@@ -14,7 +14,6 @@ impl State {
                 Phase::Choosing | Phase::Checking | Phase::Countdown(_)
             )
         {
-            self.view.window.present();
             return;
         }
         self.release_capture();
