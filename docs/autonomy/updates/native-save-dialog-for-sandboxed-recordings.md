@@ -38,3 +38,15 @@ the native backend and document services while retaining alo's public portal
 authority. The booted recording walkthrough is tracked in the capture report;
 this prerequisite alone does not establish booted-system or microphone hardware
 acceptance.
+
+The private booted guest subsequently passed Studio's actual Save a copy flow.
+A production-feature development binary at `e3352001`, mounted read-only in the
+installed Flatpak sandbox, saved `Product demonstration.webm` through the native
+chooser. Its 31,891-byte export and private original remained identical, SHA-256
+`099ab146ed57eb0af447189d286d151bbdc1f8148129a69987275c8dcdac8f36`.
+The document portal exposed only that file. Settings displayed its grant, and
+Take back changed a real sandbox reopen-for-writing check from allowed to denied.
+Both files remained intact. Guest evidence is under
+`/home/alo/StudioVerification`: `document-access-before.txt`,
+`document-access-after.txt`, and `export-document-info.txt`. This is one-off
+booted UI evidence, distinct from the permanent private-bus tests above.

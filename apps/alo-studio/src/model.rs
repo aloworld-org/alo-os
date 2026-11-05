@@ -136,9 +136,15 @@ impl Session {
     pub fn reset(&mut self) {
         *self = Self::default();
     }
-    /// Remember a microphone choice only before recording.
+    /// Remember a microphone choice until recording begins. GTK can finish a
+    /// switch activation after preflight or the countdown has already begun.
     pub fn set_microphone(&mut self, enabled: bool) -> Result<(), InvalidTransition> {
-        self.require(&[Phase::Ready, Phase::Selected, Phase::Review])?;
+        if matches!(
+            self.phase,
+            Phase::Recording | Phase::Paused | Phase::Finishing
+        ) {
+            return Err(InvalidTransition(self.phase));
+        }
         self.microphone = enabled;
         Ok(())
     }
@@ -288,6 +294,25 @@ mod tests {
         session.finishing(now).unwrap();
         session.finished().unwrap();
         assert!(!session.microphone());
+    }
+    #[test]
+    fn pending_microphone_choice_survives_preflight_and_countdown() {
+        let mut session = Session::default();
+        let now = Instant::now();
+        session.selected();
+        session.checking().unwrap();
+        session.set_microphone(true).unwrap();
+        session.selected();
+        session.countdown(3).unwrap();
+        session.set_microphone(false).unwrap();
+        session.set_microphone(true).unwrap();
+        session.started(now).unwrap();
+        assert!(session.microphone());
+        assert!(session.set_microphone(false).is_err());
+        session.pause(now).unwrap();
+        assert!(session.set_microphone(false).is_err());
+        session.finishing(now).unwrap();
+        assert!(session.set_microphone(false).is_err());
     }
     #[test]
     fn quality_preserves_aspect_ratio_and_never_enlarges() {

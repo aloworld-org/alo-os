@@ -7,6 +7,8 @@ A short quality check warns if the chosen size may run slowly. You can choose
 another size or explicitly record anyway; the app never changes it silently.
 Recording preserves incoming frame timing, up to 30 frames per second. A slow
 source does not generate duplicate frames just to reach that ceiling.
+Preview and recording share one permission-scoped capture stream; starting the
+encoder does not reconnect the selected source.
 
 The microphone starts **off for every recording**. Videos stay on this device;
 the application has no network permission. VP9 and Opus are encoded into WebM,
@@ -78,9 +80,10 @@ encoder, pauses and resumes, finalizes the container, and decodes it to EOS.
 The X11 diagnostic source is absent from ordinary installed builds.
 
 `packaging/verify-pipewire.sh` additionally captures generated video over a
-real, private PipeWire socket. It verifies the preview-to-record connection
-handoff, pause/resume, finalization, and decoding. Hardware monitors are disabled
-in that isolated server; it does not access the desktop or microphone.
+real, private PipeWire socket. It verifies attaching the recorder to the running
+preview, pause/resume, finalization, and decoding, with and without generated
+Opus audio. Hardware monitors are disabled in that isolated server; it does not
+access the desktop or microphone.
 With `ALO_STUDIO_CAPTURE_PROVIDER` and `ALO_STUDIO_CAPTURE_REMOTE`, the same
 probe uses the native publisher and the actual restricted descriptor helper.
 That integration fixture requires the full repository checkout for its shared
@@ -98,9 +101,12 @@ Wayland permission picker works on alo OS or replace a physical-machine walk.
 The separate `verify-portal` example exercises the production ScreenCast and
 PipeWire path on an explicitly selected desktop. It is not the Xvfb fixture.
 Build it with `--features verification --example verify-portal`, then run it
-with an output `.webm` path from that desktop's own session. It still needs a
-working screen-sharing service; the software-only wlr backend in this WSL
-environment refused stream creation, as recorded in the task report.
+with an output `.webm` path and optional `screen` or `window` argument from
+that desktop's own session. It saves a preview image and requires at least
+15 captured frames and a finalized video that decodes to completion. The
+bounded `ALO_STUDIO_VERIFY_TIME_SCALE` also applies to this probe. The real
+screen portal passed in a booted alo OS guest; the integration report records
+the separate application, microphone, and permission-revocation observations.
 
 User-facing copy goes through the gettext domain `alo-studio`. Translators can
 provide standard gettext catalogues without changing the recording code.
