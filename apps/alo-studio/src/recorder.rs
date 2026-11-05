@@ -45,6 +45,7 @@ pub struct Recorder {
     finishing: bool,
     fell_behind: Arc<AtomicBool>,
     video: Option<Arc<Mutex<crate::recorded_video::Progress>>>,
+    paused: Arc<AtomicBool>,
 }
 
 /// The pipeline's source, separately selected for explicit diagnostic builds.
@@ -170,10 +171,12 @@ impl Recorder {
             })
         };
         let element = by_name("source")?;
+        let paused = Arc::new(AtomicBool::new(false));
         match source {
             Input::PipeWire { fd, node } => {
                 element.set_property("fd", fd);
                 element.set_property("path", node.to_string());
+                crate::capture_timing::receive(&pipeline, &element, paused.clone())?;
             }
             #[cfg(feature = "verification")]
             Input::VerificationDisplay(display) => {
@@ -273,6 +276,7 @@ impl Recorder {
             finishing: false,
             fell_behind,
             video,
+            paused,
         })
     }
     /// The duration actually encoded, available before stopping the engine.
@@ -295,17 +299,20 @@ impl Recorder {
     }
     /// Freeze both streams together; the microphone stops reading while paused.
     pub fn pause(&self) -> Result<(), MediaError> {
-        self.pipeline
-            .set_state(gst::State::Paused)
-            .map(|_| ())
-            .map_err(failed)
+        self.paused.store(true, Ordering::Relaxed);
+        if let Err(error) = self.pipeline.set_state(gst::State::Paused) {
+            self.paused.store(false, Ordering::Relaxed);
+            return Err(failed(error));
+        }
+        Ok(())
     }
     /// Continue both streams on the same pipeline clock.
     pub fn resume(&self) -> Result<(), MediaError> {
         self.pipeline
             .set_state(gst::State::Playing)
-            .map(|_| ())
-            .map_err(failed)
+            .map_err(failed)?;
+        self.paused.store(false, Ordering::Relaxed);
+        Ok(())
     }
     /// Stop live inputs and seal queued media. Only bus EOS means it is finished.
     pub fn finish(&mut self) -> Result<(), MediaError> {
