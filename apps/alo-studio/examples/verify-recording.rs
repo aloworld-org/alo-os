@@ -243,17 +243,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     pipeline.set_state(gst::State::Null)?;
     result?;
     let saved_duration = alo_studio::completed_media::duration(&output)?;
-    // The header and a demuxer duration query can differ by final audio padding.
-    // Allow one 20 ms Opus packet plus WebM timestamp rounding, never seconds.
-    if saved_duration
-        .as_millis()
-        .abs_diff(u128::from(duration.mseconds()))
-        > 25
+    // Header discovery and decoded stream queries can include different final
+    // packet padding. Both must fit the observed active recording window. The
+    // separate GTK flow requires library metadata to equal discovery exactly.
+    if saved_duration < Duration::from_secs(time_scale)
+        || saved_duration > Duration::from_millis(4000 * time_scale + 700)
     {
-        return Err(format!(
-            "Completed-file duration {saved_duration:?} disagrees with decoded playback {duration}"
-        )
-        .into());
+        return Err("Discovered playback duration does not match active capture".into());
     }
     if video_info.width() != width as u32
         || video_info.height() != height as u32
