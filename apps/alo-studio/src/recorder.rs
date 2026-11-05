@@ -312,9 +312,6 @@ impl Recorder {
     /// encoding keep running, and preview events still reach the sink.
     pub fn set_preview_visible(&self, visible: bool) {
         self.preview_gate.set_property("drop", !visible);
-        if !visible && let Ok(mut frame) = self.frame.lock() {
-            frame.take();
-        }
     }
     /// The negotiated source dimensions, before preview scaling.
     pub fn source_size(&self) -> Option<(i32, i32)> {

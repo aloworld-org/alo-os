@@ -57,6 +57,7 @@ clip = json.loads(clips[0].read_text())
 assert not clip['microphone'], 'The GUI opened its microphone by default'
 assert clip['duration_ms'] >= 1000, clip
 assert (folder / (clip['id'] + '.webm')).stat().st_size > 1024
+assert (folder / (clip['id'] + '.png')).stat().st_size > 0, 'The saved recording lost its preview image'
 duration = int(subprocess.check_output([sys.argv[2], '--duration', str(folder / (clip['id'] + '.webm'))], text=True).strip())
 assert clip['duration_ms'] == duration, (clip, duration)
 print('PASS: GUI source selection, preflight, countdown, recording controls, finalization, and library save')
