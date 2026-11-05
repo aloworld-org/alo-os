@@ -142,6 +142,26 @@ device could not keep up. Other warnings and warnings during finalization do
 not interrupt saving. This prevents silent continuation after audio loss; it
 does not establish recording quality in the software VM.
 
+At `9f111958`, formatting, clippy, and all 14 unit/refusal checks passed,
+including microphone sample loss, unrelated warnings, and finalization after a
+late warning. GTK/framebuffer checks passed in `/tmp/tmp.6OtO4hE7nf`.
+The private PipeWire/Pulse fixture passed in `/tmp/tmp.YtLI0wegW7` with 61
+video-only, 61 generated-audio, and 62 microphone preview frames; microphone
+tracks started 14.5 ms apart. The native publisher/restricted-descriptor fixture
+passed in `/tmp/tmp.PwJvC94XvT` with 115, 116, and 114 frames respectively;
+microphone tracks started 7.5 ms apart. Dedicated native CI job `127086557094`
+also passed. The updated SDK-built package has SHA-256
+`9941e9e732709be5c06811044596e63de7497eb02611dae564d98313d8c7db45`.
+These are application/scoped integration results, not a booted quality pass.
+
+A private VM trial with QEMU's `max` CPU model did not establish an improvement.
+During that guest's startup, a 60-frame 600 x 438 sample reached its 90-second
+timeout; 320 x 240 completed in 47.720 seconds. Startup load differs from the
+earlier measurements, so these results do not isolate CPU instructions as the
+cause. The trial was reverted to the original CPU configuration. Console
+evidence is `D:\\alo-studio-verification\\cpu-evaluation-console.log`; the five
+staged OS binaries were backed up and checksum-verified before restoration.
+
 The dedicated application CI passed at `df655460`, `e5810d12`, and `21c303eb`,
 including the new isolated microphone fixture. Broader OS acceptance remains open;
 there is no full-workspace, production-image, or physical-hardware pass here.

@@ -7,6 +7,8 @@ A short quality check warns if the chosen size may run slowly. You can choose
 another size or explicitly record anyway; the app never changes it silently.
 Recording preserves incoming frame timing, up to 30 frames per second. A slow
 source does not generate duplicate frames just to reach that ceiling.
+If encoding falls behind or microphone samples are lost, Studio stops and saves
+the captured portion with a clear explanation.
 Preview and recording share one permission-scoped capture stream; starting the
 encoder does not reconnect the selected source.
 
