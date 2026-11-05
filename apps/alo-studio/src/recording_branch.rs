@@ -152,6 +152,28 @@ pub(crate) fn attach(
         )
         .map_err(failed)?;
         bin.sync_state_with_parent().map_err(failed)?;
+        // Opening the microphone can take time. The blocked tee and upstream
+        // queues still contain preview frames from before it was ready. They
+        // must not become the recording's first images while sound starts now.
+        let ready = pipeline.current_running_time().ok_or_else(|| {
+            MediaError(t("The recording clock is unavailable. Please try again."))
+        })?;
+        if sink
+            .add_probe(gst::PadProbeType::BUFFER, move |_, info| {
+                if info
+                    .buffer()
+                    .and_then(|buffer| buffer.pts())
+                    .is_some_and(|stamp| stamp >= ready)
+                {
+                    gst::PadProbeReturn::Remove
+                } else {
+                    gst::PadProbeReturn::Drop
+                }
+            })
+            .is_none()
+        {
+            return Err(MediaError(t("The recording could not be prepared.")));
+        }
         Ok(())
     })();
     if result.is_err() {
