@@ -21,6 +21,8 @@ Video starts after the microphone supplies its first timestamped sample, so a
 slow microphone startup does not encode earlier preview frames. Bounded audio
 buffers absorb short video-encoder stalls; reaching
 either recording buffer's limit still requests a controlled stop.
+The controls show Starting while inputs open. The timer and Pause become active
+after fresh video joins the chosen audio timeline; Stop remains available.
 
 The microphone starts **off for every recording**. Videos stay on this device;
 the application has no network permission. VP9 and Opus are encoded into WebM,

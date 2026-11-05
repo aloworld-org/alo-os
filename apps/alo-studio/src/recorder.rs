@@ -304,6 +304,15 @@ impl Recorder {
     pub fn recorded_duration(&self) -> Option<std::time::Duration> {
         self.video.as_ref()?.lock().ok()?.duration()
     }
+    /// Time since fresh video joined the selected audio timeline. Engine state
+    /// changes alone do not establish that either source has supplied media.
+    pub fn capture_elapsed(&self) -> Option<std::time::Duration> {
+        let first = self.video.as_ref()?.lock().ok()?.input_time()?;
+        self.pipeline
+            .current_running_time()?
+            .checked_sub(first)
+            .map(|elapsed| std::time::Duration::from_nanos(elapsed.nseconds()))
+    }
     /// The newest frame only. Slow UI painting never builds an unbounded queue.
     pub fn frame(&self) -> Option<Frame> {
         self.frame.lock().ok()?.take()

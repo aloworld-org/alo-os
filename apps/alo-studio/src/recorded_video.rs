@@ -4,11 +4,20 @@ use std::time::Duration;
 
 #[derive(Default)]
 pub(crate) struct Progress {
+    input: Option<gst::ClockTime>,
     first: Option<gst::ClockTime>,
     end: Option<gst::ClockTime>,
 }
 
 impl Progress {
+    pub(crate) fn input_started(&mut self, stamp: gst::ClockTime) {
+        self.input.get_or_insert(stamp);
+    }
+
+    pub(crate) fn input_time(&self) -> Option<gst::ClockTime> {
+        self.input
+    }
+
     pub(crate) fn observe(&mut self, buffer: &gst::BufferRef) {
         let Some(start) = buffer.pts() else { return };
         let Some(duration) = buffer.duration() else {

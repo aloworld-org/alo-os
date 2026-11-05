@@ -69,9 +69,13 @@ impl State {
         }
         self.view.new_button.set_sensitive(changing);
         self.view.library_button.set_sensitive(changing);
+        self.view.pause.set_visible(matches!(
+            phase,
+            Phase::Preparing | Phase::Recording | Phase::Paused
+        ));
         self.view
             .pause
-            .set_visible(matches!(phase, Phase::Recording | Phase::Paused));
+            .set_sensitive(matches!(phase, Phase::Recording | Phase::Paused));
         self.view.pause.set_label(&t(if phase == Phase::Paused {
             "Resume"
         } else {
@@ -105,6 +109,7 @@ impl State {
                 "Starting…",
                 "Get ready. Recording starts after the countdown.",
             ),
+            Phase::Preparing => ("Stop recording", "Preparing your recording…"),
             Phase::Recording => ("Stop recording", "●  Recording"),
             Phase::Paused => ("Stop recording", "Ⅱ  Paused · microphone paused too"),
             Phase::Finishing => ("Finishing…", "Saving your video safely…"),
@@ -135,7 +140,7 @@ impl State {
             } else {
                 "Pause"
             }));
-            pause.set_sensitive(phase != Phase::Finishing);
+            pause.set_sensitive(matches!(phase, Phase::Recording | Phase::Paused));
         }
     }
     pub(super) fn show_bar(self: &Rc<Self>) {
@@ -150,10 +155,11 @@ impl State {
             .build();
         let controls = gtk::Box::new(gtk::Orientation::Horizontal, 14);
         controls.add_css_class("control-bar");
-        let timer = label("00:00:00", "timer");
+        let timer = label("Starting…", "timer");
         timer.set_hexpand(true);
         controls.append(&timer);
         let pause = gtk::Button::with_label(&t("Pause"));
+        pause.set_sensitive(self.session.borrow().phase() != Phase::Preparing);
         let stop = gtk::Button::with_label(&t("Finish"));
         stop.add_css_class("primary");
         stop.add_css_class("recording-stop");

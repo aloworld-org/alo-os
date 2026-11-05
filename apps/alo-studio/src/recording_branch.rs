@@ -181,7 +181,7 @@ pub(crate) fn attach(
         let ready = pipeline.current_running_time().ok_or_else(|| {
             MediaError(t("The recording clock is unavailable. Please try again."))
         })?;
-        start.admit_video(&sink, ready)?;
+        start.admit_video(&sink, ready, progress.clone())?;
         Ok(())
     })();
     if result.is_err() {

@@ -3,7 +3,7 @@
 use crate::{recorder::MediaError, words::t};
 use gst::prelude::*;
 use std::sync::{
-    Arc,
+    Arc, Mutex,
     atomic::{AtomicU64, Ordering},
 };
 
@@ -40,14 +40,18 @@ impl Start {
         self,
         sink: &gst::Pad,
         ready: gst::ClockTime,
+        progress: Arc<Mutex<crate::recorded_video::Progress>>,
     ) -> Result<(), MediaError> {
         sink.add_probe(gst::PadProbeType::BUFFER, move |_, info| {
             let earliest = ready.nseconds().max(self.audio.load(Ordering::Acquire));
-            if info
+            if let Some(stamp) = info
                 .buffer()
                 .and_then(|buffer| buffer.pts())
-                .is_some_and(|stamp| stamp.nseconds() >= earliest)
+                .filter(|stamp| stamp.nseconds() >= earliest)
             {
+                if let Ok(mut progress) = progress.lock() {
+                    progress.input_started(stamp);
+                }
                 gst::PadProbeReturn::Remove
             } else {
                 // The Rust probe consumes this buffer. Handled prevents an

@@ -13,7 +13,7 @@ impl State {
         match phase {
             Phase::Ready => self.choose(),
             Phase::Selected => self.preflight(),
-            Phase::Recording | Phase::Paused => self.stop(),
+            Phase::Preparing | Phase::Recording | Phase::Paused => self.stop(),
             Phase::Review => self.new_recording(),
             _ => {}
         }
@@ -226,7 +226,7 @@ impl State {
             *self.clip.borrow_mut() = Some(clip);
             self.session
                 .borrow_mut()
-                .started(Instant::now())
+                .preparing()
                 .map_err(|error| error.to_string())?;
             Ok::<(), String>(())
         })();
@@ -246,6 +246,9 @@ impl State {
     }
     pub(super) fn pause(&self) {
         let phase = self.session.borrow().phase();
+        if !matches!(phase, Phase::Recording | Phase::Paused) {
+            return;
+        }
         let result = self.engine.borrow().as_ref().map(|engine| {
             if phase == Phase::Paused {
                 engine.resume()
@@ -270,7 +273,7 @@ impl State {
     pub(super) fn stop(&self) {
         if !matches!(
             self.session.borrow().phase(),
-            Phase::Recording | Phase::Paused
+            Phase::Preparing | Phase::Recording | Phase::Paused
         ) {
             return;
         }
@@ -286,6 +289,21 @@ impl State {
         self.render();
     }
     pub(super) fn poll(self: &Rc<Self>) {
+        if self.session.borrow().phase() == Phase::Preparing {
+            let elapsed = self
+                .engine
+                .borrow()
+                .as_ref()
+                .and_then(Recorder::capture_elapsed);
+            if let Some(elapsed) = elapsed {
+                let now = Instant::now();
+                let _ = self
+                    .session
+                    .borrow_mut()
+                    .started(now.checked_sub(elapsed).unwrap_or(now));
+                self.render();
+            }
+        }
         if self.capture.borrow().as_ref().is_some_and(Capture::ended)
             && !matches!(
                 self.session.borrow().phase(),
@@ -372,7 +390,11 @@ impl State {
         {
             self.failed(&t("Finishing took too long. The temporary video has been kept in your recording library folder."));
         }
-        let time = clock(self.session.borrow().elapsed_at(Instant::now()));
+        let time = if self.session.borrow().phase() == Phase::Preparing {
+            t("Starting…")
+        } else {
+            clock(self.session.borrow().elapsed_at(Instant::now()))
+        };
         self.view.timer.set_label(&time);
         if let Some((_, timer, _)) = self.bar.borrow().as_ref() {
             timer.set_label(&time);
@@ -384,7 +406,7 @@ impl State {
         if phase == Phase::Finishing {
             return;
         }
-        if !matches!(phase, Phase::Recording | Phase::Paused) {
+        if !matches!(phase, Phase::Preparing | Phase::Recording | Phase::Paused) {
             self.failed(&t(
                 "Screen sharing ended. Please select a screen or window again.",
             ));

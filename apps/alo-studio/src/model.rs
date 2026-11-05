@@ -71,6 +71,8 @@ pub enum Phase {
     Checking,
     /// A countdown precedes the first frame written.
     Countdown(u8),
+    /// Inputs are opening; the timer and Pause wait for actual media.
+    Preparing,
     /// Video, and microphone only if chosen, are being saved.
     Recording,
     /// Capture is paused; the recording clock is paused too.
@@ -118,7 +120,7 @@ impl Session {
     pub fn busy(&self) -> bool {
         matches!(
             self.phase,
-            Phase::Recording | Phase::Paused | Phase::Finishing
+            Phase::Preparing | Phase::Recording | Phase::Paused | Phase::Finishing
         )
     }
     /// Begin asking; a dismissed system picker can return to the prior selection.
@@ -152,7 +154,7 @@ impl Session {
     pub fn set_microphone(&mut self, enabled: bool) -> Result<(), InvalidTransition> {
         if matches!(
             self.phase,
-            Phase::Recording | Phase::Paused | Phase::Finishing
+            Phase::Preparing | Phase::Recording | Phase::Paused | Phase::Finishing
         ) {
             return Err(InvalidTransition(self.phase));
         }
@@ -184,11 +186,17 @@ impl Session {
         self.phase = Phase::Selected;
         Ok(())
     }
-    /// Called only after the actual recording pipeline has started.
-    pub fn started(&mut self, now: Instant) -> Result<(), InvalidTransition> {
+    /// Open selected inputs without claiming that media has arrived yet.
+    pub fn preparing(&mut self) -> Result<(), InvalidTransition> {
         if !matches!(self.phase, Phase::Countdown(_)) {
             return Err(InvalidTransition(self.phase));
         }
+        self.phase = Phase::Preparing;
+        Ok(())
+    }
+    /// Called only after fresh video joins the chosen audio timeline.
+    pub fn started(&mut self, now: Instant) -> Result<(), InvalidTransition> {
+        self.require(&[Phase::Preparing])?;
         self.phase = Phase::Recording;
         self.elapsed = Duration::ZERO;
         self.running_since = Some(now);
@@ -211,7 +219,7 @@ impl Session {
     }
     /// Start sealing the file; a second Stop cannot race the first.
     pub fn finishing(&mut self, now: Instant) -> Result<(), InvalidTransition> {
-        self.require(&[Phase::Recording, Phase::Paused])?;
+        self.require(&[Phase::Preparing, Phase::Recording, Phase::Paused])?;
         self.elapsed = self.elapsed_at(now);
         self.running_since = None;
         self.phase = Phase::Finishing;
@@ -269,6 +277,7 @@ mod tests {
         let mut session = Session::default();
         session.selected();
         session.countdown(3).unwrap();
+        session.preparing().unwrap();
         session.started(now).unwrap();
         session.pause(now + Duration::from_secs(4)).unwrap();
         assert_eq!(
@@ -300,6 +309,7 @@ mod tests {
         session.selected();
         session.set_microphone(true).unwrap();
         session.countdown(0).unwrap();
+        session.preparing().unwrap();
         session.started(now).unwrap();
         assert!(session.set_microphone(false).is_err());
         session.finishing(now).unwrap();
@@ -317,6 +327,7 @@ mod tests {
         session.countdown(3).unwrap();
         session.set_microphone(false).unwrap();
         session.set_microphone(true).unwrap();
+        session.preparing().unwrap();
         session.started(now).unwrap();
         assert!(session.microphone());
         assert!(session.set_microphone(false).is_err());
@@ -335,5 +346,38 @@ mod tests {
         assert_eq!(Quality::Lightweight.size(320, 240), Ok((320, 240)));
         assert_eq!(Quality::Lightweight.frame_rate(), 5);
         assert_eq!(Quality::FullHd.frame_rate(), 30);
+    }
+
+    #[test]
+    fn preparing_inputs_cannot_start_the_clock_or_pause_before_media() {
+        let mut session = Session::default();
+        let now = Instant::now();
+        session.selected();
+        session.countdown(0).unwrap();
+        session.preparing().unwrap();
+        assert!(session.busy());
+        assert!(session.pause(now).is_err());
+        assert!(session.set_microphone(true).is_err());
+        assert_eq!(
+            session.elapsed_at(now + Duration::from_secs(20)),
+            Duration::ZERO
+        );
+        session.started(now + Duration::from_secs(20)).unwrap();
+        assert_eq!(
+            session.elapsed_at(now + Duration::from_secs(23)),
+            Duration::from_secs(3)
+        );
+    }
+
+    #[test]
+    fn stop_during_preparation_is_available_once_without_claiming_capture_time() {
+        let mut session = Session::default();
+        let now = Instant::now();
+        session.selected();
+        session.countdown(0).unwrap();
+        session.preparing().unwrap();
+        session.finishing(now).unwrap();
+        assert!(session.finishing(now).is_err());
+        assert_eq!(session.elapsed_at(now), Duration::ZERO);
     }
 }
