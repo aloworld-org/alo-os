@@ -4,6 +4,7 @@
 //! through the desktop portal for each recording; the microphone starts off.
 
 mod capture_timing;
+pub mod completed_media;
 pub mod model;
 mod parent_window;
 pub mod performance;

@@ -235,6 +235,9 @@ fn date(seconds: u64) -> String {
 #[path = "exports.rs"]
 mod exports;
 
+#[path = "completion.rs"]
+mod completion;
+
 #[path = "lifecycle.rs"]
 mod lifecycle;
 

@@ -407,52 +407,6 @@ impl State {
             None => self.failed(&t("The recording engine has stopped.")),
         }
     }
-    pub(super) fn completed(self: &Rc<Self>) {
-        self.finish_started.set(None);
-        let recorded_duration = self
-            .engine
-            .borrow()
-            .as_ref()
-            .and_then(Recorder::recorded_duration);
-        self.release_capture();
-        if self.session.borrow().phase() != Phase::Finishing {
-            let _ = self.session.borrow_mut().finishing(Instant::now());
-        }
-        let result = (|| {
-            let mut clip = self.clip.borrow_mut();
-            let clip = clip
-                .as_mut()
-                .ok_or_else(|| t("No recording was returned."))?;
-            clip.duration_ms = recorded_duration
-                .ok_or_else(|| {
-                    t("No video frames were recorded. Please choose your source again.")
-                })?
-                .as_millis()
-                .min(u128::from(u64::MAX)) as u64;
-            let library = self
-                .library
-                .as_ref()
-                .ok_or_else(|| t("Your recording library is unavailable."))?;
-            library.finish(clip).map_err(|error| error.to_string())?;
-            Ok::<Clip, String>(clip.clone())
-        })();
-        match result {
-            Ok(clip) => {
-                let _ = self.session.borrow_mut().finished();
-                self.view.microphone.set_active(false);
-                if self.close_after_save.get() {
-                    self.close_bar();
-                    self.view.window.close();
-                } else {
-                    self.open_clip(&clip);
-                    self.refresh_library();
-                    self.show_workspace();
-                }
-            }
-            Err(error) => self.failed(&format!("{} {error}", t("The video could not be added to your library. Its temporary file has been kept."))),
-        }
-        self.render();
-    }
     pub(super) fn failed(&self, message: &str) {
         self.close_after_save.set(false);
         self.finish_started.set(None);

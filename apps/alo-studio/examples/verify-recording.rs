@@ -21,6 +21,14 @@ use std::time::{Duration, Instant};
 pub mod descriptor;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    if std::env::args().nth(1).as_deref() == Some("--duration") {
+        let path = std::env::args().nth(2).ok_or("Pass the saved video path")?;
+        println!(
+            "{}",
+            alo_studio::completed_media::duration(std::path::Path::new(&path))?.as_millis()
+        );
+        return Ok(());
+    }
     let output = std::env::args()
         .nth(1)
         .map(PathBuf::from)
@@ -234,6 +242,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let video_info = gst_video::VideoInfo::from_caps(&caps)?;
     pipeline.set_state(gst::State::Null)?;
     result?;
+    let saved_duration = alo_studio::completed_media::duration(&output)?;
+    if saved_duration.as_millis() != u128::from(duration.mseconds()) {
+        return Err("Completed-file discovery disagrees with decoded playback duration".into());
+    }
     if video_info.width() != width as u32
         || video_info.height() != height as u32
         || video_info.fps() <= gst::Fraction::new(0, 1)

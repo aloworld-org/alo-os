@@ -23,8 +23,8 @@ The microphone starts **off for every recording**. Videos stay on this device;
 the application has no network permission. VP9 and Opus are encoded into WebM,
 following alo OS's encoding decision. Your original stays in the app's private
 library even after you export a copy.
-Saved duration comes from encoded video timestamps. An empty video is not
-reported as a completed recording.
+Saved duration is read from the completed media without blocking the UI.
+Missing, damaged, or empty media is not reported as a completed recording.
 
 ![The native recording workspace](data/screenshots/studio.png)
 

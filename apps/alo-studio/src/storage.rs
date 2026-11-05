@@ -17,7 +17,7 @@ pub struct Clip {
     pub title: String,
     /// When recording began, as Unix seconds.
     pub created: u64,
-    /// Active recording time, excluding pauses.
+    /// Playback duration read from the completed media, excluding pauses.
     pub duration_ms: u64,
     /// Encoded width.
     pub width: i32,
@@ -28,7 +28,7 @@ pub struct Clip {
 }
 
 impl Clip {
-    /// The active duration shown beside the video.
+    /// The saved media's playback duration, shown beside the video.
     pub fn duration(&self) -> Duration {
         Duration::from_millis(self.duration_ms)
     }
