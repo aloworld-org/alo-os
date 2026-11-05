@@ -6,12 +6,14 @@ signed distribution, production-image acceptance, and physical-hardware
 acceptance are separate. The complete booted walk is **not yet accepted**.
 
 Current result: native permissions and the installable application are implemented.
-Formatting, clippy, 19 application tests, the GTK flow, and eight scoped PipeWire
-cases pass at application source `b4196118`; CI for that source is still running.
-The optimized installed package completes animated-window recording with microphone,
-Pause, Resume, and Finish, and saves playable media with accurate duration.
-Decoded video and audio still contain substantial gaps. Demonstration-quality
-acceptance fails, and the review remains a draft with no market publication.
+Application source `44fff5c7` passes dedicated CI (formatting, clippy, 19 tests,
+the GTK flow and eight scoped PipeWire cases) and authors validation. The earlier
+OS gate passed at `83f821ea`; the current gate is still running.
+Native window recording can complete Start, Pause, Resume and Finish with optional
+microphone audio, but decoded video and audio still contain substantial gaps.
+Demonstration-quality acceptance fails, and the review remains a draft with no
+market publication. Earlier measurements below retain their tested source;
+they are not acceptance results for later packages.
 
 ## Implemented boundaries
 
@@ -515,22 +517,132 @@ Pause is disabled with its state reset. One immediate post-save command query
 timed out at 15 seconds; the later query returned the expected completed state.
 Neither query result changes the failed media-quality result.
 
-The development executable and timing preload have been removed. The normal
-installed application remains running, and the separate demonstration fixture
-is stopped. Normal SSH service is restored, the temporary authorized key is
-removed, and both private SSH and evidence-HTTP host forwarding rules are
-closed. The VM disk, completed recordings, and earlier partial files remain.
-The staged OS overlay is still temporary and will not survive a reboot.
+### Microphone shutdown and preview follow-up
 
-Native motion and audio continuity, production-image acceptance, and signed
-market distribution remain open. The current VM is the only available OS test
-machine; isolated-fixture results do not substitute for its failed quality
-measurement. No further OS-engine or virtual-machine configuration change is
-claimed as a fix. Desktop locking remains a separate OS change.
+Native teardown tracing measured 3.552 seconds to disconnect video, followed by
+296 ms to stop the microphone. Source `34b2e8a4` therefore stops microphone input
+first and suppresses capture timestamps immediately. A verification-only 750 ms
+video-disconnect delay checks this order. Restoring the old order fails the
+existing duration check; independent decoding confirms 603 ms of extra audio
+(video ends at 4.202 seconds, audio at 4.805). The restored implementation's
+GTK fixture ends video at 4.021 seconds and audio at 4.012 seconds. This is a
+measured shutdown regression fix, not a general continuity fix.
 
-The dedicated application CI passed at `df655460`, `e5810d12`, and `21c303eb`,
-including the new isolated microphone fixture. Broader OS acceptance remains open;
-there is no full-workspace, production-image, or physical-hardware pass here.
+Source `0ababe75` consumes hidden-preview buffers before color conversion. Its
+stronger fixture requires encoded duration to advance while the preview is
+hidden. The initially installed build did not receive video during native
+recording startup; its 5,218-byte partial file remains. Source `db80ae7b` retains
+preview flow until the encoder produces fresh video, including after Resume.
+Source `83f821ea` retains live PipeWire scheduling and disables cached keepalive
+frames. The app still timestamps received frames against its running clock.
+
+The normal-feature development binary at `83f821ea` completes the actual
+animated-window Start/Pause/Resume/Finish flow at 360p, up to 5 fps, with
+microphone enabled. Clip `1793904786-33079266-2` contains 58 video frames and
+1,180 audio buffers. Video begins at 36 ms and ends at 22.302 seconds; audio
+runs from zero to 27.24 seconds. The largest uncovered video and audio gaps are
+5.146 and 3.64 seconds. Library/header duration agrees at 27,240 ms; decoded
+playback includes 20 ms packet padding. This is another failed quality check.
+Evidence is `D:\\alo-studio-verification\\installed-live-stream-diagnostic`;
+WebM SHA-256 is
+`dc2eb0f2de499c36423fb81e71c09d6c80d77b6c78cb4e8f6ea6c47d191276b4`.
+
+Other private comparisons do not establish an accepted remedy:
+
+- A newer PipeWire consumer plugin alone, tested against the earlier `b4196118`
+  application, still leaves 11.33 seconds of uncovered video and 3.14 seconds
+  of uncovered audio. Its private override is excluded from installed builds.
+- A development-only 2 fps variant completes the controls, reducing uncovered
+  video to 663 ms, but still loses 2.36 seconds of audio and leaves audio
+  extending almost six seconds beyond video. The production quality choices
+  are unchanged; this variant is not adopted.
+- A private virtual microphone comparison configures an in-guest null sink and
+  attempts generated tone, without host microphone access or speaker output.
+  No completed file establishes nonzero tone samples in that trial. Rejected
+  queued video precedes the first microphone timestamp; the recording branch
+  then sees no fresh video. Changing audio timestamping, explicit consumed-pad
+  flow status, non-live source properties and dynamic latency recalculation
+  does not produce a completed recording in those trials. These changes are
+  not adopted. The last partial file and command trace are preserved under
+  `D:\\alo-studio-verification\\installed-latency-prototype`.
+
+Dedicated application CI and the OS gate passed at `83f821ea`: native job
+`127457444495`, authors job `127457444937`, and gate job `127458323636`.
+The isolated checks cover the stronger hidden-preview assertion and delayed
+microphone shutdown. They do not substitute for the failed booted quality
+measurements or establish production-image or physical-hardware acceptance.
+
+### Rejected optimized candidate
+
+The optimized, ordinary-feature Flatpak built from application source
+`83f821ea` was installed normally in the same private software VM. It is
+1,104,528 bytes, with SHA-256
+`8ee71eb2acf0da308b359e774a68d3e9e2517c99d2c78e52327d4d7d68989c76`
+and Flatpak commit
+`91f9ca358eb69aec81052e4b5b500e4b9473b95e2548f1acd1eb9677b2c75c31`.
+No development executable, timing preload, private consumer plugin, 2 fps
+profile, or latency experiment is part of this package. It failed the installed
+startup check: the actual source picker accepted the demonstration window, but
+Studio never enabled Pause or reached Recording. A controlled Finish refused
+the audio-only result with "No video frames were recorded" and preserved
+`1793911262-737550604-2.webm.part` (31,269 bytes). The candidate bundle, partial
+file, source choice, application commands and journal are preserved under
+`D:\\alo-studio-verification\\installed-live-capture-candidate`.
+
+Source `44fff5c7` removes the hidden-preview conversion probe and restores the
+capture source settings of the last installed build that completed the controls
+(`34b2e8a4`). Hidden preview samples continue to be pulled, without copying images
+to the UI. The microphone-first shutdown fix and stronger hidden-preview
+duration assertion remain. The earlier optimized startup failure outweighs
+isolated-fixture passes; the speculative preview/scheduling changes are not
+retained as production fixes.
+
+### Conservative release package
+
+The replacement optimized bundle is built from application source `44fff5c7`.
+It is 1,102,904 bytes, SHA-256
+`ee5f5caccd85d3e471a29fff5e1e1b61b3062d366b7f5165bd6bbe9b82a08a5a`,
+Flatpak commit
+`5013659da65e28915bc503e0069c2c49bb2ab8bc3ccf915af4d37a72e194440a`.
+The local bundle is `C:\\dev\\alo-studio-artifacts\\alo-studio-0.1.0.flatpak`.
+Its dedicated CI passes formatting, clippy, all 19 tests, the real GTK flow and
+all eight pinned PipeWire cases (native job `127521272854`).
+
+This installed package completes selected animated-window Start, absolute Pause,
+absolute Resume and Finish with microphone enabled. Clip
+`1793912088-260602040-2` decodes to 52 video frames (35 distinct images) and
+1,734 audio buffers. Video starts at 165 ms, within the fixture's 250 ms startup
+allowance, and ends at 35.364 seconds. Audio runs from zero to 39.06 seconds.
+The largest uncovered gaps are 19.194 seconds for video and 2.26 seconds for
+audio. Library and header both report 39,060 ms; decoded playback includes 20 ms
+of packet padding. The emulated microphone contains 34.66 seconds of decoded
+PCM samples with peak zero, so this run does not validate spoken audio quality.
+The recording is playable and functionally completed, but **fails native
+continuity acceptance**.
+
+Evidence is `D:\\alo-studio-verification\\installed-conservative-native-recording`;
+WebM SHA-256 is
+`536441f92c0da5c7ff3f5f0275d466c57fffcccedd50b2dcb460e19d3a224f98`.
+The source choice and each requested/observed application state are retained.
+After Finish no native capture worker remains. An immediate action-state query
+again times out at 15 seconds; it is not treated as a successful state check.
+
+The later query succeeds: Pause is disabled with false state. The graph has one
+idle microphone input during Pause and no audio inputs after Finish. New
+Recording resets the workspace and microphone; the ordinary installed app is
+left running without an active capture. Original audio input is restored, the
+private null sink is unloaded, and diagnostic executables, preloads and consumer
+overrides are removed. The separate demonstration fixture is stopped. A fresh
+console confirmation at `2026-11-05T20:59:23Z` verifies normal SSH is active and
+the temporary authorized key is removed. The artifact server is stopped and
+neither temporary host port listens. Completed recordings, partial media, the
+VM disk and comparison evidence remain. The staged OS overlay is still
+temporary and will not survive a reboot.
+
+Native continuity, production-image acceptance and signed market distribution
+remain open. The only available test machine is this software VM; its failed
+measurements are not waived. No physical-machine acceptance is claimed.
+Desktop locking remains a separate OS change.
 
 Earlier scoped OS checks passed: 594 permission/portal/protocol/activity/storage
 checks, 295 transport/portal/architecture/language checks, 413 client-lifecycle
