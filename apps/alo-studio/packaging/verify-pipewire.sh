@@ -28,9 +28,11 @@ for attempt in $(seq 1 50); do
   [[ ! -S "$XDG_RUNTIME_DIR/pipewire-0" ]] || break
   sleep .1
 done
+start_source() {
 if [[ -n "${ALO_STUDIO_CAPTURE_PROVIDER:-}" ]]; then
   # The actual compositor publisher must preserve square pixels across the
   # PipeWire bridge, including a source whose aspect ratio differs from 16:9.
+  : > "$scratch/publisher.json"
   gst-launch-1.0 -q videotestsrc is-live=true pattern=ball ! video/x-raw,format=BGRx,width=1280,height=800,framerate=30/1 ! fdsink fd=1 2> "$scratch/input.log" |
     "$ALO_STUDIO_CAPTURE_PROVIDER" 1280 800 studio-pipewire-fixture org.aloworld.Studio > "$scratch/publisher.json" 2> "$scratch/source.log" &
   source_pid=$!
@@ -50,6 +52,16 @@ else
   pw-dump > "$scratch/nodes.json"
   node=$(python3 -c 'import json,sys; print(next(n["id"] for n in json.load(open(sys.argv[1])) if n.get("info",{}).get("props",{}).get("node.name")=="studio-pipewire-fixture"))' "$scratch/nodes.json")
 fi
+}
+
+# Each case owns a fresh publisher. Reconnecting to the distribution's
+# pipewiresink after the first receiver closes can crash that external fixture
+# in buffer-pool teardown, before the audio case even receives its first frame.
+start_source
 timeout 25s "$build_target/debug/examples/verify-recording" "$scratch/pipewire.webm" "$node" "$XDG_RUNTIME_DIR/pipewire-0"
+kill "$source_pid" 2>/dev/null || true
+wait "$source_pid" 2>/dev/null || true
+unset source_pid
+start_source
 ALO_STUDIO_VERIFY_GENERATED_AUDIO=1 timeout 25s "$build_target/debug/examples/verify-recording" "$scratch/pipewire-with-audio.webm" "$node" "$XDG_RUNTIME_DIR/pipewire-0"
 printf 'PipeWire verification evidence: %s\n' "$scratch"
