@@ -190,10 +190,9 @@ impl State {
     pub(super) fn start(self: &Rc<Self>) {
         let size = self.selected_size();
         let result = (|| {
-            let capture = self.capture.borrow();
-            let capture = capture
-                .as_ref()
-                .ok_or_else(|| t("Please choose your screen again."))?;
+            if self.capture.borrow().is_none() {
+                return Err(t("Please choose your screen again."));
+            }
             let (width, height) = size?;
             let library = self
                 .library
@@ -207,11 +206,13 @@ impl State {
             let path = library
                 .pending(&clip.id)
                 .map_err(|error| error.to_string())?;
-            // Keep the preview's PipeWire core alive while the new pipeline
-            // attaches. A borrowed socket cannot be reopened as a fresh client.
-            let engine = Recorder::record(capture.into(), &path, width, height, microphone)
+            // Keep the selected source connected; only the encoding branch starts.
+            self.engine
+                .borrow_mut()
+                .as_mut()
+                .ok_or_else(|| t("Please select your source again."))?
+                .start_recording(&path, width, height, microphone)
                 .map_err(|error| error.to_string())?;
-            *self.engine.borrow_mut() = Some(engine);
             *self.clip.borrow_mut() = Some(clip);
             self.session
                 .borrow_mut()

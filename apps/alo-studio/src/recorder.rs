@@ -46,6 +46,8 @@ pub struct Recorder {
     fell_behind: Arc<AtomicBool>,
     video: Option<Arc<Mutex<crate::recorded_video::Progress>>>,
     paused: Arc<AtomicBool>,
+    #[cfg(feature = "verification")]
+    generated_audio: bool,
 }
 
 /// The pipeline's source, separately selected for explicit diagnostic builds.
@@ -55,13 +57,6 @@ pub enum Input {
     /// A real X11 framebuffer, used by the integration probe only.
     #[cfg(feature = "verification")]
     VerificationDisplay(String),
-}
-
-enum Audio {
-    Off,
-    Microphone,
-    #[cfg(feature = "verification")]
-    Generated,
 }
 
 impl From<&Capture> for Input {
@@ -104,41 +99,69 @@ impl Recorder {
     }
     /// Start a source-only preview. A microphone is never part of this pipeline.
     pub fn preview(source: Input) -> Result<Self, MediaError> {
-        Self::build(source, None, 0, 0, Audio::Off)
+        Self::build(source)
     }
-    /// Start writing only the size and microphone choice the person confirmed.
-    pub fn record(
-        source: Input,
+    /// Begin encoding on the same stream that supplied the preview.
+    pub fn start_recording(
+        &mut self,
         path: &Path,
         width: i32,
         height: i32,
         microphone: bool,
-    ) -> Result<Self, MediaError> {
-        let audio = match (microphone, &source) {
-            (false, _) => Audio::Off,
+    ) -> Result<(), MediaError> {
+        let audio = if microphone {
             #[cfg(feature = "verification")]
-            (true, Input::VerificationDisplay(_)) => Audio::Generated,
-            _ => Audio::Microphone,
+            if self.generated_audio {
+                return self.start_with_audio(
+                    path,
+                    width,
+                    height,
+                    crate::recording_branch::Audio::Generated,
+                );
+            }
+            crate::recording_branch::Audio::Microphone
+        } else {
+            crate::recording_branch::Audio::Off
         };
-        Self::build(source, Some(path), width, height, audio)
+        self.start_with_audio(path, width, height, audio)
     }
-    /// Exercise the real video source with generated audio, without hardware.
+    /// Exercise the selected stream with generated sound, without hardware.
     #[cfg(feature = "verification")]
-    pub fn record_with_generated_audio(
-        source: Input,
+    pub fn start_with_generated_audio(
+        &mut self,
         path: &Path,
         width: i32,
         height: i32,
-    ) -> Result<Self, MediaError> {
-        Self::build(source, Some(path), width, height, Audio::Generated)
+    ) -> Result<(), MediaError> {
+        self.start_with_audio(
+            path,
+            width,
+            height,
+            crate::recording_branch::Audio::Generated,
+        )
     }
-    fn build(
-        source: Input,
-        path: Option<&Path>,
+    fn start_with_audio(
+        &mut self,
+        path: &Path,
         width: i32,
         height: i32,
-        audio: Audio,
-    ) -> Result<Self, MediaError> {
+        audio: crate::recording_branch::Audio,
+    ) -> Result<(), MediaError> {
+        if self.video.is_some() || self.finishing || self.source_ended || width <= 0 || height <= 0
+        {
+            return Err(MediaError(t("Please select a source for a new recording.")));
+        }
+        self.video = Some(crate::recording_branch::attach(
+            &self.pipeline,
+            path,
+            width,
+            height,
+            audio,
+            self.fell_behind.clone(),
+        )?);
+        Ok(())
+    }
+    fn build(source: Input) -> Result<Self, MediaError> {
         gst::init().map_err(failed)?;
         let source_text = match &source {
             Input::PipeWire { .. } => {
@@ -154,40 +177,10 @@ impl Recorder {
                 "ximagesrc name=source use-damage=false show-pointer=true do-timestamp=true"
             }
         };
-        // This is a fixed engine configuration. No filename, device name, or
-        // other person-supplied text is interpolated into the pipeline parser.
-        // Preserve the selected source's timing without inventing duplicate
-        // frames when it updates slowly. Thirty frames per second is a ceiling.
-        // Preview bounds also avoid enlarging a small window or allocating an
-        // excessively tall texture for a portrait source.
-        let video = if path.is_some() {
-            "! queue name=video-input max-size-buffers=2 max-size-bytes=0 max-size-time=0 ! videoconvert ! videoscale ! videorate skip-to-first=true drop-only=true ! capsfilter name=size ! tee name=frames \
-             frames. ! queue name=record-buffer max-size-time=0 max-size-bytes=134217728 max-size-buffers=60 ! vp9enc name=encoder deadline=1 cpu-used=8 threads=4 lag-in-frames=0 target-bitrate=4500000 keyframe-max-dist=60 \
-             ! queue ! webmmux name=container offset-to-zero=true ! filesink name=output async=false \
-             frames. ! queue leaky=downstream max-size-buffers=1 ! videoconvert ! videoscale ! video/x-raw,format=RGBA,width=[1,640],height=[1,480],pixel-aspect-ratio=1/1 ! appsink name=preview sync=false async=false max-buffers=1 drop=true"
-        } else {
-            "! videoconvert ! videoscale ! video/x-raw,format=RGBA,width=[1,640],height=[1,480],pixel-aspect-ratio=1/1 ! appsink name=preview sync=false async=false max-buffers=1 drop=true"
-        };
-        let audio_source = match audio {
-            Audio::Off => None,
-            Audio::Microphone => {
-                Some("pulsesrc name=microphone client-name=alo-Studio do-timestamp=true")
-            }
-            #[cfg(feature = "verification")]
-            Audio::Generated => {
-                Some("audiotestsrc name=microphone is-live=true wave=sine volume=0.05")
-            }
-        };
-        let audio = if let (Some(audio_source), Some(_)) = (audio_source, path) {
-            format!(
-                " {audio_source} ! queue name=audio-input ! audioconvert ! audioresample ! audio/x-raw,rate=48000,channels=1 ! opusenc bitrate=96000 ! queue ! container."
-            )
-        } else {
-            String::new()
-        };
-        let pipeline = gst::parse::launch(&format!("{source_text} {video} {audio}"))
-            .map_err(failed)?
-            .downcast::<gst::Pipeline>()
+        let pipeline = gst::parse::launch(&format!(
+            "{source_text} ! queue name=video-input max-size-buffers=2 max-size-bytes=0 max-size-time=0 ! tee name=frames \
+             frames. ! queue leaky=downstream max-size-buffers=1 max-size-bytes=0 max-size-time=0 ! videoconvert ! videoscale ! video/x-raw,format=RGBA,width=[1,640],height=[1,480],pixel-aspect-ratio=1/1 ! appsink name=preview sync=false async=false max-buffers=1 drop=true"
+        )).map_err(failed)?.downcast::<gst::Pipeline>()
             .map_err(|_| MediaError(t("The recording engine could not start.")))?;
         // Preview and recording share a permission-scoped PipeWire core. Keep
         // their timelines independent of clock resets in that shared graph.
@@ -203,6 +196,8 @@ impl Recorder {
         let element = by_name("source")?;
         // Do not timestamp a preroll buffer before Playing assigns the base time.
         let paused = Arc::new(AtomicBool::new(true));
+        #[cfg(feature = "verification")]
+        let generated_audio = matches!(&source, Input::VerificationDisplay(_));
         match source {
             Input::PipeWire { fd, node } => {
                 element.set_property("fd", fd);
@@ -214,43 +209,7 @@ impl Recorder {
                 element.set_property("display-name", display);
             }
         }
-        if let Some(path) = path {
-            let caps = gst::Caps::builder("video/x-raw")
-                .field("format", "I420")
-                .field("width", width)
-                .field("height", height)
-                .field("framerate", gst::Fraction::new(30, 1))
-                .field("pixel-aspect-ratio", gst::Fraction::new(1, 1))
-                .build();
-            by_name("size")?.set_property("caps", &caps);
-            by_name("output")?.set_property("location", path.to_string_lossy().as_ref());
-        }
         let fell_behind = Arc::new(AtomicBool::new(false));
-        let video = if path.is_some() {
-            let progress = Arc::new(Mutex::new(crate::recorded_video::Progress::default()));
-            let recording = progress.clone();
-            let encoded = by_name("encoder")?
-                .static_pad("src")
-                .ok_or_else(|| MediaError(t("The video encoder is unavailable.")))?;
-            encoded.add_probe(gst::PadProbeType::BUFFER, move |_, info| {
-                if let Some(buffer) = info.buffer()
-                    && let Ok(mut progress) = recording.lock()
-                {
-                    progress.observe(buffer);
-                }
-                gst::PadProbeReturn::Ok
-            });
-            Some(progress)
-        } else {
-            None
-        };
-        if let Some(queue) = pipeline.by_name("record-buffer") {
-            let stalled = fell_behind.clone();
-            queue.connect("overrun", false, move |_| {
-                stalled.store(true, Ordering::Relaxed);
-                None
-            });
-        }
         let frame = Arc::new(Mutex::new(None));
         let receiving = frame.clone();
         let sink = by_name("preview")?
@@ -320,8 +279,10 @@ impl Recorder {
             frame,
             finishing: false,
             fell_behind,
-            video,
+            video: None,
             paused,
+            #[cfg(feature = "verification")]
+            generated_audio,
         })
     }
     /// The duration actually encoded, available before stopping the engine.

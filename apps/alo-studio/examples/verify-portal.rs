@@ -32,25 +32,24 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     gtk::init()?;
     gtk::glib::MainContext::default().block_on(async {
         let capture = portal::choose(kind, None).await?;
-        let preview = Recorder::preview((&capture).into())?;
+        let mut recorder = Recorder::preview((&capture).into())?;
         let mut size = None;
         for _ in 0..(160 * time_scale) {
-            if let Some(Event::Failed(error)) = preview.poll() { return Err(error.into()); }
-            if let Some(frame) = preview.frame() {
+            if let Some(Event::Failed(error)) = recorder.poll() { return Err(error.into()); }
+            if let Some(frame) = recorder.frame() {
                 let texture = gtk::gdk::MemoryTexture::new(
                     frame.width, frame.height, gtk::gdk::MemoryFormat::R8g8b8a8,
                     &gtk::glib::Bytes::from_owned(frame.bytes), frame.width as usize * 4,
                 );
                 texture.save_to_png(output.with_extension("preview.png"))?;
-                size = preview.source_size();
+                size = recorder.source_size();
                 break;
             }
             gtk::glib::timeout_future(Duration::from_millis(50)).await;
         }
         let (width, height) = size.ok_or("No real portal preview frame arrived")?;
         let (width, height) = Quality::Hd.size(width, height)?;
-        let mut recorder = Recorder::record((&capture).into(), &output, width, height, false)?;
-        drop(preview);
+        recorder.start_recording(&output, width, height, false)?;
         let started = Instant::now();
         let mut finishing = false;
         let mut frames = 0;

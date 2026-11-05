@@ -11,6 +11,7 @@ mod permission_lifetime;
 pub mod portal;
 mod recorded_video;
 pub mod recorder;
+mod recording_branch;
 pub mod storage;
 pub mod ui;
 pub mod words;

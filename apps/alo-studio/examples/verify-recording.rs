@@ -68,13 +68,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     if !(1..=6).contains(&time_scale) {
         return Err("The verification time scale must be between one and six".into());
     }
-    let preview = Recorder::preview(source())?;
+    let mut recorder = Recorder::preview(source())?;
     let preview_started = Instant::now();
     let preview_frame = loop {
-        if let Some(frame) = preview.frame() {
+        if let Some(frame) = recorder.frame() {
             break frame;
         }
-        if let Some(Event::Failed(error)) = preview.poll() {
+        if let Some(Event::Failed(error)) = recorder.poll() {
             return Err(error.into());
         }
         if preview_started.elapsed() > Duration::from_secs(8 * time_scale) {
@@ -88,23 +88,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         return Err("The preview changed the source's aspect ratio".into());
     }
     alo_studio::performance::check(preview_frame.width, preview_frame.height)?;
-    let mut recorder = if generated_audio {
-        Recorder::record_with_generated_audio(
-            source(),
-            &output,
-            preview_frame.width,
-            preview_frame.height,
-        )?
+    if generated_audio {
+        recorder.start_with_generated_audio(&output, preview_frame.width, preview_frame.height)?;
     } else {
-        Recorder::record(
-            source(),
+        recorder.start_recording(
             &output,
             preview_frame.width,
             preview_frame.height,
             microphone,
-        )?
-    };
-    drop(preview);
+        )?;
+    }
     let started = Instant::now();
     let mut paused = false;
     let mut resumed = false;

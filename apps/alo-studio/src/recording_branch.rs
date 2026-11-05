@@ -1,0 +1,118 @@
+//! Attach encoding to an already running, permission-scoped capture stream.
+
+use crate::{recorded_video::Progress, recorder::MediaError, words::t};
+use gst::prelude::*;
+use std::{
+    path::Path,
+    sync::{
+        Arc, Mutex,
+        atomic::{AtomicBool, Ordering},
+    },
+};
+
+pub(crate) enum Audio {
+    Off,
+    Microphone,
+    #[cfg(feature = "verification")]
+    Generated,
+}
+
+pub(crate) fn attach(
+    pipeline: &gst::Pipeline,
+    path: &Path,
+    width: i32,
+    height: i32,
+    audio: Audio,
+    fell_behind: Arc<AtomicBool>,
+) -> Result<Arc<Mutex<Progress>>, MediaError> {
+    let audio_source = match audio {
+        Audio::Off => None,
+        Audio::Microphone => {
+            Some("pulsesrc name=microphone client-name=alo-Studio do-timestamp=true")
+        }
+        #[cfg(feature = "verification")]
+        Audio::Generated => Some(
+            "audiotestsrc name=microphone is-live=true do-timestamp=true wave=sine volume=0.05",
+        ),
+    };
+    let audio = audio_source.map(|source| format!(
+        " {source} ! queue name=audio-input ! audioconvert ! audioresample ! audio/x-raw,rate=48000,channels=1 ! opusenc bitrate=96000 ! queue ! container."
+    )).unwrap_or_default();
+    // Thirty frames per second is a ceiling; a slow source never creates
+    // duplicate work. Filenames and dimensions are assigned as properties.
+    let bin = gst::parse::bin_from_description(&format!(
+        "queue name=record-entry max-size-buffers=2 max-size-bytes=0 max-size-time=0 ! videoconvert ! videoscale ! videorate skip-to-first=true drop-only=true ! capsfilter name=size \
+         ! queue name=record-buffer max-size-time=0 max-size-bytes=134217728 max-size-buffers=60 ! vp9enc name=encoder deadline=1 cpu-used=8 threads=4 lag-in-frames=0 target-bitrate=4500000 keyframe-max-dist=60 \
+         ! queue ! webmmux name=container offset-to-zero=true ! filesink name=output async=false {audio}"
+    ), true).map_err(failed)?;
+    let by_name = |name| {
+        bin.by_name(name).ok_or_else(|| {
+            MediaError(format!(
+                "{} ({name}).",
+                t("A recording component is unavailable")
+            ))
+        })
+    };
+    let caps = gst::Caps::builder("video/x-raw")
+        .field("format", "I420")
+        .field("width", width)
+        .field("height", height)
+        .field("framerate", gst::Fraction::new(30, 1))
+        .field("pixel-aspect-ratio", gst::Fraction::new(1, 1))
+        .build();
+    by_name("size")?.set_property("caps", &caps);
+    by_name("output")?.set_property("location", path.to_string_lossy().as_ref());
+    let progress = Arc::new(Mutex::new(Progress::default()));
+    let observed = progress.clone();
+    by_name("encoder")?
+        .static_pad("src")
+        .ok_or_else(|| MediaError(t("The video encoder is unavailable.")))?
+        .add_probe(gst::PadProbeType::BUFFER, move |_, info| {
+            if let Some(buffer) = info.buffer()
+                && let Ok(mut progress) = observed.lock()
+            {
+                progress.observe(buffer);
+            }
+            gst::PadProbeReturn::Ok
+        });
+    by_name("record-buffer")?.connect("overrun", false, move |_| {
+        fell_behind.store(true, Ordering::Relaxed);
+        None
+    });
+    let tee = pipeline
+        .by_name("frames")
+        .ok_or_else(|| MediaError(t("The selected source is unavailable.")))?;
+    let sink = bin
+        .static_pad("sink")
+        .ok_or_else(|| MediaError(t("The recording could not be connected.")))?;
+    let pad = tee
+        .request_pad_simple("src_%u")
+        .ok_or_else(|| MediaError(t("The recording could not be connected.")))?;
+    let Some(blocked) = pad.add_probe(gst::PadProbeType::BLOCK_DOWNSTREAM, |_, _| {
+        gst::PadProbeReturn::Ok
+    }) else {
+        tee.release_request_pad(&pad);
+        return Err(MediaError(t("The recording could not be prepared.")));
+    };
+    // Block only the new branch while it is linked and brought to the parent's
+    // state. The selected source and preview never disconnect or restart.
+    let result = (|| {
+        pipeline.add(&bin).map_err(failed)?;
+        pad.link(&sink).map_err(failed)?;
+        bin.sync_state_with_parent().map_err(failed)?;
+        Ok(())
+    })();
+    if result.is_err() {
+        let _ = pad.unlink(&sink);
+        let _ = bin.set_state(gst::State::Null);
+        let _ = pipeline.remove(&bin);
+        tee.release_request_pad(&pad);
+    }
+    pad.remove_probe(blocked);
+    result?;
+    Ok(progress)
+}
+
+fn failed(error: impl std::fmt::Display) -> MediaError {
+    MediaError(error.to_string())
+}
