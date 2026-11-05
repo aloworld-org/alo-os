@@ -475,11 +475,13 @@ mod tests {
         .downcast::<gst::Pipeline>()
         .map_err(|_| "No test pipeline")?;
         let bus = pipeline.bus().ok_or("No test bus")?;
+        let preview_gate = gst::ElementFactory::make("valve").build()?;
         Ok(Recorder {
             source_ended: false,
             pipeline,
             bus,
             frame: Arc::new(Mutex::new(None)),
+            preview_gate,
             finishing: false,
             fell_behind: Arc::new(AtomicBool::new(false)),
             video: None,
