@@ -31,12 +31,17 @@ cleanup() {
 trap cleanup EXIT
 pipewire > "$scratch/pipewire.log" 2>&1 &
 pipewire_pid=$!
-wireplumber > "$scratch/manager.log" 2>&1 &
-manager_pid=$!
 for attempt in $(seq 1 50); do
   [[ ! -S "$XDG_RUNTIME_DIR/pipewire-0" ]] || break
+  kill -0 "$pipewire_pid" 2>/dev/null || { cat "$scratch/pipewire.log" >&2; exit 1; }
   sleep .1
 done
+[[ -S "$XDG_RUNTIME_DIR/pipewire-0" ]] || { echo 'The private PipeWire server did not become ready.' >&2; exit 1; }
+# WirePlumber exits if it connects before PipeWire creates its socket. Start the
+# manager only after the server is available, then let source readiness and the
+# recorder's first-frame deadline verify that its policy is operational.
+wireplumber > "$scratch/manager.log" 2>&1 &
+manager_pid=$!
 start_source() {
 source_name="studio-pipewire-fixture-$RANDOM-$RANDOM"
 publisher=(env)
