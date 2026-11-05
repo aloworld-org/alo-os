@@ -24,7 +24,7 @@ pub fn check(width: i32, height: i32, frame_rate: i32) -> Result<Assessment, Med
     }
     gst::init().map_err(|error| MediaError(error.to_string()))?;
     let frames = (frame_rate * 3 + 1) / 2;
-    let element = gst::parse::launch(&format!("videotestsrc num-buffers={frames} pattern=smpte ! capsfilter name=size ! videoconvert ! vp9enc deadline=1 cpu-used=8 threads=4 lag-in-frames=0 target-bitrate=4500000 ! fakesink sync=false"))
+    let element = gst::parse::launch(&format!("videotestsrc num-buffers={frames} pattern=smpte ! capsfilter name=size ! videoconvert ! vp9enc deadline=1 cpu-used=8 threads=4 row-mt=true lag-in-frames=0 target-bitrate=4500000 ! fakesink sync=false"))
         .map_err(|error| MediaError(error.to_string()))?;
     let pipeline = element
         .downcast::<gst::Pipeline>()

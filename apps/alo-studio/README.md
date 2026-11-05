@@ -8,6 +8,8 @@ another size or explicitly record anyway; the app never changes it silently.
 Recording preserves incoming frame timing, up to 30 frames per second. A slow
 source does not generate duplicate frames just to reach that ceiling.
 The explicit **360p · up to 5 fps** option reduces work on slower devices.
+It also uses faster microphone encoding with the same 48 kHz mono audio and
+96 kbit/s target bitrate. Other choices retain the standard audio encoder setting.
 The quality check uses the selected size and frame rate; the default stays 1080p.
 Quality and countdown options stay visible as direct choices. Alt + 1, Alt + 7,
 Alt + O, and Alt + 3 select 1080p, 720p, original size, and 360p respectively.

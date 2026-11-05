@@ -43,14 +43,17 @@ pub(crate) fn attach(
             "audiotestsrc name=microphone is-live=true do-timestamp=true wave=sine volume=0.05",
         ),
     };
+    // The explicitly chosen low-resource profile also avoids Opus's most
+    // expensive search. The sample rate, channel count and bitrate stay fixed.
+    let audio_complexity = if frame_rate <= 5 { 0 } else { 10 };
     let audio = audio_source.map(|source| format!(
-        " {source} ! queue name=audio-input ! audioconvert ! audioresample ! audio/x-raw,rate=48000,channels=1 ! opusenc bitrate=96000 ! queue name=audio-buffer ! container."
+        " {source} ! queue name=audio-input ! audioconvert ! audioresample ! audio/x-raw,rate=48000,channels=1 ! opusenc bitrate=96000 complexity={audio_complexity} ! queue name=audio-buffer ! container."
     )).unwrap_or_default();
     // Drop frames before conversion and scaling so a lower chosen rate reduces
     // processing work as well as the encoder's load.
     let bin = gst::parse::bin_from_description(&format!(
         "queue name=record-entry max-size-buffers=2 max-size-bytes=0 max-size-time=0 ! capsfilter name=record-format ! videorate skip-to-first=true drop-only=true ! videoconvert ! videoscale ! capsfilter name=size \
-         ! queue name=record-buffer max-size-time=0 max-size-bytes=134217728 max-size-buffers=60 ! vp9enc name=encoder deadline=1 cpu-used=8 threads=4 lag-in-frames=0 target-bitrate=4500000 keyframe-max-dist=60 \
+         ! queue name=record-buffer max-size-time=0 max-size-bytes=134217728 max-size-buffers=60 ! vp9enc name=encoder deadline=1 cpu-used=8 threads=4 row-mt=true lag-in-frames=0 target-bitrate=4500000 keyframe-max-dist=60 \
          ! queue ! webmmux name=container offset-to-zero=true ! filesink name=output async=false {audio}"
     ), true).map_err(failed)?;
     let by_name = |name| {

@@ -299,7 +299,10 @@ pub fn build(application: &gtk::Application) -> View {
             ("_1080p", "1080p, up to 30 fps"),
             ("_720p", "720p, up to 30 fps"),
             ("_Original", "Original size, up to 30 fps"),
-            ("_360p · 5 fps", "360p, up to 5 fps"),
+            (
+                "_360p · 5 fps",
+                "360p, up to 5 fps. Uses less processing power for video and microphone audio.",
+            ),
         ],
     );
     quality.widget.set_tooltip_text(Some(&t(
