@@ -3,9 +3,12 @@
 use gst::prelude::*;
 use std::{io, path::Path};
 
+/// The immutable private plugin installed by the OS image.
 const FILE: &str = "/usr/lib/alo-capture-provider/gstreamer-1.0/libgstpipewire.so";
+/// The upstream buffer-ownership revision and separately pinned race fix.
 const VERSION: &str = "1.4.90+ee2c6eb4.2770143f";
 
+/// Check the engine selected by an installed portal, without a system fallback.
 pub(super) fn verify() -> io::Result<()> {
     // Standalone development fixtures may explicitly use the host engine.
     // The installed portal unit always requires the private pinned engine.
@@ -18,6 +21,7 @@ pub(super) fn verify() -> io::Result<()> {
     validate(plugin.filename().as_deref(), plugin.version().as_str())
 }
 
+/// Missing metadata, other search paths, and other versions are refusals.
 fn validate(filename: Option<&Path>, version: &str) -> io::Result<()> {
     if filename != Some(Path::new(FILE)) || version != VERSION {
         return Err(io::Error::other(
