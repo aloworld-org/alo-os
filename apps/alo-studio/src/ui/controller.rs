@@ -171,7 +171,11 @@ fn connect(state: &Rc<State>, application: &gtk::Application) {
         ("record", vec!["<Primary><Shift>r"]),
         ("pause", vec![]),
     ] {
-        let action = gio::SimpleAction::new(name, None);
+        let action = if name == "pause" {
+            gio::SimpleAction::new_stateful(name, None, &false.to_variant())
+        } else {
+            gio::SimpleAction::new(name, None)
+        };
         let own = state.clone();
         action.connect_activate(move |_, _| match name {
             "new" => own.new_recording(),

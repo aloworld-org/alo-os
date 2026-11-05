@@ -134,6 +134,9 @@ impl State {
                     .and_then(|action| action.downcast::<gtk::gio::SimpleAction>().ok())
                 {
                     action.set_enabled(enabled);
+                    if name == "pause" {
+                        action.set_state(&(phase == Phase::Paused).to_variant());
+                    }
                 }
             }
         }
