@@ -116,7 +116,18 @@ pub(crate) fn attach(
         None
     });
     if let Some(buffer) = bin.by_name("audio-buffer") {
-        buffer.connect("overrun", false, move |_| {
+        buffer.connect("overrun", false, move |values| {
+            if let Some(queue) = values
+                .first()
+                .and_then(|value| value.get::<gst::Element>().ok())
+            {
+                eprintln!(
+                    "Microphone queue limit: {} buffers, {} bytes, {} ns",
+                    queue.property::<u32>("current-level-buffers"),
+                    queue.property::<u32>("current-level-bytes"),
+                    queue.property::<u64>("current-level-time")
+                );
+            }
             fell_behind.store(true, Ordering::Relaxed);
             None
         });

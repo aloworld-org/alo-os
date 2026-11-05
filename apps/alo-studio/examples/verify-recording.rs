@@ -113,7 +113,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // the person's quality check. A private Pulse server must be selected by
     // the caller; this opt-in diagnostic can otherwise open a real microphone.
     if pulse_audio {
-        std::thread::sleep(Duration::from_secs(3));
+        let preview_seconds = if std::env::var_os("ALO_STUDIO_VERIFY_LONG_PREVIEW").is_some() {
+            12
+        } else {
+            3
+        };
+        std::thread::sleep(Duration::from_secs(preview_seconds));
     }
     let quality = if std::env::var_os("ALO_STUDIO_VERIFY_LIGHTWEIGHT").is_some() {
         alo_studio::model::Quality::Lightweight
