@@ -47,67 +47,97 @@ starts off for every new recording. Native dialogs share Studio's application ID
 
 ## Verification and current limits
 
-Permanent host checks passed at `8d18ba6d`: formatting, clippy, ten meaningful
-lifecycle/storage/duration tests, actual GTK/Xvfb recording, generated Opus audio,
-pause/resume, source ending while paused, finalization, and decoding. Both the
-ordinary PipeWire fixture and actual native publisher/restricted-descriptor
-fixture pass with and without generated audio. Current native evidence is
-`/tmp/tmp.JVDEnhWYo2`; framebuffer and GUI evidence is `/tmp/tmp.2IK7mBXZsS`.
-Generated audio does not establish physical microphone quality.
+At `21c303eb`, formatting, clippy, 11 lifecycle/storage/duration checks, actual
+GTK/Xvfb recording, generated Opus audio, pause/resume, source ending while
+paused, finalization, and decoding passed. The private PipeWire fixture now also
+opens the production microphone implementation through an isolated PulseAudio
+server and virtual monitor. It waits three seconds with the preview running
+before attaching audio, and requires actual decoded buffers from both tracks
+with startup timestamps within 250 ms. It never selects physical audio hardware.
+
+The ordinary fixture's microphone tracks started 10.5 ms apart. The actual
+native publisher and restricted-descriptor fixture passed all three cases:
+117 preview frames without audio, 116 with generated audio, and 121 through
+PulseAudio, with the latter tracks starting 32.5 ms apart. Native evidence is
+`/tmp/tmp.usbt00Qhg4`; ordinary PipeWire evidence is `/tmp/tmp.9Lf5DK5kRc`;
+GTK/framebuffer evidence is `/tmp/tmp.xdf9BtSe1k`. The microphone-state regression
+also verifies that a delayed switch activation during preflight/countdown is
+retained, while recording, pause, and finalization refuse changes.
 
 The private software-emulated guest established these one-off observations:
 
-- A production-feature development binary at `e3352001`, mounted read-only in the
-  installed Studio Flatpak sandbox, recorded a selected window, paused/resumed,
-  saved it, and played it to completion in the review screen. The clip decodes
-  to 30 video frames over 102.613 seconds at 600 x 436. Its metadata reports
-  102,612 ms. The thumbnail contains only the selected demonstration window.
-- Studio's Save a copy action opened the real native chooser and saved
-  `Product demonstration.webm`. The original and 31,891-byte export are identical,
+- A production-feature development binary at `e3352001`, mounted read-only in
+  the installed Flatpak sandbox, recorded a selected window, paused/resumed,
+  saved it, and played it to completion in GTK review. It decodes to 30 frames
+  over 102.613 seconds at 600 x 436; metadata reports 102,612 ms. Its thumbnail
+  contains only the selected demonstration window.
+- Studio's Save a copy action opened the real native chooser and exported
+  `Product demonstration.webm`. The original and 31,891-byte copy are identical:
   SHA-256 `099ab146ed57eb0af447189d286d151bbdc1f8148129a69987275c8dcdac8f36`.
-  Settings displayed that exact file grant. Reopening for writing from the
-  sandbox succeeded before Take back and was denied afterwards. Both files
-  remained intact. This is an actual booted UI export/revocation observation.
-- The installed package at `ce4b97a1` opened screen capture with the microphone
-  explicitly enabled. Actual graph activity identified Studio's microphone;
-  pause suspended both streams. Taking back the capture grant in Settings
-  removed both media streams. That run encoded no video, was correctly refused
-  as a completed recording, and retained its temporary file.
-- A separate real-portal screen test reproduced missing recording buffers without
-  audio, while saving a correct full-screen preview. The trace showed the new
-  recording connection waiting for buffers after preview disconnected. The
-  continuous-stream implementation above replaces that handoff and isolates
-  encoder negotiation from the selected native format. At `8d18ba6d`, the real
-  portal screen probe passed: 1152 x 720, 15 preview frames, finalized WebM,
-  and VP9 decoded to EOS. Independent host decoding counted 14 encoded frames
-  over 11.039 seconds, with opaque alpha. Guest evidence is
-  `verified-screen-stable-format.log`
-  and its video/preview artifacts under `/home/alo/StudioVerification`.
-  A production-feature development run at the same revision still delivered no
-  encoded video with the microphone switch enabled. Taking back its permission
-  while paused removed grant 20 and all capture streams; empty-video refusal
-  worked. That is a failed recording observation, not an accepted combined flow.
-  **The installed package's combined screen/microphone flow is being verified.**
+  Settings displayed that exact file grant. Reopening for writing succeeded
+  before Take back and was denied afterwards. Both files remained intact.
+- At `8d18ba6d`, the real ScreenCast portal probe produced a finalized
+  1152 x 720 WebM. Independent decoding counted 14 encoded frames over
+  11.039 seconds. The installed SDK package also saved a 1280 x 800 screen
+  recording, independently decoded as 14 frames over 17.325 seconds.
+  Guest evidence is `verified-screen-stable-format.*` and
+  `completed-screen-without-audio.*` under `/home/alo/StudioVerification`.
+- A production-feature development binary at `303d0b4f` used the actual portal
+  and real PulseAudio microphone path in the installed sandbox. Both streams
+  opened, paused, resumed, and paused again. Taking back capture grant 22 in
+  Settings while paused removed the grant and both streams. Studio finalized
+  clip `1793845599-533344291-2`, with microphone metadata true. The installed
+  SDK package subsequently opened it from the recording library.
+- That 244,447-byte clip contains VP9 and mono 48 kHz Opus and both tracks
+  decode to EOS: 17 video buffers and 17,871 audio buffers over 628.88 seconds.
+  SHA-256 `69b6fe999ca9fd227fe902457eb28938d0bc7257f46d92b28626d9cff6b1f704`.
+  However, its first decoded video timestamp is 65.536 seconds after audio,
+  and the guest logged audio sample loss. **It is not accepted as a
+  demonstration-quality recording.** Evidence is `completed-screen.*`,
+  `fixed-retry-paused-media.txt`, `fixed-resumed-media.txt`,
+  `fixed-before-revoke-media.txt`, and `revoked-media-status.txt`.
 
-The SDK-built `8d18ba6d` package was installed in the guest with SHA-256
-`2d9b251308d51e912fea9857bcff85382332c37f3b65d29305c1ea790aee5ef4`
+The PulseAudio check passes on the host; this does not explain or waive the
+software guest's poor cadence and delayed initial video. The guest uses QEMU
+software emulation, two virtual CPUs, and a virtual audio input. An isolated
+600 x 438 VP9 sample encoded 60 frames in 12.4 seconds. Neither microphone
+quality nor 30 fps performance on physical hardware is established.
+
+An isolated diagnostic checkout of `21c303eb`, with the native live-source
+override removed and microphone enabled in the real-portal probe, did not resolve
+cadence: it delivered 11 preview frames and failed the minimum of 15. It was not
+promoted into the application. Its diagnostic decoder handled both tracks with
+asynchronous preroll disabled. Evidence is `verified-live-window.*` and the
+change note in `/root/alo-studio-live-evaluation.oLz3dt/.qa-changes`.
+Host checks use GStreamer 1.24.2/PipeWire 1.0.5; the guest's installed runtime
+uses GStreamer 1.26.11/PipeWire 1.4.9 against the OS's PipeWire 1.4.11 server.
+
+The SDK-built `df655460` package was installed normally with SHA-256
+`1b6d4b5d23f50867579a6503c2fd7e50ba34007dbdc029b0db7a740cf6a3e2fb`
 and Flatpak commit
-`34b48c9dec6c0cd4e39f482d42f131f21f74dc6d7218fd540b9816ffce259ee0`.
+`2b9db4c3171837e2b037d451cb8afb8d43b92c3de8d3d2937f4a18c45b371b80`.
+The final accessibility/test build at `21c303eb` is installed normally in the
+guest with SHA-256
+`42b9d3124621f426049543ce1d9c033f1200e5b1738c172f21ebc560332357fe`
+and Flatpak commit
+`6afbd7601858f15deb4dde3dedc0273e7958b9c7e265b5c11bd4ecc1a742df76`.
 
-The guest uses QEMU software emulation, two virtual CPUs, and a virtual audio
-input. An isolated 600 x 438 VP9 sample encoded 60 frames in 12.4 seconds. These
-observations do not establish 30 fps performance or microphone quality on
-physical hardware.
+A further small-window microphone run at `21c303eb` also saved and decoded both
+tracks, but did not establish demonstration quality: 600 x 436, 11 decoded video
+buffers, 579 audio buffers, and a 19.98-second container. The first audio/video
+timestamps coincide, but video is sparse. Its evidence is
+`completed-window-microphone.*`; clip ID `1793847916-139378302-2`.
 
-The native desktop in this branch does not expose a live lock transition. Lock
-policy, exclusive-scene capture refusal, and nested lock components are tested,
-but a booted desktop-lock recording test cannot yet be claimed. The dedicated
-application CI passed at `8d18ba6d`. The broader OS gate reports failure, while
-its job-step response remains incomplete and its log endpoint returns 404;
-the cause has not been established. There is no full-workspace or
-production-image pass here.
+The native desktop does not expose a live lock transition. Lock policy,
+exclusive-scene capture refusal, and nested lock components are tested; a booted
+desktop-lock recording test cannot be claimed. Desktop locking is treated as a
+separate OS change pending the owner's scope clarification.
+
+The dedicated application CI passed at `df655460`, `e5810d12`, and `21c303eb`,
+including the new isolated microphone fixture. Broader OS acceptance remains open;
+there is no full-workspace, production-image, or physical-hardware pass here.
 
 Earlier scoped OS checks passed: 594 permission/portal/protocol/activity/storage
 checks, 295 transport/portal/architecture/language checks, 413 client-lifecycle
-checks and 12 native-parent wire checks. The exact-file save boundary and earlier
-host-only proof are documented in `native-save-dialog-for-sandboxed-recordings.md`.
+checks and 12 native-parent wire checks. The exact-file save boundary is
+documented in `native-save-dialog-for-sandboxed-recordings.md`.
