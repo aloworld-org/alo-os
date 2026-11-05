@@ -10,6 +10,8 @@ The microphone starts **off for every recording**. Videos stay on this device;
 the application has no network permission. VP9 and Opus are encoded into WebM,
 following alo OS's encoding decision. Your original stays in the app's private
 library even after you export a copy.
+Saved duration comes from encoded video timestamps. An empty video is not
+reported as a completed recording.
 
 ![The native recording workspace](data/screenshots/studio.png)
 
@@ -77,6 +79,12 @@ The X11 diagnostic source is absent from ordinary installed builds.
 real, private PipeWire socket. It verifies the preview-to-record connection
 handoff, pause/resume, finalization, and decoding. Hardware monitors are disabled
 in that isolated server; it does not access the desktop or microphone.
+With `ALO_STUDIO_CAPTURE_PROVIDER` and `ALO_STUDIO_CAPTURE_REMOTE`, the same
+probe uses the native publisher and the actual restricted descriptor helper.
+That integration fixture requires the full repository checkout for its shared
+descriptor codec. It is excluded from the installed application. A diagnostic
+`ALO_STUDIO_VERIFY_TIME_SCALE` between one and six extends observation in slow
+OS guests; default CI timing and the minimum frame count remain unchanged.
 
 `packaging/verify-native.sh` also drives the actual native UI through source
 selection, quality preflight, countdown, pause/resume, completion, and a durable

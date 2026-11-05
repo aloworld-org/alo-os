@@ -177,3 +177,6 @@ acceptance is still pending. Studio also measures duration from encoded video
 packets and refuses a completed recording with no timed video frames; an
 advancing interface clock alone can no longer become saved clip metadata.
 The empty-video and one-frame regressions are permanent app unit tests.
+The latest guest recording investigation remains incomplete. A fixed system clock corrected the publisher-only comparison (30 frames over 4.45 seconds). Studio's saved metadata now measures encoded video duration and refuses a completed clip with no timed video frames; all ten app unit tests pass. App CI also passes with system-clock consumers and live sinks that do not wait for preroll.
+
+The guest's five-second recording probes still produced insufficient continuous frames. An explicit verification-only time scale now allows a longer observation in the software-emulated guest while preserving the default CI timing, minimum frame count, and proportional pause-duration check. The first negotiated preview size and widget allocation are logged once per source selection to diagnose the dark preview. Return from recording controls to the visible review workspace has been observed in the guest. Playback, application-driven export, revocation, and lock acceptance remain pending.
