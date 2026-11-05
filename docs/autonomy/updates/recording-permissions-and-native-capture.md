@@ -187,9 +187,53 @@ The integration now packages that engine privately for the publisher, with
 upstream's buffer-release race fix `2770143f506a92e242f8a5b8b870929b515b48c0`.
 The sanitized publisher launcher supplies its fixed settings explicitly, and the worker refuses an
 unexpected filename or version. The distribution's daemon and other programs'
-plugins remain separate. New container checks target the image's pinned base
-and the stricter resume assertion. Their results and a real-portal microphone
-walk remain required before acceptance.
+plugins remain separate. Container checks target the image's pinned base and
+the stricter resume assertion.
+
+At `1594b42b`, clippy and 16 scoped native tests passed (14 media-server tests,
+two private-engine refusal tests), as did the image packaging contract. The
+dedicated application CI and broader OS gate both passed at `289589a1`.
+The pinned-base container passed all six recording cases: ordinary and native
+publisher paths, each with no audio, generated sound, and isolated PulseAudio.
+Each continued to deliver fresh frames after Resume.
+
+The updated portal, worker, unit, and private plugin are installed in the VM's
+temporary OS overlay. The portal, worker, and plugin SHA-256 values are
+`e5b7cb78f8895ad4b69c906b1e2c5c4e080795160571ca3ba7a287a8174d88a7`,
+`ff330c21fa00d2f277b607b04e3559130cfe53aeb85dd445f812f733eb35dd69`, and
+`783acc20cde1eb97f28a029705bf9ff916912dc920e765cd2c1533d25e681ed2`
+respectively; the unit is recorded in the installation evidence.
+The publisher cache is owned by `alo:alo` with mode 0700. Installation evidence
+is `D:\\alo-studio-verification\\private-capture-engine-install.txt`.
+
+The installed default-quality app then used the real native chooser to select
+the demonstration window with microphone enabled. It stopped after detecting
+microphone sample loss and saved clip `1793866252-340967369-2`. Independent
+decoding reached EOS: 19 video frames at 600 x 436 and 345 audio buffers, over a
+9.14-second container. Both tracks start at zero; video ends at 3.885 seconds.
+The metadata's 13.439-second duration disagrees with the container. This is
+failed quality acceptance, including a duration discrepancy to investigate;
+it is not a pause/resume acceptance result. The thumbnail contains the selected
+window. Evidence is
+`D:\\alo-studio-verification\\private-engine-installed-recording`; WebM SHA-256
+`025142f2e23b2e28e3da8725f401cc29b801f0fa074d7f4ca4cde50daa3b27e2`.
+
+At `318eda56`, Studio adds a visible **360p · up to 5 fps** option for slower
+devices. The 1080p default remains unchanged. Preflight measures the selected
+rate; the recording branch drops excess frames before conversion and scaling.
+The media probe checks decoded dimensions and frame-rate ceiling. Formatting,
+clippy, all 15 application tests, and GTK/framebuffer checks passed. Framebuffer
+evidence is `/tmp/tmp.F6A4ggj5nG`; the new profile decodes at 480 x 360, 5 fps.
+The ordinary pinned-engine fixture passed all four cases in
+`/tmp/tmp.6qi4dmvOI6`, including the new low-resource PulseAudio case. An initial
+native invocation timed out during startup; a fresh run with the current
+release worker passed all four cases, with 53–60 fresh frames after Resume.
+Its low-resource recording decoded at 576 x 360, 5 fps with coincident first
+audio/video timestamps. Preserved native evidence is
+`/root/alo-studio-engine-container-evidence/tmp.tUxpVGa2KA`.
+These checks run again in `.github/workflows/studio.yml`; VM observations are
+one-off measurements. The lower-resource package's real-portal walk remains
+required before quality acceptance.
 
 The dedicated application CI passed at `df655460`, `e5810d12`, and `21c303eb`,
 including the new isolated microphone fixture. Broader OS acceptance remains open;
