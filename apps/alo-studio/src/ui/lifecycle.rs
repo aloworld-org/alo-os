@@ -224,10 +224,11 @@ impl State {
                 self.show_bar();
             }
             Err(error) => {
+                eprintln!("Starting recording: {error}");
                 self.release_capture();
                 self.session.borrow_mut().reset();
                 self.view.microphone.set_active(false);
-                self.notice(&error);
+                self.notice(&t("Recording could not start. Please select your source again. Any temporary video has been kept."));
             }
         }
         self.render();

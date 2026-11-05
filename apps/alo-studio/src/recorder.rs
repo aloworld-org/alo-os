@@ -271,6 +271,18 @@ impl Recorder {
             .bus()
             .ok_or_else(|| MediaError(t("The recording engine cannot report its state.")))?;
         if let Err(error) = pipeline.set_state(gst::State::Playing) {
+            for _ in 0..32 {
+                let Some(message) = bus.pop() else {
+                    break;
+                };
+                if let gst::MessageView::Error(detail) = message.view() {
+                    eprintln!(
+                        "Starting recording media: {} ({:?})",
+                        detail.error(),
+                        detail.debug()
+                    );
+                }
+            }
             let _ = pipeline.set_state(gst::State::Null);
             return Err(failed(error));
         }
