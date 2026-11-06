@@ -657,6 +657,17 @@ file carries it with a tier.*
   window *Put back…* at the end of each change that can be put back, the
   confirmation under it, Tab and Enter to reach both, and a plain line under a
   change that cannot be put back saying why
+- **A window of alo's own that cannot be drawn is closed with a short notice,
+  never the desktop.** *The owner's answer of 2026-11-06, after a booted
+  machine lost a person's whole session to the record window failing to draw
+  its Put back confirmation (#1087): "a short notice", a brief notification in
+  the existing notification style* — from alo OS, naming the window by its own
+  title: *"What alo did couldn't be shown on this screen and was closed.
+  Nothing was lost."* One notice per closing, for eight seconds. **Built
+  2026-11-06** for the record window and Settings; the question surface has no
+  title of its own and is not closed when it cannot draw, so it is left out of
+  the frame and said in the log. **Not shown while the screen is being
+  captured by alo's own tools**, as a notification is not
 - ★ **Scrollback you can move along, not only read.** In a session you asked to
   be able to undo, every command is a place you can return to: scroll up, choose
   one, and your files are as they were before it ran. *In every other terminal scrollback is a
@@ -1652,6 +1663,27 @@ find.*
   offers the three levels yet, so the choice still cannot be made by anybody. **And where a box's control group lives on a booted machine is open**:
   it cannot go under `alo-bounding`'s turn root, which was measured rather than
   reasoned about and is in `docs/quirks.md`.
+  **On an installed alo OS the sealed box cannot start a program yet**,
+  measured on a booted machine on 2026-11-02: `/` is a composefs image, and the
+  boundary refuses the system layer's own checks — following a link, reading a
+  program's capability attribute when it starts, listing a folder, a first
+  lookup — so nothing from `/usr`, and nothing reached through the `/home`
+  link, starts boxed; a static program at its real `/var/home/…` path did.
+  *The owner's decision of 2026-11-06: "say so plainly, keep going."* So
+  `alo-try` says, when the box was joined and then denied the start on a
+  composefs root — both seen, never one guessed from the other — *"{program} was
+  not run. The sealed box can't run programs on this computer yet. Choose 'ask
+  each time' in Settings → Running code to run commands after you approve
+  them."*, writes the run down as refused, and exits non-zero; and Settings →
+  Running code says under the sealed box *"The sealed box isn't available on
+  this computer yet."* **Nothing chosen is changed** (law 5): the sealed box
+  stays the default and stays a choice, and *ask each time* and *full trust*
+  are as they were. **Planned, and kernel work of its own**: the boundary may
+  *read* the system layer, read-only — the owner's answer to *may the box read
+  the read-only system layer?* — which needs the layer recognised as the booted
+  deployment's `.ostree.cfs` image rather than by path; the design notes and the
+  measurement scripts are in the coordinator's `C:\dev\backing\` (`m.sh`,
+  `m2.sh`), not in this repository.
 - Update checking can be turned off, saying that security fixes stop arriving while it is off
 - *Trust devices on this network*, off by default, saying that it also trusts guests' phones and every device on the network
 - A provider address that is not https can be allowed after a plain warning that the key crosses the network readable.

@@ -254,8 +254,14 @@ pub use what_the_machine_offers_now::{AnApplicationHere, WhatTheMachineOffersNow
 /// Super+Tab and Alt+Tab going round every window, the terminal and the task
 /// windows included.
 mod a_chord_goes_round_every_window;
+/// A press on Settings reaching Settings.
+mod a_click_reaches_settings;
 /// A press on a task window's one button: Stop (ADR 0139).
 mod a_press_on_the_one_button;
+/// A window of alo's laid out in a room of its own, seen through the camera.
+mod a_room_through_the_camera;
+/// The edge over one of alo's own windows.
+mod an_alo_windows_edge;
 /// Where the application door's socket goes, and what it refuses rather than
 /// serve. Public because `docs/contracts/application-door.md` publishes the
 /// path and the modes, and a test holds this crate to that document.
@@ -405,6 +411,8 @@ mod session_desktop;
 mod session_device;
 mod session_input;
 mod settings_answering;
+/// Settings as a frame drew it, for the press after the frame.
+mod settings_as_drawn;
 mod settings_canvas;
 mod settings_categories;
 mod settings_chord;
@@ -413,6 +421,8 @@ mod settings_drawn_controls;
 mod settings_drawn_page;
 mod settings_drawn_picker;
 mod settings_drawn_row;
+/// Settings' window edge: its title and Close.
+mod settings_edge;
 mod settings_formats;
 mod settings_frame;
 mod settings_granted;
@@ -420,6 +430,9 @@ mod settings_keepers;
 mod settings_kept;
 mod settings_keys;
 mod settings_measures;
+/// Settings as a window on the canvas: its size, its place and the view going
+/// to it (ADR 0145, stage 3).
+mod settings_on_the_plane;
 mod settings_page;
 mod settings_page_accessibility;
 mod settings_page_alo;
@@ -434,6 +447,8 @@ mod settings_paired;
 mod settings_palette;
 mod settings_picker;
 mod settings_places;
+/// What a press on Settings points at, and where the keyboard goes.
+mod settings_pointed_at;
 mod settings_raster;
 mod settings_seat;
 mod settings_shell_integration;
@@ -510,6 +525,8 @@ pub use the_first_account::{ASecret, OnTheSheet, TheAccountSheet, TheAccountShow
 /// Closing alo's terminal: at once when idle, after a question when a command
 /// is running.
 mod closing_the_terminal;
+mod the_closed_windows_notice;
+pub mod the_closed_windows_words;
 pub mod the_first_start;
 mod the_first_starts_icons;
 mod the_formats_are_told;

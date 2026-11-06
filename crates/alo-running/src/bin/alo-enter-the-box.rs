@@ -39,10 +39,27 @@ fn main() -> ExitCode {
         return said("the command to become");
     };
     let arguments: Vec<_> = asked.collect();
+    // The word the runner gave this run, if it gave one. Read before the
+    // command starts, which takes it out of what the command inherits.
+    let word = std::env::var(alo_running::the_helpers_word::THE_WORD_IS_CALLED).ok();
 
     // Returns only on failure. On success this process is the command and
     // nothing below here runs.
     let why = alo_running::enter_the_box_and_become(&inside, &the_box, &program, &arguments);
+    // **Said to the runner first**, in the one line it listens for, so a
+    // refused start is never read as a command that ran and failed.
+    if let Some(word) = word
+        && alo_running::it_was_joined(&why)
+    {
+        use std::io::Write;
+        // Let go of on purpose, as `refused` says: there is nowhere else.
+        write!(
+            std::io::stderr(),
+            "{}",
+            alo_running::the_helpers_word::the_refusal_line(&word, why.kind())
+        )
+        .ok();
+    }
     refused(&format!(
         "{} did not start inside {}: {why}",
         program.display(),

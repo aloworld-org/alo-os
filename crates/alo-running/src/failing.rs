@@ -69,6 +69,20 @@ pub enum NotRun {
     #[error("the command could not be started inside its box: {0}")]
     ItWouldNotStart(#[source] std::io::Error),
 
+    /// The box was joined, and from inside it the command could not be
+    /// started — said by the helper in its own word
+    /// (`crate::the_helpers_word`), so this is never a command that ran.
+    #[error(
+        "the box was joined, and from inside it {} could not be started ({refused:?})",
+        program.display()
+    )]
+    TheBoxRefusedTheCommand {
+        /// The program that was not started.
+        program: PathBuf,
+        /// Why, as the helper said it.
+        refused: crate::the_helpers_word::StartRefused,
+    },
+
     /// Waiting for the command failed, so what it did is unknown.
     #[error("the command was started and then could not be waited for: {0}")]
     ItCouldNotBeWaitedFor(#[source] std::io::Error),
@@ -150,6 +164,7 @@ impl NotRun {
             // which `WhatHappened` carries, and this sentence is only reached
             // where a caller asks this type what to say.
             Self::ItWouldNotStart(_)
+            | Self::TheBoxRefusedTheCommand { .. }
             | Self::ItCouldNotBeWaitedFor(_)
             | Self::TheBoxWouldNotGoAway { .. }
             | Self::ItWasNotWrittenDown(_) => words::NOTHING_RAN_WOULD_NOT_START,

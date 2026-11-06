@@ -32,6 +32,8 @@
 use std::io::{Read, Write};
 use std::process::{Child, ExitStatus};
 
+use crate::the_helpers_word::{Listening, StartRefused};
+
 /// Where a boxed command's output goes, and where its input comes from.
 pub enum Carrying<'a> {
     /// The person's own: this process's standard streams.
@@ -59,6 +61,20 @@ pub fn carried_until_it_ends(
     child: &mut Child,
     carrying: Carrying<'_>,
 ) -> std::io::Result<ExitStatus> {
+    carried_and_heard(child, carrying, None).map(|(ended, _)| ended)
+}
+
+/// [`carried_until_it_ends`], **listening for the helper's `word`** on the
+/// error stream (`crate::the_helpers_word`): how it ended, and whether the
+/// helper said the start was refused after the box was joined.
+///
+/// # Errors
+/// As [`carried_until_it_ends`].
+pub(crate) fn carried_and_heard(
+    child: &mut Child,
+    carrying: Carrying<'_>,
+    word: Option<&str>,
+) -> std::io::Result<(ExitStatus, Option<StartRefused>)> {
     let said = child.stdout.take();
     let complained = child.stderr.take();
     let input = child.stdin.take();
@@ -73,33 +89,48 @@ pub fn carried_until_it_ends(
             }
             let mut out = std::io::stdout();
             let mut err = std::io::stderr();
-            both_carried(child, said, complained, &mut out, &mut err)
+            both_carried(child, (said, complained), (&mut out, &mut err), word)
         }
         Carrying::To { out, err } => {
             // No input, which is what a test wants: dropping the pipe is an
             // end of input the command reads at once.
             drop(input);
-            both_carried(child, said, complained, out, err)
+            both_carried(child, (said, complained), (out, err), word)
         }
     }
 }
 
-/// Copy both output streams while the child runs, then wait for it.
+/// Copy both output streams while the child runs, then wait for it — and,
+/// given the helper's `word`, listen for it on the error stream.
 fn both_carried(
     child: &mut Child,
-    said: Option<std::process::ChildStdout>,
-    complained: Option<std::process::ChildStderr>,
-    out: &mut (dyn Write + Send),
-    err: &mut (dyn Write + Send),
-) -> std::io::Result<ExitStatus> {
+    (said, complained): (
+        Option<std::process::ChildStdout>,
+        Option<std::process::ChildStderr>,
+    ),
+    (out, err): (&mut (dyn Write + Send), &mut (dyn Write + Send)),
+    word: Option<&str>,
+) -> std::io::Result<(ExitStatus, Option<StartRefused>)> {
     std::thread::scope(|scope| {
         if let Some(mut from) = said {
             scope.spawn(move || copied(&mut from, out));
         }
-        if let Some(mut from) = complained {
-            scope.spawn(move || copied(&mut from, err));
-        }
-        child.wait()
+        let listened = complained.map(|mut from| {
+            scope.spawn(move || match word {
+                Some(word) => {
+                    let mut listening = Listening::for_the_word(word, err);
+                    copied(&mut from, &mut listening);
+                    listening.heard()
+                }
+                None => {
+                    copied(&mut from, err);
+                    None
+                }
+            })
+        });
+        let ended = child.wait()?;
+        let heard = listened.and_then(|it| it.join().ok().flatten());
+        Ok((ended, heard))
     })
 }
 

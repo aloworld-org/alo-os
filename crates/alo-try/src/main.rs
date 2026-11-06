@@ -56,6 +56,7 @@ use alo_try::a_scope_of_its_own::{
     IN_A_SCOPE_OF_ITS_OWN, SYSTEMD_RUN, WhenTheBoxCannotBeMade, the_scope_to_ask_for,
     when_the_box_cannot_be_made,
 };
+use alo_try::when_the_box_cannot_run_it::WhatItSays;
 use alo_try::{
     HowNarrow, found_on_the_path, the_cgroup_this_process_is_in, the_record_a_person_keeps,
     what_was_asked_for, where_the_box_goes,
@@ -321,10 +322,18 @@ fn main() -> ExitCode {
             // second is `NotRun`'s own English and is deliberately not worked
             // into the first — `alo-turn`'s `COULD_NOT_LOOK_AT_THE_CATALOGUE`
             // keeps the same two apart for the same reason.
-            eprintln!(
-                "{}",
-                strings.say(&not_run.the_word().key(), &alo_strings::Filling::nothing())
-            );
+            //
+            // **On a computer where the box cannot run programs yet** the
+            // person's sentence says so plainly, and where to go instead —
+            // decided from the refusal and the root together, never one alone
+            // (`alo_try::when_the_box_cannot_run_it`). The run is already
+            // written down as refused, by `ran`.
+            let root_is_composefs =
+                std::fs::read_to_string(alo_capability::the_sealed_box_here::THE_MOUNTS).is_ok_and(
+                    |mounts| alo_capability::the_sealed_box_here::the_root_is_composefs(&mounts),
+                );
+            let says = WhatItSays::of(&not_run, root_is_composefs);
+            eprintln!("{}", says.said(&not_run, &strings));
             eprintln!("alo-try: {not_run}");
             ExitCode::FAILURE
         }

@@ -118,8 +118,39 @@ pub fn enter_the_box_and_become(
     }
 
     // Step two, and there is no step three. `exec` returns only on failure.
-    let why = Command::new(program).args(arguments).exec();
-    std::io::Error::new(why.kind(), the_command_would_not_start(program, &why))
+    //
+    // **The helper's word is not the command's**, so it is taken out of what
+    // the command inherits (`crate::the_helpers_word`).
+    let why = Command::new(program)
+        .args(arguments)
+        .env_remove(crate::the_helpers_word::THE_WORD_IS_CALLED)
+        .exec();
+    std::io::Error::new(
+        why.kind(),
+        JoinedButNotStarted(the_command_would_not_start(program, &why)),
+    )
+}
+
+/// The refusal from inside a joined box, as its own type, so that whether the
+/// box was joined is read from the error rather than from its words.
+#[derive(Debug)]
+struct JoinedButNotStarted(String);
+
+impl std::fmt::Display for JoinedButNotStarted {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&self.0)
+    }
+}
+
+impl std::error::Error for JoinedButNotStarted {}
+
+/// Whether `why`, from [`enter_the_box_and_become`], is a refusal **after the
+/// box was joined** — the command would not start from inside it — rather
+/// than one before.
+#[must_use]
+pub fn it_was_joined(why: &std::io::Error) -> bool {
+    why.get_ref()
+        .is_some_and(|inner| inner.is::<JoinedButNotStarted>())
 }
 
 /// What a refusal to join the box says: this process never got in.

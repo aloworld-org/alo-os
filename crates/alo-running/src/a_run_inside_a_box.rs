@@ -79,7 +79,7 @@ use alo_capability::Grantee;
 use alo_record::Entry;
 use alo_strings::{Filling, Strings};
 
-use crate::carrying_what_it_says::{Carrying, carried_until_it_ends};
+use crate::carrying_what_it_says::{Carrying, carried_and_heard};
 use crate::{ARun, AskedToRun, SomewhereToWrite, WhatHappened, failing::NotRun};
 
 /// Where `alo-enter-the-box` is on a machine running alo OS.
@@ -305,11 +305,16 @@ impl<'a, R: SomewhereToWrite> WhereCommandsRun<'a, R> {
         // **All three streams are pipes**, because the box refuses the
         // person's terminal on every read and write, and a command given it
         // says nothing — not even the helper's own refusal (2026-10-31).
+        // **A word of its own for this run**, so a start refused after the
+        // box was joined is told apart from a command that ran and failed
+        // (`crate::the_helpers_word`).
+        let word = crate::the_helpers_word::a_word_of_its_own();
         let started = Command::new(self.helper)
             .arg(self.boxes_live_in)
             .arg(the_box.at())
             .arg(what.program())
             .args(what.arguments())
+            .env(crate::the_helpers_word::THE_WORD_IS_CALLED, &word)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
@@ -328,8 +333,21 @@ impl<'a, R: SomewhereToWrite> WhereCommandsRun<'a, R> {
         };
 
         let carrying = self.carrying();
-        let ended = match carried_until_it_ends(&mut child, carrying) {
-            Ok(ended) => ended,
+        let ended = match carried_and_heard(&mut child, carrying, Some(&word)) {
+            // **The helper said the box refused the command**: nothing ran,
+            // and that is what is written down and said.
+            Ok((_, Some(refused))) => {
+                return Err(put_back(
+                    self.boundary,
+                    the_box,
+                    Some(which),
+                    NotRun::TheBoxRefusedTheCommand {
+                        program: what.program().to_path_buf(),
+                        refused,
+                    },
+                ));
+            }
+            Ok((ended, None)) => ended,
             Err(why) => {
                 return Err(put_back(
                     self.boundary,
