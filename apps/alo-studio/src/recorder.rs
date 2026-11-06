@@ -163,7 +163,7 @@ impl Recorder {
                 "Please choose a frame rate between 1 and 30 fps.",
             )));
         }
-        self.video = Some(crate::recording_branch::attach(
+        let video = crate::recording_branch::attach(
             &self.pipeline,
             path,
             width,
@@ -171,7 +171,31 @@ impl Recorder {
             frame_rate,
             audio,
             self.fell_behind.clone(),
-        )?);
+        )?;
+        // Once actual encoded video exists, the hidden workspace no longer
+        // needs colour conversion or scaling. Consume only its raw buffers;
+        // negotiation and EOS still reach the preview sink. Installing this
+        // after attachment keeps source-only preview and startup untouched.
+        let visible = self.preview_visible.clone();
+        let encoded = video.clone();
+        self.pipeline
+            .by_name("preview-input")
+            .and_then(|queue| queue.static_pad("src"))
+            .and_then(|pad| {
+                pad.add_probe(gst::PadProbeType::BUFFER, move |_, _| {
+                    if !visible.load(Ordering::Relaxed)
+                        && encoded
+                            .lock()
+                            .is_ok_and(|progress| progress.duration().is_some())
+                    {
+                        gst::PadProbeReturn::Handled
+                    } else {
+                        gst::PadProbeReturn::Ok
+                    }
+                })
+            })
+            .ok_or_else(|| MediaError(t("The preview could not start.")))?;
+        self.video = Some(video);
         Ok(())
     }
     fn build(source: Input) -> Result<Self, MediaError> {
@@ -192,7 +216,7 @@ impl Recorder {
         };
         let pipeline = gst::parse::launch(&format!(
             "{source_text} ! queue name=video-input max-size-buffers=2 max-size-bytes=0 max-size-time=0 ! tee name=frames \
-             frames. ! queue leaky=downstream max-size-buffers=1 max-size-bytes=0 max-size-time=0 ! videoconvert ! videoscale ! video/x-raw,format=RGBA,width=[1,640],height=[1,480],pixel-aspect-ratio=1/1 ! appsink name=preview sync=false async=false max-buffers=1 drop=true"
+             frames. ! queue name=preview-input leaky=downstream max-size-buffers=1 max-size-bytes=0 max-size-time=0 ! videoconvert ! videoscale ! video/x-raw,format=RGBA,width=[1,640],height=[1,480],pixel-aspect-ratio=1/1 ! appsink name=preview sync=false async=false max-buffers=1 drop=true"
         )).map_err(failed)?.downcast::<gst::Pipeline>()
             .map_err(|_| MediaError(t("The recording engine could not start.")))?;
         // Preview and recording share a permission-scoped PipeWire core. Keep

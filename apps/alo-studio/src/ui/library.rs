@@ -18,7 +18,7 @@ impl State {
         *self.clip.borrow_mut() = Some(clip.clone());
         self.view.review.title.set_text(&clip.title);
         self.view.review.details.set_label(&format!(
-            "{}  ·  {} × {}  ·  VP9 / WebM  ·  {}",
+            "{}  ·  {} × {}  ·  WebM  ·  {}",
             clock(clip.duration()),
             clip.width,
             clip.height,
