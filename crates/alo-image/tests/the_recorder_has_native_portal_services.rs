@@ -12,6 +12,7 @@ fn capture_workers_and_native_services_are_in_the_recipe() {
         "/usr/lib/alo-capture-provider/gstreamer-1.0/libgstpipewire.so",
         "xdg-desktop-portal-gtk",
         "pipewire-pulseaudio",
+        "wireplumber rtkit",
         "systemctl --global mask xdg-desktop-portal.service",
         "pipewire-pulse.socket",
         "test -x /usr/bin/setpriv",

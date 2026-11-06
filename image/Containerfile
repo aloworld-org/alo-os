@@ -677,7 +677,7 @@ RUN dnf install --assumeyes --setopt=install_weak_deps=False \
  && test -f /usr/share/X11/xkb/rules/evdev.xml
 
 RUN dnf install --assumeyes --setopt=install_weak_deps=False \
-      pipewire pipewire-utils pipewire-pulseaudio wireplumber \
+      pipewire pipewire-utils pipewire-pulseaudio wireplumber rtkit \
       xdg-desktop-portal xdg-desktop-portal-gtk \
  && dnf clean all \
  && systemctl --global mask xdg-desktop-portal.service \
