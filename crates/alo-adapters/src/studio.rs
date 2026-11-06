@@ -34,13 +34,13 @@ const TITLE: Word = Word::saying("adapters.studio.title", "the recording's new n
     .noting("The title shown in the private recording library.");
 /// The full-HD choice shown in approvals.
 const FULL_HD: Word = Word::saying("adapters.studio.full-hd", "1080p, up to 30 fps")
-    .noting("A recording quality choice.");
+    .noting("The recording size and maximum frame rate offered before starting capture.");
 /// The HD choice shown in approvals.
-const HD: Word =
-    Word::saying("adapters.studio.hd", "720p, up to 30 fps").noting("A recording quality choice.");
+const HD: Word = Word::saying("adapters.studio.hd", "720p, up to 30 fps")
+    .noting("The recording size and maximum frame rate offered before starting capture.");
 /// The original-size choice shown in approvals.
 const ORIGINAL: Word = Word::saying("adapters.studio.original", "original size, up to 30 fps")
-    .noting("A recording quality choice.");
+    .noting("The recording size and maximum frame rate offered before starting capture.");
 /// The lower-cost quality choice shown in approvals.
 const LIGHTWEIGHT: Word = Word::saying("adapters.studio.lightweight", "360p, up to 5 fps")
     .noting("A recording quality choice for slower devices.");
