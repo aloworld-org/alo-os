@@ -964,3 +964,54 @@ gaps; it cannot be used as a valid synchronization reference. The VM is paused
 again while unrelated queued builds complete, reducing contention. The final
 installed recording repeat is queued on the shared build lock and first
 requires a healthy reference signal. Its result is not yet claimed.
+
+The first reserved window opens at 19:21 UTC with no host compiler active.
+The reference generator is still using the system clock. Its independent
+native monitor probe supplies 10 seconds of PCM with no timestamp gaps and
+three detected pulses. Restarting the native audio graph and the generator
+again supplies 10 seconds with no timestamp gaps, but only two pulses. Both
+source probes reach EOS but fall below the reference's minimum of four pulses, so
+this attempt does not start a Studio recording. The complete output is retained
+in `installed-callback-clock-verification/control-flow.txt`. These are source
+health measurements outside Studio, not installed recording acceptance.
+
+The external reference generator is now rebuilt to use its audio sink's clock
+rather than force the system clock. This is a verification-fixture change,
+not a Studio package change, and its effect is still unverified. GStreamer's
+[audio sink clock contract](https://gstreamer.freedesktop.org/documentation/audio/gstaudiobasesink.html)
+tracks the sink's data rate; resolving this fixture's missing pulses remains a
+hypothesis. The next
+reserved run will also complete the installed control and export flow if the
+pulse reference remains insufficient, while retaining that failure separately
+from synchronization acceptance.
+
+### Status queries blocking frame delivery
+
+The next reserved run has no host compiler active and independently receives
+10 seconds of uninterrupted PCM with seven pulses. The reference still selects
+`GstSystemClock`; removing the forced clock did not select its audio sink's
+clock, so the improved pulse count cannot be attributed to that hypothesis.
+The installed recording nevertheless stops before Pause on the 200-buffer
+audio-input limit. Clip `1793995052-176373741-2` contains 35 video frames over
+13.801 seconds and 9.120 seconds of PCM. Largest uncovered gaps are 1.494 seconds
+for video and 2.100 seconds for audio. No flash transitions are measurable.
+SHA-256 is `47a9261f3e0d2e42c48e1104f78fcde9b98dfee7deabb1891707bcbc566b59e6`.
+Evidence is retained in `installed-callback-audio-clock-verification`.
+
+A subsequent diagnostic client trace shows Wayland frame replies arriving many
+seconds after requests while its local clock advances. This trace runs under
+host load and is not a cadence benchmark. A live snapshot of the normal
+compositor shows its main thread in an indefinite `poll` on subprocess output
+pipes. A pipe-owner lookup identifies `pw-dump`, and the source confirms that
+the status area's volume query runs synchronously on the compositor thread at
+its once-per-second refresh. The media-activity indicator already has a worker;
+that does not cover this separate speaker-volume query.
+
+The new change moves repeated hardware status reads to one outstanding worker
+with a bounded handoff. The local clock remains responsive to time and region
+changes. Hardware readings that fail, time out or arrive stale become unknown;
+late results cannot overwrite a new clock format. The startup query remains
+before the desktop takes the display. Regressions cover a blocked reader,
+bounded outstanding work, a late result, failure and worker disappearance.
+This change is written and formatted; its tests, native build and installed
+recording repeat are still pending. No additional media acceptance is claimed.

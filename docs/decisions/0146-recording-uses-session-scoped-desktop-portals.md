@@ -165,8 +165,8 @@ time without the fix and keep it out of the saved timeline with the fix. Do not
 fill missing audio or synthesize video to make this check pass.
 
 An independent native microphone probe then delivers 48 seconds of uninterrupted
-PCM over 48.755 seconds between first and last delivery. A fixed system clock
-therefore lets video drift from this virtual audio device. For microphone
+PCM over 48.755 seconds between first and last delivery. Delivery latency means
+that interval alone does not establish clock-rate drift. For microphone
 recordings, select the microphone's GStreamer clock before its first sample and
 start a fresh recording timeline. Keep the selected PipeWire stream connected;
 discard preview buffers from the preceding clock epoch before admitting video.
@@ -192,3 +192,14 @@ failed capture, an unrelated window and an unmapped surface must receive none.
 Keep existing FrameTarget implementations compatible through an additive
 default method. Verify actual Wayland callbacks, including failure and repeated
 completion, before rebuilding the desktop and repeating installed recording.
+
+The installed repeat also exposes a compositor-thread wait outside the capture
+engine: the status area's speaker-volume reading runs `pw-dump` synchronously.
+Wayland client traces show delayed frame callbacks, and a live compositor
+snapshot waits without a deadline on the tool's output pipes. Move repeated
+hardware readings to one outstanding worker with a bounded handoff. The local
+clock and regional formatting remain on the frame path; slow, failed or stale
+hardware readings become unknown rather than blocking frames or inventing
+silence. A late hardware result must not overwrite a new clock format. Verify
+that a blocked reader does not block refresh, that outstanding work stays
+bounded, and that failure and stale results cannot retain measured values.
