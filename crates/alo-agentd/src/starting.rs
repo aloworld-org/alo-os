@@ -281,6 +281,7 @@ pub fn until_stopped(
     // is read from** — so an approved `open` is recorded with its road and an
     // entry with none is refused by name (ADR 0108, 2026-10-31).
     let starting = HowApplicationsStartHere::in_these(where_entries_are_here());
+    let application_controls = alo_adapters::ApplicationSession;
     let mut machine = what_this_machine_can_carry_out(
         strings,
         &installing_with,
@@ -292,7 +293,8 @@ pub fn until_stopped(
         bounding,
         &mut indicator,
         kept,
-    )?;
+    )?
+    .with_application_controls(&application_controls)?;
     // What this machine holds about the other machines: what `src/main.rs`
     // read back off the disk, handed in as a value for the grants' reason,
     // and one lock over it — with the one way to write the list whole beside

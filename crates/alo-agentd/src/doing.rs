@@ -113,7 +113,11 @@ fn carried_out(
     standing: Duration,
     now: SystemTime,
 ) -> ToAnAgent {
+    turning.refresh_offered(grants, now);
     match asked {
+        FromAnAgent::Capabilities => ToAnAgent::Capabilities {
+            verbs: turning.offered_action_names(),
+        },
         FromAnAgent::Read { verb, .. } => {
             match turning.reading(verb, &asked.given(), grants, now) {
                 Ok(answer) => ToAnAgent::did(as_a_client_sees_it(&answer, now)),

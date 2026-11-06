@@ -39,6 +39,8 @@ use crate::wording::Wording;
 /// One thing the daemon told an agent.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ToAnAgent {
+    /// Currently offered action names; execution still checks permission.
+    Capabilities { verbs: Vec<String> },
     /// What a read found.
     Did(Done),
     /// A change is waiting for the person under this number.
@@ -120,6 +122,7 @@ impl ToAnAgent {
     /// is only ever given to a person's screen.
     pub fn read(line: &str) -> Result<Self, NotUnderstood> {
         match frame::reply(line)? {
+            Told::Capabilities { verbs } => Ok(Self::Capabilities { verbs }),
             Told::Did(done) => Ok(Self::Did(done)),
             Told::Proposed(standing) => Ok(Self::Proposed(standing)),
             Told::Answered {
@@ -197,6 +200,7 @@ impl ToAnAgent {
 impl From<ToAnAgent> for Told {
     fn from(told: ToAnAgent) -> Self {
         match told {
+            ToAnAgent::Capabilities { verbs } => Self::Capabilities { verbs },
             ToAnAgent::Did(done) => Self::Did(done),
             ToAnAgent::Proposed(standing) => Self::Proposed(standing),
             ToAnAgent::Answered {
@@ -246,6 +250,7 @@ mod tests {
         /// What each one is, in a match a new variant breaks.
         fn what_it_carries(said: &ToAnAgent) -> &'static str {
             match said {
+                ToAnAgent::Capabilities { .. } => "currently offered action names",
                 ToAnAgent::Did(_) => "what a read found",
                 ToAnAgent::Proposed(_) => "a change waiting for the person",
                 ToAnAgent::Answered { .. } => "what a model said, in its own words",

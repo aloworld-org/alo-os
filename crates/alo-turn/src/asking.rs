@@ -217,7 +217,8 @@ impl Turning<'_, '_> {
         }
         // The only other place `held` is read: an agent's next request is put
         // to a model in the product's own words (ADR 0037), wherever it goes.
-        let question = Question::asked(&held.shown(self.machine().verbs(), asked), of_model)?;
+        let question =
+            Question::asked(&held.shown(self.machine().offered_verbs(), asked), of_model)?;
         // Cloned rather than borrowed: the indicator and the record are reached
         // through the same machine this borrows from, and an agent's name is a
         // short string beside a question that is about to cross a network.

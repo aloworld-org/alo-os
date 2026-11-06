@@ -296,9 +296,10 @@ impl FromAPerson {
             Asked::APlaceToReturnTo => Ok(Self::APlaceToReturnTo),
             Asked::PutBack { place, folders } => Ok(Self::PutBack { place, folders }),
             Asked::WatchWhatLeaves {} => Ok(Self::WatchWhatLeaves),
-            Asked::Read { .. } | Asked::Propose { .. } | Asked::Ask { .. } => {
-                Err(NotUnderstood::NotForAPerson)
-            }
+            Asked::Capabilities {}
+            | Asked::Read { .. }
+            | Asked::Propose { .. }
+            | Asked::Ask { .. } => Err(NotUnderstood::NotForAPerson),
         }
     }
 

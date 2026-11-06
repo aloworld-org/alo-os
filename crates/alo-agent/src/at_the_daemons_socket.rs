@@ -96,6 +96,15 @@ impl AtTheDaemonsSocket {
 }
 
 impl TheDoor for AtTheDaemonsSocket {
+    fn offered_verbs(&mut self) -> Result<Option<Vec<String>>, NotAnswered> {
+        match self.asking(&FromAnAgent::Capabilities)? {
+            ToAnAgent::Capabilities { verbs } => Ok(Some(verbs)),
+            _ => Err(NotAnswered::NotTheProtocol {
+                why: "capability discovery received an unexpected answer".to_owned(),
+            }),
+        }
+    }
+
     fn asking(&mut self, request: &FromAnAgent) -> Result<ToAnAgent, NotAnswered> {
         // Written by the protocol's own writer. This file composes no JSON, so
         // there is no second account of what a message looks like.

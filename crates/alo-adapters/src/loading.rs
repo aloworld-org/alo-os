@@ -58,6 +58,47 @@ impl Loaded {
         &self.verbs
     }
 
+    /// Add a checked, translated change description without changing the SDK's
+    /// existing adapter declaration shape.
+    ///
+    /// # Errors
+    /// Unknown verbs, undeclared words, descriptions on reads, or invalid gaps.
+    pub fn describing_change(
+        mut self,
+        verb: &str,
+        changes: Word,
+        leaves: Option<Word>,
+    ) -> Result<Self, NotLoaded> {
+        let named = format!("{}.{}", self.adapter.name, verb);
+        let index = self
+            .verbs
+            .iter()
+            .position(|item| item.name() == named)
+            .ok_or_else(|| NotLoaded::UnknownVerb {
+                adapter: self.adapter.name.to_owned(),
+                verb: verb.to_owned(),
+            })?;
+        for word in std::iter::once(changes).chain(leaves) {
+            if !self
+                .adapter
+                .words
+                .iter()
+                .any(|declared| declared.named() == word.named())
+            {
+                return Err(NotLoaded::WordNotDeclared {
+                    adapter: self.adapter.name.to_owned(),
+                    verb: named,
+                    key: word.named().to_owned(),
+                });
+            }
+        }
+        self.verbs[index] = self.verbs[index]
+            .clone()
+            .changing(changes, leaves)
+            .map_err(|why| NotLoaded::Verb { verb: named, why })?;
+        Ok(self)
+    }
+
     /// The declared verb the machine knows by this name, if it is this
     /// adapter's.
     #[must_use]

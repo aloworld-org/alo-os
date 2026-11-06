@@ -119,7 +119,7 @@ fn run() -> Result<ExitCode, String> {
     // is *what may I ask for* — because `docs/contracts/agent-verbs.md` is the
     // answer for whoever writes an adapter, and this function is the answer for
     // anything in this workspace.
-    let verbs = alo_turn::the_verbs_a_whole_machine_offers()
+    let verbs = alo_turn::the_verbs_with_application_controls()
         .map_err(|why| format!("the verbs this machine offers could not be declared: {why}"))?;
 
     let mut door = AtTheDaemonsSocket::opened(&at).map_err(|why| {

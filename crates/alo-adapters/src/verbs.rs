@@ -26,6 +26,7 @@ use crate::text_editor::TEXT_EDITOR;
 pub fn shipped_adapters() -> Result<Adapters, NotLoaded> {
     let mut adapters = Adapters::default();
     adapters.add(load(&TEXT_EDITOR)?)?;
+    adapters.add(crate::studio::loaded()?)?;
     Ok(adapters)
 }
 
@@ -63,11 +64,18 @@ mod tests {
         let verbs = adapter_verbs().unwrap();
         let names: Vec<&str> = verbs.all().map(|verb| verb.name()).collect();
         assert_eq!(
-            names,
+            &names[..2],
             ["text_editor.open_document", "text_editor.new_window"]
         );
+        assert!(names.contains(&"studio.status"));
+        assert!(names.contains(&"studio.finish"));
         for verb in verbs.all() {
-            assert_eq!(verb.effect(), Effect::Change, "{}", verb.name());
+            let effect = if verb.name() == "studio.status" {
+                Effect::Read
+            } else {
+                Effect::Change
+            };
+            assert_eq!(verb.effect(), effect, "{}", verb.name());
         }
         assert!(matches!(
             verbs.of("text_editor.open_document").unwrap().requires(),

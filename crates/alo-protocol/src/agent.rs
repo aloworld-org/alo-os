@@ -62,6 +62,8 @@ use crate::refusing::NotUnderstood;
 /// it belongs here.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum FromAnAgent {
+    /// Discover actions currently offered under this turn's live grants.
+    Capabilities,
     /// A read, which answers inside the turn.
     Read {
         /// The name of the verb, as it was asked for. Nothing has looked it up.
@@ -96,6 +98,7 @@ impl FromAnAgent {
     /// person makes.
     pub fn read(line: &str) -> Result<Self, NotUnderstood> {
         match frame::message(line)? {
+            Asked::Capabilities {} => Ok(Self::Capabilities),
             Asked::Read { verb, given } => Ok(Self::Read { verb, given }),
             Asked::Propose { verb, given } => Ok(Self::Propose { verb, given }),
             Asked::Ask { question, answered } => Ok(Self::Ask { question, answered }),
@@ -164,7 +167,7 @@ impl FromAnAgent {
     pub fn verb(&self) -> Option<&str> {
         match self {
             Self::Read { verb, .. } | Self::Propose { verb, .. } => Some(verb),
-            Self::Ask { .. } => None,
+            Self::Ask { .. } | Self::Capabilities => None,
         }
     }
 
@@ -181,7 +184,7 @@ impl FromAnAgent {
                 .iter()
                 .map(|argument| (argument.named(), argument.given().clone()))
                 .collect(),
-            Self::Ask { .. } => Vec::new(),
+            Self::Ask { .. } | Self::Capabilities => Vec::new(),
         }
     }
 
@@ -190,7 +193,7 @@ impl FromAnAgent {
     pub fn question(&self) -> Option<&str> {
         match self {
             Self::Ask { question, .. } => Some(question),
-            Self::Read { .. } | Self::Propose { .. } => None,
+            Self::Read { .. } | Self::Propose { .. } | Self::Capabilities => None,
         }
     }
 
@@ -199,7 +202,7 @@ impl FromAnAgent {
     pub fn answered(&self) -> Option<Answered> {
         match self {
             Self::Ask { answered, .. } => Some(*answered),
-            Self::Read { .. } | Self::Propose { .. } => None,
+            Self::Read { .. } | Self::Propose { .. } | Self::Capabilities => None,
         }
     }
 
@@ -219,6 +222,7 @@ impl FromAnAgent {
 impl From<FromAnAgent> for Asked {
     fn from(asked: FromAnAgent) -> Self {
         match asked {
+            FromAnAgent::Capabilities => Self::Capabilities {},
             FromAnAgent::Read { verb, given } => Self::Read { verb, given },
             FromAnAgent::Propose { verb, given } => Self::Propose { verb, given },
             FromAnAgent::Ask { question, answered } => Self::Ask { question, answered },
@@ -232,6 +236,27 @@ impl From<FromAnAgent> for Asked {
     reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
 )]
 mod tests {
+    #[test]
+    fn capability_discovery_round_trips_and_cannot_cross_the_persons_door() {
+        let line = super::FromAnAgent::Capabilities.written().unwrap();
+        assert_eq!(
+            super::FromAnAgent::read(&line).unwrap(),
+            super::FromAnAgent::Capabilities
+        );
+        assert!(crate::FromAPerson::read(&line).is_err());
+        let answer = crate::ToAnAgent::Capabilities {
+            verbs: vec!["studio.status".to_owned()],
+        };
+        let line = answer.written().unwrap();
+        assert_eq!(crate::ToAnAgent::read(&line).unwrap(), answer);
+        assert!(crate::ToAPerson::read(&line).is_err());
+        assert!(
+            super::FromAnAgent::read(
+                "{\"format\":1,\"asks\":{\"capabilities\":{\"application\":\"anything\"}}}"
+            )
+            .is_err()
+        );
+    }
     use super::*;
 
     /// The three, off the wire.

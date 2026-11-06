@@ -74,6 +74,26 @@ forbid unsafe code. The vendored changes, provenance, and removal condition
 
 ## Evidence required
 
+### Capture publisher buffer-wait investigation
+
+The 2026-11-06 software-VM trace observed an acquisition from the private
+`GstPipeWirePool` begin without returning while compositor inputs continued and
+the appsrc queue stayed at its two-frame bound. Thread inspection found the
+publisher's appsrc thread waiting on a condition. The sink's `on_process`
+signals that condition without the pool mutex, so a notification can be lost
+between the empty-buffer check and the wait. Taking the mutex in that callback
+would reverse the existing pool/loop lock order.
+
+Evaluate a bounded timed recheck of that predicate, first in the private trial.
+If it resolves the observed wait, carry a minimal, separately checksummed patch
+against the pinned build copy and a regression that deliberately withholds a
+notification after making a buffer available. Keep the imported engine source
+unchanged. A timed recheck must preserve flushing, pause, cancellation and the
+existing queue bounds; it must not manufacture frames or report a stalled
+recording as continuous. The installed application flow and decoded media are
+still the acceptance evidence. Remove the patch when an upstream version fixes
+the notification protocol.
+
 The booted PipeWire 1.4.11 publisher was observed to terminate with
 `all buffers have been removed` during an isolated recorder lifecycle. Its
 GStreamer sink treats the consumer's link removal as a fatal provider failure.

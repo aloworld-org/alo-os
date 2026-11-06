@@ -209,3 +209,25 @@ endless grant must never be indistinguishable from a timed one at a glance.
 **And it is not a default.** The shortest length is still the row the ring lands
 on, so the least a person can give stays the cheapest to choose, and *until I
 remove it* is a deliberate reach rather than the path of least resistance.
+
+## Read-only discovery of already granted application controls
+
+The owner's request of 2026-11-06 makes application control part of the Studio
+work. Discovering those controls makes an existing promise true: an agent can
+only use the typed application verbs the machine actually offers, under the
+person's application grant. A hardcoded client list cannot describe that grant
+or its revocation at the moment of use.
+
+The agent's protocol therefore also allows `capabilities`, during an invoked
+turn. Its answer contains only the names of the actions currently offered to
+that agent. It reads no application, starts no program, reveals no ungranted
+application and creates or widens no grant. It is protocol metadata, not an
+execution of an application verb. The person's list of grants remains on the
+person's door. An agent cannot approve a change through discovery.
+
+The daemon recomputes the offered list from live grants before answering and
+before constructing a model's next-request instructions. Execution still
+validates arguments, checks the application's grant again and records every
+execution and refusal. A cached discovery answer is never authority. New
+application verbs still require their own declaration, translated approval
+sentence, tested effect and application-specific consent surfaces.

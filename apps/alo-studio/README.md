@@ -84,8 +84,6 @@ and export an installable bundle. A market publisher must publish this build to
 a signed Flatpak remote before adding its identifier and source to alo OS's
 catalogue. **It is not on Flathub merely because it has a manifest.**
 
-## Checks
-
 ## Agent control
 
 The versioned [automation interface](docs/automation.md) provides semantic
