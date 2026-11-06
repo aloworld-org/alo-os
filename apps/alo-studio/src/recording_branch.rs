@@ -17,6 +17,11 @@ pub(crate) enum Audio {
     Generated,
 }
 
+pub(crate) struct Signals {
+    pub(crate) fell_behind: Arc<AtomicBool>,
+    pub(crate) paused: Arc<AtomicBool>,
+}
+
 pub(crate) fn attach(
     pipeline: &gst::Pipeline,
     path: &Path,
@@ -24,8 +29,9 @@ pub(crate) fn attach(
     height: i32,
     frame_rate: i32,
     audio: Audio,
-    fell_behind: Arc<AtomicBool>,
+    signals: Signals,
 ) -> Result<Arc<Mutex<Progress>>, MediaError> {
+    let microphone_clock = matches!(audio, Audio::Microphone);
     #[cfg(feature = "verification")]
     let generated_audio = matches!(audio, Audio::Generated);
     let audio_source = match audio {
@@ -72,7 +78,7 @@ pub(crate) fn attach(
         crate::verification_audio::delay(&source, pipeline)?;
     }
     let start = crate::recording_start::Start::observe(&bin)?;
-    crate::audio_buffering::prepare(&bin, fell_behind.clone())?;
+    crate::audio_buffering::prepare(&bin, signals.fell_behind.clone())?;
     let tee = pipeline
         .by_name("frames")
         .ok_or_else(|| MediaError(t("The selected source is unavailable.")))?;
@@ -112,7 +118,7 @@ pub(crate) fn attach(
             gst::PadProbeReturn::Ok
         });
     // Retained video remains bounded independently of audio buffering.
-    let video_fell_behind = fell_behind;
+    let video_fell_behind = signals.fell_behind;
     by_name("record-buffer")?.connect("overrun", false, move |_| {
         video_fell_behind.store(true, Ordering::Relaxed);
         None
@@ -156,7 +162,11 @@ pub(crate) fn attach(
             gst::PadLinkCheck::DEFAULT | gst::PadLinkCheck::NO_RECONFIGURE,
         )
         .map_err(failed)?;
-        bin.sync_state_with_parent().map_err(failed)?;
+        if microphone_clock {
+            crate::recording_clock::select(pipeline, &bin, &signals.paused)?;
+        } else {
+            bin.sync_state_with_parent().map_err(failed)?;
+        }
         #[cfg(feature = "verification")]
         if std::env::var_os("ALO_STUDIO_VERIFY_PREPARE_DELAY").is_some() {
             std::thread::sleep(std::time::Duration::from_millis(100));
@@ -166,7 +176,7 @@ pub(crate) fn attach(
         let ready = pipeline.current_running_time().ok_or_else(|| {
             MediaError(t("The recording clock is unavailable. Please try again."))
         })?;
-        start.admit_video(&sink, ready, progress.clone())?;
+        start.admit_video(pipeline, &sink, ready, progress.clone())?;
         Ok(())
     })();
     if result.is_err() {

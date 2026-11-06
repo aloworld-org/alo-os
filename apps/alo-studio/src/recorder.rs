@@ -170,7 +170,10 @@ impl Recorder {
             height,
             frame_rate,
             audio,
-            self.fell_behind.clone(),
+            crate::recording_branch::Signals {
+                fell_behind: self.fell_behind.clone(),
+                paused: self.paused.clone(),
+            },
         )?;
         // Once actual encoded video exists, the hidden workspace no longer
         // needs colour conversion or scaling. Consume only its raw buffers;

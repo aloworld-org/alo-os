@@ -163,3 +163,14 @@ saved running time at that admission boundary and use the same request instant
 for the visible timer. A real delayed GStreamer child must reproduce the added
 time without the fix and keep it out of the saved timeline with the fix. Do not
 fill missing audio or synthesize video to make this check pass.
+
+An independent native microphone probe then delivers 48 seconds of uninterrupted
+PCM over 48.755 seconds between first and last delivery. A fixed system clock
+therefore lets video drift from this virtual audio device. For microphone
+recordings, select the microphone's GStreamer clock before its first sample and
+start a fresh recording timeline. Keep the selected PipeWire stream connected;
+discard preview buffers from the preceding clock epoch before admitting video.
+Silent recording retains the system clock. Verify clock selection and stale
+preview rejection in permanent tests, then repeat the normally installed flow.
+Do not stretch timestamps, fabricate samples or trim a failed recording to make
+synchronization appear to pass.
