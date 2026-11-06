@@ -400,6 +400,7 @@ capability.proposal.read-does-not-wait	{verb} answers a question rather than cha
 capability.reach.application	the application {application}
 capability.reach.file	the file {path}
 capability.reach.folder	{path} and everything in it
+capability.refused.application-control-not-granted	{agent} has not been granted {wanted}. Choose the application and how long access lasts in Settings.
 capability.refused.application-expired	{application} was granted {reach} and that has expired — grant it again to let {application} use {wanted}
 capability.refused.application-never-granted	{application} has not been granted {wanted} — an application reaches only what you grant it, never what it asks for
 capability.refused.change-waits	{verb} changes something — propose it with the sentence describing it and let one person approve that, rather than running it in the turn
