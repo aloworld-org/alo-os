@@ -49,7 +49,6 @@ pub fn the_root_is_composefs(mountinfo: &str) -> bool {
     })
 }
 
-
 #[cfg(test)]
 #[path = "the_sealed_box_here_tests.rs"]
 mod tests;
