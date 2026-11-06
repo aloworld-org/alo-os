@@ -1108,7 +1108,7 @@ impl Server {
         self.the_display_submitted(&metadata, (size.w, size.h));
         if let Some(capture) = self.capture.take() {
             if !target.capture_forbidden() {
-                capture.submitted(self, &metadata.name, target);
+                capture.submitted(self, &metadata.name, target, time);
             }
             self.capture = Some(capture);
         }

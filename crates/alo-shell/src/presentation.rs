@@ -195,6 +195,24 @@ pub trait FrameTarget {
     ) -> Result<std::sync::Arc<[u8]>, RenderError> {
         Err(RenderError::ControlsUnsupported)
     }
+    /// Complete the selected application's frame clock after a successful capture.
+    /// A covered window still needs callbacks to produce its next real frame.
+    ///
+    /// # Errors
+    /// The same unsupported backend, import or size errors as `capture_window`.
+    fn capture_window_at(
+        &mut self,
+        size: Size<i32, Physical>,
+        root: &WlSurface,
+        popups: &[crate::Popup],
+        cursor: &crate::Cursor,
+        camera: alo_canvas::Camera,
+        time: u32,
+    ) -> Result<std::sync::Arc<[u8]>, RenderError> {
+        let pixels = self.capture_window(size, root, popups, cursor, camera)?;
+        crate::capture_frames::completed(root, popups, camera, time);
+        Ok(pixels)
+    }
     /// Submit a complete reader with its strip, clients, popups and cursor.
     /// Refuse unsupported content; never silently submit only the strip.
     /// No dispatch or publication is allowed during this transaction.

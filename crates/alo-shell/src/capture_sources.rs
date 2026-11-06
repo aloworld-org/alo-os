@@ -164,6 +164,7 @@ impl CaptureSources {
         server: &Server,
         named: &str,
         target: &mut (impl crate::FrameTarget + ?Sized),
+        time: u32,
     ) {
         if let Some(pixels) = target.captured_output()
             && let Some(feed) = self.monitors.get(named)
@@ -205,12 +206,13 @@ impl CaptureSources {
                     })
                 })
                 .unwrap_or(crate::Cursor::Default);
-            match target.capture_window(
+            match target.capture_window_at(
                 size,
                 &window.root,
                 &server.popup_surfaces(),
                 &cursor,
                 camera,
+                time,
             ) {
                 Ok(pixels) => window.feed.publish(pixels),
                 Err(_) => window.feed.stop(),

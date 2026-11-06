@@ -181,3 +181,14 @@ snapshot the now-stopped clock and gate video. Taking the snapshot while the
 microphone clock is still advancing moves retained samples backwards on Resume.
 Keep the earlier request-boundary snapshot for a system-clock recording, where
 native source shutdown would otherwise add time without capturing frames.
+
+The timed-window investigation also finds that the separate window-capture
+render never completes Wayland frame callbacks. Desktop presentation completes
+callbacks only for its own submitted surfaces; a covered captured application
+can therefore stop repainting while its old pixels keep being published.
+After a successful selected-window capture, complete callbacks for its mapped
+surface tree and its own popup trees, using that submitted frame's time. A
+failed capture, an unrelated window and an unmapped surface must receive none.
+Keep existing FrameTarget implementations compatible through an additive
+default method. Verify actual Wayland callbacks, including failure and repeated
+completion, before rebuilding the desktop and repeating installed recording.

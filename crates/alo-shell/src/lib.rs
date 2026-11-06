@@ -178,6 +178,7 @@ mod canvas_wheel_zoom;
 mod capture_authority;
 mod capture_delivery;
 mod capture_flatten;
+mod capture_frames;
 mod capture_paint;
 mod capture_raster;
 mod capture_sources;
