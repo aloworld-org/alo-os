@@ -145,3 +145,12 @@ source selection, recording with and without audio, pause and resume, playback,
 sandboxed export, cancellation, revocation, and lock. Fixture recordings do not
 establish that walk. Hardware microphone evidence is identified separately from
 a virtual test device. This decision does not claim these checks have passed.
+
+The current software VM's installed-app trace also locates long waits around
+the VP8 encoding branch. A controlled comparison of the same 30-frame,
+452 × 360, 5 fps sample takes 6.037/6.668 seconds with two encoder threads and
+3.580/3.840 seconds with one. Evaluate a single VP8 encoder thread for the
+Lightweight profile, retaining its size, frame-rate, bitrate and queue bounds.
+Preflight must use that same configuration. This reduces coordination on a
+small machine; it does not establish recording continuity or allow missing
+audio to be concealed. Repeat installed recording and decoded-media acceptance.

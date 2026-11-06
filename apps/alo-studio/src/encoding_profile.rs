@@ -3,7 +3,7 @@
 /// The selected video encoder, shared by preflight and actual recording.
 pub(crate) fn video(frame_rate: i32) -> &'static str {
     if frame_rate <= 5 {
-        "vp8enc name=encoder deadline=1 cpu-used=16 threads=2 lag-in-frames=0 target-bitrate=1500000 keyframe-max-dist=30"
+        "vp8enc name=encoder deadline=1 cpu-used=16 threads=1 lag-in-frames=0 target-bitrate=1500000 keyframe-max-dist=30"
     } else {
         "vp9enc name=encoder deadline=1 cpu-used=8 threads=4 row-mt=true lag-in-frames=0 target-bitrate=4500000 keyframe-max-dist=60"
     }
