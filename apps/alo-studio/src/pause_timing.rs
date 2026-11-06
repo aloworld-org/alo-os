@@ -41,7 +41,9 @@ mod tests {
         use gst::subclass::prelude::*;
 
         #[derive(Default)]
-        pub struct Input;
+        pub struct Input {
+            clock: std::sync::OnceLock<gst::SystemClock>,
+        }
 
         #[glib::object_subclass]
         impl ObjectSubclass for Input {
@@ -52,6 +54,14 @@ mod tests {
         impl ObjectImpl for Input {}
         impl GstObjectImpl for Input {}
         impl ElementImpl for Input {
+            fn provide_clock(&self) -> Option<gst::Clock> {
+                Some(
+                    self.clock
+                        .get_or_init(gst::glib::Object::new::<gst::SystemClock>)
+                        .clone()
+                        .upcast(),
+                )
+            }
             fn change_state(
                 &self,
                 transition: gst::StateChange,
@@ -92,6 +102,26 @@ mod tests {
             "stopping the input added {} to the recording's paused time",
             saved - before
         );
+        Ok(())
+    }
+
+    #[test]
+    fn microphone_pause_completes_before_its_clock_boundary_is_saved()
+    -> Result<(), Box<dyn std::error::Error>> {
+        gst::init()?;
+        let pipeline = gst::Pipeline::new();
+        let microphone = glib::Object::builder::<SlowInput>()
+            .property("name", "microphone")
+            .build();
+        let clock = microphone.provide_clock().ok_or("No microphone clock")?;
+        pipeline.use_clock(Some(&clock));
+        pipeline.add(&microphone)?;
+        pipeline.set_state(gst::State::Playing)?;
+        let before = pipeline.current_running_time().ok_or("No running clock")?;
+        pause(&pipeline, &AtomicBool::new(false))?;
+        let saved = pipeline.start_time().ok_or("No paused time")?;
+        pipeline.set_state(gst::State::Null)?;
+        assert!(saved - before >= gst::ClockTime::from_mseconds(250));
         Ok(())
     }
 }
