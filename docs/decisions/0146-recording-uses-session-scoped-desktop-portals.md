@@ -174,3 +174,10 @@ Silent recording retains the system clock. Verify clock selection and stale
 preview rejection in permanent tests, then repeat the normally installed flow.
 Do not stretch timestamps, fabricate samples or trim a failed recording to make
 synchronization appear to pass.
+
+The first microphone-clock trial exposes 179 ms of overlapping decoded audio at
+Resume. When the microphone supplies the clock, first pause that input, then
+snapshot the now-stopped clock and gate video. Taking the snapshot while the
+microphone clock is still advancing moves retained samples backwards on Resume.
+Keep the earlier request-boundary snapshot for a system-clock recording, where
+native source shutdown would otherwise add time without capturing frames.

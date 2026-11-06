@@ -5,6 +5,17 @@ use gst::prelude::*;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 pub(crate) fn pause(pipeline: &gst::Pipeline, paused: &AtomicBool) -> Result<(), MediaError> {
+    if let Some(microphone) = pipeline.by_name("microphone")
+        && let Some(clock) = microphone.provide_clock()
+        && pipeline.clock().as_ref() == Some(&clock)
+    {
+        // Retained microphone samples belong to its sample clock. Stop that
+        // clock before saving the boundary; freezing it while capture is still
+        // advancing makes those retained samples overlap at Resume.
+        microphone
+            .set_state(gst::State::Paused)
+            .map_err(|error| MediaError(error.to_string()))?;
+    }
     let requested = pipeline
         .current_running_time()
         .ok_or_else(|| MediaError(t("The recording clock is unavailable. Please try again.")))?;
