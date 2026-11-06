@@ -114,11 +114,10 @@ fn run() -> Result<ExitCode, String> {
         },
     };
 
-    // The list this machine offers, from the one place that builds it. An agent
-    // cannot ask the daemon for it — the protocol has three messages and none
-    // is *what may I ask for* — because `docs/contracts/agent-verbs.md` is the
-    // answer for whoever writes an adapter, and this function is the answer for
-    // anything in this workspace.
+    // The checked declarations this client understands. Before each model round,
+    // driving asks the daemon which names the current turn may use, then filters
+    // this registry against that live view. The contract is documented in
+    // `docs/contracts/agent-verbs.md`.
     let verbs = alo_turn::the_verbs_with_application_controls()
         .map_err(|why| format!("the verbs this machine offers could not be declared: {why}"))?;
 
