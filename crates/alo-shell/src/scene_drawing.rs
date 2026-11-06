@@ -441,11 +441,11 @@ where
             // stage: under the Dock, in the order the person put the windows
             // in, with its edge over it.
             crate::which_window_is_in_front::AKindOfWindow::Settings => {
-                if let Some(settings) = native
+                if let Some(settings_on_the_canvas) = native
                     .settings
                     .filter(|settings| !settings.is_empty() && settings.is_on_the_canvas())
                 {
-                    settings.paint(&mut frame, settings_washed.as_ref())?;
+                    settings_on_the_canvas.paint(&mut frame, settings_washed.as_ref())?;
                 }
                 for (edge, textures) in native.settings_edge.iter().zip(&settings_edge_textures) {
                     crate::each_window_with_its_edge::wash_all(&mut frame, &textures.behind)?;
@@ -480,11 +480,11 @@ where
     // draws: above every client, the desktop and the record; below the
     // question and the indicator. Settings on the canvas was drawn among the
     // windows above.
-    if let Some(settings) = native
+    if let Some(fixed_settings) = native
         .settings
         .filter(|settings| !settings.is_empty() && !settings.is_on_the_canvas())
     {
-        settings.paint(&mut frame, settings_washed.as_ref())?;
+        fixed_settings.paint(&mut frame, settings_washed.as_ref())?;
     }
     // Above every client and control, so no window covers the sentence a
     // person is asked to approve; below the indicator, so the question never
