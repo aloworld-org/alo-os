@@ -230,12 +230,21 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         return Err("The recording is empty".into());
     }
     // Decoding proves the muxed output is a usable video, not just a nonempty file.
-    let decode = if microphone {
-        "filesrc name=input ! matroskademux name=demux demux.video_0 ! queue ! vp9dec name=video ! fakesink sync=false async=false demux.audio_0 ! queue ! opusdec name=audio ! fakesink sync=false async=false"
+    let decoder = if quality == alo_studio::model::Quality::Lightweight {
+        "vp8dec"
     } else {
-        "filesrc name=input ! matroskademux ! vp9dec name=video ! fakesink sync=false async=false"
+        "vp9dec"
     };
-    let pipeline = gst::parse::launch(decode)?
+    let decode = if microphone {
+        format!(
+            "filesrc name=input ! matroskademux name=demux demux.video_0 ! queue ! {decoder} name=video ! fakesink sync=false async=false demux.audio_0 ! queue ! opusdec name=audio ! fakesink sync=false async=false"
+        )
+    } else {
+        format!(
+            "filesrc name=input ! matroskademux ! {decoder} name=video ! fakesink sync=false async=false"
+        )
+    };
+    let pipeline = gst::parse::launch(&decode)?
         .downcast::<gst::Pipeline>()
         .map_err(|_| "No decoder pipeline")?;
     pipeline
