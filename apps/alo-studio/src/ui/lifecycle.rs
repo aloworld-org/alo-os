@@ -249,6 +249,7 @@ impl State {
         if !matches!(phase, Phase::Recording | Phase::Paused) {
             return;
         }
+        let requested = Instant::now();
         let result = self.engine.borrow().as_ref().map(|engine| {
             if phase == Phase::Paused {
                 engine.resume()
@@ -260,9 +261,9 @@ impl State {
             Some(Ok(())) => {
                 let mut session = self.session.borrow_mut();
                 let _ = if phase == Phase::Paused {
-                    session.resume(Instant::now())
+                    session.resume(requested)
                 } else {
-                    session.pause(Instant::now())
+                    session.pause(requested)
                 };
             }
             Some(Err(error)) => self.notice(&error.to_string()),

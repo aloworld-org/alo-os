@@ -1,0 +1,86 @@
+//! Keep time spent stopping native inputs out of a recording's paused timeline.
+
+use crate::{recorder::MediaError, words::t};
+use gst::prelude::*;
+use std::sync::atomic::{AtomicBool, Ordering};
+
+pub(crate) fn pause(pipeline: &gst::Pipeline, paused: &AtomicBool) -> Result<(), MediaError> {
+    let requested = pipeline
+        .current_running_time()
+        .ok_or_else(|| MediaError(t("The recording clock is unavailable. Please try again.")))?;
+    paused.store(true, Ordering::Relaxed);
+    if let Err(error) = pipeline.set_state(gst::State::Paused) {
+        paused.store(false, Ordering::Relaxed);
+        return Err(MediaError(error.to_string()));
+    }
+    // The pipeline samples time again after pausing its children. Capture was
+    // already gated above, so that native shutdown wait belongs to the pause.
+    pipeline.set_start_time(Some(requested));
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use gst::glib;
+    use std::time::{Duration, Instant};
+
+    mod delayed {
+        use gst::glib;
+        use gst::subclass::prelude::*;
+
+        #[derive(Default)]
+        pub struct Input;
+
+        #[glib::object_subclass]
+        impl ObjectSubclass for Input {
+            const NAME: &'static str = "StudioInputWithDelayedPause";
+            type Type = super::SlowInput;
+            type ParentType = gst::Bin;
+        }
+        impl ObjectImpl for Input {}
+        impl GstObjectImpl for Input {}
+        impl ElementImpl for Input {
+            fn change_state(
+                &self,
+                transition: gst::StateChange,
+            ) -> Result<gst::StateChangeSuccess, gst::StateChangeError> {
+                if transition == gst::StateChange::PlayingToPaused {
+                    std::thread::sleep(std::time::Duration::from_millis(300));
+                }
+                self.parent_change_state(transition)
+            }
+        }
+        impl BinImpl for Input {}
+    }
+
+    glib::wrapper! {
+        pub struct SlowInput(ObjectSubclass<delayed::Input>)
+            @extends gst::Bin, gst::Element, gst::Object;
+    }
+
+    #[test]
+    fn a_slow_input_pause_does_not_advance_the_saved_timeline()
+    -> Result<(), Box<dyn std::error::Error>> {
+        gst::init()?;
+        let pipeline = gst::Pipeline::new();
+        pipeline.add(&glib::Object::new::<SlowInput>())?;
+        pipeline.set_state(gst::State::Playing)?;
+        let before = pipeline.current_running_time().ok_or("No running clock")?;
+        let started = Instant::now();
+        let paused = AtomicBool::new(false);
+        pause(&pipeline, &paused)?;
+        let elapsed = started.elapsed();
+        let saved = pipeline.start_time().ok_or("No paused time")?;
+        pipeline.set_state(gst::State::Null)?;
+        assert!(elapsed >= Duration::from_millis(250));
+        assert!(paused.load(Ordering::Relaxed));
+        assert!(saved >= before);
+        assert!(
+            saved - before < gst::ClockTime::from_mseconds(100),
+            "stopping the input added {} to the recording's paused time",
+            saved - before
+        );
+        Ok(())
+    }
+}

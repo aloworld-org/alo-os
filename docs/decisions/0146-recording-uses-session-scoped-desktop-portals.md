@@ -154,3 +154,12 @@ Lightweight profile, retaining its size, frame-rate, bitrate and queue bounds.
 Preflight must use that same configuration. This reduces coordination on a
 small machine; it does not establish recording continuity or allow missing
 audio to be concealed. Repeat installed recording and decoded-media acceptance.
+
+The installed four-CPU trial has continuous audio but a video gap at Resume,
+with the audio ending approximately that gap before video. GStreamer's pipeline
+samples running time again after its children have paused; Studio has already
+stopped admitting frames before that potentially slow transition. Freeze the
+saved running time at that admission boundary and use the same request instant
+for the visible timer. A real delayed GStreamer child must reproduce the added
+time without the fix and keep it out of the saved timeline with the fix. Do not
+fill missing audio or synthesize video to make this check pass.

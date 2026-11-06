@@ -364,12 +364,7 @@ impl Recorder {
     }
     /// Freeze both streams together; the microphone stops reading while paused.
     pub fn pause(&self) -> Result<(), MediaError> {
-        self.paused.store(true, Ordering::Relaxed);
-        if let Err(error) = self.pipeline.set_state(gst::State::Paused) {
-            self.paused.store(false, Ordering::Relaxed);
-            return Err(failed(error));
-        }
-        Ok(())
+        crate::pause_timing::pause(&self.pipeline, &self.paused)
     }
     /// Continue both streams on the same pipeline clock.
     pub fn resume(&self) -> Result<(), MediaError> {

@@ -816,3 +816,34 @@ The Settings page is now called **Access for alo**, covering folders,
 applications and explicitly shared files. Application-control refusals point
 to that Settings choice rather than telling someone to pick a folder. Existing
 adapter declarations and grant checks remain intact.
+
+### Encoder coordination comparison
+
+A metadata-only diagnostic of the normally installed app records timestamps
+and wall/thread CPU time at capture, conversion, VP8 output and both audio
+queues. It finds long waits around the encoding branch and audio backpressure,
+with no repeat of the earlier indefinite publisher acquisition. Timing preloads
+are diagnostic only and are removed for acceptance measurements.
+
+In the same available VM, four alternating tests of a 30-frame, 452 × 360,
+5 fps sample complete in 6.037/6.668 seconds with two VP8 threads and
+3.580/3.840 seconds with one. The Lightweight profile now uses one encoder
+thread in both preflight and recording. This is a one-off comparison, not a CI
+performance threshold.
+
+The normal package from application source `12ba1d99` has SHA-256
+`03c4d3fe33576170eac345c31799bb89bcdc126d048f8d4200c35371c9bcf7fc`
+and commit `63ffcf2a07f3dc412ff18dcb749660519503516d7cd826d5ecfe53dc2829772b`.
+Its installed trial `1793975857-828822970-2` still stops at the audio-input
+limit before Pause. It has 26 video frames (25 consecutive changes) and 8.54
+seconds of PCM over a 14.525-second header duration. Largest uncovered gaps are
+1.767 seconds for video and 2.480 seconds for audio; decoded audio peak is 1828.
+The exported publisher uses asynchronous processing, and the recorded worker
+thread classes are retained with the evidence. This trial fails continuity.
+Evidence is `D:\\alo-studio-verification\\installed-single-thread-recording`;
+WebM SHA-256 is `f96c60a8c9cf617b42f48968e855e7dec5c498be3f38c21ff9df2a43cf5a2811`.
+
+The same VM disk is being evaluated with four virtual CPUs. No other VM is
+modified, and the two-CPU command and firmware state are preserved. Installed
+recordings and completed exports remain on disk. The default-application
+installation was thawed before the clean shutdown.

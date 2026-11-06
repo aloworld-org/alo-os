@@ -10,6 +10,7 @@ mod control;
 mod encoding_profile;
 pub mod model;
 mod parent_window;
+mod pause_timing;
 pub mod performance;
 mod permission_lifetime;
 pub mod portal;
