@@ -366,3 +366,81 @@ may be left out because an agent can do it instead* — and applying it to
 promised. `crates/alo-reconciling` and `docs/autonomy/evidence-it-boots-and-the-agent-acts.md` are that
 half.
 
+
+## Recording with alo Studio
+
+### studio.status
+
+**By hand:** a person can read the status, elapsed time, source and microphone controls in Studio — `read recording status and elapsed time`.
+
+### studio.new_recording
+
+**By hand:** a person can choose New recording in Studio — `choose a screen or a window`.
+
+### studio.choose_screen
+
+**By hand:** a person can choose Screen, then select the display in the native picker — `choose a screen or a window`.
+
+### studio.choose_window
+
+**By hand:** a person can choose Window, then select that window in the native picker — `choose a screen or a window`.
+
+### studio.start
+
+**By hand:** a person can press Start recording and choose whether to continue if the performance check warns — `choose a screen or a window`.
+
+### studio.pause
+
+**By hand:** a person can press Pause in the recording bar or workspace — `pause and resume`.
+
+### studio.resume
+
+**By hand:** a person can press Resume in the recording bar or workspace — `pause and resume`.
+
+### studio.finish
+
+**By hand:** a person can press Stop recording and wait for the saved review — `preview the video, and save a copy`.
+
+### studio.enable_microphone
+
+**By hand:** a person can enable Microphone before starting the recording — `optionally add microphone audio for this recording`.
+
+### studio.disable_microphone
+
+**By hand:** a person can turn Microphone off before starting the recording — `optionally add microphone audio for this recording`.
+
+### studio.set_quality
+
+**By hand:** a person can choose the recording quality in Studio before starting — `Choose recording quality and a countdown`.
+
+### studio.countdown_off
+
+**By hand:** a person can choose no countdown in Studio before starting — `Choose recording quality and a countdown`.
+
+### studio.countdown_three
+
+**By hand:** a person can choose the three-second countdown in Studio before starting — `Choose recording quality and a countdown`.
+
+### studio.countdown_five
+
+**By hand:** a person can choose the five-second countdown in Studio before starting — `Choose recording quality and a countdown`.
+
+### studio.cancel_countdown
+
+**By hand:** a person can press Cancel while the countdown is visible — `Choose recording quality and a countdown`.
+
+### studio.show_library
+
+**By hand:** a person can open Recordings in Studio — `browse their local library`.
+
+### studio.review
+
+**By hand:** a person can open a saved recording from the library — `preview the video`.
+
+### studio.rename
+
+**By hand:** a person can edit the recording title in its review — `name recordings`.
+
+### studio.export
+
+**By hand:** a person can press Save a copy and choose the exact destination in the native save window — `save a copy`.

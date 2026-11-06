@@ -1392,8 +1392,8 @@ fn a_session_with_no_folder_offers_nothing_it_could_not_keep() {
     );
     assert_eq!(
         rows.len(),
-        10,
-        "one grant, one pairing, the row that opens the record, the three levels, and the          row that opens their page, and the pointer's three sizes, which keep nothing"
+        11,
+        "the existing grant, pairing, application permission picker, record, code levels and pointer sizes remain reachable without a settings folder"
     );
     assert_eq!(window.appearance(), Some(&Appearance::shipped()));
     assert_eq!(window.dock(), Some(&Dock::shipped()));
