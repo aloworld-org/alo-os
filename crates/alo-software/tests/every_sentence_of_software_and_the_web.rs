@@ -63,6 +63,7 @@ fn every_word_the_three_declare() -> Vec<Word> {
         .chain(alo_proxy::EVERY_WORD.iter())
         .chain(alo_adapters::EVERY_WORD.iter())
         .chain(alo_adapters::text_editor::WORDS.iter())
+        .chain(alo_adapters::studio::WORDS.iter())
         .chain(alo_adapters::fallback_words::EVERY_WORD.iter())
         .copied()
         .collect()

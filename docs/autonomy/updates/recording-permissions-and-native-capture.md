@@ -738,3 +738,81 @@ Review details now say WebM for either video encoder.
 
 No demo-quality acceptance is claimed. The only available machine remains the
 current software VM. Desktop locking remains a separate OS change.
+
+### Native scheduling and the current installed measurement
+
+The native PulseAudio service reports RTKit calls through
+`org.freedesktop.portal.Realtime` failing with `UnknownInterface`. PipeWire
+1.4.11 chooses that route when the portal name exists, without checking whether
+the Realtime interface exists. alo's portal owns the name but does not implement
+that interface. The native PipeWire and PulseAudio services now explicitly use
+the installed system RTKit broker; sandboxed clients retain their existing
+configuration and gain no scheduling authority. Both data-loop threads were
+observed running at round-robin priority 20 after the configuration was applied.
+This follows the rented engine's [RT module configuration](https://docs.pipewire.org/page_module_rt.html)
+and its [1.4.11 implementation](https://github.com/PipeWire/pipewire/blob/1.4.11/src/modules/module-rt.c).
+The image installs RTKit explicitly and two permanent image checks hold the
+native configuration and package dependency.
+
+The ordinary Flatpak from application source `df9adc0b` has SHA-256
+`40b7d38e443dcd91d54cc34aee315e8b0adbf20e3299aa28391fac9420afc3d6`
+and commit `88886a201f38461d28b44d4d4761eda2ed284bdef2af38219635041412e20545`.
+Its first hidden-preview trial completed Pause, Resume and Finish, but clip
+`1793964891-9152358-2` still contains only 42 video frames and 10.64 seconds of
+PCM over a 30.840-second header duration. Largest uncovered video/audio gaps
+are 2.310/2.900 seconds. The earlier file-fed source also logged underruns and
+broken pipes, so it is unsuitable as the final audio fixture.
+
+A native, clocked GStreamer tone and a null-sink monitor replace that source.
+Independent native and sandboxed probes each deliver three seconds of PCM over
+approximately three seconds between first and last delivery. Their total
+elapsed times include startup and must not be interpreted as missing audio.
+The native scheduling trial still stops early on the audio-queue limit: clip
+`1793966970-725682634-2` has 31 video frames and 8.66 seconds of PCM over
+21.140 seconds, with uncovered gaps of 1.793/3.620 seconds.
+
+The same disk was then rebooted with two virtual CPUs, `-cpu max` and a 512 MiB
+TCG translation cache. Six optimized native binaries from OS source `260f51e2`
+were staged, including the current desktop, agent service/client and capture
+services. This changes both the CPU profile and native build, so it is not an
+isolated CPU comparison. The native dialog service initially timed out during
+the default-application installation. The installation's verified cgroup was
+temporarily frozen; after startup completed, the ordinary dialog service ran
+successfully again. No permanent dialog-service override was installed.
+
+With compilation stopped, the normal installed app and ordinary native
+services recorded clip `1793972152-678118873-2`. It contains seven changing
+video frames and 4.14 seconds of actual PCM over 6.180 seconds. Uncovered
+video/audio gaps reach 1.313/2.040 seconds. The supplied audio signal is present
+(decoded peak 1937). The audio-input queue reaches its 200-buffer retained-data
+limit and Studio saves the partial recording before the requested Pause. This
+quiet measurement also fails continuity; it does not establish synchronized
+audio or clean installed pause/resume. Evidence is
+`D:\\alo-studio-verification\\installed-quiet-current-system-recording`, with WebM
+SHA-256 `e9a5c8043b34819c75e61657fbb6d6f720d39759f5d186661ecc84c77eefdd7b`.
+These installed measurements were performed once and do not run in CI.
+
+### Application permission on the running OS
+
+The agent's real OS identity initially receives no Studio actions and its
+status request is refused. In the visible Settings application picker, Studio
+was selected and then a one-hour duration was chosen. Discovery then offers all
+19 Studio actions, and `studio.status` returns the installed app's bounded
+status through the running daemon. A proposed `studio.countdown_three` stays
+pending until the person-side protocol connection approves that exact proposal.
+The approval returns `application-controlled`, and a subsequent status read
+confirms the countdown changed from zero to three seconds. This exercises the
+real daemon, distinct person/agent identities and installed application; it does
+not claim a model conversation or a visible approval-card walk.
+
+Taking back the newly created application permission through Settings removes
+all Studio verbs from discovery immediately and a new status request is
+refused. The earlier exact-file export permission is retained. This is a
+one-off walk on the running OS. Permanent adapter, Settings, grant, source and
+vocabulary checks also pass, including the refusal directing application
+permission to Settings and a session with no personal settings folder.
+
+The Settings page is now called **Access for alo**, covering folders,
+applications and explicitly shared files. Application-control refusals point
+to that Settings choice rather than telling someone to pick a folder. Existing
+adapter declarations and grant checks remain intact.
