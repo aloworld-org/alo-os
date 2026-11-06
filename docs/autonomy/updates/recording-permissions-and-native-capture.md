@@ -5,15 +5,18 @@ Work remains on `app/alo-studio`, with a draft review. Market publication,
 signed distribution, production-image acceptance, and physical-hardware
 acceptance are separate. The complete booted walk is **not yet accepted**.
 
-Current result: native permissions and the installable application are implemented.
-Application source `44fff5c7` passes dedicated CI (formatting, clippy, 19 tests,
-the GTK flow and eight scoped PipeWire cases) and authors validation. The earlier
-OS gate passed at `83f821ea`; the current gate is still running.
-Native window recording can complete Start, Pause, Resume and Finish with optional
-microphone audio, but decoded video and audio still contain substantial gaps.
-Demonstration-quality acceptance fails, and the review remains a draft with no
-market publication. Earlier measurements below retain their tested source;
-they are not acceptance results for later packages.
+Current result: native permissions, the installable application and 19 typed
+agent actions are implemented. Application source `8555d5bd` passes dedicated
+CI: formatting, Clippy, 28 unit tests, the actual GTK recording flow and the
+pinned native capture publisher cases. At `00781cbd`, dedicated native CI,
+authors validation and the hosted OS gate all pass. The hosted gate required a
+retry after dependency installation timed out; its documented runner exceptions
+were not changed. Installed window recording completes Start, Pause,
+Resume, Finish, naming, library review and exact-file export. Decoded-media
+quality is being checked below; it is not inferred from those successful
+controls. The review remains a draft with no market publication. Earlier
+measurements retain their tested source and are not acceptance results for
+later packages.
 
 ## Implemented boundaries
 
@@ -812,7 +815,7 @@ one-off walk on the running OS. Permanent adapter, Settings, grant, source and
 vocabulary checks also pass, including the refusal directing application
 permission to Settings and a session with no personal settings folder.
 
-The Settings page is now called **Access for alo**, covering folders,
+In the current source, the Settings page is called **Access for alo**, covering folders,
 applications and explicitly shared files. Application-control refusals point
 to that Settings choice rather than telling someone to pick a folder. Existing
 adapter declarations and grant checks remain intact.
@@ -843,7 +846,121 @@ thread classes are retained with the evidence. This trial fails continuity.
 Evidence is `D:\\alo-studio-verification\\installed-single-thread-recording`;
 WebM SHA-256 is `f96c60a8c9cf617b42f48968e855e7dec5c498be3f38c21ff9df2a43cf5a2811`.
 
-The same VM disk is being evaluated with four virtual CPUs. No other VM is
-modified, and the two-CPU command and firmware state are preserved. Installed
-recordings and completed exports remain on disk. The default-application
-installation was thawed before the clean shutdown.
+### Four-CPU timing investigation
+
+The same disk now runs with four virtual CPUs, `-cpu max` and the same TCG
+translation cache. The host has four available CPUs and another existing VM;
+that VM was not changed. These are software-emulation measurements, not an
+isolated-host benchmark. The two-CPU command and firmware state are preserved.
+The first-boot application installation was frozen again during recording.
+
+| Installed application | Recording | Video frames | Video end | PCM duration | Largest uncovered video gap |
+|---|---|---:|---:|---:|---:|
+| `12ba1d99` | `1793977158-344973477-2` | 120 | 24.378 s | 23.280 s | 0.995 s at Resume |
+| `6ad69d1f` | `1793978952-239210547-2` | 120 | 24.058 s | 23.620 s | 0.503 s during recording |
+| `37111f19` | `1793980394-145942011-2` | 91 | 22.318 s | 22.240 s | 0.525 s |
+
+Each completes the installed control flow and native exact-file export. The
+first two have no uncovered audio timestamp holes. The third contains 179 ms
+of overlapping audio at Resume; its PCM duration must not be confused with its
+22.061-second final audio timestamp. None establishes final synchronization.
+Exports `Product demonstration 2.webm`, `Product demonstration 3.webm` and
+`Product demonstration 4.webm` match their private originals exactly. Their
+SHA-256 values are respectively
+`06babb921f9a08c069df05678b21dd0b905e7d6e735f6f87d1593227fa351936`,
+`76c9cb9780104e39b86c455551cb0299c44e7c6645fb292973ea6005ba556555` and
+`6223d12c8756c1f8c6436e2fafb3f32d19167a1cfe3eb4aed098f84abbe048ef`.
+
+GStreamer samples pipeline running time again after pausing its children.
+Studio had already stopped admitting video, so a slow native pause added a
+gap to the saved timeline. A real delayed-child regression reproduces an added
+300 ms before the fix. Saving the request boundary excludes that stop time;
+the installed `6ad69d1f` trial removes the large Resume gap. Its remaining
+audio/video end difference is 438 ms. These video ends include the final
+frame's nominal 200 ms display duration at 5 fps. A difference in track ends
+alone does not establish an offset between recorded sound and visible events.
+
+An independent microphone probe supplies 48 seconds of uninterrupted PCM over
+48.755 seconds between its first and last delivery. Its 51.615-second total
+also includes 2.835 seconds of startup. Microphone recording now selects the
+microphone's clock before the first sample and starts a fresh recording
+timeline, while retaining the permission-scoped capture stream. Old preview
+buffers from the previous clock epoch are rejected. Silent recordings retain
+the system clock. Permanent checks cover clock selection, failed-clock preview
+recovery and stale-buffer rejection.
+
+The first microphone-clock run exposes the Resume overlap above. The pause
+order now stops that microphone before saving its clock boundary. A real
+delayed GStreamer child verifies this order. The subsequent timed-source run,
+`1793981493-675597584-2`, has 21.540 seconds of PCM with neither timestamp
+holes nor overlap, but video ends at 24.346 seconds with a 1.130-second
+uncovered gap. Only six audio pulse starts and one visual transition are
+measurable. It fails alignment verification and is retained as a failed trial,
+not an acceptance pass. Changing the reference source to a system clock alone
+does not establish alignment: its native clock advances while its covered
+window retains an old painted clock label. Its export
+`Product demonstration 5.webm` matches SHA-256
+`a4e61c12a210af4658d7dbae49347154f5d8d8c0d1d4a88994a4eae51fa051f9`.
+
+The current normal package, built from `8555d5bd`, has SHA-256
+`6b576f484fd51998ba423f6239a3a99c4e4b2c8625dad73b7782d951183d7c06`
+and Flatpak commit
+`f669255934ee94d1ecb3387d594a9595a95c6d8514f2598f3e06154c68c96ecc`.
+It contains no verification feature, development command or timing preload.
+The earlier native OS binaries staged for this boot are from `260f51e2`; this is a
+temporary `/usr` overlay, not production-image acceptance. Later source wording
+for **Access for alo** is not claimed as installed in that older desktop binary.
+
+The repeated timed-source run `1793981932-584295404-2` stops at the same
+200-buffer audio-input limit before Finish can be exercised. It has 90 video
+frames over 23.755 seconds, 23.540 seconds of PCM with no timestamp holes or
+overlap, and a 1.597-second uncovered video gap. Only two audio starts and no
+visual transitions are measurable. SHA-256 is
+`6ffb6b07de97523dc01b872cec1905d2b309780f24779a3f04b94a8a8a176ead`.
+
+Screen-only clip `1793982170-485460354-2` completes Start, Pause, Resume,
+Finish, review and native export with microphone disabled throughout. It
+contains 54 video frames, all consecutive frames changing, over 21.458 seconds
+at 576 × 360. Its largest uncovered video gap is 0.619 seconds. This is still
+below the selected 5 fps ceiling and does not establish smooth video. The
+export `Product demonstration 6.webm` matches its original with SHA-256
+`b5c46d5aa0f19b03def548c398b6a4a343043de77f911b019c5daf9c92b88ffe`.
+
+### Covered application repainting
+
+Inspecting decoded pixels confirms that the timed source retains its old
+painted clock value while native logs show its clock advancing. The separate
+window-capture renderer does not complete Wayland frame callbacks; normal
+desktop presentation completes only its own submitted surfaces. A covered
+captured client can therefore stop repainting even though repeated old pixels
+continue through capture and encoding.
+
+The source now completes callbacks for the selected mapped surface tree and
+its own popup trees after a successful private capture. Failure and unrelated
+windows receive none. This is an additive default `FrameTarget` method,
+preserving existing implementations. A real Wayland client regression covers
+failure, mapped parent/child completion, an unmapped child, duplicate
+completion and an unrelated application. The regression and strict library/test
+Clippy checks pass at `00781cbd`. Optimized desktop, agent service and agent
+client binaries from that source are now installed in the running VM; their
+checksums are recorded in `capture-callback-system-identity.txt`. The updated
+agent correctly refuses an ungranted Studio read and points to application
+access in Settings. The Settings wording is therefore present in this new
+desktop build.
+
+The installed application remains the normal `8555d5bd` package. On this
+software VM, its verification launch now also uses `GDK_DISABLE=gl,vulkan`
+with the existing Cairo renderer, avoiding unsuccessful GPU initialization.
+GTK documents these as debugging controls; they are not shipped as an end-user
+configuration. A one-off Review/status check completes in 16 seconds, compared
+with earlier repeated 30-second timeouts. This is not a general UI latency
+guarantee. See [GTK's runtime controls](https://docs.gtk.org/gtk4/running.html).
+
+The private VM was paused during the optimized build and resumed before
+testing. Its wall clock was restored afterward. The first-boot installation
+was resumed during build work and frozen again for measurement. An independent
+virtual-audio probe during host load supplies silent PCM and reports timestamp
+gaps; it cannot be used as a valid synchronization reference. The VM is paused
+again while unrelated queued builds complete, reducing contention. The final
+installed recording repeat is queued on the shared build lock and first
+requires a healthy reference signal. Its result is not yet claimed.
