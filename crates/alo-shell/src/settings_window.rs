@@ -428,6 +428,11 @@ pub(crate) struct Open {
     /// says — including *nobody has chosen*, which is why this is not a
     /// `KeptSection`. `crate::how_code_runs_in_settings` holds that argument.
     pub(crate) how_code_runs: HowCodeRunsHere,
+    /// Whether the sealed box can run programs on this computer yet, read at
+    /// opening from the machine's mounts. **It changes nothing the person
+    /// chose**: the sealed box stays a choice, and the default; this is only
+    /// whether the line under it says it is not available here yet.
+    pub(crate) the_sealed_box_runs_here: bool,
     /// The page the window is showing, which is the category chosen in the
     /// side column.
     pub(crate) category: SettingsCategory,
@@ -495,6 +500,12 @@ impl SettingsWindow {
                 places.folder(),
             ),
             how_code_runs: HowCodeRunsHere::at_sign_in(places.how_code_runs()),
+            // Mounts that cannot be read are not said to be a machine where it
+            // cannot run: the line is for what was read.
+            the_sealed_box_runs_here: match std::fs::read_to_string(places.mounts()) {
+                Ok(mounts) => !alo_capability::the_sealed_box_here::the_root_is_composefs(&mounts),
+                Err(_) => true,
+            },
             // **It opens on the first page, with the keyboard in the side
             // column**, which is where a person chooses what they came for.
             category: SettingsCategory::AloAndAi,

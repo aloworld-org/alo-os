@@ -78,6 +78,9 @@ fn the_box_is_entered_before_the_command_is_reached() {
         why.to_string().contains("the box was joined"),
         "a command that would not start after the box was joined did not say so: {why}"
     );
+    // **And it is read so from the error itself**, which is what the helper
+    // asks before it tells the runner in its own word.
+    assert!(super::it_was_joined(&why), "{why}");
 
     drop(fs::remove_dir_all(&inside));
 }
@@ -108,6 +111,7 @@ fn a_box_that_will_not_take_this_process_says_so() {
         !said.contains("the box was joined"),
         "a refused admission was described as a joined box: {said}"
     );
+    assert!(!super::it_was_joined(&why), "{why}");
 
     drop(fs::remove_dir_all(&inside));
 }
