@@ -49,16 +49,6 @@ pub fn the_root_is_composefs(mountinfo: &str) -> bool {
     })
 }
 
-/// Whether the sealed box can run programs on this computer yet, read from
-/// [`THE_MOUNTS`]. A machine whose mounts cannot be read is not said to be one
-/// where it cannot: the plain line is for what was read, never a guess.
-#[must_use]
-pub fn the_sealed_box_runs_programs_here() -> bool {
-    match std::fs::read_to_string(THE_MOUNTS) {
-        Ok(mounts) => !the_root_is_composefs(&mounts),
-        Err(_) => true,
-    }
-}
 
 #[cfg(test)]
 #[path = "the_sealed_box_here_tests.rs"]
