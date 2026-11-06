@@ -49,4 +49,21 @@ impl Choices {
     pub fn selected(&self) -> u32 {
         self.selected.get()
     }
+
+    /// Select the same visible button a person uses; refuse an unknown option.
+    pub fn select(&self, index: u32) -> bool {
+        let mut child = self.widget.first_child();
+        let mut found = 0;
+        while let Some(widget) = child {
+            child = widget.next_sibling();
+            if let Ok(button) = widget.downcast::<gtk::ToggleButton>() {
+                if found == index {
+                    button.set_active(true);
+                    return true;
+                }
+                found += 1;
+            }
+        }
+        false
+    }
 }

@@ -1,6 +1,18 @@
 //! Native asynchronous export and deliberate removal of a completed video.
 
 use super::*;
+
+/// The visible save request stays singular through the chooser and async copy.
+struct ExportPending(std::rc::Weak<State>);
+
+impl Drop for ExportPending {
+    fn drop(&mut self) {
+        if let Some(state) = self.0.upgrade() {
+            state.export_pending.set(false);
+            state.view.review.save.set_sensitive(true);
+        }
+    }
+}
 pub(super) fn save(own: Rc<State>) {
     let Some(clip) = own.clip.borrow().clone() else {
         return;
@@ -11,6 +23,11 @@ pub(super) fn save(own: Rc<State>) {
     let Ok(path) = library.video(&clip.id) else {
         return;
     };
+    if own.export_pending.replace(true) {
+        return;
+    }
+    own.view.review.save.set_sensitive(false);
+    let pending = ExportPending(Rc::downgrade(&own));
     let name = format!(
         "{}.webm",
         clip.title
@@ -55,6 +72,7 @@ pub(super) fn save(own: Rc<State>) {
             gio::Cancellable::NONE,
             None,
             move |result| {
+                let _pending = pending;
                 let _keep_running = hold;
                 callback.view.review.save.set_sensitive(true);
                 match result {

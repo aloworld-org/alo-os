@@ -86,6 +86,14 @@ catalogue. **It is not on Flathub merely because it has a manifest.**
 
 ## Checks
 
+## Agent control
+
+The versioned [automation interface](docs/automation.md) provides semantic
+recording actions and status for ask-alo and other agents. It shares the native
+lifecycle and preserves the person's system source picker and export chooser.
+
+## Checks
+
 ```sh
 cargo fmt --manifest-path apps/alo-studio/Cargo.toml --check
 cargo clippy --manifest-path apps/alo-studio/Cargo.toml --all-targets --features verification -- -D warnings

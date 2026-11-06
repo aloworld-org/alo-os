@@ -24,6 +24,8 @@ struct State {
     finish_started: Cell<Option<Instant>>,
     close_after_save: Cell<bool>,
     closed: Cell<bool>,
+    export_pending: Cell<bool>,
+    automation: RefCell<Option<(gio::DBusConnection, gio::RegistrationId)>>,
     bar: RefCell<Option<(gtk::ApplicationWindow, gtk::Label, gtk::Button)>>,
 }
 
@@ -42,9 +44,12 @@ pub fn open(application: &gtk::Application) {
         finish_started: Cell::new(None),
         close_after_save: Cell::new(false),
         closed: Cell::new(false),
+        export_pending: Cell::new(false),
+        automation: RefCell::new(None),
         bar: RefCell::new(None),
     });
     connect(&state, application);
+    control_bus::register(&state, application);
     state.refresh_library();
     state.render();
     if let Some(error) = library_error {
@@ -241,12 +246,14 @@ fn connect(state: &Rc<State>, application: &gtk::Application) {
             return glib::Propagation::Stop;
         }
         own.closed.set(true);
+        own.release_automation();
         own.release_capture();
         glib::Propagation::Proceed
     });
     let own = state.clone();
     application.connect_shutdown(move |_| {
         own.closed.set(true);
+        own.release_automation();
         own.release_capture();
     });
 }
@@ -272,3 +279,9 @@ mod presentation;
 
 #[path = "library.rs"]
 mod library;
+
+#[path = "control_bus.rs"]
+mod control_bus;
+
+#[path = "control_actions.rs"]
+mod control_actions;
