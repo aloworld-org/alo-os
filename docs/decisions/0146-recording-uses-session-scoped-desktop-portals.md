@@ -74,6 +74,25 @@ forbid unsafe code. The vendored changes, provenance, and removal condition
 
 ## Evidence required
 
+### Native audio scheduling alongside the alo portal
+
+The 2026-11-06 VM investigation found native PipeWire and PulseAudio processing
+threads running without real-time priority. Their journals show
+`org.freedesktop.DBus.Error.UnknownInterface` when the RT module asks the alo
+portal for `org.freedesktop.portal.Realtime`. PipeWire 1.4 chooses a portal by
+name ownership before checking that interface, so an owned but unsupported
+interface prevents its native RTKit fallback.
+
+Configure only the native `pipewire.conf` and `pipewire-pulse.conf` RT modules
+to use the installed system RTKit broker directly (`rtportal.enabled = false`,
+`rtkit.enabled = true`). Retain RTKit's authorization, priority bounds and
+watchdog; do not grant scheduling capabilities to applications or agents and
+do not copy or replace a complete upstream configuration. Keep sandbox/client
+configuration unchanged. Verify actual service thread scheduling and real
+audio delivery in the current VM before treating this as a capture-quality
+fix. Remove the routing override when the public portal supplies a compatible
+Realtime interface or upstream reliably falls back from an unsupported one.
+
 ### Capture publisher buffer-wait investigation
 
 The 2026-11-06 software-VM trace observed an acquisition from the private

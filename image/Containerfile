@@ -1051,6 +1051,8 @@ COPY image/usr/lib/systemd/system/ /usr/lib/systemd/system/
 # somewhere.
 COPY image/usr/lib/systemd/user/ /usr/lib/systemd/user/
 COPY image/usr/share/dbus-1/services/org.freedesktop.portal.Desktop.service /usr/share/dbus-1/services/org.freedesktop.portal.Desktop.service
+COPY image/usr/share/pipewire/pipewire.conf.d/ /usr/share/pipewire/pipewire.conf.d/
+COPY image/usr/share/pipewire/pipewire-pulse.conf.d/ /usr/share/pipewire/pipewire-pulse.conf.d/
 COPY image/usr/lib/sysusers.d/ /usr/lib/sysusers.d/
 COPY image/usr/lib/tmpfiles.d/ /usr/lib/tmpfiles.d/
 # The greeter's PAM stack, which is what gives it a logind session and so a

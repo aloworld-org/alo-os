@@ -36,3 +36,34 @@ fn capture_workers_and_native_services_are_in_the_recipe() {
         )
     );
 }
+
+#[test]
+fn native_audio_scheduling_does_not_depend_on_an_unsupported_portal_interface() {
+    let recipe = include_str!("../../../image/Containerfile");
+    for (directory, config) in [
+        (
+            "pipewire.conf.d",
+            include_str!(
+                "../../../image/usr/share/pipewire/pipewire.conf.d/20-alo-native-realtime.conf"
+            ),
+        ),
+        (
+            "pipewire-pulse.conf.d",
+            include_str!(
+                "../../../image/usr/share/pipewire/pipewire-pulse.conf.d/20-alo-native-realtime.conf"
+            ),
+        ),
+    ] {
+        assert!(recipe.contains(&format!(
+            "COPY image/usr/share/pipewire/{directory}/ /usr/share/pipewire/{directory}/"
+        )));
+        assert!(config.contains("module.rt.args"));
+        assert!(config.contains("rtportal.enabled = false"));
+        assert!(config.contains("rtkit.enabled = true"));
+        assert!(!config.contains("context.modules"), "keep upstream modules");
+        assert!(
+            !config.contains("rt.prio"),
+            "keep the broker's priority bound"
+        );
+    }
+}
