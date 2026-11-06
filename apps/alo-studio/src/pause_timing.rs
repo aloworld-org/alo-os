@@ -38,6 +38,7 @@ mod tests {
 
     mod delayed {
         use gst::glib;
+        use gst::prelude::*;
         use gst::subclass::prelude::*;
 
         #[derive(Default)]
