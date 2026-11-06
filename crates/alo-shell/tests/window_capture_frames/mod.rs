@@ -46,7 +46,7 @@ fn capture(fixture: &Fixture, fail: bool, time: u32) -> Result<(), RenderError> 
             .mapped_surfaces()
             .find(|root| server.the_name_of(root).its_own_words() == Some("Captured application"))
             .cloned()
-            .unwrap();
+            .ok_or_else(|| RenderError::Submission("selected application is not mapped".into()))?;
         CaptureTarget { fail }
             .capture_window_at(
                 (16, 16).into(),
@@ -62,7 +62,7 @@ fn capture(fixture: &Fixture, fail: bool, time: u32) -> Result<(), RenderError> 
 
 #[test]
 /// Failed, repeated and unrelated captures cannot claim a new client frame.
-fn covered_capture_completes_only_its_mapped_tree_after_success() {
+fn covered_capture_completes_only_its_mapped_tree_after_success() -> Result<(), RenderError> {
     let fixture = Fixture::new();
     let mut selected = Application::new(&fixture);
     selected.configure();
@@ -83,12 +83,12 @@ fn covered_capture_completes_only_its_mapped_tree_after_success() {
     other.sync();
     assert!(selected.events.frames.is_empty());
     assert!(other.events.frames.is_empty());
-    capture(&fixture, false, 20).unwrap();
+    capture(&fixture, false, 20)?;
     selected.sync();
     other.sync();
     assert_eq!(selected.events.frames, [20, 20]);
     assert!(other.events.frames.is_empty());
-    capture(&fixture, false, 21).unwrap();
+    capture(&fixture, false, 21)?;
     selected.sync();
     assert_eq!(selected.events.frames, [20, 20]);
 
@@ -98,11 +98,12 @@ fn covered_capture_completes_only_its_mapped_tree_after_success() {
     selected.surface.frame(&selected.queue.handle(), ());
     selected.surface.commit();
     selected.sync();
-    capture(&fixture, false, 30).unwrap();
+    capture(&fixture, false, 30)?;
     selected.sync();
     other.sync();
     assert_eq!(selected.events.frames, [20, 20, 30]);
     assert!(other.events.frames.is_empty());
     role.destroy();
     child.destroy();
+    Ok(())
 }
