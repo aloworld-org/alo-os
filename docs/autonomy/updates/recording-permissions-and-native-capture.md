@@ -685,5 +685,56 @@ operations through its versioned application interface. The daemon routes the
 capability discovery refreshes before each model round; Studio controls appear
 only under a live application grant and delivery rechecks that grant. Changes
 retain single-use approval. Native source and file choosers retain consent.
-The core integration compiles; the permission-picker and live-bus regression
-checks are still being completed. No demo-quality acceptance is claimed.
+Targeted Clippy for the agent, daemon, protocol, adapters, shell and permissions
+passes. Core turn, protocol and permission logic passed 158, 148 and 25 unit
+checks respectively. The real private-bus adapter tests pass, including bounded
+status, a fixed integer countdown sent only after approval, missing ownership and
+revocation. The two Settings checks pass: choosing an app alone writes nothing,
+cancel writes nothing, and choosing a duration persists only that app's grant,
+with visible revocation. Live installation inventory, protocol integration and
+the first-party agent's driving tests also pass. These are permanent tests in
+the source tree, distinct from the manual VM measurements below.
+
+The isolated buffer-wait regression compiles the actual patched upstream pool
+implementation. The patched build completes dequeue and preserves nonblocking,
+pause and flushing outcomes; the baseline misses the withheld notification and
+hits the watchdog. This check runs in the pinned-engine verification container.
+
+### Installed recording with a known audio signal
+
+The normal Flatpak built from application source `9f96fa43` includes the semantic
+control API, lightweight VP8/Opus profile and review-player cleanup. Its SHA-256
+is `f2125b8249a294f83f9fc705a6142783cfbf63eabd8c61378b8339a103983667`,
+Flatpak commit `f3fcdd95593cb8c44422ceee338fb4ca81c40418894adf16f632b3771627554f`.
+The fixed capture worker and private `wait1` plugin run without timing preloads.
+
+The emulated HDA input is silent. A virtual monitor initially was silent too;
+forcing its test generator onto the system clock supplied an actual signal,
+confirmed independently outside and inside the sandbox. The later trial uses
+PipeWire's native pipe source and a generated PCM fixture, avoiding a second
+GStreamer pipeline competing with the recorder. This is virtual-device evidence,
+not physical microphone acceptance. Local compilation was stopped during capture.
+
+Clip `1793963752-989885763-2` records the selected animated window at 452 × 360.
+It contains 33 decoded video frames and 8.60 seconds of actual PCM over a
+27.585-second header duration. Startup video/audio separation is 156 ms. The
+largest uncovered gaps are 1.492 seconds for video and 3.200 seconds for audio;
+the decoded audio peak is 2971, proving this recording includes the supplied
+signal. The input audio queue reaches its retained-data limit, so Studio seals
+the recording before the requested Pause. This trial fails continuity and does
+not establish clean pause/resume. The library keeps the completed recording.
+
+Evidence is `D:\\alo-studio-verification\\installed-file-fed-microphone`; WebM
+SHA-256 is `5358f1da6ffce6fbc0fe5dee9bc3d56938e5f6fa07bde78979bba68544dc31f6`.
+This is a one-off installed measurement and does not run in CI.
+
+Source `df9adc0b` is a further performance trial: its buffer-only preview gate
+is installed after recording attachment and waits for an actual encoded frame
+before skipping hidden colour conversion. It retains the native capture source
+settings from the working startup path and forwards negotiation and EOS. The
+earlier preview optimization's installed startup failure remains relevant; this
+candidate requires its own installed acceptance and is not yet a quality fix.
+Review details now say WebM for either video encoder.
+
+No demo-quality acceptance is claimed. The only available machine remains the
+current software VM. Desktop locking remains a separate OS change.
