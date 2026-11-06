@@ -92,13 +92,7 @@ impl crate::Server {
                 .into(),
         );
         let place = self.the_place_now();
-        let open: Vec<Rectangle<i32, Logical>> = self
-            .mapped_surfaces()
-            .filter(|surface| crate::canvas_place::the_place_of(surface) == Some(place))
-            .map(crate::where_a_window_is)
-            .chain(self.where_the_terminal_is_on_the_plane())
-            .chain(self.where_settings_is_on_the_plane())
-            .collect();
+        let open = self.the_windows_on_this_place();
         let at = crate::where_a_window_opens(
             view,
             &open,

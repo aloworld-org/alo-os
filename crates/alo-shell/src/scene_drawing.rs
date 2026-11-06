@@ -458,11 +458,11 @@ where
             // **The record window, a window among windows** since ADR 0145's
             // fourth stage, with its edge over it.
             crate::which_window_is_in_front::AKindOfWindow::TheRecord => {
-                if let Some(record) = native
+                if let Some(the_record_on_the_canvas) = native
                     .record
                     .filter(|record| !record.is_empty() && record.is_on_the_canvas())
                 {
-                    record.paint(&mut frame, record_washed.as_ref())?;
+                    the_record_on_the_canvas.paint(&mut frame, record_washed.as_ref())?;
                 }
                 for (edge, textures) in native.records_edge.iter().zip(&records_edge_textures) {
                     crate::each_window_with_its_edge::wash_all(&mut frame, &textures.behind)?;
@@ -491,11 +491,11 @@ where
     // **The record fixed to the display**, which only the nested lane still
     // draws: above every client and control; below the question and the
     // indicator. The record on the canvas was drawn among the windows above.
-    if let Some(record) = native
+    if let Some(fixed_record) = native
         .record
         .filter(|record| !record.is_empty() && !record.is_on_the_canvas())
     {
-        record.paint(&mut frame, record_washed.as_ref())?;
+        fixed_record.paint(&mut frame, record_washed.as_ref())?;
     }
     // **Settings fixed to the display**, which only the nested lane still
     // draws: above every client, the desktop and the record; below the

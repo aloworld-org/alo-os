@@ -33,7 +33,10 @@ fn the_records_icon(
     across: u32,
     palette: crate::record_palette::RecordPalette,
 ) -> Option<APicture> {
-    let side = i32::try_from(across).ok().filter(|side| *side > 0)?;
+    let side = i32::try_from(across).ok()?;
+    if side <= 0 {
+        return None;
+    }
     let (_, _, icon, corner) = m::THE_ICON;
     let tile = Rectangle::<i32, Physical>::from_size((side, side).into());
     let mut canvas = Canvas::over(tile);
