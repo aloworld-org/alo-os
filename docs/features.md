@@ -1590,6 +1590,29 @@ deep teal always with its mark and its word, never by colour alone.
 - **Project spaces** — moving between projects rather than applications; the dock becomes the project's tools, with its people, files and the agent's memory of it
 - **Calm notifications** — delivered in batches at times the person chooses, summarised by the agent, with a capsule saying how many are waiting
 
+## The alo Cursor — the person's hand (owner, 2026-11-06)
+
+Decided by the owner on 2026-11-06, approving this set and order for the first
+cursor demo: *"Yes go ahead."* The cursor helps the **person** act; alo the
+agent does work on their behalf, and the cursor never becomes a second alo Bar.
+**Every line here works in applications alo did not make**, by the owner's rule
+of the same day — through what the compositor already owns (windows, the
+canvas, the pointer), or through what applications already publish (cursor
+shapes by name, drag and drop, the clipboard, the accessibility tree). Where an
+application publishes nothing, the cursor says plainly what is not available
+there rather than pretending. Nothing in it depends on how fast somebody moves,
+every manipulation has a keyboard and screen-reader road, and every placement
+is undone through History and the record.
+
+- **One cursor, drawn by alo, in every application** — an application asks for a cursor by name (text, link, grab, resize) and alo draws its own; an application that brings its own images is given alo's cursor theme to draw from. So the pointer looks the same crossing Files, Firefox and Writer, and *cursor size and colour* above holds everywhere rather than only in alo's own windows. Drawn from the palette, scaled per display
+- ★ **The cursor changes shape by flowing, not snapping** — arrow into text cursor into hand, short and stable, never wobbling or chasing
+- ★ **The Pocket** — click a picture, then a paragraph, and both travel with the pointer with a count beside it, no button held; each is placed where the person clicks, and the destination previews where it will land before anything lands. Esc puts things back
+- ★ **The Portal** — a window far away on the canvas opens as a small live view beside the cursor; the pointer can reach into it and a drop lands in it, and nothing else on the screen moves
+- ★ **The AI cursor**, switched on by the person in Settings and off until they do ([ADR 0147](decisions/0147-a-person-may-switch-watching-on.md)) — it understands what it is over and what it carries, so a table carried from a web page into a document lands as a table, and a date pointed at offers *Add to calendar* as one quiet suggestion. It never clicks, never moves and never acts; anything done for the person goes to alo and its approval. It shows on screen while it is on, runs on this machine's model, and anything it would send off the machine fires the indicator. *Whether it may use a cloud provider is not decided*
+- ★ **Two fingers with one mouse** — pin one point, move another, to stretch or turn. On windows, always; inside an application, where it accepts touch gestures, and otherwise the gesture moves or stretches the window
+- ★ **Look & Jump** — look at the other monitor, press, and the pointer is there. **Not built until its own ADR decides the camera**: the camera light and words shown while it looks, what is kept, and that it is off until the person switches it on and calibrates. The demo stands without it
+- **It disappears when it is not needed** — typing hides the pointer and any movement brings it back at once; never during a drag, a selection or precision work; the idle time, including *Never*, is in Settings
+
 ## What makes a person want it
 
 Adopted by the owner on 2026-09-22 and not yet built. Each builds on something
