@@ -96,6 +96,7 @@ use crate::the_verbs_would_not_declare::TheVerbsWouldNotDeclare;
 pub struct Machine<'a> {
     /// Optional application transport and its checked control declarations.
     controls: alo_adapters::Adapters,
+    /// The host transport used only after application permission checks.
     delivering_controls: Option<&'a dyn alo_adapters::Delivers>,
     /// A live-grant-filtered view for model prompts and discovery.
     offered: Option<Verbs>,
