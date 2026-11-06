@@ -290,7 +290,7 @@ cannot demonstrate.
   switch on is named in Settings with what it reads and where that
   goes, says so on screen while it watches, stops the moment it is
   switched off, is never switched on by an agent, and feeds nothing to
-  an agent's turns (ADR 0147). *Until 2026-11-06 this forbade watching
+  an agent's turns (ADR 0146). *Until 2026-11-06 this forbade watching
   even for a person who wanted it; the owner changed it for the AI
   cursor.*
 - **Reads answer, changes wait.** A read runs inside the turn. Any

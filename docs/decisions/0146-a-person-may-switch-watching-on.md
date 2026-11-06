@@ -1,4 +1,4 @@
-# ADR 0147 — A person may switch watching on
+# ADR 0146 — A person may switch watching on
 
 **Status:** **accepted, 2026-11-06**, by the owner's direction the same day:
 *"Change this law first before we go forward"*, given after this exact

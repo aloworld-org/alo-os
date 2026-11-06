@@ -31,7 +31,7 @@ wastes the scarcest thing this project has.
   that a person did not deliberately grant.
 - **A background reader the person did not switch on.** Context arrives on
   invocation. Watching exists only where the person switched it on, by name,
-  and it says so on screen (ADR 0147).
+  and it says so on screen (ADR 0146).
 - **Egress that doesn't fire the indicator.** And no telemetry, ever.
 - **A language that isn't Rust.** Pinned engines are the exception, and they are
   configured, never written in.
