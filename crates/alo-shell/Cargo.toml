@@ -13,6 +13,8 @@ publish = false
 alo-folded-light = { path = "../alo-folded-light" }
 
 [target.'cfg(target_os = "linux")'.dependencies]
+alo-adapters = { path = "../alo-adapters" }
+alo-installed = { path = "../alo-installed" }
 # The type of the session the sign-in screen hands over to, and nothing else:
 # `tests/sign_in_source.rs` holds this crate to naming `alo_accounts::Session`
 # and never the accounts themselves, which only `alo-greeting` asks.

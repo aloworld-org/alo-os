@@ -282,6 +282,7 @@ impl<'a> Machine<'a> {
         Ok(self)
     }
 
+    /// The checked adapters and the optional application transport together.
     pub(crate) fn application_controls(
         &self,
     ) -> (
@@ -291,6 +292,7 @@ impl<'a> Machine<'a> {
         (&self.controls, self.delivering_controls)
     }
 
+    /// Refresh the model-facing registry from the grants in force at this moment.
     pub(crate) fn refresh_offered(
         &mut self,
         agent: &alo_capability::Grantee,

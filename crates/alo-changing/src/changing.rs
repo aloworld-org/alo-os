@@ -74,6 +74,26 @@ pub struct Changing<'a> {
 }
 
 impl<'a> Changing<'a> {
+    /// Persist the application permission a person selected in Settings.
+    /// The checked grant's exact reach and expiry are preserved; the daemon is
+    /// notified only after the latest complete file has been updated.
+    ///
+    /// # Errors
+    /// [`NotChanged`] if the latest grants file cannot be read or replaced.
+    pub fn application_granted(
+        &mut self,
+        grant: alo_capability::Grant,
+        now: SystemTime,
+    ) -> Result<Made, NotChanged> {
+        let (fresh, id) = alo_remembering::updated(self.at, now, |grants| {
+            Ok::<_, NotChanged>(grants.grant(grant))
+        })?;
+        *self.grants = fresh;
+        Ok(Made::Granted {
+            id,
+            stood: self.daemon.knock(),
+        })
+    }
     /// The person's list, the file it came from, and the daemon's door.
     pub fn of(grants: &'a mut Grants, at: &'a Path, daemon: &'a dyn Door) -> Self {
         Self { grants, at, daemon }

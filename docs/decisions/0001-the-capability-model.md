@@ -231,3 +231,13 @@ validates arguments, checks the application's grant again and records every
 execution and refusal. A cached discovery answer is never authority. New
 application verbs still require their own declaration, translated approval
 sentence, tested effect and application-specific consent surfaces.
+
+Settings provides the person's application-grant path beside the existing
+folder-grant path. The person first chooses an installed application whose
+controls the daemon actually routes, then chooses an explicit duration. The
+shortest duration is first; an endless grant remains a deliberate choice.
+Closing the picker or choosing no application writes no grant. The selected
+application's exact identity and expiry are persisted using the locked update
+of the latest complete grant file, then the daemon is notified. The existing
+visible grant row supplies revocation. Nothing on the agent's door opens,
+selects, or confirms this picker.

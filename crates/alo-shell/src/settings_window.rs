@@ -191,6 +191,10 @@ pub enum SettingsRow {
     /// section's own words — *nothing is granted from here* — and so nothing
     /// on the machine could grant alo a folder at all.
     GrantAFolder,
+    /// Open the installed-application permission picker.
+    GrantAnApplication,
+    /// One visible application choice, duration, or cancellation.
+    ApplicationPermission(crate::application_permissions::ApplicationPermissionRow),
     /// See what alo did: Enter opens the record.
     ///
     /// **In the section of what alo may reach**, above giving it more, because
@@ -298,9 +302,12 @@ impl SettingsRow {
             Self::OpenThePicker(SettingsPicker::Region) => SettingsSection::Formats,
             Self::OpenThePicker(SettingsPicker::TimeZone) => SettingsSection::TimeZone,
             Self::Shortcut(_) => SettingsSection::Shortcuts,
-            Self::Granted(_) | Self::GrantAFolder | Self::SeeWhatAloDid | Self::Picking(_) => {
-                SettingsSection::Granted
-            }
+            Self::Granted(_)
+            | Self::GrantAFolder
+            | Self::GrantAnApplication
+            | Self::ApplicationPermission(_)
+            | Self::SeeWhatAloDid
+            | Self::Picking(_) => SettingsSection::Granted,
             Self::UsingAnother | Self::Way(_) | Self::AlosOwnService | Self::SayWhereItRuns(_) => {
                 SettingsSection::Answering
             }
@@ -734,7 +741,7 @@ impl SettingsWindow {
                 // folder chooser has not asked to throw away everything else
                 // they came here for.
                 if let Some(open) = &mut self.open
-                    && open.granted.picking().is_some()
+                    && open.granted.a_picker_is_open()
                 {
                     open.granted.that_folder_is_not_being_given();
                     return Some(SettingsDid::Gave(
@@ -883,6 +890,13 @@ impl Open {
     /// The folders page's rows: what is given, the row that gives more, the
     /// record, and the computers paired with this one.
     fn the_granted_rows(&self, now: SystemTime) -> Vec<SettingsRow> {
+        if let Some(picking) = self.granted.application_picking() {
+            return picking
+                .rows()
+                .into_iter()
+                .map(SettingsRow::ApplicationPermission)
+                .collect();
+        }
         // **The picker takes the page over while it is open**, rather than
         // appearing above the list of grants: the key that opens a folder and
         // the key that revokes a grant would otherwise be one key a row apart.
@@ -904,6 +918,9 @@ impl Open {
         // through it.
         if self.granted.a_folder_can_be_given() {
             rows.push(SettingsRow::GrantAFolder);
+        }
+        if self.granted.an_application_can_be_given() {
+            rows.push(SettingsRow::GrantAnApplication);
         }
         rows.push(SettingsRow::SeeWhatAloDid);
         rows.extend(paired.into_iter().map(SettingsRow::Granted));
@@ -1039,7 +1056,7 @@ impl Open {
                 }
             }
             SettingsKey::Close => {
-                if self.granted.picking().is_some() {
+                if self.granted.a_picker_is_open() {
                     self.granted.that_folder_is_not_being_given();
                     return Some(SettingsDid::Gave(
                         crate::settings_granted::SettingsGave::ItChanged,
@@ -1277,6 +1294,13 @@ impl Open {
             SettingsRow::GrantAFolder => {
                 SettingsDid::Gave(self.granted.give_alo_a_folder(doors.folders, doors.strings))
             }
+            SettingsRow::GrantAnApplication => {
+                SettingsDid::Gave(self.granted.give_alo_an_application())
+            }
+            SettingsRow::ApplicationPermission(row) => SettingsDid::Gave(
+                self.granted
+                    .act_on_application(row, doors.daemon, doors.now, doors.strings),
+            ),
             SettingsRow::Picking(picking) => SettingsDid::Gave(self.granted.act_on(
                 picking,
                 doors.folders,

@@ -90,6 +90,8 @@ pub(crate) struct GrantedSection {
     /// `crate::a_provider_is_added_in_settings`' rule: there is no flag beside
     /// it that could disagree with what is on the screen.
     picking: Option<AFolderBeingPicked>,
+    /// The separate application picker, while the person chooses an app and duration.
+    application_picking: Option<crate::application_permissions::ApplicationBeingPicked>,
 }
 
 /// What giving alo a folder did.
@@ -106,6 +108,110 @@ pub enum SettingsGave {
 }
 
 impl GrantedSection {
+    /// The current application picker, when one is open.
+    pub(crate) fn application_picking(
+        &self,
+    ) -> Option<&crate::application_permissions::ApplicationBeingPicked> {
+        self.application_picking.as_ref()
+    }
+
+    /// Whether Escape should leave a picker while retaining Settings.
+    pub(crate) fn a_picker_is_open(&self) -> bool {
+        self.picking.is_some() || self.application_picking.is_some()
+    }
+
+    /// Whether an agent is named and the complete grants file was readable.
+    pub(crate) fn an_application_can_be_given(&self) -> bool {
+        self.agent.is_some() && self.grants.is_some()
+    }
+
+    /// Open application choices without granting access.
+    pub(crate) fn give_alo_an_application(&mut self) -> SettingsGave {
+        if !self.an_application_can_be_given() {
+            return SettingsGave::Nothing;
+        }
+        self.picking = None;
+        self.application_picking = Some(
+            crate::application_permissions::ApplicationBeingPicked::installed(self.home.as_deref()),
+        );
+        self.told.clear();
+        SettingsGave::ItChanged
+    }
+
+    /// Handle only a visible choice and persist access after the duration choice.
+    pub(crate) fn act_on_application(
+        &mut self,
+        row: &crate::application_permissions::ApplicationPermissionRow,
+        daemon: &dyn Door,
+        now: SystemTime,
+        strings: &Strings,
+    ) -> SettingsGave {
+        use crate::application_permissions::{ApplicationPermissionRow, GIVEN};
+        use alo_capability::{ATerminalForTheAgent, Grant, Grantee, Reach};
+        let Some(picking) = &mut self.application_picking else {
+            return SettingsGave::Nothing;
+        };
+        if !picking.rows().contains(row) {
+            return SettingsGave::Nothing;
+        }
+        match row {
+            ApplicationPermissionRow::Cancel => {
+                self.application_picking = None;
+                SettingsGave::ItChanged
+            }
+            ApplicationPermissionRow::Application(id) => {
+                if picking.select(id) {
+                    SettingsGave::ItChanged
+                } else {
+                    SettingsGave::Nothing
+                }
+            }
+            ApplicationPermissionRow::For(length) => {
+                let Some(app) = picking.selected().cloned() else {
+                    return SettingsGave::Nothing;
+                };
+                let (Some(grants), Some(agent)) = (&mut self.grants, &self.agent) else {
+                    return SettingsGave::Nothing;
+                };
+                let granting = length.granting_to(agent);
+                let reach = Reach::Application(app.identifier().to_owned());
+                let grant = match granting.lasting() {
+                    alo_picking::ForHowLong::Lasting(duration) => {
+                        Grant::checked(agent, reach, now, duration)
+                    }
+                    alo_picking::ForHowLong::UntilRemoved => Grant::checked_until_removed(
+                        &Grantee::named(agent),
+                        reach,
+                        now,
+                        ATerminalForTheAgent::NotAtAll,
+                    ),
+                };
+                self.application_picking = None;
+                let result = grant.map_err(NotChanged::from).and_then(|grant| {
+                    Changing::of(grants, &self.grants_at, daemon).application_granted(grant, now)
+                });
+                match result {
+                    Ok(Made::Granted { stood, .. }) => {
+                        self.told = vec![
+                            strings
+                                .say(
+                                    &GIVEN.key(),
+                                    &Filling::of("application", app.shown(strings)),
+                                )
+                                .into_text(),
+                        ];
+                        self.told.extend(stood.explained(strings));
+                        SettingsGave::ItWasGiven
+                    }
+                    Ok(Made::Nothing) => SettingsGave::Nothing,
+                    Err(why) => {
+                        self.told = vec![why.said(strings).into_text()];
+                        SettingsGave::ItWasNotGiven
+                    }
+                }
+            }
+        }
+    }
     /// The section at sign-in, and each file that did not read, for the
     /// host's log.
     pub(crate) fn at_sign_in(
@@ -162,6 +268,7 @@ impl GrantedSection {
                 home: home.map(Path::to_owned),
                 agent: agent.map(str::to_owned),
                 picking: None,
+                application_picking: None,
             },
             refused,
         )
@@ -199,6 +306,7 @@ impl GrantedSection {
         folders: &dyn Folders,
         strings: &Strings,
     ) -> SettingsGave {
+        self.application_picking = None;
         let Some(home) = self.home.clone() else {
             return SettingsGave::Nothing;
         };
@@ -218,6 +326,7 @@ impl GrantedSection {
     /// Stop picking without giving anything away.
     pub(crate) fn that_folder_is_not_being_given(&mut self) {
         self.picking = None;
+        self.application_picking = None;
     }
 
     /// The person pressed Enter on one of the picker's rows.
@@ -432,4 +541,87 @@ fn told(row: &Row, answered: &Result<Gone, NotChanged>, strings: &Strings) -> Ve
         Err(refused) => said.push(refused.said(strings).into_text()),
     }
     said
+}
+
+#[cfg(test)]
+#[expect(
+    clippy::unwrap_used,
+    reason = "unexpected fixture failures must fail this permission-flow test"
+)]
+mod application_permission_tests {
+    use super::*;
+    use crate::application_permissions::{ApplicationBeingPicked, ApplicationPermissionRow};
+    use crate::settings_testing::{CountingDoor, noon, words};
+    use alo_capability::{Ask, Grantee};
+    use std::time::Duration;
+
+    #[test]
+    fn a_person_selects_an_app_and_expiry_then_can_revoke_the_persisted_permission() {
+        let folder = tempfile::tempdir().unwrap();
+        let path = folder.path().join("grants.toml");
+        let (mut section, refused) = GrantedSection::at_sign_in(
+            &path,
+            &folder.path().join("pairings.toml"),
+            Some(folder.path()),
+            Some("@alo"),
+            noon(),
+        );
+        assert!(refused.is_empty());
+        let installed =
+            alo_applications::Installed::holding([alo_applications::Application::called(
+                alo_adapters::studio::APPLICATION,
+                "alo Studio",
+            )
+            .unwrap()]);
+        let door = CountingDoor::revoking();
+        let strings = words();
+        let choose =
+            ApplicationPermissionRow::Application(alo_adapters::studio::APPLICATION.to_owned());
+        let duration = ApplicationPermissionRow::For(HowLong::AnHour);
+        section.application_picking = Some(ApplicationBeingPicked::from_installed(&installed));
+        assert_eq!(
+            section.act_on_application(&duration, &door, noon(), &strings),
+            SettingsGave::Nothing
+        );
+        assert_eq!(
+            section.act_on_application(&choose, &door, noon(), &strings),
+            SettingsGave::ItChanged
+        );
+        assert!(!path.exists());
+        assert_eq!(door.knocks.get(), 0);
+        assert_eq!(
+            section.act_on_application(&ApplicationPermissionRow::Cancel, &door, noon(), &strings),
+            SettingsGave::ItChanged
+        );
+        assert!(!path.exists());
+        section.application_picking = Some(ApplicationBeingPicked::from_installed(&installed));
+        section.act_on_application(&choose, &door, noon(), &strings);
+        assert_eq!(
+            section.act_on_application(&duration, &door, noon(), &strings),
+            SettingsGave::ItWasGiven
+        );
+        assert_eq!(
+            section.act_on_application(&duration, &door, noon(), &strings),
+            SettingsGave::Nothing
+        );
+        assert_eq!(door.knocks.get(), 1);
+        let agent = Grantee::named("@alo");
+        let app = Ask::Application(alo_adapters::studio::APPLICATION.to_owned());
+        let grants = alo_remembering::remembered(&path, noon()).unwrap();
+        assert!(grants.permits(&agent, &app, noon()));
+        assert!(!grants.permits(&agent, &app, noon() + Duration::from_secs(3601)));
+        assert!(!grants.permits(
+            &agent,
+            &Ask::Application("org.example.Other".to_owned()),
+            noon()
+        ));
+        let row = section.rows(noon()).into_iter().next().unwrap();
+        section.revoked(&row, &door, noon(), &strings);
+        assert!(
+            !alo_remembering::remembered(&path, noon())
+                .unwrap()
+                .permits(&agent, &app, noon())
+        );
+        assert_eq!(door.knocks.get(), 2);
+    }
 }

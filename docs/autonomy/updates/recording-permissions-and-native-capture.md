@@ -648,3 +648,42 @@ Earlier scoped OS checks passed: 594 permission/portal/protocol/activity/storage
 checks, 295 transport/portal/architecture/language checks, 413 client-lifecycle
 checks and 12 native-parent wire checks. The exact-file save boundary is
 documented in `native-save-dialog-for-sandboxed-recordings.md`.
+
+## Follow-up investigation, 6 November 2026
+
+The current task reopens private VM verification. The prior cleanup above is
+historical: temporary SSH forwarding, the artifact server, diagnostic binaries
+and metadata preloads are currently in use again and must be removed after the
+installed-app acceptance run. The ordinary SSH service and original capture
+worker have been preserved for restoration. No image or market package has been
+published.
+
+Paired timestamps now locate an indefinite buffer acquisition in the capture
+publisher while compositor frames continue arriving. In the preserved
+`capture-pool-wait` evidence, acquisition 581 begins without returning and input
+count advances from 667 to 762. The appsrc queue stays bounded at two frames.
+Thread inspection finds the publisher's streaming thread waiting on a condition.
+The sink signals that condition without the pool mutex, allowing a notification
+between dequeue and wait to be lost. A private timed-recheck trial keeps frames
+moving; ADR 0146 authorizes the narrowly checksummed build-copy patch. The
+imported upstream source remains unchanged. Plugin version
+`1.4.90+ee2c6eb4.2770143f.wait1` adds a 100 ms predicate recheck.
+
+The same GNOME runtime in the available software VM encoded a two-second
+640 × 360, 5 fps sample in 4.391 seconds with VP9 and 1.814 seconds with VP8.
+Two seconds of isolated microphone encoding took 0.818 seconds at 48 kHz and
+0.560 seconds with the selected 16 kHz voice configuration. The lightweight
+profile now uses VP8 and the cheaper voice path; preflight and recording share
+one configuration. Instrumented development builds still overrun the audio
+queue. These comparisons motivate the changes and do not establish continuous
+or synchronized media. An optimized, normally installed package and capture
+worker are being prepared for the full flow.
+
+Studio now exposes explicit status, recording, settings, library and export
+operations through its versioned application interface. The daemon routes the
+`studio` adapter through the existing approval and execution record. Read-only
+capability discovery refreshes before each model round; Studio controls appear
+only under a live application grant and delivery rechecks that grant. Changes
+retain single-use approval. Native source and file choosers retain consent.
+The core integration compiles; the permission-picker and live-bus regression
+checks are still being completed. No demo-quality acceptance is claimed.

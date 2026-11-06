@@ -263,6 +263,7 @@ mod a_press_on_the_one_button;
 /// wire, and because whoever wires a compositor together serves the door.
 /// The compositor's hand for the three application acts the door carries.
 mod an_application_verb_is_carried_out;
+pub mod application_permissions;
 /// Closing a running task asks: Stop and close, or Cancel (ADR 0139).
 mod asking_before_closing;
 pub mod bar_raster;

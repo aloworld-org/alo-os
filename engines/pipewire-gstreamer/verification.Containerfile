@@ -7,6 +7,7 @@ RUN dnf install --assumeyes --setopt=install_weak_deps=False \
  && dnf clean all
 COPY engines/pipewire-gstreamer /engine
 RUN bash /engine/build.sh /usr/lib/alo-capture-provider/gstreamer-1.0 \
+ && bash /engine/test-buffer-wait.sh /usr/lib/alo-capture-provider/gstreamer-1.0 \
  && GST_PLUGIN_PATH_1_0=/usr/lib/alo-capture-provider/gstreamer-1.0 \
       GST_REGISTRY=/tmp/build-registry.bin gst-inspect-1.0 pipewiresink > /tmp/plugin.txt \
  && grep -F '/usr/lib/alo-capture-provider/gstreamer-1.0/libgstpipewire.so' /tmp/plugin.txt \

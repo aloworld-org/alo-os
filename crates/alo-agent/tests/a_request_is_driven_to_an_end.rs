@@ -481,6 +481,7 @@ fn every_request_it_makes_is_one_an_agent_may_make() {
         // Total on purpose: a fourth variant on `FromAnAgent` fails to compile
         // here, which is where a widening of the agent's half gets noticed.
         match request {
+            FromAnAgent::Capabilities => {}
             FromAnAgent::Read { .. } | FromAnAgent::Propose { .. } | FromAnAgent::Ask { .. } => {}
         }
     }

@@ -1,5 +1,6 @@
 //! Keep preflight and recording on the same selected encoding configuration.
 
+/// The selected video encoder, shared by preflight and actual recording.
 pub(crate) fn video(frame_rate: i32) -> &'static str {
     if frame_rate <= 5 {
         "vp8enc name=encoder deadline=1 cpu-used=16 threads=2 lag-in-frames=0 target-bitrate=1500000 keyframe-max-dist=30"
@@ -8,6 +9,7 @@ pub(crate) fn video(frame_rate: i32) -> &'static str {
     }
 }
 
+/// The selected microphone format and voice-encoding cost.
 pub(crate) fn audio(frame_rate: i32) -> &'static str {
     if frame_rate <= 5 {
         "audio/x-raw,format=S16LE,rate=16000,channels=1 ! opusenc bitrate=24000 complexity=0 audio-type=voice"

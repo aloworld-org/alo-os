@@ -18,6 +18,7 @@ pub struct Controlled {
     pub unanswered: bool,
 }
 
+/// Deliver one authorized control, returning evidence on success and refusal.
 pub(crate) fn controlling(
     machine: &Machine<'_>,
     authorised: Authorised,
@@ -27,11 +28,29 @@ pub(crate) fn controlling(
     let agent = authorised.under().clone();
     let at = authorised.at();
     let (adapters, transport) = machine.application_controls();
+    // Market installation may happen after the daemon starts. Read current
+    // entries only for an app this agent is already permitted to control.
+    let current = adapters
+        .carrying_out(authorised.verb())
+        .filter(|(adapter, _)| {
+            grants.permits(
+                &agent,
+                &alo_capability::Ask::Application(adapter.application.to_owned()),
+                at,
+            )
+        })
+        .and_then(|_| {
+            machine
+                .how_applications_start()?
+                .applications_installed_now()
+        });
     let result = alo_adapters::Driving::of(
         authorised,
         adapters,
         grants,
-        machine.the_applications_installed(),
+        current
+            .as_ref()
+            .unwrap_or(machine.the_applications_installed()),
         strings,
     )
     .and_then(|driving| driving.deliver(transport.unwrap_or(&Unavailable), strings));
@@ -53,6 +72,7 @@ pub(crate) fn controlling(
     }
 }
 
+/// A missing transport refuses instead of losing the execution record.
 struct Unavailable;
 impl alo_adapters::Delivers for Unavailable {
     fn deliver(&self, _: &alo_adapters::Message) -> Result<(), alo_adapters::NotDelivered> {

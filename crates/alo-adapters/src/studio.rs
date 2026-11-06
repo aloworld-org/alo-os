@@ -10,30 +10,41 @@ use crate::{
 
 /// The separately installed recording application.
 pub const APPLICATION: &str = "org.aloworld.Studio";
+/// The fixed recording-control object in Studio.
 const OBJECT: &str = "/org/aloworld/Studio/Recorder";
+/// The versioned semantic recording interface.
 const INTERFACE: &str = "org.aloworld.Studio.Recorder1";
+/// The effect description shared by recording changes.
 const KEEP_VIDEOS: Word = Word::saying(
     "adapters.studio.keep-videos",
     "Existing videos stay in your private library.",
 )
 .noting("What existing recordings retain when a recording control is used.");
+/// The translated purpose of the quality argument.
 const QUALITY: Word = Word::saying("adapters.studio.quality", "the recording quality")
     .noting("The recording size and frame-rate choice shown before recording.");
+/// The translated purpose of the library identifier.
 const RECORDING: Word = Word::saying(
     "adapters.studio.recording",
     "the saved recording identifier",
 )
 .noting("The identifier of the saved video to open for review.");
+/// The translated purpose of the recording title.
 const TITLE: Word = Word::saying("adapters.studio.title", "the recording's new name")
     .noting("The title shown in the private recording library.");
+/// The full-HD choice shown in approvals.
 const FULL_HD: Word = Word::saying("adapters.studio.full-hd", "1080p, up to 30 fps")
     .noting("A recording quality choice.");
+/// The HD choice shown in approvals.
 const HD: Word =
     Word::saying("adapters.studio.hd", "720p, up to 30 fps").noting("A recording quality choice.");
+/// The original-size choice shown in approvals.
 const ORIGINAL: Word = Word::saying("adapters.studio.original", "original size, up to 30 fps")
     .noting("A recording quality choice.");
+/// The lower-cost quality choice shown in approvals.
 const LIGHTWEIGHT: Word = Word::saying("adapters.studio.lightweight", "360p, up to 5 fps")
     .noting("A recording quality choice for slower devices.");
+/// The closed set of named quality options.
 const QUALITY_ARGS: &[AdapterArg] = &[AdapterArg {
     name: "quality",
     purpose: QUALITY,
@@ -56,32 +67,38 @@ const QUALITY_ARGS: &[AdapterArg] = &[AdapterArg {
         },
     ]),
 }];
+/// A bounded library identifier, never a filesystem path.
 const RECORDING_ARGS: &[AdapterArg] = &[AdapterArg {
     name: "recording",
     purpose: RECORDING,
     kind: Kind::Name { longest: 100 },
 }];
+/// A bounded recording title.
 const TITLE_ARGS: &[AdapterArg] = &[AdapterArg {
     name: "title",
     purpose: TITLE,
     kind: Kind::Name { longest: 200 },
 }];
+/// The purpose of the status read.
 const STATUS_PURPOSE: Word = Word::saying(
     "adapters.studio.status.purpose",
     "read alo Studio's current recording status",
 )
 .noting("Read whether recording is ready, running, paused, saving or complete.");
+/// The sentence recorded for the status read.
 const STATUS_SENTENCE: Word = Word::saying(
     "adapters.studio.status.sentence",
     "read alo Studio's recording status",
 )
 .noting("The read recorded when the person asks about their recording.");
+/// The status read without an agent.
 const STATUS_BY_HAND: Word = Word::saying(
     "adapters.studio.status.by-hand",
     "In alo Studio, read the status beside the preview and recording controls",
 )
 .noting("How to inspect the recording without an agent.");
 
+/// Declare each fixed control with translated purpose, approval and effect words.
 macro_rules! controls {
     ($(($name:ident, $key:literal, $purpose:literal, $sentence:literal, $manual:literal, $changes:literal, $method:literal, $args:expr, $parameters:expr)),* $(,)?) => {
         /// Every translated word this recording adapter declares.
