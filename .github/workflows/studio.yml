@@ -39,7 +39,9 @@ jobs:
           cargo +1.97.0 clippy --locked --release -p alo-shell --lib -- -D warnings
       - name: Build the desktop for installed recording verification
         run: |
-          cargo +1.97.0 build --locked --release -p alo-desktop
+          # Retain function names for profiling the optimized VM binary.
+          # This adds no instrumentation and leaves dependency profiles alone.
+          cargo +1.97.0 rustc --locked --release -p alo-desktop -- -C strip=debuginfo
           mkdir -p desktop-verification
           cp target/release/alo-desktop desktop-verification/alo-desktop
           git rev-parse HEAD > desktop-verification/source.txt
