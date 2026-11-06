@@ -37,6 +37,7 @@ pub(crate) const fn the_shape_of(cursor: &Cursor) -> Option<CursorIcon> {
     match cursor {
         Cursor::Arrow { .. } => Some(CursorIcon::Default),
         Cursor::Resize { edge, .. } => Some(crate::resize_cursor::the_cursor_over(*edge)),
+        Cursor::Named { shape, .. } => Some(*shape),
         Cursor::Default | Cursor::Hidden | Cursor::Surface { .. } => None,
     }
 }
@@ -91,7 +92,9 @@ pub(crate) fn the_pointer(
 /// Where the pointer is, for the states alo draws.
 const fn where_it_is(cursor: &Cursor) -> Option<(f64, f64)> {
     match cursor {
-        Cursor::Arrow { location } | Cursor::Resize { location, .. } => {
+        Cursor::Arrow { location }
+        | Cursor::Resize { location, .. }
+        | Cursor::Named { location, .. } => {
             Some((location.x, location.y))
         }
         Cursor::Default | Cursor::Hidden | Cursor::Surface { .. } => None,

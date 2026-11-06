@@ -43,6 +43,7 @@ use wayland_client::{
     },
 };
 use wayland_protocols::{
+    wp::cursor_shape::v1::client::{wp_cursor_shape_device_v1, wp_cursor_shape_manager_v1},
     wp::viewporter::client::{wp_viewport, wp_viewporter},
     xdg::shell::client::{xdg_surface, xdg_toplevel, xdg_wm_base},
 };
@@ -542,6 +543,26 @@ impl Application {
         Some(viewport)
     }
 
+    /// **A cursor-shape device for this connection's pointer**, through
+    /// `wp_cursor_shape_manager_v1` as a client binds it — or [`None`] when the
+    /// compositor advertises no such global or this client has no pointer yet.
+    #[allow(
+        dead_code,
+        reason = "used by the cursor-shape tests, not by the examples"
+    )]
+    pub fn a_cursor_shape_device(&mut self) -> Option<wp_cursor_shape_device_v1::WpCursorShapeDeviceV1> {
+        let qh = self.queue.handle();
+        let pointer = self.events.pointer.proxy.clone()?;
+        let &(name, _, _) = self
+            .events
+            .globals
+            .iter()
+            .find(|(_, interface, _)| interface == "wp_cursor_shape_manager_v1")?;
+        let manager: wp_cursor_shape_manager_v1::WpCursorShapeManagerV1 =
+            self.registry.bind(name, 1, &qh, ());
+        Some(manager.get_pointer(&pointer, &qh, ()))
+    }
+
     /// **A second window of this same application**, named `app_id`, mapped
     /// through the whole handshake — what a dialog an application opens is.
     #[allow(
@@ -608,3 +629,8 @@ impl Dispatch<wp_viewport::WpViewport, ()> for Events {
     ) {
     }
 }
+
+// **Neither cursor-shape object sends this client anything**: the protocol has
+// requests and errors only.
+delegate_noop!(Events: ignore wp_cursor_shape_manager_v1::WpCursorShapeManagerV1);
+delegate_noop!(Events: ignore wp_cursor_shape_device_v1::WpCursorShapeDeviceV1);

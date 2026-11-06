@@ -13,6 +13,7 @@ mod a_surface_says_how_big_it_is_drawn;
 mod a_window_that_fills_the_screen;
 mod a_window_the_person_opened;
 mod cursor;
+mod cursor_shapes;
 mod direct_keyboard;
 mod direct_pointer;
 mod direct_seat;

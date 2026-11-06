@@ -254,7 +254,7 @@ alo-keeping = { path = "../alo-keeping" }
 tempfile = "3"
 drm-ffi = "=0.9.1"
 wayland-client = "0.31"
-wayland-protocols = { version = "0.32", features = ["client"] }
+wayland-protocols = { version = "0.32", features = ["client", "staging"] }
 
 # The compositor a machine boots to. One binary, and it is the only thing in
 # this package that is a process rather than a library: everything it does is
