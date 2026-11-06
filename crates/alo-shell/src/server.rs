@@ -585,6 +585,9 @@ pub struct Server {
     /// The place and folders a person confirmed, until the frame loop asks
     /// the service.
     pub(crate) put_back_asked: Option<(String, Vec<String>)>,
+    /// **The short notices about alo's own windows closed because they could
+    /// not be drawn** (`crate::the_closed_windows_notice`).
+    pub(crate) closed_notices: crate::the_closed_windows_notice::TheClosedWindowsNotices,
     /// **How this person writes a time and a day**, told by the desktop at
     /// sign-in and again by Settings when they choose a region.
     ///
@@ -869,6 +872,8 @@ impl Server {
             places_kept: None,
             plan_asked: None,
             put_back_asked: None,
+            // No window of alo's own has been closed for not drawing.
+            closed_notices: crate::the_closed_windows_notice::TheClosedWindowsNotices::default(),
             // Nobody has told this seat how this person writes a time.
             formats: crate::TheirFormats::of(alo_formats::Chosen::default(), None),
             formats_untold: false,

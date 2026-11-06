@@ -1854,7 +1854,7 @@ impl LoopInput for Desk<'_> {
         server.the_question_was_drawn(terminal.as_ref().and_then(|terminal| terminal.question));
         // **The record window, while it is open**, in this frame and on
         // this display. A chord or a row in Settings opens it.
-        let pictures = crate::nested_desktop::frame_pictures(
+        let mut pictures = crate::nested_desktop::frame_pictures(
             frame,
             server.the_records_frame(frame.strings, frame.look),
             None,
@@ -1864,11 +1864,33 @@ impl LoopInput for Desk<'_> {
         )?;
         // **A record window that could not be drawn is closed, not the
         // desktop** — see `crate::a_surface_that_cannot_draw`.
+        let now = std::time::Instant::now();
         if let Some(why) = &pictures.record_refused {
-            server.the_record_could_not_be_drawn(&named, why);
+            server.the_record_could_not_be_drawn(&named, why, now);
         }
         if let Some(why) = &pictures.approval_refused {
             crate::Server::a_question_could_not_be_drawn(&named, why);
+        }
+        // **And the person is told, in a short notice beside their
+        // notifications** (`crate::the_closed_windows_notice`): the cards are
+        // laid out again with it, on the frames it is showing and no others.
+        // **Not into a capture**, as a notification is not: alo's own capture
+        // tools being open is the one sign of it a frame carries.
+        let notices = server.the_closed_windows_notices(now, frame.strings);
+        if !notices.is_empty() && frame.capturing.is_none() {
+            pictures.notifications = crate::notification_raster::with_alos_own(
+                frame.notifications,
+                &notices,
+                frame.strings,
+                frame.dock,
+                self.labels,
+                crate::egress_status_place::TheRoom {
+                    size: (size.w, size.h),
+                    panel: Some(pictures.desktop.panel.reserved),
+                    scale: crate::display_scale::DisplayScale::of_per_cent(frame.display_scale),
+                },
+                frame.look.notifications(),
+            )?;
         }
         // **Where the launcher went, for the press after this frame**: laid
         // out where the display's scale is known, and nowhere else.
@@ -2054,7 +2076,7 @@ impl LoopInput for Desk<'_> {
             // **On this display too**, for the reason the first display's
             // own note gives.
             if let Some(why) = &its_pictures.record_refused {
-                server.the_record_could_not_be_drawn(&named, why);
+                server.the_record_could_not_be_drawn(&named, why, std::time::Instant::now());
             }
             // **This display's own edges**, at this display's own scale. One
             // list shared with the display above would be right for whichever
@@ -2324,7 +2346,7 @@ impl LoopInput for Desk<'_> {
             // **Settings that cannot be drawn are closed, not the desktop** —
             // see `crate::a_surface_that_cannot_draw`.
             Err(why) => {
-                server.settings_could_not_be_drawn(&named, &why);
+                server.settings_could_not_be_drawn(&named, &why, std::time::Instant::now());
                 None
             }
         };

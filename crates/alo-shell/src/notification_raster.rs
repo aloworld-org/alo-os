@@ -121,6 +121,32 @@ pub(crate) fn picture(
     room: TheRoom,
     look: NotificationLook,
 ) -> Result<NotificationPicture, RenderError> {
+    with_alos_own(showing, &[], strings, dock, labels, room, look)
+}
+
+/// [`picture`], with **alo OS's own notices after the notifications**: one
+/// card each, from *alo OS*, saying the one sentence it was handed.
+///
+/// A notice of alo's own is not a `Shown`, because nothing outside the
+/// authentication path can mint the session `alo_notifying::deciding::arrives`
+/// wants — `crate::direct_desktop` records that wall. What may reach this
+/// road is narrow on purpose: sentences this shell worded itself, about its own
+/// windows, which carry nothing a screen being shared could give away
+/// (`crate::a_surface_that_cannot_draw`). They are drawn exactly as a
+/// notification from alo OS is, which is the owner's *the existing
+/// notification style* (2026-11-06).
+///
+/// # Errors
+/// As [`picture`].
+pub(crate) fn with_alos_own(
+    showing: &[Shown],
+    alos_own: &[String],
+    strings: &Strings,
+    dock: &Dock,
+    labels: &mut WindowControlLabels,
+    room: TheRoom,
+    look: NotificationLook,
+) -> Result<NotificationPicture, RenderError> {
     let size = room.size;
     let mut picture = NotificationPicture {
         size,
@@ -128,7 +154,7 @@ pub(crate) fn picture(
         solids: Vec::new(),
         inked: Vec::new(),
     };
-    if showing.is_empty() {
+    if showing.is_empty() && alos_own.is_empty() {
         return Ok(picture);
     }
     let (width, height) = size;
@@ -149,8 +175,22 @@ pub(crate) fn picture(
 
     let mut at_y = place.stacked;
     let mut used = 0;
-    for shown in showing {
-        let card = lines_of(shown, strings);
+    // **alo OS held to its own rules**: each notice is made a notification
+    // through `alo_notifying::arriving::from_alo_os`, which refuses one with no
+    // title exactly as it refuses anybody's, and is then worded the way every
+    // notification is. One that is refused is not drawn.
+    let ours: Vec<alo_notifying::Notification> = alos_own
+        .iter()
+        .filter_map(|said| alo_notifying::arriving::from_alo_os(said, "", &[]).ok())
+        .collect();
+    let cards = showing
+        .iter()
+        .map(|shown| lines_of(shown.notification(), strings))
+        .chain(
+            ours.iter()
+                .map(|notification| lines_of(notification, strings)),
+        );
+    for card in cards {
         let widest = (place.room_across - 2 * measure.px(12))
             .min(measure.px(360))
             .max(1);
@@ -255,8 +295,7 @@ struct Lines {
 }
 
 /// The sentences on one card, each exactly as `alo-notifying` worded it.
-fn lines_of(shown: &Shown, strings: &Strings) -> Lines {
-    let notification = shown.notification();
+fn lines_of(notification: &alo_notifying::Notification, strings: &Strings) -> Lines {
     let mut lines = vec![notification.sent_by(strings).text().to_owned()];
     lines.push(notification.title().to_owned());
     if !notification.body().is_empty() {

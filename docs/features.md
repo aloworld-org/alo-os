@@ -656,6 +656,17 @@ file carries it with a tier.*
   window *Put back…* at the end of each change that can be put back, the
   confirmation under it, Tab and Enter to reach both, and a plain line under a
   change that cannot be put back saying why
+- **A window of alo's own that cannot be drawn is closed with a short notice,
+  never the desktop.** *The owner's answer of 2026-11-06, after a booted
+  machine lost a person's whole session to the record window failing to draw
+  its Put back confirmation (#1087): "a short notice", a brief notification in
+  the existing notification style* — from alo OS, naming the window by its own
+  title: *"What alo did couldn't be shown on this screen and was closed.
+  Nothing was lost."* One notice per closing, for eight seconds. **Built
+  2026-11-06** for the record window and Settings; the question surface has no
+  title of its own and is not closed when it cannot draw, so it is left out of
+  the frame and said in the log. **Not shown while the screen is being
+  captured by alo's own tools**, as a notification is not
 - ★ **Scrollback you can move along, not only read.** In a session you asked to
   be able to undo, every command is a place you can return to: scroll up, choose
   one, and your files are as they were before it ran. *In every other terminal scrollback is a
