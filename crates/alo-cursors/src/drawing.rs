@@ -23,11 +23,11 @@ use alo_appearance::role::Role;
 use alo_vector_shapes::AShape;
 use cursor_icon::CursorIcon;
 
+use crate::Silhouette;
 use crate::artwork::{Artwork, Paint, artwork, drawing_for};
 use crate::measures::{
     BOX_UNITS, KEYLINE, SHADOW_COLOUR, SHADOW_FALLS, SHADOW_OPACITY, SHADOW_SOFTNESS,
 };
-use crate::Silhouette;
 
 /// The largest square this draws, in pixels.
 ///
@@ -130,7 +130,8 @@ enum Layer {
 
 /// How much of each pixel one layer covers.
 fn coverage(art: &Artwork, size: u32, layer: Layer) -> Result<Vec<u8>, NotDrawn> {
-    let shape = AShape::read(&svg_of(art, layer)).map_err(|why| NotDrawn::NotRead(why.to_string()))?;
+    let shape =
+        AShape::read(&svg_of(art, layer)).map_err(|why| NotDrawn::NotRead(why.to_string()))?;
     Ok(shape.coverage(size, size))
 }
 
@@ -215,7 +216,12 @@ fn softened(covered: &[u8], size: u32, reach: u32) -> Vec<u8> {
 
 /// One pass of a box blur: each pixel the mean of `reach` either side of it
 /// along one direction. `at(along, line)` is where a pixel is in the square.
-fn blurred(covered: &[u8], size: usize, reach: usize, at: impl Fn(usize, usize) -> usize) -> Vec<u8> {
+fn blurred(
+    covered: &[u8],
+    size: usize,
+    reach: usize,
+    at: impl Fn(usize, usize) -> usize,
+) -> Vec<u8> {
     let mut out = vec![0_u8; covered.len()];
     let width = 2 * reach + 1;
     for line in 0..size {

@@ -66,11 +66,21 @@ fn what_a_desktop_needs_has_a_picture_that_says_so() {
 fn the_resize_names_point_the_way_they_say() {
     for (names, drawing) in [
         (
-            [CursorIcon::EResize, CursorIcon::WResize, CursorIcon::EwResize, CursorIcon::ColResize],
+            [
+                CursorIcon::EResize,
+                CursorIcon::WResize,
+                CursorIcon::EwResize,
+                CursorIcon::ColResize,
+            ],
             Drawing::Across,
         ),
         (
-            [CursorIcon::NResize, CursorIcon::SResize, CursorIcon::NsResize, CursorIcon::RowResize],
+            [
+                CursorIcon::NResize,
+                CursorIcon::SResize,
+                CursorIcon::NsResize,
+                CursorIcon::RowResize,
+            ],
             Drawing::Down,
         ),
     ] {
@@ -80,11 +90,19 @@ fn the_resize_names_point_the_way_they_say() {
     }
     for (names, drawing) in [
         (
-            [CursorIcon::NwResize, CursorIcon::SeResize, CursorIcon::NwseResize],
+            [
+                CursorIcon::NwResize,
+                CursorIcon::SeResize,
+                CursorIcon::NwseResize,
+            ],
             Drawing::Falling,
         ),
         (
-            [CursorIcon::NeResize, CursorIcon::SwResize, CursorIcon::NeswResize],
+            [
+                CursorIcon::NeResize,
+                CursorIcon::SwResize,
+                CursorIcon::NeswResize,
+            ],
             Drawing::Rising,
         ),
     ] {
@@ -108,10 +126,17 @@ fn the_kite_ships_and_each_arrow_clicks_at_its_tip() {
             .map(|number| number.parse().unwrap_or(f32::NAN))
             .collect();
         let (x, y) = silhouette.tip();
-        assert_eq!(first, [x, y], "{silhouette:?}'s tip is not where its outline starts");
+        assert_eq!(
+            first,
+            [x, y],
+            "{silhouette:?}'s tip is not where its outline starts"
+        );
         let art = artwork(Drawing::Arrow, silhouette);
         assert_eq!(art.hotspot, silhouette.tip());
-        assert_eq!(art.parts.first().map(|part| part.d.as_str()), Some(silhouette.path()));
+        assert_eq!(
+            art.parts.first().map(|part| part.d.as_str()),
+            Some(silhouette.path())
+        );
     }
     assert_ne!(Silhouette::Kite.path(), Silhouette::Classic.path());
 }
@@ -119,7 +144,17 @@ fn the_kite_ships_and_each_arrow_clicks_at_its_tip() {
 /// **The arrows that point two ways click in their middle** (ADR 0071).
 #[test]
 fn a_double_arrow_clicks_in_its_middle() {
-    for drawing in [Drawing::Across, Drawing::Down, Drawing::Falling, Drawing::Rising, Drawing::Move] {
-        assert_eq!(artwork(drawing, Silhouette::Kite).hotspot, (16.0, 16.0), "{drawing:?}");
+    for drawing in [
+        Drawing::Across,
+        Drawing::Down,
+        Drawing::Falling,
+        Drawing::Rising,
+        Drawing::Move,
+    ] {
+        assert_eq!(
+            artwork(drawing, Silhouette::Kite).hotspot,
+            (16.0, 16.0),
+            "{drawing:?}"
+        );
     }
 }

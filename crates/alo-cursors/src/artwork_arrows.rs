@@ -34,10 +34,7 @@ pub(crate) fn both_ways(degrees: f32) -> Artwork {
         (-base, SHAFT_HALF),
         (-base, HEAD_HALF),
     ];
-    let turned: Vec<_> = across
-        .iter()
-        .map(|&at| placed(turn(at, degrees)))
-        .collect();
+    let turned: Vec<_> = across.iter().map(|&at| placed(turn(at, degrees))).collect();
     Artwork {
         parts: vec![Part::filled(polygon(&turned))],
         hotspot: (MIDDLE, MIDDLE),

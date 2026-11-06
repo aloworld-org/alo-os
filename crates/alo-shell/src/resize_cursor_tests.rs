@@ -43,8 +43,11 @@ fn opposite_edges_share_one_arrow_and_the_pairs_are_right() {
 fn the_hotspot_is_the_middle_rather_than_the_tip() {
     for edge in FrameEdge::ALL {
         for size in [24, 48] {
-            let picture =
-                alo_cursors::draw(the_cursor_over(edge), alo_cursors::Silhouette::default(), size);
+            let picture = alo_cursors::draw(
+                the_cursor_over(edge),
+                alo_cursors::Silhouette::default(),
+                size,
+            );
             assert_eq!(
                 picture.map(|drawn| drawn.hotspot),
                 Ok((size / 2, size / 2)),

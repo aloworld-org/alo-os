@@ -181,7 +181,6 @@ mod capture_raster;
 /// What one key press means in the Dock's composer.
 pub mod composer_keys;
 mod cursor;
-mod the_pointer_drawn;
 #[cfg(test)]
 mod descriptor_testing;
 mod desktop_list;
@@ -227,6 +226,7 @@ mod dock_tooltip;
 /// shadow — at the display scale its geometry is laid out in.
 mod how_a_panel_is_raised;
 mod the_keyboard_on_the_docks_surfaces;
+mod the_pointer_drawn;
 pub mod what_is_on_the_clipboard;
 mod where_the_docks_surface_is;
 

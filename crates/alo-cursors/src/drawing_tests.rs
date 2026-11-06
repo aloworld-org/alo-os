@@ -34,10 +34,16 @@ fn every_shape_draws_at_every_scale() {
             for size in SIZES {
                 let picture = drawn(icon, silhouette, size);
                 assert_eq!(picture.size, size);
-                assert_eq!(picture.pixels.len(), usize::try_from(size * size * 4).unwrap_or(0));
+                assert_eq!(
+                    picture.pixels.len(),
+                    usize::try_from(size * size * 4).unwrap_or(0)
+                );
                 assert!(picture.hotspot.0 < size && picture.hotspot.1 < size);
                 assert!(
-                    picture.pixels.chunks(4).any(|pixel| pixel == [0x10, 0x2A, 0x43, 255]),
+                    picture
+                        .pixels
+                        .chunks(4)
+                        .any(|pixel| pixel == [0x10, 0x2A, 0x43, 255]),
                     "{} at {size} has no solid navy in it",
                     icon.name()
                 );
@@ -93,9 +99,16 @@ fn the_fill_is_navy_the_keyline_white_and_the_shadow_below() {
     for silhouette in Silhouette::ALL {
         let picture = drawn(CursorIcon::Default, silhouette, 48);
         // (13, 13) units is inside both arrows; 1.5 pixels to a unit here.
-        assert_eq!(at(&picture, 19, 19), [0x10, 0x2A, 0x43, 255], "{silhouette:?}");
+        assert_eq!(
+            at(&picture, 19, 19),
+            [0x10, 0x2A, 0x43, 255],
+            "{silhouette:?}"
+        );
         assert!(
-            picture.pixels.chunks(4).any(|pixel| pixel == [255, 255, 255, 255]),
+            picture
+                .pixels
+                .chunks(4)
+                .any(|pixel| pixel == [255, 255, 255, 255]),
             "{silhouette:?} has no white keyline"
         );
         let lowest = |test: &dyn Fn(&[u8]) -> bool| {
@@ -146,10 +159,22 @@ fn the_persons_pointer_is_never_the_agents_colour() {
 /// in the middle.
 #[test]
 fn the_hotspot_follows_the_scale() {
-    assert_eq!(drawn(CursorIcon::Default, Silhouette::Kite, 24).hotspot, (4, 3));
-    assert_eq!(drawn(CursorIcon::Default, Silhouette::Kite, 48).hotspot, (9, 7));
-    assert_eq!(drawn(CursorIcon::Default, Silhouette::Classic, 48).hotspot, (9, 6));
-    assert_eq!(drawn(CursorIcon::EwResize, Silhouette::Kite, 48).hotspot, (24, 24));
+    assert_eq!(
+        drawn(CursorIcon::Default, Silhouette::Kite, 24).hotspot,
+        (4, 3)
+    );
+    assert_eq!(
+        drawn(CursorIcon::Default, Silhouette::Kite, 48).hotspot,
+        (9, 7)
+    );
+    assert_eq!(
+        drawn(CursorIcon::Default, Silhouette::Classic, 48).hotspot,
+        (9, 6)
+    );
+    assert_eq!(
+        drawn(CursorIcon::EwResize, Silhouette::Kite, 48).hotspot,
+        (24, 24)
+    );
 }
 
 /// **A double arrow is the same turned half a turn**, so it never says one end
@@ -157,7 +182,13 @@ fn the_hotspot_follows_the_scale() {
 #[test]
 fn every_double_arrow_points_both_ways() {
     let size = 32;
-    for drawing in [Drawing::Across, Drawing::Down, Drawing::Falling, Drawing::Rising, Drawing::Move] {
+    for drawing in [
+        Drawing::Across,
+        Drawing::Down,
+        Drawing::Falling,
+        Drawing::Rising,
+        Drawing::Move,
+    ] {
         let covered = coverage(&artwork(drawing, Silhouette::Kite), size, Layer::Fill)
             .unwrap_or_else(|why| unreachable!("{drawing:?}: {why}"));
         let turned: Vec<u8> = covered.iter().rev().copied().collect();
@@ -186,7 +217,10 @@ fn the_size_follows_the_display() {
 /// pixels, and one larger than the compositor will allocate mid-frame.
 #[test]
 fn a_size_that_cannot_be_drawn_is_refused() {
-    assert_eq!(draw(CursorIcon::Default, Silhouette::Kite, 0), Err(NotDrawn::NoPixels));
+    assert_eq!(
+        draw(CursorIcon::Default, Silhouette::Kite, 0),
+        Err(NotDrawn::NoPixels)
+    );
     assert_eq!(
         draw(CursorIcon::Default, Silhouette::Kite, LARGEST + 1),
         Err(NotDrawn::TooLarge(LARGEST + 1))

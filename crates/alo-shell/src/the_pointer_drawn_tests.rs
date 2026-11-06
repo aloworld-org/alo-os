@@ -39,7 +39,8 @@ fn the_tip_lands_on_the_position() -> Result<(), RenderError> {
 #[test]
 fn a_dense_display_draws_it_at_its_own_scale() -> Result<(), RenderError> {
     let one = arrow_at(8.0, 8.0, DisplayScale::ONE)?.map(|pointer| pointer.area.size.w);
-    let two = arrow_at(8.0, 8.0, DisplayScale::of_per_cent(200))?.map(|pointer| pointer.area.size.w);
+    let two =
+        arrow_at(8.0, 8.0, DisplayScale::of_per_cent(200))?.map(|pointer| pointer.area.size.w);
     assert_eq!((one, two), (Some(24), Some(48)));
     Ok(())
 }
@@ -71,7 +72,12 @@ fn a_resize_arrow_is_placed_by_its_middle() -> Result<(), RenderError> {
 /// outside any integer, and partly off is still drawn so the renderer clips it.
 #[test]
 fn off_the_display_draws_nothing_and_partly_off_is_drawn() -> Result<(), RenderError> {
-    for (x, y) in [(-40.0, 8.0), (8.0, 80.0), (f64::MAX, 0.0), (f64::MIN, f64::MIN)] {
+    for (x, y) in [
+        (-40.0, 8.0),
+        (8.0, 80.0),
+        (f64::MAX, 0.0),
+        (f64::MIN, f64::MIN),
+    ] {
         assert_eq!(arrow_at(x, y, DisplayScale::ONE)?, None, "({x}, {y})");
     }
     assert!(arrow_at(31.0, 31.0, DisplayScale::ONE)?.is_some());

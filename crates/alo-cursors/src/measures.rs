@@ -48,6 +48,10 @@ pub const SHADOW_COLOUR: [u8; 3] = [0x07, 0x13, 0x1F];
 /// no answer for its scale.
 #[must_use]
 pub fn pixels_at(per_cent: u16) -> u32 {
-    let per_cent = if per_cent == 0 { 100 } else { u32::from(per_cent) };
+    let per_cent = if per_cent == 0 {
+        100
+    } else {
+        u32::from(per_cent)
+    };
     ((LOGICAL_SIZE * per_cent + 50) / 100).max(1)
 }
