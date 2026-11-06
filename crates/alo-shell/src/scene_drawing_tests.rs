@@ -37,8 +37,8 @@ fn the_terminal_is_painted_where_a_window_is_under_every_surface_of_alos() {
             "desktop.paint(&mut frame, &washed)",
         ),
         (
-            "the record, so it covers what the machine did",
-            "record.paint(&mut frame, record_washed.as_ref())",
+            "the record fixed to the display, which the nested lane still draws",
+            "fixed_record.paint(&mut frame, record_washed.as_ref())",
         ),
         (
             "Settings fixed to the display, which the nested lane still draws",
@@ -77,6 +77,8 @@ fn the_windows_are_painted_in_the_order_the_person_put_them_in() {
         // **And Settings, a window among windows** since ADR 0145's third
         // stage: in the person's order, under the Dock.
         "settings_on_the_canvas.paint(&mut frame, settings_washed.as_ref())",
+        // **And the record**, since the fourth.
+        "the_record_on_the_canvas.paint(&mut frame, record_washed.as_ref())",
     ] {
         let at = painted_at(call);
         assert!(

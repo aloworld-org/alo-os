@@ -256,13 +256,10 @@ impl Server {
                 self.a_press_landed_on_the_furniture();
                 return Ok(false);
             }
-            // **Then the record window, while it is open**: it is drawn over
-            // every application, so a press on it is its own — Close closes
-            // it — and never reaches what is behind.
-            if self.a_press_on_the_record(at) {
-                self.a_press_landed_on_the_furniture();
-                return Ok(false);
-            }
+            // **The record window is not asked here any more**: it was drawn
+            // over everything, the Dock included, until it joined the canvas
+            // (ADR 0145, stage 4). It is a window under the Dock now, asked
+            // with the other windows below.
             if self.the_dock_takes_this_press(at) {
                 // **Counted where it was taken**, so *three clicks and nothing
                 // happened* can be told from *three clicks and none of them was
@@ -294,6 +291,18 @@ impl Server {
             // **A press on Settings is Settings'** since it joined the canvas
             // (ADR 0145, stage 3): its edge first, then what it is on — a
             // category, a row, an entry — and never the application behind it.
+            // **And the record's**, since stage 4: its edge, then Put back, its
+            // confirmation and anywhere on it — the window's own.
+            if in_front_here == Some(crate::which_window_is_in_front::AKindOfWindow::TheRecord) {
+                if let Some(at) = self.where_the_pointer_is_in_logical_pixels()
+                    && self.a_press_on_the_records_edge(at)
+                {
+                    return Ok(false);
+                }
+                if self.a_press_on_the_record(on_the_screen) {
+                    return Ok(false);
+                }
+            }
             if in_front_here == Some(crate::which_window_is_in_front::AKindOfWindow::Settings) {
                 if let Some(at) = self.where_the_pointer_is_in_logical_pixels()
                     && self.a_press_on_the_settings_edge(at)

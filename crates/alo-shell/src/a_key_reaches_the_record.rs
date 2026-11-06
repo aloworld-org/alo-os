@@ -44,9 +44,15 @@ pub(crate) fn the_key_the_record_took(
     server: &mut Server,
     key: crate::DirectKeyEvent,
 ) -> Result<(), InputError> {
-    match server.record_key(key.code, key.state, key.time) {
-        Ok(Some(press)) => {
+    match server.what_a_key_is_to_the_record(key.code, key.state, key.time) {
+        Ok(Some(crate::record_seat::ToTheRecord::AKey(press))) => {
             the_press_is_carried_out(server, press);
+            Ok(())
+        }
+        // **A chord reaches its action** from the record too (ADR 0145): a
+        // window on the canvas is one Super+Tab away from the others.
+        Ok(Some(crate::record_seat::ToTheRecord::AChord(chord))) => {
+            let _ = server.the_chord_does_what_it_names(chord);
             Ok(())
         }
         Ok(None) | Err(InputError::InvalidKey) => Ok(()),
