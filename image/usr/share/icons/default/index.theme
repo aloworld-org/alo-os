@@ -1,0 +1,4 @@
+# What a program that asks for the "default" cursor theme gets: alo's.
+# Changed by setting XCURSOR_THEME, which a person's own environment may do.
+[Icon Theme]
+Inherits=alo
