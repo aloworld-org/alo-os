@@ -92,7 +92,7 @@ impl ApplicationBeingPicked {
 
     /// The rows currently visible, with cancellation always available.
     pub(crate) fn rows(&self) -> Vec<ApplicationPermissionRow> {
-        let mut rows = if self.selected.is_some() {
+        let mut rows: Vec<ApplicationPermissionRow> = if self.selected.is_some() {
             HowLong::ALL
                 .into_iter()
                 .map(ApplicationPermissionRow::For)
