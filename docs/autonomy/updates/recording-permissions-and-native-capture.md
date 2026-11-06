@@ -1018,6 +1018,13 @@ The hosted OS gate at `c65625cd` passes within its existing runner limitations:
 61 are skipped. Studio's separate native recording job and the authors check
 also pass. No exception was changed. The runtime status-reading code is from
 `95dd2dce`; the following commit only bounds native dependency installation.
-The local optimized build and installed recording repeat are still queued
-behind validation of separate cursor branches. No additional media acceptance
-is claimed.
+A hosted optimized build at `8cd35fc7` now passes all 55 desktop tests, including
+the three blocked/late/unavailable-reader regressions. Strict optimized Clippy
+checks pass for the desktop's full target set and the shell library. The
+[desktop verification job](https://github.com/aloworld-org/alo-os/actions/runs/42298855519/job/128171075380)
+provides the binary, source revision and SHA-256 for the installed repeat.
+The downloaded archive and executable checksums are verified; the executable is
+`60c25a08cc9bffdce3253b99ecce1f1912991d3395a40fa43eedeb6e0d264224`.
+The local recording reservation is still queued behind validation of separate
+cursor branches; it will use that tested binary without rebuilding it.
+No additional media acceptance is claimed.

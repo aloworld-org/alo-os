@@ -38,7 +38,7 @@ impl Review {
         content.append(&frame);
         let title = gtk::Entry::builder()
             .placeholder_text(t("Name your recording"))
-            .max_length(120)
+            .max_length(200)
             .build();
         title.add_css_class("clip-title");
         title.update_property(&[gtk::accessible::Property::Label(&t("Recording title"))]);
