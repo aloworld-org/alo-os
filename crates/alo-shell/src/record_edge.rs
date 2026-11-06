@@ -70,16 +70,15 @@ impl crate::Server {
         look: crate::RecordLook,
     ) -> Option<crate::window_edge_picture::EdgePicture> {
         let body = self.where_the_records_body_is_seen()?;
-        let title = says.say(
-            &crate::the_records_words::WHAT_ALO_DID.key(),
-            &alo_strings::Filling::nothing(),
-        );
+        // **Looked up where the window's words are**, `crate::the_records_words`:
+        // the window itself says nothing (`tests/record_source.rs`).
+        let title = crate::the_records_words::TheRecordsSentences::of(says).title;
         let palette = crate::record_palette::RecordPalette::of(look.scheme, look.contrast);
         let icon = the_records_icon(crate::the_terminals_icon::across_at(scale), palette);
         its_picture(
             body,
             WhatItShows {
-                title: title.text(),
+                title: &title,
                 icon: icon.as_ref(),
                 focused: self.the_record_is_taking_the_keys(),
             },
