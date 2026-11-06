@@ -7,6 +7,10 @@ use crate::artwork::{Artwork, Part};
 /// The middle of the box.
 const MIDDLE: (f32, f32) = (16.0, 16.0);
 
+/// The crosshair's line width: eight thirds of a unit, which is two pixels in a
+/// 24-pixel box.
+const CROSS_WIDTH: f32 = 8.0 / 3.0;
+
 /// The I-beam: a stem with a short bar at each end. Its middle clicks.
 pub(crate) fn text() -> Artwork {
     Artwork {
@@ -32,7 +36,10 @@ pub(crate) fn crosshair() -> Artwork {
     Artwork {
         parts: vec![Part::stroked(
             "M16 4 L16 13 M16 19 L16 28 M4 16 L13 16 M19 16 L28 16",
-            2.0,
+            // **Two whole pixels at 24 and at 48**, centred on the middle, so the
+            // cross is crisp where it is used most. Two units was a pixel and a
+            // half, which no pixel covered solidly: a soft cross nobody can aim.
+            CROSS_WIDTH,
             false,
         )],
         hotspot: MIDDLE,
