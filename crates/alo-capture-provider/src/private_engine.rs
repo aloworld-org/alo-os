@@ -6,7 +6,7 @@ use std::{io, path::Path};
 /// The immutable private plugin installed by the OS image.
 const FILE: &str = "/usr/lib/alo-capture-provider/gstreamer-1.0/libgstpipewire.so";
 /// The upstream buffer-ownership revision and separately pinned race fix.
-const VERSION: &str = "1.4.90+ee2c6eb4.2770143f";
+const VERSION: &str = "1.4.90+ee2c6eb4.2770143f.wait1";
 
 /// Check the engine selected by an installed portal, without a system fallback.
 pub(super) fn verify() -> io::Result<()> {

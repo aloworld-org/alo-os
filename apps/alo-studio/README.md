@@ -30,7 +30,8 @@ The controls show Starting while inputs open. The timer and Pause become active
 after fresh video joins the chosen audio timeline; Stop remains available.
 
 The microphone starts **off for every recording**. Videos stay on this device;
-the application has no network permission. VP9 and Opus are encoded into WebM,
+the application has no network permission. VP9 and Opus are encoded into WebM;
+the lightweight profile uses VP8 and 16 kHz voice audio to reduce encoding cost,
 following alo OS's encoding decision. Your original stays in the app's private
 library even after you export a copy.
 Saved duration is read from the completed media without blocking the UI.
@@ -56,7 +57,7 @@ the package.
 
 ## Run from source
 
-Requires Rust 1.97+, GTK 4.14+, GStreamer 1.22+, and the PipeWire, VP9, Opus,
+Requires Rust 1.97+, GTK 4.14+, GStreamer 1.22+, and the PipeWire, VP8, VP9, Opus,
 PulseAudio and GTK media plugins. On Ubuntu:
 
 ```sh

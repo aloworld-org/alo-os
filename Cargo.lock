@@ -159,6 +159,7 @@ name = "alo-agentd"
 version = "0.0.1"
 dependencies = [
  "alo-acting",
+ "alo-adapters",
  "alo-agent",
  "alo-answering",
  "alo-applications",
@@ -2000,6 +2001,7 @@ name = "alo-turn"
 version = "0.0.1"
 dependencies = [
  "alo-acting",
+ "alo-adapters",
  "alo-answering",
  "alo-applications",
  "alo-asking",

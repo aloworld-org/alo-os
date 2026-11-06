@@ -9,6 +9,13 @@ is applied to a build copy, with exact context and no fuzz. `SHA256SUMS` also
 covers that patch. No daemon, SPA plugin,
 codec, or renderer is vendored here.
 
+The separately checksummed `buffer-wait-recheck.patch` bounds the publisher
+pool's condition wait to 100 ms. The sink's process callback signals without
+that pool mutex; a notification can arrive between dequeue and wait. A timed
+predicate recheck avoids an indefinite wait without reversing the loop/pool
+lock order. Queue bounds, buffer ownership, flushing and pause checks remain
+the engine's own. ADR 0146 records the trace, private trial and removal rule.
+
 PipeWire 1.4.11's distribution plugin terminates a provided video source when a
 consumer removes its buffers. The pinned upstream implementation owns its
 buffer memory and keeps a provided source alive across that link transition.

@@ -83,6 +83,7 @@ impl Recorder {
             "videoscale",
             "videorate",
             "vp9enc",
+            "vp8enc",
             "webmmux",
             "appsink",
             "opusenc",

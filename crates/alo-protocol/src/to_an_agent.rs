@@ -40,7 +40,10 @@ use crate::wording::Wording;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ToAnAgent {
     /// Currently offered action names; execution still checks permission.
-    Capabilities { verbs: Vec<String> },
+    Capabilities {
+        /// The action identifiers offered under the turn's current grants.
+        verbs: Vec<String>,
+    },
     /// What a read found.
     Did(Done),
     /// A change is waiting for the person under this number.

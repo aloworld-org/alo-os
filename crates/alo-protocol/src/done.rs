@@ -392,6 +392,7 @@ impl Done {
     #[must_use]
     pub fn left_something_out(&self) -> bool {
         match self {
+            Self::ApplicationControlled { unanswered, .. } => *unanswered,
             Self::Listed {
                 could_not_be_named,
                 cut_short,

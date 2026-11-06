@@ -117,7 +117,13 @@ impl Driving {
     /// [`Driven::unanswered`] says so.
     pub fn deliver(self, to: &dyn Delivers, strings: &Strings) -> Result<Driven, Refused> {
         let result = if self.authorised.call().effect() == alo_capability::Effect::Read {
-            to.read_text(&self.message).map(Some)
+            to.read_text(&self.message).and_then(|text| {
+                if text.len() > 8192 {
+                    Err(NotDelivered::Refused)
+                } else {
+                    Ok(Some(text))
+                }
+            })
         } else {
             to.deliver(&self.message).map(|()| None)
         };

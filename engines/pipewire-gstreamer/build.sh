@@ -10,11 +10,12 @@ pkg-config --atleast-version=1.4 libpipewire-0.3
 pkg-config --atleast-version=1.24 gstreamer-allocators-1.0
 cat > "$output/config.h" <<'CONFIG'
 #define PACKAGE "pipewire"
-#define PACKAGE_VERSION "1.4.90+ee2c6eb4.2770143f"
+#define PACKAGE_VERSION "1.4.90+ee2c6eb4.2770143f.wait1"
 #define HAVE_GSTREAMER_SHM_ALLOCATOR 1
 CONFIG
 cp src/gst/gstpipewirepool.c "$output/gstpipewirepool.c"
 patch --batch --fuzz=0 "$output/gstpipewirepool.c" patches/buffer-release-race.patch
+patch --batch --fuzz=0 "$output/gstpipewirepool.c" patches/buffer-wait-recheck.patch
 sources=()
 for source in src/gst/*.c; do
   if [[ "$source" == src/gst/gstpipewirepool.c ]]; then

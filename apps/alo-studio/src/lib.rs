@@ -7,6 +7,7 @@ mod audio_buffering;
 mod capture_timing;
 pub mod completed_media;
 mod control;
+mod encoding_profile;
 pub mod model;
 mod parent_window;
 pub mod performance;
