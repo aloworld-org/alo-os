@@ -70,10 +70,10 @@ impl Loaded {
         leaves: Option<Word>,
     ) -> Result<Self, NotLoaded> {
         let named = format!("{}.{}", self.adapter.name, verb);
-        let index = self
+        let declaration = self
             .verbs
-            .iter()
-            .position(|item| item.name() == named)
+            .iter_mut()
+            .find(|item| item.name() == named)
             .ok_or_else(|| NotLoaded::UnknownVerb {
                 adapter: self.adapter.name.to_owned(),
                 verb: verb.to_owned(),
@@ -92,7 +92,7 @@ impl Loaded {
                 });
             }
         }
-        self.verbs[index] = self.verbs[index]
+        *declaration = declaration
             .clone()
             .changing(changes, leaves)
             .map_err(|why| NotLoaded::Verb { verb: named, why })?;

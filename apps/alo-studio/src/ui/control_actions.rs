@@ -49,6 +49,9 @@ impl State {
                     return Err(failed(t("Your recording library is unavailable.")));
                 }
                 Recorder::available().map_err(|error| failed(error.to_string()))?;
+                if phase == Phase::Review {
+                    self.new_recording();
+                }
                 if command == Command::ChooseScreen {
                     self.view.screen.set_active(true);
                 } else {

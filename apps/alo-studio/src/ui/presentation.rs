@@ -44,6 +44,10 @@ impl State {
         self.release_capture();
         self.session.borrow_mut().reset();
         self.view.microphone.set_active(false);
+        self.view
+            .review
+            .video
+            .set_media_stream(gtk::MediaStream::NONE);
         self.refresh_library();
         self.view.pages.set_visible_child_name("library");
         self.view.new_button.remove_css_class("nav-active");
