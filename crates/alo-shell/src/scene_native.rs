@@ -84,6 +84,13 @@ pub(crate) struct NativeLayers<'a> {
     /// the Dock, the status area and a notification each sit above whatever a
     /// client maps, and a terminal does not — it is a window among windows.
     pub(crate) terminal: Option<&'a crate::the_terminal_on_the_plane::TheTerminalOnTheScreen>,
+    /// The scale alo's own pointer is drawn at on this display
+    /// (`crate::the_pointer_drawn`).
+    ///
+    /// **One-to-one unless the backend that knows the display says otherwise**,
+    /// which the direct backend does for every display it draws. A nested
+    /// window and an offscreen check have no display scale of their own.
+    pub(crate) pointer_at: crate::display_scale::DisplayScale,
 }
 
 impl NativeLayers<'_> {
@@ -108,6 +115,7 @@ impl NativeLayers<'_> {
             notifications: None,
             capturing: None,
             terminal: None,
+            pointer_at: crate::display_scale::DisplayScale::ONE,
         }
     }
 

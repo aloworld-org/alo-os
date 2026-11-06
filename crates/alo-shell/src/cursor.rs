@@ -15,7 +15,8 @@ pub enum Cursor {
     /// Unpositioned legacy snapshot (no pointer seat); nested uses its host arrow.
     /// Offscreen/direct rendering adds no pixels for this variant.
     Default,
-    /// Compositor-owned scale-one arrow, including after focus loss/destruction.
+    /// alo's own arrow, drawn at each display's scale (`crate::the_pointer_drawn`),
+    /// including after focus loss/destruction.
     Arrow {
         /// Logical tip position; the arrow's hotspot is (0, 0).
         /// Rendering floors fractional coordinates and refuses non-finite values.

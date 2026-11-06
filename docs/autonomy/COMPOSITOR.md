@@ -1465,14 +1465,17 @@ its parent arrow, offscreen/direct draws nothing. Cursor-aware targets must
 support Arrow explicitly; the default FrameTarget method refuses it. This
 supersedes the earlier statements that the default cursor is always host-owned.
 
-`default_cursor.rs` owns an original 12x18 black-outline/white-interior shape.
-Its tip hotspot is (0,0), fractional coordinates floor, and each opaque pixel
-clips to the output before integer conversion. NaN/infinity refuse; finite
-offscreen positions are valid but invisible. The shared GLES painter draws the
-arrow after every client tree; it adds no client identities or callbacks. Hidden
-and client-surface requests suppress the arrow. The nested host cursor is hidden
-only after successful submission. Black/white provides neutral contrast without
-requiring the pending shell palette or a theme filesystem dependency.
+`the_pointer_drawn.rs` places alo's own pointer, drawn by the `alo-cursors`
+crate from one vector source (since 2026-11-06; it replaced a 12x18 black and
+white mask): a `text/primary` navy shape with a white keyline and a soft shadow,
+premultiplied, 24 logical pixels square through the display's scale
+(`NativeLayers::pointer_at`). The hotspot is the arrow's tip, or a resize
+arrow's middle; fractional coordinates floor. NaN/infinity refuse; finite
+positions off the display are valid but invisible. The shared painter uploads
+it as a texture and draws it after every client tree and every native layer; it
+adds no client identities or callbacks. Hidden and client-surface requests
+suppress it. The nested host cursor is hidden only after successful submission.
+No theme is read from disk.
 
 Four new automated tests and all 171 Linux shell checks pass. The expanded WSLg
 `nested_check --offscreen` compares every pixel to an independent row-span golden

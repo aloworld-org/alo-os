@@ -531,6 +531,8 @@ impl<'a, K: Knocking> Lane<'a, K> {
             &cursor,
             NativeLayers {
                 scene: Some(NativeScene::SignIn(&drawn)),
+                // The pointer at the scale the screen itself is drawn at.
+                pointer_at: display,
                 ..NativeLayers::nothing()
             },
         )?;
