@@ -138,10 +138,6 @@ pub(crate) fn picture(
 ///
 /// # Errors
 /// As [`picture`].
-#[expect(
-    clippy::too_many_arguments,
-    reason = "picture's six, and the notices; each is a different fact about this frame"
-)]
 pub(crate) fn with_alos_own(
     showing: &[Shown],
     alos_own: &[String],
