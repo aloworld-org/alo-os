@@ -94,9 +94,7 @@ const fn where_it_is(cursor: &Cursor) -> Option<(f64, f64)> {
     match cursor {
         Cursor::Arrow { location }
         | Cursor::Resize { location, .. }
-        | Cursor::Named { location, .. } => {
-            Some((location.x, location.y))
-        }
+        | Cursor::Named { location, .. } => Some((location.x, location.y)),
         Cursor::Default | Cursor::Hidden | Cursor::Surface { .. } => None,
     }
 }

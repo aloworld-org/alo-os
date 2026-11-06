@@ -550,7 +550,9 @@ impl Application {
         dead_code,
         reason = "used by the cursor-shape tests, not by the examples"
     )]
-    pub fn a_cursor_shape_device(&mut self) -> Option<wp_cursor_shape_device_v1::WpCursorShapeDeviceV1> {
+    pub fn a_cursor_shape_device(
+        &mut self,
+    ) -> Option<wp_cursor_shape_device_v1::WpCursorShapeDeviceV1> {
         let qh = self.queue.handle();
         let pointer = self.events.pointer.proxy.clone()?;
         let &(name, _, _) = self
