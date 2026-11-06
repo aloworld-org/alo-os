@@ -504,6 +504,8 @@ pub use the_first_account::{ASecret, OnTheSheet, TheAccountSheet, TheAccountShow
 /// Closing alo's terminal: at once when idle, after a question when a command
 /// is running.
 mod closing_the_terminal;
+mod the_closed_windows_notice;
+pub mod the_closed_windows_words;
 pub mod the_first_start;
 mod the_first_starts_icons;
 mod the_formats_are_told;

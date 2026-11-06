@@ -134,9 +134,57 @@ fn a_record_that_cannot_draw_is_closed_and_takes_no_keys() {
     );
     assert!(server.the_record_is_taking_the_keys());
 
-    server.the_record_could_not_be_drawn("Virtual-1", &RenderError::RecordScene);
+    let now = std::time::Instant::now();
+    server.the_record_could_not_be_drawn("Virtual-1", &RenderError::RecordScene, now);
     assert!(!server.the_record_is_taking_the_keys());
     assert!(!server.record.is_open());
+
+    // **One notice for the closing, naming the window by its own title** —
+    // and the same refusal again, on a second display or a later frame, adds
+    // nothing, because the window was already closed.
+    server.the_record_could_not_be_drawn("Virtual-2", &RenderError::RecordScene, now);
+    let strings = crate::what_this_machine_can_say().unwrap();
+    assert_eq!(
+        server.the_closed_windows_notices(now, &strings),
+        ["What alo did couldn't be shown on this screen and was closed. Nothing was lost."]
+    );
+    // **Brief**: still there a moment later, gone once it has stayed its time.
+    let later = now + std::time::Duration::from_secs(2);
+    assert_eq!(server.the_closed_windows_notices(later, &strings).len(), 1);
+    let gone = now + crate::the_closed_windows_notice::A_NOTICE_STAYS;
+    assert!(server.the_closed_windows_notices(gone, &strings).is_empty());
+}
+
+/// **The notice is drawn as a notification from alo OS is**: one card, who it
+/// is from and then the sentence, beside the Dock.
+#[test]
+fn the_notice_is_drawn_as_a_notification_from_alo_os() {
+    let strings = crate::what_this_machine_can_say().unwrap();
+    let dock = alo_dock::Dock::shipped();
+    let mut labels = WindowControlLabels::new().unwrap();
+    let notice = crate::the_closed_windows_notice::AClosedWindow::TheRecord.said(&strings);
+    let drawn = crate::notification_raster::with_alos_own(
+        &[],
+        std::slice::from_ref(&notice),
+        &strings,
+        &dock,
+        &mut labels,
+        crate::egress_status_place::TheRoom {
+            size: SIZE,
+            panel: None,
+            scale: crate::display_scale::DisplayScale::ONE,
+        },
+        noon_look(&an_appearance(), Direction::LeftToRight).notifications(),
+    )
+    .unwrap();
+    assert_eq!(drawn.cards.len(), 1);
+    let card = drawn.cards.first().unwrap();
+    assert_eq!(card.lines.last(), Some(&notice));
+    assert!(
+        card.lines.len() == 2 && !card.the_agents,
+        "{:?}",
+        card.lines
+    );
 }
 
 /// **Settings that cannot be drawn are closed too.**
@@ -161,6 +209,12 @@ fn settings_that_cannot_draw_are_closed() {
         .settings
         .opened_by_hand(&places, std::time::SystemTime::now());
     assert!(server.settings.is_open());
-    server.settings_could_not_be_drawn("Virtual-1", &RenderError::RecordScene);
+    let now = std::time::Instant::now();
+    server.settings_could_not_be_drawn("Virtual-1", &RenderError::RecordScene, now);
     assert!(!server.settings.is_open());
+    let strings = crate::what_this_machine_can_say().unwrap();
+    assert_eq!(
+        server.the_closed_windows_notices(now, &strings),
+        ["Settings couldn't be shown on this screen and was closed. Nothing was lost."]
+    );
 }
