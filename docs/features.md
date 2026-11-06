@@ -1662,6 +1662,27 @@ find.*
   offers the three levels yet, so the choice still cannot be made by anybody. **And where a box's control group lives on a booted machine is open**:
   it cannot go under `alo-bounding`'s turn root, which was measured rather than
   reasoned about and is in `docs/quirks.md`.
+  **On an installed alo OS the sealed box cannot start a program yet**,
+  measured on a booted machine on 2026-11-02: `/` is a composefs image, and the
+  boundary refuses the system layer's own checks — following a link, reading a
+  program's capability attribute when it starts, listing a folder, a first
+  lookup — so nothing from `/usr`, and nothing reached through the `/home`
+  link, starts boxed; a static program at its real `/var/home/…` path did.
+  *The owner's decision of 2026-11-06: "say so plainly, keep going."* So
+  `alo-try` says, when the box was joined and then denied the start on a
+  composefs root — both seen, never one guessed from the other — *"{program} was
+  not run. The sealed box can't run programs on this computer yet. Choose 'ask
+  each time' in Settings → Running code to run commands after you approve
+  them."*, writes the run down as refused, and exits non-zero; and Settings →
+  Running code says under the sealed box *"The sealed box isn't available on
+  this computer yet."* **Nothing chosen is changed** (law 5): the sealed box
+  stays the default and stays a choice, and *ask each time* and *full trust*
+  are as they were. **Planned, and kernel work of its own**: the boundary may
+  *read* the system layer, read-only — the owner's answer to *may the box read
+  the read-only system layer?* — which needs the layer recognised as the booted
+  deployment's `.ostree.cfs` image rather than by path; the design notes and the
+  measurement scripts are in the coordinator's `C:\dev\backing\` (`m.sh`,
+  `m2.sh`), not in this repository.
 - Update checking can be turned off, saying that security fixes stop arriving while it is off
 - *Trust devices on this network*, off by default, saying that it also trusts guests' phones and every device on the network
 - A provider address that is not https can be allowed after a plain warning that the key crosses the network readable.

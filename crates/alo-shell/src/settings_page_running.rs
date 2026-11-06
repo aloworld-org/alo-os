@@ -40,6 +40,19 @@ pub(crate) fn the_blocks(open: &Open, strings: &Strings) -> Vec<ABlock> {
                 (HowCodeRuns::InASealedBox, _) => {
                     row.tag = Some(said(strings, w::DEFAULT));
                     row.lines.push(said(strings, w::SEALED_BOX_IS));
+                    // **Said plainly, and nothing taken away** — the owner's
+                    // decision of 2026-11-06. The row is still a choice, still
+                    // the default, and still chosen if the person chose it.
+                    if !open.the_sealed_box_runs_here {
+                        row.lines.push(
+                            strings
+                                .say(
+                                    &alo_capability::words::THE_SEALED_BOX_IS_NOT_HERE_YET.key(),
+                                    &Filling::nothing(),
+                                )
+                                .into_text(),
+                        );
+                    }
                 }
                 (_, Some(cost)) => {
                     row.risk = Some(ARisk {
@@ -79,3 +92,7 @@ pub(crate) fn the_blocks(open: &Open, strings: &Strings) -> Vec<ABlock> {
         }),
     ]
 }
+
+#[cfg(test)]
+#[path = "settings_page_running_tests.rs"]
+mod tests;

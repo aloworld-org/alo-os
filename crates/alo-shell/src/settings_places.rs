@@ -40,6 +40,11 @@ pub struct SettingsPlaces {
     /// what lets a test point the section at a file of its own rather than at
     /// the machine's.
     how_code_runs: PathBuf,
+    /// Where this machine's mounts are read from, to say under the sealed box
+    /// whether it can run programs here yet
+    /// (`alo_capability::the_sealed_box_here`). The machine's own unless a
+    /// test points it elsewhere.
+    mounts: PathBuf,
     /// The shell this account uses, as the session was told it.
     ///
     /// **Handed over rather than read here**, which is this file's rule for
@@ -99,6 +104,7 @@ impl SettingsPlaces {
             pairings: pairings.to_owned(),
             daemon: daemon.to_owned(),
             how_code_runs: how_code_runs.to_owned(),
+            mounts: PathBuf::from(alo_capability::the_sealed_box_here::THE_MOUNTS),
             // Lossy on purpose: a shell whose path is not text is a shell this
             // crate cannot match against a name anyway, and losing a byte is
             // better than refusing to draw the rest of Settings.
@@ -172,6 +178,19 @@ impl SettingsPlaces {
     /// Where this machine's level of running code is kept.
     pub(crate) fn how_code_runs(&self) -> &Path {
         &self.how_code_runs
+    }
+
+    /// Where this machine's mounts are read from.
+    pub(crate) fn mounts(&self) -> &Path {
+        &self.mounts
+    }
+
+    /// These places, with the mounts read from `at` — a test's own file
+    /// rather than this machine's.
+    #[must_use]
+    pub fn with_the_mounts_at(mut self, at: &Path) -> Self {
+        at.clone_into(&mut self.mounts);
+        self
     }
 }
 

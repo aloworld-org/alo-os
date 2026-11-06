@@ -94,9 +94,11 @@ mod what_a_try_may_reach;
 mod what_happened_in_the_box;
 mod what_was_asked;
 
+pub mod the_helpers_word;
+
 pub use a_run_inside_a_box::{THE_HELPER, WhereCommandsRun, checked_and_written_down};
 pub use carrying_what_it_says::{Carrying, carried_until_it_ends};
-pub use entering::{MEANING_ME, THE_PROCESSES, enter_the_box_and_become};
+pub use entering::{MEANING_ME, THE_PROCESSES, enter_the_box_and_become, it_was_joined};
 pub use failing::NotRun;
 pub use somewhere_to_write::SomewhereToWrite;
 pub use what_a_run_asks_for::ARun;

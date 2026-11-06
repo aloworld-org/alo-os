@@ -698,6 +698,32 @@ pub const NOTHING_RAN_WOULD_NOT_START: Word = Word::saying(
      than a refusal by any rule.",
 );
 
+/// The sealed box was joined and refused to start the program, on a machine
+/// whose system layer it cannot read yet — the owner's *say so plainly, keep
+/// going* of 2026-11-06 (`crate::the_sealed_box_here`).
+pub const THE_SEALED_BOX_CANNOT_RUN_PROGRAMS_HERE_YET: Word = Word::saying(
+    "capability.running.sealed-box-not-here-yet",
+    "{program} was not run. The sealed box can't run programs on this computer yet. Choose \
+     'ask each time' in Settings → Running code to run commands after you approve them.",
+)
+.noting(
+    "Shown when a person runs a command in the sealed box and the box cannot start it, on a \
+     computer where the sealed box cannot run programs yet. {program} is the program's path. \
+     'ask each time' and 'Settings → Running code' name a choice and a page as they are shown \
+     in Settings; use the same words your translation uses there.",
+);
+
+/// Under the sealed box in Settings, on a computer where it cannot run
+/// programs yet. The person's choice is not changed by it.
+pub const THE_SEALED_BOX_IS_NOT_HERE_YET: Word = Word::saying(
+    "capability.running.sealed-box-not-available-here",
+    "The sealed box isn't available on this computer yet.",
+)
+.noting(
+    "A plain line under the sealed box choice in Settings → Running code, on a computer where the \
+     sealed box cannot run programs yet. The choice is still there and can still be chosen.",
+);
+
 /// Nothing ran because this is not how the person said commands may run.
 pub const NOTHING_RAN_NOT_THAT_WAY: Word = Word::saying(
     "capability.running.not-that-way",
@@ -711,7 +737,7 @@ pub const NOTHING_RAN_NOT_THAT_WAY: Word = Word::saying(
 );
 
 /// Every string this crate can say, in the order a translator meets them.
-pub const EVERY_WORD: [Word; 63] = [
+pub const EVERY_WORD: [Word; 65] = [
     ANONYMOUS,
     NO_APPLICATION_NAMED,
     NOTHING_NAMED,
@@ -770,6 +796,8 @@ pub const EVERY_WORD: [Word; 63] = [
     NOTHING_RAN_NOT_A_COMMAND,
     NOTHING_RAN_NO_BOX,
     NOTHING_RAN_WOULD_NOT_START,
+    THE_SEALED_BOX_CANNOT_RUN_PROGRAMS_HERE_YET,
+    THE_SEALED_BOX_IS_NOT_HERE_YET,
     NOTHING_RAN_NOT_THAT_WAY,
     WHAT_FULL_TRUST_COSTS,
     ALWAYS_THE_RECORD,
