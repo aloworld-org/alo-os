@@ -4,6 +4,9 @@
 **§1 replaced by [ADR 0064](0064-the-person-chooses-how-code-runs-and-every-protection-they-may-change.md), 2026-09-22:** running code becomes the person's
 grant at three levels. The broker's verb list stays typed and closed, and the
 rest of this decision stands.
+**§4 amended by [ADR 0147](0147-a-person-may-switch-watching-on.md), 2026-11-06:**
+nothing watches unless the person switches it on, knowing what it costs. With
+every watcher off, §4 reads exactly as written.
 **Date:** 2026-09-02
 **Context:** `alo-agentd`, the application adapters, `docs/contracts/`;
 carries forward the propose-then-approve and intent-layer decisions made in

@@ -29,7 +29,9 @@ wastes the scarcest thing this project has.
   anything that changes the machine is proposed and waits for one tap.
 - **Reach without a grant.** No path, application or device an agent can touch
   that a person did not deliberately grant.
-- **A background reader.** Context arrives on invocation, never by watching.
+- **A background reader the person did not switch on.** Context arrives on
+  invocation. Watching exists only where the person switched it on, by name,
+  and it says so on screen (ADR 0147).
 - **Egress that doesn't fire the indicator.** And no telemetry, ever.
 - **A language that isn't Rust.** Pinned engines are the exception, and they are
   configured, never written in.
