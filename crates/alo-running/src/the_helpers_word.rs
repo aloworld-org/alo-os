@@ -13,7 +13,7 @@
 //! takes it out of what the command inherits before starting it, and writes it
 //! only when the start was refused after the box was joined. A command cannot
 //! write a word it was never given, so a line carrying it is the helper's.
-//! [`Listening`] carries the command's error stream to the person as before,
+//! `Listening` carries the command's error stream to the person as before,
 //! and keeps that one line out of it.
 
 use std::hash::{BuildHasher as _, Hasher as _};
