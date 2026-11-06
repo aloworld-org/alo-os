@@ -1013,5 +1013,11 @@ changes. Hardware readings that fail, time out or arrive stale become unknown;
 late results cannot overwrite a new clock format. The startup query remains
 before the desktop takes the display. Regressions cover a blocked reader,
 bounded outstanding work, a late result, failure and worker disappearance.
-This change is written and formatted; its tests, native build and installed
-recording repeat are still pending. No additional media acceptance is claimed.
+The hosted OS gate at `c65625cd` passes within its existing runner limitations:
+12,659 tests pass, one fails exactly as already declared for that runner, and
+61 are skipped. Studio's separate native recording job and the authors check
+also pass. No exception was changed. The runtime status-reading code is from
+`95dd2dce`; the following commit only bounds native dependency installation.
+The local optimized build and installed recording repeat are still queued
+behind validation of separate cursor branches. No additional media acceptance
+is claimed.

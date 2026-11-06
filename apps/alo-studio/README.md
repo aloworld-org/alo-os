@@ -8,8 +8,8 @@ another size or explicitly record anyway; the app never changes it silently.
 Recording preserves incoming frame timing, up to 30 frames per second. A slow
 source does not generate duplicate frames just to reach that ceiling.
 The explicit **360p · up to 5 fps** option reduces work on slower devices.
-It also uses faster microphone encoding with the same 48 kHz mono audio and
-96 kbit/s target bitrate. Other choices retain the standard audio encoder setting.
+It uses 16 kHz mono microphone audio with a 24 kbit/s Opus target and faster
+voice encoding. Other choices use 48 kHz mono audio with a 96 kbit/s target.
 The quality check uses the selected size and frame rate; the default stays 1080p.
 Quality and countdown options stay visible as direct choices. Alt + 1, Alt + 7,
 Alt + O, and Alt + 3 select 1080p, 720p, original size, and 360p respectively.
@@ -90,6 +90,9 @@ catalogue. **It is not on Flathub merely because it has a manifest.**
 The versioned [automation interface](docs/automation.md) provides semantic
 recording actions and status for ask-alo and other agents. It shares the native
 lifecycle and preserves the person's system source picker and export chooser.
+In Settings, open **Access for alo**, choose **Give alo access to an
+application**, select **alo Studio**, and choose how long access lasts.
+**Take back** revokes that application's access immediately.
 
 ## Checks
 

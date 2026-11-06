@@ -1,5 +1,11 @@
 # Controlling alo Studio
 
+The person enables these controls in **Settings → Access for alo → Give alo
+access to an application**, selects **alo Studio**, and chooses an access
+duration. With that application grant, ask-alo can read recording status and
+propose actions for the person's approval. **Take back** removes access
+immediately; an expired grant also stops further reads and actions.
+
 Studio exposes `org.aloworld.Studio.Recorder1` at
 `/org/aloworld/Studio/Recorder` on the session-bus name `org.aloworld.Studio`.
 The interface is independent of translated labels and keyboard focus. Its
@@ -57,3 +63,10 @@ adapter and the person's application grant. A read still needs that grant;
 changes follow the person's approval policy. The application interface is not
 a second consent mechanism and cannot select a hidden source or silently save
 outside the private library.
+
+Studio is the application connected to the live agent in this change. Other
+applications can use the OS's typed adapter framework, but each must declare
+its supported actions, connect its transport, and be included in the daemon's
+installed-controls list before Settings offers it. Merely installing an
+application does not claim that its controls are available. The same grant,
+approval, revocation and execution-record checks apply to every adapter.
