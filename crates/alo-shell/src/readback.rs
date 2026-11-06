@@ -161,7 +161,11 @@ pub(crate) fn convert(
             .iter()
             .zip(destination.as_chunks_mut::<4>().0)
         {
-            *destination = [source[2], source[1], source[0], 0];
+            // One packed load/store avoids scalar channel traffic for every
+            // output pixel, especially costly on a software-only workstation.
+            // RGBA as a big-endian word becomes 00RRGGBB; little-endian bytes
+            // are the required BGRx with its unused byte still zero.
+            *destination = (u32::from_be_bytes(*source) >> 8).to_le_bytes();
         }
     }
     Ok(ScanoutPixels {

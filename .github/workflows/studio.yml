@@ -30,7 +30,9 @@ jobs:
         with:
           prefix-key: studio-desktop
       - name: Optimized desktop regressions
-        run: cargo +1.97.0 test --locked --release -p alo-desktop -- --test-threads=1
+        run: |
+          cargo +1.97.0 test --locked --release -p alo-desktop -- --test-threads=1
+          cargo +1.97.0 test --locked --release -p alo-shell --lib readback::
       - name: Strict desktop and shell checks
         run: |
           cargo +1.97.0 clippy --locked --release -p alo-desktop --all-targets -- -D warnings
