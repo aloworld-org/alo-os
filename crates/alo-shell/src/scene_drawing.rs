@@ -96,13 +96,11 @@ where
     if let Some(terminal) = native.terminal {
         terminal.validate()?;
     }
-    // One of these two is always empty: the plain arrow and the double-headed one
-    // over a frame's resize band are the same kind of thing, and only one cursor
-    // is on the screen at a time.
-    let arrow: Vec<_> = crate::default_cursor::pixels(cursor, damage)?
-        .into_iter()
-        .chain(crate::resize_cursor::pixels(cursor, damage)?)
-        .collect();
+    // **alo's own pointer**, the arrow or the double arrow over a frame's resize
+    // band, drawn at this display's scale (`crate::the_pointer_drawn`). Asked
+    // before anything is imported, so a position that is not a number refuses
+    // the frame before a client's buffer is touched, as the mask before it did.
+    let pointer = crate::the_pointer_drawn::the_pointer(cursor, native.pointer_at, damage)?;
     let mut drawing = drawing::Drawing {
         elements: Vec::new(),
         surfaces: Vec::new(),
@@ -300,6 +298,22 @@ where
                     .map_err(submission)
             })
             .collect::<Result<_, _>>()?,
+    };
+    // **The pointer, uploaded with the rest** for the same reason: a frame
+    // borrows the renderer. Premultiplied, which is how both renderers blend.
+    let pointer_texture: Option<(R::TextureId, Rectangle<i32, Physical>)> = match &pointer {
+        None => None,
+        Some(pointer) => Some(
+            renderer
+                .import_memory(
+                    &pointer.picture.pixels,
+                    Fourcc::Abgr8888,
+                    (pointer.area.size.w, pointer.area.size.h).into(),
+                    false,
+                )
+                .map(|texture| (texture, pointer.area))
+                .map_err(submission)?,
+        ),
     };
     let mut frame = renderer
         .render(framebuffer, size, transform)
@@ -538,12 +552,10 @@ where
         draw_render_elements(&mut frame, 1.0, &cursor_drawing.elements, &[damage])
             .map_err(submission)?;
     }
-    // Draw last so the owned arrow stays above every client tree. Damage is local
-    // to each solid rectangle; these pixels own no Wayland identity or callbacks.
-    for (pixel, color) in arrow {
-        frame
-            .draw_solid(pixel, &[Rectangle::from_size(pixel.size)], color)
-            .map_err(submission)?;
+    // Drawn last so alo's pointer stays above every client tree and every layer
+    // of the shell's own. It owns no Wayland identity or callbacks.
+    if let Some((texture, area)) = &pointer_texture {
+        crate::painted::wash(&mut frame, texture, *area)?;
     }
     let _sync = frame.finish().map_err(submission)?;
     if let Some(mut cursor_drawing) = cursor_drawing {

@@ -138,17 +138,26 @@ fn the_arrow_is_drawn_above_the_screen_it_points_at() {
         without.pixels(),
         "a positioned arrow added no pixels"
     );
-    // The arrow is a white shape inside a black outline and its tip is the
-    // outline's own corner, so the pixel at the point given is black.
-    assert_eq!(
+    // **The tip is at the point given**: the pixel there carries the arrow, and
+    // two pixels up and to the left of it, outside the keyline and above the
+    // shadow, is the screen.
+    assert_ne!(
         pixel_at(&with_arrow, (8, 8)),
-        [0, 0, 0],
+        [20, 30, 40],
         "the arrow's tip is not at the point it was given"
     );
     assert_eq!(
-        pixel_at(&with_arrow, (9, 10)),
-        [255, 255, 255],
-        "the arrow is an outline with nothing inside it"
+        pixel_at(&with_arrow, (6, 6)),
+        [20, 30, 40],
+        "the arrow reaches above and before its own tip"
+    );
+    // **Solid navy inside**, `text/primary`: the kite at one-to-one is 24
+    // pixels square with its tip at (4, 3), and its pixel (9, 9) is wholly
+    // inside the shape, which lands on the screen at (13, 14).
+    assert_eq!(
+        pixel_at(&with_arrow, (13, 14)),
+        [0x10, 0x2A, 0x43],
+        "the arrow is not filled with the palette's navy"
     );
     assert_eq!(
         pixel_at(&with_arrow, (0, 0)),

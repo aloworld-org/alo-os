@@ -672,6 +672,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "alo-cursors"
+version = "0.0.1"
+dependencies = [
+ "alo-appearance",
+ "alo-vector-shapes",
+ "cursor-icon",
+]
+
+[[package]]
 name = "alo-declared"
 version = "0.0.1"
 dependencies = [
@@ -1736,6 +1745,7 @@ dependencies = [
  "alo-changing",
  "alo-choosing",
  "alo-context",
+ "alo-cursors",
  "alo-desktops",
  "alo-displays",
  "alo-dividing",

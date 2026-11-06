@@ -132,6 +132,7 @@ pub fn run(
         &Cursor::Hidden,
         Some(invalid),
     )?;
+    let drawn = crate::default_cursor_check::the_arrow()?;
     for origin in [(10.0, 14.0), (10.0, 50.0)] {
         let arrow = render_control_scanout(
             renderer,
@@ -154,11 +155,15 @@ pub fn run(
             .enumerate()
         {
             let expected = crate::default_cursor_check::golden(
+                &drawn,
                 (index % 320) as f64 - origin.0,
                 (index / 320) as f64 - origin.1,
-            )
-            .unwrap_or(*base);
-            assert_eq!(*pixel, expected, "arrow over native scene at {index}");
+                *base,
+            );
+            assert!(
+                crate::default_cursor_check::close(*pixel, expected),
+                "arrow over native scene at {index}: {pixel:?} against {expected:?}"
+            );
         }
     }
     assert!(matches!(

@@ -211,6 +211,9 @@ unicode-segmentation = "1.13"
 # display's scale (ADR 0142). Its one dependency is the rasteriser cosmic-text
 # already draws every letter with, so it adds nothing to the supply chain.
 alo-vector-shapes = { path = "../alo-vector-shapes" }
+# The pointer: every cursor shape from one vector source in the palette's colours,
+# drawn with the same rasteriser as the line above (ADR 0142).
+alo-cursors = { path = "../alo-cursors" }
 smithay = { version = "=0.7.0", default-features = false, features = ["wayland_frontend", "renderer_gl", "backend_winit", "backend_session_libseat", "backend_libinput", "backend_udev", "use_system_lib", "desktop", "renderer_pixman"] }
 rustix.workspace = true
 thiserror.workspace = true

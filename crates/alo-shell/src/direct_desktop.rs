@@ -2108,7 +2108,7 @@ impl LoopInput for Desk<'_> {
                 (size.w, size.h),
                 u32::from(its_scale),
             );
-            theirs.push((other, its_pictures, its_edges));
+            theirs.push((other, its_pictures, its_edges, its_scale));
         }
         // **Every display's controls, from the one list that also draws
         // them.** `more-than-one-display-plan.md` task 9.
@@ -2131,7 +2131,7 @@ impl LoopInput for Desk<'_> {
         // `bring_back_frames_the_moved_controls_hide` below, which until now
         // asked its question with only the first display's bounds recorded —
         // so a frame hidden by the second display's dock was not found.
-        for (other, its_pictures, _its_edges) in &theirs {
+        for (other, its_pictures, _its_edges, _its_scale) in &theirs {
             let Ok(its) = FrameTarget::metadata(*other) else {
                 continue;
             };
@@ -2450,6 +2450,9 @@ impl LoopInput for Desk<'_> {
                 // **The order the person's windows are in**, the same one a
                 // press and the keyboard read (`crate::which_window_is_in_front`).
                 in_front: server.which_is_in_front(),
+                // **The pointer at this display's scale**, so a dense screen
+                // draws it sharper rather than smaller (`crate::the_pointer_drawn`).
+                pointer_at: crate::display_scale::DisplayScale::of_per_cent(this_displays_scale),
                 ..pictures.layers(&edges)
             },
         };
@@ -2458,9 +2461,14 @@ impl LoopInput for Desk<'_> {
         // and because a refusal on a later one must not delay it.
         let mut painted: Vec<Layered<'_>> = theirs
             .iter_mut()
-            .map(|(other, its_pictures, its_edges)| Layered {
+            .map(|(other, its_pictures, its_edges, its_scale)| Layered {
                 target: *other,
-                layers: its_pictures.layers(its_edges),
+                layers: crate::scene_native::NativeLayers {
+                    // **The pointer at this display's own scale**, as its
+                    // edges and its Dock are.
+                    pointer_at: crate::display_scale::DisplayScale::of_per_cent(*its_scale),
+                    ..its_pictures.layers(its_edges)
+                },
             })
             .collect();
         let mut displays: Vec<&mut dyn crate::FrameTarget> = Vec::with_capacity(1 + painted.len());
