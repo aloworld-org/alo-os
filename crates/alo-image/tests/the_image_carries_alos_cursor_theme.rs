@@ -46,7 +46,8 @@ fn the_recipe_runs_the_generator_into_what_it_copies() {
     assert!(
         recipe
             .lines()
-            .any(|line| line.starts_with("RUN cargo build") && line.contains("--package alo-cursors")),
+            .any(|line| line.starts_with("RUN cargo build")
+                && line.contains("--package alo-cursors")),
         "the shell stage does not build alo-cursors"
     );
     let ran = recipe
@@ -58,8 +59,13 @@ fn the_recipe_runs_the_generator_into_what_it_copies() {
         .nth(2)
         .unwrap_or_else(|| panic!("alo-cursor-theme is run with nowhere to write"));
     assert!(
-        recipe.lines().any(|line| line.starts_with("COPY --from=shell ")
-            && line.contains(&format!("{written}/ /usr/share/icons/{}/", alo_cursors::theme::THE_NAME))),
+        recipe
+            .lines()
+            .any(|line| line.starts_with("COPY --from=shell ")
+                && line.contains(&format!(
+                    "{written}/ /usr/share/icons/{}/",
+                    alo_cursors::theme::THE_NAME
+                ))),
         "the theme written to {written} is not what is copied to /usr/share/icons"
     );
 }

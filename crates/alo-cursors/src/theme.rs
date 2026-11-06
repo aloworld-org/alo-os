@@ -12,15 +12,13 @@
 //!
 //! Toolkits written before the CSS names ask for `left_ptr`, `xterm`, `hand2`
 //! and so on. Each is an alias of the CSS name `cursor-icon` lists it under
-//! ([`CursorIcon::alt_names`]). Where two CSS names list the same old name — both
+//! ([`cursor_icon::CursorIcon::alt_names`]). Where two CSS names list the same old name — both
 //! `col-resize` and `ew-resize` claim `h_double_arrow` — the first in the
 //! protocol's order keeps it; and an old name that is also a CSS name (`copy`,
 //! `move`) is the CSS cursor, never an alias.
 
 use std::collections::BTreeMap;
 use std::path::Path;
-
-use cursor_icon::CursorIcon;
 
 use crate::artwork::EVERY_SHAPE;
 use crate::xcursor_file::{NotWritten, xcursor_file};

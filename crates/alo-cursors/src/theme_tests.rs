@@ -32,7 +32,10 @@ fn every_name_has_a_file_and_every_old_name_points_at_one() {
             theme.cursors.contains_key(target),
             "{alias} points at {target}, which is not in the theme"
         );
-        assert!(!theme.cursors.contains_key(alias), "{alias} is a file and an alias");
+        assert!(
+            !theme.cursors.contains_key(alias),
+            "{alias} is a file and an alias"
+        );
     }
 }
 
@@ -52,7 +55,11 @@ fn the_old_names_reach_the_right_cursor() {
         ("crossed_circle", "not-allowed"),
         ("closedhand", "grabbing"),
     ] {
-        assert_eq!(theme.aliases.get(old).map(String::as_str), Some(new), "{old}");
+        assert_eq!(
+            theme.aliases.get(old).map(String::as_str),
+            Some(new),
+            "{old}"
+        );
     }
     for both in ["copy", "move"] {
         assert!(theme.cursors.contains_key(both) && !theme.aliases.contains_key(both));

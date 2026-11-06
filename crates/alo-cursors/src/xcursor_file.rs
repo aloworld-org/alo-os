@@ -135,11 +135,9 @@ pub fn xcursor_file(pictures: &[Picture]) -> Result<Vec<u8>, NotWritten> {
         ] {
             file.extend_from_slice(&number.to_le_bytes());
         }
-        for pixel in picture.pixels.chunks_exact(4) {
-            if let [red, green, blue, alpha] = pixel {
-                let argb = u32::from_be_bytes([*alpha, *red, *green, *blue]);
-                file.extend_from_slice(&argb.to_le_bytes());
-            }
+        for &[red, green, blue, alpha] in picture.pixels.as_chunks::<4>().0 {
+            let argb = u32::from_be_bytes([alpha, red, green, blue]);
+            file.extend_from_slice(&argb.to_le_bytes());
         }
     }
     Ok(file)

@@ -18,7 +18,9 @@ fn drawn(icon: CursorIcon, size: u32) -> Picture {
 /// premultiplied `R G B A`.
 #[test]
 fn another_reader_reads_every_image_back() {
-    let pictures: Vec<Picture> = [48, 24, 36].map(|size| drawn(CursorIcon::Text, size)).into();
+    let pictures: Vec<Picture> = [48, 24, 36]
+        .map(|size| drawn(CursorIcon::Text, size))
+        .into();
     let file = xcursor_file(&pictures).unwrap_or_else(|why| unreachable!("{why}"));
     let Some(images) = xcursor::parser::parse_xcursor(&file) else {
         unreachable!("the xcursor crate could not read the file");
@@ -37,11 +39,10 @@ fn another_reader_reads_every_image_back() {
         assert_eq!(image.delay, 0);
         let as_drawn: Vec<u8> = image
             .pixels_rgba
-            .chunks_exact(4)
-            .flat_map(|pixel| match pixel {
-                [blue, green, red, alpha] => [*red, *green, *blue, *alpha],
-                _ => [0; 4],
-            })
+            .as_chunks::<4>()
+            .0
+            .iter()
+            .flat_map(|&[blue, green, red, alpha]| [red, green, blue, alpha])
             .collect();
         assert_eq!(as_drawn, picture.pixels, "size {}", image.size);
     }
