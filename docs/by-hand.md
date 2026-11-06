@@ -350,25 +350,6 @@ dark and the hour it turns light again; the verb sets those same two hours by th
 same road. The agent is quicker at hearing it said out loud and reaches nothing a
 person setting two hours cannot.
 
-## What this document does not do
-
-It does not say the plain way is **built**. Every entry above names a promise
-with a tier on it, and a tier is a commitment rather than a screen; `A file
-manager, with trash, and archives that open` is v0.5 work that has not started.
-The distinction is deliberate: what ADR 0009 forbids is a surface being *left
-out* because an agent covers it, and the place a surface stops being left out is
-the definition. Whether it then gets built is `ROADMAP.md`'s exit gate, and
-whether it works is a test on a certified machine.
-
-It does not answer for anything but verbs. ADR 0009's rule is wider — *no surface
-may be left out because an agent can do it instead* — and applying it to
-`docs/features.md` as a whole is what found the file search that nobody had
-promised. `crates/alo-reconciling` and `docs/autonomy/evidence-it-boots-and-the-agent-acts.md` are that
-half.
-
-
-## Recording with alo Studio
-
 ### studio.status
 
 **By hand:** a person can read the status, elapsed time, source and microphone controls in Studio — `read recording status and elapsed time`.
@@ -444,3 +425,19 @@ half.
 ### studio.export
 
 **By hand:** a person can press Save a copy and choose the exact destination in the native save window — `save a copy`.
+
+## What this document does not do
+
+It does not say the plain way is **built**. Every entry above names a promise
+with a tier on it, and a tier is a commitment rather than a screen; `A file
+manager, with trash, and archives that open` is v0.5 work that has not started.
+The distinction is deliberate: what ADR 0009 forbids is a surface being *left
+out* because an agent covers it, and the place a surface stops being left out is
+the definition. Whether it then gets built is `ROADMAP.md`'s exit gate, and
+whether it works is a test on a certified machine.
+
+It does not answer for anything but verbs. ADR 0009's rule is wider — *no surface
+may be left out because an agent can do it instead* — and applying it to
+`docs/features.md` as a whole is what found the file search that nobody had
+promised. `crates/alo-reconciling` and `docs/autonomy/evidence-it-boots-and-the-agent-acts.md` are that
+half.
