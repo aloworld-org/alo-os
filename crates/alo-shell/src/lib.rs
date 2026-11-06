@@ -181,6 +181,7 @@ mod capture_raster;
 /// What one key press means in the Dock's composer.
 pub mod composer_keys;
 mod cursor;
+mod cursor_shapes;
 #[cfg(test)]
 mod descriptor_testing;
 mod desktop_list;

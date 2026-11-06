@@ -279,6 +279,14 @@ pub(crate) struct Surfaces {
         reason = "holding the global alive is the whole purpose; there is nothing to read"
     )]
     pub(crate) gestures: PointerGesturesState,
+    /// `wp_cursor_shape_v1`, held for the same reason as the gestures above:
+    /// so the global stays advertised. Requests reach `cursor_image` below
+    /// (`crate::cursor_shapes`).
+    #[expect(
+        dead_code,
+        reason = "holding the global alive is the whole purpose; there is nothing to read"
+    )]
+    pub(crate) cursor_shapes: smithay::wayland::cursor_shape::CursorShapeManagerState,
     /// Buffer sharing with the graphics card, made here and advertised later.
     ///
     /// **The state is not the global.** `DmabufState::new` creates nothing a
@@ -366,6 +374,9 @@ impl Surfaces {
             // application that wants one; `crate::canvas_pinch` is what happens
             // when the pinch is over the plane instead of over a frame.
             gestures: PointerGesturesState::new::<Self>(display),
+            cursor_shapes: smithay::wayland::cursor_shape::CursorShapeManagerState::new::<Self>(
+                display,
+            ),
             viewporter: ViewporterState::new::<Self>(display),
             text_input: TextInputManagerState::new::<Self>(display),
             // Buffer sharing. **The global is deliberately not made here**, by
