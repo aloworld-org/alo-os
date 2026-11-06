@@ -146,7 +146,7 @@ impl GrantedSection {
         now: SystemTime,
         strings: &Strings,
     ) -> SettingsGave {
-        use crate::application_permissions::{ApplicationPermissionRow, GIVEN};
+        use crate::application_permissions::ApplicationPermissionRow;
         use alo_capability::{ATerminalForTheAgent, Grant, Grantee, Reach};
         let Some(picking) = &mut self.application_picking else {
             return SettingsGave::Nothing;
@@ -192,14 +192,7 @@ impl GrantedSection {
                 });
                 match result {
                     Ok(Made::Granted { stood, .. }) => {
-                        self.told = vec![
-                            strings
-                                .say(
-                                    &GIVEN.key(),
-                                    &Filling::of("application", app.shown(strings)),
-                                )
-                                .into_text(),
-                        ];
+                        self.told = vec![crate::application_permissions::saved(&app, strings)];
                         self.told.extend(stood.explained(strings));
                         SettingsGave::ItWasGiven
                     }

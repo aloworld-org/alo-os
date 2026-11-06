@@ -51,6 +51,16 @@ pub(crate) const GIVEN: Word = Word::saying(
 )
 .noting("Confirmation after the selected application permission was persisted; keep its name.");
 
+/// Confirm the application whose access was persisted.
+pub(crate) fn saved(application: &Application, strings: &Strings) -> String {
+    strings
+        .say(
+            &GIVEN.key(),
+            &Filling::of("application", application.shown(strings)),
+        )
+        .into_text()
+}
+
 /// The installed choices and the application the person has selected.
 #[derive(Debug)]
 pub(crate) struct ApplicationBeingPicked {
