@@ -3155,7 +3155,7 @@ endpoint = \"https://{at}\"
             folder.join(alo_choosing::THE_SETTINGS),
             format!(
                 "format = 3\n\n[answers]\nprovider = {{ name = \"Here\", model = \"a-model\" \
-                 }}\n\n[[provider]]\nname = \"Here\"\nendpoint = \"http://127.0.0.1:{port}\"\n"
+                 }}\n\n[[provider]]\nname = \"Here\"\nendpoint = \"http://127.0.0.1:{port}\"\nneeds_a_key = false\n"
             ),
         )
         .unwrap();
