@@ -8,7 +8,9 @@ use smithay::{
 };
 use std::sync::Arc;
 
+/// A backend whose private capture is independent of desktop visibility.
 struct CaptureTarget {
+    /// Inject a failed private render before callbacks may complete.
     fail: bool,
 }
 
@@ -37,6 +39,7 @@ impl FrameTarget for CaptureTarget {
     }
 }
 
+/// Capture the named application without submitting it to the desktop.
 fn capture(fixture: &Fixture, fail: bool, time: u32) -> Result<(), RenderError> {
     fixture.backend(move |server| {
         let root = server
@@ -58,6 +61,7 @@ fn capture(fixture: &Fixture, fail: bool, time: u32) -> Result<(), RenderError> 
 }
 
 #[test]
+/// Failed, repeated and unrelated captures cannot claim a new client frame.
 fn covered_capture_completes_only_its_mapped_tree_after_success() {
     let fixture = Fixture::new();
     let mut selected = Application::new(&fixture);

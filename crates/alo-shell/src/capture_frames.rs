@@ -6,6 +6,7 @@ use smithay::{
     wayland::compositor::{SurfaceAttributes, TraversalAction, with_surface_tree_downward},
 };
 
+/// Complete only the selected mapped trees after their pixels were captured.
 pub(crate) fn completed(
     root: &WlSurface,
     popups: &[crate::Popup],
