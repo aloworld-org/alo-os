@@ -9,6 +9,46 @@ on:
 permissions:
   contents: read
 jobs:
+  desktop:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    env:
+      CARGO_INCREMENTAL: 0
+      CARGO_BUILD_JOBS: 2
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Native desktop libraries
+        timeout-minutes: 8
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends libwayland-dev libinput-dev libseat-dev libxkbcommon-dev libpixman-1-dev libegl1-mesa-dev libgbm-dev libudev-dev libpipewire-0.3-dev libspa-0.2-dev libclang-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev dbus-x11 dbus-daemon gnome-keyring at-spi2-core libgtk-3-bin
+      - name: Rust toolchain
+        run: rustup toolchain install 1.97.0 --profile minimal --component clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          prefix-key: studio-desktop
+      - name: Optimized desktop regressions
+        run: cargo +1.97.0 test --locked --release -p alo-desktop -- --test-threads=1
+      - name: Strict desktop and shell checks
+        run: |
+          cargo +1.97.0 clippy --locked --release -p alo-desktop --all-targets -- -D warnings
+          cargo +1.97.0 clippy --locked --release -p alo-shell --lib -- -D warnings
+      - name: Build the desktop for installed recording verification
+        run: |
+          cargo +1.97.0 build --locked --release -p alo-desktop
+          mkdir -p desktop-verification
+          cp target/release/alo-desktop desktop-verification/alo-desktop
+          git rev-parse HEAD > desktop-verification/source.txt
+          cd desktop-verification
+          sha256sum alo-desktop > sha256.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: studio-desktop
+          path: desktop-verification/
+          if-no-files-found: error
+          retention-days: 7
   native:
     runs-on: ubuntu-24.04
     steps:
