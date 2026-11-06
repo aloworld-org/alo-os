@@ -721,7 +721,7 @@ pub const NOTHING_RAN_NOT_THAT_WAY: Word = Word::saying(
 );
 
 /// Every string this crate can say, in the order a translator meets them.
-pub const EVERY_WORD: [Word; 63] = [
+pub const EVERY_WORD: [Word; 64] = [
     ANONYMOUS,
     NO_APPLICATION_NAMED,
     NOTHING_NAMED,
