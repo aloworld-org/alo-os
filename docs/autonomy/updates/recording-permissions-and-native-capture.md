@@ -67,8 +67,16 @@ minor-fault and call-chain samples are separate from those acceptance recordings
 Live ownership metadata confirms two output pixel allocations are actually reused
 and unobserved frames have no reader preventing reuse. Remaining sampled faults
 occur while writing those retained allocations and clearing the render target;
-they do not by themselves prove new allocation. Process-creation investigation
-remains in progress. A failed debugger connection temporarily stops the desktop;
+they do not by themselves prove new allocation. A kernel `task_newtask` trace
+records nine compositor children with flags `0x1200000`, which have neither
+shared address space nor the vfork flag, beside thirteen ordinary thread clones.
+The pinned Rust 1.97 process implementation explicitly falls back from
+`posix_spawn` when PATH changes and the executable is a bare name. The media
+launcher clears PATH and starts `pw-dump` this way. Its new candidate resolves
+tools in the exact child search path before spawning, preserving explicit paths,
+missing-tool refusal, environment filtering and caller PATH overrides. Hosted
+regressions and an installed repeat of that candidate are still required.
+A failed debugger connection temporarily stops the desktop;
 the owned debugger is removed and `TracerPid: 0` with a running desktop is verified.
 No debugger or sampling hook is present during the acceptance recordings.
 

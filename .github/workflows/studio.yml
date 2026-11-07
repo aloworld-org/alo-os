@@ -36,6 +36,7 @@ jobs:
         run: |
           cargo +1.97.0 test --locked --release -p alo-desktop -- --test-threads=1
           cargo +1.97.0 test --locked --release -p alo-dock --lib artwork::
+          cargo +1.97.0 test --locked --release -p alo-media-server --lib reaching::
           cargo +1.97.0 test --locked --release -p alo-shell --lib readback::
           cargo +1.97.0 test --locked --release -p alo-shell --lib software_scanout::
           cargo +1.97.0 test --locked --release -p alo-shell --lib capture_transport::
