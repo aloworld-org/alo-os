@@ -26,7 +26,8 @@
 
 use alo_shell::ThePointersLook;
 
-/// Which of the pointer's two variables to tell.
+/// Which of the pointer's two variables to tell: the theme, which is the
+/// arrow and the colour together, and the size.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct WhatToTell {
     /// The cursor theme, which is the arrow.
@@ -40,7 +41,7 @@ impl WhatToTell {
     #[must_use]
     pub fn between(before: ThePointersLook, now: ThePointersLook) -> Self {
         Self {
-            theme: before.shape != now.shape,
+            theme: before.shape != now.shape || before.colour != now.colour,
             size: before.size != now.size,
         }
     }
@@ -66,9 +67,13 @@ pub fn as_they_left_it(appearance: &alo_appearance::Appearance) -> (ThePointersL
     let look = ThePointersLook {
         shape: appearance.pointer_shape(),
         size: appearance.pointer_size(),
+        colour: appearance.pointer_colour(),
     };
+    // **The theme is the arrow and the colour together**, so a choice of
+    // either is a choice of theme.
     let chose = WhatToTell {
-        theme: appearance.changes().pointer_shape().is_some(),
+        theme: appearance.changes().pointer_shape().is_some()
+            || appearance.changes().pointer_colour().is_some(),
         size: appearance.changes().pointer_size().is_some(),
     };
     (look, chose)
@@ -123,6 +128,7 @@ mod tests {
                 ThePointersLook {
                     shape: PointerShape::Classic,
                     size: PointerSize::Larger,
+                    ..ThePointersLook::SHIPPED
                 },
                 BOTH
             ),
@@ -162,6 +168,35 @@ mod tests {
                 theme: true,
                 size: false
             }
+        );
+    }
+
+    /// **A new colour is a new theme**: the white kite is `alo-white`, told as
+    /// the theme and not as a size.
+    #[test]
+    fn a_colour_is_told_as_its_theme() {
+        let white = ThePointersLook {
+            colour: alo_appearance::PointerColour::White,
+            ..ThePointersLook::SHIPPED
+        };
+        let what = WhatToTell::between(ThePointersLook::SHIPPED, white);
+        assert_eq!(
+            what,
+            WhatToTell {
+                theme: true,
+                size: false
+            }
+        );
+        assert_eq!(
+            what_applications_are_told(white, what),
+            ["XCURSOR_THEME=alo-white"]
+        );
+        let mut chose = alo_appearance::Appearance::shipped();
+        chose.set_pointer_colour(alo_appearance::PointerColour::Black);
+        let (look, told) = as_they_left_it(&chose);
+        assert_eq!(
+            what_applications_are_told(look, told),
+            ["XCURSOR_THEME=alo-black"]
         );
     }
 

@@ -344,6 +344,8 @@ fn every_setting_the_machine_has_is_in_one_window() {
             SettingsRow::PointerSize(PointerSize::Default),
             // And the arrow it ships as.
             SettingsRow::PointerShape(alo_appearance::PointerShape::Kite),
+            // And the colour it ships in.
+            SettingsRow::PointerColour(alo_appearance::PointerColour::Navy),
         ]
     );
 }
@@ -1895,6 +1897,54 @@ fn light_and_dark_and_the_text_size_are_kept_as_alo_appearance_keeps_them() {
     alo_appearance::keeping::keep(&twin_at, expected.changes()).unwrap();
     assert_eq!(bytes(&at), bytes(&twin_at));
     assert_eq!(window.pointer_size(), Some(PointerSize::Larger));
+}
+
+/// **The pointer's colour is a choice of three, kept as `alo-appearance` keeps
+/// it** — the owner's yes of 2026-11-06 — and never deep teal, which is not
+/// offered at all.
+#[test]
+fn the_pointers_colour_is_a_choice_kept_with_the_appearance() {
+    let machine = a_persons_machine("pointer-colour");
+    let strings = words();
+    let door = CountingDoor::revoking();
+    let mut window = machine.opened();
+    let at = machine.kept(alo_appearance::keeping::THE_FILE);
+    let offered: Vec<alo_appearance::PointerColour> = window
+        .rows(noon())
+        .into_iter()
+        .filter_map(|row| match row {
+            SettingsRow::PointerColour(colour) => Some(colour),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(offered, alo_appearance::PointerColour::ALL);
+    assert_eq!(
+        window.pointer_colour(),
+        Some(alo_appearance::PointerColour::Navy)
+    );
+
+    assert_eq!(
+        chosen(
+            &mut window,
+            &SettingsRow::PointerColour(alo_appearance::PointerColour::White),
+            &strings,
+            &door
+        ),
+        Some(SettingsDid::Kept(
+            SettingsSection::Appearance,
+            SettingsKept::Written
+        ))
+    );
+    assert_eq!(
+        window.pointer_colour(),
+        Some(alo_appearance::PointerColour::White)
+    );
+    let mut expected = Appearance::shipped();
+    expected.set_pointer_colour(alo_appearance::PointerColour::White);
+    let twin = a_twin();
+    let twin_at = twin.path().join(alo_appearance::keeping::THE_FILE);
+    alo_appearance::keeping::keep(&twin_at, expected.changes()).unwrap();
+    assert_eq!(bytes(&at), bytes(&twin_at));
 }
 
 /// **The familiar arrow is a choice, kept as `alo-appearance` keeps it**: on

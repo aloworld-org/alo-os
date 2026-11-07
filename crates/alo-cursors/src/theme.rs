@@ -22,7 +22,9 @@ use std::path::Path;
 
 use crate::artwork::EVERY_SHAPE;
 use crate::xcursor_file::{NotWritten, xcursor_file};
-use crate::{NotDrawn, Silhouette, draw};
+use alo_appearance::PointerColour;
+
+use crate::{NotDrawn, Silhouette, draw_in};
 
 /// The shipped theme's directory name, and what `XCURSOR_THEME` is set to
 /// unless the person chose the familiar arrow.
@@ -32,13 +34,38 @@ pub const THE_NAME: &str = "alo";
 /// ([`Silhouette::Classic`]). Every other shape is the same as [`THE_NAME`]'s.
 pub const THE_CLASSIC_NAME: &str = "alo-classic";
 
-/// The name of the theme drawn with `silhouette` as its arrow.
+/// The name of the navy theme drawn with `silhouette` as its arrow.
 #[must_use]
 pub const fn the_name_of(silhouette: Silhouette) -> &'static str {
-    match silhouette {
-        Silhouette::Kite => THE_NAME,
-        Silhouette::Classic => THE_CLASSIC_NAME,
+    the_name_for(silhouette, PointerColour::Navy)
+}
+
+/// The name of the theme drawn with `silhouette` as its arrow, in `colour`.
+///
+/// **One theme for each arrow in each colour**, six in all, because an
+/// application that draws its own pointer takes its pixels from the theme's
+/// files as they are: there is no way to tell it a colour. Navy keeps the
+/// names it had before colours were offered, so a session told `alo` before
+/// is still told the right thing.
+#[must_use]
+pub const fn the_name_for(silhouette: Silhouette, colour: PointerColour) -> &'static str {
+    match (silhouette, colour) {
+        (Silhouette::Kite, PointerColour::Navy) => THE_NAME,
+        (Silhouette::Classic, PointerColour::Navy) => THE_CLASSIC_NAME,
+        (Silhouette::Kite, PointerColour::White) => "alo-white",
+        (Silhouette::Classic, PointerColour::White) => "alo-classic-white",
+        (Silhouette::Kite, PointerColour::Black) => "alo-black",
+        (Silhouette::Classic, PointerColour::Black) => "alo-classic-black",
     }
+}
+
+/// Every theme this crate writes: each arrow, in each colour.
+#[must_use]
+pub fn every_theme() -> Vec<(Silhouette, PointerColour)> {
+    Silhouette::ALL
+        .into_iter()
+        .flat_map(|silhouette| PointerColour::ALL.map(|colour| (silhouette, colour)))
+        .collect()
 }
 
 /// The nominal sizes every cursor file carries, in pixels.
@@ -83,17 +110,25 @@ impl core::fmt::Display for NotMade {
 
 impl std::error::Error for NotMade {}
 
-/// The whole theme, drawn with `silhouette` as the arrow.
+/// The whole theme, drawn with `silhouette` as the arrow, in navy.
+///
+/// # Errors
+/// As [`the_theme_in`].
+pub fn the_theme(silhouette: Silhouette) -> Result<Theme, NotMade> {
+    the_theme_in(silhouette, PointerColour::Navy)
+}
+
+/// The whole theme, drawn with `silhouette` as the arrow, in `colour`.
 ///
 /// # Errors
 /// [`NotMade`] when a cursor does not draw or does not write, which no shipped
 /// shape does and a test makes the whole theme to show.
-pub fn the_theme(silhouette: Silhouette) -> Result<Theme, NotMade> {
+pub fn the_theme_in(silhouette: Silhouette, colour: PointerColour) -> Result<Theme, NotMade> {
     let mut cursors = BTreeMap::new();
     for icon in EVERY_SHAPE {
         let pictures = SIZES
             .iter()
-            .map(|&size| draw(icon, silhouette, size))
+            .map(|&size| draw_in(icon, silhouette, colour, size))
             .collect::<Result<Vec<_>, _>>()
             .map_err(NotMade::NotDrawn)?;
         let file = xcursor_file(&pictures).map_err(NotMade::NotWritten)?;
@@ -110,7 +145,7 @@ pub fn the_theme(silhouette: Silhouette) -> Result<Theme, NotMade> {
     Ok(Theme {
         index: format!(
             "[Icon Theme]\nName={}\nComment=alo OS's pointer, drawn from one vector source\n",
-            the_name_of(silhouette)
+            the_name_for(silhouette, colour)
         ),
         cursors,
         aliases,

@@ -187,3 +187,32 @@ dialog with that focused parent comes in front and takes the keyboard. A
 background parent, a guessed handle, or a revoked export cannot interrupt the
 person. This extends rule 8's person-initiated opening to native permission
 dialogs; it does not activate an existing window when its parent later changes.
+
+---
+
+## Amended 2026-11-07 — when there is no room, the view can glide to empty space
+
+**The owner, 2026-11-07:** *"when the user opens the window of the application it
+should not open on top of the other, it should smooth move the canvas and open on
+the empty space. Also this can be put in the settings so the user chooses."*
+Asked which a new machine starts with: **glide to empty space**. Asked where it
+looks first: *"Nearest space and the new window should be in focus."*
+
+So rule 5 becomes a choice, in Settings → Windows, **When there's no room for a
+new window**:
+
+- **Glide to empty space** — the default. The view moves smoothly to the
+  **nearest** free space on the current Place, from what the person is looking
+  at, in any direction; the new window opens there **without covering any
+  window**, and **it has the focus**. Nothing else moves or resizes (rule 4
+  stands), and the view does not zoom.
+- **Open in front, slightly offset** — rule 5 as written on 2026-10-09, unchanged.
+
+Rules 1–4 and 6–8 are untouched: room in the current view is still used first,
+beside the active window. A person-initiated opening is the *authorised
+interaction* rule 8 asks for, so this glide is allowed; a window an application
+or alo opens in the background still never moves the camera. **The glide
+follows the person's reduced-motion setting** — with it on, the view jumps
+rather than glides — and its length is a duration, never a speed the person has
+to match. A person may still put one window over another themselves at either
+setting.

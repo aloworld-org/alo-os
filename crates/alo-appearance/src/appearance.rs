@@ -136,6 +136,11 @@ impl Appearance {
         self.changes.set_pointer_size(size);
     }
 
+    /// Make the pointer this colour.
+    pub fn set_pointer_colour(&mut self, colour: crate::pointer::PointerColour) {
+        self.changes.set_pointer_colour(colour);
+    }
+
     /// Put one setting back to what this release ships.
     ///
     /// Says whether there was anything to put back.
@@ -236,6 +241,12 @@ impl Appearance {
     #[must_use]
     pub fn pointer_size(&self) -> crate::pointer::PointerSize {
         self.changes.pointer_size().unwrap_or_default()
+    }
+
+    /// What colour the pointer is: the person's choice, or navy.
+    #[must_use]
+    pub fn pointer_colour(&self) -> crate::pointer::PointerColour {
+        self.changes.pointer_colour().unwrap_or_default()
     }
 
     /// The accent as a colour, at this time of day.

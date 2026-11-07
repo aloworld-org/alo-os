@@ -67,10 +67,12 @@ fn the_recipe_runs_the_generator_into_what_it_copies() {
     );
     // **Both themes are checked by the build**, the shipped one and the one a
     // person who chose the familiar arrow is given.
-    for name in [
-        alo_cursors::theme::THE_NAME,
-        alo_cursors::theme::THE_CLASSIC_NAME,
-    ] {
+    // **Every theme alo-cursors writes is checked by the build**: each arrow
+    // in each colour a person may choose.
+    for name in alo_cursors::theme::every_theme()
+        .into_iter()
+        .map(|(silhouette, colour)| alo_cursors::theme::the_name_for(silhouette, colour))
+    {
         assert!(
             ran.contains(&format!("test -s {written}/{name}/cursors/default")),
             "the build does not check that it wrote the {name} theme"
