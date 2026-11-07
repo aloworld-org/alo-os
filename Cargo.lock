@@ -1842,6 +1842,7 @@ dependencies = [
  "jiff",
  "pixman",
  "rustix 1.1.4",
+ "self_cell",
  "serde_json",
  "smithay",
  "tempfile",

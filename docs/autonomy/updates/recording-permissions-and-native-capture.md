@@ -1747,3 +1747,41 @@ remain explicit rendering errors. No renderer patch or unsafe access is added.
 Regressions cover sparse gaps, overlap order, unchanged inputs, bounded fallback,
 overflow refusal and exact software-rendered indicator pixels, including output
 clipping. Validation and the installed recording repeat are pending.
+
+At `a29f347c`, the native application check, optimized desktop regressions and
+strict desktop checks pass. The full OS gate and installed repeat are pending.
+The first candidate is refused by Clippy's fixed-size-chunk rule; the correction
+uses `as_chunks_mut::<4>()` and does not suppress the check.
+
+### Display mapping lifetime candidate
+
+A separate one-time kernel CPU sample of desktop `0b3dc75a` collects 541 samples
+over 20.057 seconds, with none lost. Of these, 172 locate `do_user_addr_fault`,
+23 `__handle_mm_fault`, 13 `handle_mm_fault` and 57 inter-CPU function calls.
+Kernel symbols come from that guest's own symbol table. This diagnostic runs
+with competing validation resumed and does not measure quiet-host media quality.
+Evidence is in `diagnostic-passive-kernel-scratch`.
+
+A minor-fault sample then records one fault per 100 events, including mapping
+notifications. Of 731 sampled faults, 560 resolve to `/dev/dri/card1`, 122 to
+the heap and 49 to anonymous mappings, over 20.285 seconds; none are lost and 56
+mapping notifications arrive. A second 20.159-second sample preserves the full
+mapping/sample event sequence: 1,210 of 1,873 fault samples resolve to that DRM
+device, with 121 mapping notifications and none lost. Workload and competing
+validation differ between samples, so their event rates are not a performance
+comparison. Both sample the unchanged normal desktop before installing the ink
+candidate. All sampling descriptors close afterward. Evidence is in
+`diagnostic-passive-page-fault-scratch` and its `-repeat` folder.
+
+Source inspection shows each upload calls `map_dumb_buffer` and drops the
+mapping, even when the detached GEM buffer is reused. The next candidate keeps
+one lazy mapping per owned buffer, using the safe `self_cell` 1.3.0 API already
+locked through cosmic-text. No new registry package or engine patch is added.
+Only unbound allocations expose upload callbacks. Successful mapping admission
+is reused, mapping refusal leaves no cached entry, and upload refusal retains
+ownership for the existing allocation cleanup. The mapping is dropped before
+GEM destruction. Uncertain scanout retirement still quarantines kernel handles
+until descriptor teardown. No owned pointer or mapping escapes its callback.
+Regression checks cover single admission across repeated uploads, exact byte
+writes, mapping refusal without upload, and exactly-once mapping retirement
+after an upload refusal. CI, installed capture and the fault recheck are pending.

@@ -65,7 +65,8 @@ pub struct DisplayResources<'fd> {
 impl<'fd> DisplayResources<'fd> {
     /// Upload a full-mode CPU frame while this candidate remains unbound.
     ///
-    /// Returns ownership only after the copy and unmap succeed. Size/layout or
+    /// Returns ownership only after the exclusive copy succeeds. Its private CPU
+    /// mapping stays with the allocation and unmaps before GEM retirement. Size/layout or
     /// mapping refusal consumes and releases the candidate, retaining every cleanup
     /// failure. No commit occurs. Call `activate` afterwards to test and display it.
     /// ActiveScanout deliberately has no write API: scanned-out memory is immutable.
@@ -139,7 +140,8 @@ pub(crate) trait ResourceDevice {
     type Buffer: Buffer;
     /// Allocate a 32-bit XRGB8888 dumb buffer.
     fn create_buffer(&self, size: (u32, u32)) -> io::Result<Self::Buffer>;
-    /// Borrow mapped bytes only inside the callback; unmap before returning.
+    /// Borrow mapped bytes only inside the callback. A device may retain its
+    /// private mapping with the buffer, but must unmap before GEM destruction.
     fn with_mapping(
         &self,
         buffer: &mut Self::Buffer,

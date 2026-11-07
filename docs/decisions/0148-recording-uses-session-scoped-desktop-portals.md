@@ -203,3 +203,18 @@ hardware readings become unknown rather than blocking frames or inventing
 silence. A late hardware result must not overwrite a new clock format. Verify
 that a blocked reader does not block refresh, that outstanding work stays
 bounded, and that failure and stale results cannot retain measured values.
+
+The software-VM fault investigation later samples repeated minor faults in the
+DRM mapping itself: retaining a GEM allocation still remaps all its pages on
+every upload. Keep at most one private CPU mapping with each owned dumb buffer,
+including while it is detached for reuse. Upload callbacks may borrow bytes only
+while the allocation is unbound; active scanout retains no write API. Unmap
+before destroying the GEM handle, including allocation refusal and retirement.
+Quarantine continues to leave uncertain kernel handles for descriptor teardown.
+Rent the lifetime owner from `self_cell` 1.3.0, already locked through the text
+stack: its `MutBorrow` builder gives drm-rs the one mutable buffer borrow, and
+the resulting cell keeps that mapping within the buffer owner. Metadata copies
+carry no separate cleanup ownership. No leaked allocation, raw pointer access,
+local lifetime extension or engine patch is permitted. Validate single mapping
+admission, refusal and retirement ownership, then repeat installed capture and
+measure faults again; a lower fault count alone does not establish media quality.

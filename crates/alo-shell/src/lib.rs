@@ -395,6 +395,7 @@ mod region_sheet;
 mod resize_cursor;
 mod resize_transaction;
 mod resource_device;
+mod retained_dumb_buffer;
 mod running_keys;
 mod running_rows;
 mod running_window;
