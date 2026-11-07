@@ -675,7 +675,7 @@ pub const AS_A_PERCENTAGE: Word = Word::saying("settings.access.percent", "{perc
 /// The length is written out so that adding a word above and forgetting it
 /// here does not compile — a word declared and left out of this list reaches a
 /// person as its own key.
-pub const THE_WINDOWS_WORDS: [Word; 93] = [
+pub const THE_WINDOWS_WORDS: [Word; 96] = [
     SETTINGS,
     EVERYTHING_IN_ONE_PLACE,
     THE_GROUP_ALO,
