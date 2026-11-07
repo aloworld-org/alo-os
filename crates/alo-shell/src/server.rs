@@ -242,6 +242,18 @@ pub struct Server {
     pub(crate) pointers_look: crate::ThePointersLook,
     /// A change to the pointer the desktop has not told the session about yet.
     pub(crate) pointer_change_to_tell: Option<crate::ThePointersLook>,
+    /// Where a new window goes when there is no room for it in view, as the
+    /// person last said (`crate::the_choice_when_there_is_no_room`).
+    pub(crate) when_there_is_no_room: alo_appearance::WhenThereIsNoRoom,
+    /// Whether the person asked for less motion (`crate::the_view_glides`).
+    pub(crate) motion_is_reduced: bool,
+    /// The view gliding somewhere, while it is (`crate::the_view_glides`).
+    pub(crate) the_glide: Option<crate::the_view_glides::TheGlide>,
+    /// Windows the person opened that have not been placed yet
+    /// (`crate::a_window_the_person_opened`): the only ones whose placing may
+    /// move the view.
+    pub(crate) the_person_opened_these:
+        Vec<smithay::reexports::wayland_server::protocol::wl_surface::WlSurface>,
     /// **alo's own terminal**, when a person has opened one.
     ///
     /// Distinct from [`Self::the_terminal`] above, and the pair is worth
@@ -880,6 +892,12 @@ impl Server {
             window_titles: alo_appearance::WindowTitles::default(),
             pointers_look: crate::ThePointersLook::default(),
             pointer_change_to_tell: None,
+            // Gliding to empty space, until the desktop says what this person
+            // chose; and full motion, until it says they asked for less.
+            when_there_is_no_room: alo_appearance::WhenThereIsNoRoom::default(),
+            motion_is_reduced: false,
+            the_glide: None,
+            the_person_opened_these: Vec::new(),
             what_was_typed_into_more_apps: alo_dock::WhatTheyTyped::nothing(),
             pins_owed_to_the_disk: None,
             // The keyboard starts with the work, which is where a person's

@@ -21,6 +21,7 @@ use crate::accent::Accent;
 use crate::background::Background;
 use crate::display::DisplayId;
 use crate::lock::Lock;
+use crate::no_room::WhenThereIsNoRoom;
 use crate::pointer::{PointerColour, PointerShape, PointerSize};
 use crate::scheme::Following;
 use crate::text::TextScale;
@@ -49,6 +50,8 @@ pub enum Setting {
     PointerSize,
     /// What colour the pointer is.
     PointerColour,
+    /// Where a new window goes when there is no room for it in the view.
+    WhenThereIsNoRoom,
 }
 
 /// Everything a person has changed about how their machine looks.
@@ -79,6 +82,8 @@ pub struct Changes {
     pointer_size: Option<PointerSize>,
     /// What colour they made the pointer.
     pointer_colour: Option<PointerColour>,
+    /// Where they asked a new window to go when there is no room for it.
+    when_there_is_no_room: Option<WhenThereIsNoRoom>,
 }
 
 impl Changes {
@@ -102,6 +107,7 @@ impl Changes {
             && self.pointer_shape.is_none()
             && self.pointer_size.is_none()
             && self.pointer_colour.is_none()
+            && self.when_there_is_no_room.is_none()
     }
 
     /// Put this behind the windows, on every display they have not singled out.
@@ -163,6 +169,11 @@ impl Changes {
         self.pointer_colour = Some(colour);
     }
 
+    /// Say where a new window goes when there is no room for it in the view.
+    pub fn set_when_there_is_no_room(&mut self, choice: WhenThereIsNoRoom) {
+        self.when_there_is_no_room = Some(choice);
+    }
+
     /// Forget that this was ever changed, which puts it back to what the
     /// running release ships.
     ///
@@ -178,6 +189,7 @@ impl Changes {
             Setting::PointerShape => self.pointer_shape.take().is_some(),
             Setting::PointerSize => self.pointer_size.take().is_some(),
             Setting::PointerColour => self.pointer_colour.take().is_some(),
+            Setting::WhenThereIsNoRoom => self.when_there_is_no_room.take().is_some(),
         }
     }
 
@@ -266,6 +278,12 @@ impl Changes {
     pub fn pointer_colour(&self) -> Option<PointerColour> {
         self.pointer_colour
     }
+
+    /// Where a new window goes when there is no room, if the person chose.
+    #[must_use]
+    pub fn when_there_is_no_room(&self) -> Option<WhenThereIsNoRoom> {
+        self.when_there_is_no_room
+    }
 }
 
 /// Changes as a settings file holds them: everything untouched is absent rather
@@ -302,6 +320,9 @@ struct Written {
     /// What colour the pointer is.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pointer_colour: Option<PointerColour>,
+    /// Where a new window goes when there is no room for it.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    when_there_is_no_room: Option<WhenThereIsNoRoom>,
 }
 
 impl From<Written> for Changes {
@@ -320,6 +341,7 @@ impl From<Written> for Changes {
             pointer_shape: written.pointer_shape,
             pointer_size: written.pointer_size,
             pointer_colour: written.pointer_colour,
+            when_there_is_no_room: written.when_there_is_no_room,
         };
         for (display, background) in written.displays {
             changes.set_background_on(display, background);
@@ -341,6 +363,7 @@ impl From<Changes> for Written {
             pointer_shape: changes.pointer_shape,
             pointer_size: changes.pointer_size,
             pointer_colour: changes.pointer_colour,
+            when_there_is_no_room: changes.when_there_is_no_room,
         }
     }
 }
@@ -387,6 +410,11 @@ mod tests {
         assert_eq!(changes.accent(), Some(Accent::Rose));
         changes.set_window_titles(WindowTitles::WhenPointedAt);
         assert_eq!(changes.window_titles(), Some(WindowTitles::WhenPointedAt));
+        changes.set_when_there_is_no_room(WhenThereIsNoRoom::OpenInFront);
+        assert_eq!(
+            changes.when_there_is_no_room(),
+            Some(WhenThereIsNoRoom::OpenInFront)
+        );
         assert!(!changes.is_untouched());
 
         for setting in [
@@ -396,6 +424,7 @@ mod tests {
             Setting::Text,
             Setting::Accent,
             Setting::WindowTitles,
+            Setting::WhenThereIsNoRoom,
         ] {
             assert!(changes.forget(setting), "{setting:?} was there to forget");
             assert!(!changes.forget(setting), "and is not there twice");

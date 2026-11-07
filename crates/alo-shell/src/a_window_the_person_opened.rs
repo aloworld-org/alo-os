@@ -36,6 +36,20 @@
 //! `crate::which_window_is_in_front`'s *only a person's own road moves it*. A
 //! window no one asked for opens behind and without the keyboard, one
 //! Super+Tab away — background applications must not steal focus.
+//!
+//! # The same answer decides whether the view may move
+//!
+//! Since 2026-11-07 a window the person opened with no room in view may have
+//! the view glide to empty space for it (`crate::a_new_window_is_placed`), and
+//! rule 8 lets only *an authorised interaction* move the camera. So *is this the
+//! person's* is asked twice — here, to bring it in front, and when it is placed
+//! — and both ask [`Server::the_person_opened`], so the two cannot disagree.
+//!
+//! **Either can come first.** A window maps while clients are heard, and that
+//! can be after this frame's look here and before its placing. So the look here
+//! remembers what it decided for a window not yet placed, in
+//! `Server::the_person_opened_these`, and the placing asks the same question
+//! afresh for one this look has not seen yet.
 
 use smithay::reexports::wayland_server::Resource as _;
 use smithay::reexports::wayland_server::protocol::wl_surface::WlSurface;
@@ -88,15 +102,20 @@ impl crate::Server {
             if !surface.alive() {
                 continue;
             }
-            let started = self.the_application_of(&surface).and_then(|application| {
-                self.the_person_is_waiting_for
-                    .iter()
-                    .position(|waiting| *waiting == application)
-            });
-            if let Some(at) = started {
-                self.the_person_is_waiting_for.remove(at);
-            } else if !self.a_window_of_the_application_the_person_is_in(&surface) {
+            if !self.the_person_opened(&surface) {
                 continue;
+            }
+            if let Some(at) = self.the_application_this_person_started(&surface) {
+                self.the_person_is_waiting_for.remove(at);
+            }
+            // **Remembered for its placing**, where that has not happened yet:
+            // the ask above is forgotten now, and the placing must still know
+            // this window is the person's.
+            if !crate::has_been_placed(&surface) {
+                if self.the_person_opened_these.len() >= AT_MOST_REMEMBERED {
+                    self.the_person_opened_these.remove(0);
+                }
+                self.the_person_opened_these.push(surface.clone());
             }
             // Going to a window forgets what else the person was waiting for,
             // which is right for a window they chose and wrong here: two
@@ -107,6 +126,38 @@ impl crate::Server {
             let _ = self.the_person_goes_to_this_window(&surface);
             self.the_person_is_waiting_for = still_waiting;
         }
+    }
+
+    /// **Whether the person opened this window**: the first window of an
+    /// application they started, or a new window of the application they are
+    /// in. Asks and forgets nothing, so it can be asked twice in one frame.
+    pub(crate) fn the_person_opened(&self, surface: &WlSurface) -> bool {
+        self.the_application_this_person_started(surface).is_some()
+            || self.a_window_of_the_application_the_person_is_in(surface)
+    }
+
+    /// Where `surface`'s application is in the list of what the person is
+    /// waiting for, if they started it.
+    fn the_application_this_person_started(&self, surface: &WlSurface) -> Option<usize> {
+        let application = self.the_application_of(surface)?;
+        self.the_person_is_waiting_for
+            .iter()
+            .position(|waiting| *waiting == application)
+    }
+
+    /// **Whether the person opened this window and it is waiting to be
+    /// placed** — and it is forgotten, because a window is placed once.
+    pub(crate) fn the_person_opened_this_one(&mut self, surface: &WlSurface) -> bool {
+        self.the_person_opened_these.retain(|theirs| theirs.alive());
+        if let Some(at) = self
+            .the_person_opened_these
+            .iter()
+            .position(|theirs| theirs == surface)
+        {
+            self.the_person_opened_these.remove(at);
+            return true;
+        }
+        self.the_person_opened(surface)
     }
 
     /// Whether `surface` is a new window of the application that holds the

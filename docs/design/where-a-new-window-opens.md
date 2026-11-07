@@ -206,3 +206,49 @@ follows the person's reduced-motion setting** — with it on, the view jumps
 rather than glides — and its length is a duration, never a speed the person has
 to match. A person may still put one window over another themselves at either
 setting.
+
+### Built 2026-11-07, and what this lane decided where the owner was silent
+
+**Where it is.** `crate::a_new_window_is_placed` decides,
+`crate::the_nearest_empty_space` finds the space, `crate::the_view_glides`
+moves the view, and the choice is `alo_appearance::WhenThereIsNoRoom`, kept in
+`appearance.toml` and chosen in Settings → Appearance, in a section under
+*Windows* (`the-settings-window.md`, question 8).
+
+**When it happens — all three, or not at all:**
+
+- rules 3 to 7 found **no room in view**: their answer lies over another
+  window, or is not wholly in the view (for a window larger than the view, its
+  handle is not in it). Room in view is used exactly as before;
+- the person kept **Glide to empty space**;
+- **the person opened the window** — the same answer rule 8 uses to give it the
+  focus (`crate::a_window_the_person_opened`). A window an application or alo
+  opened in the background keeps rule 5, in front and offset, and the view
+  does not move.
+
+**Decided by this lane, each the owner's to change:**
+
+1. ***Nearest* is how far the view has to move**, not how far the window is
+   from the middle of the screen. Ties go to the space nearest the middle of
+   the view, then to the reading direction's side (rule 3's preference,
+   mirrored), then to the higher.
+2. **The 16 gap is kept on every side**, from every window, and between the new
+   window and the edge of the view it glides to.
+3. **Never further than *Show all* reaches.** A Place so full that no space is
+   left within what *Show all* fits at its furthest out gets rule 5 instead —
+   in front, offset — rather than a window that could not be brought back.
+4. **The glide lasts 300 ms however far it goes**, eased in and out. The design
+   names no duration; 300 ms is what common desktop guidelines give a
+   transition that moves the whole view.
+5. **The person's hand wins.** A pan, a zoom, *Show all* or going to another
+   Place ends a glide where it is.
+6. **Reduced motion is read from the person's own `access.toml` at sign-in**
+   (`alo_access::Setting::ReducedMotion`), because that is where it is kept.
+   **Nothing in Settings turns it on yet**, so on a machine today the glide
+   always glides; the first-start sheet's *More options* is the designed road
+   (`the-first-start.md`, row 3).
+
+**Not covered, named rather than guessed:** alo's own windows — the terminal,
+Settings, the record and task windows — are placed by their own callers and
+still open by rule 5. The owner's words were about *the window of the
+application*. Whether alo's own windows glide too is a question for the owner.

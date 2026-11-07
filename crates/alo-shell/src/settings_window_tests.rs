@@ -246,6 +246,13 @@ fn every_setting_the_machine_has_is_in_one_window() {
         .chain(Accent::ALL.into_iter().map(SettingsRow::Accent))
         // **Then the titles switch**, under *Windows*.
         .chain(std::iter::once(SettingsRow::WindowTitles))
+        // **Then where a new window goes when there is no room**, gliding
+        // first because it is how this computer comes.
+        .chain(
+            alo_appearance::WhenThereIsNoRoom::ALL
+                .into_iter()
+                .map(SettingsRow::WhenThereIsNoRoom),
+        )
         .collect();
     // **The Dock's four edges, then what it does when a window needs the
     // room**: where it sits is chosen in Settings again (`docs/features.md`).
@@ -326,6 +333,8 @@ fn every_setting_the_machine_has_is_in_one_window() {
             }),
             SettingsRow::LightOrDark(LightOrDark::of(Appearance::shipped().following())),
             SettingsRow::Accent(Appearance::shipped().accent()),
+            // A new window with no room glides to empty space, as it ships.
+            SettingsRow::WhenThereIsNoRoom(alo_appearance::WhenThereIsNoRoom::GlideToEmptySpace),
             SettingsRow::Edge(Dock::shipped().edge()),
             SettingsRow::Hiding(Dock::shipped().hiding()),
             // **The region and the time zone are not marked on a page**: each
@@ -694,6 +703,61 @@ fn the_titles_switch_turns_over_and_back_and_is_kept_each_time() {
         );
     }
     assert_eq!(door.knocks.get(), 0, "a title switch knocked on the daemon");
+}
+
+/// **Where a new window goes when there is no room is kept across sign-ins**,
+/// each way: gliding as shipped, opening in front as the person's choice, and
+/// back — and the file says it by name.
+#[test]
+fn the_no_room_choice_is_kept_each_way_and_read_back_at_sign_in() {
+    use alo_appearance::WhenThereIsNoRoom;
+    let machine = a_persons_machine("no-room");
+    let strings = words();
+    let door = CountingDoor::revoking();
+    let mut window = machine.opened();
+    let at = machine.kept(alo_appearance::keeping::THE_FILE);
+    assert_eq!(
+        window.when_there_is_no_room(),
+        Some(WhenThereIsNoRoom::GlideToEmptySpace),
+        "a machine nobody changed glides to empty space"
+    );
+    for expected in [
+        WhenThereIsNoRoom::OpenInFront,
+        WhenThereIsNoRoom::GlideToEmptySpace,
+    ] {
+        assert_eq!(
+            chosen(
+                &mut window,
+                &SettingsRow::WhenThereIsNoRoom(expected),
+                &strings,
+                &door
+            ),
+            Some(SettingsDid::Kept(
+                SettingsSection::Appearance,
+                SettingsKept::Written
+            ))
+        );
+        assert_eq!(window.when_there_is_no_room(), Some(expected));
+        assert_eq!(
+            alo_appearance::keeping::at_sign_in(&at)
+                .0
+                .when_there_is_no_room(),
+            expected,
+            "what the next sign-in reads back"
+        );
+    }
+    // **Choosing the shipped answer is kept too**, so it stays chosen if a
+    // later release ships something else.
+    let written = std::fs::read_to_string(&at).unwrap();
+    assert!(
+        written.contains("when_there_is_no_room = \"GlideToEmptySpace\""),
+        "the file does not say the choice by name: {written}"
+    );
+    assert_eq!(
+        door.knocks.get(),
+        0,
+        "a window choice knocked on the daemon"
+    );
 }
 
 /// **The dock changes nothing `alo-dock` would not.**
