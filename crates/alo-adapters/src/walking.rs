@@ -1,13 +1,23 @@
 //! Walking one application's windows, once, at the moment it is asked.
 //!
 //! The walk is the only thing in this crate that asks an
-//! [`AccessibilityTree`] anything, and it is reached only from an authorised
-//! call (`crate::reading_windows`, `crate::activating`). What it keeps to:
+//! [`AccessibilityTree`] anything. It is reached from an authorised call
+//! (`crate::reading_windows`, `crate::activating`) and from a person's own
+//! command (`crate::by_their_hand`), and **both take this one walk**, so what a
+//! person can reach and what alo can reach are found the same way. What it
+//! keeps to:
 //!
 //! 1. **Only this application.** The applications the tree lists are matched by
 //!    the identifier their sandbox names ([`crate::accessibility_tree::Running::is`]),
 //!    never by the name an application gives itself; a child held on another
-//!    connection is another program's and is not followed, only said.
+//!    connection is another program's and is not followed, only said. **alo's
+//!    own surfaces** ([`Whose::AlosOwn`]) are matched by the unique name the
+//!    shell's tree answers as on the accessibility bus, which the compositor
+//!    tells a person's command and no client can take — never by a name or a
+//!    toolkit a client chooses for itself.
+//! 1. **Only the window named, when one is** (`--in`): a window whose title is
+//!    exactly that, or on alo's own tree the surface whose typed name it is.
+//!    None, or more than one, is refused rather than guessed.
 //! 2. **Only what is on the screen.** A thing that is not showing is not read,
 //!    and neither is anything inside it.
 //! 3. **Never a password field's contents.** Its text is not asked for. The
@@ -16,7 +26,7 @@
 //!    [`LONGEST_TEXT`] characters of any one text; past that the answer says
 //!    not everything was read, rather than stopping silently.
 
-use crate::accessibility_tree::{AccessibilityTree, Facts, NodeAt, TreeFault};
+use crate::accessibility_tree::{AccessibilityTree, Facts, NodeAt, Running, TreeFault};
 use crate::not_walked::NotWalked;
 use crate::pressable::Pressable;
 use crate::role::Role;
@@ -54,13 +64,57 @@ pub(crate) struct Walked {
     pub(crate) pressable: Vec<Found>,
 }
 
-/// Walk every window of `application` on the screen.
-pub(crate) fn walk(tree: &dyn AccessibilityTree, application: &str) -> Result<Walked, NotWalked> {
+/// Whose windows a walk reads.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Whose<'a> {
+    /// An installed application, by the identifier its sandbox gives it.
+    Application(&'a str),
+    /// **alo OS's own surfaces**: the tree the shell publishes, by the unique
+    /// name it answers as on the accessibility bus.
+    ///
+    /// The name comes from the compositor, which serves the tree, and a unique
+    /// name — one beginning `:` — is the bus's own and cannot be claimed by
+    /// another connection. A name that is not unique is never read as alo's:
+    /// anybody can ask for a well-known name.
+    AlosOwn {
+        /// The unique name the shell's tree answers as.
+        answers_as: &'a str,
+    },
+}
+
+impl<'a> Whose<'a> {
+    /// What a person is told this is: the identifier, or `alo`.
+    #[must_use]
+    pub const fn named(self) -> &'a str {
+        match self {
+            Self::Application(application) => application,
+            Self::AlosOwn { .. } => "alo",
+        }
+    }
+
+    /// Whether a root the tree lists is this one's.
+    fn is(self, running: &Running) -> bool {
+        match self {
+            Self::Application(application) => running.is.as_deref() == Some(application),
+            Self::AlosOwn { answers_as } => {
+                answers_as.starts_with(':') && running.at.holder == answers_as
+            }
+        }
+    }
+}
+
+/// Walk every window of `whose` on the screen — or, where `within` names one,
+/// that one window alone.
+pub(crate) fn walk(
+    tree: &dyn AccessibilityTree,
+    whose: Whose<'_>,
+    within: Option<&str>,
+) -> Result<Walked, NotWalked> {
     let roots: Vec<NodeAt> = tree
         .applications()
         .map_err(NotWalked::Tree)?
         .into_iter()
-        .filter(|running| running.is.as_deref() == Some(application))
+        .filter(|running| whose.is(running))
         .map(|running| running.at)
         .collect();
     let mut walker = Walker {
@@ -69,7 +123,7 @@ pub(crate) fn walk(tree: &dyn AccessibilityTree, application: &str) -> Result<Wa
         not_all_read: false,
         pressable: Vec::new(),
     };
-    let mut windows = Vec::new();
+    let mut showing = Vec::new();
     for root in roots {
         let Some(facts) = walker.facts(&root)? else {
             continue;
@@ -81,19 +135,37 @@ pub(crate) fn walk(tree: &dyn AccessibilityTree, application: &str) -> Result<Wa
             let Some(facts) = walker.facts(&window)? else {
                 continue;
             };
-            if !States::of_the_tree(&facts.states).showing() {
-                continue;
+            if States::of_the_tree(&facts.states).showing() {
+                showing.push((window, facts));
             }
-            let mut seen = Vec::new();
-            walker.inside(&window, &facts, 0, &mut seen)?;
-            windows.push(ShownWindow::titled(facts.name, seen));
         }
     }
-    if windows.is_empty() {
+    if showing.is_empty() {
         return Err(NotWalked::NoWindow);
     }
+    if let Some(named) = within {
+        let mut matching = Vec::new();
+        for (window, facts) in showing {
+            if walker.is_called(whose, &window, &facts, named)? {
+                matching.push((window, facts));
+            }
+        }
+        if matching.len() > 1 {
+            return Err(NotWalked::MoreThanOneWindow);
+        }
+        if matching.is_empty() {
+            return Err(NotWalked::NoSuchWindow);
+        }
+        showing = matching;
+    }
+    let mut windows = Vec::new();
+    for (window, facts) in showing {
+        let mut seen = Vec::new();
+        walker.inside(&window, &facts, 0, &mut seen)?;
+        windows.push(ShownWindow::titled(facts.name, seen));
+    }
     Ok(Walked {
-        shown: Shown::of(application.to_owned(), windows, walker.not_all_read),
+        shown: Shown::of(whose.named().to_owned(), windows, walker.not_all_read),
         pressable: walker.pressable,
     })
 }
@@ -111,6 +183,28 @@ struct Walker<'t> {
 }
 
 impl Walker<'_> {
+    /// Whether this window is the one a person named: by its exact title, or
+    /// on alo's own tree by the surface's typed name, which the shell publishes
+    /// as an attribute of the surface's own node.
+    fn is_called(
+        &self,
+        whose: Whose<'_>,
+        window: &NodeAt,
+        facts: &Facts,
+        named: &str,
+    ) -> Result<bool, NotWalked> {
+        match whose {
+            Whose::Application(_) => Ok(facts.name == named),
+            Whose::AlosOwn { .. } => match self.tree.attributes(window) {
+                Ok(attributes) => Ok(attributes.iter().any(|(key, value)| {
+                    key == alo_access::THE_SURFACE_ATTRIBUTE && value == named
+                })),
+                Err(TreeFault::Vanished) => Ok(false),
+                Err(fault) => Err(NotWalked::Tree(fault)),
+            },
+        }
+    }
+
     /// The facts about one thing, or [`None`] when it vanished while being
     /// read — a window changes while it is read, and what left it is not
     /// there to describe.

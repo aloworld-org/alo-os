@@ -58,6 +58,8 @@ pub use high_contrast::{HighContrast, THE_PAIRS_THE_SHELL_DRAWS};
 pub use key_filter::{KeyFilter, NotADelay};
 pub use reaching::{Key, Leaving, after_the_last, focus_order, leaving, the_tab_stop_for};
 pub use setting::{Setting, WhatItChanges};
-pub use tree::{Control, Role, State, Surface, the_approval_in_reading_order};
+pub use tree::{
+    Control, Role, State, Surface, THE_SURFACE_ATTRIBUTE, the_approval_in_reading_order,
+};
 pub use turned_on::{Magnification, NotAMagnification, TurnedOn};
 pub use voices::{A_VOICE_FOR_EACH, has_a_voice};

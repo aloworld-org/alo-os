@@ -21,6 +21,9 @@ pub const NAME: &str = "name";
 /// The gap holding a verb's name.
 pub const VERB: &str = "verb";
 
+/// The gap holding the window a person named with `--in`.
+pub const WINDOW: &str = "window";
+
 // ---------------------------------------------------------------------------
 // Reading what a window shows.
 // ---------------------------------------------------------------------------
@@ -181,6 +184,24 @@ pub const NO_WINDOW: Word = Word::saying(
      {application} is its identifier and is not translated. Nothing happened.",
 );
 
+/// No window of the application has the title a person named.
+pub const NO_SUCH_WINDOW: Word = Word::saying(
+    "adapters.fallback.no-such-window",
+    "{application} shows no window called {window}, so nothing was read or pressed",
+)
+.noting(
+    "Said when a person's command named one window with --in and no window of the \n     application on the screen has exactly that title. For alo OS's own surfaces {window} is \n     the surface's typed name, such as settings. {application} and {window} are not \n     translated. Nothing happened.",
+);
+
+/// More than one window of the application has the title a person named.
+pub const MORE_THAN_ONE_WINDOW: Word = Word::saying(
+    "adapters.fallback.more-than-one-window",
+    "{application} shows more than one window called {window}, so which one was meant cannot \n     be told and nothing was read or pressed",
+)
+.noting(
+    "Said instead of choosing one: two windows with one title, and acting on either would be a \n     guess. {application} and {window} are not translated. Nothing happened.",
+);
+
 /// What applications show cannot be read on this machine.
 pub const NOT_READABLE_HERE: Word = Word::saying(
     "adapters.fallback.not-readable-here",
@@ -321,7 +342,7 @@ pub const NOT_ALL_READ: Word = Word::saying(
 .noting("Said beside what was read. {application} is its identifier and is not translated.");
 
 /// Every word the fallback declares.
-pub const EVERY_WORD: [Word; 33] = [
+pub const EVERY_WORD: [Word; 35] = [
     READ_PURPOSE,
     READ_APPLICATION,
     READ_SENTENCE,
@@ -342,6 +363,8 @@ pub const EVERY_WORD: [Word; 33] = [
     NOT_THIS_VERB,
     HAS_ITS_OWN,
     NO_WINDOW,
+    NO_SUCH_WINDOW,
+    MORE_THAN_ONE_WINDOW,
     NOT_READABLE_HERE,
     DID_NOT_ANSWER_READING,
     NO_SUCH_CONTROL,

@@ -170,6 +170,11 @@ impl Control {
     }
 }
 
+/// The attribute the shell's published tree carries on each surface's own node,
+/// whose value is [`Surface::on_the_wire`] — how a person's command finds the
+/// surface they named, on the one tree a screen reader reads too.
+pub const THE_SURFACE_ATTRIBUTE: &str = "alo-surface";
+
 /// **Every surface this machine draws**, as the shell's own frames name them.
 ///
 /// The list is held to `alo-shell`'s exports by
@@ -218,6 +223,39 @@ impl Surface {
         Self::Settings,
         Self::WindowControls,
     ];
+
+    /// **The name a person types for this surface**, and the one the shell's
+    /// published tree carries on the surface's own node under
+    /// [`THE_SURFACE_ATTRIBUTE`]: `alo-app alo controls --in settings`.
+    ///
+    /// **Never translated**, for the reason a verb name is not: a script
+    /// typed on a Greek machine must reach the same surface on a German one.
+    /// What a person *reads* about the surface is [`Self::read_aloud`]'s words;
+    /// this is what they *type*. Stable once published
+    /// (`docs/contracts/terminal-commands.md`, *What is a public surface*).
+    #[must_use]
+    pub const fn on_the_wire(self) -> &'static str {
+        match self {
+            Self::Recovery => "recovery",
+            Self::SignIn => "sign-in",
+            Self::Desktop => "desktop",
+            Self::Dock => "dock",
+            Self::StatusArea => "status-area",
+            Self::Approval => "approval",
+            Self::Record => "record",
+            Self::Settings => "settings",
+            Self::WindowControls => "window-controls",
+        }
+    }
+
+    /// The surface a person typed, or [`None`] for a word that names none —
+    /// matched exactly, with no case folding, as an identifier is.
+    #[must_use]
+    pub fn off_the_wire(word: &str) -> Option<Self> {
+        Self::ALL
+            .into_iter()
+            .find(|surface| surface.on_the_wire() == word)
+    }
 
     /// **Which of the shell's frames or screens draw this**, as that crate
     /// spells them — what the test matches its exports against.
@@ -476,6 +514,33 @@ const BORROWED_AND_NOT_AN_ACTION: [Word; 2] =
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// **Every surface has one name a person can type, each different, and
+    /// each reads back as the surface it names** — and a word that names no
+    /// surface, or names one in the wrong case, reads as none.
+    #[test]
+    fn every_surface_has_one_typed_name_and_it_reads_back() {
+        let mut names: Vec<&str> = Surface::ALL.into_iter().map(Surface::on_the_wire).collect();
+        for surface in Surface::ALL {
+            let name = surface.on_the_wire();
+            assert_eq!(Surface::off_the_wire(name), Some(surface), "{name}");
+            assert!(
+                name.bytes()
+                    .all(|byte| byte.is_ascii_lowercase() || byte == b'-'),
+                "{name} is not a word a person types without quoting"
+            );
+        }
+        names.sort_unstable();
+        names.dedup();
+        assert_eq!(
+            names.len(),
+            Surface::ALL.len(),
+            "two surfaces share a typed name"
+        );
+        for not in ["Settings", "setting", "", "the record", "places"] {
+            assert_eq!(Surface::off_the_wire(not), None, "{not}");
+        }
+    }
 
     /// **Every name a reader says is declared by somebody, and which somebody
     /// is a property of the control rather than of the word.**

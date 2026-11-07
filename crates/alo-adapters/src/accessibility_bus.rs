@@ -238,6 +238,14 @@ impl AccessibilityTree for AccessibleSession {
         let index = i32::try_from(action).map_err(|_| TreeFault::Vanished)?;
         self.ask(at, ACTION, "DoAction", &(index,))
     }
+
+    fn attributes(&self, at: &NodeAt) -> Result<Vec<(String, String)>, TreeFault> {
+        let said: std::collections::HashMap<String, String> =
+            self.ask(at, ACCESSIBLE, "GetAttributes", &())?;
+        let mut said: Vec<(String, String)> = said.into_iter().collect();
+        said.sort_unstable();
+        Ok(said)
+    }
 }
 
 /// What an error from the bus means for one question.

@@ -58,7 +58,11 @@ struct Where(Rc<RefCell<BTreeMap<String, Vec<u64>>>>);
 
 impl FindsWhereItRuns for Where {
     fn groups_of(&self, application: &str) -> Vec<u64> {
-        self.0.borrow().get(application).cloned().unwrap_or_default()
+        self.0
+            .borrow()
+            .get(application)
+            .cloned()
+            .unwrap_or_default()
     }
 }
 
@@ -103,8 +107,11 @@ impl Machine {
         let (command, door) = UnixStream::pair().unwrap();
         door.set_nonblocking(true).unwrap();
         let asked = ToCount::what(Application::identified(MAIL).unwrap());
-        self.counting
-            .taken_in(AskedToCount::of(asked, door, Vec::new()), called, self.at(seconds));
+        self.counting.taken_in(
+            AskedToCount::of(asked, door, Vec::new()),
+            called,
+            self.at(seconds),
+        );
         BufReader::new(command)
     }
 
@@ -161,7 +168,10 @@ fn a_command_is_counted_shown_and_told_what_was_sent() {
     assert_eq!(next(&mut command), "sent 1024");
     assert!(machine.lines().is_empty(), "the line outlived its command");
     assert_eq!(machine.counting.how_many_are_counting(), 0);
-    assert!(machine.kernel.borrow().counted.is_empty(), "a count outlived its command");
+    assert!(
+        machine.kernel.borrow().counted.is_empty(),
+        "a count outlived its command"
+    );
 }
 
 /// **A command that sends nothing never lights the indicator**, and is told
@@ -189,9 +199,16 @@ fn a_line_stays_until_it_has_been_seen() {
     done(&mut command);
     machine.looked(11);
     assert_eq!(next(&mut command), "sent 10");
-    assert_eq!(machine.lines(), ["Thunderbird"], "it came off before it was seen");
+    assert_eq!(
+        machine.lines(),
+        ["Thunderbird"],
+        "it came off before it was seen"
+    );
     machine.looked(12);
-    assert!(machine.lines().is_empty(), "it stayed past the time it was owed");
+    assert!(
+        machine.lines().is_empty(),
+        "it stayed past the time it was owed"
+    );
 }
 
 /// **A command that hangs up ends its count**, and nothing stays counting
@@ -231,7 +248,10 @@ fn an_application_started_during_the_command_is_counted_once_it_appears() {
     let mut command = machine.asked(0, Some("Thunderbird"));
     assert_eq!(next(&mut command), "counting");
     machine.looked(1);
-    machine.running.borrow_mut().insert(MAIL.to_owned(), vec![9]);
+    machine
+        .running
+        .borrow_mut()
+        .insert(MAIL.to_owned(), vec![9]);
     machine.looked(2);
     machine.sends(9, 300);
     done(&mut command);
@@ -279,7 +299,11 @@ fn what_cannot_be_counted_is_refused_by_name() {
     );
     let (command, door) = UnixStream::pair().unwrap();
     nowhere.taken_in(
-        AskedToCount::of(ToCount::what(Application::identified(MAIL).unwrap()), door, Vec::new()),
+        AskedToCount::of(
+            ToCount::what(Application::identified(MAIL).unwrap()),
+            door,
+            Vec::new(),
+        ),
         Some("Thunderbird"),
         Instant::now(),
     );
@@ -325,5 +349,9 @@ fn a_command_that_says_anything_but_done_is_finished_with() {
     command.get_mut().write_all(b"finished\n").unwrap();
     machine.looked(1);
     assert_eq!(machine.counting.how_many_are_counting(), 0);
-    assert_eq!(next(&mut command), "", "a caller with a bug was told something");
+    assert_eq!(
+        next(&mut command),
+        "",
+        "a caller with a bug was told something"
+    );
 }

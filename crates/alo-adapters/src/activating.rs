@@ -26,15 +26,15 @@ use alo_applications::Installed;
 use alo_capability::{Authorised, Grants, Refused, Value};
 use alo_strings::{Said, Strings};
 
-use crate::accessibility_tree::{AccessibilityTree, TreeFault};
+use crate::accessibility_tree::AccessibilityTree;
 use crate::adapters::Adapters;
+use crate::by_their_hand::pressed;
 use crate::fallback_reach::reached;
 use crate::fallback_verbs::{ACTIVATE_CONTROL, KIND, NAME};
 use crate::fallback_words as words;
-use crate::not_pressed::{NotPressed, TheControl};
-use crate::not_walked::NotWalked;
+use crate::not_pressed::TheControl;
 use crate::pressable::Pressable;
-use crate::walking::{Found, Walked, walk};
+use crate::walking::Whose;
 
 /// The names of the actions that press a control, in the order they are
 /// looked for, matched without regard to case. Toolkits name the same act
@@ -121,49 +121,15 @@ impl Activating {
         tree: &dyn AccessibilityTree,
         strings: &Strings,
     ) -> Result<Pressed, Refused> {
-        let control = TheControl {
-            application: &self.application,
-            kind: self.kind,
-            name: &self.name,
-        };
-        let refused_with =
-            |said: Said| Refused::worded_elsewhere(self.authorised.call().clone(), said);
-        let not_pressed = |why: NotPressed| refused_with(why.said(control, strings));
-        let not_walked = |why: NotWalked| refused_with(why.said(&self.application, strings));
-
-        let Walked { shown, pressable } = walk(tree, &self.application).map_err(not_walked)?;
-        let mut matching: Vec<Found> = pressable
-            .into_iter()
-            .filter(|found| found.kind == self.kind && found.name == self.name)
-            .collect();
-        let found = match (matching.len(), shown.not_all_read()) {
-            (2.., _) => return Err(not_pressed(NotPressed::MoreThanOne)),
-            (_, true) => return Err(not_pressed(NotPressed::TooMuchToBeSure)),
-            (0, false) => return Err(not_pressed(NotPressed::NoSuchControl)),
-            (_, false) => matching.remove(0),
-        };
-        if !found.usable {
-            return Err(not_pressed(NotPressed::CannotBeUsedNow));
-        }
-        let actions = match tree.actions(&found.at) {
-            Ok(actions) => actions,
-            Err(TreeFault::Vanished) => return Err(not_pressed(NotPressed::NoSuchControl)),
-            Err(fault) => return Err(not_walked(NotWalked::Tree(fault))),
-        };
-        let Some(action) = PRESSING.iter().find_map(|pressing| {
-            actions
-                .iter()
-                .position(|action| action.eq_ignore_ascii_case(pressing))
-        }) else {
-            return Err(not_pressed(NotPressed::CannotBePressed));
-        };
-        let unanswered = match tree.act(&found.at, action) {
-            Ok(true) => false,
-            Ok(false) => return Err(not_pressed(NotPressed::DidNotPress)),
-            Err(TreeFault::DidNotAnswer) => true,
-            Err(TreeFault::Vanished) => return Err(not_pressed(NotPressed::NoSuchControl)),
-            Err(fault @ TreeFault::NotThere) => return Err(not_walked(NotWalked::Tree(fault))),
-        };
+        // **The one press** a person's command takes too (`crate::by_their_hand`),
+        // so what alo is refused and what a person is refused are one list.
+        let whose = Whose::Application(&self.application);
+        let unanswered = pressed(tree, whose, None, self.kind, &self.name).map_err(|why| {
+            Refused::worded_elsewhere(
+                self.authorised.call().clone(),
+                why.said(whose, None, self.kind, &self.name, strings),
+            )
+        })?;
         Ok(Pressed {
             authorised: self.authorised,
             application: self.application,
