@@ -1,10 +1,11 @@
 //! `org.freedesktop.portal.Settings`, answered from what the person set.
 //!
 //! Version 2 of the interface, for the `org.freedesktop.appearance` namespace
-//! only ([`crate::appearance_settings`]):
+//! and the pointer's two keys of `org.gnome.desktop.interface`
+//! ([`crate::appearance_settings`], the owner's yes of 2026-11-06):
 //!
-//! - **`ReadAll(as namespaces) -> a{sa{sv}}`** — every answered key of the
-//!   namespace, when a pattern reaches it; an empty dictionary when none does.
+//! - **`ReadAll(as namespaces) -> a{sa{sv}}`** — every answered key of each
+//!   namespace a pattern reaches; an empty dictionary when none does.
 //! - **`ReadOne(s namespace, s key) -> v`** — one value.
 //! - **`Read(s namespace, s key) -> v`** — the same value inside one more
 //!   variant, as the deprecated method has always returned it. Served because
@@ -49,7 +50,7 @@ use zbus::message::Header;
 use zbus::zvariant::{OwnedValue, Structure, Value as OnTheBus};
 
 use crate::answered::{Answered, Outcome, Unanswered};
-use crate::appearance_settings::{self, Setting, THE_NAMESPACE, Value, Values};
+use crate::appearance_settings::{self, Setting, Value, Values};
 use crate::asked::NOT_RECORDED;
 use crate::caller::{application_of, named};
 use crate::portal::Portal;
@@ -89,16 +90,24 @@ impl SettingsPortal {
         #[zbus(connection)] connection: &zbus::Connection,
         namespaces: Vec<String>,
     ) -> Result<HashMap<String, HashMap<String, OwnedValue>>, SettingError> {
-        if !appearance_settings::asked_of(&namespaces) {
+        let asked = appearance_settings::asked_of(&namespaces);
+        if asked.is_empty() {
             self.unknown(connection, &header).await?;
             return Ok(HashMap::new());
         }
         let values = self.answered(connection, &header).await?;
-        let mut namespace = HashMap::new();
+        // **Only the namespaces asked for**, each holding its own keys: a
+        // `ReadAll` of GNOME's interface gets the pointer and not the colours.
+        let mut answered: HashMap<String, HashMap<String, OwnedValue>> = HashMap::new();
         for (setting, value) in values {
-            namespace.insert(setting.key().to_owned(), on_the_bus(value)?);
+            if asked.contains(&setting.namespace()) {
+                answered
+                    .entry(setting.namespace().to_owned())
+                    .or_default()
+                    .insert(setting.key().to_owned(), on_the_bus(value)?);
+            }
         }
-        Ok(HashMap::from([(THE_NAMESPACE.to_owned(), namespace)]))
+        Ok(answered)
     }
 
     /// One setting's value.
@@ -251,6 +260,8 @@ pub(crate) fn written(value: Value) -> OnTheBus<'static> {
             let (red, green, blue) = Value::accent_color(colour);
             OnTheBus::Structure(Structure::from((red, green, blue)))
         }
+        Value::CursorTheme(name) => OnTheBus::Str(name.into()),
+        Value::CursorSize(pixels) => OnTheBus::I32(pixels),
     }
 }
 

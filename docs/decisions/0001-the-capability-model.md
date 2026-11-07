@@ -244,3 +244,25 @@ application's exact identity and expiry are persisted using the locked update
 of the latest complete grant file, then the daemon is notified. The existing
 visible grant row supplies revocation. Nothing on the agent's door opens,
 selects, or confirms this picker.
+
+---
+
+## Amended 2026-11-06 — the fourth road is the screen road, under ADR 0147's rules
+
+*Accepted by the owner on 2026-11-06 with
+[ADR 0147](0147-the-screen-road-and-who-reads-the-screen.md) ("yes").*
+
+§6's fourth row is read, from that day on, as:
+
+| Mechanism | When | Quality |
+|---|---|---|
+| The screen: one window's picture read, and keys and clicks delivered to that window | **Only for a control no better road reaches** | Least reliable: it reads pictures, and afterwards nobody can say for certain what was pressed — so every act is marked in the record |
+
+Everything §6 already said of it stands — *only where nothing better exists,
+marked as such in the record, and can be disabled by policy* — and ADR 0147 §1
+adds how it is kept honest: one window, read at the moment of the act and never
+kept, found by what it says, read again after, password fields never read or
+sent. **alo uses it for an application only after the person switches it on for
+that application; alo never acts by position; a person's own typed commands use
+it at once** (ADR 0147 §2–§3). *Screenshot-and-click as the universal
+mechanism* stays rejected, below: it is the last road, never the first.

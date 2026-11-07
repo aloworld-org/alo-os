@@ -1,4 +1,5 @@
-//! The `org.freedesktop.appearance` namespace, answered from what the person set.
+//! The `org.freedesktop.appearance` namespace and the pointer's two keys of
+//! `org.gnome.desktop.interface`, answered from what the person set.
 //!
 //! `org.freedesktop.portal.Settings` is how an application that follows light
 //! and dark, and the accent colour, asks what the desktop looks like. This
@@ -6,17 +7,24 @@
 //! bus, so both are decided and tested on any machine. `crate::settings_portal`
 //! speaks it.
 //!
-//! # One namespace, and what it holds
+//! # Two namespaces, and what each holds
 //!
-//! [`THE_NAMESPACE`] is the only one answered. Every other namespace a Linux
-//! desktop keeps settings under — GNOME's, KDE's — is answered as unknown and
-//! never with a value: those are that desktop's own settings, and this machine
-//! is not that desktop.
+//! [`THE_NAMESPACE`] is answered whole. Of [`THE_INTERFACE_NAMESPACE`], GNOME's,
+//! **only the pointer's two keys** are: a sandboxed GTK application reads its
+//! cursor theme and size there and nowhere else, so without them it drew its
+//! own runtime's pointer however the person had set theirs. **The owner's yes of
+//! 2026-11-06**: answer `cursor-theme` and `cursor-size` under the appearance
+//! permission this portal already uses. Every other key of that namespace, and
+//! every other namespace — KDE's, the rest of GNOME's — is answered as unknown
+//! and never with a value: those are that desktop's own settings, and this
+//! machine is not that desktop.
 //!
-//! | Key | Type | From `alo-appearance` |
-//! |---|---|---|
-//! | `color-scheme` | `u` | [`Appearance::scheme_at`]: `1` dark, `2` light |
-//! | `accent-color` | `(ddd)` | [`Appearance::accent_at`], each channel from 0 to 1 |
+//! | Namespace | Key | Type | From `alo-appearance` |
+//! |---|---|---|---|
+//! | appearance | `color-scheme` | `u` | [`Appearance::scheme_at`]: `1` dark, `2` light |
+//! | appearance | `accent-color` | `(ddd)` | [`Appearance::accent_at`], each channel from 0 to 1 |
+//! | interface | `cursor-theme` | `s` | [`Appearance::pointer_shape`], as the name of alo's cursor theme with that arrow |
+//! | interface | `cursor-size` | `i` | [`Appearance::pointer_size`], in logical pixels: 24, 36 or 48 |
 //!
 //! Both are resolved **at the moment of asking**, at the time of day the
 //! machine gives, so a person who turns dark at six is answered dark at six.
@@ -46,21 +54,46 @@ use crate::portal::Portal;
 use crate::request::Request;
 use crate::the_machine::TheMachine;
 
-/// The one namespace the Settings portal answers.
+/// The namespace the Settings portal answers whole.
 pub const THE_NAMESPACE: &str = "org.freedesktop.appearance";
 
-/// One key of [`THE_NAMESPACE`] that is answered.
+/// GNOME's namespace, of which only the pointer's two keys are answered.
+pub const THE_INTERFACE_NAMESPACE: &str = "org.gnome.desktop.interface";
+
+/// Every namespace any key is answered in.
+pub const THE_NAMESPACES: [&str; 2] = [THE_NAMESPACE, THE_INTERFACE_NAMESPACE];
+
+/// One key that is answered.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum Setting {
     /// `color-scheme`: light or dark.
     ColorScheme,
     /// `accent-color`: the accent, for the scheme showing.
     AccentColor,
+    /// `cursor-theme`, in [`THE_INTERFACE_NAMESPACE`]: the pointer's arrow.
+    CursorTheme,
+    /// `cursor-size`, in [`THE_INTERFACE_NAMESPACE`]: the pointer's size.
+    CursorSize,
 }
 
 impl Setting {
-    /// Every key answered, in the order the specification lists them.
-    pub const EVERY: [Self; 2] = [Self::ColorScheme, Self::AccentColor];
+    /// Every key answered: the appearance namespace's in the order the
+    /// specification lists them, then the pointer's.
+    pub const EVERY: [Self; 4] = [
+        Self::ColorScheme,
+        Self::AccentColor,
+        Self::CursorTheme,
+        Self::CursorSize,
+    ];
+
+    /// The namespace the key is in.
+    #[must_use]
+    pub const fn namespace(self) -> &'static str {
+        match self {
+            Self::ColorScheme | Self::AccentColor => THE_NAMESPACE,
+            Self::CursorTheme | Self::CursorSize => THE_INTERFACE_NAMESPACE,
+        }
+    }
 
     /// The key, as the specification names it.
     #[must_use]
@@ -68,6 +101,8 @@ impl Setting {
         match self {
             Self::ColorScheme => "color-scheme",
             Self::AccentColor => "accent-color",
+            Self::CursorTheme => "cursor-theme",
+            Self::CursorSize => "cursor-size",
         }
     }
 
@@ -75,10 +110,9 @@ impl Setting {
     /// machine does not answer — another namespace, or a key it does not hold.
     #[must_use]
     pub fn named(namespace: &str, key: &str) -> Option<Self> {
-        if namespace != THE_NAMESPACE {
-            return None;
-        }
-        Self::EVERY.into_iter().find(|setting| setting.key() == key)
+        Self::EVERY
+            .into_iter()
+            .find(|setting| setting.namespace() == namespace && setting.key() == key)
     }
 
     /// This setting's value, from `appearance` at `now`.
@@ -87,6 +121,15 @@ impl Setting {
         match self {
             Self::ColorScheme => Value::ColorScheme(appearance.scheme_at(now)),
             Self::AccentColor => Value::AccentColor(appearance.accent_at(now)),
+            Self::CursorTheme => Value::CursorTheme(alo_cursors::theme::the_name_of(
+                appearance.pointer_shape().into(),
+            )),
+            Self::CursorSize => Value::CursorSize(
+                i32::try_from(alo_cursors::measures::logical_pixels(
+                    appearance.pointer_size(),
+                ))
+                .unwrap_or(i32::MAX),
+            ),
         }
     }
 }
@@ -98,6 +141,10 @@ pub enum Value {
     ColorScheme(Scheme),
     /// The accent's colour.
     AccentColor(Colour),
+    /// The name of the cursor theme with the person's arrow.
+    CursorTheme(&'static str),
+    /// The pointer's size, in logical pixels.
+    CursorSize(i32),
 }
 
 impl Value {
@@ -130,24 +177,29 @@ impl Value {
 /// Every answered setting and its value, in [`Setting::EVERY`]'s order.
 pub type Values = Vec<(Setting, Value)>;
 
-/// Whether a `ReadAll` namespace pattern reaches [`THE_NAMESPACE`].
+/// Whether a `ReadAll` namespace pattern reaches `namespace`.
 ///
 /// The specification's patterns: the empty string is every namespace, and one
 /// ending in `*` is every namespace beginning with what is before it. Anything
 /// else is one namespace, named exactly.
 #[must_use]
-pub fn reaches(pattern: &str) -> bool {
+pub fn reaches(namespace: &str, pattern: &str) -> bool {
     match pattern.strip_suffix('*') {
-        Some(prefix) => THE_NAMESPACE.starts_with(prefix),
-        None => pattern.is_empty() || pattern == THE_NAMESPACE,
+        Some(prefix) => namespace.starts_with(prefix),
+        None => pattern.is_empty() || pattern == namespace,
     }
 }
 
-/// Whether a `ReadAll` of `patterns` asks for [`THE_NAMESPACE`] — an empty list
-/// being every namespace.
+/// Which of [`THE_NAMESPACES`] a `ReadAll` of `patterns` asks for — an empty
+/// list being every namespace. Empty when it asks for none this machine answers.
 #[must_use]
-pub fn asked_of(patterns: &[String]) -> bool {
-    patterns.is_empty() || patterns.iter().any(|pattern| reaches(pattern))
+pub fn asked_of(patterns: &[String]) -> Vec<&'static str> {
+    THE_NAMESPACES
+        .into_iter()
+        .filter(|namespace| {
+            patterns.is_empty() || patterns.iter().any(|pattern| reaches(namespace, pattern))
+        })
+        .collect()
 }
 
 /// Whether `application` may read the appearance settings at `at`, judged
@@ -271,10 +323,11 @@ mod tests {
         grants
     }
 
-    /// **Two keys, each named as the specification names it**, and every
-    /// other key or namespace — `contrast` among them — is none of them.
+    /// **Four keys, each named as the specification names it, each in its own
+    /// namespace**, and every other key or namespace — `contrast`, GNOME's
+    /// `color-scheme` and `gtk-theme` among them — is none of them.
     #[test]
-    fn only_the_appearance_namespace_and_its_answered_keys_are_named() {
+    fn only_the_answered_keys_are_named_and_each_in_its_own_namespace() {
         assert_eq!(
             Setting::named(THE_NAMESPACE, "color-scheme"),
             Some(Setting::ColorScheme)
@@ -283,10 +336,22 @@ mod tests {
             Setting::named(THE_NAMESPACE, "accent-color"),
             Some(Setting::AccentColor)
         );
+        assert_eq!(
+            Setting::named(THE_INTERFACE_NAMESPACE, "cursor-theme"),
+            Some(Setting::CursorTheme)
+        );
+        assert_eq!(
+            Setting::named(THE_INTERFACE_NAMESPACE, "cursor-size"),
+            Some(Setting::CursorSize)
+        );
         for (namespace, key) in [
             (THE_NAMESPACE, "contrast"),
             (THE_NAMESPACE, ""),
-            ("org.gnome.desktop.interface", "color-scheme"),
+            (THE_NAMESPACE, "cursor-theme"),
+            (THE_INTERFACE_NAMESPACE, "color-scheme"),
+            (THE_INTERFACE_NAMESPACE, "gtk-theme"),
+            (THE_INTERFACE_NAMESPACE, "accent-color"),
+            ("org.gnome.desktop.interface.extra", "cursor-size"),
             ("org.freedesktop.appearance.extra", "color-scheme"),
             ("", "color-scheme"),
         ] {
@@ -299,7 +364,7 @@ mod tests {
     #[test]
     fn a_read_all_pattern_reaches_the_namespace_as_the_specification_says() {
         for reaching in ["", "*", "org.*", "org.freedesktop.*", THE_NAMESPACE] {
-            assert!(reaches(reaching), "{reaching}");
+            assert!(reaches(THE_NAMESPACE, reaching), "{reaching}");
         }
         for not in [
             "org.gnome.*",
@@ -308,14 +373,23 @@ mod tests {
             "org.freedesktop.Appearance",
             "*.appearance",
         ] {
-            assert!(!reaches(not), "{not}");
+            assert!(!reaches(THE_NAMESPACE, not), "{not}");
         }
-        assert!(asked_of(&[]));
-        assert!(!asked_of(&["org.gnome.desktop.interface".to_owned()]));
-        assert!(asked_of(&[
-            "org.gnome.desktop.interface".to_owned(),
-            "org.freedesktop.*".to_owned()
-        ]));
+        assert!(reaches(THE_INTERFACE_NAMESPACE, "org.gnome.*"));
+        assert!(!reaches(THE_INTERFACE_NAMESPACE, "org.freedesktop.*"));
+        let asked = |patterns: &[&str]| {
+            asked_of(
+                &patterns
+                    .iter()
+                    .map(|it| (*it).to_owned())
+                    .collect::<Vec<_>>(),
+            )
+        };
+        assert_eq!(asked(&[]), THE_NAMESPACES);
+        assert_eq!(asked(&[""]), THE_NAMESPACES);
+        assert_eq!(asked(&[THE_INTERFACE_NAMESPACE]), [THE_INTERFACE_NAMESPACE]);
+        assert_eq!(asked(&["org.freedesktop.*"]), [THE_NAMESPACE]);
+        assert!(asked(&["org.kde.*", "com.example"]).is_empty());
     }
 
     /// **The values are what `alo-appearance` resolves, at the time given**,
@@ -339,8 +413,23 @@ mod tests {
                     Setting::AccentColor,
                     Value::AccentColor(Accent::Rose.on(Scheme::Dark))
                 ),
+                (Setting::CursorTheme, Value::CursorTheme("alo")),
+                (Setting::CursorSize, Value::CursorSize(24)),
             ]
         );
+        // **The pointer the person chose**: the familiar arrow's theme, at
+        // twice the size.
+        let mut chose = appearance.clone();
+        chose.set_pointer_shape(alo_appearance::PointerShape::Classic);
+        chose.set_pointer_size(alo_appearance::PointerSize::Larger);
+        let machine = AMachine {
+            appearance: Some(chose),
+            time: Some(TimeOfDay::checked(9, 0).unwrap()),
+            ..AMachine::default()
+        };
+        let values = read(&machine).unwrap();
+        assert!(values.contains(&(Setting::CursorTheme, Value::CursorTheme("alo-classic"))));
+        assert!(values.contains(&(Setting::CursorSize, Value::CursorSize(48))));
         assert_eq!(Value::color_scheme(Scheme::Dark), 1);
         assert_eq!(Value::color_scheme(Scheme::Light), 2);
         let (red, green, blue) = Value::accent_color(Colour::of(255, 0, 51));

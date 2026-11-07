@@ -67,6 +67,11 @@ fn the_contract_lists_settings_as_answered_with_what_it_answers() {
         "contrast",
         "appearance-settings",
         "org.freedesktop.portal.Error.NotFound",
+        // The pointer's two keys, and the owner's yes that put them here.
+        "org.gnome.desktop.interface",
+        "cursor-theme",
+        "cursor-size",
+        "2026-11-06",
     ] {
         assert!(
             row.contains(named),
@@ -106,6 +111,8 @@ mod on_the_bus {
     const PORTALS: &str = "/org/freedesktop/portal/desktop";
     const SETTINGS: &str = "org.freedesktop.portal.Settings";
     const APPEARANCE: &str = "org.freedesktop.appearance";
+    /// GNOME's namespace, of which the pointer's two keys are answered.
+    const INTERFACE: &str = "org.gnome.desktop.interface";
     const NOT_FOUND: &str = "org.freedesktop.portal.Error.NotFound";
 
     /// The machine as the backend reads it: grants, the person's appearance and
@@ -338,6 +345,16 @@ mod on_the_bus {
         u32::try_from(value).unwrap()
     }
 
+    /// A `cursor-theme` value's text.
+    fn text(value: &OwnedValue) -> String {
+        String::try_from(value.try_clone().unwrap()).unwrap()
+    }
+
+    /// A `cursor-size` value's number.
+    fn number(value: &OwnedValue) -> i32 {
+        i32::try_from(value).unwrap()
+    }
+
     /// The red, green and blue an `accent-color` value carries.
     fn accent(value: OwnedValue) -> [f64; 3] {
         let (red, green, blue) = <(f64, f64, f64)>::try_from(value).unwrap();
@@ -402,14 +419,14 @@ mod on_the_bus {
 
         // Evening, and the person's own choice of dark.
         serving.set_clock(19);
-        for asked in [
-            vec![APPEARANCE],
-            vec![],
-            vec![""],
-            vec!["org.freedesktop.*"],
+        for (asked, namespaces) in [
+            (vec![APPEARANCE], 1),
+            (vec![], 2),
+            (vec![""], 2),
+            (vec!["org.freedesktop.*"], 1),
         ] {
             let mut everything = serving.read_all(&asked).unwrap();
-            assert_eq!(everything.len(), 1, "{asked:?}: {everything:?}");
+            assert_eq!(everything.len(), namespaces, "{asked:?}: {everything:?}");
             let mut appearance = everything.remove(APPEARANCE).expect("the namespace");
             let mut keys: Vec<&str> = appearance.keys().map(String::as_str).collect();
             keys.sort_unstable();
@@ -424,6 +441,34 @@ mod on_the_bus {
                 rgb(Accent::Rose, Scheme::Dark),
             );
         }
+
+        // **The pointer, for a sandboxed GTK application**: alo's theme at its
+        // ordinary size, then the person's choice, in GNOME's interface
+        // namespace and nowhere else in it.
+        let interface = serving.read_all(&[INTERFACE]).unwrap();
+        assert_eq!(interface.len(), 1, "{interface:?}");
+        let pointer = interface.get(INTERFACE).expect("the interface namespace");
+        let mut keys: Vec<&str> = pointer.keys().map(String::as_str).collect();
+        keys.sort_unstable();
+        assert_eq!(
+            keys,
+            ["cursor-size", "cursor-theme"],
+            "only the pointer's keys"
+        );
+        assert_eq!(text(pointer.get("cursor-theme").unwrap()), "alo");
+        assert_eq!(number(pointer.get("cursor-size").unwrap()), 24);
+        serving.change(|appearance| {
+            appearance.set_pointer_shape(alo_appearance::PointerShape::Classic);
+            appearance.set_pointer_size(alo_appearance::PointerSize::Large);
+        });
+        assert_eq!(
+            text(&serving.read_one(INTERFACE, "cursor-theme").unwrap()),
+            "alo-classic"
+        );
+        assert_eq!(
+            number(&serving.read_one(INTERFACE, "cursor-size").unwrap()),
+            36
+        );
 
         // The deprecated `Read`, which wraps the value in one more variant.
         let wrapped: OwnedValue = serving
@@ -599,8 +644,8 @@ mod on_the_bus {
                 assert_eq!(answered.application(), Some(&Applicant::named(application)));
             }
             for asked in [
-                vec!["org.gnome.desktop.interface"],
-                vec!["org.gnome.*", "org.kde.*"],
+                vec!["org.kde.*"],
+                vec!["org.gnome.desktop.interface.extra"],
                 vec!["org.freedesktop.appearance.*"],
             ] {
                 assert!(

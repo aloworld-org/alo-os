@@ -574,7 +574,7 @@ machine is, whose password belongs to this unit (ADR 0059). A command that went
 straight out instead would send a company's traffic around the company's own
 rule.
 
-**A local answer never comes through here.** `alo-ask` answers a model on this
+**A local answer never comes through here.** `alo` (formerly `alo-ask`) answers a model on this
 machine itself: that causes no egress, needs no credential and needs no proxy. A
 question whose settings name this machine, or a paired machine, is refused here
 rather than answered on a road built for a provider — two roads, and which one a

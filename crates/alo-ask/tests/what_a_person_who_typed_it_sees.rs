@@ -35,7 +35,7 @@ fn a_login_with_no_settings() -> std::path::PathBuf {
 
 /// What the command printed on the error stream, and whether it succeeded.
 fn run(arguments: &[&str], home: &Path) -> (bool, String) {
-    let ran = Command::new(env!("CARGO_BIN_EXE_alo-ask"))
+    let ran = Command::new(env!("CARGO_BIN_EXE_alo"))
         .args(arguments)
         .env("HOME", home)
         .env_remove("XDG_CONFIG_HOME")
@@ -227,4 +227,48 @@ fn spaces_are_not_a_question_either() {
         said.contains("there is nothing to ask yet"),
         "spaces were taken for a question: {said}"
     );
+}
+
+/// **Typed by its old name, the command says the name has changed and answers
+/// exactly as before; typed by its new name, it says nothing about names.**
+///
+/// The image installs `alo-ask` as a link to `alo` (ADR 0124, amended
+/// 2026-11-06), so this runs the real binary through a link of that name. An
+/// empty command line is the question here because its answer needs no model:
+/// both names refuse with *nothing to ask*, and only the old one adds the note.
+#[cfg(unix)]
+#[test]
+fn the_old_name_still_works_and_says_it_has_changed() {
+    let links = std::env::temp_dir().join(format!("alo-ask-names-{}", std::process::id()));
+    std::fs::create_dir_all(&links).expect("a temporary folder can be made");
+    let old = links.join("alo-ask");
+    let _ = std::fs::remove_file(&old);
+    std::os::unix::fs::symlink(env!("CARGO_BIN_EXE_alo"), &old).expect("a link can be made");
+    let said = |program: &Path| {
+        let ran = Command::new(program)
+            .env("HOME", a_login_with_no_settings())
+            .env_remove("XDG_CONFIG_HOME")
+            .output()
+            .expect("the command runs by either name");
+        (
+            ran.status.success(),
+            String::from_utf8_lossy(&ran.stdout).into_owned(),
+            String::from_utf8_lossy(&ran.stderr).into_owned(),
+        )
+    };
+    let (worked, out, err) = said(&old);
+    assert!(!worked, "an empty question is refused by the old name too");
+    assert!(out.is_empty(), "nothing on stdout: {out:?}");
+    assert!(err.contains("nothing to ask"), "{err}");
+    assert!(err.contains("alo-ask is now called alo"), "{err}");
+
+    let (worked, out, err) = said(Path::new(env!("CARGO_BIN_EXE_alo")));
+    assert!(!worked);
+    assert!(out.is_empty(), "{out:?}");
+    assert!(err.contains("nothing to ask"), "{err}");
+    assert!(
+        !err.contains("now called"),
+        "the new name says nothing about names: {err}"
+    );
+    std::fs::remove_dir_all(&links).expect("the temporary folder can be removed");
 }

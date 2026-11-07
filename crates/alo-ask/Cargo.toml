@@ -55,8 +55,10 @@ rustix = { workspace = true }
 # whoever is fixing a list, never by somebody who typed a question.
 thiserror = { workspace = true }
 
+# **`alo`, since the owner's rename of 2026-11-06** (ADR 0124, amended). The
+# image keeps `alo-ask` as a link to it, which `src/its_name.rs` says why.
 [[bin]]
-name = "alo-ask"
+name = "alo"
 path = "src/main.rs"
 
 [lints]

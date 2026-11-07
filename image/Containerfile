@@ -357,7 +357,15 @@ COPY --from=built /alo-os/target/${THE_TARGET}/release/alo-try /usr/bin/alo-try
 # command is simply not there. It needs no unit and no files of its own — it
 # reads the person's settings, and for a provider it asks `alo-agentd` on the
 # socket that service already binds.
-COPY --from=built /alo-os/target/${THE_TARGET}/release/alo-ask /usr/bin/alo-ask
+#
+# **`alo`, since the owner's rename of 2026-11-06** (ADR 0124, amended): a person
+# types `alo email Sarah that I'm late`. Checked first that nothing on this image
+# was already called `alo` — no binary, link, package, alias or Flatpak export.
+# **`alo-ask` keeps working**, as a link to the same program, because it is a
+# public surface (`CLAUDE.md`, *contracts outlive code*); typed by that name it
+# answers as ever and says once, on stderr, that the name has changed.
+COPY --from=built /alo-os/target/${THE_TARGET}/release/alo /usr/bin/alo
+RUN ln -s alo /usr/bin/alo-ask
 
 # **The two commands a place to return to is made of**, both absent from every
 # image built before 2026-10-22 — and the first of them absent on the day the
@@ -1220,12 +1228,23 @@ RUN set -e; \
 # What this does not check: that a question reaches a model. That wants a model
 # on the machine or a provider in somebody's settings, and neither belongs in
 # an image build — ADR 0095 ships no weights at all.
+#
+# **By both names**, since `alo` became the name and `alo-ask` stayed a link to
+# it: the new one refuses as before, and the old one refuses the same way and
+# says the name has changed.
 RUN set -e; \
+    if /usr/bin/alo; then \
+      echo "alo with no question should have refused and did not" >&2; exit 1; \
+    fi; \
+    /usr/bin/alo 2>&1 | grep -q 'nothing to ask' \
+      || { echo "alo started but did not say why it refused" >&2; exit 1; }; \
     if /usr/bin/alo-ask; then \
       echo "alo-ask with no question should have refused and did not" >&2; exit 1; \
     fi; \
     /usr/bin/alo-ask 2>&1 | grep -q 'nothing to ask' \
-      || { echo "alo-ask started but did not say why it refused" >&2; exit 1; }
+      || { echo "alo-ask started but did not say why it refused" >&2; exit 1; }; \
+    /usr/bin/alo-ask 2>&1 | grep -q 'alo-ask is now called alo' \
+      || { echo "alo-ask did not say that it is now called alo" >&2; exit 1; }
 
 # **And `alo-compositor` is run, for `alo-try`'s reason exactly.** It was copied
 # here and made executable and **never started by this build** — found
@@ -1266,7 +1285,7 @@ RUN chmod 0755 /usr/libexec/alo-boundaryd /usr/libexec/alo-sessiond \
                /usr/libexec/alo-convertd /usr/libexec/alo-portald \
                /usr/libexec/alo-shipping \
                /usr/bin/alo-agentd /usr/bin/alo-agent /usr/bin/alo-try \
-               /usr/bin/alo-ask \
+               /usr/bin/alo \
                /usr/bin/ollama \
  && chmod 0644 /usr/lib/systemd/system/alo-boundaryd.service \
                /usr/lib/systemd/system/alo-agentd.service \

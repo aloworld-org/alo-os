@@ -24,6 +24,9 @@ alo-applications = { path = "../alo-applications" }
 # moment of asking, so light and dark and the accent are decided in one crate
 # and never restated here. A workspace crate, so it adds nothing to the tree.
 alo-appearance = { path = "../alo-appearance" }
+# The names of alo's cursor themes and the pointer's size in pixels, which the
+# Settings portal answers sandboxed GTK applications with (the owner, 2026-11-06).
+alo-cursors = { path = "../alo-cursors" }
 
 # How far this machine reaches. The NetworkMonitor portal is answered from
 # `alo_networks::Reaching` and nowhere else, so what the rented network manager

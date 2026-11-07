@@ -1,7 +1,7 @@
 //! GTK's version 1 parent handles over Smithay's existing surface model.
 //!
 //! A handle associates windows; it grants no content, input, or recording access.
-//! ADR 0147 records why this bounded adapter accompanies the native portals.
+//! ADR 0148 records why this bounded adapter accompanies the native portals.
 
 use super::Surfaces;
 use smithay::{

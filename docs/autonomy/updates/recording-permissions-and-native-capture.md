@@ -47,7 +47,7 @@ one in-flight frame, with cancellable partial writes and bounded admission.
 
 The selected-node descriptor exposes the necessary PipeWire factories and the
 chosen node, including link permission; unrelated current and future objects
-remain hidden. ADR 0147 documents the narrow rented-binding additions. Native
+remain hidden. ADR 0148 documents the narrow rented-binding additions. Native
 window parenting uses XDG foreign v1 and verifies the actual focused parent.
 
 SaveFile uses the native GTK chooser and Documents portal. The exact selected
@@ -681,7 +681,7 @@ count advances from 667 to 762. The appsrc queue stays bounded at two frames.
 Thread inspection finds the publisher's streaming thread waiting on a condition.
 The sink signals that condition without the pool mutex, allowing a notification
 between dequeue and wait to be lost. A private timed-recheck trial keeps frames
-moving; ADR 0147 authorizes the narrowly checksummed build-copy patch. The
+moving; ADR 0148 authorizes the narrowly checksummed build-copy patch. The
 imported upstream source remains unchanged. Plugin version
 `1.4.90+ee2c6eb4.2770143f.wait1` adds a 100 ms predicate recheck.
 
@@ -1182,7 +1182,7 @@ The full `745b67e3` gate runs 12,715 tests: 12,711 pass, four fail and 61 are
 skipped. Besides the existing declared runner limitation, two failures expose
 the recording ADR's number colliding with main's new watching ADR; the third
 expects the cursor package's Cargo build to start its own image instruction.
-The recording decision and its citations move to ADR 0147, while watching
+The recording decision and its citations move to ADR 0148, while watching
 retains ADR 0146. The image keeps both the private plugin build and cursor
 generation, with Cargo in a separate `RUN` instruction. No executable capture
 logic, audit rule or runner exception changes. These integration corrections
@@ -1624,3 +1624,7 @@ it is not treated as a quiet-host performance result. The parent is resumed
 after 28 seconds, recorded with its process identity. No allocator improvement
 or media acceptance is claimed. Both diagnostic drop-ins are removed, the
 normal desktop services restart, and no allocator setting is added to the OS.
+
+Integrating main `6d93b3b4` retains both the capture-protocol and pointer-setting
+dependencies and both capability amendments. Main has assigned ADR 0147 to the
+screen road, so the draft recording decision and its references become ADR 0148.

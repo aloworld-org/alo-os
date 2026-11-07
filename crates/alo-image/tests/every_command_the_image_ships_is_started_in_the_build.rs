@@ -61,7 +61,11 @@
 /// Written down here because the fault of 2026-10-19 was a command in no list
 /// anything read. Derivation finds what is present; only a name finds what is
 /// absent.
-const WHAT_A_PERSON_TYPES: [&str; 2] = ["alo-ask", "alo-try"];
+///
+/// **`alo` since 2026-11-06**, when the owner renamed `alo-ask` (ADR 0124,
+/// amended) — and `alo-ask` stays on this list, because it still works and a
+/// person who types it is owed the same check.
+const WHAT_A_PERSON_TYPES: [&str; 3] = ["alo", "alo-ask", "alo-try"];
 
 /// The recipe, as one string.
 fn the_recipe() -> String {
@@ -86,7 +90,20 @@ fn what_a_shell_would_run(recipe: &str) -> String {
         .join("\n")
 }
 
-/// Every binary the recipe copies to `/usr/bin`, by the name it lands under.
+/// Whether `path` is named in `text` as a whole name — `/usr/bin/alo` and not
+/// the front of `/usr/bin/alo-ask`, which a plain search would find and which
+/// would make the check for `alo` pass on a recipe that never ran it.
+fn names_whole(text: &str, path: &str) -> bool {
+    text.match_indices(path).any(|(at, _)| {
+        text.get(at + path.len()..)
+            .and_then(|rest| rest.chars().next())
+            .is_none_or(|next| !(next.is_alphanumeric() || next == '-' || next == '_'))
+    })
+}
+
+/// Every binary the recipe copies to `/usr/bin`, by the name it lands under —
+/// and every name it links there, which is how `alo-ask` is shipped since it
+/// became another name for `alo`.
 ///
 /// Derived from the recipe rather than listed here, which is the whole point:
 /// a list in this file would need somebody to remember it, and remembering is
@@ -94,10 +111,11 @@ fn what_a_shell_would_run(recipe: &str) -> String {
 fn what_the_image_ships(recipe: &str) -> Vec<String> {
     let mut shipped: Vec<String> = recipe
         .lines()
-        .filter(|line| line.trim_start().starts_with("COPY"))
+        .map(str::trim_start)
+        .filter(|line| line.starts_with("COPY") || line.starts_with("RUN ln -s "))
         .filter_map(|line| line.split_whitespace().last())
         .filter_map(|landing| landing.strip_prefix("/usr/bin/"))
-        .filter(|name| name.starts_with("alo-"))
+        .filter(|name| *name == "alo" || name.starts_with("alo-"))
         .map(str::to_owned)
         .collect();
     shipped.sort_unstable();
@@ -152,7 +170,7 @@ fn the_commands_a_person_types_are_started_by_the_build() {
     let used = where_a_binary_is_used(&the_recipe());
     for command in WHAT_A_PERSON_TYPES {
         assert!(
-            used.contains(&format!("/usr/bin/{command}")),
+            names_whole(&used, &format!("/usr/bin/{command}")),
             "{command} is copied and made executable and the recipe does nothing else with it, \
              so the build never starts it. A binary the build never starts can die at launch on \
              a missing library and nothing notices — CLAUDE.md's converter, three releases \
@@ -180,6 +198,9 @@ fn where_a_binary_is_used(recipe: &str) -> String {
         .lines()
         .map(str::trim_start)
         .filter(|command| !command.starts_with("COPY"))
+        // **Nor a link**: `ln -s alo /usr/bin/alo-ask` names the old name and runs
+        // nothing, so it must not read as the old name being started.
+        .filter(|command| !command.starts_with("RUN ln -s "))
         .filter(|command| !command.starts_with("RUN chmod") && !command.starts_with("chmod "))
         .collect::<Vec<&str>>()
         .join("\n")
@@ -200,10 +221,23 @@ fn the_commands_a_person_types_are_shipped() {
         assert!(
             shipped.iter().any(|name| name == command),
             "{command} is a command a person types and the image does not ship it: {shipped:?}. \
-             ADR 0124 measured that there is no `alo` binary and that `alo-ask` is the only one a \
-             person could type"
+             The owner renamed `alo-ask` to `alo` on 2026-11-06 and kept `alo-ask` working \
+             (ADR 0124, amended), so both are owed"
         );
     }
+}
+
+/// **A name is matched whole**, so `alo` is not found inside `alo-ask`.
+#[test]
+fn a_name_is_matched_whole() {
+    assert!(names_whole("RUN /usr/bin/alo; x", "/usr/bin/alo"));
+    assert!(names_whole("if /usr/bin/alo", "/usr/bin/alo"));
+    assert!(!names_whole("RUN /usr/bin/alo-ask", "/usr/bin/alo"));
+    assert!(!names_whole("RUN /usr/bin/alo-try 2>&1", "/usr/bin/alo"));
+    assert!(names_whole(
+        "/usr/bin/alo-try /usr/bin/alo 2>&1",
+        "/usr/bin/alo"
+    ));
 }
 
 /// **And the comment-stripping does not let a real reference through.**
