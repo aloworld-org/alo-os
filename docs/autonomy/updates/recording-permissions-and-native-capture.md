@@ -1453,7 +1453,7 @@ samples have screen preview active. No recording or microphone is active during
 this explicitly diagnostic profile, and the debugger is detached afterwards.
 
 The next candidate lets only the software desktop retain one detached scanout
-beside its active one. It allocates at most two buffers per fixed output and
+beside its active one. It retains at most two live buffers per fixed output and
 alternates them after successful blocking commits. An active allocation cannot
 be uploaded through the reuse path. Each reused frame is fully uploaded and
 tested before activation; captured pixels are still published only after

@@ -10,6 +10,10 @@ cleanup() {
     for log in "$scratch/xvfb.log" "$scratch/app.log"; do
       if [[ -f "$log" ]]; then tail -n 35 "$log" >&2; fi
     done
+    if [[ -n "${app_pid:-}" ]] && kill -0 "$app_pid" 2>/dev/null && command -v gdb >/dev/null; then
+      sudo timeout 20s gdb -q -batch -ex 'set pagination off' -ex 'set confirm off' -ex 'set debuginfod enabled off' -ex 'thread apply all bt 20' -ex detach -p "$app_pid" > "$scratch/application-stack.txt" 2>&1 || true
+      tail -90 "$scratch/application-stack.txt" >&2
+    fi
   fi
   if [[ -s "$scratch/app-group" ]]; then
     app_group=$(tr -d '[:space:]' < "$scratch/app-group")
@@ -50,6 +54,8 @@ sleep 3
 if [[ ! -s "$scratch/app-pid" ]]; then head -30 "$scratch/app.log"; exit 1; fi
 app_pid=$(cat "$scratch/app-pid")
 if ! kill -0 "$app_pid"; then head -30 "$scratch/app.log"; exit 1; fi
+printf 'GUI_BASELINE_STATUS_BEFORE_RECORDING\n'
+gdbus call --address "$(cat "$scratch/session-bus")" --timeout 2 --dest org.aloworld.Studio --object-path /org/aloworld/Studio/Recorder --method org.aloworld.Studio.Recorder1.GetStatus > "$scratch/startup-status.txt"
 ALO_STUDIO_VERIFY_PREPARE_DELAY=1 "$build_target/debug/examples/verify-recording" "$scratch/display.webm"
 ALO_STUDIO_VERIFY_STOP_DELAY=1 ALO_STUDIO_VERIFY_LIGHTWEIGHT=1 "$build_target/debug/examples/verify-recording" "$scratch/display-lightweight.webm"
 ALO_STUDIO_VERIFY_SOURCE_END=1 "$build_target/debug/examples/verify-recording" "$scratch/source-ended-while-paused.webm"

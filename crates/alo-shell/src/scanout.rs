@@ -125,6 +125,7 @@ impl<D: ScanoutDevice> Scanout<D> {
         Ok(self)
     }
 
+    /// Validate and enable this initialized, currently unbound allocation.
     fn enable(&mut self, framebuffer: framebuffer::Handle, blob: u64) -> Result<(), ResourceError> {
         for (stage, flags) in [
             (
