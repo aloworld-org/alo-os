@@ -524,6 +524,10 @@ mod the_egress_indicators_arrows;
 mod the_first_account;
 /// The nearest empty space on a Place for a window with no room in view.
 mod the_nearest_empty_space;
+/// One rule for every window a person opens into a full view.
+mod a_full_view_finds_room;
+/// Task windows opened into a full view find room as other windows do.
+mod the_task_windows_find_room;
 /// The record drawn as a window on the canvas, for one frame.
 mod the_record_drawn_on_the_canvas;
 /// The view gliding, or jumping where less motion was asked for.

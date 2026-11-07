@@ -137,6 +137,68 @@ pub(crate) fn where_one_more_goes(
     Some(Rectangle::new(at, wanted))
 }
 
+/// What a full view needs to know besides the task windows themselves.
+pub(crate) struct WhenTheViewIsFull<'a> {
+    /// Every other window on the Place — applications, the terminal, Settings,
+    /// the record — which a task window opened with no room must not cover.
+    pub(crate) others: &'a [Rectangle<i32, Logical>],
+    /// Whether the person kept *Glide to empty space*.
+    pub(crate) glides: bool,
+    /// As far as *Show all* reaches, in plane units.
+    pub(crate) reach: Option<Size<i32, Logical>>,
+}
+
+/// **Room for a task window with none in view**, where the person kept *Glide
+/// to empty space*: the nearest empty space for the window **and the edge
+/// above it**, which carries its Close, and the view that shows it.
+///
+/// `at` is what [`where_one_more_goes`] answered, `view` the whole view (not
+/// the one less the edge that function uses), `already` the task windows.
+/// [`None`] where there was room, the choice is *Open in front*, or no space is
+/// left within reach — each of which keeps `at`.
+#[must_use]
+pub(crate) fn room_for_one_more(
+    at: Rectangle<i32, Logical>,
+    view: Rectangle<i32, Logical>,
+    already: &[Rectangle<i32, Logical>],
+    full: &WhenTheViewIsFull<'_>,
+    reading: Direction,
+    scale: DisplayScale,
+) -> Option<crate::the_nearest_empty_space::WhereItGoes> {
+    if !full.glides {
+        return None;
+    }
+    let edge = scale.px(u32::try_from(crate::window_edge::THE_REGION_IS_TALL).unwrap_or(0));
+    let with_its_edge = |window: Rectangle<i32, Logical>| {
+        Rectangle::new(
+            Point::from((window.loc.x, window.loc.y - edge)),
+            Size::from((window.size.w, window.size.h + edge)),
+        )
+    };
+    let open: Vec<Rectangle<i32, Logical>> = already
+        .iter()
+        .copied()
+        .map(with_its_edge)
+        .chain(full.others.iter().copied())
+        .collect();
+    let whole = with_its_edge(at);
+    if crate::a_full_view_finds_room::there_is_room_at(whole.loc, whole.size, &open, view) {
+        return None;
+    }
+    let found = crate::the_nearest_empty_space::the_nearest_empty_space(
+        view,
+        &open,
+        whole.size,
+        &[],
+        full.reach,
+        reading,
+    )?;
+    Some(crate::the_nearest_empty_space::WhereItGoes {
+        window: Point::from((found.window.x, found.window.y + edge)),
+        view: found.view,
+    })
+}
+
 /// The same rectangle, as the pixels a frame draws into.
 ///
 /// One number to one number, for the reason in this file's header: the seat's

@@ -74,7 +74,8 @@ impl crate::Server {
         if self.the_record_on_the_plane.is_some() {
             return false;
         }
-        let camera = self.the_camera();
+        // **Against where the view is going**, as every opening is.
+        let camera = self.the_camera_after_the_glide();
         let zoom = crate::scene::drawn_at(camera);
         if zoom <= 0.0 {
             return false;
@@ -93,13 +94,26 @@ impl crate::Server {
         );
         let place = self.the_place_now();
         let open = self.the_windows_on_this_place();
-        let at = crate::where_a_window_opens(
+        let first = crate::where_a_window_opens(
             view,
             &open,
             open.first().copied(),
             Size::from(window),
             reading,
             &[],
+        );
+        // **The person opened it**: with no room the view may glide, the
+        // owner's *"Yes, the same"* (`crate::a_full_view_finds_room`).
+        let at = self.room_for_what_the_person_opened(
+            first,
+            &crate::a_full_view_finds_room::AnOpening {
+                view,
+                open: &open,
+                wanted: Size::from(window),
+                fixed: &[],
+                reading,
+            },
+            std::time::Instant::now(),
         );
         self.the_record_on_the_plane = Some((at, place));
         true
