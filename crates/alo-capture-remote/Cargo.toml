@@ -1,0 +1,22 @@
+[package]
+name = "alo-capture-remote"
+version = "0.1.0"
+description = "Prepare and hand off a PipeWire connection restricted to one selected capture node."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[features]
+verification = []
+
+[dependencies]
+alo-capture-protocol = { path = "../alo-capture-protocol" }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+# The exact upstream binding and its two ADR 0148 safe wrappers. This helper is
+# built against the image's own libc; the public portal daemon stays static.
+pipewire = { version = "=0.10.0", path = "../../engines/pipewire", features = ["v0_3_77"] }
+
+[lints]
+workspace = true

@@ -1,0 +1,50 @@
+name: Studio installable package
+on:
+  pull_request:
+    paths: ['apps/alo-studio/**', '.github/workflows/studio-package.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: studio-package-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  package:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    container:
+      image: ghcr.io/flathub-infra/flatpak-github-actions:gnome-49
+      options: --privileged
+    env:
+      ALO_STUDIO_BUILD_DIR: /tmp/studio-flatpak
+      STUDIO_PACKAGE_SOURCE: ${{ github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: dtolnay/rust-toolchain@1.97.0
+      - name: Prepare package tools
+        run: |
+          command -v flatpak-builder dbus-run-session
+          flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+      - name: Build the normal installable application
+        run: dbus-run-session -- bash apps/alo-studio/packaging/build-flatpak.sh
+      - name: Record package provenance
+        run: |
+          test "$(cat .git/HEAD)" = "$STUDIO_PACKAGE_SOURCE"
+          printf '%s\n' "$STUDIO_PACKAGE_SOURCE" > /tmp/studio-flatpak/source.txt
+          printf '%s\n' 'normal; verification disabled' > /tmp/studio-flatpak/features.txt
+          flatpak list --runtime --columns=application,branch,active:full > /tmp/studio-flatpak/sdk-versions.txt
+          cd /tmp/studio-flatpak
+          sha256sum alo-studio-0.1.0.flatpak source.txt features.txt sdk-versions.txt > checksums.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: studio-flatpak
+          path: |
+            /tmp/studio-flatpak/alo-studio-0.1.0.flatpak
+            /tmp/studio-flatpak/source.txt
+            /tmp/studio-flatpak/features.txt
+            /tmp/studio-flatpak/sdk-versions.txt
+            /tmp/studio-flatpak/checksums.txt
+          if-no-files-found: error
+          retention-days: 14

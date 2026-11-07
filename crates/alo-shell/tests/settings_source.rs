@@ -401,7 +401,8 @@ const WORDING: [&str; 6] = [
 /// say *nothing granted*, and every file verb was refused forever.
 ///
 /// The rule became narrower rather than weaker — **a grant is made from a
-/// folder a person picked and from nothing else.** Those three words moved to
+/// folder or installed application a person picked and from nothing else.**
+/// The grant-making words moved to
 /// [`PICKING`], which one file may use; everything left here still forbids
 /// this window inventing a grant, a revocation or a write of its own.
 const GRANTING: [&str; 9] = [
@@ -416,12 +417,13 @@ const GRANTING: [&str; 9] = [
     "put_everything_back",
 ];
 
-/// Making a grant from a folder a person picked, which only
+/// Making a grant from a folder or installed application a person picked, which only
 /// `settings_granted.rs` may do.
 ///
-/// Three words rather than one, so that all three ends are held: the grant's
-/// own type, the crate that seals a picked folder, and the call that carries
-/// it to the disk. A Settings file reaching for any of them is a second road
+/// These words hold the grant's own type, the crate that seals a picked
+/// folder, and both calls that carry a checked choice to disk. The application
+/// choice and expiry are checked by `ApplicationBeingPicked` before that call.
+/// A Settings file reaching for any of them is a second road
 /// to a grant, which is the thing this file exists to keep at one.
 ///
 /// **`a_folder_is_picked_in_settings.rs` is not among the files checked here**,
@@ -429,7 +431,12 @@ const GRANTING: [&str; 9] = [
 /// walking and makes no grant — `GiveItThisFolder` is handed back to the
 /// section — but nothing in *this* file is what says so, and that is a gap
 /// named here rather than left to be discovered.
-const PICKING: [&str; 3] = ["Granting", "alo_picking", ".granted("];
+const PICKING: [&str; 4] = [
+    "Granting",
+    "alo_picking",
+    ".granted(",
+    ".application_granted(",
+];
 
 /// Answering setup again, which is asked once.
 const RE_ASKING: [&str; 3] = ["SettingUp", ".answer(", ".setting_up("];
@@ -520,16 +527,17 @@ fn settings_grants_only_from_a_pick_and_changes_only_through_the_owning_crates()
         for (line, text) in &code {
             if text.contains("Changing::of") {
                 revoking.push(format!("src/{named}:{line}"));
-                // **Two things a `Changing` may be, and no third.** Revoking a
-                // row a person saw, or making the grant a person's pick means.
+                // Revoke a visible row, grant a picked folder, or grant the
+                // installed application and expiry the person selected.
                 // Anything else is this window changing the machine by a road
                 // of its own, which is what this file is here to keep from
                 // existing.
                 assert!(
                     text.contains(".revoked(row, now)")
-                        || text.contains(".granted(&granting, chosen, now)"),
+                        || text.contains(".granted(&granting, chosen, now)")
+                        || text.contains(".application_granted(grant, now)"),
                     "src/{named}:{line} makes a Changing for something other than revoking a row \
-                     or granting a picked folder: {text}"
+                     or granting a picked folder or application: {text}"
                 );
             }
         }
@@ -539,14 +547,11 @@ fn settings_grants_only_from_a_pick_and_changes_only_through_the_owning_crates()
         "Settings does what it must not:\n{}",
         refused.join("\n")
     );
-    // **Two, and the test above says which two they may be.** One revokes —
-    // a grant and a pairing by the same call, which is what the one list
-    // means — and one carries a person's pick to the disk. This was `1` until
-    // 2026-10-24, when nothing could grant anything.
+    // Each checked pick has one persistence path beside the shared revocation.
     assert_eq!(
         revoking.len(),
-        2,
-        "a grant and a pairing are revoked by one call, and one call grants a picked folder: \
+        3,
+        "revocation and the picked folder/application grants have three owning calls: \
          {revoking:?}"
     );
 }
@@ -585,6 +590,11 @@ fn a_settings_file_that_words_grants_or_writes_around_its_keeper_is_refused() {
             "settings_window.rs",
             "changing.granted(&granting, &chosen, now)?;",
             ".granted(",
+        ),
+        (
+            "settings_window.rs",
+            "changing.application_granted(grant, now)?;",
+            ".application_granted(",
         ),
         (
             "settings_page.rs",

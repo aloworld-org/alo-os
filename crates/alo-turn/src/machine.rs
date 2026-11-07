@@ -94,6 +94,12 @@ use crate::the_verbs_would_not_declare::TheVerbsWouldNotDeclare;
 /// with no order between them, and the record is a file whose lines are read as
 /// a sequence.
 pub struct Machine<'a> {
+    /// Optional application transport and its checked control declarations.
+    controls: alo_adapters::Adapters,
+    /// The host transport used only after application permission checks.
+    delivering_controls: Option<&'a dyn alo_adapters::Delivers>,
+    /// A live-grant-filtered view for model prompts and discovery.
+    offered: Option<Verbs>,
     /// What an agent may ask for, which is what this machine can carry out.
     verbs: Verbs,
     /// The words the person in front of this machine reads.
@@ -246,7 +252,75 @@ pub fn the_verbs_a_whole_machine_offers() -> Result<Verbs, TheVerbsWouldNotDecla
     Ok(verbs)
 }
 
+/// The core declarations and Studio controls understood by the first-party agent.
+/// The daemon's discovery response filters this registry before each model round.
+///
+/// # Errors
+/// A duplicate or invalid declaration.
+pub fn the_verbs_with_application_controls() -> Result<Verbs, TheVerbsWouldNotDeclare> {
+    let mut verbs = the_verbs_a_whole_machine_offers()?;
+    let mut controls = alo_adapters::Adapters::default();
+    controls.add(alo_adapters::studio::loaded()?)?;
+    controls.declare_into(&mut verbs)?;
+    Ok(verbs)
+}
+
 impl<'a> Machine<'a> {
+    /// Attach Studio's semantic controls. Existing constructors stay compatible.
+    ///
+    /// # Errors
+    /// A duplicate or invalid declaration. No partial machine is returned.
+    pub fn with_application_controls(
+        mut self,
+        transport: &'a dyn alo_adapters::Delivers,
+    ) -> Result<Self, TheVerbsWouldNotDeclare> {
+        let mut controls = alo_adapters::Adapters::default();
+        controls.add(alo_adapters::studio::loaded()?)?;
+        self.offered = Some(self.verbs.clone());
+        controls.declare_into(&mut self.verbs)?;
+        self.controls = controls;
+        self.delivering_controls = Some(transport);
+        Ok(self)
+    }
+
+    /// The checked adapters and the optional application transport together.
+    pub(crate) fn application_controls(
+        &self,
+    ) -> (
+        &alo_adapters::Adapters,
+        Option<&'a dyn alo_adapters::Delivers>,
+    ) {
+        (&self.controls, self.delivering_controls)
+    }
+
+    /// Refresh the model-facing registry from the grants in force at this moment.
+    pub(crate) fn refresh_offered(
+        &mut self,
+        agent: &alo_capability::Grantee,
+        grants: &alo_capability::Grants,
+        now: std::time::SystemTime,
+    ) {
+        if self.delivering_controls.is_some() {
+            self.offered = Some(self.verbs.selecting(|verb| {
+                self.controls
+                    .carrying_out(verb.name())
+                    .is_none_or(|(adapter, _)| {
+                        grants.permits(
+                            agent,
+                            &alo_capability::Ask::Application(adapter.application.to_owned()),
+                            now,
+                        )
+                    })
+            }));
+        }
+    }
+
+    /// The declarations currently offered under this turn's live grants.
+    #[must_use]
+    pub fn offered_verbs(&self) -> &Verbs {
+        self.offered.as_ref().unwrap_or(&self.verbs)
+    }
+
     /// A machine that can carry out the six file verbs, and offers those.
     ///
     /// No tool and no installation: a machine made this way answers an agent
@@ -269,6 +343,9 @@ impl<'a> Machine<'a> {
     ) -> Result<Self, TheVerbsWouldNotDeclare> {
         Ok(Self {
             verbs: file_verbs()?,
+            controls: alo_adapters::Adapters::default(),
+            delivering_controls: None,
+            offered: None,
             strings,
             resolving,
             installing_with: None,
@@ -327,6 +404,9 @@ impl<'a> Machine<'a> {
         alo_software::verbs::declare_into(&mut verbs)?;
         Ok(Self {
             verbs,
+            controls: alo_adapters::Adapters::default(),
+            delivering_controls: None,
+            offered: None,
             strings,
             resolving,
             installing_with: Some(installing_with),
@@ -401,6 +481,9 @@ impl<'a> Machine<'a> {
         let verbs = the_verbs_a_whole_machine_offers()?;
         Ok(Self {
             verbs,
+            controls: alo_adapters::Adapters::default(),
+            delivering_controls: None,
+            offered: None,
             strings,
             resolving,
             installing_with: Some(software.tool),
@@ -704,6 +787,117 @@ mod tests {
     use alo_capability::Verb;
     use alo_files::OnThisMachine;
     use alo_record::Record;
+
+    #[test]
+    fn studio_controls_follow_live_grants_and_one_approval_sends_one_message() {
+        use alo_capability::{Grant, Grants, Reach};
+        use std::{cell::RefCell, time::Duration};
+        struct Transport(RefCell<Vec<String>>);
+        impl alo_adapters::Delivers for Transport {
+            fn deliver(
+                &self,
+                message: &alo_adapters::Message,
+            ) -> Result<(), alo_adapters::NotDelivered> {
+                self.0.borrow_mut().push(message.method().to_owned());
+                Ok(())
+            }
+            fn read_text(
+                &self,
+                message: &alo_adapters::Message,
+            ) -> Result<String, alo_adapters::NotDelivered> {
+                self.0.borrow_mut().push(message.method().to_owned());
+                Ok("{\"phase\":\"paused\"}".to_owned())
+            }
+        }
+        let at = crate::testing::noon();
+        let strings = in_english();
+        let mut boundary = NothingIsBounded;
+        let mut indicator = Indicator::default();
+        let mut record = Record::default();
+        let transport = Transport(RefCell::new(Vec::new()));
+        {
+            let mut machine = Machine::carrying_out_file_verbs(
+                &strings,
+                &OnThisMachine,
+                &mut boundary,
+                &mut indicator,
+                &mut record,
+            )
+            .unwrap()
+            .with_application_controls(&transport)
+            .unwrap();
+            machine.installed.add(
+                alo_applications::Application::called(
+                    alo_adapters::studio::APPLICATION,
+                    "alo Studio",
+                )
+                .unwrap(),
+            );
+            let mut grants = Grants::default();
+            let mut turn = crate::Turning::beginning(
+                alo_context::Context::at_invocation(at),
+                "@alo",
+                Duration::from_secs(3600),
+                &mut grants,
+                &mut machine,
+            )
+            .unwrap();
+            turn.refresh_offered(&grants, at);
+            assert!(
+                !turn
+                    .offered_action_names()
+                    .iter()
+                    .any(|name| name.starts_with("studio."))
+            );
+            assert!(turn.reading("studio.status", &[], &grants, at).is_err());
+            assert!(transport.0.borrow().is_empty());
+            let permission = grants.grant(
+                Grant::checked(
+                    "@alo",
+                    Reach::Application(alo_adapters::studio::APPLICATION.to_owned()),
+                    at,
+                    Duration::from_secs(30),
+                )
+                .unwrap(),
+            );
+            turn.refresh_offered(&grants, at);
+            assert!(
+                turn.offered_action_names()
+                    .iter()
+                    .any(|name| name == "studio.status")
+            );
+            let status = turn.reading("studio.status", &[], &grants, at).unwrap();
+            assert!(
+                matches!(status, crate::WhatAVerbDid::ApplicationControlled(ref status) if status.reply.as_deref() == Some("{\"phase\":\"paused\"}"))
+            );
+            let proposal = turn
+                .proposing("studio.resume", &[], &grants, Duration::from_secs(30), at)
+                .unwrap();
+            assert_eq!(*transport.0.borrow(), ["GetStatus"]);
+            turn.approving(proposal, &grants, at).unwrap();
+            assert!(turn.approving(proposal, &grants, at).is_err());
+            assert_eq!(*transport.0.borrow(), ["GetStatus", "Resume"]);
+            turn.refresh_offered(&grants, at + Duration::from_secs(31));
+            assert!(
+                !turn
+                    .offered_action_names()
+                    .iter()
+                    .any(|name| name.starts_with("studio."))
+            );
+            assert!(grants.revoke(permission));
+            turn.refresh_offered(&grants, at);
+            assert!(
+                !turn
+                    .offered_action_names()
+                    .iter()
+                    .any(|name| name.starts_with("studio."))
+            );
+            assert!(turn.reading("studio.status", &[], &grants, at).is_err());
+            assert_eq!(transport.0.borrow().len(), 2);
+        }
+        // The successful read/change and both permission refusals leave evidence.
+        assert_eq!(record.everything().count(), 4);
+    }
 
     /// **Every verb this machine offers, by name.**
     ///

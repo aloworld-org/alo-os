@@ -186,6 +186,7 @@ fn what_is_drawn_on_two_desktops_carries_the_indicator_and_the_question() {
                     running: &running,
                     filling: &filling,
                     in_use: &[],
+                    in_use_problem: None,
                     notifications: &[],
                     capturing: None,
                     division: an_undivided_display(),

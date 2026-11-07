@@ -635,7 +635,7 @@ impl crate::DirectSession {
                 let output = every.remove(0);
                 poll()?;
                 let (width, height) = output.output.mode.size();
-                let painter = crate::software_scanout::SoftwarePainter::new()?;
+                let painter = crate::software_scanout::SoftwarePainter::new()?.with_reusable_frames();
                 // **A painter each, because a `Target` owns its painter**, and
                 // a borrow each of the one descriptor, which is what
                 // `Inventory` is. A display whose painter cannot be made is
@@ -645,12 +645,12 @@ impl crate::DirectSession {
                 let others = every
                     .into_iter()
                     .filter_map(|output| {
-                        let painter = crate::software_scanout::SoftwarePainter::new().ok()?;
+                        let painter = crate::software_scanout::SoftwarePainter::new().ok()?.with_reusable_frames();
                         Some(crate::direct_target::Target::new(
                             painter,
                             crate::drm_inventory::Inventory(fd),
                             output,
-                        ))
+                        ).with_reusable_scanout())
                     })
                     .collect::<Vec<_>>();
                 // **Buffer sharing is promised here and not in
@@ -716,7 +716,7 @@ impl crate::DirectSession {
                         painter,
                         crate::drm_inventory::Inventory(fd),
                         output,
-                    ),
+                    ).with_reusable_scanout(),
                     poll,
                     &mut next,
                     {
@@ -2667,6 +2667,60 @@ struct Layered<'a> {
 }
 
 impl FrameTarget for Layered<'_> {
+    fn capture_forbidden(&self) -> bool {
+        matches!(
+            self.layers.scene,
+            Some(
+                crate::scene_native::NativeScene::Lock(_)
+                    | crate::scene_native::NativeScene::SignIn(_)
+                    | crate::scene_native::NativeScene::Recovery(_)
+            )
+        )
+    }
+    fn capture_output(&mut self, wanted: bool) {
+        self.target.capture_output(wanted);
+    }
+    fn captured_output(&mut self) -> Option<std::sync::Arc<[u8]>> {
+        self.shared_captured_output()
+            .map(|pixels| std::sync::Arc::from(pixels.as_slice()))
+    }
+    fn capture_window(
+        &mut self,
+        size: Size<i32, Physical>,
+        root: &WlSurface,
+        popups: &[Popup],
+        cursor: &Cursor,
+        camera: alo_canvas::Camera,
+    ) -> Result<std::sync::Arc<[u8]>, RenderError> {
+        self.shared_capture_window(size, root, popups, cursor, camera)
+            .map(|pixels| std::sync::Arc::from(pixels.as_slice()))
+    }
+    fn shared_capture_window_at(
+        &mut self,
+        size: Size<i32, Physical>,
+        root: &WlSurface,
+        popups: &[Popup],
+        cursor: &Cursor,
+        camera: alo_canvas::Camera,
+        time: u32,
+    ) -> Result<std::sync::Arc<Vec<u8>>, RenderError> {
+        self.target
+            .shared_capture_window_at(size, root, popups, cursor, camera, time)
+    }
+    fn shared_captured_output(&mut self) -> Option<std::sync::Arc<Vec<u8>>> {
+        self.target.shared_captured_output()
+    }
+    fn shared_capture_window(
+        &mut self,
+        size: Size<i32, Physical>,
+        root: &WlSurface,
+        popups: &[Popup],
+        cursor: &Cursor,
+        camera: alo_canvas::Camera,
+    ) -> Result<std::sync::Arc<Vec<u8>>, RenderError> {
+        self.target
+            .shared_capture_window(size, root, popups, cursor, camera)
+    }
     fn metadata(&self) -> Result<crate::OutputMetadata, RenderError> {
         self.target.metadata()
     }

@@ -95,7 +95,7 @@ is shown to have reached nothing.
 | Open a web link | `software.removed` | org.mozilla.firefox is removed. Everything it was allowed has ended, and so has every permission to use it |
 | Open a web link | `software.web.nothing-opens` | No application on this machine opens web addresses, so nothing was opened. Install a web browser, and it opens them |
 | Ask the agent to use the text editor | `software.removed` | org.gnome.TextEditor is removed. Everything it was allowed has ended, and so has every permission to use it |
-| Ask the agent to use the text editor | `capability.refused.never-granted` | @alo has not been granted the application org.gnome.TextEditor — grants are made by picking a folder, never by asking for one |
+| Ask the agent to use the text editor | `capability.refused.application-control-not-granted` | @alo has not been granted the application org.gnome.TextEditor. Choose the application and how long access lasts in Settings. |
 | Remove the text editor | `software.refused.not-installed` | org.gnome.TextEditor is not installed on this machine, so there is nothing to update or remove. Check the application's name |
 
 In row 5, the tool is never asked to install anything. In row 9, the person had

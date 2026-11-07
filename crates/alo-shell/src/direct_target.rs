@@ -52,6 +52,50 @@ impl<'renderer, 'fd> DirectTarget<'renderer, 'fd> {
 }
 
 impl FrameTarget for DirectTarget<'_, '_> {
+    fn capture_output(&mut self, wanted: bool) {
+        self.target.capture_output(wanted);
+    }
+    fn captured_output(&mut self) -> Option<std::sync::Arc<[u8]>> {
+        self.shared_captured_output()
+            .map(|pixels| std::sync::Arc::from(pixels.as_slice()))
+    }
+    fn capture_window(
+        &mut self,
+        size: Size<i32, Physical>,
+        root: &WlSurface,
+        popups: &[Popup],
+        cursor: &Cursor,
+        camera: alo_canvas::Camera,
+    ) -> Result<std::sync::Arc<[u8]>, RenderError> {
+        self.shared_capture_window(size, root, popups, cursor, camera)
+            .map(|pixels| std::sync::Arc::from(pixels.as_slice()))
+    }
+    fn shared_capture_window_at(
+        &mut self,
+        size: Size<i32, Physical>,
+        root: &WlSurface,
+        popups: &[Popup],
+        cursor: &Cursor,
+        camera: alo_canvas::Camera,
+        time: u32,
+    ) -> Result<std::sync::Arc<Vec<u8>>, RenderError> {
+        self.target
+            .shared_capture_window_at(size, root, popups, cursor, camera, time)
+    }
+    fn shared_captured_output(&mut self) -> Option<std::sync::Arc<Vec<u8>>> {
+        self.target.shared_captured_output()
+    }
+    fn shared_capture_window(
+        &mut self,
+        size: Size<i32, Physical>,
+        root: &WlSurface,
+        popups: &[Popup],
+        cursor: &Cursor,
+        camera: alo_canvas::Camera,
+    ) -> Result<std::sync::Arc<Vec<u8>>, RenderError> {
+        self.target
+            .shared_capture_window(size, root, popups, cursor, camera)
+    }
     fn retire(&mut self) -> Result<(), RenderError> {
         self.target.retire()
     }
@@ -207,6 +251,10 @@ use smithay::backend::{
 
 /// One frozen output, one active allocation owner, and a terminal cleanup latch.
 pub(crate) struct Target<R, D: ScanoutDevice> {
+    /// Full-output copies are made only for an active permission-scoped consumer.
+    capture_output: bool,
+    /// Published only after successful scanout submission, never after a refusal.
+    captured_output: Option<std::sync::Arc<Vec<u8>>>,
     /// Context-thread painter.
     painter: R,
     /// Descriptor shared by initial and replacement transactions.
@@ -221,6 +269,8 @@ pub(crate) struct Target<R, D: ScanoutDevice> {
     retirement_error: Option<ResourceError>,
     /// A retirement attempt is terminal, including failed disable.
     retired: bool,
+    /// Fixed backend policy, never changed by a client or agent.
+    reuse_buffers: bool,
     /// What a person is looking at on the canvas, for the frames this scans out.
     ///
     /// A copy of the session's, set by [`FrameTarget::look_at`] once a frame. The
@@ -235,14 +285,23 @@ impl<R, D: ScanoutDevice> Target<R, D> {
     pub(crate) fn new(painter: R, device: D, output: AtomicOutput) -> Self {
         Self {
             painter,
+            capture_output: false,
+            captured_output: None,
             device,
             output,
             scene: None,
             halted: false,
             retirement_error: None,
             retired: false,
+            reuse_buffers: false,
             camera: alo_canvas::Camera::new(),
         }
+    }
+
+    /// Keep one detached buffer for the software desktop's next frame.
+    pub(crate) fn with_reusable_scanout(mut self) -> Self {
+        self.reuse_buffers = true;
+        self
     }
 
     /// Retire once and preserve chronological post-commit and shutdown errors.
@@ -256,7 +315,7 @@ impl<R, D: ScanoutDevice> Target<R, D> {
         self.retired = true;
         let mut errors: Vec<_> = self.retirement_error.take().into_iter().collect();
         if let Some(mut scene) = self.scene.take()
-            && let Err(error) = scene.active.retire()
+            && let Err(error) = scene.retire()
         {
             errors.push(error);
         }
@@ -269,6 +328,59 @@ impl<R, D: ScanoutDevice> Target<R, D> {
 }
 
 impl<R: ScenePainter, D: ScanoutDevice + Clone> FrameTarget for Target<R, D> {
+    fn capture_output(&mut self, wanted: bool) {
+        self.capture_output = wanted;
+        self.captured_output = None;
+    }
+    fn captured_output(&mut self) -> Option<std::sync::Arc<[u8]>> {
+        self.shared_captured_output()
+            .map(|pixels| std::sync::Arc::from(pixels.as_slice()))
+    }
+    fn capture_window(
+        &mut self,
+        size: Size<i32, Physical>,
+        root: &WlSurface,
+        popups: &[Popup],
+        cursor: &Cursor,
+        camera: alo_canvas::Camera,
+    ) -> Result<std::sync::Arc<[u8]>, RenderError> {
+        self.shared_capture_window(size, root, popups, cursor, camera)
+            .map(|pixels| std::sync::Arc::from(pixels.as_slice()))
+    }
+    fn shared_capture_window_at(
+        &mut self,
+        size: Size<i32, Physical>,
+        root: &WlSurface,
+        popups: &[Popup],
+        cursor: &Cursor,
+        camera: alo_canvas::Camera,
+        time: u32,
+    ) -> Result<std::sync::Arc<Vec<u8>>, RenderError> {
+        let pixels = self.shared_capture_window(size, root, popups, cursor, camera)?;
+        crate::capture_frames::completed(root, popups, camera, time);
+        Ok(pixels)
+    }
+    fn shared_captured_output(&mut self) -> Option<std::sync::Arc<Vec<u8>>> {
+        self.captured_output.take()
+    }
+    fn shared_capture_window(
+        &mut self,
+        size: Size<i32, Physical>,
+        root: &WlSurface,
+        popups: &[Popup],
+        cursor: &Cursor,
+        camera: alo_canvas::Camera,
+    ) -> Result<std::sync::Arc<Vec<u8>>, RenderError> {
+        let (pixels, _) = self.painter.paint(
+            size,
+            std::slice::from_ref(root),
+            popups,
+            cursor,
+            crate::scene_native::NativeLayers::nothing(),
+            camera,
+        )?;
+        Ok(pixels.shared())
+    }
     fn look_at(&mut self, camera: alo_canvas::Camera) -> Result<(), RenderError> {
         self.camera = camera;
         Ok(())
@@ -335,6 +447,16 @@ impl<R: ScenePainter, D: ScanoutDevice + Clone> Target<R, D> {
         let prepared =
             self.painter
                 .paint(self.size(), roots, popups, cursor, layers, self.camera)?;
+        // A lock, sign-in or recovery scene can never become a capture frame.
+        let exclusive = matches!(
+            layers.scene,
+            Some(
+                crate::scene_native::NativeScene::Lock(_)
+                    | crate::scene_native::NativeScene::SignIn(_)
+                    | crate::scene_native::NativeScene::Recovery(_)
+            )
+        );
+        let captured = (self.capture_output && !exclusive).then(|| prepared.0.shared());
         let result = if let Some(scene) = &mut self.scene {
             scene.replace(prepared).map(|result| {
                 self.retirement_error = result.retirement_error;
@@ -343,13 +465,17 @@ impl<R: ScenePainter, D: ScanoutDevice + Clone> Target<R, D> {
             })
         } else {
             crate::scene_scanout::activate(prepared, self.device.clone(), &self.output).map(
-                |scene| {
+                |mut scene| {
+                    scene.reuse_buffers = self.reuse_buffers;
                     let surfaces = scene.surfaces.clone();
                     self.scene = Some(scene);
                     surfaces
                 },
             )
         };
+        if result.is_ok() {
+            self.captured_output = captured;
+        }
         result.map_err(|error| {
             self.halted |= !error.cleanup.is_empty();
             RenderError::Scanout(error)

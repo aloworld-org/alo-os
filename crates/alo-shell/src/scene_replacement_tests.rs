@@ -29,8 +29,6 @@ fn replacement_commits_before_old_cleanup_without_disabling_new_scene()
                 "unmap",
                 "framebuffer",
                 "blob",
-                "map",
-                "unmap",
                 "test",
                 "enable",
                 "destroy blob",
@@ -66,7 +64,7 @@ fn replacement_refusals_preserve_old_allocation_and_allow_clean_retry()
         "map",
         "framebuffer",
         "blob",
-        "upload map",
+        "unmap",
         "test",
         "enable",
     ] {

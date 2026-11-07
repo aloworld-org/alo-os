@@ -41,7 +41,7 @@ pub struct ScanoutPixels {
     /// Tightly packed byte pitch.
     stride: usize,
     /// Immutable converted frame storage.
-    pixels: Vec<u8>,
+    pixels: std::sync::Arc<Vec<u8>>,
 }
 
 impl ScanoutPixels {
@@ -60,6 +60,12 @@ impl ScanoutPixels {
         &self.pixels
     }
 
+    /// Share the owned allocation without copying the frame's bytes.
+    /// A consumer cannot mutate storage while scanout or another reader holds it.
+    pub(crate) fn shared(&self) -> std::sync::Arc<Vec<u8>> {
+        self.pixels.clone()
+    }
+
     /// The same extent and stride, carrying pixels drawn from these.
     ///
     /// The one door for a frame made out of another — the magnifier
@@ -71,7 +77,7 @@ impl ScanoutPixels {
         (pixels.len() == self.pixels.len()).then_some(Self {
             size: self.size,
             stride: self.stride,
-            pixels,
+            pixels: std::sync::Arc::new(pixels),
         })
     }
 }
@@ -144,10 +150,11 @@ pub(crate) fn convert(
     if rgba.len() != length {
         return Err(ReadbackError::Layout);
     }
-    let mut pixels = Vec::new();
-    pixels.try_reserve_exact(length)?;
-    pixels.resize(length, 0);
-    for (row, destination) in pixels.chunks_exact_mut(stride).enumerate() {
+    // Extend initialized four-byte pixels directly. Zeroing a byte vector first
+    // writes the full frame twice; this exact-size iterator needs no such pass.
+    let mut pixels: Vec<[u8; 4]> = Vec::new();
+    pixels.try_reserve_exact(length / 4)?;
+    for row in 0..size.1 as usize {
         let source_row = match order {
             RowOrder::TopToBottom => row,
             RowOrder::BottomToTop => size.1 as usize - 1 - row,
@@ -155,19 +162,45 @@ pub(crate) fn convert(
         let source = rgba
             .get(source_row * stride..(source_row + 1) * stride)
             .ok_or(ReadbackError::Layout)?;
-        for (source, destination) in source
-            .as_chunks::<4>()
-            .0
-            .iter()
-            .zip(destination.as_chunks_mut::<4>().0)
-        {
-            *destination = [source[2], source[1], source[0], 0];
-        }
+        pixels.extend(
+            source
+                .as_chunks::<4>()
+                .0
+                .iter()
+                .map(|source| [source[2], source[1], source[0], 0]),
+        );
     }
     Ok(ScanoutPixels {
         size,
         stride,
-        pixels,
+        pixels: std::sync::Arc::new(pixels.into_flattened()),
+    })
+}
+
+/// Preserve software-native BGR channels and clear only the unused fourth byte.
+pub(crate) fn copy_xrgb(size: (u32, u32), bgrx: &[u8]) -> Result<ScanoutPixels, ReadbackError> {
+    let (stride, length) = layout(size)?;
+    if bgrx.len() != length {
+        return Err(ReadbackError::Layout);
+    }
+    let (blocks, tail) = bgrx.as_chunks::<16>();
+    let mut pixels: Vec<[u8; 16]> = Vec::new();
+    // Reserve the final partial block too, so flattening and appending its
+    // complete pixels cannot introduce an infallible growth allocation.
+    pixels.try_reserve_exact(length.div_ceil(16))?;
+    // Copy four pixels and discard their unused bytes together, in one pass.
+    // Explicit byte order keeps this independent of host endian and alignment.
+    pixels.extend(blocks.iter().map(|block| {
+        (u128::from_le_bytes(*block) & 0x00ff_ffff_00ff_ffff_00ff_ffff_00ff_ffff).to_le_bytes()
+    }));
+    let mut pixels = pixels.into_flattened();
+    for [blue, green, red, _] in tail.as_chunks::<4>().0 {
+        pixels.extend_from_slice(&[*blue, *green, *red, 0]);
+    }
+    Ok(ScanoutPixels {
+        size,
+        stride,
+        pixels: std::sync::Arc::new(pixels),
     })
 }
 

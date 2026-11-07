@@ -1,6 +1,9 @@
 [workspace]
 resolver = "3"
 members = [
+  "crates/alo-capture-provider",
+  "crates/alo-capture-remote",
+  "crates/alo-capture-protocol",
   "crates/alo-folded-light",
   "crates/alo-vector-shapes",
   "crates/alo-cursors",
@@ -139,6 +142,8 @@ members = [
   "crates/alo-turn",
 ]
 exclude = [
+  # The pinned rented binding and its two ADR 0147 safe-wrapper additions.
+  "engines/pipewire",
   # The half that runs inside the kernel. It is a different target, a
   # different compiler channel and a different set of lints; `build.rs` in
   # `alo-bounding` is what builds it, and that crate's `main.rs` says why it

@@ -140,6 +140,15 @@ struct Watched<'a> {
 }
 
 impl TheDoor for Watched<'_> {
+    fn offered_verbs(&mut self) -> Result<Option<Vec<String>>, NotAnswered> {
+        if (self.stopped)() {
+            return Err(NotAnswered::NotReached {
+                why: "the person stopped the turn".to_owned(),
+            });
+        }
+        self.door.offered_verbs()
+    }
+
     fn asking(&mut self, request: &FromAnAgent) -> Result<ToAnAgent, NotAnswered> {
         if (self.stopped)() {
             return Err(NotAnswered::NotReached {
@@ -170,9 +179,14 @@ pub fn driving_after(
     let mut steps: Vec<AStep> = Vec::new();
 
     for _ in 0..how_far.rounds() {
+        let offered = match door.offered_verbs() {
+            Ok(Some(names)) => verbs.selecting(|verb| names.iter().any(|name| name == verb.name())),
+            Ok(None) => verbs.clone(),
+            Err(why) => return could_not_be_asked(why, steps),
+        };
         let shown = shown_in_progress(
             instructions,
-            verbs,
+            &offered,
             ATurnInProgress::of(request, &steps, may_reach).after(earlier),
         );
         let asked = FromAnAgent::Ask {
@@ -189,7 +203,7 @@ pub fn driving_after(
             }
             // We asked a question; an answer about a verb means this machine
             // answered something we did not ask. Its own fault, in English.
-            Ok(ToAnAgent::Did(_) | ToAnAgent::Proposed(_)) => {
+            Ok(ToAnAgent::Capabilities { .. } | ToAnAgent::Did(_) | ToAnAgent::Proposed(_)) => {
                 return WhatHappened::TheMachineCouldNotBeAsked {
                     why: "a question was answered with what a verb did".to_owned(),
                     after: steps,
@@ -281,7 +295,9 @@ pub fn driving_after(
                     let line = ToAnAgent::Refused(why).written().unwrap_or_default();
                     steps.push(AStep::of(&said, &line));
                 }
-                Ok(ToAnAgent::Did(_) | ToAnAgent::Answered { .. }) => {
+                Ok(
+                    ToAnAgent::Capabilities { .. } | ToAnAgent::Did(_) | ToAnAgent::Answered { .. },
+                ) => {
                     return WhatHappened::TheMachineCouldNotBeAsked {
                         why: "a change was answered as though it had already run".to_owned(),
                         after: steps,
@@ -293,7 +309,7 @@ pub fn driving_after(
             // what we just did for it. Asking again would be the same round
             // with nothing added, so the turn ends rather than spending the
             // bound on a loop with no step in it.
-            FromAnAgent::Ask { .. } => {
+            FromAnAgent::Ask { .. } | FromAnAgent::Capabilities => {
                 return WhatHappened::ItWasAnsweredInWords { said, after: steps };
             }
         }

@@ -113,6 +113,7 @@ alo-protocol = { path = "../alo-protocol" }
 alo-put-aside = { path = "../alo-put-aside" }
 alo-egress = { path = "../alo-egress" }
 alo-indicator = { path = "../alo-indicator" }
+alo-in-use = { path = "../alo-in-use" }
 alo-saying = { path = "../alo-saying" }
 alo-strings = { path = "../alo-strings" }
 # The machine's own clock, for the one reading that has no device to ask.

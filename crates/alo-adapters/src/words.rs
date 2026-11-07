@@ -19,7 +19,7 @@ use alo_strings::{Vocabulary, VocabularyError, WordError};
 /// crate's files name it as `crate::words::Word`.
 pub use alo_strings::Word;
 
-use crate::{fallback_words, text_editor};
+use crate::{fallback_words, studio, text_editor};
 
 /// The gap holding an application's identifier.
 pub const APPLICATION: &str = "application";
@@ -132,6 +132,7 @@ pub fn declare_into(vocabulary: &mut Vocabulary) -> Result<(), WordsError> {
     for word in EVERY_WORD
         .iter()
         .chain(text_editor::WORDS.iter())
+        .chain(studio::WORDS.iter())
         .chain(fallback_words::EVERY_WORD.iter())
     {
         vocabulary.says(word.phrase()?)?;
@@ -153,6 +154,7 @@ mod tests {
         EVERY_WORD
             .iter()
             .chain(text_editor::WORDS.iter())
+            .chain(studio::WORDS.iter())
             .chain(fallback_words::EVERY_WORD.iter())
             .copied()
             .collect()

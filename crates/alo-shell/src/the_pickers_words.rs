@@ -143,7 +143,14 @@ pub const HIDE_HIDDEN_FOLDERS: Word =
         .noting("The same row once hidden folders are shown: pressing it hides them again.");
 
 /// Every string this file declares, in the order a translator meets them.
-pub const THE_PICKERS_WORDS: [Word; 13] = [
+pub const THE_PICKERS_WORDS: [Word; 20] = [
+    crate::application_permissions::GIVE,
+    crate::application_permissions::CHOOSE,
+    crate::application_permissions::DURATION,
+    crate::application_permissions::SCOPE,
+    crate::application_permissions::NONE,
+    crate::application_permissions::CANCEL,
+    crate::application_permissions::GIVEN,
     GRANT_A_FOLDER,
     YOU_ARE_IN,
     PICK_THIS_FOLDER,

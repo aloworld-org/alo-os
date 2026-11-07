@@ -12,6 +12,22 @@ rules below are consequences of that ADR, not preferences.
 
 Every verb declares:
 
+The separately installed alo Studio app adds the `studio` adapter. Its complete
+typed operations, arguments, asynchronous outcomes and consent boundaries are
+specified in [Studio automation](../../apps/alo-studio/docs/automation.md).
+`studio.status` is a bounded read; all other recording operations are changes
+requiring approval. They cover new recordings, native source pickers,
+start/pause/resume/finish, microphone and quality options, countdown, library,
+review, rename and the native Save a copy chooser. They accept no source IDs,
+file paths, export destinations or executable action names.
+
+Controls are offered only under a live application grant for
+`org.aloworld.Studio`. Discovery refreshes before every model round and delivery
+checks permission again. Reads never start a closed app; use the ordinary
+`open_application` action first. The app's native permission dialogs still
+require the person's choice. Expiry or revocation removes controls from
+discovery and refuses later delivery.
+
 | Field | Meaning |
 |---|---|
 | `name` | Stable identifier. Never reused for a different meaning. |

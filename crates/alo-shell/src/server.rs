@@ -29,8 +29,10 @@ pub struct Server {
     display: Display<Surfaces>,
     /// Protocol state and mapped toplevels.
     pub(crate) surfaces: Surfaces,
+    /// Desktop-only capture endpoint, removed before its enclosing socket directory.
+    pub(crate) capture: Option<crate::capture_sources::CaptureSources>,
     /// Listener and private directory lifetime.
-    socket: Socket,
+    pub(crate) socket: Socket,
     /// One output and its successfully submitted surface membership.
     /// **One per display, keyed by the output's own name.**
     ///
@@ -834,6 +836,7 @@ impl Server {
             reader_presentation: None,
             display,
             surfaces,
+            capture: None,
             socket,
             display_numbers: std::collections::BTreeMap::new(),
             // No desktop has arranged anything yet.
@@ -1157,6 +1160,14 @@ impl Server {
         let roots: Vec<_> = self.mapped_surfaces().cloned().collect();
         let cursor = self.cursor();
         let popups = self.popup_surfaces();
+        if let Some(mut capture) = self.capture.take() {
+            if target.capture_forbidden() {
+                capture.stop();
+            } else {
+                capture.prepare(self, &metadata.name, size, target);
+            }
+            self.capture = Some(capture);
+        }
         let handle = self.display.handle();
         let submitted = self
             .presentations
@@ -1167,6 +1178,12 @@ impl Server {
         // The output this frame went to is the display a session holds its
         // divisions and desktops on; see `crate::display_lifecycle`.
         self.the_display_submitted(&metadata, (size.w, size.h));
+        if let Some(capture) = self.capture.take() {
+            if !target.capture_forbidden() {
+                capture.submitted(self, &metadata.name, target, time);
+            }
+            self.capture = Some(capture);
+        }
         Ok(submitted)
     }
 }

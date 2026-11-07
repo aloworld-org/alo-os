@@ -539,7 +539,9 @@ impl ToAPerson {
                 model,
             }),
             Told::Leaving { lines } => Ok(Self::Leaving { lines }),
-            Told::Proposed(_) => Err(NotUnderstood::NotAnAnswerForAPerson),
+            Told::Capabilities { .. } | Told::Proposed(_) => {
+                Err(NotUnderstood::NotAnAnswerForAPerson)
+            }
         }
     }
 

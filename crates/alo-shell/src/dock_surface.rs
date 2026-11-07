@@ -103,7 +103,7 @@ pub(crate) struct AWell {
 /// be grey, and indistinguishable from a border. Every panel that draws
 /// nothing in it says [`Self::NOTHING`], one line, so adding this did not add
 /// three fields to every surface that never needed them.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub(crate) struct InPrimary<'a> {
     /// Wells filled in it — the *Primary* answer.
     pub(crate) wells: &'a [AWell],
@@ -143,7 +143,7 @@ impl InPrimary<'static> {
 }
 
 /// What the surface is drawn out of.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub(crate) struct ADocksSurface<'a> {
     /// Where the panel itself is, in this display's pixels.
     pub(crate) panel: Rectangle<i32, Physical>,
@@ -230,6 +230,11 @@ pub(crate) struct ADocksSurface<'a> {
 /// Returns [`None`] for a panel with no area, which is a Dock that gave way
 /// rather than a failure.
 pub(crate) fn surface(of: ADocksSurface<'_>) -> Option<Washed> {
+    crate::dock_surface_cache::surface(of)
+}
+
+/// Draw a changed panel. Unchanged panels reuse these exact pixels.
+pub(super) fn rasterize(of: ADocksSurface<'_>) -> Option<Washed> {
     let panel = of.panel;
     if panel.size.w <= 0 || panel.size.h <= 0 {
         return None;

@@ -178,6 +178,16 @@ and a window exactly over another hides all of it, its title strip included.
 on nobody's corner. **This makes an existing promise true** — rule 5's *losing
 access to a window is not [permitted]* — rather than adding one.
 
+## A native permission dialog follows its caller — 2026-11-04
+
+A system dialog can be a different Wayland client from the application whose
+button opened it. Its exported XDG parent handle makes that relationship
+explicit. Like another window of the focused application, a newly mapped
+dialog with that focused parent comes in front and takes the keyboard. A
+background parent, a guessed handle, or a revoked export cannot interrupt the
+person. This extends rule 8's person-initiated opening to native permission
+dialogs; it does not activate an existing window when its parent later changes.
+
 ---
 
 ## Amended 2026-11-07 — when there is no room, the view can glide to empty space

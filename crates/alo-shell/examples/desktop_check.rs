@@ -450,6 +450,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                                 running,
                                 filling,
                                 in_use: &[],
+                                in_use_problem: None,
                                 notifications: &[],
                                 capturing: None,
                                 division: &division,

@@ -585,6 +585,7 @@ impl<'a> TheDesk<'a> {
             running: self.running,
             filling: self.filling,
             in_use: &[],
+            in_use_problem: None,
             notifications,
             capturing,
             division: self.division,

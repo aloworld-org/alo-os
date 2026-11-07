@@ -91,6 +91,12 @@ fn the_contract_names_every_portal_answered_and_every_one_not() {
 
 #[cfg(target_os = "linux")]
 mod on_the_bus {
+    mod native_save_checks {
+        include!("support/native_save_checks.rs");
+    }
+    mod recording_session_checks {
+        include!("support/recording_session_checks.rs");
+    }
     use std::collections::HashMap;
     use std::fs::File;
     use std::os::fd::AsFd;
@@ -129,6 +135,28 @@ mod on_the_bus {
     impl TheMachine for ThisMachine {
         fn grants(&self) -> Option<Grants> {
             Some(self.grants.read().unwrap().clone())
+        }
+
+        fn grant_choice(
+            &self,
+            application: &str,
+            reach: Reach,
+        ) -> Option<(Grants, alo_capability::GrantId)> {
+            let grant = Grant::checked_for(
+                &Applicant::named(application).grantee(),
+                reach,
+                SystemTime::now(),
+                Duration::from_secs(3600),
+            )
+            .ok()?;
+            let mut grants = self.grants.write().unwrap();
+            let id = grants.grant(grant);
+            Some((grants.clone(), id))
+        }
+
+        fn revoke_choice(&self, id: alo_capability::GrantId) -> bool {
+            self.grants.write().unwrap().revoke(id);
+            true
         }
 
         fn applications(&self) -> Option<Applications> {
@@ -593,11 +621,11 @@ mod on_the_bus {
             .call_method(
                 Some(DESKTOP),
                 PORTALS,
-                Some("org.freedesktop.portal.FileChooser"),
-                "OpenFile",
+                Some("org.freedesktop.portal.Print"),
+                "PreparePrint",
                 &("", "Open", HashMap::<&str, Value<'_>>::new()),
             )
-            .expect_err("the file chooser was answered");
+            .expect_err("the print portal was answered");
         assert!(
             matches!(&refused, zbus::Error::MethodError(name, _, _)
                 if name.as_str() == "org.freedesktop.DBus.Error.UnknownInterface"

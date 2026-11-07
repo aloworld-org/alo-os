@@ -517,6 +517,8 @@ fn before_the_door(at_the_door: AtTheDoor) -> Judged {
 /// protocol has no such shape, and it must not gain one by this road.
 fn as_the_asking_machine_sees_it(did: &alo_turn::WhatAVerbDid) -> Option<alo_protocol::Done> {
     Some(match did {
+        // Application status is local to the granted, invoked turn.
+        alo_turn::WhatAVerbDid::ApplicationControlled(_) => return None,
         alo_turn::WhatAVerbDid::ToFiles(answer) => alo_protocol::Done::of_a_file_verb(answer),
         alo_turn::WhatAVerbDid::AnApplicationInstalled(installed) => {
             alo_protocol::Done::of_an_installation(installed)

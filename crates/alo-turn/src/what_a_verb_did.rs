@@ -37,6 +37,8 @@ use crate::acting_on_an_application::Reached;
 /// list as the verbs an agent may ask for, by [`crate::Machine`]'s rule.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum WhatAVerbDid {
+    /// A granted application's own typed operation was sent.
+    ApplicationControlled(crate::controlling_an_application::Controlled),
     /// One of the six file verbs: what was found, read, or where a file now is.
     ToFiles(Answer),
     /// An application was installed, and what it is sandboxed by.
@@ -76,7 +78,8 @@ impl WhatAVerbDid {
     pub const fn to_files(&self) -> Option<&Answer> {
         match self {
             Self::ToFiles(answer) => Some(answer),
-            Self::AnApplicationInstalled(_)
+            Self::ApplicationControlled(_)
+            | Self::AnApplicationInstalled(_)
             | Self::AnApplicationWasReached(_)
             | Self::WhatCanBeInstalled(_)
             | Self::WhatTouchedAFile(_) => None,
@@ -89,6 +92,7 @@ impl WhatAVerbDid {
         match self {
             Self::AnApplicationInstalled(installed) => Some(installed),
             Self::ToFiles(_)
+            | Self::ApplicationControlled(_)
             | Self::AnApplicationWasReached(_)
             | Self::WhatCanBeInstalled(_)
             | Self::WhatTouchedAFile(_) => None,
@@ -101,6 +105,7 @@ impl WhatAVerbDid {
         match self {
             Self::WhatCanBeInstalled(holds) => Some(holds),
             Self::ToFiles(_)
+            | Self::ApplicationControlled(_)
             | Self::AnApplicationInstalled(_)
             | Self::AnApplicationWasReached(_)
             | Self::WhatTouchedAFile(_) => None,
@@ -113,6 +118,7 @@ impl WhatAVerbDid {
         match self {
             Self::WhatTouchedAFile(found) => Some(found),
             Self::ToFiles(_)
+            | Self::ApplicationControlled(_)
             | Self::AnApplicationInstalled(_)
             | Self::AnApplicationWasReached(_)
             | Self::WhatCanBeInstalled(_) => None,
@@ -125,6 +131,7 @@ impl WhatAVerbDid {
         match self {
             Self::AnApplicationWasReached(reached) => Some(reached),
             Self::ToFiles(_)
+            | Self::ApplicationControlled(_)
             | Self::AnApplicationInstalled(_)
             | Self::WhatCanBeInstalled(_)
             | Self::WhatTouchedAFile(_) => None,

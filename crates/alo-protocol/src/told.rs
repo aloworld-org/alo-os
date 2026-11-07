@@ -55,6 +55,11 @@ use crate::workspaces::FoundWorkspace;
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case", deny_unknown_fields)]
 pub(crate) enum Told {
+    /// Currently offered action names, without grant or application data.
+    Capabilities {
+        /// Names currently offered to the invoked agent, without grant data.
+        verbs: Vec<String>,
+    },
     /// What a read found, or what an approved change did.
     Did(Done),
     /// What an approved change did, when nothing was kept from before it to

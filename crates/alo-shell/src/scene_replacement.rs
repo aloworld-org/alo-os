@@ -46,9 +46,15 @@ impl<D: ScanoutDevice + Clone> Submitted<D> {
                 },
                 cleanup: Vec::new(),
             })?;
-            let (mut owned, fb, blob) =
-                Allocation::allocate(self.active.owned.device.clone(), &self.mode, &self.formats)?;
-            owned.write_frame(&frame)?;
+            if let Some(spare) = self.spare.take() {
+                return spare.reuse(&frame);
+            }
+            let (owned, fb, blob) = Allocation::allocate_with_frame(
+                self.active.owned.device.clone(),
+                &self.mode,
+                &self.formats,
+                &frame,
+            )?;
             Scanout::activate(owned, self.active.plan.clone(), fb, blob)
         })();
         let candidate = match candidate {
@@ -65,7 +71,12 @@ impl<D: ScanoutDevice + Clone> Submitted<D> {
         let mut old = std::mem::replace(&mut self.active, candidate);
         old.enabled = false;
         self.surfaces = surfaces;
-        let retirement_error = old.owned.release().err();
+        let retirement_error = if self.reuse_buffers {
+            self.spare = Some(old);
+            None
+        } else {
+            old.owned.release().err()
+        };
         self.replacement_allowed = retirement_error.is_none();
         Ok(SceneReplacement { retirement_error })
     }

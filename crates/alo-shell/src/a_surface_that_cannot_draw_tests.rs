@@ -81,6 +81,7 @@ fn a_record_that_cannot_draw_leaves_the_rest_of_the_frame() {
             running: &running,
             filling: &filling,
             in_use: &[],
+            in_use_problem: None,
             notifications: &[],
             capturing: None,
             division: an_undivided_display(),

@@ -34,7 +34,7 @@ fn the_terminal_is_painted_where_a_window_is_under_every_surface_of_alos() {
     for (surface, call) in [
         (
             "the Dock, so it covers the furniture no window covers",
-            "desktop.paint(&mut frame, &washed)",
+            "desktop.paint(&mut frame, &washed, dock_ink.as_ref())",
         ),
         (
             "the record fixed to the display, which the nested lane still draws",
@@ -63,7 +63,7 @@ fn the_terminal_is_painted_where_a_window_is_under_every_surface_of_alos() {
 #[test]
 fn the_windows_are_painted_in_the_order_the_person_put_them_in() {
     let the_loop = painted_at("for kind in native.in_front.bottom_to_top()");
-    let the_desktop = painted_at("desktop.paint(&mut frame, &washed)");
+    let the_desktop = painted_at("desktop.paint(&mut frame, &washed, dock_ink.as_ref())");
     // **Each application window is painted with its own edge** since the
     // owner's answer of 2026-11-01 (`crate::each_window_with_its_edge`): its
     // elements one window at a time, then whatever was imported after the

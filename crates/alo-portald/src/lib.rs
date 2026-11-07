@@ -39,13 +39,10 @@
 //! the person can read is the better answer, and it is the one
 //! `alo_portals::Unanswered::ApplicationsUnread` exists for.
 //!
-//! **FileChooser is not served at all**, and that is `alo-portals`' deliberate
-//! choice rather than this crate's omission: `serving.rs` registers only the
-//! portals decided without a dialog, so the bus itself tells an application that
-//! nothing answers the rest. A backend running from this crate can therefore
-//! hold the name, answer Secret, Settings and NetworkMonitor for real, and still
-//! not let an application open a file — which is the second half of task 1's own
-//! text and the content of task 6.
+//! The native FileChooser save frontend also writes each selected application's
+//! exact file grant through this machine, with locked updates to the same list
+//! Settings revokes. The GTK backend and Documents portal supply the native
+//! picker and sandbox export; neither is an alternative permission authority.
 
 pub mod this_machine;
 

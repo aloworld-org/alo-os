@@ -239,9 +239,10 @@ FROM ${THE_BASE} AS shell
 ARG THE_STABLE
 
 RUN dnf install --assumeyes --setopt=install_weak_deps=False \
-      gcc \
+      gcc patch \
       wayland-devel libinput-devel libseat-devel libxkbcommon-devel \
       pixman-devel mesa-libEGL-devel mesa-libgbm-devel systemd-devel \
+      pipewire-devel clang-libs gstreamer1-devel gstreamer1-plugins-base-devel \
  && dnf clean all
 
 # **Not `/root`, because in this base `/root` is not a directory.** A bootc
@@ -285,9 +286,12 @@ WORKDIR /alo-os
 
 # No `--target`: the host triple of this stage is the base's own, which is the
 # whole point of building here.
-RUN cargo build --release --package alo-shell --package alo-desktop --package alo-cursors \
+RUN bash engines/pipewire-gstreamer/build.sh target/native-capture-plugin
+RUN cargo build --release --package alo-shell --package alo-desktop --package alo-cursors --package alo-capture-remote --package alo-capture-provider \
  && test -x target/release/alo-compositor \
- && test -x target/release/alo-desktop
+ && test -x target/release/alo-desktop \
+ && test -x target/release/alo-capture-remote \
+ && test -x target/release/alo-capture-provider
 
 # **alo's cursor theme, drawn here from the vector source the compositor draws
 # from** (`crates/alo-cursors`), for applications that draw their own pointer
@@ -521,6 +525,10 @@ COPY --from=built /alo-os/target/${THE_TARGET}/release/alo-sessiond /usr/libexec
 # appeared — which its own source says is what its log is for.
 COPY --from=shell /alo-os/target/release/alo-compositor /usr/bin/alo-compositor
 COPY --from=shell /alo-os/target/release/alo-desktop /usr/bin/alo-desktop
+COPY --from=shell /alo-os/target/release/alo-capture-remote /usr/libexec/alo-capture-remote
+COPY --from=shell /alo-os/target/release/alo-capture-provider /usr/libexec/alo-capture-provider
+COPY --from=shell /alo-os/target/native-capture-plugin/libgstpipewire.so /usr/lib/alo-capture-provider/gstreamer-1.0/libgstpipewire.so
+COPY engines/pipewire-gstreamer/COPYING /usr/share/licenses/alo-capture-provider/pipewire-gstreamer
 # The pointer for applications that bring their own cursor images: alo's theme,
 # written by `alo-cursor-theme` above, and named as the default below
 # (`image/usr/lib/environment.d/60-alo-cursor.conf`).
@@ -700,8 +708,14 @@ RUN dnf install --assumeyes --setopt=install_weak_deps=False \
  && test -f /usr/share/X11/xkb/rules/evdev.xml
 
 RUN dnf install --assumeyes --setopt=install_weak_deps=False \
-      pipewire pipewire-utils wireplumber \
+      pipewire pipewire-utils pipewire-pulseaudio wireplumber rtkit \
+      xdg-desktop-portal xdg-desktop-portal-gtk \
  && dnf clean all \
+ && systemctl --global mask xdg-desktop-portal.service \
+ && systemctl --global enable pipewire.socket pipewire-pulse.socket wireplumber.service \
+ && test -x /usr/bin/setpriv \
+ && test -x /usr/libexec/xdg-desktop-portal-gtk \
+ && test -x /usr/libexec/xdg-document-portal \
  && test -x /usr/bin/pw-dump \
  && test -x /usr/bin/wpctl \
  && least=0.5 \
@@ -1067,6 +1081,9 @@ COPY image/usr/lib/systemd/system/ /usr/lib/systemd/system/
 # the thing is not the thing*, in the one place where the thing is a file being
 # somewhere.
 COPY image/usr/lib/systemd/user/ /usr/lib/systemd/user/
+COPY image/usr/share/dbus-1/services/org.freedesktop.portal.Desktop.service /usr/share/dbus-1/services/org.freedesktop.portal.Desktop.service
+COPY image/usr/share/pipewire/pipewire.conf.d/ /usr/share/pipewire/pipewire.conf.d/
+COPY image/usr/share/pipewire/pipewire-pulse.conf.d/ /usr/share/pipewire/pipewire-pulse.conf.d/
 COPY image/usr/lib/sysusers.d/ /usr/lib/sysusers.d/
 COPY image/usr/lib/tmpfiles.d/ /usr/lib/tmpfiles.d/
 # **The cursor theme as a default the person can change**: `XCURSOR_THEME` and

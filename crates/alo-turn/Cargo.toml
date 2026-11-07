@@ -8,6 +8,7 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
+alo-adapters = { path = "../alo-adapters" }
 # Where a question that was not answered may go next, and the offer only a
 # person can take. A turn hands one of these back and does nothing with it.
 alo-answering = { path = "../alo-answering" }

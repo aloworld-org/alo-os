@@ -194,9 +194,9 @@ const WHERE_IT_STOPS: &[(&str, &str, &str)] = &[
     ),
     (
         "Ask the agent to use the text editor",
-        "capability.refused.never-granted",
-        "@alo has not been granted the application org.gnome.TextEditor — grants are made by \
-         picking a folder, never by asking for one",
+        "capability.refused.application-control-not-granted",
+        "@alo has not been granted the application org.gnome.TextEditor. Choose the application \
+         and how long access lasts in Settings.",
     ),
     (
         "Remove the text editor",

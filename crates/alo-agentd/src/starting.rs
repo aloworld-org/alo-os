@@ -281,6 +281,7 @@ pub fn until_stopped(
     // is read from** — so an approved `open` is recorded with its road and an
     // entry with none is refused by name (ADR 0108, 2026-10-31).
     let starting = HowApplicationsStartHere::in_these(where_entries_are_here());
+    let application_controls = alo_adapters::ApplicationSession;
     let mut machine = what_this_machine_can_carry_out(
         strings,
         &installing_with,
@@ -292,7 +293,8 @@ pub fn until_stopped(
         bounding,
         &mut indicator,
         kept,
-    )?;
+    )?
+    .with_application_controls(&application_controls)?;
     // What this machine holds about the other machines: what `src/main.rs`
     // read back off the disk, handed in as a value for the grants' reason,
     // and one lock over it — with the one way to write the list whole beside
@@ -892,6 +894,17 @@ mod tests {
         alo_remembering::kept(&at, &granting(&folder, now), now).unwrap();
 
         let before = std::fs::read(&at).unwrap();
+        // The person's writer creates its stable sibling lock during setup.
+        // An agent must neither add nor remove any of these existing files.
+        let alongside = || {
+            let mut files: Vec<PathBuf> = std::fs::read_dir(at.parent().unwrap())
+                .unwrap()
+                .map(|one| one.unwrap().path())
+                .collect();
+            files.sort();
+            files
+        };
+        let before_files = alongside();
         let mut grants = alo_remembering::remembered(&at, now).unwrap();
 
         let (answers, _entries) = what_the_agent_is_told(
@@ -920,10 +933,6 @@ mod tests {
             before,
             "the grants file was written while the service was running"
         );
-        let alongside: Vec<PathBuf> = std::fs::read_dir(at.parent().unwrap())
-            .unwrap()
-            .map(|one| one.unwrap().path())
-            .collect();
-        assert_eq!(alongside, vec![at], "something else was written beside it");
+        assert_eq!(alongside(), before_files, "the directory was changed");
     }
 }

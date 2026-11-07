@@ -116,16 +116,29 @@ impl Driving {
     /// **not** an error: something was sent under the approval, and
     /// [`Driven::unanswered`] says so.
     pub fn deliver(self, to: &dyn Delivers, strings: &Strings) -> Result<Driven, Refused> {
-        match to.deliver(&self.message) {
-            Ok(()) => Ok(Driven {
+        let result = if self.authorised.call().effect() == alo_capability::Effect::Read {
+            to.read_text(&self.message).and_then(|text| {
+                if text.len() > 8192 {
+                    Err(NotDelivered::Refused)
+                } else {
+                    Ok(Some(text))
+                }
+            })
+        } else {
+            to.deliver(&self.message).map(|()| None)
+        };
+        match result {
+            Ok(reply) => Ok(Driven {
                 authorised: self.authorised,
                 application: self.application,
                 unanswered: false,
+                reply,
             }),
             Err(why) if why.may_have_happened() => Ok(Driven {
                 authorised: self.authorised,
                 application: self.application,
                 unanswered: true,
+                reply: None,
             }),
             Err(why) => Err(Refused::worded_elsewhere(
                 self.authorised.call().clone(),
@@ -144,9 +157,22 @@ pub struct Driven {
     application: &'static str,
     /// Whether the application did not answer.
     unanswered: bool,
+    /// The bounded text returned by a read; never guessed for a unit reply.
+    reply: Option<String>,
 }
 
 impl Driven {
+    /// The application the granted request reached.
+    #[must_use]
+    pub fn application(&self) -> &'static str {
+        self.application
+    }
+
+    /// A read's answer, when the application actually returned one.
+    #[must_use]
+    pub fn reply(&self) -> Option<&str> {
+        self.reply.as_deref()
+    }
     /// What ran.
     #[must_use]
     pub fn authorised(&self) -> &Authorised {

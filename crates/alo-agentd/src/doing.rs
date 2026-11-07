@@ -113,7 +113,11 @@ fn carried_out(
     standing: Duration,
     now: SystemTime,
 ) -> ToAnAgent {
+    turning.refresh_offered(grants, now);
     match asked {
+        FromAnAgent::Capabilities => ToAnAgent::Capabilities {
+            verbs: turning.offered_action_names(),
+        },
         FromAnAgent::Read { verb, .. } => {
             match turning.reading(verb, &asked.given(), grants, now) {
                 Ok(answer) => ToAnAgent::did(as_a_client_sees_it(&answer, now)),
@@ -3151,7 +3155,7 @@ endpoint = \"https://{at}\"
             folder.join(alo_choosing::THE_SETTINGS),
             format!(
                 "format = 3\n\n[answers]\nprovider = {{ name = \"Here\", model = \"a-model\" \
-                 }}\n\n[[provider]]\nname = \"Here\"\nendpoint = \"http://127.0.0.1:{port}\"\n"
+                 }}\n\n[[provider]]\nname = \"Here\"\nendpoint = \"http://127.0.0.1:{port}\"\nneeds-a-key = false\n"
             ),
         )
         .unwrap();

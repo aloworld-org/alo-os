@@ -308,6 +308,16 @@ pub const NEVER_GRANTED: Word = Word::saying(
      translated; {wanted} arrives already in the reader's language.",
 );
 
+/// An agent needs the person's explicit permission to control an application.
+pub const APPLICATION_CONTROL_NOT_GRANTED: Word = Word::saying(
+    "capability.refused.application-control-not-granted",
+    "{agent} has not been granted {wanted}. Choose the application and how long access lasts in Settings.",
+)
+.noting(
+    "The person grants application control in Settings. {agent} is never translated; \
+     {wanted} is the translated application reach. Asking cannot create this permission.",
+);
+
 /// A machine where the person declined the agent (ADR 0009).
 pub const NO_AGENT: Word = Word::saying(
     "capability.refused.no-agent",
@@ -801,7 +811,7 @@ pub const NO_WORD_BACK_IN_THE_TERMINAL: Word = Word::saying(
 );
 
 /// Every string this crate can say, in the order a translator meets them.
-pub const EVERY_WORD: [Word; 70] = [
+pub const EVERY_WORD: [Word; 71] = [
     ANONYMOUS,
     NO_APPLICATION_NAMED,
     NOTHING_NAMED,
@@ -829,6 +839,7 @@ pub const EVERY_WORD: [Word; 70] = [
     ITS_OWN_SECRETS,
     HAS_EXPIRED,
     NEVER_GRANTED,
+    APPLICATION_CONTROL_NOT_GRANTED,
     NO_AGENT,
     APPLICATION_LAPSED,
     APPLICATION_NEVER_GRANTED,

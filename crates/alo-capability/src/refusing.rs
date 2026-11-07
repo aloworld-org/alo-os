@@ -88,6 +88,10 @@ impl NotGranted {
     pub fn word(&self) -> words::Word {
         match self {
             Self::Lapsed { .. } => words::HAS_EXPIRED,
+            Self::Never {
+                wanted: Ask::Application(_),
+                ..
+            } => words::APPLICATION_CONTROL_NOT_GRANTED,
             Self::Never { .. } => words::NEVER_GRANTED,
             Self::NoAgent { .. } => words::NO_AGENT,
         }
@@ -146,6 +150,19 @@ mod tests {
     use super::*;
     use crate::testing::{in_english, translated};
     use std::path::PathBuf;
+
+    #[test]
+    fn application_control_points_to_the_persons_application_permission_choice() {
+        let refusal = NotGranted::Never {
+            agent: "alo".to_owned(),
+            wanted: Ask::Application("org.aloworld.Studio".to_owned()),
+        };
+        assert_eq!(refusal.word(), words::APPLICATION_CONTROL_NOT_GRANTED);
+        let said = refusal.said(&in_english());
+        assert!(!said.is_a_bug());
+        assert!(said.text().contains("Settings"));
+        assert!(!said.text().contains("picking a folder"));
+    }
 
     fn never() -> NotGranted {
         NotGranted::Never {

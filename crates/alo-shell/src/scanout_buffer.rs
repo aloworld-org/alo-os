@@ -4,7 +4,7 @@ use crate::display_resources::ResourceDevice;
 use drm::buffer::{Buffer, DrmFourcc};
 use std::io;
 
-/// Clear visible pixels, row padding and the allocation tail, then unmap.
+/// Clear visible pixels, row padding and the allocation tail before registration.
 pub(crate) fn initialize<D: ResourceDevice>(device: &D, buffer: &mut D::Buffer) -> io::Result<()> {
     let (width, height) = buffer.size();
     let pitch = buffer.pitch();

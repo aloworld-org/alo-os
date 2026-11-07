@@ -50,6 +50,10 @@ use wayland_protocols::{
 /// Registry and configure events actually received from the compositor.
 #[derive(Default)]
 pub struct Events {
+    /// Exported window handle observed on the actual protocol connection.
+    pub exported_parent: Option<String>,
+    /// Invalid or revoked imported handles reported by the compositor.
+    pub invalidated_parents: usize,
     /// Window-management capabilities advertised before initial configuration.
     pub wm_capabilities: Vec<Vec<u32>>,
     /// Logical sizes suggested by successive XDG toplevel configures.
@@ -94,6 +98,9 @@ pub struct Events {
     /// Output enter and leave event counts.
     pub membership: (usize, usize),
 }
+
+#[path = "foreign_events.rs"]
+mod foreign_events;
 
 impl Dispatch<wl_registry::WlRegistry, ()> for Events {
     fn event(
