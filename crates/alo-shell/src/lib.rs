@@ -524,6 +524,12 @@ mod the_first_account;
 mod the_record_drawn_on_the_canvas;
 /// The view travelling to a window of alo's rather than the window moving.
 mod the_view_travels_to_a_window;
+/// The view gliding, or jumping where less motion was asked for.
+mod the_view_glides;
+/// The nearest empty space on a Place for a window with no room in view.
+mod the_nearest_empty_space;
+/// Where a new window goes when there is no room, as the person chose.
+mod the_choice_when_there_is_no_room;
 /// Every window on the Place being looked at, for a new one to be placed beside.
 mod the_windows_on_this_place;
 pub use the_first_account::{ASecret, OnTheSheet, TheAccountSheet, TheAccountShown};

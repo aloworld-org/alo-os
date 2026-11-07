@@ -651,6 +651,53 @@ pub const LARGE: Word = Word::saying("settings.access.large", "Large")
 pub const LARGER: Word = Word::saying("settings.access.larger", "Larger")
     .noting("One of three short choices for the pointer's size, larger than Large.");
 
+/// When there's no room for a new window.
+pub const WHEN_THERE_IS_NO_ROOM: Word = Word::saying(
+    "settings.windows.no-room",
+    "When there's no room for a new window",
+)
+.noting(
+    "A heading over two choices: what the computer does when a window opens and the part of \
+     the workspace on the screen is already full of other windows. Sentence case.",
+);
+
+/// Glide to empty space.
+pub const GLIDE_TO_EMPTY_SPACE: Word =
+    Word::saying("settings.windows.no-room.glide", "Glide to empty space").noting(
+        "One of two choices under When there's no room for a new window, and how this computer \
+         comes: the view moves smoothly across the workspace to the nearest empty space, and the \
+         new window opens there.",
+    );
+
+/// What gliding to empty space does.
+pub const GLIDE_TO_EMPTY_SPACE_IS: Word = Word::saying(
+    "settings.windows.no-room.glide.is",
+    "The view moves smoothly to the nearest empty space, and the new window opens there without covering any other.",
+)
+.noting(
+    "Under the choice Glide to empty space. The view is the part of the workspace on the screen; \
+     nothing else moves or changes size.",
+);
+
+/// Open in front, slightly offset.
+pub const OPEN_IN_FRONT: Word = Word::saying(
+    "settings.windows.no-room.in-front",
+    "Open in front, slightly offset",
+)
+.noting(
+    "The other choice under When there's no room for a new window: the new window opens over \
+     the one being worked in, a little down and to the side, and the view stays where it is.",
+);
+
+/// What opening in front does.
+pub const OPEN_IN_FRONT_IS: Word = Word::saying(
+    "settings.windows.no-room.in-front.is",
+    "The view stays where it is, and the new window opens over the one you are working in, a little down and across.",
+)
+.noting(
+    "Under the choice Open in front, slightly offset. Spoken to the person, so second person.",
+);
+
 /// Pointer shape.
 pub const POINTER_SHAPE: Word = Word::saying("settings.access.pointer-shape", "Pointer shape")
     .noting("The name of the setting for which arrow the pointer is drawn as.");
@@ -693,7 +740,7 @@ pub const AS_A_PERCENTAGE: Word = Word::saying("settings.access.percent", "{perc
 /// The length is written out so that adding a word above and forgetting it
 /// here does not compile — a word declared and left out of this list reaches a
 /// person as its own key.
-pub const THE_WINDOWS_WORDS: [Word; 100] = [
+pub const THE_WINDOWS_WORDS: [Word; 105] = [
     SETTINGS,
     EVERYTHING_IN_ONE_PLACE,
     THE_GROUP_ALO,
@@ -772,6 +819,11 @@ pub const THE_WINDOWS_WORDS: [Word; 100] = [
     WINDOWS,
     SHOW_THE_TITLE_ONLY_WHEN_POINTED_AT,
     SHOW_THE_TITLE_ONLY_WHEN_POINTED_AT_IS,
+    WHEN_THERE_IS_NO_ROOM,
+    GLIDE_TO_EMPTY_SPACE,
+    GLIDE_TO_EMPTY_SPACE_IS,
+    OPEN_IN_FRONT,
+    OPEN_IN_FRONT_IS,
     CHOOSE_A_COUNTRY,
     ALL_COUNTRIES,
     ALL_TIME_ZONES,

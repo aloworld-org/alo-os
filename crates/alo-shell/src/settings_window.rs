@@ -261,6 +261,11 @@ pub enum SettingsRow {
     /// navy edge and black are the owner's yes of 2026-11-06
     /// (`alo_appearance::PointerColour`).
     PointerColour(alo_appearance::PointerColour),
+    /// Where a new window goes when there is no room for it in view: Enter
+    /// chooses it. Gliding to empty space ships; opening in front, offset,
+    /// stays a choice — the owner, 2026-11-07
+    /// (`alo_appearance::WhenThereIsNoRoom`).
+    WhenThereIsNoRoom(alo_appearance::WhenThereIsNoRoom),
     /// The list of countries and regions, or of time zones: Enter opens it.
     ///
     /// **One row where there were two hundred and fifty.** Every region is
@@ -287,7 +292,9 @@ impl SettingsRow {
             Self::TimeZone(_) => SettingsSection::TimeZone,
             Self::Hiding(_) | Self::Edge(_) => SettingsSection::Dock,
             Self::GoTo(_) => SettingsSection::Terminal,
-            Self::LightOrDark(_) | Self::WindowTitles => SettingsSection::Appearance,
+            Self::LightOrDark(_) | Self::WindowTitles | Self::WhenThereIsNoRoom(_) => {
+                SettingsSection::Appearance
+            }
             Self::TextSize
             | Self::PointerSize(_)
             | Self::PointerShape(_)
@@ -619,6 +626,15 @@ impl SettingsWindow {
             .map(|open| open.appearance.drawn().window_titles())
     }
 
+    /// Where a new window goes when there is no room for it, as Settings
+    /// holds it.
+    #[must_use]
+    pub fn when_there_is_no_room(&self) -> Option<alo_appearance::WhenThereIsNoRoom> {
+        self.open
+            .as_ref()
+            .map(|open| open.appearance.drawn().when_there_is_no_room())
+    }
+
     /// Which arrow the pointer is, as Settings holds it.
     #[must_use]
     pub fn pointer_shape(&self) -> Option<alo_appearance::PointerShape> {
@@ -833,6 +849,11 @@ impl Open {
                     rows.extend(LightOrDark::ALL.into_iter().map(SettingsRow::LightOrDark));
                     rows.extend(Accent::ALL.into_iter().map(SettingsRow::Accent));
                     rows.push(SettingsRow::WindowTitles);
+                    rows.extend(
+                        alo_appearance::WhenThereIsNoRoom::ALL
+                            .into_iter()
+                            .map(SettingsRow::WhenThereIsNoRoom),
+                    );
                 }
                 if self.dock.at().is_some() {
                     rows.extend(alo_dock::Edge::EVERY.into_iter().map(SettingsRow::Edge));
@@ -1262,6 +1283,20 @@ impl Open {
                 SettingsDid::Kept(SettingsSection::Appearance, kept)
             }
             SettingsRow::TextSize => self.the_text_is(25, doors.strings),
+            // **One of two, kept with the rest of the appearance**; the seat is
+            // told by `crate::a_key_reaches_settings`, so the next window opens
+            // the way the person just chose.
+            SettingsRow::WhenThereIsNoRoom(choice) => {
+                let choice = *choice;
+                let kept = self.appearance.changed(
+                    |appearance| {
+                        appearance.set_when_there_is_no_room(choice);
+                        Ok(())
+                    },
+                    doors.strings,
+                );
+                SettingsDid::Kept(SettingsSection::Appearance, kept)
+            }
             // **Kept with the rest of the appearance**, and the seat is told by
             // `crate::a_key_reaches_settings`, so the next frame draws it.
             SettingsRow::PointerColour(colour) => {

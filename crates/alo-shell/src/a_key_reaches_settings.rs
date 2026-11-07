@@ -286,6 +286,11 @@ fn the_press_is_carried_out(server: &mut Server, press: crate::SettingsPress, st
         if let Some(titles) = server.settings.window_titles() {
             server.the_window_titles_are(titles);
         }
+        // **And where the next window goes when there is no room**, so the
+        // next one opens the way the person just chose.
+        if let Some(choice) = server.settings.when_there_is_no_room() {
+            server.when_there_is_no_room_is(choice);
+        }
         if let (Some(shape), Some(size), Some(colour)) = (
             server.settings.pointer_shape(),
             server.settings.pointer_size(),

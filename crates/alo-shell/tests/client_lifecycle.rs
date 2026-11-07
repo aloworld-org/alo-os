@@ -11,6 +11,7 @@ mod a_place_remembers_time;
 mod a_restore_travels;
 mod a_surface_says_how_big_it_is_drawn;
 mod a_window_that_fills_the_screen;
+mod a_new_window_glides_to_empty_space;
 mod a_window_the_person_opened;
 mod cursor;
 mod cursor_shapes;
