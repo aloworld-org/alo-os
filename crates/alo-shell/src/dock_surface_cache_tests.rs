@@ -4,6 +4,7 @@
 use super::*;
 use std::cell::Cell;
 
+/// A visible panel with room for its shadow and unmistakable colours.
 fn panel() -> ADocksSurface<'static> {
     ADocksSurface {
         panel: Rectangle::new((20, 20).into(), (100, 60).into()),
@@ -26,6 +27,7 @@ fn panel() -> ADocksSurface<'static> {
     }
 }
 
+/// Count actual rasterization calls while exercising the real pixel generator.
 fn draw(cache: &mut Panels, of: ADocksSurface<'_>, calls: &Cell<usize>) -> Washed {
     cache
         .draw(of, |input| {
@@ -36,6 +38,7 @@ fn draw(cache: &mut Panels, of: ADocksSurface<'_>, calls: &Cell<usize>) -> Washe
 }
 
 #[test]
+/// Reusing a panel must not hand out the cache's mutable backing storage.
 fn unchanged_panels_reuse_exact_pixels_and_callers_cannot_change_the_cache() {
     let mut cache = Panels::default();
     let calls = Cell::new(0);
@@ -49,6 +52,7 @@ fn unchanged_panels_reuse_exact_pixels_and_callers_cannot_change_the_cache() {
 }
 
 #[test]
+/// Focus, appearance, placement and clipping must remain live on a cache hit.
 fn focus_appearance_shape_and_display_changes_draw_fresh_pixels() {
     let mut cache = Panels::default();
     let calls = Cell::new(0);
@@ -117,6 +121,7 @@ fn focus_appearance_shape_and_display_changes_draw_fresh_pixels() {
 }
 
 #[test]
+/// Entry eviction and oversized input cannot bypass the retention limits.
 fn cache_evicts_old_panels_and_refuses_to_retain_oversized_images() {
     let mut cache = Panels::default();
     let calls = Cell::new(0);
