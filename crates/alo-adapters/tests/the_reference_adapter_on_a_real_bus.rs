@@ -302,7 +302,14 @@ fn studio_reads_actual_bounded_status_and_sends_only_the_approved_fixed_countdow
             .deliver(&transport, &strings)
             .is_err()
     );
-    drop(service);
+    // Drop can leave asynchronous bus work owning the connection temporarily.
+    // Confirm that the name is released before testing an unavailable app.
+    assert!(
+        service
+            .release_name(alo_adapters::studio::APPLICATION)
+            .unwrap()
+    );
+    service.close().unwrap();
     assert!(
         Driving::of(read(), &adapters, &grants, &installed, &strings)
             .unwrap()

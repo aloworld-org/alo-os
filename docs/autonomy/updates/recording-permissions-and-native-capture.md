@@ -11,9 +11,9 @@ typed agent actions are implemented. The normal GNOME 49 SDK Flatpak source is
 `ac0ba3a3aa33af1895fbefd9ed21d0c7b2571128da51a2008b018e5b0697e0ba`.
 All five hosted checks pass for that source. Thirty-three application tests and
 the real native integration verify input ownership, lifecycle and pause cutoff.
-The installed desktop is `0a763631`.
+The installed desktop is `5943a4d6`, with direct reusable software readback.
 
-The latest installed desktop is `0a763631`, with all five hosted checks passing.
+The previous installed desktop was `0a763631`, with all five hosted checks passing.
 Normal application inputs are unchanged from the installed `06213b2e` package,
 verified by Git object identity for source, assets, dependencies and Flatpak
 recipe. Both installed flows complete source selection, stable five-second pause,
@@ -31,8 +31,15 @@ largest compositor cost; minor-fault sampling attributes about 95% of sampled
 faults to full-frame export and readback. The next candidate exports directly
 into initialized owned bytes and reuses them only after all readers release
 ownership. It preserves Smithay's static renderer target and uses Pixman's safe
-copy API for the temporary destination. Formatting passes; hosted and installed
-validation remain pending. The previously rejected renderer-binding trial stays
+copy API for the temporary destination. Optimized regressions, strict desktop
+checks, native integration and packaging pass. Installed default-configuration
+recordings still fail: screen measures 4.573 fps with a 691 ms uncovered gap;
+window measures 1.727 fps with a 2.513-second gap and a 10.103-second track-end
+difference. Five-second pause clocks and microphone pause states pass. Screen
+export matches exactly; the window's native save control times out, while its
+completed library recording is preserved. One marker match does not establish
+audio/video synchronization. The competing compiler processes are resumed.
+The previously rejected renderer-binding trial stays
 reverted. No engine source, allocator defaults, media timing or acceptance limit
 is changed by the new candidate.
 
@@ -50,6 +57,21 @@ The review remains a draft, with no market publication. Desktop locking remains
 a separate OS change. No acceptance threshold, media timestamp or duration is
 changed by the current candidate.
 
+The readback candidate's executable SHA-256 is
+`be66100c0ea778c5ad71a66cd26602e230fad5a3c619c28f0b3df468fc4d3b73`.
+Its normal application inputs remain unchanged from installed package `06213b2e`.
+Default-configuration media and controls are retained under
+`installed-reused-readback-screen`, `installed-reused-readback-window`, and
+`installed-reused-readback-validation` on the verification drive. Diagnostic
+minor-fault and call-chain samples are separate from those acceptance recordings.
+Live ownership metadata confirms two output pixel allocations are actually reused
+and unobserved frames have no reader preventing reuse. Remaining sampled faults
+occur while writing those retained allocations and clearing the render target;
+they do not by themselves prove new allocation. Process-creation investigation
+remains in progress. A failed debugger connection temporarily stops the desktop;
+the owned debugger is removed and `TracerPid: 0` with a running desktop is verified.
+No debugger or sampling hook is present during the acceptance recordings.
+
 ## Implemented boundaries
 
 alo's public portal identifies the Flatpak caller through its bus connection
@@ -66,7 +88,7 @@ one in-flight frame, with cancellable partial writes and bounded admission.
 
 The selected-node descriptor exposes the necessary PipeWire factories and the
 chosen node, including link permission; unrelated current and future objects
-remain hidden. ADR 0148 documents the narrow rented-binding additions. Native
+remain hidden. ADR 0149 documents the narrow rented-binding additions. Native
 window parenting uses XDG foreign v1 and verifies the actual focused parent.
 
 SaveFile uses the native GTK chooser and Documents portal. The exact selected
@@ -700,7 +722,7 @@ count advances from 667 to 762. The appsrc queue stays bounded at two frames.
 Thread inspection finds the publisher's streaming thread waiting on a condition.
 The sink signals that condition without the pool mutex, allowing a notification
 between dequeue and wait to be lost. A private timed-recheck trial keeps frames
-moving; ADR 0148 authorizes the narrowly checksummed build-copy patch. The
+moving; ADR 0149 authorizes the narrowly checksummed build-copy patch. The
 imported upstream source remains unchanged. Plugin version
 `1.4.90+ee2c6eb4.2770143f.wait1` adds a 100 ms predicate recheck.
 
@@ -1201,7 +1223,7 @@ The full `745b67e3` gate runs 12,715 tests: 12,711 pass, four fail and 61 are
 skipped. Besides the existing declared runner limitation, two failures expose
 the recording ADR's number colliding with main's new watching ADR; the third
 expects the cursor package's Cargo build to start its own image instruction.
-The recording decision and its citations move to ADR 0148, while watching
+The recording decision and its citations move to ADR 0149, while watching
 retains ADR 0146. The image keeps both the private plugin build and cursor
 generation, with Cargo in a separate `RUN` instruction. No executable capture
 logic, audit rule or runner exception changes. These integration corrections
@@ -1652,7 +1674,7 @@ normal desktop services restart, and no allocator setting is added to the OS.
 
 Integrating main `6d93b3b4` retains both the capture-protocol and pointer-setting
 dependencies and both capability amendments. Main has assigned ADR 0147 to the
-screen road, so the draft recording decision and its references become ADR 0148.
+screen road, so the draft recording decision and its references become ADR 0149.
 
 ### Installed pixel-run batching repeat and scratch-image follow-up
 

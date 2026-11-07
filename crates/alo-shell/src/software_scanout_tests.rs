@@ -160,6 +160,40 @@ fn reusable_scratch_images_clear_old_pixels_and_preserve_published_snapshots()
 }
 
 #[test]
+fn completed_frame_bytes_are_reused_without_changing_a_live_snapshot()
+-> Result<(), Box<dyn std::error::Error>> {
+    let size = (8, 4);
+    let mut painter = SoftwarePainter::new()?.with_reusable_frames();
+    let screen = a_screen(size);
+    let draw = |painter: &mut SoftwarePainter| {
+        painter.paint(
+            extent(size),
+            &[],
+            &[],
+            &Cursor::Default,
+            only(NativeScene::SignIn(&screen)),
+            alo_canvas::Camera::new(),
+        )
+    };
+    let (first, _) = draw(&mut painter)?;
+    let first_storage = first.pixels().as_ptr();
+    drop(first);
+    let (second, _) = draw(&mut painter)?;
+    assert_eq!(second.pixels().as_ptr(), first_storage);
+    let snapshot = second.shared();
+    let saved = snapshot.as_slice().to_vec();
+    drop(second);
+    let (third, _) = draw(&mut painter)?;
+    let released_storage = third.pixels().as_ptr();
+    assert_ne!(released_storage, snapshot.as_ptr());
+    drop(third);
+    let (fourth, _) = draw(&mut painter)?;
+    assert_eq!(fourth.pixels().as_ptr(), released_storage);
+    assert_eq!(snapshot.as_slice(), saved);
+    Ok(())
+}
+
+#[test]
 fn the_arrow_is_drawn_above_the_screen_it_points_at() {
     let size = (16, 16);
     let screen = a_screen(size);
