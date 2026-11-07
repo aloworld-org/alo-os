@@ -114,6 +114,94 @@ pub fn what_the_agent_says(at: &Path, typed: &str) -> Result<String, NothingCame
     Ok(heard.to_owned())
 }
 
+/// The request's connection, kept open so that the turn — and a change waiting
+/// in it — lasts until this is dropped.
+///
+/// `alo_agent::holding_the_turn` holds a turn **until the asking side closes**.
+/// [`what_the_agent_says`] closes its sending side at once, so a change its
+/// request left waiting lapses with the turn the moment the reply is read. The
+/// terminal acting without the OK has to answer that change first, so it keeps
+/// the connection open and lets go of it only once the daemon has answered —
+/// which is exactly what `alo-shell` does while a card is on the screen.
+///
+/// **Dropping it is the whole of letting go**, and it is also what a Ctrl-C does
+/// to this process: the agent sees the close and the turn ends, with nothing
+/// approved.
+#[derive(Debug)]
+pub struct TheTurnHeldOpen {
+    /// The connection, which nothing writes to again.
+    talking: UnixStream,
+}
+
+impl TheTurnHeldOpen {
+    /// Let go of the turn: the agent sees the close, and the turn ends.
+    ///
+    /// Said out loud rather than left to a drop, so that the moment the turn
+    /// ends is a line somebody can point at. Dropping it does the same.
+    pub fn let_go(self) {
+        drop(self.talking.shutdown(std::net::Shutdown::Both));
+    }
+}
+
+/// Hand one sentence to the agent and wait for what it says, **keeping the turn
+/// open** until the returned [`TheTurnHeldOpen`] is dropped.
+///
+/// It also writes the earlier-conversation marker with nothing after it — a
+/// first request — so that the agent need not wait to learn there is none
+/// (`docs/contracts/asking-socket.md`). Keeping the sending side open makes the
+/// agent read a close as a Stop, and that is what it is.
+///
+/// **The reply is kept as written, only its end trimmed.** Its first line is
+/// what says whether a change is waiting
+/// (`alo_protocol::what_the_agent_says_back`), and trimming its start would
+/// undo the space that keeps a model's words off that line.
+///
+/// # Errors
+/// [`NothingCameBack`], as [`what_the_agent_says`] has them.
+pub fn what_the_agent_says_holding_the_turn(
+    at: &Path,
+    typed: &str,
+) -> Result<(String, TheTurnHeldOpen), NothingCameBack> {
+    let mut talking = UnixStream::connect(at).map_err(|_| NothingCameBack::NobodyThere {
+        at: at.display().to_string(),
+    })?;
+    let fault = |why: std::io::Error| NothingCameBack::WouldNotTake {
+        why: why.to_string(),
+    };
+    talking.set_read_timeout(Some(PATIENCE)).map_err(fault)?;
+    talking.set_write_timeout(Some(PATIENCE)).map_err(fault)?;
+    let one_line: String = typed
+        .chars()
+        .map(|it| if it == '\n' || it == '\r' { ' ' } else { it })
+        .collect();
+    talking
+        .write_all(
+            format!(
+                "{one_line}\n{}\n",
+                alo_instructing::THE_EARLIER_CONVERSATION
+            )
+            .as_bytes(),
+        )
+        .and_then(|()| talking.flush())
+        .map_err(fault)?;
+
+    let mut heard = String::new();
+    let mut reading = BufReader::new(&talking);
+    loop {
+        let mut line = String::new();
+        match reading.read_line(&mut line) {
+            Ok(0) => break,
+            Ok(_) => heard.push_str(&line),
+            Err(why) => return Err(fault(why)),
+        }
+    }
+    let heard = heard.trim_end();
+    if heard.trim_start().is_empty() {
+        return Err(NothingCameBack::ClosedWithoutAnswering);
+    }
+    Ok((heard.to_owned(), TheTurnHeldOpen { talking }))
+}
+
 #[cfg(test)]
 #[path = "at_the_agents_door_tests.rs"]
 mod tests;

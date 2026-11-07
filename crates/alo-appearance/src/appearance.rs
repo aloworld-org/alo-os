@@ -136,6 +136,16 @@ impl Appearance {
         self.changes.set_pointer_size(size);
     }
 
+    /// Make the pointer this colour.
+    pub fn set_pointer_colour(&mut self, colour: crate::pointer::PointerColour) {
+        self.changes.set_pointer_colour(colour);
+    }
+
+    /// Say where a new window goes when there is no room for it in the view.
+    pub fn set_when_there_is_no_room(&mut self, choice: crate::no_room::WhenThereIsNoRoom) {
+        self.changes.set_when_there_is_no_room(choice);
+    }
+
     /// Put one setting back to what this release ships.
     ///
     /// Says whether there was anything to put back.
@@ -236,6 +246,21 @@ impl Appearance {
     #[must_use]
     pub fn pointer_size(&self) -> crate::pointer::PointerSize {
         self.changes.pointer_size().unwrap_or_default()
+    }
+
+    /// What colour the pointer is: the person's choice, or navy.
+    #[must_use]
+    pub fn pointer_colour(&self) -> crate::pointer::PointerColour {
+        self.changes.pointer_colour().unwrap_or_default()
+    }
+
+    /// Where a new window goes when there is no room for it in the view: the
+    /// person's choice, or gliding to empty space, which this release ships.
+    ///
+    /// Not part of [`Shipped`], for the reason [`Self::window_titles`] gives.
+    #[must_use]
+    pub fn when_there_is_no_room(&self) -> crate::no_room::WhenThereIsNoRoom {
+        self.changes.when_there_is_no_room().unwrap_or_default()
     }
 
     /// The accent as a colour, at this time of day.

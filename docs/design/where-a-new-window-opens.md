@@ -177,3 +177,84 @@ and a window exactly over another hides all of it, its title strip included.
 `where_a_window_opens` now steps any such answer on by the same 48 until it is
 on nobody's corner. **This makes an existing promise true** — rule 5's *losing
 access to a window is not [permitted]* — rather than adding one.
+
+---
+
+## Amended 2026-11-07 — when there is no room, the view can glide to empty space
+
+**The owner, 2026-11-07:** *"when the user opens the window of the application it
+should not open on top of the other, it should smooth move the canvas and open on
+the empty space. Also this can be put in the settings so the user chooses."*
+Asked which a new machine starts with: **glide to empty space**. Asked where it
+looks first: *"Nearest space and the new window should be in focus."*
+
+So rule 5 becomes a choice, in Settings → Windows, **When there's no room for a
+new window**:
+
+- **Glide to empty space** — the default. The view moves smoothly to the
+  **nearest** free space on the current Place, from what the person is looking
+  at, in any direction; the new window opens there **without covering any
+  window**, and **it has the focus**. Nothing else moves or resizes (rule 4
+  stands), and the view does not zoom.
+- **Open in front, slightly offset** — rule 5 as written on 2026-10-09, unchanged.
+
+Rules 1–4 and 6–8 are untouched: room in the current view is still used first,
+beside the active window. A person-initiated opening is the *authorised
+interaction* rule 8 asks for, so this glide is allowed; a window an application
+or alo opens in the background still never moves the camera. **The glide
+follows the person's reduced-motion setting** — with it on, the view jumps
+rather than glides — and its length is a duration, never a speed the person has
+to match. A person may still put one window over another themselves at either
+setting.
+
+### Built 2026-11-07, and what this lane decided where the owner was silent
+
+**Where it is.** `crate::a_new_window_is_placed` decides,
+`crate::the_nearest_empty_space` finds the space, `crate::the_view_glides`
+moves the view, and the choice is `alo_appearance::WhenThereIsNoRoom`, kept in
+`appearance.toml` and chosen in Settings → Appearance, in a section under
+*Windows* (`the-settings-window.md`, question 8).
+
+**When it happens — all three, or not at all:**
+
+- rules 3 to 7 found **no room in view**: their answer lies over another
+  window, or is not wholly in the view (for a window larger than the view, its
+  handle is not in it). Room in view is used exactly as before;
+- the person kept **Glide to empty space**;
+- **the person opened the window** — the same answer rule 8 uses to give it the
+  focus (`crate::a_window_the_person_opened`). A window an application or alo
+  opened in the background keeps rule 5, in front and offset, and the view
+  does not move.
+
+**Decided by this lane, each the owner's to change:**
+
+1. ***Nearest* is how far the view has to move**, not how far the window is
+   from the middle of the screen. Ties go to the space nearest the middle of
+   the view, then to the reading direction's side (rule 3's preference,
+   mirrored), then to the higher.
+2. **The 16 gap is kept on every side**, from every window, and between the new
+   window and the edge of the view it glides to.
+3. **Never further than *Show all* reaches.** A Place so full that no space is
+   left within what *Show all* fits at its furthest out gets rule 5 instead —
+   in front, offset — rather than a window that could not be brought back.
+4. **The glide lasts 300 ms however far it goes**, eased in and out. The design
+   names no duration; 300 ms is what common desktop guidelines give a
+   transition that moves the whole view.
+5. **The person's hand wins.** A pan, a zoom, *Show all* or going to another
+   Place ends a glide where it is.
+6. **Reduced motion is read from the person's own `access.toml` at sign-in**
+   (`alo_access::Setting::ReducedMotion`), because that is where it is kept.
+   **Nothing in Settings turns it on yet**, so on a machine today the glide
+   always glides; the first-start sheet's *More options* is the designed road
+   (`the-first-start.md`, row 3).
+
+**alo's own windows glide too — the owner, 2026-11-07: *"Yes, the same"*.**
+Asked whether the terminal, Settings, the record and task windows follow the
+same rule, the owner said yes the same day. So each of them asks the one rule
+in `crate::room_in_a_full_view`, with the same choice: rules 3 to 7 first,
+and with no room and *Glide to empty space* kept, the nearest empty space,
+covering nothing, and a glide (or a jump, with less motion asked for). alo's
+own windows open only when the person opens them, so each asks every time. A
+task window's space includes **the edge above it**, which carries its Close.
+The record now counts among the windows a new one must not cover, as Settings
+and the terminal already did.

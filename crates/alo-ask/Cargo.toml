@@ -7,12 +7,13 @@ rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
 
-# **No words here, and no policy.** Every sentence this command prints is
+# **No words here.** Every sentence this command prints is
 # somebody else's string in the person's own language — `alo-asking`'s when there
 # is nothing to ask with, `alo-answering`'s when nothing answered, `alo-models`'
 # beside the answer. A list of its own would be this crate saying a second time
 # what three crates already say, which is the thing `alo-asking`'s own word list
-# refuses to do.
+# refuses to do — and the sentences about acting without the OK are
+# `alo-capability`'s, beside the switch they describe.
 [dependencies]
 # The door. `Asking::to_this_machine` is the only method in this repository that
 # puts a person's prose question to a model here, and every refusal it makes is
@@ -51,9 +52,22 @@ alo-protocol = { path = "../alo-protocol" }
 # `alo-agentd` reads its own login number with.
 rustix = { workspace = true }
 
+# **Whether alo in the terminal may act without the OK**, and the door it says
+# yes on. The switch is `alo-capability`'s type, kept by `alo-remembering` beside
+# the level for running code; the OK goes to the daemon on the person's door
+# through `alo-changing`, which is the door `alo-shell` answers a card on. The
+# marker an empty earlier conversation is written with is `alo-instructing`'s.
+alo-changing = { path = "../alo-changing" }
+alo-instructing = { path = "../alo-instructing" }
+alo-remembering = { path = "../alo-remembering" }
+
 # One error type for four word lists that could not be gathered — read by
 # whoever is fixing a list, never by somebody who typed a question.
 thiserror = { workspace = true }
+
+[dev-dependencies]
+# The tests build a waiting change from the bytes a daemon sends.
+serde_json = { workspace = true }
 
 # **`alo`, since the owner's rename of 2026-11-06** (ADR 0124, amended). The
 # image keeps `alo-ask` as a link to it, which `src/its_name.rs` says why.

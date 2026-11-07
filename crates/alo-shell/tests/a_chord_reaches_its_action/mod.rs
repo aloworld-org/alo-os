@@ -109,6 +109,85 @@ fn a_chord_pressed_on_a_running_desktop_reaches_its_action() {
     );
 }
 
+/// `KEY_MINUS`, the key that prints `-` on a US keyboard.
+const MINUS: u32 = 12;
+/// `KEY_KPPLUS`, the numpad's `+`: the one road to *Plus* on a US layout, which
+/// prints `+` only with Shift on the main block
+/// (`docs/quirks/a-shortcut-naming-a-character-is-unreachable-where-the-layout-shifts-it.md`).
+const NUMPAD_PLUS: u32 = 78;
+/// `KEY_1`, the other half of the shipped *back to 100 %* chord.
+const DIGIT1: u32 = 2;
+
+/// How far in this session is looking, in thousandths.
+fn zoom(f: &Fixture) -> u32 {
+    f.backend(|s| s.the_camera().zoom().thousandths())
+}
+
+/// Press and let go of one key while `⊞` is held.
+fn with_super(f: &Fixture, code: u32) -> bool {
+    let taken = !press(f, code);
+    release(f, code);
+    taken
+}
+
+/// **The zoom chords, pressed as keys**: `⊞`+Minus steps out a rung, `⊞` and
+/// the numpad's plus step in, and `⊞`+1 comes back to 100 %. Until this test
+/// every zoom chord was reached only by calling the dispatcher.
+#[test]
+fn the_zoom_chords_pressed_as_keys_zoom_out_in_and_back() {
+    let (f, _first, _second) = a_desktop_looking_away();
+    f.backend(|s| s.the_shortcuts_are(Shortcuts::shipped()));
+    assert_eq!(zoom(&f), 1000, "the control: life size");
+
+    assert!(!press(&f, SUPER), "a modifier alone is not a chord");
+    assert!(with_super(&f, MINUS), "⊞+Minus reached a client");
+    assert_eq!(zoom(&f), 700, "⊞+Minus did not step out one rung");
+    assert!(
+        with_super(&f, NUMPAD_PLUS),
+        "⊞ and numpad plus reached a client"
+    );
+    assert!(with_super(&f, NUMPAD_PLUS));
+    assert_eq!(
+        zoom(&f),
+        1500,
+        "⊞ and numpad plus did not step in a rung each"
+    );
+    assert!(with_super(&f, DIGIT1), "⊞+1 reached a client");
+    assert_eq!(zoom(&f), 1000, "⊞+1 did not come back to 100 %");
+    release(&f, SUPER);
+}
+
+/// `KEY_EQUAL`, which prints `=` unshifted and `+` with Shift on a US layout.
+const EQUALS: u32 = 13;
+
+/// **⊞+= zooms in, pressed as keys on a US layout** — the fixture's own
+/// keymap — where the main block's `+` needs Shift and ⊞++ cannot be pressed
+/// without a numpad. The owner's yes of 2026-11-07. Once with ⊞ held for one
+/// press, and once more to show a second press is a second rung.
+#[test]
+fn super_equals_zooms_in_on_a_us_keyboard() {
+    let (f, _first, _second) = a_desktop_looking_away();
+    f.backend(|s| s.the_shortcuts_are(Shortcuts::shipped()));
+    assert_eq!(zoom(&f), 1000, "the control: life size");
+    assert!(!press(&f, SUPER), "a modifier alone is not a chord");
+    assert!(with_super(&f, EQUALS), "⊞+= reached a client");
+    assert_eq!(zoom(&f), 1500, "⊞+= did not zoom in one rung");
+    assert!(with_super(&f, EQUALS));
+    assert_eq!(zoom(&f), 2000, "a second ⊞+= did not zoom in another");
+    release(&f, SUPER);
+}
+
+/// **The refusal**: = without ⊞ is a key for the application, and the canvas
+/// does not move.
+#[test]
+fn equals_alone_is_the_applications() {
+    let (f, _first, _second) = a_desktop_looking_away();
+    f.backend(|s| s.the_shortcuts_are(Shortcuts::shipped()));
+    let _ = press(&f, EQUALS);
+    release(&f, EQUALS);
+    assert_eq!(zoom(&f), 1000, "= alone zoomed the canvas");
+}
+
 /// **A seat nobody has told about shortcuts routes every key as it always did.**
 ///
 /// The sign-in screen, the nested lane and every test that existed before this

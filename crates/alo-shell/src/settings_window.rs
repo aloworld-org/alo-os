@@ -70,6 +70,7 @@ use alo_shortcuts::{Action, Chord, Key, Modifiers, Shortcuts};
 use alo_strings::Strings;
 
 use crate::a_folder_is_picked_in_settings::{Folders, PickingRow};
+use crate::alo_in_the_terminal_in_settings::AloInTheTerminalHere;
 use crate::how_code_runs_in_settings::HowCodeRunsHere;
 use crate::settings_answering::{AnsweringSection, SettingsAnswered, SettingsChoice};
 use crate::settings_formats::FormatsSection;
@@ -207,6 +208,11 @@ pub enum SettingsRow {
     AddAProvider,
     /// Keep a place to return to before each command (ADR 0130).
     APlaceToReturnTo,
+    /// Let what the person asks alo for in the terminal run without the OK:
+    /// one switch, and Enter turns it over — on in one press, off in one
+    /// press. `crate::alo_in_the_terminal_in_settings` holds why it is off
+    /// rather than *not set* for somebody who never touched it.
+    ActWithoutAsking,
     /// Whether alo may use another model or API when the one the person chose
     /// is not available: one switch, and Enter turns it over.
     ///
@@ -257,6 +263,15 @@ pub enum SettingsRow {
     /// Which arrow the pointer is: Enter chooses it. The kite ships; the
     /// familiar arrow stays a choice (`alo_appearance::PointerShape`).
     PointerShape(alo_appearance::PointerShape),
+    /// What colour the pointer is: Enter chooses it. Navy ships; white with a
+    /// navy edge and black are the owner's yes of 2026-11-06
+    /// (`alo_appearance::PointerColour`).
+    PointerColour(alo_appearance::PointerColour),
+    /// Where a new window goes when there is no room for it in view: Enter
+    /// chooses it. Gliding to empty space ships; opening in front, offset,
+    /// stays a choice — the owner, 2026-11-07
+    /// (`alo_appearance::WhenThereIsNoRoom`).
+    WhenThereIsNoRoom(alo_appearance::WhenThereIsNoRoom),
     /// The list of countries and regions, or of time zones: Enter opens it.
     ///
     /// **One row where there were two hundred and fifty.** Every region is
@@ -283,10 +298,13 @@ impl SettingsRow {
             Self::TimeZone(_) => SettingsSection::TimeZone,
             Self::Hiding(_) | Self::Edge(_) => SettingsSection::Dock,
             Self::GoTo(_) => SettingsSection::Terminal,
-            Self::LightOrDark(_) | Self::WindowTitles => SettingsSection::Appearance,
-            Self::TextSize | Self::PointerSize(_) | Self::PointerShape(_) => {
-                SettingsSection::Accessibility
+            Self::LightOrDark(_) | Self::WindowTitles | Self::WhenThereIsNoRoom(_) => {
+                SettingsSection::Appearance
             }
+            Self::TextSize
+            | Self::PointerSize(_)
+            | Self::PointerShape(_)
+            | Self::PointerColour(_) => SettingsSection::Accessibility,
             Self::OpenThePicker(SettingsPicker::Region) => SettingsSection::Formats,
             Self::OpenThePicker(SettingsPicker::TimeZone) => SettingsSection::TimeZone,
             Self::Shortcut(_) => SettingsSection::Shortcuts,
@@ -297,7 +315,9 @@ impl SettingsRow {
                 SettingsSection::Answering
             }
             Self::HowCodeRuns(_) => SettingsSection::HowCodeRuns,
-            Self::ShellIntegration | Self::APlaceToReturnTo => SettingsSection::Terminal,
+            Self::ShellIntegration | Self::APlaceToReturnTo | Self::ActWithoutAsking => {
+                SettingsSection::Terminal
+            }
             Self::AddAProvider => SettingsSection::Answering,
         }
     }
@@ -420,6 +440,9 @@ pub(crate) struct Open {
     /// says — including *nobody has chosen*, which is why this is not a
     /// `KeptSection`. `crate::how_code_runs_in_settings` holds that argument.
     pub(crate) how_code_runs: HowCodeRunsHere,
+    /// Whether what the person asks alo for in the terminal runs without the
+    /// OK, kept in the same file as how code runs.
+    pub(crate) alo_in_the_terminal: AloInTheTerminalHere,
     /// Whether the sealed box can run programs on this computer yet, read at
     /// opening from the machine's mounts. **It changes nothing the person
     /// chose**: the sealed box stays a choice, and the default; this is only
@@ -492,6 +515,7 @@ impl SettingsWindow {
                 places.folder(),
             ),
             how_code_runs: HowCodeRunsHere::at_sign_in(places.how_code_runs()),
+            alo_in_the_terminal: AloInTheTerminalHere::at_sign_in(places.how_code_runs()),
             // Mounts that cannot be read are not said to be a machine where it
             // cannot run: the line is for what was read.
             the_sealed_box_runs_here: match std::fs::read_to_string(places.mounts()) {
@@ -614,12 +638,29 @@ impl SettingsWindow {
             .map(|open| open.appearance.drawn().window_titles())
     }
 
+    /// Where a new window goes when there is no room for it, as Settings
+    /// holds it.
+    #[must_use]
+    pub fn when_there_is_no_room(&self) -> Option<alo_appearance::WhenThereIsNoRoom> {
+        self.open
+            .as_ref()
+            .map(|open| open.appearance.drawn().when_there_is_no_room())
+    }
+
     /// Which arrow the pointer is, as Settings holds it.
     #[must_use]
     pub fn pointer_shape(&self) -> Option<alo_appearance::PointerShape> {
         self.open
             .as_ref()
             .map(|open| open.appearance.drawn().pointer_shape())
+    }
+
+    /// What colour the pointer is, as Settings holds it.
+    #[must_use]
+    pub fn pointer_colour(&self) -> Option<alo_appearance::PointerColour> {
+        self.open
+            .as_ref()
+            .map(|open| open.appearance.drawn().pointer_colour())
     }
 
     /// How large the pointer is, as Settings holds it.
@@ -811,6 +852,10 @@ impl Open {
                 if self.a_place_to_return_to.offers_a_row() {
                     rows.push(SettingsRow::APlaceToReturnTo);
                 }
+                // **Always offered**: it needs nothing installed, and a switch
+                // that is off until the person turns it on is a switch they can
+                // see.
+                rows.push(SettingsRow::ActWithoutAsking);
                 rows.push(SettingsRow::GoTo(SettingsCategory::RunningCode));
                 rows
             }
@@ -820,6 +865,11 @@ impl Open {
                     rows.extend(LightOrDark::ALL.into_iter().map(SettingsRow::LightOrDark));
                     rows.extend(Accent::ALL.into_iter().map(SettingsRow::Accent));
                     rows.push(SettingsRow::WindowTitles);
+                    rows.extend(
+                        alo_appearance::WhenThereIsNoRoom::ALL
+                            .into_iter()
+                            .map(SettingsRow::WhenThereIsNoRoom),
+                    );
                 }
                 if self.dock.at().is_some() {
                     rows.extend(alo_dock::Edge::EVERY.into_iter().map(SettingsRow::Edge));
@@ -865,6 +915,11 @@ impl Open {
                         alo_appearance::PointerShape::ALL
                             .into_iter()
                             .map(SettingsRow::PointerShape),
+                    );
+                    rows.extend(
+                        alo_appearance::PointerColour::ALL
+                            .into_iter()
+                            .map(SettingsRow::PointerColour),
                     );
                 }
                 rows
@@ -1244,8 +1299,33 @@ impl Open {
                 SettingsDid::Kept(SettingsSection::Appearance, kept)
             }
             SettingsRow::TextSize => self.the_text_is(25, doors.strings),
+            // **One of two, kept with the rest of the appearance**; the seat is
+            // told by `crate::a_key_reaches_settings`, so the next window opens
+            // the way the person just chose.
+            SettingsRow::WhenThereIsNoRoom(choice) => {
+                let choice = *choice;
+                let kept = self.appearance.changed(
+                    |appearance| {
+                        appearance.set_when_there_is_no_room(choice);
+                        Ok(())
+                    },
+                    doors.strings,
+                );
+                SettingsDid::Kept(SettingsSection::Appearance, kept)
+            }
             // **Kept with the rest of the appearance**, and the seat is told by
             // `crate::a_key_reaches_settings`, so the next frame draws it.
+            SettingsRow::PointerColour(colour) => {
+                let colour = *colour;
+                let kept = self.appearance.changed(
+                    |appearance| {
+                        appearance.set_pointer_colour(colour);
+                        Ok(())
+                    },
+                    doors.strings,
+                );
+                SettingsDid::Kept(SettingsSection::Appearance, kept)
+            }
             SettingsRow::PointerShape(shape) => {
                 let shape = *shape;
                 let kept = self.appearance.changed(
@@ -1346,6 +1426,13 @@ impl Open {
             SettingsRow::APlaceToReturnTo => SettingsDid::Kept(
                 SettingsSection::Terminal,
                 self.a_place_to_return_to.add(doors.strings),
+            ),
+            // **Written before the switch moves**, for the level's reason: a
+            // switch that moved first would say alo asks first when it does
+            // not.
+            SettingsRow::ActWithoutAsking => SettingsDid::Kept(
+                SettingsSection::Terminal,
+                self.alo_in_the_terminal.pressed(),
             ),
             // **The level is written before the tick moves.** A tick that moved
             // first would tell somebody their machine runs code at a level it

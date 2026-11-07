@@ -64,3 +64,14 @@ was **not** measured; it is a possibility read out of the same file, not an
 observed failure.
 
 **Date:** 2026-09-28.
+
+## Closed for zooming in, 2026-11-07
+
+The gap named above — *a laptop without a numpad and a US layout still cannot
+press `Super`+Plus* — is closed for the one shortcut it reached, by a second
+shortcut rather than by changing how chords are named: **`Super`+= zooms in as
+well**, the owner's yes of 2026-11-07. `=` is at level 1 of `<AE12>` on `us`,
+the key `+` sits on with Shift. `alo_shortcuts`' `ALSO_SHIPPED` holds it, and
+`a_chord_reaches_its_action::super_equals_zooms_in_on_a_us_keyboard` presses it
+as evdev codes on the fixture's `us` keymap. The general fault — a `Key` that is
+reachable only with Shift — stays open for any other shortcut that names one.

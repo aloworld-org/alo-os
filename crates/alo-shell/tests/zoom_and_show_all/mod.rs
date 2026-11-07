@@ -254,14 +254,64 @@ fn a_wheel_zoom_holds_the_point_under_the_pointer() {
             .expect("a real modifier press"),
         "the Ctrl press was not routed at all"
     );
-    for notches in [-1.0, -1.0, 2.0] {
+    // **And the zoom moved each time**: an anchor that held because nothing
+    // zoomed would pass the line above on its own.
+    for (notches, then) in [(-1.0, 1500), (-1.0, 2000), (2.0, 1000)] {
         assert!(scroll(&f, notches));
+        assert_eq!(
+            zoom(&f),
+            then,
+            "{notches} notches did not land on the next rung"
+        );
         assert_eq!(
             f.backend(move |s| s.the_camera().plane_of(at)),
             under,
             "zooming by {notches} notches moved what was under the pointer"
         );
     }
+}
+
+/// **The furthest in is an end, by the keyboard and by the wheel**: one more
+/// step in moves nothing — not the zoom, not the view — and is not a fault.
+#[test]
+fn zooming_in_at_the_furthest_in_moves_nothing_by_key_or_by_wheel() {
+    let f = fixture();
+    let _app = mapped(&f);
+    super::support::motion(&f, (317.0, 211.0));
+    let furthest =
+        alo_canvas::Zoom::of(alo_canvas::Zoom::FURTHEST_IN).expect("the furthest in is a zoom");
+    assert!(
+        f.backend(move |s| s.zoom_the_canvas(furthest, (317, 211)))
+            .is_some(),
+        "the control: the canvas reaches its furthest in"
+    );
+    let before = f.backend(|s| s.the_camera());
+    let _ = command(&f, Action::ZoomTheCanvasIn);
+    assert_eq!(
+        f.backend(|s| s.the_camera()),
+        before,
+        "a key stepped past the end"
+    );
+
+    assert!(f.focus(Some(0)).is_ok());
+    assert!(
+        f.key(LEFT_CTRL, KeyState::Pressed)
+            .expect("a real modifier press"),
+        "the Ctrl press was not routed at all"
+    );
+    let _ = scroll(&f, -1.0);
+    assert_eq!(
+        f.backend(|s| s.the_camera()),
+        before,
+        "the wheel stepped past the end"
+    );
+    // The control: the wheel still zooms out from there.
+    assert!(scroll(&f, 1.0));
+    assert_eq!(
+        zoom(&f),
+        7000,
+        "the wheel did not step back out from the end"
+    );
 }
 
 /// **Show all leaves every frame inside the viewport, with none clipped.**
@@ -627,6 +677,10 @@ fn a_pinch_holds_the_point_under_the_pointer() {
     let under = f.backend(move |s| s.the_camera().plane_of(at));
 
     pinch(&f, &[1.5, 2.0, 1.2]);
+    assert!(
+        zoom(&f) > 1000,
+        "the pinch did not zoom in, so the anchor proves nothing"
+    );
     assert_eq!(
         f.backend(move |s| s.the_camera().plane_of(at)),
         under,

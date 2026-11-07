@@ -319,6 +319,13 @@ mod running {
         /// What this person's pointer looks like, read from the same file at the
         /// same moment, and changed whenever Settings says so.
         pointers_look: alo_shell::ThePointersLook,
+        /// Where a new window goes when there is no room for it in view, read
+        /// from the same file at the same moment.
+        when_there_is_no_room: alo_appearance::WhenThereIsNoRoom,
+        /// Whether this person asked for less motion, read from their
+        /// `access.toml` once at sign-in. **A file that does not read is no**,
+        /// which is how this computer comes, and the reason is said once.
+        motion_is_reduced: bool,
         /// Where the dock is, and so where the status area is.
         dock: alo_dock::Dock,
         /// The windows this person has put aside, which the panel at the edge
@@ -573,6 +580,32 @@ mod running {
                     .0
             });
             let window_titles = appearance.window_titles();
+            let when_there_is_no_room = appearance.when_there_is_no_room();
+            // **And whether they asked for less motion**, from their own
+            // accessibility settings in the same folder (ADR 0038): the view
+            // then jumps where it would glide.
+            let motion_is_reduced = alo_choosing::where_the_folder_is(
+                std::env::var_os("XDG_CONFIG_HOME").as_deref(),
+                std::env::var_os("HOME").as_deref(),
+            )
+            .is_some_and(|folder| {
+                let (turned_on, not_read) =
+                    alo_access::keeping::at_sign_in(&folder.join(alo_access::keeping::THE_FILE));
+                // A file nobody has written is the ordinary case and not news;
+                // one that is there and does not read is said, once.
+                let missing = matches!(
+                    &not_read,
+                    Some(alo_access::keeping::FileNotRead::NotReadable(why))
+                        if why.kind() == std::io::ErrorKind::NotFound
+                );
+                if let Some(why) = not_read.filter(|_| !missing) {
+                    eprintln!(
+                        "alo-desktop: this person's accessibility settings did not read, so \
+                         nothing in them is followed: {why}"
+                    );
+                }
+                turned_on.has(alo_access::Setting::ReducedMotion)
+            });
             let (pointers_look, they_chose) =
                 crate::telling_applications_about_the_pointer::as_they_left_it(&appearance);
             // **Told at sign-in only what they chose in Settings**, so a theme
@@ -585,6 +618,8 @@ mod running {
                 dock_at,
                 window_titles,
                 pointers_look,
+                when_there_is_no_room,
+                motion_is_reduced,
                 dock: alo_dock::Dock::shipped(),
                 put_aside: alo_put_aside::Panel::new(),
                 // Nothing has been asked to be put back.
@@ -673,6 +708,17 @@ mod running {
         /// What this person's pointer looks like, as read at sign-in.
         fn the_pointers_look(&self) -> alo_shell::ThePointersLook {
             self.pointers_look
+        }
+
+        /// Where this person's new windows go when there is no room, as read
+        /// at sign-in.
+        fn when_there_is_no_room(&self) -> alo_appearance::WhenThereIsNoRoom {
+            self.when_there_is_no_room
+        }
+
+        /// Whether this person asked for less motion, as read at sign-in.
+        fn the_motion_is_reduced(&self) -> bool {
+            self.motion_is_reduced
         }
 
         /// **They chose another pointer**: applications started from now on

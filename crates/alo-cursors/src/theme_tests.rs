@@ -95,6 +95,37 @@ fn the_classic_theme_changes_only_the_arrow() {
     assert_eq!(kite.aliases, classic.aliases);
 }
 
+/// **Six themes, each named once**: every arrow in every colour, navy keeping
+/// the names it had, and every theme's arrow different from every other's.
+#[test]
+fn every_arrow_in_every_colour_is_its_own_theme() {
+    let every = every_theme();
+    assert_eq!(every.len(), 6);
+    let mut names: Vec<&str> = every
+        .iter()
+        .map(|&(silhouette, colour)| the_name_for(silhouette, colour))
+        .collect();
+    names.sort_unstable();
+    names.dedup();
+    assert_eq!(names.len(), 6, "two themes share a name: {names:?}");
+    assert_eq!(
+        the_name_for(Silhouette::Kite, alo_appearance::PointerColour::Navy),
+        THE_NAME
+    );
+    assert_eq!(
+        the_name_for(Silhouette::Classic, alo_appearance::PointerColour::Navy),
+        THE_CLASSIC_NAME
+    );
+    let white = the_theme_in(Silhouette::Kite, alo_appearance::PointerColour::White)
+        .unwrap_or_else(|why| unreachable!("{why}"));
+    assert!(white.index.contains("\nName=alo-white\n"));
+    assert_ne!(
+        white.cursors.get("default"),
+        shipped().cursors.get("default"),
+        "the white theme's arrow is the navy one"
+    );
+}
+
 /// **What is written is what a toolkit finds**: the index, every file, and an
 /// old name that opens to the same bytes as the name it points at.
 #[test]

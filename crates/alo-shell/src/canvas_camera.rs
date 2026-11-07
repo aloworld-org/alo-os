@@ -71,7 +71,12 @@ impl crate::Server {
     /// The one writer, so that *which display did this change* is answered in
     /// a single place rather than at each of the six sites that used to
     /// assign the field directly.
+    ///
+    /// **And it ends any glide** (`crate::the_view_glides`): a pan, a zoom, or
+    /// going somewhere is the person taking hold of the canvas, and a glide
+    /// that carried on would fight them.
     pub(crate) fn set_the_camera(&mut self, camera: Camera) {
+        self.the_glide = None;
         let named = self.the_display_being_worked_on();
         self.surfaces.cameras.insert(named, camera);
     }

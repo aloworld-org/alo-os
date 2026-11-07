@@ -43,34 +43,41 @@
 //! picked. Keeping all three apart is why this does not return a bare
 //! `HowCodeRuns`, and `crate::the_level` carries the same argument about the
 //! key inside the file.
+//!
+//! # And whether alo in the terminal acts without the OK
+//!
+//! *Added 2026-11-06.* The same file keeps a second answer — `in-the-terminal`,
+//! `crate::the_level` has its shape — and so the same trust. **This is the
+//! reason an agent cannot switch it on for itself**: the agent is its own login
+//! (ADR 0001 §5), the folder is the person's alone, and a file anybody else
+//! could have written is refused here rather than believed, so the one reader
+//! of this answer — `alo-ask`, run by the person — is told nothing it could
+//! act on.
+//!
+//! **Each writer keeps the other's answer.** Choosing a level does not switch
+//! the terminal off, and switching the terminal does not unchoose a level. The
+//! one place they differ is a file that would not read: a level chosen over it
+//! is written as before, and loses a terminal answer nobody could read anyway —
+//! the switch then reads off, which is the direction that takes nothing from
+//! the person. The terminal's switch is **refused** over such a file instead,
+//! because writing it would throw away a level the person may well have chosen.
 
 use std::path::Path;
 
-use alo_capability::HowCodeRuns;
+use alo_capability::{AloInTheTerminal, HowCodeRuns};
 
 use crate::believing::{read_believed, replaced_whole};
 use crate::refusing::NotRemembered;
+use crate::the_level::WhatTheFileSays;
 
 /// Where a machine keeps the level its person chose for running code.
 pub const THE_LEVEL: &str = "/var/lib/alo/how-code-runs.toml";
 
-/// The level kept at this path, believed and read.
-///
-/// `Ok(None)` is **a person who has not chosen**, which is not a failure and
-/// not the default; see this module's table.
-///
-/// # Errors
-///
-/// [`NotRemembered::ALink`] for a symbolic link;
-/// [`NotRemembered::SomebodyElses`] and [`NotRemembered::WritableByOthers`] for
-/// a file somebody else could have written — which here would be an escalation
-/// to full trust; [`NotRemembered::NotRead`] for a file that would not read;
-/// and [`NotRemembered::NotTheLevel`] for everything `the_level`'s own reader
-/// refuses about the text, including a file that says no level at all.
-pub fn the_level_remembered(at: &Path) -> Result<Option<HowCodeRuns>, NotRemembered> {
+/// Everything kept at this path, believed and read; `Ok(None)` for no file.
+fn what_is_kept(at: &Path) -> Result<Option<WhatTheFileSays>, NotRemembered> {
     match read_believed(at) {
         Ok(text) => match crate::the_level::read(&text) {
-            Ok(chose) => Ok(Some(chose)),
+            Ok(says) => Ok(Some(says)),
             // **The path is attached here and nowhere else.** `the_level` reads
             // text and does not know which file it came from; every sentence
             // for this refusal names the file, so the reader supplies it.
@@ -87,7 +94,34 @@ pub fn the_level_remembered(at: &Path) -> Result<Option<HowCodeRuns>, NotRemembe
     }
 }
 
-/// This level, written whole to this path.
+/// What the file is to say, written whole to this path.
+fn kept(at: &Path, says: WhatTheFileSays) -> Result<(), NotRemembered> {
+    let text = crate::the_level::written(says).map_err(|why| NotRemembered::NotTheLevel {
+        at: at.to_owned(),
+        why,
+    })?;
+    replaced_whole(at, &text)
+}
+
+/// The level kept at this path, believed and read.
+///
+/// `Ok(None)` is **a person who has not chosen**, which is not a failure and
+/// not the default; see this module's table. A file holding only the
+/// terminal's answer is that too.
+///
+/// # Errors
+///
+/// [`NotRemembered::ALink`] for a symbolic link;
+/// [`NotRemembered::SomebodyElses`] and [`NotRemembered::WritableByOthers`] for
+/// a file somebody else could have written — which here would be an escalation
+/// to full trust; [`NotRemembered::NotRead`] for a file that would not read;
+/// and [`NotRemembered::NotTheLevel`] for everything `the_level`'s own reader
+/// refuses about the text, including a file that says nothing at all.
+pub fn the_level_remembered(at: &Path) -> Result<Option<HowCodeRuns>, NotRemembered> {
+    Ok(what_is_kept(at)?.and_then(|says| says.chose))
+}
+
+/// This level, written whole to this path, keeping the terminal's answer.
 ///
 /// # Errors
 ///
@@ -95,13 +129,57 @@ pub fn the_level_remembered(at: &Path) -> Result<Option<HowCodeRuns>, NotRemembe
 /// folder that is not there, which is refused rather than made — and
 /// [`NotRemembered::NotTheLevel`] for a level that cannot be written down.
 pub fn the_level_kept(at: &Path, chose: HowCodeRuns) -> Result<(), NotRemembered> {
-    let text = crate::the_level::written(chose).map_err(|why| NotRemembered::NotTheLevel {
-        at: at.to_owned(),
-        why,
-    })?;
-    replaced_whole(at, &text)
+    // A file that would not read is written over, as it always was; see this
+    // module's header for why that loses nothing the person could be shown.
+    let in_the_terminal = what_is_kept(at)
+        .ok()
+        .flatten()
+        .and_then(|says| says.in_the_terminal);
+    kept(
+        at,
+        WhatTheFileSays {
+            chose: Some(chose),
+            in_the_terminal,
+        },
+    )
 }
 
+/// Whether alo in the terminal acts without the OK, as kept at this path.
+///
+/// **No file, and a file that says nothing about the terminal, are the switch
+/// as a machine arrives: off.** Unlike the level, there is no *has not chosen*
+/// to keep apart from it — the switch is offered off, and off is what a person
+/// who never touched it has.
+///
+/// # Errors
+///
+/// Every refusal [`the_level_remembered`] makes, for the same file. **A reader
+/// that meets one must ask first**: that is the only answer that cannot be a
+/// file somebody else wrote speaking for the person.
+pub fn alo_in_the_terminal_remembered(at: &Path) -> Result<AloInTheTerminal, NotRemembered> {
+    Ok(what_is_kept(at)?
+        .and_then(|says| says.in_the_terminal)
+        .unwrap_or_default())
+}
+
+/// Whether alo in the terminal acts without the OK, written whole to this path,
+/// keeping the level.
+///
+/// # Errors
+///
+/// Every refusal [`the_level_remembered`] makes, when the file is there and
+/// would not read — **written over, it would lose a level the person chose** —
+/// and [`NotRemembered::NotWritten`] for a file that could not be written.
+pub fn alo_in_the_terminal_kept(at: &Path, answer: AloInTheTerminal) -> Result<(), NotRemembered> {
+    let chose = what_is_kept(at)?.and_then(|says| says.chose);
+    kept(
+        at,
+        WhatTheFileSays {
+            chose,
+            in_the_terminal: Some(answer),
+        },
+    )
+}
 #[cfg(test)]
 #[expect(
     clippy::unwrap_used,
@@ -240,6 +318,94 @@ mod tests {
             Path::new(THE_LEVEL).parent().unwrap(),
             Path::new(crate::THE_FOLDER),
             "the level is kept somewhere other than beside the grants"
+        );
+    }
+
+    /// **Off until the person switches it on.** No file at all is the switch
+    /// as a machine arrives, and so is a file that says only a level.
+    #[test]
+    fn alo_in_the_terminal_is_off_until_switched_on() {
+        let folder = a_folder_of_our_own("terminal-off");
+        let at = folder.join("how-code-runs.toml");
+        assert_eq!(
+            alo_in_the_terminal_remembered(&at).unwrap(),
+            AloInTheTerminal::AsksFirst,
+            "a machine with nothing written down acts without asking"
+        );
+        the_level_kept(&at, HowCodeRuns::AtFullTrust).unwrap();
+        assert_eq!(
+            alo_in_the_terminal_remembered(&at).unwrap(),
+            AloInTheTerminal::AsksFirst,
+            "full trust for running code switched the terminal on, which nobody chose"
+        );
+    }
+
+    /// **Each writer keeps the other's answer**, and a file holding only the
+    /// terminal's answer is a person who has not chosen a level.
+    #[test]
+    fn the_terminal_and_the_level_are_two_answers_in_one_file() {
+        let folder = a_folder_of_our_own("terminal-and-level");
+        let at = folder.join("how-code-runs.toml");
+        alo_in_the_terminal_kept(&at, AloInTheTerminal::ActsWithoutAsking).unwrap();
+        assert_eq!(
+            the_level_remembered(&at).unwrap(),
+            None,
+            "switching the terminal on chose a level for running code"
+        );
+        the_level_kept(&at, HowCodeRuns::AskingEachTime).unwrap();
+        assert_eq!(
+            alo_in_the_terminal_remembered(&at).unwrap(),
+            AloInTheTerminal::ActsWithoutAsking,
+            "choosing a level switched the terminal off"
+        );
+        alo_in_the_terminal_kept(&at, AloInTheTerminal::AsksFirst).unwrap();
+        assert_eq!(
+            the_level_remembered(&at).unwrap(),
+            Some(HowCodeRuns::AskingEachTime),
+            "switching the terminal off forgot the level"
+        );
+        assert_eq!(
+            alo_in_the_terminal_remembered(&at).unwrap(),
+            AloInTheTerminal::AsksFirst
+        );
+    }
+
+    /// **An agent cannot switch it on for itself by writing the file.** The
+    /// agent is another login, so a file it could have written is one others
+    /// can write — and that is refused, never read as *act without asking*.
+    #[test]
+    fn a_file_others_could_write_saying_act_without_asking_is_refused() {
+        let folder = a_folder_of_our_own("terminal-untrusted");
+        let at = folder.join("how-code-runs.toml");
+        alo_in_the_terminal_kept(&at, AloInTheTerminal::ActsWithoutAsking).unwrap();
+        std::fs::set_permissions(&at, std::fs::Permissions::from_mode(0o646)).unwrap();
+        assert!(matches!(
+            alo_in_the_terminal_remembered(&at),
+            Err(NotRemembered::WritableByOthers { mode: 0o646, .. })
+        ));
+    }
+
+    /// **The switch is not written over a file that would not read**, because
+    /// that would throw away a level the person may have chosen — and the file
+    /// is left exactly as it was.
+    #[test]
+    fn the_switch_is_refused_over_a_file_that_would_not_read() {
+        let folder = a_folder_of_our_own("terminal-over-garbage");
+        let at = folder.join("how-code-runs.toml");
+        std::fs::write(&at, "this is not the file [").unwrap();
+        std::fs::set_permissions(&at, std::fs::Permissions::from_mode(OURS_ALONE)).unwrap();
+        assert!(matches!(
+            alo_in_the_terminal_kept(&at, AloInTheTerminal::ActsWithoutAsking),
+            Err(NotRemembered::NotTheLevel { .. })
+        ));
+        assert_eq!(
+            std::fs::read_to_string(&at).unwrap(),
+            "this is not the file [",
+            "the file that would not read was written over"
+        );
+        assert!(
+            alo_in_the_terminal_remembered(&at).is_err(),
+            "a file that would not read was read as an answer"
         );
     }
 }

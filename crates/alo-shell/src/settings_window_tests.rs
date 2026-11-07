@@ -246,6 +246,13 @@ fn every_setting_the_machine_has_is_in_one_window() {
         .chain(Accent::ALL.into_iter().map(SettingsRow::Accent))
         // **Then the titles switch**, under *Windows*.
         .chain(std::iter::once(SettingsRow::WindowTitles))
+        // **Then where a new window goes when there is no room**, gliding
+        // first because it is how this computer comes.
+        .chain(
+            alo_appearance::WhenThereIsNoRoom::ALL
+                .into_iter()
+                .map(SettingsRow::WhenThereIsNoRoom),
+        )
         .collect();
     // **The Dock's four edges, then what it does when a window needs the
     // room**: where it sits is chosen in Settings again (`docs/features.md`).
@@ -326,6 +333,8 @@ fn every_setting_the_machine_has_is_in_one_window() {
             }),
             SettingsRow::LightOrDark(LightOrDark::of(Appearance::shipped().following())),
             SettingsRow::Accent(Appearance::shipped().accent()),
+            // A new window with no room glides to empty space, as it ships.
+            SettingsRow::WhenThereIsNoRoom(alo_appearance::WhenThereIsNoRoom::GlideToEmptySpace),
             SettingsRow::Edge(Dock::shipped().edge()),
             SettingsRow::Hiding(Dock::shipped().hiding()),
             // **The region and the time zone are not marked on a page**: each
@@ -337,6 +346,8 @@ fn every_setting_the_machine_has_is_in_one_window() {
             SettingsRow::PointerSize(PointerSize::Default),
             // And the arrow it ships as.
             SettingsRow::PointerShape(alo_appearance::PointerShape::Kite),
+            // And the colour it ships in.
+            SettingsRow::PointerColour(alo_appearance::PointerColour::Navy),
         ]
     );
 }
@@ -398,6 +409,7 @@ fn no_choice_the_old_window_offered_is_dropped() {
     if open.a_place_to_return_to.offers_a_row() {
         before.push(SettingsRow::APlaceToReturnTo);
     }
+    before.push(SettingsRow::ActWithoutAsking);
     before.extend(
         alo_capability::HowCodeRuns::ALL
             .into_iter()
@@ -692,6 +704,61 @@ fn the_titles_switch_turns_over_and_back_and_is_kept_each_time() {
         );
     }
     assert_eq!(door.knocks.get(), 0, "a title switch knocked on the daemon");
+}
+
+/// **Where a new window goes when there is no room is kept across sign-ins**,
+/// each way: gliding as shipped, opening in front as the person's choice, and
+/// back — and the file says it by name.
+#[test]
+fn the_no_room_choice_is_kept_each_way_and_read_back_at_sign_in() {
+    use alo_appearance::WhenThereIsNoRoom;
+    let machine = a_persons_machine("no-room");
+    let strings = words();
+    let door = CountingDoor::revoking();
+    let mut window = machine.opened();
+    let at = machine.kept(alo_appearance::keeping::THE_FILE);
+    assert_eq!(
+        window.when_there_is_no_room(),
+        Some(WhenThereIsNoRoom::GlideToEmptySpace),
+        "a machine nobody changed glides to empty space"
+    );
+    for expected in [
+        WhenThereIsNoRoom::OpenInFront,
+        WhenThereIsNoRoom::GlideToEmptySpace,
+    ] {
+        assert_eq!(
+            chosen(
+                &mut window,
+                &SettingsRow::WhenThereIsNoRoom(expected),
+                &strings,
+                &door
+            ),
+            Some(SettingsDid::Kept(
+                SettingsSection::Appearance,
+                SettingsKept::Written
+            ))
+        );
+        assert_eq!(window.when_there_is_no_room(), Some(expected));
+        assert_eq!(
+            alo_appearance::keeping::at_sign_in(&at)
+                .0
+                .when_there_is_no_room(),
+            expected,
+            "what the next sign-in reads back"
+        );
+    }
+    // **Choosing the shipped answer is kept too**, so it stays chosen if a
+    // later release ships something else.
+    let written = std::fs::read_to_string(&at).unwrap();
+    assert!(
+        written.contains("when_there_is_no_room = \"GlideToEmptySpace\""),
+        "the file does not say the choice by name: {written}"
+    );
+    assert_eq!(
+        door.knocks.get(),
+        0,
+        "a window choice knocked on the daemon"
+    );
 }
 
 /// **The dock changes nothing `alo-dock` would not.**
@@ -1367,15 +1434,21 @@ fn a_session_with_no_folder_offers_nothing_it_could_not_keep() {
         rows.iter().all(|row| matches!(
             row.section(),
             SettingsSection::Granted | SettingsSection::HowCodeRuns
-        ) || matches!(row, SettingsRow::GoTo(SettingsCategory::RunningCode))),
+        ) || matches!(
+            row,
+            SettingsRow::GoTo(SettingsCategory::RunningCode)
+                // **And the switch to act without asking**, kept in the same
+                // machine file as how code runs, so keepable here too.
+                | SettingsRow::ActWithoutAsking
+        )),
         "{rows:?}"
     );
     // **No pointer row**: its size and shape are kept with the appearance,
     // which a session with no folder cannot keep.
     assert_eq!(
         rows.len(),
-        7,
-        "one grant, one pairing, the row that opens the record, the three levels, and the          row that opens their page"
+        8,
+        "one grant, one pairing, the record's row, the three levels, their page's row, the switch"
     );
     assert_eq!(window.appearance(), Some(&Appearance::shipped()));
     assert_eq!(window.dock(), Some(&Dock::shipped()));
@@ -1878,6 +1951,54 @@ fn light_and_dark_and_the_text_size_are_kept_as_alo_appearance_keeps_them() {
     assert_eq!(window.pointer_size(), Some(PointerSize::Larger));
 }
 
+/// **The pointer's colour is a choice of three, kept as `alo-appearance` keeps
+/// it** — the owner's yes of 2026-11-06 — and never deep teal, which is not
+/// offered at all.
+#[test]
+fn the_pointers_colour_is_a_choice_kept_with_the_appearance() {
+    let machine = a_persons_machine("pointer-colour");
+    let strings = words();
+    let door = CountingDoor::revoking();
+    let mut window = machine.opened();
+    let at = machine.kept(alo_appearance::keeping::THE_FILE);
+    let offered: Vec<alo_appearance::PointerColour> = window
+        .rows(noon())
+        .into_iter()
+        .filter_map(|row| match row {
+            SettingsRow::PointerColour(colour) => Some(colour),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(offered, alo_appearance::PointerColour::ALL);
+    assert_eq!(
+        window.pointer_colour(),
+        Some(alo_appearance::PointerColour::Navy)
+    );
+
+    assert_eq!(
+        chosen(
+            &mut window,
+            &SettingsRow::PointerColour(alo_appearance::PointerColour::White),
+            &strings,
+            &door
+        ),
+        Some(SettingsDid::Kept(
+            SettingsSection::Appearance,
+            SettingsKept::Written
+        ))
+    );
+    assert_eq!(
+        window.pointer_colour(),
+        Some(alo_appearance::PointerColour::White)
+    );
+    let mut expected = Appearance::shipped();
+    expected.set_pointer_colour(alo_appearance::PointerColour::White);
+    let twin = a_twin();
+    let twin_at = twin.path().join(alo_appearance::keeping::THE_FILE);
+    alo_appearance::keeping::keep(&twin_at, expected.changes()).unwrap();
+    assert_eq!(bytes(&at), bytes(&twin_at));
+}
+
 /// **The familiar arrow is a choice, kept as `alo-appearance` keeps it**: on
 /// the Accessibility page beside the pointer's size, marked where it ships, and
 /// written to `appearance.toml` byte for byte as that crate writes it.
@@ -2067,4 +2188,54 @@ fn reading_what_answers_again_does_not_open_settings() {
     let mut window = SettingsWindow::closed();
     window.what_answers_is_read_again(&machine.places, noon());
     assert!(!window.is_open());
+}
+
+/// **Let alo act without asking: on in one press, off again in one press**,
+/// each written to the person's file before the switch moves — and the level
+/// for running code, kept in the same file, is left as the person chose it.
+#[test]
+fn one_press_lets_alo_act_without_asking_and_one_press_stops_it() {
+    let machine = a_persons_machine("act-without-asking-pressed");
+    let strings = words();
+    let door = CountingDoor::revoking();
+    let at = machine.places.how_code_runs().to_owned();
+    alo_remembering::the_level_kept(&at, alo_capability::HowCodeRuns::AskingEachTime).unwrap();
+    let mut window = machine.opened();
+    let off = || alo_capability::AloInTheTerminal::AsksFirst;
+    assert_eq!(
+        alo_remembering::alo_in_the_terminal_remembered(&at).unwrap(),
+        off(),
+        "the switch arrived on"
+    );
+
+    assert_eq!(
+        chosen(&mut window, &SettingsRow::ActWithoutAsking, &strings, &door),
+        Some(SettingsDid::Kept(
+            SettingsSection::Terminal,
+            SettingsKept::Written
+        ))
+    );
+    assert_eq!(
+        alo_remembering::alo_in_the_terminal_remembered(&at).unwrap(),
+        alo_capability::AloInTheTerminal::ActsWithoutAsking
+    );
+
+    // **One press, and it is off**: no confirmation on the way back.
+    assert_eq!(
+        window.pressed(key(SettingsKey::Choose), doors(&strings, &door)),
+        Some(SettingsDid::Kept(
+            SettingsSection::Terminal,
+            SettingsKept::Written
+        ))
+    );
+    assert_eq!(
+        alo_remembering::alo_in_the_terminal_remembered(&at).unwrap(),
+        off(),
+        "one press from on did not turn it off"
+    );
+    assert_eq!(
+        alo_remembering::the_level_remembered(&at).unwrap(),
+        Some(alo_capability::HowCodeRuns::AskingEachTime),
+        "the switch changed how code runs"
+    );
 }

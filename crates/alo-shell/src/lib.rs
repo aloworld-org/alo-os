@@ -118,6 +118,7 @@ mod a_task_windows_edge;
 mod a_wheel_over_a_sheet;
 mod a_window_onto_a_list;
 mod a_window_raised;
+mod alo_in_the_terminal_in_settings;
 /// alo's words read for the emphasis a model marks in Markdown.
 ///
 /// **Public because `task_text::WhatWasSaid` carries its marks**, as
@@ -389,6 +390,8 @@ mod region_sheet;
 mod resize_cursor;
 mod resize_transaction;
 mod resource_device;
+/// One rule for every window a person opens into a full view.
+mod room_in_a_full_view;
 mod running_keys;
 mod running_rows;
 mod running_window;
@@ -509,6 +512,8 @@ pub mod the_bar_finds;
 mod the_bars_pressable_slots;
 mod the_bars_seat;
 pub mod the_cards_words;
+/// Where a new window goes when there is no room, as the person chose.
+mod the_choice_when_there_is_no_room;
 /// What a task window says when closing a running task asks.
 pub mod the_closing_words;
 /// The Dock's composer as a field a person types a request into.
@@ -522,8 +527,14 @@ mod the_edge_takes_the_keyboard;
 /// The egress indicator's two arrows, from the design file's SVG.
 mod the_egress_indicators_arrows;
 mod the_first_account;
+/// The nearest empty space on a Place for a window with no room in view.
+mod the_nearest_empty_space;
 /// The record drawn as a window on the canvas, for one frame.
 mod the_record_drawn_on_the_canvas;
+/// Task windows opened into a full view find room as other windows do.
+mod the_task_windows_find_room;
+/// The view gliding, or jumping where less motion was asked for.
+mod the_view_glides;
 /// The view travelling to a window of alo's rather than the window moving.
 mod the_view_travels_to_a_window;
 /// The compositor's answers to `front` and `alo-tree` at the door.

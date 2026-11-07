@@ -60,6 +60,25 @@ pub trait TheDesktop {
         alo_appearance::WindowTitles::default()
     }
 
+    /// Where a new window goes when there is no room for it in view, as this
+    /// person's own settings say.
+    ///
+    /// Asked once, when the desktop stands up, like [`Self::the_window_titles`];
+    /// Settings tells the seat again whenever the person changes it. **Gliding
+    /// to empty space by default**, which is what this release ships.
+    fn when_there_is_no_room(&self) -> alo_appearance::WhenThereIsNoRoom {
+        alo_appearance::WhenThereIsNoRoom::default()
+    }
+
+    /// Whether this person asked for less motion, as their accessibility
+    /// settings say: then the view jumps where it would glide.
+    ///
+    /// Asked once, when the desktop stands up. **No by default**, which is a
+    /// person who has not been asked rather than one who said no.
+    fn the_motion_is_reduced(&self) -> bool {
+        false
+    }
+
     /// What this seat has made of a person's input, offered every frame.
     ///
     /// **Offered rather than printed**, because this crate is a compositor and
@@ -1305,6 +1324,11 @@ impl LoopInput for Desk<'_> {
                 let _moved = server.put_back_where_it_was(&frame, &mut self.left);
             }
         }
+        // **A glide moves on before anything is drawn**, so this frame shows
+        // the view where the glide has got to (`crate::the_view_glides`). The
+        // answer — whether one is still moving — is not needed: frames are
+        // drawn on the loop's own clock, so the next one comes regardless.
+        let _still_gliding = server.the_glide_moves_on(std::time::Instant::now());
         let size = target.size();
         // **The one place holding both the windows and the frame.** The
         // desktop's own state has no server in it, so it cannot say where the
@@ -1607,10 +1631,11 @@ impl LoopInput for Desk<'_> {
         let this_displays_scale = server.the_scale_of_display(&named);
         let the_place_now = server.the_place_now();
         server.tasks_mut().new_windows_open_on(the_place_now);
-        server.tasks_mut().put_whatever_has_nowhere_to_be(
+        // **With no room, a task window glides to empty space** as every other
+        // window the person opens does (`crate::the_task_windows_find_room`).
+        let _placed = server.the_task_windows_find_room(
             the_view_on_the_plane,
             frame.look.reading(),
-            &[],
             this_displays_scale,
         );
         // **Said once a frame, and kept alive for as long as the frame is.**

@@ -133,7 +133,8 @@ impl crate::Server {
         if self.settings_on_the_plane.is_some() {
             return false;
         }
-        let camera = self.the_camera();
+        // **Against where the view is going**, as every opening is.
+        let camera = self.the_camera_after_the_glide();
         let zoom = crate::scene::drawn_at(camera);
         if zoom <= 0.0 {
             return false;
@@ -157,13 +158,28 @@ impl crate::Server {
             .map(crate::where_a_window_is)
             .chain(self.where_the_terminal_is_on_the_plane())
             .collect();
-        let at = crate::where_a_window_opens(
+        let first = crate::where_a_window_opens(
             view,
             &open,
             open.first().copied(),
             Size::from(window),
             reading,
             &[],
+        );
+        // **The person opened it**: with no room the view may glide, the
+        // owner's yes of 2026-11-07 (`crate::room_in_a_full_view`) —
+        // against every window on the Place, the record included.
+        let everything = self.the_windows_on_this_place();
+        let at = self.room_for_what_the_person_opened(
+            first,
+            &crate::room_in_a_full_view::AnOpening {
+                view,
+                open: &everything,
+                wanted: Size::from(window),
+                fixed: &[],
+                reading,
+            },
+            std::time::Instant::now(),
         );
         self.settings_on_the_plane = Some((at, place));
         true

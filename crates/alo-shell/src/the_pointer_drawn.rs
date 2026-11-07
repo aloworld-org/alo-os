@@ -70,7 +70,7 @@ pub(crate) fn the_pointer(
     let size = alo_cursors::measures::pixels_at(u16::try_from(per_cent).unwrap_or(u16::MAX));
     // **The arrow the person chose**: the kite the owner picked on 2026-11-06,
     // unless they chose the familiar one in Settings (`crate::the_pointers_look`).
-    let picture = alo_cursors::draw(shape, look.silhouette(), size)
+    let picture = alo_cursors::draw_in(shape, look.silhouette(), look.colour, size)
         .map_err(|why| RenderError::Submission(why.to_string()))?;
     let left = location.0.floor() - f64::from(picture.hotspot.0);
     let top = location.1.floor() - f64::from(picture.hotspot.1);

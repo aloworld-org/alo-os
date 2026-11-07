@@ -243,6 +243,29 @@ impl TheTasks {
         fixed: &[Rectangle<i32, Logical>],
         display_scale: u16,
     ) -> usize {
+        let full = crate::where_a_task_window_opens::WhenTheViewIsFull {
+            others: &[],
+            glides: false,
+            reach: None,
+        };
+        self.put_whatever_has_nowhere_to_be_finding_room(view, reading, fixed, display_scale, &full)
+            .0
+    }
+
+    /// The same, and with no room in view and *Glide to empty space* kept,
+    /// each window goes to the nearest empty space beside every window in
+    /// `full.others` as well (`crate::the_task_windows_find_room`). Answers how
+    /// many were placed and, where one went out of view, where the view must go
+    /// to show the last of them.
+    pub(crate) fn put_whatever_has_nowhere_to_be_finding_room(
+        &mut self,
+        view: Rectangle<i32, Logical>,
+        reading: Direction,
+        fixed: &[Rectangle<i32, Logical>],
+        display_scale: u16,
+        full: &crate::where_a_task_window_opens::WhenTheViewIsFull<'_>,
+    ) -> (usize, Option<smithay::utils::Point<i32, Logical>>) {
+        let mut the_view_goes_to = None;
         let scale = crate::display_scale::DisplayScale::of_per_cent(display_scale);
         debug_assert_eq!(self.open.len(), self.placed.len());
         let mut placed = 0;
@@ -267,7 +290,7 @@ impl TheTasks {
                     Rectangle::new((at.loc.x, at.loc.y).into(), (at.size.w, at.size.h).into())
                 })
                 .collect();
-            let Some(at) = crate::where_a_task_window_opens::where_one_more_goes(
+            let Some(mut at) = crate::where_a_task_window_opens::where_one_more_goes(
                 view, &already, reading, fixed, scale,
             ) else {
                 // A view too small for the window at all. Nothing is placed and
@@ -275,6 +298,12 @@ impl TheTasks {
                 // place it.
                 continue;
             };
+            if let Some(found) = crate::where_a_task_window_opens::room_for_one_more(
+                at, view, &already, full, reading, scale,
+            ) {
+                at.loc = found.window;
+                the_view_goes_to = found.the_view_moves(view.loc).then_some(found.view);
+            }
             if let Some(slot) = self.placed.get_mut(which) {
                 *slot = ItsWindow::At(
                     crate::where_a_task_window_opens::as_a_frame_draws_it(at),
@@ -283,7 +312,7 @@ impl TheTasks {
                 placed += 1;
             }
         }
-        placed
+        (placed, the_view_goes_to)
     }
 
     /// The Place a window placed from now on goes on — the one the person is

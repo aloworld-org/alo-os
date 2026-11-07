@@ -51,6 +51,8 @@ const KEYS: &[&str] = &[
     "window_titles",
     "pointer_shape",
     "pointer_size",
+    "pointer_colour",
+    "when_there_is_no_room",
 ];
 
 impl Kept for Changes {
@@ -171,6 +173,8 @@ mod tests {
         changes.set_window_titles(crate::titles::WindowTitles::WhenPointedAt);
         changes.set_pointer_shape(crate::pointer::PointerShape::Classic);
         changes.set_pointer_size(crate::pointer::PointerSize::Larger);
+        changes.set_pointer_colour(crate::pointer::PointerColour::White);
+        changes.set_when_there_is_no_room(crate::no_room::WhenThereIsNoRoom::OpenInFront);
         changes
     }
 

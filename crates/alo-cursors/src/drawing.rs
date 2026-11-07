@@ -1,10 +1,11 @@
-//! **Drawing one cursor into a square of pixels**: a navy shape, a white
-//! keyline round it, and a soft shadow under both.
+//! **Drawing one cursor into a square of pixels**: a shape, a keyline round it,
+//! and a soft shadow under both.
 //!
-//! The colours are the palette's, never the person's accent: the fill is
-//! `text/primary` (#102A43) and the keyline is `bg/surface` (white). **Deep teal
-//! is the agent's** (ADR 0067) and is never the person's pointer, which
-//! `the_persons_pointer_is_never_the_agents_colour` holds.
+//! The colours are the person's choice of three, never their accent
+//! (`crate::inks`): navy with a white edge as it ships, white with a navy edge,
+//! or black with a white edge. **Deep teal is the agent's** (ADR 0067) and is
+//! never the person's pointer, which `the_persons_pointer_is_never_the_agents_colour`
+//! holds for every choice.
 //!
 //! The vector work is `alo-vector-shapes`', which is ADR 0142's rasteriser for
 //! alo's own artwork: each layer is written as the small SVG that crate reads,
@@ -74,13 +75,28 @@ impl core::fmt::Display for NotDrawn {
 
 impl std::error::Error for NotDrawn {}
 
-/// `icon` drawn `size` pixels square, with the person's arrow `silhouette`.
+/// `icon` drawn `size` pixels square, with the person's arrow `silhouette`, in
+/// navy as it ships. [`draw_in`] draws it in another of the person's colours.
+///
+/// # Errors
+/// As [`draw_in`].
+pub fn draw(icon: CursorIcon, silhouette: Silhouette, size: u32) -> Result<Picture, NotDrawn> {
+    draw_in(icon, silhouette, alo_appearance::PointerColour::Navy, size)
+}
+
+/// `icon` drawn `size` pixels square, with the person's arrow `silhouette`, in
+/// the person's `colour`.
 ///
 /// # Errors
 /// [`NotDrawn`] for a square of no pixels or one larger than [`LARGEST`], and
 /// for artwork that does not read — which no shipped shape does, and a test
 /// draws every one.
-pub fn draw(icon: CursorIcon, silhouette: Silhouette, size: u32) -> Result<Picture, NotDrawn> {
+pub fn draw_in(
+    icon: CursorIcon,
+    silhouette: Silhouette,
+    colour: alo_appearance::PointerColour,
+    size: u32,
+) -> Result<Picture, NotDrawn> {
     if size == 0 {
         return Err(NotDrawn::NoPixels);
     }
@@ -96,14 +112,13 @@ pub fn draw(icon: CursorIcon, silhouette: Silhouette, size: u32) -> Result<Pictu
         size,
         in_pixels(SHADOW_SOFTNESS),
     );
-    let navy = rgb(Role::TextPrimary);
-    let white = rgb(Role::BgSurface);
+    let crate::inks::Inks { fill: ink, edge } = crate::inks::inks(colour);
     let mut pixels = Vec::with_capacity(keyline.len() * 4);
     for ((&shade, &line), &solid) in shadow.iter().zip(&keyline).zip(&fill) {
         let mut pixel = [0_u8; 4];
         over(&mut pixel, SHADOW_COLOUR, scaled(shade, SHADOW_OPACITY));
-        over(&mut pixel, white, line);
-        over(&mut pixel, navy, solid);
+        over(&mut pixel, edge, line);
+        over(&mut pixel, ink, solid);
         pixels.extend_from_slice(&pixel);
     }
     // **The pixel the tip falls in**, so floored: a tip at 4.5 pixels is in

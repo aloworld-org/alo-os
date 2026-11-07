@@ -1,6 +1,8 @@
 //! **Writes alo's cursor themes** into a directory, for the image build to
-//! install: `alo-cursor-theme /usr/share/icons` writes `alo/`, with the precision
-//! kite, and `alo-classic/`, with the familiar arrow a person may choose instead.
+//! install: `alo-cursor-theme /usr/share/icons` writes one theme for each arrow
+//! a person may choose in each colour they may choose — `alo/` (the precision
+//! kite, navy, as it ships), `alo-classic/`, and their white and black twins
+//! (`alo_cursors::theme::the_name_for`).
 //!
 //! Run once, at build time, by `image/Containerfile`. It draws every cursor from
 //! the vector source the compositor draws from, so the theme an application reads
@@ -16,10 +18,10 @@ fn main() -> ExitCode {
         return ExitCode::from(2);
     };
     let directory = std::path::PathBuf::from(directory);
-    for silhouette in alo_cursors::Silhouette::ALL {
-        let name = alo_cursors::theme::the_name_of(silhouette);
+    for (silhouette, colour) in alo_cursors::theme::every_theme() {
+        let name = alo_cursors::theme::the_name_for(silhouette, colour);
         let into = directory.join(name);
-        let made = alo_cursors::theme::the_theme(silhouette)
+        let made = alo_cursors::theme::the_theme_in(silhouette, colour)
             .and_then(|theme| alo_cursors::theme::write_into(&theme, &into).map(|()| theme));
         match made {
             Ok(theme) => println!(

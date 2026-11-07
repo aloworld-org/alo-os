@@ -92,6 +92,32 @@ pub(crate) fn the_blocks(open: &Open, strings: &Strings) -> Vec<ABlock> {
             .collect();
         rows.push(shape);
     }
+    // **What colour**: navy as it ships, white with a navy edge for dark
+    // backgrounds, or black — the owner's yes of 2026-11-06. Never deep teal,
+    // which is the agent's. Also not drawn in `551:1038`; the same segmented
+    // choice, in the same section (`docs/design/the-settings-window.md`).
+    {
+        let chosen = appearance.drawn().pointer_colour();
+        let mut colour = ARow::named(None, TheKind::ASegmented, said(strings, w::POINTER_COLOUR));
+        colour.lead = Some(ASettingsIcon::Pointer);
+        colour.parts = alo_appearance::PointerColour::ALL
+            .into_iter()
+            .map(|each| APart {
+                label: said(
+                    strings,
+                    match each {
+                        alo_appearance::PointerColour::Navy => w::NAVY,
+                        alo_appearance::PointerColour::White => w::WHITE,
+                        alo_appearance::PointerColour::Black => w::BLACK,
+                    },
+                ),
+                row: SettingsRow::PointerColour(each),
+                chosen: each == chosen,
+                colour: None,
+            })
+            .collect();
+        rows.push(colour);
+    }
     blocks.push(ABlock::Section(ASection {
         heading: Some(said(strings, w::POINTER)),
         rows,
