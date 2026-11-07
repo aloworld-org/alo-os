@@ -18,8 +18,6 @@
 #
 # One line per function: its file, a tab, its name. No line numbers, so adding a
 # comment above an unrelated function does not churn the file.
-crates/alo-adapters/src/accessibility_bus.rs	of_this_person
-crates/alo-adapters/src/session_bus.rs	this_persons
 crates/alo-agentd/src/serving.rs	discovery_answered
 crates/alo-agentd/src/settings.rs	what_this_person_chose
 crates/alo-bluetooth/src/testing.rs	with_no_radio
