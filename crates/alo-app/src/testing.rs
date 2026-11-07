@@ -91,7 +91,7 @@ impl TheDoor for ADoor {
 
     fn act(&mut self, request: &Request) -> Result<Answer, Unanswered> {
         self.asked.push(request.written());
-        self.acting
+        self.acting.clone()
     }
 
     fn begin_counting(&mut self, asked: &ToCount) -> Option<Box<dyn HeldCount>> {

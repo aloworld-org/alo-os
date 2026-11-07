@@ -209,14 +209,16 @@ mod tests {
             unreachable!("one line of JSON")
         };
         let read: serde_json::Value = serde_json::from_str(line).unwrap();
-        assert_eq!(read["format"], 1);
-        let front = read["applications"]
+        assert_eq!(read.get("format").unwrap(), 1);
+        let front = read
+            .get("applications")
+            .unwrap()
             .as_array()
             .unwrap()
             .iter()
-            .find(|one| one["identifier"] == "com.example.Front")
+            .find(|one| one.get("identifier").is_some_and(|it| it == "com.example.Front"))
             .unwrap();
-        assert_eq!(front["short_name"], serde_json::Value::Null);
-        assert_eq!(front["typed_as"], "com.example.Front");
+        assert_eq!(front.get("short_name"), Some(&serde_json::Value::Null));
+        assert_eq!(front.get("typed_as").unwrap(), "com.example.Front");
     }
 }

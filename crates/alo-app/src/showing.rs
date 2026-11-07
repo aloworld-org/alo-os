@@ -106,14 +106,14 @@ pub fn shown(
             .collect(),
         Giving::Json => {
             let mut one = one_as_json(application, knowing.installed, knowing.adapters, strings);
-            one["format"] = json!(1);
-            one["roads"] = json!({
+            with(&mut one, "format", json!(1));
+            with(&mut one, "roads", json!({
                 "window": true,
                 "tree": on_the_tree.named(),
                 "declared": declared.iter().map(|one| ability_as_json(*one, strings)).collect::<Vec<_>>(),
                 "discovered": "not-asked",
                 "screen": "not-built",
-            });
+            }));
             vec![one.to_string()]
         }
         Giving::Sentences => {
@@ -210,8 +210,8 @@ fn one_ability(
             .collect(),
         Giving::Json => {
             let mut shown = ability_as_json(one, strings);
-            shown["format"] = json!(1);
-            shown["application"] = json!(subject.identifier());
+            with(&mut shown, "format", json!(1));
+            with(&mut shown, "application", json!(subject.identifier()));
             vec![shown.to_string()]
         }
         Giving::Sentences => {
@@ -330,4 +330,11 @@ fn ability_as_json(one: Declared, strings: &Strings) -> serde_json::Value {
             "purpose": strings.say(&arg.purpose.key(), &Filling::nothing()).into_text(),
         })).collect::<Vec<_>>(),
     })
+}
+
+/// Put one more field into a JSON object.
+fn with(object: &mut serde_json::Value, field: &str, value: serde_json::Value) {
+    if let Some(map) = object.as_object_mut() {
+        map.insert(field.to_owned(), value);
+    }
 }

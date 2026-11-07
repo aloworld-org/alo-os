@@ -266,7 +266,7 @@ fn a_window_act_is_asked_of_the_desktop_and_written_down() {
         (Err(Unanswered::NotUnderstood), Ended::NotKnown),
     ] {
         let mut machine = AMachine::default();
-        machine.door.acting = answer;
+        machine.door.acting = answer.clone();
         assert_eq!(
             known.running(&["texteditor", "focus"], &mut machine),
             ended,
