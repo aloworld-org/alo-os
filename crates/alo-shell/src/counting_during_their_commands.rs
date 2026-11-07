@@ -4,7 +4,7 @@
 //!
 //! A person's command (`alo-app`) asks the compositor's door to `count` one
 //! application and keeps that connection open while it works. The door hands
-//! the connection here ([`AskedToCount`]), and from then on, once a frame:
+//! the connection here ([`AskedToCount`](crate::counting_during_their_commands::AskedToCount)), and from then on, once a frame:
 //!
 //! 1. the application's control groups are found again, so one that started
 //!    during the command is counted from the moment its unit appears;
