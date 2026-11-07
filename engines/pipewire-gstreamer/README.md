@@ -14,12 +14,12 @@ pool's condition wait to 100 ms. The sink's process callback signals without
 that pool mutex; a notification can arrive between dequeue and wait. A timed
 predicate recheck avoids an indefinite wait without reversing the loop/pool
 lock order. Queue bounds, buffer ownership, flushing and pause checks remain
-the engine's own. ADR 0146 records the trace, private trial and removal rule.
+the engine's own. ADR 0147 records the trace, private trial and removal rule.
 
 PipeWire 1.4.11's distribution plugin terminates a provided video source when a
 consumer removes its buffers. The pinned upstream implementation owns its
 buffer memory and keeps a provided source alive across that link transition.
-This is required when Studio pauses and resumes. ADR 0146 records the boundary.
+This is required when Studio pauses and resumes. ADR 0147 records the boundary.
 
 `build.sh OUTPUT_DIRECTORY` builds against the OS's own PipeWire 1.4+ and
 GStreamer 1.24+ development libraries. It generates only build configuration;

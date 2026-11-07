@@ -5,18 +5,23 @@ Work remains on `app/alo-studio`, with a draft review. Market publication,
 signed distribution, production-image acceptance, and physical-hardware
 acceptance are separate. The complete booted walk is **not yet accepted**.
 
-Current result: native permissions, the installable application and 19 typed
-agent actions are implemented. Application source `8555d5bd` passes dedicated
-CI: formatting, Clippy, 28 unit tests, the actual GTK recording flow and the
-pinned native capture publisher cases. At `00781cbd`, dedicated native CI,
-authors validation and the hosted OS gate all pass. The hosted gate required a
-retry after dependency installation timed out; its documented runner exceptions
-were not changed. Installed window recording completes Start, Pause,
-Resume, Finish, naming, library review and exact-file export. Decoded-media
-quality is being checked below; it is not inferred from those successful
-controls. The review remains a draft with no market publication. Earlier
-measurements retain their tested source and are not acceptance results for
-later packages.
+Current result: native permissions, the normal installable application and 19
+typed agent actions are implemented. The installed Flatpak is source
+`9772d083`, SHA-256
+`70b3ff37918ca858294eac9119fe694aa82f1ad755634edb47e862a26bfc284d`.
+Dedicated native CI covers formatting, Clippy, 28 application tests, the real
+GTK recording flow and the pinned native publisher cases. Earlier installed
+screen/window walks complete recording, pause/resume, naming, library review
+and exact-file export. Saved-video playback is exercised through the installed
+Review player. Those controls do not establish continuous or synchronized
+media; the measured failures and follow-up changes are recorded below.
+The latest native compositor candidate is `745b67e3`, integrated with main
+`da1192f0`. Its optimized regressions and strict checks pass; its installed
+recording repeat is queued on the shared build lock. The full hosted OS gate
+finds an ADR-number collision and a cursor-recipe integration assertion; both
+are corrected in the following integration change and await revalidation.
+The review remains a draft with no market publication, and
+each earlier measurement retains its own tested source.
 
 ## Implemented boundaries
 
@@ -34,7 +39,7 @@ one in-flight frame, with cancellable partial writes and bounded admission.
 
 The selected-node descriptor exposes the necessary PipeWire factories and the
 chosen node, including link permission; unrelated current and future objects
-remain hidden. ADR 0146 documents the narrow rented-binding additions. Native
+remain hidden. ADR 0147 documents the narrow rented-binding additions. Native
 window parenting uses XDG foreign v1 and verifies the actual focused parent.
 
 SaveFile uses the native GTK chooser and Documents portal. The exact selected
@@ -668,7 +673,7 @@ count advances from 667 to 762. The appsrc queue stays bounded at two frames.
 Thread inspection finds the publisher's streaming thread waiting on a condition.
 The sink signals that condition without the pool mutex, allowing a notification
 between dequeue and wait to be lost. A private timed-recheck trial keeps frames
-moving; ADR 0146 authorizes the narrowly checksummed build-copy patch. The
+moving; ADR 0147 authorizes the narrowly checksummed build-copy patch. The
 imported upstream source remains unchanged. Plugin version
 `1.4.90+ee2c6eb4.2770143f.wait1` adds a 100 ms predicate recheck.
 
@@ -1028,3 +1033,159 @@ The downloaded archive and executable checksums are verified; the executable is
 The local recording reservation is still queued behind validation of separate
 cursor branches; it will use that tested binary without rebuilding it.
 No additional media acceptance is claimed.
+
+### Installed status-reading repeat and remaining rendering cost
+
+The reservation subsequently runs with no host compiler active. Integrated
+source `9772d083` passes native Studio CI, all 55 optimized desktop tests,
+strict desktop/shell checks, authors validation and the hosted OS gate. That
+gate runs 12,671 tests: 12,670 pass, one matches its existing declared runner
+limitation, and 61 are skipped. No exception changes. The normal Flatpak is
+rebuilt from this source, without its verification feature; its SHA-256 is
+`70b3ff37918ca858294eac9119fe694aa82f1ad755634edb47e862a26bfc284d`.
+The native desktop's SHA-256 is
+`650bda68803a2d024d73d95006cf0ae891b8f67315b953d3453e66a4c4abd16f`.
+The title field now accepts the same 200 characters as storage and automation.
+Both following installed flows verify a 200-character title and restore their
+professional recording names before completing export.
+
+Window/microphone clip `1794007539-309622476-2` completes recording,
+Pause, Resume, Finish, review, naming, library navigation and native exact-file
+export. Its 193 video buffers end at 39.558 seconds, with a largest uncovered
+gap of 1.579 seconds. Its 37.300 seconds of decoded 16 kHz mono PCM have no
+detected holes or overlap. The visual reference supplies only one measurable
+flash against 21 audio onsets; synchronization is not established. The export
+`Product demonstration 7.webm` matches its private original, SHA-256
+`268a397c63e65c0701e6448c3979238e6ce1a4324da5a95423e95bf77b19688a`.
+Evidence is in `installed-status-readings-recording`.
+
+Screen clip `1794008193-58456063-2` completes the same installed flow with
+microphone disabled throughout. It has 54 video buffers ending at 21.520
+seconds, with a largest uncovered gap of 1.413 seconds. The export
+`Product demonstration 8.webm` matches its original, SHA-256
+`ecb7849d3cdcc153937d4105cbb45a84b7d791fc4788f82adf92d196cee11d24`.
+Evidence is in `installed-status-readings-screen-recording`. Video gaps with
+microphone off show that the remaining problem is not confined to audio clock
+selection. Neither complete control flow establishes continuous video.
+
+An isolated packed-pixel conversion experiment does not show a reliable
+microbenchmark improvement. Its installed desktop, `70830d88`, passes the
+desktop and native CI jobs but its window recording stops before Pause on the
+audio-input bound. Clip `1794009901-961346376-2` has 65 video buffers ending at
+26.319 seconds, a 1.051-second uncovered video gap, and 22.380 seconds of PCM
+with no detected holes. It has only 19 distinct decoded video hashes and no
+measurable visual flash. Evidence is in `installed-packed-readback-window`;
+SHA-256 is
+`086b9188b33edeb495a401e9f137c06291ea518a1b932c4b3755eb258b14a773`.
+This experiment is removed rather than credited as a performance fix.
+
+The optimized `70830d88` executable retains function names without adding
+instrumentation. A separate 16-sample live compositor profile, taken outside
+recording acceptance, places nine samples in `dock_surface::surface` through
+`dock_raster::picture`. The source rebuilds the rounded Dock panel's raster on
+each frame despite unchanged inputs. The previous stripped snapshot's channel
+conversion instruction was only one sample and did not establish a dominant
+hotspot. The raw named profile is retained as `compositor-samples.txt`.
+
+The new panel cache compares all visual inputs, including borrowed shapes,
+appearance, display clipping, scale, position and focus. It retains at most
+eight images and 16 MiB of owned vector storage per rendering thread. Oversized
+panels still draw without being retained. Regressions compare reused and fresh
+pixels, verify caller mutations cannot poison the cache, exercise visual
+changes, and check eviction and oversized images. The change is integrated
+with main `251dd212`; both unstable and staging Wayland client features are
+retained in the dependency conflict resolution. At `ad8feea0`, all 55 desktop
+tests, five readback tests, 15 panel/cache tests and strict desktop/shell
+checks pass. The hosted workspace run has 12,700 passes and five failures:
+one existing declared runner limitation and four desktop source-inventory
+failures caused by the newly added cache file. The inventory is subsequently
+extended so the same authority and appearance audits cover the cache. No
+exception or audit rule is removed.
+
+The normally installed application's saved-video playback is also exercised
+with the earlier complete window/microphone clip. A real pointer click starts
+the Review player's native Play overlay. Subsequent screenshots show its
+recorded source clock advancing from 97.57 to 130.87 seconds. A fresh native
+audio-output listing identifies `org.aloworld.Studio`, active 16 kHz mono PCM,
+unmuted and uncorked. This establishes Review playback and virtual output
+routing; it does not establish physical audible output or synchronized
+recording. Screenshots and the fresh audio listing are retained in
+`installed-review-playback`.
+
+### Scanout memory and the synchronization reference
+
+The installed panel-cache desktop has SHA-256
+`0ee9b4ceb17fe13517eda4055254358a29dfe9fe56b9f39c05a0011f362f1cb7`.
+Window clip `1794012104-874814924-2` completes recording, Pause, Resume and
+Finish; two paused snapshots five seconds apart have identical elapsed time
+and an inactive microphone. Its native export `Product demonstration 9.webm`
+matches the original with SHA-256
+`14025f58e9fb1c010e3cff091a4f82f443198b6e2e9d9d8b1c9354e2db779e08`.
+It contains 138 video buffers ending at 28.063 seconds and 27.660 seconds of
+PCM with no detected holes. The largest uncovered video gap is 1.093 seconds.
+Synchronization fails, and the independent reference itself has a 2.360-second
+timestamp discontinuity. This run cannot establish synchronized recording.
+The repeated 200-character stress check times out after export; that check
+already passed on both earlier complete flows using this same Studio binary.
+Native-only repeats retain ordinary naming/export checks without repeating
+that unchanged application stress case.
+
+Screen-only clip `1794012667-656078606-2` has 51 video buffers ending at 23.073
+seconds and a largest uncovered gap of 0.734 seconds. Discovery confirms one
+video track and no audio track. Its five-second paused-state check also passes.
+The native Save dialog is present but initially behind the source window and
+larger than the VM display. An explicit native Save action subsequently
+completes export. `Product demonstration 10.webm` matches the private original,
+SHA-256
+`99b1cfe85e0de43ad98ffb619f13405692423c1e8720f24448eff40af4cb2d98`.
+Document grant `26cbec81` gives only Studio read/write access to that file.
+The initial accessibility script times out, so the later native choice,
+matching copy and fresh document-grant proof are preserved separately rather
+than represented as a successful uninterrupted harness run.
+
+A subsequent named profile has no Dock rasterization samples. Seven of its
+16 samples are in scanout allocation/initialization or readback, including
+full-frame clearing. The raw result is
+`installed-panel-cache-window/compositor-samples-004843.txt`. This is a coarse
+profile taken outside acceptance, not a measured rendering-speed ratio.
+
+The next change constructs initialized four-byte pixels directly and flattens
+their storage, avoiding a preliminary zero pass. An isolated VM comparison
+preserves identical pixels in four alternating rounds: twelve 1280 × 800
+frames take 0.444–0.591 seconds with zero-first conversion and 0.217–0.297
+seconds with direct construction. This does not establish whole-pipeline
+performance. The scanout transaction also initializes supplied pixels before
+framebuffer registration in one mapping, clears only destination padding and
+tail bytes during upload, and retains failure rollback and old-scene ownership.
+Idle iterations yield briefly instead of spinning between frames.
+
+At `745b67e3`, the 55 optimized desktop tests, five readback tests, 15
+panel/cache tests, 64 allocation/scanout/lifetime tests and four desktop source
+audits pass. Strict desktop and shell checks pass, as do native application CI
+and authors validation. The source incorporates main `da1192f0`; the image
+merge retains both native capture packaging and the generated cursor theme.
+The verified native executable has SHA-256
+`669dddf8c05cfd7b721c3f4470c76af78a11e00b4dae8bb3aa33abda7756d0c8`.
+Its [optimized verification job](https://github.com/aloworld-org/alo-os/actions/runs/42323439985/job/128253126428)
+provides the binary and source/checksum manifest. Installed media acceptance
+for this candidate is still pending.
+
+The full `745b67e3` gate runs 12,715 tests: 12,711 pass, four fail and 61 are
+skipped. Besides the existing declared runner limitation, two failures expose
+the recording ADR's number colliding with main's new watching ADR; the third
+expects the cursor package's Cargo build to start its own image instruction.
+The recording decision and its citations move to ADR 0147, while watching
+retains ADR 0146. The image keeps both the private plugin build and cursor
+generation, with Cargo in a separate `RUN` instruction. No executable capture
+logic, audit rule or runner exception changes. These integration corrections
+are awaiting the repeated hosted gate.
+
+Reference validation is strengthened to check timestamp span, uncovered gaps,
+overlap, wall-time delivery and a bounded pulse count. The original fixture
+gates its tick waveform by buffer timestamp although tick generation has its
+own phase; late buffers can therefore separate its sound and visual markers.
+The prepared replacement generates PCM from each sample's timestamp, clears
+the silence generator's GAP flag after replacing its payload, and computes
+visual phase when actually drawing. The independent reference must pass
+before synchronization is accepted. No saved recording is repaired or padded
+to manufacture a pass, and production queue limits remain unchanged.
