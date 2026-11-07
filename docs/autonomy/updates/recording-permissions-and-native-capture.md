@@ -1468,3 +1468,23 @@ latching, active-write refusal, failed-disable quarantine and aggregate shutdown
 errors without retry. Existing immediate-retirement resource tests are retained.
 CI and installed media verification of this candidate are pending; no whole-flow
 performance improvement is inferred from the sampled stacks.
+
+### Embedded playback dependency and library responsiveness
+
+The hosted UI check's unstressed status baseline also timed out before the 128
+preview fixtures were created. A one-time GDB stack at `febfd0f8` finds the main
+thread joining GTK's playback thread from `show_library` while that thread waits
+on a direct KMS video sink. The native test environment lacked `glsinkbin`.
+GTK's [embedded renderer](https://github.com/GNOME/gtk/blob/gtk-4-14/modules/media/gtkgstpaintable.c)
+returns no sink when a GL context exists but that element cannot be created,
+allowing the playback engine to select a different sink. The normal GNOME 49
+runtime does contain the OpenGL plugin (GStreamer 1.26.11), checked once locally.
+
+The native workflow now installs `gstreamer1.0-gl`, and Studio checks for
+`glsinkbin` with its other required media components. At `7dea46f2`, the hosted
+framebuffer/UI step passes, including both the initial baseline and the unchanged
+two-second responses while opening/dismissing 128 large library previews. The
+pinned publisher workflow also passes, including real PulseAudio inputs and
+stopped-clock-provider checks. Complete desktop/OS gates are still running. This test runs
+in the native workflow on subsequent relevant changes; it does not establish
+installed recording cadence or synchronization.

@@ -29,7 +29,8 @@ fn the_software_desktop_target_uses_reuse_and_retires_both_allocations()
     let (device, log) = fixture(&[], 0);
     let mut target = crate::direct_target::Target::new(Painter, device, scanout_tests::output())
         .with_reusable_scanout();
-    for _ in 0..5 {
+    for index in 0..5 {
+        log.borrow_mut().expected_binding = Some(if index % 2 == 0 { (21, 72) } else { (22, 73) });
         target.submit(&[])?;
     }
     assert_eq!(
@@ -67,6 +68,7 @@ fn software_frames_rotate_only_two_initialized_buffers() -> Result<(), Box<dyn s
     let (device, log) = fixture(&[], 0);
     let mut scene = reusable(device)?;
     for index in 0..6 {
+        log.borrow_mut().expected_binding = Some(if index % 2 == 0 { (22, 73) } else { (21, 72) });
         let next = crate::readback::convert(
             (1280, 720),
             crate::RowOrder::TopToBottom,
@@ -136,6 +138,7 @@ fn reused_frame_refusals_keep_the_previous_scanout_and_allow_clean_retry()
                 .is_none()
         );
         let active = scene.active.owned.bindings();
+        log.borrow_mut().expected_binding = Some((21, 72));
         log.borrow_mut().failures = vec![failure];
         let error = scene
             .replace((pixels((1280, 720))?, vec![]))
@@ -148,6 +151,7 @@ fn reused_frame_refusals_keep_the_previous_scanout_and_allow_clean_retry()
         assert!(!log.borrow().released.contains(&73));
         assert!(!log.borrow().released.contains(&22));
         log.borrow_mut().failures.clear();
+        log.borrow_mut().expected_binding = None;
         assert!(
             scene
                 .replace((pixels((1280, 720))?, vec![]))?
@@ -176,6 +180,7 @@ fn reused_frame_cleanup_failure_latches_the_output_until_retirement()
         "destroy framebuffer",
         "destroy buffer",
     ];
+    log.borrow_mut().expected_binding = Some((21, 72));
     let error = scene
         .replace((pixels((1280, 720))?, vec![]))
         .err()

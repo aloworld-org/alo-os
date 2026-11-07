@@ -54,6 +54,8 @@ impl Buffer for FakeBuffer {
 /// Shared event log outlives the cleanup owner.
 #[derive(Default)]
 struct Log {
+    /// Exact next binding for rotation tests; other tests expect the newest allocation.
+    expected_binding: Option<(u64, u64)>,
     /// Dynamically injected faults after initial activation.
     failures: Vec<&'static str>,
     /// Released handles, for distinguishing old and replacement allocations.

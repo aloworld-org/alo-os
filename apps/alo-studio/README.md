@@ -58,12 +58,13 @@ the package.
 ## Run from source
 
 Requires Rust 1.97+, GTK 4.14+, GStreamer 1.22+, and the PipeWire, VP8, VP9, Opus,
-PulseAudio and GTK media plugins. On Ubuntu:
+PulseAudio, OpenGL (`glsinkbin`) and GTK media plugins. GTK uses the OpenGL
+plugin for embedded playback when a graphics context is available. On Ubuntu:
 
 ```sh
 sudo apt install libgtk-4-dev libgtk-4-media-gstreamer \
   libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev \
-  gstreamer1.0-plugins-good gstreamer1.0-plugins-bad \
+  gstreamer1.0-gl gstreamer1.0-plugins-good gstreamer1.0-plugins-bad \
   gstreamer1.0-pipewire gstreamer1.0-pulseaudio
 cargo run --manifest-path apps/alo-studio/Cargo.toml
 ```
