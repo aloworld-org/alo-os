@@ -242,6 +242,8 @@ pub(crate) struct Target<R, D: ScanoutDevice> {
     retirement_error: Option<ResourceError>,
     /// A retirement attempt is terminal, including failed disable.
     retired: bool,
+    /// Fixed backend policy, never changed by a client or agent.
+    reuse_buffers: bool,
     /// What a person is looking at on the canvas, for the frames this scans out.
     ///
     /// A copy of the session's, set by [`FrameTarget::look_at`] once a frame. The
@@ -264,8 +266,15 @@ impl<R, D: ScanoutDevice> Target<R, D> {
             halted: false,
             retirement_error: None,
             retired: false,
+            reuse_buffers: false,
             camera: alo_canvas::Camera::new(),
         }
+    }
+
+    /// Keep one detached buffer for the software desktop's next frame.
+    pub(crate) fn with_reusable_scanout(mut self) -> Self {
+        self.reuse_buffers = true;
+        self
     }
 
     /// Retire once and preserve chronological post-commit and shutdown errors.
@@ -279,7 +288,7 @@ impl<R, D: ScanoutDevice> Target<R, D> {
         self.retired = true;
         let mut errors: Vec<_> = self.retirement_error.take().into_iter().collect();
         if let Some(mut scene) = self.scene.take()
-            && let Err(error) = scene.active.retire()
+            && let Err(error) = scene.retire()
         {
             errors.push(error);
         }
@@ -402,7 +411,8 @@ impl<R: ScenePainter, D: ScanoutDevice + Clone> Target<R, D> {
             })
         } else {
             crate::scene_scanout::activate(prepared, self.device.clone(), &self.output).map(
-                |scene| {
+                |mut scene| {
+                    scene.reuse_buffers = self.reuse_buffers;
                     let surfaces = scene.surfaces.clone();
                     self.scene = Some(scene);
                     surfaces

@@ -1435,3 +1435,36 @@ the hosted native runner. Async stream loading alone still performs image decode
 work on the UI context. The correction runs the complete scaled decoder in GIO's
 worker pool and returns only owned RGBA pixels to GTK. Hidden or replaced rows
 cancel their queued results; the same 128-preview responsiveness check is retained.
+
+A later CI run stops before the library regression because its fast recording
+can hide the preview before the poll saves a thumbnail. The application now
+preserves the actual selected-source preview before starting encoding. The
+existing requirement for a saved real preview image remains unchanged. The
+library check also records an unstressed status baseline before adding its image
+fixtures, and thumbnail completions run below control callbacks in priority.
+
+### Bounded software scanout reuse
+
+A further one-time compositor profile at desktop `54eb8544` is preserved in
+`native-render-investigation-current54/compositor-samples-051328.txt`. It still
+contains readback conversion and repeated scanout allocation/upload among the
+remaining costs. Screen selection completes during the early samples; later
+samples have screen preview active. No recording or microphone is active during
+this explicitly diagnostic profile, and the debugger is detached afterwards.
+
+The next candidate lets only the software desktop retain one detached scanout
+beside its active one. It allocates at most two buffers per fixed output and
+alternates them after successful blocking commits. An active allocation cannot
+be uploaded through the reuse path. Each reused frame is fully uploaded and
+tested before activation; captured pixels are still published only after
+successful presentation. Other presentation paths keep immediate retirement.
+Output shutdown disables active scanout, releases the known-unbound spare and
+retains all cleanup errors. Failed disable quarantines active storage; the
+independently detached spare can still be released.
+
+Seven added regressions cover target wiring, bounded rotation, pixels and binding
+identities, reused upload/test/enable refusal with clean retry, cleanup-failure
+latching, active-write refusal, failed-disable quarantine and aggregate shutdown
+errors without retry. Existing immediate-retirement resource tests are retained.
+CI and installed media verification of this candidate are pending; no whole-flow
+performance improvement is inferred from the sampled stacks.

@@ -88,11 +88,44 @@ pub(crate) struct Scanout<D: ScanoutDevice> {
 impl<D: ScanoutDevice> Scanout<D> {
     /// Test before enabling; either refusal retires the still-unbound candidate.
     pub(crate) fn activate(
-        mut owned: Allocation<D>,
+        owned: Allocation<D>,
         plan: AtomicPlan,
         framebuffer: framebuffer::Handle,
         blob: u64,
     ) -> Result<Self, ResourceError> {
+        let mut scanout = Self {
+            owned,
+            plan,
+            enabled: false,
+        };
+        scanout.enable(framebuffer, blob)?;
+        Ok(scanout)
+    }
+
+    /// Reinitialize only storage detached by a successful blocking replacement.
+    pub(crate) fn reuse(mut self, frame: &crate::XrgbFrame<'_>) -> Result<Self, ResourceError> {
+        if self.enabled {
+            return Err(ResourceError {
+                failure: ResourceFailure {
+                    stage: "cannot overwrite active scanout",
+                    source: io::ErrorKind::InvalidInput.into(),
+                },
+                cleanup: Vec::new(),
+            });
+        }
+        let (framebuffer, blob) = self.owned.bindings().ok_or_else(|| ResourceError {
+            failure: ResourceFailure {
+                stage: "missing reusable scanout bindings",
+                source: io::ErrorKind::InvalidInput.into(),
+            },
+            cleanup: Vec::new(),
+        })?;
+        self.owned.write_frame(frame)?;
+        self.enable(framebuffer, blob)?;
+        Ok(self)
+    }
+
+    fn enable(&mut self, framebuffer: framebuffer::Handle, blob: u64) -> Result<(), ResourceError> {
         for (stage, flags) in [
             (
                 "atomic TEST_ONLY",
@@ -100,12 +133,13 @@ impl<D: ScanoutDevice> Scanout<D> {
             ),
             ("atomic enable", AtomicCommitFlags::ALLOW_MODESET),
         ] {
-            if let Err(source) = owned
+            if let Err(source) = self
+                .owned
                 .device
-                .commit(flags, plan.request(Some((framebuffer, blob))))
+                .commit(flags, self.plan.request(Some((framebuffer, blob))))
             {
                 let mut cleanup = Vec::new();
-                if let Err(error) = owned.release() {
+                if let Err(error) = self.owned.release() {
                     cleanup.push(error.failure);
                     cleanup.extend(error.cleanup);
                 }
@@ -115,11 +149,8 @@ impl<D: ScanoutDevice> Scanout<D> {
                 });
             }
         }
-        Ok(Self {
-            owned,
-            plan,
-            enabled: true,
-        })
+        self.enabled = true;
+        Ok(())
     }
 
     /// A blocking disable is the only path from enabled to destructible.

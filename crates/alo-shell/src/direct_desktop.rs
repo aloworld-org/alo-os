@@ -631,7 +631,7 @@ impl crate::DirectSession {
                             painter,
                             crate::drm_inventory::Inventory(fd),
                             output,
-                        ))
+                        ).with_reusable_scanout())
                     })
                     .collect::<Vec<_>>();
                 // **Buffer sharing is promised here and not in
@@ -697,7 +697,7 @@ impl crate::DirectSession {
                         painter,
                         crate::drm_inventory::Inventory(fd),
                         output,
-                    ),
+                    ).with_reusable_scanout(),
                     poll,
                     &mut next,
                     {

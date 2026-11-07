@@ -9,6 +9,8 @@ mod scanout_tests;
 #[path = "scanout_frame_tests.rs"]
 mod scanout_frame_tests;
 
+#[path = "scanout_reuse_tests.rs"]
+mod scanout_reuse_tests;
 #[path = "scene_identity_tests.rs"]
 mod scene_identity_tests;
 #[path = "scene_replacement_tests.rs"]

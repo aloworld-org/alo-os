@@ -172,6 +172,11 @@ pub(crate) struct Allocation<D: ResourceDevice> {
 }
 
 impl<D: ResourceDevice> Allocation<D> {
+    /// IDs remain owned by this allocation; callers cannot transfer or release them.
+    pub(crate) fn bindings(&self) -> Option<(framebuffer::Handle, u64)> {
+        Some((self.framebuffer?, self.blob?))
+    }
+
     /// Upload to an unbound owner; retire all handles after any upload failure.
     pub(crate) fn write_frame(
         &mut self,

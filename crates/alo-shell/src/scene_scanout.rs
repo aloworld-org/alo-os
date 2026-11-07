@@ -60,7 +60,7 @@ impl ActiveScene<'_> {
 
     /// Disable before destruction, retaining every failure and never retrying refusal.
     pub fn disable(mut self) -> Result<(), ResourceError> {
-        self.submitted.active.retire()
+        self.submitted.retire()
     }
 }
 
@@ -68,6 +68,10 @@ impl ActiveScene<'_> {
 pub(crate) struct Submitted<D: ScanoutDevice> {
     /// Retired before releasing the session descriptor, never writable while active.
     pub(crate) active: Scanout<D>,
+    /// Software outputs retain at most one known-unbound allocation.
+    pub(crate) spare: Option<Scanout<D>>,
+    /// Opted into by the software desktop; other presentation paths retire immediately.
+    pub(crate) reuse_buffers: bool,
     /// Published to the caller only after successful enable.
     pub(crate) surfaces: Vec<WlSurface>,
     /// Frozen allocation requirements; replacement cannot retarget the output.
@@ -102,9 +106,30 @@ pub(crate) fn activate<D: ScanoutDevice>(
     let active = Scanout::activate(owned, plan, fb, blob)?;
     Ok(Submitted {
         active,
+        spare: None,
+        reuse_buffers: false,
         surfaces,
         mode: output.output.mode,
         formats: output.formats.clone(),
         replacement_allowed: true,
     })
+}
+
+impl<D: ScanoutDevice> Submitted<D> {
+    /// Disable active scanout first and report every cached-resource cleanup failure.
+    pub(crate) fn retire(&mut self) -> Result<(), ResourceError> {
+        self.replacement_allowed = false;
+        let mut error = self.active.retire().err();
+        if let Some(mut spare) = self.spare.take()
+            && let Err(extra) = spare.retire()
+        {
+            if let Some(first) = &mut error {
+                first.cleanup.push(extra.failure);
+                first.cleanup.extend(extra.cleanup);
+            } else {
+                error = Some(extra);
+            }
+        }
+        error.map_or(Ok(()), Err)
+    }
 }
