@@ -67,8 +67,8 @@ impl Counter {
     /// [`NotBounded::ProcessorsNotKnown`] if this machine would not say how
     /// many processors it has, since the entry holds one number for each.
     pub fn begun(&mut self, group: u64) -> Result<(), NotBounded> {
-        let processors = aya::util::nr_cpus()
-            .map_err(|(_, why)| NotBounded::ProcessorsNotKnown { why })?;
+        let processors =
+            aya::util::nr_cpus().map_err(|(_, why)| NotBounded::ProcessorsNotKnown { why })?;
         let nothing = PerCpuValues::try_from(vec![0_u64; processors])
             .map_err(|why| NotBounded::ProcessorsNotKnown { why })?;
         match self

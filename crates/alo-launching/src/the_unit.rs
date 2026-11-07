@@ -40,6 +40,44 @@ pub fn the_unit_for(identifier: &str, distinct: u64) -> Option<String> {
     (name.len() <= 255).then_some(name)
 }
 
+/// Whether a unit with this name runs the application with this identifier.
+///
+/// The question ADR 0148's counter asks, so it is answered beside the rule that
+/// names the units rather than by a second copy of it. Two shapes, both in the
+/// person's own manager under `app.slice`:
+///
+/// - `app-alo-<escaped identifier>@<n>.service` — what this desktop starts when a
+///   person presses an application ([`the_unit_for`]);
+/// - `app-flatpak-<identifier>-<n>.scope` — what Flatpak moves an application
+///   into when it starts it, with the identifier as Flatpak writes it, unescaped,
+///   and `<n>` a number.
+///
+/// **Exact, never a prefix of another application's name**: `org.gnome.Text`
+/// is not `org.gnome.TextEditor`, because what follows the identifier must be
+/// the `@` or the `-<n>.scope` the shape requires.
+#[must_use]
+pub fn is_a_unit_of(unit: &str, identifier: &str) -> bool {
+    if identifier.is_empty() {
+        return false;
+    }
+    if let Some(rest) = unit
+        .strip_prefix("app-")
+        .and_then(|rest| rest.strip_prefix(LAUNCHER))
+        .and_then(|rest| rest.strip_prefix('-'))
+        .and_then(|rest| rest.strip_prefix(escaped(identifier).as_str()))
+        .and_then(|rest| rest.strip_prefix('@'))
+    {
+        return rest.strip_suffix(".service").is_some_and(|distinct| {
+            !distinct.is_empty() && distinct.bytes().all(|b| b.is_ascii_hexdigit())
+        });
+    }
+    unit.strip_prefix("app-flatpak-")
+        .and_then(|rest| rest.strip_prefix(identifier))
+        .and_then(|rest| rest.strip_prefix('-'))
+        .and_then(|rest| rest.strip_suffix(".scope"))
+        .is_some_and(|number| !number.is_empty() && number.bytes().all(|b| b.is_ascii_digit()))
+}
+
 /// An application ID written so that it is one part of a unit name.
 fn escaped(identifier: &str) -> String {
     let mut out = String::with_capacity(identifier.len());

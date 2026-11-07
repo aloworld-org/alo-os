@@ -356,6 +356,12 @@ pub enum NotBounded {
         why: io::Error,
     },
 
+    /// The kernel would not load the counter or attach it to the control-group
+    /// tree (ADR 0148). Told apart from [`NotBounded::WillNotAttach`] so a
+    /// machine whose counter failed is not told its boundary did.
+    #[error("the kernel would not attach the counter of what applications send")]
+    CounterWillNotAttach(#[source] aya::programs::ProgramError),
+
     /// This machine would not say how many processors it has, so a count of
     /// what an application sends — one number per processor — cannot begin
     /// (ADR 0148).

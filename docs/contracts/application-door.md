@@ -273,6 +273,46 @@ does not know treats it as a compositor newer or older than itself, and never as
 *it worked*. The asymmetry is the point: a door whose unknown answers were
 optimistic would report work that never happened.
 
+## Counting what an application sends — added 2026-11-07 (ADR 0148)
+
+**What it gives a person:** while a command they typed makes an application do
+something, the indicator shows that the application is sending — *Thunderbird
+is sending, during your command* — and the command is told how much it sent.
+[ADR 0148](../decisions/0148-the-kernel-counts-what-an-application-sends-during-a-persons-command.md)
+is the decision; this is the wire.
+
+**The one act on this door that holds its connection**, because the count lasts
+exactly as long as the command, and a connection is the one thing a command
+cannot forget to end:
+
+```
+→ count <application>
+← counting | not-installed | cannot-count
+  … the command does its work …
+→ done
+← sent <bytes> | stopped <bytes>
+```
+
+- The first line is `count`, one space, and one application identifier held to
+  the shape above. A line beginning `count` that is not exactly that is not a
+  request: it is closed with nothing written.
+- `counting` means the count has begun; `not-installed` that no desktop entry
+  names the application; `cannot-count` that this machine has no counter (the
+  boundary was loaded without one), that it is already counting as many
+  commands as it can, or that no part of the application could be counted.
+  **A caller never reads anything but `counting` as a count having begun.**
+- `done` is the only thing a caller says after that. Anything else, or the
+  connection closing, ends the count with nothing written back.
+- `sent <bytes>` is the total, counted by the kernel at the application's own
+  sockets, headers included. `stopped <bytes>` means **the count did not cover
+  the whole command**: the desktop ended it after two minutes, or part of the
+  application could not be counted. `stopped` may arrive before `done` is said.
+- **Who answers is the desktop that draws the indicator**, not the act
+  carrier: a desktop with no indicator answers every count `cannot-count`.
+
+Nothing an agent sends reaches this act: `alo-agentd` writes only `open`, `focus`
+and `close`, and the answer is the person's own command's to read.
+
 ## What is not here
 
 **`arrange`.** `docs/features.md` promises four application verbs and this door

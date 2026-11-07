@@ -180,6 +180,8 @@ mod capture_paint;
 mod capture_raster;
 /// What one key press means in the Dock's composer.
 pub mod composer_keys;
+/// What an application sends while a person's command runs, on the indicator (ADR 0148).
+pub mod counting_during_their_commands;
 mod cursor;
 mod cursor_shapes;
 #[cfg(test)]

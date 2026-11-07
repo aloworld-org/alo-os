@@ -83,6 +83,12 @@ alo-installed = { path = "../alo-installed" }
 # `Exec` line in a unit of its own. The decisions are that crate's; the bus calls
 # acting on them are `crate::starting_what_a_person_pressed`.
 alo-launching = { path = "../alo-launching" }
+# **The kernel's counter of what an application sends during a person's
+# command** (ADR 0148), opened by the pin `alo-boundaryd` made at boot. This
+# desktop holds the indicator that shows it, so it is the one that counts; it
+# writes one map it has permission on and loads nothing.
+alo-bounding = { path = "../alo-bounding" }
+rustix = { workspace = true, features = ["process"] }
 # Where the icon one of them named actually is, by the icon theme rules.
 alo-icons = { path = "../alo-icons" }
 # The one decoder in this workspace, already pinned by alo-shell at the same

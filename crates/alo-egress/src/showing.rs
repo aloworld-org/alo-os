@@ -22,6 +22,7 @@ use alo_strings::{Said, Strings};
 use serde::Serialize;
 
 use crate::destination::Destination;
+use crate::during::DuringTheirCommand;
 use crate::itself::OnItsOwn;
 use crate::leaving::Leaving;
 
@@ -38,15 +39,22 @@ pub enum Showing {
     /// alo OS caused this itself, for one of the reasons on
     /// [`Errand`](crate::Errand).
     Itself(OnItsOwn),
+    /// An application, sending while a person's own command runs (ADR 0148).
+    TheirCommand(DuringTheirCommand),
 }
 
 impl Showing {
-    /// Where it is going.
+    /// Where it is going, when that is known.
+    ///
+    /// [`None`] for an application during a person's command, and that is the
+    /// honest answer: the counter reads how much was sent and nothing about
+    /// where (ADR 0148).
     #[must_use]
-    pub fn destination(&self) -> &Destination {
+    pub fn destination(&self) -> Option<&Destination> {
         match self {
-            Self::Agent(leaving) => leaving.destination(),
-            Self::Itself(errand) => errand.destination(),
+            Self::Agent(leaving) => Some(leaving.destination()),
+            Self::Itself(errand) => Some(errand.destination()),
+            Self::TheirCommand(_) => None,
         }
     }
 
@@ -59,7 +67,7 @@ impl Showing {
     pub fn agent(&self) -> Option<&Grantee> {
         match self {
             Self::Agent(leaving) => Some(leaving.agent()),
-            Self::Itself(_) => None,
+            Self::Itself(_) | Self::TheirCommand(_) => None,
         }
     }
 
@@ -68,7 +76,7 @@ impl Showing {
     pub fn leaving(&self) -> Option<&Leaving> {
         match self {
             Self::Agent(leaving) => Some(leaving),
-            Self::Itself(_) => None,
+            Self::Itself(_) | Self::TheirCommand(_) => None,
         }
     }
 
@@ -76,8 +84,17 @@ impl Showing {
     #[must_use]
     pub fn on_its_own(&self) -> Option<&OnItsOwn> {
         match self {
-            Self::Agent(_) => None,
+            Self::Agent(_) | Self::TheirCommand(_) => None,
             Self::Itself(errand) => Some(errand),
+        }
+    }
+
+    /// The application sending during a person's command this is, if it is one.
+    #[must_use]
+    pub fn during_their_command(&self) -> Option<&DuringTheirCommand> {
+        match self {
+            Self::TheirCommand(during) => Some(during),
+            Self::Agent(_) | Self::Itself(_) => None,
         }
     }
 
@@ -91,6 +108,7 @@ impl Showing {
         match self {
             Self::Agent(leaving) => leaving.said(strings),
             Self::Itself(errand) => errand.said(strings),
+            Self::TheirCommand(during) => during.said(strings),
         }
     }
 }
@@ -135,11 +153,29 @@ mod tests {
         );
         assert_eq!(
             an_agents().destination(),
-            &Destination::at("alo.example").unwrap()
+            Some(&Destination::at("alo.example").unwrap())
         );
         assert_eq!(
             the_machines().destination(),
-            &Destination::at("models.alo.example").unwrap()
+            Some(&Destination::at("models.alo.example").unwrap())
+        );
+    }
+
+    /// **An application during a person's command names no place and no
+    /// authority**, because neither is known: the counter read how much, and
+    /// the person, not a grant, is behind it.
+    #[test]
+    fn an_application_during_a_command_names_neither_a_place_nor_an_authority() {
+        let theirs = Showing::TheirCommand(
+            DuringTheirCommand::of("org.mozilla.Thunderbird", "Thunderbird").unwrap(),
+        );
+        assert_eq!(theirs.destination(), None);
+        assert_eq!(theirs.agent(), None);
+        assert!(theirs.leaving().is_none() && theirs.on_its_own().is_none());
+        assert!(theirs.during_their_command().is_some());
+        assert_eq!(
+            theirs.said(&in_english()).text(),
+            "Thunderbird is sending, during your command"
         );
     }
 

@@ -133,6 +133,27 @@ pub trait TheDesktop {
         None
     }
 
+    /// **What applications send while a person's commands run**, once a
+    /// frame: the counts asked for at the door since the last frame, and a look
+    /// at every count already held (ADR 0148).
+    ///
+    /// The desktop holds the counter, what is installed and the indicator, so
+    /// it is the one that answers; `crate::counting_during_their_commands` is
+    /// what it answers with.
+    ///
+    /// **By default every count is refused**, for [`Self::the_indicator`]'s
+    /// reason: a desktop with nowhere to show a line must not tell a command
+    /// that what its application sends is being shown.
+    fn counted_during_their_commands(
+        &mut self,
+        asked: Vec<crate::counting_during_their_commands::AskedToCount>,
+        _now: std::time::Instant,
+    ) {
+        for one in asked {
+            one.refused();
+        }
+    }
+
     /// The panel this desktop keeps, for the one act that has to change it.
     ///
     /// **Lent mutably, and only here.** Every other seam in this trait hands the compositor
@@ -1166,6 +1187,12 @@ impl LoopInput for Desk<'_> {
         // before the starts are sent so an `open` that arrived this frame is
         // started this frame. It never waits.
         let _ = self.door.answered(server);
+        // **And every count a person's command asked for** (ADR 0148), handed to
+        // the desktop that holds the indicator, every frame — including frames
+        // with nothing new, because the counts already held are looked at too.
+        let counts = self.door.asked_to_count();
+        self.desktop
+            .counted_during_their_commands(counts, std::time::Instant::now());
         for not_started in server.start_what_was_asked_for_now() {
             // **Said rather than dropped**, the same rule the edge's menu
             // follows two blocks up: a press that reached here and vanished is

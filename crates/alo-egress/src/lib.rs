@@ -117,6 +117,7 @@
 
 pub mod departing;
 pub mod destination;
+pub mod during;
 pub mod errand;
 pub mod indicator;
 pub mod itself;
@@ -127,6 +128,7 @@ pub mod reported;
 pub mod showing;
 pub mod telling;
 pub mod underway;
+pub mod while_it_runs;
 pub mod words;
 
 #[cfg(test)]
@@ -134,6 +136,7 @@ mod testing;
 
 pub use departing::Departing;
 pub use destination::{Destination, DestinationError};
+pub use during::{DuringTheirCommand, NotAnApplicationsLine};
 pub use errand::Errand;
 pub use indicator::{Indicator, Shown, ShownId};
 pub use itself::OnItsOwn;
@@ -144,4 +147,5 @@ pub use reported::Reported;
 pub use showing::Showing;
 pub use telling::Telling;
 pub use underway::Underway;
+pub use while_it_runs::WhileItRuns;
 pub use words::{Word, WordsError, declare_into, egress_words};

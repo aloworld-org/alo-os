@@ -335,38 +335,40 @@ fn attach_and_pin(loaded: &mut Ebpf, pinned: &Pinned) -> Result<(), NotBounded> 
 /// Attach the counter to the root of the control-group tree, beside whatever
 /// else is there, and pin its link (ADR 0148).
 ///
-/// `AllowMultiple`, because the service manager attaches programs of its own
-/// to the tree and this one must not displace any of them: it only counts, and
-/// it answers *let it through* to every packet.
+/// It must not displace anything the service manager attaches to the tree, and
+/// it does not: on a kernel from 5.7 on it is attached as a **link**, and a
+/// control-group link always runs beside every other program there. The mode is
+/// `Single` because a link takes no flags at all — the kernel answers `EINVAL`
+/// to *allow multiple* on a link, measured on 2026-11-07 on this repository's
+/// WSL kernel (6.18), which is how the first build of this found out. It only
+/// counts, and it answers *let it through* to every packet.
 fn the_counter_attached_and_pinned(loaded: &mut Ebpf, pinned: &Pinned) -> Result<(), NotBounded> {
     let program: &mut CgroupSkb = loaded
         .program_mut(THE_COUNTER)
         .ok_or(NotBounded::NothingCalled { what: THE_COUNTER })?
         .try_into()
-        .map_err(NotBounded::WillNotAttach)?;
-    program.load().map_err(NotBounded::WillNotAttach)?;
+        .map_err(NotBounded::CounterWillNotAttach)?;
+    program.load().map_err(NotBounded::CounterWillNotAttach)?;
     let tree = std::fs::File::open(THE_TREE).map_err(|why| NotBounded::Cgroup {
         what: "the counter cannot open the control-group tree at",
         path: THE_TREE.to_owned(),
         why,
     })?;
     let attached = program
-        .attach(
-            &tree,
-            CgroupSkbAttachType::Egress,
-            CgroupAttachMode::AllowMultiple,
-        )
-        .map_err(NotBounded::WillNotAttach)?;
+        .attach(&tree, CgroupSkbAttachType::Egress, CgroupAttachMode::Single)
+        .map_err(NotBounded::CounterWillNotAttach)?;
     let link = program
         .take_link(attached)
-        .map_err(NotBounded::WillNotAttach)?;
+        .map_err(NotBounded::CounterWillNotAttach)?;
     let link: FdLink = link.try_into().map_err(|_| NotBounded::NothingCalled {
         what: "a link the counter can be pinned by",
     })?;
-    let _pinned: PinnedLink = link.pin(pinned.counting()).map_err(|why| NotBounded::WillNotPin {
-        what: "the link that holds the counter on the control-group tree",
-        path: pinned.counting().display().to_string(),
-        why,
-    })?;
+    let _pinned: PinnedLink =
+        link.pin(pinned.counting())
+            .map_err(|why| NotBounded::WillNotPin {
+                what: "the link that holds the counter on the control-group tree",
+                path: pinned.counting().display().to_string(),
+                why,
+            })?;
     Ok(())
 }

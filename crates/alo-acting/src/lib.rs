@@ -59,8 +59,10 @@
 
 pub mod acting;
 pub mod answer;
+pub mod counting;
 pub mod request;
 
 pub use acting::Acting;
 pub use answer::{Answer, NotActed};
+pub use counting::{Begun, Counted, NotACount, ToCount};
 pub use request::{NotRead, Request};

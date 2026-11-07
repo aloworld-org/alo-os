@@ -241,6 +241,28 @@ pub const ALO_IS_UPDATING_AN_APPLICATION: Word = Word::saying(
      reader's language; \"alo OS\" is never translated.",
 );
 
+// ---------------------------------------------------------------------------
+// What an application sends while a person's own command runs —
+// [`crate::DuringTheirCommand`], ADR 0148.
+//
+// The third kind: neither an agent nor alo OS, but an application the person
+// told to do something by typing a command. Counted, never declared, so there
+// is no place in it: nothing about where the bytes went is read.
+// ---------------------------------------------------------------------------
+
+/// An application sending something while a person's own command runs.
+pub const IS_SENDING_DURING_YOUR_COMMAND: Word = Word::saying(
+    "egress.command.sending",
+    "{application} is sending, during your command",
+)
+.noting(
+    "Shown while a command the person typed is making an application do something, from the \
+     moment the application is seen sending until the command ends. \"During\", not \"because \
+     of\": the machine counts what the application sent in those seconds and cannot tell which \
+     of it the command caused. No destination is named because none is read. {application} is \
+     the application's own name as its menu entry shows it, already in the reader's language.",
+);
+
 /// The promise that goes with the list of reasons.
 pub const ALO_REACHES_NOTHING_ELSE: Word = Word::saying(
     "egress.itself.nothing-else",
@@ -352,7 +374,7 @@ pub const NOTHING_LEAVES: Word = Word::saying(
 ///
 /// The array is what a test reads down and what [`declare_into`] walks, so a
 /// word declared above and left out here is a string nothing can look up.
-pub const EVERY_WORD: [Word; 21] = [
+pub const EVERY_WORD: [Word; 22] = [
     A_PAIRED_MACHINE,
     A_PROVIDER,
     A_PROVIDER_SOMEWHERE,
@@ -367,6 +389,7 @@ pub const EVERY_WORD: [Word; 21] = [
     ALO_IS_CHECKING_FOR_APPLICATION_UPDATES,
     ALO_IS_UPDATING_AN_APPLICATION,
     ALO_REACHES_NOTHING_ELSE,
+    IS_SENDING_DURING_YOUR_COMMAND,
     OUTSIDE_THE_BUILDING,
     OUTSIDE_THE_REGION,
     NOTHING_MAY_LEAVE,
@@ -500,6 +523,7 @@ mod tests {
             ALO_IS_CHECKING_FOR_APPLICATION_UPDATES,
             ALO_IS_UPDATING_AN_APPLICATION,
             ALO_REACHES_NOTHING_ELSE,
+            IS_SENDING_DURING_YOUR_COMMAND,
             A_PAIRED_MACHINE,
             A_PROVIDER,
             A_PROVIDER_SOMEWHERE,

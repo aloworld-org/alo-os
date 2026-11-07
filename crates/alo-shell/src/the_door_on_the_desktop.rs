@@ -71,6 +71,17 @@ impl TheDoorOnTheDesktop {
         self.served.as_mut().map_or(0, |door| door.answered(server))
     }
 
+    /// The counts asked for at the door since the last frame (ADR 0148), or
+    /// none while it is not served.
+    pub(crate) fn asked_to_count(
+        &mut self,
+    ) -> Vec<crate::counting_during_their_commands::AskedToCount> {
+        self.served
+            .as_mut()
+            .map(TheApplicationDoor::asked_to_count)
+            .unwrap_or_default()
+    }
+
     /// Whether the door is served — for a test; the desktop only answers.
     #[cfg(test)]
     pub(crate) const fn is_served(&self) -> bool {

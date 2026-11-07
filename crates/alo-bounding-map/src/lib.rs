@@ -55,15 +55,15 @@
 #![no_std]
 
 mod bound;
-mod counted;
 mod bounds;
+mod counted;
 mod departure;
 mod field;
 mod reaching;
 
 pub use bound::Place;
-pub use counted::{THE_LOOPBACK_INTERFACE, THE_MOST_COUNTED, is_counted};
 pub use bounds::{Bounds, PLACES, Places, WORDS};
+pub use counted::{THE_LOOPBACK_INTERFACE, THE_MOST_COUNTED, is_counted};
 pub use departure::{
     DESTINATIONS, Departure, Departures, Family, keeps_its_interface, needs_an_interface,
 };

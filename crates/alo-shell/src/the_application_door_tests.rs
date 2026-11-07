@@ -365,3 +365,51 @@ fn each_of_the_three_acts_reaches_the_machine_as_itself() {
     door.taken_away();
     let _ = std::fs::remove_dir_all(root);
 }
+
+/// **A count is handed on, not answered** (ADR 0148): the door reads the line,
+/// carries out nothing, and gives the connection — with whatever the command
+/// said after it — to whoever holds the counter.
+#[test]
+fn a_count_is_handed_on_with_what_followed_it() {
+    let (root, place) = a_place("count");
+    let mut door = TheApplicationDoor::served(place.clone(), us()).unwrap();
+    let mut hand = AHand::answering(Answer::Acted);
+
+    let mut command = UnixStream::connect(place.socket()).unwrap();
+    command.write_all(b"count org.gnome.Geary\ndo").unwrap();
+
+    assert_eq!(door.answered(&mut hand), 0);
+    assert!(hand.carried.is_empty(), "a count was carried out as an act");
+    let asked = door.asked_to_count();
+    assert_eq!(asked.len(), 1);
+    assert_eq!(
+        asked
+            .first()
+            .map(crate::counting_during_their_commands::AskedToCount::application),
+        Some("org.gnome.Geary")
+    );
+    assert!(door.asked_to_count().is_empty(), "a count was handed on twice");
+    assert_eq!(door.how_many_are_waiting(), 0);
+
+    door.taken_away();
+    let _ = std::fs::remove_dir_all(root);
+}
+
+/// **A count that names no single application is closed with nothing said**,
+/// like any other line that is not a request, and is handed to nobody.
+#[test]
+fn a_malformed_count_is_closed_with_nothing_said() {
+    let (root, place) = a_place("bad-count");
+    let mut door = TheApplicationDoor::served(place.clone(), us()).unwrap();
+    let mut hand = AHand::answering(Answer::Acted);
+
+    let mut command = UnixStream::connect(place.socket()).unwrap();
+    command.write_all(b"count org.gnome.Geary org.kde.dolphin\n").unwrap();
+
+    assert_eq!(door.answered(&mut hand), 0);
+    assert!(door.asked_to_count().is_empty());
+    assert_eq!(one_line(&mut command), None);
+
+    door.taken_away();
+    let _ = std::fs::remove_dir_all(root);
+}

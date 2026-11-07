@@ -81,7 +81,11 @@ fn a_child_that_sent_from(cgroup: &Cgroup, counter: Option<(&mut Counter, u64)>)
         .expect("this binary can be run again");
     let mut saying = BufReader::new(child.stdout.take().expect("stdout was asked for"));
     let mut telling = child.stdin.take().expect("stdin was asked for");
-    assert_eq!(next_line(&mut saying), READY, "the child never reached its control group");
+    assert_eq!(
+        next_line(&mut saying),
+        READY,
+        "the child never reached its control group"
+    );
     if let Some((counter, group)) = counter {
         counter.begun(group).expect("the kernel takes the entry");
     }
@@ -97,8 +101,13 @@ fn a_child_that_sent_from(cgroup: &Cgroup, counter: Option<(&mut Counter, u64)>)
 fn next_line(saying: &mut BufReader<std::process::ChildStdout>) -> String {
     loop {
         let mut line = String::new();
-        let read = saying.read_line(&mut line).expect("the child's output is readable");
-        assert!(read > 0, "the child stopped talking before it said anything of ours");
+        let read = saying
+            .read_line(&mut line)
+            .expect("the child's output is readable");
+        assert!(
+            read > 0,
+            "the child stopped talking before it said anything of ours"
+        );
         let line = line.trim().to_owned();
         if line == READY || line == SENT {
             return line;
@@ -147,8 +156,12 @@ fn the_counter_counts_a_named_group_exactly_and_nothing_else() {
         "the map holds something other than the one entry that was made"
     );
 
-    counter.ended(group).expect("the kernel takes the entry back");
-    counter.ended(group).expect("ending a count twice is ending it once");
+    counter
+        .ended(group)
+        .expect("the kernel takes the entry back");
+    counter
+        .ended(group)
+        .expect("ending a count twice is ending it once");
     a_child_that_sent_from(&named, None);
     assert_eq!(
         counter.so_far(group).expect("the map can be read"),
@@ -156,12 +169,19 @@ fn the_counter_counts_a_named_group_exactly_and_nothing_else() {
         "the group was still counted after its count ended"
     );
     assert!(
-        counter.every_group_counted().expect("the map can be read").is_empty(),
+        counter
+            .every_group_counted()
+            .expect("the map can be read")
+            .is_empty(),
         "an entry outlived the count it was made for"
     );
 
-    named.removed().expect("an empty control group can be taken away");
-    nobodys.removed().expect("an empty control group can be taken away");
+    named
+        .removed()
+        .expect("an empty control group can be taken away");
+    nobodys
+        .removed()
+        .expect("an empty control group can be taken away");
 }
 
 /// **A count begun twice keeps what it had**: two commands counting one
@@ -175,15 +195,21 @@ fn a_count_begun_again_keeps_what_it_had() {
     let group = named.id().expect("a control group has an identifier");
 
     a_child_that_sent_from(&named, Some((&mut counter, group)));
-    counter.begun(group).expect("a second beginning is not refused");
+    counter
+        .begun(group)
+        .expect("a second beginning is not refused");
     assert_eq!(
         counter.so_far(group).expect("the map can be read"),
         Some(DATAGRAMS * ON_THE_WIRE),
         "beginning a count that was already running set it back"
     );
 
-    counter.ended(group).expect("the kernel takes the entry back");
-    named.removed().expect("an empty control group can be taken away");
+    counter
+        .ended(group)
+        .expect("the kernel takes the entry back");
+    named
+        .removed()
+        .expect("an empty control group can be taken away");
 }
 
 /// **A machine whose counter was never pinned is told so**, rather than
@@ -221,7 +247,9 @@ fn what_a_child_sends() {
     writeln!(saying, "{READY}").expect("the parent is listening");
     saying.flush().expect("the parent is listening");
     let mut go = String::new();
-    std::io::stdin().read_line(&mut go).expect("the parent says when");
+    std::io::stdin()
+        .read_line(&mut go)
+        .expect("the parent says when");
 
     let payload = [b'a'; PAYLOAD as usize];
     for _ in 0..DATAGRAMS {

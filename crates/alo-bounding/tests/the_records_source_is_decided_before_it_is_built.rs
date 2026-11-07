@@ -263,7 +263,11 @@ fn maps_waiting_on_it(programme: &str, counters_status: &str) -> usize {
 
 /// Whether the programme is still where the decision left it: two maps, and
 /// the one counter ADR 0148 names, for as long as the decision is only proposed.
-fn the_code_waits_on_it(status: &str, counters_status: &str, programme: &str) -> Result<(), String> {
+fn the_code_waits_on_it(
+    status: &str,
+    counters_status: &str,
+    programme: &str,
+) -> Result<(), String> {
     let maps = maps_waiting_on_it(programme, counters_status);
     if status == WAITING && maps != THE_TWO_MAPS {
         return Err(format!(

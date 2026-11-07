@@ -235,14 +235,12 @@ fn nothing_was_written_down(before: &Held, after: &Held, after_what: &str) {
         before.turns.len()
     );
     assert_eq!(
-        after.counted,
-        before.counted,
+        after.counted, before.counted,
         "{after_what}, and the counter now holds entries for {:?} rather than {:?}: a syscall \
          outside an agent turn left a trace, and nothing outside a turn may. ADR 0148 lets the \
          counter add to an entry the desktop made for a person's command, and never make one, so \
          an entry nobody asked for is the program keeping a note of who sent what.",
-        after.counted,
-        before.counted
+        after.counted, before.counted
     );
     assert_eq!(
         after.fields, before.fields,
