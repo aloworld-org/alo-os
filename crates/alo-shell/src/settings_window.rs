@@ -271,6 +271,10 @@ pub enum SettingsRow {
     /// navy edge and black are the owner's yes of 2026-11-06
     /// (`alo_appearance::PointerColour`).
     PointerColour(alo_appearance::PointerColour),
+    /// *Reduced motion*: one switch, and Enter turns it over. Off as this
+    /// computer comes; on, the view jumps where it would glide (the owner's
+    /// yes of 2026-11-07, `alo_access::Setting::ReducedMotion`).
+    ReducedMotion,
     /// Where a new window goes when there is no room for it in view: Enter
     /// chooses it. Gliding to empty space ships; opening in front, offset,
     /// stays a choice — the owner, 2026-11-07
@@ -308,7 +312,8 @@ impl SettingsRow {
             Self::TextSize
             | Self::PointerSize(_)
             | Self::PointerShape(_)
-            | Self::PointerColour(_) => SettingsSection::Accessibility,
+            | Self::PointerColour(_)
+            | Self::ReducedMotion => SettingsSection::Accessibility,
             Self::OpenThePicker(SettingsPicker::Region) => SettingsSection::Formats,
             Self::OpenThePicker(SettingsPicker::TimeZone) => SettingsSection::TimeZone,
             Self::Shortcut(_) => SettingsSection::Shortcuts,
@@ -435,6 +440,8 @@ pub(crate) struct Open {
     pub(crate) time_zone: TimeZoneSection,
     /// The dock.
     pub(crate) dock: KeptSection<DockKept>,
+    /// What the person turned on for access: reduced motion.
+    pub(crate) access: KeptSection<crate::settings_keepers::AccessKept>,
     /// Shortcuts.
     pub(crate) shortcuts: KeptSection<ShortcutsKept>,
     /// Grants and pairings.
@@ -513,6 +520,7 @@ impl SettingsWindow {
                 jiff::tz::TimeZone::system().iana_name().map(str::to_owned),
             ),
             dock: KeptSection::at_sign_in(places.kept(alo_dock::keeping::THE_FILE)),
+            access: KeptSection::at_sign_in(places.kept(alo_access::keeping::THE_FILE)),
             shortcuts: KeptSection::at_sign_in(places.kept(alo_shortcuts::keeping::THE_FILE)),
             granted,
             shell_integration: TheShellIntegration::at_sign_in(places.shell(), places.folder()),
@@ -652,6 +660,14 @@ impl SettingsWindow {
         self.open
             .as_ref()
             .map(|open| open.appearance.drawn().when_there_is_no_room())
+    }
+
+    /// Whether the person asked for less motion, as Settings holds it.
+    #[must_use]
+    pub fn motion_is_reduced(&self) -> Option<bool> {
+        self.open
+            .as_ref()
+            .map(|open| open.access.drawn().has(alo_access::Setting::ReducedMotion))
     }
 
     /// Which arrow the pointer is, as Settings holds it.
@@ -928,6 +944,11 @@ impl Open {
                             .into_iter()
                             .map(SettingsRow::PointerColour),
                     );
+                }
+                // **Reduced motion**, kept in `access.toml` and so offered
+                // only where that file can be kept.
+                if self.access.at().is_some() && self.access.not_read().is_none() {
+                    rows.push(SettingsRow::ReducedMotion);
                 }
                 rows
             }
@@ -1316,6 +1337,28 @@ impl Open {
                 SettingsDid::Kept(SettingsSection::Appearance, kept)
             }
             SettingsRow::TextSize => self.the_text_is(25, doors.strings),
+            // **One switch, turned over**, kept in the person's `access.toml`;
+            // the seat is told by `crate::a_key_reaches_settings`, so the next
+            // glide is a jump.
+            SettingsRow::ReducedMotion if self.access.not_read().is_some() => {
+                // **A file that did not read is never written over** by one
+                // switch: it says why, and the switch is not offered.
+                SettingsDid::Kept(SettingsSection::Accessibility, SettingsKept::Refused)
+            }
+            SettingsRow::ReducedMotion => {
+                let kept = self.access.changed(
+                    |turned_on| {
+                        if turned_on.has(alo_access::Setting::ReducedMotion) {
+                            turned_on.turn_off(alo_access::Setting::ReducedMotion);
+                        } else {
+                            turned_on.turn_on(alo_access::Setting::ReducedMotion);
+                        }
+                        Ok(())
+                    },
+                    doors.strings,
+                );
+                SettingsDid::Kept(SettingsSection::Accessibility, kept)
+            }
             // **One of two, kept with the rest of the appearance**; the seat is
             // told by `crate::a_key_reaches_settings`, so the next window opens
             // the way the person just chose.

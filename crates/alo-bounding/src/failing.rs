@@ -356,6 +356,12 @@ pub enum NotBounded {
         why: io::Error,
     },
 
+    /// The kernel would not load the counter or attach it to the control-group
+    /// tree (ADR 0148). Told apart from [`NotBounded::WillNotAttach`] so a
+    /// machine whose counter failed is not told its boundary did.
+    #[error("the kernel would not attach the counter of what applications send")]
+    CounterWillNotAttach(#[source] aya::programs::ProgramError),
+
     /// The cgroup filesystem would not do what was asked.
     #[error("{what} {path}: {why}")]
     Cgroup {

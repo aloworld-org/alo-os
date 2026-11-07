@@ -401,6 +401,7 @@
 mod bounding;
 mod btf;
 mod cgroup;
+
 mod failing;
 mod fields;
 mod imposing;
@@ -415,6 +416,7 @@ mod waiting;
 #[cfg(test)]
 mod testing;
 
+pub use alo_counting::{Counter, NotCounted};
 pub use bounding::Boundary;
 pub use btf::{Member, Types};
 pub use cgroup::Cgroup;
@@ -428,5 +430,6 @@ pub use turns::Turns;
 pub use waiting::{A_NOTE, AT_MOST, NotWaited, ON_THIS_KERNEL, Waited};
 
 pub use alo_bounding_map::{
-    Bounds, DEPTH, DESTINATIONS, Departure, Departures, Family, Field, PLACES, Place, WORDS,
+    Bounds, DEPTH, DESTINATIONS, Departure, Departures, Family, Field, PLACES, Place,
+    THE_MOST_COUNTED, WORDS,
 };

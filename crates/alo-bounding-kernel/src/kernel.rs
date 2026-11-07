@@ -30,16 +30,23 @@
 //!
 //! # What is not here
 //!
-//! No writing. Nothing in this file puts anything into a map, a ring buffer, a
-//! counter or a log line, and there is no `bpf_printk`. That is ADR 0015's
-//! *the LSM decides and forgets*, and the absence is the whole of it: a program
-//! with nowhere to write cannot become a record of somebody's day.
+//! No writing, with **one** exception the owner decided by name. Nothing in
+//! this file puts anything into a ring buffer, a log line or a map, and there
+//! is no `bpf_printk`. That is ADR 0015's *the LSM decides and forgets*, and
+//! the absence is the whole of it: a program with nowhere to write cannot
+//! become a record of somebody's day.
 //!
-//! The two maps below are read here and written only by the daemon, and there
-//! are two. `alo-bounding`'s `tests/the_boundary_decides_and_forgets.rs` counts
-//! them on a running kernel, so a third — however it is named and whatever kind
-//! it is — fails a test rather than passing a review, and so does a
-//! `bpf_printk` added to the hook.
+//! The exception is [`COUNTED`]
+//! ([ADR 0148](../../../docs/decisions/0148-the-kernel-counts-what-an-application-sends-during-a-persons-command.md)):
+//! the `counting` program adds a packet's length to an entry **the desktop
+//! already made** for a control group a person's command asked about. It never
+//! makes an entry, so a control group nobody asked about leaves nothing behind.
+//!
+//! The two maps the hooks decide from are read here and written only by the
+//! daemon, and there are two; `COUNTED` is the third, and the only one. `alo-bounding`'s `tests/the_boundary_decides_and_forgets.rs` counts
+//! them on a running kernel by name, so a fourth — however it is named and
+//! whatever kind it is — fails a test rather than passing a review, and so does
+//! a `bpf_printk` added to a hook.
 
 // The one module in this crate the rule is lifted for. Everything the four
 // paragraphs above describe is below; nothing else in the package may.
@@ -50,15 +57,17 @@
 )]
 
 use aya_ebpf::{
-    helpers::{bpf_get_current_cgroup_id, bpf_probe_read_kernel},
-    macros::{lsm, map},
-    maps::{Array, HashMap},
-    programs::LsmContext,
+    EbpfContext as _,
+    bindings::__sk_buff,
+    helpers::{bpf_get_current_cgroup_id, bpf_probe_read_kernel, bpf_skb_cgroup_id},
+    macros::{cgroup_skb, lsm, map},
+    maps::{Array, HashMap, PerCpuHashMap},
+    programs::{LsmContext, SkBuffContext},
 };
 
 use alo_bounding_map::{Bounds, Field, Places, WORDS};
 
-use crate::{deciding, departing};
+use crate::{counting, deciding, departing};
 
 /// Which turn may reach where: the cgroup a turn runs in, against the places it
 /// was granted.
@@ -84,6 +93,18 @@ static BOUNDS: HashMap<u64, [u64; WORDS]> = HashMap::with_max_entries(1024, 0);
 /// program can already reach is exactly where a counter would sit.
 #[map(name = "FIELDS")]
 static FIELDS: Array<u32> = Array::with_max_entries(23, 0);
+
+/// How many bytes each control group a person's command asked about has sent,
+/// one number per processor.
+///
+/// **The one map this program writes**, and ADR 0148 is the permission for it.
+/// The desktop makes an entry when a person's command begins counting an
+/// application and takes it away when the command ends; this program only adds
+/// to an entry that is already there. Per processor, so two processors adding
+/// at once never race: each has its own number, and the desktop adds them up.
+#[map(name = "COUNTED")]
+static COUNTED: PerCpuHashMap<u64, u64> =
+    PerCpuHashMap::with_max_entries(alo_bounding_map::THE_MOST_COUNTED, 0);
 
 /// Every open of every file, on this machine, from now until the program is
 /// detached.
@@ -618,6 +639,40 @@ pub fn inode_get_acl(ctx: LsmContext) -> i32 {
         return already;
     }
     deciding::decide_question(entry)
+}
+
+/// Every packet leaving every socket on this machine, until the program is
+/// detached — **counted only for a control group somebody asked about**, and
+/// always let through.
+///
+/// `cgroup_skb/egress`, attached once at boot to the root of the control-group
+/// tree, beside whatever else is attached there. The control group read is the
+/// **socket's**, not the current thread's: a packet a TCP connection sends from
+/// the kernel's own context, later, still belongs to the program that opened it.
+/// What is read is that, the interface and the length; [`crate::counting`] says
+/// why nothing else is.
+///
+/// Answers `1`, which is *let it through*, on every road.
+#[cgroup_skb(egress)]
+pub fn counting(ctx: SkBuffContext) -> i32 {
+    let buffer = ctx.as_ptr().cast::<__sk_buff>();
+    let group = unsafe { bpf_skb_cgroup_id(buffer) };
+    let interface = unsafe { (*buffer).ifindex };
+    counting::sent(group, interface, ctx.len());
+    1
+}
+
+/// Add `bytes` to what `group` has sent, if somebody asked for `group` to be
+/// counted, and do nothing otherwise.
+///
+/// A pointer into this processor's own number, and nothing else can write that
+/// number while this program runs on it, which is what makes the plain add safe.
+/// Saturating rather than wrapping, so a number that has reached its end reads
+/// as *a great deal* and never as *a little*.
+pub fn add_to_what_was_counted(group: u64, bytes: u64) {
+    if let Some(so_far) = COUNTED.get_ptr_mut(group) {
+        unsafe { *so_far = (*so_far).saturating_add(bytes) };
+    }
 }
 
 /// Which turn this open belongs to, or the cgroup of whoever is not in one.

@@ -421,11 +421,17 @@ capability.running.sealed-box-not-available-here	The sealed box isn't available 
 capability.running.sealed-box-not-here-yet	{program} was not run. The sealed box can't run programs on this computer yet. Choose 'ask each time' in Settings → Running code to run commands after you approve them.
 capability.running.what-full-trust-costs	text in a web page, an email or a downloaded project can steer the agent, and at this level whatever it steers the agent to run, runs
 capability.running.would-not-start	nothing ran, because the command could not be started
+capability.terminal.done	Done.
+capability.terminal.done-cannot-be-put-back	Done. This one can't be put back: a copy of your files from before it could not be kept.
 capability.terminal.done-without-asking	Done without asking you first, as you chose in Settings → Terminal.
 capability.terminal.done-without-asking-cannot-be-put-back	Done without asking you first, as you chose in Settings → Terminal. This one can't be put back: a copy of your files from before it could not be kept.
+capability.terminal.no-longer-waiting	Not done: this change is no longer waiting, and nothing was changed. Ask again to have alo propose it again.
 capability.terminal.no-word-back	alo was told to go ahead, and the alo service did not say whether it did. See what alo did to find out.
-capability.terminal.not-done-switched-off	Not done: acting without asking was switched off in Settings → Terminal while alo was working on this.
+capability.terminal.nobody-answered	Not done: there was no answer in time, and nothing was changed. Ask again when you are ready.
+capability.terminal.run-this-command	Run this command? [y/N]
+capability.terminal.waits-for-a-terminal	Nothing was changed: alo asks for your OK before a change, and can only ask in a terminal. Type the same request at a terminal prompt to answer it.
 capability.terminal.what-acting-without-asking-costs	alo will send, change and delete what you ask for without showing you first
+capability.terminal.you-said-no	Not done: you said no, and nothing was changed.
 capturing.another-persons-window	That window belongs to somebody else signed in on this machine, so a picture of it cannot be taken. Take a picture of your own screen instead
 capturing.copied	A picture of your screen was copied, ready to paste
 capturing.mark.arrow	Arrow
@@ -761,6 +767,7 @@ dock.windows.footer	Choose a window · Escape returns to apps
 dock.windows.heading	{app} windows
 dock.windows.open	Open
 dock.windows.put-aside	Minimised
+egress.command.sending	{application} is sending, during your command
 egress.destination.nameless	say where this is going — an egress with nowhere named cannot be shown to anybody
 egress.destination.not-printable	the address contains a character that cannot be shown — the indicator has to be readable in one line
 egress.destination.nothing-leaves	an answer on this machine goes nowhere — ask whether the source causes egress before making a destination of it

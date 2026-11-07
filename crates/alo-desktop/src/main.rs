@@ -81,6 +81,14 @@ mod telling_applications_about_the_pointer;
 #[cfg(target_os = "linux")]
 mod putting_back;
 
+/// Which control groups are an application's (ADR 0148).
+#[cfg(target_os = "linux")]
+mod where_an_application_runs;
+
+/// The kernel's counter of what an application sends (ADR 0148).
+#[cfg(target_os = "linux")]
+mod the_kernels_counter;
+
 /// What this process does on the machine alo OS is for.
 #[cfg(target_os = "linux")]
 mod running {
@@ -390,6 +398,12 @@ mod running {
         /// [`Self::refreshed`] is what turns this into the picture the status
         /// area draws, once a frame and before the readings' own throttle.
         indicator: alo_egress::Indicator,
+        /// **What applications send while a person's commands run**, counted
+        /// and put on [`Self::indicator`] (ADR 0148).
+        counting: alo_shell::counting_during_their_commands::CountingForCommands,
+        /// Where this machine's desktop entries are, for the name a person
+        /// calls an application a command asked to count.
+        entries: Vec<PathBuf>,
         /// The picture the status area was last given.
         ///
         /// Held beside the indicator because they are different things:
@@ -586,8 +600,7 @@ mod running {
                 std::env::var_os("HOME").as_deref(),
             )
             .is_some_and(|folder| {
-                let (turned_on, not_read) =
-                    alo_access::keeping::at_sign_in(&folder.join(alo_access::keeping::THE_FILE));
+                let (turned_on, not_read) = alo_access::keeping::at_sign_in(&folder);
                 // A file nobody has written is the ordinary case and not news;
                 // one that is there and does not read is said, once.
                 let missing = matches!(
@@ -665,6 +678,13 @@ mod running {
                 strings,
                 egress,
                 indicator,
+                // **The counter, opened once by its pin** (ADR 0148). A
+                // machine with none answers every count *cannot count*.
+                counting: alo_shell::counting_during_their_commands::CountingForCommands::with(
+                    crate::the_kernels_counter::TheKernels::on_this_machine(),
+                    Box::new(crate::where_an_application_runs::UnderTheAppSlice::for_this_person()),
+                ),
+                entries: crate::what_this_machine_offers::WhereToLook::on_this_machine().entries,
                 indicating,
                 daemon,
                 told,
@@ -1318,6 +1338,33 @@ mod running {
         /// the display probe is one of those.
         fn the_indicator(&mut self) -> Option<&mut alo_egress::Indicator> {
             Some(&mut self.indicator)
+        }
+
+        /// **What applications send while a person's commands run** (ADR
+        /// 0148): each new count is taken in under the name a person calls the
+        /// application — `not-installed` when no entry names it — and every
+        /// count is looked at, on this desktop's own indicator.
+        ///
+        /// The installed list is read again for each new count rather than
+        /// kept, because a command may name an application installed a moment
+        /// ago, and reading a few dozen entries once per command costs nothing a
+        /// person could notice.
+        fn counted_during_their_commands(
+            &mut self,
+            asked: Vec<alo_shell::counting_during_their_commands::AskedToCount>,
+            now: std::time::Instant,
+        ) {
+            if !asked.is_empty() {
+                let installed = alo_installed::read(&self.entries);
+                for one in asked {
+                    let called = installed
+                        .knows(one.application())
+                        .map(|application| application.shown(&self.strings));
+                    self.counting.taken_in(one, called.as_deref(), now);
+                }
+            }
+            self.counting
+                .looked_at(&mut self.indicator, now, std::time::SystemTime::now());
         }
 
         /// The panel this desktop keeps, lent for the one act that changes it.

@@ -15,7 +15,17 @@
 //!    not.
 //! 3. Fill the map of offsets.
 //! 4. **Then** attach.
-//! 5. Pin each hook's link, then the two maps.
+//! 5. Pin each hook's link, then the counter's, then the three maps.
+//!
+//! # And one counter beside the boundary (ADR 0148)
+//!
+//! The same object carries `counting`, on `cgroup_skb/egress`, attached once to
+//! the root of the control-group tree with others allowed beside it, and its
+//! map `COUNTED`. It decides nothing and always lets a packet through, so the
+//! order above does not matter to it; it is attached and pinned with the
+//! boundary because a machine with half a programme loaded is the state this
+//! file refuses to leave. The desktop opens `COUNTED` by its pin; nothing here
+//! puts an entry in it.
 //!
 //! Attaching last of the first four is what makes step 3 safe to do at all. A
 //! programme attached before its offsets were filled would run against a map of
@@ -47,7 +57,10 @@
 use aya::{
     Btf, Ebpf, EbpfLoader,
     maps::Array,
-    programs::{Lsm, links::FdLink},
+    programs::{
+        CgroupAttachMode, CgroupSkb, CgroupSkbAttachType, Lsm,
+        links::{FdLink, PinnedLink},
+    },
 };
 
 use crate::{btf::Types, failing::NotBounded, fields::Offsets, pinned::Pinned};
@@ -138,6 +151,19 @@ pub(crate) const THE_BOUNDS: &str = "BOUNDS";
 /// The map of where this kernel keeps its fields.
 const THE_FIELDS: &str = "FIELDS";
 
+/// The map of what each counted control group has sent (ADR 0148).
+pub(crate) const THE_COUNTED: &str = "COUNTED";
+
+/// The program that counts it, called as the kernel half names it.
+const THE_COUNTER: &str = "counting";
+
+/// The root of the control-group tree, which the counter is attached to.
+///
+/// The root and not the person's own slice, because the loader runs before
+/// anybody has signed in and takes no input (ADR 0018); a packet from a control
+/// group nobody asked to count costs one lookup that misses.
+const THE_TREE: &str = "/sys/fs/cgroup";
+
 /// The boundary, loaded into this kernel and pinned where the daemon can reach
 /// one map of it.
 ///
@@ -202,9 +228,9 @@ impl Imposed {
     /// A BPF programme on the security hooks sees every open on the machine, and
     /// the only thing standing between that and a record of somebody's day is
     /// that it has nowhere to put what it saw. A map is that somewhere — a ring
-    /// buffer, a counter, a table of who opened what — so *there are two, and
-    /// they are the two the loader fills* is the promise, and this is the form
-    /// it can be held to from outside.
+    /// buffer, a counter, a table of who opened what — so *there are three,
+    /// the two the loader fills and the one counter ADR 0148 allows by name* is
+    /// the promise, and this is the form it can be held to from outside.
     ///
     /// Read out of the loaded programme rather than off this file's own
     /// constants, so what it answers is what the kernel really has.
@@ -286,7 +312,13 @@ fn attach_and_pin(loaded: &mut Ebpf, pinned: &Pinned) -> Result<(), NotBounded> 
             })?;
     }
 
-    for (name, at) in [(THE_BOUNDS, pinned.bounds()), (THE_FIELDS, pinned.fields())] {
+    the_counter_attached_and_pinned(loaded, pinned)?;
+
+    for (name, at) in [
+        (THE_BOUNDS, pinned.bounds()),
+        (THE_FIELDS, pinned.fields()),
+        (THE_COUNTED, pinned.counted()),
+    ] {
         loaded
             .map(name)
             .ok_or(NotBounded::NothingCalled { what: name })?
@@ -297,5 +329,46 @@ fn attach_and_pin(loaded: &mut Ebpf, pinned: &Pinned) -> Result<(), NotBounded> 
                 why,
             })?;
     }
+    Ok(())
+}
+
+/// Attach the counter to the root of the control-group tree, beside whatever
+/// else is there, and pin its link (ADR 0148).
+///
+/// It must not displace anything the service manager attaches to the tree, and
+/// it does not: on a kernel from 5.7 on it is attached as a **link**, and a
+/// control-group link always runs beside every other program there. The mode is
+/// `Single` because a link takes no flags at all — the kernel answers `EINVAL`
+/// to *allow multiple* on a link, measured on 2026-11-07 on this repository's
+/// WSL kernel (6.18), which is how the first build of this found out. It only
+/// counts, and it answers *let it through* to every packet.
+fn the_counter_attached_and_pinned(loaded: &mut Ebpf, pinned: &Pinned) -> Result<(), NotBounded> {
+    let program: &mut CgroupSkb = loaded
+        .program_mut(THE_COUNTER)
+        .ok_or(NotBounded::NothingCalled { what: THE_COUNTER })?
+        .try_into()
+        .map_err(NotBounded::CounterWillNotAttach)?;
+    program.load().map_err(NotBounded::CounterWillNotAttach)?;
+    let tree = std::fs::File::open(THE_TREE).map_err(|why| NotBounded::Cgroup {
+        what: "the counter cannot open the control-group tree at",
+        path: THE_TREE.to_owned(),
+        why,
+    })?;
+    let attached = program
+        .attach(&tree, CgroupSkbAttachType::Egress, CgroupAttachMode::Single)
+        .map_err(NotBounded::CounterWillNotAttach)?;
+    let link = program
+        .take_link(attached)
+        .map_err(NotBounded::CounterWillNotAttach)?;
+    let link: FdLink = link.try_into().map_err(|_| NotBounded::NothingCalled {
+        what: "a link the counter can be pinned by",
+    })?;
+    let _pinned: PinnedLink =
+        link.pin(pinned.counting())
+            .map_err(|why| NotBounded::WillNotPin {
+                what: "the link that holds the counter on the control-group tree",
+                path: pinned.counting().display().to_string(),
+                why,
+            })?;
     Ok(())
 }

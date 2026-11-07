@@ -785,16 +785,74 @@ pub const DONE_WITHOUT_ASKING_AND_IT_CANNOT_BE_PUT_BACK: Word = Word::saying(
      a copy of the person's files from before it, so Put back cannot undo it.",
 );
 
-/// Printed when acting without asking was switched off while alo was working
-/// out what to do, so it did not do it.
-pub const NOT_DONE_IT_WAS_SWITCHED_OFF: Word = Word::saying(
-    "capability.terminal.not-done-switched-off",
-    "Not done: acting without asking was switched off in Settings → Terminal while alo was \
-     working on this.",
+/// The question the terminal asks before a change alo proposed is carried out:
+/// ADR 0124's own words, drawn in `docs/design/the-terminal-window.md`.
+pub const RUN_THIS_COMMAND: Word = Word::saying(
+    "capability.terminal.run-this-command",
+    "Run this command? [y/N]",
 )
 .noting(
-    "Printed in the terminal when the person switched off letting alo act without their OK \
-     after asking for something and before alo did it. Nothing was changed.",
+    "Asked in the terminal under the change alo proposes, before anything is done. Keep '[y/N]' \
+     exactly as it is, with its letters untranslated: only the key y means yes, and every other \
+     key, Enter among them, means no.",
+);
+
+/// The person said yes in the terminal, and it was done.
+pub const DONE_AFTER_YOUR_OK: Word = Word::saying("capability.terminal.done", "Done.").noting(
+    "Printed in the terminal after the person answered yes and the change was carried out.",
+);
+
+/// The same, for a change the machine could not keep a copy from before.
+pub const DONE_AFTER_YOUR_OK_AND_IT_CANNOT_BE_PUT_BACK: Word = Word::saying(
+    "capability.terminal.done-cannot-be-put-back",
+    "Done. This one can't be put back: a copy of your files from before it could not be kept.",
+)
+.noting(
+    "Printed after the person answered yes, for a change the computer carried out without being \
+     able to keep a copy of the person's files from before it, so Put back cannot undo it.",
+);
+
+/// The person said no in the terminal.
+pub const NOT_DONE_YOU_SAID_NO: Word = Word::saying(
+    "capability.terminal.you-said-no",
+    "Not done: you said no, and nothing was changed.",
+)
+.noting(
+    "Printed in the terminal after the person answered anything but yes to alo's proposed \
+     change. The no is kept in the record of what alo did.",
+);
+
+/// Nobody answered in the terminal while the question stood.
+pub const NOT_DONE_NOBODY_ANSWERED: Word = Word::saying(
+    "capability.terminal.nobody-answered",
+    "Not done: there was no answer in time, and nothing was changed. Ask again when you are ready.",
+)
+.noting(
+    "Printed in the terminal when nobody pressed a key before alo's question stopped standing, \
+     or the terminal could no longer be read.",
+);
+
+/// The change the reply named is not one the service still holds.
+pub const NOT_DONE_NO_LONGER_WAITING: Word = Word::saying(
+    "capability.terminal.no-longer-waiting",
+    "Not done: this change is no longer waiting, and nothing was changed. Ask again to have alo \
+     propose it again.",
+)
+.noting(
+    "Printed in the terminal when the change alo proposed had already stopped waiting by the \
+     time it could be answered.",
+);
+
+/// A change was proposed for a request that did not come from a terminal, so
+/// there is nobody to ask.
+pub const IT_WAITS_FOR_A_TERMINAL: Word = Word::saying(
+    "capability.terminal.waits-for-a-terminal",
+    "Nothing was changed: alo asks for your OK before a change, and can only ask in a terminal. \
+     Type the same request at a terminal prompt to answer it.",
+)
+.noting(
+    "Printed when alo was asked to do something from a script or a pipe rather than typed at a \
+     terminal, so the question 'Run this command?' could not be put to anybody.",
 );
 
 /// The service said nothing back about a change the terminal told it to go
@@ -811,7 +869,7 @@ pub const NO_WORD_BACK_IN_THE_TERMINAL: Word = Word::saying(
 );
 
 /// Every string this crate can say, in the order a translator meets them.
-pub const EVERY_WORD: [Word; 71] = [
+pub const EVERY_WORD: [Word; 77] = [
     ANONYMOUS,
     NO_APPLICATION_NAMED,
     NOTHING_NAMED,
@@ -881,7 +939,13 @@ pub const EVERY_WORD: [Word; 71] = [
     WHAT_ACTING_WITHOUT_ASKING_COSTS,
     DONE_WITHOUT_ASKING,
     DONE_WITHOUT_ASKING_AND_IT_CANNOT_BE_PUT_BACK,
-    NOT_DONE_IT_WAS_SWITCHED_OFF,
+    RUN_THIS_COMMAND,
+    DONE_AFTER_YOUR_OK,
+    DONE_AFTER_YOUR_OK_AND_IT_CANNOT_BE_PUT_BACK,
+    NOT_DONE_YOU_SAID_NO,
+    NOT_DONE_NOBODY_ANSWERED,
+    NOT_DONE_NO_LONGER_WAITING,
+    IT_WAITS_FOR_A_TERMINAL,
     NO_WORD_BACK_IN_THE_TERMINAL,
 ];
 

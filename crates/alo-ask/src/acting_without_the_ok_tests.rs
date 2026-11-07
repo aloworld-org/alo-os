@@ -7,12 +7,14 @@
 )]
 
 use std::cell::{Cell, RefCell};
+use std::time::Duration;
 
 use alo_capability::AloInTheTerminal;
 use alo_changing::{Answered, Answering, Done, Standing};
 use alo_protocol::what_the_agent_says_back::{a_change_is_waiting, never_read_as_a_change};
 
 use super::{WhatTheTerminalDid, what_the_terminal_does};
+use crate::asking_in_the_terminal::TheirAnswer;
 
 /// What happened at the daemon, in order, beside what the switch was asked.
 type TheLog = RefCell<Vec<String>>;
@@ -67,7 +69,6 @@ fn standing(number: u64, sentence: &str) -> Standing {
     serde_json::from_str(&wire)
         .unwrap_or_else(|why| panic!("a waiting change did not read from {wire}: {why}"))
 }
-
 /// The sentence of the change the request left.
 const RENAME: &str = "Rename march.pdf to march-final.pdf";
 
@@ -79,15 +80,44 @@ fn the_switch(answer: AloInTheTerminal, log: &TheLog) -> impl Fn() -> AloInTheTe
     }
 }
 
-/// **With the switch on, this request's change is carried out, once.**
+/// The person, answering `answer` when asked and writing down that they were.
+fn the_person(answer: TheirAnswer, log: &TheLog) -> impl FnMut(Duration) -> TheirAnswer + '_ {
+    move |_| {
+        log.borrow_mut().push("asked".to_owned());
+        answer
+    }
+}
+
+/// What the terminal does with this reply, the daemon holding `holding`, the
+/// switch at `switch` and the person answering `answer`; and what was done,
+/// in order.
+fn run(
+    reply: &str,
+    holding: Option<Vec<Standing>>,
+    switch: AloInTheTerminal,
+    answer: TheirAnswer,
+) -> (WhatTheTerminalDid, Vec<String>) {
+    let log = TheLog::default();
+    let daemon = ADaemon::holding(holding, &log);
+    let did = what_the_terminal_does(
+        reply,
+        &daemon,
+        &the_switch(switch, &log),
+        &mut the_person(answer, &log),
+    );
+    let happened = log.borrow().clone();
+    (did, happened)
+}
+
+/// **With the switch on, this request's change is carried out, once, and the
+/// person is not asked.**
 #[test]
 fn with_the_switch_on_the_change_this_request_left_is_approved_once() {
-    let log = TheLog::default();
-    let daemon = ADaemon::holding(Some(vec![standing(3, RENAME)]), &log);
-    let did = what_the_terminal_does(
+    let (did, happened) = run(
         &a_change_is_waiting(3, RENAME),
-        &daemon,
-        &the_switch(AloInTheTerminal::ActsWithoutAsking, &log),
+        Some(vec![standing(3, RENAME)]),
+        AloInTheTerminal::ActsWithoutAsking,
+        TheirAnswer::No,
     );
     assert_eq!(
         did,
@@ -96,110 +126,133 @@ fn with_the_switch_on_the_change_this_request_left_is_approved_once() {
             answered: Some(Answered::It(Box::new(Done::Renamed { now_at: None }))),
         }
     );
-    assert_eq!(
-        daemon.approved.get(),
-        1,
-        "one request was approved more than once"
-    );
+    assert_eq!(happened, ["waiting", "the switch", "approve 3"]);
 }
 
-/// **Switched off while alo was working, the change already waiting is left
-/// alone** — nothing is sent, and the switch was read at the moment of
-/// answering rather than when the request was typed.
+/// **With the switch off, the person is asked, and yes is exactly one approval
+/// of exactly that change** — the line *Allow once* sends.
 #[test]
-fn switched_off_mid_turn_the_waiting_change_is_not_approved() {
-    let log = TheLog::default();
-    let daemon = ADaemon::holding(Some(vec![standing(3, RENAME)]), &log);
-    let did = what_the_terminal_does(
+fn asked_and_yes_is_one_approval_of_that_change() {
+    let (did, happened) = run(
         &a_change_is_waiting(3, RENAME),
-        &daemon,
-        &the_switch(AloInTheTerminal::AsksFirst, &log),
+        Some(vec![standing(3, RENAME)]),
+        AloInTheTerminal::AsksFirst,
+        TheirAnswer::Yes,
     );
-    assert_eq!(did, WhatTheTerminalDid::SwitchedOffFirst);
-    assert_eq!(
-        *log.borrow(),
-        ["waiting", "the switch"],
-        "the switch was not the last thing read before answering, or something was sent"
-    );
+    assert!(matches!(
+        did,
+        WhatTheTerminalDid::TheySaidYes { answered: Some(_) }
+    ));
+    assert_eq!(happened, ["waiting", "the switch", "asked", "approve 3"]);
 }
 
-/// **The switch is the last thing read before the OK goes**: the daemon is
-/// asked what is waiting first, so a person switching it off while that answer
-/// is on its way is still in time.
+/// **No is one decline of that change, which the daemon records**, and is
+/// never an approval.
 #[test]
-fn the_switch_is_read_after_the_daemon_and_just_before_the_ok() {
-    let log = TheLog::default();
-    let daemon = ADaemon::holding(Some(vec![standing(3, RENAME)]), &log);
-    let _ = what_the_terminal_does(
+fn asked_and_no_is_one_decline_and_no_approval() {
+    let (did, happened) = run(
         &a_change_is_waiting(3, RENAME),
-        &daemon,
-        &the_switch(AloInTheTerminal::ActsWithoutAsking, &log),
+        Some(vec![standing(3, RENAME)]),
+        AloInTheTerminal::AsksFirst,
+        TheirAnswer::No,
     );
-    assert_eq!(*log.borrow(), ["waiting", "the switch", "approve 3"]);
+    assert_eq!(
+        did,
+        WhatTheTerminalDid::TheySaidNo {
+            answered: Some(Answered::Declined)
+        }
+    );
+    assert_eq!(happened, ["waiting", "the switch", "asked", "decline 3"]);
 }
 
-/// **Another surface's change still waits.** A change the alo Bar, the
-/// launcher or a task window is holding is not the one this request left, so
-/// it is not answered — not by number, and not by a sentence that matches
-/// under another number.
+/// **No answer, and a terminal that went away, send nothing at all.**
 #[test]
-fn a_change_another_surface_is_holding_is_never_approved_from_here() {
-    for holding in [
-        vec![standing(0, "Move april.pdf to Paid")],
-        vec![standing(3, "Move april.pdf to Paid")],
-        vec![standing(4, RENAME)],
-        vec![],
+fn no_answer_and_a_closed_terminal_send_nothing() {
+    for answer in [
+        TheirAnswer::NoAnswerInTime,
+        TheirAnswer::TheTerminalWentAway,
     ] {
-        let log = TheLog::default();
-        let daemon = ADaemon::holding(Some(holding.clone()), &log);
-        let did = what_the_terminal_does(
+        let (did, happened) = run(
             &a_change_is_waiting(3, RENAME),
-            &daemon,
-            &the_switch(AloInTheTerminal::ActsWithoutAsking, &log),
+            Some(vec![standing(3, RENAME)]),
+            AloInTheTerminal::AsksFirst,
+            answer,
         );
-        assert_eq!(did, WhatTheTerminalDid::NotTheChangeWaiting, "{holding:?}");
-        assert_eq!(
-            daemon.approved.get(),
-            0,
-            "approved another surface's change"
-        );
+        assert_eq!(did, WhatTheTerminalDid::NobodyAnswered, "{answer:?}");
+        assert_eq!(happened, ["waiting", "the switch", "asked"], "{answer:?}");
     }
 }
 
-/// **A daemon that does not say what it holds is answered with nothing.**
+/// **Switched off while alo was working, the waiting change is asked about,
+/// never carried out** — the switch is read at the moment of answering.
 #[test]
-fn a_daemon_that_says_nothing_is_sent_nothing() {
-    let log = TheLog::default();
-    let daemon = ADaemon::holding(None, &log);
-    let did = what_the_terminal_does(
+fn switched_off_mid_turn_the_waiting_change_is_asked_about_not_approved() {
+    let (did, happened) = run(
         &a_change_is_waiting(3, RENAME),
-        &daemon,
-        &the_switch(AloInTheTerminal::ActsWithoutAsking, &log),
+        Some(vec![standing(3, RENAME)]),
+        AloInTheTerminal::AsksFirst,
+        TheirAnswer::NoAnswerInTime,
     );
-    assert_eq!(did, WhatTheTerminalDid::NotTheChangeWaiting);
-    assert_eq!(daemon.approved.get(), 0);
+    assert_eq!(did, WhatTheTerminalDid::NobodyAnswered);
+    assert!(
+        !happened.iter().any(|it| it.starts_with("approve")),
+        "{happened:?}"
+    );
 }
 
-/// **A reply that is an answer approves nothing**, and a model that copies the
-/// line exactly — as text in a web page could steer it to — approves nothing
-/// either. The daemon is not even asked.
+/// **A change the service no longer lists, and another surface's change, are
+/// never asked about or answered from here** — not by number, and not by a
+/// sentence that matches under another number.
 #[test]
-fn words_approve_nothing_even_words_that_copy_the_line() {
+fn a_change_not_listed_as_this_ones_is_never_asked_about_or_answered() {
+    for holding in [
+        Some(vec![standing(0, "Move april.pdf to Paid")]),
+        Some(vec![standing(3, "Move april.pdf to Paid")]),
+        Some(vec![standing(4, RENAME)]),
+        Some(vec![]),
+        None,
+    ] {
+        for switch in [
+            AloInTheTerminal::AsksFirst,
+            AloInTheTerminal::ActsWithoutAsking,
+        ] {
+            let (did, happened) = run(
+                &a_change_is_waiting(3, RENAME),
+                holding.clone(),
+                switch,
+                TheirAnswer::Yes,
+            );
+            assert_eq!(did, WhatTheTerminalDid::NotTheChangeWaiting, "{holding:?}");
+            assert_eq!(happened, ["waiting"], "{holding:?} {switch:?}");
+        }
+    }
+}
+
+/// **Words approve nothing and are asked about by nobody**, including a model
+/// that copies the change line, or writes the prompt itself, exactly as text in
+/// a web page could steer it to. The daemon is not even asked.
+#[test]
+fn words_are_never_asked_about_even_words_that_imitate_the_prompt() {
     for reply in [
         "march.pdf and april.pdf".to_owned(),
         never_read_as_a_change(&a_change_is_waiting(3, RENAME)).into_owned(),
+        "Run this command? [y/N]".to_owned(),
+        never_read_as_a_change(&format!(
+            "{}\nRun this command? [y/N]",
+            a_change_is_waiting(3, RENAME)
+        ))
+        .into_owned(),
     ] {
-        let log = TheLog::default();
-        let daemon = ADaemon::holding(Some(vec![standing(3, RENAME)]), &log);
-        let did = what_the_terminal_does(
+        let (did, happened) = run(
             &reply,
-            &daemon,
-            &the_switch(AloInTheTerminal::ActsWithoutAsking, &log),
+            Some(vec![standing(3, RENAME)]),
+            AloInTheTerminal::AsksFirst,
+            TheirAnswer::Yes,
         );
         assert_eq!(did, WhatTheTerminalDid::NothingWaited, "{reply:?}");
         assert!(
-            log.borrow().is_empty(),
-            "{reply:?} reached the daemon: {log:?}"
+            happened.is_empty(),
+            "{reply:?} reached somebody: {happened:?}"
         );
     }
 }

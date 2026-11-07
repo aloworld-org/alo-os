@@ -50,7 +50,9 @@ alo-strings = { path = "../alo-strings" }
 alo-protocol = { path = "../alo-protocol" }
 # `getuid`, which is how this command finds its own door. The same call
 # `alo-agentd` reads its own login number with.
-rustix = { workspace = true }
+# `termios` puts the terminal into one-key mode for *Run this command? [y/N]*,
+# and `event` waits for that key no longer than the question stands.
+rustix = { workspace = true, features = ["termios", "event"] }
 
 # **Whether alo in the terminal may act without the OK**, and the door it says
 # yes on. The switch is `alo-capability`'s type, kept by `alo-remembering` beside
@@ -68,6 +70,8 @@ thiserror = { workspace = true }
 [dev-dependencies]
 # The tests build a waiting change from the bytes a daemon sends.
 serde_json = { workspace = true }
+# The prompt is tested on a real pseudo-terminal.
+rustix = { workspace = true, features = ["pty"] }
 
 # **`alo`, since the owner's rename of 2026-11-06** (ADR 0124, amended). The
 # image keeps `alo-ask` as a link to it, which `src/its_name.rs` says why.

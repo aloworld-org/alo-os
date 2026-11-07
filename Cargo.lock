@@ -385,6 +385,7 @@ name = "alo-bounding"
 version = "0.0.1"
 dependencies = [
  "alo-bounding-map",
+ "alo-counting",
  "aya",
  "rustix 1.1.4",
  "socket2",
@@ -704,6 +705,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "alo-counting"
+version = "0.0.1"
+dependencies = [
+ "aya",
+ "thiserror 2.0.20",
+]
+
+[[package]]
 name = "alo-cursors"
 version = "0.0.1"
 dependencies = [
@@ -749,6 +758,7 @@ dependencies = [
  "alo-capability",
  "alo-changing",
  "alo-choosing",
+ "alo-counting",
  "alo-dividing",
  "alo-dock",
  "alo-egress",
@@ -781,6 +791,7 @@ dependencies = [
  "image",
  "jiff",
  "resvg",
+ "rustix 1.1.4",
  "zbus",
 ]
 

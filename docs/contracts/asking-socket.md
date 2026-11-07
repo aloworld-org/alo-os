@@ -112,16 +112,29 @@ both ends use it.
   says is waiting (`waiting` on the person's door), and answers nothing
   otherwise.
 
-### `alo-ask` holds the turn when it may act without the OK
+### `alo` holds the turn when it is typed at a terminal
 
-`alo-ask` closes its sending side as soon as it has written, as above — except
-when it is typed at a terminal and the person has switched on *Let alo act
-without asking* in Settings → Terminal (`docs/contracts/how-code-runs-file.md`,
-`in-the-terminal`). Then it writes the request and an `alo-earlier:` line with
+`alo` (and `alo-ask`, the same command) closes its sending side as soon as it
+has written, as above, **only when its input is not a terminal** — a script or a
+pipe. A change such a request leaves is not asked about: there is nobody to ask,
+the reply is followed by a sentence saying alo can only ask for the OK in a
+terminal, and the change lapses with the turn.
+
+**Typed at a terminal**, it writes the request and an `alo-earlier:` line with
 nothing after it, and **keeps its sending side open**, exactly as a shell does
-while a card is on the screen: the agent holds the turn, `alo-ask` reads the
-reply, answers the change on the person's door, and only then closes. Closing
-early — a Ctrl-C — is a Stop, and the change lapses unanswered.
+while a card is on the screen: the agent holds the turn, `alo` reads the reply
+and answers the change on the person's door before it closes.
+
+- **With *Let alo act without asking* switched on** in Settings → Terminal
+  (`docs/contracts/how-code-runs-file.md`, `in-the-terminal`), it approves the
+  change without asking.
+- **Otherwise it asks *Run this command? [y/N]*** (ADR 0124), reading one key:
+  `y` sends one `approve` of that change's number; any other key — `n`, Enter,
+  Ctrl-C, Ctrl-D — sends one `decline`, which the daemon records. No key while
+  the question stands (the service's `lapses_in`), or a terminal that went
+  away, sends nothing.
+- Closing before the reply is read — a Ctrl-C while alo is still working — is a
+  Stop, and the change lapses unanswered.
 
 ## Versioning
 
@@ -144,7 +157,7 @@ way to a provider; `docs/contracts/daemon-protocol.md`, *Stop*), and exits.
 the only moment a window may say so.
 
 - **A caller that shuts its sending side as soon as it has written** — `alo`
-  does (and `alo-ask`, its old name) — has said *that was all*, and is never read as stopping: the agent sees
+  does when it is not typed at a terminal — has said *that was all*, and is never read as stopping: the agent sees
   that half-close already there where the third line could have been.
 - **After a proposal**, the shell holding the connection open for the person's
   answer stops the turn the same way; the change on the card lapses with the

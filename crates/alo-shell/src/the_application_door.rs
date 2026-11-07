@@ -37,7 +37,9 @@
 use std::io::{ErrorKind, Read as _, Write as _};
 use std::os::unix::net::{UnixListener, UnixStream};
 
-use alo_acting::{Answer, Request};
+use alo_acting::{Answer, Request, ToCount};
+
+use crate::counting_during_their_commands::AskedToCount;
 
 use crate::the_application_doors_place::{NoDoor, ThePlace};
 
@@ -95,6 +97,9 @@ pub struct TheApplicationDoor {
     person: u32,
     /// Callers part-way through a line.
     waiting: Vec<Waiting>,
+    /// Callers who asked to count what an application sends, for the desktop
+    /// to take (ADR 0148).
+    counting: Vec<AskedToCount>,
 }
 
 impl TheApplicationDoor {
@@ -112,6 +117,7 @@ impl TheApplicationDoor {
             listening,
             person,
             waiting: Vec::new(),
+            counting: Vec::new(),
         })
     }
 
@@ -131,6 +137,7 @@ impl TheApplicationDoor {
             listening,
             person,
             waiting: Vec::new(),
+            counting: Vec::new(),
         }
     }
 
@@ -153,6 +160,16 @@ impl TheApplicationDoor {
     pub fn answered(&mut self, carrying_out: &mut dyn CarriesOutAnApplicationVerb) -> usize {
         self.let_them_in();
         self.hear_them_out(carrying_out)
+    }
+
+    /// Every caller who has asked to count what an application sends since the
+    /// last time this was asked, handed over with its connection (ADR 0148).
+    ///
+    /// **The door does not answer these.** Whether a count can begin depends on
+    /// the counter and on what is installed, which the desktop holds; the door
+    /// only reads the line and hands the connection on, still not blocking.
+    pub fn asked_to_count(&mut self) -> Vec<AskedToCount> {
+        std::mem::take(&mut self.counting)
     }
 
     /// Take the door away. The socket goes; the daemon's directory stays.
@@ -215,6 +232,30 @@ impl TheApplicationDoor {
             match caller.read_a_little() {
                 // A whole line, so this connection is finished either way.
                 HowFarAlong::ALine(line) => {
+                    // **A count holds its connection**, so it is handed on
+                    // rather than answered, with whatever was said after it.
+                    match ToCount::read(&line) {
+                        Some(Ok(asked)) => {
+                            let after = caller
+                                .heard
+                                .iter()
+                                .position(|byte| *byte == b'\n')
+                                .and_then(|end| caller.heard.get(end + 1..))
+                                .map(<[u8]>::to_vec)
+                                .unwrap_or_default();
+                            self.counting
+                                .push(AskedToCount::of(asked, caller.talking, after));
+                            continue;
+                        }
+                        // Meant as a count and not one: a caller with a bug,
+                        // closed with nothing said, as any other line that is
+                        // not a request.
+                        Some(Err(_)) => {
+                            drop(caller.talking);
+                            continue;
+                        }
+                        None => {}
+                    }
                     let answer = match Request::read(&line) {
                         Ok(request) => {
                             let answer = carrying_out.carrying_out(request.acting());

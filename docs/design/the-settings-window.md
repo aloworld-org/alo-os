@@ -392,3 +392,14 @@ Each was decided one way to build this, and is listed so it can be answered:
    file was read. **If the owner meant a page of its own**, a ninth category
    in the side column needs an icon the design file does not have, and both
    window choices would move to it.
+9. **Reduced motion is a third section on the Accessibility page**, headed
+   *Motion*, with one switch — *Reduced motion* — in the design's own switch row
+   (`550:256` off, `551:196` on) and the line *On, the view jumps to where it is
+   going instead of gliding there.* The owner's yes of 2026-11-07; `551:1038`
+   draws only Text and Pointer, so the section, its heading and its words are
+   this lane's. It is **off** as a machine comes. It is kept in the person's own
+   `access.toml` (`alo_access::Setting::ReducedMotion`), not `appearance.toml`,
+   because that is the file alo-access owns and sign-in already reads; the rest
+   of that file is written back as it was. A file that does not read is said
+   above the section and the switch is not offered, so one switch never writes
+   over a person's broken file.
