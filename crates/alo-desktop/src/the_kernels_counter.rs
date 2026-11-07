@@ -1,13 +1,13 @@
 //! **The kernel's counter**, as the counting in `alo-shell` asks for it
 //! (ADR 0148).
 //!
-//! `alo_bounding::Counter` opened by the pin `alo-boundaryd` made at boot. A
+//! `alo_counting::Counter` opened by the pin `alo-boundaryd` made at boot. A
 //! machine where it cannot be opened — no boundary loaded, a boundary loaded
 //! before ADR 0148, a login not in the agent's group — has no counter, and the
 //! desktop says so once on its log and answers every count *cannot count*:
 //! never *nothing was sent*.
 
-use alo_bounding::{Counter, Pinned};
+use alo_counting::{Counter, ON_THIS_MACHINE};
 use alo_shell::counting_during_their_commands::CountsWhatIsSent;
 
 /// The kernel's counter.
@@ -17,7 +17,7 @@ impl TheKernels {
     /// The counter on this machine, or [`None`] with the reason said.
     #[must_use]
     pub fn on_this_machine() -> Option<Box<dyn CountsWhatIsSent>> {
-        match Counter::opened(&Pinned::on_this_machine()) {
+        match Counter::opened(std::path::Path::new(ON_THIS_MACHINE)) {
             Ok(counter) => Some(Box::new(Self(counter))),
             Err(why) => {
                 eprintln!(

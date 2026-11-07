@@ -1,0 +1,23 @@
+[package]
+name = "alo-counting"
+version = "0.0.1"
+description = "The kernel's count of what an application sends during a person's command, opened by its pin: begun, read and ended (ADR 0148)."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish = false
+
+# Its own crate, and not a part of `alo-bounding`, for one measured reason: the
+# person's desktop opens this map, and anything that depends on `alo-bounding`
+# compiles the kernel half through its build script, which needs a BPF linker
+# the image's compositor step does not have. On 2026-10-30 exactly that road
+# stopped `main` producing a bootable image, and
+# `crates/alo-desktop/tests/the_desktop_is_built_without_the_agent_service.rs`
+# refuses it. This crate opens a pinned map and loads nothing.
+[target.'cfg(target_os = "linux")'.dependencies]
+aya = "0.14"
+thiserror = { workspace = true }
+
+[lints]
+workspace = true

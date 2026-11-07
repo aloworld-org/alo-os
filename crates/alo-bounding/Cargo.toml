@@ -25,6 +25,9 @@ thiserror = { workspace = true }
 # `crates/alo-bounding-kernel`, which this crate's `build.rs` compiles and
 # embeds.
 alo-bounding-map = { path = "../alo-bounding-map" }
+# The counter of what an application sends (ADR 0148), in a crate of its own
+# so the desktop can open it without compiling this crate's kernel half.
+alo-counting = { path = "../alo-counting" }
 
 # One question `std` has no spelling for: which thread this is, as the kernel
 # numbers it. `inside.rs` needs it once per turn, because since `file_permission`

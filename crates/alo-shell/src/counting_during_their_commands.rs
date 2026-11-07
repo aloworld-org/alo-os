@@ -61,7 +61,7 @@ const LONGEST_LINE: usize = 64;
 /// The kernel's counter, as the desktop reaches it.
 ///
 /// A trait so this file is tested without a kernel; the desktop's own is
-/// `alo_bounding::Counter`. Every answer is a fact or a failure, and a failure
+/// `alo_counting::Counter`. Every answer is a fact or a failure, and a failure
 /// is never read as *nothing was sent*.
 pub trait CountsWhatIsSent {
     /// Begin counting `group`, or leave a count already running as it is.

@@ -42,6 +42,7 @@ members = [
   "crates/alo-approving",
   "crates/alo-bluetooth",
   "crates/alo-bounding",
+  "crates/alo-counting",
   "crates/alo-bounding-map",
   "crates/alo-boundaryd",
   "crates/alo-broker",

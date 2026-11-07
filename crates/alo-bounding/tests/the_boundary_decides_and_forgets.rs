@@ -141,7 +141,7 @@ impl Held {
             .every_turn_the_kernel_is_holding()
             .expect("the map of turns can be read");
         turns.sort_unstable();
-        let mut counted = Counter::opened(kernel.pinned())
+        let mut counted = Counter::opened(kernel.pinned().counted())
             .expect("the counter's map can be opened by its pin")
             .every_group_counted()
             .expect("the counter's map can be read");
@@ -920,7 +920,8 @@ fn the_checks_would_notice_something_being_written() {
     // And the same for the counter's map: an entry made and ended by this
     // test, for a control group nobody has, is found while it is there and not
     // after — so an entry the program made would be found too.
-    let mut counter = Counter::opened(kernel.pinned()).expect("the counter can be opened");
+    let mut counter =
+        Counter::opened(kernel.pinned().counted()).expect("the counter can be opened");
     counter.begun(nobody).expect("the kernel takes the entry");
     assert!(
         Held::of(&kernel).counted.contains(&nobody),
