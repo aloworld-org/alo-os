@@ -537,6 +537,8 @@ mod the_task_windows_find_room;
 mod the_view_glides;
 /// The view travelling to a window of alo's rather than the window moving.
 mod the_view_travels_to_a_window;
+/// The compositor's answers to `front` and `alo-tree` at the door.
+mod the_window_before_this_terminal;
 /// Every window on the Place being looked at, for a new one to be placed beside.
 mod the_windows_on_this_place;
 pub use the_first_account::{ASecret, OnTheSheet, TheAccountSheet, TheAccountShown};
@@ -654,6 +656,8 @@ pub mod which_preview_the_pointer_is_on;
 mod which_surface_claims_a_point;
 /// Which kind of window is in front: the one a person went to (2026-10-31).
 mod which_window_is_in_front;
+/// Who had the person's keyboard, most recent first, for `front`.
+mod who_had_the_keyboard;
 /// The name of the person a desktop is for, told once at sign-in (ADR 0135).
 mod whose_desktop_this_is;
 /// Whether a person is arriving at the screen, asked of `logind` and systemd before the

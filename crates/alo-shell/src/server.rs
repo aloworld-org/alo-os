@@ -19,6 +19,9 @@ use crate::{
 pub struct Server {
     /// Submitted opaque label and pointer releases owned independently of pixels.
     pub(crate) control_overlay: crate::window_control_overlay::Overlay,
+    /// The unique name this shell's own accessibility tree answers as, once
+    /// the desktop has published it — the answer to `alo-tree` at the door.
+    pub(crate) alos_tree: Option<String>,
     /// Native control ownership is separate from client pointer grabs.
     pub(crate) control_press: Option<crate::window_control_input::Press>,
     /// Explicitly composed strip and mapping-bound native label focus.
@@ -829,6 +832,7 @@ impl Server {
         let socket = Socket::bind(runtime, name)?;
         Ok(Self {
             control_overlay: Default::default(),
+            alos_tree: None,
             control_press: None,
             control_presentation: None,
             reader_presentation: None,

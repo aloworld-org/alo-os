@@ -571,8 +571,31 @@ pub const LET_GO_THE_PERSON_ASKED_TO_FORGET: Word = Word::saying(
      Nothing has gone wrong; say it plainly rather than as a warning or an apology.",
 );
 
+/// A person's own command asked an application to do something.
+pub const ASKED_AN_APPLICATION: Word = Word::saying(
+    "recounting.outcome.asked-an-application",
+    "you asked an application to do something, from the terminal",
+)
+.noting(
+    "Read at the head of one line of a record somebody is reading back. The person typed a \
+     command — alo-app — that pressed a control, opened a window or did one of an application's \
+     own abilities. No agent took part. What it was, and what the application answered, is shown \
+     after it.",
+);
+
+/// A person's own command was refused before it reached the application.
+pub const AN_APPLICATION_WAS_NOT_ASKED: Word = Word::saying(
+    "recounting.outcome.an-application-was-not-asked",
+    "you asked an application to do something, from the terminal, and it was not asked",
+)
+.noting(
+    "Read at the head of one line of a record somebody is reading back. The person typed a \
+     command — alo-app — and it was refused before anything reached the application, in the \
+     sentence shown after it. What the person typed is deliberately not kept.",
+);
+
 /// Every string this crate can say, in the order a translator meets them.
-pub const EVERY_WORD: [Word; 38] = [
+pub const EVERY_WORD: [Word; 40] = [
     RAN,
     NOBODY_WAS_ASKED,
     THE_PERSON_SAID_NO,
@@ -587,6 +610,8 @@ pub const EVERY_WORD: [Word; 38] = [
     NOT_BOUNDED,
     RAN_A_COMMAND,
     A_COMMAND_WAS_NOT_RUN,
+    ASKED_AN_APPLICATION,
+    AN_APPLICATION_WAS_NOT_ASKED,
     LEFT,
     HELD_BACK,
     LEFT_ON_ITS_OWN,
@@ -618,7 +643,7 @@ pub const EVERY_WORD: [Word; 38] = [
 /// Named apart from the rest so the tests below can hold each group to the rule
 /// that is actually its own: a clause is read beside a sentence and does not end
 /// in a full stop, and a refusal says what to do next.
-pub const EVERY_OUTCOME: [Word; 30] = [
+pub const EVERY_OUTCOME: [Word; 32] = [
     RAN,
     NOBODY_WAS_ASKED,
     THE_PERSON_SAID_NO,
@@ -633,6 +658,8 @@ pub const EVERY_OUTCOME: [Word; 30] = [
     NOT_BOUNDED,
     RAN_A_COMMAND,
     A_COMMAND_WAS_NOT_RUN,
+    ASKED_AN_APPLICATION,
+    AN_APPLICATION_WAS_NOT_ASKED,
     LEFT,
     HELD_BACK,
     LEFT_ON_ITS_OWN,

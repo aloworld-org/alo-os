@@ -89,6 +89,7 @@ pub const EVERY_LIST: &[&str] = &[
     "alo-accounts",
     "alo-adapters",
     "alo-answering",
+    "alo-app",
     "alo-appearance",
     "alo-applications",
     "alo-approving",
@@ -226,6 +227,7 @@ pub fn everything_this_machine_can_say() -> Result<Vocabulary, NotCollected> {
         "alo-answering",
         alo_answering::declare_into,
     )?;
+    declare(&mut vocabulary, "alo-app", alo_app::declare_into)?;
     declare(
         &mut vocabulary,
         "alo-appearance",
@@ -465,6 +467,7 @@ mod tests {
         ("alo-accounts", "accounts.not-signed-in"),
         ("alo-adapters", "adapters.not-carried-out.not-there"),
         ("alo-answering", "answering.wrong.nothing-answered"),
+        ("alo-app", "app.typed.nothing"),
         ("alo-appearance", "appearance.token.navy"),
         ("alo-applications", "applications.not-installed"),
         ("alo-approving", "approving.nothing-to-answer"),
@@ -593,6 +596,7 @@ mod tests {
             alo_accounts::accounts_words().unwrap().how_many(),
             alo_adapters::adapter_words().unwrap().how_many(),
             alo_answering::answering_words().unwrap().how_many(),
+            alo_app::words::app_words().unwrap().how_many(),
             alo_appearance::appearance_words().unwrap().how_many(),
             alo_applications::application_words().unwrap().how_many(),
             alo_approving::approving_words().unwrap().how_many(),

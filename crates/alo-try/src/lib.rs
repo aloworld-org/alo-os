@@ -122,29 +122,9 @@ pub fn the_cgroup_this_process_is_in(said: &str) -> Option<PathBuf> {
 /// Where the cgroup filesystem is mounted, which systemd fixes.
 pub const THE_CGROUP_FILESYSTEM: &str = "/sys/fs/cgroup";
 
-/// Where a person's own runs are written down.
-///
-/// **Their own file, under their own state folder**, which ADR 0125's amendment
-/// settles and `docs/contracts/record-file.md` already prescribes the shape of:
-/// *two files, because a record file has one writer.* That contract's own answer
-/// to a new writer is a new file, and this is the fourth — written by the
-/// person's own command rather than by a service.
-///
-/// **Not `/var/lib/alo/record.jsonl`.** That file has one writer and it is
-/// `alo-agentd`. Appending to it from a second process is the thing the rule
-/// forbids, and it is forbidden for a reason that has nothing to do with
-/// permission: on a shipped machine the person and the daemon are the same
-/// account, so the permission is there and the rule is still right.
-///
-/// The format is the same line-per-entry shape, so the tooling that reads a
-/// record can read this one when it is pointed at it.
-#[must_use]
-pub fn the_record_a_person_keeps(home: &Path) -> PathBuf {
-    home.join(".local")
-        .join("state")
-        .join("alo")
-        .join("commands.jsonl")
-}
+/// Where a person's own runs are written down — named once, in `alo-keeping`,
+/// which `alo-app` writes to as well.
+pub use alo_keeping::the_record_a_person_keeps;
 
 /// What a person asked for in front of the command.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

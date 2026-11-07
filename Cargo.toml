@@ -20,6 +20,7 @@ members = [
   "crates/alo-kept-undo",
   "crates/alo-running",
   "crates/alo-try",
+  "crates/alo-app",
   "crates/alo-access",
   "crates/alo-acting",
   "crates/alo-agent",

@@ -74,6 +74,14 @@ impl CarriesOutAnApplicationVerb for Server {
             what_an_application_act_asks_for(&self.the_windows_the_dock_sees(), &app, acting);
         self.carry_this_out(asked_for, &app)
     }
+
+    fn the_window_before_this_terminal(&mut self) -> alo_acting::InFront {
+        Self::the_window_before_this_terminal(self)
+    }
+
+    fn where_alos_tree_is(&self) -> alo_acting::WhereAlosTreeIs {
+        Self::where_alos_tree_is(self)
+    }
 }
 
 impl Server {

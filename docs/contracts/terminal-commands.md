@@ -9,9 +9,33 @@ and the body of this page is in line with them.
 screen road and who reads the screen, was accepted the same day (*"yes"*), and
 ADR 0001 §6 and `app-adapters.md` were amended in the same change. It is the
 contract `docs/features.md` said must be written *before* the commands are
-built (*Everything on the computer, from the terminal*, #1101). **Nothing in it
-is built yet**: accepted is a promise about what will be built, not a statement
-that a person can type any of it today (section 6).
+built (*Everything on the computer, from the terminal*, #1101).
+
+**What is built, 2026-11-07** (`crates/alo-app`, stage 2 of the plan) — and
+**none of it has been walked on a booted alo machine**:
+
+| | |
+|---|---|
+| `list`, `show <application>`, `show <application> <ability>`, with `--json` carrying `"format": 1` | built |
+| `<application> <ability> [values]` for declared abilities, by order or `--<argument>`, through alo's own validation | built |
+| `controls`, `read`, `press <kind> <name>` through the accessibility tree | built |
+| `open`, `focus`, `close` through the desktop's door | built |
+| naming: identifier, short name, reserved words, a shared short name refused | built |
+| `--in`, `front`, `alo` | built |
+| `-` from the pipe, one call and one entry per line | built |
+| the record entry, the count of what the application sends (ADR 0148), one place to return to per command line | built |
+| exit codes 0, 1, 64, 65, 69, 75 | built; **76 and 77 are produced by nothing yet** — 76 is the screen road's, and no policy reaches a typed command |
+| `type`, `set`, `choose`, `key`, `click`, `drag`, the screen road, discovered abilities, `coverage`, the parity test | **not built** |
+
+Accepted is a promise about what will be built; the table is what a person can
+type today (section 6 says what each row reaches).
+
+**Three things this page did not settle, settled by the build and put to the
+owner** on 2026-11-07, by the coordinator: when a count cannot be held
+the command **runs and says so** rather than refusing; `--plain` is read as
+*plain sentences wherever the output goes*; and `open`, `focus` and `close`
+refuse `--in` and `front`, because they act on the whole application and the
+person meant one window.
 
 ## What this gives a person, in one paragraph
 
@@ -343,6 +367,28 @@ deprecation period, as `CLAUDE.md`'s *contracts outlive code* requires:
   carries `"format": 1` so a later shape can be told apart;
 - the exit codes above;
 - the record entry in section 4.
+
+**As built on 2026-11-07, these are the shapes** (`crates/alo-app`):
+
+- on a pipe, `list` gives one identifier per line; `show <application>` its
+  declared abilities' names; `show <application> <ability>` that ability's
+  arguments' names; `controls` one control per line as
+  `<kind>⇥<name>⇥<states>`, where `<kind>` is a kind `press` takes or `field` or
+  `password_field`, and `<states>` is any of `greyed-out`, `on` and `off`
+  separated by commas; `read` each piece of text a window shows; and an act
+  gives back nothing, because no ability declares `gives` yet;
+- `--json` for `list` is `{"format":1,"applications":[…]}`, each with
+  `identifier`, `name`, `typed_as`, `short_name` (`null` where it does not reach
+  it), `terminal` and `abilities`; for `show` it is the same object with
+  `"format":1` and `roads` — `window`, `tree` (`described`, `not-open` or
+  `no-tree`), `declared` (each ability's `ability`, `purpose`, `effect`, `sends`
+  and `arguments`), `discovered` (`not-asked`) and `screen` (`not-built`);
+- `--plain` gives plain sentences in the person's language wherever the output
+  goes, and `--json` is offered for `list` and `show` only;
+- `ALO_APP_DOORS_IN` names the folder this person's two doors are in, in place
+  of `/run/alo/<uid>`, which is how a test runs the real binary against doors
+  of its own. It moves nothing a person does not already have: both doors admit
+  only their own login, decided by the kernel.
 
 Additive means: new forms, new flags and new fields may appear; an existing one
 never changes meaning. **A deprecated spelling keeps working for at least one
@@ -837,10 +883,12 @@ counted.
 
 ## 6. What a fresh machine can do with this today
 
-**`alo-app` does not exist.** So today, on a fresh machine, a person can type
-none of this. What follows is what it *would* reach on the day it is built, read
-from the code and documents on `main` on 2026-11-06. Nothing in this table has
-been measured on a booted alo machine; where only one could tell, it says so.
+**`alo-app` is built as of 2026-11-07 and shipped in the image** (`/usr/bin/alo-app`),
+with the forms the table at the top of this page lists. What follows is what it
+reaches, read from the code and documents of 2026-11-06 and unchanged by
+building it. **Nothing in this table has been measured on a booted alo machine**;
+where only one could tell, it says so. *Until 2026-11-07 this paragraph began
+"`alo-app` does not exist".*
 
 Three facts govern every row:
 

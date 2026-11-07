@@ -108,6 +108,7 @@ dependencies = [
 name = "alo-adapters"
 version = "0.0.1"
 dependencies = [
+ "alo-access",
  "alo-applications",
  "alo-capability",
  "alo-portals",
@@ -214,6 +215,28 @@ dependencies = [
  "alo-record",
  "alo-strings",
  "thiserror 2.0.20",
+]
+
+[[package]]
+name = "alo-app"
+version = "0.0.1"
+dependencies = [
+ "alo-access",
+ "alo-acting",
+ "alo-adapters",
+ "alo-applications",
+ "alo-capability",
+ "alo-choosing",
+ "alo-installed",
+ "alo-keeping",
+ "alo-portals",
+ "alo-protocol",
+ "alo-record",
+ "alo-strings",
+ "rustix 1.1.4",
+ "serde_json",
+ "thiserror 2.0.20",
+ "zbus",
 ]
 
 [[package]]
@@ -1626,6 +1649,7 @@ dependencies = [
  "alo-adapters",
  "alo-adapting",
  "alo-answering",
+ "alo-app",
  "alo-appearance",
  "alo-applications",
  "alo-approving",

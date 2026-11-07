@@ -313,6 +313,58 @@ cannot forget to end:
 Nothing an agent sends reaches this act: `alo-agentd` writes only `open`, `focus`
 and `close`, and the answer is the person's own command's to read.
 
+## The window you were working in — `front`, added 2026-11-07
+
+**What it gives a person:** typing `alo-app front press button "Save"` in a
+terminal acts on the window they were just working in, without looking up which
+application it belongs to (`terminal-commands.md`, *front*). This is the
+compositor's half: which window that was.
+
+```
+→ front
+← front <window-number> <application> <title> | none | unnamed
+```
+
+- `front` is alone on its line. `front` followed by anything is not a request
+  and is closed with nothing written.
+- *This terminal* is whatever has the person's keyboard when the line arrives,
+  and it must be a terminal: alo's own, or a window whose application is one of
+  the terminals `alo_capability::A_PERSONS_OWN` lists. Anything else means the
+  command was not typed in a terminal — a script a timer started — and the
+  answer is `none`.
+- The answer is **the most recently focused window that is not that terminal
+  and is still open**: the compositor's number for it (stable for its life,
+  never reused), the identifier it gave itself, and its title, cleaned of
+  control characters, cut to 200 characters, and possibly empty.
+- `none` — nothing had the keyboard before this terminal, or what has it is not
+  a terminal. `unnamed` — the window before it cannot be named: it gave no
+  identifier, or it is alo's own terminal, which is not an application.
+  **Another window is never answered instead**: a window that closed is not
+  replaced by the one before it.
+- **What is remembered to answer this**: who had the keyboard, most recent
+  first, at most thirty-two changes, in the compositor's memory for the
+  session. It is never written down or sent anywhere, and a window that closes
+  drops out of it.
+
+## Where alo's own surfaces are — `alo-tree`, added 2026-11-07
+
+**What it gives a person:** `alo-app alo …` reaches Settings, the Dock and the
+record through the tree a screen reader reads, and reaches **alo's** — not a
+program that calls itself alo. The shell is not sandboxed, so nothing on the
+accessibility bus tells its tree from another unsandboxed program's; the
+compositor publishes the tree, so it is the one that can say which it is.
+
+```
+→ alo-tree
+← at <unique-bus-name> | none
+```
+
+- `alo-tree` is alone on its line; anything after it is not a request.
+- `at :1.42` names the connection the shell's tree answers as on the
+  accessibility bus — always a unique name, which no other program can hold.
+- `none` — the shell publishes no tree: no accessibility bus answered when the
+  session began.
+
 ## What is not here
 
 **`arrange`.** `docs/features.md` promises four application verbs and this door

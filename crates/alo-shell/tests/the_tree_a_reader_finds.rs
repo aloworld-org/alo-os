@@ -862,3 +862,67 @@ fn nothing_a_session_started_outlives_it() {
         "the session was dropped and these are still running: {left:?}"
     );
 }
+
+/// **Each surface's own node carries the name a person types for it**, on the
+/// real bus, and a person's command reaches a surface by that name through the
+/// name the shell's tree answers as — the road `alo-app alo … --in settings`
+/// takes (`docs/contracts/terminal-commands.md`, section 3).
+#[test]
+fn a_persons_command_reaches_a_surface_by_the_name_it_types() {
+    let session = ASession::started();
+    let strings = words();
+    let tree = ReadAloudTree::of(&strings, &Surface::ALL, &TurnedOn::nothing());
+    let bus = ReadAloudBus::serving(&session.accessibility, &tree).expect("the tree is served");
+    bus.embedded().expect("the registry embedded this machine");
+    let reader = session.reader();
+    let ours = waiting_for(
+        "this machine's own tree being listed by the registry",
+        || {
+            reader
+                .applications()
+                .ok()?
+                .into_iter()
+                .find(|running| running.at.holder == bus.answers_as())
+        },
+    );
+
+    let root = reader.facts(&ours.at).expect("the root is there");
+    let mut typed: Vec<String> = Vec::new();
+    for surface_node in &root.children {
+        for (key, value) in reader
+            .attributes(surface_node)
+            .expect("attributes are served")
+        {
+            if key == alo_access::THE_SURFACE_ATTRIBUTE {
+                typed.push(value);
+            }
+        }
+    }
+    let mut expected: Vec<String> = Surface::ALL
+        .into_iter()
+        .map(|surface| surface.on_the_wire().to_owned())
+        .collect();
+    typed.sort_unstable();
+    expected.sort_unstable();
+    assert_eq!(
+        typed, expected,
+        "not every surface is on the bus under its typed name, once"
+    );
+
+    let alo = alo_adapters::Whose::AlosOwn {
+        answers_as: bus.answers_as(),
+    };
+    let settings = alo_adapters::read_by_hand(&reader, alo, Some("settings"))
+        .expect("Settings is reached by the name a person types");
+    assert_eq!(
+        settings.windows().len(),
+        1,
+        "--in settings reached more than Settings"
+    );
+    assert_eq!(
+        alo_adapters::read_by_hand(&reader, alo, Some("places")).unwrap_err(),
+        alo_adapters::NotWalked::NoSuchWindow,
+        "a surface the shell does not publish was reached"
+    );
+    drop(bus);
+}

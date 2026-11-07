@@ -576,6 +576,12 @@ impl Surfaces {
             .and_then(|surface| self.display.get_client(surface.id()).ok());
 
         handle.set_focus(self, focus, SERIAL_COUNTER.next_serial());
+        // **Remembered for `front`**: the window, as its toplevel, that has the
+        // person's keyboard now (`crate::who_had_the_keyboard`).
+        if let Some(root) = self.keyboard_root() {
+            self.keyboard_was_with
+                .now_has(crate::who_had_the_keyboard::HadTheKeyboard::Window(root));
+        }
 
         if let Some(seat) = seat {
             let display = self.display.clone();

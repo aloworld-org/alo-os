@@ -17,7 +17,7 @@ use crate::adapters::Adapters;
 use crate::fallback_reach::reached;
 use crate::fallback_verbs::READ_WINDOW;
 use crate::shown::Shown;
-use crate::walking::walk;
+use crate::walking::{Whose, walk};
 
 /// An authorised read of an application's windows that has not been read yet.
 ///
@@ -74,14 +74,14 @@ impl ReadingWindows {
         tree: &dyn AccessibilityTree,
         strings: &Strings,
     ) -> Result<WindowsRead, Refused> {
-        match walk(tree, &self.application) {
+        match walk(tree, Whose::Application(&self.application), None) {
             Ok(walked) => Ok(WindowsRead {
                 authorised: self.authorised,
                 shown: walked.shown,
             }),
             Err(why) => Err(Refused::worded_elsewhere(
                 self.authorised.call().clone(),
-                why.said(&self.application, strings),
+                why.said(&self.application, None, strings),
             )),
         }
     }

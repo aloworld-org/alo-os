@@ -624,7 +624,7 @@ before it leaves.
 {"pairings":{"paired":[{"machine":"0f1e2d3c4b5a69788796a5b4c3d2e1f0","may":[…],"made_ago":60,"ends_in":86340,"may_answer_questions":true,"called":"the studio machine"}],"waiting":[]}}
 {"chosen-to-answer":{"machine":"0f1e2d3c4b5a69788796a5b4c3d2e1f0","called":"the studio machine"}}
 {"machine-named":{"machine":"0f1e2d3c4b5a69788796a5b4c3d2e1f0","called":"the studio machine","became":"kept"}}
-{"a-place-to-return-to":{"kept":true}}
+{"a-place-to-return-to":{"kept":true,"named":"1762516800-4242-their-own"}}
 {"leaving":{"lines":[{"agent":{"agent":"@alo","why":"asking","destination":{"provider":{"provider":"openai","region":{"declared":"the US"}}}}}]}}
 {"a-place-to-return-to":{"kept":false,"why_not":{"text":"this command is about to run and alo could not keep a place to return to, so you will not be able to undo it","came_from":"translation"}}}
 ```
@@ -633,6 +633,14 @@ before it leaves.
 next command. **`why_not` is absent when one was kept**, and that is the whole
 shape: a sentence before every command a person runs is noise they would learn
 to scroll past, and the one worth telling them is the one that did not happen.
+
+**`named` is what the place is called, present only when one was kept** — added
+2026-11-07, additively, for `alo-app` (`terminal-commands.md`, *Put back*): a
+command that writes its own record entry names the place in that entry's
+`kept_as`, so the record window offers Put back for it. The name is opaque, as
+every place's is, and nothing parses it. A reader must take an answer with no
+`named` — an older service's — as a place kept that no entry can name, and
+`alo-before`, which writes no entry, reads none.
 
 **It is never a refusal.** The command runs either way —
 [ADR 0045](../decisions/0045-what-undoing-rewinds-to.md)'s third term is *a

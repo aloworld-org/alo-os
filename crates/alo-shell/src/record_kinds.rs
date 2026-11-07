@@ -45,6 +45,7 @@ impl EntryKind {
         match outcome {
             Outcome::Ran
             | Outcome::RanACommand
+            | Outcome::AskedAnApplication
             | Outcome::MachineChangeHandedOn
             | Outcome::PutBack
             | Outcome::FoldersPutBack => Self::Changed,
@@ -56,6 +57,7 @@ impl EntryKind {
             | Outcome::NeverPutAnywhere
             | Outcome::NotBounded
             | Outcome::ACommandWasNotRun
+            | Outcome::AnApplicationWasNotAsked
             | Outcome::HeldBack
             | Outcome::MachineChangeRefused
             | Outcome::NotPutBack
