@@ -180,6 +180,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             && !finishing
         {
             recorder.finish_after_source_ended()?;
+            recorder.verify_stopped_inputs()?;
             finishing = true;
         }
         if elapsed > Duration::from_secs(3 * time_scale) && !resumed && !finishing {
@@ -188,6 +189,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
         if elapsed > Duration::from_secs(5 * time_scale) && !finishing {
             recorder.finish()?;
+            recorder.verify_stopped_inputs()?;
             finishing = true;
         }
         match recorder.poll() {

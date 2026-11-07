@@ -1366,3 +1366,37 @@ size, cadence, format, permission source and frame-dropping policy. The existing
 real-framebuffer and pinned-publisher CI flows exercise downscaled recording,
 pause/resume, finalization and decoded output; a normal installed package repeat
 is still required.
+
+### Native microphone clock lifetime
+
+Normal package `54eb8544` builds with all 28 local application tests passing,
+and native CI passes its framebuffer and pinned-publisher recording checks.
+Its bundle SHA-256 is
+`e1f56b8866e66e8015d6f7a31f4b80836fe52385d0760b77aa9ed1e70601d354`.
+The isolated installed application repeat retains desktop `605d72a3`.
+
+A persistent reader of only the owned virtual reference monitor keeps reference
+audio generation alive after the short health probe disconnects. The first
+reference check passes; the subsequent idle-period check has continuous PCM but
+a 10.547-second delivery span, outside the existing 10.5-second limit. That run
+does not establish synchronization acceptance. No reference limit is changed.
+
+Window clip `1794026261-466303989-2` begins recording, then its audio queue fills.
+The subsequent Pause request and status read time out. Studio aborts in native
+PulseAudio code, leaving a 1,646-byte partial rather than a completed recording.
+The partial is preserved with SHA-256
+`147161f51ca29b135a37b82ad15ffc97f491c22ed8da2bedbd2c26998d9b13da`.
+The core, application journal and source journal are preserved in
+`installed-preprocessing-window`; no full-flow or export success is credited.
+
+The core's failing thread reads an audio clock through the PulseAudio plugin
+while shutdown clears its mainloop. The matching
+[GStreamer 1.26.11 source](https://github.com/GStreamer/gstreamer/blob/1.26.11/subprojects/gst-plugins-good/ext/pulse/pulsesrc.c)
+confirms that manually moving the microphone to Null destroys this context.
+The application currently does so before the other pipeline threads have
+finished using its selected clock. The candidate instead corks the microphone
+in Paused, locks it against parent resume, and retains its clock provider while
+queued media drains. Normal parent shutdown then unlocks and closes the inputs
+in pipeline order. Verification probes check stopped input states and the live
+native clock provider during real microphone finalization. CI and another
+normally installed repeat of this correction are pending.

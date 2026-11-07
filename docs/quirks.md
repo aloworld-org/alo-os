@@ -8395,3 +8395,19 @@ extending it to the whole service is a reading, not a ruling.
 The provider half — the answer coming back from the provider with the service
 running — **has not been verified on any machine**, and needs one with a
 boundary.
+
+## A recording clock can outlive a manually closed PulseAudio source
+
+On 2026-11-07, normally installed Studio `54eb8544` aborts in the GNOME 49
+runtime's GStreamer 1.26.11 PulseAudio plugin after its audio queue fills and
+controlled finalization begins. The core's failing streaming thread reads an
+audio clock and reaches `pa_threaded_mainloop_unlock` with a null mainloop.
+The source had been manually moved to Null while another stream still used
+its clock. This is a one-time observed failure, preserved with the partial
+recording and journals in `installed-preprocessing-window`.
+
+Studio's correction corks and locks the microphone during drain, retaining its
+native clock context until normal pipeline shutdown. The real PulseAudio
+integration probe now checks that stopped capture still has its selected clock
+provider. Installed verification of this correction is pending; the original
+partial is retained and is not reported as a completed recording.

@@ -380,7 +380,7 @@ impl Recorder {
     /// Stop live inputs and seal queued media. Only bus EOS means it is finished.
     pub fn finish(&mut self) -> Result<(), MediaError> {
         // A native PipeWire provider need not forward a downstream EOS request.
-        // Closing video and microphone first also makes Finish stop capture now.
+        // Stop both inputs before draining their already captured media.
         self.finish_after_source_ended()
     }
     /// Stop all live inputs, then drain only queued media into the WebM trailer.
@@ -389,14 +389,23 @@ impl Recorder {
         if self.finishing {
             return Ok(());
         }
-        // Stop admitting video at Finish, then close the microphone before a
+        // Stop admitting video at Finish, then cork the microphone before a
         // slow native video disconnect can extend the audio recording.
         self.paused.store(true, Ordering::Relaxed);
         let mut inputs = Vec::new();
         for (name, queue) in [("microphone", "audio-input"), ("source", "video-input")] {
             if let Some(source) = self.pipeline.by_name(name) {
                 source.set_locked_state(true);
-                source.set_state(gst::State::Null).map_err(failed)?;
+                // The microphone supplies the pipeline clock. Keep its native
+                // context alive while other threads drain, with capture corked
+                // and locked against the parent's resume. Closing it here can
+                // free PulseAudio's mainloop during an outstanding clock read.
+                let stopped = if name == "microphone" {
+                    gst::State::Paused
+                } else {
+                    gst::State::Null
+                };
+                source.set_state(stopped).map_err(failed)?;
                 #[cfg(feature = "verification")]
                 if name == "source" && std::env::var_os("ALO_STUDIO_VERIFY_STOP_DELAY").is_some() {
                     std::thread::sleep(std::time::Duration::from_millis(750));
@@ -494,11 +503,22 @@ impl Recorder {
 impl Drop for Recorder {
     fn drop(&mut self) {
         self.paused.store(true, Ordering::Relaxed);
+        // Restore normal bin shutdown ordering: all streaming tasks stop before
+        // the microphone's clock provider and native context are destroyed.
+        for name in ["microphone", "source"] {
+            if let Some(source) = self.pipeline.by_name(name) {
+                source.set_locked_state(false);
+            }
+        }
         if let Err(error) = self.pipeline.set_state(gst::State::Null) {
             eprintln!("Stopping the recording engine: {error}");
         }
     }
 }
+
+#[cfg(feature = "verification")]
+#[path = "verification_finish.rs"]
+mod verification_finish;
 
 fn failed(error: impl std::fmt::Display) -> MediaError {
     MediaError(error.to_string())
