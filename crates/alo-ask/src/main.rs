@@ -104,7 +104,7 @@ const WHO_IS_ASKING: &str = alo_ask::its_name::ITS_NAME;
 /// without a runtime, and the part that reaches one is the order a real machine
 /// does things in.
 ///
-/// A model that will not answer is [`WhatItWants::CannotTell`] rather than a
+/// A model that will not answer is [`alo_ask::answering_or_acting::WhatItWants::CannotTell`] rather than a
 /// failure of its own, because the person asked for something and the thing to
 /// tell them is that alo could not tell which — not that a classification step
 /// they never asked for did not work.
