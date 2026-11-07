@@ -34,22 +34,19 @@ impl ThePointersLook {
     /// what a display's scale multiplies.
     #[must_use]
     pub const fn logical_pixels(self) -> u32 {
-        alo_cursors::measures::LOGICAL_SIZE * self.size.per_cent() as u32 / 100
+        alo_cursors::measures::logical_pixels(self.size)
     }
 
     /// The arrow `alo_cursors` draws for this look.
     #[must_use]
-    pub const fn silhouette(self) -> alo_cursors::Silhouette {
-        match self.shape {
-            PointerShape::Kite => alo_cursors::Silhouette::Kite,
-            PointerShape::Classic => alo_cursors::Silhouette::Classic,
-        }
+    pub fn silhouette(self) -> alo_cursors::Silhouette {
+        self.shape.into()
     }
 
     /// The cursor theme an application that draws its own pointer is told to
     /// draw from.
     #[must_use]
-    pub const fn the_theme(self) -> &'static str {
+    pub fn the_theme(self) -> &'static str {
         alo_cursors::theme::the_name_of(self.silhouette())
     }
 }

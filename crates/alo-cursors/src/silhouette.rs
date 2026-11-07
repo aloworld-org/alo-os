@@ -19,6 +19,18 @@ pub enum Silhouette {
     Classic,
 }
 
+/// The arrow for the shape a person chose in Settings, which
+/// `alo_appearance::PointerShape` keeps: one mapping, so alo's own pointer, its
+/// cursor theme and what the Settings portal says cannot disagree.
+impl From<alo_appearance::PointerShape> for Silhouette {
+    fn from(shape: alo_appearance::PointerShape) -> Self {
+        match shape {
+            alo_appearance::PointerShape::Kite => Self::Kite,
+            alo_appearance::PointerShape::Classic => Self::Classic,
+        }
+    }
+}
+
 impl Silhouette {
     /// Both, the shipped one first.
     pub const ALL: [Self; 2] = [Self::Kite, Self::Classic];

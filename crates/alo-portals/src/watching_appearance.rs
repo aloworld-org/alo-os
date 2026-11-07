@@ -41,7 +41,7 @@ use zbus::names::{BusName, OwnedBusName, UniqueName};
 use zbus::object_server::SignalEmitter;
 
 use crate::answered::{Answered, Outcome, Unanswered};
-use crate::appearance_settings::{self, THE_NAMESPACE, Values};
+use crate::appearance_settings::{self, Values};
 use crate::caller::{caller_of, named};
 use crate::handle::THE_PORTALS_OBJECT;
 use crate::portal::Portal;
@@ -152,9 +152,14 @@ async fn send(bus: &zbus::Connection, connection: &UniqueName<'_>, changed: &Val
     };
     let emitter = emitter.set_destination(BusName::Unique(connection.as_ref()));
     for (setting, value) in changed {
-        if SettingsPortal::setting_changed(&emitter, THE_NAMESPACE, setting.key(), written(*value))
-            .await
-            .is_err()
+        if SettingsPortal::setting_changed(
+            &emitter,
+            setting.namespace(),
+            setting.key(),
+            written(*value),
+        )
+        .await
+        .is_err()
         {
             return;
         }
