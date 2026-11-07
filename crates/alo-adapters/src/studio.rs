@@ -119,7 +119,7 @@ macro_rules! controls {
             mechanism: Mechanism::DBus, words: WORDS,
             verbs: &[
                 AdapterVerb {
-                    name: "status", purpose: STATUS_PURPOSE, effect: Effect::Read, args: &[],
+                    name: "status", purpose: STATUS_PURPOSE, effect: Effect::Read, sends: crate::adapter_verb::Sends::Never, args: &[],
                     reaches: Reaches::OnlyItsApplication, sentence: STATUS_SENTENCE,
                     by_hand: Some(STATUS_BY_HAND),
                     carried_out: Invocation::DBus(DBusMethod { object: OBJECT, interface: INTERFACE, method: "GetStatus", parameters: &[] }),
@@ -127,7 +127,7 @@ macro_rules! controls {
                 $(AdapterVerb {
                     name: stringify!($name),
                     purpose: Word::saying(concat!("adapters.studio.", $key, ".purpose"), $purpose),
-                    effect: Effect::Change, args: $args, reaches: Reaches::OnlyItsApplication,
+                    effect: Effect::Change, sends: crate::adapter_verb::Sends::Never, args: $args, reaches: Reaches::OnlyItsApplication,
                     sentence: Word::saying(concat!("adapters.studio.", $key, ".sentence"), $sentence),
                     by_hand: Some(Word::saying(concat!("adapters.studio.", $key, ".by-hand"), $manual)),
                     carried_out: Invocation::DBus(DBusMethod { object: OBJECT, interface: INTERFACE, method: $method, parameters: $parameters }),
