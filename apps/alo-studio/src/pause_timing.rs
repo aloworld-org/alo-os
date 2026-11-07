@@ -16,10 +16,15 @@ pub(crate) fn pause(pipeline: &gst::Pipeline, paused: &AtomicBool) -> Result<(),
             .set_state(gst::State::Paused)
             .map_err(|error| MediaError(error.to_string()))?;
     }
-    let requested = pipeline
-        .current_running_time()
-        .ok_or_else(|| MediaError(t("The recording clock is unavailable. Please try again.")))?;
     paused.store(true, Ordering::Relaxed);
+    // Close admission before sampling the cutoff. A buffer that passed the
+    // final source-gate check was timestamped before this boundary.
+    let Some(requested) = pipeline.current_running_time() else {
+        paused.store(false, Ordering::Relaxed);
+        return Err(MediaError(t(
+            "The recording clock is unavailable. Please try again.",
+        )));
+    };
     if let Err(error) = pipeline.set_state(gst::State::Paused) {
         paused.store(false, Ordering::Relaxed);
         return Err(MediaError(error.to_string()));

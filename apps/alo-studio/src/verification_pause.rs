@@ -6,7 +6,9 @@ use gst::prelude::*;
 impl Recorder {
     /// Check the real PipeWire input remains connected while recording is gated.
     /// This inspection is excluded from the normal installed application.
-    pub fn verify_paused_native_capture(&self) -> Result<(), MediaError> {
+    pub fn verify_paused_native_capture(
+        &self,
+    ) -> Result<(gst::ClockTime, Option<gst::ClockTime>), MediaError> {
         let source = self
             .pipeline
             .by_name("source")
@@ -30,6 +32,19 @@ impl Recorder {
         {
             return Err(MediaError("The paused microphone is still active".into()));
         }
-        Ok(())
+        let cutoff = self
+            .pipeline
+            .start_time()
+            .ok_or_else(|| MediaError("No paused capture boundary".into()))?;
+        let latest = self
+            .video
+            .as_ref()
+            .and_then(|progress| progress.lock().ok()?.latest_time());
+        if latest.is_some_and(|latest| latest > cutoff) {
+            return Err(MediaError(format!(
+                "Video captured after the pause boundary was encoded: latest={latest:?} cutoff={cutoff}"
+            )));
+        }
+        Ok((cutoff, latest))
     }
 }

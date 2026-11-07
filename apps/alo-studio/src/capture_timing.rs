@@ -35,6 +35,11 @@ pub(crate) fn receive(
             let Some(arrived) = pipeline.current_running_time() else {
                 return gst::PadProbeReturn::Handled;
             };
+            // A pause can begin while the clock lookup waits on the pipeline.
+            // Do not admit that late buffer after its capture gate has closed.
+            if paused.load(Ordering::Relaxed) {
+                return gst::PadProbeReturn::Handled;
+            }
             if let Some(buffer) = info.buffer_mut() {
                 let buffer = buffer.make_mut();
                 buffer.set_pts(arrived);

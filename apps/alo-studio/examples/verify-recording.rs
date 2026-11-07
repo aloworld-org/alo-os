@@ -186,9 +186,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             finishing = true;
         }
         if paused && !resumed && !finishing && remote.is_some() {
-            recorder.verify_paused_native_capture()?;
+            let (cutoff, latest) = recorder.verify_paused_native_capture()?;
             if recorder.recorded_duration() != paused_duration {
-                return Err("Video encoding advanced while native recording was paused".into());
+                println!(
+                    "PAUSED_PREVIOUS_INPUT_DRAIN before={paused_duration:?} after={:?} latest={latest:?} cutoff={cutoff}",
+                    recorder.recorded_duration()
+                );
+                paused_duration = recorder.recorded_duration();
             }
         }
         if elapsed > Duration::from_secs(3 * time_scale) && !resumed && !finishing {

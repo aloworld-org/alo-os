@@ -7,6 +7,8 @@ pub(crate) struct Progress {
     input: Option<gst::ClockTime>,
     first: Option<gst::ClockTime>,
     end: Option<gst::ClockTime>,
+    #[cfg(feature = "verification")]
+    latest: Option<gst::ClockTime>,
 }
 
 impl Progress {
@@ -28,6 +30,16 @@ impl Progress {
         };
         self.first = Some(self.first.map_or(start, |first| first.min(start)));
         self.end = Some(self.end.map_or(end, |last| last.max(end)));
+        #[cfg(feature = "verification")]
+        {
+            self.latest = Some(self.latest.map_or(start, |last| last.max(start)));
+        }
+    }
+
+    /// Compare captured time with a pause boundary, rather than encoder progress.
+    #[cfg(feature = "verification")]
+    pub(crate) fn latest_time(&self) -> Option<gst::ClockTime> {
+        self.latest
     }
 
     pub(crate) fn duration(&self) -> Option<Duration> {

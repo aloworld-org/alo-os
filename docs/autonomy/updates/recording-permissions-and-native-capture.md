@@ -2099,7 +2099,21 @@ pauses, restored base time, refusal to acquire another owner's lock, ordinary
 source exclusion, early-return cleanup, retirement without restart and failure
 when its parent disappears. The native PipeWire integration probe additionally
 requires a connected Playing video input while the recording pipeline is paused,
-a stopped microphone and no encoded-duration advance. Existing resumed-frame,
+a stopped microphone and no encoded frame timestamped after the saved pause boundary. Existing resumed-frame,
 source-loss-while-paused, stopped-input and final-decoding checks remain.
 CI, a fresh normal GNOME SDK package and another installed recording walk are
 pending; this is a candidate correction, not installed quality acceptance.
+
+The first native connection CI at `5afc4832` passes all 33 unit tests, the native
+GTK walk and its normal package build, but fails the pinned provider probe's
+new exact encoded-duration comparison during Pause. That comparison conflates
+capture time and completion of already queued encoding. The next diagnostic
+records the latest encoded input timestamp and rejects any timestamp after the
+saved pause cutoff instead. It logs queued completion with before/after duration,
+latest timestamp and cutoff; only a passing cutoff check can classify it as
+pre-pause work. The live input/microphone state checks remain. The source gate
+also rechecks Pause after looking up the clock, and admission closes before the
+cutoff is sampled, so a callback cannot cross that lookup with stale admission.
+No encoded timestamp/duration, media threshold or reference criterion changes.
+The failed `5afc4832` bundle is preserved and has not been installed. Native
+validation of this correction remains pending.
