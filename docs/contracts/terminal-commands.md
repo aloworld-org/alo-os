@@ -808,10 +808,14 @@ The promise says *what it sends fires the indicator*. The indicator today shows
 what `alo-agentd` and alo OS themselves send, and nothing an application sends.
 So for a typed command this is **not yet true, and nothing in this contract may
 be built as though it were**. **It is made true by counting** (the owner's
-answer of 2026-11-06, answer 7): for as long as the command runs, the kernel
-counter that already watches a turn's connections is attached to that
-application's sandbox, and the indicator shows *Thunderbird is sending —
-because of your command*. It counts, rather than declares. It also counts
+answer of 2026-11-06, answer 7): for as long as the command runs, a kernel
+counter is attached to that application's sandbox, and the indicator shows
+*Thunderbird is sending, during your command*. It counts, rather than declares.
+*Corrected 2026-11-07:* this said the counter was the one *that already watches
+a turn's connections*. There was none — the boundary decides and keeps nothing
+(ADR 0015) — so the owner decided a counter of its own, bytes and nothing else,
+in [ADR 0148](../decisions/0148-the-kernel-counts-what-an-application-sends-during-a-persons-command.md),
+and `application-door.md`'s `count` act is how `alo-app` asks for it. It also counts
 anything else that application sends in those seconds, and the line says
 *during your command* rather than claiming every byte was the command's. The
 line is raised by the service that draws the indicator, not printed by

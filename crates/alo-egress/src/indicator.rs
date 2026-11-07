@@ -40,12 +40,14 @@ use alo_strings::{Said, Strings};
 use serde::Serialize;
 
 use crate::departing::Departing;
+use crate::during::DuringTheirCommand;
 use crate::itself::OnItsOwn;
 use crate::leaving::Leaving;
 use crate::policy::EgressPolicy;
 use crate::refusing::NotPermitted;
 use crate::showing::Showing;
 use crate::underway::Underway;
+use crate::while_it_runs::WhileItRuns;
 
 /// Which line on the indicator an egress is.
 ///
@@ -303,6 +305,30 @@ impl Indicator {
     pub fn beginning_on_its_own(&mut self, on_its_own: OnItsOwn, now: SystemTime) -> Underway {
         let id = self.line(now, Showing::Itself(on_its_own.clone()));
         Underway::new(on_its_own, now, id)
+    }
+
+    /// Show that an application is sending during a person's own command
+    /// (ADR 0148), and answer the one handle that takes the line off again.
+    ///
+    /// Nothing is decided here, unlike [`Indicator::beginning`]: the person
+    /// typed the command, the application is already sending by the time a
+    /// count shows it, and no policy of this indicator's stands between a
+    /// person and their own application. What this does is make sure it is
+    /// **seen**.
+    pub fn beginning_during_their_command(
+        &mut self,
+        during: DuringTheirCommand,
+        now: SystemTime,
+    ) -> WhileItRuns {
+        let id = self.line(now, Showing::TheirCommand(during.clone()));
+        WhileItRuns::new(during, now, id)
+    }
+
+    /// Stop showing an application whose person's command has ended.
+    ///
+    /// Takes the [`WhileItRuns`], so one command ends exactly one line.
+    pub fn ended_during_their_command(&mut self, while_it_runs: WhileItRuns) -> bool {
+        self.take_off(while_it_runs.shown())
     }
 
     /// Put one line on the list and answer which line it is.
