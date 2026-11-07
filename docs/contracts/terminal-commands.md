@@ -163,6 +163,84 @@ keeps (*the identifier is approved; the name is only shown*).
 When two installed applications share a short name, the short name is refused
 and both identifiers are listed, so the person picks. Nothing is guessed.
 
+### `front` — the window the person was just working in
+
+*Added 2026-11-06, approved by the owner: "Yes add it".* A person working in a
+window should not have to look up which application it belongs to:
+
+```text
+$ alo-app front press button "Save"
+Pressed Save in Text Editor, today.txt
+```
+
+**What `front` means.** While the person types, the terminal they are typing in
+is the window in front, so `front` cannot mean *the window in front now*. It
+means **the window that was in front just before focus moved to this
+terminal** — the most recently focused window that is not the terminal the
+command was typed in. It is asked of the compositor once, at the moment the
+command starts, and that one window is the subject of the whole command.
+**Nothing answers that question yet**: the compositor's door
+(`application-door.md`) takes acts on a named application and has no *which
+window was in front before this one*. It is an additive act on that door, made
+in the change that builds `front`, and the door already admits only the
+person's own login.
+
+- **There is none** — nothing had focus before the terminal, or the window in
+  front when the command starts is not a terminal at all (a script started by a
+  timer, say), so *before this terminal* means nothing: refused, in a sentence:
+  *There is no window you were working in before this terminal.*
+- **That window has since closed**: refused, in a sentence — *The window you were
+  working in before this terminal (Text Editor, today.txt) has closed.* **Another
+  window is never chosen instead**, not the one before it and not another window
+  of the same application: the person meant one window, and a guess would act on
+  a different one with the same confidence.
+- **A window the compositor cannot name** — one that has no application
+  identifier this machine knows — is refused the same way, rather than acted on
+  as *something*.
+
+**The application is the one that owns that window**, identified as every
+application here is: by the identifier its sandbox gives it, never by its
+title (`app-adapters.md`, *an application is identified by its sandbox*). Every
+form then works exactly as if that identifier had been typed, narrowed to that
+one window as `--in` would narrow it. **The record keeps the real identifier and
+the window, never the word `front`**, so a reader a year later sees what was
+acted on, not how it was named.
+
+**The output names the window it acted on** — the application's name and the
+window's title — on every form, not only on success: *Pressed Save in Text
+Editor, today.txt*, or *Text Editor, today.txt, shows no button named Save.* A
+person reads which window it was in the same line that says what happened.
+
+**Focus comes back to the terminal.** An act on the screen road may bring the
+application's window forward. After each act, `alo-app` asks the compositor to
+return focus to the terminal it was typed in, so a second `alo-app front …`
+typed next still means the same window. Where focus cannot be returned, the
+command says so, because the next `front` would be refused.
+
+**Reserved words.** A name in the application's place is read in this order:
+first the reserved words — `list`, `show`, `front` and `alo` — then a full
+identifier, then a short name. So **an application whose short name is a
+reserved word is not reached by that short name**, and `show` and `list` say
+so beside it: *reach this application as `com.example.Front`*. **Its full
+identifier always reaches it**, because no identifier can be a reserved word —
+an identifier has at least two parts separated by dots. A new reserved word is
+a change to this contract and is added only where no installed application's
+short name is known to need it; adding one is otherwise a break, versioned as
+any other.
+
+**For alo.** alo may use `front`, **and only at the moment the person asks.**
+The window the person was working in is context, and `CLAUDE.md` is plain about
+context: *offered, never watched* — it reaches an agent only at the moment of
+invocation, and only for that turn. So when a person types to `alo` in a
+terminal, the window that was in front before that terminal is taken once, at
+that moment, and handed to that turn as its context, exactly as the focused
+window is when alo is asked from the Dock. It is never asked for again during
+the turn, never kept after it, and alo cannot ask for *the window in front*
+whenever it likes — there is still no verb that lists open windows
+(`agent-verbs.md`, *the application verbs*). Acting on it still needs the grant
+over that application and the person's OK, unless they chose full trust; the
+proposal names the window by its application and title, as the output does.
+
 ### Naming the ability
 
 An ability is named exactly as it is declared: `open_document`,
@@ -256,7 +334,8 @@ deprecation period, as `CLAUDE.md`'s *contracts outlive code* requires:
   and the seven control forms `controls`, `read`, `press`, `type`, `set`,
   `choose` and `key`, with the kinds of control `press` takes, and the two
   position forms `click` and `drag` with their proportions;
-- how an application and an ability are named;
+- how an application and an ability are named, the reserved words `list`,
+  `show`, `front` and `alo`, and what `front` means;
 - how arguments are written, and `-` for the pipe;
 - the line format of a pipe, and the `--json` shape of `list` and `show`, which
   carries `"format": 1` so a later shape can be told apart;
