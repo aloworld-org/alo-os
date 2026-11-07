@@ -26,13 +26,22 @@ media acceptance. All media, partials and compiler resumption proof are retained
 
 An instrumented stage trace finds the publisher already receives about two
 frames per second before encoding, with an empty publisher queue and short pool
-waits. A separate live-recording compositor sample identifies Pixman and readback
-as the main observed user CPU work. A candidate to draw directly into borrowed
-owned words fails compilation: Smithay accepts only static image storage. The
-candidate is reverted; the supported owned Pixman image path is restored. No
-engine lifetime is bypassed and no unsafe code is added. The failed candidate
-and its logs remain in history. Capture source, timing, permission and media
-acceptance requirements remain unchanged; recording quality is not accepted.
+waits. A recording-time activity sample then identifies kernel work as the
+largest compositor cost; minor-fault sampling attributes about 95% of sampled
+faults to full-frame export and readback. The next candidate exports directly
+into initialized owned bytes and reuses them only after all readers release
+ownership. It preserves Smithay's static renderer target and uses Pixman's safe
+copy API for the temporary destination. Formatting passes; hosted and installed
+validation remain pending. The previously rejected renderer-binding trial stays
+reverted. No engine source, allocator defaults, media timing or acceptance limit
+is changed by the new candidate.
+
+A temporary compositor-only allocator trial produces a passing screen recording
+(4.819 fps, 373 ms maximum uncovered gap), but its microphone/window recording
+still fails (2.861 fps, 1.033-second gap and unhealthy reference after idle).
+These are trial-configuration results, not default-system acceptance. The exact
+settings, media and restoration are preserved. Allocator defaults are restored;
+no trial configuration is proposed for the image.
 
 The agent permission walk separately verifies live discovery, approved execution,
 immediate revocation and refusal. Revoked Studio access removes its actions from
@@ -2284,3 +2293,92 @@ free, and QEMU reports zero swapped memory. This is a later observation rather
 than a recording-time memory trace. It does not support swapping as the cause.
 The sampler's journal proves event closure and an inactive service; normal
 application/source/chooser/installer restoration is preserved alongside it.
+
+
+### Readback page faults and the completed allocator experiment
+
+All five hosted checks pass at supported source `7354c454`. The installed
+executable remains the unchanged `0a763631` binary during these diagnostics.
+A recording-time process snapshot measures the compositor over 16.154 seconds:
+4.26 user CPU seconds and 9.94 system CPU seconds. Its main-thread scheduler
+readings span roughly eleven seconds, with 6.55 seconds running and 4.27 seconds
+waiting for CPU. Snapshot collection itself is diagnostic overhead; its media
+is not acceptance. Evidence is `diagnostic-recording-activity` and
+`installed-recording-activity`.
+
+An idle compositor kernel sample under an approved compiler pause retains 799
+instruction pointers over 12.245 seconds, with zero lost records. The largest
+symbols are `do_user_addr_fault` (246) and `clear_page_erms` (193); `read_hpet`
+appears only ten times. No clocksource or kernel boot parameter is changed.
+A subsequent minor-fault sample is protected by the shared build lock and retains
+794 records (one per 100 minor faults), zero lost, over 12.056 seconds. There
+are 722 heap records, 71 anonymous records and one library record. Faulting code
+is Pixman for 408 records and native `copy_xrgb` for 350: 758/794, about 95.5%.
+This locates page initialization associated with the two full-frame allocations.
+It does not imply swapping; QEMU previously reports zero swapped memory.
+Evidence is `diagnostic-idle-kernel-clock-baseline` and
+`diagnostic-current-anonymous-faults`.
+
+An isolated Pixman comparison tries default, disabled wide-SIMD and disabled
+SIMD implementations. Pixel outputs match, but timings do not establish a
+consistent alternative advantage. The desktop implementation selection stays
+unchanged. An isolated export/readback allocation comparison uses default versus
+16 MiB mmap and 32 MiB trim thresholds. Across three trials, its 24-frame phase
+produces 5,002-5,003 minor faults by default and 3,000-3,001 with retention; all
+outputs match. Timings overlap, including a slower retained first trial. These
+are microbenchmarks, not installed application acceptance. Evidence is
+`diagnostic-pixman-native-comparison` and `diagnostic-frame-allocation-comparison`.
+Threshold meanings follow the [GNU libc allocation tunables documentation](https://sourceware.org/glibc/manual/latest/html_node/Memory-Allocation-Tunables.html).
+
+A separate reversible runtime-only compositor trial uses 64 MiB mmap threshold,
+128 MiB trim threshold and two arenas. Its exact service override and before/after
+process identity are preserved. After restart, another twelve-second fault sample
+retains 319 records with zero lost and no mapping events. This is not a controlled
+proof of speedup: process restart and cache state also differ. Observed RSS is
+54,204 KiB versus 85,556 KiB in the older process, with no swap in either; it is
+not a demonstrated steady-state memory reduction.
+
+Under that explicit temporary configuration, both installed flows complete
+controls, stable five-second pause, microphone state, review, library and exact
+export. Screen clip `1794077022-350980926-2`, SHA-256
+`d2c23b79636839322acedf95bea0c382a9152280c5603b4a8a84fa372e2d2105`,
+has 99 decoded frames, 4.819 fps and a 373 ms uncovered gap: screen acceptance
+passes. Window clip `1794077254-953451321-2`, SHA-256
+`caaff89ef668f0071b6d86507e667af2b8584b8b5daecd658a602c5af5f7a225`,
+has 108 distinct frames, 2.861 fps and a 1.033-second gap. Its 37.880 seconds of
+PCM are continuous and track endings differ by 40 ms. The initial reference
+passes but its idle recheck fails (10 seconds of PCM over 10.846 seconds). Four
+marker matches do not establish sync. Window acceptance fails. Evidence is
+`installed-heap-reuse-*`. All nine paused compiler processes resume at 18:51:01 UTC
+after the 18:42:17 UTC pause on 7 November 2026. The owned override is removed,
+and the new desktop process proves allocator defaults restored. No threshold or
+accepted timestamp is changed, and allocator tuning is not shipped.
+
+### Direct export into reusable owned readback bytes
+
+The new candidate keeps the supported static Pixman render target. After the
+shared painter finishes and the renderer borrow ends, Pixman composites directly
+into an initialized owned byte vector through `Image::from_slice_mut`. This is
+an ordinary image copy and does not require Smithay to bind a borrowed image.
+The temporary image borrow ends before normalization or publication. The unused
+channel is cleared in place, retaining the same allocation and canonical B,G,R,0
+bytes. The intermediate exported image allocation and second full-frame copy
+are removed.
+
+The destination's alignment and length are checked by bytemuck's safe slice API.
+Bytemuck 1.25.2 is already resolved in the workspace; it becomes an explicitly
+pinned direct dependency with no new locked version. No local unsafe code, engine
+patch, allocator environment setting, permission or timestamp change is added.
+Malformed lengths, unaligned destinations and non-native source formats refuse
+before the engine copy. Existing rendering/pixel tests remain, and a real-image
+copy regression proves pointer retention and independent saved bytes.
+
+The desktop optionally retains at most six readback allocations and 64 MiB of
+actual capacity, separately from its existing two-image/64 MiB scratch pool.
+Only a successfully unwrapped Arc can become mutable storage. A racing weak-reader
+upgrade fails unwrapping and keeps that frame immutable; old weak references
+cannot observe new pixels after successful unwrapping. Live readers are never
+mutated. Byte, entry, oversized bypass and reader-lifetime regressions cover the
+new pool. Full-image copy replaces all pixels before any publication. Existing
+source lifetime, successful-submission gating and bounded transport remain.
+Formatting passes; CI and default-configuration installed acceptance are pending.

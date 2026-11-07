@@ -202,6 +202,9 @@ alo-turn = { path = "../alo-turn" }
 # asked for a `pixman::Image` by its type. Reached only by
 # `crates/alo-shell/src/software_scanout.rs`.
 pixman = "=0.2.1"
+# Checked alignment and length for Pixman's temporary mutable word view of owned
+# bytes. Already pinned in the workspace lockfile; no local pointer cast.
+bytemuck = "=1.25.2"
 # Already locked through cosmic-text. Its safe owner/dependent cell keeps a
 # drm-rs mapping borrowed from its buffer until retirement, without local unsafe.
 self_cell = "=1.3.0"

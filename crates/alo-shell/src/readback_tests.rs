@@ -84,16 +84,19 @@ fn native_bgr_bytes_match_rgba_conversion_including_odd_width() -> Result<(), Re
         .flat_map(|p| [p[2], p[1], p[0], p[3]])
         .collect();
     let expected = convert((3, 3), RowOrder::TopToBottom, &rgba)?;
-    let actual = copy_xrgb((3, 3), &bgrx)?;
+    let actual = owned_xrgb((3, 3), bgrx)?;
     assert_eq!(actual.pixels(), expected.pixels());
     actual.frame().map_err(|_| ReadbackError::Layout)?;
     for length in [0, 4, 35, 37, 40] {
         assert!(matches!(
-            copy_xrgb((3, 3), &vec![0; length]),
+            owned_xrgb((3, 3), vec![0; length]),
             Err(ReadbackError::Layout)
         ));
     }
-    assert!(matches!(copy_xrgb((0, 1), &[]), Err(ReadbackError::Layout)));
+    assert!(matches!(
+        owned_xrgb((0, 1), Vec::new()),
+        Err(ReadbackError::Layout)
+    ));
     Ok(())
 }
 
@@ -108,7 +111,7 @@ fn native_copy_preserves_channels_across_wide_block_boundaries() -> Result<(), R
             .iter()
             .flat_map(|[blue, green, red, _]| [*blue, *green, *red, 0])
             .collect();
-        let copied = copy_xrgb((width, 3), &source)?;
+        let copied = owned_xrgb((width, 3), source)?;
         assert_eq!(copied.pixels(), expected);
         assert_eq!(copied.stride, width as usize * 4);
     }
@@ -118,7 +121,7 @@ fn native_copy_preserves_channels_across_wide_block_boundaries() -> Result<(), R
 /// Capture shares the exact scanout bytes and survives replacement and release.
 #[test]
 fn capture_shares_owned_pixels_without_changing_previous_frames() -> Result<(), ReadbackError> {
-    let original = copy_xrgb((2, 1), &[1, 2, 3, 255, 4, 5, 6, 255])?;
+    let original = owned_xrgb((2, 1), vec![1, 2, 3, 255, 4, 5, 6, 255])?;
     let shared = original.shared();
     assert!(std::ptr::eq(original.pixels().as_ptr(), shared.as_ptr()));
     let again = original.shared();

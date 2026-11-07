@@ -1838,6 +1838,7 @@ dependencies = [
  "alo-terminal",
  "alo-turn",
  "alo-vector-shapes",
+ "bytemuck",
  "cosmic-text",
  "drm",
  "drm-ffi",
