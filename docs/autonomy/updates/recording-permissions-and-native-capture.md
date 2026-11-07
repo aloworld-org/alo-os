@@ -15,11 +15,14 @@ screen/window walks complete recording, pause/resume, naming, library review
 and exact-file export. Saved-video playback is exercised through the installed
 Review player. Those controls do not establish continuous or synchronized
 media; the measured failures and follow-up changes are recorded below.
-The latest native compositor candidate is `745b67e3`, integrated with main
-`da1192f0`. Its optimized regressions and strict checks pass; its installed
-recording repeat is queued on the shared build lock. The full hosted OS gate
-finds an ADR-number collision and a cursor-recipe integration assertion; both
-are corrected in the following integration change and await revalidation.
+The installed native compositor is `745b67e3`, integrated with main
+`da1192f0`. Its optimized regressions and strict checks pass, but its installed
+video cadence and synchronization fail acceptance. The next candidate,
+`59f8166b`, reuses bounded glyph images after checking actual font identities;
+all dedicated CI and the hosted OS gate pass. Installed repeats still fail
+video cadence and synchronization. A software-native readback format is now
+being validated after a further memory-work profile. The ADR-number collision
+and cursor-recipe integration assertion are corrected.
 The review remains a draft with no market publication, and
 each earlier measurement retains its own tested source.
 
@@ -1214,6 +1217,13 @@ timeout, so the screen flow's export is correctly refused as busy. Neither
 export is credited as complete. A screenshot shows the native Save dialog
 extending beyond the VM display. Exact saved-media and control evidence are
 in `installed-scanout-memory-window` and `installed-scanout-memory-screen`.
+Later native choices complete both exports. `Product demonstration 11.webm`
+matches the window recording and document grant `41225a8a` gives only Studio
+read/write access. `Product demonstration 12.webm` matches the screen recording
+with grant `b80d236b`. These proofs remain separate from the initial failed
+accessibility flow. The VM's remembered chooser size is 1203 × 902 pixels,
+larger than its display; a temporary 760 × 500 setting is used for subsequent
+checks, with its original value saved for cleanup.
 
 Separate 16-sample profiles outside recording acceptance show text shaping,
 glyph rasterization and native painting among the remaining costs. A deeper
@@ -1226,3 +1236,54 @@ IDs alone are local to a database. Regressions check exact fresh/reused output,
 colliding IDs from different databases, and release of excessive pixel storage
 and missing-glyph entries. CI and installed media verification of this change
 are pending; no performance acceptance is inferred from the sampled stacks.
+
+### Installed glyph-cache result and software-native readback
+
+Source `59f8166b` passes dedicated native and optimized desktop CI, strict
+checks, authors validation and the hosted OS gate. The gate runs 12,719 tests:
+12,718 pass, one matches the existing declared runner limitation, and 61 are
+skipped. The four glyph-cache regressions and three existing text-raster tests
+pass alongside the existing desktop, readback, panel, resource/lifetime and
+source-audit checks. No audit or runner exception changes. The installed
+desktop's SHA-256 is
+`1d7e4f3f46a15ba1c7294a822be2fbd3feadc3aff4c4ce68e5a487d0f1748c6b`.
+
+The independent reference passes after one audio-graph restart: 160,000
+samples, ten seconds of timestamp span, no uncovered gaps or overlap, a
+9.606-second delivery span and five pulses. Window/microphone clip
+`1794019648-181544836-2` completes recording, the stable five-second pause,
+Resume and Finish. Its 192 video buffers average 4.205 fps with a 0.666-second
+uncovered gap. Its 46.040 seconds of PCM have no detected holes or overlap;
+track endings differ by 306 milliseconds. Only two visual flashes match, with
+a median offset of -0.7405 seconds. Video continuity and synchronization fail.
+SHA-256 is
+`611f754dcdafacd855ad6cb47363063ffcc37442d0b5b717930adb9c53c6680d`.
+The initial export's accessibility flow times out; its later native Save
+choice is checked separately rather than credited to that first flow.
+
+Screen clip `1794020124-591763283-2` completes the full control, naming,
+library and native export flow without a retry. It has exactly one video
+track and no audio track. Its 41 buffers average 1.651 fps and have a
+2.741-second uncovered gap, so media continuity still fails.
+`Product demonstration 14.webm` matches the original with SHA-256
+`71a3190468b5d62820a5c96969b1b02ffe6c4f7d3e59ca7b1cda49cd1bfa1d34`;
+document grant `8268a5bc` gives only Studio read/write access. Evidence is in
+`installed-glyph-cache-window` and `installed-glyph-cache-screen`.
+
+A subsequent one-time profile outside recording acceptance has ten of sixteen
+samples in scanout allocation/upload or readback conversion, and none in text
+shaping or glyph rasterization. It is preserved as
+`installed-glyph-cache-screen/compositor-samples-025956.txt`; it is not a
+recurring CI measurement or a measured speed ratio. The software renderer
+currently draws RGBA, exports it, and swaps every pixel to BGR for scanout.
+The prepared change instead draws and exports XRGB, retaining its BGR channels
+and clearing the unused byte with a word mask. GLES conversion is unchanged.
+
+A separate four-round VM comparison checks identical output for twelve
+1280 × 800 frames. Current conversion takes 0.236–0.408 seconds, packed RGBA
+conversion 0.272–0.376 seconds, and native BGR copying 0.125–0.148 seconds.
+Only the native-format result improves every round. This is not a pipeline
+acceptance measurement. The new byte-layout regression covers asymmetric
+channels, odd dimensions and malformed lengths; the complete existing software
+renderer pixel checks are added to dedicated optimized CI. Installed media
+verification of this change remains pending.

@@ -171,6 +171,27 @@ pub(crate) fn convert(
     })
 }
 
+/// Preserve software-native BGR channels and clear only the unused fourth byte.
+pub(crate) fn copy_xrgb(size: (u32, u32), bgrx: &[u8]) -> Result<ScanoutPixels, ReadbackError> {
+    let (stride, length) = layout(size)?;
+    if bgrx.len() != length {
+        return Err(ReadbackError::Layout);
+    }
+    let mut pixels: Vec<[u8; 4]> = Vec::new();
+    pixels.try_reserve_exact(length / 4)?;
+    pixels.extend(
+        bgrx.as_chunks::<4>()
+            .0
+            .iter()
+            .map(|pixel| (u32::from_le_bytes(*pixel) & 0x00ff_ffff).to_le_bytes()),
+    );
+    Ok(ScanoutPixels {
+        size,
+        stride,
+        pixels: pixels.into_flattened(),
+    })
+}
+
 #[cfg(test)]
 #[path = "readback_tests.rs"]
 mod tests;

@@ -72,3 +72,27 @@ fn short_and_trailing_bytes_refuse_without_partial_output() {
         ));
     }
 }
+
+/// Native software bytes keep their rows and channels while discarding X.
+#[test]
+fn native_bgr_bytes_match_rgba_conversion_including_odd_width() -> Result<(), ReadbackError> {
+    let rgba: Vec<u8> = (0..3 * 3 * 4).map(|index| index as u8).collect();
+    let bgrx: Vec<u8> = rgba
+        .as_chunks::<4>()
+        .0
+        .iter()
+        .flat_map(|p| [p[2], p[1], p[0], p[3]])
+        .collect();
+    let expected = convert((3, 3), RowOrder::TopToBottom, &rgba)?;
+    let actual = copy_xrgb((3, 3), &bgrx)?;
+    assert_eq!(actual.pixels(), expected.pixels());
+    actual.frame().map_err(|_| ReadbackError::Layout)?;
+    for length in [0, 4, 35, 37, 40] {
+        assert!(matches!(
+            copy_xrgb((3, 3), &vec![0; length]),
+            Err(ReadbackError::Layout)
+        ));
+    }
+    assert!(matches!(copy_xrgb((0, 1), &[]), Err(ReadbackError::Layout)));
+    Ok(())
+}

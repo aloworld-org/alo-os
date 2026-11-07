@@ -58,7 +58,7 @@ use smithay::{
     utils::{Buffer as BufferCoords, Physical, Rectangle, Size, Transform},
 };
 
-use crate::{Cursor, Popup, ReadbackError, RenderError, RowOrder, ScanoutPixels};
+use crate::{Cursor, Popup, ReadbackError, RenderError, ScanoutPixels};
 
 /// Draws this shell's own surfaces on the processor, and imports nothing.
 ///
@@ -183,9 +183,8 @@ impl crate::direct_target::ScenePainter for SoftwarePainter {
     }
 }
 
-/// The one format asked for on the way out, in DRM's spelling: four bytes per
-/// pixel, red first in memory, which is what [`crate::readback::convert`] reads.
-const READBACK: DrmFourcc = DrmFourcc::Abgr8888;
+/// Draw and export in scanout's own BGR byte order, avoiding a channel swap.
+const READBACK: DrmFourcc = DrmFourcc::Xrgb8888;
 
 /// Copy the whole painted frame into owned scanout bytes.
 ///
@@ -216,11 +215,7 @@ fn readback(
     let bytes = renderer
         .map_texture(&mapping)
         .map_err(|error| RenderError::Submission(format!("map software frame: {error}")))?;
-    Ok(crate::readback::convert(
-        dimensions,
-        RowOrder::TopToBottom,
-        bytes,
-    )?)
+    Ok(crate::readback::copy_xrgb(dimensions, bytes)?)
 }
 
 #[cfg(test)]
