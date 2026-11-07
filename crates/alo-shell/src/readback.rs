@@ -177,30 +177,24 @@ pub(crate) fn convert(
     })
 }
 
-/// Preserve software-native BGR channels and clear only the unused fourth byte.
-pub(crate) fn copy_xrgb(size: (u32, u32), bgrx: &[u8]) -> Result<ScanoutPixels, ReadbackError> {
+/// Copy native XRGB words directly after the renderer's exclusive borrow ends.
+/// Numeric words give canonical B,G,R,0 bytes regardless of host byte order.
+pub(crate) fn copy_words(size: (u32, u32), words: &[u32]) -> Result<ScanoutPixels, ReadbackError> {
     let (stride, length) = layout(size)?;
-    if bgrx.len() != length {
+    if words.len() != length / 4 {
         return Err(ReadbackError::Layout);
     }
-    let (blocks, tail) = bgrx.as_chunks::<16>();
-    let mut pixels: Vec<[u8; 16]> = Vec::new();
-    // Reserve the final partial block too, so flattening and appending its
-    // complete pixels cannot introduce an infallible growth allocation.
-    pixels.try_reserve_exact(length.div_ceil(16))?;
-    // Copy four pixels and discard their unused bytes together, in one pass.
-    // Explicit byte order keeps this independent of host endian and alignment.
-    pixels.extend(blocks.iter().map(|block| {
-        (u128::from_le_bytes(*block) & 0x00ff_ffff_00ff_ffff_00ff_ffff_00ff_ffff).to_le_bytes()
-    }));
-    let mut pixels = pixels.into_flattened();
-    for [blue, green, red, _] in tail.as_chunks::<4>().0 {
-        pixels.extend_from_slice(&[*blue, *green, *red, 0]);
-    }
+    let mut pixels: Vec<[u8; 4]> = Vec::new();
+    pixels.try_reserve_exact(words.len())?;
+    pixels.extend(
+        words
+            .iter()
+            .map(|pixel| (pixel & 0x00ff_ffff).to_le_bytes()),
+    );
     Ok(ScanoutPixels {
         size,
         stride,
-        pixels: std::sync::Arc::new(pixels),
+        pixels: std::sync::Arc::new(pixels.into_flattened()),
     })
 }
 

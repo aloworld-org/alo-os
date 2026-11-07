@@ -3,13 +3,8 @@
 use super::*;
 
 /// A real CPU image; these checks need no display or device descriptor.
-fn image(
-    width: usize,
-    height: usize,
-) -> Result<Image<'static, 'static>, Box<dyn std::error::Error>> {
-    let format = pixman::FormatCode::try_from(drm::buffer::DrmFourcc::Xrgb8888)
-        .map_err(|_| "no XRGB test format")?;
-    Image::new(format, width, height, false).map_err(|_| "no test image".into())
+fn image(width: usize, height: usize) -> Result<Scratch, Box<dyn std::error::Error>> {
+    Ok(Scratch::new((width as i32, height as i32))?)
 }
 
 #[test]

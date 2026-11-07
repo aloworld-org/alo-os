@@ -13,23 +13,26 @@ All five hosted checks pass for that source. Thirty-three application tests and
 the real native integration verify input ownership, lifecycle and pause cutoff.
 The installed desktop is `74c3fef4`.
 
-The latest quiet-host installed flows complete capture, stable five-second pause,
-correct microphone states, resume, finish, review, naming, library navigation
-and byte-identical native export. Both saved videos have increasing timestamps
-and the expected tracks. Screen measures 4.217 fps with a 450 ms uncovered gap;
-window measures 3.337 fps with a 779 ms gap. Window PCM is continuous for 34.960
-seconds; track endings differ by 35 ms. Eight marker matches do not establish
-synchronization. Both videos fail unchanged media acceptance. All media, partials,
-exact source identities and compiler resumption proof are preserved below.
+The latest installed desktop is `0a763631`, with all five hosted checks passing.
+Normal application inputs are unchanged from the installed `06213b2e` package,
+verified by Git object identity for source, assets, dependencies and Flatpak
+recipe. Both installed flows complete source selection, stable five-second pause,
+correct microphone states, resume, finish, review, naming, library and exact native
+export. Screen measures 4.153 fps with a 615 ms uncovered gap; window measures
+1.985 fps with a 1.806-second gap. Window PCM is continuous for 37.700 seconds;
+track endings differ by 111 ms. Two marker matches do not establish sync. Both
+saved videos have increasing timestamps and expected tracks, but fail unchanged
+media acceptance. All media, partials and compiler resumption proof are retained.
 
-The next candidate shares already-owned direct capture storage, removing one
-full-frame allocation and copy per captured frame while preserving existing
-backend methods and callbacks. It is merged with main's terminal choices and
-window placement updates. Hosted validation is pending; it is not installed
-quality acceptance. The first combined native check passes all 33 unit tests
-but queries the startup control object before it exists. Its fixed startup wait
-is replaced by a bounded live-interface readiness check; failure evidence is
-preserved rather than discarded. This changes no production recording code.
+A new instrumented stage trace finds the publisher already receives about two
+frames per second before encoding, with an empty publisher queue and short pool
+waits. A separate live-recording compositor sample identifies Pixman and readback
+as the main observed user CPU work. The next candidate borrows initialized owned
+words directly into Pixman while drawing, then copies normalized output only
+after that borrow ends. It removes an intermediate full-frame exported image,
+allocation and composite. Existing rendering, byte layout, bounded scratch reuse,
+source permissions, timestamps and acceptance thresholds remain unchanged. Its
+formatting passes; hosted checks and installed acceptance remain pending.
 
 The agent permission walk separately verifies live discovery, approved execution,
 immediate revocation and refusal. Revoked Studio access removes its actions from
@@ -2193,3 +2196,73 @@ A new readback regression checks pointer identity, shared mutation refusal,
 redraw independence and retained bytes after the original frame is dropped.
 Existing pixel and bounded slow-consumer tests remain. Formatting passes; hosted
 validation and installed media acceptance are pending for this candidate.
+
+
+### Installed shared-storage repeat and current rendering diagnosis
+
+All five checks pass at `0a763631`. Desktop job `128466666633`, run `42393747201`,
+artifact `13583300787` produces executable SHA-256
+`93ced39f14eb6e7d9e37841f97ac98cf6e9a1b2bb59a521922dad7192078ce8b`;
+archive SHA-256 is `5f3a534d657a2c04030d8aea9c9f6c83266bf9b12b08a74971634927ddd0ac18`.
+It is installed on the same software VM, with normal app `06213b2e`. Exact normal
+package input equivalence is retained separately. Both completed installed flows
+pass controls and exact export, but fail media acceptance:
+
+| Source | Clip | Frames | fps | Largest uncovered gap |
+| --- | --- | ---: | ---: | ---: |
+| Screen | `1794071792-622113966-2` | 82 | 4.153 | 615 ms |
+| Window and microphone | `1794072103-749261708-2` | 74 | 1.985 | 1,806 ms |
+
+Screen SHA-256 is `a84a144e8ef01937fe309ef9c60ace034c79ae2d50f728bfeafdec7418c99d70`;
+window SHA-256 is `3ef36558eee5b0748f7a6143bed9e6b340a9986073c97e3738db6e76557eb66a`.
+Both have strictly increasing video timestamps and expected track counts. The
+37.700 seconds of PCM have no meaningful hole or overlap, with 111 ms between
+track endings. The audio reference passes after one restart and again after idle.
+Only two of 22 audio onsets match visual markers; median delay is 687.5 ms,
+maximum 693.5 ms. No synchronization pass. All five paused compiler processes
+resume at 17:24:37 UTC after the 17:15:15 UTC pause on 7 November 2026. Evidence is
+`installed-shared-capture-*`; no paired speedup is claimed.
+
+The following timing-preload recording is a diagnostic, not acceptance. Its
+stage journal retains process identities, monotonic/real time, frame counts and
+buffer timestamps. During the active interval before pause, publisher input is
+2.073 buffers/s, app source 2.113, recording entry 2.112 and encoded output 2.211.
+After resume these are 1.400, 1.387, 1.384 and 1.466 respectively. Across 145
+publisher pool acquisitions, the maximum wait is 29.4 ms and median 0.35 ms;
+observed publisher input queues are empty. The low rate already exists before
+encoding. Encoder-output push measurements cover downstream muxing, not codec
+CPU, and are not misreported as encoder execution time. Instrumentation can
+change cost; these numbers locate stages, not normal media performance.
+Evidence is `installed-shared-capture-stage-trace`. The exact native provider
+is restored, the preload is removed from the app environment and all paused
+compiler processes resume.
+
+A separate 12.122-second sample begins only after confirmed recording. It
+retains 252 compositor user instruction pointers with zero lost records:
+124 in Pixman, 90 in the desktop executable and 37 in libc. Desktop symbols
+include 27 native readback copies. The sampler closes its event descriptor and
+mapping and its service becomes inactive. Evidence is
+`diagnostic-shared-recording-cpu`, with diagnostic media in
+`installed-recording-cpu-live`. Earlier setup failures (missing owned audio
+device and a control timeout before confirmed recording) remain separate;
+neither produces a valid CPU sample. The revised sampler uses a file signal
+from the existing recording confirmation and sends no extra control requests.
+Library thumbnail loading is already lazy and cancels when unmapped; inspection
+does not establish background thumbnail decoding as the cause.
+
+Source inspection confirms that software `copy_framebuffer` allocates another
+Pixman image and composites the complete target into it before its bytes are
+copied. The next candidate uses the existing safe `Image::from_slice_mut` API
+with checked dimensions, exact stride and fully initialized owned u32 storage.
+Only an exclusive temporary borrow reaches the engine. The image/target are
+dropped before CPU readback, scratch reuse or publication, so subsequent drawing
+cannot mutate a saved frame. The single output copy masks the unused channel
+and emits canonical B,G,R,0 bytes. The shared painter and callback/submission
+rules remain the same; GLES is untouched.
+
+Scratch retention remains two sizes and 64 MiB, now counting actual Vec capacity.
+Invalid dimensions fail before allocation. New checks exercise borrowed-image
+layout and initialized bytes; existing real rendering, arrow, pixel, failed
+render, retained snapshot and pool-budget tests remain, along with native-word
+channel/row/length checks. No dependency, local unsafe code or renderer patch is
+added. Formatting passes; CI and normally installed media acceptance are pending.
