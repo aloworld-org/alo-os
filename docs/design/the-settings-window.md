@@ -360,4 +360,16 @@ Each was decided one way to build this, and is listed so it can be answered:
    stays a choice in Settings* (the owner, 2026-11-06); `551:1038` draws only
    *Pointer size* here, so where the choice sits is this lane's, built
    2026-11-06. It is kept in `appearance.toml` and offered only where that file
-   was read.
+   was read.8. **"When there's no room for a new window" is a section of the Appearance
+   page, under the Windows section**, not a page of its own. The owner's words
+   of 2026-11-07 are *Settings → Windows*; there is no Windows page, and the
+   Appearance page already has a section headed *Windows* (the title switch),
+   so this lane read *Windows* as that heading. The new section sits directly
+   beneath it, with the design's own choice rows (`550:170`, `550:184`): a
+   ring, the name, and a line under it. *Glide to empty space* is first and
+   chosen on a machine nobody has changed; *Open in front, slightly offset* is
+   second. No frame draws either. It is kept in `appearance.toml` as
+   `when_there_is_no_room`, beside `window_titles`, and offered only where that
+   file was read. **If the owner meant a page of its own**, a ninth category
+   in the side column needs an icon the design file does not have, and both
+   window choices would move to it.

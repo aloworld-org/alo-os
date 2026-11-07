@@ -21,27 +21,16 @@
 //! what the plan says of panning and is true here for the same reason — a curve
 //! nobody can predict is a curve everybody fights.
 //!
-//! # The rough edge: with nothing focused, the shell cannot see Ctrl
+//! # With nothing focused, the shell still sees Ctrl
 //!
-//! **A modifier only reaches xkb through a focused client.**
-//! `Server::keyboard_key` returns early — before `KeyboardHandle::input`, which is
-//! what advances xkb's state — when `current_focus()` is `None`. So with no window
-//! focused at all, holding Ctrl changes nothing this file can read, and a scroll
-//! over the plane pans instead of zooming.
-//!
-//! In ordinary use a window is focused and the pointer is merely out over the
-//! canvas, which is the case the design file describes and the case that works.
-//! The edge is a canvas with nothing focused: freshly started, or after the last
-//! window closed.
-//!
-//! **It is named here and belongs elsewhere.** The shell's own modifier state
-//! should not depend on a client having focus — that is a question about what the
-//! keyboard is for when nothing is focused, in `crate::keyboard`, and answering it
-//! inside the wheel road would mean this file keeping a second copy of which keys
-//! are down. A second answer to *is Ctrl held* is exactly the kind of thing this
-//! seam has already been bitten by once.
-//! `zoom_and_show_all::with_nothing_focused_the_shell_cannot_see_ctrl` pins the
-//! current behaviour so that changing it is a decision rather than an accident.
+//! This used to be a rough edge: `Server::keyboard_key` returned before
+//! `KeyboardHandle::input`, which advances xkb's state, whenever nothing was
+//! focused, so on a canvas with no window focused a Ctrl+wheel panned. That was
+//! decided and fixed in `crate::keyboard` — the compositor reads its own
+//! modifiers whatever has the focus, and only forwarding to a client depends on
+//! it — and `zoom_and_show_all::ctrl_is_seen_with_nothing_focused_and_the_wheel_still_zooms`
+//! holds it. This paragraph named a test that pinned the old behaviour until
+//! 2026-11-07, when it was found pointing at a test that no longer exists.
 
 use smithay::input::pointer::AxisFrame;
 
