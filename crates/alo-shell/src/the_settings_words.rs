@@ -623,6 +623,59 @@ pub fn also_pressed(strings: &alo_strings::Strings, keys: &[String]) -> String {
         .into_text()
 }
 
+/// Motion.
+pub const MOTION: Word = Word::saying("settings.access.motion", "Motion").noting(
+    "A heading on the accessibility page over the setting for movement on the screen. Sentence case.",
+);
+
+/// Reduced motion.
+pub const REDUCED_MOTION: Word = Word::saying("settings.access.reduced-motion", "Reduced motion")
+    .noting(
+        "A switch for somebody who is made unwell or distracted by movement on the screen. The \
+         name the setting has on other computers.",
+    );
+
+/// What reduced motion does.
+pub const REDUCED_MOTION_IS: Word = Word::saying(
+    "settings.access.reduced-motion.is",
+    "On, the view jumps to where it is going instead of gliding there.",
+)
+.noting("Under the switch Reduced motion. Says what changes on the screen while it is on.");
+
+/// The accessibility settings did not read.
+pub const ACCESS_NOT_READ: Word = Word::saying(
+    "settings.access.not-read",
+    "Your accessibility settings could not be read, so they are not changed here: {why}",
+)
+.noting("Above the Reduced motion switch when the file it is kept in is broken. {why} is the computer's own reason.");
+
+/// The accessibility settings were not written.
+pub const ACCESS_NOT_WRITTEN: Word = Word::saying(
+    "settings.access.not-written",
+    "That was not saved: {why}",
+)
+.noting("When turning Reduced motion on or off could not be saved. {why} is the computer's own reason.");
+
+/// *Your accessibility settings could not be read …*
+pub fn access_not_read(strings: &alo_strings::Strings, why: &str) -> String {
+    strings
+        .say(
+            &ACCESS_NOT_READ.key(),
+            &alo_strings::Filling::of("why", why.to_owned()),
+        )
+        .into_text()
+}
+
+/// *That was not saved …*
+pub fn access_not_written(strings: &alo_strings::Strings, why: &str) -> String {
+    strings
+        .say(
+            &ACCESS_NOT_WRITTEN.key(),
+            &alo_strings::Filling::of("why", why.to_owned()),
+        )
+        .into_text()
+}
+
 /// *N matches*, in the person's language and counted the way it counts.
 pub fn how_many_match(strings: &alo_strings::Strings, how_many: usize) -> String {
     let (key, ..) = MATCHES;
@@ -784,7 +837,7 @@ pub const AS_A_PERCENTAGE: Word = Word::saying("settings.access.percent", "{perc
 /// The length is written out so that adding a word above and forgetting it
 /// here does not compile — a word declared and left out of this list reaches a
 /// person as its own key.
-pub const THE_WINDOWS_WORDS: [Word; 108] = [
+pub const THE_WINDOWS_WORDS: [Word; 113] = [
     SETTINGS,
     EVERYTHING_IN_ONE_PLACE,
     THE_GROUP_ALO,
@@ -893,6 +946,11 @@ pub const THE_WINDOWS_WORDS: [Word; 108] = [
     BLACK,
     AS_A_PERCENTAGE,
     ALSO_PRESSED,
+    MOTION,
+    REDUCED_MOTION,
+    REDUCED_MOTION_IS,
+    ACCESS_NOT_READ,
+    ACCESS_NOT_WRITTEN,
 ];
 
 /// Why this window's words could not be declared.

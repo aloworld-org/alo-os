@@ -671,6 +671,78 @@ fn appearance_changes_nothing_its_crate_would_not() {
     );
 }
 
+/// **Reduced motion turns on and off and is kept in the person's
+/// `access.toml`**, off as this computer comes, and whatever else the file
+/// holds is kept as it was.
+#[test]
+fn reduced_motion_turns_on_and_off_and_keeps_the_rest_of_the_file() {
+    use alo_access::Setting;
+    let machine = a_persons_machine("reduced-motion");
+    let at = machine.kept(alo_access::keeping::THE_FILE);
+    // Something the person turned on some other way, which must survive.
+    let mut before = alo_access::TurnedOn::nothing();
+    before.turn_on(Setting::HighContrast);
+    alo_access::keeping::keep(&at, &before).unwrap();
+    let strings = words();
+    let door = CountingDoor::revoking();
+    let mut window = machine.opened();
+    assert_eq!(
+        window.motion_is_reduced(),
+        Some(false),
+        "reduced motion is not off as this computer comes"
+    );
+    for expected in [true, false] {
+        assert_eq!(
+            chosen(&mut window, &SettingsRow::ReducedMotion, &strings, &door),
+            Some(SettingsDid::Kept(
+                SettingsSection::Accessibility,
+                SettingsKept::Written
+            ))
+        );
+        assert_eq!(window.motion_is_reduced(), Some(expected));
+        let read_back = alo_access::keeping::read(&at).unwrap();
+        assert_eq!(
+            read_back.has(Setting::ReducedMotion),
+            expected,
+            "what sign-in reads"
+        );
+        assert!(
+            read_back.has(Setting::HighContrast),
+            "the rest of the file was lost"
+        );
+    }
+    assert_eq!(
+        door.knocks.get(),
+        0,
+        "a motion switch knocked on the daemon"
+    );
+}
+
+/// **A broken `access.toml` is said and never written over** by the switch.
+#[test]
+fn a_broken_access_file_is_said_and_not_written_over() {
+    let machine = a_persons_machine("access-broken");
+    let at = machine.kept(alo_access::keeping::THE_FILE);
+    std::fs::write(&at, "this is not = [ settings").unwrap();
+    let window = machine.opened();
+    let open = window.open().unwrap();
+    assert!(
+        open.access.not_read().is_some(),
+        "a broken file read as nothing changed"
+    );
+    assert!(
+        !window
+            .rows(std::time::SystemTime::now())
+            .contains(&SettingsRow::ReducedMotion),
+        "the switch is offered over a file that did not read"
+    );
+    assert_eq!(
+        std::fs::read_to_string(&at).unwrap(),
+        "this is not = [ settings",
+        "opening Settings wrote over the person's file"
+    );
+}
+
 /// **The window titles switch turns over and is kept**, and turns back: the
 /// owner's *always* as shipped, and the quieter edge as the person's choice.
 #[test]

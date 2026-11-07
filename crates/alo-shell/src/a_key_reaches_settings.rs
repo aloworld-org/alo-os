@@ -282,6 +282,13 @@ fn the_press_is_carried_out(server: &mut Server, press: crate::SettingsPress, st
     // **And so is the pointer**: alo's own on the next frame, and the
     // applications that draw their own once the desktop has told the session
     // (`crate::the_pointers_look`).
+    // **Less motion is told to the seat at once**, so the next glide is a jump.
+    if let Some(SettingsDid::Kept(SettingsSection::Accessibility, SettingsKept::Written)) = did
+        && let Some(reduced) = server.settings.motion_is_reduced()
+    {
+        server.the_motion_is_reduced(reduced);
+        return;
+    }
     if let Some(SettingsDid::Kept(SettingsSection::Appearance, SettingsKept::Written)) = did {
         if let Some(titles) = server.settings.window_titles() {
             server.the_window_titles_are(titles);

@@ -1,8 +1,9 @@
 //! The keepers Settings calls, each exactly as its own crate offers it.
 //!
-//! `alo_appearance::keeping`, `alo_dock::keeping`, `alo_shortcuts::keeping` and
-//! `alo_formats::keeping` have one shape and four sets of types. This names that
-//! shape once, so `crate::settings_kept` walks all four the same road, and
+//! `alo_appearance::keeping`, `alo_dock::keeping`, `alo_shortcuts::keeping`,
+//! `alo_formats::keeping` and `alo_access::keeping` have one shape and five sets
+//! of types. This names that shape once, so `crate::settings_kept` walks all
+//! five the same road, and
 //! holds nothing of its own: every function body is one call into the crate
 //! that owns the file.
 
@@ -82,6 +83,62 @@ impl Keeper for AppearanceKept {
 
     fn not_written_said(why: &Self::NotWritten, strings: &Strings) -> String {
         why.said(strings).into_text()
+    }
+}
+
+/// What a person turned on for access: `alo_access::keeping`, the person's own
+/// `access.toml` and never the machine's sign-in copy.
+///
+/// **Reduced motion is the one setting Settings changes here**, the owner's yes
+/// of 2026-11-07; the rest of the file is read and written back whole, so a
+/// switch somebody set some other way is kept as they set it.
+#[derive(Debug)]
+pub(crate) struct AccessKept;
+
+impl Keeper for AccessKept {
+    type Drawn = alo_access::TurnedOn;
+    /// `alo_access`' reason, as its words say it: its error carries an
+    /// `io::Error`, which cannot be held twice.
+    type NotRead = String;
+    type NotWritten = alo_access::keeping::FileNotWritten;
+
+    fn shipped() -> alo_access::TurnedOn {
+        alo_access::TurnedOn::nothing()
+    }
+
+    fn at_sign_in(at: &Path) -> (alo_access::TurnedOn, Option<String>) {
+        match alo_access::keeping::read(at) {
+            Ok(turned_on) => (turned_on, None),
+            // A file nobody has written yet is a machine nobody has changed.
+            Err(alo_access::keeping::FileNotRead::NotReadable(why))
+                if why.kind() == std::io::ErrorKind::NotFound =>
+            {
+                (alo_access::TurnedOn::nothing(), None)
+            }
+            Err(why) => (alo_access::TurnedOn::nothing(), Some(why.to_string())),
+        }
+    }
+
+    fn keep(at: &Path, drawn: &alo_access::TurnedOn) -> Result<(), Self::NotWritten> {
+        alo_access::keeping::keep(at, drawn)
+    }
+
+    fn put_back_as_shipped(at: &Path) -> Result<(), Self::NotWritten> {
+        alo_access::keeping::keep(at, &alo_access::TurnedOn::nothing())
+    }
+
+    fn did_not_read(_refused: &Self::NotWritten) -> Option<String> {
+        // `alo_access::keeping::keep` writes without reading, so a write it
+        // refused never says anything about the file as it was.
+        None
+    }
+
+    fn not_read_said(why: &String, strings: &Strings) -> String {
+        crate::the_settings_words::access_not_read(strings, why)
+    }
+
+    fn not_written_said(why: &Self::NotWritten, strings: &Strings) -> String {
+        crate::the_settings_words::access_not_written(strings, &why.to_string())
     }
 }
 
