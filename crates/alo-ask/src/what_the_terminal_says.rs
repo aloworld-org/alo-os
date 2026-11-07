@@ -236,12 +236,22 @@ mod tests {
             },
             &in_english(),
         );
-        assert_eq!(no.lines, ["Not done: you said no, and nothing was changed."]);
+        assert_eq!(
+            no.lines,
+            ["Not done: you said no, and nothing was changed."]
+        );
         assert!(!no.worked);
-        let nobody = what_the_terminal_says(&reply, &WhatTheTerminalDid::NobodyAnswered, &in_english());
-        assert!(nobody.lines[0].starts_with("Not done: there was no answer"), "{nobody:?}");
-        let gone =
-            what_the_terminal_says(&reply, &WhatTheTerminalDid::NotTheChangeWaiting, &in_english());
+        let nobody =
+            what_the_terminal_says(&reply, &WhatTheTerminalDid::NobodyAnswered, &in_english());
+        assert!(
+            nobody.lines[0].starts_with("Not done: there was no answer"),
+            "{nobody:?}"
+        );
+        let gone = what_the_terminal_says(
+            &reply,
+            &WhatTheTerminalDid::NotTheChangeWaiting,
+            &in_english(),
+        );
         assert_eq!(gone.lines[0], reply);
         assert!(gone.lines[1].contains("no longer waiting"), "{gone:?}");
         assert!(!gone.worked);
@@ -254,7 +264,10 @@ mod tests {
         let reply = a_change_is_waiting(3, RENAME);
         let told = what_a_pipe_is_told(&reply, &in_english());
         assert_eq!(told.lines[0], reply);
-        assert!(told.lines[1].contains("can only ask in a terminal"), "{told:?}");
+        assert!(
+            told.lines[1].contains("can only ask in a terminal"),
+            "{told:?}"
+        );
         assert!(!told.worked);
         let words = what_a_pipe_is_told("march.pdf and april.pdf", &in_english());
         assert_eq!(words.lines, ["march.pdf and april.pdf"]);

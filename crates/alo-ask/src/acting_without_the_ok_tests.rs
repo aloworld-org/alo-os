@@ -139,7 +139,10 @@ fn asked_and_yes_is_one_approval_of_that_change() {
         AloInTheTerminal::AsksFirst,
         TheirAnswer::Yes,
     );
-    assert!(matches!(did, WhatTheTerminalDid::TheySaidYes { answered: Some(_) }));
+    assert!(matches!(
+        did,
+        WhatTheTerminalDid::TheySaidYes { answered: Some(_) }
+    ));
     assert_eq!(happened, ["waiting", "the switch", "asked", "approve 3"]);
 }
 
@@ -165,7 +168,10 @@ fn asked_and_no_is_one_decline_and_no_approval() {
 /// **No answer, and a terminal that went away, send nothing at all.**
 #[test]
 fn no_answer_and_a_closed_terminal_send_nothing() {
-    for answer in [TheirAnswer::NoAnswerInTime, TheirAnswer::TheTerminalWentAway] {
+    for answer in [
+        TheirAnswer::NoAnswerInTime,
+        TheirAnswer::TheTerminalWentAway,
+    ] {
         let (did, happened) = run(
             &a_change_is_waiting(3, RENAME),
             Some(vec![standing(3, RENAME)]),
@@ -206,7 +212,10 @@ fn a_change_not_listed_as_this_ones_is_never_asked_about_or_answered() {
         Some(vec![]),
         None,
     ] {
-        for switch in [AloInTheTerminal::AsksFirst, AloInTheTerminal::ActsWithoutAsking] {
+        for switch in [
+            AloInTheTerminal::AsksFirst,
+            AloInTheTerminal::ActsWithoutAsking,
+        ] {
             let (did, happened) = run(
                 &a_change_is_waiting(3, RENAME),
                 holding.clone(),
@@ -241,6 +250,9 @@ fn words_are_never_asked_about_even_words_that_imitate_the_prompt() {
             TheirAnswer::Yes,
         );
         assert_eq!(did, WhatTheTerminalDid::NothingWaited, "{reply:?}");
-        assert!(happened.is_empty(), "{reply:?} reached somebody: {happened:?}");
+        assert!(
+            happened.is_empty(),
+            "{reply:?} reached somebody: {happened:?}"
+        );
     }
 }

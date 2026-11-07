@@ -85,12 +85,19 @@ fn a_terminal_that_closed_is_not_an_answer() {
 fn the_terminal_is_put_back_and_the_prompt_is_shown() {
     let (mut person, near) = a_terminal();
     let before = rustix::termios::tcgetattr(&near).expect("it has modes");
-    assert!(before.local_modes.contains(LocalModes::ICANON | LocalModes::ISIG));
+    assert!(
+        before
+            .local_modes
+            .contains(LocalModes::ICANON | LocalModes::ISIG)
+    );
     person.write_all(b"n").expect("the key goes in");
     let mut told = Vec::new();
     let _ = asked_at(near.as_fd(), PROMPT, &mut told, Duration::from_secs(5));
     let after = rustix::termios::tcgetattr(&near).expect("it has modes");
-    assert_eq!(after.local_modes, before.local_modes, "the terminal was left changed");
+    assert_eq!(
+        after.local_modes, before.local_modes,
+        "the terminal was left changed"
+    );
     assert_eq!(String::from_utf8_lossy(&told), format!("{PROMPT}N\n"));
 }
 
