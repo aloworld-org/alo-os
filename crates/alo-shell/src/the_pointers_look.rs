@@ -11,16 +11,32 @@
 //! session would change alo's pointer and leave every older application on the
 //! old one, which is the pointer changing look at a window's edge again.
 
-use alo_appearance::PointerShape;
+use alo_appearance::{PointerShape, PointerSize};
 
 /// The pointer, as the person last said.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct ThePointersLook {
     /// Which arrow it is.
     pub shape: PointerShape,
+    /// How large it is, over the size every pointer has.
+    pub size: PointerSize,
 }
 
 impl ThePointersLook {
+    /// The pointer as this release ships it: the kite, at its ordinary size.
+    pub const SHIPPED: Self = Self {
+        shape: PointerShape::Kite,
+        size: PointerSize::Default,
+    };
+
+    /// How many logical pixels across the pointer is: 24 as it ships, 36 or
+    /// 48 when the person made it larger. What `XCURSOR_SIZE` is set to, and
+    /// what a display's scale multiplies.
+    #[must_use]
+    pub const fn logical_pixels(self) -> u32 {
+        alo_cursors::measures::LOGICAL_SIZE * self.size.per_cent() as u32 / 100
+    }
+
     /// The arrow `alo_cursors` draws for this look.
     #[must_use]
     pub const fn silhouette(self) -> alo_cursors::Silhouette {
@@ -85,9 +101,29 @@ mod tests {
         assert_eq!(kite.the_theme(), "alo");
         let classic = ThePointersLook {
             shape: PointerShape::Classic,
+            size: PointerSize::Default,
         };
         assert_eq!(classic.silhouette(), alo_cursors::Silhouette::Classic);
         assert_eq!(classic.the_theme(), "alo-classic");
+    }
+
+    /// **The size lands on the sizes alo's theme carries**: 24 as it ships,
+    /// 36 and 48 when made larger.
+    #[test]
+    fn each_size_is_a_size_the_theme_carries() {
+        for (size, pixels) in [
+            (PointerSize::Default, 24),
+            (PointerSize::Large, 36),
+            (PointerSize::Larger, 48),
+        ] {
+            let look = ThePointersLook {
+                size,
+                ..ThePointersLook::SHIPPED
+            };
+            assert_eq!(look.logical_pixels(), pixels);
+            assert!(alo_cursors::theme::SIZES.contains(&pixels));
+        }
+        assert_eq!(ThePointersLook::default(), ThePointersLook::SHIPPED);
     }
 
     /// **The session is told once per change, and never about nothing**: the
@@ -109,6 +145,7 @@ mod tests {
         };
         let classic = ThePointersLook {
             shape: PointerShape::Classic,
+            size: PointerSize::Default,
         };
         assert_eq!(server.the_pointer_change_to_tell(), None);
         server.the_pointer_is(classic);

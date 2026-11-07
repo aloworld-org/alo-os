@@ -1,19 +1,22 @@
-//! **Telling applications which pointer the person chose.**
+//! **Telling applications which pointer the person chose**: its arrow and its
+//! size.
 //!
-//! An application that draws its own pointer reads the cursor theme from
-//! `XCURSOR_THEME` when it starts. The image names alo's theme as the default
-//! (`/usr/lib/environment.d/60-alo-cursor.conf`); a person who chooses the
-//! familiar arrow in Settings is given the theme with that arrow, so the pointer
-//! is the same arrow over every window rather than only over alo's own.
+//! An application that draws its own pointer reads `XCURSOR_THEME` and
+//! `XCURSOR_SIZE` when it starts. The image names alo's theme at 24 pixels as
+//! the default (`/usr/lib/environment.d/60-alo-cursor.conf`); a person who
+//! chooses the familiar arrow, or a larger pointer, in Settings is given the
+//! theme with that arrow and that size, so the pointer is the same over every
+//! window rather than only over alo's own.
 //!
-//! # Only once the person has chosen
+//! # Only what the person chose
 //!
-//! **Nothing is told at sign-in unless the person chose in Settings.** A person
-//! who set `XCURSOR_THEME` themselves, in their own `~/.config/environment.d`,
-//! keeps it until they choose here — at which point what they chose here is the
-//! latest thing they said. Telling the session at every sign-in would overwrite
-//! their own setting with alo's default, which is a choice taken away
-//! (`CLAUDE.md`, law 5).
+//! **Nothing is told unless the person chose it in Settings, and only that.** A
+//! person who set `XCURSOR_THEME` or `XCURSOR_SIZE` themselves, in their own
+//! `~/.config/environment.d`, keeps it until they choose that same thing here —
+//! at which point what they chose here is the latest thing they said. Telling the
+//! session everything at every sign-in would overwrite their own setting with
+//! alo's default, which is a choice taken away (`CLAUDE.md`, law 5). So making
+//! the pointer larger tells the size and leaves the theme as it was.
 //!
 //! # What it does not reach
 //!
@@ -23,33 +26,70 @@
 
 use alo_shell::ThePointersLook;
 
-/// The variables an application is told for `look`.
-#[must_use]
-pub fn what_applications_are_told(look: ThePointersLook) -> Vec<String> {
-    vec![format!("XCURSOR_THEME={}", look.the_theme())]
+/// Which of the pointer's two variables to tell.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct WhatToTell {
+    /// The cursor theme, which is the arrow.
+    pub theme: bool,
+    /// The cursor size.
+    pub size: bool,
 }
 
-/// The pointer as `appearance` holds it, and whether the person chose it —
-/// which is whether the session is told at sign-in.
+impl WhatToTell {
+    /// What differs between `before` and `now`.
+    #[must_use]
+    pub fn between(before: ThePointersLook, now: ThePointersLook) -> Self {
+        Self {
+            theme: before.shape != now.shape,
+            size: before.size != now.size,
+        }
+    }
+}
+
+/// The variables an application is told for `look`, of those `what` names.
 #[must_use]
-pub fn as_they_left_it(appearance: &alo_appearance::Appearance) -> (ThePointersLook, bool) {
+pub fn what_applications_are_told(look: ThePointersLook, what: WhatToTell) -> Vec<String> {
+    let mut told = Vec::new();
+    if what.theme {
+        told.push(format!("XCURSOR_THEME={}", look.the_theme()));
+    }
+    if what.size {
+        told.push(format!("XCURSOR_SIZE={}", look.logical_pixels()));
+    }
+    told
+}
+
+/// The pointer as `appearance` holds it, and which of it the person chose —
+/// which is what the session is told at sign-in.
+#[must_use]
+pub fn as_they_left_it(appearance: &alo_appearance::Appearance) -> (ThePointersLook, WhatToTell) {
     let look = ThePointersLook {
         shape: appearance.pointer_shape(),
+        size: appearance.pointer_size(),
     };
-    (look, appearance.changes().pointer_shape().is_some())
+    let chose = WhatToTell {
+        theme: appearance.changes().pointer_shape().is_some(),
+        size: appearance.changes().pointer_size().is_some(),
+    };
+    (look, chose)
 }
 
-/// Tell the person's session `look`, over a connection of its own, and say on
-/// the log what could not be told.
+/// Tell the person's session `look`, as much of it as `what` names, over a
+/// connection of its own, and say on the log what could not be told.
 ///
 /// **A connection of its own** because this is rare — a person changing their
 /// pointer — and holding one open for it would be a second bus connection for
-/// the whole session to save a handshake once in a while.
-pub fn tell(look: ThePointersLook) {
+/// the whole session to save a handshake once in a while. Nothing to tell opens
+/// nothing.
+pub fn tell(look: ThePointersLook, what: WhatToTell) {
+    let told = what_applications_are_told(look, what);
+    if told.is_empty() {
+        return;
+    }
     match zbus::blocking::Connection::session() {
         Ok(session) => crate::telling_the_session_where_alo_draws::told_to_the_session(
             session.inner(),
-            &what_applications_are_told(look),
+            &told,
             "which pointer the person chose, so an application it starts draws the one it had",
         ),
         Err(why) => eprintln!(
@@ -62,46 +102,87 @@ pub fn tell(look: ThePointersLook) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use alo_appearance::{PointerShape, PointerSize};
 
-    /// **Each shape names its own theme**, so an application drawing its own
-    /// pointer draws the arrow the person chose.
+    /// Both variables.
+    const BOTH: WhatToTell = WhatToTell {
+        theme: true,
+        size: true,
+    };
+
+    /// **Each choice is told as the variable an application reads**: the arrow
+    /// as its theme, the size in logical pixels.
     #[test]
-    fn each_shape_is_told_as_its_theme() {
+    fn each_choice_is_told_as_what_an_application_reads() {
         assert_eq!(
-            what_applications_are_told(ThePointersLook::default()),
-            ["XCURSOR_THEME=alo"]
+            what_applications_are_told(ThePointersLook::SHIPPED, BOTH),
+            ["XCURSOR_THEME=alo", "XCURSOR_SIZE=24"]
         );
         assert_eq!(
-            what_applications_are_told(ThePointersLook {
-                shape: alo_appearance::PointerShape::Classic,
-            }),
-            ["XCURSOR_THEME=alo-classic"]
+            what_applications_are_told(
+                ThePointersLook {
+                    shape: PointerShape::Classic,
+                    size: PointerSize::Larger,
+                },
+                BOTH
+            ),
+            ["XCURSOR_THEME=alo-classic", "XCURSOR_SIZE=48"]
+        );
+        assert!(
+            what_applications_are_told(ThePointersLook::SHIPPED, WhatToTell::default()).is_empty()
         );
     }
 
-    /// **A person who chose nothing is told nothing**, so a theme they set
-    /// themselves outside Settings is left as they set it; one who chose is
-    /// told, the shipped arrow included.
+    /// **A person who chose nothing is told nothing**, and one who chose only
+    /// the size is told only the size, so a theme they set themselves outside
+    /// Settings is left as they set it.
     #[test]
-    fn only_a_choice_is_told_at_sign_in() {
+    fn only_what_was_chosen_is_told_at_sign_in() {
         let untouched = alo_appearance::Appearance::shipped();
         assert_eq!(
             as_they_left_it(&untouched),
-            (ThePointersLook::default(), false)
+            (ThePointersLook::SHIPPED, WhatToTell::default())
         );
-        let mut chose = alo_appearance::Appearance::shipped();
-        chose.set_pointer_shape(alo_appearance::PointerShape::Classic);
+        let mut larger = alo_appearance::Appearance::shipped();
+        larger.set_pointer_size(PointerSize::Large);
+        let (look, chose) = as_they_left_it(&larger);
         assert_eq!(
-            as_they_left_it(&chose),
-            (
-                ThePointersLook {
-                    shape: alo_appearance::PointerShape::Classic
-                },
-                true
-            )
+            chose,
+            WhatToTell {
+                theme: false,
+                size: true
+            }
         );
-        let mut chose_the_kite = alo_appearance::Appearance::shipped();
-        chose_the_kite.set_pointer_shape(alo_appearance::PointerShape::Kite);
-        assert!(as_they_left_it(&chose_the_kite).1);
+        assert_eq!(what_applications_are_told(look, chose), ["XCURSOR_SIZE=36"]);
+        let mut classic = alo_appearance::Appearance::shipped();
+        classic.set_pointer_shape(PointerShape::Classic);
+        assert_eq!(
+            as_they_left_it(&classic).1,
+            WhatToTell {
+                theme: true,
+                size: false
+            }
+        );
+    }
+
+    /// **A change tells what changed and nothing else.**
+    #[test]
+    fn a_change_tells_only_what_changed() {
+        let larger = ThePointersLook {
+            size: PointerSize::Larger,
+            ..ThePointersLook::SHIPPED
+        };
+        assert_eq!(
+            WhatToTell::between(ThePointersLook::SHIPPED, larger),
+            WhatToTell {
+                theme: false,
+                size: true
+            }
+        );
+        assert_eq!(
+            WhatToTell::between(larger, larger),
+            WhatToTell::default(),
+            "nothing changed, nothing told"
+        );
     }
 }

@@ -561,12 +561,10 @@ mod running {
             let window_titles = appearance.window_titles();
             let (pointers_look, they_chose) =
                 crate::telling_applications_about_the_pointer::as_they_left_it(&appearance);
-            // **Told at sign-in only if they chose it in Settings**, so a theme
-            // they set themselves is not overwritten
+            // **Told at sign-in only what they chose in Settings**, so a theme
+            // or a size they set themselves is not overwritten
             // (`crate::telling_applications_about_the_pointer`).
-            if they_chose {
-                crate::telling_applications_about_the_pointer::tell(pointers_look);
-            }
+            crate::telling_applications_about_the_pointer::tell(pointers_look, they_chose);
             Ok(Self {
                 layout_at,
                 shortcuts_at,
@@ -659,8 +657,12 @@ mod running {
         /// **They chose another pointer**: applications started from now on
         /// are told its cursor theme.
         fn the_pointer_changed(&mut self, look: alo_shell::ThePointersLook) {
+            let what = crate::telling_applications_about_the_pointer::WhatToTell::between(
+                self.pointers_look,
+                look,
+            );
             self.pointers_look = look;
-            crate::telling_applications_about_the_pointer::tell(look);
+            crate::telling_applications_about_the_pointer::tell(look, what);
         }
 
         /// Where this person's settings are kept, so a chord can open them.

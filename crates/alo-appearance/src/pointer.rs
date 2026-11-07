@@ -1,4 +1,4 @@
-//! **What the person's pointer looks like.**
+//! **What the person's pointer looks like**: its shape and its size.
 //!
 //! The owner chose the precision kite on 2026-11-06, in one word: *"B"*. So the
 //! shipped answer is [`PointerShape::Kite`], and the familiar arrow is kept as
@@ -27,6 +27,37 @@ impl PointerShape {
     pub const ALL: [Self; 2] = [Self::Kite, Self::Classic];
 }
 
+/// How large the pointer is drawn, over the size every pointer has.
+///
+/// *Cursor size* is promised (`docs/features.md`), and the three are the
+/// design's own (`551:1136`). **Whole multiples of a half**, so each lands on a
+/// size alo's cursor theme already carries: 24, 36 and 48 logical pixels.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default, Serialize, Deserialize)]
+pub enum PointerSize {
+    /// As it ships.
+    #[default]
+    Default,
+    /// Half as large again.
+    Large,
+    /// Twice as large.
+    Larger,
+}
+
+impl PointerSize {
+    /// All three, in the order the frame draws them.
+    pub const ALL: [Self; 3] = [Self::Default, Self::Large, Self::Larger];
+
+    /// How large, as a per cent of the size it ships at.
+    #[must_use]
+    pub const fn per_cent(self) -> u16 {
+        match self {
+            Self::Default => 100,
+            Self::Large => 150,
+            Self::Larger => 200,
+        }
+    }
+}
+
 #[cfg(test)]
 #[expect(
     clippy::unwrap_used,
@@ -49,5 +80,16 @@ mod tests {
         let written = serde_json::to_string(&PointerShape::Classic).unwrap();
         assert_eq!(written, r#""Classic""#);
         assert!(serde_json::from_str::<PointerShape>(r#""Pointy""#).is_err());
+    }
+
+    #[test]
+    fn each_size_is_larger_than_the_last_and_the_default_is_as_shipped() {
+        assert_eq!(PointerSize::default(), PointerSize::Default);
+        assert_eq!(PointerSize::ALL.map(PointerSize::per_cent), [100, 150, 200]);
+        assert_eq!(
+            serde_json::to_string(&PointerSize::Larger).unwrap(),
+            r#""Larger""#
+        );
+        assert!(serde_json::from_str::<PointerSize>(r#""Huge""#).is_err());
     }
 }

@@ -64,7 +64,10 @@ pub(crate) fn the_pointer(
     if !location.0.is_finite() || !location.1.is_finite() {
         return Err(RenderError::Submission("non-finite cursor position".into()));
     }
-    let size = alo_cursors::measures::pixels_at(scale.per_cent());
+    // **The display's scale times the size the person chose**, so a pointer made
+    // twice as large on a screen at 200 per cent is four times the pixels.
+    let per_cent = u32::from(scale.per_cent()) * u32::from(look.size.per_cent()) / 100;
+    let size = alo_cursors::measures::pixels_at(u16::try_from(per_cent).unwrap_or(u16::MAX));
     // **The arrow the person chose**: the kite the owner picked on 2026-11-06,
     // unless they chose the familiar one in Settings (`crate::the_pointers_look`).
     let picture = alo_cursors::draw(shape, look.silhouette(), size)
