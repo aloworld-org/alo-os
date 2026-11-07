@@ -228,14 +228,6 @@ impl Server {
         if !zoom.is_finite() || zoom <= 0.0 {
             return 0;
         }
-        // **As far as *Show all* reaches**, so a space found for a window is
-        // never one it cannot be brought back from (`crate::canvas_never_lost`).
-        let reach = self.as_far_as_show_all_reaches().and_then(|reach| {
-            Some(Size::<i32, Logical>::from((
-                i32::try_from(reach.width()).ok()?,
-                i32::try_from(reach.height()).ok()?,
-            )))
-        });
         let now = std::time::Instant::now();
         let at = camera.at();
         // **The visible area, not the output.** The person can only reach what
@@ -370,59 +362,27 @@ impl Server {
             // where they kept the default. Asked whatever the choice, because a
             // window is the person's once and the record of it is spent here.
             let theirs = self.the_person_opened_this_one(&surface);
-            let (point, glide_to) = if theirs
-                && self.when_there_is_no_room.glides()
-                && !there_is_room_at(point, wanted, &open, view)
-            {
-                match crate::the_nearest_empty_space::the_nearest_empty_space(
-                    view, &open, wanted, &fixed, reach, reading,
-                ) {
-                    Some(found) => (
-                        found.window,
-                        found
-                            .the_view_moves(view.loc)
-                            .then(|| alo_canvas::At::checked(found.view.x, found.view.y))
-                            .flatten(),
-                    ),
-                    // A Place with no space left within reach: rule 5, in
-                    // front and offset, rather than a window that would be lost.
-                    None => (point, None),
-                }
+            let point = if theirs {
+                self.room_for_what_the_person_opened(
+                    point,
+                    &crate::room_in_a_full_view::AnOpening {
+                        view,
+                        open: &open,
+                        wanted,
+                        fixed: &fixed,
+                        reading,
+                    },
+                    now,
+                )
             } else {
-                (point, None)
+                point
             };
             if crate::place_unless_already_placed(&surface, point) {
                 placed += 1;
-                if let Some(to) = glide_to {
-                    self.the_view_glides_to(to, now);
-                }
             }
         }
         placed
     }
-}
-
-/// Whether rules 3 to 7 found a window of `wanted` size **room in view** at
-/// `at`: over no open window, and wholly in the view — or, for a window larger
-/// than the view, with its handle in it, which is as much of it as any view
-/// can show. Anything else is the case the person's choice is about.
-fn there_is_room_at(
-    at: Point<i32, Logical>,
-    wanted: Size<i32, Logical>,
-    open: &[Rectangle<i32, Logical>],
-    view: Rectangle<i32, Logical>,
-) -> bool {
-    let window = Rectangle::new(at, wanted);
-    if open.iter().any(|other| other.overlaps(window)) {
-        return false;
-    }
-    let fits = wanted.w <= view.size.w && wanted.h <= view.size.h;
-    let seen = if fits {
-        window
-    } else {
-        Rectangle::new(at, Size::from((wanted.w.min(44), wanted.h.min(24))))
-    };
-    view.contains_rect(seen)
 }
 
 #[cfg(test)]

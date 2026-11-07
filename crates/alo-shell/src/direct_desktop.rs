@@ -1601,10 +1601,11 @@ impl LoopInput for Desk<'_> {
         let this_displays_scale = server.the_scale_of_display(&named);
         let the_place_now = server.the_place_now();
         server.tasks_mut().new_windows_open_on(the_place_now);
-        server.tasks_mut().put_whatever_has_nowhere_to_be(
+        // **With no room, a task window glides to empty space** as every other
+        // window the person opens does (`crate::the_task_windows_find_room`).
+        let _placed = server.the_task_windows_find_room(
             the_view_on_the_plane,
             frame.look.reading(),
-            &[],
             this_displays_scale,
         );
         // **Said once a frame, and kept alive for as long as the frame is.**

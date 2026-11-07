@@ -221,3 +221,66 @@ fn a_window_leaves_room_above_it_for_its_edge() {
         );
     }
 }
+
+/// **A task window into a full view finds room**, with its edge clear of every
+/// other window; and the three refusals keep the first answer: the choice is
+/// *Open in front*, there was room, or nothing is left within reach.
+#[test]
+fn a_task_window_into_room_in_a_full_view_and_the_refusals_keep_the_first_answer() {
+    use super::{WhenTheViewIsFull, room_for_one_more};
+    use smithay::utils::Logical;
+    let view = Rectangle::<i32, Logical>::new((0, 0).into(), (1440, 960).into());
+    let scale = DisplayScale::ONE;
+    let edge = scale.px(u32::try_from(crate::window_edge::THE_REGION_IS_TALL).unwrap_or(0));
+    let full_of = [Rectangle::<i32, Logical>::new(
+        (0, 0).into(),
+        (1440, 960).into(),
+    )];
+    let at = Rectangle::<i32, Logical>::new((16, 16 + edge).into(), (1040, 800).into());
+    let glides = WhenTheViewIsFull {
+        others: &full_of,
+        glides: true,
+        reach: None,
+    };
+    let Some(found) = room_for_one_more(at, view, &[], &glides, Direction::LeftToRight, scale)
+    else {
+        unreachable!("a full view with the default finds room");
+    };
+    let with_its_edge = Rectangle::<i32, Logical>::new(
+        (found.window.x, found.window.y - edge).into(),
+        (1040, 800 + edge).into(),
+    );
+    assert!(
+        !full_of[0].overlaps(with_its_edge),
+        "it or its edge covers a window"
+    );
+    assert!(found.the_view_moves(view.loc));
+
+    let in_front = WhenTheViewIsFull {
+        others: &full_of,
+        glides: false,
+        reach: None,
+    };
+    assert_eq!(
+        room_for_one_more(at, view, &[], &in_front, Direction::LeftToRight, scale),
+        None
+    );
+    let empty = WhenTheViewIsFull {
+        others: &[],
+        glides: true,
+        reach: None,
+    };
+    assert_eq!(
+        room_for_one_more(at, view, &[], &empty, Direction::LeftToRight, scale),
+        None
+    );
+    let no_reach = WhenTheViewIsFull {
+        others: &full_of,
+        glides: true,
+        reach: Some(Size::from((1440, 960))),
+    };
+    assert_eq!(
+        room_for_one_more(at, view, &[], &no_reach, Direction::LeftToRight, scale),
+        None
+    );
+}

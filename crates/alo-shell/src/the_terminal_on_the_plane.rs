@@ -225,7 +225,9 @@ impl crate::Server {
         else {
             return false;
         };
-        let camera = self.the_camera();
+        // **Against where the view is going**, so a terminal opened while a
+        // glide moves is placed in what the person will be looking at.
+        let camera = self.the_camera_after_the_glide();
         let zoom = crate::scene::drawn_at(camera);
         if zoom <= 0.0 {
             return false;
@@ -248,13 +250,23 @@ impl crate::Server {
             .filter(|surface| crate::canvas_place::the_place_of(surface) == Some(place))
             .map(crate::where_a_window_is)
             .collect();
-        let at = crate::where_a_window_opens(
-            view,
-            &open,
-            open.first().copied(),
-            Size::from((window.size.w, window.size.h)),
-            reading,
-            &[],
+        let wanted = Size::from((window.size.w, window.size.h));
+        let first =
+            crate::where_a_window_opens(view, &open, open.first().copied(), wanted, reading, &[]);
+        // **The person opened it, so with no room the view may glide** — the
+        // owner's *"Yes, the same"* of 2026-11-07 (`crate::room_in_a_full_view`),
+        // against every window on the Place, alo's own included.
+        let everything = self.the_windows_on_this_place();
+        let at = self.room_for_what_the_person_opened(
+            first,
+            &crate::room_in_a_full_view::AnOpening {
+                view,
+                open: &everything,
+                wanted,
+                fixed: &[],
+                reading,
+            },
+            std::time::Instant::now(),
         );
         self.the_terminal_on_the_plane = Some((
             Rectangle::new(at, (window.size.w, window.size.h).into()),
