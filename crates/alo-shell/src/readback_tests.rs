@@ -21,10 +21,10 @@ fn owned_mapping_bytes_preserve_rows_channels_and_the_engine_allocation()
     assert_eq!(retained.as_ref().as_ptr(), pointer);
     drop(frame);
     assert_eq!(owner.as_ref().as_ref().as_ptr(), pointer);
-    let observed = std::thread::spawn(move || retained[0])
+    let observed = std::thread::spawn(move || retained.first().copied())
         .join()
         .map_err(|_| "immutable mapping reader failed")?;
-    assert_eq!(observed, 1);
+    assert_eq!(observed, Some(1));
     let wrong = renderer.create_owned_mapping(DrmFourcc::Argb8888, (3, 2).into())?;
     assert!(matches!(mapped_xrgb(wrong), Err(ReadbackError::Layout)));
     Ok(())
