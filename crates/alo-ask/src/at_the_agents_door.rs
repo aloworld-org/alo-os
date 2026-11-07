@@ -107,8 +107,10 @@ pub fn what_the_agent_says(at: &Path, typed: &str) -> Result<String, NothingCame
             Err(why) => return Err(fault(why)),
         }
     }
-    let heard = heard.trim();
-    if heard.is_empty() {
+    // Only its end: the start of the first line is what keeps a model's words
+    // from reading as a change waiting (`alo_protocol::what_the_agent_says_back`).
+    let heard = heard.trim_end();
+    if heard.trim_start().is_empty() {
         return Err(NothingCameBack::ClosedWithoutAnswering);
     }
     Ok(heard.to_owned())

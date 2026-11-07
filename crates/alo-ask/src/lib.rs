@@ -123,6 +123,7 @@
 
 pub mod acting_without_the_ok;
 pub mod answering_or_acting;
+pub mod asking_in_the_terminal;
 pub mod at_the_agents_door;
 pub mod at_the_daemons_door;
 pub mod beside_an_answer;
