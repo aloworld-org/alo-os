@@ -400,10 +400,16 @@ file carries it with a tier.*
   mentions and roads are different populations — a crate can name a thing
   hundreds of times with nothing calling it, which is this repository's own
   commonest fault. This says which line dispatches.*
-  **Nothing here approves anything, deliberately.** The command writes a
-  sentence and reads what came back; the proposal is the daemon's to put and the
-  approval is the person's to give. ADR 0124's own words: *the classifier is not
-  what protects the person — the approval is.*
+  **Nothing here approves anything on its own.** The proposal is the daemon's
+  to put and the approval is the person's to give. ADR 0124's own words: *the
+  classifier is not what protects the person — the approval is.*
+  **The approval is asked for in the terminal since 2026-11-07**: *Run this
+  command? [y/N]*, one key, where `y` sends one approval of that change and any
+  other key — Enter and Ctrl-C included — sends one decline the record keeps.
+  *Until then the change lapsed the moment the reply was read, so a change
+  asked for from a terminal could not be approved anywhere — the promise read
+  built and was not. Typed from a script or a pipe, nobody is asked and alo says
+  so.*
   **Not built**: nothing of this promise. What is left is that **nobody has seen
   it on a machine**, which is true of six other starred terminal lines and is
   waiting on an image.

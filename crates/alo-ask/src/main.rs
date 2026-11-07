@@ -137,21 +137,25 @@ fn the_road_this_takes(
 fn the_agent_was_asked(typed: &str, strings: &Strings) -> ExitCode {
     let at = std::path::Path::new(alo_protocol::where_the_door_is::WHERE_A_PERSONS_WORDS_GO);
     let the_switch = std::path::Path::new(alo_remembering::THE_LEVEL);
-    // **Typed at a terminal, with the switch on** — or the road is exactly what
-    // it was. `docs/features.md`: alo in the terminal may act without asking if
-    // the person chooses, and that is a request typed at their prompt; a script
-    // piping a sentence in is not in a terminal, and is asked as before. The
-    // switch is read again at the moment of answering, so this first reading
-    // only chooses whether to hold the turn open long enough to answer.
-    if std::io::IsTerminal::is_terminal(&std::io::stdin())
-        && the_switch_at(the_switch).acts_without_asking()
-    {
-        return the_agent_was_asked_and_may_go_ahead(at, typed, the_switch, strings);
+    // **Typed at a terminal, the turn is held open** so that a change it leaves
+    // waiting can be answered there: by asking *Run this command? [y/N]*, or —
+    // when the person switched on acting without asking — without asking. A
+    // script piping a sentence in is not at a terminal: nobody is asked there,
+    // and it is told so.
+    if std::io::IsTerminal::is_terminal(&std::io::stdin()) {
+        return the_agent_was_asked_at_a_terminal(at, typed, the_switch, strings);
     }
     match alo_ask::at_the_agents_door::what_the_agent_says(at, typed) {
         Ok(said) => {
-            println!("{said}");
-            ExitCode::SUCCESS
+            let told = alo_ask::what_the_terminal_says::what_a_pipe_is_told(&said, strings);
+            for line in &told.lines {
+                println!("{line}");
+            }
+            if told.worked {
+                ExitCode::SUCCESS
+            } else {
+                ExitCode::FAILURE
+            }
         }
         // **Its own English, and no fallback to answering.** A command that met
         // a missing agent and quietly answered the request instead would be the
@@ -176,12 +180,13 @@ fn the_switch_at(at: &std::path::Path) -> alo_capability::AloInTheTerminal {
     alo_remembering::alo_in_the_terminal_remembered(at).unwrap_or_default()
 }
 
-/// **What alo was asked to do, with the switch on: done without the OK.**
+/// **What alo was asked to do, at a terminal: asked about, or done without the
+/// OK.**
 ///
 /// The turn is held open while the change it left waiting is answered on the
 /// person's door, and let go of once the daemon has said what happened —
 /// `alo_ask::acting_without_the_ok` has the whole account, and the refusals.
-fn the_agent_was_asked_and_may_go_ahead(
+fn the_agent_was_asked_at_a_terminal(
     at: &std::path::Path,
     typed: &str,
     the_switch: &std::path::Path,
@@ -192,14 +197,34 @@ fn the_agent_was_asked_and_may_go_ahead(
             Ok(it) => it,
             // The same English, and no fallback, as the road beside this.
             Err(why) => {
-                eprintln!("alo-ask: {why}");
+                eprintln!("{}: {why}", alo_ask::its_name::ITS_NAME);
                 return ExitCode::FAILURE;
             }
         };
     let door = alo_changing::TheDaemonsDoor::at(&alo_changing::this_persons_door());
-    let did = alo_ask::acting_without_the_ok::what_the_terminal_does(&reply, &door, &|| {
-        the_switch_at(the_switch)
-    });
+    let prompt = strings
+        .say(
+            &alo_capability::words::RUN_THIS_COMMAND.key(),
+            &alo_strings::Filling::nothing(),
+        )
+        .into_text();
+    // **The reply goes on the screen before the question**, so the person
+    // reads what alo proposes and then is asked whether to run it.
+    let mut ask = |within: std::time::Duration| {
+        println!("{}", reply.trim());
+        alo_ask::asking_in_the_terminal::asked_at(
+            std::os::fd::AsFd::as_fd(&std::io::stdin()),
+            &format!("{prompt} "),
+            &mut std::io::stderr(),
+            within,
+        )
+    };
+    let did = alo_ask::acting_without_the_ok::what_the_terminal_does(
+        &reply,
+        &door,
+        &|| the_switch_at(the_switch),
+        &mut ask,
+    );
     let said = alo_ask::what_the_terminal_says::what_the_terminal_says(&reply, &did, strings);
     for line in &said.lines {
         println!("{line}");
