@@ -210,6 +210,19 @@ impl State {
             let path = library
                 .pending(&clip.id)
                 .map_err(|error| error.to_string())?;
+            // A fast encoder can hide the workspace before the next preview
+            // poll. Preserve the actual selected-source preview before that
+            // transition, rather than depending on a later visible frame.
+            if let (Some(texture), Ok(thumbnail)) = (
+                self.view
+                    .preview
+                    .paintable()
+                    .and_then(|image| image.downcast::<gtk::gdk::Texture>().ok()),
+                library.thumbnail(&clip.id),
+            ) && let Err(error) = texture.save_to_png(thumbnail)
+            {
+                eprintln!("Saving thumbnail: {error}");
+            }
             // Keep the selected source connected; only the encoding branch starts.
             self.engine
                 .borrow_mut()
