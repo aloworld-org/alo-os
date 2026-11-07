@@ -17,6 +17,7 @@ jobs:
       options: --privileged
     env:
       ALO_STUDIO_BUILD_DIR: /tmp/studio-flatpak
+      STUDIO_PACKAGE_SOURCE: ${{ github.event.pull_request.head.sha || github.sha }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -30,7 +31,8 @@ jobs:
         run: dbus-run-session -- bash apps/alo-studio/packaging/build-flatpak.sh
       - name: Record package provenance
         run: |
-          git rev-parse HEAD > /tmp/studio-flatpak/source.txt
+          test "$(cat .git/HEAD)" = "$STUDIO_PACKAGE_SOURCE"
+          printf '%s\n' "$STUDIO_PACKAGE_SOURCE" > /tmp/studio-flatpak/source.txt
           printf '%s\n' 'normal; verification disabled' > /tmp/studio-flatpak/features.txt
           flatpak list --runtime --columns=application,branch,commit > /tmp/studio-flatpak/sdk-versions.txt
           cd /tmp/studio-flatpak
