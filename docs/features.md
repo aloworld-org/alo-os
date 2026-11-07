@@ -395,6 +395,11 @@ file carries it with a tier.*
   and treating anything else as *could not tell*; and an acting sentence goes to
   **the agent's own door** — `alo-asking.socket`, which systemd opens as the
   agent (ADR 0109) — rather than being answered.
+  **With a provider chosen, too, since 2026-11-07**: the one-word question is
+  put to the person's own provider through the alo service, as their answers
+  are, so it is recorded and shown like any question of theirs. *Until then it
+  was asked only of a model on this machine, and a person whose model is a
+  provider was only ever answered — this line was true for local models alone.*
   *The road and not the mention count: `main.rs` matches `WhatItWants::Acting`
   and returns `the_agent_was_asked`, which connects to the agent's socket and
   reads what came back. The 2026-10-18 measurement counted **mentions**, and

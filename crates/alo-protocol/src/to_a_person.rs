@@ -91,6 +91,12 @@ pub enum ToAPerson {
         /// the service so the screen and the record cannot become two accounts
         /// of one moment.
         why_not: Option<Wording>,
+        /// **What the place is called**, where one was kept, so a command that
+        /// writes its own record entry — `alo-app` — can name it in
+        /// `kept_as` and the record window can offer Put back for it.
+        /// [`None`] when none was kept, and from a daemon older than this
+        /// field. The name is opaque, as every place's is: nothing parses it.
+        named: Option<String>,
     },
     /// Every folder they asked for is as it was, and it is written down.
     ///
@@ -503,9 +509,15 @@ impl ToAPerson {
             Told::Did(done) => Ok(Self::Did(done)),
             Told::DidAndCannotBeUndone(done) => Ok(Self::DidAndCannotBeUndone(done)),
             Told::Waiting { changes } => Ok(Self::Waiting { changes }),
-            Told::APlaceToReturnTo { kept, why_not } => {
-                Ok(Self::APlaceToReturnTo { kept, why_not })
-            }
+            Told::APlaceToReturnTo {
+                kept,
+                why_not,
+                named,
+            } => Ok(Self::APlaceToReturnTo {
+                kept,
+                why_not,
+                named,
+            }),
             Told::PutBack { said } => Ok(Self::PutBack { said }),
             Told::Declined {} => Ok(Self::Declined),
             Told::Granted { holding } => Ok(Self::Granted { holding }),
@@ -599,9 +611,15 @@ impl From<ToAPerson> for Told {
             ToAPerson::Did(done) => Self::Did(done),
             ToAPerson::DidAndCannotBeUndone(done) => Self::DidAndCannotBeUndone(done),
             ToAPerson::Waiting { changes } => Self::Waiting { changes },
-            ToAPerson::APlaceToReturnTo { kept, why_not } => {
-                Self::APlaceToReturnTo { kept, why_not }
-            }
+            ToAPerson::APlaceToReturnTo {
+                kept,
+                why_not,
+                named,
+            } => Self::APlaceToReturnTo {
+                kept,
+                why_not,
+                named,
+            },
             ToAPerson::PutBack { said } => Self::PutBack { said },
             ToAPerson::Declined => Self::Declined {},
             ToAPerson::Granted { holding } => Self::Granted { holding },
@@ -655,6 +673,43 @@ mod tests {
     /// One sentence this crate really declares.
     fn a_sentence() -> Said {
         in_english().say(&words::NOT_READABLE.key(), &Filling::nothing())
+    }
+
+    /// **A kept place says what it is called, and an answer without the name
+    /// still reads** — an older daemon's, or one where nothing was kept — so
+    /// the field is additive in both directions.
+    #[test]
+    fn a_kept_place_says_its_name_and_an_older_answer_still_reads() {
+        let kept = ToAPerson::APlaceToReturnTo {
+            kept: true,
+            why_not: None,
+            named: Some("1762516800-42-their-own".to_owned()),
+        };
+        let written = kept.written().unwrap();
+        assert!(
+            written.contains(r#""named":"1762516800-42-their-own""#),
+            "{written}"
+        );
+        assert_eq!(ToAPerson::read(&written).unwrap(), kept);
+        // **An older daemon's line is this one without the field** — taken off
+        // the written line rather than typed here, so whatever else the wire
+        // carries around it is the wire's own.
+        let older = written.replace(r#","named":"1762516800-42-their-own""#, "");
+        assert!(!older.contains("named"), "{older}");
+        assert_eq!(
+            ToAPerson::read(&older).unwrap(),
+            ToAPerson::APlaceToReturnTo {
+                kept: true,
+                why_not: None,
+                named: None,
+            }
+        );
+        let not_kept = ToAPerson::APlaceToReturnTo {
+            kept: false,
+            why_not: Some(Wording::of(&a_sentence())),
+            named: None,
+        };
+        assert!(!not_kept.written().unwrap().contains("named"));
     }
 
     /// The five, written and read back.

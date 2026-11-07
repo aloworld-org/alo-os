@@ -164,9 +164,12 @@ fn a_place_kept_the_way_a_shell_asks(folder: &Path, home: &Path, named: &str) ->
     // Printed, because the handler answers *no place was kept* for every reason
     // there is and a test that only saw the boolean would have nothing to go on.
     println!("the handler answered: {answered:?}");
+    // **And it says what the place is called**, which is what a person's own
+    // command writes in its record entry so Put back can find it.
     let kept = matches!(
-        answered,
-        alo_protocol::ToAPerson::APlaceToReturnTo { kept: true, .. }
+        &answered,
+        alo_protocol::ToAPerson::APlaceToReturnTo { kept: true, named: Some(given), .. }
+            if given == named
     );
     (kept, whose)
 }

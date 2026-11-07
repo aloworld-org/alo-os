@@ -312,8 +312,9 @@ struct ReadAloud {
     name: String,
     /// The two words `GetState` answers with, low word first.
     states: Vec<u32>,
-    /// What a reader is told besides the name — the `live` attribute, and
-    /// nothing else.
+    /// What a reader is told besides the name — the `live` attribute, and on
+    /// a surface's own node the surface's typed name
+    /// ([`alo_access::THE_SURFACE_ATTRIBUTE`]), and nothing else.
     attributes: HashMap<String, String>,
     /// What hangs under it, in reading order.
     children: Vec<(String, OwnedObjectPath)>,
@@ -351,6 +352,12 @@ impl ReadAloud {
         let mut attributes = HashMap::new();
         if node.announced {
             attributes.insert(LIVE.0.to_owned(), LIVE.1.to_owned());
+        }
+        if let Some(surface) = tree.surface_at(&node.path) {
+            attributes.insert(
+                alo_access::THE_SURFACE_ATTRIBUTE.to_owned(),
+                surface.on_the_wire().to_owned(),
+            );
         }
         Self {
             role: node.role,

@@ -272,3 +272,36 @@ fn the_old_name_still_works_and_says_it_has_changed() {
     );
     std::fs::remove_dir_all(&links).expect("the temporary folder can be removed");
 }
+
+/// **A request, with a provider chosen, is put to that provider to decide
+/// whether it wants acting** — through the alo service, never a model on this
+/// machine — and a service that is not there is said once, not once per ask.
+///
+/// Until 2026-11-07 a provider was asked only to *answer*, so a person whose
+/// model is a provider could never have alo act from the terminal.
+#[test]
+fn a_request_with_a_provider_chosen_is_decided_through_the_service_and_said_once() {
+    let home = a_login_whose_settings_say(
+        "provider-request",
+        "format = 3\n\n\
+         [answers]\n\
+         provider = { name = \"Mistral\", model = \"mistral-small-latest\" }\n\n\
+         [[provider]]\n\
+         name = \"Mistral\"\n\
+         endpoint = \"https://api.mistral.ai\"\n\
+         region = \"the EU\"\n",
+    );
+
+    let (ok, said) = run(&["rename march.pdf to march-final.pdf"], &home);
+
+    assert!(!ok, "a request nothing could decide succeeded: {said}");
+    assert!(
+        !said.contains("runtime"),
+        "a request going to a provider was decided on this machine: {said}"
+    );
+    assert_eq!(
+        said.matches("provider").count(),
+        1,
+        "the service being absent was said other than once: {said}"
+    );
+}

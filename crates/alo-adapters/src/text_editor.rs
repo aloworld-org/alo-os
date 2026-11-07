@@ -36,7 +36,7 @@ use alo_strings::Word;
 
 use crate::adapter::Adapter;
 use crate::adapter_arg::{AdapterArg, Kind};
-use crate::adapter_verb::{AdapterVerb, Reaches};
+use crate::adapter_verb::{AdapterVerb, Reaches, Sends};
 use crate::invocation::{DBusMethod, Invocation, Part};
 use crate::mechanism::Mechanism;
 
@@ -143,6 +143,8 @@ pub const TEXT_EDITOR: Adapter = Adapter {
             name: "open_document",
             purpose: OPEN_DOCUMENT_PURPOSE,
             effect: Effect::Change,
+            // Opening a file, or a window, in an editor on this machine.
+            sends: Sends::Never,
             args: &[AdapterArg {
                 name: DOCUMENT,
                 purpose: OPEN_DOCUMENT_DOCUMENT,
@@ -162,6 +164,8 @@ pub const TEXT_EDITOR: Adapter = Adapter {
             name: "new_window",
             purpose: NEW_WINDOW_PURPOSE,
             effect: Effect::Change,
+            // Opening a file, or a window, in an editor on this machine.
+            sends: Sends::Never,
             args: &[],
             reaches: Reaches::OnlyItsApplication,
             sentence: NEW_WINDOW_SENTENCE,

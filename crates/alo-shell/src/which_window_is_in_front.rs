@@ -144,6 +144,13 @@ impl crate::Server {
     /// window is `Server::this_task_took_the_keyboard`'s, which calls this.
     pub(crate) fn the_person_went_to(&mut self, kind: AKindOfWindow) {
         self.which_is_in_front.comes_to_the_front(kind);
+        // alo's own terminal has no surface to be focused, so the keyboard
+        // changing hands to it is remembered here (`crate::who_had_the_keyboard`).
+        if kind == AKindOfWindow::TheTerminal {
+            self.surfaces
+                .keyboard_was_with
+                .now_has(crate::who_had_the_keyboard::HadTheKeyboard::AlosOwnTerminal);
+        }
         // An application started earlier does not take them away from here
         // when its window comes (`crate::a_window_the_person_opened`).
         self.the_person_waits_for_nothing();

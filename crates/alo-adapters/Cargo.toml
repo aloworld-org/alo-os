@@ -15,6 +15,9 @@ alo-capability = { path = "../alo-capability" }
 # What an application identifier is, what is installed, and the refusal for an
 # application that is not here — read, never restated.
 alo-applications = { path = "../alo-applications" }
+# Which surface of alo's own tree a person named, by the name that crate
+# gives it and the attribute the shell publishes it under: one name, kept there.
+alo-access = { path = "../alo-access" }
 # Every sentence a person reads here, and every word an adapter declares.
 alo-strings = { path = "../alo-strings" }
 thiserror = { workspace = true }

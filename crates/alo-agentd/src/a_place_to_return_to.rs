@@ -71,6 +71,7 @@ pub fn kept(
         return ToAPerson::APlaceToReturnTo {
             kept: false,
             why_not: why_not(),
+            named: None,
         };
     };
     // **The person's own folder is made first, exactly as a turn's bracket
@@ -81,6 +82,7 @@ pub fn kept(
         return ToAPerson::APlaceToReturnTo {
             kept: false,
             why_not: why_not(),
+            named: None,
         };
     }
     match WhereThisTurnIsKept::made(goes.whose(), named) {
@@ -117,24 +119,31 @@ pub fn kept(
                     &Filling::nothing(),
                 );
                 match kept.what_it_did(now, did.text()) {
+                    // **Its name goes back with it**, so a person's own
+                    // command can write it in its record entry and the
+                    // record window can offer Put back for that entry.
                     Ok(()) => ToAPerson::APlaceToReturnTo {
                         kept: true,
                         why_not: None,
+                        named: Some(named.to_owned()),
                     },
                     Err(_) => ToAPerson::APlaceToReturnTo {
                         kept: false,
                         why_not: why_not(),
+                        named: None,
                     },
                 }
             }
             ASideOfTheTurn::NotKept(_) => ToAPerson::APlaceToReturnTo {
                 kept: false,
                 why_not: why_not(),
+                named: None,
             },
         },
         Err(_) => ToAPerson::APlaceToReturnTo {
             kept: false,
             why_not: why_not(),
+            named: None,
         },
     }
 }

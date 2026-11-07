@@ -31,7 +31,7 @@ use std::time::{Duration, SystemTime};
 use alo_adapters::{
     Adapter, AdapterArg, AdapterVerb, Adapters, Argument, DBusMethod, Delivers, Driving,
     Invocation, Kind, Mechanism, Message, NotDelivered, NotLoaded, ONLY_ITS_APPLICATION, Part,
-    Reaches, TEXT_EDITOR, adapter_verbs, load, shipped_adapters,
+    Reaches, Sends, TEXT_EDITOR, adapter_verbs, load, shipped_adapters,
 };
 use alo_applications::{Application, Installed};
 use alo_capability::{
@@ -165,6 +165,7 @@ const A_SOUND_VERB: AdapterVerb = AdapterVerb {
     name: "open_drawing",
     purpose: PURPOSE,
     effect: Effect::Change,
+    sends: Sends::Never,
     args: &[AdapterArg {
         name: "which",
         purpose: WHICH,

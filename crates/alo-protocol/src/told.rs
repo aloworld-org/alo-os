@@ -93,6 +93,12 @@ pub(crate) enum Told {
         /// Why not, where one was not.
         #[serde(default, skip_serializing_if = "Option::is_none")]
         why_not: Option<Wording>,
+        /// What the place is called, where one was kept — added 2026-11-07 so
+        /// a person's own command can name it in its record entry's
+        /// `kept_as`. Absent from an older daemon, and absent when none was
+        /// kept.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        named: Option<String>,
     },
     /// Every folder asked for was put back and written down; one sentence for
     /// each, saying where what was in it now is. A refusal is `refused`, and

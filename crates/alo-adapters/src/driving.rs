@@ -20,11 +20,19 @@
 //!    hold (ADR 0043).
 //! 3. **Is it installed?** `alo_applications::NotInstalled`'s words if not.
 //! 4. **What message does the call become?** Built from validated values only.
+//!
+//! **A person's own command asks the same questions but the second**
+//! (`crate::driving_by_hand`): law 2 binds the agent, not the person, so
+//! nothing is granted for what they typed. Questions 1, 3 and 4 are one
+//! function each here, and both roads call them — one core, two callers, so a
+//! person is never told something alo would not be.
 
 use alo_applications::{Installed, NotInstalled};
-use alo_capability::{Ask, Authorised, Grants, Refused};
+use alo_capability::{Ask, Authorised, Call, Grants, Refused};
 use alo_strings::{Filling, Said, Strings};
 
+use crate::adapter::Adapter;
+use crate::adapter_verb::AdapterVerb;
 use crate::adapters::Adapters;
 use crate::delivering::{Delivers, NotDelivered};
 use crate::invocation::Invocation;
@@ -62,31 +70,19 @@ impl Driving {
             Refused::worded_elsewhere(authorised.call().clone(), said)
         };
         // 1. An adapter's verb at all?
-        let Some((adapter, verb)) = adapters.carrying_out(authorised.verb()) else {
-            let said = strings.say(
-                &words::NOT_AN_ADAPTERS_VERB.key(),
-                &Filling::of(words::VERB, authorised.verb().to_owned()),
-            );
-            return Err(refused(&authorised, said));
+        let (adapter, verb) = match whose_verb(adapters, authorised.verb(), strings) {
+            Ok(found) => found,
+            Err(said) => return Err(refused(&authorised, said)),
         };
         // 2. Granted? Refused here, and nothing has been looked for.
         let application = Ask::Application(adapter.application.to_owned());
         if let Err(why) = grants.permitting(authorised.under(), &application, authorised.at()) {
             return Err(Refused::not_granted(authorised.call().clone(), why));
         }
-        // 3. Here?
-        if !installed.has(adapter.application) {
-            let said = NotInstalled::wanting(adapter.application).said(strings);
-            return Err(refused(&authorised, said));
-        }
-        // 4. The message.
-        let Invocation::DBus(method) = verb.carried_out;
-        let Some(message) = Message::of(adapter.application, &method, authorised.call()) else {
-            let said = strings.say(
-                &words::NOT_BUILT.key(),
-                &Filling::of(words::APPLICATION, adapter.application.to_owned()),
-            );
-            return Err(refused(&authorised, said));
+        // 3 and 4. Here, and the message.
+        let message = match the_message(adapter, verb, authorised.call(), installed, strings) {
+            Ok(message) => message,
+            Err((_, said)) => return Err(refused(&authorised, said)),
         };
         Ok(Self {
             authorised,
@@ -121,17 +117,17 @@ impl Driving {
                 if text.len() > 8192 {
                     Err(NotDelivered::Refused)
                 } else {
-                    Ok(Some(text))
+                    Ok((false, Some(text)))
                 }
             })
         } else {
-            to.deliver(&self.message).map(|()| None)
+            sent(&self.message, to).map(|unanswered| (unanswered, None))
         };
         match result {
-            Ok(reply) => Ok(Driven {
+            Ok((unanswered, reply)) => Ok(Driven {
                 authorised: self.authorised,
                 application: self.application,
-                unanswered: false,
+                unanswered,
                 reply,
             }),
             Err(why) if why.may_have_happened() => Ok(Driven {
@@ -197,5 +193,62 @@ impl Driven {
     #[must_use]
     pub fn into_authorised(self) -> Authorised {
         self.authorised
+    }
+}
+
+/// Which of the two questions after the grant stopped a verb.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum NotMessaged {
+    /// The application is not installed.
+    NotInstalled,
+    /// The call could not be put into the application's terms.
+    NotBuilt,
+}
+
+/// **Question 1**: the adapter and the declared verb the machine knows by this
+/// name — or the sentence for a name no loaded adapter declares.
+pub(crate) fn whose_verb(
+    adapters: &Adapters,
+    named: &str,
+    strings: &Strings,
+) -> Result<(&'static Adapter, &'static AdapterVerb), Said> {
+    adapters.carrying_out(named).ok_or_else(|| {
+        strings.say(
+            &words::NOT_AN_ADAPTERS_VERB.key(),
+            &Filling::of(words::VERB, named.to_owned()),
+        )
+    })
+}
+
+/// **Questions 3 and 4**: whether the application is here, and the message a
+/// validated call becomes.
+pub(crate) fn the_message(
+    adapter: &'static Adapter,
+    verb: &'static AdapterVerb,
+    call: &Call,
+    installed: &Installed,
+    strings: &Strings,
+) -> Result<Message, (NotMessaged, Said)> {
+    if !installed.has(adapter.application) {
+        let said = NotInstalled::wanting(adapter.application).said(strings);
+        return Err((NotMessaged::NotInstalled, said));
+    }
+    let Invocation::DBus(method) = verb.carried_out;
+    Message::of(adapter.application, &method, call).ok_or_else(|| {
+        let said = strings.say(
+            &words::NOT_BUILT.key(),
+            &Filling::of(words::APPLICATION, adapter.application.to_owned()),
+        );
+        (NotMessaged::NotBuilt, said)
+    })
+}
+
+/// **The one send**: whether the application did not answer, or why nothing
+/// was done in it.
+pub(crate) fn sent(message: &Message, to: &dyn Delivers) -> Result<bool, NotDelivered> {
+    match to.deliver(message) {
+        Ok(()) => Ok(false),
+        Err(why) if why.may_have_happened() => Ok(true),
+        Err(why) => Err(why),
     }
 }
