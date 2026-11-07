@@ -4,6 +4,8 @@ use crate::{ReadbackError, RenderError, ScanoutPixels};
 use drm::buffer::DrmFourcc;
 use pixman::{Image, Operation};
 
+/// Copy a completed image into released storage, then normalize it in place.
+/// Invalid source metadata, allocation failure or misalignment refuses the frame.
 pub(super) fn capture(
     source: &Image<'_, '_>,
     retained: Option<Vec<u8>>,
@@ -27,6 +29,7 @@ pub(super) fn capture(
     Ok(crate::readback::owned_xrgb((width, height), pixels)?)
 }
 
+/// Borrow a checked destination only for the synchronous complete Pixman copy.
 fn copy_into(source: &Image<'_, '_>, pixels: &mut [u8]) -> Result<(), RenderError> {
     let width = u32::try_from(source.width()).map_err(|_| ReadbackError::Layout)?;
     let height = u32::try_from(source.height()).map_err(|_| ReadbackError::Layout)?;

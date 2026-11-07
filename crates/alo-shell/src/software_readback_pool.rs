@@ -2,12 +2,18 @@
 
 use std::{collections::VecDeque, sync::Arc};
 
+/// Bound retained ownership metadata independently of pixel capacity.
 const MAX_FRAMES: usize = 6;
+/// Bound retained CPU readback capacity independently of scratch render images.
 const MAX_BYTES: usize = 64 * 1024 * 1024;
 
+/// Recent completed allocations, including immutable buffers still in use.
 pub(super) struct Buffers {
+    /// Oldest retained allocation first; readers may keep additional ownership.
     frames: VecDeque<Arc<Vec<u8>>>,
+    /// Sum of actual Vec capacities retained by this pool.
     bytes: usize,
+    /// Production capacity budget, reduced only by resource regression tests.
     limit: usize,
 }
 
@@ -22,6 +28,7 @@ impl Default for Buffers {
 }
 
 impl Buffers {
+    /// Transfer storage only after ownership can be unwrapped without readers.
     pub(super) fn take(&mut self, length: usize) -> Option<Vec<u8>> {
         let index = self
             .frames
@@ -40,6 +47,7 @@ impl Buffers {
         }
     }
 
+    /// Retain a bounded ownership reference; oversized frames bypass retention.
     pub(super) fn put(&mut self, frame: Arc<Vec<u8>>) {
         let bytes = frame.capacity();
         if bytes > self.limit {
