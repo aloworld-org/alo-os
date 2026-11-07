@@ -15,14 +15,19 @@ fn renderer_sources_match_the_pinned_package_and_documented_mapping_patch()
     let manifest: serde_json::Value =
         serde_json::from_slice(&std::fs::read(engine.join("upstream-files.sha256.json"))?)?;
     assert_eq!(
-        manifest["package"],
+        manifest
+            .get("package")
+            .and_then(serde_json::Value::as_str)
+            .ok_or("missing package hash")?,
         "740cea6927892bc182d5bf70c8f79806c8bc9f68f2fb96e55a30be171b63af98"
     );
-    let files = manifest["files"]
-        .as_object()
+    let files = manifest
+        .get("files")
+        .and_then(serde_json::Value::as_object)
         .ok_or("missing upstream file hashes")?;
-    let overlay = manifest["overlay"]
-        .as_object()
+    let overlay = manifest
+        .get("overlay")
+        .and_then(serde_json::Value::as_object)
         .ok_or("missing reviewed overlay hashes")?;
     assert_eq!(overlay.len(), 2);
     let source = "src/backend/renderer/pixman/mod.rs";
