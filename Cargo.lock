@@ -294,11 +294,15 @@ dependencies = [
  "alo-answering",
  "alo-asking",
  "alo-capability",
+ "alo-changing",
  "alo-choosing",
+ "alo-instructing",
  "alo-models",
  "alo-protocol",
+ "alo-remembering",
  "alo-strings",
  "rustix 1.1.4",
+ "serde_json",
  "thiserror 2.0.20",
 ]
 
