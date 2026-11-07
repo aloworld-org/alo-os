@@ -250,6 +250,7 @@ as-it-was.the-whole-home	your whole home cannot go back while you are signed in 
 as-it-was.this-is-what-would-happen	{folder} will be as it was at {taken}, and what is in it now will be at {aside}
 as-it-was.type-its-name	type the folder's own name to go on, or anything else to stop
 as-it-was.what-you-can-return-to	places you can return to, newest first
+asking.command.old-name	alo-ask is now called alo — it still works, and alo is the name to type from now on
 asking.question.no-model	choose a model for this question to be answered by
 asking.question.nothing	there is nothing to ask yet — write the question first
 asking.vetting.cannot-be-tested-from-here	this provider cannot be tested from here, so nothing was sent — save it if you are sure of it, and the first question put to it will say whether it answers
