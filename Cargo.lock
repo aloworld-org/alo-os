@@ -72,6 +72,7 @@ version = "0.0.1"
 dependencies = [
  "alo-appearance",
  "alo-approving",
+ "alo-capability",
  "alo-instructing",
  "alo-saying",
  "alo-shortcuts",

@@ -186,6 +186,7 @@ pub mod sentence;
 pub mod the_sealed_box_here;
 pub mod verb;
 pub mod verbs;
+pub mod approval_words;
 pub mod words;
 
 #[cfg(test)]
