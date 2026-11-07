@@ -239,8 +239,7 @@ impl TheApplicationDoor {
                             let after = caller
                                 .heard
                                 .iter()
-                                .position(|byte| *byte == b'
-')
+                                .position(|byte| *byte == b'\n')
                                 .and_then(|end| caller.heard.get(end + 1..))
                                 .map(<[u8]>::to_vec)
                                 .unwrap_or_default();
