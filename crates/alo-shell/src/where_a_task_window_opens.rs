@@ -182,7 +182,7 @@ pub(crate) fn room_for_one_more(
         .chain(full.others.iter().copied())
         .collect();
     let whole = with_its_edge(at);
-    if crate::a_full_view_finds_room::there_is_room_at(whole.loc, whole.size, &open, view) {
+    if crate::room_in_a_full_view::there_is_room_at(whole.loc, whole.size, &open, view) {
         return None;
     }
     let found = crate::the_nearest_empty_space::the_nearest_empty_space(

@@ -252,8 +252,6 @@ pub use what_the_machine_offers_now::{AnApplicationHere, WhatTheMachineOffersNow
 mod a_chord_goes_round_every_window;
 /// A press on Settings reaching Settings.
 mod a_click_reaches_settings;
-/// One rule for every window a person opens into a full view.
-mod a_full_view_finds_room;
 /// A press on a task window's one button: Stop (ADR 0139).
 mod a_press_on_the_one_button;
 /// A window of alo's laid out in a room of its own, seen through the camera.
@@ -389,6 +387,8 @@ mod region_sheet;
 mod resize_cursor;
 mod resize_transaction;
 mod resource_device;
+/// One rule for every window a person opens into a full view.
+mod room_in_a_full_view;
 mod running_keys;
 mod running_rows;
 mod running_window;

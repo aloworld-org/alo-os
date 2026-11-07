@@ -254,12 +254,12 @@ impl crate::Server {
         let first =
             crate::where_a_window_opens(view, &open, open.first().copied(), wanted, reading, &[]);
         // **The person opened it, so with no room the view may glide** — the
-        // owner's *"Yes, the same"* of 2026-11-07 (`crate::a_full_view_finds_room`),
+        // owner's *"Yes, the same"* of 2026-11-07 (`crate::room_in_a_full_view`),
         // against every window on the Place, alo's own included.
         let everything = self.the_windows_on_this_place();
         let at = self.room_for_what_the_person_opened(
             first,
-            &crate::a_full_view_finds_room::AnOpening {
+            &crate::room_in_a_full_view::AnOpening {
                 view,
                 open: &everything,
                 wanted,

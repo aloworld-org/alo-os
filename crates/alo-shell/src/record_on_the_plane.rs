@@ -103,10 +103,10 @@ impl crate::Server {
             &[],
         );
         // **The person opened it**: with no room the view may glide, the
-        // owner's *"Yes, the same"* (`crate::a_full_view_finds_room`).
+        // owner's *"Yes, the same"* (`crate::room_in_a_full_view`).
         let at = self.room_for_what_the_person_opened(
             first,
-            &crate::a_full_view_finds_room::AnOpening {
+            &crate::room_in_a_full_view::AnOpening {
                 view,
                 open: &open,
                 wanted: Size::from(window),

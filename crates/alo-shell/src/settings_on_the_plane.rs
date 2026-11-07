@@ -167,12 +167,12 @@ impl crate::Server {
             &[],
         );
         // **The person opened it**: with no room the view may glide, the
-        // owner's yes of 2026-11-07 (`crate::a_full_view_finds_room`) —
+        // owner's yes of 2026-11-07 (`crate::room_in_a_full_view`) —
         // against every window on the Place, the record included.
         let everything = self.the_windows_on_this_place();
         let at = self.room_for_what_the_person_opened(
             first,
-            &crate::a_full_view_finds_room::AnOpening {
+            &crate::room_in_a_full_view::AnOpening {
                 view,
                 open: &everything,
                 wanted: Size::from(window),

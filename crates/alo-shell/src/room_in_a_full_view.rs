@@ -104,5 +104,5 @@ impl crate::Server {
 }
 
 #[cfg(test)]
-#[path = "a_full_view_finds_room_tests.rs"]
+#[path = "room_in_a_full_view_tests.rs"]
 mod tests;

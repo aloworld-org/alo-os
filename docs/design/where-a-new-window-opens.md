@@ -251,7 +251,7 @@ moves the view, and the choice is `alo_appearance::WhenThereIsNoRoom`, kept in
 **alo's own windows glide too — the owner, 2026-11-07: *"Yes, the same"*.**
 Asked whether the terminal, Settings, the record and task windows follow the
 same rule, the owner said yes the same day. So each of them asks the one rule
-in `crate::a_full_view_finds_room`, with the same choice: rules 3 to 7 first,
+in `crate::room_in_a_full_view`, with the same choice: rules 3 to 7 first,
 and with no room and *Glide to empty space* kept, the nearest empty space,
 covering nothing, and a glide (or a jump, with less motion asked for). alo's
 own windows open only when the person opens them, so each asks every time. A

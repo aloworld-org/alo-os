@@ -226,7 +226,7 @@ fn a_window_leaves_room_above_it_for_its_edge() {
 /// other window; and the three refusals keep the first answer: the choice is
 /// *Open in front*, there was room, or nothing is left within reach.
 #[test]
-fn a_task_window_into_a_full_view_finds_room_and_the_refusals_keep_the_first_answer() {
+fn a_task_window_into_room_in_a_full_view_and_the_refusals_keep_the_first_answer() {
     use super::{WhenTheViewIsFull, room_for_one_more};
     use smithay::utils::Logical;
     let view = Rectangle::<i32, Logical>::new((0, 0).into(), (1440, 960).into());

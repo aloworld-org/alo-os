@@ -4,7 +4,7 @@
 //! for.
 //!
 //! The owner's *"Yes, the same"* of 2026-11-07, asked whether alo's own windows
-//! glide too (`crate::a_full_view_finds_room`). A task window is placed by
+//! glide too (`crate::room_in_a_full_view`). A task window is placed by
 //! `crate::the_tasks_a_person_opened::TheTasks`, which holds no view of the
 //! other windows; this hands it them, and the person's choice, and moves the
 //! view where it says. A task window opens only for something the person asked
