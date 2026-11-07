@@ -17,7 +17,16 @@ fn fonts(bytes: &[u8]) -> FontSystem {
 
 /// Shape the same visible word using the database's own face.
 fn buffer(fonts: &mut FontSystem) -> Buffer {
-    let family = fonts.db().faces().next().unwrap().families[0].0.clone();
+    let family = fonts
+        .db()
+        .faces()
+        .next()
+        .unwrap()
+        .families
+        .first()
+        .unwrap()
+        .0
+        .clone();
     let mut buffer = Buffer::new(fonts, Metrics::new(24.0, 30.0));
     buffer.set_size(fonts, Some(240.0), Some(60.0));
     buffer.set_text(
@@ -43,6 +52,7 @@ fn drawn(
     pixels
 }
 
+/// Cache hits preserve pixels while keeping the original image allocation.
 #[test]
 fn repeated_draws_reuse_images_and_match_a_fresh_raster() {
     let mut fonts = fonts(include_bytes!("../fonts/Manrope-Regular.ttf"));
@@ -57,7 +67,11 @@ fn repeated_draws_reuse_images_and_match_a_fresh_raster() {
         .find(|(_, image)| image.is_some())
         .unwrap()
         .0;
-    let pointer = cache.swash.image_cache[&key]
+    let pointer = cache
+        .swash
+        .image_cache
+        .get(&key)
+        .unwrap()
         .as_ref()
         .unwrap()
         .data
@@ -67,7 +81,11 @@ fn repeated_draws_reuse_images_and_match_a_fresh_raster() {
     assert_eq!(first, drawn(&mut fonts, &buffer, &mut cache.swash));
     assert_eq!(
         pointer,
-        cache.swash.image_cache[&key]
+        cache
+            .swash
+            .image_cache
+            .get(&key)
+            .unwrap()
             .as_ref()
             .unwrap()
             .data
@@ -76,6 +94,7 @@ fn repeated_draws_reuse_images_and_match_a_fresh_raster() {
     assert_eq!(first, drawn(&mut fonts, &buffer, &mut SwashCache::new()));
 }
 
+/// Database-local IDs cannot authorize reuse across different loaded faces.
 #[test]
 fn identical_database_ids_cannot_reuse_a_different_faces_pixels() {
     let mut first = fonts(include_bytes!("../fonts/Manrope-Regular.ttf"));
@@ -96,6 +115,7 @@ fn identical_database_ids_cannot_reuse_a_different_faces_pixels() {
     assert_eq!(actual, drawn(&mut second, &b, &mut SwashCache::new()));
 }
 
+/// A large image cannot remain retained after the buffer has been drawn.
 #[test]
 fn oversized_pixel_storage_is_released_after_the_draw() {
     let mut fonts = fonts(include_bytes!("../fonts/Manrope-Regular.ttf"));
@@ -117,6 +137,7 @@ fn oversized_pixel_storage_is_released_after_the_draw() {
     assert!(cache.swash.image_cache.is_empty());
 }
 
+/// Failed glyph lookups consume bounded entry storage even without pixels.
 #[test]
 fn missing_glyph_entries_are_bounded_too() {
     let mut fonts = fonts(include_bytes!("../fonts/Manrope-Regular.ttf"));
