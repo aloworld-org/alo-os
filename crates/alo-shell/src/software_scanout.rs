@@ -48,18 +48,20 @@
 //! one painter now, so there is one answer.
 
 use drm::buffer::DrmFourcc;
+use pixman::Image;
 use smithay::{
-    backend::renderer::{Bind, pixman::PixmanRenderer},
+    backend::renderer::{
+        Bind, ExportMem, Offscreen, Texture, TextureMapping,
+        pixman::{PixmanRenderer, PixmanTarget},
+    },
     reexports::wayland_server::protocol::wl_surface::WlSurface,
-    utils::{Physical, Size, Transform},
+    utils::{Buffer as BufferCoords, Physical, Rectangle, Size, Transform},
 };
 
-use crate::{Cursor, Popup, RenderError, ScanoutPixels};
+use crate::{Cursor, Popup, ReadbackError, RenderError, ScanoutPixels};
 
 #[path = "software_framebuffers.rs"]
 mod framebuffers;
-#[path = "software_pixels.rs"]
-mod pixels;
 
 /// Draws this shell's own surfaces on the processor, and imports nothing.
 ///
@@ -164,17 +166,21 @@ impl crate::direct_target::ScenePainter for SoftwarePainter {
                 scene: "a frame with nothing of this shell's own in it",
             });
         }
-        let mut buffer = match self
+        let mut buffer: Image<'static, 'static> = match self
             .frames
             .as_mut()
             .and_then(|frames| frames.take((size.w, size.h)))
         {
             Some(buffer) => buffer,
-            None => pixels::Scratch::new((size.w, size.h))?,
+            None => self
+                .renderer
+                .create_buffer(READBACK, (size.w, size.h).into())
+                .map_err(|error| {
+                    RenderError::Submission(format!("create software frame: {error}"))
+                })?,
         };
         let result = (|| {
-            let mut image = buffer.image()?;
-            let mut target = self.renderer.bind(&mut image).map_err(|error| {
+            let mut target = self.renderer.bind(&mut buffer).map_err(|error| {
                 RenderError::Submission(format!("bind software frame: {error}"))
             })?;
             // **The same painting the card's road does, and the same function.**
@@ -200,9 +206,8 @@ impl crate::direct_target::ScenePainter for SoftwarePainter {
             // a painter that refused them. A client told nothing stops drawing,
             // so an empty answer here would be a desktop that freezes one frame
             // after it starts.
-            Ok::<_, RenderError>(drawing.surfaces)
-        })()
-        .and_then(|surfaces| Ok((buffer.readback()?, surfaces)));
+            Ok((readback(&mut self.renderer, &target)?, drawing.surfaces))
+        })();
         // The target borrow has ended. Readback owns independent output bytes,
         // so a later clear cannot alter an already published frame.
         if let Some(frames) = &mut self.frames {
@@ -214,6 +219,38 @@ impl crate::direct_target::ScenePainter for SoftwarePainter {
 
 /// Draw and export in scanout's own BGR byte order, avoiding a channel swap.
 const READBACK: DrmFourcc = DrmFourcc::Xrgb8888;
+
+/// Copy the whole painted frame into owned scanout bytes.
+///
+/// pixman's export is not GLES's: it is a plain composite into a second image,
+/// its rows already run top to bottom, and its mapping is never marked flipped.
+/// The metadata is checked against what was asked for rather than trusted, so a
+/// pinned engine that changed its mind refuses here instead of putting
+/// misread bytes on a display.
+fn readback(
+    renderer: &mut PixmanRenderer,
+    target: &PixmanTarget<'_>,
+) -> Result<ScanoutPixels, RenderError> {
+    let dimensions = (Texture::width(target), Texture::height(target));
+    let layout = ReadbackError::Layout;
+    let extent = i32::try_from(dimensions.0)
+        .and_then(|width| Ok((width, i32::try_from(dimensions.1)?)))
+        .map_err(|_: std::num::TryFromIntError| RenderError::Readback(layout))?;
+    let region: Rectangle<i32, BufferCoords> = Rectangle::from_size(extent.into());
+    let mapping = renderer
+        .copy_framebuffer(target, region, READBACK)
+        .map_err(|error| RenderError::Submission(format!("read back software frame: {error}")))?;
+    if (mapping.width(), mapping.height()) != dimensions
+        || Texture::format(&mapping) != Some(READBACK)
+        || mapping.flipped()
+    {
+        return Err(RenderError::Readback(ReadbackError::Layout));
+    }
+    let bytes = renderer
+        .map_texture(&mapping)
+        .map_err(|error| RenderError::Submission(format!("map software frame: {error}")))?;
+    Ok(crate::readback::copy_xrgb(dimensions, bytes)?)
+}
 
 #[cfg(test)]
 #[path = "software_scanout_tests.rs"]

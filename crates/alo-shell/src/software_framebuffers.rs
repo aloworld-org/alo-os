@@ -1,6 +1,6 @@
 //! Bounded owned scratch images, with one image checked out while painting.
 
-use super::pixels::Scratch;
+use pixman::Image;
 use std::collections::VecDeque;
 
 /// Retain the display size and one selected-window size without unbounded growth.
@@ -10,9 +10,9 @@ const MAX_BYTES: usize = 64 * 1024 * 1024;
 
 /// One detached CPU image, with its actual stride allocation counted.
 struct Retained {
-    /// Rust owns this initialized storage; it is never a KMS framebuffer.
-    image: Scratch,
-    /// Actual retained word allocation in bytes.
+    /// Pixman owns this storage; it is never a KMS framebuffer.
+    image: Image<'static, 'static>,
+    /// Stride times height, including row padding.
     bytes: usize,
 }
 
@@ -20,7 +20,7 @@ struct Retained {
 pub(super) struct Buffers {
     /// Oldest returned image first.
     images: VecDeque<Retained>,
-    /// Sum of retained pixel allocation capacities.
+    /// Sum of retained pixel allocations.
     bytes: usize,
     /// Fixed production budget, reduced only by internal resource tests.
     limit: usize,
@@ -38,7 +38,7 @@ impl Default for Buffers {
 
 impl Buffers {
     /// Transfer exclusive ownership out of the pool, never a shared mutable alias.
-    pub(super) fn take(&mut self, size: (i32, i32)) -> Option<Scratch> {
+    pub(super) fn take(&mut self, size: (i32, i32)) -> Option<Image<'static, 'static>> {
         let index = self.images.iter().position(|entry| {
             (entry.image.width(), entry.image.height()) == (size.0 as usize, size.1 as usize)
         })?;
@@ -48,8 +48,10 @@ impl Buffers {
     }
 
     /// Keep only affordable images after the renderer's target borrow has ended.
-    pub(super) fn put(&mut self, image: Scratch) {
-        let bytes = image.bytes();
+    pub(super) fn put(&mut self, image: Image<'static, 'static>) {
+        let Some(bytes) = image.stride().checked_mul(image.height()) else {
+            return;
+        };
         if bytes > self.limit {
             return;
         }

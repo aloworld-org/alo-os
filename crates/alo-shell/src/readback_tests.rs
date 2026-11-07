@@ -84,31 +84,22 @@ fn native_bgr_bytes_match_rgba_conversion_including_odd_width() -> Result<(), Re
         .flat_map(|p| [p[2], p[1], p[0], p[3]])
         .collect();
     let expected = convert((3, 3), RowOrder::TopToBottom, &rgba)?;
-    let words: Vec<_> = bgrx
-        .as_chunks::<4>()
-        .0
-        .iter()
-        .map(|p| u32::from_le_bytes(*p))
-        .collect();
-    let actual = copy_words((3, 3), &words)?;
+    let actual = copy_xrgb((3, 3), &bgrx)?;
     assert_eq!(actual.pixels(), expected.pixels());
     actual.frame().map_err(|_| ReadbackError::Layout)?;
-    for length in [0, 1, 8, 10, 11] {
+    for length in [0, 4, 35, 37, 40] {
         assert!(matches!(
-            copy_words((3, 3), &vec![0; length]),
+            copy_xrgb((3, 3), &vec![0; length]),
             Err(ReadbackError::Layout)
         ));
     }
-    assert!(matches!(
-        copy_words((0, 1), &[]),
-        Err(ReadbackError::Layout)
-    ));
+    assert!(matches!(copy_xrgb((0, 1), &[]), Err(ReadbackError::Layout)));
     Ok(())
 }
 
-/// Odd and even row widths preserve every native word and clear each X byte.
+/// Every partial wide block retains complete pixels and clears each X byte.
 #[test]
-fn native_word_copy_preserves_channels_across_row_widths() -> Result<(), ReadbackError> {
+fn native_copy_preserves_channels_across_wide_block_boundaries() -> Result<(), ReadbackError> {
     for width in 1..=17 {
         let source: Vec<u8> = (0..width * 3 * 4).map(|byte| byte as u8).collect();
         let expected: Vec<u8> = source
@@ -117,13 +108,7 @@ fn native_word_copy_preserves_channels_across_row_widths() -> Result<(), Readbac
             .iter()
             .flat_map(|[blue, green, red, _]| [*blue, *green, *red, 0])
             .collect();
-        let words: Vec<_> = source
-            .as_chunks::<4>()
-            .0
-            .iter()
-            .map(|p| u32::from_le_bytes(*p))
-            .collect();
-        let copied = copy_words((width, 3), &words)?;
+        let copied = copy_xrgb((width, 3), &source)?;
         assert_eq!(copied.pixels(), expected);
         assert_eq!(copied.stride, width as usize * 4);
     }
@@ -133,7 +118,7 @@ fn native_word_copy_preserves_channels_across_row_widths() -> Result<(), Readbac
 /// Capture shares the exact scanout bytes and survives replacement and release.
 #[test]
 fn capture_shares_owned_pixels_without_changing_previous_frames() -> Result<(), ReadbackError> {
-    let original = copy_words((2, 1), &[0xff03_0201, 0xff06_0504])?;
+    let original = copy_xrgb((2, 1), &[1, 2, 3, 255, 4, 5, 6, 255])?;
     let shared = original.shared();
     assert!(std::ptr::eq(original.pixels().as_ptr(), shared.as_ptr()));
     let again = original.shared();

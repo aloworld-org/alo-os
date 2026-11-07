@@ -11,7 +11,7 @@ typed agent actions are implemented. The normal GNOME 49 SDK Flatpak source is
 `ac0ba3a3aa33af1895fbefd9ed21d0c7b2571128da51a2008b018e5b0697e0ba`.
 All five hosted checks pass for that source. Thirty-three application tests and
 the real native integration verify input ownership, lifecycle and pause cutoff.
-The installed desktop is `74c3fef4`.
+The installed desktop is `0a763631`.
 
 The latest installed desktop is `0a763631`, with all five hosted checks passing.
 Normal application inputs are unchanged from the installed `06213b2e` package,
@@ -24,15 +24,15 @@ track endings differ by 111 ms. Two marker matches do not establish sync. Both
 saved videos have increasing timestamps and expected tracks, but fail unchanged
 media acceptance. All media, partials and compiler resumption proof are retained.
 
-A new instrumented stage trace finds the publisher already receives about two
+An instrumented stage trace finds the publisher already receives about two
 frames per second before encoding, with an empty publisher queue and short pool
 waits. A separate live-recording compositor sample identifies Pixman and readback
-as the main observed user CPU work. The next candidate borrows initialized owned
-words directly into Pixman while drawing, then copies normalized output only
-after that borrow ends. It removes an intermediate full-frame exported image,
-allocation and composite. Existing rendering, byte layout, bounded scratch reuse,
-source permissions, timestamps and acceptance thresholds remain unchanged. Its
-formatting passes; hosted checks and installed acceptance remain pending.
+as the main observed user CPU work. A candidate to draw directly into borrowed
+owned words fails compilation: Smithay accepts only static image storage. The
+candidate is reverted; the supported owned Pixman image path is restored. No
+engine lifetime is bypassed and no unsafe code is added. The failed candidate
+and its logs remain in history. Capture source, timing, permission and media
+acceptance requirements remain unchanged; recording quality is not accepted.
 
 The agent permission walk separately verifies live discovery, approved execution,
 immediate revocation and refusal. Revoked Studio access removes its actions from
@@ -2266,3 +2266,21 @@ layout and initialized bytes; existing real rendering, arrow, pixel, failed
 render, retained snapshot and pool-budget tests remain, along with native-word
 channel/row/length checks. No dependency, local unsafe code or renderer patch is
 added. Formatting passes; CI and normally installed media acceptance are pending.
+
+
+### Borrowed-word trial rejected by the renderer boundary
+
+The combined candidate `76b9bdf5` passes native application and package checks
+but its desktop and OS checks fail to compile. Pixman's FormatCode lacks direct
+PartialEq, and, more substantially, Smithay's Bind implementation requires
+`Image<'static, 'static>`. A borrowed-word image cannot satisfy that lifetime.
+The complete trial is reverted while retaining main's newer changes and all
+measurement evidence. The supported static owned-image/readback path is restored.
+No leaked buffer, lifetime cast or local unsafe code is introduced. The direct
+borrow is not an installed optimization or a demonstrated quality improvement.
+
+After the recording sample, WSL has about 27 GiB available, all 8 GiB of swap
+free, and QEMU reports zero swapped memory. This is a later observation rather
+than a recording-time memory trace. It does not support swapping as the cause.
+The sampler's journal proves event closure and an inactive service; normal
+application/source/chooser/installer restoration is preserved alongside it.
