@@ -118,8 +118,8 @@ model, third-parties apis."*
 | **the person's local model** | nothing | *Reads the screen with your model, on this machine. Nothing is sent.* |
 | **a third-party service the person names** | **a picture of the window, every time the screen is read** | *A picture of the window alo is reading is sent to {provider} each time. Password fields are cut out first.* |
 
-- **Before anybody has chosen, alo's own recognition is used.** *This default is
-  the lane's reading, for the owner to confirm*: it is the only one of the three
+- **Before anybody has chosen, alo's own built-in offline recognition is used** —
+  *the owner's decision of 2026-11-06*: it is the only one of the three
   that works on every machine, with or without a model, and sends nothing — so
   it is the one that decides nothing for the person that they could not see
   (ADR 0025).

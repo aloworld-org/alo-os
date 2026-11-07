@@ -26,7 +26,7 @@ reliable road, marked as such in the record. **A typed command runs at once, bec
 person typed it**, with no OK to give, including one that sends something off
 the machine. It is written in the person's record, it is undone with **Put
 back** where that is possible, and what it sends is shown on the indicator. The
-other way in, plain words through `alo-ask`, uses **the same list** of what an
+other way in, plain words through `alo` (with `alo-ask` kept as its alias), uses **the same list** of what an
 application can do, and waits for the person's OK unless they switched that off.
 
 ## What this rests on
@@ -43,7 +43,7 @@ Read these before arguing with any of it; this page is what they say, applied.
   its own automation interface, the accessibility tree, D-Bus, and pictures
   with synthetic input as a last resort. And the safety rule: **an adapter
   exposes typed verbs and builds any script itself, from validated arguments.**
-- **ADR 0124** — `alo-ask` is the one command for plain words, and it both
+- **ADR 0124** — `alo-ask` — being renamed `alo`, with `alo-ask` kept as an alias — is the one command for plain words, and it both
   answers and acts.
 - **ADR 0143** — alo works inside any installed application; what exists, what
   does not, and the owner's answers of 2026-10-31.
@@ -79,7 +79,7 @@ used it.
 **Plain words are the equal road beside it.** The owner, 2026-11-06: *"Also the
 users will be able to use alo (natural language in the terminal instead of
 commands)."* A person who would rather say what they want types it to
-`alo-ask` (ADR 0124, built), and alo does it in the application under its own
+`alo` (ADR 0124's command, built as `alo-ask`, which stays as an alias of `alo`), and alo does it in the application under its own
 rules — through the same list of abilities and controls `alo-app` uses. Neither
 is the real road with the other as a shortcut (answer 2).
 
@@ -149,7 +149,7 @@ how a stroke on a canvas or a drag in a 3D view is reached, which no named
 control can be. **Every click and drag is recorded as *done by position***,
 because afterwards nobody can say what was at that place. They always go by the
 screen road, to that window only. **alo never clicks or drags by position**, on
-any road and at any setting: `alo-ask` is never offered either form.
+any road and at any setting: `alo` is never offered either form.
 
 ### Naming the application
 
@@ -433,8 +433,8 @@ third-parties apis."* Three choices (answer 14):
 | **their local model** | a model on this machine that the person has set up | nothing leaves; needs a model that can read pictures |
 | **a third-party service they name** | a provider the person chooses and signs in to | **a picture of the window is sent to that provider every time the screen is read** — said in those plain words beside the option before it is chosen, shown on the indicator as it happens, and written in the record, as law 1 requires |
 
-**Before anybody has chosen, alo's own recognition is used** — *proposed by this
-lane, and a reading for the owner to confirm*: it is the only choice that works
+**Before anybody has chosen, alo's own built-in offline recognition is used** — *the
+owner's decision of 2026-11-06*: it is the only choice that works
 on every machine, with or without a model, and sends nothing. Whichever is
 chosen, it must read every one of the 24 languages a machine can be set to, or
 say which it cannot. **A password field is never sent anywhere**: it is cut out
@@ -620,7 +620,7 @@ the floor the guarantee rests on.
 The two ways in use **one list** of abilities and **one validation**. What
 differs is who acted, whether anything waits, and how that is shown and kept.
 
-| | Typed: `alo-app …` | Plain words: `alo-ask "…"` |
+| | Typed: `alo-app …` | Plain words: `alo "…"` (alias `alo-ask`) |
 |---|---|---|
 | Who acted | the person | alo, for the person |
 | What it may reach | anything the person can, with no grant | only applications the person has let alo use (ADR 0143, the grant over one application) |
@@ -820,12 +820,10 @@ users will be able to use alo (natural language in the terminal instead of
 commands)."* So **plain words in the terminal are an equal road beside
 `alo-app`, not a fallback beneath it**: a person types what they want in their
 own words and alo does it, under alo's rules. That road is ADR 0124's command,
-already built, and **its name is `alo-ask`, not `alo`** — ADR 0124 kept the
-name, and the owner said there *"or any name, I do not care about the name."*
-Whether the owner's *alo* here means the road or a new command spelled `alo` is
-read as **the road**, because ADR 0124 decided there is one command and not
-two; *a reading, marked: if the owner wants `alo` as the spelling, that renames
-ADR 0124's command and is its own change.* Closed.
+already built as `alo-ask`. **The owner decided on 2026-11-06 that it is
+spelled `alo`, with `alo-ask` kept as an alias**, so one command answers to both
+names and nothing that types `alo-ask` breaks. The rename is another change's,
+not this contract's; this page names `alo`. Closed.
 
 **3. Short words and chaining — short words later; one ability per line.**
 `mail`, `image` and the like may come later, additively, only where no command
@@ -901,11 +899,11 @@ them:
   beside the option before it is chosen, shown on the indicator as it happens
   and written in the record, as law 1 requires.
 
-**Before anybody has chosen, the built-in recogniser is used** — *proposed by
-this lane, and a reading for the owner to confirm*: it is the only one of the
+**Before anybody has chosen, alo's built-in offline recognition is used — the
+owner's decision of 2026-11-06**, confirming this lane's proposal: it is the only one of the
 three that works on every machine and sends nothing. **A password field is
 never sent anywhere**, whichever is chosen: it is cut out of the picture before
-any reader sees it. Closed, with the default awaiting confirmation.
+any reader sees it. Closed.
 
 **15. The amendments before any screen-road code — the recommendation, taken.**
 ADR 0001 §6 and `app-adapters.md` are amended before a line of the screen road
