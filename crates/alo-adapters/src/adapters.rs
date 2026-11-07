@@ -91,6 +91,15 @@ impl Adapters {
         Ok(verbs)
     }
 
+    /// The adapter for this application, if one is loaded — what a person's
+    /// command asks when they name an application rather than a verb. One at
+    /// most, because [`Adapters::add`] refuses a second for one application.
+    #[must_use]
+    pub fn for_application(&self, identifier: &str) -> Option<&'static Adapter> {
+        self.all()
+            .find(|adapter| adapter.application == identifier)
+    }
+
     /// The adapter and the declared verb the machine knows by this name.
     #[must_use]
     pub fn carrying_out(&self, named: &str) -> Option<(&'static Adapter, &'static AdapterVerb)> {

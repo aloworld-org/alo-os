@@ -65,7 +65,10 @@
 /// **`alo` since 2026-11-06**, when the owner renamed `alo-ask` (ADR 0124,
 /// amended) — and `alo-ask` stays on this list, because it still works and a
 /// person who types it is owed the same check.
-const WHAT_A_PERSON_TYPES: [&str; 3] = ["alo", "alo-ask", "alo-try"];
+///
+/// **`alo-app` since 2026-11-07**, when the command a person types to use their
+/// applications was built (`docs/contracts/terminal-commands.md`).
+const WHAT_A_PERSON_TYPES: [&str; 4] = ["alo", "alo-app", "alo-ask", "alo-try"];
 
 /// The recipe, as one string.
 fn the_recipe() -> String {

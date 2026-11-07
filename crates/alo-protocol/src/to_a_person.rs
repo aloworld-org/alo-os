@@ -91,6 +91,12 @@ pub enum ToAPerson {
         /// the service so the screen and the record cannot become two accounts
         /// of one moment.
         why_not: Option<Wording>,
+        /// **What the place is called**, where one was kept, so a command that
+        /// writes its own record entry — `alo-app` — can name it in
+        /// `kept_as` and the record window can offer Put back for it.
+        /// [`None`] when none was kept, and from a daemon older than this
+        /// field. The name is opaque, as every place's is: nothing parses it.
+        named: Option<String>,
     },
     /// Every folder they asked for is as it was, and it is written down.
     ///
@@ -503,8 +509,16 @@ impl ToAPerson {
             Told::Did(done) => Ok(Self::Did(done)),
             Told::DidAndCannotBeUndone(done) => Ok(Self::DidAndCannotBeUndone(done)),
             Told::Waiting { changes } => Ok(Self::Waiting { changes }),
-            Told::APlaceToReturnTo { kept, why_not } => {
-                Ok(Self::APlaceToReturnTo { kept, why_not })
+            Told::APlaceToReturnTo {
+                kept,
+                why_not,
+                named,
+            } => {
+                Ok(Self::APlaceToReturnTo {
+                    kept,
+                    why_not,
+                    named,
+                })
             }
             Told::PutBack { said } => Ok(Self::PutBack { said }),
             Told::Declined {} => Ok(Self::Declined),
@@ -597,8 +611,16 @@ impl From<ToAPerson> for Told {
             ToAPerson::Did(done) => Self::Did(done),
             ToAPerson::DidAndCannotBeUndone(done) => Self::DidAndCannotBeUndone(done),
             ToAPerson::Waiting { changes } => Self::Waiting { changes },
-            ToAPerson::APlaceToReturnTo { kept, why_not } => {
-                Self::APlaceToReturnTo { kept, why_not }
+            ToAPerson::APlaceToReturnTo {
+                kept,
+                why_not,
+                named,
+            } => {
+                Self::APlaceToReturnTo {
+                    kept,
+                    why_not,
+                    named,
+                }
             }
             ToAPerson::PutBack { said } => Self::PutBack { said },
             ToAPerson::Declined => Self::Declined {},

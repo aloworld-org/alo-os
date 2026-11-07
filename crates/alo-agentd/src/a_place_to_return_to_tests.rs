@@ -43,7 +43,12 @@ fn in_english() -> Strings {
 fn a_session_with_no_home_keeps_no_place_and_says_so() {
     let answered = kept(None, "whatever", noon(), &in_english());
     match answered {
-        ToAPerson::APlaceToReturnTo { kept, why_not } => {
+        ToAPerson::APlaceToReturnTo {
+            kept,
+            why_not,
+            named,
+        } => {
+            assert_eq!(named, None, "a place that was not kept has no name");
             assert!(!kept, "there was nowhere to keep one");
             let said = why_not.expect("a person is told when nothing was kept");
             assert!(
@@ -72,7 +77,12 @@ fn a_folder_that_cannot_be_made_keeps_no_place() {
     let goes = WhereBracketsGo::of_a_session(&at, 1000, Some(std::ffi::OsStr::new("/")));
     let answered = kept(goes.as_ref(), "whatever", noon(), &in_english());
     match answered {
-        ToAPerson::APlaceToReturnTo { kept, why_not } => {
+        ToAPerson::APlaceToReturnTo {
+            kept,
+            why_not,
+            named,
+        } => {
+            assert_eq!(named, None, "a place that was not kept has no name");
             assert!(!kept, "nothing could be made there");
             assert!(why_not.is_some(), "and the person is told");
         }

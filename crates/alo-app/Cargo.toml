@@ -1,0 +1,56 @@
+[package]
+name = "alo-app"
+version = "0.0.1"
+description = "The command a person types to use their applications: list, show, an application's declared abilities, its controls and its window."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[[bin]]
+name = "alo-app"
+path = "src/main.rs"
+
+[dependencies]
+# The compositor's door: `front`, `alo-tree`, the three acts on a window, and a
+# count of what an application sends. Every word of the wire is that crate's.
+alo-acting = { path = "../alo-acting" }
+# What an application is, and which are installed.
+alo-applications = { path = "../alo-applications" }
+alo-installed = { path = "../alo-installed" }
+# The declared abilities and the accessibility tree: one walk, one press and one
+# send, shared with alo's own road (`by_their_hand.rs`, `driving_by_hand.rs`).
+alo-adapters = { path = "../alo-adapters" }
+# alo OS's own surfaces, by the names `--in` takes.
+alo-access = { path = "../alo-access" }
+# The validation alo's own calls go through, and which applications are
+# terminals.
+alo-capability = { path = "../alo-capability" }
+# The person's record, and the entry a typed command writes into it.
+alo-record = { path = "../alo-record" }
+alo-keeping = { path = "../alo-keeping" }
+# Where that record is: the file `alo-try` already writes, named once there.
+alo-try = { path = "../alo-try" }
+# The person's language, read from their settings as `alo-ask` reads it.
+alo-choosing = { path = "../alo-choosing" }
+alo-strings = { path = "../alo-strings" }
+# The daemon's door, for one place to return to before a command that acts.
+alo-protocol = { path = "../alo-protocol" }
+# `--json`, in the contract's shape.
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+
+[target.'cfg(unix)'.dependencies]
+# `getuid`, to find this person's own doors.
+rustix = { workspace = true, features = ["process"] }
+
+[dev-dependencies]
+serde_json = { workspace = true }
+
+[target.'cfg(target_os = "linux")'.dev-dependencies]
+# The accessibility bus and a real GTK window, for the press a person types.
+alo-portals = { path = "../alo-portals" }
+zbus = { version = "5.19", default-features = false, features = ["async-io", "blocking-api"] }
+
+[lints]
+workspace = true

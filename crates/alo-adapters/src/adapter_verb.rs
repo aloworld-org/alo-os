@@ -26,6 +26,35 @@ pub enum Reaches {
 pub const ONLY_ITS_APPLICATION: &str = "an adapter's verb that takes no path reaches only its own \
      application, and the grant over that application is asked before anything is sent to it";
 
+/// Whether carrying a verb out sends anything off this machine.
+///
+/// **What a person reads before they type it** (`docs/contracts/terminal-commands.md`,
+/// section 4, *Saying so before, not after*): `alo-app show` prints *this
+/// cannot be undone once it has been sent* beside every verb that does not say
+/// [`Sends::Never`], because Put back restores files and reaches nobody else's
+/// computer. Declared by the adapter's author, honestly, as its effect is.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Sends {
+    /// It never sends anything off this machine.
+    Never,
+    /// It always does: a message, a post, an upload.
+    Always,
+    /// It may, depending on what it is given or what the application does.
+    May,
+}
+
+impl Sends {
+    /// What the contract calls it.
+    #[must_use]
+    pub const fn named(self) -> &'static str {
+        match self {
+            Self::Never => "never",
+            Self::Always => "always",
+            Self::May => "may",
+        }
+    }
+}
+
 /// One verb of an adapter.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct AdapterVerb {
@@ -35,6 +64,8 @@ pub struct AdapterVerb {
     pub purpose: Word,
     /// Read or change — honestly (the adapter contract's rule 1).
     pub effect: Effect,
+    /// Whether it sends anything off this machine — honestly, as its effect.
+    pub sends: Sends,
     /// What it takes. All of them are required.
     pub args: &'static [AdapterArg],
     /// What it reaches beyond its application.
