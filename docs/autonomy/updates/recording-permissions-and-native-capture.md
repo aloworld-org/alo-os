@@ -38,7 +38,11 @@ window measures 1.727 fps with a 2.513-second gap and a 10.103-second track-end
 difference. Five-second pause clocks and microphone pause states pass. Screen
 export matches exactly; the window's native save control times out, while its
 completed library recording is preserved. One marker match does not establish
-audio/video synchronization. The competing compiler processes are resumed.
+audio/video synchronization. All five paused compiler processes had exited by
+cleanup; their exit times are unknown, so this proof alone does not establish
+continuous host quiet throughout the recordings. No process remains stopped by
+the lease. The next installed acceptance run will hold the shared build lock
+directly for its entire flow.
 The previously rejected renderer-binding trial stays
 reverted. No engine source, allocator defaults, media timing or acceptance limit
 is changed by the new candidate.

@@ -218,3 +218,35 @@ carry no separate cleanup ownership. No leaked allocation, raw pointer access,
 local lifetime extension or engine patch is permitted. Validate single mapping
 admission, refusal and retirement ownership, then repeat installed capture and
 measure faults again; a lower fault count alone does not establish media quality.
+
+### Own the software image mapping without another full-frame export
+
+After reusable readback and absolute media-tool resolution, the installed VM
+still fails video cadence and synchronization. A kernel trace verifies that
+`pw-dump` now uses shared-memory/vfork spawning; a separate twelve-second sample
+does not reach one hundred compositor minor faults. A twenty-second user-CPU
+sample instead attributes most work to Pixman drawing and memory copies.
+
+Smithay 0.7.0's safe `PixmanMapping` already owns a static Pixman image and its
+`ExportMem::map_texture` safely borrows those image bytes. Its constructor is
+private, however, so the shell must ask the engine to allocate and copy a second
+image or copy into a separate Vec before publishing a scanout frame. Borrowing
+Vec storage directly for rendering is not supported by its static image binding.
+
+Authorize only these additional safe ownership interfaces on the pinned rented
+Smithay binding: construct `PixmanMapping` from an owned static Pixman image,
+recover that owned image by consuming the mapping, and borrow its bytes with
+`AsRef<[u8]>` or `AsMut<[u8]>`. These are the same pointer and validated image
+extent already used by the existing engine mapping; no renderer, codec, color,
+compositing or scheduling algorithm changes. Retain the published upstream
+package, license, checksum and a reviewable patch. Enable Pixman's existing
+`sync` feature so immutable mapping owners can cross threads safely.
+
+The shell must normalize the unused X byte before publication, validate the
+exact size, stride and format, and retain mapping ownership for every borrowed
+byte view. A bounded pool may recover an image only after every strong reader
+releases it. Existing Vec-backed public capture interfaces remain compatible;
+they copy bytes only when that older interface requests Vec ownership. Tests
+must exercise real rendering, exact pixels, pointer identity, live snapshots,
+size changes and bounded retirement. Repeat normally installed media acceptance;
+removing a copy alone does not establish continuous video or synchronized audio.
