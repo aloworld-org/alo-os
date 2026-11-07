@@ -920,9 +920,10 @@ file carries it with a tier.*
   un-send an email, or undo anything that already left. A reversibility
   overstated once is one nobody trusts again
 - ★ **Ask alo from the terminal, and asking means acting.** One command, and
-  you never say which you meant: `alo-ask open the text editor` is a request and
-  `alo-ask may the tenant sublet?` is a question, typed the same way at the same
-  prompt. A request is **proposed, never performed** — alo says what it would do
+  you never say which you meant: `alo open the text editor` is a request and
+  `alo may the tenant sublet?` is a question, typed the same way at the same
+  prompt. **The command is `alo`** (the owner, 2026-11-06); `alo-ask`, its name
+  until then, still works and says once that the name has changed. A request is **proposed, never performed** — alo says what it would do
   and what grant the work needs, and nothing happens until you approve it, which
   is *reads answer, changes wait* in the terminal rather than only in the dock.
   *A misread question costs you reading one sentence, because a proposal nobody

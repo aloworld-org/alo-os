@@ -106,8 +106,8 @@ way to a provider; `docs/contracts/daemon-protocol.md`, *Stop*), and exits.
 **The agent's side closing is the shell's only evidence that alo stopped**, and
 the only moment a window may say so.
 
-- **A caller that shuts its sending side as soon as it has written** — `alo-ask`
-  does — has said *that was all*, and is never read as stopping: the agent sees
+- **A caller that shuts its sending side as soon as it has written** — `alo`
+  does (and `alo-ask`, its old name) — has said *that was all*, and is never read as stopping: the agent sees
   that half-close already there where the third line could have been.
 - **After a proposal**, the shell holding the connection open for the person's
   answer stops the turn the same way; the change on the card lapses with the

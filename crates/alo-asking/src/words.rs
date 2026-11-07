@@ -101,11 +101,29 @@ pub const CANNOT_BE_TESTED_FROM_HERE: Word = Word::saying(
      before, and the second half says so.",
 );
 
+// ---------------------------------------------------------------------------
+// The command's old name — `alo-ask`, kept working after it became `alo`.
+// ---------------------------------------------------------------------------
+
+/// The command was typed by the name it had before.
+pub const CALLED_BY_ITS_OLD_NAME: Word = Word::saying(
+    "asking.command.old-name",
+    "alo-ask is now called alo — it still works, and alo is the name to type from now on",
+)
+.noting(
+    "Said on the line above an answer when somebody types the command by the name it had until \n     2026-11-06. alo and alo-ask are command names and are never translated. It is a note, not \n     a warning: the question is answered exactly as before.",
+);
+
 /// Every string this crate can say, in the order this file declares them.
 ///
 /// The array is what a test reads down and what [`declare_into`] walks, so a
 /// word declared above and left out here is a string nothing can look up.
-pub const EVERY_WORD: [Word; 3] = [NOTHING_TO_ASK, NO_MODEL_NAMED, CANNOT_BE_TESTED_FROM_HERE];
+pub const EVERY_WORD: [Word; 4] = [
+    NOTHING_TO_ASK,
+    NO_MODEL_NAMED,
+    CANNOT_BE_TESTED_FROM_HERE,
+    CALLED_BY_ITS_OLD_NAME,
+];
 
 /// Why this crate's own list could not be declared.
 ///
