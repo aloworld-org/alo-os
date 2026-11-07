@@ -83,7 +83,7 @@ fn software_frames_rotate_only_two_initialized_buffers() -> Result<(), Box<dyn s
         );
         assert!(!scene.spare.as_ref().ok_or("missing spare")?.enabled);
         assert_eq!(
-            &log.borrow().pixels[..4],
+            log.borrow().pixels.get(..4).ok_or("missing uploaded pixel")?,
             &[index + 30, index + 30, index + 30, 0]
         );
     }
@@ -126,7 +126,7 @@ fn reused_frame_refusals_keep_the_previous_scanout_and_allow_clean_retry()
     for failure in ["map", "unmap", "test", "enable"] {
         let (device, log) = fixture(&[], 0);
         let mut scene = reusable(device)?;
-        scene.replace((pixels((1280, 720))?, vec![]))?;
+        assert!(scene.replace((pixels((1280, 720))?, vec![]))?.retirement_error.is_none());
         let active = scene.active.owned.bindings();
         log.borrow_mut().failures = vec![failure];
         let error = scene
@@ -140,7 +140,7 @@ fn reused_frame_refusals_keep_the_previous_scanout_and_allow_clean_retry()
         assert!(!log.borrow().released.contains(&73));
         assert!(!log.borrow().released.contains(&22));
         log.borrow_mut().failures.clear();
-        scene.replace((pixels((1280, 720))?, vec![]))?;
+        assert!(scene.replace((pixels((1280, 720))?, vec![]))?.retirement_error.is_none());
         scene.retire()?;
     }
     Ok(())
@@ -151,7 +151,7 @@ fn reused_frame_cleanup_failure_latches_the_output_until_retirement()
 -> Result<(), Box<dyn std::error::Error>> {
     let (device, log) = fixture(&[], 0);
     let mut scene = reusable(device)?;
-    scene.replace((pixels((1280, 720))?, vec![]))?;
+    assert!(scene.replace((pixels((1280, 720))?, vec![]))?.retirement_error.is_none());
     log.borrow_mut().failures = vec![
         "test",
         "destroy blob",
@@ -176,7 +176,7 @@ fn failed_disable_quarantines_active_storage_and_releases_only_the_detached_spar
 -> Result<(), Box<dyn std::error::Error>> {
     let (device, log) = fixture(&[], 0);
     let mut scene = reusable(device)?;
-    scene.replace((pixels((1280, 720))?, vec![]))?;
+    assert!(scene.replace((pixels((1280, 720))?, vec![]))?.retirement_error.is_none());
     log.borrow_mut().failures = vec!["disable"];
     let error = scene.retire().err().ok_or("disable accepted")?;
     assert_eq!(error.failure.stage, "atomic disable; retire session device");
@@ -212,7 +212,7 @@ fn retirement_reports_active_and_spare_cleanup_failures_without_retry()
 -> Result<(), Box<dyn std::error::Error>> {
     let (device, log) = fixture(&[], 0);
     let mut scene = reusable(device)?;
-    scene.replace((pixels((1280, 720))?, vec![]))?;
+    assert!(scene.replace((pixels((1280, 720))?, vec![]))?.retirement_error.is_none());
     log.borrow_mut().failures = vec!["destroy blob", "destroy framebuffer", "destroy buffer"];
     let error = scene.retire().err().ok_or("cleanup accepted")?;
     assert_eq!(error.failure.stage, "destroy mode blob");
