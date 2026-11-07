@@ -4,9 +4,12 @@
 accepted.** It is the contract `docs/features.md` says must be written *before*
 the commands are built (the promise *Everything on the computer, from the
 terminal*, in pull request #1101, which had not landed on `main` when this was
-written). Every question the owner has to answer is under *Open questions*, at
-the end, each with a recommendation. Until the owner has answered them, nothing
-may be built against this page.
+written). **The owner answered every open question on 2026-11-06**; the answers
+are in section 7, with the date and the owner's own words where they gave them,
+and the body of this page has been brought into line with them. It is still a
+draft until the owner accepts it, and **the screen road may not be built until
+[ADR 0147](../decisions/0147-the-screen-road-and-who-reads-the-screen.md) is
+accepted** (answer 15).
 
 ## What this gives a person, in one paragraph
 
@@ -69,8 +72,16 @@ described in section 2 — the same list alo itself is offered. Nobody writes a
 command per application; an adapter author who declares a verb has, by doing so,
 given the person a command.
 
-*The name is a proposal (question 1).* It follows `alo-ask`, `alo-try` and
-`alo-back`, and it is free: no file in this repository uses it.
+*The name is the owner's choice of 2026-11-06 (answer 1).* It follows
+`alo-ask`, `alo-try` and `alo-back`, and was free: no file in this repository
+used it.
+
+**Plain words are the equal road beside it.** The owner, 2026-11-06: *"Also the
+users will be able to use alo (natural language in the terminal instead of
+commands)."* A person who would rather say what they want types it to
+`alo-ask` (ADR 0124, built), and alo does it in the application under its own
+rules — through the same list of abilities and controls `alo-app` uses. Neither
+is the real road with the other as a shortcut (answer 2).
 
 ```text
 alo-app list                                  what is installed, and what each offers
@@ -85,10 +96,13 @@ alo-app <application> type   <name> <text | ->     put text into a field
 alo-app <application> set    <name> <number>       move a slider or a number box to a value
 alo-app <application> choose <name> <option>       pick one option of a drop-down or a list
 alo-app <application> key    <keys>                press keys in its window, as a keyboard would
+alo-app <application> click  <across> <down>       click at a place in its window, as proportions of it
+alo-app <application> drag   <across> <down> <across> <down>   drag from one place in its window to another
 ```
 
 The second group is **what a person does with their hands on a window, in the
-terminal.** It is the same seven forms for every application ever installed,
+terminal.** It is the same seven control forms, and the two position forms
+`click` and `drag`, for every application ever installed,
 and it is the shape that makes *three equal roads* a guarantee: whatever a
 person can click, type, slide or pick in a window, they can do by naming it.
 **Which road carries a form is decided per control, not per application**, best
@@ -122,8 +136,20 @@ itself reports and refuses one outside it. `choose` takes one of the options
 the control itself lists, matched exactly. `key` takes keys in the common
 spelling — `ctrl+s`, `alt+f4`, `escape`, `tab`, `shift+tab` — one press each,
 separated by spaces, and is how a shortcut that has no control is reached.
-None of the seven ever takes a position: a control is found by what it says,
-on both roads.
+None of those seven takes a position: a control is found by what it says, on
+both roads.
+
+**`click` and `drag` are the two that do, and they are the person's alone**
+(the owner's answer of 2026-11-06, answer 16). A place is given **as proportions
+of the window** — `click 0.5 0.25` is half-way across and a quarter of the way
+down — **never in pixels**, so the same command means the same place on any
+screen and at any scale (*nothing is built to one screen size*). Each number is
+from 0 to 1, both ends included, and a value outside that is refused. They are
+how a stroke on a canvas or a drag in a 3D view is reached, which no named
+control can be. **Every click and drag is recorded as *done by position***,
+because afterwards nobody can say what was at that place. They always go by the
+screen road, to that window only. **alo never clicks or drags by position**, on
+any road and at any setting: `alo-ask` is never offered either form.
 
 ### Naming the application
 
@@ -197,8 +223,7 @@ call and one record entry:
 No application on a fresh machine offers either ability by name (section 6);
 through the controls forms, an image editor's own *Brightness* slider and
 *Crop* button are reached the same way as any other. Short words such as
-`image` and `mail`, and a form chaining abilities in one command, are
-question 3.*
+`image` and `mail` come later; a command line does one ability (answer 3).*
 
 ### What it says, and the exit codes
 
@@ -220,8 +245,7 @@ in the categories `app-adapters.md` already tells a person apart:
 
 64, 65, 69, 75 and 77 are the standard `sysexits.h` numbers and mean what they
 mean to every other Unix program. 76 is that list's *protocol* code, borrowed
-for *sent and not confirmed* because no standard number says it; whether to
-borrow it or take one outside the list is part of question 10.
+for *sent and not confirmed* because no standard number says it (answer 10).
 
 ### What is a public surface, and how it changes
 
@@ -230,7 +254,8 @@ deprecation period, as `CLAUDE.md`'s *contracts outlive code* requires:
 
 - the name `alo-app` and its forms `list`, `show`, `<application> <ability>`,
   and the seven control forms `controls`, `read`, `press`, `type`, `set`,
-  `choose` and `key`, with the kinds of control `press` takes;
+  `choose` and `key`, with the kinds of control `press` takes, and the two
+  position forms `click` and `drag` with their proportions;
 - how an application and an ability are named;
 - how arguments are written, and `-` for the pipe;
 - the line format of a pipe, and the `--json` shape of `list` and `show`, which
@@ -283,13 +308,14 @@ particular to the application:
   with one of a simple type (a word, a number, yes or no), becomes an ability of
   that action's name.
 
-**These are offered to the person and not to alo.** `app-adapters.md` refuses an
-adapter whose action is chosen by an argument, because alo's list must be one
-somebody reviewed; that rule is about the agent, and law 2 does not stretch it
-to the person. But nobody has reviewed a discovered ability, so `show` says, in
+**These are offered to the person and to alo both** (the owner's answer of
+2026-11-06, answer 4). The person uses them at once; alo uses them under its
+own rules — over an application the person has let it use, one sentence and one
+OK per act, or none if the person chose full trust. Nobody has reviewed a
+discovered ability, so `show`, and the sentence alo puts to the person, say in
 plain words: *the application describes this itself; alo cannot tell what it
-changes or whether it sends anything.* Whether this split is right is
-question 4.
+changes or whether it sends anything.* `app-adapters.md` is amended in this
+change to permit it (*Amended 2026-11-06* there).
 
 Interfaces an application invents for itself are **not** turned into abilities:
 their arguments have no types `alo-app` can check, and a person who wants one
@@ -330,7 +356,7 @@ the tree only once the menu is open (unmeasured per toolkit), so
 `press menu "File"` then `press menu_item "Save As…"` is the honest road, and
 `controls` after the first press lists what opened. `menu`, `field`, `slider`,
 `drop_down` and `list` are not yet among the fallback's kinds; adding them is
-additive (question 10).
+additive (answer 10).
 
 **Where the tree runs out, the screen takes over, control by control.** A
 control the tree does not describe, a field the tree describes but will not
@@ -345,6 +371,15 @@ every window and carries every key and click, so it can read what a window
 shows and act in it for the person. It is the **least reliable** road, so it is
 used only for a control nothing better reaches, and the record marks every act
 that went this way.
+
+**Who may use it** (the owner's answer of 2026-11-06, answer 17): **the
+person's typed commands use it at once.** alo uses it for an application **only
+after the person has switched it on for that application**, in Settings, with
+its cost said in ADR 0143's words — *alo will act on what it sees in pictures of
+this window, and may press the wrong thing.* Until then, asked for a control
+only the screen can reach, alo says *I can only do this by reading the screen of
+Blender* and offers the switch. That keeps ADR 0143's promise of *off by
+default, switched on per application* rather than withdrawing it.
 
 How each form works on it:
 
@@ -388,19 +423,38 @@ icon with no words — is listed as *an unnamed control* and cannot be named,
 and a control the application draws in its own style may be read as the wrong
 kind. That is what *least reliable* means, said where the person reads it.
 
-**What reads the screen.** Text recognition is an engine, pinned and
-configured, never written here, which must read every one of the 24 languages a machine can
-be set to — or, where the person has one, their local model. Which is
-question 14. **Nothing here is built**: ADR 0143 found no code that delivers
-keys or clicks for anything but a person's own hands, and `app-adapters.md`
-refuses the `synthetic` mechanism today; this contract proposes the amendment
-(question 15).
+**What reads the screen — the person chooses, in Settings.** The owner,
+2026-11-06: *"User chooses in settings, it can be alo services, local model,
+third-parties apis."* Three choices (answer 14):
 
-**An application with an adapter.** `app-adapters.md` says today that, for
-alo, an adapter's narrower list replaces the tree, because pressing any control
-would make a reviewed list decorative. For the person, both are offered side by
-side. **For alo the guarantee now pulls against that rule** — *alo cannot be
-asked for* a control is a bug — so it is question 4.
+| Choice | What it is | What it costs the person |
+|---|---|---|
+| **alo's own recognition** | text recognition built into alo OS, pinned and configured like every engine here, working with no network and no model | nothing leaves; may read less well than a model |
+| **their local model** | a model on this machine that the person has set up | nothing leaves; needs a model that can read pictures |
+| **a third-party service they name** | a provider the person chooses and signs in to | **a picture of the window is sent to that provider every time the screen is read** — said in those plain words beside the option before it is chosen, shown on the indicator as it happens, and written in the record, as law 1 requires |
+
+**Before anybody has chosen, alo's own recognition is used** — *proposed by this
+lane, and a reading for the owner to confirm*: it is the only choice that works
+on every machine, with or without a model, and sends nothing. Whichever is
+chosen, it must read every one of the 24 languages a machine can be set to, or
+say which it cannot. **A password field is never sent anywhere**: it is cut out
+of the picture before any reader, built-in or not, sees it.
+
+**Nothing here is built**: ADR 0143 found no code that delivers keys or clicks
+for anything but a person's own hands, and `app-adapters.md` refuses the
+`synthetic` mechanism today. ADR 0001 §6 and `app-adapters.md` are amended
+**before** any of it is built (answer 15), by
+[ADR 0147](../decisions/0147-the-screen-road-and-who-reads-the-screen.md),
+proposed in this branch.
+
+**An application with an adapter.** `app-adapters.md` said that, for alo, an
+adapter's narrower list replaces the tree, because pressing any control would
+make a reviewed list decorative. The guarantee — *alo cannot be asked for* a
+control is a bug — and the owner's answer 4 reverse that: **alo reaches an
+adapter's verbs and the application's controls both**, and the sentence it puts
+to the person says when an act is a press rather than a reviewed verb.
+`app-adapters.md` is amended in this change to say so. For the person, both were
+always offered side by side.
 
 ### The window — what every application has
 
@@ -424,10 +478,11 @@ roads there are — never an empty list, which would look like a fault:
 windows ADR 0143 names as describing nothing — a game, a 3D or painting
 canvas, a remote desktop, a virtual machine, a video — `controls` lists what
 words it can read and `key` sends keys, but **a stroke on a canvas or a drag
-in a 3D view is a place, not a control**, and none of the seven forms takes a
-place. Whether the person may click or drag by position is question 16. Until
-it is answered, `show` says *keys and named controls only — drawing and
-dragging inside this window cannot be done from the terminal.*
+in a 3D view is a place, not a control**, and none of the seven control forms
+takes a place. The person reaches it with `click` and `drag`, by proportions of
+the window, recorded as done by position (answer 16); `show` says so for such a
+window — *named controls and keys, and places by position: alo cannot do the
+last for you.*
 
 The terminal itself (`app.devsuite.Ptyxis`, or alo's own) is answered *this is
 a terminal — type into it directly.*
@@ -450,10 +505,12 @@ reliably and how richly. What `alo-app <application> controls` prints is,
 honestly, what parity is for that application today, each line saying which
 road carries it.
 
-The one part of a window none of the seven forms reaches is **a place rather
-than a control** — a point on a canvas, a drag in a 3D view. That gap is named
-in section 2 and is question 16; until it is answered, the guarantee covers
-every control and every key, and `show` says where it stops.
+The one part of a window no named control reaches is **a place rather than a
+control** — a point on a canvas, a drag in a 3D view. The person reaches it with
+`click` and `drag` (answer 16). **alo does not**, because alo never acts by
+position; asked for such a thing, alo says it cannot do it by position and the
+person can. That is the one place the three roads are not equal, and it is the
+owner's decision rather than a gap.
 
 ### alo OS's own surfaces
 
@@ -504,7 +561,7 @@ each surface, for each of `alo_access::Surface::ALL`, in each of its states:
 - **every control can be used from outside, by its own form** — pressed,
   typed into, set or chosen over the bus, and the surface asserted to have
   done what the person's hand would have done;
-- **and alo's lookup finds what `alo-app`'s finds** (question 12).
+- **and alo's lookup finds what `alo-app`'s finds** (answer 12).
 
 A control with no road fails the build **unless** it is on a short exception
 list written in the test itself, each line naming the control, the reason and
@@ -567,7 +624,7 @@ differs is who acted, whether anything waits, and how that is shown and kept.
 |---|---|---|
 | Who acted | the person | alo, for the person |
 | What it may reach | anything the person can, with no grant | only applications the person has let alo use (ADR 0143, the grant over one application) |
-| Which abilities | the seven control forms by the tree or the screen, declared, discovered, window | the seven control forms, declared and window — **never discovered** (question 4); the screen road for that application only once the person has switched it on (question 17) |
+| Which abilities | the seven control forms by the tree or the screen, `click` and `drag`, declared, discovered, window | the seven control forms, declared, discovered and window (answer 4); the screen road for an application only once the person has switched it on for that application (answer 17); **never `click` or `drag`** (answer 16) |
 | Waits for an OK | never | yes, one OK per action — unless the person switched on full trust for the terminal in Settings |
 | Where it runs | in the person's own process | in `alo-agentd`, as a turn |
 | The gutter in alo's terminal (ADR 0113) | `YOU` for the line, `PROGRAM · alo-app` for its output | `YOU` for the request, `ALO` for the proposal and the answer |
@@ -575,10 +632,10 @@ differs is who acted, whether anything waits, and how that is shown and kept.
 
 **What the screen shows.** The gutter decides who is speaking from where the
 bytes came from, and a program cannot write into it — so `alo-app`'s output is
-labelled `PROGRAM`, and can never be dressed up as alo's. A plain-words proposal
-also shows, under its sentence, the typed command that would do the same thing,
-so a person learns the second road from the first. **What the person approves
-is still the sentence**, not the command line. In a terminal that is not
+labelled `PROGRAM`, and can never be dressed up as alo's. **A plain-words
+proposal shows the plain sentence only** — not the typed command that would do
+the same thing; the owner declined that on 2026-11-06 (answer 8). What the
+person approves is the sentence. In a terminal that is not
 alo's own, such as Ptyxis, there is no gutter, and nothing can show the
 difference on the screen; the record still can.
 
@@ -606,7 +663,16 @@ as a new entry, additively, `format` staying `1`:
   why, and **not** the arguments, for `record-file.md`'s reason: what never
   validated is whatever arrived.
 
-Which commands are written down at all is question 5.
+**What is written down at all — changes and refusals; looking is not recorded**
+(the owner's answer of 2026-11-06, answer 5). Every act on an application and
+every refusal of one is an entry; `list`, `show`, `controls`, `read` and a
+declared read are not.
+
+**When alo runs `alo-app`** — which a person who let alo run commands (ADR 0111)
+makes possible — **the entry is alo's, under alo's rules** (answer 9): it names
+the agent, read from the kernel's answer about which login is running the
+command, never from a flag, and the grant over the application and the OK apply
+exactly as on alo's own road.
 
 ### Put back
 
@@ -620,9 +686,9 @@ window offers **Put back** for it, exactly as it does for alo's changes.
 
 ADR 0127 made the place before a person's command something they switch on per
 session, because the shell cannot tell a command that changes things from one
-that only reads. `alo-app` can tell, so it can keep a place only before a
-change. Whether it does that always, or only in a session that asked, is
-question 6.
+that only reads. `alo-app` can tell, so it keeps a place only before a command
+that acts. **One place per command line, and its cost is measured on a booted
+machine before this is built** (the owner's answer of 2026-11-06, answer 6).
 
 **What Put back can bring back:** files and folders in the person's home, as
 they were before the command — a picture an application edited and saved, a
@@ -659,21 +725,22 @@ it applies to the person's command identically.
 The promise says *what it sends fires the indicator*. The indicator today shows
 what `alo-agentd` and alo OS themselves send, and nothing an application sends.
 So for a typed command this is **not yet true, and nothing in this contract may
-be built as though it were**. There are two honest ways to make it true, and it
-is question 7:
+be built as though it were**. **It is made true by counting** (the owner's
+answer of 2026-11-06, answer 7): for as long as the command runs, the kernel
+counter that already watches a turn's connections is attached to that
+application's sandbox, and the indicator shows *Thunderbird is sending —
+because of your command*. It counts, rather than declares. It also counts
+anything else that application sends in those seconds, and the line says
+*during your command* rather than claiming every byte was the command's. The
+line is raised by the service that draws the indicator, not printed by
+`alo-app`, because ADR 0125 says a command does not report its own egress.
 
-- **Measured** — for as long as the command runs, the kernel counter that
-  already watches a turn's connections is attached to that application's
-  sandbox, and the indicator shows *Thunderbird is sending — because of your
-  command*. It counts, rather than declares. It also counts anything else that
-  application sends in those seconds.
-- **Declared** — a line on the indicator, raised for any ability whose `sends`
-  is not `never`, saying the application was asked to send. It shows that
-  sending was asked for, not what left. ADR 0125 says a command does not report
-  its own egress, so the line would be raised by the service that draws the
-  indicator, not printed by `alo-app`.
+**And a picture of a window sent to a third-party reader** (section 2, answer
+14) is egress `alo-app` itself causes: it goes through the service that already
+sends questions to a provider, on the indicator and in the record, exactly as a
+question to a provider does.
 
-Either way: **counting everything an application does, outside the command, is
+**Counting everything an application does, outside the command, is
 not offered**, because that is watching the person, which this product calls a
 bug (ADR 0143, the table of settings). And `alo-try --offline` already lets a
 person cut a command off from the network with the kernel holding it.
@@ -737,148 +804,133 @@ text kind, stage 5); the screen road, with its own measurement; *value* and
 *text* on alo's own surfaces, and Places in the tree; and adapters with real
 verbs for applications that offer an automation interface.
 
-## 7. Open questions for the owner
+## 7. The owner's answers, 2026-11-06
 
-Each has a recommendation. None is answered by this draft. **Settled by the
-owner's decisions of 2026-11-06, and so no longer asked:** whether parity covers
-applications alo did not make (it does, as a guarantee); whether a window that
-describes nothing is reached (by the screen road); and whether typing, sliders
-and drop-downs are in scope (they are — *fully used* needs them). The old
-question 11 is replaced by the new 11 below.
+Every question this draft put to the owner was answered on 2026-11-06, relayed
+by the coordinator. Each is closed here with the answer; where the owner gave
+words, they are quoted. Where the owner took the draft's recommendation without
+comment, it says so. **Answered is not built**: nothing on this page exists yet,
+and the screen road may not be built at all before ADR 0147 is accepted (answer
+15).
 
-**1. What is the command called?**
-`alo-app` here; it could be anything. *Recommendation: `alo-app`*, which follows
-`alo-ask`, `alo-try` and `alo-back`, and is unused. Not `alo`, which ADR 0124
-left unbuilt and which a person might expect to mean plain words.
+**1. The command's name — `alo-app`.** Closed.
 
-**2. Is the shape `alo-app <application> <form or ability> <arguments>` right?**
-The alternative is one command per application (`texteditor open_document …`),
-which puts every installed application's name on the shell's own list of
-commands, where any of them can collide with a program of the same name.
-*Recommendation: one command*, with the short words of question 3 as an
-optional layer above it.
+**2. One command for every application — yes.** The owner added: *"Also the
+users will be able to use alo (natural language in the terminal instead of
+commands)."* So **plain words in the terminal are an equal road beside
+`alo-app`, not a fallback beneath it**: a person types what they want in their
+own words and alo does it, under alo's rules. That road is ADR 0124's command,
+already built, and **its name is `alo-ask`, not `alo`** — ADR 0124 kept the
+name, and the owner said there *"or any name, I do not care about the name."*
+Whether the owner's *alo* here means the road or a new command spelled `alo` is
+read as **the road**, because ADR 0124 decided there is one command and not
+two; *a reading, marked: if the owner wants `alo` as the spelling, that renames
+ADR 0124's command and is its own change.* Closed.
 
-**3. The features list's examples use `mail` and `image`, and chain two
-abilities in one line. Should either exist?**
-Short words would be shell functions in alo's snippet, each meaning *the
-application this person chose for that kind of file*, the way `try` calls
-`alo-try` — but `mail` is already a standard Unix program on many systems.
-*Recommendation: later, and additively* — define a word only where no command of
-that name exists; keep one ability per command, so one line stays one record
-entry; and correct the two examples in `docs/features.md` to the contract's form
-when this is accepted.
+**3. Short words and chaining — short words later; one ability per line.**
+`mail`, `image` and the like may come later, additively, only where no command
+of that name exists. A command line does one thing, so one line stays one record
+entry. The two examples in `docs/features.md` are written in the contract's form
+when this contract is accepted. Closed.
 
-**4. Abilities discovered on D-Bus: for the person only, or for alo too?**
-*Recommendation: the person only.* Law 2 does not bind the person; alo stays on
-abilities somebody reviewed, because `app-adapters.md` refuses an action chosen
-by an argument for exactly the reason ADR 0001 exists. **The controls are
-different**, and here the guarantee does decide something: alo must be able to
-be asked for every control, so `app-adapters.md`'s *an application with an
-adapter is reached through its adapter's verbs alone* has to give way — alo
-reaches an adapter's verbs **and** the application's controls, under the
-person's grant, each press one sentence and one OK. *Recommendation: amend that
-sentence of `app-adapters.md`*, keeping what it protected by marking a control
-press as less certain than a reviewed verb in the sentence the person approves.
+**4. Abilities an application announces on D-Bus — the person and alo both.**
+alo uses them under its own rules: one sentence and one OK per act, or none if
+the person chose full trust. And alo reaches an application's controls as well
+as its adapter's verbs. `app-adapters.md` is amended in this change to say both
+(*Amended 2026-11-06* there). Closed.
 
-**5. Which typed commands are written in the record?**
-*Recommendation: every act on an application — every declared change, every
-discovered ability, every `press`, `type`, `set`, `choose` and `key` — and every
-refusal of one; not `list`, `show`, `controls`, `read` or a declared read.*
-Writing every look a person takes would be a record of the person rather than of
-what happened to the machine.
+**5. What the record keeps — changes and refusals; looking is not recorded.**
+Every act on an application (every declared change, every discovered ability,
+every `press`, `type`, `set`, `choose`, `key`, `click` and `drag`) and every
+refusal of one is written. `list`, `show`, `controls`, `read` and a declared
+read are not, because a record of what a person looked at is a record of the
+person. Closed.
 
-**6. Is a place to return to kept before every typed act, or only in a session
-that asked for it?**
-Every `press` is now an act whose effect cannot be known, so *before every
-change* would mean a snapshot before every click typed. *Recommendation: before
-every command that acts, always — one place per command line, not per control —
-and measure on a booted machine what a place costs before this is accepted*,
-because if places are cheap, Put back is true for every typed act, and if they
-are not, ADR 0127's window of fifty is spent in an afternoon.
+**6. A place to return to — one per command line, and its cost is measured on a
+booted machine first.** The measurement comes before this part is built: if a
+place is cheap, Put back is true for every typed act; if it is not, ADR 0127's
+window of fifty would be spent in an afternoon, and the owner hears that before
+anything is built on it. Closed, with the measurement owed.
 
-**7. How does what an application sends reach the indicator, for a typed
-command?**
-*Recommendation: measured* — the application's sandbox counted for the seconds
-the command runs, with the line naming the command. *Declared* is the fallback
-for an application whose sandbox cannot be told apart.
+**7. What an application sends, for a typed command — counted.** The
+application's sandbox is counted for the seconds the command runs, and the
+indicator's line names the command. Nothing outside those seconds is counted.
+Closed.
 
-**8. Does the plain-words proposal show the typed command beside its sentence?**
-*Recommendation: yes*, below the sentence and clearly not what is being
-approved.
+**8. The typed command under alo's proposal — no.** The owner declined it:
+**alo's proposal shows the plain sentence only.** The paragraph in section 4
+that said otherwise is removed. Closed.
 
-**9. Should `alo-app` refuse to run under the agent's own login?**
-*Recommendation: no refusal* — a person who let alo run commands (ADR 0111)
-already let it reach strictly more — **but** the entry then names the agent,
-read from the kernel's answer about who is running it, never from a flag.
+**9. When the agent runs `alo-app` — allowed, and recorded as alo's, under alo's
+own rules.** The entry names the agent, from the kernel's answer about which
+login is running it, never from a flag, and everything alo's road requires — the
+grant over the application, the OK unless full trust — applies as if alo had
+asked through its own road. Closed.
 
-**10. Does this contract change `app-adapters.md`?**
-It proposes two additive fields on a verb, `gives` and `sends`; five new kinds
-of control (`menu`, `field`, `slider`, `drop_down`, `list`); fallback verbs for
-typing, setting and choosing; and the screen road as a mechanism the machine
-carries out. *Recommendation: yes, each in the change that first builds what
-reads it.*
+**10. Changes to `app-adapters.md` — the recommendation, taken.** Each lands in
+the change that first builds what reads it: `gives` and `sends` on a verb; the
+kinds `menu`, `field`, `slider`, `drop_down` and `list`; fallback verbs for
+typing, setting and choosing; the screen road as a mechanism (after ADR 0147);
+and exit code 76 borrowed for *sent and not confirmed*. The parts answer 4
+decided are amended now. Closed.
 
-**11. On the tree road, how is text put into a field?**
-Through the field's own editable text (what a screen reader's dictation uses),
-or always as keystrokes to the window (the screen road's way), which every
-toolkit accepts. *Recommendation: the field's editable text first, keystrokes
-where the field refuses it* — the first can be read back exactly, which is what
-lets the record say what went in. ADR 0143 stage 1 measures it.
+**11. Text into a field on the tree road — the recommendation, taken.** The
+field's own editable text first, because it can be read back exactly and so
+the record can say what went in; keystrokes where the field refuses it. ADR
+0143 stage 1 measures which toolkits accept which. Closed.
 
-**12. For alo's own surfaces, does alo use the same tree, or verbs of its own?**
-*Recommendation: the same tree*, reached as `alo` under a grant the person makes
-like any other, so the screen reader, the terminal and alo share one description
-of every control and the test in section 3 holds all three at once. A Settings
-change alo makes this way is still one sentence and one OK, unless the person
-chose full trust.
+**12. alo's own surfaces — the recommendation, taken.** alo reaches them
+through the same tree the screen reader and the terminal use, as `alo`, under a
+grant the person makes like any other. Closed.
 
-**13. Does the parity test refuse a control with no road, from the day it lands?**
-*Recommendation: yes, for alo's own surfaces, with a written exception list in
-the test* (section 3), starting with Places and every slider and field; **and
-for other applications, the fixtures fail the build and the shipped-application
-walk runs per release**, its report naming the machine. A test that only warns
-is one lanes learn to skip.
+**13. The parity test — it fails the build from day one, with the written
+exception list.** For alo's own surfaces, as section 3 describes; for other
+applications, the per-toolkit fixtures fail the build and the walk over the
+shipped applications runs per release. Closed.
 
-**14. What reads the screen?**
-A text-recognition engine, pinned and configured like every engine here, or the
-person's own local model where they have one. *Recommendation: an engine, always
-available, with no model required* — the road must work on a machine with no
-model, as *a good computer without the agent* (ADR 0009) asks — and the local
-model as an option the person may choose for better reading. The engine needs
-an ADR naming it, and has to read all 24 EU languages.
+**14. What reads the screen — the person chooses in Settings.** The owner's
+words: *"User chooses in settings, it can be alo services, local model,
+third-parties apis."* So there are three choices, and section 2 now carries
+them:
 
-**15. The screen road needs ADR 0001 §6 and `app-adapters.md` amended.**
-§6 already permits it as a last resort, marked in the record and able to be
-disabled by policy; `app-adapters.md` refuses `synthetic` outright and says
-*nothing is found or pressed by position*. *Recommendation: amend both*, to
-permit the screen road under the rules in section 2 — one window, found by what
-it says, read again after, never kept, marked in the record — before a line of
-it is built.
+- **alo's own text recognition**, built in and working with no network and no
+  model;
+- **the person's local model**, where they have one;
+- **a third-party service the person names** — which **sends a picture of the
+  window off this machine** each time the screen is read, said in plain words
+  beside the option before it is chosen, shown on the indicator as it happens
+  and written in the record, as law 1 requires.
 
-**16. May a person click or drag by position?**
-A stroke on a canvas or a drag in a 3D view is a place, not a control, so none
-of the seven forms reaches it. *Recommendation: for the person's typed commands,
-yes, later* — a `click` and a `drag` in proportions of the window, never in
-pixels (*nothing is built to one screen size*), recorded as *by position*; **for
-alo, no**, until somebody can say what a position-based act did afterwards.
-Until then, `show` says where the terminal stops.
+**Before anybody has chosen, the built-in recogniser is used** — *proposed by
+this lane, and a reading for the owner to confirm*: it is the only one of the
+three that works on every machine and sends nothing. **A password field is
+never sent anywhere**, whichever is chosen: it is cut out of the picture before
+any reader sees it. Closed, with the default awaiting confirmation.
 
-**17. Is the screen road on for alo by default?**
-`docs/features.md` and ADR 0143 (its question 11) promise pictures and keystrokes
-for alo **off by default, switched on per application** by the person, because
-alo may press the wrong thing. The new guarantee says alo can be asked for every
-control. *Recommendation: both stand* — the person's typed commands use the
-screen road at once, because the person typed them; alo uses it for an
-application only once the person has switched it on for that application, and
-when it is off, asking alo for such a control answers *I can only do this by
-reading the screen of Blender — switch that on in Settings?* That keeps the
-guarantee (alo can be asked, and the choice is the person's) without
-withdrawing a promised default, which law 5 would call a bug.
+**15. The amendments before any screen-road code — the recommendation, taken.**
+ADR 0001 §6 and `app-adapters.md` are amended before a line of the screen road
+is written. The text is drafted in the same branch as
+[ADR 0147](../decisions/0147-the-screen-road-and-who-reads-the-screen.md),
+**proposed, not accepted**. Closed as a decision; the ADR itself awaits the
+owner.
+
+**16. Clicking and dragging by position — for the person now; never for alo.**
+`click` and `drag` are forms of `alo-app` from the start (section 1), with the
+position given **as proportions of the window, never in pixels**, and recorded
+as *done by position*. **alo never clicks or drags by position**, on any road
+and at any setting. Closed.
+
+**17. The screen road for alo — off until the person switches it on, per
+application.** The person's typed commands use the screen road at once. alo uses
+it for an application only after the person has switched it on for that
+application; until then, asked for such a control, alo says it can only do this
+by reading the screen of that application, and offers the switch. **This keeps
+ADR 0143's promise** — pictures and keystrokes for alo, off by default and
+switched on per application — rather than withdrawing it. Closed.
 
 ## What this page does not decide
 
-The text-recognition engine (question 14); the amendments to ADR 0001 §6 and
-`app-adapters.md` (question 15); the text kind for alo (ADR 0143 stage 5); and
-the grant over one application and where a person makes it (ADR 0143,
-question 10). Each is its own decision, and this contract uses whatever they
-settle.
+The recogniser itself, which ADR 0147 leaves to the change that builds it; the
+text kind for alo (ADR 0143 stage 5); and the grant over one application and
+where a person makes it (ADR 0143, question 10). Each is its own decision, and
+this contract uses whatever they settle.

@@ -213,3 +213,42 @@ applications, so it is treated as such: adapters are signed, they declare their
 mechanism and grants up front, and policy can restrict which adapters may load
 on a machine or across a fleet. An unsigned adapter can be permitted explicitly
 for development and never by default.
+
+## Amended 2026-11-06 — alo reaches an application's controls and what it announces, as well as its adapter
+
+*The owner's answer of 2026-11-06 to question 4 of
+[`terminal-commands.md`](terminal-commands.md), under the promise* Three equal
+roads *(`docs/features.md`, #1101): a control a person can use on screen that
+alo cannot be asked for is a bug. Additive for adapter authors: nothing an
+adapter declares changes meaning, and nothing that loaded before is refused
+now.*
+
+**1. The accessibility fallback reaches an application with an adapter too.**
+Above, *an application with an adapter is reached through its adapter's verbs
+alone*. That sentence is replaced: alo is offered an adapter's verbs **and**
+the fallback's verbs over the same application, under the same grant. What the
+narrower rule protected — a reviewed list not made decorative — is kept by
+saying which is which: the sentence a person approves for a fallback press says
+it is *a press of a control named “{name}”*, never in the words of a reviewed
+verb, and the record names the road.
+
+**2. Abilities an application announces on the session bus are a road for alo
+as well as for the person.** `terminal-commands.md` section 2 names them:
+`org.freedesktop.Application.Open`, and each action listed by `org.gtk.Actions`
+with no parameter or one of a simple type, asked of the application at the
+moment they are wanted and kept nowhere. **They are not adapter declarations**,
+and the refusal above of *an action chosen by an argument* still binds every
+adapter: a declared verb names its action as a literal. A discovered ability is
+a separate road, offered to alo under its own rules — only over an application
+the person has let alo use, one generated sentence and one OK per act unless the
+person chose full trust, recorded with its road — and the sentence says plainly
+that *the application describes this itself, and alo cannot tell what it
+changes or whether it sends anything*.
+
+**3. Not amended yet: the `synthetic` mechanism and *nothing is found or pressed
+by position*.** The screen road needs both changed, and the owner's answer 15
+is that ADR 0001 §6 and this contract are amended **before** any of it is built.
+The text is proposed in
+[ADR 0147](../decisions/0147-the-screen-road-and-who-reads-the-screen.md); until
+that ADR is accepted, `synthetic` stays refused and this page stays as it was
+written above.
