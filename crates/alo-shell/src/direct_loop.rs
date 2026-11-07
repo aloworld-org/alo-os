@@ -197,6 +197,11 @@ pub(crate) fn run_with_input(
             if let DirectFrame::Render(time) = frame {
                 input.present(server, &mut target, time)?;
                 target.check()?;
+            } else {
+                // An idle scheduler still dispatches input and clients above.
+                // Bound the empty polling loop instead of consuming a core
+                // between frames and competing with capture/audio workers.
+                std::thread::sleep(std::time::Duration::from_millis(1));
             }
         }
     })();

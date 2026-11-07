@@ -97,8 +97,8 @@ pub(crate) fn activate<D: ScanoutDevice>(
     }
     let frame = pixels.frame().map_err(invalid)?;
     let plan = AtomicPlan::new(output).map_err(invalid)?;
-    let (mut owned, fb, blob) = Allocation::allocate(device, &output.output.mode, &output.formats)?;
-    owned.write_frame(&frame)?;
+    let (owned, fb, blob) =
+        Allocation::allocate_with_frame(device, &output.output.mode, &output.formats, &frame)?;
     let active = Scanout::activate(owned, plan, fb, blob)?;
     Ok(Submitted {
         active,

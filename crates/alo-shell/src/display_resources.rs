@@ -199,6 +199,48 @@ impl<D: ResourceDevice> Allocation<D> {
         mode: &Mode,
         formats: &[u32],
     ) -> Result<(Self, framebuffer::Handle, u64), ResourceError> {
+        Self::allocate_initialized(
+            device,
+            mode,
+            formats,
+            "initialize dumb buffer",
+            crate::scanout_buffer::initialize,
+        )
+    }
+
+    /// Initialize the full unbound frame before registration, without first
+    /// clearing pixels that the upload immediately overwrites.
+    pub(crate) fn allocate_with_frame(
+        device: D,
+        mode: &Mode,
+        formats: &[u32],
+        frame: &crate::XrgbFrame<'_>,
+    ) -> Result<(Self, framebuffer::Handle, u64), ResourceError> {
+        let (width, height) = mode.size();
+        if frame.size() != (u32::from(width), u32::from(height)) {
+            return Err(ResourceError {
+                failure: invalid("scanout frame dimensions"),
+                cleanup: Vec::new(),
+            });
+        }
+        Self::allocate_initialized(
+            device,
+            mode,
+            formats,
+            "upload scanout frame",
+            |device, buffer| crate::scanout_frame::upload(device, buffer, frame),
+        )
+    }
+
+    /// Share allocation, validation and rollback for either black or supplied
+    /// pixels. Initialization always finishes before a framebuffer is exposed.
+    fn allocate_initialized(
+        device: D,
+        mode: &Mode,
+        formats: &[u32],
+        stage: &'static str,
+        initialize: impl FnOnce(&D, &mut D::Buffer) -> io::Result<()>,
+    ) -> Result<(Self, framebuffer::Handle, u64), ResourceError> {
         let mut owned = Self {
             device,
             buffer: None,
@@ -225,10 +267,7 @@ impl<D: ResourceDevice> Allocation<D> {
                 .buffer
                 .as_mut()
                 .ok_or_else(|| invalid("missing buffer"))?;
-            operation(
-                "initialize dumb buffer",
-                crate::scanout_buffer::initialize(&owned.device, buffer),
-            )?;
+            operation(stage, initialize(&owned.device, buffer))?;
             let framebuffer = operation(
                 "create framebuffer",
                 owned.device.create_framebuffer(buffer),

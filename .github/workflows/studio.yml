@@ -34,6 +34,8 @@ jobs:
           cargo +1.97.0 test --locked --release -p alo-desktop -- --test-threads=1
           cargo +1.97.0 test --locked --release -p alo-shell --lib readback::
           cargo +1.97.0 test --locked --release -p alo-shell --lib dock_surface
+          cargo +1.97.0 test --locked --release -p alo-shell --lib display_resources::
+          cargo +1.97.0 test --locked --release -p alo-shell --test desktop_source
       - name: Strict desktop and shell checks
         run: |
           cargo +1.97.0 clippy --locked --release -p alo-desktop --all-targets -- -D warnings

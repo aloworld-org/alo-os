@@ -46,9 +46,12 @@ impl<D: ScanoutDevice + Clone> Submitted<D> {
                 },
                 cleanup: Vec::new(),
             })?;
-            let (mut owned, fb, blob) =
-                Allocation::allocate(self.active.owned.device.clone(), &self.mode, &self.formats)?;
-            owned.write_frame(&frame)?;
+            let (owned, fb, blob) = Allocation::allocate_with_frame(
+                self.active.owned.device.clone(),
+                &self.mode,
+                &self.formats,
+                &frame,
+            )?;
             Scanout::activate(owned, self.active.plan.clone(), fb, blob)
         })();
         let candidate = match candidate {

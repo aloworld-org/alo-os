@@ -144,10 +144,11 @@ pub(crate) fn convert(
     if rgba.len() != length {
         return Err(ReadbackError::Layout);
     }
-    let mut pixels = Vec::new();
-    pixels.try_reserve_exact(length)?;
-    pixels.resize(length, 0);
-    for (row, destination) in pixels.chunks_exact_mut(stride).enumerate() {
+    // Extend initialized four-byte pixels directly. Zeroing a byte vector first
+    // writes the full frame twice; this exact-size iterator needs no such pass.
+    let mut pixels: Vec<[u8; 4]> = Vec::new();
+    pixels.try_reserve_exact(length / 4)?;
+    for row in 0..size.1 as usize {
         let source_row = match order {
             RowOrder::TopToBottom => row,
             RowOrder::BottomToTop => size.1 as usize - 1 - row,
@@ -155,19 +156,18 @@ pub(crate) fn convert(
         let source = rgba
             .get(source_row * stride..(source_row + 1) * stride)
             .ok_or(ReadbackError::Layout)?;
-        for (source, destination) in source
-            .as_chunks::<4>()
-            .0
-            .iter()
-            .zip(destination.as_chunks_mut::<4>().0)
-        {
-            *destination = [source[2], source[1], source[0], 0];
-        }
+        pixels.extend(
+            source
+                .as_chunks::<4>()
+                .0
+                .iter()
+                .map(|source| [source[2], source[1], source[0], 0]),
+        );
     }
     Ok(ScanoutPixels {
         size,
         stride,
-        pixels,
+        pixels: pixels.into_flattened(),
     })
 }
 
