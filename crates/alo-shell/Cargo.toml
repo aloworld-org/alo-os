@@ -213,6 +213,9 @@ unicode-segmentation = "1.13"
 # display's scale (ADR 0142). Its one dependency is the rasteriser cosmic-text
 # already draws every letter with, so it adds nothing to the supply chain.
 alo-vector-shapes = { path = "../alo-vector-shapes" }
+# The pointer: every cursor shape from one vector source in the palette's colours,
+# drawn with the same rasteriser as the line above (ADR 0142).
+alo-cursors = { path = "../alo-cursors" }
 smithay = { version = "=0.7.0", default-features = false, features = ["wayland_frontend", "renderer_gl", "backend_winit", "backend_session_libseat", "backend_libinput", "backend_udev", "use_system_lib", "desktop", "renderer_pixman"] }
 rustix.workspace = true
 alo-capture-protocol = { path = "../alo-capture-protocol" }
@@ -256,7 +259,7 @@ alo-keeping = { path = "../alo-keeping" }
 tempfile = "3"
 drm-ffi = "=0.9.1"
 wayland-client = "0.31"
-wayland-protocols = { version = "0.32", features = ["client", "unstable"] }
+wayland-protocols = { version = "0.32", features = ["client", "unstable", "staging"] }
 
 # The compositor a machine boots to. One binary, and it is the only thing in
 # this package that is a process rather than a library: everything it does is

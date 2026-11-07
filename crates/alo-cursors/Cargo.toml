@@ -1,0 +1,20 @@
+[package]
+name = "alo-cursors"
+version = "0.0.1"
+description = "alo OS's pointer: every cursor shape a desktop asks for, drawn from one vector source in the palette's colours."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+# **Nothing new reaches the compositor.** `alo-vector-shapes` is ADR 0142's
+# rasteriser for alo's own artwork and draws through `zeno`, which the text stack
+# already brings; `alo-appearance` holds the palette; `cursor-icon` is the list of
+# cursor names Smithay already depends on, at the same version.
+[dependencies]
+alo-appearance = { path = "../alo-appearance" }
+alo-vector-shapes = { path = "../alo-vector-shapes" }
+cursor-icon = "1.2"
+
+[lints]
+workspace = true

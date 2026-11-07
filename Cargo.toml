@@ -6,6 +6,7 @@ members = [
   "crates/alo-capture-protocol",
   "crates/alo-folded-light",
   "crates/alo-vector-shapes",
+  "crates/alo-cursors",
   "crates/alo-before",
   "crates/alo-reached",
   "crates/alo-shell",

@@ -96,13 +96,11 @@ where
     if let Some(terminal) = native.terminal {
         terminal.validate()?;
     }
-    // One of these two is always empty: the plain arrow and the double-headed one
-    // over a frame's resize band are the same kind of thing, and only one cursor
-    // is on the screen at a time.
-    let arrow: Vec<_> = crate::default_cursor::pixels(cursor, damage)?
-        .into_iter()
-        .chain(crate::resize_cursor::pixels(cursor, damage)?)
-        .collect();
+    // **alo's own pointer**, the arrow or the double arrow over a frame's resize
+    // band, drawn at this display's scale (`crate::the_pointer_drawn`). Asked
+    // before anything is imported, so a position that is not a number refuses
+    // the frame before a client's buffer is touched, as the mask before it did.
+    let pointer = crate::the_pointer_drawn::the_pointer(cursor, native.pointer_at, damage)?;
     let mut drawing = drawing::Drawing {
         elements: Vec::new(),
         surfaces: Vec::new(),
@@ -210,6 +208,8 @@ where
         crate::each_window_with_its_edge::uploaded(renderer, native.terminal_edge)?;
     let settings_edge_textures =
         crate::each_window_with_its_edge::uploaded(renderer, native.settings_edge)?;
+    let records_edge_textures =
+        crate::each_window_with_its_edge::uploaded(renderer, native.records_edge)?;
     // **The terminal, uploaded with the rest** for the same reason: it is one
     // raster — body, cells and strip — since it became a window on the canvas,
     // and the frame below borrows the renderer.
@@ -298,6 +298,22 @@ where
                     .map_err(submission)
             })
             .collect::<Result<_, _>>()?,
+    };
+    // **The pointer, uploaded with the rest** for the same reason: a frame
+    // borrows the renderer. Premultiplied, which is how both renderers blend.
+    let pointer_texture: Option<(R::TextureId, Rectangle<i32, Physical>)> = match &pointer {
+        None => None,
+        Some(pointer) => Some(
+            renderer
+                .import_memory(
+                    &pointer.picture.pixels,
+                    Fourcc::Abgr8888,
+                    (pointer.area.size.w, pointer.area.size.h).into(),
+                    false,
+                )
+                .map(|texture| (texture, pointer.area))
+                .map_err(submission)?,
+        ),
     };
     let mut frame = renderer
         .render(framebuffer, size, transform)
@@ -453,6 +469,21 @@ where
                     edge.paint(&mut frame)?;
                 }
             }
+            // **The record window, a window among windows** since ADR 0145's
+            // fourth stage, with its edge over it.
+            crate::which_window_is_in_front::AKindOfWindow::TheRecord => {
+                if let Some(the_record_on_the_canvas) = native
+                    .record
+                    .filter(|record| !record.is_empty() && record.is_on_the_canvas())
+                {
+                    the_record_on_the_canvas.paint(&mut frame, record_washed.as_ref())?;
+                }
+                for (edge, textures) in native.records_edge.iter().zip(&records_edge_textures) {
+                    crate::each_window_with_its_edge::wash_all(&mut frame, &textures.behind)?;
+                    crate::each_window_with_its_edge::wash_all(&mut frame, &textures.over)?;
+                    edge.paint(&mut frame)?;
+                }
+            }
             crate::which_window_is_in_front::AKindOfWindow::TaskWindows => {
                 if let Some(desktop) = native.desktop {
                     desktop.paint_the_tasks(&mut frame, &washed, camera)?;
@@ -471,10 +502,14 @@ where
     if let Some(desktop) = native.desktop {
         desktop.paint(&mut frame, &washed)?;
     }
-    // Above every client and control, so no window covers what the machine
-    // did; below the question and the indicator.
-    if let Some(record) = native.record.filter(|record| !record.is_empty()) {
-        record.paint(&mut frame, record_washed.as_ref())?;
+    // **The record fixed to the display**, which only the nested lane still
+    // draws: above every client and control; below the question and the
+    // indicator. The record on the canvas was drawn among the windows above.
+    if let Some(fixed_record) = native
+        .record
+        .filter(|record| !record.is_empty() && !record.is_on_the_canvas())
+    {
+        fixed_record.paint(&mut frame, record_washed.as_ref())?;
     }
     // **Settings fixed to the display**, which only the nested lane still
     // draws: above every client, the desktop and the record; below the
@@ -517,12 +552,10 @@ where
         draw_render_elements(&mut frame, 1.0, &cursor_drawing.elements, &[damage])
             .map_err(submission)?;
     }
-    // Draw last so the owned arrow stays above every client tree. Damage is local
-    // to each solid rectangle; these pixels own no Wayland identity or callbacks.
-    for (pixel, color) in arrow {
-        frame
-            .draw_solid(pixel, &[Rectangle::from_size(pixel.size)], color)
-            .map_err(submission)?;
+    // Drawn last so alo's pointer stays above every client tree and every layer
+    // of the shell's own. It owns no Wayland identity or callbacks.
+    if let Some((texture, area)) = &pointer_texture {
+        crate::painted::wash(&mut frame, texture, *area)?;
     }
     let _sync = frame.finish().map_err(submission)?;
     if let Some(mut cursor_drawing) = cursor_drawing {

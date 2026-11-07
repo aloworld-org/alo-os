@@ -28,6 +28,27 @@ impl Server {
         state: KeyState,
         time: u32,
     ) -> Result<Option<RecordKey>, InputError> {
+        Ok(self
+            .what_a_key_is_to_the_record(code, state, time)?
+            .map(|meant| match meant {
+                ToTheRecord::AKey(key) => key,
+                ToTheRecord::AChord(_) => RecordKey::Nothing,
+            }))
+    }
+
+    /// One key, as the record window understands it **or as a chord the person
+    /// has bound** (ADR 0145, stage 4): a chord with Control, Alt or the logo
+    /// key held means nothing to the record, and on the canvas it reaches its
+    /// action — so Super+Tab leaves the record as it leaves any window.
+    ///
+    /// # Errors
+    /// As [`Self::record_key`].
+    pub(crate) fn what_a_key_is_to_the_record(
+        &mut self,
+        code: u32,
+        state: KeyState,
+        time: u32,
+    ) -> Result<Option<ToTheRecord>, InputError> {
         if !(1..=0x2ff).contains(&code) {
             return Err(InputError::InvalidKey);
         }
@@ -42,24 +63,41 @@ impl Server {
         if handle.pressed_keys().contains(&code) == (state == KeyState::Pressed) {
             return Ok(None);
         }
-        let meant = handle.input::<Option<RecordKey>, _>(
+        let shortcuts = self.shortcuts.take();
+        let meant = handle.input::<Option<ToTheRecord>, _>(
             &mut self.surfaces,
             code,
             state,
             SERIAL_COUNTER.next_serial(),
             time,
             |_, held, symbol| {
-                FilterResult::Intercept(
-                    (state == KeyState::Pressed)
-                        .then(|| RecordKey::of(symbol.modified_sym(), held)),
-                )
+                FilterResult::Intercept((state == KeyState::Pressed).then(|| {
+                    let key = RecordKey::of(symbol.modified_sym(), held);
+                    match (
+                        key,
+                        Server::the_chord_a_key_makes(shortcuts.as_ref(), &symbol, held),
+                    ) {
+                        (RecordKey::Nothing, Some(chord)) => ToTheRecord::AChord(chord),
+                        _ => ToTheRecord::AKey(key),
+                    }
+                }))
             },
         );
+        self.shortcuts = shortcuts;
         if let Some(keyboard) = self.surfaces.keyboard.as_mut() {
             keyboard.time = time;
         }
         Ok(meant.flatten())
     }
+}
+
+/// What one key is to the record window.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum ToTheRecord {
+    /// A key the window understands, or [`RecordKey::Nothing`].
+    AKey(RecordKey),
+    /// A chord the person bound, which means nothing to the window.
+    AChord(alo_shortcuts::Chord),
 }
 
 #[cfg(test)]

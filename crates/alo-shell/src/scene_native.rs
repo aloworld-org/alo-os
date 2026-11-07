@@ -57,6 +57,9 @@ pub(crate) struct NativeLayers<'a> {
     /// Settings' edge — none or one — painted with Settings wherever it is in
     /// [`Self::in_front`]'s order (`crate::settings_edge`).
     pub(crate) settings_edge: &'a [crate::window_edge_picture::EdgePicture],
+    /// The record's edge — none or one — painted with the record wherever it
+    /// is in [`Self::in_front`]'s order (`crate::record_edge`).
+    pub(crate) records_edge: &'a [crate::window_edge_picture::EdgePicture],
     /// Which kind of window is in front of which — the applications, the
     /// terminal, the task windows — and so the order they are painted in
     /// (`crate::which_window_is_in_front`, the owner's decision of 2026-10-31).
@@ -87,6 +90,13 @@ pub(crate) struct NativeLayers<'a> {
     /// the Dock, the status area and a notification each sit above whatever a
     /// client maps, and a terminal does not — it is a window among windows.
     pub(crate) terminal: Option<&'a crate::the_terminal_on_the_plane::TheTerminalOnTheScreen>,
+    /// The scale alo's own pointer is drawn at on this display
+    /// (`crate::the_pointer_drawn`).
+    ///
+    /// **One-to-one unless the backend that knows the display says otherwise**,
+    /// which the direct backend does for every display it draws. A nested
+    /// window and an offscreen check have no display scale of their own.
+    pub(crate) pointer_at: crate::display_scale::DisplayScale,
 }
 
 impl NativeLayers<'_> {
@@ -102,6 +112,7 @@ impl NativeLayers<'_> {
             task_edges: &[],
             terminal_edge: &[],
             settings_edge: &[],
+            records_edge: &[],
             in_front: crate::which_window_is_in_front::WhichIsInFront::AS_IT_WAS,
             desktop: None,
             record: None,
@@ -112,6 +123,7 @@ impl NativeLayers<'_> {
             notifications: None,
             capturing: None,
             terminal: None,
+            pointer_at: crate::display_scale::DisplayScale::ONE,
         }
     }
 
@@ -122,6 +134,7 @@ impl NativeLayers<'_> {
             && self.task_edges.is_empty()
             && self.terminal_edge.is_empty()
             && self.settings_edge.is_empty()
+            && self.records_edge.is_empty()
             && self.desktop.is_none()
             && self.record.is_none()
             && self.settings.is_none()

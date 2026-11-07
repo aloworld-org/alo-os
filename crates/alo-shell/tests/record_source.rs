@@ -47,6 +47,7 @@ fn the_record_files() -> Vec<(String, Vec<(usize, String)>)> {
         [
             "nested_record.rs",
             "record_clock.rs",
+            "record_edge.rs",
             "record_entry_drawn.rs",
             "record_frame_drawn.rs",
             "record_header.rs",
@@ -54,6 +55,7 @@ fn the_record_files() -> Vec<(String, Vec<(usize, String)>)> {
             "record_kinds.rs",
             "record_lines.rs",
             "record_measures.rs",
+            "record_on_the_plane.rs",
             "record_paint.rs",
             "record_palette.rs",
             "record_put_back_drawn.rs",

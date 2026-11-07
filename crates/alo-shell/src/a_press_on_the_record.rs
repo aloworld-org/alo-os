@@ -54,16 +54,56 @@ impl TheRecordsPlaces {
     }
 }
 
+impl TheRecordsPlaces {
+    /// **The places as the camera shows them** (ADR 0145, stage 4): laid out in
+    /// a room `room` big that landed at `room_on_screen`, each carried onto the
+    /// display, so a press is tested where the button is seen at any zoom.
+    ///
+    /// **Close is the canvas edge's** on the canvas (`crate::record_edge`),
+    /// which keeps its size at any zoom, so the place the window's own strip
+    /// would have had is left empty here rather than found twice.
+    #[must_use]
+    pub(crate) fn as_seen(
+        &self,
+        room: (i32, i32),
+        room_on_screen: smithay::utils::Rectangle<i32, Physical>,
+    ) -> Self {
+        let seen = |area: Area| {
+            crate::a_room_through_the_camera::on_the_screen(area, room, room_on_screen)
+        };
+        Self {
+            window: seen(self.window),
+            close: Area::default(),
+            buttons: self
+                .buttons
+                .iter()
+                .map(|(which, area)| (*which, seen(*area)))
+                .collect(),
+            put_back: self.put_back.map(seen),
+            cancel: self.cancel.map(seen),
+        }
+    }
+}
+
 impl crate::Server {
     /// Where the record window was drawn on the last frame, or that it was not.
     pub(crate) fn the_record_was_drawn(&mut self, places: Option<TheRecordsPlaces>) {
         self.the_records_places = places;
     }
 
+    /// Whether the record window is drawn under `at`, in the display's pixels.
+    pub(crate) fn the_record_is_under(&self, at: Point<i32, Physical>) -> bool {
+        self.the_record_is_open_here()
+            && self
+                .the_records_places
+                .as_ref()
+                .is_some_and(|places| places.window.contains(at))
+    }
+
     /// A press at `at`, in the display's pixels. Answers whether the record
     /// window took it.
     pub(crate) fn a_press_on_the_record(&mut self, at: Point<i32, Physical>) -> bool {
-        if !self.record.is_open() {
+        if !self.the_record_is_open_here() {
             return false;
         }
         let Some(places) = self.the_records_places.clone() else {
@@ -73,6 +113,12 @@ impl crate::Server {
             self.record.closed();
             self.the_records_places = None;
             return true;
+        }
+        // **A press on the window brings it in front**, as on any window
+        // (#1044), before what it is on is done.
+        if places.window.contains(at) {
+            self.the_composer.it_gave_the_keyboard_up();
+            self.the_person_went_to(crate::which_window_is_in_front::AKindOfWindow::TheRecord);
         }
         // **The confirmation's buttons**, as Enter on them: the keyboard goes
         // to the one pressed, and it is pressed.

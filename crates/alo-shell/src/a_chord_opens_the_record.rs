@@ -70,16 +70,23 @@ impl crate::Server {
         })
     }
 
-    /// Whether the record window is open, and so takes the keyboard.
+    /// Whether the record window takes the keyboard: while it is open **and is
+    /// the window in front** (ADR 0145, stage 4) — one the person put behind
+    /// another window gives that window the keys, as any window on the canvas
+    /// does. Opening it brings it in front.
     pub(crate) fn the_record_is_taking_the_keys(&self) -> bool {
         self.record.is_open()
+            && self.the_kind_in_front() == crate::which_window_is_in_front::AKindOfWindow::TheRecord
     }
 
     /// Open the record window, from a chord or from the row in Settings.
     ///
-    /// **Settings is closed first**, because Settings is painted above the
-    /// record and takes the keys before it: both open would be a person typing
-    /// into a window they cannot see.
+    /// **Settings is closed first**, as it always has been. It was the only
+    /// safe order while both were fixed to the display, Settings above; since
+    /// both are windows on the canvas (ADR 0145) they could stand side by side,
+    /// and whether they should is not changed here.
+    ///
+    /// **And the record comes in front**, with the view going to it.
     ///
     /// Answers [`None`] when nobody told this session where the record is.
     pub(crate) fn the_record_is_opened(&mut self) -> Option<RecordOpened> {
@@ -101,6 +108,7 @@ impl crate::Server {
             // offered on what can be put back now.
             self.the_places_are_read_again();
         }
+        self.the_person_went_to_the_record();
         Some(opened)
     }
 

@@ -22,13 +22,21 @@ use crate::record_raster::RecordPicture;
 impl RecordPicture {
     /// Refuse a frame the window was not laid out for, before anything is
     /// imported or drawn.
+    ///
+    /// **A window on the canvas is laid out in a room of its own** and may sit
+    /// partly off the display, so it is held to its own room rather than to the
+    /// output.
     pub(crate) fn validate(&self, size: Size<i32, Physical>) -> Result<(), RenderError> {
-        let output: Rectangle<i32, Physical> = Rectangle::from_size(size);
+        let room: Rectangle<i32, Physical> = if self.is_on_the_canvas() {
+            Rectangle::from_size(self.size.into())
+        } else {
+            Rectangle::from_size(size)
+        };
         let inside = self
             .washed
             .as_ref()
-            .is_none_or(|washed| output.contains_rect(washed.area));
-        if (size.w, size.h) == self.size && inside {
+            .is_none_or(|washed| room.contains_rect(washed.area));
+        if (self.is_on_the_canvas() || (size.w, size.h) == self.size) && inside {
             Ok(())
         } else {
             Err(RenderError::RecordScene)
@@ -48,9 +56,18 @@ impl RecordPicture {
         frame: &mut F,
         window: Option<&(F::TextureId, Rectangle<i32, Physical>)>,
     ) -> Result<(), RenderError> {
-        if let Some((texture, area)) = window {
-            crate::painted::wash(frame, texture, *area)?;
+        let Some((texture, area)) = window else {
+            return Ok(());
+        };
+        // **Through the camera**, for a window on the canvas.
+        match self.drawn_at {
+            Some(room) => crate::painted::wash_scaled(
+                frame,
+                texture,
+                (area.size.w, area.size.h),
+                crate::a_room_through_the_camera::on_the_screen(*area, self.size, room),
+            ),
+            None => crate::painted::wash(frame, texture, *area),
         }
-        Ok(())
     }
 }

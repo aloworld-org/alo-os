@@ -15,7 +15,8 @@ pub enum Cursor {
     /// Unpositioned legacy snapshot (no pointer seat); nested uses its host arrow.
     /// Offscreen/direct rendering adds no pixels for this variant.
     Default,
-    /// Compositor-owned scale-one arrow, including after focus loss/destruction.
+    /// alo's own arrow, drawn at each display's scale (`crate::the_pointer_drawn`),
+    /// including after focus loss/destruction.
     Arrow {
         /// Logical tip position; the arrow's hotspot is (0, 0).
         /// Rendering floors fractional coordinates and refuses non-finite values.
@@ -31,6 +32,17 @@ pub enum Cursor {
         edge: crate::FrameEdge,
         /// Where the pointer is. The arrow's hotspot is its middle, not a tip,
         /// so what is drawn is offset from this rather than starting at it.
+        location: Point<f64, Logical>,
+    },
+    /// The focused client asked for one of alo's cursors by name
+    /// (`wp_cursor_shape_v1`, `crate::cursor_shapes`), and alo draws it.
+    ///
+    /// A request for `default` is [`Self::Arrow`] instead: it is the arrow.
+    Named {
+        /// The name asked for.
+        shape: alo_cursors::CursorIcon,
+        /// Where the pointer is. Where the hotspot sits inside the shape is the
+        /// shape's own: a text cursor's middle, a hand's fingertip.
         location: Point<f64, Logical>,
     },
     /// The focused client explicitly requested no cursor.
@@ -71,6 +83,14 @@ impl Server {
         }
         match &self.surfaces.cursor {
             CursorImageStatus::Hidden => Cursor::Hidden,
+            // **The arrow by name is the arrow**, so a client asking for
+            // `default` and one that never asked look the same to everything
+            // downstream.
+            CursorImageStatus::Named(alo_cursors::CursorIcon::Default) => default,
+            CursorImageStatus::Named(shape) => Cursor::Named {
+                shape: *shape,
+                location: pointer.location,
+            },
             CursorImageStatus::Surface(surface) if surface.is_alive() => {
                 let hotspot = with_states(surface, |states| {
                     states

@@ -186,8 +186,7 @@ mod capture_transport;
 /// What one key press means in the Dock's composer.
 pub mod composer_keys;
 mod cursor;
-mod cursor_mask;
-mod default_cursor;
+mod cursor_shapes;
 #[cfg(test)]
 mod descriptor_testing;
 mod desktop_list;
@@ -234,6 +233,7 @@ mod dock_tooltip;
 /// shadow — at the display scale its geometry is laid out in.
 mod how_a_panel_is_raised;
 mod the_keyboard_on_the_docks_surfaces;
+mod the_pointer_drawn;
 pub mod what_is_on_the_clipboard;
 mod where_the_docks_surface_is;
 
@@ -360,6 +360,8 @@ mod putting_a_window_aside;
 mod putting_back_from_the_record;
 mod readback;
 mod record_clock;
+/// The record's window edge: its icon, its title and Close.
+mod record_edge;
 mod record_entry_drawn;
 mod record_frame_drawn;
 mod record_header;
@@ -367,6 +369,8 @@ mod record_keys;
 mod record_kinds;
 mod record_lines;
 mod record_measures;
+/// The record window as a window on the canvas (ADR 0145, stage 4).
+mod record_on_the_plane;
 mod record_paint;
 mod record_palette;
 mod record_put_back_drawn;
@@ -522,6 +526,12 @@ mod the_edge_takes_the_keyboard;
 /// The egress indicator's two arrows, from the design file's SVG.
 mod the_egress_indicators_arrows;
 mod the_first_account;
+/// The record drawn as a window on the canvas, for one frame.
+mod the_record_drawn_on_the_canvas;
+/// The view travelling to a window of alo's rather than the window moving.
+mod the_view_travels_to_a_window;
+/// Every window on the Place being looked at, for a new one to be placed beside.
+mod the_windows_on_this_place;
 pub use the_first_account::{ASecret, OnTheSheet, TheAccountSheet, TheAccountShown};
 /// Closing alo's terminal: at once when idle, after a question when a command
 /// is running.
@@ -883,7 +893,7 @@ pub use recovery_keys::RecoveryKey;
 pub use recovery_raster::RecoveryLook;
 pub use recovery_reached::Reached;
 pub use recovery_screen::{RecoveryChosen, RecoveryScreen, RecoveryShows, THE_TWO_MOMENTS};
-pub use resize_cursor::{the_cursor_over, the_hotspot_of};
+pub use resize_cursor::the_cursor_over;
 pub use running_keys::RunningKey;
 pub use running_window::{RunningPressed, RunningShows, RunningWindow};
 pub use scanout::ActiveScanout;

@@ -1858,22 +1858,35 @@ impl LoopInput for Desk<'_> {
         // this frame**: laid out where the display's scale is known, and
         // nowhere else.
         server.the_question_was_drawn(terminal.as_ref().and_then(|terminal| terminal.question));
-        // **The record window, while it is open**, in this frame and on
-        // this display. A chord or a row in Settings opens it.
+        let now = std::time::Instant::now();
+        // **The record window, while it is open**, as a window on the canvas
+        // (ADR 0145, stage 4) — drawn here rather than among the desktop's
+        // own pictures, because it is placed and seen through the camera.
+        let the_record = crate::the_record_drawn_on_the_canvas::the_record_drawn(
+            server,
+            self.labels,
+            frame,
+            ((size.w, size.h), &named),
+        );
+        // **A record window that could not be drawn is closed, not the
+        // desktop** — see `crate::a_surface_that_cannot_draw`.
+        let the_record = match the_record {
+            Ok(drawn) => drawn,
+            Err(why) => {
+                server.the_record_could_not_be_drawn(&named, &why, now);
+                None
+            }
+        };
         let mut pictures = crate::nested_desktop::frame_pictures(
             frame,
-            server.the_records_frame(frame.strings, frame.look),
+            None,
             None,
             self.labels,
             (size.w, size.h),
             terminal,
         )?;
-        // **A record window that could not be drawn is closed, not the
-        // desktop** — see `crate::a_surface_that_cannot_draw`.
-        let now = std::time::Instant::now();
-        if let Some(why) = &pictures.record_refused {
-            server.the_record_could_not_be_drawn(&named, why, now);
-        }
+        // **A question that could not be drawn is left out of this frame, not
+        // the desktop** — see `crate::a_surface_that_cannot_draw`.
         if let Some(why) = &pictures.approval_refused {
             crate::Server::a_question_could_not_be_drawn(&named, why);
         }
@@ -1898,6 +1911,9 @@ impl LoopInput for Desk<'_> {
                 frame.look.notifications(),
             )?;
         }
+        server.where_the_records_body_was_drawn = the_record.as_ref().and_then(|drawn| drawn.body);
+        let the_records_places = the_record.as_ref().and_then(|drawn| drawn.places.clone());
+        pictures.record = the_record.map(|drawn| drawn.picture);
         // **Where the launcher went, for the press after this frame**: laid
         // out where the display's scale is known, and nowhere else.
         server.the_launcher_was_drawn(
@@ -1909,12 +1925,7 @@ impl LoopInput for Desk<'_> {
         );
         // **Where the record window went, for the press after this frame**:
         // laid out where the display's scale is known, and nowhere else.
-        server.the_record_was_drawn(
-            pictures
-                .record
-                .as_ref()
-                .and_then(crate::a_press_on_the_record::TheRecordsPlaces::of),
-        );
+        server.the_record_was_drawn(the_records_places);
         // **A window this person has open that this frame did not draw.**
         //
         // **Here, and not where the placement is made.** It stood beside
@@ -2071,9 +2082,12 @@ impl LoopInput for Desk<'_> {
                 frame,
                 self.strings,
             );
+            // **No record here**: it is a window on the canvas since ADR 0145's
+            // fourth stage, and a window is on the display the loop holds, as
+            // Settings and the task windows are.
             let its_pictures = crate::nested_desktop::frame_pictures(
                 frame,
-                server.the_records_frame(frame.strings, frame.look),
+                None,
                 None,
                 self.labels,
                 (size.w, size.h),
@@ -2094,7 +2108,7 @@ impl LoopInput for Desk<'_> {
                 (size.w, size.h),
                 u32::from(its_scale),
             );
-            theirs.push((other, its_pictures, its_edges));
+            theirs.push((other, its_pictures, its_edges, its_scale));
         }
         // **Every display's controls, from the one list that also draws
         // them.** `more-than-one-display-plan.md` task 9.
@@ -2117,7 +2131,7 @@ impl LoopInput for Desk<'_> {
         // `bring_back_frames_the_moved_controls_hide` below, which until now
         // asked its question with only the first display's bounds recorded —
         // so a frame hidden by the second display's dock was not found.
-        for (other, its_pictures, _its_edges) in &theirs {
+        for (other, its_pictures, _its_edges, _its_scale) in &theirs {
             let Ok(its) = FrameTarget::metadata(*other) else {
                 continue;
             };
@@ -2396,6 +2410,19 @@ impl LoopInput for Desk<'_> {
             (size.w, size.h),
             u32::from(frame.display_scale),
         );
+        // **And the record's**, laid out over its body where this frame drew
+        // it (`crate::record_edge`).
+        let records_edge = server.the_records_edge_picture(
+            &mut self.labels.fonts,
+            self.strings,
+            ((size.w, size.h), u32::from(frame.display_scale)),
+            crate::RecordLook {
+                scheme: frame.look.scheme(),
+                scale: frame.look.scale(),
+                reading: frame.look.reading(),
+                contrast: frame.look.contrast(),
+            },
+        );
         // **The frame is drawn through the per-display road, with one display
         // on it.** `more-than-one-display-plan.md` task 4. This desk builds one
         // target today; `discover_every_atomic_output` is what will make it
@@ -2419,9 +2446,13 @@ impl LoopInput for Desk<'_> {
                 task_edges: &task_edges,
                 terminal_edge: terminal_edge.as_slice(),
                 settings_edge: settings_edge.as_slice(),
+                records_edge: records_edge.as_slice(),
                 // **The order the person's windows are in**, the same one a
                 // press and the keyboard read (`crate::which_window_is_in_front`).
                 in_front: server.which_is_in_front(),
+                // **The pointer at this display's scale**, so a dense screen
+                // draws it sharper rather than smaller (`crate::the_pointer_drawn`).
+                pointer_at: crate::display_scale::DisplayScale::of_per_cent(this_displays_scale),
                 ..pictures.layers(&edges)
             },
         };
@@ -2430,9 +2461,14 @@ impl LoopInput for Desk<'_> {
         // and because a refusal on a later one must not delay it.
         let mut painted: Vec<Layered<'_>> = theirs
             .iter_mut()
-            .map(|(other, its_pictures, its_edges)| Layered {
+            .map(|(other, its_pictures, its_edges, its_scale)| Layered {
                 target: *other,
-                layers: its_pictures.layers(its_edges),
+                layers: crate::scene_native::NativeLayers {
+                    // **The pointer at this display's own scale**, as its
+                    // edges and its Dock are.
+                    pointer_at: crate::display_scale::DisplayScale::of_per_cent(*its_scale),
+                    ..its_pictures.layers(its_edges)
+                },
             })
             .collect();
         let mut displays: Vec<&mut dyn crate::FrameTarget> = Vec::with_capacity(1 + painted.len());

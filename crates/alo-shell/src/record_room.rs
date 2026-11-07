@@ -41,6 +41,10 @@ pub struct RecordLook {
 /// The largest output side, in pixels, the window is laid out for.
 const LARGEST_SIDE: i32 = 16_384;
 
+/// How far the window's shadow may reach past it, logical: the room a raster
+/// keeps round the window.
+const THE_SHADOWS_REACH: i32 = 48;
+
 /// The least the window may be, logical, before it refuses the frame: room
 /// for the heading's line and one short entry.
 const THE_LEAST: (i32, i32) = (320, 300);
@@ -107,6 +111,50 @@ impl Room {
         })
     }
 
+    /// **The window in a room of its own** (ADR 0145, stage 4): a window
+    /// `window` big — the size [`Self::on`] gives it on the display it is on —
+    /// laid out with room for its shadow on every side, as the canvas draws it.
+    /// Everything inside it is where [`Self::on`] would put it; only the corner
+    /// moves.
+    ///
+    /// Answers the room's size with it.
+    ///
+    /// # Errors
+    /// As [`Self::on`], for a window smaller than the least it is drawn at.
+    pub(crate) fn around(
+        window: (i32, i32),
+        look: RecordLook,
+        display: DisplayScale,
+    ) -> Result<(Self, (i32, i32)), RenderError> {
+        let measure = Measure::of(look.scale).on(display);
+        let px = |at_one: i32| measure.px(at_one);
+        let (wide, tall) = window;
+        if wide < px(THE_LEAST.0) || tall < px(THE_LEAST.1) {
+            return Err(RenderError::RecordScene);
+        }
+        let reach = px(THE_SHADOWS_REACH);
+        let window = Rectangle::new((reach, reach).into(), (wide, tall).into());
+        let (strip_at, strip_tall) = m::THE_STRIP;
+        let band = px(m::THE_STRIP_BAND);
+        Ok((
+            Self {
+                measure,
+                hairline: display.px(1),
+                window,
+                strip: Rectangle::new(
+                    (window.loc.x, window.loc.y + px(strip_at)).into(),
+                    (wide, px(strip_tall)).into(),
+                ),
+                body: Rectangle::new(
+                    (window.loc.x, window.loc.y + band).into(),
+                    (wide, tall - band).into(),
+                ),
+                reading: look.reading,
+            },
+            (wide + 2 * reach, tall + 2 * reach),
+        ))
+    }
+
     /// `at_one` logical pixels, scaled.
     pub(crate) fn px(self, at_one: i32) -> i32 {
         self.measure.px(at_one)
@@ -132,7 +180,7 @@ impl Room {
     /// The canvas the window is drawn on: the window and room for its shadow,
     /// within the output.
     pub(crate) fn canvas(self, size: (i32, i32)) -> Area {
-        let reach = self.px(48);
+        let reach = self.px(THE_SHADOWS_REACH);
         let around = Rectangle::new(
             (self.window.loc.x - reach, self.window.loc.y - reach).into(),
             (
