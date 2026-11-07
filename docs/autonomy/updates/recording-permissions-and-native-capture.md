@@ -6,37 +6,42 @@ signed distribution, production-image acceptance, and physical-hardware
 acceptance are separate. The complete booted walk is **not yet accepted**.
 
 Current result: native permissions, the normally installed application and 19
-typed agent actions are implemented. The latest normal Flatpak is source
-`bbc88582`, bundle SHA-256
+typed agent actions are implemented. Normal Flatpak source is `bbc88582`,
+bundle SHA-256
 `49c513ecf42a58041c6517fdc847f14447468e3f34d17f22bb04237f12829b85`.
-It is built in the hosted GNOME 49 SDK without verification features. Native,
-optimized desktop, package, author and full OS checks all pass at that source.
-The installed desktop is `dad76731`; subsequent packaging-only commits leave
-its runtime source unchanged. Thirty application tests include adversarial
-video timestamps encoded to WebM and independently decoded.
+It is built in the hosted GNOME 49 SDK without verification features. The latest
+installed desktop is `6ebf9396`; all five hosted checks pass there, including
+the full OS gate, optimized desktop/strict checks and normal packaging. Its
+application source is identical to the installed package. Thirty application
+tests include adversarial video timestamps encoded to WebM and actually decoded.
 
 Both latest installed flows complete capture, stable five-second pause, resume,
 review, naming, library navigation and byte-identical native export. Both saved
-videos have strictly increasing timestamps. Screen video measures 2.891 fps with
-a 0.750-second uncovered gap; window video measures 3.800 fps with a 1.178-second
-gap. Its 37.920 seconds of audible PCM have no meaningful gaps or overlap, and
-track endings differ by 80 ms. Both independent reference checks pass, but eight
-visual/audio matches have a median 673 ms video delay and do not establish
-synchronization. Neither video passes the unchanged 5 fps continuity requirement.
-These are one-time installed measurements, preserved below. The approved compiler
-pauses end with every identified process resumed; normal audio, chooser size and
-application state are restored.
+videos have strictly increasing timestamps. Screen video measures 4.367 fps with
+a 0.330-second uncovered gap; it passes the gap limit but misses the 4.5 fps
+minimum. Window video measures 3.742 fps with a 1.130-second gap. Its 36.160 seconds
+of audible PCM have no meaningful gaps or overlap, and track endings differ by
+105 ms. The later independent reference fails its delivery check, and three
+visual/audio matches do not establish synchronization. Neither video passes the
+unchanged full media acceptance. These are one-time installed observations,
+preserved below. All five paused compiler processes resume, and normal audio,
+chooser size and application state are restored.
 
-The next desktop candidate copies four BGR pixels and clears their unused bytes
-in one pass. A standalone alternating copy comparison supports that local change;
-it does not establish whole-flow performance. Its regression and installed-media
-checks remain pending. No renderer patch, local unsafe code, new dependency,
-allocator tuning or acceptance-threshold change is included.
+The next desktop candidate avoids repeatedly rescaling unchanged public Dock
+icons. Immutable artwork clones share their allocation; a drawing-thread cache
+retains at most sixteen variants and four MiB of source/output pixels, counted
+conservatively. Fresh source allocations and requested dimensions identify a
+variant. Oversized variants still draw without retention. Pixel arithmetic is
+unchanged. CI and another installed walk remain pending. No renderer patch,
+local unsafe code, new dependency, allocator tuning or acceptance-threshold
+change is included.
 
 The agent permission walk separately verifies live discovery, one approved
-execution, immediate revocation and refusal. Other applications must expose
-their own adapters. The review remains a draft with no market publication, and
-each earlier measurement retains its own tested source.
+execution, immediate revocation and refusal. A post-recovery read again verifies
+that revoked Studio access removes its actions from discovery and refuses the
+read. Other applications must expose their own adapters. The review remains a
+draft with no market publication, and each earlier measurement retains its own
+tested source.
 
 ## Implemented boundaries
 
@@ -1969,3 +1974,64 @@ handles every complete-pixel tail without another allocation. A regression
 compares exact channels and stride across widths one through seventeen; existing
 malformed-layout and actual software-pixel tests remain. CI and installed
 recording acceptance of this additional change are pending.
+
+### Installed one-pass native copy repeat
+
+All five hosted checks pass at `6ebf9396`. Desktop job `128431159098` in run
+`42381919756` produces artifact `13578735155`, archive SHA-256
+`6612e651e3ef3ab7b72879538ec564170b11ec1f4e5c761f91b40c5d0bef7325`.
+The checked executable SHA-256 is
+`09734d7a06abc7ac3938bbcaaa33a66d37b38aeba2573493827ba3738ef9cea7`.
+The normal application remains package `bbc88582`; both application subtrees
+are `af45ac889b25e47507c894118b8951fc5e1c3408`. No new app package or diagnostic
+executable is substituted for this OS-only performance trial.
+
+Screen clip `1794062700-874405166-2`, SHA-256
+`4f36b818cf516a91c4e3636b797f441e5765eaedfdf47c33ebf80c54be6134a9`,
+has 94 decoded frames, 81 globally unique images, 4.367 fps and a 0.330-second
+uncovered gap. It has exactly one video track and no audio. It passes the gap
+limit and fails the unchanged 4.5 fps minimum. Export `Product demonstration
+31.webm` has grant `3cec06de`.
+
+Window clip `1794062944-420682466-2`, SHA-256
+`1f3d5377df3b6934dbb55d8e6e3ab977757aa83ec01ded493d752308241614c7`,
+has 134 distinct decoded frames, 3.742 fps and a 1.130-second uncovered gap.
+Exactly one video and one audio track are present. Its 36.160 seconds of audible
+PCM have no meaningful gap or overlap; track endings differ by 105 ms. Video
+timestamps increase strictly in both clips. The first reference check passes
+with 10.252 seconds of delivery; the post-idle check takes 11.221 seconds for ten
+seconds of PCM and fails. Three marker matches with median 403.5 ms and maximum
+710.5 ms delay do not establish sync. Export `Product demonstration 32.webm`
+has grant `af86ad54`.
+
+Both controls pass five-second pause with fixed elapsed time and microphone off,
+correct resumed microphone state, final microphone shutdown, review, naming,
+library navigation and exact native export. The approved compilation pause runs
+from 14:42:14 to 14:51:45 UTC on 7 November 2026; all five processes resume and
+the safeguard does not fire. Cleanup checks pass at 14:52:37 UTC with normal app
+ready, no reference audio override or module, original source restored, forced
+rate zero, original chooser size and unfrozen installer. Media, execution logs,
+source identities, pause/resumption proof and cleanup remain in the
+`installed-wide-copy-*` folders. These are one-time installed measurements,
+not a paired performance claim; no threshold changes.
+
+### Bounded public artwork scaling candidate
+
+The retained user CPU sample also identifies 47 artwork-scaling samples in
+1,219 instruction pointers. Source inspection shows the same icons are averaged
+at each frame even when their bytes and requested size are unchanged. The next
+candidate shares immutable original/output bytes across picture clones and
+retains exact-sized variants by original allocation identity, source dimensions
+and target dimensions. Holding the source allocation prevents address reuse
+from matching a different picture. New artwork gets a fresh identity. Pixel
+comparisons and public immutable access retain their existing meaning.
+
+Retention is per drawing thread, at most sixteen entries and four MiB including
+source/output lengths, conservatively recounting shared sources per entry.
+Metadata is separately bounded by entry count. Oldest used entries are evicted;
+oversized results use the original arithmetic without displacing the cache.
+No window or application document pixels are retained. Added regressions cover
+hits through clones, exact pixel results, changed size and replacement,
+byte-budget eviction, oversized bypass, entry limits and recent-use ordering.
+The optimized Studio desktop workflow now includes these Dock tests and strict
+checks. CI and installed recording acceptance are pending for this candidate.

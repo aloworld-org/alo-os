@@ -1,10 +1,10 @@
 name: alo Studio
 on:
   pull_request:
-    paths: ['apps/alo-studio/**', 'crates/alo-shell/**', 'crates/alo-desktop/**', 'crates/alo-capture-provider/**', 'crates/alo-capture-remote/**', 'crates/alo-capture-protocol/**', 'crates/alo-media-server/**', 'engines/pipewire/**', 'engines/pipewire-gstreamer/**', 'image/Containerfile', 'image/usr/lib/systemd/system/alo-portald.service', 'Cargo.toml', 'Cargo.lock', '.github/workflows/studio.yml']
+    paths: ['apps/alo-studio/**', 'crates/alo-dock/**', 'crates/alo-shell/**', 'crates/alo-desktop/**', 'crates/alo-capture-provider/**', 'crates/alo-capture-remote/**', 'crates/alo-capture-protocol/**', 'crates/alo-media-server/**', 'engines/pipewire/**', 'engines/pipewire-gstreamer/**', 'image/Containerfile', 'image/usr/lib/systemd/system/alo-portald.service', 'Cargo.toml', 'Cargo.lock', '.github/workflows/studio.yml']
   push:
     branches: [main]
-    paths: ['apps/alo-studio/**', 'crates/alo-shell/**', 'crates/alo-desktop/**', 'crates/alo-capture-provider/**', 'crates/alo-capture-remote/**', 'crates/alo-capture-protocol/**', 'crates/alo-media-server/**', 'engines/pipewire/**', 'engines/pipewire-gstreamer/**', 'image/Containerfile', 'image/usr/lib/systemd/system/alo-portald.service', 'Cargo.toml', 'Cargo.lock', '.github/workflows/studio.yml']
+    paths: ['apps/alo-studio/**', 'crates/alo-dock/**', 'crates/alo-shell/**', 'crates/alo-desktop/**', 'crates/alo-capture-provider/**', 'crates/alo-capture-remote/**', 'crates/alo-capture-protocol/**', 'crates/alo-media-server/**', 'engines/pipewire/**', 'engines/pipewire-gstreamer/**', 'image/Containerfile', 'image/usr/lib/systemd/system/alo-portald.service', 'Cargo.toml', 'Cargo.lock', '.github/workflows/studio.yml']
   workflow_dispatch:
 permissions:
   contents: read
@@ -35,6 +35,7 @@ jobs:
       - name: Optimized desktop regressions
         run: |
           cargo +1.97.0 test --locked --release -p alo-desktop -- --test-threads=1
+          cargo +1.97.0 test --locked --release -p alo-dock --lib artwork::
           cargo +1.97.0 test --locked --release -p alo-shell --lib readback::
           cargo +1.97.0 test --locked --release -p alo-shell --lib software_scanout::
           cargo +1.97.0 test --locked --release -p alo-shell --lib capture_transport::
@@ -52,6 +53,7 @@ jobs:
       - name: Strict desktop and shell checks
         run: |
           cargo +1.97.0 clippy --locked --release -p alo-desktop --all-targets -- -D warnings
+          cargo +1.97.0 clippy --locked --release -p alo-dock --all-targets -- -D warnings
           cargo +1.97.0 clippy --locked --release -p alo-shell --lib -- -D warnings
       - name: Build the desktop for installed recording verification
         run: |
