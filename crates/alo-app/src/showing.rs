@@ -107,13 +107,17 @@ pub fn shown(
         Giving::Json => {
             let mut one = one_as_json(application, knowing.installed, knowing.adapters, strings);
             with(&mut one, "format", json!(1));
-            with(&mut one, "roads", json!({
-                "window": true,
-                "tree": on_the_tree.named(),
-                "declared": declared.iter().map(|one| ability_as_json(*one, strings)).collect::<Vec<_>>(),
-                "discovered": "not-asked",
-                "screen": "not-built",
-            }));
+            with(
+                &mut one,
+                "roads",
+                json!({
+                    "window": true,
+                    "tree": on_the_tree.named(),
+                    "declared": declared.iter().map(|one| ability_as_json(*one, strings)).collect::<Vec<_>>(),
+                    "discovered": "not-asked",
+                    "screen": "not-built",
+                }),
+            );
             vec![one.to_string()]
         }
         Giving::Sentences => {

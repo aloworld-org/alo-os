@@ -233,7 +233,6 @@ impl ASession {
             .env("XDG_CONFIG_HOME", self.place.join("config"))
             .env("XDG_CACHE_HOME", self.place.join("cache"))
             .env("XDG_DATA_HOME", self.place.join("data"))
-            .env("XDG_DATA_DIRS", self.place.join("data"))
             .env("DBUS_SESSION_BUS_ADDRESS", &self.session)
             .env("GSETTINGS_BACKEND", "memory")
             .env("LANG", "C.UTF-8");

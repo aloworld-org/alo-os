@@ -295,7 +295,24 @@ impl Acting<'_> {
     /// Tell the person what came of it: a done act on the output when the
     /// answer is sentences, and everything else on the error output.
     fn spoken(&self, outcome: &Outcome, machine: &mut dyn Machine) {
-        let line = outcome.said().text();
+        // **Every line about `front` names its window** — the contract's rule —
+        // so a sentence written elsewhere that does not is put after it.
+        let named;
+        let line = if self.subject.in_front && !outcome.said().text().contains(&self.subject.called)
+        {
+            named = self
+                .knowing
+                .strings
+                .say(
+                    &words::FRONT_SAYS.key(),
+                    &alo_strings::Filling::of(words::APPLICATION, self.subject.called.clone())
+                        .and_said(words::SAID, outcome.said()),
+                )
+                .into_text();
+            named.as_str()
+        } else {
+            outcome.said().text()
+        };
         match (outcome.ended(), self.telling) {
             (Ended::Done, Telling::Sentences) => machine.told(line),
             (Ended::Done, Telling::Values) => {}

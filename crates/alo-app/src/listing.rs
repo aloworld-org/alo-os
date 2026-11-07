@@ -216,7 +216,10 @@ mod tests {
             .as_array()
             .unwrap()
             .iter()
-            .find(|one| one.get("identifier").is_some_and(|it| it == "com.example.Front"))
+            .find(|one| {
+                one.get("identifier")
+                    .is_some_and(|it| it == "com.example.Front")
+            })
             .unwrap();
         assert_eq!(front.get("short_name"), Some(&serde_json::Value::Null));
         assert_eq!(front.get("typed_as").unwrap(), "com.example.Front");

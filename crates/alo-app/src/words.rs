@@ -225,6 +225,13 @@ pub const FRONT_WINDOW: Word = Word::saying("app.front.window", "{application}, 
          today.txt”.",
 );
 
+/// A sentence said elsewhere, about the window in front, naming that window.
+pub const FRONT_SAYS: Word = Word::saying("app.front.says", "{application}: {said}").noting(
+    "Puts the window the person was working in in front of a sentence another part of alo OS \
+     wrote, so every line about it names it. {application} is the application's name and the \
+     window's title; {said} is that sentence, already in the person's language.",
+);
+
 /// The desktop did not answer a question about which window or which tree.
 pub const DESKTOP_SILENT: Word = Word::saying(
     "app.desktop.silent",
@@ -702,7 +709,7 @@ pub const CANNOT_BE_UNDONE_ONCE_SENT: Word = Word::saying(
 .noting("The contract's own words, said beside an ability that sends, or may send, something off the machine.");
 
 /// Every word of this crate's own.
-pub const EVERY_WORD: [Word; 82] = [
+pub const EVERY_WORD: [Word; 83] = [
     NOTHING_ASKED,
     NOTHING_TO_DO,
     LEFT_OVER,
@@ -721,6 +728,7 @@ pub const EVERY_WORD: [Word; 82] = [
     NO_FRONT,
     FRONT_UNNAMED,
     FRONT_WINDOW,
+    FRONT_SAYS,
     DESKTOP_SILENT,
     NO_ALO_TREE,
     ALO_TREE_ONLY,
