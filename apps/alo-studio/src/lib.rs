@@ -4,6 +4,7 @@
 //! through the desktop portal for each recording; the microphone starts off.
 
 mod audio_buffering;
+mod capture_connection;
 mod capture_timing;
 pub mod completed_media;
 mod control;

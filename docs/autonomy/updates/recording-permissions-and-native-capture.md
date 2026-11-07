@@ -6,35 +6,36 @@ signed distribution, production-image acceptance, and physical-hardware
 acceptance are separate. The complete booted walk is **not yet accepted**.
 
 Current result: native permissions, the normally installed application and 19
-typed agent actions are implemented. Normal Flatpak source is `bbc88582`,
+typed agent actions are implemented. Normal Flatpak source remains `bbc88582`,
 bundle SHA-256
 `49c513ecf42a58041c6517fdc847f14447468e3f34d17f22bb04237f12829b85`.
-It is built in the hosted GNOME 49 SDK without verification features. The latest
-installed desktop is `6ebf9396`; all five hosted checks pass there, including
-the full OS gate, optimized desktop/strict checks and normal packaging. Its
-application source is identical to the installed package. Thirty application
-tests include adversarial video timestamps encoded to WebM and actually decoded.
+It is built in the hosted GNOME 49 SDK without verification features. Installed
+desktop `74c3fef4` passes all five hosted checks, including the full OS gate,
+optimized artwork/desktop regressions and strict checks. Its application source
+is identical to the installed package. Thirty application tests include
+adversarial video timestamps encoded to WebM and actually decoded.
 
 Both latest installed flows complete capture, stable five-second pause, resume,
 review, naming, library navigation and byte-identical native export. Both saved
-videos have strictly increasing timestamps. Screen video measures 4.367 fps with
-a 0.330-second uncovered gap; it passes the gap limit but misses the 4.5 fps
-minimum. Window video measures 3.742 fps with a 1.130-second gap. Its 36.160 seconds
-of audible PCM have no meaningful gaps or overlap, and track endings differ by
-105 ms. The later independent reference fails its delivery check, and three
-visual/audio matches do not establish synchronization. Neither video passes the
-unchanged full media acceptance. These are one-time installed observations,
-preserved below. All five paused compiler processes resume, and normal audio,
-chooser size and application state are restored.
+videos have strictly increasing timestamps. Screen video measures 4.793 fps,
+passing cadence, but its 0.711-second uncovered gap fails the 0.4-second limit.
+That gap is near resume. Window video measures 2.621 fps with a 1.405-second gap.
+Its 37.220 seconds of audible PCM have no meaningful gaps or overlap; track
+endings differ by 398 ms. Both independent reference checks pass, but six marker
+matches do not establish synchronization. Neither video passes full media
+acceptance. These are one-time installed observations, preserved below. All five
+paused compiler processes resume, and normal audio, chooser size and application
+state are restored.
 
-The next desktop candidate avoids repeatedly rescaling unchanged public Dock
-icons. Immutable artwork clones share their allocation; a drawing-thread cache
-retains at most sixteen variants and four MiB of source/output pixels, counted
-conservatively. Fresh source allocations and requested dimensions identify a
-variant. Oversized variants still draw without retention. Pixel arithmetic is
-unchanged. CI and another installed walk remain pending. No renderer patch,
-local unsafe code, new dependency, allocator tuning or acceptance-threshold
-change is included.
+Source inspection identifies native pipeline state changes at microphone clock
+selection and pause. The next application candidate holds only the existing
+PipeWire video source in Playing across those transitions. Paused video still
+gets discarded before downstream queues; the microphone still stops. Parent
+control and its new base time are restored on resume. Finish and Drop retire
+that hold without restarting inputs. It changes neither accepted timestamps nor
+durations. Unit and real native integration checks plus a new normal package
+and installed walk remain required. No renderer patch, local unsafe code, new
+dependency, allocator tuning or acceptance-threshold change is included.
 
 The agent permission walk separately verifies live discovery, one approved
 execution, immediate revocation and refusal. A post-recovery read again verifies
@@ -2035,3 +2036,70 @@ hits through clones, exact pixel results, changed size and replacement,
 byte-budget eviction, oversized bypass, entry limits and recent-use ordering.
 The optimized Studio desktop workflow now includes these Dock tests and strict
 checks. CI and installed recording acceptance are pending for this candidate.
+
+### Installed bounded-artwork repeat
+
+All five hosted checks pass at `74c3fef4`. Desktop job `128436708504` in run
+`42383770336` produces artifact `13578079808`, archive SHA-256
+`b19b219332036c21d33b0f8c0a629803442e17f00dd0de40692ecd5c3f598b6e`.
+The installed executable SHA-256 is
+`531fc014ba023e7c902f639c0cfd5257a4b5c3a4b01c74fbf034189c7ef4b059`.
+The normal application stays on the unchanged `bbc88582` package.
+
+Screen clip `1794064314-752154456-2`, SHA-256
+`74f742833d222088250df885b5b2b08b455bf09acd5946f1adc3213d878890f1`,
+has 104 decoded frames, 83 globally unique images, 4.793 fps and a 0.711-second
+uncovered gap. It passes cadence and fails the gap limit. The largest uncovered
+interval is 11.963–12.674 seconds, close to the saved pause boundary of 11.824
+seconds. This locates the symptom; it does not by itself prove which source
+transition causes the wait. Export `Product demonstration 33.webm` has grant
+`f7e6e33c`.
+
+Window clip `1794064574-359315779-2`, SHA-256
+`b8f4973d6752785a7c04d5b065c5aefb6081626515315cd321f619a103d06517`,
+has 97 distinct decoded frames, 2.621 fps and a 1.405-second uncovered gap.
+Its 37.220 seconds of audible PCM contain no meaningful gap or overlap; track
+endings differ by 398 ms. Both references pass: ten seconds of PCM arrive over
+10.160 and 10.305 seconds, with seven and six pulses respectively. Six of 22
+audio onsets match visual markers; median delay is 653.5 ms, maximum 885.5 ms,
+so synchronization fails. Export `Product demonstration 34.webm` has grant
+`a12afb1e`. Both videos have increasing timestamps and exact expected track
+counts, but neither passes full media acceptance.
+
+Both flows pass stable five-second pause, correct resumed microphone state,
+final microphone shutdown, review, naming, library and exact native export. The
+approved compiler pause runs from 15:09:08 to 15:18:57 UTC on 7 November 2026;
+all five processes resume, no test executable is paused, and the safeguard does
+not fire. Cleanup checks pass at 15:22:11 UTC with normal app ready, microphone
+off, original source and chooser restored, reference module removed, forced
+rate zero and unfrozen installer. All evidence is preserved in
+`installed-artwork-cache-*`. These are one-time observations, not a paired
+performance comparison. No threshold changes.
+
+### Native input continuity during recording transitions
+
+The existing pause and microphone-clock selection paths pause the whole media
+pipeline. That includes the selected PipeWire input, so the native consumer graph
+must wake again before new video can arrive. The next candidate retains only a
+Playing `pipewiresrc` through its parent's pause/clock transition. The existing
+source-pad gate still discards every paused video buffer before it reaches
+queues or encoding. Native microphone input remains parent-controlled and stops
+before its clock boundary is saved. No permission or source identity changes.
+
+An owned state hold is released after the parent returns to Playing, resynchronizing
+its base time without disconnecting the live source. Early returns restore the
+parent's control. Finish and Drop retire the hold before normal input shutdown,
+so finishing while paused cannot restart a video input or lose the retained
+microphone clock provider. Non-native verification sources retain their existing
+state behavior. Accepted timestamps/durations, clock selection and media limits
+are unchanged.
+
+New real-element regressions cover a source kept Playing while its parent
+pauses, restored base time, refusal to acquire another owner's lock, ordinary
+source exclusion, early-return cleanup, retirement without restart and failure
+when its parent disappears. The native PipeWire integration probe additionally
+requires a connected Playing video input while the recording pipeline is paused,
+a stopped microphone and no encoded-duration advance. Existing resumed-frame,
+source-loss-while-paused, stopped-input and final-decoding checks remain.
+CI, a fresh normal GNOME SDK package and another installed recording walk are
+pending; this is a candidate correction, not installed quality acceptance.

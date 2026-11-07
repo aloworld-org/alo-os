@@ -11,6 +11,7 @@ pub(crate) fn select(
 ) -> Result<(), MediaError> {
     let previous_clock = pipeline.clock();
     let previous_time = pipeline.current_running_time();
+    let connected = crate::capture_connection::Connected::native(pipeline);
     // No recording buffer has been admitted. Pause the existing source without
     // disconnecting its permission-scoped stream and prepare the microphone.
     paused.store(true, Ordering::Relaxed);
@@ -35,8 +36,12 @@ pub(crate) fn select(
         pipeline.set_start_time(previous_time);
         let _ = pipeline.set_state(gst::State::Playing);
     }
+    let restored = connected
+        .map(crate::capture_connection::Connected::release)
+        .transpose()
+        .map(|_| ());
     paused.store(false, Ordering::Relaxed);
-    result
+    result.and(restored)
 }
 
 fn failed(error: impl std::fmt::Display) -> MediaError {

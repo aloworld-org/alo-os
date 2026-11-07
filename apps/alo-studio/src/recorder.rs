@@ -47,6 +47,7 @@ pub struct Recorder {
     fell_behind: Arc<AtomicBool>,
     video: Option<Arc<Mutex<crate::recorded_video::Progress>>>,
     paused: Arc<AtomicBool>,
+    connection: Mutex<Option<crate::capture_connection::Connected>>,
     #[cfg(feature = "verification")]
     generated_audio: bool,
 }
@@ -333,6 +334,7 @@ impl Recorder {
             fell_behind,
             video: None,
             paused,
+            connection: Mutex::new(None),
             #[cfg(feature = "verification")]
             generated_audio,
         })
@@ -371,13 +373,23 @@ impl Recorder {
     }
     /// Freeze both streams together; the microphone stops reading while paused.
     pub fn pause(&self) -> Result<(), MediaError> {
-        crate::pause_timing::pause(&self.pipeline, &self.paused)
+        let mut connection = self.connection.lock().map_err(failed)?;
+        if connection.is_some() {
+            return Ok(());
+        }
+        let kept = crate::capture_connection::Connected::native(&self.pipeline);
+        crate::pause_timing::pause(&self.pipeline, &self.paused)?;
+        *connection = kept;
+        Ok(())
     }
     /// Continue both streams on the same pipeline clock.
     pub fn resume(&self) -> Result<(), MediaError> {
         self.pipeline
             .set_state(gst::State::Playing)
             .map_err(failed)?;
+        if let Some(connection) = self.connection.lock().map_err(failed)?.take() {
+            connection.release()?;
+        }
         self.paused.store(false, Ordering::Relaxed);
         Ok(())
     }
@@ -399,6 +411,11 @@ impl Recorder {
         let mut inputs = Vec::new();
         for (name, queue) in [("microphone", "audio-input"), ("source", "video-input")] {
             if let Some(source) = self.pipeline.by_name(name) {
+                if name == "source"
+                    && let Some(connection) = self.connection.get_mut().map_err(failed)?.take()
+                {
+                    connection.retire();
+                }
                 source.set_locked_state(true);
                 // The microphone supplies the pipeline clock. Keep its native
                 // context alive while other threads drain, with capture corked
@@ -507,6 +524,13 @@ impl Recorder {
 impl Drop for Recorder {
     fn drop(&mut self) {
         self.paused.store(true, Ordering::Relaxed);
+        let connection = match self.connection.get_mut() {
+            Ok(connection) => connection,
+            Err(error) => error.into_inner(),
+        };
+        if let Some(connection) = connection.take() {
+            connection.retire();
+        }
         // Restore normal bin shutdown ordering: all streaming tasks stop before
         // the microphone's clock provider and native context are destroyed.
         for name in ["microphone", "source"] {
@@ -523,6 +547,10 @@ impl Drop for Recorder {
 #[cfg(feature = "verification")]
 #[path = "verification_finish.rs"]
 mod verification_finish;
+
+#[cfg(feature = "verification")]
+#[path = "verification_pause.rs"]
+mod verification_pause;
 
 fn failed(error: impl std::fmt::Display) -> MediaError {
     MediaError(error.to_string())
@@ -550,6 +578,7 @@ mod tests {
             fell_behind: Arc::new(AtomicBool::new(false)),
             video: None,
             paused: Arc::new(AtomicBool::new(false)),
+            connection: Mutex::new(None),
             #[cfg(feature = "verification")]
             generated_audio: false,
         })

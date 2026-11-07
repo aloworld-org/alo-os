@@ -135,6 +135,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     let started = Instant::now();
     let mut paused = false;
+    let mut paused_duration = None;
     let mut resumed = false;
     let mut finishing = false;
     let mut preview_hidden = false;
@@ -174,6 +175,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         if elapsed > Duration::from_secs(2 * time_scale) && !paused {
             recorder.pause()?;
             paused = true;
+            paused_duration = recorder.recorded_duration();
         }
         if std::env::var_os("ALO_STUDIO_VERIFY_SOURCE_END").is_some()
             && elapsed > Duration::from_millis(2500 * time_scale)
@@ -182,6 +184,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             recorder.finish_after_source_ended()?;
             recorder.verify_stopped_inputs()?;
             finishing = true;
+        }
+        if paused && !resumed && !finishing && remote.is_some() {
+            recorder.verify_paused_native_capture()?;
+            if recorder.recorded_duration() != paused_duration {
+                return Err("Video encoding advanced while native recording was paused".into());
+            }
         }
         if elapsed > Duration::from_secs(3 * time_scale) && !resumed && !finishing {
             recorder.resume()?;
