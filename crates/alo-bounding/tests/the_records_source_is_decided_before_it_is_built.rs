@@ -31,9 +31,11 @@
 //!   and the fourth that is the honest name for doing nothing, the costs to a
 //!   person reading, to the record file and to the loader, and one
 //!   recommendation.
-//! - **While it says *proposed*, the programme has two maps.** The day a third
-//!   appears with this line unchanged, the code has run ahead of the decision,
-//!   and this is the test that says so — the refusal path of an ADR.
+//! - **While it says *proposed*, the programme has two maps** — beside one
+//!   more the owner allowed by name in ADR 0148, `COUNTED`, which holds nothing
+//!   about a turn and is set aside here exactly once. The day another appears
+//!   with this line unchanged, the code has run ahead of the decision, and this
+//!   is the test that says so — the refusal path of an ADR.
 //!
 //! # It needs no kernel
 //!
@@ -73,6 +75,17 @@ const THE_PROGRAMME: &str = "crates/alo-bounding-kernel/src/kernel.rs";
 
 /// How a map is declared on the programme.
 const A_MAP: &str = "#[map(";
+
+/// **The one map this check does not count, by name**: the counter of what an
+/// application sends during a person's command, which the owner allowed in
+/// ADR 0148. It is not ADR 0029's map — that decision asks what the kernel
+/// writes down *about a turn*, and this map holds nothing about any turn — so
+/// it is set aside here, exactly once, and only while ADR 0148 stands accepted.
+const THE_COUNTER: &str = "#[map(name = \"COUNTED\")]";
+
+/// The decision that allows [`THE_COUNTER`], relative to the repository.
+const THE_COUNTERS_DECISION: &str =
+    "docs/decisions/0148-the-kernel-counts-what-an-application-sends-during-a-persons-command.md";
 
 /// How many maps the programme has while the decision is still proposed: the
 /// two the daemon and the loader fill, and no third.
@@ -234,14 +247,32 @@ fn maps_on(programme: &str) -> usize {
     programme.matches(A_MAP).count()
 }
 
-/// Whether the programme is still where the decision left it: two maps, for
-/// as long as the decision is only proposed.
-fn the_code_waits_on_it(status: &str, programme: &str) -> Result<(), String> {
-    let maps = maps_on(programme);
+/// How many of those this decision is waiting on: every map, less
+/// [`THE_COUNTER`] — **once, by its exact declaration, and only while ADR 0148
+/// is accepted**. A second `COUNTED`, a counter under another name, or a
+/// counter beside an ADR 0148 that is no longer accepted is counted like any
+/// other map.
+fn maps_waiting_on_it(programme: &str, counters_status: &str) -> usize {
+    let every = maps_on(programme);
+    if counters_status == "accepted" && programme.matches(THE_COUNTER).count() == 1 {
+        every.saturating_sub(1)
+    } else {
+        every
+    }
+}
+
+/// Whether the programme is still where the decision left it: two maps, and
+/// the one counter ADR 0148 names, for as long as the decision is only proposed.
+fn the_code_waits_on_it(
+    status: &str,
+    counters_status: &str,
+    programme: &str,
+) -> Result<(), String> {
+    let maps = maps_waiting_on_it(programme, counters_status);
     if status == WAITING && maps != THE_TWO_MAPS {
         return Err(format!(
-            "the programme declares {maps} maps while ADR {THE_NUMBER} still says `{WAITING}`: \
-             the code has run ahead of the decision it was told to wait on"
+            "the programme declares {maps} maps besides ADR 0148's counter while ADR {THE_NUMBER} \
+             still says `{WAITING}`: the code has run ahead of the decision it was told to wait on"
         ));
     }
     Ok(())
@@ -297,11 +328,14 @@ fn the_decision_sets_out_the_options_their_costs_and_a_recommendation() {
 }
 
 /// While the decision is proposed, the programme has the two maps it had when
-/// the decision was written, and no third.
+/// the decision was written, and no third — beside the one counter ADR 0148
+/// allows by name.
 #[test]
 fn the_code_waits_on_the_decision() {
     let status = status_of(&reading(THE_DECISION)).unwrap_or_else(|why| panic!("{why}"));
-    the_code_waits_on_it(&status, &reading(THE_PROGRAMME)).unwrap_or_else(|why| panic!("{why}"));
+    let counters = status_of(&reading(THE_COUNTERS_DECISION)).unwrap_or_else(|why| panic!("{why}"));
+    the_code_waits_on_it(&status, &counters, &reading(THE_PROGRAMME))
+        .unwrap_or_else(|why| panic!("{why}"));
 }
 
 /// **The checks above would notice**, which is the half a green run cannot
@@ -376,20 +410,48 @@ fn the_checks_would_notice_the_decision_going_missing_or_the_code_running_ahead(
     let with_a_third = format!("{programme}\n{A_MAP}name = \"WATCHED\")]\n");
     assert_eq!(
         maps_on(&with_a_third),
-        THE_TWO_MAPS + 1,
+        THE_TWO_MAPS + 2,
         "the count of maps did not move when a map was added, so the check reads nothing"
     );
     assert!(
-        the_code_waits_on_it(WAITING, &with_a_third).is_err(),
+        the_code_waits_on_it(WAITING, "accepted", &with_a_third).is_err(),
         "a third map beside a proposed decision was not refused"
     );
     assert!(
-        the_code_waits_on_it("accepted", &with_a_third).is_ok(),
+        the_code_waits_on_it("accepted", "accepted", &with_a_third).is_ok(),
         "a third map beside an accepted decision was refused, which would forbid building it"
     );
+
+    // **ADR 0148's counter is set aside by name, once, and only while that
+    // decision is accepted** — each of the three ways round it is refused.
+    assert!(
+        the_code_waits_on_it(WAITING, "proposed", &programme).is_err(),
+        "the counter was set aside beside an ADR 0148 that is not accepted"
+    );
+    let a_second_counter = format!("{programme}\n{THE_COUNTER}\n");
+    assert!(
+        the_code_waits_on_it(WAITING, "accepted", &a_second_counter).is_err(),
+        "a second map named COUNTED was set aside as though it were the one ADR 0148 allows"
+    );
+    let renamed = programme.replace(THE_COUNTER, "#[map(name = \"SENT\")]");
+    assert!(
+        the_code_waits_on_it(WAITING, "accepted", &renamed).is_err(),
+        "a counter under a name ADR 0148 does not give was set aside"
+    );
     assert_eq!(
-        maps_on(&programme),
+        maps_waiting_on_it(&programme, "accepted"),
         THE_TWO_MAPS,
-        "the programme as it is does not have the two maps the decision was written against"
+        "the programme as it is does not have the two maps the decision was written against, \
+         beside ADR 0148's counter"
+    );
+    assert_eq!(
+        programme.matches(THE_COUNTER).count(),
+        1,
+        "the programme does not declare ADR 0148's counter exactly once"
+    );
+    assert_eq!(
+        status_of(&reading(THE_COUNTERS_DECISION)).as_deref(),
+        Ok("accepted"),
+        "the counter is in the programme and the decision that allows it is not accepted"
     );
 }

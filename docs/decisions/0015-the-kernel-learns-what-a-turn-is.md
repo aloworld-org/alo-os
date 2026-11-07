@@ -114,6 +114,19 @@ in a year, one reasonable-sounding feature at a time.
 It also keeps ADR 0001 §4 true at the depth where it would be easiest to break:
 **a background reader is a bug in this product, not a feature request.**
 
+### Amended 2026-11-07 — one counter, for a person's command (ADR 0148)
+
+The owner decided on 2026-11-06 that the programme may hold **one** thing it
+writes into: the map `COUNTED`, through the program `counting`
+([ADR 0148](0148-the-kernel-counts-what-an-application-sends-during-a-persons-command.md)).
+It counts the bytes an application's own control groups send, **only while a
+person's command has asked for that application to be counted**, and only into
+an entry the desktop put there; the program never makes an entry, and reads no
+address, port, contents or process. Everything else in this section stands as
+written: a syscall outside a turn still leaves no trace, and a person's day
+outside a command they typed is still forgotten. The tests that hold this rule
+name `COUNTED` as the one exception, by name, and still refuse any other.
+
 ## Consequences
 
 - **A new crate**, and it is `alo-agentd`'s floor: everything it does happens

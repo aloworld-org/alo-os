@@ -677,6 +677,7 @@ dock.windows.footer	Choose a window · Escape returns to apps
 dock.windows.heading	{app} windows
 dock.windows.open	Open
 dock.windows.put-aside	Minimised
+egress.command.sending	{application} is sending, during your command
 egress.destination.nameless	say where this is going — an egress with nowhere named cannot be shown to anybody
 egress.destination.not-printable	the address contains a character that cannot be shown — the indicator has to be readable in one line
 egress.destination.nothing-leaves	an answer on this machine goes nowhere — ask whether the source causes egress before making a destination of it

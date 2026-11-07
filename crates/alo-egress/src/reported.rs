@@ -25,6 +25,7 @@ use alo_strings::{Said, Strings};
 use serde::{Deserialize, Serialize};
 
 use crate::destination::Destination;
+use crate::during::said_of_their_command;
 use crate::errand::Errand;
 use crate::indicator::Shown;
 use crate::itself::said_of_an_errand;
@@ -51,6 +52,16 @@ pub enum Reported {
         /// Where it is reaching.
         destination: Destination,
     },
+    /// An application sending while a person's own command runs (ADR 0148).
+    ///
+    /// No destination, because none is read; [`crate::DuringTheirCommand`]
+    /// says why.
+    TheirCommand {
+        /// The application, by the identifier its sandbox gives it.
+        application: String,
+        /// What a person calls it.
+        called: String,
+    },
 }
 
 impl Reported {
@@ -68,14 +79,20 @@ impl Reported {
                 errand: errand.errand(),
                 destination: errand.destination().clone(),
             },
+            Showing::TheirCommand(during) => Self::TheirCommand {
+                application: during.application().to_owned(),
+                called: during.called().to_owned(),
+            },
         }
     }
 
-    /// Where it is going.
+    /// Where it is going, when that is known — never for an application during
+    /// a person's command.
     #[must_use]
-    pub fn destination(&self) -> &Destination {
+    pub fn destination(&self) -> Option<&Destination> {
         match self {
-            Self::Agent { destination, .. } | Self::Itself { destination, .. } => destination,
+            Self::Agent { destination, .. } | Self::Itself { destination, .. } => Some(destination),
+            Self::TheirCommand { .. } => None,
         }
     }
 
@@ -93,6 +110,7 @@ impl Reported {
                 errand,
                 destination,
             } => said_of_an_errand(*errand, destination, strings),
+            Self::TheirCommand { called, .. } => said_of_their_command(called, strings),
         }
     }
 }
@@ -141,6 +159,11 @@ mod tests {
             ),
             noon(),
         );
+        let while_it_runs = indicator.beginning_during_their_command(
+            crate::DuringTheirCommand::of("org.mozilla.Thunderbird", "Thunderbird").unwrap(),
+            noon(),
+        );
+        assert_eq!(indicator.showing().len(), 3);
         for shown in indicator.showing() {
             assert_eq!(
                 Reported::of(shown).said(&strings).text(),
@@ -149,6 +172,29 @@ mod tests {
         }
         assert!(indicator.ended(departing));
         assert!(indicator.ended_on_its_own(underway));
+        assert!(indicator.ended_during_their_command(while_it_runs));
+        assert!(indicator.is_quiet());
+    }
+
+    /// **An application's line crosses the wire whole and names no place.**
+    #[test]
+    fn an_application_during_a_command_reads_back_with_no_destination() {
+        let line = Reported::TheirCommand {
+            application: "org.mozilla.Thunderbird".to_owned(),
+            called: "Thunderbird".to_owned(),
+        };
+        let written = serde_json::to_string(&line).unwrap();
+        assert_eq!(serde_json::from_str::<Reported>(&written).unwrap(), line);
+        assert_eq!(line.destination(), None);
+        assert_eq!(
+            line.said(&in_english()).text(),
+            "Thunderbird is sending, during your command"
+        );
+        let widened = written.replacen("\"called\"", "\"host\":\"x\",\"called\"", 1);
+        assert!(
+            serde_json::from_str::<Reported>(&widened).is_err(),
+            "{widened}"
+        );
     }
 
     /// **It survives the wire whole**, and an unknown field is refused rather

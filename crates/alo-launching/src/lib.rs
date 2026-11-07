@@ -53,5 +53,5 @@ pub use how_it_starts::{HowItStarts, WhyItCannotStart, how_it_starts};
 pub use the_command::{Filling, WhyNotACommand, the_command_in};
 pub use the_entry::TheEntry;
 pub use the_environment::{what_an_application_is_handed, what_the_session_is_told};
-pub use the_unit::the_unit_for;
+pub use the_unit::{is_a_unit_of, the_unit_for};
 pub use where_it_is::{the_program, where_the_entry_is};

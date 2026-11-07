@@ -11,6 +11,7 @@
 //! | [`kernel`] | The only file here that talks to the kernel, and the only one with `unsafe` in it |
 //! | [`deciding`] | What happens on an open, in ordinary Rust |
 //! | [`departing`] | What happens when a turn connects or sends, in ordinary Rust |
+//! | [`counting`] | What happens when a packet leaves a socket a person's command asked to count (ADR 0148) |
 //!
 //! # Why this is its own package
 //!
@@ -46,22 +47,29 @@
 //!
 //! ADR 0015's dangerous property is that a program on the security hooks sees
 //! everything by construction, and the discipline against it is that **the LSM
-//! decides and forgets**. There is no map of observations here, no counter, no
-//! ring buffer and no `bpf_printk`: an open outside a turn is looked up, missed,
-//! and allowed, and nothing anywhere is different afterwards.
+//! decides and forgets**. There is no map of observations here, no ring buffer
+//! and no `bpf_printk`: an open outside a turn is looked up, missed, and
+//! allowed, and nothing anywhere is different afterwards.
+//!
+//! **One counter, by the owner's decision** (ADR 0148): `COUNTED`, which the
+//! `counting` program adds a packet's length to only where the desktop made an
+//! entry for a control group a person's command asked about. It never makes an
+//! entry, so a packet from anybody nobody asked about leaves nothing behind.
 //!
 //! `alo-bounding`'s `tests/the_boundary_decides_and_forgets.rs` is what holds
 //! this to it, on a running kernel rather than in a paragraph: it counts the
 //! maps this program has, the entries in them, and the lines this kernel's trace
 //! buffer has been written, before and after ordinary programs spend a day
-//! opening files under the loaded program. A third map here is caught by name,
-//! and a `bpf_printk` on `file_open` by the count.
+//! opening files under the loaded program. A fourth map here is caught by name,
+//! an entry in `COUNTED` nobody made by the count of its entries, and a
+//! `bpf_printk` on `file_open` by the count of trace lines.
 
 #![no_std]
 #![no_main]
 #![deny(unsafe_code)]
 #![warn(missing_docs)]
 
+mod counting;
 mod deciding;
 mod departing;
 mod kernel;
