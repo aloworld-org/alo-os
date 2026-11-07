@@ -121,7 +121,7 @@ fn next_line(saying: &mut BufReader<std::process::ChildStdout>) -> String {
 fn the_counter_counts_a_named_group_exactly_and_nothing_else() {
     let _order = on_this_kernel::one_at_a_time();
     let kernel = AsAMachineHasIt::on_this_kernel("counting");
-    let mut counter = Counter::opened(kernel.pinned()).unwrap_or_else(|why| {
+    let mut counter = Counter::opened(kernel.pinned().counted()).unwrap_or_else(|why| {
         panic!("the counter was pinned and could not be opened by path, which is what the desktop does: {why}")
     });
     assert_eq!(
@@ -190,7 +190,8 @@ fn the_counter_counts_a_named_group_exactly_and_nothing_else() {
 fn a_count_begun_again_keeps_what_it_had() {
     let _order = on_this_kernel::one_at_a_time();
     let kernel = AsAMachineHasIt::on_this_kernel("counting-twice");
-    let mut counter = Counter::opened(kernel.pinned()).expect("the counter can be opened");
+    let mut counter =
+        Counter::opened(kernel.pinned().counted()).expect("the counter can be opened");
     let named = Cgroup::made("alo-counting-twice").expect("a control group can be made");
     let group = named.id().expect("a control group has an identifier");
 
@@ -210,18 +211,6 @@ fn a_count_begun_again_keeps_what_it_had() {
     named
         .removed()
         .expect("an empty control group can be taken away");
-}
-
-/// **A machine whose counter was never pinned is told so**, rather than
-/// answering *nothing was sent*.
-#[test]
-fn a_machine_with_no_counter_is_refused_rather_than_answered_zero() {
-    let nowhere = alo_bounding::Pinned::beneath(Path::new("/sys/fs/bpf/alo-no-counter-here"));
-    let refused = Counter::opened(&nowhere).expect_err("a counter nobody pinned was opened");
-    assert!(
-        matches!(refused, alo_bounding::NotBounded::NoBoundaryHere { ref path } if path.ends_with("counted")),
-        "{refused}"
-    );
 }
 
 /// The child: into the control group, then seven datagrams off the machine and

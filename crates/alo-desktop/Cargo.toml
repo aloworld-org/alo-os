@@ -86,8 +86,10 @@ alo-launching = { path = "../alo-launching" }
 # **The kernel's counter of what an application sends during a person's
 # command** (ADR 0148), opened by the pin `alo-boundaryd` made at boot. This
 # desktop holds the indicator that shows it, so it is the one that counts; it
-# writes one map it has permission on and loads nothing.
-alo-bounding = { path = "../alo-bounding" }
+# writes one map it has permission on and loads nothing. **`alo-counting` and
+# never `alo-bounding`**, whose build compiles the kernel half: see
+# `tests/the_desktop_is_built_without_the_agent_service.rs`.
+alo-counting = { path = "../alo-counting" }
 rustix = { workspace = true, features = ["process"] }
 # Where the icon one of them named actually is, by the icon theme rules.
 alo-icons = { path = "../alo-icons" }

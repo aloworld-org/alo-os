@@ -61,7 +61,7 @@ const LONGEST_LINE: usize = 64;
 /// The kernel's counter, as the desktop reaches it.
 ///
 /// A trait so this file is tested without a kernel; the desktop's own is
-/// `alo_bounding::Counter`. Every answer is a fact or a failure, and a failure
+/// `alo_counting::Counter`. Every answer is a fact or a failure, and a failure
 /// is never read as *nothing was sent*.
 pub trait CountsWhatIsSent {
     /// Begin counting `group`, or leave a count already running as it is.
@@ -312,7 +312,12 @@ impl CountingForCommands {
         command
             .groups
             .iter()
-            .map(|(group, from)| counter.so_far(*group).unwrap_or(*from).saturating_sub(*from))
+            .map(|(group, from)| {
+                counter
+                    .so_far(*group)
+                    .unwrap_or(*from)
+                    .saturating_sub(*from)
+            })
             .fold(0_u64, u64::saturating_add)
     }
 

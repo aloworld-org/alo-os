@@ -401,7 +401,7 @@
 mod bounding;
 mod btf;
 mod cgroup;
-mod counting;
+
 mod failing;
 mod fields;
 mod imposing;
@@ -416,10 +416,10 @@ mod waiting;
 #[cfg(test)]
 mod testing;
 
+pub use alo_counting::{Counter, NotCounted};
 pub use bounding::Boundary;
 pub use btf::{Member, Types};
 pub use cgroup::Cgroup;
-pub use counting::Counter;
 pub use failing::NotBounded;
 pub use fields::Offsets;
 pub use imposing::Imposed;

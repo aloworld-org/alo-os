@@ -98,7 +98,7 @@ const THE_FIELDS: &str = "fields";
 
 /// The map of what each counted control group has sent, which the person's
 /// desktop makes and ends entries in (ADR 0148).
-const THE_COUNTED: &str = "counted";
+const THE_COUNTED: &str = alo_counting::THE_PIN;
 
 /// The pinned link that holds the counter on the root of the control-group
 /// tree.
