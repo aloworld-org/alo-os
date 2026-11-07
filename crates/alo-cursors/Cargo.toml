@@ -16,5 +16,11 @@ alo-appearance = { path = "../alo-appearance" }
 alo-vector-shapes = { path = "../alo-vector-shapes" }
 cursor-icon = "1.2"
 
+# **Somebody else's reader**, so the XCursor files this crate writes are held to
+# libXcursor's rules rather than to this crate's own idea of them. Already in
+# the lock through `wayland-cursor`.
+[dev-dependencies]
+xcursor = "0.3"
+
 [lints]
 workspace = true

@@ -287,11 +287,20 @@ WORKDIR /alo-os
 # No `--target`: the host triple of this stage is the base's own, which is the
 # whole point of building here.
 RUN bash engines/pipewire-gstreamer/build.sh target/native-capture-plugin \
- && cargo build --release --package alo-shell --package alo-desktop --package alo-capture-remote --package alo-capture-provider \
+ && cargo build --release --package alo-shell --package alo-desktop --package alo-cursors --package alo-capture-remote --package alo-capture-provider \
  && test -x target/release/alo-compositor \
  && test -x target/release/alo-desktop \
  && test -x target/release/alo-capture-remote \
  && test -x target/release/alo-capture-provider
+
+# **alo's cursor theme, drawn here from the vector source the compositor draws
+# from** (`crates/alo-cursors`), for applications that draw their own pointer
+# rather than asking the compositor for a shape by name. Run, not stat-ed: the
+# theme in the image is what this command wrote, so a generator that cannot
+# start is a build that stops here.
+RUN target/release/alo-cursor-theme /build/cursor-theme/alo \
+ && test -s /build/cursor-theme/alo/index.theme \
+ && test -s /build/cursor-theme/alo/cursors/default
 
 FROM ${THE_BASE}
 
@@ -506,6 +515,10 @@ COPY --from=shell /alo-os/target/release/alo-capture-remote /usr/libexec/alo-cap
 COPY --from=shell /alo-os/target/release/alo-capture-provider /usr/libexec/alo-capture-provider
 COPY --from=shell /alo-os/target/native-capture-plugin/libgstpipewire.so /usr/lib/alo-capture-provider/gstreamer-1.0/libgstpipewire.so
 COPY engines/pipewire-gstreamer/COPYING /usr/share/licenses/alo-capture-provider/pipewire-gstreamer
+# The pointer for applications that bring their own cursor images: alo's theme,
+# written by `alo-cursor-theme` above, and named as the default below
+# (`image/usr/lib/environment.d/60-alo-cursor.conf`).
+COPY --from=shell /build/cursor-theme/alo/ /usr/share/icons/alo/
 
 # The converting service is in libexec for the same reason (ADR 0039): systemd
 # starts it when something knocks on its socket, and nobody runs it by hand.
@@ -1055,6 +1068,14 @@ COPY image/usr/share/pipewire/pipewire.conf.d/ /usr/share/pipewire/pipewire.conf
 COPY image/usr/share/pipewire/pipewire-pulse.conf.d/ /usr/share/pipewire/pipewire-pulse.conf.d/
 COPY image/usr/lib/sysusers.d/ /usr/lib/sysusers.d/
 COPY image/usr/lib/tmpfiles.d/ /usr/lib/tmpfiles.d/
+# **The cursor theme as a default the person can change**: `XCURSOR_THEME` and
+# `XCURSOR_SIZE` for every person's systemd manager, and so for every
+# application it starts. In `/usr/lib/environment.d` rather than pushed at
+# sign-in, because a person's own `~/.config/environment.d` is read after this
+# and wins.
+COPY image/usr/lib/environment.d/ /usr/lib/environment.d/
+# And what a program asking for the `default` cursor theme finds.
+COPY image/usr/share/icons/default/index.theme /usr/share/icons/default/index.theme
 # The greeter's PAM stack, which is what gives it a logind session and so a
 # seat. `/usr/lib/pam.d` and not `/etc/pam.d`: the base keeps its own
 # `systemd-run0` and `systemd-user` stacks there, `/usr` is what a bootc image

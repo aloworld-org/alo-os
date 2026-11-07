@@ -18,6 +18,9 @@
 //!   drawings themselves as SVG path data on a 32-unit box.
 //! - [`draw`] — one shape into a square of pixels: a `text/primary` navy shape,
 //!   a white keyline and a soft shadow, premultiplied.
+//! - [`theme`] and [`xcursor_file`] — the same drawings as an XCursor theme,
+//!   for applications that draw their own pointer; written at build time by
+//!   `alo-cursor-theme` and installed by the image.
 //! - [`measures`] — the logical size and the artwork's own measures, which a
 //!   caller passes through its display's scale ([`measures::pixels_at`]).
 //!
@@ -31,6 +34,8 @@ mod artwork_marks;
 pub mod drawing;
 pub mod measures;
 pub mod silhouette;
+pub mod theme;
+pub mod xcursor_file;
 
 pub use artwork::{Drawing, EVERY_SHAPE, drawing_for, has_its_own_drawing};
 pub use cursor_icon::CursorIcon;

@@ -706,6 +706,7 @@ dependencies = [
  "alo-appearance",
  "alo-vector-shapes",
  "cursor-icon",
+ "xcursor",
 ]
 
 [[package]]
@@ -1037,6 +1038,7 @@ dependencies = [
  "alo-accounts",
  "alo-appearance",
  "alo-converting",
+ "alo-cursors",
  "alo-entering",
  "alo-keeping",
  "alo-models",

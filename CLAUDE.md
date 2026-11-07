@@ -282,10 +282,17 @@ cannot demonstrate.
   application or device is reachable that a person has not granted.
   Grants are enumerated, visible where the person can find them,
   revocable, and they expire. There is no grant to `/`.
-- **Context is offered, never watched.** The focused window, the
+- **Context is offered, never watched, unless the person switches
+  watching on, knowing what it costs.** The focused window, the
   selection and the open document reach an agent only at the moment
-  of invocation, and only for that turn. A background reader is a bug
-  in this product, not a feature request.
+  of invocation, and only for that turn. A background reader the
+  person did not switch on is a bug in this product. One they did
+  switch on is named in Settings with what it reads and where that
+  goes, says so on screen while it watches, stops the moment it is
+  switched off, is never switched on by an agent, and feeds nothing to
+  an agent's turns (ADR 0146). *Until 2026-11-06 this forbade watching
+  even for a person who wanted it; the owner changed it for the AI
+  cursor.*
 - **Reads answer, changes wait.** A read runs inside the turn. Any
   change to the machine is proposed with a sentence describing it and
   waits for one approval. What a person approves is that sentence.
