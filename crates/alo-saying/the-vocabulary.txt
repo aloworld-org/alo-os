@@ -1679,7 +1679,7 @@ recounting.outcome.workspace-opened	the person at this machine opened a workspac
 remembering.level.a-link	{path} is a link to somewhere else, and this is read only as a real file, so this machine does not know how you want code run
 remembering.level.from-a-newer-alo-os	{path} was written by a newer alo OS than this one, so this machine does not know how you want code run
 remembering.level.no-such-level	{path} says {said}, which is not one of the three levels, so this machine does not know how you want code run
-remembering.level.not-a-terminal-answer	{path} says {said} for the terminal, which is neither asking-each-time nor at-full-trust, so this machine does not know how you want alo to act
+remembering.level.not-a-terminal-answer	{path} says {said} for the terminal, which is neither asking-each-time nor at-full-trust, so this machine does not know how you want code run, and alo in the terminal asks first
 remembering.level.not-read	{path} could not be read, so this machine does not know how you want code run
 remembering.level.not-the-shape	{path} is not the shape this file takes, so this machine does not know how you want code run
 remembering.level.not-written	{path} could not be written, so how code runs has not been changed

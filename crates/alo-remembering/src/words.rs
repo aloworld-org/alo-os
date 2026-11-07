@@ -178,7 +178,7 @@ pub const LEVEL_NOT_WRITTEN_DOWN: Word = Word::saying(
 pub const LEVEL_NOT_A_TERMINAL_ANSWER: Word = Word::saying(
     "remembering.level.not-a-terminal-answer",
     "{path} says {said} for the terminal, which is neither asking-each-time nor at-full-trust, so \
-     this machine does not know how you want alo to act",
+     this machine does not know how you want code run, and alo in the terminal asks first",
 )
 .noting(
     "{path} and {said} are both taken from the file exactly as written and are never translated, \
