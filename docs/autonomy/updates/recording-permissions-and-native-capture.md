@@ -1287,3 +1287,15 @@ acceptance measurement. The new byte-layout regression covers asymmetric
 channels, odd dimensions and malformed lengths; the complete existing software
 renderer pixel checks are added to dedicated optimized CI. Installed media
 verification of this change remains pending.
+
+The transport loop also writes its retained full-resolution frame again on
+every iteration, followed by a 33-millisecond sleep, even if the compositor
+has published nothing new. Delivery now tracks a publication generation and
+writes each captured frame once per consumer. Fresh captures with identical
+pixels still advance the generation. The worker retains only its current
+in-flight image beside the newest slot and continues checking source lifetime
+and authority while idle. Real socket regressions cover idle delivery,
+fresh identical captures and revocation with no new frame; further checks
+cover dropped intermediate images, generation wrap and the existing blocked
+writer and exact service-owner checks. CI and installed verification of this
+additional change are pending; no synchronization result is inferred from it.

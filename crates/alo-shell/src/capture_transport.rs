@@ -18,6 +18,15 @@ use std::{
 /// At most four authenticated or authenticating consumers for this desktop.
 const MAX_CONSUMERS: usize = 4;
 
+/// The frame's publication identity changes even when its pixels are identical.
+#[derive(Default)]
+struct Latest {
+    /// Equality, rather than ordering, makes counter wrap harmless.
+    generation: u64,
+    /// Only the newest published immutable storage is retained here.
+    pixels: Option<Arc<[u8]>>,
+}
+
 /// One lifetime-bound source, holding only its newest immutable frame.
 pub(super) struct Feed {
     /// The exact source identity and fixed caps presented to the native picker.
@@ -29,7 +38,7 @@ pub(super) struct Feed {
     /// No pixel copy occurs while nobody is consuming this source.
     consuming: AtomicUsize,
     /// A slow writer can retain at most one previous frame beside this slot.
-    frame: Mutex<Option<Arc<[u8]>>>,
+    frame: Mutex<Latest>,
 }
 
 impl Feed {
@@ -40,7 +49,7 @@ impl Feed {
             source,
             live: AtomicBool::new(true),
             consuming: AtomicUsize::new(0),
-            frame: Mutex::new(None),
+            frame: Mutex::new(Latest::default()),
         })
     }
     /// Refresh display text without waiting for catalogue serialization.
@@ -66,8 +75,24 @@ impl Feed {
         if self.wanted()
             && let Ok(mut frame) = self.frame.try_lock()
         {
-            *frame = Some(pixels);
+            frame.generation = frame.generation.wrapping_add(1);
+            frame.pixels = Some(pixels);
         }
+    }
+
+    /// Clone storage only when this consumer has not delivered its publication.
+    fn undelivered(&self, previous: Option<u64>) -> io::Result<Option<(u64, Arc<[u8]>)>> {
+        let frame = self
+            .frame
+            .lock()
+            .map_err(|_| io::Error::other("capture frame is unavailable"))?;
+        if previous == Some(frame.generation) {
+            return Ok(None);
+        }
+        Ok(frame
+            .pixels
+            .as_ref()
+            .map(|pixels| (frame.generation, pixels.clone())))
     }
     /// Invalidate this identity before a replacement source is published.
     pub(super) fn stop(&self) {
@@ -219,7 +244,7 @@ fn serve(mut stream: UnixStream, shared: &Shared) -> io::Result<()> {
         },
     )?;
     let mut checked = std::time::Instant::now();
-    let mut sharing = || {
+    let sharing = || {
         if shared.stopped.load(Ordering::Acquire) || !feed.live.load(Ordering::Acquire) {
             return false;
         }
@@ -231,14 +256,20 @@ fn serve(mut stream: UnixStream, shared: &Shared) -> io::Result<()> {
         }
         true
     };
+    deliver_frames(feed, &mut stream, sharing)
+}
+
+/// Poll authority even while idle; do not resend a stale full-resolution frame.
+fn deliver_frames(
+    feed: &Feed,
+    stream: &mut UnixStream,
+    mut sharing: impl FnMut() -> bool,
+) -> io::Result<()> {
+    let mut previous = None;
     while sharing() {
-        let frame = feed
-            .frame
-            .lock()
-            .map_err(|_| io::Error::other("capture frame is unavailable"))?
-            .clone();
-        if let Some(frame) = frame {
-            super::capture_delivery::write_frame(&mut stream, &frame, &mut sharing)?;
+        if let Some((generation, frame)) = feed.undelivered(previous)? {
+            super::capture_delivery::write_frame(stream, &frame, &mut sharing)?;
+            previous = Some(generation);
         }
         std::thread::sleep(Duration::from_millis(33));
     }
@@ -264,20 +295,20 @@ mod tests {
             height: 1,
         });
         feed.publish(Arc::from([1, 2, 3, 0]));
-        assert!(feed.frame.lock().unwrap().is_none());
+        assert!(feed.frame.lock().unwrap().pixels.is_none());
         feed.consuming.store(1, Ordering::Release);
         for red in 0..100 {
             feed.publish(Arc::from([0, 0, red, 0]));
         }
         assert_eq!(
-            feed.frame.lock().unwrap().as_deref(),
+            feed.frame.lock().unwrap().pixels.as_deref(),
             Some([0, 0, 99, 0].as_slice())
         );
         feed.stop();
         assert!(!feed.wanted());
         feed.publish(Arc::from([255; 4]));
         assert_eq!(
-            feed.frame.lock().unwrap().as_deref(),
+            feed.frame.lock().unwrap().pixels.as_deref(),
             Some([0, 0, 99, 0].as_slice())
         );
     }
@@ -301,8 +332,97 @@ mod tests {
             sent.send(()).unwrap();
         });
         assert!(received.recv_timeout(Duration::from_secs(1)).is_ok());
-        assert!(locked.is_none());
+        assert!(locked.pixels.is_none());
         drop(locked);
         worker.join().unwrap();
+    }
+
+    /// A real socket stays idle between captures, delivers fresh identical pixels,
+    /// and closes promptly when sharing ends without another publication.
+    #[test]
+    fn only_new_publications_cross_the_socket_and_idle_revocation_still_runs() {
+        use std::io::Read;
+        let feed = Feed::new(Source {
+            id: "generation-3".into(),
+            name: "screen".into(),
+            kind: alo_capture_protocol::SourceKind::Monitor,
+            width: 1,
+            height: 1,
+        });
+        feed.consuming.store(1, Ordering::Release);
+        feed.publish(Arc::from([1, 2, 3, 0]));
+        let (mut writer, mut reader) = UnixStream::pair().unwrap();
+        reader
+            .set_read_timeout(Some(Duration::from_secs(2)))
+            .unwrap();
+        let live = Arc::new(AtomicBool::new(true));
+        let sharing = live.clone();
+        let sending = feed.clone();
+        let worker = std::thread::spawn(move || {
+            deliver_frames(&sending, &mut writer, || sharing.load(Ordering::Acquire)).unwrap()
+        });
+        let mut pixels = [0; 4];
+        reader.read_exact(&mut pixels).unwrap();
+        assert_eq!(pixels, [1, 2, 3, 0]);
+        reader
+            .set_read_timeout(Some(Duration::from_millis(200)))
+            .unwrap();
+        let error = reader.read(&mut [0]).unwrap_err();
+        assert!(matches!(
+            error.kind(),
+            io::ErrorKind::WouldBlock | io::ErrorKind::TimedOut
+        ));
+        feed.publish(Arc::from([1, 2, 3, 0]));
+        reader
+            .set_read_timeout(Some(Duration::from_secs(2)))
+            .unwrap();
+        reader.read_exact(&mut pixels).unwrap();
+        assert_eq!(pixels, [1, 2, 3, 0]);
+        live.store(false, Ordering::Release);
+        assert_eq!(reader.read(&mut [0]).unwrap(), 0);
+        worker.join().unwrap();
+    }
+
+    /// The slow consumer has one in-flight image; intervening images are dropped.
+    #[test]
+    fn publication_tracking_retains_no_previous_frame_beside_the_inflight_one() {
+        let feed = Feed::new(Source {
+            id: "generation-4".into(),
+            name: "screen".into(),
+            kind: alo_capture_protocol::SourceKind::Monitor,
+            width: 1,
+            height: 1,
+        });
+        feed.consuming.store(1, Ordering::Release);
+        feed.publish(Arc::from([1; 4]));
+        let (generation, inflight) = feed.undelivered(None).unwrap().unwrap();
+        let first = Arc::downgrade(&inflight);
+        let middle: Arc<[u8]> = Arc::from([2; 4]);
+        let discarded = Arc::downgrade(&middle);
+        feed.publish(middle);
+        feed.publish(Arc::from([3; 4]));
+        assert!(discarded.upgrade().is_none());
+        let (_, latest) = feed.undelivered(Some(generation)).unwrap().unwrap();
+        assert_eq!(&*latest, &[3; 4]);
+        drop(inflight);
+        assert!(first.upgrade().is_none());
+    }
+
+    /// A wrapping counter still makes the next capture distinct.
+    #[test]
+    fn a_wrapping_generation_does_not_hide_the_next_frame() {
+        let feed = Feed::new(Source {
+            id: "generation-5".into(),
+            name: "screen".into(),
+            kind: alo_capture_protocol::SourceKind::Monitor,
+            width: 1,
+            height: 1,
+        });
+        feed.consuming.store(1, Ordering::Release);
+        feed.frame.lock().unwrap().generation = u64::MAX;
+        feed.publish(Arc::from([4; 4]));
+        let (generation, pixels) = feed.undelivered(Some(u64::MAX)).unwrap().unwrap();
+        assert_eq!(generation, 0);
+        assert_eq!(&*pixels, &[4; 4]);
     }
 }
