@@ -682,7 +682,9 @@ fn reduced_motion_turns_on_and_off_and_keeps_the_rest_of_the_file() {
     // Something the person turned on some other way, which must survive.
     let mut before = alo_access::TurnedOn::nothing();
     before.turn_on(Setting::HighContrast);
-    alo_access::keeping::keep(&at, &before).unwrap();
+    let folder = at.parent().unwrap().to_path_buf();
+    std::fs::create_dir_all(&folder).unwrap();
+    alo_access::keeping::keep(&folder, &before).unwrap();
     let strings = words();
     let door = CountingDoor::revoking();
     let mut window = machine.opened();
@@ -700,7 +702,11 @@ fn reduced_motion_turns_on_and_off_and_keeps_the_rest_of_the_file() {
             ))
         );
         assert_eq!(window.motion_is_reduced(), Some(expected));
-        let read_back = alo_access::keeping::read(&at).unwrap();
+        let read_back = alo_access::keeping::read(&folder).unwrap();
+        assert!(
+            at.exists(),
+            "it was not kept in access.toml, where sign-in reads it"
+        );
         assert_eq!(
             read_back.has(Setting::ReducedMotion),
             expected,
@@ -723,6 +729,7 @@ fn reduced_motion_turns_on_and_off_and_keeps_the_rest_of_the_file() {
 fn a_broken_access_file_is_said_and_not_written_over() {
     let machine = a_persons_machine("access-broken");
     let at = machine.kept(alo_access::keeping::THE_FILE);
+    std::fs::create_dir_all(at.parent().unwrap()).unwrap();
     std::fs::write(&at, "this is not = [ settings").unwrap();
     let window = machine.opened();
     let open = window.open().unwrap();
