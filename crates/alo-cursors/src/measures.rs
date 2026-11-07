@@ -41,6 +41,14 @@ pub const SHADOW_OPACITY: u8 = 77;
 /// surface in the shell has it (`crates/alo-shell/src/a_window_raised.rs`).
 pub const SHADOW_COLOUR: [u8; 3] = [0x07, 0x13, 0x1F];
 
+/// How many logical pixels across the pointer is at the size a person chose:
+/// 24 as it ships, 36 or 48 larger. What `XCURSOR_SIZE` and the Settings
+/// portal's `cursor-size` say.
+#[must_use]
+pub const fn logical_pixels(size: alo_appearance::PointerSize) -> u32 {
+    LOGICAL_SIZE * size.per_cent() as u32 / 100
+}
+
 /// How many pixels a box drawn at `per_cent` is: [`LOGICAL_SIZE`] through the
 /// display's scale, rounded to the nearest pixel and never below one.
 ///

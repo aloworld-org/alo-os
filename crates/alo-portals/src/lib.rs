@@ -168,7 +168,9 @@ pub use answered::{Answered, Outcome, Unanswered};
 pub use answers_file::{AnswersFile, ReadBack, WHERE_IT_USED_TO_BE};
 #[cfg(unix)]
 pub use answers_head::THE_ANSWERS_FORMAT;
-pub use appearance_settings::{Setting, THE_NAMESPACE, Value, Values};
+pub use appearance_settings::{
+    Setting, THE_INTERFACE_NAMESPACE, THE_NAMESPACE, THE_NAMESPACES, Value, Values,
+};
 pub use handle::{NotAToken, THE_PORTALS_OBJECT, handle_for};
 #[cfg(target_os = "linux")]
 pub use held_process::HeldProcess;
