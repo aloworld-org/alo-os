@@ -63,7 +63,7 @@ pub(crate) fn attach(
     let bin = gst::parse::bin_from_description(&format!(
         "queue name=record-entry max-size-buffers=2 max-size-bytes=0 max-size-time=0 ! capsfilter name=record-format ! videorate skip-to-first=true drop-only=true ! videoscale ! videoconvert ! capsfilter name=size \
          ! queue name=record-buffer max-size-time=0 max-size-bytes=134217728 max-size-buffers=60 ! {video_encoding} \
-         ! queue ! webmmux name=container offset-to-zero=true ! filesink name=output async=false {audio}"
+         ! queue ! webmmux name=container offset-to-zero=true timecodescale=1000000 ! filesink name=output async=false {audio}"
     ), true).map_err(failed)?;
     let by_name = |name| {
         bin.by_name(name).ok_or_else(|| {
@@ -73,6 +73,7 @@ pub(crate) fn attach(
             ))
         })
     };
+    crate::recording_order::prepare(&by_name("encoder")?)?;
     #[cfg(feature = "verification")]
     if let Some(source) = bin.by_name("microphone")
         && generated_audio

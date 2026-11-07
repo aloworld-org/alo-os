@@ -11,18 +11,19 @@ typed agent actions are implemented. The installed Flatpak is source
 `adcd8bef984e9810de175cfa735dcd77f9cda2a0ed373854c8653533b5777793`.
 Dedicated native CI covers formatting, Clippy, 28 application tests, the real
 GTK recording flow and the pinned native publisher cases. The latest installed
-repeat uses desktop `0b3dc75a`, with native, optimized desktop, strict and full
+repeat uses desktop `34d37b4e`, with native, optimized desktop, strict and full
 OS checks passing. Both screen and window/microphone flows complete recording,
 stable five-second pause, resume, naming, library review and exact-file export.
-Screen video measures 2.669 fps with a 1.159-second uncovered gap; window video
-measures 1.349 fps with a 2.338-second gap. Window PCM is audible with a maximum
-20 ms uncovered gap, and track endings differ by 39 ms. The independent reference fails, and
-visual marker matches are insufficient, so synchronization remains unverified.
+Screen video measures 3.736 fps with a 0.709-second uncovered gap; window video
+measures 2.535 fps with a 0.966-second gap and one repeated timestamp. Window
+PCM is audible without meaningful uncovered gaps, and track endings differ by
+77 ms. Both reference checks pass, but visual marker matches are insufficient,
+so synchronization remains unverified.
 These are one-time installed measurements, preserved below. Neither video
 passes the unchanged 5 fps continuity requirement.
 
-This desktop reuses bounded, detached CPU scratch images in software
-desktop painters. Its checks pass, but its installed media still fails. Studio's
+This desktop retains private display-buffer mappings and reuses bounded,
+detached CPU scratch images. Its checks pass, but its installed media still fails. Studio's
 application source is unchanged from the installed package. The agent permission walk
 separately verifies live discovery, one approved execution, immediate revocation
 and refusal; other applications must expose their own typed adapters.
@@ -1749,9 +1750,30 @@ overflow refusal and exact software-rendered indicator pixels, including output
 clipping. Validation and the installed recording repeat are pending.
 
 At `a29f347c`, the native application check, optimized desktop regressions and
-strict desktop checks pass. The full OS gate and installed repeat are pending.
+strict desktop checks pass. Its installed repeat is recorded below.
 The first candidate is refused by Clippy's fixed-size-chunk rule; the correction
 uses `as_chunks_mut::<4>()` and does not suppress the check.
+
+Its subsequent one-time installed repeat completes both control flows and exact
+native exports under the shared Cargo lock, with no competing job paused.
+The verification reservation runs from 12:28:23 to 12:45:07 UTC on 7 November
+2026, including a wait for another formatter before acquisition. No compiler
+runs during recording. Screen clip `1794054877-879342217-2`, SHA-256
+`bbf389a3e31a8a37c5eeffe81dbdb5ddef0378d352d688ff986d7282721b1eac`,
+decodes to 60 frames (55 globally unique images), 2.593 measured fps and a
+2.102-second uncovered video gap. Export `Product demonstration 25.webm` has
+document grant `5f3c5d0d`.
+
+Window clip `1794055291-302898550-2`, SHA-256
+`d0ab25d50b4af43dcb8f15d29820a46416d3772686ac37341bea60ee531d9257`,
+decodes to 53 distinct video frames, 1.386 fps and a 1.892-second uncovered video
+gap. Its audio is audible, decodes to 38.260 seconds of PCM with no meaningful
+gaps or overlap, and ends 125 ms after video. The independent reference passes
+after the idle recheck (10.395-second delivery span, ten seconds of PCM, seven
+pulses), but only three video markers match; synchronization is unverified.
+Export `Product demonstration 26.webm` has grant `fdf33904`. These results do not
+establish a video-quality improvement. Evidence is in `installed-native-ink-screen`
+and `installed-native-ink-window`; restoration is in `installed-native-ink-cleanup`.
 
 ### Display mapping lifetime candidate
 
@@ -1785,3 +1807,67 @@ until descriptor teardown. No owned pointer or mapping escapes its callback.
 Regression checks cover single admission across repeated uploads, exact byte
 writes, mapping refusal without upload, and exactly-once mapping retirement
 after an upload refusal. CI, installed capture and the fault recheck are pending.
+
+### Installed retained-mapping repeat
+
+All four checks pass at desktop `34d37b4e`: native application recording,
+optimized desktop regressions, strict checks and the full OS gate. The installed
+executable SHA-256 is
+`4f5c5b8ffbacae7b451b25d611df6093763f82c022c524bdf92c9824bcc81068`.
+The person-approved pause stops the other validation's Cargo test compilation
+and four compiler children before any test executable starts. Each process is
+checked by start identity and resumed after cleanup, from 12:46:52 to 12:56:13
+UTC on 7 November 2026. Its original owner retains the shared build lock; the
+twenty-minute resumption safeguard does not fire. The process snapshot and
+resumption proof are in `installed-retained-mapping-validation`.
+
+Screen clip `1794055757-99418837-2`, SHA-256
+`92e3ae8062efc1b70a095a41396e0b3159f8b4597df8179ef127cbf46c9ec282`,
+has 78 decoded frames, 63 globally unique images, 3.736 measured fps and a
+0.709-second uncovered gap. Export `Product demonstration 27.webm` has grant
+`6cbefd39`. Window clip `1794056012-848234452-2`, SHA-256
+`99f41be33831ffa344f12ccd1297b4e10cdfc28302bc2db255fd94056da6f357`,
+has 90 decoded frames, 89 globally unique images, 2.535 fps and a 0.966-second
+gap. One decoded video timestamp repeats near resume. Its 35.700 seconds of
+audible PCM have no meaningful gaps or overlap; track endings differ by 77 ms.
+Both independent reference checks pass (10.176 and 10.190 seconds of delivery
+for ten seconds of PCM, six pulses each). Six visual/audio matches are still
+insufficient to establish synchronization. Export `Product demonstration
+28.webm` has grant `e3d475e0`.
+
+Both complete controls, stable five-second pause, correct microphone states,
+review, naming, library navigation and exact native export. Both fail unchanged
+video continuity requirements. Window media also fails monotonic timestamps
+and synchronization. These are one-time installed observations in
+`installed-retained-mapping-screen` and `installed-retained-mapping-window`,
+not a paired performance comparison or demo-quality acceptance.
+
+After cleanup and compiler resumption, two concurrent passive diagnostics sample
+the normal ready desktop. A 20.085-second minor-fault sample receives no mapping
+notifications and no sampled DRM faults: 232 samples resolve to heap, 95 to
+anonymous memory and two to stack. This supports removal of the remapping
+mechanism without claiming zero unsampled faults. A 20.082-second user-CPU
+sample records 1,146 instruction pointers: 528 in pixman, 440 in the desktop,
+and 172 in libc. Desktop symbols include 116 readback-copy samples, 47 artwork
+scaling samples and 37 native-ink upload samples. Neither loses records; both
+close their sampling descriptors afterward. These locate remaining costs and
+are not quiet-host timing measurements. Evidence is in
+`diagnostic-retained-mapping-page-faults` and `diagnostic-retained-mapping-cpu`.
+
+### Recording timestamp admission and bulk-copy follow-up
+
+Incoming video receives the pipeline's current arrival time. A stopped or
+slowly advancing sample clock can stamp multiple arriving frames at the same
+time, including after resume. The new recording-local admission guard remains
+installed before the encoder across pause/resume. It refuses missing, repeated,
+backward or sub-millisecond advances. A new recording starts with a fresh guard.
+It never moves accepted timestamps, changes duration, pads video or creates
+duplicate frames. The muxer explicitly selects its existing one-millisecond
+timecode scale. Regressions exercise a stopped/rewound clock and pass adversarial
+timestamp bursts through VP8, WebM muxing and actual decoding.
+
+The software readback follow-up preserves the existing validated BGR layout,
+copies native channel bytes in bulk and clears only the unused fourth byte.
+It retains fallible allocation and malformed-layout refusal. Existing readback
+and actual software-renderer pixel tests cover its byte contract. Both follow-up
+changes still require validation and another normally installed recording walk.

@@ -177,18 +177,18 @@ pub(crate) fn copy_xrgb(size: (u32, u32), bgrx: &[u8]) -> Result<ScanoutPixels, 
     if bgrx.len() != length {
         return Err(ReadbackError::Layout);
     }
-    let mut pixels: Vec<[u8; 4]> = Vec::new();
-    pixels.try_reserve_exact(length / 4)?;
-    pixels.extend(
-        bgrx.as_chunks::<4>()
-            .0
-            .iter()
-            .map(|pixel| (u32::from_le_bytes(*pixel) & 0x00ff_ffff).to_le_bytes()),
-    );
+    let mut pixels = Vec::new();
+    pixels.try_reserve_exact(length)?;
+    // The channels already match scanout. Let the bulk copy handle them, then
+    // clear only X rather than rebuilding an owned four-byte pixel at a time.
+    pixels.extend_from_slice(bgrx);
+    for unused in pixels.iter_mut().skip(3).step_by(4) {
+        *unused = 0;
+    }
     Ok(ScanoutPixels {
         size,
         stride,
-        pixels: pixels.into_flattened(),
+        pixels,
     })
 }
 
