@@ -14,7 +14,7 @@ use super::AnOpening;
 use crate::Server;
 
 /// A server on a socket of its own.
-fn server(named: &str) -> (tempfile::TempDir, Server) {
+fn a_server(named: &str) -> (tempfile::TempDir, Server) {
     let directory = tempfile::tempdir().expect("a private directory");
     std::fs::set_permissions(directory.path(), std::fs::Permissions::from_mode(0o700))
         .expect("a private runtime directory");
@@ -50,7 +50,7 @@ fn opening<'a>(
 /// **A full view, the default: empty space, and the view glides there.**
 #[test]
 fn a_full_view_finds_empty_space_and_the_view_glides() {
-    let (_directory, mut server) = server("full-glides");
+    let (_directory, mut server) = a_server("full-glides");
     let (view, open, first) = a_full_view();
     let at = server.room_for_what_the_person_opened(first, &opening(view, &open), Instant::now());
     let window = Rectangle::new(at, Size::from((640, 480)));
@@ -65,7 +65,7 @@ fn a_full_view_finds_empty_space_and_the_view_glides() {
 /// front* chosen, and a view with room.
 #[test]
 fn open_in_front_or_room_in_view_keeps_the_first_answer() {
-    let (_directory, mut server) = server("in-front");
+    let (_in_front, mut server) = a_server("in-front");
     server.when_there_is_no_room_is(alo_appearance::WhenThereIsNoRoom::OpenInFront);
     let (view, open, first) = a_full_view();
     assert_eq!(
@@ -74,7 +74,7 @@ fn open_in_front_or_room_in_view_keeps_the_first_answer() {
     );
     assert!(!server.the_view_is_gliding());
 
-    let (_directory, mut roomy) = server("roomy");
+    let (_roomy, mut roomy) = a_server("roomy");
     assert_eq!(
         roomy.room_for_what_the_person_opened(first, &opening(view, &[]), Instant::now()),
         first,
@@ -86,7 +86,7 @@ fn open_in_front_or_room_in_view_keeps_the_first_answer() {
 /// **Less motion asked for: the view jumps** to the space.
 #[test]
 fn with_reduced_motion_the_view_jumps() {
-    let (_directory, mut server) = server("full-jumps");
+    let (_directory, mut server) = a_server("full-jumps");
     server.the_motion_is_reduced(true);
     let (view, open, first) = a_full_view();
     let at = server.room_for_what_the_person_opened(first, &opening(view, &open), Instant::now());
