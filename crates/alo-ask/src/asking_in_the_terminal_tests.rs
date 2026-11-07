@@ -32,12 +32,34 @@ fn a_terminal() -> (std::fs::File, std::fs::File) {
     (std::fs::File::from(far), near)
 }
 
-/// The person presses `typed`, and the question is asked.
-fn pressing(typed: &[u8]) -> TheirAnswer {
+/// The person presses `typed` **once the question is being asked**, and what
+/// they answered.
+///
+/// **Not before**, as this did until 2026-11-07, which failed one gate run in
+/// several: a Ctrl-C or Ctrl-D typed while the terminal is still in its
+/// ordinary line mode is taken by the terminal itself — a signal, an end of
+/// line — and never reaches the program, so the question waited out its time.
+/// A person presses the key after the prompt, so the key is sent once the
+/// terminal has been put into one-key mode, read off the terminal itself.
+fn pressing(typed: &'static [u8]) -> TheirAnswer {
     let (mut person, near) = a_terminal();
-    person.write_all(typed).expect("the key goes in");
+    let watching = near.try_clone().expect("the terminal can be watched");
+    let typing = std::thread::spawn(move || {
+        for _ in 0..500 {
+            let one_key = rustix::termios::tcgetattr(&watching)
+                .is_ok_and(|modes| !modes.local_modes.contains(LocalModes::ICANON));
+            if one_key {
+                break;
+            }
+            std::thread::sleep(Duration::from_millis(10));
+        }
+        person.write_all(typed).expect("the key goes in");
+        person
+    });
     let mut told = Vec::new();
-    asked_at(near.as_fd(), PROMPT, &mut told, Duration::from_secs(5))
+    let answer = asked_at(near.as_fd(), PROMPT, &mut told, Duration::from_secs(10));
+    drop(typing.join());
+    answer
 }
 
 /// **Only `y` is yes.**
