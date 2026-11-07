@@ -48,8 +48,10 @@ fn malformed_or_unaligned_destinations_are_refused_before_the_engine_copy()
             Err(RenderError::Readback(ReadbackError::Layout))
         ));
     }
-    let mut storage = vec![0; 28];
-    let unaligned = storage
+    let mut storage = [0u32; 7];
+    let bytes = bytemuck::try_cast_slice_mut::<u32, u8>(&mut storage)
+        .map_err(|_| "missing aligned test byte view")?;
+    let unaligned = bytes
         .get_mut(1..25)
         .ok_or("missing unaligned test region")?;
     assert!(matches!(
