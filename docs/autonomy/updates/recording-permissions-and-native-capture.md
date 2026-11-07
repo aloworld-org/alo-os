@@ -1189,3 +1189,40 @@ the silence generator's GAP flag after replacing its payload, and computes
 visual phase when actually drawing. The independent reference must pass
 before synchronization is accepted. No saved recording is repaired or padded
 to manufacture a pass, and production queue limits remain unchanged.
+
+### Installed scanout-memory repeat and glyph rendering
+
+The verified `745b67e3` desktop is installed with no host compiler active.
+The background application installer is stopped cleanly for measurement and
+scheduled to restart during cleanup. Window/microphone clip
+`1794017448-201333090-2` completes recording, a five-second pause with exactly
+stable elapsed time and microphone off, Resume, and Finish. Its 152 decoded
+video buffers average 3.782 fps at the selected 5 fps and have a 0.807-second
+uncovered gap. Its 41.400 seconds of PCM have a largest gap of 20 milliseconds;
+the track endings differ by 144 milliseconds. The independent audio reference
+fails delivery timing even after one audio-graph restart, and only two visual
+flashes can be matched. Synchronization is not accepted. SHA-256 is
+`e68706a468f65190410133ed93a36aa30366812d3ce9c43a8066ae9706debc2b`.
+
+Screen clip `1794017786-118732295-2` completes recording, the same stable
+pause, Resume, and Finish. It contains exactly one video track and no audio
+track. Its 40 buffers average 1.387 fps and have a 3.964-second uncovered gap;
+SHA-256 is
+`7a3146239dfa5a700c3824e6bfa60b3fc2191a83163a35d8c9eac8275d23b4f0`.
+The earlier native window export remains pending after its accessibility
+timeout, so the screen flow's export is correctly refused as busy. Neither
+export is credited as complete. A screenshot shows the native Save dialog
+extending beyond the VM display. Exact saved-media and control evidence are
+in `installed-scanout-memory-window` and `installed-scanout-memory-screen`.
+
+Separate 16-sample profiles outside recording acceptance show text shaping,
+glyph rasterization and native painting among the remaining costs. A deeper
+stack identifies `painted_text::inked` through both Dock labels and status-row
+sentences. That function creates a new `SwashCache` for every draw, discarding
+the same glyph images between frames. The next change retains glyph images
+per renderer thread, bounded by 4,096 entries, 16 MiB of image allocations and
+32 face references. It compares actual font owners before reuse because font
+IDs alone are local to a database. Regressions check exact fresh/reused output,
+colliding IDs from different databases, and release of excessive pixel storage
+and missing-glyph entries. CI and installed media verification of this change
+are pending; no performance acceptance is inferred from the sampled stacks.

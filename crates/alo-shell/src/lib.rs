@@ -503,6 +503,7 @@ pub mod task_raster;
 pub mod task_text;
 /// Task windows on the canvas: where they meet a screen (ADR 0145).
 mod task_windows_on_the_plane;
+mod text_glyph_cache;
 pub mod the_application_door;
 pub mod the_application_doors_place;
 /// The approval card's layout, measured off the approved frame.
