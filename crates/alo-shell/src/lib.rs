@@ -252,6 +252,8 @@ pub use what_the_machine_offers_now::{AnApplicationHere, WhatTheMachineOffersNow
 mod a_chord_goes_round_every_window;
 /// A press on Settings reaching Settings.
 mod a_click_reaches_settings;
+/// One rule for every window a person opens into a full view.
+mod a_full_view_finds_room;
 /// A press on a task window's one button: Stop (ADR 0139).
 mod a_press_on_the_one_button;
 /// A window of alo's laid out in a room of its own, seen through the camera.
@@ -524,12 +526,10 @@ mod the_egress_indicators_arrows;
 mod the_first_account;
 /// The nearest empty space on a Place for a window with no room in view.
 mod the_nearest_empty_space;
-/// One rule for every window a person opens into a full view.
-mod a_full_view_finds_room;
-/// Task windows opened into a full view find room as other windows do.
-mod the_task_windows_find_room;
 /// The record drawn as a window on the canvas, for one frame.
 mod the_record_drawn_on_the_canvas;
+/// Task windows opened into a full view find room as other windows do.
+mod the_task_windows_find_room;
 /// The view gliding, or jumping where less motion was asked for.
 mod the_view_glides;
 /// The view travelling to a window of alo's rather than the window moving.
