@@ -23,7 +23,7 @@
 //! |---|---|---|---|
 //! | appearance | `color-scheme` | `u` | [`Appearance::scheme_at`]: `1` dark, `2` light |
 //! | appearance | `accent-color` | `(ddd)` | [`Appearance::accent_at`], each channel from 0 to 1 |
-//! | interface | `cursor-theme` | `s` | [`Appearance::pointer_shape`], as the name of alo's cursor theme with that arrow |
+//! | interface | `cursor-theme` | `s` | [`Appearance::pointer_shape`] and [`Appearance::pointer_colour`], as the name of alo's cursor theme with that arrow in that colour |
 //! | interface | `cursor-size` | `i` | [`Appearance::pointer_size`], in logical pixels: 24, 36 or 48 |
 //!
 //! Both are resolved **at the moment of asking**, at the time of day the
@@ -121,8 +121,9 @@ impl Setting {
         match self {
             Self::ColorScheme => Value::ColorScheme(appearance.scheme_at(now)),
             Self::AccentColor => Value::AccentColor(appearance.accent_at(now)),
-            Self::CursorTheme => Value::CursorTheme(alo_cursors::theme::the_name_of(
+            Self::CursorTheme => Value::CursorTheme(alo_cursors::theme::the_name_for(
                 appearance.pointer_shape().into(),
+                appearance.pointer_colour(),
             )),
             Self::CursorSize => Value::CursorSize(
                 i32::try_from(alo_cursors::measures::logical_pixels(
@@ -422,13 +423,17 @@ mod tests {
         let mut chose = appearance.clone();
         chose.set_pointer_shape(alo_appearance::PointerShape::Classic);
         chose.set_pointer_size(alo_appearance::PointerSize::Larger);
+        chose.set_pointer_colour(alo_appearance::PointerColour::Black);
         let machine = AMachine {
             appearance: Some(chose),
             time: Some(TimeOfDay::checked(9, 0).unwrap()),
             ..AMachine::default()
         };
         let values = read(&machine).unwrap();
-        assert!(values.contains(&(Setting::CursorTheme, Value::CursorTheme("alo-classic"))));
+        assert!(values.contains(&(
+            Setting::CursorTheme,
+            Value::CursorTheme("alo-classic-black")
+        )));
         assert!(values.contains(&(Setting::CursorSize, Value::CursorSize(48))));
         assert_eq!(Value::color_scheme(Scheme::Dark), 1);
         assert_eq!(Value::color_scheme(Scheme::Light), 2);

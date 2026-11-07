@@ -32,6 +32,7 @@ mod artwork_arrows;
 mod artwork_hands;
 mod artwork_marks;
 pub mod drawing;
+pub mod inks;
 pub mod measures;
 pub mod silhouette;
 pub mod theme;
@@ -39,5 +40,5 @@ pub mod xcursor_file;
 
 pub use artwork::{Drawing, EVERY_SHAPE, drawing_for, has_its_own_drawing};
 pub use cursor_icon::CursorIcon;
-pub use drawing::{LARGEST, NotDrawn, Picture, draw};
+pub use drawing::{LARGEST, NotDrawn, Picture, draw, draw_in};
 pub use silhouette::Silhouette;

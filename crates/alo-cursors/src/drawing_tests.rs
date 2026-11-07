@@ -131,14 +131,19 @@ fn the_fill_is_navy_the_keyline_white_and_the_shadow_below() {
 }
 
 /// **Deep teal is the agent's, never the person's pointer** (ADR 0067). No
-/// solid pixel of any shape is anywhere near `accent/default`.
+/// solid pixel of any shape, in any colour the person may choose, is anywhere
+/// near `accent/default`.
 #[test]
 fn the_persons_pointer_is_never_the_agents_colour() {
     let teal = Role::AccentDefault.colour();
     let teal = [teal.red(), teal.green(), teal.blue()].map(i32::from);
     for icon in EVERY_SHAPE {
-        for silhouette in Silhouette::ALL {
-            let picture = drawn(icon, silhouette, 48);
+        for (silhouette, colour) in Silhouette::ALL
+            .into_iter()
+            .flat_map(|s| alo_appearance::PointerColour::ALL.map(|c| (s, c)))
+        {
+            let picture =
+                draw_in(icon, silhouette, colour, 48).unwrap_or_else(|why| unreachable!("{why}"));
             for pixel in picture.pixels.chunks(4) {
                 if let [red, green, blue, 255] = pixel {
                     let distance: i32 = [*red, *green, *blue]
@@ -230,4 +235,38 @@ fn a_size_that_cannot_be_drawn_is_refused() {
         Err(NotDrawn::TooLarge(u32::MAX))
     );
     assert!(draw(CursorIcon::Default, Silhouette::Kite, 1).is_ok());
+}
+
+/// **Each colour the person may choose is drawn in that colour**: the shape
+/// in its fill, and its edge in the opposite one, which is what keeps a white
+/// pointer visible on a white page and a black one on a black window.
+#[test]
+fn each_colour_is_drawn_as_its_fill_with_its_edge() {
+    use alo_appearance::PointerColour;
+    for colour in PointerColour::ALL {
+        let picture = draw_in(CursorIcon::Default, Silhouette::Kite, colour, 48)
+            .unwrap_or_else(|why| unreachable!("{why}"));
+        let crate::inks::Inks { fill, edge } = crate::inks::inks(colour);
+        let [r, g, b] = fill;
+        // (13, 13) units is inside the kite; 1.5 pixels to a unit here.
+        assert_eq!(at(&picture, 19, 19), [r, g, b, 255], "{colour:?}");
+        let [r, g, b] = edge;
+        assert!(
+            picture
+                .pixels
+                .chunks(4)
+                .any(|pixel| pixel == [r, g, b, 255]),
+            "{colour:?} has no solid edge"
+        );
+    }
+    assert_eq!(
+        draw(CursorIcon::Default, Silhouette::Kite, 24),
+        draw_in(
+            CursorIcon::Default,
+            Silhouette::Kite,
+            PointerColour::Navy,
+            24
+        ),
+        "the shipped drawing is the navy one"
+    );
 }

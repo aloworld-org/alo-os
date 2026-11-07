@@ -11,7 +11,7 @@
 //! session would change alo's pointer and leave every older application on the
 //! old one, which is the pointer changing look at a window's edge again.
 
-use alo_appearance::{PointerShape, PointerSize};
+use alo_appearance::{PointerColour, PointerShape, PointerSize};
 
 /// The pointer, as the person last said.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -20,6 +20,8 @@ pub struct ThePointersLook {
     pub shape: PointerShape,
     /// How large it is, over the size every pointer has.
     pub size: PointerSize,
+    /// What colour it is.
+    pub colour: PointerColour,
 }
 
 impl ThePointersLook {
@@ -27,6 +29,7 @@ impl ThePointersLook {
     pub const SHIPPED: Self = Self {
         shape: PointerShape::Kite,
         size: PointerSize::Default,
+        colour: PointerColour::Navy,
     };
 
     /// How many logical pixels across the pointer is: 24 as it ships, 36 or
@@ -47,7 +50,7 @@ impl ThePointersLook {
     /// draw from.
     #[must_use]
     pub fn the_theme(self) -> &'static str {
-        alo_cursors::theme::the_name_of(self.silhouette())
+        alo_cursors::theme::the_name_for(self.silhouette(), self.colour)
     }
 }
 
@@ -98,7 +101,7 @@ mod tests {
         assert_eq!(kite.the_theme(), "alo");
         let classic = ThePointersLook {
             shape: PointerShape::Classic,
-            size: PointerSize::Default,
+            ..ThePointersLook::SHIPPED
         };
         assert_eq!(classic.silhouette(), alo_cursors::Silhouette::Classic);
         assert_eq!(classic.the_theme(), "alo-classic");
@@ -142,7 +145,7 @@ mod tests {
         };
         let classic = ThePointersLook {
             shape: PointerShape::Classic,
-            size: PointerSize::Default,
+            ..ThePointersLook::SHIPPED
         };
         assert_eq!(server.the_pointer_change_to_tell(), None);
         server.the_pointer_is(classic);

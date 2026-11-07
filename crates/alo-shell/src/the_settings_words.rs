@@ -665,6 +665,24 @@ pub const CLASSIC: Word = Word::saying("settings.access.classic", "Classic").not
     "One of two short choices for the pointer's shape: the familiar arrow most computers have.",
 );
 
+/// Pointer colour.
+pub const POINTER_COLOUR: Word = Word::saying("settings.access.pointer-colour", "Pointer colour")
+    .noting("The name of the setting for what colour the pointer is drawn in.");
+
+/// Navy.
+pub const NAVY: Word = Word::saying("settings.access.navy", "Navy").noting(
+    "One of three short choices for the pointer's colour: a very dark blue with a white edge, which is how alo draws it unless the person chooses otherwise.",
+);
+
+/// White.
+pub const WHITE: Word = Word::saying("settings.access.white", "White").noting(
+    "One of three short choices for the pointer's colour: white with a dark edge, for dark backgrounds.",
+);
+
+/// Black.
+pub const BLACK: Word = Word::saying("settings.access.black", "Black")
+    .noting("One of three short choices for the pointer's colour: black with a white edge.");
+
 /// A text size, as a percentage.
 pub const AS_A_PERCENTAGE: Word = Word::saying("settings.access.percent", "{percent}%").noting(
     "Beside the text size slider: the size as a percentage of the ordinary size. {percent} is      the number. Write a percentage the way your language does, with or without a space.",
@@ -675,7 +693,7 @@ pub const AS_A_PERCENTAGE: Word = Word::saying("settings.access.percent", "{perc
 /// The length is written out so that adding a word above and forgetting it
 /// here does not compile — a word declared and left out of this list reaches a
 /// person as its own key.
-pub const THE_WINDOWS_WORDS: [Word; 96] = [
+pub const THE_WINDOWS_WORDS: [Word; 100] = [
     SETTINGS,
     EVERYTHING_IN_ONE_PLACE,
     THE_GROUP_ALO,
@@ -771,6 +789,10 @@ pub const THE_WINDOWS_WORDS: [Word; 96] = [
     POINTER_SHAPE,
     KITE,
     CLASSIC,
+    POINTER_COLOUR,
+    NAVY,
+    WHITE,
+    BLACK,
     AS_A_PERCENTAGE,
 ];
 
