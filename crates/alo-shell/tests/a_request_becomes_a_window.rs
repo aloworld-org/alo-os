@@ -182,7 +182,9 @@ fn the_frame_loop_turns_a_request_into_a_task_and_draws_it() {
          was built"
     );
     assert!(
-        shipped.contains("put_whatever_has_nowhere_to_be("),
+        shipped.contains("server.the_task_windows_find_room(")
+            && production_part_of(&read("the_task_windows_find_room.rs"))
+                .contains(".put_whatever_has_nowhere_to_be_finding_room("),
         "nothing in production places a task window, so every one would have nowhere to be \
          drawn"
     );

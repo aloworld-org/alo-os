@@ -388,6 +388,8 @@ mod region_sheet;
 mod resize_cursor;
 mod resize_transaction;
 mod resource_device;
+/// One rule for every window a person opens into a full view.
+mod room_in_a_full_view;
 mod running_keys;
 mod running_rows;
 mod running_window;
@@ -527,6 +529,8 @@ mod the_first_account;
 mod the_nearest_empty_space;
 /// The record drawn as a window on the canvas, for one frame.
 mod the_record_drawn_on_the_canvas;
+/// Task windows opened into a full view find room as other windows do.
+mod the_task_windows_find_room;
 /// The view gliding, or jumping where less motion was asked for.
 mod the_view_glides;
 /// The view travelling to a window of alo's rather than the window moving.

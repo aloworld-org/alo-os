@@ -248,7 +248,13 @@ moves the view, and the choice is `alo_appearance::WhenThereIsNoRoom`, kept in
    always glides; the first-start sheet's *More options* is the designed road
    (`the-first-start.md`, row 3).
 
-**Not covered, named rather than guessed:** alo's own windows — the terminal,
-Settings, the record and task windows — are placed by their own callers and
-still open by rule 5. The owner's words were about *the window of the
-application*. Whether alo's own windows glide too is a question for the owner.
+**alo's own windows glide too — the owner, 2026-11-07: *"Yes, the same"*.**
+Asked whether the terminal, Settings, the record and task windows follow the
+same rule, the owner said yes the same day. So each of them asks the one rule
+in `crate::room_in_a_full_view`, with the same choice: rules 3 to 7 first,
+and with no room and *Glide to empty space* kept, the nearest empty space,
+covering nothing, and a glide (or a jump, with less motion asked for). alo's
+own windows open only when the person opens them, so each asks every time. A
+task window's space includes **the edge above it**, which carries its Close.
+The record now counts among the windows a new one must not cover, as Settings
+and the terminal already did.

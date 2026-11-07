@@ -14,6 +14,9 @@ impl crate::Server {
             .map(crate::where_a_window_is)
             .chain(self.where_the_terminal_is_on_the_plane())
             .chain(self.where_settings_is_on_the_plane())
+            // **And the record**, a window on the canvas like Settings since
+            // ADR 0145's fourth stage, so nothing opens over it unasked.
+            .chain(self.where_the_record_is_on_the_plane())
             .collect()
     }
 }
