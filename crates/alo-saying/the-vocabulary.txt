@@ -80,7 +80,9 @@ adapters.fallback.limit.another-program	a part of the window shown by another pr
 adapters.fallback.limit.no-name	a control with no name, which the agent can neither describe nor press
 adapters.fallback.limit.not-described	an area the application draws itself and does not describe, which the agent cannot read
 adapters.fallback.more-than-one	{application} shows more than one {kind} named “{name}”, so nothing was pressed rather than guessing which
+adapters.fallback.more-than-one-window	{application} shows more than one window called {window}, so which one was meant cannot be told and nothing was read or pressed
 adapters.fallback.no-such-control	{application} shows no {kind} named “{name}” now, so nothing was pressed
+adapters.fallback.no-such-window	{application} shows no window called {window}, so nothing was read or pressed
 adapters.fallback.no-window	{application} has no window on the screen, so there was nothing to read or press
 adapters.fallback.not-all-read	{application} shows more than can be read at once, so not all of it was read
 adapters.fallback.not-readable-here	What applications show could not be read on this machine just now, so nothing was read or pressed in {application}

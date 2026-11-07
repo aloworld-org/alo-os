@@ -100,4 +100,19 @@ pub trait AccessibilityTree {
     /// # Errors
     /// [`TreeFault`].
     fn act(&self, at: &NodeAt, action: usize) -> Result<bool, TreeFault>;
+
+    /// What one thing says about itself besides its name, as `GetAttributes`
+    /// answers — sorted by name.
+    ///
+    /// Read for one purpose: finding the surface of alo's own tree a person
+    /// named (`alo_access::THE_SURFACE_ATTRIBUTE`). **Answers nothing by
+    /// default**, which is what a tree that serves no attributes says; the bus
+    /// asks the real one.
+    ///
+    /// # Errors
+    /// [`TreeFault`].
+    fn attributes(&self, at: &NodeAt) -> Result<Vec<(String, String)>, TreeFault> {
+        let _ = at;
+        Ok(Vec::new())
+    }
 }

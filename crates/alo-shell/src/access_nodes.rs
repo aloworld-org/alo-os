@@ -155,6 +155,18 @@ impl ReadAloudTree {
         &self.nodes
     }
 
+    /// The surface whose own node is at `path`, if one is — what the node
+    /// carries as [`alo_access::THE_SURFACE_ATTRIBUTE`], so a person's command
+    /// can name the surface it means (`--in settings`).
+    pub(crate) fn surface_at(&self, path: &str) -> Option<Surface> {
+        self.surfaces.iter().find_map(|(surface, at)| {
+            self.nodes
+                .get(*at)
+                .is_some_and(|node| node.path == path)
+                .then_some(*surface)
+        })
+    }
+
     /// Where each surface's own node is — what the tests hold the shape to.
     /// Nothing serving the tree needs it: the bus is answered from the nodes.
     #[cfg(test)]

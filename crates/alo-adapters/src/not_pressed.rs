@@ -11,7 +11,7 @@ use crate::pressable::Pressable;
 
 /// Why nothing was pressed.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum NotPressed {
+pub enum NotPressed {
     /// No control of that kind and name is on the screen.
     NoSuchControl,
     /// More than one is, and which was meant is not guessed.
@@ -62,5 +62,25 @@ impl NotPressed {
             Self::DidNotPress => words::DID_NOT_PRESS,
         };
         strings.say(&word.key(), &control.filling(strings))
+    }
+
+    /// What a person is told about the `kind` called `name` in `application`
+    /// — the same sentence the agent's road says, for a person's own command.
+    #[must_use]
+    pub fn said_of(
+        self,
+        application: &str,
+        kind: Pressable,
+        name: &str,
+        strings: &Strings,
+    ) -> Said {
+        self.said(
+            TheControl {
+                application,
+                kind,
+                name,
+            },
+            strings,
+        )
     }
 }
