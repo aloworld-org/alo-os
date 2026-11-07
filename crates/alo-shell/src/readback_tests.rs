@@ -1,6 +1,36 @@
 use super::*;
 
 #[test]
+fn owned_mapping_bytes_preserve_rows_channels_and_the_engine_allocation()
+-> Result<(), Box<dyn std::error::Error>> {
+    let mut renderer = smithay::backend::renderer::pixman::PixmanRenderer::new()?;
+    let mut mapping = renderer.create_owned_mapping(DrmFourcc::Xrgb8888, (3, 2).into())?;
+    let pointer = mapping.as_ref().as_ptr();
+    mapping.as_mut().copy_from_slice(&[
+        1, 2, 3, 255, 4, 5, 6, 127, 7, 8, 9, 0, 10, 11, 12, 254, 13, 14, 15, 85, 16, 17, 18, 170,
+    ]);
+    let (frame, owner) = mapped_xrgb(mapping)?;
+    assert_eq!(frame.pixels().as_ptr(), pointer);
+    assert_eq!(
+        frame.pixels(),
+        &[
+            1, 2, 3, 0, 4, 5, 6, 0, 7, 8, 9, 0, 10, 11, 12, 0, 13, 14, 15, 0, 16, 17, 18, 0,
+        ]
+    );
+    let retained = frame.retained();
+    assert_eq!(retained.as_ref().as_ptr(), pointer);
+    drop(frame);
+    assert_eq!(owner.as_ref().as_ref().as_ptr(), pointer);
+    let observed = std::thread::spawn(move || retained[0])
+        .join()
+        .map_err(|_| "immutable mapping reader failed")?;
+    assert_eq!(observed, 1);
+    let wrong = renderer.create_owned_mapping(DrmFourcc::Argb8888, (3, 2).into())?;
+    assert!(matches!(mapped_xrgb(wrong), Err(ReadbackError::Layout)));
+    Ok(())
+}
+
+#[test]
 fn mapping_metadata_must_match_the_pinned_export_contract() {
     for format in [DrmFourcc::Abgr8888, DrmFourcc::Xbgr8888] {
         assert!(validate_mapping((3, 2), (3, 2), Some(format), true).is_ok());

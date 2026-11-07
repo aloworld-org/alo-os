@@ -18,6 +18,9 @@ use crate::scene_native::NativeScene;
 use crate::sign_in_raster::SignInPicture;
 use smithay::utils::Rectangle;
 
+#[path = "software_mapped_tests.rs"]
+mod mapped;
+
 /// One frame carrying just this scene and nothing else of the shell's.
 fn only(scene: NativeScene<'_>) -> crate::scene_native::NativeLayers<'_> {
     crate::scene_native::NativeLayers {

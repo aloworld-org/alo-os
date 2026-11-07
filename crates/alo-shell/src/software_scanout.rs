@@ -59,10 +59,20 @@ use crate::{Cursor, Popup, RenderError, ScanoutPixels};
 
 #[path = "software_framebuffers.rs"]
 mod framebuffers;
+#[path = "software_mapped_pool.rs"]
+mod mappings;
 #[path = "software_readback.rs"]
 mod readback;
 #[path = "software_readback_pool.rs"]
 mod readbacks;
+
+/// Both storage owners bind to the same renderer and shared scene painter.
+enum SoftwareFrame {
+    /// Existing callers keep the checked Vec export path.
+    Image(Image<'static, 'static>),
+    /// Desktop scanout can borrow the rendered image's initialized bytes.
+    Mapped(smithay::backend::renderer::pixman::PixmanMapping),
+}
 
 /// Draws this shell's own surfaces on the processor, and imports nothing.
 ///
@@ -75,6 +85,8 @@ pub(crate) struct SoftwarePainter {
     frames: Option<framebuffers::Buffers>,
     /// Only allocations released by all scanout and capture readers are reused.
     readbacks: Option<readbacks::Buffers>,
+    /// Direct owned image mappings, bounded independently of the legacy pools.
+    mappings: Option<mappings::Buffers>,
 }
 
 impl SoftwarePainter {
@@ -91,6 +103,7 @@ impl SoftwarePainter {
                 renderer,
                 frames: None,
                 readbacks: None,
+                mappings: None,
             })
             .map_err(|error| RenderError::Submission(format!("no software renderer: {error}")))
     }
@@ -100,6 +113,14 @@ impl SoftwarePainter {
     pub(crate) fn with_reusable_frames(mut self) -> Self {
         self.frames.get_or_insert_with(Default::default);
         self.readbacks.get_or_insert_with(Default::default);
+        self
+    }
+
+    /// Keep the initialized render allocation itself for direct desktop upload.
+    #[must_use]
+    pub(crate) fn with_mapped_frames(mut self) -> Self {
+        self = self.with_reusable_frames();
+        self.mappings.get_or_insert_with(Default::default);
         self
     }
 }
@@ -171,23 +192,39 @@ impl crate::direct_target::ScenePainter for SoftwarePainter {
                 scene: "a frame with nothing of this shell's own in it",
             });
         }
-        let mut buffer: Image<'static, 'static> = match self
-            .frames
-            .as_mut()
-            .and_then(|frames| frames.take((size.w, size.h)))
-        {
-            Some(buffer) => buffer,
-            None => self
-                .renderer
-                .create_buffer(READBACK, (size.w, size.h).into())
-                .map_err(|error| {
-                    RenderError::Submission(format!("create software frame: {error}"))
-                })?,
+        let mut buffer = if let Some(pool) = &mut self.mappings {
+            SoftwareFrame::Mapped(match pool.take((size.w, size.h)) {
+                Some(mapping) => mapping,
+                None => self
+                    .renderer
+                    .create_owned_mapping(READBACK, (size.w, size.h).into())
+                    .map_err(|error| {
+                        RenderError::Submission(format!("create software mapping: {error}"))
+                    })?,
+            })
+        } else {
+            SoftwareFrame::Image(
+                match self
+                    .frames
+                    .as_mut()
+                    .and_then(|frames| frames.take((size.w, size.h)))
+                {
+                    Some(buffer) => buffer,
+                    None => self
+                        .renderer
+                        .create_buffer(READBACK, (size.w, size.h).into())
+                        .map_err(|error| {
+                            RenderError::Submission(format!("create software frame: {error}"))
+                        })?,
+                },
+            )
         };
         let result = (|| {
-            let mut target = self.renderer.bind(&mut buffer).map_err(|error| {
-                RenderError::Submission(format!("bind software frame: {error}"))
-            })?;
+            let mut target = match &mut buffer {
+                SoftwareFrame::Image(buffer) => self.renderer.bind(buffer),
+                SoftwareFrame::Mapped(buffer) => self.renderer.bind(buffer),
+            }
+            .map_err(|error| RenderError::Submission(format!("bind software frame: {error}")))?;
             // **The same painting the card's road does, and the same function.**
             // This hand-rolled a clear, this shell's own layers and the arrow,
             // and drew no client at all — which is what made it a second painter
@@ -212,22 +249,41 @@ impl crate::direct_target::ScenePainter for SoftwarePainter {
             // so an empty answer here would be a desktop that freezes one frame
             // after it starts.
             Ok::<_, RenderError>(drawing.surfaces)
-        })()
-        .and_then(|surfaces| {
-            let (_, length) = crate::readback::layout((size.w as u32, size.h as u32))?;
-            let retained = self.readbacks.as_mut().and_then(|pool| pool.take(length));
-            let pixels = readback::capture(&buffer, retained)?;
-            if let Some(pool) = &mut self.readbacks {
-                pool.put(pixels.shared());
+        })();
+        match buffer {
+            SoftwareFrame::Image(buffer) => {
+                let result = result.and_then(|surfaces| {
+                    let (_, length) = crate::readback::layout((size.w as u32, size.h as u32))?;
+                    let retained = self.readbacks.as_mut().and_then(|pool| pool.take(length));
+                    let pixels = readback::capture(&buffer, retained)?;
+                    if let Some(pool) = &mut self.readbacks {
+                        pool.put(pixels.shared());
+                    }
+                    Ok((pixels, surfaces))
+                });
+                // The target borrow has ended. Readback owns independent output bytes,
+                // so a later clear cannot alter an already published frame.
+                if let Some(frames) = &mut self.frames {
+                    frames.put(buffer);
+                }
+                result
             }
-            Ok((pixels, surfaces))
-        });
-        // The target borrow has ended. Readback owns independent output bytes,
-        // so a later clear cannot alter an already published frame.
-        if let Some(frames) = &mut self.frames {
-            frames.put(buffer);
+            SoftwareFrame::Mapped(mapping) => match result {
+                Ok(surfaces) => {
+                    let (pixels, owner) = crate::readback::mapped_xrgb(mapping)?;
+                    if let Some(pool) = &mut self.mappings {
+                        pool.put(owner);
+                    }
+                    Ok((pixels, surfaces))
+                }
+                Err(error) => {
+                    if let Some(pool) = &mut self.mappings {
+                        pool.put(std::sync::Arc::new(mapping));
+                    }
+                    Err(error)
+                }
+            },
         }
-        result
     }
 }
 

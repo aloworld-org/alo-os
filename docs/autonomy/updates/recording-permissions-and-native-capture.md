@@ -11,7 +11,37 @@ typed agent actions are implemented. The normal GNOME 49 SDK Flatpak source is
 `ac0ba3a3aa33af1895fbefd9ed21d0c7b2571128da51a2008b018e5b0697e0ba`.
 All five hosted checks pass for that source. Thirty-three application tests and
 the real native integration verify input ownership, lifecycle and pause cutoff.
-The installed desktop is `5943a4d6`, with direct reusable software readback.
+The installed desktop is `96ca4af0`, with reusable readback and absolute media-tool resolution.
+
+The latest installed default-configuration repeat holds the shared build lock
+from 20:23:37 to 20:32:56 UTC; no other job is paused. Both screen and window
+flows pass source selection, stable five-second pause, correct microphone states,
+resume, finish, review, naming, library and exact native export. Screen measures
+3.816 fps with a 556 ms uncovered gap. Window measures 3.664 fps with an 863 ms
+gap, continuous 38.100-second PCM and a 68 ms track-end difference. Seven marker
+matches have a 619.5 ms median video delay and do not establish synchronization.
+Both videos fail unchanged media acceptance. All five hosted checks pass for
+the installed desktop source. Evidence is under `installed-system-tool-spawn-*`.
+
+Kernel execution tracing identifies thirteen ordinary compositor forks, all
+executing `pw-dump`, before absolute tool resolution. The installed repeat's
+separate trace records seven `pw-dump` launches with shared-memory/vfork flags
+`0x100004100` and no ordinary fork. A later twelve-second diagnostic sample
+records zero samples at a period of one hundred minor faults, without lost
+records. This is not a zero-fault claim. A twenty-second user-CPU sample remains
+dominated by Pixman drawing and memory copies. No diagnostic is active during
+the acceptance recordings.
+
+The next candidate owns the software render mapping through scanout and native
+capture, removing the remaining separate export copy. ADR 0149 is recorded
+before the narrow rented-binding extension. The published Smithay 0.7.0 package
+is preserved with its license and upstream SHA-256; one source file gains safe
+initialized allocation, target binding and byte views. A permanent integrity
+test holds every upstream file and the reviewed patch to recorded hashes. The
+native capture owner stays immutable through every reader, and its bounded pool
+cannot repaint a live snapshot. Existing backend APIs keep their compatibility
+path. All shell targets type-check; pixel, ownership, source-integrity and strict
+lint checks are in progress. This mapping candidate is not yet installed.
 
 The previous installed desktop was `0a763631`, with all five hosted checks passing.
 Normal application inputs are unchanged from the installed `06213b2e` package,

@@ -41,7 +41,60 @@ pub struct ScanoutPixels {
     /// Tightly packed byte pitch.
     stride: usize,
     /// Immutable converted frame storage.
-    pixels: std::sync::Arc<Vec<u8>>,
+    pixels: Pixels,
+}
+
+/// The complete immutable allocation, retained for every borrowed byte view.
+#[derive(Clone)]
+enum Pixels {
+    /// Existing capture backends and GLES keep their owned byte vectors.
+    Owned(std::sync::Arc<Vec<u8>>),
+    /// Software rendering can publish its initialized image allocation directly.
+    Mapped(std::sync::Arc<smithay::backend::renderer::pixman::PixmanMapping>),
+}
+
+/// Immutable native pixels whose allocation stays alive through every clone.
+/// This additive capture owner supports both existing vectors and CPU mappings.
+#[derive(Clone)]
+pub struct SharedPixels(Pixels);
+
+impl AsRef<[u8]> for SharedPixels {
+    fn as_ref(&self) -> &[u8] {
+        self.0.bytes()
+    }
+}
+
+impl std::ops::Deref for SharedPixels {
+    type Target = [u8];
+    fn deref(&self) -> &Self::Target {
+        self.as_ref()
+    }
+}
+
+impl From<std::sync::Arc<Vec<u8>>> for SharedPixels {
+    fn from(pixels: std::sync::Arc<Vec<u8>>) -> Self {
+        Self(Pixels::Owned(pixels))
+    }
+}
+
+impl SharedPixels {
+    /// Preserve the older Vec-backed capture interface when a backend needs it.
+    pub fn into_vec(self) -> std::sync::Arc<Vec<u8>> {
+        match self.0 {
+            Pixels::Owned(pixels) => pixels,
+            Pixels::Mapped(pixels) => std::sync::Arc::new(pixels.as_ref().as_ref().to_vec()),
+        }
+    }
+}
+
+impl Pixels {
+    /// Both owners expose the same validated native byte layout.
+    fn bytes(&self) -> &[u8] {
+        match self {
+            Self::Owned(pixels) => pixels,
+            Self::Mapped(pixels) => pixels.as_ref().as_ref(),
+        }
+    }
 }
 
 impl ScanoutPixels {
@@ -52,18 +105,26 @@ impl ScanoutPixels {
 
     /// Borrow the validated source accepted by `DisplayResources::with_frame`.
     pub fn frame(&self) -> std::io::Result<crate::XrgbFrame<'_>> {
-        crate::XrgbFrame::new(self.size, self.stride, &self.pixels)
+        crate::XrgbFrame::new(self.size, self.stride, self.pixels.bytes())
     }
 
     /// Immutable CPU bytes; destination stride padding is added only at upload.
     pub fn pixels(&self) -> &[u8] {
-        &self.pixels
+        self.pixels.bytes()
     }
 
     /// Share the owned allocation without copying the frame's bytes.
     /// A consumer cannot mutate storage while scanout or another reader holds it.
     pub(crate) fn shared(&self) -> std::sync::Arc<Vec<u8>> {
-        self.pixels.clone()
+        match &self.pixels {
+            Pixels::Owned(pixels) => pixels.clone(),
+            Pixels::Mapped(_) => std::sync::Arc::new(self.pixels.bytes().to_vec()),
+        }
+    }
+
+    /// Keep the complete immutable storage without converting its owner type.
+    pub(crate) fn retained(&self) -> SharedPixels {
+        SharedPixels(self.pixels.clone())
     }
 
     /// The same extent and stride, carrying pixels drawn from these.
@@ -74,10 +135,10 @@ impl ScanoutPixels {
     /// that is not this frame's, rather than a frame a display would read past
     /// the end of.
     pub(crate) fn redrawn(&self, pixels: Vec<u8>) -> Option<Self> {
-        (pixels.len() == self.pixels.len()).then_some(Self {
+        (pixels.len() == self.pixels.bytes().len()).then_some(Self {
             size: self.size,
             stride: self.stride,
-            pixels: std::sync::Arc::new(pixels),
+            pixels: Pixels::Owned(std::sync::Arc::new(pixels)),
         })
     }
 }
@@ -173,7 +234,7 @@ pub(crate) fn convert(
     Ok(ScanoutPixels {
         size,
         stride,
-        pixels: std::sync::Arc::new(pixels.into_flattened()),
+        pixels: Pixels::Owned(std::sync::Arc::new(pixels.into_flattened())),
     })
 }
 
@@ -186,6 +247,43 @@ pub(crate) fn owned_xrgb(
     if pixels.len() != length {
         return Err(ReadbackError::Layout);
     }
+    normalize_x(&mut pixels);
+    Ok(ScanoutPixels {
+        size,
+        stride,
+        pixels: Pixels::Owned(std::sync::Arc::new(pixels)),
+    })
+}
+
+/// Normalize initialized image storage before sharing it with scanout readers.
+pub(crate) fn mapped_xrgb(
+    mut mapping: smithay::backend::renderer::pixman::PixmanMapping,
+) -> Result<
+    (
+        ScanoutPixels,
+        std::sync::Arc<smithay::backend::renderer::pixman::PixmanMapping>,
+    ),
+    ReadbackError,
+> {
+    let size = (Texture::width(&mapping), Texture::height(&mapping));
+    let (stride, length) = layout(size)?;
+    if Texture::format(&mapping) != Some(DrmFourcc::Xrgb8888) || mapping.as_ref().len() != length {
+        return Err(ReadbackError::Layout);
+    }
+    normalize_x(mapping.as_mut());
+    let mapping = std::sync::Arc::new(mapping);
+    Ok((
+        ScanoutPixels {
+            size,
+            stride,
+            pixels: Pixels::Mapped(mapping.clone()),
+        },
+        mapping,
+    ))
+}
+
+/// Clear only the unused channel, preserving the completed native colors.
+fn normalize_x(pixels: &mut [u8]) {
     let (blocks, tail) = pixels.as_chunks_mut::<16>();
     for block in blocks {
         *block =
@@ -194,11 +292,6 @@ pub(crate) fn owned_xrgb(
     for [_, _, _, unused] in tail.as_chunks_mut::<4>().0 {
         *unused = 0;
     }
-    Ok(ScanoutPixels {
-        size,
-        stride,
-        pixels: std::sync::Arc::new(pixels),
-    })
 }
 
 #[cfg(test)]

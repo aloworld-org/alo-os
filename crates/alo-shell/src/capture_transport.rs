@@ -24,7 +24,7 @@ struct Latest {
     /// Equality, rather than ordering, makes counter wrap harmless.
     generation: u64,
     /// Only the newest published immutable storage is retained here.
-    pixels: Option<Arc<Vec<u8>>>,
+    pixels: Option<crate::SharedPixels>,
 }
 
 /// One lifetime-bound source, holding only its newest immutable frame.
@@ -71,17 +71,17 @@ impl Feed {
         self.live.load(Ordering::Acquire) && self.consuming.load(Ordering::Acquire) > 0
     }
     /// Drop a late frame instead of waiting for a socket writer's short snapshot.
-    pub(super) fn publish(&self, pixels: Arc<Vec<u8>>) {
+    pub(super) fn publish(&self, pixels: impl Into<crate::SharedPixels>) {
         if self.wanted()
             && let Ok(mut frame) = self.frame.try_lock()
         {
             frame.generation = frame.generation.wrapping_add(1);
-            frame.pixels = Some(pixels);
+            frame.pixels = Some(pixels.into());
         }
     }
 
     /// Clone storage only when this consumer has not delivered its publication.
-    fn undelivered(&self, previous: Option<u64>) -> io::Result<Option<(u64, Arc<Vec<u8>>)>> {
+    fn undelivered(&self, previous: Option<u64>) -> io::Result<Option<(u64, crate::SharedPixels)>> {
         let frame = self
             .frame
             .lock()
@@ -301,24 +301,14 @@ mod tests {
             feed.publish(Arc::new(vec![0, 0, red, 0]));
         }
         assert_eq!(
-            feed.frame
-                .lock()
-                .unwrap()
-                .pixels
-                .as_deref()
-                .map(Vec::as_slice),
+            feed.frame.lock().unwrap().pixels.as_deref(),
             Some([0, 0, 99, 0].as_slice())
         );
         feed.stop();
         assert!(!feed.wanted());
         feed.publish(Arc::new(vec![255; 4]));
         assert_eq!(
-            feed.frame
-                .lock()
-                .unwrap()
-                .pixels
-                .as_deref()
-                .map(Vec::as_slice),
+            feed.frame.lock().unwrap().pixels.as_deref(),
             Some([0, 0, 99, 0].as_slice())
         );
     }
@@ -404,16 +394,17 @@ mod tests {
             height: 1,
         });
         feed.consuming.store(1, Ordering::Release);
-        feed.publish(Arc::new(vec![1; 4]));
+        let original = Arc::new(vec![1; 4]);
+        let first = Arc::downgrade(&original);
+        feed.publish(original);
         let (generation, inflight) = feed.undelivered(None).unwrap().unwrap();
-        let first = Arc::downgrade(&inflight);
         let middle: Arc<Vec<u8>> = Arc::new(vec![2; 4]);
         let discarded = Arc::downgrade(&middle);
         feed.publish(middle);
         feed.publish(Arc::new(vec![3; 4]));
         assert!(discarded.upgrade().is_none());
         let (_, latest) = feed.undelivered(Some(generation)).unwrap().unwrap();
-        assert_eq!(latest.as_slice(), &[3; 4]);
+        assert_eq!(latest.as_ref(), &[3; 4]);
         drop(inflight);
         assert!(first.upgrade().is_none());
     }

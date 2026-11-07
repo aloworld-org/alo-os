@@ -234,9 +234,12 @@ image or copy into a separate Vec before publishing a scanout frame. Borrowing
 Vec storage directly for rendering is not supported by its static image binding.
 
 Authorize only these additional safe ownership interfaces on the pinned rented
-Smithay binding: construct `PixmanMapping` from an owned static Pixman image,
-recover that owned image by consuming the mapping, and borrow its bytes with
-`AsRef<[u8]>` or `AsMut<[u8]>`. These are the same pointer and validated image
+Smithay binding: allocate an initialized `PixmanMapping` through `Offscreen`,
+bind that owned mapping as a render target, and borrow its bytes with
+`AsRef<[u8]>` or `AsMut<[u8]>`. Do not expose an unchecked conversion from an
+arbitrary image: an image created without clearing may contain uninitialized
+bytes. The new allocator must initialize all storage before any byte view, and
+the target binding must keep the inner image private. These use the same pointer and validated image
 extent already used by the existing engine mapping; no renderer, codec, color,
 compositing or scheduling algorithm changes. Retain the published upstream
 package, license, checksum and a reviewable patch. Enable Pixman's existing

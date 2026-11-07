@@ -201,7 +201,7 @@ alo-turn = { path = "../alo-turn" }
 # `renderer_pixman` resolves to; named here only because `Offscreen` must be
 # asked for a `pixman::Image` by its type. Reached only by
 # `crates/alo-shell/src/software_scanout.rs`.
-pixman = "=0.2.1"
+pixman = { version = "=0.2.1", features = ["sync"] }
 # Checked alignment and length for Pixman's temporary mutable word view of owned
 # bytes. Already pinned in the workspace lockfile; no local pointer cast.
 bytemuck = "=1.25.2"

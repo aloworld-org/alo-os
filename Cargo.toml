@@ -145,6 +145,8 @@ members = [
 exclude = [
   # The pinned rented binding and its two ADR 0147 safe-wrapper additions.
   "engines/pipewire",
+  # ADR 0149: the pinned renderer binding's owned Pixman mapping interfaces.
+  "engines/smithay",
   # The half that runs inside the kernel. It is a different target, a
   # different compiler channel and a different set of lints; `build.rs` in
   # `alo-bounding` is what builds it, and that crate's `main.rs` says why it
@@ -285,3 +287,7 @@ debug = "line-tables-only"
 lto = "thin"
 codegen-units = 1
 strip = "symbols"
+
+[patch.crates-io]
+# ADR 0149: ownership and byte views of the existing CPU image mapping only.
+smithay = { path = "engines/smithay" }

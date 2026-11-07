@@ -250,6 +250,26 @@ pub trait FrameTarget {
         self.capture_window_at(size, root, popups, cursor, camera, time)
             .map(|pixels| std::sync::Arc::new(pixels.to_vec()))
     }
+    /// Retain immutable storage without requiring a Vec allocation from a backend.
+    fn retained_captured_output(&mut self) -> Option<crate::SharedPixels> {
+        self.shared_captured_output().map(Into::into)
+    }
+    /// Retain the selected tree's real pixels and its existing callback behavior.
+    ///
+    /// # Errors
+    /// The same errors as `shared_capture_window_at`.
+    fn retained_capture_window_at(
+        &mut self,
+        size: Size<i32, Physical>,
+        root: &WlSurface,
+        popups: &[crate::Popup],
+        cursor: &crate::Cursor,
+        camera: alo_canvas::Camera,
+        time: u32,
+    ) -> Result<crate::SharedPixels, RenderError> {
+        self.shared_capture_window_at(size, root, popups, cursor, camera, time)
+            .map(Into::into)
+    }
     /// Submit a complete reader with its strip, clients, popups and cursor.
     /// Refuse unsupported content; never silently submit only the strip.
     /// No dispatch or publication is allowed during this transaction.

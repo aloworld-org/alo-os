@@ -901,7 +901,7 @@ pub use presentation::{FrameTarget, RenderError};
 pub use putting_back_from_the_record::{
     OnTheConfirmation, PutBackHere, ThePlan, ThePutBack, TheSheet,
 };
-pub use readback::{ReadbackError, RowOrder, ScanoutPixels, readback_xrgb};
+pub use readback::{ReadbackError, RowOrder, ScanoutPixels, SharedPixels, readback_xrgb};
 pub use record_clock::RecordClock;
 pub use record_keys::RecordKey;
 pub use record_room::RecordLook;

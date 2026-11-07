@@ -1,10 +1,10 @@
 name: alo Studio
 on:
   pull_request:
-    paths: ['apps/alo-studio/**', 'crates/alo-dock/**', 'crates/alo-shell/**', 'crates/alo-desktop/**', 'crates/alo-capture-provider/**', 'crates/alo-capture-remote/**', 'crates/alo-capture-protocol/**', 'crates/alo-media-server/**', 'engines/pipewire/**', 'engines/pipewire-gstreamer/**', 'image/Containerfile', 'image/usr/lib/systemd/system/alo-portald.service', 'Cargo.toml', 'Cargo.lock', '.github/workflows/studio.yml']
+    paths: ['apps/alo-studio/**', 'crates/alo-dock/**', 'crates/alo-shell/**', 'crates/alo-desktop/**', 'crates/alo-capture-provider/**', 'crates/alo-capture-remote/**', 'crates/alo-capture-protocol/**', 'crates/alo-media-server/**', 'engines/pipewire/**', 'engines/smithay/**', 'engines/pipewire-gstreamer/**', 'image/Containerfile', 'image/usr/lib/systemd/system/alo-portald.service', 'Cargo.toml', 'Cargo.lock', '.github/workflows/studio.yml']
   push:
     branches: [main]
-    paths: ['apps/alo-studio/**', 'crates/alo-dock/**', 'crates/alo-shell/**', 'crates/alo-desktop/**', 'crates/alo-capture-provider/**', 'crates/alo-capture-remote/**', 'crates/alo-capture-protocol/**', 'crates/alo-media-server/**', 'engines/pipewire/**', 'engines/pipewire-gstreamer/**', 'image/Containerfile', 'image/usr/lib/systemd/system/alo-portald.service', 'Cargo.toml', 'Cargo.lock', '.github/workflows/studio.yml']
+    paths: ['apps/alo-studio/**', 'crates/alo-dock/**', 'crates/alo-shell/**', 'crates/alo-desktop/**', 'crates/alo-capture-provider/**', 'crates/alo-capture-remote/**', 'crates/alo-capture-protocol/**', 'crates/alo-media-server/**', 'engines/pipewire/**', 'engines/smithay/**', 'engines/pipewire-gstreamer/**', 'image/Containerfile', 'image/usr/lib/systemd/system/alo-portald.service', 'Cargo.toml', 'Cargo.lock', '.github/workflows/studio.yml']
   workflow_dispatch:
 permissions:
   contents: read
@@ -51,6 +51,7 @@ jobs:
           cargo +1.97.0 test --locked --release -p alo-shell --lib retained_dumb_buffer::
           cargo +1.97.0 test --locked --release -p alo-shell --lib display_resources::
           cargo +1.97.0 test --locked --release -p alo-shell --test desktop_source
+          cargo +1.97.0 test --locked --release -p alo-shell --test software_renderer_binding
       - name: Strict desktop and shell checks
         run: |
           cargo +1.97.0 clippy --locked --release -p alo-desktop --all-targets -- -D warnings
