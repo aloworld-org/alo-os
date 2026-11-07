@@ -89,7 +89,10 @@ pub fn listed(
                     .say(
                         &words::LIST_LINE.key(),
                         &Filling::of(words::NAME, application.shown(strings))
-                            .and_said(words::SAID, &reached.said(application.identifier(), strings))
+                            .and_said(
+                                words::SAID,
+                                &reached.said(application.identifier(), strings),
+                            )
                             .and_said(words::LIST, &what_it_offers(application, adapters, strings)),
                     )
                     .into_text()
@@ -163,7 +166,11 @@ mod tests {
         let adapters = alo_adapters::shipped_adapters().unwrap();
         assert_eq!(
             listed(&installed(), &adapters, Giving::Values, &strings()),
-            ["app.devsuite.Ptyxis", "com.example.Front", "org.gnome.TextEditor"]
+            [
+                "app.devsuite.Ptyxis",
+                "com.example.Front",
+                "org.gnome.TextEditor"
+            ]
         );
     }
 
@@ -175,9 +182,18 @@ mod tests {
         let adapters = alo_adapters::shipped_adapters().unwrap();
         let lines = listed(&installed(), &adapters, Giving::Sentences, &strings());
         assert_eq!(lines.len(), 3);
-        let front = lines.iter().find(|line| line.contains("com.example.Front")).unwrap();
-        assert!(front.contains("reach this application as com.example.Front"), "{front}");
-        let editor = lines.iter().find(|line| line.contains("texteditor")).unwrap();
+        let front = lines
+            .iter()
+            .find(|line| line.contains("com.example.Front"))
+            .unwrap();
+        assert!(
+            front.contains("reach this application as com.example.Front"),
+            "{front}"
+        );
+        let editor = lines
+            .iter()
+            .find(|line| line.contains("texteditor"))
+            .unwrap();
         assert!(editor.contains("open_document, new_window"), "{editor}");
         let terminal = lines.iter().find(|line| line.contains("ptyxis")).unwrap();
         assert!(terminal.contains("type into it directly"), "{terminal}");

@@ -57,7 +57,7 @@ pub fn the_ability(
     application: &str,
     named: &str,
     strings: &Strings,
-) -> Result<Declared, Outcome> {
+) -> Result<Declared, Box<Outcome>> {
     adapters
         .for_application(application)
         .and_then(|adapter| {
@@ -68,7 +68,7 @@ pub fn the_ability(
                 .map(|verb| Declared { adapter, verb })
         })
         .ok_or_else(|| {
-            Outcome::not_asked(
+            Outcome::refusing(
                 Ended::NotOffered,
                 strings.say(
                     &words::NO_SUCH_ABILITY.key(),
@@ -88,7 +88,7 @@ pub fn by_name(
     declared: Declared,
     given: &[GivenAs],
     strings: &Strings,
-) -> Result<Vec<(String, String)>, Outcome> {
+) -> Result<Vec<(String, String)>, Box<Outcome>> {
     let mut in_order = declared.verb.args.iter();
     let mut named = Vec::with_capacity(given.len());
     for value in given {
@@ -100,7 +100,7 @@ pub fn by_name(
                         &words::TOO_MANY_VALUES.key(),
                         &Filling::of(words::ABILITY, declared.verb.name.to_owned()),
                     );
-                    return Err(Outcome::not_asked(Ended::NotThisShape, said));
+                    return Err(Outcome::refusing(Ended::NotThisShape, said));
                 };
                 named.push((arg.name.to_owned(), value.clone()));
             }
@@ -120,7 +120,7 @@ pub fn the_call(
     standing_in: &Path,
     verbs: &Verbs,
     strings: &Strings,
-) -> Result<Call, Outcome> {
+) -> Result<Call, Box<Outcome>> {
     let given: Vec<(&str, Given)> = values
         .iter()
         .map(|(argument, value)| {
@@ -143,7 +143,7 @@ pub fn the_call(
                 | CallError::Missing { .. }
                 | CallError::SameArgumentTwice { .. } => Ended::NotThisShape,
             };
-            Outcome::not_asked(ended, why.said(strings))
+            Outcome::refusing(ended, why.said(strings))
         })
 }
 
@@ -187,7 +187,8 @@ pub fn carried(
         )),
     };
     let sentence = call.sentence(strings);
-    let filling = Filling::of(words::APPLICATION, subject.called.clone()).and_said(words::SAID, &sentence);
+    let filling =
+        Filling::of(words::APPLICATION, subject.called.clone()).and_said(words::SAID, &sentence);
     match answered {
         Ok(driven) if driven.unanswered() => Outcome::Carried {
             road: Road::Declared,

@@ -337,10 +337,12 @@ fn asked(rest: Vec<Word>, within: Option<String>) -> Result<Asked, NotTyped> {
     let first = match words.next() {
         None => return Err(NotTyped::Nothing),
         Some(Word::Bare(first)) => first,
-        Some(word) => return Err(NotTyped::LeftOver {
-            typed: as_typed(word),
-            act: None,
-        }),
+        Some(word) => {
+            return Err(NotTyped::LeftOver {
+                typed: as_typed(word),
+                act: None,
+            });
+        }
     };
     let left_over = |word: Word, act: Option<(String, String)>| NotTyped::LeftOver {
         typed: as_typed(word),

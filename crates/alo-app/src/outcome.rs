@@ -44,6 +44,13 @@ impl Outcome {
         Self::NotAsked { ended, said }
     }
 
+    /// Refused before anything reached the application, boxed for a `Result`
+    /// whose success is small.
+    #[must_use]
+    pub fn refusing(ended: Ended, said: Said) -> Box<Self> {
+        Box::new(Self::NotAsked { ended, said })
+    }
+
     /// Carried, and refused by the application in this sentence.
     #[must_use]
     pub fn refused_by_it(

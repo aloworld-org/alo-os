@@ -99,7 +99,10 @@ mod tests {
             }),
             vec![values.clone()]
         );
-        assert!(!asked, "the pipe was read for a command that did not name it");
+        assert!(
+            !asked,
+            "the pipe was read for a command that did not name it"
+        );
         assert!(every_call(&values, Some(1), || None).is_empty());
     }
 }

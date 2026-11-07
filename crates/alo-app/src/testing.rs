@@ -150,14 +150,18 @@ impl ATree {
         let mut inside = Vec::new();
         for (i, name) in buttons.iter().enumerate() {
             let button = at(format!("/button/{n}/{i}"));
-            self.facts.insert(button.clone(), facts(roles::PUSH_BUTTON, name, Vec::new()));
-            self.actions.insert(button.clone(), vec!["click".to_owned()]);
+            self.facts
+                .insert(button.clone(), facts(roles::PUSH_BUTTON, name, Vec::new()));
+            self.actions
+                .insert(button.clone(), vec!["click".to_owned()]);
             inside.push(button);
         }
         let label = at(format!("/label/{n}"));
-        self.facts.insert(label.clone(), facts(roles::LABEL, words, Vec::new()));
+        self.facts
+            .insert(label.clone(), facts(roles::LABEL, words, Vec::new()));
         inside.push(label);
-        self.facts.insert(window.clone(), facts(roles::FRAME, title, inside));
+        self.facts
+            .insert(window.clone(), facts(roles::FRAME, title, inside));
         self.facts
             .insert(root.clone(), facts(roles::APPLICATION, "", vec![window]));
         self.running.push(Running {
@@ -306,7 +310,7 @@ impl Machine for AMachine {
         Ok(())
     }
 
-    fn from_the_pipe(&mut self) -> Option<String> {
+    fn next_on_the_pipe(&mut self) -> Option<String> {
         self.pipe.pop_front()
     }
 

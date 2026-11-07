@@ -138,9 +138,7 @@ pub fn the_subject(
     match named {
         Named::Installed(found) => {
             if whole_application && within.is_some() {
-                return Err(refusal(&words::WHOLE_APPLICATION,
-                    Ended::NotThisShape,
-                ));
+                return Err(refusal(&words::WHOLE_APPLICATION, Ended::NotThisShape));
             }
             Ok(Subject {
                 called: found.shown(strings),
@@ -151,9 +149,7 @@ pub fn the_subject(
         }
         Named::Alo => {
             if !matches!(doing, Doing::Controls | Doing::Read | Doing::Press { .. }) {
-                return Err(refusal(&words::ALO_TREE_ONLY,
-                    Ended::NotOffered,
-                ));
+                return Err(refusal(&words::ALO_TREE_ONLY, Ended::NotOffered));
             }
             match machine.door().alos_tree() {
                 Ok(WhereAlosTreeIs::At(answers_as)) => Ok(Subject {
@@ -162,24 +158,20 @@ pub fn the_subject(
                     within: within.map(str::to_owned),
                     in_front: false,
                 }),
-                Ok(WhereAlosTreeIs::Nowhere) => Err(refusal(&words::NO_ALO_TREE,
-                    Ended::NotOffered,
-                )),
-                Err(Unanswered::NotReached | Unanswered::NotUnderstood) => Err(refusal(&words::DESKTOP_SILENT,
-                    Ended::NotOffered,
-                )),
+                Ok(WhereAlosTreeIs::Nowhere) => {
+                    Err(refusal(&words::NO_ALO_TREE, Ended::NotOffered))
+                }
+                Err(Unanswered::NotReached | Unanswered::NotUnderstood) => {
+                    Err(refusal(&words::DESKTOP_SILENT, Ended::NotOffered))
+                }
             }
         }
         Named::Front => {
             if within.is_some() {
-                return Err(refusal(&words::FRONT_AND_IN,
-                    Ended::NotThisShape,
-                ));
+                return Err(refusal(&words::FRONT_AND_IN, Ended::NotThisShape));
             }
             if whole_application {
-                return Err(refusal(&words::WHOLE_APPLICATION,
-                    Ended::NotThisShape,
-                ));
+                return Err(refusal(&words::WHOLE_APPLICATION, Ended::NotThisShape));
             }
             in_front(knowing, machine)
         }
@@ -208,7 +200,8 @@ fn in_front(knowing: Knowing<'_>, machine: &mut dyn Machine) -> Result<Subject, 
     let called = strings
         .say(
             &words::FRONT_WINDOW.key(),
-            &Filling::of(words::APPLICATION, found.shown(strings)).and(words::WINDOW, title.clone()),
+            &Filling::of(words::APPLICATION, found.shown(strings))
+                .and(words::WINDOW, title.clone()),
         )
         .into_text();
     Ok(Subject {

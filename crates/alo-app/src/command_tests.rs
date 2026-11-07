@@ -47,7 +47,12 @@ fn written(entry: &Entry) -> Written<'_> {
             road: *road,
             arguments: arguments
                 .iter()
-                .map(|given| (given.name.as_str().to_owned(), given.value.as_str().to_owned()))
+                .map(|given| {
+                    (
+                        given.name.as_str().to_owned(),
+                        given.value.as_str().to_owned(),
+                    )
+                })
                 .collect(),
             answered,
             sent: sent.as_ref(),
@@ -58,7 +63,13 @@ fn written(entry: &Entry) -> Written<'_> {
 
 /// The editor's window, with a Save button, on the tree.
 fn the_editors_window() -> ATree {
-    ATree::default().with(":1.20", Some(EDITOR), "today.txt", &["Save", "Help", "Help"], "Hello")
+    ATree::default().with(
+        ":1.20",
+        Some(EDITOR),
+        "today.txt",
+        &["Save", "Help", "Help"],
+        "Hello",
+    )
 }
 
 // ---------------------------------------------------------------------------
@@ -85,7 +96,10 @@ fn list_show_controls_and_read_write_nothing() {
     assert!(machine.kept.is_empty(), "a look was written down");
     assert_eq!(machine.places_asked, 0);
     assert!(
-        machine.told.iter().any(|line| line.contains("button “Save”")),
+        machine
+            .told
+            .iter()
+            .any(|line| line.contains("button “Save”")),
         "{:?}",
         machine.told
     );
@@ -100,8 +114,15 @@ fn controls_on_a_pipe_are_one_value_per_line() {
         tree: Some(the_editors_window()),
         ..AMachine::default()
     };
-    assert_eq!(known.piped(&["texteditor", "controls"], &mut machine), Ended::Done);
-    assert!(machine.told.contains(&"button\tSave\t".to_owned()), "{:?}", machine.told);
+    assert_eq!(
+        known.piped(&["texteditor", "controls"], &mut machine),
+        Ended::Done
+    );
+    assert!(
+        machine.told.contains(&"button\tSave\t".to_owned()),
+        "{:?}",
+        machine.told
+    );
 }
 
 /// **`show` says the roads it did not take**, rather than leaving them out.
@@ -109,12 +130,21 @@ fn controls_on_a_pipe_are_one_value_per_line() {
 fn show_names_what_was_not_looked_for() {
     let known = Known::holding(&[EDITOR]);
     let mut machine = AMachine::default();
-    assert_eq!(known.running(&["show", "texteditor"], &mut machine), Ended::Done);
+    assert_eq!(
+        known.running(&["show", "texteditor"], &mut machine),
+        Ended::Done
+    );
     let shown = machine.told.join("\n");
     assert!(shown.contains("open_document"), "{shown}");
     assert!(shown.contains("does not look there yet"), "{shown}");
-    assert!(shown.contains("Reading the screen is not built yet"), "{shown}");
-    assert!(shown.contains("which this session does not have now"), "{shown}");
+    assert!(
+        shown.contains("Reading the screen is not built yet"),
+        "{shown}"
+    );
+    assert!(
+        shown.contains("which this session does not have now"),
+        "{shown}"
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -150,7 +180,10 @@ fn a_press_writes_one_entry_with_its_count_and_place() {
     );
     assert!(entry.agent().is_none(), "the person acted, not an agent");
     assert!(machine.door.asked.contains(&format!("count {EDITOR}")));
-    assert_eq!(machine.told, ["Pressed the button “Save” in org.gnome.TextEditor"]);
+    assert_eq!(
+        machine.told,
+        ["Pressed the button “Save” in org.gnome.TextEditor"]
+    );
 }
 
 /// **A declared ability is validated, sent once, and written down with what
@@ -169,7 +202,10 @@ fn a_declared_ability_is_sent_once_and_written_down() {
     assert_eq!(entry_read.road, Some(Road::Declared));
     assert_eq!(
         entry_read.arguments,
-        [("document".to_owned(), "/home/anna/Notes/today.txt".to_owned())]
+        [(
+            "document".to_owned(),
+            "/home/anna/Notes/today.txt".to_owned()
+        )]
     );
     assert!(machine.told.iter().any(|line| line.starts_with("Done: ")));
 }
@@ -204,7 +240,10 @@ fn an_argument_is_given_once_by_order_or_by_name() {
 fn a_window_act_is_asked_of_the_desktop_and_written_down() {
     let known = Known::holding(&[EDITOR]);
     let mut machine = AMachine::default();
-    assert_eq!(known.running(&["texteditor", "close"], &mut machine), Ended::Done);
+    assert_eq!(
+        known.running(&["texteditor", "close"], &mut machine),
+        Ended::Done
+    );
     assert!(machine.door.asked.contains(&format!("close {EDITOR}")));
     assert_eq!(machine.places_asked, 0);
     let [entry] = machine.kept.as_slice() else {
@@ -215,8 +254,14 @@ fn a_window_act_is_asked_of_the_desktop_and_written_down() {
     for (answer, ended) in [
         (Ok(Answer::NotActed(NotActed::NoWindow)), Ended::Refused),
         (Ok(Answer::NotActed(NotActed::ItDidNot)), Ended::Refused),
-        (Ok(Answer::NotActed(NotActed::CouldNotAsk)), Ended::NotOffered),
-        (Ok(Answer::NotActed(NotActed::NotInstalled)), Ended::NotOffered),
+        (
+            Ok(Answer::NotActed(NotActed::CouldNotAsk)),
+            Ended::NotOffered,
+        ),
+        (
+            Ok(Answer::NotActed(NotActed::NotInstalled)),
+            Ended::NotOffered,
+        ),
         (Err(Unanswered::NotReached), Ended::NotOffered),
         (Err(Unanswered::NotUnderstood), Ended::NotKnown),
     ] {
@@ -254,7 +299,8 @@ fn an_act_that_cannot_be_counted_runs_and_says_so() {
         machine
             .warned
             .iter()
-            .any(|line| line == "alo cannot show what org.gnome.TextEditor sends during this command"),
+            .any(|line| line
+                == "alo cannot show what org.gnome.TextEditor sends during this command"),
         "{:?}",
         machine.warned
     );
@@ -273,7 +319,10 @@ fn a_stopped_count_is_kept_as_at_least() {
     let known = Known::holding(&[EDITOR]);
     let mut machine = AMachine::default();
     machine.door.counting = Counting::Ends(Some(Counted::Stopped(9)));
-    assert_eq!(known.running(&["texteditor", "open"], &mut machine), Ended::Done);
+    assert_eq!(
+        known.running(&["texteditor", "open"], &mut machine),
+        Ended::Done
+    );
     assert_eq!(
         written(machine.kept.first().unwrap()).sent,
         Some(&SentDuring::AtLeast { bytes: 9 })
@@ -288,18 +337,29 @@ fn no_place_is_said_once_and_the_command_runs() {
         place: APlace::NotKept("No place was kept".to_owned()),
         ..AMachine::default()
     };
-    machine.pipe.extend(["/a.txt".to_owned(), "/b.txt".to_owned()]);
+    machine
+        .pipe
+        .extend(["/a.txt".to_owned(), "/b.txt".to_owned()]);
     assert_eq!(
         known.running(&["texteditor", "open_document", "-"], &mut machine),
         Ended::Done
     );
     assert_eq!(machine.places_asked, 1, "one place per command line");
     assert_eq!(
-        machine.warned.iter().filter(|line| *line == "No place was kept").count(),
+        machine
+            .warned
+            .iter()
+            .filter(|line| *line == "No place was kept")
+            .count(),
         1
     );
     assert_eq!(machine.kept.len(), 2);
-    assert!(machine.kept.iter().all(|entry| entry.kept_before_it().is_none()));
+    assert!(
+        machine
+            .kept
+            .iter()
+            .all(|entry| entry.kept_before_it().is_none())
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -320,7 +380,11 @@ fn a_refused_line_of_the_pipe_does_not_stop_the_others() {
     ]);
     let ended = known.running(&["texteditor", "open_document", "-"], &mut machine);
     assert_eq!(ended, Ended::ValueRefused);
-    assert_eq!(machine.bus.sent.borrow().len(), 2, "the two good lines were sent");
+    assert_eq!(
+        machine.bus.sent.borrow().len(),
+        2,
+        "the two good lines were sent"
+    );
     assert_eq!(machine.kept.len(), 4, "every line is one entry");
     let refused: Vec<_> = machine
         .kept
@@ -374,7 +438,10 @@ fn an_unknown_application_is_refused() {
     assert!(written(entry).arguments.is_empty());
 
     let mut machine = AMachine::default();
-    assert_eq!(known.running(&["gedit", "controls"], &mut machine), Ended::NotOffered);
+    assert_eq!(
+        known.running(&["gedit", "controls"], &mut machine),
+        Ended::NotOffered
+    );
     assert!(machine.kept.is_empty());
 }
 
@@ -392,7 +459,13 @@ fn a_shared_short_name_is_refused_naming_both() {
         said.contains("org.gnome.TextEditor, org.kde.TextEditor"),
         "{said}"
     );
-    assert!(!machine.door.asked.iter().any(|line| line.starts_with("open")));
+    assert!(
+        !machine
+            .door
+            .asked
+            .iter()
+            .any(|line| line.starts_with("open"))
+    );
 }
 
 /// **A kind `press` does not take is refused, and the entry keeps no values.**
@@ -412,7 +485,12 @@ fn an_unknown_kind_is_refused() {
         panic!()
     };
     assert!(written(entry).arguments.is_empty());
-    assert!(machine.warned.iter().any(|line| line.contains("button, check_box")));
+    assert!(
+        machine
+            .warned
+            .iter()
+            .any(|line| line.contains("button, check_box"))
+    );
 }
 
 /// **The wrong number of values is the wrong shape (64)**, and an ability the
@@ -422,7 +500,10 @@ fn the_wrong_count_of_values_and_an_unknown_ability_are_refused() {
     let known = Known::holding(&[EDITOR]);
     for (line, ended) in [
         (&["texteditor", "open_document"][..], Ended::NotThisShape),
-        (&["texteditor", "open_document", "/a", "/b"], Ended::NotThisShape),
+        (
+            &["texteditor", "open_document", "/a", "/b"],
+            Ended::NotThisShape,
+        ),
         (&["texteditor", "new_window", "/a"], Ended::NotThisShape),
         (&["texteditor", "print"], Ended::NotOffered),
         (&["texteditor", "press", "button"], Ended::NotThisShape),
@@ -449,7 +530,11 @@ fn a_control_that_is_missing_or_doubled_is_not_pressed() {
             Ended::Refused,
             "{name}"
         );
-        assert_eq!(*machine.tree.as_ref().unwrap().pressed.borrow(), 0, "{name}");
+        assert_eq!(
+            *machine.tree.as_ref().unwrap().pressed.borrow(),
+            0,
+            "{name}"
+        );
     }
     let mut machine = AMachine::default();
     assert_eq!(
@@ -478,13 +563,22 @@ fn front_acts_on_the_window_and_records_what_it_was() {
         Ended::Done
     );
     assert_eq!(
-        machine.door.asked.iter().filter(|line| *line == "front").count(),
+        machine
+            .door
+            .asked
+            .iter()
+            .filter(|line| *line == "front")
+            .count(),
         1,
         "front is asked once"
     );
     let entry = written(machine.kept.first().unwrap());
     assert_eq!(entry.application, EDITOR);
-    assert!(entry.arguments.contains(&("window".to_owned(), "today.txt".to_owned())));
+    assert!(
+        entry
+            .arguments
+            .contains(&("window".to_owned(), "today.txt".to_owned()))
+    );
     assert!(
         machine.told.iter().all(|line| line.contains("today.txt")),
         "{:?}",
@@ -498,8 +592,14 @@ fn front_acts_on_the_window_and_records_what_it_was() {
 fn front_with_nothing_to_name_is_refused() {
     let known = Known::holding(&[EDITOR]);
     for (answer, says) in [
-        (Ok(InFront::None), "There is no window you were working in before this terminal"),
-        (Ok(InFront::Unnamed), "does not say which application it belongs to"),
+        (
+            Ok(InFront::None),
+            "There is no window you were working in before this terminal",
+        ),
+        (
+            Ok(InFront::Unnamed),
+            "does not say which application it belongs to",
+        ),
         (
             Ok(InFront::window(3, "org.example.NotHere", "x")),
             "does not say which application it belongs to",
@@ -513,7 +613,11 @@ fn front_with_nothing_to_name_is_refused() {
             Ended::NotOffered,
             "{answer:?}"
         );
-        assert!(machine.warned.iter().any(|line| line.contains(says)), "{:?}", machine.warned);
+        assert!(
+            machine.warned.iter().any(|line| line.contains(says)),
+            "{:?}",
+            machine.warned
+        );
         assert!(machine.kept.is_empty(), "the word front was written down");
     }
     let mut machine = AMachine::default();
@@ -523,7 +627,10 @@ fn front_with_nothing_to_name_is_refused() {
         "front cannot close a whole application"
     );
     assert_eq!(
-        known.running(&["front", "controls", "--in", "x"], &mut AMachine::default()),
+        known.running(
+            &["front", "controls", "--in", "x"],
+            &mut AMachine::default()
+        ),
         Ended::NotThisShape
     );
 }
@@ -546,7 +653,13 @@ fn alo_is_reached_through_its_own_tree_only() {
     let entry = written(machine.kept.first().unwrap());
     assert_eq!(entry.application, "alo");
     assert!(matches!(entry.sent, Some(SentDuring::NotCounted { .. })));
-    assert!(!machine.door.asked.iter().any(|line| line.starts_with("count")));
+    assert!(
+        !machine
+            .door
+            .asked
+            .iter()
+            .any(|line| line.starts_with("count"))
+    );
 
     for (answer, ended) in [
         (Ok(WhereAlosTreeIs::Nowhere), Ended::NotOffered),
@@ -554,12 +667,23 @@ fn alo_is_reached_through_its_own_tree_only() {
     ] {
         let mut machine = AMachine::default();
         machine.door.alos_tree = answer.clone();
-        assert_eq!(known.running(&["alo", "controls"], &mut machine), ended, "{answer:?}");
+        assert_eq!(
+            known.running(&["alo", "controls"], &mut machine),
+            ended,
+            "{answer:?}"
+        );
     }
     let mut machine = AMachine::default();
-    assert_eq!(known.running(&["alo", "open"], &mut machine), Ended::NotOffered);
+    assert_eq!(
+        known.running(&["alo", "open"], &mut machine),
+        Ended::NotOffered
+    );
     assert!(
-        !machine.door.asked.iter().any(|line| line.starts_with("open")),
+        !machine
+            .door
+            .asked
+            .iter()
+            .any(|line| line.starts_with("open")),
         "alo's own surfaces went by another road"
     );
 }
@@ -587,5 +711,11 @@ fn a_line_not_in_the_shape_asks_nothing() {
     let mut machine = AMachine::default();
     assert_eq!(known.running(&[], &mut machine), Ended::NotThisShape);
     assert!(machine.door.asked.is_empty());
-    assert!(machine.warned.first().unwrap().starts_with("Nothing was asked"));
+    assert!(
+        machine
+            .warned
+            .first()
+            .unwrap()
+            .starts_with("Nothing was asked")
+    );
 }

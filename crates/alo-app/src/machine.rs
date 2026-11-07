@@ -85,7 +85,7 @@ pub trait Machine {
     fn keep(&mut self, entry: &Entry, strings: &Strings) -> Result<(), Said>;
 
     /// The next line on the pipe, without its line ending; [`None`] at its end.
-    fn from_the_pipe(&mut self) -> Option<String>;
+    fn next_on_the_pipe(&mut self) -> Option<String>;
 
     /// One line of what the command gives back, on its output.
     fn told(&mut self, line: &str);

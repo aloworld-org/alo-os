@@ -218,13 +218,12 @@ pub const FRONT_UNNAMED: Word = Word::saying(
 );
 
 /// The window `front` means, as a person reads it.
-pub const FRONT_WINDOW: Word = Word::saying("app.front.window", "{application}, {window}")
-    .noting(
-        "Names the window the person was working in: {application} is the application's name \
+pub const FRONT_WINDOW: Word = Word::saying("app.front.window", "{application}, {window}").noting(
+    "Names the window the person was working in: {application} is the application's name \
          as its menu shows it, and {window} is the window's title, both shown as they are. It \
          goes inside other sentences, like “Pressed the button “Save” in Text Editor, \
          today.txt”.",
-    );
+);
 
 /// The desktop did not answer a question about which window or which tree.
 pub const DESKTOP_SILENT: Word = Word::saying(
@@ -423,7 +422,9 @@ pub const ALOS_OWN_NOT_COUNTED: Word = Word::saying(
     "What alo OS itself sends is shown on the indicator, so it is not counted again for this \
      command",
 )
-.noting("Kept in the record for a press on Settings, the Dock or another of alo OS's own surfaces.");
+.noting(
+    "Kept in the record for a press on Settings, the Dock or another of alo OS's own surfaces.",
+);
 
 // ---------------------------------------------------------------------------
 // The place to return to (ADR 0127).
@@ -453,8 +454,8 @@ pub const A_CONTROL: Word = Word::saying("app.controls.one", "{kind} “{control
     .noting("{kind} is a kind of control in words; {control} is the name it shows.");
 
 /// One control, with what is true of it.
-pub const A_CONTROL_WITH: Word = Word::saying("app.controls.one-with", "{kind} “{control}”: {list}")
-    .noting(
+pub const A_CONTROL_WITH: Word =
+    Word::saying("app.controls.one-with", "{kind} “{control}”: {list}").noting(
         "{list} is what is true of it now, separated by commas: greyed out, on, off, or what \
          it holds.",
     );
@@ -467,7 +468,8 @@ pub const NO_CONTROLS: Word = Word::saying(
 .noting("Said under a window's heading.");
 
 /// A text field, as a kind.
-pub const A_FIELD: Word = Word::saying("app.role.field", "field").noting("A kind of control: a box a person types into.");
+pub const A_FIELD: Word =
+    Word::saying("app.role.field", "field").noting("A kind of control: a box a person types into.");
 
 /// A password field, as a kind.
 pub const A_PASSWORD_FIELD: Word = Word::saying("app.role.password-field", "password field")
@@ -666,8 +668,8 @@ pub const KIND_PATH: Word = Word::saying(
 .noting("{said} is what the argument is for.");
 
 /// A name argument.
-pub const KIND_NAME: Word = Word::saying("app.kind.name", "{said}: one name")
-    .noting("{said} is what the argument is for.");
+pub const KIND_NAME: Word =
+    Word::saying("app.kind.name", "{said}: one name").noting("{said} is what the argument is for.");
 
 /// A number argument.
 pub const KIND_COUNT: Word = Word::saying("app.kind.count", "{said}: a whole number")
@@ -831,11 +833,7 @@ mod tests {
     fn every_word_declares_under_this_crates_own_keys() {
         let mut vocabulary = Vocabulary::empty();
         declare_into(&mut vocabulary).unwrap();
-        let mut keys: Vec<&str> = EVERY_WORD
-            .iter()
-            
-            .map(Word::named)
-            .collect();
+        let mut keys: Vec<&str> = EVERY_WORD.iter().map(Word::named).collect();
         assert!(keys.iter().all(|key| key.starts_with("app.")), "{keys:?}");
         keys.sort_unstable();
         let before = keys.len();

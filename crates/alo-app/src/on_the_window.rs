@@ -55,10 +55,9 @@ pub fn on_the_window(
         Ok(Answer::NotActed(NotActed::NoWindow)) => {
             Outcome::not_asked(Ended::Refused, say(&words::NO_WINDOW_TO_ACT_ON))
         }
-        Ok(Answer::NotActed(NotActed::NotInstalled)) => Outcome::not_asked(
-            Ended::NotOffered,
-            say(&words::DESKTOP_SAYS_NOT_INSTALLED),
-        ),
+        Ok(Answer::NotActed(NotActed::NotInstalled)) => {
+            Outcome::not_asked(Ended::NotOffered, say(&words::DESKTOP_SAYS_NOT_INSTALLED))
+        }
         Ok(Answer::NotActed(NotActed::CouldNotAsk)) => {
             Outcome::not_asked(Ended::NotOffered, say(&words::COULD_NOT_ASK))
         }

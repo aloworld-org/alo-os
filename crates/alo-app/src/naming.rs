@@ -102,11 +102,13 @@ impl Reached {
             ),
             Self::AsIdentifierBecauseReserved { short } => strings.say(
                 &words::TYPE_IDENTIFIER_RESERVED.key(),
-                &Filling::of(words::IDENTIFIER, identifier.to_owned()).and(words::SHORT, short.clone()),
+                &Filling::of(words::IDENTIFIER, identifier.to_owned())
+                    .and(words::SHORT, short.clone()),
             ),
             Self::AsIdentifierBecauseShared { short } => strings.say(
                 &words::TYPE_IDENTIFIER_SHARED.key(),
-                &Filling::of(words::IDENTIFIER, identifier.to_owned()).and(words::SHORT, short.clone()),
+                &Filling::of(words::IDENTIFIER, identifier.to_owned())
+                    .and(words::SHORT, short.clone()),
             ),
         }
     }
@@ -259,7 +261,9 @@ mod tests {
         assert_eq!(named("alo", &installed).unwrap(), Named::Alo);
         assert!(named("list", &installed).is_err());
         let front = installed.knows("com.example.Front").unwrap();
-        assert!(matches!(named("com.example.Front", &installed).unwrap(), Named::Installed(found) if found == front));
+        assert!(
+            matches!(named("com.example.Front", &installed).unwrap(), Named::Installed(found) if found == front)
+        );
         let reached = how_it_is_reached(front, &installed);
         assert_eq!(
             reached,

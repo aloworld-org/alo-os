@@ -52,14 +52,14 @@ pub fn run(
             application,
             ability,
         } => {
-            let subject =
-                match the_subject(&application, &Doing::Controls, None, knowing, machine) {
-                    Ok(subject) => subject,
-                    Err(why) => {
-                        machine.warned(why.said.text());
-                        return why.ended;
-                    }
-                };
+            let subject = match the_subject(&application, &Doing::Controls, None, knowing, machine)
+            {
+                Ok(subject) => subject,
+                Err(why) => {
+                    machine.warned(why.said.text());
+                    return why.ended;
+                }
+            };
             let one = match (&ability, subject.application()) {
                 (None, _) => None,
                 (Some(ability), Some(found)) => {
@@ -94,24 +94,24 @@ pub fn run(
             doing,
             within,
         } => {
-            let subject = match the_subject(&application, &doing, within.as_deref(), knowing, machine)
-            {
-                Ok(subject) => subject,
-                Err(why) => {
-                    if doing.acts() {
-                        refused_before_a_subject(
-                            &application,
-                            doing.named(),
-                            &why.said,
-                            strings,
-                            machine,
-                        );
-                    } else {
-                        machine.warned(why.said.text());
+            let subject =
+                match the_subject(&application, &doing, within.as_deref(), knowing, machine) {
+                    Ok(subject) => subject,
+                    Err(why) => {
+                        if doing.acts() {
+                            refused_before_a_subject(
+                                &application,
+                                doing.named(),
+                                &why.said,
+                                strings,
+                                machine,
+                            );
+                        } else {
+                            machine.warned(why.said.text());
+                        }
+                        return why.ended;
                     }
-                    return why.ended;
-                }
-            };
+                };
             match doing {
                 Doing::Controls => looked(Look::Controls, &subject, telling, strings, machine),
                 Doing::Read => looked(Look::Read, &subject, telling, strings, machine),

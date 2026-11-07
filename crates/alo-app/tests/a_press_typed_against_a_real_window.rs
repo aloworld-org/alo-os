@@ -91,7 +91,10 @@ fn waiting_for<T>(what: &str, mut ready: impl FnMut() -> Option<T>) -> T {
         if let Some(answer) = ready() {
             return answer;
         }
-        assert!(started.elapsed() < PATIENCE, "{what} did not happen in {PATIENCE:?}");
+        assert!(
+            started.elapsed() < PATIENCE,
+            "{what} did not happen in {PATIENCE:?}"
+        );
         std::thread::sleep(Duration::from_millis(100));
     }
 }
@@ -209,7 +212,9 @@ impl ASession {
         std::fs::create_dir_all(&root).unwrap();
         std::fs::write(
             root.join(".flatpak-info"),
-            format!("[Application]\nname={FIXTURE}\nruntime=runtime/org.gnome.Platform/x86_64/48\n"),
+            format!(
+                "[Application]\nname={FIXTURE}\nruntime=runtime/org.gnome.Platform/x86_64/48\n"
+            ),
         )
         .unwrap();
         this.processes.push(window);
@@ -236,7 +241,11 @@ impl ASession {
 
     /// The tree as only this test reads it: with the window's pretend sandbox.
     fn tree(&self) -> AccessibleSession {
-        AccessibleSession::at(&self.accessibility, Sandboxes::under(self.place.join("proc"))).unwrap()
+        AccessibleSession::at(
+            &self.accessibility,
+            Sandboxes::under(self.place.join("proc")),
+        )
+        .unwrap()
     }
 
     /// The unique name the window's tree answers as, once it shows something.

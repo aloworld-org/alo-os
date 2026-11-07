@@ -96,8 +96,7 @@ impl Adapters {
     /// most, because [`Adapters::add`] refuses a second for one application.
     #[must_use]
     pub fn for_application(&self, identifier: &str) -> Option<&'static Adapter> {
-        self.all()
-            .find(|adapter| adapter.application == identifier)
+        self.all().find(|adapter| adapter.application == identifier)
     }
 
     /// The adapter and the declared verb the machine knows by this name.

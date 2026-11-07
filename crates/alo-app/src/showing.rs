@@ -59,7 +59,11 @@ pub fn on_the_tree(identifier: &str, machine: &mut dyn Machine) -> OnTheTree {
         return OnTheTree::NoTree;
     };
     match tree.applications() {
-        Ok(running) if running.iter().any(|one| one.is.as_deref() == Some(identifier)) => {
+        Ok(running)
+            if running
+                .iter()
+                .any(|one| one.is.as_deref() == Some(identifier)) =>
+        {
             OnTheTree::Described
         }
         Ok(_) => OnTheTree::NotOpen,
@@ -113,11 +117,8 @@ pub fn shown(
             vec![one.to_string()]
         }
         Giving::Sentences => {
-            let say = |word: &words::Word| {
-                strings
-                    .say(&word.key(), &Filling::nothing())
-                    .into_text()
-            };
+            let say =
+                |word: &words::Word| strings.say(&word.key(), &Filling::nothing()).into_text();
             let reached = how_it_is_reached(application, knowing.installed);
             let mut lines = vec![
                 strings
@@ -168,7 +169,10 @@ fn alos_own(giving: Giving, strings: &Strings) -> Vec<String> {
         .map(|surface| surface.on_the_wire())
         .collect();
     match giving {
-        Giving::Values => surfaces.iter().map(|surface| (*surface).to_owned()).collect(),
+        Giving::Values => surfaces
+            .iter()
+            .map(|surface| (*surface).to_owned())
+            .collect(),
         Giving::Json => vec![
             json!({
                 "format": 1,
@@ -245,7 +249,8 @@ fn one_ability(
                 strings
                     .say(
                         &words::IN_WORDS.key(),
-                        &Filling::nothing().and_said(words::SAID, &sentence_with_gaps(one, strings)),
+                        &Filling::nothing()
+                            .and_said(words::SAID, &sentence_with_gaps(one, strings)),
                     )
                     .into_text(),
             );
@@ -258,7 +263,10 @@ fn one_ability(
             if one.verb.sends != Sends::Never {
                 lines.push(
                     strings
-                        .say(&words::CANNOT_BE_UNDONE_ONCE_SENT.key(), &Filling::nothing())
+                        .say(
+                            &words::CANNOT_BE_UNDONE_ONCE_SENT.key(),
+                            &Filling::nothing(),
+                        )
                         .into_text(),
                 );
             }

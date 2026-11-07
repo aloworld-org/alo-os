@@ -32,18 +32,18 @@ pub struct ToPress {
 /// # Errors
 /// An [`Outcome::NotAsked`]: a kind `press` does not take, or a name a
 /// sentence cannot hold.
-pub fn to_press(kind: &str, control: &str, strings: &Strings) -> Result<ToPress, Outcome> {
+pub fn to_press(kind: &str, control: &str, strings: &Strings) -> Result<ToPress, Box<Outcome>> {
     let Some(kind) = Pressable::called(kind) else {
         let kinds: Vec<&str> = Pressable::ALL.iter().map(|kind| kind.named()).collect();
         let said = strings.say(
             &words::NO_SUCH_KIND.key(),
             &Filling::of(words::TYPED, kind.to_owned()).and(words::LIST, kinds.join(", ")),
         );
-        return Err(Outcome::not_asked(Ended::ValueRefused, said));
+        return Err(Outcome::refusing(Ended::ValueRefused, said));
     };
     if !readable(control) {
         let said = strings.say(&words::UNREADABLE_VALUE.key(), &Filling::nothing());
-        return Err(Outcome::not_asked(Ended::ValueRefused, said));
+        return Err(Outcome::refusing(Ended::ValueRefused, said));
     }
     Ok(ToPress {
         kind,

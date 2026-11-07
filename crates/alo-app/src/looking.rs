@@ -170,7 +170,8 @@ fn controls_said(shown: &Shown, strings: &Strings) -> Vec<String> {
                 continue;
             };
             let states = states_said(seen, strings);
-            let filling = Filling::of(words::CONTROL, seen.name().to_owned()).and_said(words::KIND, &kind);
+            let filling =
+                Filling::of(words::CONTROL, seen.name().to_owned()).and_said(words::KIND, &kind);
             let said = if states.is_empty() {
                 strings.say(&words::A_CONTROL.key(), &filling)
             } else {

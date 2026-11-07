@@ -116,7 +116,7 @@ impl Machine for OnThisMachine {
         }
     }
 
-    fn from_the_pipe(&mut self) -> Option<String> {
+    fn next_on_the_pipe(&mut self) -> Option<String> {
         match self.pipe.next()? {
             Ok(line) => Some(line.strip_suffix('\r').map(str::to_owned).unwrap_or(line)),
             Err(_) => None,
@@ -183,8 +183,10 @@ pub fn main() -> ExitCode {
 
     // **What the person typed, before the machine is touched.** A word that is
     // not text cannot be shown or matched, so it is refused as a value.
-    let typed: Result<Vec<String>, OsString> =
-        std::env::args_os().skip(1).map(OsString::into_string).collect();
+    let typed: Result<Vec<String>, OsString> = std::env::args_os()
+        .skip(1)
+        .map(OsString::into_string)
+        .collect();
     let Ok(typed) = typed else {
         eprintln!(
             "{}",
@@ -197,11 +199,15 @@ pub fn main() -> ExitCode {
     };
 
     let Some(home) = std::env::var_os("HOME").map(PathBuf::from) else {
-        eprintln!("alo-app: this session has no home directory, so there is nowhere to write down what is done");
+        eprintln!(
+            "alo-app: this session has no home directory, so there is nowhere to write down what is done"
+        );
         return Ended::NotOffered.into();
     };
     let Ok(standing_in) = std::env::current_dir() else {
-        eprintln!("alo-app: this process has no current directory, so a relative path cannot be read");
+        eprintln!(
+            "alo-app: this process has no current directory, so a relative path cannot be read"
+        );
         return Ended::NotOffered.into();
     };
     let (Ok(adapters), Ok(verbs)) = (shipped_adapters(), adapter_verbs()) else {
@@ -235,5 +241,11 @@ pub fn main() -> ExitCode {
         verbs: &verbs,
         standing_in: &standing_in,
     };
-    run(&typed, std::io::stdout().is_terminal(), knowing, &mut machine).into()
+    run(
+        &typed,
+        std::io::stdout().is_terminal(),
+        knowing,
+        &mut machine,
+    )
+    .into()
 }

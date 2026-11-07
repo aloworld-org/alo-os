@@ -86,12 +86,11 @@ pub fn drive_by_hand(
 ) -> Result<DrivenByHand, NotDrivenByHand> {
     let (adapter, verb) =
         whose_verb(adapters, call.verb(), strings).map_err(NotDrivenByHand::NotDeclared)?;
-    let message = the_message(adapter, verb, call, installed, strings).map_err(|(why, said)| {
-        match why {
+    let message =
+        the_message(adapter, verb, call, installed, strings).map_err(|(why, said)| match why {
             NotMessaged::NotInstalled => NotDrivenByHand::NotInstalled(said),
             NotMessaged::NotBuilt => NotDrivenByHand::NotBuilt(said),
-        }
-    })?;
+        })?;
     match sent(&message, to) {
         Ok(unanswered) => Ok(DrivenByHand { unanswered }),
         Err(why) => Err(NotDrivenByHand::NotDelivered(

@@ -513,13 +513,11 @@ impl ToAPerson {
                 kept,
                 why_not,
                 named,
-            } => {
-                Ok(Self::APlaceToReturnTo {
-                    kept,
-                    why_not,
-                    named,
-                })
-            }
+            } => Ok(Self::APlaceToReturnTo {
+                kept,
+                why_not,
+                named,
+            }),
             Told::PutBack { said } => Ok(Self::PutBack { said }),
             Told::Declined {} => Ok(Self::Declined),
             Told::Granted { holding } => Ok(Self::Granted { holding }),
@@ -615,13 +613,11 @@ impl From<ToAPerson> for Told {
                 kept,
                 why_not,
                 named,
-            } => {
-                Self::APlaceToReturnTo {
-                    kept,
-                    why_not,
-                    named,
-                }
-            }
+            } => Self::APlaceToReturnTo {
+                kept,
+                why_not,
+                named,
+            },
             ToAPerson::PutBack { said } => Self::PutBack { said },
             ToAPerson::Declined => Self::Declined {},
             ToAPerson::Granted { holding } => Self::Granted { holding },

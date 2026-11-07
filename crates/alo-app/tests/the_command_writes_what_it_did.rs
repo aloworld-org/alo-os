@@ -106,9 +106,7 @@ impl AMachine {
 
     /// Every entry in the person's record.
     fn entries(&self) -> Vec<String> {
-        let record = self
-            .place
-            .join("home/.local/state/alo/commands.jsonl");
+        let record = self.place.join("home/.local/state/alo/commands.jsonl");
         std::fs::read_to_string(record)
             .unwrap_or_default()
             .lines()
@@ -138,10 +136,16 @@ fn an_act_writes_one_entry_with_what_was_sent_and_a_look_writes_none() {
     let entries = machine.entries();
     assert_eq!(entries.len(), 1, "{entries:?}");
     let entry = entries.first().unwrap();
-    assert!(entry.contains(r#""application":"org.gnome.TextEditor""#), "{entry}");
+    assert!(
+        entry.contains(r#""application":"org.gnome.TextEditor""#),
+        "{entry}"
+    );
     assert!(entry.contains(r#""road":"window""#), "{entry}");
     assert!(entry.contains("4096"), "the count was not kept: {entry}");
-    assert!(!entry.contains("agent"), "a person's own act named an agent: {entry}");
+    assert!(
+        !entry.contains("agent"),
+        "a person's own act named an agent: {entry}"
+    );
 
     // **Around the act, in this order**: the count begins, the act, the count ends.
     let heard = machine.heard.lock().unwrap().clone();
@@ -162,7 +166,10 @@ fn an_act_writes_one_entry_with_what_was_sent_and_a_look_writes_none() {
     }
     assert_eq!(machine.entries().len(), 1, "a look was written down");
     let listed = machine.typed(&["list"]);
-    assert_eq!(String::from_utf8_lossy(&listed.stdout), "org.gnome.TextEditor\n");
+    assert_eq!(
+        String::from_utf8_lossy(&listed.stdout),
+        "org.gnome.TextEditor\n"
+    );
 }
 
 #[test]
@@ -179,7 +186,10 @@ fn a_refusal_writes_one_entry_with_nothing_of_what_arrived() {
     assert_eq!(entries.len(), 1, "{entries:?}");
     let entry = entries.first().unwrap();
     assert!(entry.contains(r#""ability":"press""#), "{entry}");
-    assert!(!entry.contains("Volume-Secret"), "a refusal kept what arrived: {entry}");
+    assert!(
+        !entry.contains("Volume-Secret"),
+        "a refusal kept what arrived: {entry}"
+    );
     assert!(
         machine.heard.lock().unwrap().is_empty(),
         "the desktop was asked about a command that was refused"
@@ -187,5 +197,9 @@ fn a_refusal_writes_one_entry_with_nothing_of_what_arrived() {
 
     let shapeless = machine.typed(&[]);
     assert_eq!(shapeless.status.code(), Some(64));
-    assert_eq!(machine.entries().len(), 1, "nothing was asked, and it was written down");
+    assert_eq!(
+        machine.entries().len(),
+        1,
+        "nothing was asked, and it was written down"
+    );
 }

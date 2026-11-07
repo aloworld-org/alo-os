@@ -117,7 +117,7 @@ impl Acting<'_> {
                 return self.refused(doing.named(), &refused, machine);
             }
         };
-        let calls = every_call(&values, pipe, || machine.from_the_pipe());
+        let calls = every_call(&values, pipe, || machine.next_on_the_pipe());
         let mut ended = Ended::Done;
         let mut place: Option<APlace> = None;
         for values in calls {
@@ -148,7 +148,7 @@ impl Acting<'_> {
     }
 
     /// The declared ability, for an application.
-    fn declared(&self, ability: &str) -> Result<Declared, Outcome> {
+    fn declared(&self, ability: &str) -> Result<Declared, Box<Outcome>> {
         let strings = self.knowing.strings;
         match self.subject.application() {
             Some(application) => the_ability(
@@ -158,9 +158,12 @@ impl Acting<'_> {
                 strings,
             ),
             // `alo` reaches no declared ability, which the subject already refused.
-            None => Err(Outcome::not_asked(
+            None => Err(Outcome::refusing(
                 Ended::NotOffered,
-                strings.say(&words::ALO_TREE_ONLY.key(), &alo_strings::Filling::nothing()),
+                strings.say(
+                    &words::ALO_TREE_ONLY.key(),
+                    &alo_strings::Filling::nothing(),
+                ),
             )),
         }
     }
@@ -172,22 +175,28 @@ impl Acting<'_> {
         values: &[String],
         named_as: &[String],
         pipe: Option<usize>,
-    ) -> Result<Ready, Outcome> {
+    ) -> Result<Ready, Box<Outcome>> {
         let strings = self.knowing.strings;
         // **A line of the pipe that a sentence cannot hold is refused on its
         // line**, whatever it was going to be.
         if let Some(line) = pipe.and_then(|at| values.get(at))
             && !readable(line)
         {
-            let said = strings.say(&words::UNREADABLE_VALUE.key(), &alo_strings::Filling::nothing());
-            return Err(Outcome::not_asked(Ended::ValueRefused, said));
+            let said = strings.say(
+                &words::UNREADABLE_VALUE.key(),
+                &alo_strings::Filling::nothing(),
+            );
+            return Err(Outcome::refusing(Ended::ValueRefused, said));
         }
         match doing {
             Doing::Press { .. } => {
                 let (Some(kind), Some(control)) = (values.first(), values.get(1)) else {
-                    return Err(Outcome::not_asked(
+                    return Err(Outcome::refusing(
                         Ended::NotThisShape,
-                        strings.say(&words::PRESS_NEEDS_TWO.key(), &alo_strings::Filling::nothing()),
+                        strings.say(
+                            &words::PRESS_NEEDS_TWO.key(),
+                            &alo_strings::Filling::nothing(),
+                        ),
                     ));
                 };
                 to_press(kind, control, strings).map(Ready::Press)
@@ -209,9 +218,12 @@ impl Acting<'_> {
                 )?;
                 Ok(Ready::Declared(declared, call))
             }
-            Doing::Controls | Doing::Read => Err(Outcome::not_asked(
+            Doing::Controls | Doing::Read => Err(Outcome::refusing(
                 Ended::NotThisShape,
-                strings.say(&words::NOTHING_ASKED.key(), &alo_strings::Filling::nothing()),
+                strings.say(
+                    &words::NOTHING_ASKED.key(),
+                    &alo_strings::Filling::nothing(),
+                ),
             )),
         }
     }
@@ -227,7 +239,10 @@ impl Acting<'_> {
                 }
                 None => Outcome::not_asked(
                     Ended::NotOffered,
-                    strings.say(&words::ALO_TREE_ONLY.key(), &alo_strings::Filling::nothing()),
+                    strings.say(
+                        &words::ALO_TREE_ONLY.key(),
+                        &alo_strings::Filling::nothing(),
+                    ),
                 ),
             },
             Ready::Declared(_, call) => carried(call, self.subject, self.knowing, machine),

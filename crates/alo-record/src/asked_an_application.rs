@@ -154,7 +154,9 @@ impl Entry {
                 ability: Line::of(ability),
                 road: None,
                 arguments: Vec::new(),
-                answered: Answered::Refused { said: Line::of(why) },
+                answered: Answered::Refused {
+                    said: Line::of(why),
+                },
                 sent: None,
             },
         )
@@ -182,7 +184,10 @@ mod tests {
             "org.gnome.TextEditor",
             "open_document",
             Road::Declared,
-            &[("document".to_owned(), "/home/alo/Notes/today.txt".to_owned())],
+            &[(
+                "document".to_owned(),
+                "/home/alo/Notes/today.txt".to_owned(),
+            )],
             Answered::Done,
             SentDuring::Counted { bytes: 0 },
             noon(),
@@ -216,7 +221,9 @@ mod tests {
                 assert!(arguments.is_empty());
                 assert_eq!(*road, None);
                 assert_eq!(sent, &None);
-                assert!(matches!(answered, Answered::Refused { said } if said.is("Text Editor shows no button named Save.")));
+                assert!(
+                    matches!(answered, Answered::Refused { said } if said.is("Text Editor shows no button named Save."))
+                );
             }
             other => panic!("not an application entry: {other:?}"),
         }
