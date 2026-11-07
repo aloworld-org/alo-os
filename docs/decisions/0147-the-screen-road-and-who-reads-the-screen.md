@@ -1,11 +1,14 @@
 # ADR 0147 — The screen road, and who reads the screen
 
-**Status:** **proposed, 2026-11-06**, by the lane drafting
+**Status:** **accepted, 2026-11-06, by the owner**, in one word: *"yes"* —
+after a simpler explanation of it, relayed by the coordinator. Proposed the same
+day by the lane drafting
 [`docs/contracts/terminal-commands.md`](../contracts/terminal-commands.md), on
-the owner's answers of the same day, relayed by the coordinator. **The owner
-decided what this records; the wording is the lane's and awaits the owner's
-acceptance.** Until it is accepted, no screen-road code is written (the owner's
-answer 15: the amendments come first).
+the owner's answers of that day; the decisions are the owner's and the wording
+is the lane's. **The amendments in §5 are made in the change that accepts it**
+— to ADR 0001 §6 and to `app-adapters.md` — so no document on `main` still
+refuses the screen road; the owner's answer 15 required them before any
+screen-road code. **Nothing of the screen road is built.**
 
 *Number: 0146 is* a person may switch watching on *on `main`. No branch or pull
 request on the remote adds a 0147, checked on 2026-11-06 after a fetch of every
@@ -135,8 +138,10 @@ model, third-parties apis."*
 
 ### 5. What `app-adapters.md` becomes
 
-On acceptance, the change that first builds the screen road makes these edits to
-`app-adapters.md`, and no screen-road code lands before them:
+**Made in the change that accepted this record, 2026-11-06** — earlier than the
+proposal said (*the change that first builds the screen road*), so that no
+document on `main` refuses what this record permits. ADR 0001 §6 carries a dated
+amendment pointing here, and `app-adapters.md` was edited in place:
 
 - *`synthetic`, whatever else is true* is removed from the list of refusals;
   `synthetic` is carried out by the machine itself under §1 above, and is not a

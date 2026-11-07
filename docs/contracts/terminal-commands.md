@@ -1,15 +1,17 @@
 # Contract — commands a person types to use their applications
 
-**Status: draft, 2026-11-06. Nothing in it is built, and nothing in it is
-accepted.** It is the contract `docs/features.md` says must be written *before*
-the commands are built (the promise *Everything on the computer, from the
-terminal*, in pull request #1101, which had not landed on `main` when this was
-written). **The owner answered every open question on 2026-11-06**; the answers
+**Status: contract, accepted 2026-11-06.** Additive changes only; a break
+requires versioning and a deprecation period (`CLAUDE.md`, *contracts outlive
+code*). **The owner answered every question it put on 2026-11-06**; the answers
 are in section 7, with the date and the owner's own words where they gave them,
-and the body of this page has been brought into line with them. It is still a
-draft until the owner accepts it, and **the screen road may not be built until
-[ADR 0147](../decisions/0147-the-screen-road-and-who-reads-the-screen.md) is
-accepted** (answer 15).
+and the body of this page is in line with them.
+[ADR 0147](../decisions/0147-the-screen-road-and-who-reads-the-screen.md), the
+screen road and who reads the screen, was accepted the same day (*"yes"*), and
+ADR 0001 §6 and `app-adapters.md` were amended in the same change. It is the
+contract `docs/features.md` said must be written *before* the commands are
+built (*Everything on the computer, from the terminal*, #1101). **Nothing in it
+is built yet**: accepted is a promise about what will be built, not a statement
+that a person can type any of it today (section 6).
 
 ## What this gives a person, in one paragraph
 
@@ -520,11 +522,12 @@ say which it cannot. **A password field is never sent anywhere**: it is cut out
 of the picture before any reader, built-in or not, sees it.
 
 **Nothing here is built**: ADR 0143 found no code that delivers keys or clicks
-for anything but a person's own hands, and `app-adapters.md` refuses the
-`synthetic` mechanism today. ADR 0001 §6 and `app-adapters.md` are amended
-**before** any of it is built (answer 15), by
+for anything but a person's own hands. ADR 0001 §6 and `app-adapters.md` were
+amended **before** any of it is built (answer 15), by
 [ADR 0147](../decisions/0147-the-screen-road-and-who-reads-the-screen.md),
-proposed in this branch.
+accepted 2026-11-06, so no document now refuses it — and the code in
+`crates/alo-adapters` still refuses an adapter that *declares* `synthetic`,
+which stays right: the screen road is the machine's own, never an adapter's.
 
 **An application with an adapter.** `app-adapters.md` said that, for alo, an
 adapter's narrower list replaces the tree, because pressing any control would
@@ -885,12 +888,11 @@ verbs for applications that offer an automation interface.
 
 ## 7. The owner's answers, 2026-11-06
 
-Every question this draft put to the owner was answered on 2026-11-06, relayed
-by the coordinator. Each is closed here with the answer; where the owner gave
-words, they are quoted. Where the owner took the draft's recommendation without
-comment, it says so. **Answered is not built**: nothing on this page exists yet,
-and the screen road may not be built at all before ADR 0147 is accepted (answer
-15).
+Every question the draft of this contract put to the owner was answered on
+2026-11-06, relayed by the coordinator. Each is closed here with the answer;
+where the owner gave words, they are quoted. Where the owner took the draft's
+recommendation without comment, it says so. **Answered is not built**: nothing
+on this page exists yet.
 
 **1. The command's name — `alo-app`.** Closed.
 
@@ -986,10 +988,10 @@ any reader sees it. Closed.
 
 **15. The amendments before any screen-road code — the recommendation, taken.**
 ADR 0001 §6 and `app-adapters.md` are amended before a line of the screen road
-is written. The text is drafted in the same branch as
+is written. The text is
 [ADR 0147](../decisions/0147-the-screen-road-and-who-reads-the-screen.md),
-**proposed, not accepted**. Closed as a decision; the ADR itself awaits the
-owner.
+**accepted by the owner on 2026-11-06** — *"yes"* — and both amendments are
+made in the change that accepted it. Closed.
 
 **16. Clicking and dragging by position — for the person now; never for alo.**
 `click` and `drag` are forms of `alo-app` from the start (section 1), with the
