@@ -18,7 +18,7 @@
 
 use crate::display_scale::DisplayScale;
 use crate::{Cursor, RenderError};
-use alo_cursors::{CursorIcon, Picture, Silhouette};
+use alo_cursors::{CursorIcon, Picture};
 use smithay::utils::{Physical, Rectangle};
 
 /// A pointer drawn and placed on one display.
@@ -42,7 +42,8 @@ pub(crate) const fn the_shape_of(cursor: &Cursor) -> Option<CursorIcon> {
     }
 }
 
-/// The pointer for `cursor` on a display of `bounds` drawn at `scale`, or
+/// The pointer for `cursor` on a display of `bounds` drawn at `scale`, in the
+/// person's `look`, or
 /// [`None`] when alo draws nothing: a state that is not alo's to draw, or a
 /// pointer wholly off this display.
 ///
@@ -54,6 +55,7 @@ pub(crate) const fn the_shape_of(cursor: &Cursor) -> Option<CursorIcon> {
 pub(crate) fn the_pointer(
     cursor: &Cursor,
     scale: DisplayScale,
+    look: crate::ThePointersLook,
     bounds: Rectangle<i32, Physical>,
 ) -> Result<Option<ThePointer>, RenderError> {
     let (Some(shape), Some(location)) = (the_shape_of(cursor), where_it_is(cursor)) else {
@@ -63,10 +65,9 @@ pub(crate) fn the_pointer(
         return Err(RenderError::Submission("non-finite cursor position".into()));
     }
     let size = alo_cursors::measures::pixels_at(scale.per_cent());
-    // **The kite, until Settings offers the choice**: the owner's 2026-11-06
-    // pick. `Silhouette::Classic` is kept beside it in `alo_cursors`, and the
-    // setting that chooses between them is not built yet.
-    let picture = alo_cursors::draw(shape, Silhouette::default(), size)
+    // **The arrow the person chose**: the kite the owner picked on 2026-11-06,
+    // unless they chose the familiar one in Settings (`crate::the_pointers_look`).
+    let picture = alo_cursors::draw(shape, look.silhouette(), size)
         .map_err(|why| RenderError::Submission(why.to_string()))?;
     let left = location.0.floor() - f64::from(picture.hotspot.0);
     let top = location.1.floor() - f64::from(picture.hotspot.1);

@@ -228,6 +228,7 @@ mod dock_tooltip;
 mod how_a_panel_is_raised;
 mod the_keyboard_on_the_docks_surfaces;
 mod the_pointer_drawn;
+mod the_pointers_look;
 pub mod what_is_on_the_clipboard;
 mod where_the_docks_surface_is;
 
@@ -887,6 +888,7 @@ pub use recovery_raster::RecoveryLook;
 pub use recovery_reached::Reached;
 pub use recovery_screen::{RecoveryChosen, RecoveryScreen, RecoveryShows, THE_TWO_MOMENTS};
 pub use resize_cursor::the_cursor_over;
+pub use the_pointers_look::ThePointersLook;
 pub use running_keys::RunningKey;
 pub use running_window::{RunningPressed, RunningShows, RunningWindow};
 pub use scanout::ActiveScanout;

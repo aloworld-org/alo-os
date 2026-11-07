@@ -62,12 +62,20 @@ fn the_recipe_runs_the_generator_into_what_it_copies() {
         recipe
             .lines()
             .any(|line| line.starts_with("COPY --from=shell ")
-                && line.contains(&format!(
-                    "{written}/ /usr/share/icons/{}/",
-                    alo_cursors::theme::THE_NAME
-                ))),
-        "the theme written to {written} is not what is copied to /usr/share/icons"
+                && line.contains(&format!("{written}/ /usr/share/icons/"))),
+        "the themes written to {written} are not what is copied to /usr/share/icons"
     );
+    // **Both themes are checked by the build**, the shipped one and the one a
+    // person who chose the familiar arrow is given.
+    for name in [
+        alo_cursors::theme::THE_NAME,
+        alo_cursors::theme::THE_CLASSIC_NAME,
+    ] {
+        assert!(
+            ran.contains(&format!("test -s {written}/{name}/cursors/default")),
+            "the build does not check that it wrote the {name} theme"
+        );
+    }
 }
 
 #[test]

@@ -349,3 +349,10 @@ Each was decided one way to build this, and is listed so it can be answered:
    window left out a way with nothing under it. Choosing an empty way says why
    there is nothing there and changes nothing.
 5. **The gap between a page's blocks** is 32, 28 or 36 depending on the frame.
+6. **The pointer's shape is a second row in the Pointer section**, *Pointer
+   shape*, with the design's own segmented choice: *Kite*, which ships, and
+   *Classic*, the familiar arrow. `docs/features.md` promises *the familiar arrow
+   stays a choice in Settings* (the owner, 2026-11-06); `551:1038` draws only
+   *Pointer size* here, so where the choice sits is this lane's, built
+   2026-11-06. It is kept in `appearance.toml` and offered only where that file
+   was read.

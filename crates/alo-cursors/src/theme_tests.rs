@@ -74,6 +74,23 @@ fn the_index_names_the_theme() {
     assert!(index.contains(&format!("\nName={THE_NAME}\n")));
 }
 
+/// **The familiar arrow's theme differs from the shipped one only where the
+/// arrow is**: its own name, a different arrow, and the same text cursor, hands
+/// and resize arrows.
+#[test]
+fn the_classic_theme_changes_only_the_arrow() {
+    let kite = shipped();
+    let classic = the_theme(Silhouette::Classic).unwrap_or_else(|why| unreachable!("{why}"));
+    assert!(classic.index.contains(&format!("\nName={THE_CLASSIC_NAME}\n")));
+    assert_eq!(the_name_of(Silhouette::Kite), THE_NAME);
+    assert_eq!(the_name_of(Silhouette::Classic), THE_CLASSIC_NAME);
+    assert_ne!(kite.cursors.get("default"), classic.cursors.get("default"));
+    for same in ["text", "pointer", "grab", "ew-resize", "not-allowed"] {
+        assert_eq!(kite.cursors.get(same), classic.cursors.get(same), "{same}");
+    }
+    assert_eq!(kite.aliases, classic.aliases);
+}
+
 /// **What is written is what a toolkit finds**: the index, every file, and an
 /// old name that opens to the same bytes as the name it points at.
 #[test]

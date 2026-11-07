@@ -139,6 +139,9 @@ pub fn stand_the_desktop_up(
     // **What this person chose for their windows' titles**, before the first
     // frame draws one (`crate::the_window_titles_shown`).
     server.the_window_titles_are(desktop.the_window_titles());
+    // **And the pointer they chose**, before the first frame draws it
+    // (`crate::the_pointers_look`).
+    server.the_pointer_is(desktop.the_pointers_look());
     // **How this machine starts an application, handed in rather than built.**
     // `alo_portals::activated` is the implementation and `alo-portals` is a
     // dev-dependency here, so the caller supplies it — see
