@@ -101,7 +101,7 @@ fn raster(inked: &[Inked]) -> Result<Option<Washed>, RenderError> {
             let Some(target) = pixels.get_mut(start..start + w * 4) else {
                 return Ok(None);
             };
-            for ([red, green, blue], target) in source.iter().zip(target.chunks_exact_mut(4)) {
+            for ([red, green, blue], target) in source.iter().zip(target.as_chunks_mut::<4>().0) {
                 target.copy_from_slice(&[*red, *green, *blue, 255]);
             }
         }
