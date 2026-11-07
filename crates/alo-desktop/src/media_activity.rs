@@ -23,6 +23,8 @@ pub(crate) struct MediaActivity {
     pending: Option<Receiver<Reading>>,
     /// When that worker started, also used to limit request frequency.
     started: Option<Instant>,
+    /// Leave recovery time after completion, especially after a slow query.
+    next_request: Option<Instant>,
 }
 
 impl MediaActivity {
@@ -33,6 +35,7 @@ impl MediaActivity {
             problem: Some(unavailable("waiting for the first media-server reading")),
             pending: None,
             started: None,
+            next_request: None,
         }
     }
     /// Current rows for the renderer.
@@ -46,20 +49,37 @@ impl MediaActivity {
 
     /// Poll without waiting for a tool, socket, or worker thread.
     pub(crate) fn refresh(&mut self) {
+        self.refresh_at(Instant::now(), || {
+            InUse::read_from(&mut TheMediaServer::on_this_machine())
+        });
+    }
+
+    /// Explicit time and reader let regressions hold a genuinely pending query.
+    fn refresh_at(&mut self, now: Instant, read: impl FnOnce() -> Reading + Send + 'static) {
         if let Some(pending) = &self.pending {
             match pending.try_recv() {
                 Ok(reading) => {
                     self.pending = None;
-                    self.accept(reading);
+                    let late = self
+                        .started
+                        .is_some_and(|at| now.saturating_duration_since(at) >= STALE);
+                    let failed = late || reading.is_err();
+                    self.next_request = Some(now + if failed { STALE } else { INTERVAL });
+                    self.accept(if late {
+                        Err(unavailable("the media-server reading timed out"))
+                    } else {
+                        reading
+                    });
                 }
                 Err(TryRecvError::Disconnected) => {
                     self.pending = None;
+                    self.next_request = Some(now + STALE);
                     self.accept(Err(unavailable("the media-reading worker stopped")));
                 }
                 Err(TryRecvError::Empty) => {
                     if self
                         .started
-                        .is_some_and(|started| started.elapsed() >= STALE)
+                        .is_some_and(|started| now.saturating_duration_since(started) >= STALE)
                     {
                         self.accept(Err(unavailable("the media-server reading timed out")));
                     }
@@ -69,22 +89,26 @@ impl MediaActivity {
         }
         if self
             .started
-            .is_some_and(|started| started.elapsed() < INTERVAL)
+            .is_some_and(|at| now.saturating_duration_since(at) >= STALE)
         {
+            self.accept(Err(unavailable("the media-server reading timed out")));
+        }
+        if self.next_request.is_some_and(|at| now < at) {
             return;
         }
         let (sender, receiver) = sync_channel(1);
         match std::thread::Builder::new()
             .name("alo-media-activity".into())
             .spawn(move || {
-                let _ = sender.send(InUse::read_from(&mut TheMediaServer::on_this_machine()));
+                let _ = sender.send(read());
             }) {
             Ok(_) => {
                 self.pending = Some(receiver);
-                self.started = Some(Instant::now());
+                self.started = Some(now);
             }
             Err(error) => {
-                self.started = Some(Instant::now());
+                self.started = Some(now);
+                self.next_request = Some(now + STALE);
                 self.accept(Err(unavailable(&error.to_string())));
             }
         }
@@ -164,5 +188,49 @@ mod tests {
         assert!(began.elapsed() < Duration::from_secs(1));
         assert!(activity.pending.is_some());
         assert!(activity.problem().is_some());
+    }
+
+    #[test]
+    fn a_late_quiet_result_stays_unknown_and_does_not_restart_immediately() -> Result<(), String> {
+        let now = Instant::now();
+        let mut activity = MediaActivity::new();
+        let (sender, receiver) = sync_channel(1);
+        sender
+            .send(InUse::read_from(&mut Graph(vec![])))
+            .map_err(|e| e.to_string())?;
+        activity.started = Some(now);
+        activity.pending = Some(receiver);
+        activity.refresh_at(now + STALE, || InUse::read_from(&mut Graph(vec![])));
+        assert!(activity.problem().is_some());
+        assert!(activity.pending.is_none());
+        activity.refresh_at(now + STALE + INTERVAL, || {
+            InUse::read_from(&mut Graph(vec![]))
+        });
+        assert!(activity.problem().is_some());
+        assert!(activity.pending.is_none());
+        activity.refresh_at(now + STALE + STALE, || InUse::read_from(&mut Graph(vec![])));
+        assert!(activity.pending.is_some());
+        Ok(())
+    }
+
+    #[test]
+    fn a_slow_valid_result_leaves_an_interval_before_the_next_query() -> Result<(), String> {
+        let now = Instant::now();
+        let mut activity = MediaActivity::new();
+        let (sender, receiver) = sync_channel(1);
+        sender
+            .send(InUse::read_from(&mut Graph(vec![])))
+            .map_err(|e| e.to_string())?;
+        activity.started = Some(now);
+        activity.pending = Some(receiver);
+        let completed = now + Duration::from_secs(1);
+        activity.refresh_at(completed, || InUse::read_from(&mut Graph(vec![])));
+        assert!(activity.problem().is_none());
+        assert!(activity.pending.is_none());
+        activity.refresh_at(completed + INTERVAL, || {
+            InUse::read_from(&mut Graph(vec![]))
+        });
+        assert!(activity.pending.is_some());
+        Ok(())
     }
 }

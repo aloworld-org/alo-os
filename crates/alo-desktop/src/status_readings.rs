@@ -23,6 +23,8 @@ pub(crate) struct StatusReadings {
     fresh_at: Option<Instant>,
     /// Last reported failure, avoiding an identical message on every frame.
     problem: Option<String>,
+    /// A completed request must not immediately start another expensive query.
+    next_request: Option<Instant>,
 }
 
 impl StatusReadings {
@@ -38,6 +40,7 @@ impl StatusReadings {
             started: None,
             fresh_at: Some(now),
             problem: None,
+            next_request: None,
         }
     }
 
@@ -61,6 +64,16 @@ impl StatusReadings {
             match pending.try_recv() {
                 Ok(result) => {
                     self.pending = None;
+                    let late = self
+                        .started
+                        .is_some_and(|at| now.saturating_duration_since(at) >= STALE);
+                    self.next_request = Some(
+                        now + if late || result.is_err() {
+                            STALE
+                        } else {
+                            INTERVAL
+                        },
+                    );
                     match result {
                         Ok(mut reading)
                             if self.started.is_some_and(|started| {
@@ -80,6 +93,7 @@ impl StatusReadings {
                 }
                 Err(TryRecvError::Disconnected) => {
                     self.pending = None;
+                    self.next_request = Some(now + STALE);
                     self.failed(status, "the hardware-reading worker stopped".into());
                 }
                 Err(TryRecvError::Empty) => {}
@@ -92,6 +106,7 @@ impl StatusReadings {
             self.failed(status, "the hardware reading timed out".into());
         }
         if self.pending.is_some()
+            || self.next_request.is_some_and(|at| now < at)
             || self
                 .started
                 .is_some_and(|at| now.saturating_duration_since(at) < INTERVAL)

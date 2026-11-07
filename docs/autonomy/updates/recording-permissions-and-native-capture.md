@@ -1299,3 +1299,57 @@ fresh identical captures and revocation with no new frame; further checks
 cover dropped intermediate images, generation wrap and the existing blocked
 writer and exact service-owner checks. CI and installed verification of this
 additional change are pending; no synchronization result is inferred from it.
+
+### Fresh-publication verification and stage tracing
+
+Source `605d72a3` passes native, optimized desktop, strict, authors and OS-gate
+CI. The installed desktop SHA-256 is
+`12595953a3019bc11bb85eb0f6b6689e531e425455abd30d79453ec946a57994`.
+These checks do not establish recording quality. The normally installed Studio
+package remains source `9772d083`, with no verification feature enabled.
+
+The native-format repeat at `83d2f4a` fails media acceptance. Window clip
+`1794022241-861431505-2` stops before Pause when its audio queue reaches 200
+buffers. Its saved audio is effectively silent despite a passing independent
+precheck. Screen clip `1794022677-814956935-2` completes the full flow and exact
+native export, but averages 1.855 fps with a 1.697-second uncovered gap.
+Evidence is in `installed-native-format-window` and `installed-native-format-screen`.
+
+At `605d72a3`, window/microphone clip `1794023270-289522646-2` completes Start,
+the stable five-second pause, Resume, Finish, naming, library and exact native
+export. Its 22 frames average 0.475 fps, with a 4.384-second uncovered gap.
+Its 48.580 seconds of PCM have continuous timestamps but are effectively silent;
+the track endings differ by 1.057 seconds. Synchronization is not accepted.
+`Product demonstration 16.webm` matches SHA-256
+`7f607ac9e605d727ef22541a8509b07fe0e5f945bf8a9da71ead3468ac943a48`;
+document grant `64f823fb` gives only Studio read/write access.
+
+Screen clip `1794023971-76992512-2` also completes the full installed flow and
+native export. It has exactly one video track and no audio track. Its 21 frames
+average 0.919 fps and have a 1.439-second uncovered gap, failing continuity.
+`Product demonstration 17.webm` matches SHA-256
+`f64a473a86656d66c9fb64118cd75b237b0f1d0279165255f040dabf6d07ee2f`;
+document grant `d97d1869` is scoped to Studio. Evidence and failed acceptance
+results are in `installed-fresh-frame-window` and `installed-fresh-frame-screen`.
+The generation change exposes actual publication cadence; it is not credited
+as a verified performance improvement.
+
+A separate one-time trace, with explicitly disclosed timing preloads on both
+publisher and consumer, is preserved in `diagnostic-fresh-frame-screen-0420`.
+It is diagnostic evidence, not media acceptance. Publisher input advances from
+frame 1 to frame 60 across 81.604 seconds, with its reported queue empty. All 34
+observed PipeWire pool acquisitions finish within 33.5 milliseconds. Eleven
+observed slow record-entry pushes through preprocessing average 773.7 ms wall
+time and 485.5 ms thread CPU time; encoder output pushes are short. This locates
+sparse ingress before publication and substantial conversion/scaling work
+before encoding. The provider executable is restored and Studio relaunched
+without timing preloads after collection.
+
+A separate live process sample observes concurrent status and media-activity
+`pw-dump` queries consuming substantial CPU. Both readers immediately restart
+after an expensive completion when the start-based interval has elapsed.
+The next candidate adds an interval after completion and a two-second recovery
+interval after late or failed reads. A late quiet media result is refused rather
+than clearing the indicator. Existing freshness limits and one-outstanding-reader
+bounds remain. Regressions cover late quiet answers and recovery intervals for
+both readers. CI and an installed repeat of this candidate remain pending.

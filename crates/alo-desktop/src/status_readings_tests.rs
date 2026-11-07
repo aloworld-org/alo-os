@@ -25,6 +25,36 @@ fn formats() -> TheirFormats {
     TheirFormats::of(alo_formats::Chosen::default(), Some("en"))
 }
 
+#[test]
+fn a_slow_completed_query_leaves_recovery_time_before_another_read() -> Result<(), String> {
+    let now = Instant::now();
+    let formats = formats();
+    let mut reader = StatusReadings::at(now);
+    let mut status = measured("09:41", 35)?;
+    let (sender, receiver) = sync_channel(1);
+    sender
+        .send(measured("09:41", 75))
+        .map_err(|e| e.to_string())?;
+    reader.started = Some(now);
+    reader.pending = Some(receiver);
+    let completed = now + Duration::from_millis(1500);
+    reader.refresh_with(completed, &mut status, &formats, |_| measured("09:41", 90));
+    assert!(reader.pending.is_none());
+    assert_eq!(status.volume().map(alo_sound::Volume::hundredths), Some(75));
+    reader.refresh_with(
+        completed + Duration::from_millis(10),
+        &mut status,
+        &formats,
+        |_| measured("09:41", 90),
+    );
+    assert!(reader.pending.is_none());
+    reader.refresh_with(completed + INTERVAL, &mut status, &formats, |_| {
+        measured("09:41", 90)
+    });
+    assert!(reader.pending.is_some());
+    Ok(())
+}
+
 /// Receive a completed worker without allowing the next request to start.
 fn drain(
     reader: &mut StatusReadings,
