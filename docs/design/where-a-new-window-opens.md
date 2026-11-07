@@ -244,9 +244,11 @@ moves the view, and the choice is `alo_appearance::WhenThereIsNoRoom`, kept in
    Place ends a glide where it is.
 6. **Reduced motion is read from the person's own `access.toml` at sign-in**
    (`alo_access::Setting::ReducedMotion`), because that is where it is kept.
-   **Nothing in Settings turns it on yet**, so on a machine today the glide
-   always glides; the first-start sheet's *More options* is the designed road
-   (`the-first-start.md`, row 3).
+   Since the owner's yes of 2026-11-07 it is a switch in **Settings →
+   Accessibility → Motion**, off as a machine comes, and Settings tells the seat
+   at once, so the next glide is a jump. The first-start sheet's *More options*
+   is still the designed road before an account exists (`the-first-start.md`,
+   row 3), and is not built.
 
 **alo's own windows glide too — the owner, 2026-11-07: *"Yes, the same"*.**
 Asked whether the terminal, Settings, the record and task windows follow the

@@ -589,8 +589,7 @@ mod running {
                 std::env::var_os("HOME").as_deref(),
             )
             .is_some_and(|folder| {
-                let (turned_on, not_read) =
-                    alo_access::keeping::at_sign_in(&folder.join(alo_access::keeping::THE_FILE));
+                let (turned_on, not_read) = alo_access::keeping::at_sign_in(&folder);
                 // A file nobody has written is the ordinary case and not news;
                 // one that is there and does not read is said, once.
                 let missing = matches!(

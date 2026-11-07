@@ -95,6 +95,9 @@ pub fn keep(at: &Path, turned_on: &TurnedOn) -> Result<(), FileNotWritten> {
         format: FORMAT,
         turned_on: turned_on.clone(),
     };
+    // **A person who has never kept anything has no folder yet**, and turning
+    // a switch on is the moment it is first needed.
+    std::fs::create_dir_all(at)?;
     std::fs::write(at.join(THE_FILE), toml::to_string_pretty(&written)?)?;
     Ok(())
 }
