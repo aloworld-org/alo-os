@@ -114,3 +114,22 @@ fn native_copy_preserves_channels_across_wide_block_boundaries() -> Result<(), R
     }
     Ok(())
 }
+
+/// Capture shares the exact scanout bytes and survives replacement and release.
+#[test]
+fn capture_shares_owned_pixels_without_changing_previous_frames() -> Result<(), ReadbackError> {
+    let original = copy_xrgb((2, 1), &[1, 2, 3, 255, 4, 5, 6, 255])?;
+    let shared = original.shared();
+    assert!(std::ptr::eq(original.pixels().as_ptr(), shared.as_ptr()));
+    let again = original.shared();
+    assert!(std::sync::Arc::ptr_eq(&shared, &again));
+    assert!(std::sync::Arc::get_mut(&mut again.clone()).is_none());
+    let changed = original.redrawn(vec![0; 8]).ok_or(ReadbackError::Layout)?;
+    assert!(!std::ptr::eq(changed.pixels().as_ptr(), shared.as_ptr()));
+    drop(original);
+    drop(again);
+    assert_eq!(shared.as_slice(), &[1, 2, 3, 0, 4, 5, 6, 0]);
+    assert_eq!(changed.pixels(), &[0; 8]);
+    changed.frame().map_err(|_| ReadbackError::Layout)?;
+    Ok(())
+}

@@ -41,7 +41,7 @@ pub struct ScanoutPixels {
     /// Tightly packed byte pitch.
     stride: usize,
     /// Immutable converted frame storage.
-    pixels: Vec<u8>,
+    pixels: std::sync::Arc<Vec<u8>>,
 }
 
 impl ScanoutPixels {
@@ -60,6 +60,12 @@ impl ScanoutPixels {
         &self.pixels
     }
 
+    /// Share the owned allocation without copying the frame's bytes.
+    /// A consumer cannot mutate storage while scanout or another reader holds it.
+    pub(crate) fn shared(&self) -> std::sync::Arc<Vec<u8>> {
+        self.pixels.clone()
+    }
+
     /// The same extent and stride, carrying pixels drawn from these.
     ///
     /// The one door for a frame made out of another — the magnifier
@@ -71,7 +77,7 @@ impl ScanoutPixels {
         (pixels.len() == self.pixels.len()).then_some(Self {
             size: self.size,
             stride: self.stride,
-            pixels,
+            pixels: std::sync::Arc::new(pixels),
         })
     }
 }
@@ -167,7 +173,7 @@ pub(crate) fn convert(
     Ok(ScanoutPixels {
         size,
         stride,
-        pixels: pixels.into_flattened(),
+        pixels: std::sync::Arc::new(pixels.into_flattened()),
     })
 }
 
@@ -194,7 +200,7 @@ pub(crate) fn copy_xrgb(size: (u32, u32), bgrx: &[u8]) -> Result<ScanoutPixels, 
     Ok(ScanoutPixels {
         size,
         stride,
-        pixels,
+        pixels: std::sync::Arc::new(pixels),
     })
 }
 

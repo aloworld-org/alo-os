@@ -213,6 +213,43 @@ pub trait FrameTarget {
         crate::capture_frames::completed(root, popups, camera, time);
         Ok(pixels)
     }
+    /// Share the submitted output allocation when the backend supports it.
+    /// Existing backends retain their original capture implementation.
+    fn shared_captured_output(&mut self) -> Option<std::sync::Arc<Vec<u8>>> {
+        self.captured_output()
+            .map(|pixels| std::sync::Arc::new(pixels.to_vec()))
+    }
+    /// Render a private window while retaining its already owned pixel storage.
+    ///
+    /// # Errors
+    /// The same backend, import and size errors as `capture_window`.
+    fn shared_capture_window(
+        &mut self,
+        size: Size<i32, Physical>,
+        root: &WlSurface,
+        popups: &[crate::Popup],
+        cursor: &crate::Cursor,
+        camera: alo_canvas::Camera,
+    ) -> Result<std::sync::Arc<Vec<u8>>, RenderError> {
+        self.capture_window(size, root, popups, cursor, camera)
+            .map(|pixels| std::sync::Arc::new(pixels.to_vec()))
+    }
+    /// Complete callbacks only after the selected tree was captured successfully.
+    ///
+    /// # Errors
+    /// The same errors as `shared_capture_window`.
+    fn shared_capture_window_at(
+        &mut self,
+        size: Size<i32, Physical>,
+        root: &WlSurface,
+        popups: &[crate::Popup],
+        cursor: &crate::Cursor,
+        camera: alo_canvas::Camera,
+        time: u32,
+    ) -> Result<std::sync::Arc<Vec<u8>>, RenderError> {
+        self.capture_window_at(size, root, popups, cursor, camera, time)
+            .map(|pixels| std::sync::Arc::new(pixels.to_vec()))
+    }
     /// Submit a complete reader with its strip, clients, popups and cursor.
     /// Refuse unsupported content; never silently submit only the strip.
     /// No dispatch or publication is allowed during this transaction.

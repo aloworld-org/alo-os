@@ -56,7 +56,8 @@ impl FrameTarget for DirectTarget<'_, '_> {
         self.target.capture_output(wanted);
     }
     fn captured_output(&mut self) -> Option<std::sync::Arc<[u8]>> {
-        self.target.captured_output()
+        self.shared_captured_output()
+            .map(|pixels| std::sync::Arc::from(pixels.as_slice()))
     }
     fn capture_window(
         &mut self,
@@ -66,8 +67,34 @@ impl FrameTarget for DirectTarget<'_, '_> {
         cursor: &Cursor,
         camera: alo_canvas::Camera,
     ) -> Result<std::sync::Arc<[u8]>, RenderError> {
+        self.shared_capture_window(size, root, popups, cursor, camera)
+            .map(|pixels| std::sync::Arc::from(pixels.as_slice()))
+    }
+    fn shared_capture_window_at(
+        &mut self,
+        size: Size<i32, Physical>,
+        root: &WlSurface,
+        popups: &[Popup],
+        cursor: &Cursor,
+        camera: alo_canvas::Camera,
+        time: u32,
+    ) -> Result<std::sync::Arc<Vec<u8>>, RenderError> {
         self.target
-            .capture_window(size, root, popups, cursor, camera)
+            .shared_capture_window_at(size, root, popups, cursor, camera, time)
+    }
+    fn shared_captured_output(&mut self) -> Option<std::sync::Arc<Vec<u8>>> {
+        self.target.shared_captured_output()
+    }
+    fn shared_capture_window(
+        &mut self,
+        size: Size<i32, Physical>,
+        root: &WlSurface,
+        popups: &[Popup],
+        cursor: &Cursor,
+        camera: alo_canvas::Camera,
+    ) -> Result<std::sync::Arc<Vec<u8>>, RenderError> {
+        self.target
+            .shared_capture_window(size, root, popups, cursor, camera)
     }
     fn retire(&mut self) -> Result<(), RenderError> {
         self.target.retire()
@@ -227,7 +254,7 @@ pub(crate) struct Target<R, D: ScanoutDevice> {
     /// Full-output copies are made only for an active permission-scoped consumer.
     capture_output: bool,
     /// Published only after successful scanout submission, never after a refusal.
-    captured_output: Option<std::sync::Arc<[u8]>>,
+    captured_output: Option<std::sync::Arc<Vec<u8>>>,
     /// Context-thread painter.
     painter: R,
     /// Descriptor shared by initial and replacement transactions.
@@ -306,7 +333,8 @@ impl<R: ScenePainter, D: ScanoutDevice + Clone> FrameTarget for Target<R, D> {
         self.captured_output = None;
     }
     fn captured_output(&mut self) -> Option<std::sync::Arc<[u8]>> {
-        self.captured_output.take()
+        self.shared_captured_output()
+            .map(|pixels| std::sync::Arc::from(pixels.as_slice()))
     }
     fn capture_window(
         &mut self,
@@ -316,6 +344,33 @@ impl<R: ScenePainter, D: ScanoutDevice + Clone> FrameTarget for Target<R, D> {
         cursor: &Cursor,
         camera: alo_canvas::Camera,
     ) -> Result<std::sync::Arc<[u8]>, RenderError> {
+        self.shared_capture_window(size, root, popups, cursor, camera)
+            .map(|pixels| std::sync::Arc::from(pixels.as_slice()))
+    }
+    fn shared_capture_window_at(
+        &mut self,
+        size: Size<i32, Physical>,
+        root: &WlSurface,
+        popups: &[Popup],
+        cursor: &Cursor,
+        camera: alo_canvas::Camera,
+        time: u32,
+    ) -> Result<std::sync::Arc<Vec<u8>>, RenderError> {
+        let pixels = self.shared_capture_window(size, root, popups, cursor, camera)?;
+        crate::capture_frames::completed(root, popups, camera, time);
+        Ok(pixels)
+    }
+    fn shared_captured_output(&mut self) -> Option<std::sync::Arc<Vec<u8>>> {
+        self.captured_output.take()
+    }
+    fn shared_capture_window(
+        &mut self,
+        size: Size<i32, Physical>,
+        root: &WlSurface,
+        popups: &[Popup],
+        cursor: &Cursor,
+        camera: alo_canvas::Camera,
+    ) -> Result<std::sync::Arc<Vec<u8>>, RenderError> {
         let (pixels, _) = self.painter.paint(
             size,
             std::slice::from_ref(root),
@@ -324,7 +379,7 @@ impl<R: ScenePainter, D: ScanoutDevice + Clone> FrameTarget for Target<R, D> {
             crate::scene_native::NativeLayers::nothing(),
             camera,
         )?;
-        Ok(std::sync::Arc::from(pixels.pixels()))
+        Ok(pixels.shared())
     }
     fn look_at(&mut self, camera: alo_canvas::Camera) -> Result<(), RenderError> {
         self.camera = camera;
@@ -401,8 +456,7 @@ impl<R: ScenePainter, D: ScanoutDevice + Clone> Target<R, D> {
                     | crate::scene_native::NativeScene::Recovery(_)
             )
         );
-        let captured =
-            (self.capture_output && !exclusive).then(|| std::sync::Arc::from(prepared.0.pixels()));
+        let captured = (self.capture_output && !exclusive).then(|| prepared.0.shared());
         let result = if let Some(scene) = &mut self.scene {
             scene.replace(prepared).map(|result| {
                 self.retirement_error = result.retirement_error;

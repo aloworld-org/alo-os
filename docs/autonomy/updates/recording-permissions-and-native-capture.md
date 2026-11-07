@@ -2117,3 +2117,85 @@ cutoff is sampled, so a callback cannot cross that lookup with stale admission.
 No encoded timestamp/duration, media threshold or reference criterion changes.
 The failed `5afc4832` bundle is preserved and has not been installed. Native
 validation of this correction remains pending.
+
+### Installed native-input continuity results
+
+All five hosted checks pass at `06213b2e`. The normal GNOME SDK package from
+job `128448737332`, run `42387780673`, artifact `13579334191` is installed:
+bundle SHA-256 `ac0ba3a3aa33af1895fbefd9ed21d0c7b2571128da51a2008b018e5b0697e0ba`,
+Flatpak commit `7b85f3d6e209fdbb3efbc6bd34f86ef3f830a34805fbd8bfc338b5c8eebe4e1e`.
+The native fixture passes 33 unit tests and the pause timestamp cutoff check:
+already queued encoding advances from 1.981356333 to 2.014848333 seconds, while
+its latest frame timestamp 2.008880 remains before the 2.013074-second cutoff.
+That is queued pre-pause work, not a new paused frame. Desktop source remains
+`74c3fef4`; its relevant source trees are unchanged through `06213b2e`.
+
+The first installed screen walk completes its controls and exact export but
+fails media acceptance at 3.189 fps and a 765 ms uncovered gap. The microphone
+walk stops automatically when its bounded input queue fills. The asynchronously
+saved partial `1794067887-270965872-2` is separately retained in
+`installed-native-connection-window-partial`, SHA-256
+`4a93af4fb815ee32c6df56a8a6d35de93e3b08755710caa0f75df07dd12a8a69`.
+It contains 27 distinct video frames and 20.600 seconds of continuous PCM; it
+has no completed pause/export acceptance. The original failed collectors are
+preserved. No result is substituted for their failures.
+
+A repeat minimizes host activity and pauses only the competing Cargo/compiler
+processes with the person's existing approval. No active test is stopped in
+this repeat. The two processes resume at 16:39:28 UTC after an 16:30:58 UTC pause
+on 7 November 2026; no watchdog fires. Both complete installed flows pass source
+selection, stable five-second pause, microphone state, resume, finish, review,
+naming, library and exact native export. Media still fails:
+
+| Source | Clip | Decoded frames | Measured fps | Largest uncovered gap |
+| --- | --- | ---: | ---: | ---: |
+| Screen | `1794069136-28950846-2` | 83 | 4.217 | 450 ms |
+| Window and microphone | `1794069404-279901285-2` | 115 | 3.337 | 779 ms |
+
+Screen SHA-256 is `4331fb337533168bdda775a785a7b2843f863115dd9a410a1a0aa5f7b1133f04`;
+window SHA-256 is `ceb5a2e9d92031ef9bdc637fcf09c7181bfc039da4be55a0f7d7140e6f214c5e`.
+Both have strictly increasing timestamps and expected track counts. Window PCM
+is continuous for 34.960 seconds; track endings differ by 35 ms. Eight of twenty
+audio onsets match visual markers, median delay 598.5 ms, maximum 675.5 ms:
+synchronization is not established. Evidence and summary are retained in
+`installed-native-connection-quiet-boundary-*`. These are individual observations,
+not a paired performance comparison. Thresholds remain unchanged.
+
+A separate quiet-host reference observation runs without Studio recording after
+the competing test exits naturally. Only its Cargo supervisor is paused; all
+children finish with timers running. Reference PCM delivers 36.980 seconds over
+38.055 seconds; nine visual rises and 22 audio onsets are observed. Audio delivery
+versus its SystemClock timestamp drifts from approximately zero to one second.
+Nearest-onset matches are diagnostic only: event correspondence and physical
+presentation are not independently established. This cannot prove that either
+the reference or Studio alone causes the recorded synchronization failure.
+Evidence is `diagnostic-reference-quiet-phase-retry`; the supervisor resumes and
+normal audio/source/chooser/installer cleanup passes at 16:43:35 UTC.
+
+The earlier `installed-native-connection-quiet-repeat-validation` attempt briefly
+stops and resumes an active test before its old guard refuses the run. It produces
+no recording and is preserved separately. Subsequent pausers inspect children
+before stopping them, or pause only the Cargo supervisor and let active children
+finish naturally. `installed-reference-quiet-phase-validation` also preserves a
+supervisor-stop acknowledgement race; its finally path resumes the supervisor.
+Neither failed setup is recording acceptance.
+
+### Share owned capture pixels without a second full-frame copy
+
+Source inspection finds a full-frame allocation/copy at both direct capture
+handoffs: `Arc::from(pixels.pixels())` duplicates storage already owned by scanout
+or by the selected window render. Retaining the converted Vec behind an Arc
+allows these handoffs to clone ownership instead. Existing slice access, pixel
+format, scanout upload, permission checks, successful-submit gating, source
+lifetimes and bounded publication/in-flight retention remain unchanged.
+Redrawing creates fresh storage; previously published frames retain their bytes.
+
+The public FrameTarget capture methods keep their signatures and behavior.
+Additive shared-storage methods default to the existing backend entry points,
+including an overridden capture-with-callback method; direct backends explicitly
+opt into shared storage and complete only successfully captured trees. The
+existing covered-window integration backend exercises the compatibility path.
+A new readback regression checks pointer identity, shared mutation refusal,
+redraw independence and retained bytes after the original frame is dropped.
+Existing pixel and bounded slow-consumer tests remain. Formatting passes; hosted
+validation and installed media acceptance are pending for this candidate.

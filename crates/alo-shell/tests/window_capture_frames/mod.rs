@@ -48,7 +48,7 @@ fn capture(fixture: &Fixture, fail: bool, time: u32) -> Result<(), RenderError> 
             .cloned()
             .ok_or_else(|| RenderError::Submission("selected application is not mapped".into()))?;
         CaptureTarget { fail }
-            .capture_window_at(
+            .shared_capture_window_at(
                 (16, 16).into(),
                 &root,
                 &server.popup_surfaces(),

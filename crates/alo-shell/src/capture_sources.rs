@@ -166,7 +166,7 @@ impl CaptureSources {
         target: &mut (impl crate::FrameTarget + ?Sized),
         time: u32,
     ) {
-        if let Some(pixels) = target.captured_output()
+        if let Some(pixels) = target.shared_captured_output()
             && let Some(feed) = self.monitors.get(named)
         {
             feed.publish(pixels);
@@ -206,7 +206,7 @@ impl CaptureSources {
                     })
                 })
                 .unwrap_or(crate::Cursor::Default);
-            match target.capture_window_at(
+            match target.shared_capture_window_at(
                 size,
                 &window.root,
                 &server.popup_surfaces(),
