@@ -13,10 +13,10 @@
 //!    during your command* — and keeps saying it until the command ends;
 //! 4. when the command says `done`, it is answered with the total and the count
 //!    ends; when it hangs up, the count ends with nothing said; and **after
-//!    [`THE_LONGEST`] the desktop ends it whatever the command does**, because a
+//!    [`THE_LONGEST`](crate::counting_during_their_commands::THE_LONGEST) the desktop ends it whatever the command does**, because a
 //!    count held open for ever would be the watching ADR 0148 exists to prevent.
 //!
-//! A line that would come off the indicator less than [`SEEN_FOR_AT_LEAST`]
+//! A line that would come off the indicator less than [`SEEN_FOR_AT_LEAST`](crate::counting_during_their_commands::SEEN_FOR_AT_LEAST)
 //! after it went up stays until then, so a short burst is still something a
 //! person can see.
 //!

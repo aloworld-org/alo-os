@@ -190,16 +190,21 @@ pub const NO_SUCH_WINDOW: Word = Word::saying(
     "{application} shows no window called {window}, so nothing was read or pressed",
 )
 .noting(
-    "Said when a person's command named one window with --in and no window of the \n     application on the screen has exactly that title. For alo OS's own surfaces {window} is \n     the surface's typed name, such as settings. {application} and {window} are not \n     translated. Nothing happened.",
+    "Said when a person's command named one window with --in and no window of the \
+     application on the screen has exactly that title. For alo OS's own surfaces {window} is \
+     the surface's typed name, such as settings. {application} and {window} are not \
+     translated. Nothing happened.",
 );
 
 /// More than one window of the application has the title a person named.
 pub const MORE_THAN_ONE_WINDOW: Word = Word::saying(
     "adapters.fallback.more-than-one-window",
-    "{application} shows more than one window called {window}, so which one was meant cannot \n     be told and nothing was read or pressed",
+    "{application} shows more than one window called {window}, so which one was meant cannot \
+     be told and nothing was read or pressed",
 )
 .noting(
-    "Said instead of choosing one: two windows with one title, and acting on either would be a \n     guess. {application} and {window} are not translated. Nothing happened.",
+    "Said instead of choosing one: two windows with one title, and acting on either would be a \
+     guess. {application} and {window} are not translated. Nothing happened.",
 );
 
 /// What applications show cannot be read on this machine.

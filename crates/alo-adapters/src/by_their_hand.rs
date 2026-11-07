@@ -5,7 +5,7 @@
 //! The person typed the command, so nothing here asks for a grant or an
 //! approval: law 2 binds the agent, not the person. **Everything else is the
 //! agent's road exactly.** There is one walk (`crate::walking`) and one press
-//! ([`pressed`], which `crate::activating` calls too), so the same bounds, the
+//! (`pressed`, which `crate::activating` calls too), so the same bounds, the
 //! same password rule and the same refusals hold whoever asked: a control
 //! missing, more than one of it, too much showing to be sure, greyed out,
 //! nothing to press it with, an application that said it did not, or no window

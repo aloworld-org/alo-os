@@ -9,7 +9,7 @@
 
 use std::cell::RefCell;
 use std::collections::BTreeMap;
-use std::io::{BufRead as _, BufReader, Write as _};
+use std::io::{BufRead as _, BufReader};
 use std::os::unix::net::UnixStream;
 use std::rc::Rc;
 use std::time::{Duration, Instant, SystemTime};
