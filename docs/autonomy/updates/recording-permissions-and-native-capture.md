@@ -7,22 +7,27 @@ acceptance are separate. The complete booted walk is **not yet accepted**.
 
 Current result: native permissions, the normal installable application and 19
 typed agent actions are implemented. The installed Flatpak is source
-`9772d083`, SHA-256
-`70b3ff37918ca858294eac9119fe694aa82f1ad755634edb47e862a26bfc284d`.
+`7dea46f2`, SHA-256
+`adcd8bef984e9810de175cfa735dcd77f9cda2a0ed373854c8653533b5777793`.
 Dedicated native CI covers formatting, Clippy, 28 application tests, the real
-GTK recording flow and the pinned native publisher cases. Earlier installed
-screen/window walks complete recording, pause/resume, naming, library review
-and exact-file export. Saved-video playback is exercised through the installed
-Review player. Those controls do not establish continuous or synchronized
-media; the measured failures and follow-up changes are recorded below.
-The installed native compositor is `745b67e3`, integrated with main
-`da1192f0`. Its optimized regressions and strict checks pass, but its installed
-video cadence and synchronization fail acceptance. The next candidate,
-`59f8166b`, reuses bounded glyph images after checking actual font identities;
-all dedicated CI and the hosted OS gate pass. Installed repeats still fail
-video cadence and synchronization. A software-native readback format is now
-being validated after a further memory-work profile. The ADR-number collision
-and cursor-recipe integration assertion are corrected.
+GTK recording flow and the pinned native publisher cases. At desktop `1f36f9ef`,
+installed screen and window/microphone walks complete recording, stable
+five-second pause, resume, naming, library review and exact-file export. Those
+controls do not establish continuous or synchronized media: that screen repeat
+measures 1.132 fps with a 1.626-second uncovered gap, and the window repeat measures
+0.536 fps with a 4.155-second gap. Audio is audible but synchronization remains
+unverified. These are one-time installed measurements, preserved below.
+
+The current compositor candidate, `c7400bc8`, adds bounded native sentence reuse
+after diagnostic stacks found repeated text shaping. Its native workflow,
+optimized desktop regressions, strict checks and full hosted OS gate pass.
+Its installed window/microphone repeat fails before active recording with
+microphone sample loss and no encoded video. Its screen-only repeat completes
+the control flow and exact export but measures 0.910 fps with a 2.197-second gap.
+No installed performance improvement is established. Studio's application
+source is unchanged from the installed package. The agent permission walk
+separately verifies live discovery, one approved execution, immediate revocation
+and refusal; other applications must expose their own typed adapters.
 The review remains a draft with no market publication, and
 each earlier measurement retains its own tested source.
 
@@ -1547,4 +1552,46 @@ font database: cosmic-text replaces that owner after `db_mut`, and a new font
 system has its own owner. Locale also invalidates the cache. Rich text and
 terminal runs keep their existing renderer. Added tests cover actual pixel
 equivalence, dimensions, scripts, font invalidation, independent returned pixels,
-eviction and retention limits. CI and installed verification are pending.
+eviction and retention limits. Native, optimized desktop, strict and full OS
+checks pass at `c7400bc8`.
+
+### Installed sentence-cache repeat
+
+The one-time repeat stages desktop `c7400bc8`, executable SHA-256
+`81d638c528c304330bf04bd85db1c141dff2f766d0447ceaedbb9bcd3e658aac`,
+with the unchanged normal application package `7dea46f2`. The shared build lock
+is held and no host compiler runs during the measurement. An initial screen
+attempt fails because the runner did not relaunch Studio after replacing the
+desktop. It produces no recording and is preserved separately; the retry adds
+an explicit bounded application-readiness check.
+
+Window attempt `1794038599-415841006-2` does not reach active recording. Its
+journal reports 34,240 dropped microphone samples, then no recorded video frames.
+The 759-byte partial is preserved with SHA-256
+`2aa30db4bf9404bd1905d5356d9446cf8c1f521c7ed8a96e8c6277156f0f96b1`.
+There is no completed metadata or video to decode, and no pause/resume, export
+or media acceptance is credited. Evidence is in `installed-sentence-cache-window`.
+
+The independent reference also fails before this attempt: its first 10 seconds
+of PCM arrive over 11.424 seconds. After one audio-graph restart, the reference
+has a 2.120-second uncovered gap; the check after idle has a 2.080-second gap.
+These failures prevent synchronization acceptance independently of Studio.
+No thresholds or production audio settings change. Cleanup restores the original
+microphone, removes the virtual audio module and resets the owned forced rate.
+A proof-file ownership error in the private cleanup helper is corrected and
+cleanup is repeated successfully.
+
+The screen-only retry completes recording, stable five-second pause, resume,
+finish, naming, library review and exact native export. Clip
+`1794039162-193924091-2`, SHA-256
+`fa7ab858c6a9a4b76314ad4dad54895a75003ae4cf3407ccd72bf8d12fdd0975`,
+contains 24 distinct frames over 25.482 seconds, with exactly one video track
+and no audio. The export is `Product demonstration 20.webm`, document grant
+`234be`. Independent decoding measures 0.910 fps against the selected 5 fps
+and a 2.197-second maximum uncovered gap. The unchanged formal acceptance
+fails both cadence and continuity. Evidence is in
+`installed-sentence-cache-screen-repeat`. This is a one-time installed repeat;
+native CI continues to run its separate publisher, microphone, lifecycle and
+decoding checks. The compositor candidate has not established an installed
+performance improvement. Continuous video and synchronized microphone audio
+remain unaccepted on the available software-emulated VM; the review stays draft.
