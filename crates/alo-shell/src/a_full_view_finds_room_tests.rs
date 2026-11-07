@@ -22,13 +22,12 @@ fn a_server(named: &str) -> (tempfile::TempDir, Server) {
     (directory, server)
 }
 
+/// A rectangle on the plane.
+type APlaneRect = Rectangle<i32, Logical>;
+
 /// A view one window fills, the window filling it, and where rules 3 to 7
 /// would put the next one: over it.
-fn a_full_view() -> (
-    Rectangle<i32, Logical>,
-    Vec<Rectangle<i32, Logical>>,
-    Point<i32, Logical>,
-) {
+fn a_full_view() -> (APlaneRect, Vec<APlaneRect>, Point<i32, Logical>) {
     let view = Rectangle::new((0, 0).into(), (1440, 960).into());
     (view, vec![view], Point::from((64, 64)))
 }
