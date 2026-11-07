@@ -194,11 +194,26 @@ pub enum DefaultsError {
     Clash(Clash),
 }
 
+/// **Second shortcuts this release ships**, beside an action's own.
+///
+/// One, chosen by the owner on 2026-11-07: **⊞+= zooms in**, as ⊞++ does.
+/// *Plus* means the key that prints `+`, and on a US layout without a numpad
+/// that key prints `+` only with Shift, so ⊞++ could not be pressed at all
+/// (`docs/quirks/a-shortcut-naming-a-character-is-unreachable-where-the-layout-shifts-it.md`).
+/// `=` is the key `+` shares there. A second shortcut follows the action's
+/// own: it works while the person has not changed that action, and gives way to
+/// any shortcut a person gives that chord.
+const ALSO_SHIPPED: [(Action, Chord); 1] =
+    [(Action::ZoomTheCanvasIn, Chord::shipped(SUPER, Key::Equals))];
+
 /// A set of default bindings.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Defaults {
     /// One entry per action at most, in the order they are shown.
     bound: Vec<(Action, Chord)>,
+    /// Second shortcuts, one per action at most: [`ALSO_SHIPPED`] for the
+    /// shipped defaults and none for any other set.
+    also: Vec<(Action, Chord)>,
 }
 
 impl Defaults {
@@ -207,6 +222,7 @@ impl Defaults {
     pub fn shipped() -> Self {
         Self {
             bound: SHIPPED.to_vec(),
+            also: ALSO_SHIPPED.to_vec(),
         }
     }
 
@@ -231,7 +247,20 @@ impl Defaults {
                 }
             }
         }
-        Ok(Self { bound })
+        Ok(Self {
+            bound,
+            also: Vec::new(),
+        })
+    }
+
+    /// This action's second shortcut before anybody changes anything, where it
+    /// has one.
+    #[must_use]
+    pub fn second_chord_for(&self, action: Action) -> Option<Chord> {
+        self.also
+            .iter()
+            .find(|(bound, _)| *bound == action)
+            .map(|(_, chord)| *chord)
     }
 
     /// What this action does before anybody changes it, if it has a default at
@@ -297,7 +326,16 @@ mod tests {
     /// nothing at runtime would catch it if it did.
     #[test]
     fn the_shipped_list_has_no_clash_in_it() {
-        assert_eq!(Defaults::of(SHIPPED.to_vec()).unwrap(), Defaults::shipped());
+        let checked = Defaults::of(SHIPPED.to_vec()).unwrap();
+        assert!(checked.iter().eq(Defaults::shipped().iter()));
+        // **And no second shortcut is any action's first**, or pressing it
+        // would do two things.
+        for (action, chord) in ALSO_SHIPPED {
+            assert!(
+                SHIPPED.iter().all(|(_, first)| *first != chord),
+                "{action:?}'s second shortcut {chord:?} is somebody's first"
+            );
+        }
     }
 
     /// The conventions this list is here to keep. Somebody moving from Windows

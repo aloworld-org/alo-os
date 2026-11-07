@@ -38,8 +38,9 @@ tampered with, or a disk that would not read, reported as a level nobody picked.
 `the_level_remembered` answers `Ok(Some(level))`, `Ok(None)` and `Err(..)` for
 exactly these three, and that is why it does not return a bare level.
 
-**A file that exists and omits `chose` is the third case, not the second.** No
-file is a person who has not chosen; a file edited into saying nothing is
+**A file that exists and says nothing — neither `chose` nor `in-the-terminal`,
+below — is the third case, not the second.** No file is a person who has not
+chosen; a file edited into saying nothing is
 somebody who had a line and lost it, and they are told rather than quietly
 returned to the default.
 
@@ -71,7 +72,7 @@ chose = "asking-each-time"
 | Key | Meaning |
 |---|---|
 | `format` | Which shape the file is in. Required. `1` today. |
-| `chose` | The level. Required when the file exists. One of the three words below. |
+| `chose` | The level. One of the three words below. Absent is a person who has not chosen a level; see the terminal's key below for the one way a file can be there without it. |
 
 | `chose` | The level |
 |---|---|
@@ -79,7 +80,11 @@ chose = "asking-each-time"
 | `asking-each-time` | The person is asked before each run. |
 | `at-full-trust` | Code runs without asking. |
 
-A key nobody declared is refused rather than read around.
+A key nobody declared is refused rather than read around. *This sentence was
+here from the first day and nothing did it until 2026-11-06: `serde` read
+around an unknown key, and no test asked. It is now `deny_unknown_fields`, read
+after the format is checked on its own, so a later alo OS's file is still
+refused as not for this one rather than for a key it defines.*
 
 **It is words and not a number.** A level kept as `0`, `1` or `2` is a level
 nobody can read in their own settings, and this file is one a person may edit,
@@ -108,6 +113,47 @@ over the single question of how much of their machine an agent may use.
   `docs/contracts/machine-description.md`); it may not make this choice, because
   that would be acting as the person, which ADR 0004 forbids.
 
+
+## And whether alo in the terminal acts without the OK
+
+*Added 2026-11-06, additively; `format` stays `1`.* `docs/features.md`: *in
+Settings → Terminal, the person can let what they ask alo for in the terminal
+run without the OK — ADR 0064's third level, full trust, applied to the
+terminal.* That answer is kept here, beside the level, under the same three
+rules about who may have written it — which is the reason an agent cannot
+switch it on for itself: it is another login, and a file another login could
+write is refused.
+
+```toml
+format = 1
+chose = "asking-each-time"
+in-the-terminal = "at-full-trust"
+```
+
+| Key | Meaning |
+|---|---|
+| `in-the-terminal` | Optional. `asking-each-time` is the switch off, `at-full-trust` is it on. Any other word, `in-a-sealed-box` among them, is refused and the whole file with it. |
+
+- **Absent is off.** The switch is offered off until the person switches it on,
+  so a machine with no file, or a file without this key, asks first. Unlike
+  `chose`, there is no *has not chosen* to keep apart.
+- **Each key is its own answer.** A file holding only `in-the-terminal` is a
+  person who switched the terminal on and has not chosen a level, and reads as
+  exactly that. A file holding **neither** key is still refused as saying
+  nothing.
+- **Each writer keeps the other's key.** Settings writes the whole file either
+  way. Choosing a level over a file that will not read writes the level as
+  before; switching the terminal over one is refused, because it would throw
+  away a level the person may have chosen.
+- **A reader that cannot read it asks first.** `alo-ask` is the one reader; any
+  refusal here is the switch off to it.
+- **It reaches only the terminal.** Nothing but `alo-ask`, the command a person
+  types at their prompt, reads it. The alo Bar, the launcher and task windows
+  wait for the OK at every setting of it.
+- **It changes nothing about running code.** `chose` decides how code the agent
+  writes runs; this decides whether the changes alo proposes for a request typed
+  in the terminal are carried out without being shown first. Neither implies the
+  other.
 ## What the three protections do not depend on
 
 ADR 0064 keeps three things on at every level — the record, the snapshot taken

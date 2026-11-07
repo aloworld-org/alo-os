@@ -142,6 +142,11 @@ pub fn stand_the_desktop_up(
     // **What this person chose for their windows' titles**, before the first
     // frame draws one (`crate::the_window_titles_shown`).
     server.the_window_titles_are(desktop.the_window_titles());
+    // **Where a new window goes when there is no room, and whether the view
+    // may glide to find it one**, before the first window opens
+    // (`crate::the_view_glides`).
+    server.when_there_is_no_room_is(desktop.when_there_is_no_room());
+    server.the_motion_is_reduced(desktop.the_motion_is_reduced());
     // **And the pointer they chose**, before the first frame draws it
     // (`crate::the_pointers_look`).
     server.the_pointer_is(desktop.the_pointers_look());

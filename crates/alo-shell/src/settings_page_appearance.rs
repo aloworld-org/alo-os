@@ -102,6 +102,38 @@ pub(crate) fn the_blocks(open: &Open, strings: &Strings) -> Vec<ABlock> {
             rows: vec![titles],
             footnote: None,
         }));
+        // **When there's no room for a new window**: the owner's choice of
+        // 2026-11-07, two rings under the Windows section, gliding first
+        // because it is how this computer comes
+        // (`docs/design/the-settings-window.md`).
+        let chosen = appearance.drawn().when_there_is_no_room();
+        let rows = alo_appearance::WhenThereIsNoRoom::ALL
+            .into_iter()
+            .map(|choice| {
+                let (name, line) = match choice {
+                    alo_appearance::WhenThereIsNoRoom::GlideToEmptySpace => {
+                        (w::GLIDE_TO_EMPTY_SPACE, w::GLIDE_TO_EMPTY_SPACE_IS)
+                    }
+                    alo_appearance::WhenThereIsNoRoom::OpenInFront => {
+                        (w::OPEN_IN_FRONT, w::OPEN_IN_FRONT_IS)
+                    }
+                };
+                let mut row = ARow::named(
+                    Some(SettingsRow::WhenThereIsNoRoom(choice)),
+                    TheKind::AChoice {
+                        chosen: choice == chosen,
+                    },
+                    said(strings, name),
+                );
+                row.lines.push(said(strings, line));
+                row
+            })
+            .collect();
+        blocks.push(ABlock::Section(ASection {
+            heading: Some(said(strings, w::WHEN_THERE_IS_NO_ROOM)),
+            rows,
+            footnote: None,
+        }));
     }
 
     let dock = &open.dock;

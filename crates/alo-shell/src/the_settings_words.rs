@@ -141,9 +141,12 @@ pub const RUNNING_CODE_IS: Word = Word::saying(
 /// What the terminal page is about.
 pub const TERMINAL_IS: Word = Word::saying(
     "settings.page.terminal",
-    "Two things alo can do in your terminal. Each one is switched on by you, and says what it changes.",
+    "What alo can do in your terminal. Each one is switched on by you, and says what it changes.",
 )
-.noting("Under the heading of the Terminal page. alo is the assistant's name.");
+.noting(
+    "Under the heading of the Terminal page. alo is the assistant's name. The design drew \
+     'Two things' when there were two; there are three since 2026-11-06.",
+);
 
 /// What the appearance page is about.
 pub const APPEARANCE_IS: Word = Word::saying(
@@ -364,7 +367,7 @@ pub const STAYS_ON: Word = Word::saying("settings.section.stays-on", "Stays on a
 /// The heading over the terminal's two switches.
 pub const IN_THE_TERMINAL: Word =
     Word::saying("settings.section.in-the-terminal", "In the terminal")
-        .noting("A heading over two things alo can do in the terminal. Sentence case.");
+        .noting("A heading over the things alo can do in the terminal. Sentence case.");
 
 /// The heading over the accent colours.
 pub const LOOK: Word = Word::saying("settings.section.look", "Look")
@@ -456,6 +459,28 @@ pub const HOW_ALO_RUNS_CODE_IS: Word = Word::saying(
     "In a sealed box, after asking you, or straight away. Set in Running code.",
 )
 .noting("Under the row that opens the Running code page. Running code is that page's name.");
+
+/// Let alo act without asking: the switch on the Terminal page.
+pub const ACT_WITHOUT_ASKING: Word = Word::saying(
+    "settings.terminal.act-without-asking",
+    "Let alo act without asking",
+)
+.noting(
+    "A switch on the Terminal page. When it is on, what the person asks alo for in the terminal \
+     is done without waiting for their OK. alo is the assistant. Sentence case.",
+);
+
+/// What the switch changes, under its name.
+pub const ACT_WITHOUT_ASKING_IS: Word = Word::saying(
+    "settings.terminal.act-without-asking.is",
+    "What you ask alo for in the terminal runs without waiting for your OK. Only the terminal: \
+     anywhere else, alo still asks. The record, Put back and the indicator stay on.",
+)
+.noting(
+    "Under the switch that lets alo act without asking in the terminal. Put back is the name of \
+     the action that undoes what alo did, and the indicator is the one that shows something \
+     leaving the computer; use the same words your translation uses for them.",
+);
 
 /// Accent colour.
 pub const ACCENT_COLOUR: Word = Word::saying("settings.appearance.accent", "Accent colour")
@@ -579,6 +604,25 @@ pub fn as_a_percentage(strings: &alo_strings::Strings, percent: u16) -> String {
         .into_text()
 }
 
+/// Also a second shortcut.
+pub const ALSO_PRESSED: Word = Word::saying("settings.shortcuts.also", "Also {keys}").noting(
+    "Under the name of an action in the list of shortcuts, when a second shortcut does the \
+     same thing. {keys} is the shortcut, its keys written as the list writes them, joined by +.",
+);
+
+/// *Also ⊞ + =*, under an action with a second shortcut.
+///
+/// The keys are each already said in the person's language; they are joined
+/// with a plus, as a shortcut is written, `⊞ + =`.
+pub fn also_pressed(strings: &alo_strings::Strings, keys: &[String]) -> String {
+    strings
+        .say(
+            &ALSO_PRESSED.key(),
+            &alo_strings::Filling::of("keys", keys.join(" + ")),
+        )
+        .into_text()
+}
+
 /// *N matches*, in the person's language and counted the way it counts.
 pub fn how_many_match(strings: &alo_strings::Strings, how_many: usize) -> String {
     let (key, ..) = MATCHES;
@@ -651,6 +695,53 @@ pub const LARGE: Word = Word::saying("settings.access.large", "Large")
 pub const LARGER: Word = Word::saying("settings.access.larger", "Larger")
     .noting("One of three short choices for the pointer's size, larger than Large.");
 
+/// When there's no room for a new window.
+pub const WHEN_THERE_IS_NO_ROOM: Word = Word::saying(
+    "settings.windows.no-room",
+    "When there's no room for a new window",
+)
+.noting(
+    "A heading over two choices: what the computer does when a window opens and the part of \
+     the workspace on the screen is already full of other windows. Sentence case.",
+);
+
+/// Glide to empty space.
+pub const GLIDE_TO_EMPTY_SPACE: Word =
+    Word::saying("settings.windows.no-room.glide", "Glide to empty space").noting(
+        "One of two choices under When there's no room for a new window, and how this computer \
+         comes: the view moves smoothly across the workspace to the nearest empty space, and the \
+         new window opens there.",
+    );
+
+/// What gliding to empty space does.
+pub const GLIDE_TO_EMPTY_SPACE_IS: Word = Word::saying(
+    "settings.windows.no-room.glide.is",
+    "The view moves smoothly to the nearest empty space, and the new window opens there without covering any other.",
+)
+.noting(
+    "Under the choice Glide to empty space. The view is the part of the workspace on the screen; \
+     nothing else moves or changes size.",
+);
+
+/// Open in front, slightly offset.
+pub const OPEN_IN_FRONT: Word = Word::saying(
+    "settings.windows.no-room.in-front",
+    "Open in front, slightly offset",
+)
+.noting(
+    "The other choice under When there's no room for a new window: the new window opens over \
+     the one being worked in, a little down and to the side, and the view stays where it is.",
+);
+
+/// What opening in front does.
+pub const OPEN_IN_FRONT_IS: Word = Word::saying(
+    "settings.windows.no-room.in-front.is",
+    "The view stays where it is, and the new window opens over the one you are working in, a little down and across.",
+)
+.noting(
+    "Under the choice Open in front, slightly offset. Spoken to the person, so second person.",
+);
+
 /// Pointer shape.
 pub const POINTER_SHAPE: Word = Word::saying("settings.access.pointer-shape", "Pointer shape")
     .noting("The name of the setting for which arrow the pointer is drawn as.");
@@ -693,7 +784,7 @@ pub const AS_A_PERCENTAGE: Word = Word::saying("settings.access.percent", "{perc
 /// The length is written out so that adding a word above and forgetting it
 /// here does not compile — a word declared and left out of this list reaches a
 /// person as its own key.
-pub const THE_WINDOWS_WORDS: [Word; 100] = [
+pub const THE_WINDOWS_WORDS: [Word; 108] = [
     SETTINGS,
     EVERYTHING_IN_ONE_PLACE,
     THE_GROUP_ALO,
@@ -759,6 +850,8 @@ pub const THE_WINDOWS_WORDS: [Word; 100] = [
     RELATED,
     HOW_ALO_RUNS_CODE,
     HOW_ALO_RUNS_CODE_IS,
+    ACT_WITHOUT_ASKING,
+    ACT_WITHOUT_ASKING_IS,
     ACCENT_COLOUR,
     ACCENT_COLOUR_IS,
     THE_ACCENT_NOTE,
@@ -772,6 +865,11 @@ pub const THE_WINDOWS_WORDS: [Word; 100] = [
     WINDOWS,
     SHOW_THE_TITLE_ONLY_WHEN_POINTED_AT,
     SHOW_THE_TITLE_ONLY_WHEN_POINTED_AT_IS,
+    WHEN_THERE_IS_NO_ROOM,
+    GLIDE_TO_EMPTY_SPACE,
+    GLIDE_TO_EMPTY_SPACE_IS,
+    OPEN_IN_FRONT,
+    OPEN_IN_FRONT_IS,
     CHOOSE_A_COUNTRY,
     ALL_COUNTRIES,
     ALL_TIME_ZONES,
@@ -794,6 +892,7 @@ pub const THE_WINDOWS_WORDS: [Word; 100] = [
     WHITE,
     BLACK,
     AS_A_PERCENTAGE,
+    ALSO_PRESSED,
 ];
 
 /// Why this window's words could not be declared.

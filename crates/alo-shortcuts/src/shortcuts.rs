@@ -105,6 +105,18 @@ impl Shortcuts {
         }
     }
 
+    /// **This action's second shortcut**, where it ships one and it still
+    /// works: the person has not changed the action, and has given that chord
+    /// to nothing else. `defaults.rs`' `ALSO_SHIPPED` says why there is one.
+    #[must_use]
+    pub fn second_chord_for(&self, action: Action) -> Option<Chord> {
+        let chord = self.defaults.second_chord_for(action)?;
+        if self.is_changed(action) || self.bindings().any(|it| it.chord == Some(chord)) {
+            return None;
+        }
+        Some(chord)
+    }
+
     /// Whether this action is the person's choice rather than the shipped one.
     #[must_use]
     pub fn is_changed(&self, action: Action) -> bool {
@@ -146,7 +158,11 @@ impl Shortcuts {
             }
         }
         match (wanted_by, chosen_by_the_person) {
-            (0, _) => None,
+            // Nobody's own shortcut: a second one may answer.
+            (0, _) => Action::ALL
+                .iter()
+                .copied()
+                .find(|action| self.second_chord_for(*action) == Some(chord)),
             (1, _) => only,
             // Rule 2: one of them is the person's, and it wins over ours.
             (_, 1) => theirs,
@@ -237,6 +253,59 @@ mod tests {
 
     fn zuper(key: Key) -> Chord {
         Chord::checked(Modifiers::just(Modifier::Super), key).unwrap()
+    }
+
+    /// **⊞+= zooms in as well as ⊞++** on a machine nobody has changed, and
+    /// it is a second shortcut rather than a clash.
+    #[test]
+    fn super_equals_is_a_second_way_to_zoom_in() {
+        let shipped = Shortcuts::shipped();
+        assert_eq!(
+            shipped.action_for(zuper(Key::Plus)),
+            Some(Action::ZoomTheCanvasIn),
+            "the control: ⊞++ still zooms in"
+        );
+        assert_eq!(
+            shipped.action_for(zuper(Key::Equals)),
+            Some(Action::ZoomTheCanvasIn)
+        );
+        assert_eq!(
+            shipped.second_chord_for(Action::ZoomTheCanvasIn),
+            Some(zuper(Key::Equals))
+        );
+        assert!(
+            shipped.clashes().is_empty(),
+            "a second shortcut reads as a clash"
+        );
+        assert_eq!(shipped.second_chord_for(Action::ZoomTheCanvasOut), None);
+    }
+
+    /// **The refusals**: a person who gives ⊞+= to something else gets their
+    /// own; a person who changes zoom-in has changed both of its shortcuts;
+    /// and defaults that are not the shipped ones have no second shortcut.
+    #[test]
+    fn a_second_shortcut_gives_way_to_what_the_person_chose() {
+        let mut theirs = Shortcuts::shipped();
+        theirs.unbind(Action::Settings);
+        theirs.bind(Action::Settings, zuper(Key::Equals)).unwrap();
+        assert_eq!(
+            theirs.action_for(zuper(Key::Equals)),
+            Some(Action::Settings)
+        );
+        assert_eq!(theirs.second_chord_for(Action::ZoomTheCanvasIn), None);
+
+        let mut moved = Shortcuts::shipped();
+        moved.bind(Action::ZoomTheCanvasIn, zuper(Key::Q)).unwrap();
+        assert_eq!(moved.action_for(zuper(Key::Equals)), None);
+        assert_eq!(
+            moved.action_for(zuper(Key::Q)),
+            Some(Action::ZoomTheCanvasIn)
+        );
+
+        let other = Shortcuts::over(
+            Defaults::of(vec![(Action::ZoomTheCanvasIn, zuper(Key::Plus))]).unwrap(),
+        );
+        assert_eq!(other.action_for(zuper(Key::Equals)), None);
     }
 
     fn ctrl_alt(key: Key) -> Chord {

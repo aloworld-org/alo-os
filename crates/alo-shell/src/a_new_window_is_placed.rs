@@ -89,6 +89,27 @@
 //! holds; either way each is the rectangle the display really covers.
 //! So the camera is the only thing applied, and the `Physical` marker on those
 //! rectangles is dropped rather than converted.
+//!
+//! # When there is no room, the view can glide to empty space — 2026-11-07
+//!
+//! The owner's amendment to rule 5: with the default choice, a window **the
+//! person opened** that has no room in view goes to the nearest empty space on
+//! the Place (`crate::the_nearest_empty_space`), covering nothing, and the view
+//! glides there (`crate::the_view_glides`). Three things decide whether that
+//! happens, and each is one line below:
+//!
+//! - **there was no room.** Rules 3 and 6 are asked first and unchanged; only
+//!   an answer that would lie over another window is the case the choice is
+//!   about. A window with room in view opens exactly where it did before.
+//! - **the person chose it** — `Server::when_there_is_no_room`, *glide to empty
+//!   space* unless they chose *open in front*, which is rule 5 unchanged.
+//! - **the person opened it** — `Server::the_person_opened_this_one`. Rule 8:
+//!   a window an application or alo opens in the background never moves the
+//!   camera, so it keeps rule 5's answer and the view stays where it is.
+//!
+//! **Placed against where the view is going**, not where it is mid-glide: a
+//! second window opened while the first glide is still moving is placed in
+//! what the person will be looking at when it ends.
 
 use crate::Server;
 use smithay::reexports::wayland_server::protocol::wl_surface::WlSurface;
@@ -196,17 +217,26 @@ impl Server {
     /// second sees the first among the windows already open. Placing them from
     /// one snapshot would put both in the same free space — which is the
     /// stacking this file exists to prevent, arriving by a different route.
-    pub(crate) fn place_every_window_that_just_opened(
+    pub fn place_every_window_that_just_opened(
         &mut self,
         display: &str,
         viewport: Size<i32, Physical>,
         reading: alo_strings::Direction,
     ) -> usize {
-        let camera = self.the_camera();
+        let camera = self.the_camera_after_the_glide();
         let zoom = crate::scene::drawn_at(camera);
         if !zoom.is_finite() || zoom <= 0.0 {
             return 0;
         }
+        // **As far as *Show all* reaches**, so a space found for a window is
+        // never one it cannot be brought back from (`crate::canvas_never_lost`).
+        let reach = self.as_far_as_show_all_reaches().and_then(|reach| {
+            Some(Size::<i32, Logical>::from((
+                i32::try_from(reach.width()).ok()?,
+                i32::try_from(reach.height()).ok()?,
+            )))
+        });
+        let now = std::time::Instant::now();
         let at = camera.at();
         // **The visible area, not the output.** The person can only reach what
         // the camera is showing, so a window placed outside it is a window
@@ -335,12 +365,64 @@ impl Server {
                 continue;
             }
             let point = crate::where_a_window_opens(view, &open, active, wanted, reading, &fixed);
+            // **Rule 5 as a choice** (amended 2026-11-07): the person's own
+            // opening, with no room in view, glides to the nearest empty space
+            // where they kept the default. Asked whatever the choice, because a
+            // window is the person's once and the record of it is spent here.
+            let theirs = self.the_person_opened_this_one(&surface);
+            let (point, glide_to) = if theirs
+                && self.when_there_is_no_room.glides()
+                && !there_is_room_at(point, wanted, &open, view)
+            {
+                match crate::the_nearest_empty_space::the_nearest_empty_space(
+                    view, &open, wanted, &fixed, reach, reading,
+                ) {
+                    Some(found) => (
+                        found.window,
+                        found
+                            .the_view_moves(view.loc)
+                            .then(|| alo_canvas::At::checked(found.view.x, found.view.y))
+                            .flatten(),
+                    ),
+                    // A Place with no space left within reach: rule 5, in
+                    // front and offset, rather than a window that would be lost.
+                    None => (point, None),
+                }
+            } else {
+                (point, None)
+            };
             if crate::place_unless_already_placed(&surface, point) {
                 placed += 1;
+                if let Some(to) = glide_to {
+                    self.the_view_glides_to(to, now);
+                }
             }
         }
         placed
     }
+}
+
+/// Whether rules 3 to 7 found a window of `wanted` size **room in view** at
+/// `at`: over no open window, and wholly in the view — or, for a window larger
+/// than the view, with its handle in it, which is as much of it as any view
+/// can show. Anything else is the case the person's choice is about.
+fn there_is_room_at(
+    at: Point<i32, Logical>,
+    wanted: Size<i32, Logical>,
+    open: &[Rectangle<i32, Logical>],
+    view: Rectangle<i32, Logical>,
+) -> bool {
+    let window = Rectangle::new(at, wanted);
+    if open.iter().any(|other| other.overlaps(window)) {
+        return false;
+    }
+    let fits = wanted.w <= view.size.w && wanted.h <= view.size.h;
+    let seen = if fits {
+        window
+    } else {
+        Rectangle::new(at, Size::from((wanted.w.min(44), wanted.h.min(24))))
+    };
+    view.contains_rect(seen)
 }
 
 #[cfg(test)]

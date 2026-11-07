@@ -746,8 +746,72 @@ pub const NOTHING_RAN_NOT_THAT_WAY: Word = Word::saying(
      machine saying it did what they asked.",
 );
 
+/// What a person is told beside the switch that lets alo act on what they ask
+/// for in the terminal without the OK.
+///
+/// **The owner's own words**, from `docs/features.md`, kept as they were
+/// written. It informs and does not forbid.
+pub const WHAT_ACTING_WITHOUT_ASKING_COSTS: Word = Word::saying(
+    "capability.terminal.what-acting-without-asking-costs",
+    "alo will send, change and delete what you ask for without showing you first",
+)
+.noting(
+    "Shown beside the switch that lets alo do what the person asks for in the terminal without \
+     waiting for their OK, so that the person switching it on knows what it costs. A plain \
+     statement, not a refusal, a scare or a recommendation. alo is the assistant. Keep it one \
+     sentence.",
+);
+
+/// Printed in the terminal after alo did what was asked without waiting for
+/// the OK, because the person chose that.
+pub const DONE_WITHOUT_ASKING: Word = Word::saying(
+    "capability.terminal.done-without-asking",
+    "Done without asking you first, as you chose in Settings → Terminal.",
+)
+.noting(
+    "Printed in the terminal under what alo just did, when the person has let alo act there \
+     without their OK. 'Settings → Terminal' names a page as Settings shows it; use the same \
+     words your translation uses there.",
+);
+
+/// The same, for a change the machine could not keep a copy from before.
+pub const DONE_WITHOUT_ASKING_AND_IT_CANNOT_BE_PUT_BACK: Word = Word::saying(
+    "capability.terminal.done-without-asking-cannot-be-put-back",
+    "Done without asking you first, as you chose in Settings → Terminal. This one can't be put \
+     back: a copy of your files from before it could not be kept.",
+)
+.noting(
+    "Like the sentence above, for a change the computer carried out without being able to keep \
+     a copy of the person's files from before it, so Put back cannot undo it.",
+);
+
+/// Printed when acting without asking was switched off while alo was working
+/// out what to do, so it did not do it.
+pub const NOT_DONE_IT_WAS_SWITCHED_OFF: Word = Word::saying(
+    "capability.terminal.not-done-switched-off",
+    "Not done: acting without asking was switched off in Settings → Terminal while alo was \
+     working on this.",
+)
+.noting(
+    "Printed in the terminal when the person switched off letting alo act without their OK \
+     after asking for something and before alo did it. Nothing was changed.",
+);
+
+/// The service said nothing back about a change the terminal told it to go
+/// ahead with.
+pub const NO_WORD_BACK_IN_THE_TERMINAL: Word = Word::saying(
+    "capability.terminal.no-word-back",
+    "alo was told to go ahead, and the alo service did not say whether it did. See what alo did \
+     to find out.",
+)
+.noting(
+    "Printed in the terminal when alo was told to do something without asking and the service \
+     that carries it out did not answer. 'See what alo did' is the record of everything alo did; \
+     use the same words your translation uses for it.",
+);
+
 /// Every string this crate can say, in the order a translator meets them.
-pub const EVERY_WORD: [Word; 66] = [
+pub const EVERY_WORD: [Word; 71] = [
     ANONYMOUS,
     NO_APPLICATION_NAMED,
     NOTHING_NAMED,
@@ -814,6 +878,11 @@ pub const EVERY_WORD: [Word; 66] = [
     ALWAYS_THE_RECORD,
     ALWAYS_THE_SNAPSHOT,
     ALWAYS_THE_INDICATOR,
+    WHAT_ACTING_WITHOUT_ASKING_COSTS,
+    DONE_WITHOUT_ASKING,
+    DONE_WITHOUT_ASKING_AND_IT_CANNOT_BE_PUT_BACK,
+    NOT_DONE_IT_WAS_SWITCHED_OFF,
+    NO_WORD_BACK_IN_THE_TERMINAL,
 ];
 
 /// Why this crate's own list could not be declared.

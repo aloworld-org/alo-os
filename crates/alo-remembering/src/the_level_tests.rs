@@ -7,10 +7,16 @@ use super::*;
 #[test]
 fn every_level_goes_down_and_comes_back() {
     for chose in HowCodeRuns::ALL {
-        let text = written(chose).expect("a level writes");
+        let text = written(WhatTheFileSays {
+            chose: Some(chose),
+            in_the_terminal: None,
+        })
+        .expect("a level writes");
         assert_eq!(
-            read(&text).expect("what this crate wrote, this crate reads"),
-            chose,
+            read(&text)
+                .expect("what this crate wrote, this crate reads")
+                .chose,
+            Some(chose),
             "{chose:?} did not survive {text:?}"
         );
     }
@@ -61,8 +67,8 @@ fn a_file_that_says_no_level_is_refused_and_never_defaulted() {
     // answers `Ok`, it must not be the default.
     if let Ok(level) = read(&said_nothing) {
         assert_ne!(
-            level,
-            HowCodeRuns::default(),
+            level.chose,
+            Some(HowCodeRuns::default()),
             "a file saying no level answered with the default, which is a default dressed as a choice"
         );
     }
@@ -133,7 +139,11 @@ fn text_that_is_not_this_file_is_refused_as_a_shape() {
 /// one question of how much of their machine an agent may use.
 #[test]
 fn it_is_kept_in_words_a_person_can_read() {
-    let text = written(HowCodeRuns::AskingEachTime).expect("it writes");
+    let text = written(WhatTheFileSays {
+        chose: Some(HowCodeRuns::AskingEachTime),
+        in_the_terminal: None,
+    })
+    .expect("it writes");
     assert!(
         text.contains(ASKING_EACH_TIME),
         "it was written as {text:?}, which a person cannot read in their own settings"
@@ -168,5 +178,76 @@ fn the_three_words_are_distinct_and_none_is_a_prefix_of_another() {
         "there are {} levels and {} words for them",
         HowCodeRuns::ALL.len(),
         words.len()
+    );
+}
+
+/// **The terminal's answer survives the disk, in two of the level's words**,
+/// with or without a level beside it.
+#[test]
+fn the_terminal_answer_goes_down_and_comes_back() {
+    for answer in [
+        AloInTheTerminal::AsksFirst,
+        AloInTheTerminal::ActsWithoutAsking,
+    ] {
+        for chose in [None, Some(HowCodeRuns::InASealedBox)] {
+            let says = WhatTheFileSays {
+                chose,
+                in_the_terminal: Some(answer),
+            };
+            let text = written(says).expect("it writes");
+            assert_eq!(read(&text), Ok(says), "{says:?} did not survive {text:?}");
+        }
+    }
+    let on = written(WhatTheFileSays {
+        chose: None,
+        in_the_terminal: Some(AloInTheTerminal::ActsWithoutAsking),
+    })
+    .expect("it writes");
+    assert!(
+        on.contains("in-the-terminal = \"at-full-trust\""),
+        "the switch on was written as {on:?}"
+    );
+}
+
+/// **A word the terminal does not take is refused whole**, the sealed box
+/// among them: it means nothing for a request typed at a prompt.
+#[test]
+fn a_terminal_word_it_does_not_take_is_refused_whole() {
+    for said in [IN_A_SEALED_BOX, "full-trust", "yes"] {
+        let text = format!(
+            "format = {THE_LEVEL_FORMAT}\nchose = \"{AT_FULL_TRUST}\"\nin-the-terminal = \"{said}\"\n"
+        );
+        assert_eq!(
+            read(&text),
+            Err(NotTheLevel::NotATerminalAnswer {
+                said: said.to_owned()
+            }),
+            "{said:?} was read as an answer for the terminal"
+        );
+    }
+}
+
+/// **A key nobody declared is refused**, which the contract has said since it
+/// was written and nothing did until 2026-11-06: a misspelt `in-the-terminal`
+/// would otherwise be read around, and the person told nothing.
+#[test]
+fn a_key_nobody_declared_is_refused() {
+    let misspelt = format!("format = {THE_LEVEL_FORMAT}\nin-the-termnal = \"{AT_FULL_TRUST}\"\n");
+    assert!(
+        matches!(read(&misspelt), Err(NotTheLevel::NotTheShape { .. })),
+        "a key nobody declared was read around: {:?}",
+        read(&misspelt)
+    );
+    // **And a later alo OS's keys are still its own**: the format is refused
+    // before any key is judged.
+    let later = format!(
+        "format = {}\nsomething-later = true\n",
+        THE_LEVEL_FORMAT + 1
+    );
+    assert_eq!(
+        read(&later),
+        Err(NotTheLevel::AnotherFormat {
+            format: THE_LEVEL_FORMAT + 1
+        })
     );
 }
