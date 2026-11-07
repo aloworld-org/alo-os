@@ -100,7 +100,12 @@ where
     // band, drawn at this display's scale (`crate::the_pointer_drawn`). Asked
     // before anything is imported, so a position that is not a number refuses
     // the frame before a client's buffer is touched, as the mask before it did.
-    let pointer = crate::the_pointer_drawn::the_pointer(cursor, native.pointer_at, damage)?;
+    let pointer = crate::the_pointer_drawn::the_pointer(
+        cursor,
+        native.pointer_at,
+        native.pointer_look,
+        damage,
+    )?;
     let mut drawing = drawing::Drawing {
         elements: Vec::new(),
         surfaces: Vec::new(),

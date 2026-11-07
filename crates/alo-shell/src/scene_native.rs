@@ -97,6 +97,10 @@ pub(crate) struct NativeLayers<'a> {
     /// which the direct backend does for every display it draws. A nested
     /// window and an offscreen check have no display scale of their own.
     pub(crate) pointer_at: crate::display_scale::DisplayScale,
+    /// What the pointer looks like, as the person chose
+    /// (`crate::the_pointers_look`). The shipped look unless the backend that
+    /// knows the person says otherwise.
+    pub(crate) pointer_look: crate::ThePointersLook,
 }
 
 impl NativeLayers<'_> {
@@ -124,6 +128,7 @@ impl NativeLayers<'_> {
             capturing: None,
             terminal: None,
             pointer_at: crate::display_scale::DisplayScale::ONE,
+            pointer_look: crate::ThePointersLook::SHIPPED,
         }
     }
 

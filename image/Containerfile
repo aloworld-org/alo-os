@@ -298,9 +298,11 @@ RUN cargo build --release --package alo-shell --package alo-desktop --package al
 # rather than asking the compositor for a shape by name. Run, not stat-ed: the
 # theme in the image is what this command wrote, so a generator that cannot
 # start is a build that stops here.
-RUN target/release/alo-cursor-theme /build/cursor-theme/alo \
- && test -s /build/cursor-theme/alo/index.theme \
- && test -s /build/cursor-theme/alo/cursors/default
+RUN target/release/alo-cursor-theme /build/cursor-themes \
+ && test -s /build/cursor-themes/alo/index.theme \
+ && test -s /build/cursor-themes/alo/cursors/default \
+ && test -s /build/cursor-themes/alo-classic/index.theme \
+ && test -s /build/cursor-themes/alo-classic/cursors/default
 
 FROM ${THE_BASE}
 
@@ -518,7 +520,9 @@ COPY engines/pipewire-gstreamer/COPYING /usr/share/licenses/alo-capture-provider
 # The pointer for applications that bring their own cursor images: alo's theme,
 # written by `alo-cursor-theme` above, and named as the default below
 # (`image/usr/lib/environment.d/60-alo-cursor.conf`).
-COPY --from=shell /build/cursor-theme/alo/ /usr/share/icons/alo/
+# Two themes: `alo`, with the precision kite, and `alo-classic`, with the
+# familiar arrow for a person who chooses it in Settings.
+COPY --from=shell /build/cursor-themes/ /usr/share/icons/
 
 # The converting service is in libexec for the same reason (ADR 0039): systemd
 # starts it when something knocks on its socket, and nobody runs it by hand.

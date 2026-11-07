@@ -49,6 +49,8 @@ const KEYS: &[&str] = &[
     "text",
     "accent",
     "window_titles",
+    "pointer_shape",
+    "pointer_size",
 ];
 
 impl Kept for Changes {
@@ -167,6 +169,8 @@ mod tests {
         changes.set_text(TextScale::percent(150).unwrap());
         changes.set_accent(Accent::Moss);
         changes.set_window_titles(crate::titles::WindowTitles::WhenPointedAt);
+        changes.set_pointer_shape(crate::pointer::PointerShape::Classic);
+        changes.set_pointer_size(crate::pointer::PointerSize::Larger);
         changes
     }
 

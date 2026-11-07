@@ -144,21 +144,8 @@ impl LightOrDark {
     }
 }
 
-/// How large the pointer is drawn.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum PointerSize {
-    /// As it ships.
-    Default,
-    /// Larger.
-    Large,
-    /// Larger still.
-    Larger,
-}
-
-impl PointerSize {
-    /// All three, in the order the frame draws them.
-    pub const ALL: [Self; 3] = [Self::Default, Self::Large, Self::Larger];
-}
+/// How large the pointer is drawn, kept with the rest of the appearance.
+pub use alo_appearance::PointerSize;
 
 /// One row a person can act on.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -268,9 +255,12 @@ pub enum SettingsRow {
     /// How large text is drawn everywhere: Left and Right make it smaller and
     /// larger, a step of 25 per cent at a time, and Enter makes it larger.
     TextSize,
-    /// How large the pointer is drawn: Enter says it is not on this computer
-    /// yet. `docs/features.md` promises *cursor size*; nothing draws it yet.
+    /// How large the pointer is drawn: Enter chooses it. `docs/features.md`
+    /// promises *cursor size*; it is kept with the rest of the appearance.
     PointerSize(PointerSize),
+    /// Which arrow the pointer is: Enter chooses it. The kite ships; the
+    /// familiar arrow stays a choice (`alo_appearance::PointerShape`).
+    PointerShape(alo_appearance::PointerShape),
     /// The list of countries and regions, or of time zones: Enter opens it.
     ///
     /// **One row where there were two hundred and fifty.** Every region is
@@ -298,7 +288,9 @@ impl SettingsRow {
             Self::Hiding(_) | Self::Edge(_) => SettingsSection::Dock,
             Self::GoTo(_) => SettingsSection::Terminal,
             Self::LightOrDark(_) | Self::WindowTitles => SettingsSection::Appearance,
-            Self::TextSize | Self::PointerSize(_) => SettingsSection::Accessibility,
+            Self::TextSize | Self::PointerSize(_) | Self::PointerShape(_) => {
+                SettingsSection::Accessibility
+            }
             Self::OpenThePicker(SettingsPicker::Region) => SettingsSection::Formats,
             Self::OpenThePicker(SettingsPicker::TimeZone) => SettingsSection::TimeZone,
             Self::Shortcut(_) => SettingsSection::Shortcuts,
@@ -629,6 +621,22 @@ impl SettingsWindow {
             .map(|open| open.appearance.drawn().window_titles())
     }
 
+    /// Which arrow the pointer is, as Settings holds it.
+    #[must_use]
+    pub fn pointer_shape(&self) -> Option<alo_appearance::PointerShape> {
+        self.open
+            .as_ref()
+            .map(|open| open.appearance.drawn().pointer_shape())
+    }
+
+    /// How large the pointer is, as Settings holds it.
+    #[must_use]
+    pub fn pointer_size(&self) -> Option<PointerSize> {
+        self.open
+            .as_ref()
+            .map(|open| open.appearance.drawn().pointer_size())
+    }
+
     /// Every row a person can act on, in the order drawn. Empty while closed.
     #[must_use]
     pub fn rows(&self, now: SystemTime) -> Vec<SettingsRow> {
@@ -848,15 +856,24 @@ impl Open {
                     .map(|binding| SettingsRow::Shortcut(binding.action))
                     .collect()
             }
-            // **Nothing yet.** The text size and the pointer's size the design
-            // draws here are not reachable from this window; the page says so
-            // in words rather than drawing controls that do nothing.
+            // **The text size and the pointer**, each kept in `appearance.toml`
+            // and so offered only where it was read.
             SettingsCategory::Accessibility => {
                 let mut rows = Vec::new();
                 if self.appearance.at().is_some() {
                     rows.push(SettingsRow::TextSize);
                 }
-                rows.extend(PointerSize::ALL.into_iter().map(SettingsRow::PointerSize));
+                // **The pointer is kept with the rest of the appearance**, so
+                // its size and its arrow are offered only where that file was
+                // read.
+                if self.appearance.at().is_some() {
+                    rows.extend(PointerSize::ALL.into_iter().map(SettingsRow::PointerSize));
+                    rows.extend(
+                        alo_appearance::PointerShape::ALL
+                            .into_iter()
+                            .map(SettingsRow::PointerShape),
+                    );
+                }
                 rows
             }
         }
@@ -1244,12 +1261,33 @@ impl Open {
                 SettingsDid::Kept(SettingsSection::Appearance, kept)
             }
             SettingsRow::TextSize => self.the_text_is(25, doors.strings),
-            SettingsRow::PointerSize(_) => {
-                self.told = Some(crate::settings_page::said(
+            // **Kept with the rest of the appearance**, and the seat is told by
+            // `crate::a_key_reaches_settings`, so the next frame draws it.
+            SettingsRow::PointerShape(shape) => {
+                let shape = *shape;
+                let kept = self.appearance.changed(
+                    |appearance| {
+                        appearance.set_pointer_shape(shape);
+                        Ok(())
+                    },
                     doors.strings,
-                    crate::the_settings_words::NOT_ON_THIS_COMPUTER_YET,
-                ));
-                SettingsDid::NotOnThisComputerYet
+                );
+                SettingsDid::Kept(SettingsSection::Appearance, kept)
+            }
+            // **Kept with the rest of the appearance**, and told to the seat by
+            // `crate::a_key_reaches_settings`: alo's pointer is drawn the new
+            // size from the next frame, and applications started from then on
+            // are told `XCURSOR_SIZE`.
+            SettingsRow::PointerSize(size) => {
+                let size = *size;
+                let kept = self.appearance.changed(
+                    |appearance| {
+                        appearance.set_pointer_size(size);
+                        Ok(())
+                    },
+                    doors.strings,
+                );
+                SettingsDid::Kept(SettingsSection::Appearance, kept)
             }
             SettingsRow::OpenThePicker(which) => {
                 self.the_list_opens(*which, doors.strings);

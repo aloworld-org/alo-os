@@ -422,6 +422,24 @@ pub trait TheDesktop {
     /// nothing to rewrite.
     fn the_formats_are_now(&mut self, _formats: &crate::TheirFormats) {}
 
+    /// What this person's pointer looks like, as their own settings say.
+    ///
+    /// Asked once, when the desktop stands up, like
+    /// [`Self::the_window_titles`]. **The kite by default**, which is what this
+    /// release ships.
+    fn the_pointers_look(&self) -> crate::ThePointersLook {
+        crate::ThePointersLook::default()
+    }
+
+    /// **They chose another pointer**, in Settings, and applications that draw
+    /// their own pointer have to be told which cursor theme to draw from.
+    ///
+    /// Called on the frame after the change and never on a frame where nothing
+    /// changed; this compositor already draws its own pointer the new way.
+    /// Nothing by default: a desktop that starts no applications has nobody to
+    /// tell.
+    fn the_pointer_changed(&mut self, _look: crate::ThePointersLook) {}
+
     /// **This machine's own network addresses, read now** — asked once, each
     /// time a person opens the form that adds a provider, so Settings can warn
     /// them about a service at one of them as it does about loopback (owner's
@@ -1213,6 +1231,11 @@ impl LoopInput for Desk<'_> {
         // choice is already written the new way.
         if let Some(formats) = server.the_formats_to_tell() {
             self.desktop.the_formats_are_now(&formats);
+        }
+        // **A pointer chosen in Settings reaches applications** through the
+        // desktop, which tells the person's session (`crate::the_pointers_look`).
+        if let Some(look) = server.the_pointer_change_to_tell() {
+            self.desktop.the_pointer_changed(look);
         }
         // **A provider form that just opened learns where this machine is**,
         // once, from the desktop that may read it.
@@ -2439,6 +2462,8 @@ impl LoopInput for Desk<'_> {
         // with one display *nothing drew* and *this display refused* are the
         // same fact. With two they will not be, and this is the line that
         // stops raising and starts reporting.
+        // **The pointer as the person chose it**, the same on every display.
+        let pointer_look = server.the_pointers_look();
         let mut layered = Layered {
             target,
             layers: NativeLayers {
@@ -2453,6 +2478,7 @@ impl LoopInput for Desk<'_> {
                 // **The pointer at this display's scale**, so a dense screen
                 // draws it sharper rather than smaller (`crate::the_pointer_drawn`).
                 pointer_at: crate::display_scale::DisplayScale::of_per_cent(this_displays_scale),
+                pointer_look,
                 ..pictures.layers(&edges)
             },
         };
@@ -2467,6 +2493,7 @@ impl LoopInput for Desk<'_> {
                     // **The pointer at this display's own scale**, as its
                     // edges and its Dock are.
                     pointer_at: crate::display_scale::DisplayScale::of_per_cent(*its_scale),
+                    pointer_look,
                     ..its_pictures.layers(its_edges)
                 },
             })

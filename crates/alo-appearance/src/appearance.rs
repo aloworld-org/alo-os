@@ -126,6 +126,16 @@ impl Appearance {
         self.changes.set_window_titles(titles);
     }
 
+    /// Make this the arrow the pointer is.
+    pub fn set_pointer_shape(&mut self, shape: crate::pointer::PointerShape) {
+        self.changes.set_pointer_shape(shape);
+    }
+
+    /// Make the pointer this large.
+    pub fn set_pointer_size(&mut self, size: crate::pointer::PointerSize) {
+        self.changes.set_pointer_size(size);
+    }
+
     /// Put one setting back to what this release ships.
     ///
     /// Says whether there was anything to put back.
@@ -212,6 +222,20 @@ impl Appearance {
     #[must_use]
     pub fn window_titles(&self) -> crate::titles::WindowTitles {
         self.changes.window_titles().unwrap_or_default()
+    }
+
+    /// Which arrow the pointer is: the person's choice, or the kite.
+    ///
+    /// Not part of [`Shipped`], for the reason [`Self::window_titles`] gives.
+    #[must_use]
+    pub fn pointer_shape(&self) -> crate::pointer::PointerShape {
+        self.changes.pointer_shape().unwrap_or_default()
+    }
+
+    /// How large the pointer is: the person's choice, or as it ships.
+    #[must_use]
+    pub fn pointer_size(&self) -> crate::pointer::PointerSize {
+        self.changes.pointer_size().unwrap_or_default()
     }
 
     /// The accent as a colour, at this time of day.

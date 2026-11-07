@@ -342,6 +342,8 @@ fn every_setting_the_machine_has_is_in_one_window() {
             // that.
             // The pointer is the size it ships at.
             SettingsRow::PointerSize(PointerSize::Default),
+            // And the arrow it ships as.
+            SettingsRow::PointerShape(alo_appearance::PointerShape::Kite),
         ]
     );
 }
@@ -1384,16 +1386,15 @@ fn a_session_with_no_folder_offers_nothing_it_could_not_keep() {
         rows.iter().all(|row| matches!(
             row.section(),
             SettingsSection::Granted | SettingsSection::HowCodeRuns
-        ) || matches!(
-            row,
-            SettingsRow::GoTo(SettingsCategory::RunningCode) | SettingsRow::PointerSize(_)
-        )),
+        ) || matches!(row, SettingsRow::GoTo(SettingsCategory::RunningCode))),
         "{rows:?}"
     );
+    // **No pointer row**: its size and shape are kept with the appearance,
+    // which a session with no folder cannot keep.
     assert_eq!(
         rows.len(),
-        11,
-        "the existing grant, pairing, application permission picker, record, code levels and pointer sizes remain reachable without a settings folder"
+        8,
+        "the existing grant, pairing, application permission picker, record and code choices remain reachable without a settings folder"
     );
     assert_eq!(window.appearance(), Some(&Appearance::shipped()));
     assert_eq!(window.dock(), Some(&Dock::shipped()));
@@ -1817,8 +1818,7 @@ fn typing_narrows_the_list_and_the_whole_list_stays_under_it() {
 }
 
 /// **Light and dark and the text size are written exactly as
-/// `alo-appearance` writes them**, and the pointer's size, which nothing draws
-/// yet, says so and writes nothing.
+/// `alo-appearance` writes them**, and so is the pointer's size.
 #[test]
 fn light_and_dark_and_the_text_size_are_kept_as_alo_appearance_keeps_them() {
     let machine = a_persons_machine("light-dark-text");
@@ -1877,7 +1877,8 @@ fn light_and_dark_and_the_text_size_are_kept_as_alo_appearance_keeps_them() {
     alo_appearance::keeping::keep(&twin_at, expected.changes()).unwrap();
     assert_eq!(bytes(&at), bytes(&twin_at));
 
-    let before = bytes(&at);
+    // **And the pointer's size is kept the same way**: written beside the
+    // rest, and what Settings now holds.
     assert_eq!(
         chosen(
             &mut window,
@@ -1885,26 +1886,71 @@ fn light_and_dark_and_the_text_size_are_kept_as_alo_appearance_keeps_them() {
             &strings,
             &door
         ),
-        Some(SettingsDid::NotOnThisComputerYet)
+        Some(SettingsDid::Kept(
+            SettingsSection::Appearance,
+            SettingsKept::Written
+        ))
     );
-    assert_eq!(bytes(&at), before);
-    let not_yet = strings
-        .say(
-            &crate::the_settings_words::NOT_ON_THIS_COMPUTER_YET.key(),
-            &Filling::nothing(),
-        )
-        .into_text();
-    let page = crate::settings_page::the_page(
-        window.open().unwrap(),
-        SettingsCategory::Accessibility,
-        &strings,
-        noon(),
-    );
+    expected.set_pointer_size(PointerSize::Larger);
+    alo_appearance::keeping::keep(&twin_at, expected.changes()).unwrap();
+    assert_eq!(bytes(&at), bytes(&twin_at));
+    assert_eq!(window.pointer_size(), Some(PointerSize::Larger));
+}
+
+/// **The familiar arrow is a choice, kept as `alo-appearance` keeps it**: on
+/// the Accessibility page beside the pointer's size, marked where it ships, and
+/// written to `appearance.toml` byte for byte as that crate writes it.
+#[test]
+fn the_familiar_arrow_is_a_choice_kept_with_the_appearance() {
+    let machine = a_persons_machine("pointer-shape");
+    let strings = words();
+    let door = CountingDoor::revoking();
+    let mut window = machine.opened();
+    let at = machine.kept(alo_appearance::keeping::THE_FILE);
     assert!(
-        page.blocks
-            .contains(&crate::settings_page::ABlock::Said(not_yet)),
-        "{:?}",
-        page.blocks
+        window.rows(noon()).contains(&SettingsRow::PointerShape(
+            alo_appearance::PointerShape::Classic
+        )),
+        "the familiar arrow is not offered"
+    );
+    assert_eq!(
+        window.pointer_shape(),
+        Some(alo_appearance::PointerShape::Kite)
+    );
+
+    assert_eq!(
+        chosen(
+            &mut window,
+            &SettingsRow::PointerShape(alo_appearance::PointerShape::Classic),
+            &strings,
+            &door
+        ),
+        Some(SettingsDid::Kept(
+            SettingsSection::Appearance,
+            SettingsKept::Written
+        ))
+    );
+    assert_eq!(
+        window.pointer_shape(),
+        Some(alo_appearance::PointerShape::Classic)
+    );
+    let mut expected = Appearance::shipped();
+    expected.set_pointer_shape(alo_appearance::PointerShape::Classic);
+    let twin = a_twin();
+    let twin_at = twin.path().join(alo_appearance::keeping::THE_FILE);
+    alo_appearance::keeping::keep(&twin_at, expected.changes()).unwrap();
+    assert_eq!(bytes(&at), bytes(&twin_at));
+
+    // **Back to the kite is a choice too**, written as one.
+    chosen(
+        &mut window,
+        &SettingsRow::PointerShape(alo_appearance::PointerShape::Kite),
+        &strings,
+        &door,
+    );
+    assert_eq!(
+        window.pointer_shape(),
+        Some(alo_appearance::PointerShape::Kite)
     );
 }
 

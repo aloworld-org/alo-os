@@ -37,6 +37,7 @@ jobs:
           cargo +1.97.0 test --locked --release -p alo-shell --lib capture_transport::
           cargo +1.97.0 test --locked --release -p alo-shell --lib capture_delivery::
           cargo +1.97.0 test --locked --release -p alo-shell --lib capture_authority::
+          cargo +1.97.0 test --locked --release -p alo-shell --lib settings_window::
           cargo +1.97.0 test --locked --release -p alo-shell --lib dock_surface
           cargo +1.97.0 test --locked --release -p alo-shell --lib text_glyph_cache::
           cargo +1.97.0 test --locked --release -p alo-shell --lib painted_text::

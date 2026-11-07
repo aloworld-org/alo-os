@@ -279,10 +279,19 @@ fn the_press_is_carried_out(server: &mut Server, press: crate::SettingsPress, st
     }
     // **When titles are shown is told to the seat at once**, so the next frame
     // draws every window's edge the way the person just chose.
-    if let Some(SettingsDid::Kept(SettingsSection::Appearance, SettingsKept::Written)) = did
-        && let Some(titles) = server.settings.window_titles()
-    {
-        server.the_window_titles_are(titles);
+    // **And so is the pointer**: alo's own on the next frame, and the
+    // applications that draw their own once the desktop has told the session
+    // (`crate::the_pointers_look`).
+    if let Some(SettingsDid::Kept(SettingsSection::Appearance, SettingsKept::Written)) = did {
+        if let Some(titles) = server.settings.window_titles() {
+            server.the_window_titles_are(titles);
+        }
+        if let (Some(shape), Some(size)) = (
+            server.settings.pointer_shape(),
+            server.settings.pointer_size(),
+        ) {
+            server.the_pointer_changed_to(crate::ThePointersLook { shape, size });
+        }
         return;
     }
     if let Some(SettingsDid::Kept(SettingsSection::Shortcuts, SettingsKept::Written)) = did

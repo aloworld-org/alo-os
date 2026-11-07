@@ -16,6 +16,7 @@ fn arrow_at(x: f64, y: f64, scale: DisplayScale) -> Result<Option<ThePointer>, R
             location: (x, y).into(),
         },
         scale,
+        crate::ThePointersLook::default(),
         small(),
     )
 }
@@ -45,6 +46,39 @@ fn a_dense_display_draws_it_at_its_own_scale() -> Result<(), RenderError> {
     Ok(())
 }
 
+/// **The size the person chose multiplies the display's scale**: Larger on a
+/// screen at one-to-one is 48 pixels, and on a screen at 200 per cent is 96.
+#[test]
+fn the_size_a_person_chose_is_drawn_on_every_display() -> Result<(), RenderError> {
+    let larger = crate::ThePointersLook {
+        size: alo_appearance::PointerSize::Larger,
+        ..crate::ThePointersLook::SHIPPED
+    };
+    let side = |scale: DisplayScale, look: crate::ThePointersLook| {
+        the_pointer(
+            &Cursor::Arrow {
+                location: (16.0, 16.0).into(),
+            },
+            scale,
+            look,
+            Rectangle::from_size((256, 256).into()),
+        )
+        .map(|pointer| pointer.map(|it| it.area.size.w))
+    };
+    assert_eq!(side(DisplayScale::ONE, larger)?, Some(48));
+    assert_eq!(side(DisplayScale::of_per_cent(200), larger)?, Some(96));
+    let large = crate::ThePointersLook {
+        size: alo_appearance::PointerSize::Large,
+        ..crate::ThePointersLook::SHIPPED
+    };
+    assert_eq!(side(DisplayScale::ONE, large)?, Some(36));
+    assert_eq!(
+        side(DisplayScale::ONE, crate::ThePointersLook::SHIPPED)?,
+        Some(24)
+    );
+    Ok(())
+}
+
 /// **A resize arrow is placed by its middle** (ADR 0071) and is the double
 /// arrow for its axis.
 #[test]
@@ -60,7 +94,13 @@ fn a_resize_arrow_is_placed_by_its_middle() -> Result<(), RenderError> {
             location: (16.0, 16.0).into(),
         };
         assert_eq!(the_shape_of(&cursor), Some(shape));
-        let Some(pointer) = the_pointer(&cursor, DisplayScale::ONE, small())? else {
+        let Some(pointer) = the_pointer(
+            &cursor,
+            DisplayScale::ONE,
+            crate::ThePointersLook::default(),
+            small(),
+        )?
+        else {
             unreachable!("{edge:?} drew nothing");
         };
         assert_eq!(pointer.area.loc, (4, 4).into(), "{edge:?}");
@@ -100,7 +140,15 @@ fn a_position_that_is_not_a_number_is_refused() {
 fn states_that_are_not_alos_draw_nothing() -> Result<(), RenderError> {
     for cursor in [Cursor::Hidden, Cursor::Default] {
         assert_eq!(the_shape_of(&cursor), None);
-        assert_eq!(the_pointer(&cursor, DisplayScale::ONE, small())?, None);
+        assert_eq!(
+            the_pointer(
+                &cursor,
+                DisplayScale::ONE,
+                crate::ThePointersLook::default(),
+                small()
+            )?,
+            None
+        );
     }
     Ok(())
 }
