@@ -152,6 +152,7 @@ app.declared.no-such-ability	{application} offers no ability called {ability}. a
 app.declared.unanswered	Sent: {said}. It did not answer, so whether it happened is not known
 app.desktop.silent	The desktop did not answer, so nothing was done
 app.front.none	There is no window you were working in before this terminal
+app.front.says	{application}: {said}
 app.front.unnamed	The window you were working in before this terminal does not say which application it belongs to, so nothing was done to it
 app.front.window	{application}, {window}
 app.kind.choice	{said}: one of {list}
