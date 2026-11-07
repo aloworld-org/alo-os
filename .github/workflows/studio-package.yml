@@ -1,5 +1,7 @@
 name: Studio installable package
 on:
+  pull_request:
+    paths: ['apps/alo-studio/**', '.github/workflows/studio-package.yml']
   workflow_dispatch:
 permissions:
   contents: read
@@ -14,6 +16,8 @@ jobs:
       ALO_STUDIO_BUILD_DIR: /tmp/studio-flatpak
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - name: Prepare package tools
         run: |
           dnf install -y cargo dbus-daemon
