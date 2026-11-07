@@ -41,6 +41,7 @@ jobs:
           cargo +1.97.0 test --locked --release -p alo-shell --lib dock_surface
           cargo +1.97.0 test --locked --release -p alo-shell --lib text_glyph_cache::
           cargo +1.97.0 test --locked --release -p alo-shell --lib painted_text::
+          cargo +1.97.0 test --locked --release -p alo-shell --lib painted::
           cargo +1.97.0 test --locked --release -p alo-shell --lib display_resources::
           cargo +1.97.0 test --locked --release -p alo-shell --test desktop_source
       - name: Strict desktop and shell checks

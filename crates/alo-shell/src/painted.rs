@@ -12,6 +12,9 @@ use smithay::{
 
 use crate::RenderError;
 
+#[path = "painted_runs.rs"]
+mod runs;
+
 /// One flat rectangle of one colour.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct Solid {
@@ -63,25 +66,7 @@ pub(crate) fn paint(
         solid_run(frame, solid.area, solid.colour)?;
     }
     for inked in inked {
-        let width = inked.area.size.w;
-        for (row, pixels) in inked.pixels.chunks(width.max(1) as usize).enumerate() {
-            let y = inked.area.loc.y + row as i32;
-            let mut start = 0;
-            while let Some(first) = pixels.get(start) {
-                let run = pixels.get(start..).map_or(1, |rest| {
-                    rest.iter().take_while(|pixel| *pixel == first).count()
-                });
-                solid_run(
-                    frame,
-                    Rectangle::new(
-                        (inked.area.loc.x + start as i32, y).into(),
-                        (run as i32, 1).into(),
-                    ),
-                    *first,
-                )?;
-                start += run;
-            }
-        }
+        runs::paint(frame, inked)?;
     }
     Ok(())
 }

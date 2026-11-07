@@ -1595,3 +1595,32 @@ native CI continues to run its separate publisher, microphone, lifecycle and
 decoding checks. The compositor candidate has not established an installed
 performance improvement. Continuous video and synchronized microphone audio
 remain unaccepted on the available software-emulated VM; the review stays draft.
+
+### Native pixel-run submission investigation
+
+A further one-time diagnostic at `c7400bc8` wraps pixman's compositing calls.
+The hook is loaded correctly; an initial service-name journal query misses its
+output because the desktop's PAM session changes its journal attribution.
+The process-name query recovers the logs. About 2.88 million calls occur over
+399 seconds in the idle desktop. The reported full-output dimensions are the
+backend's composite extent, not proof that every call copies the whole output:
+Smithay clips these operations to each supplied damage region.
+
+Native opaque text currently submits each horizontal run separately. The next
+candidate groups disjoint runs of the same colour within one image, submits at
+most 4,096 runs per batch and completes that image before any overlapping next
+image. This makes the existing promise of native drawing true more efficiently;
+it adds no user-facing capability and changes neither pixels nor layer order.
+Regression checks cover exact pixel coverage, reduced submissions, bounded
+flushing, immediate failure propagation and the actual software renderer with
+overlapping images. The native workflow runs these checks on future changes.
+CI and installed verification of this candidate are pending.
+
+An independent kernel counter sample finds 102,502 minor faults and 11.39 seconds
+of main-thread kernel CPU time over 15.27 seconds. Temporary allocator settings
+are explored separately. The first comparison overlaps startup and is rejected;
+another sample pauses the parent validation but misses compiler children, so
+it is not treated as a quiet-host performance result. The parent is resumed
+after 28 seconds, recorded with its process identity. No allocator improvement
+or media acceptance is claimed. Both diagnostic drop-ins are removed, the
+normal desktop services restart, and no allocator setting is added to the OS.
