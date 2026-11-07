@@ -333,6 +333,8 @@ fn every_setting_the_machine_has_is_in_one_window() {
             }),
             SettingsRow::LightOrDark(LightOrDark::of(Appearance::shipped().following())),
             SettingsRow::Accent(Appearance::shipped().accent()),
+            // A new window with no room glides to empty space, as it ships.
+            SettingsRow::WhenThereIsNoRoom(alo_appearance::WhenThereIsNoRoom::GlideToEmptySpace),
             SettingsRow::Edge(Dock::shipped().edge()),
             SettingsRow::Hiding(Dock::shipped().hiding()),
             // **The region and the time zone are not marked on a page**: each

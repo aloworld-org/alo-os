@@ -329,7 +329,7 @@ fn an_empty_window_or_an_empty_view_has_no_space() {
     let (view, open) = a_full_view();
     for (view, wanted) in [
         (view, size(0, 480)),
-        (view, size(640, -1)),
+        (view, size(640, 0)),
         (rect(0, 0, 0, 960), size(640, 480)),
     ] {
         assert_eq!(
