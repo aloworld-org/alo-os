@@ -195,7 +195,13 @@ const A_LINE_WORTH_READING: usize = 160;
 fn said(happened: &WhatHappened) -> ExitCode {
     match happened {
         WhatHappened::ItWasAnsweredInWords { said, after } => {
-            println!("{said}");
+            // **Never read as a change waiting**, whatever the model wrote:
+            // `alo-ask` reads the first line of this reply to learn whether
+            // its request left one (`alo_protocol::what_the_agent_says_back`).
+            println!(
+                "{}",
+                alo_protocol::what_the_agent_says_back::never_read_as_a_change(said)
+            );
             if !after.is_empty() {
                 eprintln!("alo-agent: after {} step(s)", after.len());
             }
@@ -207,8 +213,11 @@ fn said(happened: &WhatHappened) -> ExitCode {
             after,
             ..
         } => {
-            println!("a change is waiting for you to answer, as number {number}:");
-            println!("  {sentence}");
+            // One place spells this line, because `alo-ask` reads it back.
+            println!(
+                "{}",
+                alo_protocol::what_the_agent_says_back::a_change_is_waiting(*number, sentence)
+            );
             eprintln!("alo-agent: after {} step(s)", after.len());
             ExitCode::SUCCESS
         }
@@ -219,7 +228,10 @@ fn said(happened: &WhatHappened) -> ExitCode {
             // can read* among them (ADR 0138) — and until 2026-10-28 it went
             // only to the service log, so the window could say no more than
             // that the request stopped.
-            println!("{said}");
+            println!(
+                "{}",
+                alo_protocol::what_the_agent_says_back::never_read_as_a_change(said)
+            );
             eprintln!("alo-agent: refused after {} step(s): {said}", after.len());
             ExitCode::FAILURE
         }

@@ -31,7 +31,7 @@ page's own footnote.
 | alo and AI, dark | `550:580` | the dark values |
 | Folders alo can use | `550:741` | a folder just given, two on the list |
 | Running code | `550:874` light, `550:1025` dark | the three levels and what stays on |
-| Terminal | `551:98` | two switches, one on |
+| Terminal | `551:98` | two switches, one on — a third built since; see *Built and not drawn* |
 | Appearance | `551:214`; `551:363` at 1280 × 800; `551:512` Moss | light and dark, the accent, the Dock |
 | Region and time | `551:661`; `551:751` choosing the country | two pickers, and the country picker open |
 | Keyboard and shortcuts | `551:870` | every shortcut with its keys |
@@ -250,6 +250,25 @@ Settings is a window on the canvas like an application's.
   and the grip's mark stands in its place as for an application whose icon this
   machine does not know — and **no Minimise or Maximise**, which nothing can do
   to Settings yet.
+
+## Built and not drawn: letting alo act without asking
+
+*The owner's decision of 2026-11-06, added after the frames were drawn.* The
+Terminal frame (`551:98`) has two switches; the page now has a third, **Let alo
+act without asking**, under them in *In the terminal*. The design is silent on
+it, so it is made of two things the design already has, with their measures:
+
+- **the switch row** of `551:168` — name, the line under it, the switch and its
+  word at the end; and
+- **the *What it risks* box** of the Running code page (`550:874`), which is
+  where this design puts a cost in plain words. It holds the owner's sentence,
+  *alo will send, change and delete what you ask for without showing you first*,
+  and is drawn **whichever way the switch is**, so it is read before switching
+  on rather than after.
+
+The page's line under its heading, *Two things alo can do in your terminal*,
+reads *What alo can do in your terminal* for the same reason. **Departures, and
+recorded here for the next person to take to the design.**
 
 ## What is drawn and not built
 
