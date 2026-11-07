@@ -96,7 +96,11 @@ fn with_the_switch_on_the_change_this_request_left_is_approved_once() {
             answered: Some(Answered::It(Box::new(Done::Renamed { now_at: None }))),
         }
     );
-    assert_eq!(daemon.approved.get(), 1, "one request was approved more than once");
+    assert_eq!(
+        daemon.approved.get(),
+        1,
+        "one request was approved more than once"
+    );
 }
 
 /// **Switched off while alo was working, the change already waiting is left
@@ -154,7 +158,11 @@ fn a_change_another_surface_is_holding_is_never_approved_from_here() {
             &the_switch(AloInTheTerminal::ActsWithoutAsking, &log),
         );
         assert_eq!(did, WhatTheTerminalDid::NotTheChangeWaiting, "{holding:?}");
-        assert_eq!(daemon.approved.get(), 0, "approved another surface's change");
+        assert_eq!(
+            daemon.approved.get(),
+            0,
+            "approved another surface's change"
+        );
     }
 }
 
@@ -189,6 +197,9 @@ fn words_approve_nothing_even_words_that_copy_the_line() {
             &the_switch(AloInTheTerminal::ActsWithoutAsking, &log),
         );
         assert_eq!(did, WhatTheTerminalDid::NothingWaited, "{reply:?}");
-        assert!(log.borrow().is_empty(), "{reply:?} reached the daemon: {log:?}");
+        assert!(
+            log.borrow().is_empty(),
+            "{reply:?} reached the daemon: {log:?}"
+        );
     }
 }

@@ -110,7 +110,10 @@ mod tests {
     /// a wall, and neither takes two presses.
     #[test]
     fn one_press_turns_it_either_way() {
-        for now in [AloInTheTerminal::AsksFirst, AloInTheTerminal::ActsWithoutAsking] {
+        for now in [
+            AloInTheTerminal::AsksFirst,
+            AloInTheTerminal::ActsWithoutAsking,
+        ] {
             assert_ne!(now.the_other_one(), now);
             assert_eq!(now.the_other_one().the_other_one(), now);
         }

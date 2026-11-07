@@ -69,9 +69,10 @@ pub fn what_the_terminal_says(
                 // Nothing here declines, so a decline is the daemon answering
                 // something else; and no answer is no answer. Either way the
                 // record is where the person finds out.
-                Some(Answered::Declined) | None => {
-                    (say(alo_capability::words::NO_WORD_BACK_IN_THE_TERMINAL), false)
-                }
+                Some(Answered::Declined) | None => (
+                    say(alo_capability::words::NO_WORD_BACK_IN_THE_TERMINAL),
+                    false,
+                ),
             };
             WhatTheTerminalSays {
                 lines: vec![sentence.clone(), outcome],
@@ -84,7 +85,8 @@ pub fn what_the_terminal_says(
 #[cfg(test)]
 #[expect(
     clippy::expect_used,
-    reason = "in a test, a vocabulary that will not build is the failure being reported"
+    clippy::indexing_slicing,
+    reason = "in a test, a vocabulary that will not build or a line that is missing is the failure being reported"
 )]
 mod tests {
     use super::*;

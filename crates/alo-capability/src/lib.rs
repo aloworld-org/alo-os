@@ -163,9 +163,9 @@
 /// What a person has allowed their agent to do with a terminal (ADR 0111,
 /// which supersedes ADR 0043's outright wall).
 pub mod a_terminal_for_the_agent;
-pub mod alo_in_the_terminal;
 pub mod agent;
 pub mod allowing;
+pub mod alo_in_the_terminal;
 pub mod approval;
 pub mod approvals;
 pub mod arg;
@@ -195,8 +195,8 @@ mod testing;
 
 pub use a_terminal_for_the_agent::ATerminalForTheAgent;
 pub use agent::Agent;
-pub use alo_in_the_terminal::AloInTheTerminal;
 pub use allowing::NotAllowed;
+pub use alo_in_the_terminal::AloInTheTerminal;
 pub use approval::Approved;
 pub use approvals::{AnswerError, Approvals, ProposalId, Waiting};
 pub use arg::{Arg, ArgError, Given, Takes, Value};

@@ -1434,15 +1434,21 @@ fn a_session_with_no_folder_offers_nothing_it_could_not_keep() {
         rows.iter().all(|row| matches!(
             row.section(),
             SettingsSection::Granted | SettingsSection::HowCodeRuns
-        ) || matches!(row, SettingsRow::GoTo(SettingsCategory::RunningCode))),
+        ) || matches!(
+            row,
+            SettingsRow::GoTo(SettingsCategory::RunningCode)
+                // **And the switch to act without asking**, kept in the same
+                // machine file as how code runs, so keepable here too.
+                | SettingsRow::ActWithoutAsking
+        )),
         "{rows:?}"
     );
     // **No pointer row**: its size and shape are kept with the appearance,
     // which a session with no folder cannot keep.
     assert_eq!(
         rows.len(),
-        7,
-        "one grant, one pairing, the row that opens the record, the three levels, and the          row that opens their page"
+        8,
+        "one grant, one pairing, the record's row, the three levels, their page's row, the switch"
     );
     assert_eq!(window.appearance(), Some(&Appearance::shipped()));
     assert_eq!(window.dock(), Some(&Dock::shipped()));

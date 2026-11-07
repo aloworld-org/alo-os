@@ -222,11 +222,7 @@ pub fn read(text: &str) -> Result<WhatTheFileSays, NotTheLevel> {
         return Err(NotTheLevel::SaysNothing);
     }
     Ok(WhatTheFileSays {
-        chose: written
-            .chose
-            .as_deref()
-            .map(the_level_called)
-            .transpose()?,
+        chose: written.chose.as_deref().map(the_level_called).transpose()?,
         in_the_terminal: written
             .in_the_terminal
             .as_deref()

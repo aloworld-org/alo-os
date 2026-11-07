@@ -10,7 +10,8 @@ fn every_level_goes_down_and_comes_back() {
         let text = written(WhatTheFileSays {
             chose: Some(chose),
             in_the_terminal: None,
-        }).expect("a level writes");
+        })
+        .expect("a level writes");
         assert_eq!(
             read(&text)
                 .expect("what this crate wrote, this crate reads")
@@ -184,7 +185,10 @@ fn the_three_words_are_distinct_and_none_is_a_prefix_of_another() {
 /// with or without a level beside it.
 #[test]
 fn the_terminal_answer_goes_down_and_comes_back() {
-    for answer in [AloInTheTerminal::AsksFirst, AloInTheTerminal::ActsWithoutAsking] {
+    for answer in [
+        AloInTheTerminal::AsksFirst,
+        AloInTheTerminal::ActsWithoutAsking,
+    ] {
         for chose in [None, Some(HowCodeRuns::InASealedBox)] {
             let says = WhatTheFileSays {
                 chose,
@@ -228,8 +232,7 @@ fn a_terminal_word_it_does_not_take_is_refused_whole() {
 /// would otherwise be read around, and the person told nothing.
 #[test]
 fn a_key_nobody_declared_is_refused() {
-    let misspelt =
-        format!("format = {THE_LEVEL_FORMAT}\nin-the-termnal = \"{AT_FULL_TRUST}\"\n");
+    let misspelt = format!("format = {THE_LEVEL_FORMAT}\nin-the-termnal = \"{AT_FULL_TRUST}\"\n");
     assert!(
         matches!(read(&misspelt), Err(NotTheLevel::NotTheShape { .. })),
         "a key nobody declared was read around: {:?}",

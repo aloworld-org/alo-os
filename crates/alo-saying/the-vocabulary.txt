@@ -337,6 +337,11 @@ capability.running.sealed-box-not-available-here	The sealed box isn't available 
 capability.running.sealed-box-not-here-yet	{program} was not run. The sealed box can't run programs on this computer yet. Choose 'ask each time' in Settings → Running code to run commands after you approve them.
 capability.running.what-full-trust-costs	text in a web page, an email or a downloaded project can steer the agent, and at this level whatever it steers the agent to run, runs
 capability.running.would-not-start	nothing ran, because the command could not be started
+capability.terminal.done-without-asking	Done without asking you first, as you chose in Settings → Terminal.
+capability.terminal.done-without-asking-cannot-be-put-back	Done without asking you first, as you chose in Settings → Terminal. This one can't be put back: a copy of your files from before it could not be kept.
+capability.terminal.no-word-back	alo was told to go ahead, and the alo service did not say whether it did. See what alo did to find out.
+capability.terminal.not-done-switched-off	Not done: acting without asking was switched off in Settings → Terminal while alo was working on this.
+capability.terminal.what-acting-without-asking-costs	alo will send, change and delete what you ask for without showing you first
 capturing.another-persons-window	That window belongs to somebody else signed in on this machine, so a picture of it cannot be taken. Take a picture of your own screen instead
 capturing.copied	A picture of your screen was copied, ready to paste
 capturing.mark.arrow	Arrow
@@ -1674,6 +1679,7 @@ recounting.outcome.workspace-opened	the person at this machine opened a workspac
 remembering.level.a-link	{path} is a link to somewhere else, and this is read only as a real file, so this machine does not know how you want code run
 remembering.level.from-a-newer-alo-os	{path} was written by a newer alo OS than this one, so this machine does not know how you want code run
 remembering.level.no-such-level	{path} says {said}, which is not one of the three levels, so this machine does not know how you want code run
+remembering.level.not-a-terminal-answer	{path} says {said} for the terminal, which is neither asking-each-time nor at-full-trust, so this machine does not know how you want alo to act
 remembering.level.not-read	{path} could not be read, so this machine does not know how you want code run
 remembering.level.not-the-shape	{path} is not the shape this file takes, so this machine does not know how you want code run
 remembering.level.not-written	{path} could not be written, so how code runs has not been changed
