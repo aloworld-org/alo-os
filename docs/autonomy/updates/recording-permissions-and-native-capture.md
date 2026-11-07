@@ -6,43 +6,37 @@ signed distribution, production-image acceptance, and physical-hardware
 acceptance are separate. The complete booted walk is **not yet accepted**.
 
 Current result: native permissions, the normally installed application and 19
-typed agent actions are implemented. Normal Flatpak source remains `bbc88582`,
-bundle SHA-256
-`49c513ecf42a58041c6517fdc847f14447468e3f34d17f22bb04237f12829b85`.
-It is built in the hosted GNOME 49 SDK without verification features. Installed
-desktop `74c3fef4` passes all five hosted checks, including the full OS gate,
-optimized artwork/desktop regressions and strict checks. Its application source
-is identical to the installed package. Thirty application tests include
-adversarial video timestamps encoded to WebM and actually decoded.
+typed agent actions are implemented. The normal GNOME 49 SDK Flatpak source is
+`06213b2e`, built without verification features; its bundle SHA-256 is
+`ac0ba3a3aa33af1895fbefd9ed21d0c7b2571128da51a2008b018e5b0697e0ba`.
+All five hosted checks pass for that source. Thirty-three application tests and
+the real native integration verify input ownership, lifecycle and pause cutoff.
+The installed desktop is `74c3fef4`.
 
-Both latest installed flows complete capture, stable five-second pause, resume,
-review, naming, library navigation and byte-identical native export. Both saved
-videos have strictly increasing timestamps. Screen video measures 4.793 fps,
-passing cadence, but its 0.711-second uncovered gap fails the 0.4-second limit.
-That gap is near resume. Window video measures 2.621 fps with a 1.405-second gap.
-Its 37.220 seconds of audible PCM have no meaningful gaps or overlap; track
-endings differ by 398 ms. Both independent reference checks pass, but six marker
-matches do not establish synchronization. Neither video passes full media
-acceptance. These are one-time installed observations, preserved below. All five
-paused compiler processes resume, and normal audio, chooser size and application
-state are restored.
+The latest quiet-host installed flows complete capture, stable five-second pause,
+correct microphone states, resume, finish, review, naming, library navigation
+and byte-identical native export. Both saved videos have increasing timestamps
+and the expected tracks. Screen measures 4.217 fps with a 450 ms uncovered gap;
+window measures 3.337 fps with a 779 ms gap. Window PCM is continuous for 34.960
+seconds; track endings differ by 35 ms. Eight marker matches do not establish
+synchronization. Both videos fail unchanged media acceptance. All media, partials,
+exact source identities and compiler resumption proof are preserved below.
 
-Source inspection identifies native pipeline state changes at microphone clock
-selection and pause. The next application candidate holds only the existing
-PipeWire video source in Playing across those transitions. Paused video still
-gets discarded before downstream queues; the microphone still stops. Parent
-control and its new base time are restored on resume. Finish and Drop retire
-that hold without restarting inputs. It changes neither accepted timestamps nor
-durations. Unit and real native integration checks plus a new normal package
-and installed walk remain required. No renderer patch, local unsafe code, new
-dependency, allocator tuning or acceptance-threshold change is included.
+The next candidate shares already-owned direct capture storage, removing one
+full-frame allocation and copy per captured frame while preserving existing
+backend methods and callbacks. It is merged with main's terminal choices and
+window placement updates. Hosted validation is pending; it is not installed
+quality acceptance. The first combined native check passes all 33 unit tests
+but queries the startup control object before it exists. Its fixed startup wait
+is replaced by a bounded live-interface readiness check; failure evidence is
+preserved rather than discarded. This changes no production recording code.
 
-The agent permission walk separately verifies live discovery, one approved
-execution, immediate revocation and refusal. A post-recovery read again verifies
-that revoked Studio access removes its actions from discovery and refuses the
-read. Other applications must expose their own adapters. The review remains a
-draft with no market publication, and each earlier measurement retains its own
-tested source.
+The agent permission walk separately verifies live discovery, approved execution,
+immediate revocation and refusal. Revoked Studio access removes its actions from
+discovery and refuses the read. Other applications must expose their own adapters.
+The review remains a draft, with no market publication. Desktop locking remains
+a separate OS change. No acceptance threshold, media timestamp or duration is
+changed by the current candidate.
 
 ## Implemented boundaries
 

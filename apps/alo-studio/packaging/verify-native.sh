@@ -55,7 +55,17 @@ if [[ ! -s "$scratch/app-pid" ]]; then head -30 "$scratch/app.log"; exit 1; fi
 app_pid=$(cat "$scratch/app-pid")
 if ! kill -0 "$app_pid"; then head -30 "$scratch/app.log"; exit 1; fi
 printf 'GUI_BASELINE_STATUS_BEFORE_RECORDING\n'
-gdbus call --address "$(cat "$scratch/session-bus")" --timeout 2 --dest org.aloworld.Studio --object-path /org/aloworld/Studio/Recorder --method org.aloworld.Studio.Recorder1.GetStatus > "$scratch/startup-status.txt"
+# Owning the application bus name precedes registering its control object.
+# Wait for the real interface, rather than treating a fixed sleep as readiness.
+startup_deadline=$((SECONDS + 30))
+while ! gdbus call --address "$(cat "$scratch/session-bus")" --timeout 2 --dest org.aloworld.Studio --object-path /org/aloworld/Studio/Recorder --method org.aloworld.Studio.Recorder1.GetStatus > "$scratch/startup-status.txt" 2> "$scratch/startup-error.txt"; do
+  if ! kill -0 "$app_pid" 2>/dev/null || (( SECONDS >= startup_deadline )); then
+    cat "$scratch/startup-error.txt" >&2
+    echo 'The native application control interface did not become ready.' >&2
+    exit 1
+  fi
+  sleep .2
+done
 ALO_STUDIO_VERIFY_PREPARE_DELAY=1 "$build_target/debug/examples/verify-recording" "$scratch/display.webm"
 ALO_STUDIO_VERIFY_STOP_DELAY=1 ALO_STUDIO_VERIFY_LIGHTWEIGHT=1 "$build_target/debug/examples/verify-recording" "$scratch/display-lightweight.webm"
 ALO_STUDIO_VERIFY_SOURCE_END=1 "$build_target/debug/examples/verify-recording" "$scratch/source-ended-while-paused.webm"
