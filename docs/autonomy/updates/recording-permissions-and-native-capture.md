@@ -2446,3 +2446,91 @@ mutated. Byte, entry, oversized bypass and reader-lifetime regressions cover the
 new pool. Full-image copy replaces all pixels before any publication. Existing
 source lifetime, successful-submission gating and bounded transport remain.
 Formatting passes; CI and default-configuration installed acceptance are pending.
+
+### Follow-up: process creation, owned mappings, and installed results
+
+The direct reusable readback passed its pixel and lifetime checks, but the
+installed software VM still faulted on reused output pages. Kernel process
+creation and execution traces identify ordinary compositor forks for
+`/usr/bin/pw-dump`. Rust's process implementation falls back to fork when a
+command changes PATH and starts a bare executable. `ATool` now resolves the
+program within its exact final child PATH before starting it. Explicit paths,
+filtered environments, missing-tool errors and the caller's last PATH override
+retain their behavior. Permanent `reaching` tests cover these cases.
+
+An installed trace after this change observes seven `pw-dump` launches, all with
+shared-memory/vfork flags, and no ordinary compositor forks. A separate
+12.249-second minor-fault sample records no samples at a period of 100 faults;
+this does not prove zero total faults. These are manual diagnostic measurements,
+preserved in `diagnostic-compositor-process-execution-fixed` and
+`diagnostic-system-tool-spawn-faults`, not continuous performance checks.
+
+The next candidate removes the remaining software export copy. ADR 0149 records
+the rented-binding exception before implementation. The pinned Smithay 0.7.0
+package retains its upstream license and file hashes; the narrow
+`owned-pixman-mapping.patch` adds initialized owned-image allocation, render-target
+binding and byte views. Rendering algorithms are unchanged. Immutable mappings
+travel through scanout and native capture, with a bounded six-image/64 MiB pool
+and no mutation while a reader holds an allocation. Existing backend APIs keep
+their compatibility path. A permanent source-integrity integration test checks
+the original package files and reviewed overlay.
+
+On the merged source, formatting, all shell targets, and strict shell/adapter
+lint checks pass. Targeted tests pass: source integrity (1), software scanout
+(25), capture transport (5), readback (12), approval labels (3), and Studio's
+real-bus bounded-status/approved-countdown integration (1). These checks are
+repeatable tests; their counts include overlapping filtered shell test groups.
+The merge also reconciles main's application controls: Studio declares local
+actions as `Sends::Never`, and shared approval labels remove a normal dependency
+cycle without changing their published keys. The existing installed permission
+walk remains the evidence for Studio's 19 typed agent controls; this is not a
+claim that every third-party application was live tested.
+
+The normally installed desktop is source `c620130c`, executable SHA-256
+`b68c1660a5af54293b32df3eceee4345c2eb9c94a3525f837aa8b10475f68930`.
+Its optimized regressions and strict desktop checks pass in hosted job
+128536138997. The installed Flatpak remains source `06213b2e`: Git-object proof
+confirms unchanged application source, assets, manifest, lockfile and packaging
+recipe. Source `d9406d41` differs from that desktop only in a checked read inside
+a test. All five hosted checks pass for `d9406d41`, including the repository
+gate. These results do not override the failed installed media acceptance.
+
+The installed repeat holds the shared Cargo lock from 22:09:47 through 22:21:18
+UTC on 7 November 2026. No competing job is paused, no local compiler runs, and
+no sampler or allocator override runs during recording. Lock ownership does not
+establish that all unrelated Windows applications were idle. Results:
+
+- Screen clip `1794089530-117829225-2`, SHA-256
+  `2e3e486ba2d63dce8f976bbac451e18991beba6bcf7daae291e8049748f1488b`,
+  completes selection, stable five-second pause, resume, review, naming, library
+  and byte-identical native export as `Product demonstration 48.webm`. It has
+  57 decoded frames, 55 unique frames, 2.472 fps and a 560 ms uncovered gap.
+  Video acceptance fails.
+- Window clip `1794089955-400835926-2`, SHA-256
+  `19075bdb525de9a095f93cd8c3f44dd1b61faf3de3a168d618da6a685fc76bf6`,
+  has 25 distinct decoded frames, 1.623 fps and a 2.587-second uncovered gap.
+  Its 9.520 seconds of PCM are continuous, but track endings differ by 6.302
+  seconds. The audio-input queue reaches its bounded limit; the next control
+  call refuses after recording has left the expected state. The complete
+  pause/resume/export flow fails. The independent reference passes initially
+  but fails its post-idle marker check. No marker matches establish sync.
+
+All files, controls, source identities and failure logs remain in
+`installed-owned-image-*`, including `verification-summary.json`. These are
+manual installed checks, not a continuous hardware gate. Their thresholds are
+unchanged; saved frames and timestamps are not padded, duplicated or retimed.
+
+A subsequent passive, recording-free compositor sample retains 1,325 user
+instruction pointers over 20.083 seconds, with no lost records: 561 in Pixman,
+510 in the desktop and 252 in libc. The software painter accounts for 86 desktop
+samples. Evidence is `diagnostic-owned-image-cpu`. This confirms substantial
+remaining software-painting work; it does not prove a controlled speedup or that
+the audio-queue failure has the same cause. **Continuous installed video,
+synchronized audio, and the complete window flow remain unverified. This work
+is not demo-ready and remains a draft.**
+
+Cleanup at 22:30:23 UTC verifies Studio Ready with microphone off, the real
+microphone restored, the owned audio fixture removed, forced sample rate zero,
+reference units stopped, native chooser size restored, installer unfrozen, and
+no compositor tracer or owned kernel probe. The VM, saved media and verification
+artifacts remain preserved.
