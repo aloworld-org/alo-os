@@ -654,7 +654,9 @@ pub const ACCESS_NOT_WRITTEN: Word = Word::saying(
     "settings.access.not-written",
     "That was not saved: {why}",
 )
-.noting("When turning Reduced motion on or off could not be saved. {why} is the computer's own reason.");
+.noting(
+    "When turning Reduced motion on or off could not be saved. {why} is the computer's own reason.",
+);
 
 /// *Your accessibility settings could not be read …*
 pub fn access_not_read(strings: &alo_strings::Strings, why: &str) -> String {
