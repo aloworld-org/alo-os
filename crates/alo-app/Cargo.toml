@@ -29,8 +29,6 @@ alo-capability = { path = "../alo-capability" }
 # The person's record, and the entry a typed command writes into it.
 alo-record = { path = "../alo-record" }
 alo-keeping = { path = "../alo-keeping" }
-# Where that record is: the file `alo-try` already writes, named once there.
-alo-try = { path = "../alo-try" }
 # The person's language, read from their settings as `alo-ask` reads it.
 alo-choosing = { path = "../alo-choosing" }
 alo-strings = { path = "../alo-strings" }

@@ -84,6 +84,7 @@
 
 #![doc(html_root_url = "https://github.com/aloworld-org/alo-os")]
 
+pub mod a_persons_own;
 mod believing;
 pub mod damage;
 pub mod disagreeing;
@@ -98,6 +99,7 @@ pub mod writing;
 #[cfg(test)]
 mod testing;
 
+pub use a_persons_own::the_record_a_person_keeps;
 pub use damage::Damage;
 pub use disagreeing::Disagreement;
 pub use failing::NotKept;

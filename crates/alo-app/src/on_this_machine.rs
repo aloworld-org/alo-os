@@ -230,7 +230,7 @@ pub fn main() -> ExitCode {
         doors,
         tree: None,
         bus: None,
-        keeping: alo_try::the_record_a_person_keeps(&home),
+        keeping: alo_keeping::the_record_a_person_keeps(&home),
         record: None,
         pipe: std::io::stdin().lock().lines(),
     };
