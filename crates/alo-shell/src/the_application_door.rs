@@ -57,6 +57,14 @@ use crate::the_application_doors_place::{NoDoor, ThePlace};
 pub trait CarriesOutAnApplicationVerb {
     /// Do this, and say what happened.
     fn carrying_out(&mut self, acting: &alo_acting::Acting) -> Answer;
+
+    /// The window the person was working in just before the terminal they are
+    /// typing in — the answer to `front`.
+    fn the_window_before_this_terminal(&mut self) -> alo_acting::InFront;
+
+    /// Where this shell's own tree is on the accessibility bus — the answer to
+    /// `alo-tree`.
+    fn where_alos_tree_is(&self) -> alo_acting::WhereAlosTreeIs;
 }
 
 /// How many callers may be part-way through a line at once.
@@ -234,6 +242,23 @@ impl TheApplicationDoor {
                 HowFarAlong::ALine(line) => {
                     // **A count holds its connection**, so it is handed on
                     // rather than answered, with whatever was said after it.
+                    // **`front` and `alo-tree` are one word each**, read
+                    // before anything that takes an application.
+                    let one_word = if alo_acting::is_front(&line) {
+                        Some(carrying_out.the_window_before_this_terminal().written())
+                    } else if alo_acting::is_alo_tree(&line) {
+                        Some(carrying_out.where_alos_tree_is().written())
+                    } else {
+                        None
+                    };
+                    if let Some(answer) = one_word {
+                        let _ = caller.talking.write_all(answer.as_bytes());
+                        let _ = caller.talking.write_all(b"
+");
+                        let _ = caller.talking.flush();
+                        drop(caller.talking);
+                        continue;
+                    }
                     match ToCount::read(&line) {
                         Some(Ok(asked)) => {
                             let after = caller

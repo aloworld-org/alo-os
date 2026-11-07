@@ -518,6 +518,8 @@ mod the_dock_as_a_reader_meets_it;
 mod the_docks_name_is_held;
 pub mod the_docks_words;
 mod the_door_on_the_desktop;
+/// The compositor's answers to `front` and `alo-tree` at the door.
+mod the_window_before_this_terminal;
 mod the_edge_takes_the_keyboard;
 /// The egress indicator's two arrows, from the design file's SVG.
 mod the_egress_indicators_arrows;
@@ -643,6 +645,8 @@ pub mod which_preview_the_pointer_is_on;
 mod which_surface_claims_a_point;
 /// Which kind of window is in front: the one a person went to (2026-10-31).
 mod which_window_is_in_front;
+/// Who had the person's keyboard, most recent first, for `front`.
+mod who_had_the_keyboard;
 /// The name of the person a desktop is for, told once at sign-in (ADR 0135).
 mod whose_desktop_this_is;
 /// Whether a person is arriving at the screen, asked of `logind` and systemd before the

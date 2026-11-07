@@ -617,6 +617,13 @@ impl crate::DirectSession {
             &alo_access::TurnedOn::nothing(),
         )
         .ok();
+        // **And where it is, for `alo-tree` at the door**: the one connection
+        // a person's command may trust as alo's own surfaces.
+        server.the_shells_tree_answers_as(
+            reader
+                .as_ref()
+                .map(crate::TheReaderIsTold::answers_as),
+        );
         let manager = self.input_session();
         self.with_active_device(|fd, poll| {
             let setup = (|| {
