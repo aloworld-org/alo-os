@@ -36,16 +36,23 @@ Pick the best one the application supports.
 | **The application's automation API** | It has one | Best — semantic, reliable, verifiable |
 | **The accessibility tree (AT-SPI)** | No API exists | Good — a real widget tree, controls activated properly |
 | **D-Bus** | The application exposes an interface | Good where present |
-| **Screenshot and synthetic input** | Nothing else exists | Poor — fragile and **unauditable** |
+| **The screen** — one window's picture read, keys and clicks delivered to that window | Only for a control no better road reaches | Least reliable — it reads pictures, and afterwards nobody can say for certain what was pressed, so every act is marked in the record |
 
-The accessibility tree is the universal floor: an application with no adapter at
-all is still readable and operable through it, so every application gets *some*
-capability and adapters add *real* capability.
+The accessibility tree is the universal floor for an application that describes
+itself: readable and operable with no adapter at all, so every such application
+gets *some* capability and adapters add *real* capability. **The screen is the
+floor beneath that**, for a window that describes nothing.
 
-Screenshot-and-click is a last resort. It must be declared in the adapter
-manifest, is marked in every record it produces, and is disabled by policy by
-default — because after the fact nobody can say what it actually did, which
-breaks the record guarantee the whole model rests on.
+*Edited 2026-11-06 by [ADR 0147](../decisions/0147-the-screen-road-and-who-reads-the-screen.md),
+accepted that day.* This paragraph said screenshot-and-click *must be declared
+in the adapter manifest … and is disabled by policy by default*. Now: **the
+screen road is carried out by this machine itself, never declared by an
+adapter**, under ADR 0147 §1's rules — one window, read at the moment of the act
+and never kept, found by what it says, read again after, password fields never
+read or sent, and every act marked in the record. alo uses it for an application
+only once the person has switched it on for that application; a person's own
+typed commands use it at once; an organisation may forbid it on machines it owns
+(ADR 0016).
 
 ## What an adapter declares
 
@@ -116,8 +123,11 @@ author to act on:
 - **an action chosen by an argument**: `org.freedesktop.Application.ActivateAction`,
   `org.gtk.Actions.Activate` and `SetState` must name their action as a literal,
   one verb per action;
-- `synthetic`, whatever else is true; `api` and `accessibility`, until this
-  machine carries them out — a verb the machine cannot carry out is never offered;
+- `synthetic` in an adapter's declaration — the screen road is this machine's
+  own, carried out under ADR 0147, and an adapter cannot declare it (*edited
+  2026-11-06*: this read *`synthetic`, whatever else is true*); `api` and
+  `accessibility`, until this machine carries them out — a verb the machine
+  cannot carry out is never offered;
 - an application that is a person's own (ADR 0043) — an adapter for the terminal is
   a command verb by another road;
 - a path argument no grant is required over; an argument that is never sent; a
@@ -166,7 +176,10 @@ building on the fallback, can rely on:
   is read — only that there is a password field, and its name;
 - **nothing is found or pressed by position.** No position, size or picture is
   asked for. A control with no name, an area the application draws itself, and a
-  part of a window another program shows are each said in words;
+  part of a window another program shows are each said in words. *Edited
+  2026-11-06 by ADR 0147:* **except a person's own `click` and `drag`**, given as
+  proportions of the window and recorded as done by position — **never an
+  agent's**;
 - **nothing is guessed.** A press is refused when no control of that kind and name
   is showing, when more than one is, when the window is too large to read whole,
   when the control is greyed out, and when it offers no way to be pressed from
@@ -213,3 +226,42 @@ applications, so it is treated as such: adapters are signed, they declare their
 mechanism and grants up front, and policy can restrict which adapters may load
 on a machine or across a fleet. An unsigned adapter can be permitted explicitly
 for development and never by default.
+
+## Amended 2026-11-06 — alo reaches an application's controls and what it announces, as well as its adapter
+
+*The owner's answer of 2026-11-06 to question 4 of
+[`terminal-commands.md`](terminal-commands.md), under the promise* Three equal
+roads *(`docs/features.md`, #1101): a control a person can use on screen that
+alo cannot be asked for is a bug. Additive for adapter authors: nothing an
+adapter declares changes meaning, and nothing that loaded before is refused
+now.*
+
+**1. The accessibility fallback reaches an application with an adapter too.**
+Above, *an application with an adapter is reached through its adapter's verbs
+alone*. That sentence is replaced: alo is offered an adapter's verbs **and**
+the fallback's verbs over the same application, under the same grant. What the
+narrower rule protected — a reviewed list not made decorative — is kept by
+saying which is which: the sentence a person approves for a fallback press says
+it is *a press of a control named “{name}”*, never in the words of a reviewed
+verb, and the record names the road.
+
+**2. Abilities an application announces on the session bus are a road for alo
+as well as for the person.** `terminal-commands.md` section 2 names them:
+`org.freedesktop.Application.Open`, and each action listed by `org.gtk.Actions`
+with no parameter or one of a simple type, asked of the application at the
+moment they are wanted and kept nowhere. **They are not adapter declarations**,
+and the refusal above of *an action chosen by an argument* still binds every
+adapter: a declared verb names its action as a literal. A discovered ability is
+a separate road, offered to alo under its own rules — only over an application
+the person has let alo use, one generated sentence and one OK per act unless the
+person chose full trust, recorded with its road — and the sentence says plainly
+that *the application describes this itself, and alo cannot tell what it
+changes or whether it sends anything*.
+
+**3. The screen road, amended in place.**
+[ADR 0147](../decisions/0147-the-screen-road-and-who-reads-the-screen.md) was
+accepted by the owner on 2026-11-06 (*"yes"*), and its edits to this page — the
+mechanisms table's last row, the paragraph under it, the refusal of `synthetic`,
+and *nothing is found or pressed by position* — are made above, each marked with
+the date. They were made before any screen-road code, as the owner's answer 15
+required. **Nothing of the screen road is built.**
