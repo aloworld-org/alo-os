@@ -102,6 +102,11 @@ pub enum Outcome {
     RanACommand,
     /// A command the agent asked to run, that did not run.
     ACommandWasNotRun,
+    /// A person's own command asked an application to do something
+    /// (`docs/contracts/terminal-commands.md`, section 4). No agent took part.
+    AskedAnApplication,
+    /// A person's own command was refused before it reached the application.
+    AnApplicationWasNotAsked,
     /// Something left this machine (law 1).
     Left,
     /// Something the egress policy refused to let leave.
@@ -166,6 +171,10 @@ impl Outcome {
             Happened::NotBounded { .. } => Self::NotBounded,
             Happened::RanACommand { .. } => Self::RanACommand,
             Happened::ACommandWasNotRun { .. } => Self::ACommandWasNotRun,
+            // **No road means nothing carried it**: the entry's own sign that
+            // it was refused before the application was reached.
+            Happened::AskedAnApplication { road: None, .. } => Self::AnApplicationWasNotAsked,
+            Happened::AskedAnApplication { road: Some(_), .. } => Self::AskedAnApplication,
             Happened::Left { .. } => Self::Left,
             Happened::HeldBack { .. } => Self::HeldBack,
             Happened::LeftOnItsOwn { .. } => Self::LeftOnItsOwn,
@@ -221,6 +230,8 @@ impl Outcome {
             Self::NotBounded => words::NOT_BOUNDED,
             Self::RanACommand => words::RAN_A_COMMAND,
             Self::ACommandWasNotRun => words::A_COMMAND_WAS_NOT_RUN,
+            Self::AskedAnApplication => words::ASKED_AN_APPLICATION,
+            Self::AnApplicationWasNotAsked => words::AN_APPLICATION_WAS_NOT_ASKED,
             Self::Left => words::LEFT,
             Self::HeldBack => words::HELD_BACK,
             Self::LeftOnItsOwn => words::LEFT_ON_ITS_OWN,
