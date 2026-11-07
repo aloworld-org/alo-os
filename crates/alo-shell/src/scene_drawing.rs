@@ -320,6 +320,19 @@ where
                 .map_err(submission)?,
         ),
     };
+    // Upload native ink before borrowing the renderer for the frame. Its
+    // transparent gaps retain the scene underneath; opaque images keep order.
+    let dock_ink = crate::native_inked::upload(
+        renderer,
+        native
+            .desktop
+            .and_then(|desktop| desktop.dock.as_ref())
+            .map_or(&[], |dock| &dock.inked),
+    )?;
+    let in_use_ink = crate::native_inked::upload(
+        renderer,
+        native.in_use.map_or(&[], |indicator| &indicator.inked),
+    )?;
     let mut frame = renderer
         .render(framebuffer, size, transform)
         .map_err(submission)?;
@@ -505,7 +518,7 @@ where
     // a task window included; below the record, the question and the
     // indicator.
     if let Some(desktop) = native.desktop {
-        desktop.paint(&mut frame, &washed)?;
+        desktop.paint(&mut frame, &washed, dock_ink.as_ref())?;
     }
     // **The record fixed to the display**, which only the nested lane still
     // draws: above every client and control; below the question and the
@@ -540,7 +553,7 @@ where
     // Beside it, and as high: nothing covers the line that says the camera is
     // on either.
     if let Some(in_use) = native.in_use.filter(|in_use| !in_use.is_empty()) {
-        in_use.paint(&mut frame)?;
+        in_use.paint(&mut frame, in_use_ink.as_ref())?;
     }
     // At the other end of the dock, and as high: a window a client maps does
     // not cover a message that arrived either.

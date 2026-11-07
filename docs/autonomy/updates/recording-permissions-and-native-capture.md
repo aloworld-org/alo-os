@@ -11,18 +11,18 @@ typed agent actions are implemented. The installed Flatpak is source
 `adcd8bef984e9810de175cfa735dcd77f9cda2a0ed373854c8653533b5777793`.
 Dedicated native CI covers formatting, Clippy, 28 application tests, the real
 GTK recording flow and the pinned native publisher cases. The latest installed
-repeat uses desktop `a46144c1`, with native, optimized desktop, strict and full
+repeat uses desktop `0b3dc75a`, with native, optimized desktop, strict and full
 OS checks passing. Both screen and window/microphone flows complete recording,
 stable five-second pause, resume, naming, library review and exact-file export.
-Screen video measures 1.436 fps with a 1.830-second uncovered gap; window video
-measures 1.053 fps with a 1.679-second gap. Window PCM is audible without measured
-gaps, and track endings differ by 95 ms. The independent reference fails, and
+Screen video measures 2.669 fps with a 1.159-second uncovered gap; window video
+measures 1.349 fps with a 2.338-second gap. Window PCM is audible with a maximum
+20 ms uncovered gap, and track endings differ by 39 ms. The independent reference fails, and
 visual marker matches are insufficient, so synchronization remains unverified.
 These are one-time installed measurements, preserved below. Neither video
 passes the unchanged 5 fps continuity requirement.
 
-The next candidate reuses bounded, detached CPU scratch images in software
-desktop painters. Its checks and installed repeat are pending. Studio's
+This desktop reuses bounded, detached CPU scratch images in software
+desktop painters. Its checks pass, but its installed media still fails. Studio's
 application source is unchanged from the installed package. The agent permission walk
 separately verifies live discovery, one approved execution, immediate revocation
 and refusal; other applications must expose their own typed adapters.
@@ -1677,4 +1677,73 @@ Regressions check exact dimensions and exclusive ownership, two-image eviction,
 actual stride-byte limits, oversized-image bypass, full clearing after refusal,
 scratch identity reuse and immutable earlier snapshots. The Studio workflow
 also starts for shell and desktop changes so these checks and the installable
-artifact are regenerated. CI and installed verification are pending.
+artifact are regenerated. Native recording, optimized desktop regressions,
+strict checks and the full OS gate pass at `0b3dc75a`.
+
+### Installed scratch-image reuse repeat
+
+Desktop `0b3dc75a`, executable SHA-256
+`a1cb1a94ece43ef9eb90bffb01f6250dc3f939aabf026b5b4d4796eb2e081e92`,
+is installed with the unchanged normal Studio package. Both complete control
+flows pass: stable five-second pause, resume, finish, naming, library review
+and byte-identical native export. The other validation's Cargo and compiler
+processes are paused with explicit person approval and checked by process start
+identity. No host compiler runs during recording. Both processes are resumed
+after cleanup: 11:41:08 to 11:55:27 UTC on 7 November 2026, recorded in
+`installed-software-frame-reuse-validation/validation-pause-and-resumption.json`.
+Its original owner retains the shared build lock. The timed safeguard does not
+fire. These are one-time measurements, not a controlled performance comparison.
+
+Screen clip `1794051872-109567679-2`, SHA-256
+`2cced51c5e8a85c6ee4115179cb111170c559ef318355d77201a4cc4847aeba6`,
+has 67 decoded frames, 65 globally distinct images, and a changing image at every
+adjacent frame. Its measured cadence is 2.669 fps with a 1.159-second uncovered
+gap. It contains one video track and no audio. Export `Product demonstration
+23.webm` receives document grant `2d38449a`. Evidence is in
+`installed-software-frame-reuse-screen`.
+
+Window clip `1794052310-454591843-2`, SHA-256
+`25d6a514bab1517588c92c39c3ab1fc443e767984ee2c42f1c934b28f9cdc87f`,
+has 54 distinct decoded video frames, measured cadence 1.349 fps, and a
+2.338-second uncovered video gap. Its one audio track decodes to 40.400 seconds
+of audible 16 kHz mono PCM, with a maximum 20 ms uncovered gap and no meaningful
+overlap. Track endings differ by 39 ms. Only three visual marker matches are
+available, and the independent reference fails; synchronization is unverified.
+Export `Product demonstration 24.webm` receives grant `41bf1ce7`. Evidence is in
+`installed-software-frame-reuse-window`.
+
+Both media checks fail the unchanged 5 fps continuity requirement. The window
+check also fails the independent reference and synchronization requirements.
+Neither a close track ending nor successful pause controls establishes media
+acceptance. All media and earlier partial files are preserved.
+
+A passive two-read `/proc` sample before recording, during source setup, sees
+80,414 minor faults over 15.295 seconds, with 3.90 seconds of user CPU and 6.42
+seconds of system CPU. No preload or allocator override is active. This is an
+allocation lead from a changing setup workload, not a recording measurement or
+a paired comparison with the previous desktop.
+
+### Native ink raster candidate
+
+A separate one-time CPU-clock sample of the normal desktop collects 1,021 user
+instruction pointers over 20.016 seconds, with zero lost samples. It uses
+`perf_event_open` and closes its sampling descriptor afterward; no injected
+library, breakpoint, stack dump or persistent kernel probe is installed. The
+competing validation is running again, so this is a cost-location diagnostic,
+not a quiet-host timing or media acceptance measurement. Of those samples,
+479 are in pixman, 389 in the desktop and 146 in libc. Symbol-size and ELF LOAD
+mapping locate 80 in native opaque painting, 75 in full-frame XRGB copying and
+32 in artwork scaling. Shared-library samples are identified by library, not
+guessed private function names. Evidence is in `diagnostic-passive-cpu-scratch`.
+
+The next candidate uploads the Dock's ink and the in-use indicator's ink as
+cropped RGBA layers before opening the frame, then draws them at their original
+positions in layer order. Each original image remains opaque, later images
+replace earlier images, and gaps are transparent. This avoids reconstructing
+and submitting hundreds of colour regions for the same labels on every frame.
+The temporary raster is capped at 8 MiB per collection; larger or malformed
+collections retain the existing run painter. Import and allocation failures
+remain explicit rendering errors. No renderer patch or unsafe access is added.
+Regressions cover sparse gaps, overlap order, unchanged inputs, bounded fallback,
+overflow refusal and exact software-rendered indicator pixels, including output
+clipping. Validation and the installed recording repeat are pending.
