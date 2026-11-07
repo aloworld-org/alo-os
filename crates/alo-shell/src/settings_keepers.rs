@@ -107,24 +107,19 @@ impl Keeper for AccessKept {
     }
 
     fn at_sign_in(at: &Path) -> (alo_access::TurnedOn, Option<String>) {
-        match alo_access::keeping::read(at) {
+        // A file nobody has written yet reads as nothing turned on.
+        match alo_access::keeping::read(its_folder(at)) {
             Ok(turned_on) => (turned_on, None),
-            // A file nobody has written yet is a machine nobody has changed.
-            Err(alo_access::keeping::FileNotRead::NotReadable(why))
-                if why.kind() == std::io::ErrorKind::NotFound =>
-            {
-                (alo_access::TurnedOn::nothing(), None)
-            }
             Err(why) => (alo_access::TurnedOn::nothing(), Some(why.to_string())),
         }
     }
 
     fn keep(at: &Path, drawn: &alo_access::TurnedOn) -> Result<(), Self::NotWritten> {
-        alo_access::keeping::keep(at, drawn)
+        alo_access::keeping::keep(its_folder(at), drawn)
     }
 
     fn put_back_as_shipped(at: &Path) -> Result<(), Self::NotWritten> {
-        alo_access::keeping::keep(at, &alo_access::TurnedOn::nothing())
+        alo_access::keeping::keep(its_folder(at), &alo_access::TurnedOn::nothing())
     }
 
     fn did_not_read(_refused: &Self::NotWritten) -> Option<String> {
@@ -140,6 +135,14 @@ impl Keeper for AccessKept {
     fn not_written_said(why: &Self::NotWritten, strings: &Strings) -> String {
         crate::the_settings_words::access_not_written(strings, &why.to_string())
     }
+}
+
+/// **The folder `access.toml` is in**: `alo_access::keeping` is handed the
+/// folder and names the file itself, where every other keeper here is handed
+/// the file. Settings knows a section by its file, so the folder is taken off
+/// it here, once.
+fn its_folder(at: &Path) -> &Path {
+    at.parent().unwrap_or(at)
 }
 
 /// Which edge the dock is on: `alo_dock::keeping`.
