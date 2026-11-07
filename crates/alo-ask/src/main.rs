@@ -238,6 +238,38 @@ fn the_agent_was_asked_at_a_terminal(
     }
 }
 
+/// Which road a sentence takes, asked of the provider the person chose.
+///
+/// The same one-word question `the_road_this_takes` puts to a model on this
+/// machine, put through the daemon as the person's own question is
+/// (`asked_of_their_provider`), and read by the same rule. **Anything that is
+/// not an answer is said here and ends the command**: a daemon that is not
+/// there, or a provider that refused, is the same fact the answer would have
+/// met, and asking again to answer would only meet it twice.
+fn the_road_their_provider_chose(
+    typed: &str,
+    strings: &Strings,
+) -> Result<alo_ask::answering_or_acting::WhatItWants, ExitCode> {
+    let question = alo_ask::answering_or_acting::the_question_about(typed);
+    match TheDoor::for_this_person().asked(&question) {
+        Ok(ToAPerson::Answered { text, .. }) => {
+            Ok(alo_ask::answering_or_acting::what_the_reply_says(&text))
+        }
+        Ok(ToAPerson::Refused(wording)) => {
+            eprintln!("{}", wording.text());
+            Err(ExitCode::FAILURE)
+        }
+        Ok(_) => {
+            eprintln!("{}", Unanswered::NotAnswered.said(strings));
+            Err(ExitCode::FAILURE)
+        }
+        Err(why) => {
+            eprintln!("{}", why.said(strings));
+            Err(ExitCode::FAILURE)
+        }
+    }
+}
+
 /// Ask the daemon to put the question to the provider the person chose.
 ///
 /// One connection, one line, one answer. Everything a person can read here is
@@ -381,8 +413,29 @@ fn main() -> ExitCode {
     // **Nothing falls back.** If the daemon is not there the person is told so
     // and told to start it; this does not then try a local model, because that
     // is the silent substitution ADR 0008 forbids arriving as robustness.
+    //
+    // **And which of the two the sentence is, asked of that same provider.**
+    // Until 2026-11-07 this returned here having only *answered*: the question
+    // that decides whether a sentence wants acting was asked of a model on this
+    // machine, below, and a person whose model is a provider never reached it —
+    // so *Ask alo from the command line, and it acts* was true only for people
+    // with a local model. It is asked the same way the answer is, through the
+    // daemon, so it is recorded and shown as their own question is.
     if matches!(settings.chosen(), Some(Picked::FromAProvider { .. })) {
-        return asked_of_their_provider(&asked, &strings);
+        return match the_road_their_provider_chose(&asked, &strings) {
+            Ok(alo_ask::answering_or_acting::WhatItWants::Acting) => {
+                the_agent_was_asked(&asked, &strings)
+            }
+            Ok(alo_ask::answering_or_acting::WhatItWants::Answering) => {
+                asked_of_their_provider(&asked, &strings)
+            }
+            // **Asked rather than guessed**, as on this machine below.
+            Ok(alo_ask::answering_or_acting::WhatItWants::CannotTell) => {
+                eprintln!("{}", Unanswered::NotAnswered.said(&strings));
+                ExitCode::FAILURE
+            }
+            Err(failed) => failed,
+        };
     }
 
     let catalogue = match Catalogue::built_in() {
