@@ -96,3 +96,21 @@ fn native_bgr_bytes_match_rgba_conversion_including_odd_width() -> Result<(), Re
     assert!(matches!(copy_xrgb((0, 1), &[]), Err(ReadbackError::Layout)));
     Ok(())
 }
+
+/// Every partial wide block retains complete pixels and clears each X byte.
+#[test]
+fn native_copy_preserves_channels_across_wide_block_boundaries() -> Result<(), ReadbackError> {
+    for width in 1..=17 {
+        let source: Vec<u8> = (0..width * 3 * 4).map(|byte| byte as u8).collect();
+        let expected: Vec<u8> = source
+            .as_chunks::<4>()
+            .0
+            .iter()
+            .flat_map(|[blue, green, red, _]| [*blue, *green, *red, 0])
+            .collect();
+        let copied = copy_xrgb((width, 3), &source)?;
+        assert_eq!(copied.pixels(), expected);
+        assert_eq!(copied.stride, width as usize * 4);
+    }
+    Ok(())
+}

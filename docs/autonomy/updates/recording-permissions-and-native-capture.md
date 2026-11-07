@@ -5,29 +5,37 @@ Work remains on `app/alo-studio`, with a draft review. Market publication,
 signed distribution, production-image acceptance, and physical-hardware
 acceptance are separate. The complete booted walk is **not yet accepted**.
 
-Current result: native permissions, the normal installable application and 19
-typed agent actions are implemented. The installed Flatpak is source
-`7dea46f2`, SHA-256
-`adcd8bef984e9810de175cfa735dcd77f9cda2a0ed373854c8653533b5777793`.
-Dedicated native CI covers formatting, Clippy, 28 application tests, the real
-GTK recording flow and the pinned native publisher cases. The latest installed
-repeat uses desktop `34d37b4e`, with native, optimized desktop, strict and full
-OS checks passing. Both screen and window/microphone flows complete recording,
-stable five-second pause, resume, naming, library review and exact-file export.
-Screen video measures 3.736 fps with a 0.709-second uncovered gap; window video
-measures 2.535 fps with a 0.966-second gap and one repeated timestamp. Window
-PCM is audible without meaningful uncovered gaps, and track endings differ by
-77 ms. Both reference checks pass, but visual marker matches are insufficient,
-so synchronization remains unverified.
-These are one-time installed measurements, preserved below. Neither video
-passes the unchanged 5 fps continuity requirement.
+Current result: native permissions, the normally installed application and 19
+typed agent actions are implemented. The latest normal Flatpak is source
+`bbc88582`, bundle SHA-256
+`49c513ecf42a58041c6517fdc847f14447468e3f34d17f22bb04237f12829b85`.
+It is built in the hosted GNOME 49 SDK without verification features. Native,
+optimized desktop, package, author and full OS checks all pass at that source.
+The installed desktop is `dad76731`; subsequent packaging-only commits leave
+its runtime source unchanged. Thirty application tests include adversarial
+video timestamps encoded to WebM and independently decoded.
 
-This desktop retains private display-buffer mappings and reuses bounded,
-detached CPU scratch images. Its checks pass, but its installed media still fails. Studio's
-application source is unchanged from the installed package. The agent permission walk
-separately verifies live discovery, one approved execution, immediate revocation
-and refusal; other applications must expose their own typed adapters.
-The review remains a draft with no market publication, and
+Both latest installed flows complete capture, stable five-second pause, resume,
+review, naming, library navigation and byte-identical native export. Both saved
+videos have strictly increasing timestamps. Screen video measures 2.891 fps with
+a 0.750-second uncovered gap; window video measures 3.800 fps with a 1.178-second
+gap. Its 37.920 seconds of audible PCM have no meaningful gaps or overlap, and
+track endings differ by 80 ms. Both independent reference checks pass, but eight
+visual/audio matches have a median 673 ms video delay and do not establish
+synchronization. Neither video passes the unchanged 5 fps continuity requirement.
+These are one-time installed measurements, preserved below. The approved compiler
+pauses end with every identified process resumed; normal audio, chooser size and
+application state are restored.
+
+The next desktop candidate copies four BGR pixels and clears their unused bytes
+in one pass. A standalone alternating copy comparison supports that local change;
+it does not establish whole-flow performance. Its regression and installed-media
+checks remain pending. No renderer patch, local unsafe code, new dependency,
+allocator tuning or acceptance-threshold change is included.
+
+The agent permission walk separately verifies live discovery, one approved
+execution, immediate revocation and refusal. Other applications must expose
+their own adapters. The review remains a draft with no market publication, and
 each earlier measurement retains its own tested source.
 
 ## Implemented boundaries
@@ -1881,3 +1889,83 @@ script. It produces an unsigned bundle, source revision, checksums and installed
 SDK versions as a review artifact, without enabling verification features or
 publishing to an application market. Hosted package validation and installed
 recording acceptance remain required before treating that artifact as tested.
+
+### Normal hosted package and installed timestamp repeat
+
+The normal package build passes at `bbc88582` in hosted job `128422292746`,
+run `42378949706`. Artifact `13576534432` has archive SHA-256
+`b4a019ecad1a95dd97240392258fcf6f216b8ca50ea467408f7b88dd84cd7b6f`.
+Its five whitelisted members include the bundle, exact source, disabled
+verification-feature declaration, SDK version/commit-prefix listing and payload
+checksums. The archive and every payload checksum are verified before normal
+Flatpak installation. Installed Flatpak commit is
+`440b112795b6df55cc0cc4edb950aa114ed4ecb92bcc5ab96f157c5e3f244779`.
+Desktop `dad76731` is the separately tested hosted executable with SHA-256
+`681d33343b5576f9f4388af3b0b2f9dac838c3949ce8d5b2732de996c9bd7031`.
+The agent and capture binaries retain their separately recorded sources; this is
+still a temporary OS overlay, not acceptance of a newly composed image.
+
+The host DATA volume fills during artifact recovery and the WSL session restarts.
+The owned 4.824 GB build-cache archive is preserved on C: with its full checksum
+verified before removing its old D: copy. No media or VM disk is removed. The
+same raw VM disk restarts with its existing four-CPU software profile, and the
+transient native integration is restored. A first installed attempt gets one
+ready response, then a control timeout before any recording. Its compiler pause
+runs from 14:10:48 to 14:13:18 UTC on 7 November 2026 and all five processes resume.
+The application subsequently answers repeated control requests. The retry retains
+that already validated, warm desktop/application session. Its approved compiler
+pause runs from 14:14:09 to 14:23:03 UTC, again resuming all five processes; no
+running test executable is paused and neither resumption safeguard fires.
+
+Screen clip `1794060949-363198639-2`, SHA-256
+`2bbe9b8cc6715b74c9bed7105a46754ee9bce254b40a7aed8960ef7ab7278b58`,
+has 65 decoded frames, 60 globally unique images, 2.891 measured fps and a
+0.750-second uncovered gap. Export `Product demonstration 29.webm` has grant
+`a96281ac`. Window clip `1794061213-118221434-2`, SHA-256
+`4dbf4aef1ddea63954c0f471be0753d276a1a2bd0e5b8bd0fa9fd2c8e1b50522`,
+has 144 distinct decoded frames, 3.800 fps and a 1.178-second gap. Neither
+contains a non-increasing video timestamp. Its 37.920 seconds of audible 16 kHz
+mono PCM contain no meaningful uncovered gap or overlap; track endings differ
+by 80 ms. Independent reference delivery spans are 10.252 and 10.219 seconds
+for ten seconds of PCM, with six and seven pulses respectively. Eight of 22
+audio onsets match visual markers: median video delay is 672.5 ms, maximum
+1,054.5 ms, so synchronization fails. Export `Product demonstration 30.webm`
+has grant `5f2684ff`.
+
+Both flows pass stable five-second pause, microphone off while paused and after
+finish, correct resumed state, review, naming, library and exact-file export.
+Both fail cadence and uncovered-gap acceptance; the window also fails sync.
+Evidence is in `installed-timestamp-order-screen`,
+`installed-timestamp-order-window`, and the two validation folders. Cleanup
+checks pass at 14:25:27 UTC: normal app ready, microphone disabled, original
+source restored, reference graph removed, forced rate zero, chooser size restored,
+installer unfrozen and no debugger, kernel probe or timing preload. Cleanup
+proof is in `installed-timestamp-order-cleanup`. All recordings and partial
+files remain preserved. None of these one-time observations proves a standing
+frame rate or hardware acceptance.
+
+### One-pass native copy candidate
+
+A separate 20.131-second user CPU sample after competing validation resumes
+collects 1,219 instruction pointers without loss: 527 in pixman, 424 in the
+desktop and 264 in libc. The desktop symbols include 123 in native readback
+copying, 47 in artwork scaling and 12 in native-ink upload. Sampling descriptors
+close afterward. This locates costs in the normal ready desktop; it is not a
+quiet-host performance comparison. Evidence is `diagnostic-timestamp-order-cpu`.
+
+A standalone optimized Rust comparison alternates six pairs of 32 full-size
+copies in the same VM, with competing validation active and no recording.
+Bulk copy followed by scalar X-byte clearing takes 0.337–0.536 seconds; a
+four-pixel mask-and-copy takes 0.132–0.239 seconds. Exact equality checks cover
+whole and partial blocks before timing. The retained source, executable checksum
+and output are in `diagnostic-wide-copy-comparison`. An earlier exploratory
+invocation also favors the wide copy but has no retained output file; only the
+retained repeat supplies these ranges. This supports the local operation, not a
+claim about recording cadence.
+
+The candidate uses safe byte-array/u128 conversions, retains BGR order and zero
+unused bytes, reserves the complete allocation fallibly before writing, and
+handles every complete-pixel tail without another allocation. A regression
+compares exact channels and stride across widths one through seventeen; existing
+malformed-layout and actual software-pixel tests remain. CI and installed
+recording acceptance of this additional change are pending.
