@@ -51,7 +51,7 @@ pub(crate) fn the_blocks(open: &Open, strings: &Strings) -> Vec<ABlock> {
                     .map(|held| held.said(strings).into_text())
                     .collect();
                 keys.push(also.key().shown(strings));
-                row.lines.push(w::also_pressed(strings, &keys.join(" + ")));
+                row.lines.push(w::also_pressed(strings, &keys));
             }
             row
         })

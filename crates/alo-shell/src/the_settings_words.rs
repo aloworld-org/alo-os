@@ -586,11 +586,14 @@ pub const ALSO_PRESSED: Word = Word::saying("settings.shortcuts.also", "Also {ke
 );
 
 /// *Also ⊞ + =*, under an action with a second shortcut.
-pub fn also_pressed(strings: &alo_strings::Strings, keys: &str) -> String {
+///
+/// The keys are each already said in the person's language; they are joined
+/// with a plus, as a shortcut is written, `⊞ + =`.
+pub fn also_pressed(strings: &alo_strings::Strings, keys: &[String]) -> String {
     strings
         .say(
             &ALSO_PRESSED.key(),
-            &alo_strings::Filling::of("keys", keys.to_owned()),
+            &alo_strings::Filling::of("keys", keys.join(" + ")),
         )
         .into_text()
 }

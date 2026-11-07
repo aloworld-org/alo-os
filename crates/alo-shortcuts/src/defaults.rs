@@ -326,7 +326,16 @@ mod tests {
     /// nothing at runtime would catch it if it did.
     #[test]
     fn the_shipped_list_has_no_clash_in_it() {
-        assert_eq!(Defaults::of(SHIPPED.to_vec()).unwrap(), Defaults::shipped());
+        let checked = Defaults::of(SHIPPED.to_vec()).unwrap();
+        assert!(checked.iter().eq(Defaults::shipped().iter()));
+        // **And no second shortcut is any action's first**, or pressing it
+        // would do two things.
+        for (action, chord) in ALSO_SHIPPED {
+            assert!(
+                SHIPPED.iter().all(|(_, first)| *first != chord),
+                "{action:?}'s second shortcut {chord:?} is somebody's first"
+            );
+        }
     }
 
     /// The conventions this list is here to keep. Somebody moving from Windows
