@@ -194,6 +194,9 @@ pub(crate) struct Surfaces {
     /// just opened is brought in front. Kept here because only a commit knows
     /// the moment a window maps, and only the server can move it in front.
     pub(crate) just_mapped: Vec<WlSurface>,
+    /// Who had the person's keyboard, most recent first, for `front`
+    /// (`crate::who_had_the_keyboard`).
+    pub(crate) keyboard_was_with: crate::who_had_the_keyboard::WhoHadTheKeyboard<WlSurface>,
     /// **Which Place the person is looking at.**
     ///
     /// One home, not two. A new toplevel is created here, on `Surfaces`, so the
@@ -390,6 +393,7 @@ impl Surfaces {
             handed_over: Vec::new(),
             windows: Vec::new(),
             just_mapped: Vec::new(),
+            keyboard_was_with: crate::who_had_the_keyboard::WhoHadTheKeyboard::default(),
             // A machine that has never been used is looking at its first Place.
             cameras: std::collections::BTreeMap::new(),
             place: alo_canvas::Place::FIRST,

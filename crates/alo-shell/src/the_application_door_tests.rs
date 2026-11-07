@@ -45,6 +45,12 @@ struct AHand {
     carried: Vec<Acting>,
     /// What to answer each time.
     answering: Answer,
+    /// What to answer `front`.
+    in_front: alo_acting::InFront,
+    /// How many times `front` was asked.
+    asked_front: usize,
+    /// What to answer `alo-tree`.
+    tree: alo_acting::WhereAlosTreeIs,
 }
 
 impl AHand {
@@ -52,6 +58,9 @@ impl AHand {
         Self {
             carried: Vec::new(),
             answering,
+            in_front: alo_acting::InFront::None,
+            asked_front: 0,
+            tree: alo_acting::WhereAlosTreeIs::Nowhere,
         }
     }
 }
@@ -60,6 +69,15 @@ impl CarriesOutAnApplicationVerb for AHand {
     fn carrying_out(&mut self, acting: &Acting) -> Answer {
         self.carried.push(acting.clone());
         self.answering.clone()
+    }
+
+    fn the_window_before_this_terminal(&mut self) -> alo_acting::InFront {
+        self.asked_front += 1;
+        self.in_front.clone()
+    }
+
+    fn where_alos_tree_is(&self) -> alo_acting::WhereAlosTreeIs {
+        self.tree.clone()
     }
 }
 
@@ -388,7 +406,10 @@ fn a_count_is_handed_on_with_what_followed_it() {
             .map(crate::counting_during_their_commands::AskedToCount::application),
         Some("org.gnome.Geary")
     );
-    assert!(door.asked_to_count().is_empty(), "a count was handed on twice");
+    assert!(
+        door.asked_to_count().is_empty(),
+        "a count was handed on twice"
+    );
     assert_eq!(door.how_many_are_waiting(), 0);
 
     door.taken_away();
@@ -404,7 +425,9 @@ fn a_malformed_count_is_closed_with_nothing_said() {
     let mut hand = AHand::answering(Answer::Acted);
 
     let mut command = UnixStream::connect(place.socket()).unwrap();
-    command.write_all(b"count org.gnome.Geary org.kde.dolphin\n").unwrap();
+    command
+        .write_all(b"count org.gnome.Geary org.kde.dolphin\n")
+        .unwrap();
 
     assert_eq!(door.answered(&mut hand), 0);
     assert!(door.asked_to_count().is_empty());
@@ -412,4 +435,88 @@ fn a_malformed_count_is_closed_with_nothing_said() {
 
     door.taken_away();
     let _ = std::fs::remove_dir_all(root);
+}
+
+/// **`front` is answered with the window the compositor names, and nothing
+/// is carried out**: asking which window is not acting on one.
+#[test]
+fn front_is_answered_with_the_window_and_acts_on_nothing() {
+    let (root, place) = a_place("front");
+    let mut door = TheApplicationDoor::served(place.clone(), us()).unwrap();
+    let mut hand = AHand::answering(Answer::Acted);
+    hand.in_front = alo_acting::InFront::window(17, "org.gnome.TextEditor", "today.txt");
+
+    let mut command = UnixStream::connect(place.socket()).unwrap();
+    command.write_all(b"front\n").unwrap();
+
+    assert_eq!(door.answered(&mut hand), 0);
+    assert_eq!(hand.asked_front, 1);
+    assert!(hand.carried.is_empty());
+    assert_eq!(
+        one_line(&mut command).as_deref(),
+        Some("front 17 org.gnome.TextEditor today.txt")
+    );
+
+    door.taken_away();
+    let _ = std::fs::remove_dir_all(root);
+}
+
+/// **`none` and `unnamed` cross as themselves**, never as a window.
+#[test]
+fn no_window_before_the_terminal_is_said_as_none_or_unnamed() {
+    for (in_front, said) in [
+        (alo_acting::InFront::None, "none"),
+        (alo_acting::InFront::Unnamed, "unnamed"),
+    ] {
+        let (root, place) = a_place(said);
+        let mut door = TheApplicationDoor::served(place.clone(), us()).unwrap();
+        let mut hand = AHand::answering(Answer::Acted);
+        hand.in_front = in_front;
+        let mut command = UnixStream::connect(place.socket()).unwrap();
+        command.write_all(b"front\n").unwrap();
+        door.answered(&mut hand);
+        assert_eq!(one_line(&mut command).as_deref(), Some(said));
+        door.taken_away();
+        let _ = std::fs::remove_dir_all(root);
+    }
+}
+
+/// **`front` with anything after it is not `front`**: it is closed with
+/// nothing said, and the compositor is not asked.
+#[test]
+fn front_with_an_application_after_it_is_not_a_request() {
+    let (root, place) = a_place("front-two");
+    let mut door = TheApplicationDoor::served(place.clone(), us()).unwrap();
+    let mut hand = AHand::answering(Answer::Acted);
+    let mut command = UnixStream::connect(place.socket()).unwrap();
+    command.write_all(b"front org.gnome.TextEditor\n").unwrap();
+    door.answered(&mut hand);
+    assert_eq!(hand.asked_front, 0);
+    assert_eq!(one_line(&mut command), None);
+    door.taken_away();
+    let _ = std::fs::remove_dir_all(root);
+}
+
+/// **`alo-tree` answers where the shell's tree is, or `none`.**
+#[test]
+fn alo_tree_is_answered_with_where_the_tree_is_or_none() {
+    for (tree, said) in [
+        (alo_acting::WhereAlosTreeIs::at(":1.42"), "at :1.42"),
+        (alo_acting::WhereAlosTreeIs::Nowhere, "none"),
+    ] {
+        let (root, place) = a_place(if said == "none" {
+            "tree-none"
+        } else {
+            "tree-at"
+        });
+        let mut door = TheApplicationDoor::served(place.clone(), us()).unwrap();
+        let mut hand = AHand::answering(Answer::Acted);
+        hand.tree = tree;
+        let mut command = UnixStream::connect(place.socket()).unwrap();
+        command.write_all(b"alo-tree\n").unwrap();
+        assert_eq!(door.answered(&mut hand), 0);
+        assert_eq!(one_line(&mut command).as_deref(), Some(said));
+        door.taken_away();
+        let _ = std::fs::remove_dir_all(root);
+    }
 }
