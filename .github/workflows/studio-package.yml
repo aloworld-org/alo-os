@@ -5,6 +5,9 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+concurrency:
+  group: studio-package-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 jobs:
   package:
     runs-on: ubuntu-24.04
@@ -18,9 +21,10 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: dtolnay/rust-toolchain@1.97.0
       - name: Prepare package tools
         run: |
-          dnf install -y cargo dbus-daemon
+          command -v flatpak-builder dbus-run-session
           flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
       - name: Build the normal installable application
         run: dbus-run-session -- bash apps/alo-studio/packaging/build-flatpak.sh
