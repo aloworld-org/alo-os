@@ -201,7 +201,7 @@ pub use colour::{Colour, ColourError};
 pub use contrast::{ENOUGH_FOR_A_SHAPE, ENOUGH_FOR_TEXT};
 pub use display::{DisplayError, DisplayId};
 pub use lock::Lock;
-pub use pointer::PointerShape;
+pub use pointer::{PointerShape, PointerSize};
 pub use role::Role;
 pub use scheme::{Following, Schedule, ScheduleError, Scheme};
 pub use shipped::{Shipped, THE_SURFACE};

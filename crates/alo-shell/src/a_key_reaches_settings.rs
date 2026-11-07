@@ -286,8 +286,11 @@ fn the_press_is_carried_out(server: &mut Server, press: crate::SettingsPress, st
         if let Some(titles) = server.settings.window_titles() {
             server.the_window_titles_are(titles);
         }
-        if let Some(shape) = server.settings.pointer_shape() {
-            server.the_pointer_changed_to(crate::ThePointersLook { shape });
+        if let (Some(shape), Some(size)) = (
+            server.settings.pointer_shape(),
+            server.settings.pointer_size(),
+        ) {
+            server.the_pointer_changed_to(crate::ThePointersLook { shape, size });
         }
         return;
     }

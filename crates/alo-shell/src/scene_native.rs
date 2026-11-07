@@ -128,9 +128,7 @@ impl NativeLayers<'_> {
             capturing: None,
             terminal: None,
             pointer_at: crate::display_scale::DisplayScale::ONE,
-            pointer_look: crate::ThePointersLook {
-                shape: alo_appearance::PointerShape::Kite,
-            },
+            pointer_look: crate::ThePointersLook::SHIPPED,
         }
     }
 

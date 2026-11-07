@@ -472,9 +472,7 @@ impl DesktopPictures {
             terminal: self.terminal.as_ref(),
             // **Set by the caller that knows** the display, as above.
             pointer_at: crate::display_scale::DisplayScale::ONE,
-            pointer_look: crate::ThePointersLook {
-                shape: alo_appearance::PointerShape::Kite,
-            },
+            pointer_look: crate::ThePointersLook::SHIPPED,
         }
     }
 }

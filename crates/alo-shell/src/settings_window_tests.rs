@@ -1367,16 +1367,15 @@ fn a_session_with_no_folder_offers_nothing_it_could_not_keep() {
         rows.iter().all(|row| matches!(
             row.section(),
             SettingsSection::Granted | SettingsSection::HowCodeRuns
-        ) || matches!(
-            row,
-            SettingsRow::GoTo(SettingsCategory::RunningCode) | SettingsRow::PointerSize(_)
-        )),
+        ) || matches!(row, SettingsRow::GoTo(SettingsCategory::RunningCode))),
         "{rows:?}"
     );
+    // **No pointer row**: its size and shape are kept with the appearance,
+    // which a session with no folder cannot keep.
     assert_eq!(
         rows.len(),
-        10,
-        "one grant, one pairing, the row that opens the record, the three levels, and the          row that opens their page, and the pointer's three sizes, which keep nothing"
+        7,
+        "one grant, one pairing, the row that opens the record, the three levels, and the          row that opens their page"
     );
     assert_eq!(window.appearance(), Some(&Appearance::shipped()));
     assert_eq!(window.dock(), Some(&Dock::shipped()));
@@ -1800,8 +1799,7 @@ fn typing_narrows_the_list_and_the_whole_list_stays_under_it() {
 }
 
 /// **Light and dark and the text size are written exactly as
-/// `alo-appearance` writes them**, and the pointer's size, which nothing draws
-/// yet, says so and writes nothing.
+/// `alo-appearance` writes them**, and so is the pointer's size.
 #[test]
 fn light_and_dark_and_the_text_size_are_kept_as_alo_appearance_keeps_them() {
     let machine = a_persons_machine("light-dark-text");
@@ -1860,7 +1858,8 @@ fn light_and_dark_and_the_text_size_are_kept_as_alo_appearance_keeps_them() {
     alo_appearance::keeping::keep(&twin_at, expected.changes()).unwrap();
     assert_eq!(bytes(&at), bytes(&twin_at));
 
-    let before = bytes(&at);
+    // **And the pointer's size is kept the same way**: written beside the
+    // rest, and what Settings now holds.
     assert_eq!(
         chosen(
             &mut window,
@@ -1868,27 +1867,15 @@ fn light_and_dark_and_the_text_size_are_kept_as_alo_appearance_keeps_them() {
             &strings,
             &door
         ),
-        Some(SettingsDid::NotOnThisComputerYet)
+        Some(SettingsDid::Kept(
+            SettingsSection::Appearance,
+            SettingsKept::Written
+        ))
     );
-    assert_eq!(bytes(&at), before);
-    let not_yet = strings
-        .say(
-            &crate::the_settings_words::NOT_ON_THIS_COMPUTER_YET.key(),
-            &Filling::nothing(),
-        )
-        .into_text();
-    let page = crate::settings_page::the_page(
-        window.open().unwrap(),
-        SettingsCategory::Accessibility,
-        &strings,
-        noon(),
-    );
-    assert!(
-        page.blocks
-            .contains(&crate::settings_page::ABlock::Said(not_yet)),
-        "{:?}",
-        page.blocks
-    );
+    expected.set_pointer_size(PointerSize::Larger);
+    alo_appearance::keeping::keep(&twin_at, expected.changes()).unwrap();
+    assert_eq!(bytes(&at), bytes(&twin_at));
+    assert_eq!(window.pointer_size(), Some(PointerSize::Larger));
 }
 
 /// **The familiar arrow is a choice, kept as `alo-appearance` keeps it**: on

@@ -262,9 +262,6 @@ the design draws them, and choosing one says in words that nothing changed**
   the line under it in the frame, **is not drawn**: it is a statement of fact
   about a service that does not exist yet, and this window draws no fact it
   cannot check.
-- **The pointer's size** (`551:1136`). `docs/features.md` promises *cursor
-  size*; nothing on this computer draws the pointer larger yet. *Default* is
-  marked, because it is what the pointer is.
 - **Say where it runs** (`550:205`). A provider's stated region is kept
   (`alo_models::Region`) and drawn — *Has not said where it runs* in the
   warning colour, or *Says it runs in …* — but there is no form to state it from
@@ -349,7 +346,12 @@ Each was decided one way to build this, and is listed so it can be answered:
    window left out a way with nothing under it. Choosing an empty way says why
    there is nothing there and changes nothing.
 5. **The gap between a page's blocks** is 32, 28 or 36 depending on the frame.
-6. **The pointer's shape is a second row in the Pointer section**, *Pointer
+6. **The pointer's size is built** (`551:1136`), since 2026-11-06: *Large* is
+   half as large again and *Larger* twice as large, which the frame does not
+   say. **Its colour is not**: `docs/features.md` promises *cursor size and
+   colour*, and no frame draws a colour choice, so the pointer stays navy until
+   the owner says which colours a person may choose.
+7. **The pointer's shape is a second row in the Pointer section**, *Pointer
    shape*, with the design's own segmented choice: *Kite*, which ships, and
    *Classic*, the familiar arrow. `docs/features.md` promises *the familiar arrow
    stays a choice in Settings* (the owner, 2026-11-06); `551:1038` draws only

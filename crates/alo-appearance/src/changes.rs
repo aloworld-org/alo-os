@@ -21,7 +21,7 @@ use crate::accent::Accent;
 use crate::background::Background;
 use crate::display::DisplayId;
 use crate::lock::Lock;
-use crate::pointer::PointerShape;
+use crate::pointer::{PointerShape, PointerSize};
 use crate::scheme::Following;
 use crate::text::TextScale;
 use crate::titles::WindowTitles;
@@ -45,6 +45,8 @@ pub enum Setting {
     WindowTitles,
     /// Which arrow the pointer is.
     PointerShape,
+    /// How large the pointer is.
+    PointerSize,
 }
 
 /// Everything a person has changed about how their machine looks.
@@ -71,6 +73,8 @@ pub struct Changes {
     window_titles: Option<WindowTitles>,
     /// Which arrow they chose for their pointer.
     pointer_shape: Option<PointerShape>,
+    /// How large they made the pointer.
+    pointer_size: Option<PointerSize>,
 }
 
 impl Changes {
@@ -92,6 +96,7 @@ impl Changes {
             && self.accent.is_none()
             && self.window_titles.is_none()
             && self.pointer_shape.is_none()
+            && self.pointer_size.is_none()
     }
 
     /// Put this behind the windows, on every display they have not singled out.
@@ -143,6 +148,11 @@ impl Changes {
         self.pointer_shape = Some(shape);
     }
 
+    /// Make the pointer this large.
+    pub fn set_pointer_size(&mut self, size: PointerSize) {
+        self.pointer_size = Some(size);
+    }
+
     /// Forget that this was ever changed, which puts it back to what the
     /// running release ships.
     ///
@@ -156,6 +166,7 @@ impl Changes {
             Setting::Accent => self.accent.take().is_some(),
             Setting::WindowTitles => self.window_titles.take().is_some(),
             Setting::PointerShape => self.pointer_shape.take().is_some(),
+            Setting::PointerSize => self.pointer_size.take().is_some(),
         }
     }
 
@@ -232,6 +243,12 @@ impl Changes {
     pub fn pointer_shape(&self) -> Option<PointerShape> {
         self.pointer_shape
     }
+
+    /// How large the pointer is, if the person chose.
+    #[must_use]
+    pub fn pointer_size(&self) -> Option<PointerSize> {
+        self.pointer_size
+    }
 }
 
 /// Changes as a settings file holds them: everything untouched is absent rather
@@ -262,6 +279,9 @@ struct Written {
     /// Which arrow the pointer is.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pointer_shape: Option<PointerShape>,
+    /// How large the pointer is.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pointer_size: Option<PointerSize>,
 }
 
 impl From<Written> for Changes {
@@ -278,6 +298,7 @@ impl From<Written> for Changes {
             accent: written.accent,
             window_titles: written.window_titles,
             pointer_shape: written.pointer_shape,
+            pointer_size: written.pointer_size,
         };
         for (display, background) in written.displays {
             changes.set_background_on(display, background);
@@ -297,6 +318,7 @@ impl From<Changes> for Written {
             accent: changes.accent,
             window_titles: changes.window_titles,
             pointer_shape: changes.pointer_shape,
+            pointer_size: changes.pointer_size,
         }
     }
 }
