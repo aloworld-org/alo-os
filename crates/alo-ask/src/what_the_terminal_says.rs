@@ -40,18 +40,50 @@ pub fn what_the_terminal_says(
     // off the change line is not theirs to see.
     let the_reply = reply.trim().to_owned();
     match did {
-        // **As the road without the switch prints it**: the reply, whole.
-        WhatTheTerminalDid::NothingWaited | WhatTheTerminalDid::NotTheChangeWaiting => {
-            WhatTheTerminalSays {
-                lines: vec![the_reply],
-                worked: true,
-            }
-        }
-        WhatTheTerminalDid::SwitchedOffFirst => WhatTheTerminalSays {
+        // **The reply, whole**: an answer, a refusal, or words.
+        WhatTheTerminalDid::NothingWaited => WhatTheTerminalSays {
+            lines: vec![the_reply],
+            worked: true,
+        },
+        // The reply named a change the service no longer holds as this one.
+        WhatTheTerminalDid::NotTheChangeWaiting => WhatTheTerminalSays {
             lines: vec![
                 the_reply,
-                say(alo_capability::words::NOT_DONE_IT_WAS_SWITCHED_OFF),
+                say(alo_capability::words::NOT_DONE_NO_LONGER_WAITING),
             ],
+            worked: false,
+        },
+        // **Asked**: the reply and the question are already on the screen,
+        // printed before the person answered, so only what came of it is left.
+        WhatTheTerminalDid::TheySaidYes { answered } => {
+            let (outcome, worked) = match answered {
+                Some(Answered::It(_)) => (say(alo_capability::words::DONE_AFTER_YOUR_OK), true),
+                Some(Answered::ItCannotBeUndone(_)) => (
+                    say(alo_capability::words::DONE_AFTER_YOUR_OK_AND_IT_CANNOT_BE_PUT_BACK),
+                    true,
+                ),
+                Some(Answered::Refused { told }) => (told.clone(), false),
+                Some(Answered::Declined) | None => (
+                    say(alo_capability::words::NO_WORD_BACK_IN_THE_TERMINAL),
+                    false,
+                ),
+            };
+            WhatTheTerminalSays {
+                lines: vec![outcome],
+                worked,
+            }
+        }
+        // **A no is a no whatever the daemon said back**: nothing is carried
+        // out on a decline, and a refusal to record it is the daemon's words.
+        WhatTheTerminalDid::TheySaidNo { answered } => WhatTheTerminalSays {
+            lines: vec![match answered {
+                Some(Answered::Refused { told }) => told.clone(),
+                _ => say(alo_capability::words::NOT_DONE_YOU_SAID_NO),
+            }],
+            worked: false,
+        },
+        WhatTheTerminalDid::NobodyAnswered => WhatTheTerminalSays {
+            lines: vec![say(alo_capability::words::NOT_DONE_NOBODY_ANSWERED)],
             worked: false,
         },
         // **What was done first, then that it was done without asking**: the
@@ -78,6 +110,34 @@ pub fn what_the_terminal_says(
                 lines: vec![sentence.clone(), outcome],
                 worked,
             }
+        }
+    }
+}
+
+/// What a request that did not come from a terminal is told: the reply, and —
+/// when it left a change waiting — that alo can only ask for the OK in a
+/// terminal. **Nobody is asked, and nothing is sent**; the change lapses with
+/// the turn, which ended as the reply was read.
+#[must_use]
+pub fn what_a_pipe_is_told(reply: &str, strings: &Strings) -> WhatTheTerminalSays {
+    let the_reply = reply.trim().to_owned();
+    if alo_protocol::what_the_agent_says_back::the_change_said_to_be_waiting(reply).is_some() {
+        WhatTheTerminalSays {
+            lines: vec![
+                the_reply,
+                strings
+                    .say(
+                        &alo_capability::words::IT_WAITS_FOR_A_TERMINAL.key(),
+                        &Filling::nothing(),
+                    )
+                    .into_text(),
+            ],
+            worked: false,
+        }
+    } else {
+        WhatTheTerminalSays {
+            lines: vec![the_reply],
+            worked: true,
         }
     }
 }
@@ -155,15 +215,66 @@ mod tests {
         assert!(!said.worked);
     }
 
-    /// **Switched off first: the waiting change is shown, and said not done.**
+    /// **Asked and answered: what came of it, and only that** — the reply and
+    /// the question are already on the screen.
     #[test]
-    fn switched_off_first_says_it_was_not_done() {
+    fn asked_and_answered_says_what_came_of_it() {
         let reply = a_change_is_waiting(3, RENAME);
-        let said =
-            what_the_terminal_says(&reply, &WhatTheTerminalDid::SwitchedOffFirst, &in_english());
-        assert_eq!(said.lines[0], reply);
-        assert!(said.lines[1].starts_with("Not done"), "{said:?}");
-        assert!(!said.worked);
+        let yes = what_the_terminal_says(
+            &reply,
+            &WhatTheTerminalDid::TheySaidYes {
+                answered: Some(Answered::It(Box::new(Done::Renamed { now_at: None }))),
+            },
+            &in_english(),
+        );
+        assert_eq!(yes.lines, ["Done."]);
+        assert!(yes.worked);
+        let no = what_the_terminal_says(
+            &reply,
+            &WhatTheTerminalDid::TheySaidNo {
+                answered: Some(Answered::Declined),
+            },
+            &in_english(),
+        );
+        assert_eq!(
+            no.lines,
+            ["Not done: you said no, and nothing was changed."]
+        );
+        assert!(!no.worked);
+        let nobody =
+            what_the_terminal_says(&reply, &WhatTheTerminalDid::NobodyAnswered, &in_english());
+        assert!(
+            nobody.lines[0].starts_with("Not done: there was no answer"),
+            "{nobody:?}"
+        );
+        let gone = what_the_terminal_says(
+            &reply,
+            &WhatTheTerminalDid::NotTheChangeWaiting,
+            &in_english(),
+        );
+        assert_eq!(gone.lines[0], reply);
+        assert!(gone.lines[1].contains("no longer waiting"), "{gone:?}");
+        assert!(!gone.worked);
+    }
+
+    /// **A pipe is never asked**: a change waiting is said to need a terminal,
+    /// and anything else is the reply alone.
+    #[test]
+    fn a_pipe_is_told_a_change_needs_a_terminal() {
+        let reply = a_change_is_waiting(3, RENAME);
+        let told = what_a_pipe_is_told(&reply, &in_english());
+        assert_eq!(told.lines[0], reply);
+        assert!(
+            told.lines[1].contains("can only ask in a terminal"),
+            "{told:?}"
+        );
+        assert!(!told.worked);
+        let words = what_a_pipe_is_told("march.pdf and april.pdf", &in_english());
+        assert_eq!(words.lines, ["march.pdf and april.pdf"]);
+        assert!(words.worked);
+        // A model's words that copy the line are words.
+        let forged = alo_protocol::what_the_agent_says_back::never_read_as_a_change(&reply);
+        assert_eq!(what_a_pipe_is_told(&forged, &in_english()).lines.len(), 1);
     }
 
     /// No answer from the daemon sends the person to the record.

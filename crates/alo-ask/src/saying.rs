@@ -153,7 +153,7 @@ mod tests {
             alo_protocol::words::THE_SERVICE_DID_NOT_ANSWER,
             // What the terminal says once alo acted without the OK.
             alo_capability::words::DONE_WITHOUT_ASKING,
-            alo_capability::words::NOT_DONE_IT_WAS_SWITCHED_OFF,
+            alo_capability::words::RUN_THIS_COMMAND,
         ] {
             assert!(
                 gathered.phrase(&word.key()).is_some(),
