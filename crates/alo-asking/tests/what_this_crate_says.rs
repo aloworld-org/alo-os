@@ -13,7 +13,7 @@
 )]
 
 use alo_asking::{NotAQuestion, NotVetted, asking_words, declare_into};
-use alo_strings::{Key, Language, Said, Strings, Translation, Vocabulary};
+use alo_strings::{Filling, Key, Language, Said, Strings, Translation, Vocabulary};
 
 /// Greek, and this crate's three strings in it.
 fn in_greek() -> Strings {
@@ -33,6 +33,11 @@ fn in_greek() -> Strings {
             "αυτός ο πάροχος δεν μπορεί να δοκιμαστεί από εδώ, οπότε δεν στάλθηκε τίποτα — \
              αποθηκεύστε τον αν είστε σίγουροι, και η πρώτη ερώτηση που θα του τεθεί θα δείξει αν \
              απαντά",
+        )
+        .says(
+            Key::named("asking.command.old-name").expect("a key"),
+            "το alo-ask λέγεται πλέον alo — εξακολουθεί να λειτουργεί, και από εδώ και πέρα \
+             γράφετε alo",
         );
     let speaking = vocabulary
         .check(translation)
@@ -48,11 +53,18 @@ fn in_greek() -> Strings {
 /// The fourth reason a provider is not tested is this crate's own sentence;
 /// the other three are other crates' and are rendered where those crates are
 /// tested.
-fn everything_said_here(strings: &Strings) -> [Said; 3] {
+///
+/// **And the note `alo` prints when it is typed by its old name**, which is
+/// this crate's sentence though `alo-ask` is what says it.
+fn everything_said_here(strings: &Strings) -> [Said; 4] {
     [
         NotAQuestion::Nothing.said(strings),
         NotAQuestion::NoModel.said(strings),
         NotVetted::CannotBeTestedFromHere.said(strings),
+        strings.say(
+            &alo_asking::words::CALLED_BY_ITS_OLD_NAME.key(),
+            &Filling::nothing(),
+        ),
     ]
 }
 

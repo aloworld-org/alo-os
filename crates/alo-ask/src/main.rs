@@ -1,8 +1,9 @@
-//! `alo-ask`: the command a person types to put a question to the model on this
-//! machine.
+//! `alo`: the command a person types to put a question to the model on this
+//! machine. It was `alo-ask` until 2026-11-06, and that name still works
+//! (`alo_ask::its_name`).
 //!
 //! ```text
-//! $ alo-ask may the tenant sublet?
+//! $ alo may the tenant sublet?
 //! …the answer…
 //! on this machine
 //! ```
@@ -25,7 +26,7 @@
 //! # The answer goes to stdout and everything else to stderr
 //!
 //! What the model said is the output, and it is the only thing on stdout, so
-//! `alo-ask … > answer.txt` holds the answer and nothing around it. **The
+//! `alo … > answer.txt` holds the answer and nothing around it. **The
 //! sentence saying where it came from goes to stderr**, which is why it is never
 //! the thing that gets piped away: on a machine sold on sovereignty, *on this
 //! machine* is not a decoration on the answer, and a person who redirected the
@@ -94,7 +95,7 @@ const THE_STRICTEST_RULE: SourcePolicy = SourcePolicy::ThisMachineOnly;
 /// are both software. **That is a finding about the shape of `Asking::by` rather
 /// than something to fix by inventing a third kind here**, and it costs nothing
 /// today precisely because this door never reads it.
-const WHO_IS_ASKING: &str = "alo-ask";
+const WHO_IS_ASKING: &str = alo_ask::its_name::ITS_NAME;
 
 /// Which road a sentence takes, asked of the model on this machine.
 ///
@@ -146,7 +147,7 @@ fn the_agent_was_asked(typed: &str, strings: &Strings) -> ExitCode {
         // person would be told about their request rather than have it done,
         // with nothing saying which happened.
         Err(why) => {
-            eprintln!("alo-ask: {why}");
+            eprintln!("{}: {why}", alo_ask::its_name::ITS_NAME);
             let _ = strings;
             ExitCode::FAILURE
         }
@@ -200,7 +201,7 @@ fn main() -> ExitCode {
         // person's language, because the sentence would have had to come out of
         // the vocabulary that could not be built.
         Err(why) => {
-            eprintln!("alo-ask: {why}");
+            eprintln!("{}: {why}", alo_ask::its_name::ITS_NAME);
             return ExitCode::FAILURE;
         }
     };
@@ -226,6 +227,20 @@ fn main() -> ExitCode {
         },
     };
     strings.prefers(settings.languages());
+
+    // **Typed by its old name, it says so once and answers as ever.** On
+    // stderr, so what is piped away is the answer and nothing else.
+    if alo_ask::its_name::called_by_its_old_name(std::env::args_os().next().as_deref()) {
+        eprintln!(
+            "{}",
+            strings
+                .say(
+                    &alo_asking::words::CALLED_BY_ITS_OLD_NAME.key(),
+                    &alo_strings::Filling::nothing()
+                )
+                .text()
+        );
+    }
 
     // **What the person typed, before the machine is touched.** Every argument is
     // the question, joined with spaces. It is checked here rather than after the
@@ -292,7 +307,10 @@ fn main() -> ExitCode {
         // parse is a fault in what the release shipped, and nothing a person
         // typed caused it or can do anything about.
         Err(why) => {
-            eprintln!("alo-ask: the catalogue this release ships could not be read: {why}");
+            eprintln!(
+                "{}: the catalogue this release ships could not be read: {why}",
+                alo_ask::its_name::ITS_NAME
+            );
             return ExitCode::FAILURE;
         }
     };
@@ -441,7 +459,7 @@ fn main() -> ExitCode {
         // reader is whoever wired a question to somewhere, and it cannot happen
         // while the only place this file builds is `InferenceSource::ThisMachine`.
         Err(NotAnswered::Miswired(why)) => {
-            eprintln!("alo-ask: {why}");
+            eprintln!("{}: {why}", alo_ask::its_name::ITS_NAME);
             ExitCode::FAILURE
         }
     }

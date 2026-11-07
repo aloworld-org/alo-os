@@ -7,6 +7,11 @@ The owner's words, in two rulings the same day: *we should have only one … and
 also it should be the one for acting and answering*, and then *it should be
 smart enough to know if the question needs answering or acting.*
 
+**Amended 2026-11-06, by the owner: the command is `alo`.** Term 3 below kept
+`alo-ask`; the owner has since chosen the design's own name, so a person types
+`alo email Sarah that I'm late`. **`alo-ask` keeps working** — see *Amendment,
+2026-11-06* at the end.
+
 ## The question
 
 `docs/design/the-terminal-window.md` draws a person reaching alo from the
@@ -144,3 +149,32 @@ second of those: one that acts is a feature, and one that knows which to do is
 the ruling.
 The mechanism working, something calling it, a person reaching it and somebody
 having seen it are four facts, and a green suite speaks to three.
+
+## Amendment, 2026-11-06: the command is `alo`
+
+**Decided by the owner on 2026-11-06**: rename `alo-ask` to `alo`, so a person
+types `alo email Sarah that I'm late`, as the design's transcript always drew
+it. This reverses term 3's *the existing one stands*; terms 1, 2 and 4 are
+untouched, and so is *the departure this records*, which no longer departs.
+
+- **Nothing was already called `alo`.** Checked before the rename, against the
+  recipe and against a built image (`localhost/alo-os:dev`): no binary, link or
+  package-owned file named `alo` on the `PATH`, no shell alias or function in
+  the profile files, and no Flatpak export of that name. The person's account is
+  also called `alo` (`image/usr/lib/sysusers.d/alo.conf`); a user name and a
+  command name do not collide.
+- **`alo-ask` keeps working**, because it is a public surface and *contracts
+  outlive code* (`CLAUDE.md`). The image installs `/usr/bin/alo` and makes
+  `/usr/bin/alo-ask` a link to it. Typed by the old name the command answers
+  exactly as it does by the new one, and says once on stderr that the name has
+  changed; stdout is untouched, so `alo-ask … > answer.txt` still holds the
+  answer alone. **It is deprecated, not removed**: removing it would need its own
+  decision and a version to remove it in, and there are no versions until a
+  launch (ADR 0105).
+- **The crate stays `alo-ask`.** A crate's name is not something a person types;
+  only the binary is renamed.
+- **Held by tests**: `crates/alo-ask/tests/what_a_person_who_typed_it_sees.rs`
+  runs the real binary by both names;
+  `crates/alo-image/tests/every_command_the_image_ships_is_started_in_the_build.rs`
+  requires the image to ship and start both; and the image build itself runs
+  both and checks that the old name says it has changed.
