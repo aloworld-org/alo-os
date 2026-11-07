@@ -1429,3 +1429,9 @@ previews beside copies of an already verified recording and requires prompt
 status responses while the library is opened and dismissed. This is a UI
 responsiveness check, not a video-cadence benchmark. CI and installed verification
 of this additional correction are pending.
+
+The first library regression fails its unchanged two-second status deadline on
+the hosted native runner. Async stream loading alone still performs image decode
+work on the UI context. The correction runs the complete scaled decoder in GIO's
+worker pool and returns only owned RGBA pixels to GTK. Hidden or replaced rows
+cancel their queued results; the same 128-preview responsiveness check is retained.
