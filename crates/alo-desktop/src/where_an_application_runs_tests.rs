@@ -59,7 +59,11 @@ fn an_applications_units_and_their_insides_are_found_and_nothing_else() {
 #[test]
 fn nothing_running_and_no_slice_both_answer_nothing() {
     let slice = a_slice("empty");
-    assert!(UnderTheAppSlice::beneath(&slice).groups_of("org.mozilla.Thunderbird").is_empty());
+    assert!(
+        UnderTheAppSlice::beneath(&slice)
+            .groups_of("org.mozilla.Thunderbird")
+            .is_empty()
+    );
     assert!(
         UnderTheAppSlice::beneath(&slice.join("not-there"))
             .groups_of("org.mozilla.Thunderbird")
@@ -72,8 +76,16 @@ fn nothing_running_and_no_slice_both_answer_nothing() {
 #[test]
 fn a_file_named_like_a_unit_is_not_counted() {
     let slice = a_slice("file");
-    std::fs::write(slice.join("app-flatpak-org.mozilla.Thunderbird-1.scope"), b"").unwrap();
-    assert!(UnderTheAppSlice::beneath(&slice).groups_of("org.mozilla.Thunderbird").is_empty());
+    std::fs::write(
+        slice.join("app-flatpak-org.mozilla.Thunderbird-1.scope"),
+        b"",
+    )
+    .unwrap();
+    assert!(
+        UnderTheAppSlice::beneath(&slice)
+            .groups_of("org.mozilla.Thunderbird")
+            .is_empty()
+    );
     let _ = std::fs::remove_dir_all(slice);
 }
 

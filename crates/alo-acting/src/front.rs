@@ -160,7 +160,9 @@ mod tests {
             }
         );
         let long = InFront::window(1, "org.example.App", &"x".repeat(LONGEST_TITLE + 50));
-        assert!(matches!(long, InFront::Window { title, .. } if title.chars().count() == LONGEST_TITLE));
+        assert!(
+            matches!(long, InFront::Window { title, .. } if title.chars().count() == LONGEST_TITLE)
+        );
     }
 
     /// **An identifier no verb could name is `unnamed`**, never a window.

@@ -253,8 +253,7 @@ impl TheApplicationDoor {
                     };
                     if let Some(answer) = one_word {
                         let _ = caller.talking.write_all(answer.as_bytes());
-                        let _ = caller.talking.write_all(b"
-");
+                        let _ = caller.talking.write_all(b"\n");
                         let _ = caller.talking.flush();
                         drop(caller.talking);
                         continue;
@@ -264,8 +263,7 @@ impl TheApplicationDoor {
                             let after = caller
                                 .heard
                                 .iter()
-                                .position(|byte| *byte == b'
-')
+                                .position(|byte| *byte == b'\n')
                                 .and_then(|end| caller.heard.get(end + 1..))
                                 .map(<[u8]>::to_vec)
                                 .unwrap_or_default();

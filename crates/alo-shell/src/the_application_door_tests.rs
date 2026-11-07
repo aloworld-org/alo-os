@@ -406,7 +406,10 @@ fn a_count_is_handed_on_with_what_followed_it() {
             .map(crate::counting_during_their_commands::AskedToCount::application),
         Some("org.gnome.Geary")
     );
-    assert!(door.asked_to_count().is_empty(), "a count was handed on twice");
+    assert!(
+        door.asked_to_count().is_empty(),
+        "a count was handed on twice"
+    );
     assert_eq!(door.how_many_are_waiting(), 0);
 
     door.taken_away();
@@ -422,7 +425,9 @@ fn a_malformed_count_is_closed_with_nothing_said() {
     let mut hand = AHand::answering(Answer::Acted);
 
     let mut command = UnixStream::connect(place.socket()).unwrap();
-    command.write_all(b"count org.gnome.Geary org.kde.dolphin\n").unwrap();
+    command
+        .write_all(b"count org.gnome.Geary org.kde.dolphin\n")
+        .unwrap();
 
     assert_eq!(door.answered(&mut hand), 0);
     assert!(door.asked_to_count().is_empty());
@@ -499,7 +504,11 @@ fn alo_tree_is_answered_with_where_the_tree_is_or_none() {
         (alo_acting::WhereAlosTreeIs::at(":1.42"), "at :1.42"),
         (alo_acting::WhereAlosTreeIs::Nowhere, "none"),
     ] {
-        let (root, place) = a_place(if said == "none" { "tree-none" } else { "tree-at" });
+        let (root, place) = a_place(if said == "none" {
+            "tree-none"
+        } else {
+            "tree-at"
+        });
         let mut door = TheApplicationDoor::served(place.clone(), us()).unwrap();
         let mut hand = AHand::answering(Answer::Acted);
         hand.tree = tree;

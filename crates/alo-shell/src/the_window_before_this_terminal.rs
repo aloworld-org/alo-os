@@ -25,7 +25,9 @@ use crate::who_had_the_keyboard::HadTheKeyboard;
 impl crate::Server {
     /// The window the person was working in before this terminal.
     pub(crate) fn the_window_before_this_terminal(&mut self) -> InFront {
-        self.surfaces.keyboard_was_with.forget(|window| !window.alive());
+        self.surfaces
+            .keyboard_was_with
+            .forget(|window| !window.alive());
         let this = if self.the_kind_in_front() == AKindOfWindow::TheTerminal {
             HadTheKeyboard::AlosOwnTerminal
         } else {

@@ -518,8 +518,6 @@ mod the_dock_as_a_reader_meets_it;
 mod the_docks_name_is_held;
 pub mod the_docks_words;
 mod the_door_on_the_desktop;
-/// The compositor's answers to `front` and `alo-tree` at the door.
-mod the_window_before_this_terminal;
 mod the_edge_takes_the_keyboard;
 /// The egress indicator's two arrows, from the design file's SVG.
 mod the_egress_indicators_arrows;
@@ -528,6 +526,8 @@ mod the_first_account;
 mod the_record_drawn_on_the_canvas;
 /// The view travelling to a window of alo's rather than the window moving.
 mod the_view_travels_to_a_window;
+/// The compositor's answers to `front` and `alo-tree` at the door.
+mod the_window_before_this_terminal;
 /// Every window on the Place being looked at, for a new one to be placed beside.
 mod the_windows_on_this_place;
 pub use the_first_account::{ASecret, OnTheSheet, TheAccountSheet, TheAccountShown};

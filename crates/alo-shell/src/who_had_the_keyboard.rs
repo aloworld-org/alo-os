@@ -108,16 +108,25 @@ mod tests {
             Some(&HadTheKeyboard::Window(1))
         );
         who.forget(|_| true);
-        assert_eq!(who.latest_other_than(&HadTheKeyboard::AlosOwnTerminal), None);
+        assert_eq!(
+            who.latest_other_than(&HadTheKeyboard::AlosOwnTerminal),
+            None
+        );
     }
 
     /// **Nothing before the terminal is none**, not the terminal itself.
     #[test]
     fn nothing_before_is_none() {
         let mut who: WhoHadTheKeyboard<u32> = WhoHadTheKeyboard::default();
-        assert_eq!(who.latest_other_than(&HadTheKeyboard::AlosOwnTerminal), None);
+        assert_eq!(
+            who.latest_other_than(&HadTheKeyboard::AlosOwnTerminal),
+            None
+        );
         who.now_has(HadTheKeyboard::AlosOwnTerminal);
-        assert_eq!(who.latest_other_than(&HadTheKeyboard::AlosOwnTerminal), None);
+        assert_eq!(
+            who.latest_other_than(&HadTheKeyboard::AlosOwnTerminal),
+            None
+        );
     }
 
     /// Bounded, so a long session costs a fixed amount.
@@ -128,6 +137,9 @@ mod tests {
             who.now_has(HadTheKeyboard::Window(window));
         }
         assert_eq!(who.latest_first.len(), AT_MOST);
-        assert_eq!(who.latest_first.first(), Some(&HadTheKeyboard::Window(AT_MOST * 3 - 1)));
+        assert_eq!(
+            who.latest_first.first(),
+            Some(&HadTheKeyboard::Window(AT_MOST * 3 - 1))
+        );
     }
 }

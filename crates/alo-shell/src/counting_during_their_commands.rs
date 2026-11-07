@@ -311,7 +311,12 @@ impl CountingForCommands {
         command
             .groups
             .iter()
-            .map(|(group, from)| counter.so_far(*group).unwrap_or(*from).saturating_sub(*from))
+            .map(|(group, from)| {
+                counter
+                    .so_far(*group)
+                    .unwrap_or(*from)
+                    .saturating_sub(*from)
+            })
             .fold(0_u64, u64::saturating_add)
     }
 

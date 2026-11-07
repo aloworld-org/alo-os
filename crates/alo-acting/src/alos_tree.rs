@@ -90,7 +90,10 @@ mod tests {
         let at = WhereAlosTreeIs::at(":1.42");
         assert_eq!(at.written(), "at :1.42");
         assert_eq!(WhereAlosTreeIs::read("at :1.42\n"), Some(at));
-        assert_eq!(WhereAlosTreeIs::read("none"), Some(WhereAlosTreeIs::Nowhere));
+        assert_eq!(
+            WhereAlosTreeIs::read("none"),
+            Some(WhereAlosTreeIs::Nowhere)
+        );
         assert!(is_alo_tree("alo-tree\n"));
         assert!(!is_alo_tree("alo-tree org.a.B"));
     }
@@ -99,13 +102,7 @@ mod tests {
     /// by any program, which is the whole of what this act exists to avoid.
     #[test]
     fn a_name_that_is_not_unique_is_never_an_answer() {
-        for not in [
-            "org.a11y.atspi.Registry",
-            ":",
-            ":1.42 x",
-            ":1/2",
-            "",
-        ] {
+        for not in ["org.a11y.atspi.Registry", ":", ":1.42 x", ":1/2", ""] {
             assert_eq!(WhereAlosTreeIs::at(not), WhereAlosTreeIs::Nowhere, "{not}");
         }
         for not in ["at org.alo.Shell", "at", "at :1 2", ":1.42", "acted"] {
