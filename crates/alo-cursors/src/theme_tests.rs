@@ -81,7 +81,11 @@ fn the_index_names_the_theme() {
 fn the_classic_theme_changes_only_the_arrow() {
     let kite = shipped();
     let classic = the_theme(Silhouette::Classic).unwrap_or_else(|why| unreachable!("{why}"));
-    assert!(classic.index.contains(&format!("\nName={THE_CLASSIC_NAME}\n")));
+    assert!(
+        classic
+            .index
+            .contains(&format!("\nName={THE_CLASSIC_NAME}\n"))
+    );
     assert_eq!(the_name_of(Silhouette::Kite), THE_NAME);
     assert_eq!(the_name_of(Silhouette::Classic), THE_CLASSIC_NAME);
     assert_ne!(kite.cursors.get("default"), classic.cursors.get("default"));

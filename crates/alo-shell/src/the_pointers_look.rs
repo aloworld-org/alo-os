@@ -113,9 +113,17 @@ mod tests {
         assert_eq!(server.the_pointer_change_to_tell(), None);
         server.the_pointer_is(classic);
         assert_eq!(server.the_pointers_look(), classic);
-        assert_eq!(server.the_pointer_change_to_tell(), None, "stand-up is not a change");
+        assert_eq!(
+            server.the_pointer_change_to_tell(),
+            None,
+            "stand-up is not a change"
+        );
         server.the_pointer_changed_to(classic);
-        assert_eq!(server.the_pointer_change_to_tell(), None, "the same choice again");
+        assert_eq!(
+            server.the_pointer_change_to_tell(),
+            None,
+            "the same choice again"
+        );
         server.the_pointer_changed_to(ThePointersLook::default());
         assert_eq!(
             server.the_pointer_change_to_tell(),

@@ -888,7 +888,6 @@ pub use recovery_raster::RecoveryLook;
 pub use recovery_reached::Reached;
 pub use recovery_screen::{RecoveryChosen, RecoveryScreen, RecoveryShows, THE_TWO_MOMENTS};
 pub use resize_cursor::the_cursor_over;
-pub use the_pointers_look::ThePointersLook;
 pub use running_keys::RunningKey;
 pub use running_window::{RunningPressed, RunningShows, RunningWindow};
 pub use scanout::ActiveScanout;
@@ -897,6 +896,7 @@ pub use scene_replacement::SceneReplacement;
 pub use scene_scanout::ActiveScene;
 pub use screens::{ScreenPlace, Screens, TheRoom};
 pub use the_markets_words::TheMarketsWords;
+pub use the_pointers_look::ThePointersLook;
 pub use their_formats::{TheDay, TheirFormats, WhereTheRegionCameFrom};
 
 // **The types a desktop needs to answer `their_displays`, re-exported so that

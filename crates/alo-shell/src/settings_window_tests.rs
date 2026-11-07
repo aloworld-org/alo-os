@@ -1902,12 +1902,15 @@ fn the_familiar_arrow_is_a_choice_kept_with_the_appearance() {
     let mut window = machine.opened();
     let at = machine.kept(alo_appearance::keeping::THE_FILE);
     assert!(
-        window
-            .rows(noon())
-            .contains(&SettingsRow::PointerShape(alo_appearance::PointerShape::Classic)),
+        window.rows(noon()).contains(&SettingsRow::PointerShape(
+            alo_appearance::PointerShape::Classic
+        )),
         "the familiar arrow is not offered"
     );
-    assert_eq!(window.pointer_shape(), Some(alo_appearance::PointerShape::Kite));
+    assert_eq!(
+        window.pointer_shape(),
+        Some(alo_appearance::PointerShape::Kite)
+    );
 
     assert_eq!(
         chosen(
@@ -1939,7 +1942,10 @@ fn the_familiar_arrow_is_a_choice_kept_with_the_appearance() {
         &strings,
         &door,
     );
-    assert_eq!(window.pointer_shape(), Some(alo_appearance::PointerShape::Kite));
+    assert_eq!(
+        window.pointer_shape(),
+        Some(alo_appearance::PointerShape::Kite)
+    );
 }
 
 /// **A paired computer is shown by the name the person gave it**, in *alo and

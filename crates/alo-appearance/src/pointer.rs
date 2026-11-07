@@ -38,7 +38,10 @@ mod tests {
     #[test]
     fn a_machine_nobody_has_changed_shows_the_kite() {
         assert_eq!(PointerShape::default(), PointerShape::Kite);
-        assert_eq!(PointerShape::ALL, [PointerShape::Kite, PointerShape::Classic]);
+        assert_eq!(
+            PointerShape::ALL,
+            [PointerShape::Kite, PointerShape::Classic]
+        );
     }
 
     #[test]
