@@ -996,6 +996,7 @@ each portal request is a grant in the sense of ADR 0001.
 - EEA and candidate languages as translations arrive: Norwegian, Icelandic, and the accession languages
 - Community translation, so a language nobody sold us on can still be complete
 - Screen reader, magnifier, high contrast, larger text
+- ★ **Reduced motion, a switch in Settings → Accessibility** — off as a machine comes; on, everything alo animates jumps to where it is going instead. On 2026-11-07 that is the view gliding to a new window, the only motion alo draws; the next animation anybody builds is held to the same switch. Kept in the person's own `access.toml`, the file sign-in already reads. *The owner, 2026-11-07, asked whether Settings should have the switch: "Yes".*
 - ★ **A published accessibility conformance report against EN 301 549** — the harmonised European standard, and the mandatory technical specification for public-sector ICT procurement across the EU. Procurement asks for the report, not the intention
 - Sticky keys, slow keys, and keyboard-only operation of everything
 - Voice control of the shell — which for us is the agent, arriving somewhere it was always going

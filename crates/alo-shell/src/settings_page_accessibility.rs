@@ -46,6 +46,7 @@ pub(crate) fn the_blocks(open: &Open, strings: &Strings) -> Vec<ABlock> {
         }));
     }
     if appearance.at().is_none() {
+        blocks.extend(the_motion(open, strings));
         return blocks;
     }
     let mut pointer = ARow::named(None, TheKind::ASegmented, said(strings, w::POINTER_SIZE));
@@ -121,6 +122,46 @@ pub(crate) fn the_blocks(open: &Open, strings: &Strings) -> Vec<ABlock> {
     blocks.push(ABlock::Section(ASection {
         heading: Some(said(strings, w::POINTER)),
         rows,
+        footnote: None,
+    }));
+    blocks.extend(the_motion(open, strings));
+    blocks
+}
+
+/// **Motion**: the *Reduced motion* switch, the owner's yes of 2026-11-07.
+///
+/// Not drawn in `551:1038`, which has Text and Pointer only, so it is a third
+/// section in the design's own switch row (`550:256`, `551:196`) —
+/// `docs/design/the-settings-window.md`, question 9. Kept in the person's
+/// `access.toml`, so offered only where that file can be kept, and off as this
+/// computer comes.
+fn the_motion(open: &Open, strings: &Strings) -> Vec<ABlock> {
+    let access = &open.access;
+    let mut blocks = Vec::new();
+    if let Some(why) = access.not_read() {
+        blocks.push(ABlock::Said(
+            crate::settings_keepers::AccessKept::not_read_said(why, strings),
+        ));
+    }
+    blocks.extend(access.told().map(|it| ABlock::Said(it.to_owned())));
+    if access.at().is_none() || access.not_read().is_some() {
+        return blocks;
+    }
+    let is = if access.drawn().has(alo_access::Setting::ReducedMotion) {
+        crate::settings_page::SwitchIs::On
+    } else {
+        crate::settings_page::SwitchIs::Off
+    };
+    let mut row = ARow::named(
+        Some(SettingsRow::ReducedMotion),
+        TheKind::ASwitch(is),
+        said(strings, w::REDUCED_MOTION),
+    );
+    row.lines.push(said(strings, w::REDUCED_MOTION_IS));
+    row.at_its_end = Some(AnEnd::Words(crate::settings_page::switch_said(is, strings)));
+    blocks.push(ABlock::Section(ASection {
+        heading: Some(said(strings, w::MOTION)),
+        rows: vec![row],
         footnote: None,
     }));
     blocks
