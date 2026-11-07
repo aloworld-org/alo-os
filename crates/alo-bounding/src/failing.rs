@@ -356,6 +356,16 @@ pub enum NotBounded {
         why: io::Error,
     },
 
+    /// This machine would not say how many processors it has, so a count of
+    /// what an application sends — one number per processor — cannot begin
+    /// (ADR 0148).
+    #[error("this machine will not say how many processors it has: {why}")]
+    ProcessorsNotKnown {
+        /// What the machine said.
+        #[source]
+        why: io::Error,
+    },
+
     /// The cgroup filesystem would not do what was asked.
     #[error("{what} {path}: {why}")]
     Cgroup {

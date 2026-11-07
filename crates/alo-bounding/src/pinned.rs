@@ -10,6 +10,8 @@
 //! ```text
 //! /sys/fs/bpf/alo            0750 root:<the agent's group>  made by the loader
 //!   ├─ bounds                0660 root:<the agent's group>  the daemon writes it
+//!   ├─ counted               0660 root:<the agent's group>  the desktop makes and ends counts in it
+//!   ├─ counting              0600 root:root                 what an application sends, counted (ADR 0148)
 //!   ├─ fields                0600 root:root                 nobody else reads it
 //!   ├─ file_open             0600 root:root                 what a turn reads
 //!   ├─ inode_rename          0600 root:root                 what it moves
@@ -93,6 +95,14 @@ const THE_BOUNDS: &str = "bounds";
 /// The map of where this kernel keeps its fields, which nobody but the loader
 /// ever opens.
 const THE_FIELDS: &str = "fields";
+
+/// The map of what each counted control group has sent, which the person's
+/// desktop makes and ends entries in (ADR 0148).
+const THE_COUNTED: &str = "counted";
+
+/// The pinned link that holds the counter on the root of the control-group
+/// tree.
+const THE_COUNTING: &str = "counting";
 
 /// The pinned link that holds the programme on the hook every open goes
 /// through.
@@ -200,6 +210,12 @@ pub struct Pinned {
     /// The map of this kernel's field offsets.
     fields: PathBuf,
 
+    /// The map of what counted control groups have sent.
+    counted: PathBuf,
+
+    /// The link that holds the counter on the control-group tree.
+    counting: PathBuf,
+
     /// The link that holds the programme on `file_open`.
     hook: PathBuf,
 
@@ -279,7 +295,7 @@ impl Pinned {
 
     /// The same shape beneath a root somebody names.
     ///
-    /// Nothing is made or looked at: this is twenty-six paths joined, and
+    /// Nothing is made or looked at: this is twenty-eight paths joined, and
     /// every other method here is what touches a filesystem.
     #[must_use]
     pub fn beneath(root: &Path) -> Self {
@@ -287,6 +303,8 @@ impl Pinned {
             root: root.to_path_buf(),
             bounds: root.join(THE_BOUNDS),
             fields: root.join(THE_FIELDS),
+            counted: root.join(THE_COUNTED),
+            counting: root.join(THE_COUNTING),
             hook: root.join(THE_HOOK),
             rename_hook: root.join(THE_RENAME_HOOK),
             delete_hook: root.join(THE_DELETE_HOOK),
@@ -329,6 +347,33 @@ impl Pinned {
     #[must_use]
     pub fn fields(&self) -> &Path {
         &self.fields
+    }
+
+    /// The map of what each counted control group has sent, which is the one
+    /// thing the person's desktop opens (ADR 0148).
+    #[must_use]
+    pub fn counted(&self) -> &Path {
+        &self.counted
+    }
+
+    /// The link that holds the counter on the root of the control-group tree.
+    #[must_use]
+    pub fn counting(&self) -> &Path {
+        &self.counting
+    }
+
+    /// Every pin that is not one of the boundary's hooks: the three maps and
+    /// the counter's link.
+    ///
+    /// One list for refusing over leftovers and for taking everything away, so
+    /// those two cannot disagree about what is here.
+    fn every_other_pin(&self) -> [&Path; 4] {
+        [
+            self.bounds.as_path(),
+            self.fields.as_path(),
+            self.counted.as_path(),
+            self.counting.as_path(),
+        ]
     }
 
     /// The link that holds the programme on the hook every open goes through.
@@ -550,10 +595,7 @@ impl Pinned {
     /// # Errors
     /// [`NotBounded::AlreadyThere`], naming the pin that is in the way.
     pub fn nothing_is_there(&self) -> Result<(), NotBounded> {
-        for pin in [self.bounds.as_path(), self.fields.as_path()]
-            .into_iter()
-            .chain(self.every_hook())
-        {
+        for pin in self.every_other_pin().into_iter().chain(self.every_hook()) {
             if pin.exists() {
                 return Err(NotBounded::AlreadyThere {
                     path: pin.display().to_string(),
@@ -593,10 +635,10 @@ impl Pinned {
 
     /// Let the agent's group in, and nobody else at all.
     ///
-    /// Three files and three different answers, which this file's own
-    /// documentation argues: the directory is entered by the group, the map of
-    /// turns is written by it, and the map of fields and the link are the
-    /// loader's alone. Set every time rather than checked, because a mode that
+    /// Three different answers, which this file's own documentation argues:
+    /// the directory is entered by the group, the map of turns and the map of
+    /// what was counted are written by it, and the map of fields and every link
+    /// are the loader's alone. Set every time rather than checked, because a mode that
     /// was right yesterday is not an argument about today.
     ///
     /// # Errors
@@ -604,7 +646,7 @@ impl Pinned {
     /// [`NotBounded::NotShutTo`] if a mode would not be set. In both, the
     /// boundary is loaded and is reachable by root only.
     pub fn given_to_group(&self, group: u32) -> Result<(), NotBounded> {
-        for path in [&self.root, &self.bounds] {
+        for path in [&self.root, &self.bounds, &self.counted] {
             std::os::unix::fs::chown(path, None, Some(group)).map_err(|why| {
                 NotBounded::NotOurGroup {
                     path: path.display().to_string(),
@@ -615,14 +657,16 @@ impl Pinned {
         }
         shut(&self.root, THE_DIRECTORY_MODE)?;
         shut(&self.bounds, THE_BOUNDS_MODE)?;
+        shut(&self.counted, THE_BOUNDS_MODE)?;
         shut(&self.fields, THE_LOADERS_OWN_MODE)?;
+        shut(&self.counting, THE_LOADERS_OWN_MODE)?;
         for hook in self.every_hook() {
             shut(hook, THE_LOADERS_OWN_MODE)?;
         }
         Ok(())
     }
 
-    /// Take the boundary off this machine: the three pins, then the directory.
+    /// Take the boundary off this machine: every pin, then the directory.
     ///
     /// Removing the link's pin is what detaches the programme, so this is the
     /// one thing in alo OS that ends a boundary — and it is deliberately not a
@@ -635,11 +679,7 @@ impl Pinned {
     /// [`Pinned::nothing_is_there`] will refuse over next time, which is the
     /// answer that file argues for anyway.
     pub fn taken_away(&self) {
-        for pin in self
-            .every_hook()
-            .into_iter()
-            .chain([self.bounds.as_path(), self.fields.as_path()])
-        {
+        for pin in self.every_hook().into_iter().chain(self.every_other_pin()) {
             drop(std::fs::remove_file(pin));
         }
         drop(std::fs::remove_dir(&self.root));
@@ -687,6 +727,8 @@ mod tests {
         assert_eq!(pinned.root(), Path::new("/sys/fs/bpf/alo"));
         assert_eq!(pinned.bounds(), Path::new("/sys/fs/bpf/alo/bounds"));
         assert_eq!(pinned.fields(), Path::new("/sys/fs/bpf/alo/fields"));
+        assert_eq!(pinned.counted(), Path::new("/sys/fs/bpf/alo/counted"));
+        assert_eq!(pinned.counting(), Path::new("/sys/fs/bpf/alo/counting"));
         assert_eq!(pinned.hook(), Path::new("/sys/fs/bpf/alo/file_open"));
         assert_eq!(
             pinned.rename_hook(),
@@ -872,16 +914,19 @@ mod tests {
         pinned.taken_away();
     }
 
-    /// **The map of turns is the group's and the map of fields is not.** A
-    /// daemon that could write the offsets could make the kernel read the front
-    /// of a `struct file` as a directory entry, so what it is given is the one
-    /// map its job is, at the one mode that job needs.
+    /// **The map of turns and the map of what was counted are the group's, and
+    /// nothing else is.** A daemon that could write the offsets could make the
+    /// kernel read the front of a `struct file` as a directory entry, and one
+    /// that could remove the counter's link could stop the indicator seeing
+    /// what an application sends — so what is given away is the two maps those
+    /// jobs are, at the one mode those jobs need.
     #[test]
-    fn only_the_map_of_turns_is_given_away() {
+    fn only_the_map_of_turns_and_the_map_of_what_was_counted_are_given_away() {
         let root = a_root_of_our_own("given-away");
         let pinned = Pinned::beneath(&root);
         pinned.made().unwrap();
-        for pin in [pinned.bounds(), pinned.fields()]
+        for pin in pinned
+            .every_other_pin()
             .into_iter()
             .chain(pinned.every_hook())
         {
@@ -900,7 +945,17 @@ mod tests {
             0o660,
             "the daemon writes this one"
         );
+        assert_eq!(
+            mode_of(pinned.counted()),
+            0o660,
+            "the desktop makes and ends counts in this one"
+        );
         assert_eq!(mode_of(pinned.fields()), 0o600, "and never this one");
+        assert_eq!(
+            mode_of(pinned.counting()),
+            0o600,
+            "nor the link that keeps the counter attached"
+        );
         for hook in pinned.every_hook() {
             assert_eq!(mode_of(hook), 0o600, "{}", hook.display());
         }
@@ -916,7 +971,8 @@ mod tests {
         let root = a_root_of_our_own("taken-away");
         let pinned = Pinned::beneath(&root);
         pinned.made().unwrap();
-        for pin in [pinned.bounds(), pinned.fields()]
+        for pin in pinned
+            .every_other_pin()
             .into_iter()
             .chain(pinned.every_hook())
         {

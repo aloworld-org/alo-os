@@ -15,11 +15,13 @@
 //! # The three places a trace could be left, and all three are checked
 //!
 //! - **A map.** A ring buffer, a counter, a table of who opened what — any of
-//!   them would be a place a program can write. There are two maps and they are
-//!   the two the daemon fills; a third is the finding.
+//!   them would be a place a program can write. There are three maps: the two
+//!   the daemon fills, and `COUNTED`, the one counter the owner allowed by name
+//!   in ADR 0148. A fourth, or a third under any other name, is the finding.
 //! - **An entry nobody put there.** The map of turns is written by the daemon
-//!   and read by the program. An entry appearing while no turn is running is the
-//!   program keeping a note.
+//!   and read by the program, and `COUNTED` gains an entry only when the desktop
+//!   makes one for a person's command. An entry appearing in either while
+//!   nobody asked for one is the program keeping a note.
 //! - **A line in the kernel's trace buffer.** `bpf_printk` is the one way a BPF
 //!   program says something without a map at all, and what it says goes into the
 //!   buffer `/sys/kernel/tracing/trace` reports the size of.
@@ -58,7 +60,7 @@ use std::{
     process::{Command, Stdio},
 };
 
-use alo_bounding::{Bounds, Cgroup, Turns, place_of};
+use alo_bounding::{Bounds, Cgroup, Counter, Turns, place_of};
 
 mod on_this_kernel;
 
@@ -108,6 +110,9 @@ struct Held {
     /// Every turn the kernel is holding a bound for, in order.
     turns: Vec<u64>,
 
+    /// Every control group the counter has an entry for, in order (ADR 0148).
+    counted: Vec<u64>,
+
     /// The offsets the daemon gave it, and the slots it never filled.
     fields: Vec<u32>,
 
@@ -136,9 +141,15 @@ impl Held {
             .every_turn_the_kernel_is_holding()
             .expect("the map of turns can be read");
         turns.sort_unstable();
+        let mut counted = Counter::opened(kernel.pinned())
+            .expect("the counter's map can be opened by its pin")
+            .every_group_counted()
+            .expect("the counter's map can be read");
+        counted.sort_unstable();
         Self {
             maps,
             turns,
+            counted,
             fields: kernel
                 .imposed
                 .every_field_the_kernel_was_given()
@@ -222,6 +233,16 @@ fn nothing_was_written_down(before: &Held, after: &Held, after_what: &str) {
          so an entry nobody put there is the program keeping a note of what it saw.",
         after.turns.len(),
         before.turns.len()
+    );
+    assert_eq!(
+        after.counted,
+        before.counted,
+        "{after_what}, and the counter now holds entries for {:?} rather than {:?}: a syscall \
+         outside an agent turn left a trace, and nothing outside a turn may. ADR 0148 lets the \
+         counter add to an entry the desktop made for a person's command, and never make one, so \
+         an entry nobody asked for is the program keeping a note of who sent what.",
+        after.counted,
+        before.counted
     );
     assert_eq!(
         after.fields, before.fields,
@@ -676,11 +697,14 @@ fn opening(what: &Path) -> Outcome {
 
 /// **The program has nowhere to put what it sees.**
 ///
-/// Two maps, and they are the two the daemon fills before it attaches: the turns
-/// it is told about, and where this kernel keeps its fields. Both are written by
-/// userspace and only read by the program.
+/// Two maps the daemon fills before it attaches — the turns it is told about,
+/// and where this kernel keeps its fields — both written by userspace and only
+/// read by the program. **And one more, by name**: `COUNTED`, the counter the
+/// owner allowed in ADR 0148, which the program adds to only where the desktop
+/// made an entry for a person's command. `the_counter_counts_only_what_it_was_asked_to.rs`
+/// is what holds that map to its one job.
 ///
-/// A third name appearing here is the finding, whatever it is called and
+/// Any other name appearing here is the finding, whatever it is called and
 /// whatever kind it is — a program that had somewhere to write would have to
 /// have somewhere, and this is the list of everywhere it has.
 #[test]
@@ -690,11 +714,18 @@ fn the_program_has_nowhere_to_write_what_it_sees() {
     let held = Held::of(&kernel);
     assert_eq!(
         held.maps,
-        ["BOUNDS", "FIELDS"],
+        ["BOUNDS", "COUNTED", "FIELDS"],
         "the boundary has somewhere to write that it did not have before: {:?}. A BPF LSM is \
          called for every open on this machine, and the only thing between that and a record of \
-         somebody's day is that the program has nowhere to put what it saw.",
+         somebody's day is that the program has nowhere to put what it saw. ADR 0148 allows \
+         `COUNTED` and nothing else.",
         held.maps
+    );
+    assert!(
+        held.counted.is_empty(),
+        "the counter holds entries for {:?} with no command counting anything: it is supposed to \
+         gain an entry only when the desktop makes one",
+        held.counted
     );
 }
 
@@ -886,6 +917,22 @@ fn the_checks_would_notice_something_being_written() {
             .expect("the map of turns can be read")
             .contains(&nobody),
         "the entry was taken out of the map of turns and reading the map back still finds it"
+    );
+
+    // And the same for the counter's map: an entry made and ended by this
+    // test, for a control group nobody has, is found while it is there and not
+    // after — so an entry the program made would be found too.
+    let mut counter = Counter::opened(kernel.pinned()).expect("the counter can be opened");
+    counter.begun(nobody).expect("the kernel takes the entry");
+    assert!(
+        Held::of(&kernel).counted.contains(&nobody),
+        "an entry was made in the counter's map and reading the map back did not find it, so an \
+         entry the program made would not be found either"
+    );
+    counter.ended(nobody).expect("the kernel takes it back");
+    assert!(
+        !Held::of(&kernel).counted.contains(&nobody),
+        "the entry was taken out of the counter's map and reading the map back still finds it"
     );
 
     let fields = kernel
