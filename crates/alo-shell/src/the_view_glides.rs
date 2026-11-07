@@ -73,14 +73,13 @@ impl TheGlide {
         }
         let t = gone.as_secs_f64() / self.lasts.as_secs_f64();
         let eased = eased(t);
+        #[expect(
+            clippy::cast_possible_truncation,
+            reason = "a point between two points on the plane is on the plane, well inside i32"
+        )]
         let between = |from: i32, to: i32| -> i32 {
             let moved = (f64::from(to) - f64::from(from)) * eased;
-            #[expect(
-                clippy::cast_possible_truncation,
-                reason = "a point between two points on the plane is on the plane, well inside i32"
-            )]
-            let at = f64::from(from) + moved.round();
-            at as i32
+            (f64::from(from) + moved.round()) as i32
         };
         let at = At::checked(
             between(self.from.x, self.to.x),

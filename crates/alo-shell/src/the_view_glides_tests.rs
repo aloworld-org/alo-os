@@ -22,6 +22,7 @@ fn server(named: &str) -> (tempfile::TempDir, Server) {
     (directory, server)
 }
 
+/// A point on the plane.
 fn at(x: i32, y: i32) -> At {
     At::checked(x, y).expect("a point on the plane")
 }

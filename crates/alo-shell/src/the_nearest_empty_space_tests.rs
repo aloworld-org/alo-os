@@ -10,10 +10,12 @@ use super::{THE_GAP, WhereItGoes, the_nearest_empty_space};
 use alo_strings::Direction;
 use smithay::utils::{Logical, Point, Rectangle, Size};
 
+/// A rectangle on the plane.
 fn rect(x: i32, y: i32, w: i32, h: i32) -> Rectangle<i32, Logical> {
     Rectangle::new(Point::from((x, y)), Size::from((w, h)))
 }
 
+/// A size on the plane.
 fn size(w: i32, h: i32) -> Size<i32, Logical> {
     Size::from((w, h))
 }
