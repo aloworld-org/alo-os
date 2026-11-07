@@ -42,6 +42,17 @@ pub(crate) fn the_blocks(open: &Open, strings: &Strings) -> Vec<ABlock> {
                 keys.push(chord.key().shown(strings));
                 AnEnd::Keys(keys)
             });
+            // **A second shortcut is said under the name**, so a person can
+            // see every key that does this: ⊞+= beside ⊞++ for zooming in.
+            if let Some(also) = section.drawn().second_chord_for(binding.action) {
+                let mut keys: Vec<String> = also
+                    .modifiers()
+                    .held()
+                    .map(|held| held.said(strings).into_text())
+                    .collect();
+                keys.push(also.key().shown(strings));
+                row.lines.push(w::also_pressed(strings, &keys.join(" + ")));
+            }
             row
         })
         .collect();

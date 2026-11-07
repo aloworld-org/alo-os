@@ -34,7 +34,7 @@ Inside the frame, every click still belongs to the application.
 | Action | Shortcut |
 |---|---|
 | Open the alo Bar — find, open, create or ask | `⊞` |
-| Zoom the canvas in | `⊞` + Plus |
+| Zoom the canvas in | `⊞` + Plus, or `⊞` + = |
 | Zoom the canvas out | `⊞` + Minus |
 | Show all windows on the canvas | `⊞` + 0 |
 | Return the canvas to 100% | `⊞` + 1 |
@@ -47,6 +47,16 @@ Inside the frame, every click still belongs to the application.
 **Plus and Minus mean the keys that produce `+` and `−` on the person's own
 keyboard.** The shortcut guide shows the right keys for German, Finnish and
 every other layout rather than the ones a designer had.
+
+**And `⊞` + = zooms in too — the owner's yes of 2026-11-07.** On a US layout
+the main block prints `+` only with Shift, so without a numpad `⊞` + Plus
+could not be pressed at all (`docs/quirks/a-shortcut-naming-a-character-is-unreachable-where-the-layout-shifts-it.md`).
+`=` is the key `+` shares there. It is a **second** shortcut beside the first,
+not a replacement: `⊞` + Plus and the numpad's plus still work. It follows the
+action's own shortcut — a person who changes *Zoom the canvas in* has changed
+both, and a person who gives `⊞` + = to something else gets their own — and
+Settings → Keyboard and shortcuts says *Also ⊞ + =* under the action's name
+(`alo_shortcuts::Shortcuts::second_chord_for`).
 
 ## Moving around the canvas
 

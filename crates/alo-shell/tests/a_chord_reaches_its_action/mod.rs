@@ -157,6 +157,37 @@ fn the_zoom_chords_pressed_as_keys_zoom_out_in_and_back() {
     release(&f, SUPER);
 }
 
+/// `KEY_EQUAL`, which prints `=` unshifted and `+` with Shift on a US layout.
+const EQUALS: u32 = 13;
+
+/// **⊞+= zooms in, pressed as keys on a US layout** — the fixture's own
+/// keymap — where the main block's `+` needs Shift and ⊞++ cannot be pressed
+/// without a numpad. The owner's yes of 2026-11-07. Once with ⊞ held for one
+/// press, and once more to show a second press is a second rung.
+#[test]
+fn super_equals_zooms_in_on_a_us_keyboard() {
+    let (f, _first, _second) = a_desktop_looking_away();
+    f.backend(|s| s.the_shortcuts_are(Shortcuts::shipped()));
+    assert_eq!(zoom(&f), 1000, "the control: life size");
+    assert!(!press(&f, SUPER), "a modifier alone is not a chord");
+    assert!(with_super(&f, EQUALS), "⊞+= reached a client");
+    assert_eq!(zoom(&f), 1500, "⊞+= did not zoom in one rung");
+    assert!(with_super(&f, EQUALS));
+    assert_eq!(zoom(&f), 2000, "a second ⊞+= did not zoom in another");
+    release(&f, SUPER);
+}
+
+/// **The refusal**: = without ⊞ is a key for the application, and the canvas
+/// does not move.
+#[test]
+fn equals_alone_is_the_applications() {
+    let (f, _first, _second) = a_desktop_looking_away();
+    f.backend(|s| s.the_shortcuts_are(Shortcuts::shipped()));
+    let _ = press(&f, EQUALS);
+    release(&f, EQUALS);
+    assert_eq!(zoom(&f), 1000, "= alone zoomed the canvas");
+}
+
 /// **A seat nobody has told about shortcuts routes every key as it always did.**
 ///
 /// The sign-in screen, the nested lane and every test that existed before this
