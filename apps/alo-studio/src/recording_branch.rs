@@ -57,9 +57,11 @@ pub(crate) fn attach(
     )).unwrap_or_default();
     // Drop frames before conversion and scaling so a lower chosen rate reduces
     // processing work as well as the encoder's load.
+    // Resize in the source format first: converting a full display to I420
+    // before downscaling spends CPU on pixels the chosen size will discard.
     let video_encoding = crate::encoding_profile::video(frame_rate);
     let bin = gst::parse::bin_from_description(&format!(
-        "queue name=record-entry max-size-buffers=2 max-size-bytes=0 max-size-time=0 ! capsfilter name=record-format ! videorate skip-to-first=true drop-only=true ! videoconvert ! videoscale ! capsfilter name=size \
+        "queue name=record-entry max-size-buffers=2 max-size-bytes=0 max-size-time=0 ! capsfilter name=record-format ! videorate skip-to-first=true drop-only=true ! videoscale ! videoconvert ! capsfilter name=size \
          ! queue name=record-buffer max-size-time=0 max-size-bytes=134217728 max-size-buffers=60 ! {video_encoding} \
          ! queue ! webmmux name=container offset-to-zero=true ! filesink name=output async=false {audio}"
     ), true).map_err(failed)?;

@@ -1353,3 +1353,16 @@ interval after late or failed reads. A late quiet media result is refused rather
 than clearing the indicator. Existing freshness limits and one-outstanding-reader
 bounds remain. Regressions cover late quiet answers and recovery intervals for
 both readers. CI and an installed repeat of this candidate remain pending.
+
+An isolated, one-time comparison inside Studio's normal Flatpak runtime processes
+eight 1280 by 800 BGRx frames into 576 by 360 I420 frames, in alternating order.
+Conversion before scaling takes 4.476 and 4.162 seconds; scaling before
+conversion takes 1.651 and 0.891 seconds. The combined converter/scaler takes
+1.574 and 1.040 seconds. All cases reach EOS. Disabling ORC's optimized code is
+slower in this comparison, so no such override is retained. This synthetic
+comparison is not recording acceptance. The next application candidate moves
+scaling before conversion in both recording and preview, retaining the chosen
+size, cadence, format, permission source and frame-dropping policy. The existing
+real-framebuffer and pinned-publisher CI flows exercise downscaled recording,
+pause/resume, finalization and decoded output; a normal installed package repeat
+is still required.

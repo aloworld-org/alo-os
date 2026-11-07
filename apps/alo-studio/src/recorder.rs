@@ -219,7 +219,7 @@ impl Recorder {
         };
         let pipeline = gst::parse::launch(&format!(
             "{source_text} ! queue name=video-input max-size-buffers=2 max-size-bytes=0 max-size-time=0 ! tee name=frames \
-             frames. ! queue name=preview-input leaky=downstream max-size-buffers=1 max-size-bytes=0 max-size-time=0 ! videoconvert ! videoscale ! video/x-raw,format=RGBA,width=[1,640],height=[1,480],pixel-aspect-ratio=1/1 ! appsink name=preview sync=false async=false max-buffers=1 drop=true"
+             frames. ! queue name=preview-input leaky=downstream max-size-buffers=1 max-size-bytes=0 max-size-time=0 ! videoscale ! videoconvert ! video/x-raw,format=RGBA,width=[1,640],height=[1,480],pixel-aspect-ratio=1/1 ! appsink name=preview sync=false async=false max-buffers=1 drop=true"
         )).map_err(failed)?.downcast::<gst::Pipeline>()
             .map_err(|_| MediaError(t("The recording engine could not start.")))?;
         // Preview and recording share a permission-scoped PipeWire core. Keep
