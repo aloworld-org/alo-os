@@ -677,6 +677,38 @@ mod tests {
         in_english().say(&words::NOT_READABLE.key(), &Filling::nothing())
     }
 
+    /// **A kept place says what it is called, and an answer without the name
+    /// still reads** — an older daemon's, or one where nothing was kept — so
+    /// the field is additive in both directions.
+    #[test]
+    fn a_kept_place_says_its_name_and_an_older_answer_still_reads() {
+        let kept = ToAPerson::APlaceToReturnTo {
+            kept: true,
+            why_not: None,
+            named: Some("1762516800-42-their-own".to_owned()),
+        };
+        let written = kept.written().unwrap();
+        assert!(
+            written.contains(r#""named":"1762516800-42-their-own""#),
+            "{written}"
+        );
+        assert_eq!(ToAPerson::read(&written).unwrap(), kept);
+        assert_eq!(
+            ToAPerson::read(r#"{"a-place-to-return-to":{"kept":true}}"#).unwrap(),
+            ToAPerson::APlaceToReturnTo {
+                kept: true,
+                why_not: None,
+                named: None,
+            }
+        );
+        let not_kept = ToAPerson::APlaceToReturnTo {
+            kept: false,
+            why_not: Some(Wording::of(&a_sentence())),
+            named: None,
+        };
+        assert!(!not_kept.written().unwrap().contains("named"));
+    }
+
     /// The five, written and read back.
     #[test]
     fn the_five_a_person_is_told_read_back() {

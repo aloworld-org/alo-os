@@ -57,6 +57,12 @@ pub mod subject;
 pub mod typed;
 pub mod words;
 
+#[cfg(test)]
+mod testing;
+
+#[cfg(test)]
+mod command_tests;
+
 pub use command::run;
 pub use ended::Ended;
 pub use machine::{APlace, Knowing, Machine};

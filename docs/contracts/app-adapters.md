@@ -85,7 +85,7 @@ machine runs. `crates/alo-adapters/src/text_editor.rs` is the worked example.
 | `releases` | The release series it supports — `50` covers `50.1` and `50.2`. At least one. |
 | `mechanism` | `api`, `accessibility`, `dbus` or `synthetic`. |
 | `words` | Every word its verbs are declared with. A word used and not listed is refused, because it would reach a person as a key. |
-| `verbs` | Each with `name`, `purpose`, `effect`, typed `args`, `reaches`, `sentence`, `by_hand` and `carried_out`. |
+| `verbs` | Each with `name`, `purpose`, `effect`, `sends`, typed `args`, `reaches`, `sentence`, `by_hand` and `carried_out`. |
 
 A verb is known on the machine's list as `adapter.verb` — `text_editor.open_document`.
 
@@ -206,6 +206,13 @@ building on the fallback, can rely on:
    genuinely does. Stealing focus mid-turn is hostile.
 7. **Test the refusal paths.** An adapter that has only been tested when it
    works has not been tested.
+8. **Be honest about `sends`** — `never`, `always` or `may`: whether carrying
+   the verb out sends anything off this machine. *Added 2026-11-07*, in the
+   change that built what reads it (`terminal-commands.md`, answer 10):
+   `alo-app show` prints *this cannot be undone once it has been sent* beside
+   every verb that does not say `never`, because Put back restores files and
+   reaches nobody else's computer. A message, a post or an upload is `always`;
+   an action whose sending depends on the application is `may`.
 
 ## Versioning
 
