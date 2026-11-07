@@ -1871,3 +1871,13 @@ copies native channel bytes in bulk and clears only the unused fourth byte.
 It retains fallible allocation and malformed-layout refusal. Existing readback
 and actual software-renderer pixel tests cover its byte contract. Both follow-up
 changes still require validation and another normally installed recording walk.
+
+The follow-up's native application check, including the new decoded-WebM
+regression, and optimized desktop/strict checks pass at `dad76731`. The local
+normal-package build is queued behind another test run through the shared Cargo
+lock. A manually dispatched `Studio installable package` workflow provides a
+separate hosted GNOME 49 SDK build using the same production manifest and build
+script. It produces an unsigned bundle, source revision, checksums and installed
+SDK versions as a review artifact, without enabling verification features or
+publishing to an application market. Hosted package validation and installed
+recording acceptance remain required before treating that artifact as tested.

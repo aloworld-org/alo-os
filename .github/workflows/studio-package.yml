@@ -1,0 +1,40 @@
+name: Studio installable package
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  package:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    container:
+      image: ghcr.io/flathub-infra/flatpak-github-actions:gnome-49
+      options: --privileged
+    env:
+      ALO_STUDIO_BUILD_DIR: /tmp/studio-flatpak
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prepare package tools
+        run: |
+          dnf install -y cargo dbus-daemon
+          flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+      - name: Build the normal installable application
+        run: dbus-run-session -- bash apps/alo-studio/packaging/build-flatpak.sh
+      - name: Record package provenance
+        run: |
+          git rev-parse HEAD > /tmp/studio-flatpak/source.txt
+          printf '%s\n' 'normal; verification disabled' > /tmp/studio-flatpak/features.txt
+          flatpak list --runtime --columns=application,branch,commit > /tmp/studio-flatpak/sdk-versions.txt
+          cd /tmp/studio-flatpak
+          sha256sum alo-studio-0.1.0.flatpak source.txt features.txt sdk-versions.txt > checksums.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: studio-flatpak
+          path: |
+            /tmp/studio-flatpak/alo-studio-0.1.0.flatpak
+            /tmp/studio-flatpak/source.txt
+            /tmp/studio-flatpak/features.txt
+            /tmp/studio-flatpak/sdk-versions.txt
+            /tmp/studio-flatpak/checksums.txt
+          if-no-files-found: error
+          retention-days: 14
