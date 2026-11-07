@@ -153,7 +153,7 @@ pub(crate) fn the_nearest_empty_space(
             ));
         }
     }
-    candidates.sort_unstable_by(|a, b| a.0.cmp(&b.0));
+    candidates.sort_unstable_by_key(|candidate| candidate.0);
     candidates.into_iter().find_map(|(_, x, y)| {
         let window = Rectangle::new(Point::from((x, y)), wanted);
         let shown_from = Point::from((
