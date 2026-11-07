@@ -579,6 +579,25 @@ pub fn as_a_percentage(strings: &alo_strings::Strings, percent: u16) -> String {
         .into_text()
 }
 
+/// Also a second shortcut.
+pub const ALSO_PRESSED: Word = Word::saying("settings.shortcuts.also", "Also {keys}").noting(
+    "Under the name of an action in the list of shortcuts, when a second shortcut does the \
+     same thing. {keys} is the shortcut, its keys written as the list writes them, joined by +.",
+);
+
+/// *Also ⊞ + =*, under an action with a second shortcut.
+///
+/// The keys are each already said in the person's language; they are joined
+/// with a plus, as a shortcut is written, `⊞ + =`.
+pub fn also_pressed(strings: &alo_strings::Strings, keys: &[String]) -> String {
+    strings
+        .say(
+            &ALSO_PRESSED.key(),
+            &alo_strings::Filling::of("keys", keys.join(" + ")),
+        )
+        .into_text()
+}
+
 /// *N matches*, in the person's language and counted the way it counts.
 pub fn how_many_match(strings: &alo_strings::Strings, how_many: usize) -> String {
     let (key, ..) = MATCHES;
@@ -740,7 +759,7 @@ pub const AS_A_PERCENTAGE: Word = Word::saying("settings.access.percent", "{perc
 /// The length is written out so that adding a word above and forgetting it
 /// here does not compile — a word declared and left out of this list reaches a
 /// person as its own key.
-pub const THE_WINDOWS_WORDS: [Word; 105] = [
+pub const THE_WINDOWS_WORDS: [Word; 106] = [
     SETTINGS,
     EVERYTHING_IN_ONE_PLACE,
     THE_GROUP_ALO,
@@ -846,6 +865,7 @@ pub const THE_WINDOWS_WORDS: [Word; 105] = [
     WHITE,
     BLACK,
     AS_A_PERCENTAGE,
+    ALSO_PRESSED,
 ];
 
 /// Why this window's words could not be declared.
