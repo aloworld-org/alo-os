@@ -135,6 +135,88 @@ answering.wrong.sent-somewhere-else	nothing was answered {source} — that addre
 answering.wrong.stopped-on-its-way	nothing was answered {source} — you stopped it on its way, and nothing more was sent
 answering.wrong.too-long-for-the-model	nothing was answered {source} — this conversation is now longer than the model there can read. Start a new one from the Dock to continue
 answering.wrong.took-too-long	nothing answered {source} within the time this machine waits
+app.alo.no-tree	alo OS's own surfaces are not on the accessibility tree in this session, so they cannot be reached from the terminal
+app.alo.tree-only	alo OS's own surfaces are reached through the accessibility tree only: controls, read and press, with --in naming the surface
+app.controls.another-program	a part of the window shown by another program, which was not read
+app.controls.none	This window shows no control that can be named
+app.controls.not-described	an area the application draws itself and does not describe
+app.controls.one	{kind} “{control}”
+app.controls.one-with	{kind} “{control}”: {list}
+app.controls.unnamed	a {kind} with no name, which cannot be named or pressed
+app.controls.window	In the window “{window}”:
+app.count.alos-own	What alo OS itself sends is shown on the indicator, so it is not counted again for this command
+app.count.cannot	alo cannot show what {application} sends during this command
+app.count.unended	How much {application} sent during this command is not known: the count ended without an answer
+app.declared.done	Done: {said}
+app.declared.no-such-ability	{application} offers no ability called {ability}. alo-app show {application} lists what it offers
+app.declared.unanswered	Sent: {said}. It did not answer, so whether it happened is not known
+app.desktop.silent	The desktop did not answer, so nothing was done
+app.front.none	There is no window you were working in before this terminal
+app.front.unnamed	The window you were working in before this terminal does not say which application it belongs to, so nothing was done to it
+app.front.window	{application}, {window}
+app.kind.choice	{said}: one of {list}
+app.kind.count	{said}: a whole number
+app.kind.name	{said}: one name
+app.kind.path	{said}: a path; one that does not begin with / is taken from the folder you are in
+app.list.line	{name} — {said}. {list}
+app.naming.not-installed	No installed application is called {typed}. alo-app list shows what is installed
+app.naming.shared-short-name	More than one installed application is called {typed}: {list}. Name the one you mean by its identifier
+app.offers.abilities	It can be opened, focused and closed, its controls pressed where its windows describe them, and asked for these abilities of its own: {list}
+app.offers.terminal	This is a terminal — type into it directly
+app.offers.window	It can be opened, focused and closed, and its controls pressed where its windows describe them
+app.place.unanswered	No place to return to was kept before this command, because alo-agentd did not answer. The command ran anyway
+app.press.done	Pressed the {kind} “{control}” in {application}
+app.press.no-such-kind	{typed} is not a kind of control alo-app can press. It presses: {list}
+app.press.unanswered	Asked {application} to press the {kind} “{control}”, and it did not answer, so whether it was pressed is not known
+app.reach.reserved	reach this application as {identifier}, because {short} is a word alo-app keeps for itself
+app.reach.shared	reach this application as {identifier}, because another installed application is also called {short}
+app.reach.short	type {short}
+app.road.declared	Abilities of its own, declared by an adapter alo OS ships and reviewed:
+app.road.discovered.not-asked	What it publishes about itself on the session bus was not asked: alo-app does not look there yet
+app.road.no-declared	No adapter declares abilities of its own for it
+app.road.screen.not-built	Reading the screen is not built yet, so a control its windows do not describe cannot be reached
+app.road.tree.described	Its controls: controls, read and press, through the accessibility tree. Its windows describe themselves there now
+app.road.tree.not-here	Its controls: controls, read and press, through the accessibility tree — which this session does not have now, so they cannot be reached
+app.road.tree.not-open	Its controls: controls, read and press, through the accessibility tree. None of its windows is open now, so whether they describe themselves is not known until one is
+app.road.window	Its window: open, focus and close, carried out by the desktop
+app.role.field	field
+app.role.password-field	password field
+app.show.ability	{ability} — {said}
+app.show.alo	alo OS's own surfaces, reached through the accessibility tree only, with --in naming one: {list}
+app.show.argument	<{typed}> — {said}
+app.show.changes	It changes something, and runs at once when you type it. A place to return to is kept before it, so Put back can bring your files back as they were
+app.show.heading	{name} ({identifier}): {said}
+app.show.in-words	What it does: {said}
+app.show.reads	It only reads, and changes nothing
+app.show.sends	This cannot be undone once it has been sent
+app.show.typed-as	Typed as: {said}
+app.state.greyed-out	greyed out
+app.state.holds	holds “{said}”
+app.state.off	off
+app.state.on	on
+app.state.withheld	what it holds is never read
+app.typed.front-and-in	front already means one window, the one you were working in, so --in cannot be added to it
+app.typed.in-needs-a-window	--in takes the title of one window after it, so nothing was done
+app.typed.in-twice	--in was given twice, and a command reaches one window, so nothing was done
+app.typed.json-not-here	--json is offered for list and show, so nothing was done
+app.typed.left-over	“{typed}” was left over at the end, so nothing was done
+app.typed.named-needs-a-value	--{typed} takes a value after it, so nothing was done
+app.typed.nothing	Nothing was asked. Type alo-app list to see what is installed, and alo-app show and an application to see what it offers
+app.typed.nothing-to-do	Say what to do with {application}: one of its abilities, or controls, read, press, open, focus or close
+app.typed.plain-and-json	--plain and --json ask for two different kinds of answer, so nothing was done
+app.typed.press-needs-two	press takes the kind of control and its name, like press button Save, so nothing was pressed
+app.typed.too-many-values	More values were given than {ability} takes, so nothing was done. alo-app show and the application lists what it takes
+app.typed.two-pipes	Only one value can be read from the pipe, and more than one was given as -, so nothing was done
+app.typed.whole-application	open, focus and close act on the whole application, not on one window, so they cannot be narrowed with --in or used with front
+app.value.unreadable	A value had a character in it that cannot be shown in a sentence, such as an escape sequence, so it was not used
+app.window.closed	Asked {application} to close. It may ask you about unsaved work first
+app.window.could-not-ask	This machine could not ask {application}, so nothing was done
+app.window.did-not	{application} was asked and has not done it
+app.window.focused	Asked {application} to come to the front
+app.window.no-window	{application} has no window here, so nothing was done
+app.window.not-installed	The desktop says {application} is not installed, so nothing was done
+app.window.opened	Asked {application} to open
+app.window.unanswered	Asked the desktop to act on {application}, and its answer could not be understood, so whether anything happened is not known
 appearance.accent.a-ground-not-an-accent	{colour} is a ground or a structure colour rather than an accent — choose indigo, violet, moss or rose
 appearance.accent.indigo	Indigo
 appearance.accent.moss	Moss
@@ -1645,8 +1727,10 @@ recounting.nothing-to-show-on	What this machine's record says cannot be put in f
 recounting.nothing-to-tell	nothing in this machine's record answers that question
 recounting.only-the-most-recent	this is the most recent part of what answers that question, and not all of it
 recounting.outcome.a-command-was-not-run	the agent asked to run a command and it did not run
+recounting.outcome.an-application-was-not-asked	you asked an application to do something, from the terminal, and it was not asked
 recounting.outcome.answered-for-another-machine	a machine you paired with asked a question and it was answered on this machine
 recounting.outcome.answered-here	the agent asked a question and it was answered on this machine
+recounting.outcome.asked-an-application	you asked an application to do something, from the terminal
 recounting.outcome.carried-on-after-sleep	the machine went to sleep while the agent was working on this, and the work carried on when it woke
 recounting.outcome.folders-not-put-back	you asked for these folders to be put back, and none of them were changed
 recounting.outcome.folders-put-back	you put these folders back as they were when this was kept

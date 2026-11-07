@@ -71,6 +71,7 @@ pub fn what_was_done(entry: &Entry) -> WhatWasDone {
         | Happened::HeldBack { .. }
         | Happened::NotBounded { .. }
         | Happened::ACommandWasNotRun { .. }
+        | Happened::AskedAnApplication { road: None, .. }
         | Happened::SleptThrough { .. }
         | Happened::Brokered {
             refused: Some(_), ..
@@ -103,6 +104,10 @@ pub fn what_was_done(entry: &Entry) -> WhatWasDone {
         | Happened::LetGo { .. }
         | Happened::Undone { .. }
         | Happened::PutBack { .. } => WhatWasDone::NotAnAgents,
+        // **A person's own command asked an application** (`alo-app`). Nobody's
+        // agent did it, so this table offers nothing; the place kept before it,
+        // named in the entry's `kept_as`, is Put back's road, not this one.
+        Happened::AskedAnApplication { road: Some(_), .. } => WhatWasDone::NotAnAgents,
     }
 }
 

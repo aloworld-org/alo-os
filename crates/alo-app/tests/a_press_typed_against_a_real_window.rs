@@ -132,7 +132,8 @@ impl ASession {
                  \"http://www.freedesktop.org/standards/dbus/1.0/busconfig.dtd\">\n\
                  <busconfig>\n<type>session</type>\n<listen>unix:path={}</listen>\n\
                  <auth>EXTERNAL</auth>\n<policy context=\"default\">\n\
-                 <allow send_destination=\"*\"/>\n<allow own=\"*\"/>\n</policy>\n</busconfig>\n",
+                 <allow send_destination=\"*\" eavesdrop=\"true\"/>\n<allow eavesdrop=\"true\"/>\n\
+                 <allow own=\"*\"/>\n</policy>\n</busconfig>\n",
                 place.join("session").display()
             ),
         )
