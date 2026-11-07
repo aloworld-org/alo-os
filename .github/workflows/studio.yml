@@ -71,7 +71,7 @@ jobs:
         timeout-minutes: 8
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends libgtk-4-dev libgtk-4-media-gstreamer at-spi2-core libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libpipewire-0.3-dev libspa-0.2-dev libclang-dev gstreamer1.0-tools gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-pipewire gstreamer1.0-pulseaudio pipewire pipewire-bin pipewire-pulse pulseaudio-utils wireplumber xvfb xdotool dbus-x11 appstream-util desktop-file-utils gdb
+          sudo apt-get install -y --no-install-recommends libgtk-4-dev libgtk-4-media-gstreamer at-spi2-core libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libpipewire-0.3-dev libspa-0.2-dev libclang-dev gstreamer1.0-tools gstreamer1.0-gl gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-pipewire gstreamer1.0-pulseaudio pipewire pipewire-bin pipewire-pulse pulseaudio-utils wireplumber xvfb xdotool dbus-x11 appstream-util desktop-file-utils gdb
       - name: Rust toolchain
         run: rustup toolchain install 1.97.0 --profile minimal --component rustfmt --component clippy
       - uses: Swatinem/rust-cache@v2

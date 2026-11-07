@@ -88,6 +88,10 @@ impl Recorder {
             "appsink",
             "opusenc",
             "filesink",
+            // GTK's embedded review renderer needs this when a GL context is
+            // available. Without it GTK returns no sink and playback may try
+            // a direct display sink, blocking teardown and all UI controls.
+            "glsinkbin",
         ] {
             if gst::ElementFactory::find(name).is_none() {
                 return Err(MediaError(format!(
