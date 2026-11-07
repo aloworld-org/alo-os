@@ -5,7 +5,6 @@
     reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
 )]
 
-use std::os::unix::fs::MetadataExt as _;
 use std::path::{Path, PathBuf};
 
 use super::*;
