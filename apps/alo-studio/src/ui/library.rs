@@ -72,7 +72,7 @@ impl State {
                 .content_fit(gtk::ContentFit::Cover)
                 .build();
             if let Ok(path) = library.thumbnail(&clip.id) {
-                picture.set_filename(Some(path));
+                super::thumbnails::load_when_shown(&picture, path);
             }
             content.append(&picture);
             let copy = gtk::Box::new(gtk::Orientation::Vertical, 4);

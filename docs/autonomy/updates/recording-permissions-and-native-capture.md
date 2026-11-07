@@ -1400,3 +1400,32 @@ queued media drains. Normal parent shutdown then unlocks and closes the inputs
 in pipeline order. Verification probes check stopped input states and the live
 native clock provider during real microphone finalization. CI and another
 normally installed repeat of this correction are pending.
+
+Package `eb13d7f5` builds normally with all 28 local tests passing; its bundle
+SHA-256 is `2b971ab4c4cee853ff305e7e2bf24fe006ac61342d16146eae3f12254c1d5cf0`.
+Native CI passes, including the new provider-lifetime checks with real PulseAudio
+inputs. Optimized desktop and strict checks also pass. The installed repeat uses
+desktop `54eb8544`, SHA-256
+`6bc42103d203e80e3c8339160ea362292e8d209536c4c2ea698f113a33a15f96`.
+
+That repeat reaches a controlled early finish after audio-queue saturation and
+saves clip `1794027671-18085922-2`, SHA-256
+`bcc3f7834ca8f8c2a16076bf6d26d2c0c67b67300cb8f149a137e3e528932de6`.
+It does not reproduce the native abort. The file contains five video frames
+ending at 14.872 seconds, with a 3.984-second uncovered gap, and 10.880 seconds
+of PCM with a 2.120-second uncovered gap. The independent audio reference also
+fails its timing check. Neither continuity nor synchronization is accepted.
+The normal control script times out and receives no successful pause/resume or
+export proof. Evidence is in `installed-clock-lifetime-window`.
+
+An explicitly diagnostic stack, captured after those control timeouts and saved
+as `application-hang-stack.txt`, instead finds the GTK main thread inside
+synchronous PNG loading from the recording library. Its media threads have
+already ended. Library rows currently decode every saved preview synchronously,
+including while that page is hidden. The next candidate opens and scales these
+images asynchronously only when the library is mapped, cancels work when hidden,
+and ignores stale completions. The native UI regression adds 128 large image
+previews beside copies of an already verified recording and requires prompt
+status responses while the library is opened and dismissed. This is a UI
+responsiveness check, not a video-cadence benchmark. CI and installed verification
+of this additional correction are pending.

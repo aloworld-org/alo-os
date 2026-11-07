@@ -280,6 +280,9 @@ mod presentation;
 #[path = "library.rs"]
 mod library;
 
+#[path = "thumbnails.rs"]
+mod thumbnails;
+
 #[path = "control_bus.rs"]
 mod control_bus;
 

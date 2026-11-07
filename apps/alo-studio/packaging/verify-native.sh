@@ -44,7 +44,7 @@ export XDG_DATA_HOME="$scratch/data"
 export ALO_STUDIO_VERIFY_DISPLAY="$DISPLAY"
 export NO_AT_BRIDGE=1
 export G_DEBUG=fatal-criticals
-setsid --wait dbus-run-session -- bash -c 'printf "%s\n" "$$" > "$1/app-pid"; ps -o pgid= -p "$$" > "$1/app-group"; exec "$2"' studio-verification "$scratch" "$build_target/debug/alo-studio" >"$scratch/app.log" 2>&1 &
+setsid --wait dbus-run-session -- bash -c 'printf "%s\n" "$$" > "$1/app-pid"; ps -o pgid= -p "$$" > "$1/app-group"; printf "%s\n" "$DBUS_SESSION_BUS_ADDRESS" > "$1/session-bus"; exec "$2"' studio-verification "$scratch" "$build_target/debug/alo-studio" >"$scratch/app.log" 2>&1 &
 app_runner_pid=$!
 sleep 3
 if [[ ! -s "$scratch/app-pid" ]]; then head -30 "$scratch/app.log"; exit 1; fi
@@ -54,6 +54,7 @@ ALO_STUDIO_VERIFY_PREPARE_DELAY=1 "$build_target/debug/examples/verify-recording
 ALO_STUDIO_VERIFY_STOP_DELAY=1 ALO_STUDIO_VERIFY_LIGHTWEIGHT=1 "$build_target/debug/examples/verify-recording" "$scratch/display-lightweight.webm"
 ALO_STUDIO_VERIFY_SOURCE_END=1 "$build_target/debug/examples/verify-recording" "$scratch/source-ended-while-paused.webm"
 bash "$app_dir/packaging/verify-ui.sh" "$scratch"
+bash "$app_dir/packaging/verify-library.sh" "$scratch"
 desktop-file-validate "$app_dir/data/org.aloworld.Studio.desktop"
 appstream-util validate-relax --nonet "$app_dir/data/org.aloworld.Studio.metainfo.xml"
 if grep -E 'panicked|CRITICAL|Theme parser error' "$scratch/app.log"; then
