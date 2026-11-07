@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 scratch=${1:?Pass the isolated UI fixture}
+bus=$(cat "$scratch/session-bus")
+printf 'LIBRARY_CHECK_BASELINE_STATUS\n'
+gdbus call --address "$bus" --timeout 2 --dest org.aloworld.Studio --object-path /org/aloworld/Studio/Recorder --method org.aloworld.Studio.Recorder1.GetStatus > "$scratch/library-baseline-status.txt"
+grep -q '"phase":"ready"' "$scratch/library-baseline-status.txt"
+printf 'LIBRARY_CHECK_PREPARING_PREVIEWS\n'
 python3 - "$XDG_DATA_HOME/alo-studio/recordings" "$scratch" <<'PY'
 import json,os,pathlib,struct,sys,zlib
 folder=pathlib.Path(sys.argv[1]);scratch=pathlib.Path(sys.argv[2])
@@ -24,11 +29,12 @@ for index in range(128):
 PY
 win=$(xdotool search --onlyvisible --name '^alo Studio$' | head -1)
 xdotool windowfocus "$win"
+printf 'LIBRARY_CHECK_OPENING_LIBRARY\n'
 xdotool key ctrl+l
 sleep .2
-bus=$(cat "$scratch/session-bus")
 gdbus call --address "$bus" --timeout 2 --dest org.aloworld.Studio --object-path /org/aloworld/Studio/Recorder --method org.aloworld.Studio.Recorder1.GetStatus > "$scratch/library-responsive-status.txt"
 xdotool key ctrl+n
+printf 'LIBRARY_CHECK_DISMISSING_LIBRARY\n'
 sleep .2
 gdbus call --address "$bus" --timeout 2 --dest org.aloworld.Studio --object-path /org/aloworld/Studio/Recorder --method org.aloworld.Studio.Recorder1.GetStatus > "$scratch/library-dismissed-status.txt"
 grep -q '"phase":"ready"' "$scratch/library-dismissed-status.txt"

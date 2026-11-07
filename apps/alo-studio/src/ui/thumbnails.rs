@@ -32,7 +32,7 @@ pub(super) fn load_when_shown(picture: &gtk::Picture, path: PathBuf) {
         // The stream's async API can still decode PNG chunks on the UI context.
         // Run the complete decoder in GIO's worker pool; only owned pixels return.
         let worker = gio::spawn_blocking(move || decode(path, &cancel));
-        glib::MainContext::default().spawn_local(async move {
+        glib::MainContext::default().spawn_local_with_priority(glib::Priority::LOW, async move {
             let decoded = worker.await;
             clear(&waiting, &token);
             if token.load(Ordering::Relaxed) {
