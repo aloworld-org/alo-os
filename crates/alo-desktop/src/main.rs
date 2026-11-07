@@ -70,6 +70,9 @@ mod starting_what_a_person_pressed;
 mod telling_the_session_where_alo_draws;
 
 #[cfg(target_os = "linux")]
+mod telling_applications_about_the_pointer;
+
+#[cfg(target_os = "linux")]
 mod putting_back;
 
 /// What this process does on the machine alo OS is for.
@@ -305,6 +308,9 @@ mod running {
         /// shown — and Settings says why it did not read when it is opened,
         /// as it does for every other appearance setting.
         window_titles: alo_appearance::WindowTitles,
+        /// What this person's pointer looks like, read from the same file at the
+        /// same moment, and changed whenever Settings says so.
+        pointers_look: alo_shell::ThePointersLook,
         /// Where the dock is, and so where the status area is.
         dock: alo_dock::Dock,
         /// The windows this person has put aside, which the panel at the edge
@@ -542,20 +548,31 @@ mod running {
                      the defaults are worked out at every sign-in"
                 );
             }
-            let window_titles = alo_choosing::where_the_folder_is(
+            // **Their appearance, read once**: when their windows show their
+            // titles, and what their pointer looks like.
+            let appearance = alo_choosing::where_the_folder_is(
                 std::env::var_os("XDG_CONFIG_HOME").as_deref(),
                 std::env::var_os("HOME").as_deref(),
             )
-            .map_or_else(alo_appearance::WindowTitles::default, |folder| {
+            .map_or_else(alo_appearance::Appearance::shipped, |folder| {
                 alo_appearance::keeping::at_sign_in(&folder.join(alo_appearance::keeping::THE_FILE))
                     .0
-                    .window_titles()
             });
+            let window_titles = appearance.window_titles();
+            let (pointers_look, they_chose) =
+                crate::telling_applications_about_the_pointer::as_they_left_it(&appearance);
+            // **Told at sign-in only if they chose it in Settings**, so a theme
+            // they set themselves is not overwritten
+            // (`crate::telling_applications_about_the_pointer`).
+            if they_chose {
+                crate::telling_applications_about_the_pointer::tell(pointers_look);
+            }
             Ok(Self {
                 layout_at,
                 shortcuts_at,
                 dock_at,
                 window_titles,
+                pointers_look,
                 dock: alo_dock::Dock::shipped(),
                 put_aside: alo_put_aside::Panel::new(),
                 // Nothing has been asked to be put back.
@@ -632,6 +649,18 @@ mod running {
         /// When this person's windows show their titles, as read at sign-in.
         fn the_window_titles(&self) -> alo_appearance::WindowTitles {
             self.window_titles
+        }
+
+        /// What this person's pointer looks like, as read at sign-in.
+        fn the_pointers_look(&self) -> alo_shell::ThePointersLook {
+            self.pointers_look
+        }
+
+        /// **They chose another pointer**: applications started from now on
+        /// are told its cursor theme.
+        fn the_pointer_changed(&mut self, look: alo_shell::ThePointersLook) {
+            self.pointers_look = look;
+            crate::telling_applications_about_the_pointer::tell(look);
         }
 
         /// Where this person's settings are kept, so a chord can open them.

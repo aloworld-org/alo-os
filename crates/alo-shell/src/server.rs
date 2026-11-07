@@ -237,6 +237,11 @@ pub struct Server {
     /// ships, or only while a person points at it. See
     /// `crate::the_window_titles_shown`.
     pub(crate) window_titles: alo_appearance::WindowTitles,
+    /// What the pointer looks like, as the person last said
+    /// (`crate::the_pointers_look`).
+    pub(crate) pointers_look: crate::ThePointersLook,
+    /// A change to the pointer the desktop has not told the session about yet.
+    pub(crate) pointer_change_to_tell: Option<crate::ThePointersLook>,
     /// **alo's own terminal**, when a person has opened one.
     ///
     /// Distinct from [`Self::the_terminal`] above, and the pair is worth
@@ -873,6 +878,8 @@ impl Server {
             what_each_application_draws: std::sync::Arc::new(alo_dock::artwork::TheArtwork::none()),
             // Always, until the desktop says what this person chose.
             window_titles: alo_appearance::WindowTitles::default(),
+            pointers_look: crate::ThePointersLook::default(),
+            pointer_change_to_tell: None,
             what_was_typed_into_more_apps: alo_dock::WhatTheyTyped::nothing(),
             pins_owed_to_the_disk: None,
             // The keyboard starts with the work, which is where a person's

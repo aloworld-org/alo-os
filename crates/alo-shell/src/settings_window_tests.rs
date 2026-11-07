@@ -335,6 +335,8 @@ fn every_setting_the_machine_has_is_in_one_window() {
             // that.
             // The pointer is the size it ships at.
             SettingsRow::PointerSize(PointerSize::Default),
+            // And the arrow it ships as.
+            SettingsRow::PointerShape(alo_appearance::PointerShape::Kite),
         ]
     );
 }
@@ -1886,6 +1888,63 @@ fn light_and_dark_and_the_text_size_are_kept_as_alo_appearance_keeps_them() {
             .contains(&crate::settings_page::ABlock::Said(not_yet)),
         "{:?}",
         page.blocks
+    );
+}
+
+/// **The familiar arrow is a choice, kept as `alo-appearance` keeps it**: on
+/// the Accessibility page beside the pointer's size, marked where it ships, and
+/// written to `appearance.toml` byte for byte as that crate writes it.
+#[test]
+fn the_familiar_arrow_is_a_choice_kept_with_the_appearance() {
+    let machine = a_persons_machine("pointer-shape");
+    let strings = words();
+    let door = CountingDoor::revoking();
+    let mut window = machine.opened();
+    let at = machine.kept(alo_appearance::keeping::THE_FILE);
+    assert!(
+        window.rows(noon()).contains(&SettingsRow::PointerShape(
+            alo_appearance::PointerShape::Classic
+        )),
+        "the familiar arrow is not offered"
+    );
+    assert_eq!(
+        window.pointer_shape(),
+        Some(alo_appearance::PointerShape::Kite)
+    );
+
+    assert_eq!(
+        chosen(
+            &mut window,
+            &SettingsRow::PointerShape(alo_appearance::PointerShape::Classic),
+            &strings,
+            &door
+        ),
+        Some(SettingsDid::Kept(
+            SettingsSection::Appearance,
+            SettingsKept::Written
+        ))
+    );
+    assert_eq!(
+        window.pointer_shape(),
+        Some(alo_appearance::PointerShape::Classic)
+    );
+    let mut expected = Appearance::shipped();
+    expected.set_pointer_shape(alo_appearance::PointerShape::Classic);
+    let twin = a_twin();
+    let twin_at = twin.path().join(alo_appearance::keeping::THE_FILE);
+    alo_appearance::keeping::keep(&twin_at, expected.changes()).unwrap();
+    assert_eq!(bytes(&at), bytes(&twin_at));
+
+    // **Back to the kite is a choice too**, written as one.
+    chosen(
+        &mut window,
+        &SettingsRow::PointerShape(alo_appearance::PointerShape::Kite),
+        &strings,
+        &door,
+    );
+    assert_eq!(
+        window.pointer_shape(),
+        Some(alo_appearance::PointerShape::Kite)
     );
 }
 

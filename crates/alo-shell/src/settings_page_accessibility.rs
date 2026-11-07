@@ -61,9 +61,36 @@ pub(crate) fn the_blocks(open: &Open, strings: &Strings) -> Vec<ABlock> {
             colour: None,
         })
         .collect();
+    let mut rows = vec![pointer];
+    // **Which arrow**, beside how large: the kite the owner chose on 2026-11-06,
+    // and the familiar arrow kept as a choice. Not drawn in `551:1038`, which has
+    // one row here; it is the design's own segmented choice, in the same
+    // section (`docs/design/the-settings-window.md`). Offered only where the
+    // appearance was read, because that is where it is kept.
+    if appearance.at().is_some() {
+        let chosen = appearance.drawn().pointer_shape();
+        let mut shape = ARow::named(None, TheKind::ASegmented, said(strings, w::POINTER_SHAPE));
+        shape.lead = Some(ASettingsIcon::Pointer);
+        shape.parts = alo_appearance::PointerShape::ALL
+            .into_iter()
+            .map(|each| APart {
+                label: said(
+                    strings,
+                    match each {
+                        alo_appearance::PointerShape::Kite => w::KITE,
+                        alo_appearance::PointerShape::Classic => w::CLASSIC,
+                    },
+                ),
+                row: SettingsRow::PointerShape(each),
+                chosen: each == chosen,
+                colour: None,
+            })
+            .collect();
+        rows.push(shape);
+    }
     blocks.push(ABlock::Section(ASection {
         heading: Some(said(strings, w::POINTER)),
-        rows: vec![pointer],
+        rows,
         footnote: None,
     }));
     blocks

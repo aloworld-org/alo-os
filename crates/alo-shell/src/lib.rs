@@ -228,6 +228,7 @@ mod dock_tooltip;
 mod how_a_panel_is_raised;
 mod the_keyboard_on_the_docks_surfaces;
 mod the_pointer_drawn;
+mod the_pointers_look;
 pub mod what_is_on_the_clipboard;
 mod where_the_docks_surface_is;
 
@@ -895,6 +896,7 @@ pub use scene_replacement::SceneReplacement;
 pub use scene_scanout::ActiveScene;
 pub use screens::{ScreenPlace, Screens, TheRoom};
 pub use the_markets_words::TheMarketsWords;
+pub use the_pointers_look::ThePointersLook;
 pub use their_formats::{TheDay, TheirFormats, WhereTheRegionCameFrom};
 
 // **The types a desktop needs to answer `their_displays`, re-exported so that

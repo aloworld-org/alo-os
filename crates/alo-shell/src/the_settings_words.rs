@@ -651,6 +651,20 @@ pub const LARGE: Word = Word::saying("settings.access.large", "Large")
 pub const LARGER: Word = Word::saying("settings.access.larger", "Larger")
     .noting("One of three short choices for the pointer's size, larger than Large.");
 
+/// Pointer shape.
+pub const POINTER_SHAPE: Word = Word::saying("settings.access.pointer-shape", "Pointer shape")
+    .noting("The name of the setting for which arrow the pointer is drawn as.");
+
+/// Kite.
+pub const KITE: Word = Word::saying("settings.access.kite", "Kite").noting(
+    "One of two short choices for the pointer's shape: a slim, pointed arrow shaped like a kite, which is how alo draws it unless the person chooses otherwise.",
+);
+
+/// Classic.
+pub const CLASSIC: Word = Word::saying("settings.access.classic", "Classic").noting(
+    "One of two short choices for the pointer's shape: the familiar arrow most computers have.",
+);
+
 /// A text size, as a percentage.
 pub const AS_A_PERCENTAGE: Word = Word::saying("settings.access.percent", "{percent}%").noting(
     "Beside the text size slider: the size as a percentage of the ordinary size. {percent} is      the number. Write a percentage the way your language does, with or without a space.",
@@ -661,7 +675,7 @@ pub const AS_A_PERCENTAGE: Word = Word::saying("settings.access.percent", "{perc
 /// The length is written out so that adding a word above and forgetting it
 /// here does not compile — a word declared and left out of this list reaches a
 /// person as its own key.
-pub const THE_WINDOWS_WORDS: [Word; 93] = [
+pub const THE_WINDOWS_WORDS: [Word; 96] = [
     SETTINGS,
     EVERYTHING_IN_ONE_PLACE,
     THE_GROUP_ALO,
@@ -754,6 +768,9 @@ pub const THE_WINDOWS_WORDS: [Word; 93] = [
     POINTER_SIZE,
     LARGE,
     LARGER,
+    POINTER_SHAPE,
+    KITE,
+    CLASSIC,
     AS_A_PERCENTAGE,
 ];
 

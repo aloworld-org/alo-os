@@ -24,8 +24,22 @@ use crate::artwork::EVERY_SHAPE;
 use crate::xcursor_file::{NotWritten, xcursor_file};
 use crate::{NotDrawn, Silhouette, draw};
 
-/// The theme's directory name, and what `XCURSOR_THEME` is set to.
+/// The shipped theme's directory name, and what `XCURSOR_THEME` is set to
+/// unless the person chose the familiar arrow.
 pub const THE_NAME: &str = "alo";
+
+/// The theme with the familiar arrow, for a person who chose it
+/// ([`Silhouette::Classic`]). Every other shape is the same as [`THE_NAME`]'s.
+pub const THE_CLASSIC_NAME: &str = "alo-classic";
+
+/// The name of the theme drawn with `silhouette` as its arrow.
+#[must_use]
+pub const fn the_name_of(silhouette: Silhouette) -> &'static str {
+    match silhouette {
+        Silhouette::Kite => THE_NAME,
+        Silhouette::Classic => THE_CLASSIC_NAME,
+    }
+}
 
 /// The nominal sizes every cursor file carries, in pixels.
 ///
@@ -95,7 +109,8 @@ pub fn the_theme(silhouette: Silhouette) -> Result<Theme, NotMade> {
     }
     Ok(Theme {
         index: format!(
-            "[Icon Theme]\nName={THE_NAME}\nComment=alo OS's pointer, drawn from one vector source\n"
+            "[Icon Theme]\nName={}\nComment=alo OS's pointer, drawn from one vector source\n",
+            the_name_of(silhouette)
         ),
         cursors,
         aliases,
