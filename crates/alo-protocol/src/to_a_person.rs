@@ -689,8 +689,13 @@ mod tests {
             "{written}"
         );
         assert_eq!(ToAPerson::read(&written).unwrap(), kept);
+        // **An older daemon's line is this one without the field** — taken off
+        // the written line rather than typed here, so whatever else the wire
+        // carries around it is the wire's own.
+        let older = written.replace(r#","named":"1762516800-42-their-own""#, "");
+        assert!(!older.contains("named"), "{older}");
         assert_eq!(
-            ToAPerson::read(r#"{"a-place-to-return-to":{"kept":true}}"#).unwrap(),
+            ToAPerson::read(&older).unwrap(),
             ToAPerson::APlaceToReturnTo {
                 kept: true,
                 why_not: None,
