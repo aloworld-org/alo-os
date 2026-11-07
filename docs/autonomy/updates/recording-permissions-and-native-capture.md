@@ -1488,3 +1488,63 @@ pinned publisher workflow also passes, including real PulseAudio inputs and
 stopped-clock-provider checks. Complete desktop/OS gates are still running. This test runs
 in the native workflow on subsequent relevant changes; it does not establish
 installed recording cadence or synchronization.
+
+### Installed repeat after scanout reuse
+
+Desktop `1f36f9ef` passes the native workflow, optimized desktop regressions,
+strict checks and the full OS gate. Its executable SHA-256 is
+`0fd1253fb72ee8129a7dcae0bfbf38dad4087c6977570f28d8a3d41e0a73df4f`.
+The installed normal application is package `7dea46f2`, bundle SHA-256
+`adcd8bef984e9810de175cfa735dcd77f9cda2a0ed373854c8653533b5777793`;
+its application source is identical to the application tested at `1f36f9ef`.
+
+Both installed flows now complete capture, stable five-second pause, resume,
+finish, naming, library navigation and native exact-file export. Window clip
+`1794032538-326619305-2` has SHA-256
+`71db8ad192115dc2b64cb6465a767ca6567f1d0e8f79606f0ad94ec5aa04b7e1`;
+its export is `Product demonstration 18.webm`, document grant `27389a9f`.
+It has 19 distinct video frames, 0.536 measured fps and a 4.155-second uncovered
+video gap. Microphone PCM is audible and has a maximum 20 ms uncovered gap, but
+track endings differ by 867 ms. Only four visual markers match, insufficient to
+establish synchronization. Evidence and the failed unchanged acceptance report
+are in `installed-scanout-reuse-window-repeat`.
+
+Screen-only clip `1794032819-682408489-2`, SHA-256
+`d8b0cac0b67656687a808d6c62ce12c050456aa80b9c668629fd37a330d676be`,
+contains exactly one video track and no audio. Its export is
+`Product demonstration 19.webm`, document grant `6dd0e122`. It has 25 distinct
+frames, 1.132 measured fps and a 1.626-second uncovered gap. Its control flow
+passes and media acceptance fails in `installed-scanout-reuse-screen`.
+
+The window fixture uses a non-live audio generator paced by its playback clock;
+the visual marker reads playback position. A one-time independent check passes
+when its owned virtual audio graph is temporarily forced to its native 16 kHz
+rate. The full-flow reference checks still exceed the existing delivery-time
+limit, so they do not establish synchronization acceptance. The forced rate is
+restored to zero after the run, recorded in the evidence; no production audio
+setting or acceptance threshold changes.
+
+Further one-time diagnostics are preserved in
+`native-render-investigation-scanout1f`. GDB samples find software readback copies
+and repeated native sentence shaping. Breakpoint phase timings include material
+debugger overhead and are not treated as production durations. A local syscall
+trace finds 26 atomic calls in about 20 seconds, 226 ms total, 26 ms maximum;
+these do not account for the observed second-long frame periods. Kernel uprobe
+registration is rejected by the guest; its private instance and any owned events
+are removed. All debuggers detach and the temporary forwarding port is closed.
+
+An alternating synthetic copy benchmark is performed once in the VM with
+recording and preview released. Sixteen masked copies take 0.197–0.442 seconds;
+bulk copies take 0.103–0.146 seconds. This saves milliseconds per frame and does
+not, by itself, explain the recording gaps. No pixel-format contract changes
+are made on that evidence.
+
+The next candidate caches fully shaped native sentences by full text, wrapping
+width, font metrics, background and ink. It retains at most 128 entries and
+4 MiB of pixel/key allocation, skips text over 4 KiB and outputs over 256 KiB,
+and returns independent owned pixels. Its font-match allocation identifies the
+font database: cosmic-text replaces that owner after `db_mut`, and a new font
+system has its own owner. Locale also invalidates the cache. Rich text and
+terminal runs keep their existing renderer. Added tests cover actual pixel
+equivalence, dimensions, scripts, font invalidation, independent returned pixels,
+eviction and retention limits. CI and installed verification are pending.

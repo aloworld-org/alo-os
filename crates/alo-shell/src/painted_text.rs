@@ -127,6 +127,7 @@ pub(crate) fn alos_own_mono_at<'a>(
 }
 
 /// Text shaped and inked into its own box, not yet placed.
+#[derive(Clone)]
 pub(crate) struct Shaped {
     /// The box's width.
     pub(crate) width_of_box: i32,
@@ -222,10 +223,15 @@ pub(crate) fn sentence(
     ground: [u8; 3],
     ink: [u8; 3],
 ) -> Shaped {
-    let mut buffer = a_wrapping_buffer(fonts, width, metrics);
-    buffer.set_text(fonts, text, &alos_own_text(), Shaping::Advanced);
-    measured_and_inked(fonts, &mut buffer, width, ground, ink)
+    sentence_cache::with(fonts, text, width, metrics, ground, ink, |fonts| {
+        let mut buffer = a_wrapping_buffer(fonts, width, metrics);
+        buffer.set_text(fonts, text, &alos_own_text(), Shaping::Advanced);
+        measured_and_inked(fonts, &mut buffer, width, ground, ink)
+    })
 }
+
+#[path = "sentence_cache.rs"]
+mod sentence_cache;
 
 /// A sentence written in runs, each with its own face, weight or size,
 /// wrapped to `width` as one paragraph.
