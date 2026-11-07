@@ -1,5 +1,5 @@
 //! Native pixels this crate draws itself: flat shapes and inked text, and
-//! painting them into a frame one run of equal pixels at a time.
+//! painting disjoint runs into a frame in bounded colour batches.
 //!
 //! Shared by every native surface that is laid out in owned pixels rather than
 //! imported from a client — the sign-in screen and the egress indicator — so

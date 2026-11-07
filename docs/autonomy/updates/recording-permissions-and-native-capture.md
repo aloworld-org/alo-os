@@ -10,22 +10,20 @@ typed agent actions are implemented. The installed Flatpak is source
 `7dea46f2`, SHA-256
 `adcd8bef984e9810de175cfa735dcd77f9cda2a0ed373854c8653533b5777793`.
 Dedicated native CI covers formatting, Clippy, 28 application tests, the real
-GTK recording flow and the pinned native publisher cases. At desktop `1f36f9ef`,
-installed screen and window/microphone walks complete recording, stable
-five-second pause, resume, naming, library review and exact-file export. Those
-controls do not establish continuous or synchronized media: that screen repeat
-measures 1.132 fps with a 1.626-second uncovered gap, and the window repeat measures
-0.536 fps with a 4.155-second gap. Audio is audible but synchronization remains
-unverified. These are one-time installed measurements, preserved below.
+GTK recording flow and the pinned native publisher cases. The latest installed
+repeat uses desktop `a46144c1`, with native, optimized desktop, strict and full
+OS checks passing. Both screen and window/microphone flows complete recording,
+stable five-second pause, resume, naming, library review and exact-file export.
+Screen video measures 1.436 fps with a 1.830-second uncovered gap; window video
+measures 1.053 fps with a 1.679-second gap. Window PCM is audible without measured
+gaps, and track endings differ by 95 ms. The independent reference fails, and
+visual marker matches are insufficient, so synchronization remains unverified.
+These are one-time installed measurements, preserved below. Neither video
+passes the unchanged 5 fps continuity requirement.
 
-The current compositor candidate, `c7400bc8`, adds bounded native sentence reuse
-after diagnostic stacks found repeated text shaping. Its native workflow,
-optimized desktop regressions, strict checks and full hosted OS gate pass.
-Its installed window/microphone repeat fails before active recording with
-microphone sample loss and no encoded video. Its screen-only repeat completes
-the control flow and exact export but measures 0.910 fps with a 2.197-second gap.
-No installed performance improvement is established. Studio's application
-source is unchanged from the installed package. The agent permission walk
+The next candidate reuses bounded, detached CPU scratch images in software
+desktop painters. Its checks and installed repeat are pending. Studio's
+application source is unchanged from the installed package. The agent permission walk
 separately verifies live discovery, one approved execution, immediate revocation
 and refusal; other applications must expose their own typed adapters.
 The review remains a draft with no market publication, and
@@ -1604,7 +1602,10 @@ output because the desktop's PAM session changes its journal attribution.
 The process-name query recovers the logs. About 2.88 million calls occur over
 399 seconds in the idle desktop. The reported full-output dimensions are the
 backend's composite extent, not proof that every call copies the whole output:
-Smithay clips these operations to each supplied damage region.
+Smithay clips these operations to each supplied damage region. The hook makes
+two thread-CPU clock reads per call. That added syscall load materially affects
+timings, so the call count is diagnostic evidence, not a native frame-rate or
+uninstrumented CPU-cost measurement.
 
 Native opaque text currently submits each horizontal run separately. The next
 candidate groups disjoint runs of the same colour within one image, submits at
@@ -1616,9 +1617,12 @@ flushing, immediate failure propagation and the actual software renderer with
 overlapping images. The native workflow runs these checks on future changes.
 CI and installed verification of this candidate are pending.
 
-An independent kernel counter sample finds 102,502 minor faults and 11.39 seconds
-of main-thread kernel CPU time over 15.27 seconds. Temporary allocator settings
-are explored separately. The first comparison overlaps startup and is rejected;
+While this hook is active, a kernel counter sample finds 102,502 minor faults
+and 11.39 seconds of main-thread kernel CPU time over 15.27 seconds. The added
+clock syscalls mean this cannot establish the normal compositor's kernel cost.
+Temporary allocator settings are explored separately after removing the hook;
+the instrumentation change also prevents a causal before/after comparison.
+The first allocator comparison overlaps startup and is rejected;
 another sample pauses the parent validation but misses compiler children, so
 it is not treated as a quiet-host performance result. The parent is resumed
 after 28 seconds, recorded with its process identity. No allocator improvement
@@ -1628,3 +1632,49 @@ normal desktop services restart, and no allocator setting is added to the OS.
 Integrating main `6d93b3b4` retains both the capture-protocol and pointer-setting
 dependencies and both capability amendments. Main has assigned ADR 0147 to the
 screen road, so the draft recording decision and its references become ADR 0148.
+
+### Installed pixel-run batching repeat and scratch-image follow-up
+
+Desktop `a46144c1`, executable SHA-256
+`b46026314a406e6cc1f194912e41553e0b1220ec2a03bb7e9f7561acc99190ab`,
+passes native recording, optimized desktop, strict checks and the full OS gate.
+Its one-time installed repeat uses the unchanged normal Studio package. With
+the person's explicit approval, the other validation's Cargo process is stopped
+before it starts a test binary; process identities and states are checked before
+recording. No host compiler runs during either flow. The validation is resumed
+after cleanup, recorded from 11:00:50 to 11:16:30 UTC on 7 November 2026.
+Its build lock is retained throughout by its original owner. A separate timed
+resumption safeguard does not fire.
+
+Screen clip `1794049504-496662537-2`, SHA-256
+`baffdae4391cf9e24a12d25830c6a7de238817d1c316aaaf596041649375a16a`,
+contains 34 distinct frames and exactly one video track without audio. Its
+export is `Product demonstration 21.webm`, document grant `ff63078c`. Its 1.436
+measured fps and 1.830-second uncovered gap fail media acceptance despite a
+complete control flow. Evidence is in `installed-pixel-run-screen`.
+
+Window clip `1794049967-124983050-2`, SHA-256
+`96bd5359d400edddf5dcced02b1a07ca96edba5930ceecd87e27ac96599bf142`,
+contains 31 distinct video frames and 29.540 seconds of audible 16 kHz mono PCM,
+with no measured uncovered audio gaps or meaningful overlap. Its export is
+`Product demonstration 22.webm`, document grant `3c9a50b0`. Its 1.053 measured fps
+and 1.679-second uncovered gap fail video acceptance. Track endings differ by
+95 ms, but only one visual marker matches and the reference checks fail, so
+those endings do not establish synchronization. Evidence is in
+`installed-pixel-run-window`; no acceptance threshold changes.
+
+The next candidate retains at most two detached pixman scratch images, with
+64 MiB total retained stride allocation, plus one checked-out image while
+painting. Only software desktop constructors opt in. Other callers retain
+immediate retirement. The renderer target borrow ends before an image returns
+to the pool, and readback still exports independent owned pixels. A failed
+frame can return scratch storage, but a later successful desktop or window
+paint clears its full output before drawing. This makes the existing promise
+of software rendering true with fewer repeated image allocations; it adds no
+capability. No engine patch or unsafe access is introduced.
+
+Regressions check exact dimensions and exclusive ownership, two-image eviction,
+actual stride-byte limits, oversized-image bypass, full clearing after refusal,
+scratch identity reuse and immutable earlier snapshots. The Studio workflow
+also starts for shell and desktop changes so these checks and the installable
+artifact are regenerated. CI and installed verification are pending.

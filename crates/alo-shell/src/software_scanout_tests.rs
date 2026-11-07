@@ -105,6 +105,60 @@ fn the_sign_in_screen_is_drawn_into_the_bytes_a_display_would_scan_out() {
 }
 
 #[test]
+fn reusable_scratch_images_clear_old_pixels_and_preserve_published_snapshots()
+-> Result<(), Box<dyn std::error::Error>> {
+    let size = (8, 4);
+    let mut painter = SoftwarePainter::new()?;
+    assert!(
+        painter.frames.is_none(),
+        "other callers keep immediate retirement"
+    );
+    painter = painter.with_reusable_frames();
+    let draw = |painter: &mut SoftwarePainter, screen: &SignInPicture| {
+        painter.paint(
+            extent(size),
+            &[],
+            &[],
+            &Cursor::Default,
+            only(NativeScene::SignIn(screen)),
+            alo_canvas::Camera::new(),
+        )
+    };
+    let (first, _) = draw(&mut painter, &a_screen(size))?;
+    let saved = first.pixels().to_vec();
+    let pool = painter.frames.as_mut().ok_or("reuse is disabled")?;
+    let scratch = pool
+        .take(size)
+        .ok_or("the painted image was not retained")?;
+    let identity = scratch.as_ptr();
+    pool.put(scratch);
+
+    assert!(draw(&mut painter, &a_screen((7, 4))).is_err());
+    let next = SignInPicture {
+        size,
+        surface: None,
+        solids: vec![Solid {
+            area: Rectangle::from_size(size.into()),
+            colour: [70, 80, 90],
+        }],
+        inked: Vec::new(),
+        controls: Vec::new(),
+    };
+    let (second, _) = draw(&mut painter, &next)?;
+    assert_eq!(first.pixels(), saved);
+    for pixel in second.pixels().as_chunks::<4>().0 {
+        assert_eq!(pixel, &[90, 80, 70, 0]);
+    }
+    let scratch = painter
+        .frames
+        .as_mut()
+        .and_then(|pool| pool.take(size))
+        .ok_or("the scratch image was lost after refusal")?;
+    assert_eq!(scratch.as_ptr(), identity);
+    Ok(())
+}
+
+#[test]
 fn the_arrow_is_drawn_above_the_screen_it_points_at() {
     let size = (16, 16);
     let screen = a_screen(size);

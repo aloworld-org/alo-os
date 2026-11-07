@@ -616,7 +616,7 @@ impl crate::DirectSession {
                 let output = every.remove(0);
                 poll()?;
                 let (width, height) = output.output.mode.size();
-                let painter = crate::software_scanout::SoftwarePainter::new()?;
+                let painter = crate::software_scanout::SoftwarePainter::new()?.with_reusable_frames();
                 // **A painter each, because a `Target` owns its painter**, and
                 // a borrow each of the one descriptor, which is what
                 // `Inventory` is. A display whose painter cannot be made is
@@ -626,7 +626,7 @@ impl crate::DirectSession {
                 let others = every
                     .into_iter()
                     .filter_map(|output| {
-                        let painter = crate::software_scanout::SoftwarePainter::new().ok()?;
+                        let painter = crate::software_scanout::SoftwarePainter::new().ok()?.with_reusable_frames();
                         Some(crate::direct_target::Target::new(
                             painter,
                             crate::drm_inventory::Inventory(fd),
