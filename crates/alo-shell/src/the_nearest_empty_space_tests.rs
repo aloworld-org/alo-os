@@ -31,7 +31,11 @@ fn found(
 
 /// The new window, grown by the gap, overlaps nothing open — the owner's
 /// *without covering any window*, with the gap rule 3 keeps.
-fn covers_nothing(at: Point<i32, Logical>, wanted: Size<i32, Logical>, open: &[Rectangle<i32, Logical>]) -> bool {
+fn covers_nothing(
+    at: Point<i32, Logical>,
+    wanted: Size<i32, Logical>,
+    open: &[Rectangle<i32, Logical>],
+) -> bool {
     let grown = rect(
         at.x - THE_GAP,
         at.y - THE_GAP,
@@ -84,9 +88,18 @@ fn a_full_view_glides_to_the_nearest_space_and_covers_nothing() {
     let (view, open) = a_full_view();
     let wanted = size(640, 480);
     let it = found(view, &open, wanted, Direction::LeftToRight);
-    assert!(it.the_view_moves(view.loc), "the view was full and did not move");
-    assert!(covers_nothing(it.window, wanted, &open), "it covers a window: {it:?}");
-    assert!(is_shown(it, wanted, view.size), "the space is not in the view it glides to");
+    assert!(
+        it.the_view_moves(view.loc),
+        "the view was full and did not move"
+    );
+    assert!(
+        covers_nothing(it.window, wanted, &open),
+        "it covers a window: {it:?}"
+    );
+    assert!(
+        is_shown(it, wanted, view.size),
+        "the space is not in the view it glides to"
+    );
     assert_eq!(
         it.window.y,
         16 - THE_GAP - wanted.h,
@@ -110,7 +123,11 @@ fn beside_the_desk_the_tie_goes_the_way_a_reader_goes() {
     let rightwards = found(view, &open, wanted, Direction::LeftToRight);
     assert_eq!(rightwards.window.x, 1424 + THE_GAP, "not to the right");
     let leftwards = found(view, &open, wanted, Direction::RightToLeft);
-    assert_eq!(leftwards.window.x, 16 - THE_GAP - wanted.w, "not to the left");
+    assert_eq!(
+        leftwards.window.x,
+        16 - THE_GAP - wanted.w,
+        "not to the left"
+    );
     for it in [rightwards, leftwards] {
         assert!(covers_nothing(it.window, wanted, &open));
         assert!(is_shown(it, wanted, view.size));
@@ -145,13 +162,23 @@ fn a_full_place_at_the_edge_of_the_plane_finds_space_still_on_it() {
     let open: Vec<_> = a_full_view()
         .1
         .into_iter()
-        .map(|it| rect(it.loc.x + view.loc.x, it.loc.y + view.loc.y, it.size.w, it.size.h))
+        .map(|it| {
+            rect(
+                it.loc.x + view.loc.x,
+                it.loc.y + view.loc.y,
+                it.size.w,
+                it.size.h,
+            )
+        })
         .collect();
     let wanted = size(640, 480);
     let it = found(view, &open, wanted, Direction::LeftToRight);
     assert!(it.window.x >= -furthest && it.window.y >= -furthest);
     assert!(it.view.x >= -furthest && it.view.y >= -furthest);
-    assert!(it.window.y > view.loc.y, "it did not go down, away from the edge: {it:?}");
+    assert!(
+        it.window.y > view.loc.y,
+        "it did not go down, away from the edge: {it:?}"
+    );
     assert!(covers_nothing(it.window, wanted, &open));
     assert!(is_shown(it, wanted, view.size));
 }
@@ -168,7 +195,10 @@ fn a_space_inside_what_show_all_can_reach_is_found() {
     let it = the_nearest_empty_space(view, &open, wanted, &[], reach, Direction::LeftToRight)
         .unwrap_or_else(|| unreachable!("there is room above, inside the reach"));
     assert!(covers_nothing(it.window, wanted, &open));
-    assert!(it.window.y + wanted.h + THE_GAP <= 16, "it is not above the desk: {it:?}");
+    assert!(
+        it.window.y + wanted.h + THE_GAP <= 16,
+        "it is not above the desk: {it:?}"
+    );
 }
 
 /// **The refusal**: one unit less reach, and nothing fits anywhere — so there
@@ -179,7 +209,14 @@ fn a_place_full_to_the_edge_of_the_reach_has_no_space() {
     let (view, open) = a_full_view();
     let reach = Some(size(1408, 1423));
     assert_eq!(
-        the_nearest_empty_space(view, &open, size(640, 480), &[], reach, Direction::LeftToRight),
+        the_nearest_empty_space(
+            view,
+            &open,
+            size(640, 480),
+            &[],
+            reach,
+            Direction::LeftToRight
+        ),
         None,
         "a space was found outside what Show all can bring back"
     );
@@ -196,17 +233,35 @@ fn ten_openings_in_a_row_cover_nothing_and_stay_within_reach() {
     let reach = size(28_800, 19_200);
     let mut looking = view;
     for _ in 0..10 {
-        let it = the_nearest_empty_space(looking, &open, wanted, &[], Some(reach), Direction::LeftToRight)
-            .unwrap_or_else(|| unreachable!("a space within reach"));
-        assert!(covers_nothing(it.window, wanted, &open), "{it:?} covers a window");
+        let it = the_nearest_empty_space(
+            looking,
+            &open,
+            wanted,
+            &[],
+            Some(reach),
+            Direction::LeftToRight,
+        )
+        .unwrap_or_else(|| unreachable!("a space within reach"));
+        assert!(
+            covers_nothing(it.window, wanted, &open),
+            "{it:?} covers a window"
+        );
         assert!(is_shown(it, wanted, view.size));
         open.push(Rectangle::new(it.window, wanted));
         looking = Rectangle::new(it.view, view.size);
     }
     let left = open.iter().map(|it| it.loc.x).min().unwrap_or_default();
-    let right = open.iter().map(|it| it.loc.x + it.size.w).max().unwrap_or_default();
+    let right = open
+        .iter()
+        .map(|it| it.loc.x + it.size.w)
+        .max()
+        .unwrap_or_default();
     let top = open.iter().map(|it| it.loc.y).min().unwrap_or_default();
-    let bottom = open.iter().map(|it| it.loc.y + it.size.h).max().unwrap_or_default();
+    let bottom = open
+        .iter()
+        .map(|it| it.loc.y + it.size.h)
+        .max()
+        .unwrap_or_default();
     assert!(right - left <= reach.w && bottom - top <= reach.h);
 }
 
@@ -221,9 +276,19 @@ fn a_space_whose_handle_would_be_under_a_fixed_control_is_passed_over() {
     // A control across the whole top of the screen, deep enough to cover the
     // handle wherever a window sits one gap in from the view's top.
     let top_controls = [rect(view.loc.x, view.loc.y, view.size.w, THE_GAP + 24)];
-    let it = the_nearest_empty_space(view, &open, wanted, &top_controls, None, Direction::LeftToRight)
-        .unwrap_or_else(|| unreachable!("a space with its handle clear"));
-    assert_ne!(it, unhindered, "the control: the unhindered space has its handle under the bar");
+    let it = the_nearest_empty_space(
+        view,
+        &open,
+        wanted,
+        &top_controls,
+        None,
+        Direction::LeftToRight,
+    )
+    .unwrap_or_else(|| unreachable!("a space with its handle clear"));
+    assert_ne!(
+        it, unhindered,
+        "the control: the unhindered space has its handle under the bar"
+    );
     let moved_by = (it.view.x - view.loc.x, it.view.y - view.loc.y);
     let bar_then = rect(
         top_controls[0].loc.x + moved_by.0,
@@ -232,7 +297,11 @@ fn a_space_whose_handle_would_be_under_a_fixed_control_is_passed_over() {
         top_controls[0].size.h,
     );
     let handle = rect(it.window.x, it.window.y, 44, 24);
-    assert_ne!(bar_then.intersection(handle), Some(handle), "the handle is under the bar");
+    assert_ne!(
+        bar_then.intersection(handle),
+        Some(handle),
+        "the handle is under the bar"
+    );
     assert!(covers_nothing(it.window, wanted, &open));
 }
 
@@ -256,7 +325,11 @@ fn a_window_larger_than_the_view_is_shown_from_its_handle() {
 #[test]
 fn an_empty_window_or_an_empty_view_has_no_space() {
     let (view, open) = a_full_view();
-    for (view, wanted) in [(view, size(0, 480)), (view, size(640, -1)), (rect(0, 0, 0, 960), size(640, 480))] {
+    for (view, wanted) in [
+        (view, size(0, 480)),
+        (view, size(640, -1)),
+        (rect(0, 0, 0, 960), size(640, 480)),
+    ] {
         assert_eq!(
             the_nearest_empty_space(view, &open, wanted, &[], None, Direction::LeftToRight),
             None
@@ -343,7 +416,10 @@ fn the_search_agrees_with_walking_every_position_at_every_display_size() {
                     }
                 }
             }
-            assert!(covers_nothing(it.window, wanted, &open), "{it:?} covers a window");
+            assert!(
+                covers_nothing(it.window, wanted, &open),
+                "{it:?} covers a window"
+            );
             assert_eq!(
                 cost(it.window.x, it.window.y),
                 best,
@@ -351,7 +427,10 @@ fn the_search_agrees_with_walking_every_position_at_every_display_size() {
                  the walk found, for {open:?}"
             );
             assert_eq!(
-                (i64::from(it.view.x - view.loc.x), i64::from(it.view.y - view.loc.y)),
+                (
+                    i64::from(it.view.x - view.loc.x),
+                    i64::from(it.view.y - view.loc.y)
+                ),
                 (
                     travel(view.loc.x, w, it.window.x, wanted.w),
                     travel(view.loc.y, h, it.window.y, wanted.h)

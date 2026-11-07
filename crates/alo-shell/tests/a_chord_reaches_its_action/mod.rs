@@ -142,9 +142,16 @@ fn the_zoom_chords_pressed_as_keys_zoom_out_in_and_back() {
     assert!(!press(&f, SUPER), "a modifier alone is not a chord");
     assert!(with_super(&f, MINUS), "⊞+Minus reached a client");
     assert_eq!(zoom(&f), 700, "⊞+Minus did not step out one rung");
-    assert!(with_super(&f, NUMPAD_PLUS), "⊞ and numpad plus reached a client");
+    assert!(
+        with_super(&f, NUMPAD_PLUS),
+        "⊞ and numpad plus reached a client"
+    );
     assert!(with_super(&f, NUMPAD_PLUS));
-    assert_eq!(zoom(&f), 1500, "⊞ and numpad plus did not step in a rung each");
+    assert_eq!(
+        zoom(&f),
+        1500,
+        "⊞ and numpad plus did not step in a rung each"
+    );
     assert!(with_super(&f, DIGIT1), "⊞+1 reached a client");
     assert_eq!(zoom(&f), 1000, "⊞+1 did not come back to 100 %");
     release(&f, SUPER);

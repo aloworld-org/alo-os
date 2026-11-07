@@ -751,7 +751,11 @@ fn the_no_room_choice_is_kept_each_way_and_read_back_at_sign_in() {
         written.contains("when_there_is_no_room = \"GlideToEmptySpace\""),
         "the file does not say the choice by name: {written}"
     );
-    assert_eq!(door.knocks.get(), 0, "a window choice knocked on the daemon");
+    assert_eq!(
+        door.knocks.get(),
+        0,
+        "a window choice knocked on the daemon"
+    );
 }
 
 /// **The dock changes nothing `alo-dock` would not.**

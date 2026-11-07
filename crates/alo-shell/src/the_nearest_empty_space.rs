@@ -157,12 +157,12 @@ pub(crate) fn the_nearest_empty_space(
     candidates.into_iter().find_map(|(_, x, y)| {
         let window = Rectangle::new(Point::from((x, y)), wanted);
         let shown_from = Point::from((
-            view.loc
-                .x
-                .checked_add(i32::try_from(how_far_the_view_moves(view.loc.x, view.size.w, x, wanted.w)).ok()?)?,
-            view.loc
-                .y
-                .checked_add(i32::try_from(how_far_the_view_moves(view.loc.y, view.size.h, y, wanted.h)).ok()?)?,
+            view.loc.x.checked_add(
+                i32::try_from(how_far_the_view_moves(view.loc.x, view.size.w, x, wanted.w)).ok()?,
+            )?,
+            view.loc.y.checked_add(
+                i32::try_from(how_far_the_view_moves(view.loc.y, view.size.h, y, wanted.h)).ok()?,
+            )?,
         ));
         (is_on_the_plane(window, shown_from, view.size)
             && touches_nothing(window, open)
@@ -312,10 +312,7 @@ fn the_handle_is_not_buried(
         window.loc,
         Size::from((A_HANDLE.0.min(window.size.w), A_HANDLE.1.min(window.size.h))),
     );
-    let (across, down) = (
-        then.x.saturating_sub(now.x),
-        then.y.saturating_sub(now.y),
-    );
+    let (across, down) = (then.x.saturating_sub(now.x), then.y.saturating_sub(now.y));
     !fixed.iter().any(|control| {
         let moved = Rectangle::new(
             Point::from((

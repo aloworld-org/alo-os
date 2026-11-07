@@ -507,6 +507,8 @@ pub mod the_bar_finds;
 mod the_bars_pressable_slots;
 mod the_bars_seat;
 pub mod the_cards_words;
+/// Where a new window goes when there is no room, as the person chose.
+mod the_choice_when_there_is_no_room;
 /// What a task window says when closing a running task asks.
 pub mod the_closing_words;
 /// The Dock's composer as a field a person types a request into.
@@ -520,16 +522,14 @@ mod the_edge_takes_the_keyboard;
 /// The egress indicator's two arrows, from the design file's SVG.
 mod the_egress_indicators_arrows;
 mod the_first_account;
-/// The record drawn as a window on the canvas, for one frame.
-mod the_record_drawn_on_the_canvas;
-/// The view travelling to a window of alo's rather than the window moving.
-mod the_view_travels_to_a_window;
-/// The view gliding, or jumping where less motion was asked for.
-mod the_view_glides;
 /// The nearest empty space on a Place for a window with no room in view.
 mod the_nearest_empty_space;
-/// Where a new window goes when there is no room, as the person chose.
-mod the_choice_when_there_is_no_room;
+/// The record drawn as a window on the canvas, for one frame.
+mod the_record_drawn_on_the_canvas;
+/// The view gliding, or jumping where less motion was asked for.
+mod the_view_glides;
+/// The view travelling to a window of alo's rather than the window moving.
+mod the_view_travels_to_a_window;
 /// Every window on the Place being looked at, for a new one to be placed beside.
 mod the_windows_on_this_place;
 pub use the_first_account::{ASecret, OnTheSheet, TheAccountSheet, TheAccountShown};

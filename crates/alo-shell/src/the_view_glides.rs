@@ -82,8 +82,11 @@ impl TheGlide {
             let at = f64::from(from) + moved.round();
             at as i32
         };
-        let at = At::checked(between(self.from.x, self.to.x), between(self.from.y, self.to.y))
-            .unwrap_or(self.to);
+        let at = At::checked(
+            between(self.from.x, self.to.x),
+            between(self.from.y, self.to.y),
+        )
+        .unwrap_or(self.to);
         (at, false)
     }
 

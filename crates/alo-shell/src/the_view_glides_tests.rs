@@ -30,17 +30,31 @@ fn at(x: i32, y: i32) -> At {
 /// same moment, and neither has ended a moment before.
 #[test]
 fn a_glide_lasts_the_same_however_far_it_goes() {
-    for (far, named) in [(at(40, 0), "a-short-glide"), (at(90_000, -60_000), "a-long-glide")] {
+    for (far, named) in [
+        (at(40, 0), "a-short-glide"),
+        (at(90_000, -60_000), "a-long-glide"),
+    ] {
         let (_directory, mut server) = server(named);
         let began = Instant::now();
-        assert!(server.the_view_glides_to(far, began), "the control: it moves");
+        assert!(
+            server.the_view_glides_to(far, began),
+            "the control: it moves"
+        );
         assert!(server.the_view_is_gliding());
-        assert_eq!(server.the_camera().at(), At::origin(), "it jumped before the first frame");
+        assert_eq!(
+            server.the_camera().at(),
+            At::origin(),
+            "it jumped before the first frame"
+        );
         assert!(
             server.the_glide_moves_on(began + THE_GLIDE_LASTS / 2),
             "it ended before its time"
         );
-        assert_ne!(server.the_camera().at(), far, "it arrived halfway through its time");
+        assert_ne!(
+            server.the_camera().at(),
+            far,
+            "it arrived halfway through its time"
+        );
         assert!(
             server.the_glide_moves_on(began + THE_GLIDE_LASTS - Duration::from_millis(1)),
             "it ended before its time"
@@ -65,13 +79,27 @@ fn a_glide_passes_between_and_eases_in_and_out() {
     assert!(server.the_view_glides_to(to, began));
     assert!(server.the_glide_moves_on(began + THE_GLIDE_LASTS / 10));
     let early = server.the_camera().at().x;
-    assert!(early > 0 && early < 100, "a tenth of the time went {early} of 1000");
+    assert!(
+        early > 0 && early < 100,
+        "a tenth of the time went {early} of 1000"
+    );
     assert!(server.the_glide_moves_on(began + THE_GLIDE_LASTS / 2));
-    assert_eq!(server.the_camera().at().x, 500, "half the time is not half the way");
+    assert_eq!(
+        server.the_camera().at().x,
+        500,
+        "half the time is not half the way"
+    );
     assert!(server.the_glide_moves_on(began + THE_GLIDE_LASTS * 9 / 10));
     let late = server.the_camera().at().x;
-    assert!(late > 900 && late < 1000, "nine tenths of the time went {late}");
-    assert_eq!(server.the_camera().zoom(), alo_canvas::Zoom::LIFE_SIZE, "the view zoomed");
+    assert!(
+        late > 900 && late < 1000,
+        "nine tenths of the time went {late}"
+    );
+    assert_eq!(
+        server.the_camera().zoom(),
+        alo_canvas::Zoom::LIFE_SIZE,
+        "the view zoomed"
+    );
     assert!((eased(0.0)).abs() < f64::EPSILON && (eased(1.0) - 1.0).abs() < f64::EPSILON);
 }
 
@@ -84,7 +112,10 @@ fn with_reduced_motion_the_view_jumps() {
     let to = at(2400, 300);
     assert!(server.the_view_glides_to(to, Instant::now()));
     assert_eq!(server.the_camera().at(), to, "it did not jump");
-    assert!(!server.the_view_is_gliding(), "it glides with less motion asked for");
+    assert!(
+        !server.the_view_is_gliding(),
+        "it glides with less motion asked for"
+    );
 }
 
 /// **Less motion asked for mid-glide** finishes the glide at once rather than
@@ -112,7 +143,11 @@ fn a_pan_mid_glide_ends_it() {
     let theirs = server.the_camera().at();
     assert!(!server.the_view_is_gliding(), "the glide fought the pan");
     assert!(!server.the_glide_moves_on(began + THE_GLIDE_LASTS));
-    assert_eq!(server.the_camera().at(), theirs, "a later frame moved the view the person put");
+    assert_eq!(
+        server.the_camera().at(),
+        theirs,
+        "a later frame moved the view the person put"
+    );
 }
 
 /// **Going to another Place ends it**: the point it was going to is on the
@@ -122,11 +157,18 @@ fn going_to_another_place_ends_it() {
     let (_directory, mut server) = server("another-place");
     let began = Instant::now();
     assert!(server.the_view_glides_to(at(3000, 0), began));
-    let next = server.the_place_now().next().expect("a Place after this one");
+    let next = server
+        .the_place_now()
+        .next()
+        .expect("a Place after this one");
     server.surfaces.place = next;
     assert!(!server.the_glide_moves_on(began + THE_GLIDE_LASTS / 2));
     assert!(!server.the_view_is_gliding());
-    assert_eq!(server.the_camera().at(), At::origin(), "it moved the view on another Place");
+    assert_eq!(
+        server.the_camera().at(),
+        At::origin(),
+        "it moved the view on another Place"
+    );
 }
 
 /// **Nowhere to go is no glide**, and a window opened mid-glide is placed
@@ -139,5 +181,9 @@ fn a_glide_to_where_the_view_is_does_nothing_and_the_destination_is_known() {
     let to = at(700, -300);
     assert!(server.the_view_glides_to(to, Instant::now()));
     assert_eq!(server.the_camera_after_the_glide().at(), to);
-    assert_eq!(server.the_camera().at(), At::origin(), "the control: it has not moved yet");
+    assert_eq!(
+        server.the_camera().at(),
+        At::origin(),
+        "the control: it has not moved yet"
+    );
 }

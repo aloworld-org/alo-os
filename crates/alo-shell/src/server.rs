@@ -252,7 +252,8 @@ pub struct Server {
     /// Windows the person opened that have not been placed yet
     /// (`crate::a_window_the_person_opened`): the only ones whose placing may
     /// move the view.
-    pub(crate) the_person_opened_these: Vec<smithay::reexports::wayland_server::protocol::wl_surface::WlSurface>,
+    pub(crate) the_person_opened_these:
+        Vec<smithay::reexports::wayland_server::protocol::wl_surface::WlSurface>,
     /// **alo's own terminal**, when a person has opened one.
     ///
     /// Distinct from [`Self::the_terminal`] above, and the pair is worth

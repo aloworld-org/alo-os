@@ -93,7 +93,11 @@ fn the_view(f: &Fixture) -> (i32, i32) {
 fn a_full_view(asked: bool) -> (Fixture, Application, WlSurface) {
     let f = Fixture::keyboard();
     let (editor, root) = mapped(&f, "org.example.Editor");
-    assert_eq!(placed(&f, A_SMALL_VIEW), 1, "the control: the editor was placed");
+    assert_eq!(
+        placed(&f, A_SMALL_VIEW),
+        1,
+        "the control: the editor was placed"
+    );
     assert!(
         f.focus_surface(root.clone()).is_ok(),
         "the control: the editor has the keyboard"
@@ -145,7 +149,11 @@ fn the_persons_window_with_no_room_glides_to_empty_space_with_the_focus() {
         alo_canvas::Zoom::LIFE_SIZE,
         "the view zoomed"
     );
-    assert_eq!(where_it_is(&f, &editor), editor_is, "the editor moved or resized");
+    assert_eq!(
+        where_it_is(&f, &editor),
+        editor_is,
+        "the editor moved or resized"
+    );
     // **The focus**, by rule 8's road for a window the person opened.
     f.backend(|s| s.what_the_person_opened_comes_in_front());
     files.sync();
@@ -164,14 +172,20 @@ fn with_open_in_front_chosen_the_view_stays_and_nothing_glides() {
     f.backend(|s| s.when_there_is_no_room_is(WhenThereIsNoRoom::OpenInFront));
     let (_files, theirs) = mapped(&f, "org.kde.dolphin");
     assert_eq!(placed(&f, A_SMALL_VIEW), 1);
-    assert!(!f.backend(|s| s.the_view_is_gliding()), "it glides when the person chose not to");
+    assert!(
+        !f.backend(|s| s.the_view_is_gliding()),
+        "it glides when the person chose not to"
+    );
     assert_eq!(the_view(&f), (0, 0), "the view moved");
     // The control: the same desk with the default does glide, so this is the
     // choice speaking and not a desk with room.
     let (g, _editor, _root) = a_full_view(true);
     let (_again, glided) = mapped(&g, "org.kde.dolphin");
     assert_eq!(placed(&g, A_SMALL_VIEW), 1);
-    assert!(g.backend(|s| s.the_view_is_gliding()), "the control: the default glides");
+    assert!(
+        g.backend(|s| s.the_view_is_gliding()),
+        "the control: the default glides"
+    );
     assert_ne!(
         where_it_is(&f, &theirs).loc,
         where_it_is(&g, &glided).loc,
@@ -187,7 +201,10 @@ fn with_reduced_motion_the_view_jumps_to_the_empty_space() {
     f.backend(|s| s.the_motion_is_reduced(true));
     let (_files, theirs) = mapped(&f, "org.kde.dolphin");
     assert_eq!(placed(&f, A_SMALL_VIEW), 1);
-    assert!(!f.backend(|s| s.the_view_is_gliding()), "it glides with less motion asked for");
+    assert!(
+        !f.backend(|s| s.the_view_is_gliding()),
+        "it glides with less motion asked for"
+    );
     let files_is = where_it_is(&f, &theirs);
     assert!(!where_it_is(&f, &editor).overlaps(files_is));
     assert!(
@@ -227,7 +244,10 @@ fn with_room_in_view_nothing_glides() {
     assert!(not_started.is_empty());
     let (_files, theirs) = mapped(&f, "org.kde.dolphin");
     assert_eq!(placed(&f, roomy), 1);
-    assert!(!f.backend(|s| s.the_view_is_gliding()), "it glided with room in view");
+    assert!(
+        !f.backend(|s| s.the_view_is_gliding()),
+        "it glided with room in view"
+    );
     assert_eq!(the_view(&f), (0, 0));
     let (editor_is, files_is) = (where_it_is(&f, &editor), where_it_is(&f, &theirs));
     assert_eq!(
