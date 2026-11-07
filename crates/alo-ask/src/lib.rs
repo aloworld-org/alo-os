@@ -121,12 +121,14 @@
 //! `docs/autonomy/the-terminal-in-full-plan.md` — written there as work and a
 //! named block, rather than left here as a justification.
 
+pub mod acting_without_the_ok;
 pub mod answering_or_acting;
 pub mod at_the_agents_door;
 pub mod at_the_daemons_door;
 pub mod beside_an_answer;
 pub mod its_name;
 pub mod saying;
+pub mod what_the_terminal_says;
 pub mod which_model;
 
 pub use at_the_daemons_door::{TheDoor, Unanswered};

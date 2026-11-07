@@ -70,13 +70,21 @@ pub enum NoVocabulary {
     /// happen are the protocol's to word because the door is the protocol's.
     #[error("alo-protocol's words could not be declared: {0}")]
     Protocol(#[from] alo_protocol::WordsError),
+
+    /// `alo-capability`'s, which is what is said in the terminal about acting
+    /// without the OK.
+    ///
+    /// The sixth list, added 2026-11-06 with the switch in Settings → Terminal:
+    /// the sentences sit beside the switch they describe.
+    #[error("alo-capability's words could not be declared: {0}")]
+    Capability(#[from] alo_capability::WordsError),
 }
 
-/// The five lists this command renders from, in one vocabulary.
+/// The six lists this command renders from, in one vocabulary.
 ///
 /// # Errors
 ///
-/// [`NoVocabulary`] if a list could not be declared into it. None of the five
+/// [`NoVocabulary`] if a list could not be declared into it. None of the six
 /// can cause that on its own — each is tested against its own keys in its own
 /// crate — so what this catches is two of them having grown the same key, which
 /// is a thing only a reader of more than one list can find.
@@ -87,6 +95,7 @@ pub fn what_it_can_say() -> Result<Vocabulary, NoVocabulary> {
     alo_models::declare_into(&mut vocabulary)?;
     alo_choosing::declare_into(&mut vocabulary)?;
     alo_protocol::declare_into(&mut vocabulary)?;
+    alo_capability::declare_into(&mut vocabulary)?;
     Ok(vocabulary)
 }
 
@@ -98,8 +107,8 @@ pub fn what_it_can_say() -> Result<Vocabulary, NoVocabulary> {
 mod tests {
     use super::*;
 
-    /// **The five lists go in together.** Each crate proves its own keys are
-    /// distinct; nothing but a reader of all five can prove they are distinct
+    /// **The six lists go in together.** Each crate proves its own keys are
+    /// distinct; nothing but a reader of all six can prove they are distinct
     /// *between* them, and a collision would make one crate's sentence
     /// unreachable from here rather than fail anything.
     ///
@@ -107,18 +116,21 @@ mod tests {
     /// machine began going to the daemon — so `alo-protocol`'s two sentences
     /// about that door became ones this command reads.
     #[test]
-    fn the_five_lists_have_no_key_in_common() {
-        let gathered = what_it_can_say().expect("five lists that agree on no key");
+    fn the_six_lists_have_no_key_in_common() {
+        let gathered = what_it_can_say().expect("six lists that agree on no key");
         let each = alo_asking::EVERY_WORD.len()
             + alo_answering::EVERY_WORD.len()
             + alo_models::words::EVERY_WORD.len()
             + alo_choosing::EVERY_WORD.len()
             + alo_protocol::EVERY_WORD.len()
-            + alo_protocol::EVERY_WORD_ABOUT_THE_DOOR.len();
+            + alo_protocol::EVERY_WORD_ABOUT_THE_DOOR.len()
+            + alo_capability::EVERY_WORD.len()
+            // And its one counted sentence, which goes in beside them.
+            + 1;
         assert_eq!(
             gathered.how_many(),
             each,
-            "the vocabulary holds fewer strings than the five crates declare, so a key is shared"
+            "the vocabulary holds fewer strings than the six crates declare, so a key is shared"
         );
     }
 
@@ -126,8 +138,8 @@ mod tests {
     /// list, so a crate dropped from [`what_it_can_say`] fails here rather than
     /// printing a marked key on a real machine.
     #[test]
-    fn one_sentence_from_each_of_the_five_is_there() {
-        let gathered = what_it_can_say().expect("five lists");
+    fn one_sentence_from_each_of_the_six_is_there() {
+        let gathered = what_it_can_say().expect("six lists");
         for word in [
             alo_asking::words::NOTHING_TO_ASK,
             alo_asking::words::NO_MODEL_NAMED,
@@ -139,6 +151,9 @@ mod tests {
             // or did not finish — the only road to a provider it has.
             alo_protocol::words::NO_SERVICE_TO_ASK_WITH,
             alo_protocol::words::THE_SERVICE_DID_NOT_ANSWER,
+            // What the terminal says once alo acted without the OK.
+            alo_capability::words::DONE_WITHOUT_ASKING,
+            alo_capability::words::NOT_DONE_IT_WAS_SWITCHED_OFF,
         ] {
             assert!(
                 gathered.phrase(&word.key()).is_some(),

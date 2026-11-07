@@ -174,6 +174,20 @@ pub const LEVEL_NOT_WRITTEN_DOWN: Word = Word::saying(
      whatever was chosen before is still in force.",
 );
 
+/// `in-the-terminal` says a word that is neither of its two.
+pub const LEVEL_NOT_A_TERMINAL_ANSWER: Word = Word::saying(
+    "remembering.level.not-a-terminal-answer",
+    "{path} says {said} for the terminal, which is neither asking-each-time nor at-full-trust, so \
+     this machine does not know how you want alo to act",
+)
+.noting(
+    "{path} and {said} are both taken from the file exactly as written and are never translated, \
+     and neither are the two words asking-each-time and at-full-trust: they are what the file \
+     holds. Said of the line that decides whether what the person asks alo for in the terminal \
+     runs without their OK. Nothing is guessed at; until it is fixed, alo in the terminal asks \
+     first.",
+);
+
 /// The file could not be written.
 pub const LEVEL_NOT_WRITTEN: Word = Word::saying(
     "remembering.level.not-written",
@@ -186,13 +200,14 @@ pub const LEVEL_NOT_WRITTEN: Word = Word::saying(
 );
 
 /// Every word this crate can say.
-pub const EVERY_WORD: [Word; 10] = [
+pub const EVERY_WORD: [Word; 11] = [
     LEVEL_A_LINK,
     LEVEL_NOT_READ,
     LEVEL_SOMEBODY_ELSES,
     LEVEL_WRITABLE_BY_OTHERS,
     LEVEL_SAYS_NOTHING,
     LEVEL_NO_SUCH_LEVEL,
+    LEVEL_NOT_A_TERMINAL_ANSWER,
     LEVEL_NOT_THE_SHAPE,
     LEVEL_FROM_A_NEWER_ALO_OS,
     LEVEL_NOT_WRITTEN_DOWN,

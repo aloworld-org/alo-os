@@ -141,9 +141,12 @@ pub const RUNNING_CODE_IS: Word = Word::saying(
 /// What the terminal page is about.
 pub const TERMINAL_IS: Word = Word::saying(
     "settings.page.terminal",
-    "Two things alo can do in your terminal. Each one is switched on by you, and says what it changes.",
+    "What alo can do in your terminal. Each one is switched on by you, and says what it changes.",
 )
-.noting("Under the heading of the Terminal page. alo is the assistant's name.");
+.noting(
+    "Under the heading of the Terminal page. alo is the assistant's name. The design drew \
+     'Two things' when there were two; there are three since 2026-11-06.",
+);
 
 /// What the appearance page is about.
 pub const APPEARANCE_IS: Word = Word::saying(
@@ -364,7 +367,7 @@ pub const STAYS_ON: Word = Word::saying("settings.section.stays-on", "Stays on a
 /// The heading over the terminal's two switches.
 pub const IN_THE_TERMINAL: Word =
     Word::saying("settings.section.in-the-terminal", "In the terminal")
-        .noting("A heading over two things alo can do in the terminal. Sentence case.");
+        .noting("A heading over the things alo can do in the terminal. Sentence case.");
 
 /// The heading over the accent colours.
 pub const LOOK: Word = Word::saying("settings.section.look", "Look")
@@ -456,6 +459,28 @@ pub const HOW_ALO_RUNS_CODE_IS: Word = Word::saying(
     "In a sealed box, after asking you, or straight away. Set in Running code.",
 )
 .noting("Under the row that opens the Running code page. Running code is that page's name.");
+
+/// Let alo act without asking: the switch on the Terminal page.
+pub const ACT_WITHOUT_ASKING: Word = Word::saying(
+    "settings.terminal.act-without-asking",
+    "Let alo act without asking",
+)
+.noting(
+    "A switch on the Terminal page. When it is on, what the person asks alo for in the terminal \
+     is done without waiting for their OK. alo is the assistant. Sentence case.",
+);
+
+/// What the switch changes, under its name.
+pub const ACT_WITHOUT_ASKING_IS: Word = Word::saying(
+    "settings.terminal.act-without-asking.is",
+    "What you ask alo for in the terminal runs without waiting for your OK. Only the terminal: \
+     anywhere else, alo still asks. The record, Put back and the indicator stay on.",
+)
+.noting(
+    "Under the switch that lets alo act without asking in the terminal. Put back is the name of \
+     the action that undoes what alo did, and the indicator is the one that shows something \
+     leaving the computer; use the same words your translation uses for them.",
+);
 
 /// Accent colour.
 pub const ACCENT_COLOUR: Word = Word::saying("settings.appearance.accent", "Accent colour")
@@ -759,7 +784,7 @@ pub const AS_A_PERCENTAGE: Word = Word::saying("settings.access.percent", "{perc
 /// The length is written out so that adding a word above and forgetting it
 /// here does not compile — a word declared and left out of this list reaches a
 /// person as its own key.
-pub const THE_WINDOWS_WORDS: [Word; 106] = [
+pub const THE_WINDOWS_WORDS: [Word; 108] = [
     SETTINGS,
     EVERYTHING_IN_ONE_PLACE,
     THE_GROUP_ALO,
@@ -825,6 +850,8 @@ pub const THE_WINDOWS_WORDS: [Word; 106] = [
     RELATED,
     HOW_ALO_RUNS_CODE,
     HOW_ALO_RUNS_CODE_IS,
+    ACT_WITHOUT_ASKING,
+    ACT_WITHOUT_ASKING_IS,
     ACCENT_COLOUR,
     ACCENT_COLOUR_IS,
     THE_ACCENT_NOTE,

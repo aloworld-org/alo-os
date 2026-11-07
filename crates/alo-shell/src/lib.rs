@@ -118,6 +118,7 @@ mod a_task_windows_edge;
 mod a_wheel_over_a_sheet;
 mod a_window_onto_a_list;
 mod a_window_raised;
+mod alo_in_the_terminal_in_settings;
 /// alo's words read for the emphasis a model marks in Markdown.
 ///
 /// **Public because `task_text::WhatWasSaid` carries its marks**, as

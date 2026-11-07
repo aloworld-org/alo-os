@@ -409,6 +409,7 @@ fn no_choice_the_old_window_offered_is_dropped() {
     if open.a_place_to_return_to.offers_a_row() {
         before.push(SettingsRow::APlaceToReturnTo);
     }
+    before.push(SettingsRow::ActWithoutAsking);
     before.extend(
         alo_capability::HowCodeRuns::ALL
             .into_iter()
@@ -2181,4 +2182,54 @@ fn reading_what_answers_again_does_not_open_settings() {
     let mut window = SettingsWindow::closed();
     window.what_answers_is_read_again(&machine.places, noon());
     assert!(!window.is_open());
+}
+
+/// **Let alo act without asking: on in one press, off again in one press**,
+/// each written to the person's file before the switch moves — and the level
+/// for running code, kept in the same file, is left as the person chose it.
+#[test]
+fn one_press_lets_alo_act_without_asking_and_one_press_stops_it() {
+    let machine = a_persons_machine("act-without-asking-pressed");
+    let strings = words();
+    let door = CountingDoor::revoking();
+    let at = machine.places.how_code_runs().to_owned();
+    alo_remembering::the_level_kept(&at, alo_capability::HowCodeRuns::AskingEachTime).unwrap();
+    let mut window = machine.opened();
+    let off = || alo_capability::AloInTheTerminal::AsksFirst;
+    assert_eq!(
+        alo_remembering::alo_in_the_terminal_remembered(&at).unwrap(),
+        off(),
+        "the switch arrived on"
+    );
+
+    assert_eq!(
+        chosen(&mut window, &SettingsRow::ActWithoutAsking, &strings, &door),
+        Some(SettingsDid::Kept(
+            SettingsSection::Terminal,
+            SettingsKept::Written
+        ))
+    );
+    assert_eq!(
+        alo_remembering::alo_in_the_terminal_remembered(&at).unwrap(),
+        alo_capability::AloInTheTerminal::ActsWithoutAsking
+    );
+
+    // **One press, and it is off**: no confirmation on the way back.
+    assert_eq!(
+        window.pressed(key(SettingsKey::Choose), doors(&strings, &door)),
+        Some(SettingsDid::Kept(
+            SettingsSection::Terminal,
+            SettingsKept::Written
+        ))
+    );
+    assert_eq!(
+        alo_remembering::alo_in_the_terminal_remembered(&at).unwrap(),
+        off(),
+        "one press from on did not turn it off"
+    );
+    assert_eq!(
+        alo_remembering::the_level_remembered(&at).unwrap(),
+        Some(alo_capability::HowCodeRuns::AskingEachTime),
+        "the switch changed how code runs"
+    );
 }

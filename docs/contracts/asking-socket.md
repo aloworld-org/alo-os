@@ -86,6 +86,43 @@ stands. A shell never sends it on a timer, a focus change or a keystroke.
   to the agent's error output; the shell sees the connection close with nothing
   answered and tells the person the request stopped without finishing.
 
+## What the agent writes back
+
+*Written down 2026-11-06, when something other than a person began reading it;
+the words themselves are unchanged.*
+
+Words a person reads, ending when the agent shuts its sending side. **When the
+request left a change waiting, the reply is exactly two lines**:
+
+```text
+a change is waiting for you to answer, as number 3:
+  Rename march.pdf to march-final.pdf
+```
+
+`alo_protocol::what_the_agent_says_back` is the one place that spells it, and
+both ends use it.
+
+- **It counts only as the first line.** An answer in words or a refusal carries
+  words that are not the agent's own — a model can be steered into writing
+  anything — so the agent puts a space before any such reply that begins with
+  this line, and a reader that trims the start of a reply before looking at its
+  first line has undone that.
+- **It is a narrowing, never a permission.** A reader that answers the change
+  must also find the same number *and* the same sentence among what the daemon
+  says is waiting (`waiting` on the person's door), and answers nothing
+  otherwise.
+
+### `alo-ask` holds the turn when it may act without the OK
+
+`alo-ask` closes its sending side as soon as it has written, as above — except
+when it is typed at a terminal and the person has switched on *Let alo act
+without asking* in Settings → Terminal (`docs/contracts/how-code-runs-file.md`,
+`in-the-terminal`). Then it writes the request and an `alo-earlier:` line with
+nothing after it, and **keeps its sending side open**, exactly as a shell does
+while a card is on the screen: the agent holds the turn, `alo-ask` reads the
+reply, answers the change on the person's door, and only then closes. Closing
+early — a Ctrl-C — is a Stop, and the change lapses unanswered.
+
 ## Versioning
 
 **Additive only.** A new line goes after the last one a current agent reads,

@@ -70,6 +70,7 @@ use alo_shortcuts::{Action, Chord, Key, Modifiers, Shortcuts};
 use alo_strings::Strings;
 
 use crate::a_folder_is_picked_in_settings::{Folders, PickingRow};
+use crate::alo_in_the_terminal_in_settings::AloInTheTerminalHere;
 use crate::how_code_runs_in_settings::HowCodeRunsHere;
 use crate::settings_answering::{AnsweringSection, SettingsAnswered, SettingsChoice};
 use crate::settings_formats::FormatsSection;
@@ -207,6 +208,11 @@ pub enum SettingsRow {
     AddAProvider,
     /// Keep a place to return to before each command (ADR 0130).
     APlaceToReturnTo,
+    /// Let what the person asks alo for in the terminal run without the OK:
+    /// one switch, and Enter turns it over — on in one press, off in one
+    /// press. `crate::alo_in_the_terminal_in_settings` holds why it is off
+    /// rather than *not set* for somebody who never touched it.
+    ActWithoutAsking,
     /// Whether alo may use another model or API when the one the person chose
     /// is not available: one switch, and Enter turns it over.
     ///
@@ -309,7 +315,9 @@ impl SettingsRow {
                 SettingsSection::Answering
             }
             Self::HowCodeRuns(_) => SettingsSection::HowCodeRuns,
-            Self::ShellIntegration | Self::APlaceToReturnTo => SettingsSection::Terminal,
+            Self::ShellIntegration | Self::APlaceToReturnTo | Self::ActWithoutAsking => {
+                SettingsSection::Terminal
+            }
             Self::AddAProvider => SettingsSection::Answering,
         }
     }
@@ -432,6 +440,9 @@ pub(crate) struct Open {
     /// says — including *nobody has chosen*, which is why this is not a
     /// `KeptSection`. `crate::how_code_runs_in_settings` holds that argument.
     pub(crate) how_code_runs: HowCodeRunsHere,
+    /// Whether what the person asks alo for in the terminal runs without the
+    /// OK, kept in the same file as how code runs.
+    pub(crate) alo_in_the_terminal: AloInTheTerminalHere,
     /// Whether the sealed box can run programs on this computer yet, read at
     /// opening from the machine's mounts. **It changes nothing the person
     /// chose**: the sealed box stays a choice, and the default; this is only
@@ -504,6 +515,7 @@ impl SettingsWindow {
                 places.folder(),
             ),
             how_code_runs: HowCodeRunsHere::at_sign_in(places.how_code_runs()),
+            alo_in_the_terminal: AloInTheTerminalHere::at_sign_in(places.how_code_runs()),
             // Mounts that cannot be read are not said to be a machine where it
             // cannot run: the line is for what was read.
             the_sealed_box_runs_here: match std::fs::read_to_string(places.mounts()) {
@@ -840,6 +852,10 @@ impl Open {
                 if self.a_place_to_return_to.offers_a_row() {
                     rows.push(SettingsRow::APlaceToReturnTo);
                 }
+                // **Always offered**: it needs nothing installed, and a switch
+                // that is off until the person turns it on is a switch they can
+                // see.
+                rows.push(SettingsRow::ActWithoutAsking);
                 rows.push(SettingsRow::GoTo(SettingsCategory::RunningCode));
                 rows
             }
@@ -1410,6 +1426,13 @@ impl Open {
             SettingsRow::APlaceToReturnTo => SettingsDid::Kept(
                 SettingsSection::Terminal,
                 self.a_place_to_return_to.add(doors.strings),
+            ),
+            // **Written before the switch moves**, for the level's reason: a
+            // switch that moved first would say alo asks first when it does
+            // not.
+            SettingsRow::ActWithoutAsking => SettingsDid::Kept(
+                SettingsSection::Terminal,
+                self.alo_in_the_terminal.pressed(),
             ),
             // **The level is written before the tick moves.** A tick that moved
             // first would tell somebody their machine runs code at a level it
