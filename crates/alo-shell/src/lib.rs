@@ -228,6 +228,7 @@ mod division_raster;
 mod dock_history_mark;
 mod dock_raster;
 mod dock_surface;
+mod dock_surface_cache;
 mod dock_tooltip;
 /// How a rounded panel is lifted off what is behind it — its corner and its
 /// shadow — at the display scale its geometry is laid out in.
