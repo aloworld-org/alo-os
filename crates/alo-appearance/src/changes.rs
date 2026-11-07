@@ -21,7 +21,7 @@ use crate::accent::Accent;
 use crate::background::Background;
 use crate::display::DisplayId;
 use crate::lock::Lock;
-use crate::pointer::{PointerShape, PointerSize};
+use crate::pointer::{PointerColour, PointerShape, PointerSize};
 use crate::scheme::Following;
 use crate::text::TextScale;
 use crate::titles::WindowTitles;
@@ -47,6 +47,8 @@ pub enum Setting {
     PointerShape,
     /// How large the pointer is.
     PointerSize,
+    /// What colour the pointer is.
+    PointerColour,
 }
 
 /// Everything a person has changed about how their machine looks.
@@ -75,6 +77,8 @@ pub struct Changes {
     pointer_shape: Option<PointerShape>,
     /// How large they made the pointer.
     pointer_size: Option<PointerSize>,
+    /// What colour they made the pointer.
+    pointer_colour: Option<PointerColour>,
 }
 
 impl Changes {
@@ -97,6 +101,7 @@ impl Changes {
             && self.window_titles.is_none()
             && self.pointer_shape.is_none()
             && self.pointer_size.is_none()
+            && self.pointer_colour.is_none()
     }
 
     /// Put this behind the windows, on every display they have not singled out.
@@ -153,6 +158,11 @@ impl Changes {
         self.pointer_size = Some(size);
     }
 
+    /// Make the pointer this colour.
+    pub fn set_pointer_colour(&mut self, colour: PointerColour) {
+        self.pointer_colour = Some(colour);
+    }
+
     /// Forget that this was ever changed, which puts it back to what the
     /// running release ships.
     ///
@@ -167,6 +177,7 @@ impl Changes {
             Setting::WindowTitles => self.window_titles.take().is_some(),
             Setting::PointerShape => self.pointer_shape.take().is_some(),
             Setting::PointerSize => self.pointer_size.take().is_some(),
+            Setting::PointerColour => self.pointer_colour.take().is_some(),
         }
     }
 
@@ -249,6 +260,12 @@ impl Changes {
     pub fn pointer_size(&self) -> Option<PointerSize> {
         self.pointer_size
     }
+
+    /// What colour the pointer is, if the person chose.
+    #[must_use]
+    pub fn pointer_colour(&self) -> Option<PointerColour> {
+        self.pointer_colour
+    }
 }
 
 /// Changes as a settings file holds them: everything untouched is absent rather
@@ -282,6 +299,9 @@ struct Written {
     /// How large the pointer is.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pointer_size: Option<PointerSize>,
+    /// What colour the pointer is.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pointer_colour: Option<PointerColour>,
 }
 
 impl From<Written> for Changes {
@@ -299,6 +319,7 @@ impl From<Written> for Changes {
             window_titles: written.window_titles,
             pointer_shape: written.pointer_shape,
             pointer_size: written.pointer_size,
+            pointer_colour: written.pointer_colour,
         };
         for (display, background) in written.displays {
             changes.set_background_on(display, background);
@@ -319,6 +340,7 @@ impl From<Changes> for Written {
             window_titles: changes.window_titles,
             pointer_shape: changes.pointer_shape,
             pointer_size: changes.pointer_size,
+            pointer_colour: changes.pointer_colour,
         }
     }
 }

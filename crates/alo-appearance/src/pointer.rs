@@ -1,4 +1,4 @@
-//! **What the person's pointer looks like**: its shape and its size.
+//! **What the person's pointer looks like**: its shape, its size and its colour.
 //!
 //! The owner chose the precision kite on 2026-11-06, in one word: *"B"*. So the
 //! shipped answer is [`PointerShape::Kite`], and the familiar arrow is kept as
@@ -25,6 +25,29 @@ pub enum PointerShape {
 impl PointerShape {
     /// Both, in the order a settings page offers them.
     pub const ALL: [Self; 2] = [Self::Kite, Self::Classic];
+}
+
+/// What colour the pointer is.
+///
+/// **The owner's yes of 2026-11-06** to three high-contrast choices rather than
+/// the accents: navy, as it ships; white with a navy edge, for dark backgrounds;
+/// and black. *Cursor size and colour* is promised (`docs/features.md`). **Deep
+/// teal is never one of them** — it is the agent's (ADR 0067) — and
+/// `alo-cursors` holds every colour to that.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default, Serialize, Deserialize)]
+pub enum PointerColour {
+    /// Navy with a white edge: what this release ships.
+    #[default]
+    Navy,
+    /// White with a navy edge, for dark backgrounds.
+    White,
+    /// Black with a white edge.
+    Black,
+}
+
+impl PointerColour {
+    /// All three, in the order a settings page offers them.
+    pub const ALL: [Self; 3] = [Self::Navy, Self::White, Self::Black];
 }
 
 /// How large the pointer is drawn, over the size every pointer has.
@@ -80,6 +103,16 @@ mod tests {
         let written = serde_json::to_string(&PointerShape::Classic).unwrap();
         assert_eq!(written, r#""Classic""#);
         assert!(serde_json::from_str::<PointerShape>(r#""Pointy""#).is_err());
+    }
+
+    #[test]
+    fn the_shipped_colour_is_navy_and_a_colour_is_written_by_its_name() {
+        assert_eq!(PointerColour::default(), PointerColour::Navy);
+        assert_eq!(
+            serde_json::to_string(&PointerColour::White).unwrap(),
+            r#""White""#
+        );
+        assert!(serde_json::from_str::<PointerColour>(r#""Teal""#).is_err());
     }
 
     #[test]

@@ -348,9 +348,12 @@ Each was decided one way to build this, and is listed so it can be answered:
 5. **The gap between a page's blocks** is 32, 28 or 36 depending on the frame.
 6. **The pointer's size is built** (`551:1136`), since 2026-11-06: *Large* is
    half as large again and *Larger* twice as large, which the frame does not
-   say. **Its colour is not**: `docs/features.md` promises *cursor size and
-   colour*, and no frame draws a colour choice, so the pointer stays navy until
-   the owner says which colours a person may choose.
+   say. **Its colour is built too**, since the owner's yes of 2026-11-06 to
+   three high-contrast choices rather than the accents: *Navy*, which ships;
+   *White* with a navy edge, for dark backgrounds; and *Black* with a white edge.
+   **Never deep teal**, which is the agent's, and a test holds every choice to
+   that. No frame draws it either, so *Pointer colour* is a third row in the
+   same section, with the same segmented choice.
 7. **The pointer's shape is a second row in the Pointer section**, *Pointer
    shape*, with the design's own segmented choice: *Kite*, which ships, and
    *Classic*, the familiar arrow. `docs/features.md` promises *the familiar arrow

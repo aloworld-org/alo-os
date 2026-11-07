@@ -257,6 +257,10 @@ pub enum SettingsRow {
     /// Which arrow the pointer is: Enter chooses it. The kite ships; the
     /// familiar arrow stays a choice (`alo_appearance::PointerShape`).
     PointerShape(alo_appearance::PointerShape),
+    /// What colour the pointer is: Enter chooses it. Navy ships; white with a
+    /// navy edge and black are the owner's yes of 2026-11-06
+    /// (`alo_appearance::PointerColour`).
+    PointerColour(alo_appearance::PointerColour),
     /// The list of countries and regions, or of time zones: Enter opens it.
     ///
     /// **One row where there were two hundred and fifty.** Every region is
@@ -284,9 +288,10 @@ impl SettingsRow {
             Self::Hiding(_) | Self::Edge(_) => SettingsSection::Dock,
             Self::GoTo(_) => SettingsSection::Terminal,
             Self::LightOrDark(_) | Self::WindowTitles => SettingsSection::Appearance,
-            Self::TextSize | Self::PointerSize(_) | Self::PointerShape(_) => {
-                SettingsSection::Accessibility
-            }
+            Self::TextSize
+            | Self::PointerSize(_)
+            | Self::PointerShape(_)
+            | Self::PointerColour(_) => SettingsSection::Accessibility,
             Self::OpenThePicker(SettingsPicker::Region) => SettingsSection::Formats,
             Self::OpenThePicker(SettingsPicker::TimeZone) => SettingsSection::TimeZone,
             Self::Shortcut(_) => SettingsSection::Shortcuts,
@@ -622,6 +627,14 @@ impl SettingsWindow {
             .map(|open| open.appearance.drawn().pointer_shape())
     }
 
+    /// What colour the pointer is, as Settings holds it.
+    #[must_use]
+    pub fn pointer_colour(&self) -> Option<alo_appearance::PointerColour> {
+        self.open
+            .as_ref()
+            .map(|open| open.appearance.drawn().pointer_colour())
+    }
+
     /// How large the pointer is, as Settings holds it.
     #[must_use]
     pub fn pointer_size(&self) -> Option<PointerSize> {
@@ -865,6 +878,11 @@ impl Open {
                         alo_appearance::PointerShape::ALL
                             .into_iter()
                             .map(SettingsRow::PointerShape),
+                    );
+                    rows.extend(
+                        alo_appearance::PointerColour::ALL
+                            .into_iter()
+                            .map(SettingsRow::PointerColour),
                     );
                 }
                 rows
@@ -1246,6 +1264,17 @@ impl Open {
             SettingsRow::TextSize => self.the_text_is(25, doors.strings),
             // **Kept with the rest of the appearance**, and the seat is told by
             // `crate::a_key_reaches_settings`, so the next frame draws it.
+            SettingsRow::PointerColour(colour) => {
+                let colour = *colour;
+                let kept = self.appearance.changed(
+                    |appearance| {
+                        appearance.set_pointer_colour(colour);
+                        Ok(())
+                    },
+                    doors.strings,
+                );
+                SettingsDid::Kept(SettingsSection::Appearance, kept)
+            }
             SettingsRow::PointerShape(shape) => {
                 let shape = *shape;
                 let kept = self.appearance.changed(

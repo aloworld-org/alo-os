@@ -298,7 +298,11 @@ RUN target/release/alo-cursor-theme /build/cursor-themes \
  && test -s /build/cursor-themes/alo/index.theme \
  && test -s /build/cursor-themes/alo/cursors/default \
  && test -s /build/cursor-themes/alo-classic/index.theme \
- && test -s /build/cursor-themes/alo-classic/cursors/default
+ && test -s /build/cursor-themes/alo-classic/cursors/default \
+ && test -s /build/cursor-themes/alo-white/cursors/default \
+ && test -s /build/cursor-themes/alo-classic-white/cursors/default \
+ && test -s /build/cursor-themes/alo-black/cursors/default \
+ && test -s /build/cursor-themes/alo-classic-black/cursors/default
 
 FROM ${THE_BASE}
 
@@ -520,8 +524,10 @@ COPY --from=shell /alo-os/target/release/alo-desktop /usr/bin/alo-desktop
 # The pointer for applications that bring their own cursor images: alo's theme,
 # written by `alo-cursor-theme` above, and named as the default below
 # (`image/usr/lib/environment.d/60-alo-cursor.conf`).
-# Two themes: `alo`, with the precision kite, and `alo-classic`, with the
-# familiar arrow for a person who chooses it in Settings.
+# Six themes: each arrow a person may choose (`alo`, the precision kite, and
+# `alo-classic`, the familiar arrow) in each colour (navy, as it ships; white
+# with a navy edge; black), because an application drawing its own pointer
+# takes its colour from the theme's files and cannot be told one.
 COPY --from=shell /build/cursor-themes/ /usr/share/icons/
 
 # The converting service is in libexec for the same reason (ADR 0039): systemd
