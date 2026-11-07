@@ -104,6 +104,7 @@ use std::time::SystemTime;
 use alo_egress::{Destination, Errand, Why};
 use serde::{Deserialize, Serialize};
 
+use crate::asked_an_application::{Answered, Given, Road, SentDuring};
 use crate::brokered::AtTheBroker;
 use crate::let_go::{Forgone, WhyLetGo};
 use crate::line::Line;
@@ -707,6 +708,29 @@ pub enum Happened {
         /// Each turn that can no longer be put back — never empty.
         turns: Vec<Forgone>,
     },
+    /// **A person's own command asked an application to do something**, and
+    /// what came of it (`docs/contracts/terminal-commands.md` section 4;
+    /// [`crate::asked_an_application`] has the rules).
+    ///
+    /// **No agent, and no field for one**: the person acted. A refusal before
+    /// the application was reached has no road and no arguments.
+    ///
+    /// Additive, and `format` stays `1`.
+    AskedAnApplication {
+        /// The application, by its identifier.
+        application: Line,
+        /// What was asked, by its declared name.
+        ability: Line,
+        /// Which road carried it; absent when it was refused before any did.
+        road: Option<Road>,
+        /// What it was given; empty for a refusal.
+        arguments: Vec<Given>,
+        /// What came of it.
+        answered: Answered,
+        /// What the application sent while the command ran (ADR 0148);
+        /// absent when it was refused before anything ran.
+        sent: Option<SentDuring>,
+    },
 }
 
 impl Happened {
@@ -747,6 +771,7 @@ impl Happened {
             | Self::PutBack { .. }
             | Self::WorkspaceOpened { .. }
             | Self::LetGo { .. }
+            | Self::AskedAnApplication { .. }
             | Self::AnsweredForAnotherMachine { .. } => None,
         }
     }
@@ -780,6 +805,7 @@ impl Happened {
             | Self::PutBack { .. }
             | Self::WorkspaceOpened { .. }
             | Self::LetGo { .. }
+            | Self::AskedAnApplication { .. }
             | Self::NotBounded { .. }
             | Self::RanACommand { .. }
             | Self::ACommandWasNotRun { .. }
@@ -819,6 +845,7 @@ impl Happened {
             | Self::PutBack { .. }
             | Self::WorkspaceOpened { .. }
             | Self::LetGo { .. }
+            | Self::AskedAnApplication { .. }
             | Self::NotBounded { .. }
             | Self::RanACommand { .. }
             | Self::ACommandWasNotRun { .. }
@@ -868,6 +895,10 @@ impl Happened {
                 | Self::GrantsNotReadAgain { .. }
                 | Self::NotBounded { .. }
                 | Self::ACommandWasNotRun { .. }
+                | Self::AskedAnApplication {
+                    answered: Answered::Refused { .. },
+                    ..
+                }
                 | Self::Brokered {
                     refused: Some(_),
                     ..
@@ -922,6 +953,7 @@ impl Happened {
             | Self::PutBack { .. }
             | Self::WorkspaceOpened { .. }
             | Self::LetGo { .. }
+            | Self::AskedAnApplication { .. }
             | Self::NotBounded { .. }
             | Self::RanACommand { .. }
             | Self::ACommandWasNotRun { .. }
@@ -941,6 +973,12 @@ impl Happened {
     pub fn why_stopped(&self) -> Option<&Line> {
         match self {
             Self::Stopped { how, .. } => how.why(),
+            // A person's own command that was refused says why in the same
+            // place, whether the application or this machine refused it.
+            Self::AskedAnApplication {
+                answered: Answered::Refused { said },
+                ..
+            } => Some(said),
             // A refused question belongs here rather than with the entries that
             // answer `None`: it *was* refused, and this is where a reader looks
             // for the sentence saying so.
@@ -971,6 +1009,7 @@ impl Happened {
             | Self::PutBack { failed: None, .. }
             | Self::WorkspaceOpened { .. }
             | Self::LetGo { .. }
+            | Self::AskedAnApplication { .. }
             | Self::Left { .. }
             | Self::LeftOnItsOwn { .. }
             | Self::RanACommand { .. } => None,
@@ -998,6 +1037,7 @@ impl Happened {
             | Self::PutBack { .. }
             | Self::WorkspaceOpened { .. }
             | Self::LetGo { .. }
+            | Self::AskedAnApplication { .. }
             | Self::NotBounded { .. }
             | Self::RanACommand { .. }
             | Self::ACommandWasNotRun { .. }
@@ -1027,6 +1067,7 @@ impl Happened {
             | Self::PutBack { .. }
             | Self::WorkspaceOpened { .. }
             | Self::LetGo { .. }
+            | Self::AskedAnApplication { .. }
             | Self::NotBounded { .. }
             | Self::RanACommand { .. }
             | Self::ACommandWasNotRun { .. }
@@ -1062,6 +1103,7 @@ impl Happened {
             | Self::PutBack { .. }
             | Self::WorkspaceOpened { .. }
             | Self::LetGo { .. }
+            | Self::AskedAnApplication { .. }
             | Self::NotBounded { .. }
             | Self::RanACommand { .. }
             | Self::ACommandWasNotRun { .. } => None,
@@ -1096,6 +1138,7 @@ impl Happened {
             | Self::PutBack { .. }
             | Self::WorkspaceOpened { .. }
             | Self::LetGo { .. }
+            | Self::AskedAnApplication { .. }
             | Self::NotBounded { .. }
             | Self::RanACommand { .. }
             | Self::ACommandWasNotRun { .. }
@@ -1116,7 +1159,17 @@ impl Happened {
     /// indicator. Which of the two it was is [`Happened::on_its_own`].
     #[must_use]
     pub fn caused_egress(&self) -> bool {
-        matches!(self, Self::Left { .. } | Self::LeftOnItsOwn { .. })
+        matches!(
+            self,
+            Self::Left { .. }
+                | Self::LeftOnItsOwn { .. }
+                | Self::AskedAnApplication {
+                    sent: Some(
+                        SentDuring::Counted { bytes: 1.. } | SentDuring::AtLeast { bytes: 1.. }
+                    ),
+                    ..
+                }
+        )
     }
 }
 
