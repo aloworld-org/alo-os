@@ -14,21 +14,18 @@
 //! starts at 220. `docs/design/where-a-new-window-opens.md` promises the new
 //! window opens *without covering any window*, with the gap.
 //!
-//! # The strip is not zoomed, so it is a different size on the plane at every
-//! zoom
+//! # The strip zooms with its window, so on the plane it is one size
 //!
-//! `crate::an_edge_in_its_displays_units`: *the edge's own furniture is not
-//! zoomed* — a strip is 32 of the design's units at the display's scale however
-//! far the canvas is zoomed. On the plane that is `32 × scale ÷ zoom`: 32 at
-//! life size and 100 %, 64 zoomed out to half. So [`ItsStrip::at`] takes the
-//! zoom the window opens at and the display's scale, and is worked out for each
-//! opening.
+//! The owner, 2026-11-08: *"Title bars shrink with zoom"*. Since then the whole
+//! edge is drawn at the display’s scale **times the zoom**
+//! (`Server::the_scale_an_edge_is_drawn_at`), exactly as its window is, so on
+//! the plane a strip is `32 × scale` at every zoom and a gap kept on the plane
+//! is a gap on the screen however far the person zooms. [`ItsStrip::at`] takes
+//! the display’s scale alone.
 //!
-//! **What this cannot promise, and says so.** A window placed at one zoom and
-//! then looked at further out has a strip that has grown on the plane while the
-//! gap has not, so far enough out a strip reaches over the gap again. That is
-//! what an unzoomed label on a zoomable canvas does, and whether the gap should
-//! grow with it is a question for the owner, not a number to pick here.
+//! Until then the strip was not zoomed, so it was `32 × scale ÷ zoom` on the
+//! plane: placed at one zoom and seen further out, it reached over the gap into
+//! the window above.
 //!
 //! # And at least as wide as the narrowest strip
 //!
@@ -44,7 +41,7 @@ use crate::window_edge::{THE_COMPACT_EDGE_IS, THE_STRIP_IS_TALL};
 /// The ordinary scale, in per cent.
 const ORDINARY: u32 = 100;
 
-/// The title strip above every window, on the plane at one zoom and one scale.
+/// The title strip above every window, on the plane, on a display at one scale.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) struct ItsStrip {
     /// How tall the strip is on the plane.
@@ -54,36 +51,22 @@ pub(crate) struct ItsStrip {
 }
 
 impl ItsStrip {
-    /// The strip at this `zoom` on a display at `scale` per cent.
+    /// The strip on a display at `scale` per cent, on the plane.
     ///
-    /// [`None`] for a zoom that cannot be divided by — none can arrive, since
-    /// `alo_canvas::Zoom` is built from thousandths above zero, and it is
-    /// refused rather than reasoned about. A scale of nought is the ordinary
-    /// one, as `crate::an_edge_in_its_displays_units` reads it.
-    ///
-    /// **Rounded up**, so a strip is never given less room than it is drawn in.
+    /// A scale of nought is the ordinary one, as
+    /// `crate::an_edge_in_its_displays_units` reads it. **Rounded up**, so a
+    /// strip is never given less room than it is drawn in.
     #[must_use]
-    pub(crate) fn at(zoom: f64, scale: u32) -> Option<Self> {
-        if !zoom.is_finite() || zoom <= 0.0 {
-            return None;
-        }
+    pub(crate) fn at(scale: u32) -> Self {
         let scale = if scale == 0 { ORDINARY } else { scale };
-        let on_the_plane = |units: i32| -> Option<i32> {
-            let it = (f64::from(units) * f64::from(scale) / f64::from(ORDINARY) / zoom).ceil();
-            if !it.is_finite() || it > f64::from(i32::MAX) || it < 0.0 {
-                return None;
-            }
-            #[expect(
-                clippy::cast_possible_truncation,
-                reason = "checked to be a whole number inside an i32 on the line above"
-            )]
-            let it = it as i32;
-            Some(it)
+        let on_the_plane = |units: i32| -> i32 {
+            let it = (i64::from(units) * i64::from(scale)).div_ceil(i64::from(ORDINARY));
+            i32::try_from(it).unwrap_or(i32::MAX)
         };
-        Some(Self {
-            tall: on_the_plane(THE_STRIP_IS_TALL)?,
-            at_least_wide: on_the_plane(THE_COMPACT_EDGE_IS)?,
-        })
+        Self {
+            tall: on_the_plane(THE_STRIP_IS_TALL),
+            at_least_wide: on_the_plane(THE_COMPACT_EDGE_IS),
+        }
     }
 
     /// What a window at `window` takes: itself and its strip.
