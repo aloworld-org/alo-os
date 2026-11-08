@@ -2318,3 +2318,108 @@ fn one_press_lets_alo_act_without_asking_and_one_press_stops_it() {
         "the switch changed how code runs"
     );
 }
+
+/// **Every pointer choice is reached and chosen from the keyboard**, by the
+/// rule every segmented row in Settings follows
+/// (`docs/design/the-settings-window.md`, *The keyboard*): each part is a row
+/// of its own, so **Down** walks Default, Large, Larger, Kite, Classic, Navy,
+/// White and Black in turn; **Enter** chooses the one it is on; **Tab** goes to
+/// the next section; and **Left and Right** change the text size only.
+///
+/// The walk of 2026-11-08 pressed Tab and Right on *Pointer size* and read
+/// the Pointer section as out of reach. Tab leaving the section and Right
+/// doing nothing are this rule, held here so that a change to it is a
+/// decision and not an accident; the road to every choice is Down, held here
+/// too, from the keys the walk pressed.
+#[test]
+fn every_pointer_choice_is_reached_and_chosen_from_the_keyboard() {
+    let machine = a_persons_machine("pointer-keys");
+    let strings = words();
+    let door = CountingDoor::revoking();
+    let mut window = machine.opened();
+    let appearance = machine.kept(alo_appearance::keeping::THE_FILE);
+    let press = |window: &mut SettingsWindow, pressed: SettingsKey| {
+        window.pressed(key(pressed), doors(&strings, &door))
+    };
+    let mut parts: Vec<SettingsRow> = PointerSize::ALL
+        .into_iter()
+        .map(SettingsRow::PointerSize)
+        .collect();
+    parts.extend(
+        alo_appearance::PointerShape::ALL
+            .into_iter()
+            .map(SettingsRow::PointerShape),
+    );
+    parts.extend(
+        alo_appearance::PointerColour::ALL
+            .into_iter()
+            .map(SettingsRow::PointerColour),
+    );
+
+    // **The walk's own keys**: Accessibility in the side column, Tab into the
+    // page, Tab to the Pointer section.
+    press(&mut window, SettingsKey::Last);
+    assert_eq!(window.category(), Some(SettingsCategory::Accessibility));
+    press(&mut window, SettingsKey::NextSection);
+    assert_eq!(window.focused(noon()), Some(SettingsRow::TextSize));
+    press(&mut window, SettingsKey::NextSection);
+    assert_eq!(window.focused(noon()), Some(parts[0].clone()));
+
+    // **Right and Left do nothing here**, and write nothing.
+    assert_eq!(press(&mut window, SettingsKey::More), None);
+    assert_eq!(press(&mut window, SettingsKey::Less), None);
+    assert_eq!(window.focused(noon()), Some(parts[0].clone()));
+    assert_eq!(bytes(&appearance), None, "Right or Left wrote the file");
+
+    // **Down walks every choice of the section, in the order drawn**, and
+    // then leaves it for the next.
+    for (at, part) in parts.iter().enumerate() {
+        assert_eq!(window.focused(noon()).as_ref(), Some(part), "Down {at}");
+        press(&mut window, SettingsKey::Next);
+    }
+    assert_eq!(window.focused(noon()), Some(SettingsRow::ReducedMotion));
+    assert_eq!(bytes(&appearance), None, "moving wrote the file");
+
+    // **Tab leaves the section and Shift+Tab comes back to its start.**
+    press(&mut window, SettingsKey::PreviousSection);
+    assert_eq!(window.focused(noon()), Some(parts[0].clone()));
+    press(&mut window, SettingsKey::NextSection);
+    assert_eq!(window.focused(noon()), Some(SettingsRow::ReducedMotion));
+
+    // **Enter chooses each one**, backwards so that every press changes
+    // something, and the switch the walk saw turned over is left alone.
+    for part in parts.iter().rev() {
+        focus_on(&mut window, part, &strings, &door);
+        assert_eq!(
+            press(&mut window, SettingsKey::Choose),
+            Some(SettingsDid::Kept(
+                SettingsSection::Appearance,
+                SettingsKept::Written
+            )),
+            "{part:?}"
+        );
+        let (kept, _) = alo_appearance::keeping::at_sign_in(&appearance);
+        let (held, read) = match part {
+            SettingsRow::PointerSize(size) => (
+                window.pointer_size() == Some(*size),
+                kept.pointer_size() == *size,
+            ),
+            SettingsRow::PointerShape(shape) => (
+                window.pointer_shape() == Some(*shape),
+                kept.pointer_shape() == *shape,
+            ),
+            SettingsRow::PointerColour(colour) => (
+                window.pointer_colour() == Some(*colour),
+                kept.pointer_colour() == *colour,
+            ),
+            _ => (false, false),
+        };
+        assert!(held && read, "Enter on {part:?} did not choose it");
+        assert_eq!(window.motion_is_reduced(), Some(false), "{part:?}");
+    }
+    assert_eq!(
+        bytes(&machine.kept(alo_access::keeping::THE_FILE)),
+        None,
+        "a pointer choice wrote access.toml"
+    );
+}

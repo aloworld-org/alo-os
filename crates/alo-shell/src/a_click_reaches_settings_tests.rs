@@ -232,3 +232,147 @@ fn close_on_the_edge_shuts_settings() {
     );
     assert!(server.where_settings_is_on_the_plane().is_none());
 }
+
+/// Every choice in the Pointer section, each row's in reverse so that every
+/// press changes something: the first of each row is what a machine comes
+/// with.
+fn every_pointer_choice() -> Vec<SettingsRow> {
+    let mut parts: Vec<SettingsRow> = crate::PointerSize::ALL
+        .into_iter()
+        .rev()
+        .map(SettingsRow::PointerSize)
+        .collect();
+    parts.extend(
+        alo_appearance::PointerShape::ALL
+            .into_iter()
+            .rev()
+            .map(SettingsRow::PointerShape),
+    );
+    parts.extend(
+        alo_appearance::PointerColour::ALL
+            .into_iter()
+            .rev()
+            .map(SettingsRow::PointerColour),
+    );
+    parts
+}
+
+/// Whether what Settings holds, and what sign-in would read from the
+/// person's `appearance.toml`, are both `part`.
+fn holds(server: &Server, machine: &Machine, part: &SettingsRow) -> (bool, bool) {
+    let window = server.the_settings_window();
+    let (kept, _) = alo_appearance::keeping::at_sign_in(
+        &machine.kept(alo_appearance::keeping::THE_FILE),
+    );
+    match part {
+        SettingsRow::PointerSize(size) => (
+            window.pointer_size() == Some(*size),
+            kept.pointer_size() == *size,
+        ),
+        SettingsRow::PointerShape(shape) => (
+            window.pointer_shape() == Some(*shape),
+            kept.pointer_shape() == *shape,
+        ),
+        SettingsRow::PointerColour(colour) => (
+            window.pointer_colour() == Some(*colour),
+            kept.pointer_colour() == *colour,
+        ),
+        _ => (false, false),
+    }
+}
+
+/// **A press on a pointer choice chooses that choice, and never the row the
+/// keyboard is on** — at life size and zoomed out to half.
+///
+/// The walk of 2026-11-08 reported a press on *Larger* that turned *Reduced
+/// motion* over instead, Reduced motion being where the keyboard was. The
+/// machine's own files said otherwise — `appearance.toml` was written with
+/// `pointer_size = "Larger"` at the press, and `access.toml` not at all — and
+/// this test holds that answer: the keyboard is put on *Reduced motion*,
+/// turned on, before every press, and every one of the eight choices is
+/// pressed where the frame drew it. A press read as Enter on the focused row
+/// would turn the switch off and write `access.toml`, and both are asserted.
+#[test]
+fn a_press_on_a_pointer_choice_chooses_it_and_not_the_row_with_the_keyboard() {
+    let mut widths = Vec::new();
+    for zoom in [None, Some(500)] {
+        let (_runtime, mut server, machine) =
+            with_settings_open(&format!("click-pointer-{}", zoom.unwrap_or(1000)));
+        a_frame(&mut server);
+        let page = server
+            .settings_as_drawn
+            .as_ref()
+            .and_then(|drawn| drawn.where_the_category_is(SettingsCategory::Accessibility))
+            .expect("drawn");
+        press_at(&mut server, middle(page));
+        a_frame(&mut server);
+        // **Reduced motion on, by a press**, and the keyboard left on it.
+        let switch = server
+            .settings_as_drawn
+            .as_ref()
+            .and_then(|drawn| drawn.where_the_row_is(&SettingsRow::ReducedMotion))
+            .expect("the switch is in view");
+        press_at(&mut server, middle(switch));
+        assert_eq!(server.the_settings_window().motion_is_reduced(), Some(true));
+        let access = machine.kept(alo_access::keeping::THE_FILE);
+        let written = crate::settings_testing::bytes(&access);
+        assert!(written.is_some(), "the control: the switch wrote its file");
+        if let Some(zoom) = zoom {
+            assert!(
+                server
+                    .zoom_the_canvas(Zoom::of(zoom).expect("a zoom"), (0, 0))
+                    .is_some()
+            );
+        }
+        for part in every_pointer_choice() {
+            // **The keyboard back on the switch**, the way a press on it
+            // would put it there, without turning it over.
+            let _ = server.settings.pointed_at(
+                &crate::settings_pointed_at::PointedAt::ARow(SettingsRow::ReducedMotion),
+                std::time::SystemTime::now(),
+            );
+            a_frame(&mut server);
+            assert_eq!(
+                server
+                    .the_settings_window()
+                    .focused(std::time::SystemTime::now()),
+                Some(SettingsRow::ReducedMotion),
+                "the control: the keyboard is on the switch before the press"
+            );
+            assert_eq!(holds(&server, &machine, &part), (false, false), "{part:?}");
+            let seen = server
+                .settings_as_drawn
+                .as_ref()
+                .and_then(|drawn| drawn.where_the_row_is(&part))
+                .unwrap_or_else(|| panic!("{part:?} is not in view at {zoom:?}"));
+            if part == SettingsRow::PointerSize(crate::PointerSize::Larger) {
+                widths.push(seen.size.w);
+            }
+            press_at(&mut server, middle(seen));
+            assert_eq!(
+                holds(&server, &machine, &part),
+                (true, true),
+                "a press on {part:?} at {zoom:?} did not choose it"
+            );
+            assert_eq!(
+                server.the_settings_window().motion_is_reduced(),
+                Some(true),
+                "a press on {part:?} at {zoom:?} turned the focused switch over"
+            );
+            assert_eq!(
+                crate::settings_testing::bytes(&access),
+                written,
+                "a press on {part:?} at {zoom:?} wrote access.toml"
+            );
+        }
+    }
+    // **The control on the zoom**: *Larger* was drawn at half the width, so
+    // the second pass really pressed a zoomed-out window.
+    let [life, half] = widths[..] else {
+        panic!("Larger was pressed {} times", widths.len());
+    };
+    assert!(
+        (half - life / 2).abs() <= 2,
+        "zoomed out to half, Larger was {half} wide against {life}"
+    );
+}
