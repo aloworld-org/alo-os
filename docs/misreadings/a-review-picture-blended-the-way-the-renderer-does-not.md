@@ -50,8 +50,3 @@ right, and *shadows work here* was true of the ones anybody had checked.
   documents a renderer doing.
 - **Ask a new raster which convention it writes before handing it to a
   renderer.** `Washed::premultiplied` is the door for a straight one.
-
-*Not changed, and the same family:* the first-start sheet's review writer
-(`the_first_start_at_one_hundred_tests.rs`) still multiplies by alpha, over a
-raster that is already premultiplied, so its pictures draw that sheet's shadow
-darker than the machine does.
