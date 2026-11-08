@@ -109,11 +109,7 @@ fn left_and_right_do_nothing_on_a_row_that_is_not_a_row_of_choices() {
             .into_iter()
             .map(SettingsRow::WhenThereIsNoRoom),
     );
-    elsewhere.extend(
-        alo_dock::Hiding::ALL
-            .into_iter()
-            .map(SettingsRow::Hiding),
-    );
+    elsewhere.extend(alo_dock::Hiding::ALL.into_iter().map(SettingsRow::Hiding));
     let _ = window.pointed_at(&PointedAt::ACategory(SettingsCategory::Appearance), noon());
     for row in &elsewhere {
         on(&mut window, row);
