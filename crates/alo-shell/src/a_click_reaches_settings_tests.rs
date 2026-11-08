@@ -261,9 +261,8 @@ fn every_pointer_choice() -> Vec<SettingsRow> {
 /// person's `appearance.toml`, are both `part`.
 fn holds(server: &Server, machine: &Machine, part: &SettingsRow) -> (bool, bool) {
     let window = server.the_settings_window();
-    let (kept, _) = alo_appearance::keeping::at_sign_in(
-        &machine.kept(alo_appearance::keeping::THE_FILE),
-    );
+    let (kept, _) =
+        alo_appearance::keeping::at_sign_in(&machine.kept(alo_appearance::keeping::THE_FILE));
     match part {
         SettingsRow::PointerSize(size) => (
             window.pointer_size() == Some(*size),
@@ -306,7 +305,15 @@ fn a_press_on_a_pointer_choice_chooses_it_and_not_the_row_with_the_keyboard() {
             .expect("drawn");
         press_at(&mut server, middle(page));
         a_frame(&mut server);
-        // **Reduced motion on, by a press**, and the keyboard left on it.
+        // **Reduced motion on, by a press**, and the keyboard left on it. The
+        // keyboard goes there first, which scrolls it into view: at the
+        // bottom of the page it is drawn cut by the window's edge, and a press
+        // on the half that is not seen is not a press on Settings.
+        let _ = server.settings.pointed_at(
+            &crate::settings_pointed_at::PointedAt::ARow(SettingsRow::ReducedMotion),
+            std::time::SystemTime::now(),
+        );
+        a_frame(&mut server);
         let switch = server
             .settings_as_drawn
             .as_ref()
@@ -344,7 +351,7 @@ fn a_press_on_a_pointer_choice_chooses_it_and_not_the_row_with_the_keyboard() {
                 .settings_as_drawn
                 .as_ref()
                 .and_then(|drawn| drawn.where_the_row_is(&part))
-                .unwrap_or_else(|| panic!("{part:?} is not in view at {zoom:?}"));
+                .expect("every pointer choice is in view");
             if part == SettingsRow::PointerSize(crate::PointerSize::Larger) {
                 widths.push(seen.size.w);
             }
@@ -368,8 +375,10 @@ fn a_press_on_a_pointer_choice_chooses_it_and_not_the_row_with_the_keyboard() {
     }
     // **The control on the zoom**: *Larger* was drawn at half the width, so
     // the second pass really pressed a zoomed-out window.
-    let [life, half] = widths[..] else {
-        panic!("Larger was pressed {} times", widths.len());
+    assert_eq!(widths.len(), 2, "Larger was pressed once at each size");
+    let (life, half) = (widths.first().copied(), widths.last().copied());
+    let (Some(life), Some(half)) = (life, half) else {
+        return;
     };
     assert!(
         (half - life / 2).abs() <= 2,
