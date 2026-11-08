@@ -173,7 +173,13 @@ fn away_from(px: f32, py: f32, (l, t, r, b): (f32, f32, f32, f32)) -> f32 {
 /// One raster of `area`, each pixel a colour and how much of it there is.
 ///
 /// [`None`] for an area with no pixels. Shared with
-/// `crate::the_title_strip_drawn`, so straight alpha is written one way.
+/// `crate::the_title_strip_drawn`, so the alpha is written one way.
+///
+/// **Premultiplied on the way out**, because a renderer blends it so
+/// (`crate::painted::Washed`). Until 2026-11-08 this handed over the straight
+/// colour, and every pixel of a window's shadow was drawn as the canvas *plus*
+/// the shadow's navy: an opaque white rectangle round every application's
+/// window, as far out as the shadow reaches.
 pub(crate) fn raster(
     area: Rectangle<i32, Physical>,
     pixel: impl Fn(f32, f32) -> ([u8; 3], f32),
@@ -196,7 +202,7 @@ pub(crate) fn raster(
             pixels.extend_from_slice(&[red, green, blue, alpha]);
         }
     }
-    Some(Washed { area, pixels })
+    Some(Washed { area, pixels }.premultiplied())
 }
 
 #[cfg(test)]

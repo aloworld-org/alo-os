@@ -159,10 +159,17 @@ impl EdgePicture {
                 && across > 0
                 && down > 0
             {
-                drawn_icon.push(Washed {
-                    area,
-                    pixels: icon.scaled_to(across, down).pixels().to_vec(),
-                });
+                // **Premultiplied**, as everything a renderer blends must be
+                // (`crate::painted::Washed`): an icon is straight colour, and
+                // its soft edge would otherwise be drawn brighter than either
+                // the icon or the strip under it.
+                drawn_icon.push(
+                    Washed {
+                        area,
+                        pixels: icon.scaled_to(across, down).pixels().to_vec(),
+                    }
+                    .premultiplied(),
+                );
             }
         }
 

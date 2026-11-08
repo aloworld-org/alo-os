@@ -535,3 +535,116 @@ fn both_windows_edges_reach_the_bytes_a_display_would_scan_out() {
         "adding a second window's edge moved the first window's"
     );
 }
+
+/// **A window's shadow darkens what is under it and never lightens it** — read
+/// back from the bytes a display would scan out, through the real software
+/// renderer.
+///
+/// Found on a booted machine on 2026-11-08: Dolphin stood in an opaque white
+/// rectangle reaching 57 pixels past its sides, its shadow's whole reach. The
+/// shadow's raster was handed over in straight alpha and both renderers blend
+/// premultiplied, so a pixel of navy at almost no alpha was drawn as the
+/// ground **plus** navy, which on the cream canvas runs past 255 in every
+/// channel. Every test of the raster passed, because each read its bytes, or
+/// composited them by hand the straight way; only the renderer's own blend
+/// shows the fault, which is why this asks the renderer.
+#[test]
+fn a_windows_shadow_never_lightens_the_ground_under_it() {
+    use crate::window_edge::{Decorations, edge_of};
+    use crate::window_edge_look::WhichLook;
+    use crate::window_edge_paint::Pointing;
+    use crate::window_edge_picture::{EdgePicture, OverTheEdge, TheWindow};
+    use smithay::utils::Logical;
+
+    let size = (400, 400);
+    let mut faces = cosmic_text::FontSystem::new();
+    faces
+        .db_mut()
+        .load_font_data(include_bytes!("../fonts/Inter.ttf").to_vec());
+    let window = Rectangle::<i32, Logical>::new((100, 150).into(), (200, 120).into());
+    // **The canvas cream under it**, as on the machine: on black a pixel of
+    // navy is lighter however it is blended, so the ground has to be light.
+    let cream = SignInPicture {
+        size,
+        surface: None,
+        solids: vec![Solid {
+            area: Rectangle::from_size(size.into()),
+            colour: [0xFA, 0xF7, 0xF2],
+        }],
+        inked: Vec::new(),
+        controls: Vec::new(),
+    };
+    for look in [WhichLook::Focused, WhichLook::NotFocused] {
+        let picture = EdgePicture::of(
+            &edge_of(
+                window,
+                Decorations::TheShellDraws,
+                true,
+                smithay::utils::Size::from(size),
+            ),
+            Pointing::default(),
+            OverTheEdge::default(),
+            TheWindow {
+                title: None,
+                look,
+                icon: None,
+                body: Some(window),
+            },
+            &mut faces,
+            size,
+            100,
+        )
+        .expect("the edge fits on this output");
+        let mut painter = SoftwarePainter::new().expect("a machine with no software renderer");
+        let drawn = painter
+            .paint(
+                extent(size),
+                &[],
+                &[],
+                &Cursor::Default,
+                crate::scene_native::NativeLayers {
+                    edges: std::slice::from_ref(&picture),
+                    ..only(NativeScene::SignIn(&cream))
+                },
+                alo_canvas::Camera::new(),
+            )
+            .expect("a frame carrying a window's edge was refused")
+            .0;
+        // The ground: a corner no shadow reaches.
+        let ground = pixel_at(&drawn, (2, 2));
+        assert_eq!(
+            ground,
+            [0xFA, 0xF7, 0xF2],
+            "the premise: the ground is the canvas cream, where a lightened pixel shows"
+        );
+        // A row through the window's middle, from its right side out past the
+        // whole of the shadow's reach — the band that came out white.
+        let row = u32::try_from(window.loc.y + window.size.h / 2).expect("on the output");
+        // From one past the line round the window, which is opaque by design.
+        let from = u32::try_from(window.loc.x + window.size.w + 1).expect("on the output");
+        let mut darkest = ground;
+        for x in from..from + 80 {
+            let it = pixel_at(&drawn, (x, row));
+            for channel in 0..3 {
+                assert!(
+                    it[channel] <= ground[channel].saturating_add(1),
+                    "{look:?}: the pixel at ({x}, {row}) is {it:?}, lighter than the ground \
+                     {ground:?} under it: the shadow was blended as straight colour"
+                );
+            }
+            let total = |pixel: [u8; 3]| pixel.iter().map(|c| u32::from(*c)).sum::<u32>();
+            if total(it) < total(darkest) {
+                darkest = it;
+            }
+        }
+        // **The premise that makes the claim mean something**: a shadow was
+        // drawn there at all, so the row is not merely untouched ground.
+        assert!(
+            darkest
+                .iter()
+                .zip(ground)
+                .any(|(it, under)| *it + 2 < under),
+            "{look:?}: no shadow was drawn beside the window, so nothing above was tested"
+        );
+    }
+}
