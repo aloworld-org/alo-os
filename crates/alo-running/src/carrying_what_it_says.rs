@@ -32,7 +32,7 @@
 use std::io::{Read, Write};
 use std::process::{Child, ExitStatus};
 
-use crate::the_helpers_word::{Listening, StartRefused};
+use crate::the_helpers_word::{Listening, TheHelperSaid};
 
 /// Where a boxed command's output goes, and where its input comes from.
 pub enum Carrying<'a> {
@@ -74,7 +74,7 @@ pub(crate) fn carried_and_heard(
     child: &mut Child,
     carrying: Carrying<'_>,
     word: Option<&str>,
-) -> std::io::Result<(ExitStatus, Option<StartRefused>)> {
+) -> std::io::Result<(ExitStatus, Option<TheHelperSaid>)> {
     let said = child.stdout.take();
     let complained = child.stderr.take();
     let input = child.stdin.take();
@@ -110,7 +110,7 @@ fn both_carried(
     ),
     (out, err): (&mut (dyn Write + Send), &mut (dyn Write + Send)),
     word: Option<&str>,
-) -> std::io::Result<(ExitStatus, Option<StartRefused>)> {
+) -> std::io::Result<(ExitStatus, Option<TheHelperSaid>)> {
     std::thread::scope(|scope| {
         if let Some(mut from) = said {
             scope.spawn(move || copied(&mut from, out));
