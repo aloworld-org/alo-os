@@ -562,6 +562,18 @@ fn a_windows_shadow_never_lightens_the_ground_under_it() {
         .db_mut()
         .load_font_data(include_bytes!("../fonts/Inter.ttf").to_vec());
     let window = Rectangle::<i32, Logical>::new((100, 150).into(), (200, 120).into());
+    // **The canvas cream under it**, as on the machine: on black a pixel of
+    // navy is lighter however it is blended, so the ground has to be light.
+    let cream = SignInPicture {
+        size,
+        surface: None,
+        solids: vec![Solid {
+            area: Rectangle::from_size(size.into()),
+            colour: [0xFA, 0xF7, 0xF2],
+        }],
+        inked: Vec::new(),
+        controls: Vec::new(),
+    };
     for look in [WhichLook::Focused, WhichLook::NotFocused] {
         let picture = EdgePicture::of(
             &edge_of(
@@ -592,7 +604,7 @@ fn a_windows_shadow_never_lightens_the_ground_under_it() {
                 &Cursor::Default,
                 crate::scene_native::NativeLayers {
                     edges: std::slice::from_ref(&picture),
-                    ..crate::scene_native::NativeLayers::nothing()
+                    ..only(NativeScene::SignIn(&cream))
                 },
                 alo_canvas::Camera::new(),
             )
@@ -600,15 +612,16 @@ fn a_windows_shadow_never_lightens_the_ground_under_it() {
             .0;
         // The ground: a corner no shadow reaches.
         let ground = pixel_at(&drawn, (2, 2));
-        assert_ne!(
+        assert_eq!(
             ground,
-            [255, 255, 255],
-            "the premise: on a white ground a lightened pixel cannot be told from the ground"
+            [0xFA, 0xF7, 0xF2],
+            "the premise: the ground is the canvas cream, where a lightened pixel shows"
         );
         // A row through the window's middle, from its right side out past the
         // whole of the shadow's reach — the band that came out white.
         let row = u32::try_from(window.loc.y + window.size.h / 2).expect("on the output");
-        let from = u32::try_from(window.loc.x + window.size.w).expect("on the output");
+        // From one past the line round the window, which is opaque by design.
+        let from = u32::try_from(window.loc.x + window.size.w + 1).expect("on the output");
         let mut darkest = ground;
         for x in from..from + 80 {
             let it = pixel_at(&drawn, (x, row));
