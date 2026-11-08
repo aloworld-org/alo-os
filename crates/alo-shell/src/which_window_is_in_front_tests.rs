@@ -360,3 +360,71 @@ fn with_no_task_window_open_the_terminal_is_in_front_again() {
     assert_eq!(server.the_kind_in_front(), AKindOfWindow::TheTerminal);
     assert!(server.the_terminal_is_taking_the_keys());
 }
+
+/// **Super+Tab with only the terminal open, holding the keys out of sight,
+/// brings the view to it** — the walk of 2026-11-08, where the record was shut
+/// with the view on the empty space it had glided to, and Super+Tab left the
+/// terminal cut off at the bottom of the screen with the keys in it.
+#[test]
+fn super_tab_with_one_window_out_of_sight_brings_the_view_to_it() {
+    let (_runtime, mut server) = a_session();
+    let display = (1280, 800);
+    server.surfaces.popups.output_size = Some(smithay::utils::Size::from(display));
+    assert!(
+        server.open_alos_own_terminal(crate::the_terminal_a_person_opened::A_SENSIBLE_FIRST_GRID),
+        "the control: a terminal opened"
+    );
+    assert!(server.the_terminal_is_placed(display, 1.0, alo_strings::Direction::LeftToRight));
+    let placed = server
+        .where_the_terminal_is_on_the_plane()
+        .expect("the control: the terminal is placed");
+    server.the_person_went_to(AKindOfWindow::TheTerminal);
+    assert!(
+        server.pan_the_canvas(0, -600).is_some(),
+        "the control: a pan"
+    );
+    let seen = |server: &Server| {
+        crate::the_terminal_on_the_plane::on_the_screen(placed, server.the_camera())
+    };
+    let screen = Rectangle::<i32, Physical>::from_size(display.into());
+    assert!(
+        !screen.contains_rect(seen(&server)),
+        "the premise: the terminal is partly out of sight, {:?}",
+        seen(&server)
+    );
+
+    a_shortcut(&mut server, &[LEFT_SUPER], TAB);
+
+    assert!(
+        screen.contains_rect(seen(&server)),
+        "Super+Tab left the only window out of sight: {:?}",
+        seen(&server)
+    );
+    assert_eq!(the_keys_go_to(&server), AKindOfWindow::TheTerminal);
+    assert_eq!(
+        server.where_the_terminal_is_on_the_plane(),
+        Some(placed),
+        "the terminal was moved to the view instead"
+    );
+}
+
+/// **The refusal: in view, Super+Tab with one window moves nothing.**
+#[test]
+fn super_tab_with_one_window_in_view_moves_nothing() {
+    let (_runtime, mut server) = a_session();
+    let display = (1280, 800);
+    server.surfaces.popups.output_size = Some(smithay::utils::Size::from(display));
+    assert!(
+        server.open_alos_own_terminal(crate::the_terminal_a_person_opened::A_SENSIBLE_FIRST_GRID)
+    );
+    assert!(server.the_terminal_is_placed(display, 1.0, alo_strings::Direction::LeftToRight));
+    server.the_person_went_to(AKindOfWindow::TheTerminal);
+    let before = server.the_camera().at();
+    a_shortcut(&mut server, &[LEFT_SUPER], TAB);
+    assert_eq!(
+        server.the_camera().at(),
+        before,
+        "the view moved with nothing to bring in"
+    );
+    assert_eq!(the_keys_go_to(&server), AKindOfWindow::TheTerminal);
+}

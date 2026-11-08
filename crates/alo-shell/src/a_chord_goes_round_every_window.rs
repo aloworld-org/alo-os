@@ -22,7 +22,14 @@
 //! already use, then the terminal, then the task windows oldest first. *Next*
 //! starts from whatever has the keyboard: the task window holding it, the
 //! terminal if it is in front, or the application window focused. One stop is
-//! nowhere to go, and nothing moves.
+//! nowhere else to go: the keys stay where they are, **and the view still goes
+//! to it** where it is out of sight. Until 2026-11-08 nothing moved, which was
+//! right while every window was on the screen and stopped being right on the
+//! canvas (ADR 0145): with the record just closed and the terminal the only
+//! window, holding the keys below the view, Super+Tab did nothing at all, and
+//! the person was left typing into a window they could not see. A window the
+//! person goes to is travelled to (`the-canvas-as-a-workspace.md` §11), and
+//! the only window is the one they are going to.
 
 use alo_shortcuts::{Action, Chord, Shortcuts};
 
@@ -117,7 +124,11 @@ impl crate::Server {
             stops.push(AStop::TheRecord);
         }
         let here = self.the_stop_with_the_keyboard(by_application);
-        match the_next_stop(&stops, here.as_ref(), direction) {
+        // **The only window, holding the keys, is still gone to**, so the view
+        // travels to it where it is out of sight — see this file's header.
+        let going_to = the_next_stop(&stops, here.as_ref(), direction)
+            .or_else(|| here.filter(|it| stops.len() == 1 && stops.first() == Some(it)));
+        match going_to {
             Some(AStop::AWindow(surface)) => {
                 let _ = self.the_person_goes_to_this_window(&surface);
             }
