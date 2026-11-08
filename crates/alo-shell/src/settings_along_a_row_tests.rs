@@ -28,10 +28,13 @@ fn on(window: &mut SettingsWindow, row: &SettingsRow) {
 
 /// Every file the Appearance page keeps, as it is now.
 fn the_files(machine: &crate::settings_testing::Machine) -> Vec<Option<Vec<u8>>> {
-    [alo_appearance::keeping::THE_FILE, alo_dock::keeping::THE_FILE]
-        .into_iter()
-        .map(|file| bytes(&machine.kept(file)))
-        .collect()
+    [
+        alo_appearance::keeping::THE_FILE,
+        alo_dock::keeping::THE_FILE,
+    ]
+    .into_iter()
+    .map(|file| bytes(&machine.kept(file)))
+    .collect()
 }
 
 /// **Each row of choices on Appearance is walked by Right to its end and by
@@ -65,7 +68,11 @@ fn right_and_left_walk_each_row_of_choices_on_appearance_and_stop_at_its_ends() 
         };
         on(&mut window, first);
         press(&mut window, SettingsKey::Less, &door);
-        assert_eq!(window.focused(noon()).as_ref(), Some(first), "Left at the start");
+        assert_eq!(
+            window.focused(noon()).as_ref(),
+            Some(first),
+            "Left at the start"
+        );
         for part in row.iter().skip(1) {
             press(&mut window, SettingsKey::More, &door);
             assert_eq!(window.focused(noon()).as_ref(), Some(part), "Right");
