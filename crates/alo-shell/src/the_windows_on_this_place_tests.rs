@@ -82,7 +82,7 @@ fn settings_opened_over_a_task_window_covers_none_of_it() {
     let settings = server
         .where_settings_is_on_the_plane()
         .expect("Settings is on this Place");
-    let strip = crate::a_window_and_its_strip::ItsStrip::at(1.0, 100).expect("life size");
+    let strip = crate::a_window_and_its_strip::ItsStrip::at(100);
     assert!(
         !strip.round(settings).overlaps(strip.round(task)),
         "Settings {settings:?} covers the task window {task:?} or its strip"

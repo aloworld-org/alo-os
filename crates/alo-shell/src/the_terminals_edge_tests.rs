@@ -122,8 +122,9 @@ fn the_edge_follows_the_terminal_when_the_canvas_pans_and_zooms() {
     assert_ne!(after, before, "the edge stayed where the terminal was");
     assert_eq!(after.loc.y + after.size.h, drawn.loc.y);
     assert_eq!((after.loc.x, after.size.w), (drawn.loc.x, drawn.size.w));
-    // **Its own furniture is not zoomed**: the band is the design's 44 tall at
-    // any zoom, as an application's edge is.
+    // **Laid out here at a fixed 100 per cent**, the band is the design's 44
+    // units at any zoom; the draw and a press lay it out at the display's scale
+    // times the zoom, which `close_lands_at_every_zoom_and_scale` holds.
     assert_eq!(after.size.h, before.size.h);
 }
 
@@ -187,4 +188,69 @@ fn the_edge_is_drawn_at_both_scales() {
             .the_terminals_edge_picture(&mut fonts, &words, (2880, 2080), 200)
             .is_some()
     );
+}
+
+/// **Close lands where it is drawn at every zoom and every scale** — the edge
+/// shrinks and grows with its window since the owner's *"Title bars shrink
+/// with zoom"* of 2026-11-08, and a press is read at the same scale the draw
+/// lays the edge out at, so the middle of the drawn Close is Close.
+#[test]
+fn close_lands_at_every_zoom_and_scale() {
+    for scale in [100_u16, 150, 200] {
+        for zoom in [500, 1_000, 2_000] {
+            let (_runtime, mut server, mut fonts) = a_terminal("alo-terminal-edge-zoomed-close");
+            server.the_scale_edges_are_measured_at = scale;
+            // **Held at Close**, so zoomed in it is still on the display.
+            let held = server
+                .where_the_terminal_is
+                .map(|window| (window.loc.x + window.size.w - 20, window.loc.y))
+                .expect("the control: the terminal is drawn");
+            assert!(
+                server
+                    .zoom_the_canvas(Zoom::of(zoom).expect("a zoom"), held)
+                    .is_some(),
+                "the control: the canvas zoomed to {zoom}"
+            );
+            let _ = server.the_terminal_fits_its_window(
+                &mut fonts,
+                A_DISPLAY,
+                1.0,
+                Direction::LeftToRight,
+            );
+            let drawn_at = server.the_scale_an_edge_is_drawn_at(u32::from(scale));
+            assert_eq!(
+                drawn_at,
+                u32::from(scale) * zoom / 1_000,
+                "the edge is not drawn at the display's scale times the zoom"
+            );
+            let edge = server
+                .the_terminals_edge(anywhere(), drawn_at)
+                .expect("a terminal drawn has an edge");
+            let close = edge
+                .controls
+                .iter()
+                .find(|control| control.does == OnTheEdge::Close)
+                .expect("Close is on the edge")
+                .target;
+            // The middle of Close, in the display's pixels, as the draw puts it.
+            let middle = |at: i32, across: i32| {
+                i32::try_from((i64::from(at) * 2 + i64::from(across)) * i64::from(drawn_at) / 200)
+                    .expect("on the display")
+            };
+            let (x, y) = (
+                middle(close.loc.x, close.size.w),
+                middle(close.loc.y, close.size.h),
+            );
+            assert!(
+                server.the_terminals_edge_is_under((x, y).into()),
+                "at {scale} % and zoom {zoom}, nothing of the edge is under the middle of Close                  ({x}, {y})"
+            );
+            press_at(&mut server, x, y);
+            assert!(
+                server.alos_own_terminal().is_none()
+                    || server.the_question_closing_asks().is_some(),
+                "at {scale} % and zoom {zoom}, a press on the middle of Close ({x}, {y}) did not                  reach Close"
+            );
+        }
+    }
 }

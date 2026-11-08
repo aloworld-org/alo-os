@@ -51,3 +51,36 @@ fn at_two_hundred_a_client_windows_edge_meets_its_window_when_drawn() {
         "drawn back at 200, the edge's foot is not the window's top"
     );
 }
+
+/// **The edge's scale is the display's times the zoom** — the owner's
+/// *"Title bars shrink with zoom"* of 2026-11-08 — at three zooms and three
+/// scales, and refuses nothing it cannot multiply by.
+#[test]
+fn an_edge_is_scaled_by_the_display_and_the_zoom() {
+    use super::a_scale_through_the_zoom;
+    for (display, zoom, scaled) in [
+        (100, 0.5, 50),
+        (100, 1.0, 100),
+        (100, 2.0, 200),
+        (150, 0.5, 75),
+        (150, 1.0, 150),
+        (150, 2.0, 300),
+        (200, 0.5, 100),
+        (200, 1.0, 200),
+        (200, 2.0, 400),
+    ] {
+        assert_eq!(
+            a_scale_through_the_zoom(display, zoom),
+            scaled,
+            "{display} % at {zoom}"
+        );
+    }
+    // A zoom nothing can multiply by is life size; a display of nought is the
+    // ordinary one; and a far zoom out is never a scale of nothing.
+    for zoom in [0.0, -1.0, f64::NAN, f64::INFINITY] {
+        assert_eq!(a_scale_through_the_zoom(150, zoom), 150, "a zoom of {zoom}");
+    }
+    assert_eq!(a_scale_through_the_zoom(0, 1.0), 100);
+    assert_eq!(a_scale_through_the_zoom(100, 0.001), 1);
+    assert_eq!(a_scale_through_the_zoom(u32::MAX, 10.0), u32::MAX);
+}

@@ -138,12 +138,12 @@ impl crate::Server {
         let zoom = crate::scene::drawn_at(camera);
         // **With the title strip above every window**, its own included
         // (`crate::a_window_and_its_strip`).
-        let Some(strip) = crate::a_window_and_its_strip::ItsStrip::at(
-            zoom,
-            self.the_scale_an_edge_is_measured_at(),
-        ) else {
+        let strip = crate::a_window_and_its_strip::ItsStrip::at(
+            self.the_display_scale_edges_are_measured_at(),
+        );
+        if zoom <= 0.0 {
             return false;
-        };
+        }
         #[expect(
             clippy::cast_possible_truncation,
             reason = "a display divided by a zoom of at least a twentieth fits an i32"

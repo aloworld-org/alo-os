@@ -229,15 +229,13 @@ impl Server {
             return 0;
         }
         // **Every window with the title strip above it** — the new one and each
-        // already open — at the zoom it opens at and this display's scale
+        // already open — at this display's scale, which on the plane is the
+        // same at every zoom because the strip zooms with its window
         // (`crate::a_window_and_its_strip`). Without it a window opened below
         // another had its strip drawn over the gap and into the one above.
-        let Some(strip) = crate::a_window_and_its_strip::ItsStrip::at(
-            zoom,
-            self.the_scale_an_edge_is_measured_at(),
-        ) else {
-            return 0;
-        };
+        let strip = crate::a_window_and_its_strip::ItsStrip::at(
+            self.the_display_scale_edges_are_measured_at(),
+        );
         let now = std::time::Instant::now();
         let at = camera.at();
         // **The visible area, not the output.** The person can only reach what

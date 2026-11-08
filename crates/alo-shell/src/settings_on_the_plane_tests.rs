@@ -177,7 +177,7 @@ fn settings_opened_over_a_full_view_glides_there_and_covers_nothing() {
     let settings = server
         .where_settings_is_on_the_plane()
         .expect("Settings is on this Place");
-    let strip = crate::a_window_and_its_strip::ItsStrip::at(1.0, 100).expect("life size");
+    let strip = crate::a_window_and_its_strip::ItsStrip::at(100);
     assert!(
         !strip.round(settings).overlaps(strip.round(terminal)),
         "Settings {settings:?} covers the terminal {terminal:?} or its strip"

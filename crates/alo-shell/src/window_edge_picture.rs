@@ -214,14 +214,29 @@ impl EdgePicture {
                 ..
             } = was_fitted;
             whole = all.clone();
-            if !shown.is_empty() {
+            // **In this edge’s pixels**: fitted in the edge’s own units above, and
+            // drawn at the scale the edge is drawn at, which since 2026-11-08
+            // carries the canvas zoom (`Server::the_scale_an_edge_is_drawn_at`), so the
+            // title shrinks with its strip rather than spilling out of it.
+            #[expect(
+                clippy::cast_possible_truncation,
+                reason = "a scale of a few hundredths to a few hundred per cent is well inside an f32"
+            )]
+            let fraction = as_a_fraction as f32;
+            let in_pixels =
+                cosmic_text::Metrics::new(THE_LABEL_IS * fraction, THE_LINE_IS * fraction);
+            // **And left out below the smallest a letter can be drawn at**,
+            // where it would be a smudge rather than a word: the strip, its
+            // icon and its controls are still drawn, and the whole title is
+            // still what a reader is told.
+            if !shown.is_empty() && in_pixels.font_size >= THE_SMALLEST_TITLE_IS {
                 // **On the strip's own ground, in the look's ink**: navy on the
                 // focused window's white, muted on every other's cream.
                 let shaped = painted_text::sentence(
                     fonts,
                     shown,
                     scaled(room, scale),
-                    metrics,
+                    in_pixels,
                     colours.strip,
                     colours.ink,
                 );
@@ -344,6 +359,14 @@ const THE_LABEL_IS: f32 = 13.0;
 
 /// Its line height.
 const THE_LINE_IS: f32 = 18.0;
+
+/// **The smallest a title is drawn at, in the display’s pixels**: eight. Below
+/// it a zoomed-out title is left out rather than drawn as a smudge, and the
+/// strip keeps its icon and controls. Chosen by this lane on 2026-11-08 when the
+/// owner answered *"Title bars shrink with zoom"*; the design names no minimum
+/// for the canvas, and `docs/design/where-a-new-window-opens.md` records the
+/// choice for the owner to change.
+pub(crate) const THE_SMALLEST_TITLE_IS: f32 = 8.0;
 
 /// One logical length in output pixels, at `scale` hundredths.
 fn scaled(length: i32, scale: u32) -> i32 {

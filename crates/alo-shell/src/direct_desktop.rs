@@ -2037,7 +2037,7 @@ impl LoopInput for Desk<'_> {
             server,
             self.labels,
             this_display.1,
-            u32::from(this_display.0),
+            server.the_scale_an_edge_is_drawn_at(u32::from(this_display.0)),
         );
         // **And each task window's, carrying Close.** On this display only,
         // because the task windows are drawn on this display only. **Kept
@@ -2049,7 +2049,7 @@ impl LoopInput for Desk<'_> {
             server,
             &mut self.labels.fonts,
             this_display.1,
-            u32::from(this_display.0),
+            server.the_scale_an_edge_is_drawn_at(u32::from(this_display.0)),
         );
         // **And alo's terminal's**: its title, its icon and Close, drawn with
         // the terminal wherever it is in the order (`crate::the_terminals_edge`).
@@ -2057,7 +2057,7 @@ impl LoopInput for Desk<'_> {
             &mut self.labels.fonts,
             self.strings,
             this_display.1,
-            u32::from(this_display.0),
+            server.the_scale_an_edge_is_drawn_at(u32::from(this_display.0)),
         );
         // **Where the fixed controls ended up, handed to the drag that has to
         // avoid them.** The draw is the only place that knows: these are laid
@@ -2184,7 +2184,7 @@ impl LoopInput for Desk<'_> {
                 server,
                 self.labels,
                 (size.w, size.h),
-                u32::from(its_scale),
+                server.the_scale_an_edge_is_drawn_at(u32::from(its_scale)),
             );
             theirs.push((other, its_pictures, its_edges, its_scale));
         }
@@ -2486,14 +2486,17 @@ impl LoopInput for Desk<'_> {
             &mut self.labels.fonts,
             self.strings,
             (size.w, size.h),
-            u32::from(frame.display_scale),
+            server.the_scale_an_edge_is_drawn_at(u32::from(frame.display_scale)),
         );
         // **And the record's**, laid out over its body where this frame drew
         // it (`crate::record_edge`).
         let records_edge = server.the_records_edge_picture(
             &mut self.labels.fonts,
             self.strings,
-            ((size.w, size.h), u32::from(frame.display_scale)),
+            (
+                (size.w, size.h),
+                server.the_scale_an_edge_is_drawn_at(u32::from(frame.display_scale)),
+            ),
             crate::RecordLook {
                 scheme: frame.look.scheme(),
                 scale: frame.look.scale(),
