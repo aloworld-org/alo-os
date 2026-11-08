@@ -15,7 +15,8 @@
 //! - **Delete** puts a section whose file did not read back as shipped — the
 //!   one act that replaces such a file, and one the section is told it may
 //!   take in its own crate's sentence;
-//! - **Left** and **Right** make the text size smaller and larger;
+//! - **Left** and **Right** make the text size smaller and larger, and move
+//!   along a row of choices (`crate::settings_along_a_row`);
 //! - **Escape** closes the window, from either column.
 //!
 //! Nothing is a letter, so nothing types; and a chord with Control, Alt or the
@@ -48,9 +49,11 @@ pub enum SettingsKey {
     PutBackAsShipped,
     /// Close the window. Escape.
     Close,
-    /// Less of what the row holds: a smaller text size. Left.
+    /// Less of what the row holds — a smaller text size — or the choice before
+    /// on a row of choices. Left.
     Less,
-    /// More of what the row holds: a larger text size. Right.
+    /// More of what the row holds — a larger text size — or the choice after
+    /// on a row of choices. Right.
     More,
     /// Anything else, which does nothing at all.
     Nothing,

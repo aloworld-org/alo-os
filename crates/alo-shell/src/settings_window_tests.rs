@@ -2324,13 +2324,13 @@ fn one_press_lets_alo_act_without_asking_and_one_press_stops_it() {
 /// (`docs/design/the-settings-window.md`, *The keyboard*): each part is a row
 /// of its own, so **Down** walks Default, Large, Larger, Kite, Classic, Navy,
 /// White and Black in turn; **Enter** chooses the one it is on; **Tab** goes to
-/// the next section; and **Left and Right** change the text size only.
+/// the next section; and **Left and Right** move along each row of choices and
+/// stop at its ends — the owner's *"Yes, also Left/Right"* of 2026-11-08.
 ///
 /// The walk of 2026-11-08 pressed Tab and Right on *Pointer size* and read
-/// the Pointer section as out of reach. Tab leaving the section and Right
-/// doing nothing are this rule, held here so that a change to it is a
-/// decision and not an accident; the road to every choice is Down, held here
-/// too, from the keys the walk pressed.
+/// the Pointer section as out of reach. Tab leaving the section is the rule;
+/// Right now moves along the row, and Down still reaches every choice — both
+/// held here, from the keys the walk pressed.
 #[test]
 fn every_pointer_choice_is_reached_and_chosen_from_the_keyboard() {
     let machine = a_persons_machine("pointer-keys");
@@ -2365,11 +2365,36 @@ fn every_pointer_choice_is_reached_and_chosen_from_the_keyboard() {
     press(&mut window, SettingsKey::NextSection);
     assert_eq!(window.focused(noon()), Some(parts[0].clone()));
 
-    // **Right and Left do nothing here**, and write nothing.
-    assert_eq!(press(&mut window, SettingsKey::More), None);
-    assert_eq!(press(&mut window, SettingsKey::Less), None);
-    assert_eq!(window.focused(noon()), Some(parts[0].clone()));
+    // **Right and Left move along each row and stop at its ends**, and write
+    // nothing: three rows, of three, two and three choices.
+    for row in [&parts[0..3], &parts[3..5], &parts[5..8]] {
+        focus_on(&mut window, &row[0], &strings, &door);
+        assert_eq!(
+            press(&mut window, SettingsKey::Less),
+            None,
+            "Left at the start"
+        );
+        assert_eq!(window.focused(noon()).as_ref(), Some(&row[0]), "{row:?}");
+        for part in &row[1..] {
+            assert_eq!(press(&mut window, SettingsKey::More), None);
+            assert_eq!(window.focused(noon()).as_ref(), Some(part), "Right");
+        }
+        let last = row.last().unwrap();
+        press(&mut window, SettingsKey::More);
+        assert_eq!(
+            window.focused(noon()).as_ref(),
+            Some(last),
+            "Right left the row at its end"
+        );
+        for part in row.iter().rev().skip(1) {
+            press(&mut window, SettingsKey::Less);
+            assert_eq!(window.focused(noon()).as_ref(), Some(part), "Left");
+        }
+    }
     assert_eq!(bytes(&appearance), None, "Right or Left wrote the file");
+    // **Moving is not choosing**: what a machine comes with is still held.
+    assert_eq!(window.pointer_size(), Some(PointerSize::Default));
+    focus_on(&mut window, &parts[0], &strings, &door);
 
     // **Down walks every choice of the section, in the order drawn**, and
     // then leaves it for the next.
