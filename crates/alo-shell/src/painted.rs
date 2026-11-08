@@ -74,13 +74,11 @@ impl Washed {
     /// one is black: nothing at all, to a premultiplied blend.
     #[must_use]
     pub(crate) fn premultiplied(mut self) -> Self {
-        for pixel in self.pixels.chunks_exact_mut(4) {
-            if let [red, green, blue, alpha] = pixel {
-                let alpha = u32::from(*alpha);
-                for channel in [red, green, blue] {
-                    let times = (u32::from(*channel) * alpha + 127) / 255;
-                    *channel = u8::try_from(times).unwrap_or(u8::MAX);
-                }
+        for [red, green, blue, alpha] in self.pixels.as_chunks_mut::<4>().0 {
+            let alpha = u32::from(*alpha);
+            for channel in [red, green, blue] {
+                let times = (u32::from(*channel) * alpha + 127) / 255;
+                *channel = u8::try_from(times).unwrap_or(u8::MAX);
             }
         }
         self
