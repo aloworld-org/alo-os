@@ -60,7 +60,8 @@ impl ItsStrip {
     pub(crate) fn at(scale: u32) -> Self {
         let scale = if scale == 0 { ORDINARY } else { scale };
         let on_the_plane = |units: i32| -> i32 {
-            let it = (i64::from(units) * i64::from(scale)).div_ceil(i64::from(ORDINARY));
+            let units = u64::try_from(units).unwrap_or(0);
+            let it = (units * u64::from(scale)).div_ceil(u64::from(ORDINARY));
             i32::try_from(it).unwrap_or(i32::MAX)
         };
         Self {
