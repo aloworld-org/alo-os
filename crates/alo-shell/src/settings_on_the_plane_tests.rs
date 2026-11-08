@@ -153,3 +153,44 @@ fn shut_it_leaves_the_canvas() {
     assert!(server.settings_as_a_frame().is_none());
     assert!(server.settings_on_the_plane.is_none());
 }
+
+/// **Settings opened over a view alo's terminal fills: the view glides to it,
+/// and it covers neither the terminal nor the terminal's strip** — the walk
+/// of 2026-11-08 at 1280 × 800, where Super+I put Settings above the terminal,
+/// over the terminal's Close, and the view stayed where it was.
+#[test]
+fn settings_opened_over_a_full_view_glides_there_and_covers_nothing() {
+    let (_directory, mut server) = with_settings_open("settings-full-view");
+    server.surfaces.popups.output_size = Some(Size::from((1280, 800)));
+    assert!(
+        server.open_alos_own_terminal(crate::the_terminal_a_person_opened::A_SENSIBLE_FIRST_GRID)
+    );
+    assert!(
+        server.the_terminal_is_placed((1280, 800), 1.0, Direction::LeftToRight),
+        "the control: the terminal was placed"
+    );
+    let terminal = server
+        .where_the_terminal_is_on_the_plane()
+        .expect("the terminal is on this Place");
+    let before = server.the_camera().at();
+    assert!(server.settings_is_placed((1152, 688), (1280, 800), Direction::LeftToRight));
+    let settings = server
+        .where_settings_is_on_the_plane()
+        .expect("Settings is on this Place");
+    let strip = crate::a_window_and_its_strip::ItsStrip::at(1.0, 100).expect("life size");
+    assert!(
+        !strip.round(settings).overlaps(strip.round(terminal)),
+        "Settings {settings:?} covers the terminal {terminal:?} or its strip"
+    );
+    assert!(
+        server.the_view_is_gliding(),
+        "the view did not set off for Settings, from {before:?}"
+    );
+    let _ =
+        server.the_glide_moves_on(std::time::Instant::now() + std::time::Duration::from_secs(5));
+    let seen = crate::the_terminal_on_the_plane::on_the_screen(settings, server.the_camera());
+    assert!(
+        Rectangle::<i32, Physical>::from_size((1280, 800).into()).contains_rect(seen),
+        "after the glide Settings is not in view: {seen:?}"
+    );
+}
