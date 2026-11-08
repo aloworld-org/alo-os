@@ -332,9 +332,22 @@ fn main() -> ExitCode {
                 std::fs::read_to_string(alo_capability::the_sealed_box_here::THE_MOUNTS).is_ok_and(
                     |mounts| alo_capability::the_sealed_box_here::the_root_is_composefs(&mounts),
                 );
-            let says = WhatItSays::of(&not_run, root_is_composefs);
-            eprintln!("{}", says.said(&not_run, &strings));
-            eprintln!("alo-try: {not_run}");
+            //
+            // **And there, that sentence is all the terminal shows**: the
+            // account goes to the journal, and comes back here only if the
+            // journal will not take it (`WhatItSays::told`).
+            let told = WhatItSays::of(&not_run, root_is_composefs).told(&not_run, &strings);
+            for line in &told.on_the_terminal {
+                eprintln!("{line}");
+            }
+            if let Some(account) = told.for_the_journal
+                && let Err(why) = alo_try::the_journal::written_to_the_journal(
+                    std::path::Path::new(alo_try::the_journal::THE_JOURNALS_SOCKET),
+                    &account,
+                )
+            {
+                eprintln!("{account} (the journal would not take this: {why})");
+            }
             ExitCode::FAILURE
         }
     }

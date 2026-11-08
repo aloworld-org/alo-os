@@ -336,14 +336,15 @@ impl<'a, R: SomewhereToWrite> WhereCommandsRun<'a, R> {
         let ended = match carried_and_heard(&mut child, carrying, Some(&word)) {
             // **The helper said the box refused the command**: nothing ran,
             // and that is what is written down and said.
-            Ok((_, Some(refused))) => {
+            Ok((_, Some(said))) => {
                 return Err(put_back(
                     self.boundary,
                     the_box,
                     Some(which),
                     NotRun::TheBoxRefusedTheCommand {
                         program: what.program().to_path_buf(),
-                        refused,
+                        refused: said.refused,
+                        account: said.account,
                     },
                 ));
             }

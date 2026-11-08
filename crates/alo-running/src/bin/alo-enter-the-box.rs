@@ -46,24 +46,21 @@ fn main() -> ExitCode {
     // Returns only on failure. On success this process is the command and
     // nothing below here runs.
     let why = alo_running::enter_the_box_and_become(&inside, &the_box, &program, &arguments);
-    // **Said to the runner first**, in the one line it listens for, so a
-    // refused start is never read as a command that ran and failed.
-    if let Some(word) = word
-        && alo_running::it_was_joined(&why)
-    {
-        use std::io::Write;
-        // Let go of on purpose, as `refused` says: there is nowhere else.
-        write!(
-            std::io::stderr(),
-            "{}",
-            alo_running::the_helpers_word::the_refusal_line(&word, why.kind())
-        )
-        .ok();
-    }
-    refused(&format!(
+    // **Said to the runner, in the one line it listens for, and only there**
+    // when the box was joined: a refused start is never read as a command that
+    // ran and failed, and the account rides on that line rather than reaching
+    // the person's terminal beside the caller's own sentence
+    // (`alo_running::the_helpers_word`).
+    let account = format!(
         "{} did not start inside {}: {why}",
         program.display(),
         the_box.display()
+    );
+    let joined = alo_running::it_was_joined(&why).then(|| why.kind());
+    written(&alo_running::the_helpers_word::what_the_helper_writes(
+        word.as_deref(),
+        joined,
+        &account,
     ))
 }
 
@@ -73,7 +70,7 @@ fn main() -> ExitCode {
 /// this program is `alo-running` and a missing argument there is a bug in that
 /// crate rather than a person holding it wrongly.
 fn said(missing: &str) -> ExitCode {
-    refused(&format!("nothing said {missing}"))
+    written(&format!("alo-enter-the-box: nothing said {missing}\n"))
 }
 
 /// Writes a refusal and stops, **without panicking if the write is refused.**
@@ -84,9 +81,9 @@ fn said(missing: &str) -> ExitCode {
 /// command that would not start ended with Rust's panic code, 101, and no word
 /// to anybody. A refusal that cannot be written still ends as a refusal, with
 /// this program's own code.
-fn refused(why: &str) -> ExitCode {
+fn written(refusal: &str) -> ExitCode {
     use std::io::Write;
     // Let go of on purpose: there is nowhere else to say it.
-    writeln!(std::io::stderr(), "alo-enter-the-box: {why}").ok();
+    write!(std::io::stderr(), "{refusal}").ok();
     ExitCode::FAILURE
 }

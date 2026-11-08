@@ -57,6 +57,7 @@
 use std::path::{Path, PathBuf};
 
 pub mod a_scope_of_its_own;
+pub mod the_journal;
 pub mod when_the_box_cannot_run_it;
 
 /// Where a person's own boxes are made: a child of the cgroup this process is
