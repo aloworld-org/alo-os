@@ -383,86 +383,105 @@ pub const EVERY_GATE: &[Gate] = &[
 ///
 /// # Errors
 /// A sentence naming the gate and the last of what it printed. Stopping at the
-/// first is deliberate: the others' output would be noise around the one thing
-/// that has to be fixed.
+/// first is deliberate **here**, where a loop is deciding whether to publish:
+/// the others' output would be noise around the one thing that has to be fixed.
+/// A caller that has to account for every gate — continuous integration — asks
+/// [`crate::every_gate`] instead, which runs [`judged`] for each one whatever
+/// the one before it said.
 pub fn all_of_them(at: &Path, touched: &[String]) -> Result<Vec<String>, String> {
+    prepared(at, touched)?;
+    let mut passed = Vec::new();
+    for gate in EVERY_GATE {
+        passed.push(judged(gate, at)?);
+    }
+    Ok(passed)
+}
+
+/// What has to be true of this machine and this checkout before any gate runs.
+///
+/// # Errors
+/// A sentence saying what is missing, before anything was built.
+pub fn prepared(at: &Path, touched: &[String]) -> Result<(), String> {
     copied_where_it_builds(at)?;
     the_machine_is_ready(at)?;
     forget_what_was_built_of(at, touched);
-    let mut passed = Vec::new();
-    for gate in EVERY_GATE {
-        // **A gate that fails is run once more before it is believed.**
-        //
-        // Two loops share this machine, and not every test is indifferent to
-        // how much of it it gets. `window_controls::name_fallback` failed in
-        // both lanes tonight and passed alone on the same commit, 262 of 262 —
-        // timing under contention rather than a defect. The cost of believing
-        // it was two tasks parked for a reason that had nothing to do with
-        // them, in a crate neither lane touches.
-        //
-        // **This does not make a failure ignorable.** A gate that fails twice
-        // fails, and the second run is the whole of the tolerance: a real break
-        // fails both times, and no flag anywhere turns a gate off. What it
-        // removes is the transient — the one kind of failure that says nothing
-        // about the work.
-        let began = Instant::now();
-        let mut refused = match ran(gate, at)? {
-            Ok(coverage) => {
-                passed.push(said_of(gate.named, began.elapsed(), &coverage));
-                continue;
-            }
-            Err(why) => why,
-        };
-        // **Asked before the retry, because a full disk is not a transient.**
-        // The second run exists for a failure that *might* not happen again;
-        // a filesystem with no room left will refuse identically and the retry
-        // is pure cost. Measured on 2026-10-13: a run that filled the disk was
-        // re-run in full before anybody was told, and the second attempt took
-        // as long as the first.
-        if let Some(why) = only_a_person_can_clear_this(&refused) {
-            return Err(needs_a_person_to_clear_it(gate.named, why, &refused));
-        }
-        let again = Instant::now();
-        if let Ok(coverage) = ran(gate, at)? {
-            // Both durations, because the first one is how long the failure
-            // took and that is the more interesting of the two when a gate is
-            // failing transiently: a refusal in a second is a different animal
-            // from a refusal in nine minutes.
-            passed.push(format!(
-                "{} in {:.0?} (on the second run; the first refused after {:.0?}{}){}",
-                gate.named,
-                again.elapsed(),
-                began.elapsed().saturating_sub(again.elapsed()),
-                which_ones_refused(&refused),
-                beside(&coverage)
-            ));
-            continue;
-        }
-        // **Twice is the work — unless what refused it was the machine.** A
-        // compiler that cannot allocate memory, or a distribution that did not
-        // answer, fails as reliably as a broken change and says nothing
-        // whatever about it. Reported as the work, it parks something finished
-        // under a sentence blaming it, which happened twice on 2026-09-11.
-        // **Asked a second time**, because a gate can fill the disk on its
-        // *second* run having had room on its first — the first run's own
-        // artefacts are what took the space.
-        if let Some(why) = only_a_person_can_clear_this(&refused) {
-            return Err(needs_a_person_to_clear_it(gate.named, why, &refused));
-        }
-        if let Some(why) = the_machine_rather_than_the_work(&refused) {
-            return Err(format!(
-                "{NOT_READY_TO_BE_GATED}: {why}. The gate `{}` was not answering about the \
-                 change. Nothing was staged, committed or pushed, and the work is where it \
-                 was. What it said:\n\n{refused}",
-                gate.named
-            ));
-        }
-        refused.push_str(
-            "\n\nRun twice and refused both times, so this is the work rather than the machine.",
-        );
-        return Err(refused);
+    Ok(())
+}
+
+/// One gate, run, and run once more if it refused, and judged.
+///
+/// The answer is the line a person reads either way: what passed and how long
+/// it took, or why it was refused and whose fault the refusal is.
+///
+/// # Errors
+/// The refusal, in the words [`all_of_them`] has always used for it.
+pub fn judged(gate: &Gate, at: &Path) -> Result<String, String> {
+    // **A gate that fails is run once more before it is believed.**
+    //
+    // Two loops share this machine, and not every test is indifferent to
+    // how much of it it gets. `window_controls::name_fallback` failed in
+    // both lanes tonight and passed alone on the same commit, 262 of 262 —
+    // timing under contention rather than a defect. The cost of believing
+    // it was two tasks parked for a reason that had nothing to do with
+    // them, in a crate neither lane touches.
+    //
+    // **This does not make a failure ignorable.** A gate that fails twice
+    // fails, and the second run is the whole of the tolerance: a real break
+    // fails both times, and no flag anywhere turns a gate off. What it
+    // removes is the transient — the one kind of failure that says nothing
+    // about the work.
+    let began = Instant::now();
+    let mut refused = match ran(gate, at)? {
+        Ok(coverage) => return Ok(said_of(gate.named, began.elapsed(), &coverage)),
+        Err(why) => why,
+    };
+    // **Asked before the retry, because a full disk is not a transient.**
+    // The second run exists for a failure that *might* not happen again;
+    // a filesystem with no room left will refuse identically and the retry
+    // is pure cost. Measured on 2026-10-13: a run that filled the disk was
+    // re-run in full before anybody was told, and the second attempt took
+    // as long as the first.
+    if let Some(why) = only_a_person_can_clear_this(&refused) {
+        return Err(needs_a_person_to_clear_it(gate.named, why, &refused));
     }
-    Ok(passed)
+    let again = Instant::now();
+    if let Ok(coverage) = ran(gate, at)? {
+        // Both durations, because the first one is how long the failure
+        // took and that is the more interesting of the two when a gate is
+        // failing transiently: a refusal in a second is a different animal
+        // from a refusal in nine minutes.
+        return Ok(format!(
+            "{} in {:.0?} (on the second run; the first refused after {:.0?}{}){}",
+            gate.named,
+            again.elapsed(),
+            began.elapsed().saturating_sub(again.elapsed()),
+            which_ones_refused(&refused),
+            beside(&coverage)
+        ));
+    }
+    // **Twice is the work — unless what refused it was the machine.** A
+    // compiler that cannot allocate memory, or a distribution that did not
+    // answer, fails as reliably as a broken change and says nothing
+    // whatever about it. Reported as the work, it parks something finished
+    // under a sentence blaming it, which happened twice on 2026-09-11.
+    // **Asked a second time**, because a gate can fill the disk on its
+    // *second* run having had room on its first — the first run's own
+    // artefacts are what took the space.
+    if let Some(why) = only_a_person_can_clear_this(&refused) {
+        return Err(needs_a_person_to_clear_it(gate.named, why, &refused));
+    }
+    if let Some(why) = the_machine_rather_than_the_work(&refused) {
+        return Err(format!(
+            "{NOT_READY_TO_BE_GATED}: {why}. The gate `{}` was not answering about the \
+             change. Nothing was staged, committed or pushed, and the work is where it \
+             was. What it said:\n\n{refused}",
+            gate.named
+        ));
+    }
+    refused.push_str(
+        "\n\nRun twice and refused both times, so this is the work rather than the machine.",
+    );
+    Err(refused)
 }
 
 #[cfg(test)]

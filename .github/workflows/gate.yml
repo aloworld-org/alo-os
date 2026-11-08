@@ -962,6 +962,62 @@ jobs:
           # bypassed by the success that triggers it.* Found by reading this file before
           # landing the change that would first make the branch reachable, which is the
           # only reason it was found at all: it has never run.
+
+          # **Every gate the supervisor defines is answered, or the job fails.**
+          #
+          # Until 2026-11-07 the supervisor stopped at the first gate that refused, and
+          # on this runner that was always the workspace's tests, on the one test
+          # declared above. So rustdoc, the supervisor's three and the BPF target's two
+          # never ran on any pull request or queue build, and this step passed anyway:
+          # it read *which gate failed* and never asked *which gates ran*. A broken
+          # rustdoc link reached main through #1107 that way. `alo-kernel-loop gates`
+          # now runs every gate whatever the one before it said, and prints one
+          # `GATE defined | <name>` line per gate before any runs and one
+          # `GATE passed | <name>` or `GATE refused | <name>` as each finishes. A gate
+          # defined and not answered exactly once is a gate this job cannot vouch for,
+          # and nothing else would notice it, because a gate that never runs prints
+          # nothing at all. docs/misreadings/a-green-gate-check-that-ran-three-gates-of-nine.md
+          # has the account.
+          defined=$(sed -n 's/^GATE defined | //p' /tmp/the-gates.log 2>/dev/null || true)
+          if [ -z "$defined" ]; then
+            echo "The supervisor named no gates, so nothing can be accounted for."
+            echo "the supervisor named no gates" > /tmp/the-verdict
+            exit 1
+          fi
+          unanswered=""
+          echo "=== every gate the supervisor defines, and what it came to:"
+          while IFS= read -r gate; do
+            passed=$(grep -cxF "GATE passed | $gate" /tmp/the-gates.log || true)
+            refused=$(grep -cxF "GATE refused | $gate" /tmp/the-gates.log || true)
+            case "$passed$refused" in
+              10) echo "  passed   $gate" ;;
+              01) echo "  refused  $gate" ;;
+              *)  echo "  NOT RUN  $gate  (answered as passed $passed and refused $refused times)"
+                  unanswered="$unanswered$gate; " ;;
+            esac
+          done <<< "$defined"
+          if [ -n "$unanswered" ]; then
+            echo
+            echo "A gate above was defined and not answered exactly once, so it did not run and"
+            echo "nothing named it as not run. The job fails: a green check here would say"
+            echo "something about a gate nobody ran."
+            printf 'a gate was neither run nor named as not run: %s\n' "$unanswered" > /tmp/the-verdict
+            exit 1
+          fi
+          refused_gates=$(sed -n 's/^GATE refused | //p' /tmp/the-gates.log)
+          # **The exit code and the answers have to agree.** Two fields that must be
+          # consistent can be caught being wrong; a contradiction is its own outcome.
+          if [ "$code" = 0 ] && [ -n "$refused_gates" ]; then
+            echo "The gates exited 0 and a gate answered refused. Those cannot both be true."
+            echo "the gates' exit code and their answers disagree" > /tmp/the-verdict
+            exit 1
+          fi
+          if [ "$code" != 0 ] && [ -z "$refused_gates" ]; then
+            echo "The gates exited $code and every gate answered passed. Those cannot both be"
+            echo "true, so whatever failed is not a gate, and this job does not guess what."
+            echo "the gates' exit code and their answers disagree" > /tmp/the-verdict
+            exit 1
+          fi
           if [ "$code" = 0 ]; then
             echo "every gate passed on this runner, including the tests gate."
             still=$(grep -v '^[[:space:]]*#' "$declared" 2>/dev/null \
@@ -982,14 +1038,14 @@ jobs:
             exit 0
           fi
 
-          failed=$(sed -n 's/.*alo-kernel-loop: the gate `\(.*\)` did not pass.*/\1/p' \
-            /tmp/the-gates.log 2>/dev/null | head -1)
-          echo "the gate the supervisor named as failing: [${failed:-could not be read}]"
-          if [ "$failed" != "the workspace's tests" ]; then
+          other=$(printf '%s\n' "$refused_gates" | grep -vxF "the workspace's tests" || true)
+          if [ -n "$other" ]; then
             echo
-            echo "This is not the gate this runner is known to be unable to finish, so"
-            echo "whatever it is, it is not this runner's doing. The job fails."
-            echo "the runner's own '${failed:-unnamed}' gate failed" > /tmp/the-verdict
+            echo "=== gates that refused and are not the one this runner is known to be unable"
+            echo "    to finish:"
+            printf '%s\n' "$other" | sed 's/^/  /'
+            echo "Whatever they are, they are not this runner's doing. The job fails."
+            echo "the runner's own '$(printf '%s' "$other" | head -1)' gate failed" > /tmp/the-verdict
             exit 1
           fi
 
@@ -1058,8 +1114,11 @@ jobs:
           {
             echo "### the gates a hosted runner can run"
             echo
-            echo "All of them passed. \`$(wc -l < /tmp/declared.txt)\` tests could not run here and are"
-            echo "declared in \`$declared\`; every one of them still fails, so none is stale."
+            echo "All $(printf '%s\n' "$defined" | wc -l) gates ran. Every one passed except the workspace's"
+            echo "tests, and its only failures are the \`$(wc -l < /tmp/declared.txt)\` tests declared in"
+            echo "\`$declared\`; every one of them still fails, so none is stale."
+            echo
+            printf '%s\n' "$defined" | sed 's/^/- /'
             echo
             echo "This is **not** \`alo/nine-gates\`. That is posted by a lane, from a machine"
             echo "where all nine ran."
