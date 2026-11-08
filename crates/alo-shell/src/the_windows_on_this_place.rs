@@ -6,7 +6,15 @@ use smithay::utils::{Logical, Rectangle};
 
 impl crate::Server {
     /// The applications' windows on the Place being looked at, front first,
-    /// then alo's terminal and Settings where they are on it.
+    /// then alo's terminal, Settings, the record and the task windows where
+    /// they are on it.
+    ///
+    /// **The task windows since 2026-11-08.** Until then this list stopped at
+    /// the record, so the terminal, Settings or the record, opened over a view
+    /// a task window filled, found no window in the way and opened on top of
+    /// it — and the design promises a window the person opens goes to empty
+    /// space *without covering any window*. A task window placing itself does
+    /// not mind meeting itself here: the one being placed has no position yet.
     pub(crate) fn the_windows_on_this_place(&self) -> Vec<Rectangle<i32, Logical>> {
         let place = self.the_place_now();
         self.mapped_surfaces()
@@ -17,6 +25,20 @@ impl crate::Server {
             // **And the record**, a window on the canvas like Settings since
             // ADR 0145's fourth stage, so nothing opens over it unasked.
             .chain(self.where_the_record_is_on_the_plane())
+            .chain(
+                self.the_task_windows_on_the_plane()
+                    .into_iter()
+                    .map(|(_, window)| {
+                        Rectangle::new(
+                            (window.loc.x, window.loc.y).into(),
+                            (window.size.w, window.size.h).into(),
+                        )
+                    }),
+            )
             .collect()
     }
 }
+
+#[cfg(test)]
+#[path = "the_windows_on_this_place_tests.rs"]
+mod tests;
