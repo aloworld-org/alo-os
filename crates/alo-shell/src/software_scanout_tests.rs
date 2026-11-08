@@ -627,7 +627,10 @@ fn a_windows_shadow_never_lightens_the_ground_under_it() {
         // **The premise that makes the claim mean something**: a shadow was
         // drawn there at all, so the row is not merely untouched ground.
         assert!(
-            darkest.iter().zip(ground).any(|(it, under)| *it + 2 < under),
+            darkest
+                .iter()
+                .zip(ground)
+                .any(|(it, under)| *it + 2 < under),
             "{look:?}: no shadow was drawn beside the window, so nothing above was tested"
         );
     }
