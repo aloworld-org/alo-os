@@ -199,7 +199,20 @@ with:
   of the page**, which a walk relies on — **Tab** goes to the next section and
   from the last back to the side column, **Shift+Tab** the other way, and
   **Enter or Space** act. **Left and Right** make the text size smaller and
-  larger on Accessibility, and do nothing anywhere else.
+  larger on Accessibility, **move along a row of choices**, and do nothing
+  anywhere else.
+- **A row of choices** — a segmented choice (*Pointer size*, *Pointer shape*,
+  *Pointer colour*, *Light and dark*, *Where the Dock sits*) or the accent's
+  colours — is walked by **Left and Right** as well as by Down and Up. The
+  owner, 2026-11-08: *"Yes, also Left/Right"*, asked after a walk pressed Right
+  on *Pointer size* and nothing moved. Down and Enter work as before, so nothing
+  is taken away. Left and Right **stop at the row's first and last choice** —
+  Down is the key that leaves a row — and **move without choosing**: Enter or
+  Space chooses, as it does after Down. That reading of *"move between the
+  options"* is this lane's. Left goes towards the row's first choice; every
+  machine reads left to right today, and a right-to-left reading would want it
+  the other way round, which nothing builds yet — the text size's Left and Right
+  have the same gap.
 - **A list** — the countries, the time zones — has the keyboard while it is
   open: letters type into its search, Backspace takes one back, Up, Down, Home
   and End move, Enter chooses and closes it, and Escape closes it and leaves

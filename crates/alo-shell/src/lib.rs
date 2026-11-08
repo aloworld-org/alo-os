@@ -416,6 +416,8 @@ mod server_desk;
 mod session_desktop;
 mod session_device;
 mod session_input;
+/// Left and Right along a row of choices in Settings.
+mod settings_along_a_row;
 mod settings_answering;
 /// Settings as a frame drew it, for the press after the frame.
 mod settings_as_drawn;
