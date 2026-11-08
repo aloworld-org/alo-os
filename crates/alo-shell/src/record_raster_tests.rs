@@ -759,7 +759,7 @@ fn the_approved_frames_are_drawn() {
             let alpha = f32::from(pixel[3]) / 255.0;
             let under = image.get_pixel(x, y).0;
             let over = |which: usize| {
-                (f32::from(pixel[which]) * alpha + f32::from(under[which]) * (1.0 - alpha)).round()
+                (f32::from(pixel[which]) + f32::from(under[which]) * (1.0 - alpha)).round()
                     as u8
             };
             image.put_pixel(x, y, image::Rgb([over(0), over(1), over(2)]));

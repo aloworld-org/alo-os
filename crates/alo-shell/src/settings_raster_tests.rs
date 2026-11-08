@@ -345,7 +345,7 @@ fn written_out(drawn: &SettingsPicture, size: (i32, i32), to: &std::path::Path) 
         let mut out = [0u8; 4];
         for channel in 0..3 {
             out[channel] =
-                ((u32::from(it[channel]) * alpha + u32::from(under[channel]) * (255 - alpha) + 127)
+                ((u32::from(it[channel]) * 255 + u32::from(under[channel]) * (255 - alpha) + 127)
                     / 255) as u8;
         }
         out[3] = 255;

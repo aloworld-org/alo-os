@@ -337,7 +337,10 @@ pub(crate) fn picture_with(
             }
         }
     }
-    drawn.washed = Some(canvas.washed());
+    // **Premultiplied for the renderer** (`crate::painted::Washed`): the
+    // canvas works in straight alpha, and its shadow handed over straight was
+    // drawn as a white halo round the window.
+    drawn.washed = Some(canvas.washed().premultiplied());
     Ok(drawn)
 }
 

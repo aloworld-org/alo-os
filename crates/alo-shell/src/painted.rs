@@ -38,9 +38,22 @@ pub(crate) struct Inked {
 /// **partial coverage**, and no number of rectangles makes one: the pixel at a
 /// corner is some of the panel and some of what is behind it.
 ///
-/// So this carries straight `RGBA` — four bytes a pixel, row-major, the memory
-/// order `Fourcc::Abgr8888` wants — and is uploaded as a texture by whoever
-/// holds the renderer. It is **not** painted by [`paint`] below, because
+/// So this carries `RGBA` — four bytes a pixel, row-major, the memory order
+/// `Fourcc::Abgr8888` wants — and is uploaded as a texture by whoever holds the
+/// renderer.
+///
+/// **What a renderer is handed must be premultiplied**: each colour already
+/// multiplied by its own alpha. Both of this shell's renderers blend that way
+/// — GLES with `ONE, ONE_MINUS_SRC_ALPHA`, pixman because its `a8b8g8r8` *is*
+/// premultiplied — so a pixel is drawn as *its colour plus what is behind it,
+/// times one less its alpha*. A straight pixel of shadow colour at almost no
+/// alpha is therefore drawn as the background **plus** the shadow's colour,
+/// which on the cream canvas runs past 255 in every channel: the shadow round a
+/// window came out as an opaque white rectangle, seen on Dolphin on 2026-11-08.
+/// A raster made in straight alpha — `crate::settings_canvas` makes one, for
+/// pictures that are also read as icons — goes through
+/// [`Washed::premultiplied`] on its way to a renderer. It is **not** painted by
+/// [`paint`] below, because
 /// importing a texture needs the `Renderer` and `paint` only has a `Frame`:
 /// `crate::scene_drawing` imports these before it opens its frame, which is the
 /// same order it already uses for every client surface.
@@ -51,6 +64,27 @@ pub(crate) struct Washed {
     /// `area.size.w * area.size.h` pixels, four bytes each: red, green, blue,
     /// then alpha.
     pub(crate) pixels: Vec<u8>,
+}
+
+impl Washed {
+    /// The same raster with each colour multiplied by its own alpha, which is
+    /// what a renderer blends (see [`Washed`]).
+    ///
+    /// Rounded to nearest, so an opaque pixel is unchanged and a transparent
+    /// one is black: nothing at all, to a premultiplied blend.
+    #[must_use]
+    pub(crate) fn premultiplied(mut self) -> Self {
+        for pixel in self.pixels.chunks_exact_mut(4) {
+            if let [red, green, blue, alpha] = pixel {
+                let alpha = u32::from(*alpha);
+                for channel in [red, green, blue] {
+                    let times = (u32::from(*channel) * alpha + 127) / 255;
+                    *channel = u8::try_from(times).unwrap_or(u8::MAX);
+                }
+            }
+        }
+        self
+    }
 }
 
 /// Draw the shapes, then the text, in order.
@@ -202,3 +236,7 @@ fn solid_run(
         )
         .map_err(|error| RenderError::Submission(format!("paint native pixels: {error}")))
 }
+
+#[cfg(test)]
+#[path = "painted_tests.rs"]
+mod tests;
