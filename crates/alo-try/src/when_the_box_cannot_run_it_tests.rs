@@ -91,8 +91,14 @@ fn the_plain_sentence_stands_alone_and_the_account_goes_to_the_journal() {
     assert!(!only.contains("Permission denied"), "{only}");
     assert!(!only.contains("alo-try:"), "{only}");
     let account = told.for_the_journal.unwrap();
-    assert!(account.starts_with("alo-try: the box was joined"), "{account}");
-    assert!(account.contains(ACCOUNT), "the helper's account was lost: {account}");
+    assert!(
+        account.starts_with("alo-try: the box was joined"),
+        "{account}"
+    );
+    assert!(
+        account.contains(ACCOUNT),
+        "the helper's account was lost: {account}"
+    );
 }
 
 /// **The refusal path: every other refusal keeps both of its lines on the

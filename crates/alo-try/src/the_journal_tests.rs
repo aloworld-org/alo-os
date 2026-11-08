@@ -28,9 +28,7 @@ fn a_listening_journal_receives_the_account() {
     let length = journal.recv(&mut received).expect("an entry arrived");
     assert_eq!(
         received.get(..length),
-        Some(
-            &b"SYSLOG_IDENTIFIER=alo-try\nPRIORITY=4\nMESSAGE=alo-try: the box was joined\n"[..]
-        )
+        Some(&b"SYSLOG_IDENTIFIER=alo-try\nPRIORITY=4\nMESSAGE=alo-try: the box was joined\n"[..])
     );
     std::fs::remove_dir_all(&folder).ok();
 }
