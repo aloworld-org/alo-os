@@ -69,7 +69,8 @@ fn alt_f4_in_settings_closes_settings_and_not_the_application_behind() {
     let f = Fixture::keyboard();
     let mut app = mapped(&f);
     let root = f.root();
-    f.focus_surface(root).expect("the application has the keyboard");
+    f.focus_surface(root)
+        .expect("the application has the keyboard");
     let held = tempfile::tempdir().expect("a folder");
     let places = nothing_kept_yet(held.path());
     f.backend(move |server| {

@@ -189,7 +189,10 @@ fn alt_f4_again_and_escape_end_nothing() {
         Some(OnTheQuestion::Cancel),
         "a second Alt+F4 answered the question"
     );
-    assert!(server.alos_own_terminal().is_some(), "two presses closed it");
+    assert!(
+        server.alos_own_terminal().is_some(),
+        "two presses closed it"
+    );
 
     at_the_seat(&mut server, ESCAPE, KeyState::Pressed);
     at_the_seat(&mut server, ESCAPE, KeyState::Released);
@@ -227,7 +230,10 @@ fn alt_f4_closes_settings_with_a_form_open() {
     server.the_settings_places_are(machine.places.clone());
     server.settings = machine.opened();
     server.a_provider_is_added();
-    assert!(server.a_provider_is_being_filled_in().is_some(), "the control");
+    assert!(
+        server.a_provider_is_being_filled_in().is_some(),
+        "the control"
+    );
 
     alt_and(&mut server, F4, at_settings);
 
