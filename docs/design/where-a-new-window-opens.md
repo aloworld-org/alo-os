@@ -233,7 +233,18 @@ moves the view, and the choice is `alo_appearance::WhenThereIsNoRoom`, kept in
    the view, then to the reading direction's side (rule 3's preference,
    mirrored), then to the higher.
 2. **The 16 gap is kept on every side**, from every window, and between the new
-   window and the edge of the view it glides to.
+   window and the edge of the view it glides to. **A window here is the window
+   and the title strip alo draws above it** (`crate::a_window_and_its_strip`),
+   for every window and every placer — rules 3 to 7 as well as the glide. Until
+   2026-11-08 the placers were handed the windows alone, and a window opened
+   below another had its strip drawn over the gap and into the one above
+   (Dolphin under the terminal, by 14 pixels at life size). The strip is not
+   zoomed, so it is counted at the zoom the window opens at. **Open for the
+   owner:** a window placed at one zoom and looked at further out has a strip
+   that has grown on the plane while the gap has not, so zoomed far enough out
+   a strip reaches over the gap again: a window placed below another at life
+   size, seen at half, has its strip 8 pixels into the window above. Whether the gap should grow with the zoom, or the strip shrink, is a
+   design question and is not decided here.
 3. **Never further than *Show all* reaches.** A Place so full that no space is
    left within what *Show all* fits at its furthest out gets rule 5 instead —
    in front, offset — rather than a window that could not be brought back.

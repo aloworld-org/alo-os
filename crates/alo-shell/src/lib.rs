@@ -116,6 +116,7 @@ mod a_task_window_scrolls;
 /// A task window's edge, carrying Close.
 mod a_task_windows_edge;
 mod a_wheel_over_a_sheet;
+mod a_window_and_its_strip;
 mod a_window_onto_a_list;
 mod a_window_raised;
 mod alo_in_the_terminal_in_settings;

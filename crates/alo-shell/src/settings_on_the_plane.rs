@@ -136,9 +136,14 @@ impl crate::Server {
         // **Against where the view is going**, as every opening is.
         let camera = self.the_camera_after_the_glide();
         let zoom = crate::scene::drawn_at(camera);
-        if zoom <= 0.0 {
+        // **With the title strip above every window**, its own included
+        // (`crate::a_window_and_its_strip`).
+        let Some(strip) = crate::a_window_and_its_strip::ItsStrip::at(
+            zoom,
+            self.the_scale_an_edge_is_measured_at(),
+        ) else {
             return false;
-        }
+        };
         #[expect(
             clippy::cast_possible_truncation,
             reason = "a display divided by a zoom of at least a twentieth fits an i32"
@@ -158,7 +163,7 @@ impl crate::Server {
             .map(crate::where_a_window_is)
             .chain(self.where_the_terminal_is_on_the_plane())
             .collect();
-        let first = crate::where_a_window_opens(
+        let first = strip.where_a_window_opens(
             view,
             &open,
             open.first().copied(),
@@ -178,6 +183,7 @@ impl crate::Server {
                 wanted: Size::from(window),
                 fixed: &[],
                 reading,
+                strip,
             },
             std::time::Instant::now(),
         );
