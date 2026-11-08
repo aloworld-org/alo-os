@@ -144,6 +144,23 @@ pub(crate) fn the_key_settings_took(
 ) -> Result<(), InputError> {
     match server.settings_key(key.code, key.state, key.time) {
         Ok(Some(press)) => {
+            // **Close window before the form**, because it is what Settings'
+            // Close does with a form open: gives the form up and closes
+            // (`crate::a_chord_closes_alos_own_window`). The form takes no
+            // chord, so without this Alt+F4 in a field did nothing at all.
+            // Not while Settings is waiting for a chord to bind, which is the
+            // one time Alt+F4 is Settings' own.
+            if !server.settings.is_waiting_for_a_chord()
+                && let Some(chord) = a_bound_chord(server, &press)
+                && server
+                    .shortcuts
+                    .as_ref()
+                    .and_then(|shortcuts| shortcuts.action_for(chord))
+                    == Some(alo_shortcuts::Action::CloseWindow)
+            {
+                let _ = server.the_chord_does_what_it_names(chord);
+                return Ok(());
+            }
             // **The form first, when there is one.** A press read as a row's
             // while somebody is typing into a field is the fault
             // `crate::a_key_fills_in_a_provider` exists to prevent: backspace

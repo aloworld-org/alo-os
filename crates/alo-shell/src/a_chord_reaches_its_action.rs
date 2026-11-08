@@ -204,6 +204,15 @@ impl Server {
             self.shortcuts = Some(shortcuts);
             return names.map_or(WhatTheChordCameTo::NotBound, WhatTheChordCameTo::Carried);
         }
+        // **Close window on alo's own window, answered before any road that
+        // knows only applications.** The applications' road closes whichever
+        // application holds the seat's focus, and alo's terminal, Settings and
+        // the record leave that focus where it was — so Alt+F4 at one of them
+        // closed the application behind it. `crate::a_chord_closes_alos_own_window`.
+        if self.a_chord_closes_alos_own_window(&shortcuts, chord) {
+            self.shortcuts = Some(shortcuts);
+            return names.map_or(WhatTheChordCameTo::NotBound, WhatTheChordCameTo::Carried);
+        }
         // **A terminal, answered next and for the same reason: it borrows
         // nothing.** One push onto `Server::asked_to_start`, no window, no
         // places and no clock — so the layers below are never entered for it
