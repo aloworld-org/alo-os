@@ -228,6 +228,16 @@ impl Server {
         if !zoom.is_finite() || zoom <= 0.0 {
             return 0;
         }
+        // **Every window with the title strip above it** — the new one and each
+        // already open — at the zoom it opens at and this display's scale
+        // (`crate::a_window_and_its_strip`). Without it a window opened below
+        // another had its strip drawn over the gap and into the one above.
+        let Some(strip) = crate::a_window_and_its_strip::ItsStrip::at(
+            zoom,
+            self.the_scale_an_edge_is_measured_at(),
+        ) else {
+            return 0;
+        };
         let now = std::time::Instant::now();
         let at = camera.at();
         // **The visible area, not the output.** The person can only reach what
@@ -356,7 +366,7 @@ impl Server {
             if wanted.w <= 0 || wanted.h <= 0 {
                 continue;
             }
-            let point = crate::where_a_window_opens(view, &open, active, wanted, reading, &fixed);
+            let point = strip.where_a_window_opens(view, &open, active, wanted, reading, &fixed);
             // **Rule 5 as a choice** (amended 2026-11-07): the person's own
             // opening, with no room in view, glides to the nearest empty space
             // where they kept the default. Asked whatever the choice, because a
@@ -371,6 +381,7 @@ impl Server {
                         wanted,
                         fixed: &fixed,
                         reading,
+                        strip,
                     },
                     now,
                 )

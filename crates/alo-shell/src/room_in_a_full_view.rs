@@ -58,6 +58,10 @@ pub(crate) struct AnOpening<'a> {
     pub(crate) fixed: &'a [Rectangle<i32, Logical>],
     /// The person's reading direction.
     pub(crate) reading: alo_strings::Direction,
+    /// The title strip above every window at the zoom this opens at: what
+    /// each window takes is itself and its strip (`crate::a_window_and_its_strip`).
+    /// `open`, `wanted`, `first` and the answer are the windows alone.
+    pub(crate) strip: crate::a_window_and_its_strip::ItsStrip,
 }
 
 impl crate::Server {
@@ -73,8 +77,12 @@ impl crate::Server {
         opening: &AnOpening<'_>,
         now: std::time::Instant,
     ) -> Point<i32, Logical> {
+        let strip = opening.strip;
+        let open = strip.round_each(opening.open);
+        let wanted = strip.round_a_size(opening.wanted);
+        let taken = strip.round(Rectangle::new(first, opening.wanted)).loc;
         if !self.when_there_is_no_room.glides()
-            || there_is_room_at(first, opening.wanted, opening.open, opening.view)
+            || there_is_room_at(taken, wanted, &open, opening.view)
         {
             return first;
         }
@@ -86,8 +94,8 @@ impl crate::Server {
         });
         let Some(found) = crate::the_nearest_empty_space::the_nearest_empty_space(
             opening.view,
-            opening.open,
-            opening.wanted,
+            &open,
+            wanted,
             opening.fixed,
             reach,
             opening.reading,
@@ -99,7 +107,7 @@ impl crate::Server {
         {
             let _moving = self.the_view_glides_to(to, now);
         }
-        found.window
+        strip.the_window_in(found.window, opening.wanted)
     }
 }
 

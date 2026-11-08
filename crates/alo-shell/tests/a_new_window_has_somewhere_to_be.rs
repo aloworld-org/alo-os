@@ -129,11 +129,20 @@ fn the_placer_is_called_from_production_and_not_only_from_tests() {
          exactly the state the repository was in until 2026-10-09: where_a_window_opens \
          implemented, tested, and reached by nobody, while every window opened at the origin."
     );
+    // **Through the strip above every window** since 2026-11-08: the caller
+    // asks `a_window_and_its_strip`, which asks the placer with each window's
+    // title strip counted. Both links are held, so neither can go quietly.
     let caller = read("a_new_window_is_placed.rs");
     assert!(
-        production_part_of(&caller).contains("crate::where_a_window_opens("),
+        production_part_of(&caller).contains("strip.where_a_window_opens("),
         "a_new_window_is_placed.rs no longer calls the placer, so the caller is a caller in \
          name only"
+    );
+    let strip = read("a_window_and_its_strip.rs");
+    assert!(
+        production_part_of(&strip).contains("crate::where_a_window_opens("),
+        "a_window_and_its_strip.rs no longer calls the placer, so no window's placement \
+         reaches it"
     );
 }
 

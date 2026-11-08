@@ -229,9 +229,14 @@ impl crate::Server {
         // glide moves is placed in what the person will be looking at.
         let camera = self.the_camera_after_the_glide();
         let zoom = crate::scene::drawn_at(camera);
-        if zoom <= 0.0 {
+        // **With the title strip above every window**, its own included
+        // (`crate::a_window_and_its_strip`).
+        let Some(strip) = crate::a_window_and_its_strip::ItsStrip::at(
+            zoom,
+            self.the_scale_an_edge_is_measured_at(),
+        ) else {
             return false;
-        }
+        };
         #[expect(
             clippy::cast_possible_truncation,
             reason = "a display divided by a zoom of at least a twentieth fits an i32"
@@ -252,7 +257,7 @@ impl crate::Server {
             .collect();
         let wanted = Size::from((window.size.w, window.size.h));
         let first =
-            crate::where_a_window_opens(view, &open, open.first().copied(), wanted, reading, &[]);
+            strip.where_a_window_opens(view, &open, open.first().copied(), wanted, reading, &[]);
         // **The person opened it, so with no room the view may glide** — the
         // owner's *"Yes, the same"* of 2026-11-07 (`crate::room_in_a_full_view`),
         // against every window on the Place, alo's own included.
@@ -265,6 +270,7 @@ impl crate::Server {
                 wanted,
                 fixed: &[],
                 reading,
+                strip,
             },
             std::time::Instant::now(),
         );
