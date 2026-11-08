@@ -206,9 +206,10 @@ mod tests {
         let mut told = Vec::new();
         let answers = each(THREE, |_| Err("no".to_owned()), |named, _| told.push(named));
         assert_eq!(told, ["first", "second", "third"]);
-        assert!(answers
+        let every_one_refused = answers
             .iter()
-            .all(|(_, answer)| matches!(answer, Answer::Refused(_))));
+            .all(|(_, answer)| matches!(answer, Answer::Refused(_)));
+        assert!(every_one_refused, "{answers:?}");
     }
 
     /// The lines the workflow reads are the lines this prints.
@@ -227,7 +228,10 @@ mod tests {
             );
         }
         assert_eq!(line("x", &Answer::Passed(String::new())), "GATE passed | x");
-        assert_eq!(line("x", &Answer::Refused(String::new())), "GATE refused | x");
+        assert_eq!(
+            line("x", &Answer::Refused(String::new())),
+            "GATE refused | x"
+        );
     }
 
     /// A name with the separator in it would be read as two fields.
@@ -239,7 +243,12 @@ mod tests {
                 "`{}` cannot be read back out of a GATE line",
                 gate.named
             );
-            assert_eq!(gate.named, gate.named.trim(), "`{}` has edge spaces", gate.named);
+            assert_eq!(
+                gate.named,
+                gate.named.trim(),
+                "`{}` has edge spaces",
+                gate.named
+            );
         }
     }
 }
