@@ -176,8 +176,10 @@ fn drawn(window: Rectangle<i32, Logical>, zoom: f64, scale: u32) -> Rectangle<f6
 /// How far apart two drawn rectangles are: the larger of the gaps across and
 /// down, negative where they overlap.
 fn apart(one: Rectangle<f64, Logical>, other: Rectangle<f64, Logical>) -> f64 {
-    let across = (other.loc.x - (one.loc.x + one.size.w)).max(one.loc.x - (other.loc.x + other.size.w));
-    let down = (other.loc.y - (one.loc.y + one.size.h)).max(one.loc.y - (other.loc.y + other.size.h));
+    let across =
+        (other.loc.x - (one.loc.x + one.size.w)).max(one.loc.x - (other.loc.x + other.size.w));
+    let down =
+        (other.loc.y - (one.loc.y + one.size.h)).max(one.loc.y - (other.loc.y + other.size.h));
     across.max(down)
 }
 
@@ -243,7 +245,10 @@ fn every_placer_counts_the_strip_above_each_window() {
         ("Settings", include_str!("settings_on_the_plane.rs")),
         ("the record", include_str!("record_on_the_plane.rs")),
         ("an application", include_str!("a_new_window_is_placed.rs")),
-        ("a task window", include_str!("the_task_windows_find_room.rs")),
+        (
+            "a task window",
+            include_str!("the_task_windows_find_room.rs"),
+        ),
     ] {
         let text = shipped(text);
         assert!(

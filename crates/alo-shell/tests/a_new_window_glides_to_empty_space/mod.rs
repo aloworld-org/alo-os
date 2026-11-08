@@ -322,8 +322,10 @@ fn drawn(window: Rectangle<i32, Logical>) -> Rectangle<i32, Logical> {
 /// How far apart two rectangles are: the larger of the gaps across and down,
 /// negative where they overlap.
 fn apart(one: Rectangle<i32, Logical>, other: Rectangle<i32, Logical>) -> i32 {
-    let across = (other.loc.x - (one.loc.x + one.size.w)).max(one.loc.x - (other.loc.x + other.size.w));
-    let down = (other.loc.y - (one.loc.y + one.size.h)).max(one.loc.y - (other.loc.y + other.size.h));
+    let across =
+        (other.loc.x - (one.loc.x + one.size.w)).max(one.loc.x - (other.loc.x + other.size.w));
+    let down =
+        (other.loc.y - (one.loc.y + one.size.h)).max(one.loc.y - (other.loc.y + other.size.h));
     across.max(down)
 }
 
@@ -341,8 +343,13 @@ fn apart(one: Rectangle<i32, Logical>, other: Rectangle<i32, Logical>) -> i32 {
 fn a_window_with_margins_keeps_the_gap_from_what_is_drawn_of_the_window_before_it() {
     let view = (1280, 800);
     let f = Fixture::keyboard();
-    let (_editor, editor) = mapped_with_margins(&f, "org.example.Editor", (924, 614), (20, 20, 20, 20));
-    assert_eq!(placed(&f, view), 1, "the control: the first window was placed");
+    let (_editor, editor) =
+        mapped_with_margins(&f, "org.example.Editor", (924, 614), (20, 20, 20, 20));
+    assert_eq!(
+        placed(&f, view),
+        1,
+        "the control: the first window was placed"
+    );
     assert!(f.focus_surface(editor.clone()).is_ok());
     let not_started = f.backend(|s| {
         s.the_person_asked_to_start(app("org.kde.dolphin"));

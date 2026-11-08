@@ -87,7 +87,10 @@ fn a_narrow_window_takes_the_narrowest_strips_width_centred_over_it() {
         (drawn.loc.x, drawn.size.w),
         "taken across is not where the strip is drawn"
     );
-    assert_eq!(taken.loc.y, drawn.loc.y, "taken is not from the strip's top");
+    assert_eq!(
+        taken.loc.y, drawn.loc.y,
+        "taken is not from the strip's top"
+    );
 }
 
 /// **The two ways meet**: a window put in what it takes is back where it was,
