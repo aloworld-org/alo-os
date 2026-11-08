@@ -181,13 +181,39 @@ any road and at any setting: `alo` is never offered either form.
 
 An application is named by **its identifier** (`org.gnome.TextEditor`) or by
 **its short name**, which is the last part of the identifier in lower case
-(`texteditor`, `firefox`, `dolphin`, `loupe`). Never by the name its menu entry
+(`texteditor`, `firefox`, `dolphin`, `loupe`), less a version number it begins
+with (below). Never by the name its menu entry
 shows (*Text Editor*), because two applications may both call themselves that,
 and the one acted on must be the one meant — the rule `agent-verbs.md` already
 keeps (*the identifier is approved; the name is only shown*).
 
 When two installed applications share a short name, the short name is refused
 and both identifiers are listed, so the person picks. Nothing is guessed.
+
+**A version number the last part begins with is left off.** *Amended
+2026-11-08, additively.* Not every identifier is reverse-DNS: LibreOffice's
+desktop entries are `libreoffice26.2-writer`, `libreoffice26.2-calc` and so on,
+whose last dot is inside the version number, so the rule above gave them
+`2-writer` and `2-calc` — found walking a booted machine that day. So where the
+last part begins with digits and a hyphen and something follows, the digits
+and the hyphen are left off: **`writer`**, `calc`, `base`, `startcenter`. It
+cannot touch a reverse-DNS identifier, because no element of one may begin with
+a digit (the D-Bus naming rule application identifiers follow); a hyphen
+elsewhere (`org.gnome.font-viewer` → `font-viewer`) and digits with no hyphen
+after them read as before.
+
+- **The name the rule gave before still reaches the application** (`2-writer`),
+  so a script written against it keeps working. It is not deprecated, and it
+  counts in the clash rule like the new one: an application *answers to* both.
+- `list` and `show` offer the new one, so `short_name` in `--json` reads
+  `writer` where it read `2-writer`. Its meaning — the short name that reaches
+  the application — is unchanged.
+- **The one thing that can stop working is a clash the new name creates**, and
+  it is refused rather than guessed: on a machine with both
+  `org.example.Writer` and `libreoffice26.2-writer`, `writer` reached the first
+  alone and is now refused, naming both. Two LibreOffice versions installed
+  together are refused at `writer` the same way, and each one's old name still
+  reaches only it. Every identifier still reaches its application.
 
 ### `front` — the window the person was just working in
 
