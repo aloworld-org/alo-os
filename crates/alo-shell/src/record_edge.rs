@@ -103,6 +103,17 @@ impl crate::Server {
         })
     }
 
+    /// **The person closed the record window**, by its edge's Close or by
+    /// Alt+F4 (`crate::a_chord_closes_alos_own_window`): one road, so the two
+    /// cannot disagree. A Put back confirmation that is open goes with it, and
+    /// nothing is put back.
+    pub(crate) fn the_person_closes_the_record(&mut self) {
+        self.record.closed();
+        self.the_records_places = None;
+        self.where_the_records_body_was_drawn = None;
+        self.the_record_on_the_plane = None;
+    }
+
     /// A press at `at`, in the display's pixels, offered to the record's edge.
     /// Close shuts the window; anywhere else on the edge brings it in front.
     pub(crate) fn a_press_on_the_records_edge(&mut self, at: Point<i32, Logical>) -> bool {
@@ -119,10 +130,7 @@ impl crate::Server {
         ) {
             None => false,
             Some(OnItsEdge::Close) => {
-                self.record.closed();
-                self.the_records_places = None;
-                self.where_the_records_body_was_drawn = None;
-                self.the_record_on_the_plane = None;
+                self.the_person_closes_the_record();
                 true
             }
             Some(OnItsEdge::TheRest) => {

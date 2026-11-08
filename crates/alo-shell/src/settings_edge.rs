@@ -82,6 +82,19 @@ impl crate::Server {
         })
     }
 
+    /// **The person closed Settings**, by its edge's Close or by Alt+F4
+    /// (`crate::a_chord_closes_alos_own_window`): one road, so the two cannot
+    /// disagree about what closing gives up.
+    ///
+    /// A provider form that is open is given up, as giving up on the form
+    /// does, and nothing is written.
+    pub(crate) fn the_person_closes_settings(&mut self) {
+        self.that_provider_is_not_being_added();
+        self.settings.close();
+        self.settings_on_the_plane = None;
+        self.settings_as_drawn = None;
+    }
+
     /// A press at `at`, in the display's pixels, offered to Settings' edge.
     /// Answers whether the edge took it: Close shuts Settings, anywhere else
     /// on it brings Settings in front.
@@ -99,10 +112,7 @@ impl crate::Server {
         ) {
             None => false,
             Some(OnItsEdge::Close) => {
-                self.that_provider_is_not_being_added();
-                self.settings.close();
-                self.settings_on_the_plane = None;
-                self.settings_as_drawn = None;
+                self.the_person_closes_settings();
                 true
             }
             Some(OnItsEdge::TheRest) => {
