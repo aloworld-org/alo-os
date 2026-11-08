@@ -42,7 +42,10 @@ fn a_scale_of_nought_is_the_ordinary_scale() {
 #[test]
 fn a_scale_past_any_display_does_not_wrap() {
     let window = Rectangle::<i32, Logical>::new((0, 0).into(), (10, 10).into());
-    assert!(at(u32::MAX).round(window).size.h > 0, "a strip wrapped negative");
+    assert!(
+        at(u32::MAX).round(window).size.h > 0,
+        "a strip wrapped negative"
+    );
 }
 
 /// **A wide window takes its own width**: its strip is as wide as it is.
@@ -128,7 +131,3 @@ fn beside_the_active_window_the_two_strips_are_level_and_a_gap_apart() {
         (48 + 560 + crate::where_a_window_opens::A_SMALL_GAP, 116)
     );
 }
-#![expect(
-    clippy::expect_used,
-    reason = "in a test, a panic on an unexpected None is the failure being reported"
-)]
