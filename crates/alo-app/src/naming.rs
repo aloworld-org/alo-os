@@ -3,7 +3,8 @@
 //!
 //! A name is read in this order: the reserved words `list`, `show`, `front` and
 //! `alo`; then a full identifier (`org.gnome.TextEditor`); then a short name,
-//! which is the last part of an identifier in lower case (`texteditor`).
+//! which is the last part of an identifier in lower case (`texteditor`), less
+//! a version number it begins with (`libreoffice26.2-writer` is `writer`).
 //! **Never the name a menu shows**, because two applications may both call
 //! themselves *Text Editor* and the one acted on must be the one meant.
 //!
@@ -114,9 +115,26 @@ impl Reached {
     }
 }
 
-/// The short name of an identifier: its last part, in lower case.
+/// The short name of an identifier: its last part, in lower case — **less a
+/// version number and the hyphen after it** where that part begins with one.
+///
+/// The second half is for identifiers that are not reverse-DNS.
+/// `libreoffice26.2-writer` has its last dot inside a version number, so its
+/// last part is `2-writer`; its short name is `writer`. It never changes a
+/// reverse-DNS identifier, because an element of one may not begin with a
+/// digit (the D-Bus naming rule application identifiers follow).
 #[must_use]
 pub fn short_name(identifier: &str) -> String {
+    let last = the_last_part(identifier);
+    match without_a_version(&last) {
+        Some(rest) => rest.to_owned(),
+        None => last,
+    }
+}
+
+/// The last part of an identifier, in lower case: the short name as it was
+/// read until 2026-11-08, which still reaches the application it reached.
+fn the_last_part(identifier: &str) -> String {
     identifier
         .rsplit('.')
         .next()
@@ -124,11 +142,28 @@ pub fn short_name(identifier: &str) -> String {
         .to_lowercase()
 }
 
-/// Every installed application whose short name is this, sorted by identifier.
+/// `part` less the digits it begins with and the hyphen after them, when it
+/// begins that way and something is left.
+fn without_a_version(part: &str) -> Option<&str> {
+    let digits = part.bytes().take_while(u8::is_ascii_digit).count();
+    let rest = part.get(digits..)?.strip_prefix('-')?;
+    (digits > 0 && !rest.is_empty()).then_some(rest)
+}
+
+/// Whether this application answers to `short`: by its short name, or by the
+/// last part it answered to before (`2-writer`), which is kept so a name that
+/// reached an application still does.
+fn answers_to(application: &Application, short: &str) -> bool {
+    let identifier = application.identifier();
+    short_name(identifier) == short || the_last_part(identifier) == short
+}
+
+/// Every installed application that answers to this short name, sorted by
+/// identifier.
 fn sharing<'a>(short: &str, installed: &'a Installed) -> Vec<&'a Application> {
     let mut found: Vec<&Application> = installed
         .all()
-        .filter(|application| short_name(application.identifier()) == short)
+        .filter(|application| answers_to(application, short))
         .collect();
     found.sort_by(|one, other| one.identifier().cmp(other.identifier()));
     found
@@ -203,6 +238,97 @@ mod tests {
         assert_eq!(short_name("org.gnome.TextEditor"), "texteditor");
         assert_eq!(short_name("org.mozilla.firefox"), "firefox");
         assert_eq!(short_name("firefox"), "firefox");
+    }
+
+    /// **A version number the last part begins with is left off**, as the
+    /// walk of 2026-11-08 found LibreOffice needs — and nothing else changes:
+    /// reverse-DNS identifiers, hyphens elsewhere, digits with no hyphen, and
+    /// a hyphen with nothing after it all read as they did.
+    #[test]
+    fn a_version_the_last_part_begins_with_is_left_off() {
+        assert_eq!(short_name("libreoffice26.2-writer"), "writer");
+        assert_eq!(short_name("libreoffice26.2-calc"), "calc");
+        assert_eq!(short_name("libreoffice26.2-startcenter"), "startcenter");
+        assert_eq!(short_name("libreoffice26.2.1-base"), "base");
+        assert_eq!(short_name("org.gnome.font-viewer"), "font-viewer");
+        assert_eq!(short_name("libreoffice-writer"), "libreoffice-writer");
+        assert_eq!(short_name("org.example.3d"), "3d");
+        assert_eq!(short_name("tool1.2-"), "2-");
+        assert_eq!(short_name("org.example.App-2"), "app-2");
+    }
+
+    /// **The new short name and the old one both reach it**, so a script
+    /// written against `2-writer` keeps working; `list` offers `writer`.
+    #[test]
+    fn the_new_and_the_old_short_name_both_reach_it() {
+        let installed = holding(&["libreoffice26.2-writer", "libreoffice26.2-calc"]);
+        for typed in ["writer", "2-writer", "libreoffice26.2-writer"] {
+            assert!(
+                matches!(
+                    named(typed, &installed).unwrap(),
+                    Named::Installed(application)
+                        if application.identifier() == "libreoffice26.2-writer"
+                ),
+                "{typed}"
+            );
+        }
+        assert_eq!(
+            how_it_is_reached(
+                installed.knows("libreoffice26.2-writer").unwrap(),
+                &installed
+            ),
+            Reached::ByItsShortName("writer".to_owned())
+        );
+    }
+
+    /// **The clash rule still refuses**: two LibreOffice versions both answer
+    /// to `writer`, so it names neither and lists both; each one's old name,
+    /// which differs, still reaches only it.
+    #[test]
+    fn two_versions_sharing_writer_are_refused_naming_both() {
+        let installed = holding(&["libreoffice25.8-writer", "libreoffice26.2-writer"]);
+        assert_eq!(
+            named("writer", &installed).unwrap_err(),
+            NotNamed::Shared {
+                typed: "writer".to_owned(),
+                identifiers: vec![
+                    "libreoffice25.8-writer".to_owned(),
+                    "libreoffice26.2-writer".to_owned()
+                ],
+            }
+        );
+        assert!(matches!(
+            named("8-writer", &installed).unwrap(),
+            Named::Installed(application) if application.identifier() == "libreoffice25.8-writer"
+        ));
+        assert_eq!(
+            how_it_is_reached(
+                installed.knows("libreoffice26.2-writer").unwrap(),
+                &installed
+            ),
+            Reached::AsIdentifierBecauseShared {
+                short: "writer".to_owned()
+            }
+        );
+    }
+
+    /// **A clash with a reverse-DNS application is refused too**, and is the
+    /// one case where a name that reached something before no longer does:
+    /// `writer` reached `org.example.Writer` alone until LibreOffice answered
+    /// to it as well. It is refused naming both rather than guessed.
+    #[test]
+    fn a_clash_with_a_reverse_dns_name_is_refused() {
+        let installed = holding(&["org.example.Writer", "libreoffice26.2-writer"]);
+        assert!(matches!(
+            named("writer", &installed).unwrap_err(),
+            NotNamed::Shared { identifiers, .. } if identifiers.len() == 2
+        ));
+        for identifier in ["org.example.Writer", "libreoffice26.2-writer"] {
+            assert!(matches!(
+                named(identifier, &installed).unwrap(),
+                Named::Installed(application) if application.identifier() == identifier
+            ));
+        }
     }
 
     #[test]

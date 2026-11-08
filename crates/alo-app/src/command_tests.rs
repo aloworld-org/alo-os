@@ -468,6 +468,23 @@ fn a_shared_short_name_is_refused_naming_both() {
     );
 }
 
+/// **`writer` reaches LibreOffice Writer**, and so does `2-writer`, the name
+/// `list` gave it until 2026-11-08 — through the whole command, to the door.
+#[test]
+fn writer_reaches_libreoffice_writer_by_either_name() {
+    const WRITER: &str = "libreoffice26.2-writer";
+    for typed in ["writer", "2-writer"] {
+        let known = Known::holding(&[WRITER, "libreoffice26.2-calc"]);
+        let mut machine = AMachine::default();
+        assert_eq!(known.running(&[typed, "close"], &mut machine), Ended::Done);
+        assert!(
+            machine.door.asked.contains(&format!("close {WRITER}")),
+            "{typed}: {:?}",
+            machine.door.asked
+        );
+    }
+}
+
 /// **A kind `press` does not take is refused, and the entry keeps no values.**
 #[test]
 fn an_unknown_kind_is_refused() {
