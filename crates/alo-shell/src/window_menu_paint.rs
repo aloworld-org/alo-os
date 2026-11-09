@@ -159,7 +159,9 @@ pub(crate) fn the_panel_drawn(
             ground,
         ));
         if row.does.is_a_picture() {
-            rasters.extend(the_placement_picture(row.row, row.does, held, scale, fraction));
+            rasters.extend(the_placement_picture(
+                row.row, row.does, held, scale, fraction,
+            ));
         } else if let Some(mark) = the_full_screen_mark() {
             let at = Rectangle::new(
                 (row.row.loc.x + A_ROWS_MARK.0, row.row.loc.y + A_ROWS_MARK.1).into(),

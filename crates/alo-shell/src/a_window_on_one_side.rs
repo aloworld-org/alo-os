@@ -124,14 +124,10 @@ impl crate::Server {
     ) -> Option<crate::window_menu_paint::ThePreview> {
         let side = in_hand?.the_side()?;
         let half = self.where_this_side_would_put(surface, side)?;
-        let drawn = crate::the_terminal_on_the_plane::on_the_screen(half.outline, self.the_camera());
-        let outline = crate::an_edge_in_its_displays_units::a_window_in_the_edges_units(
-            Rectangle::new(
-                (drawn.loc.x, drawn.loc.y).into(),
-                (drawn.size.w, drawn.size.h).into(),
-            ),
-            scale,
-        );
+        let drawn =
+            crate::the_terminal_on_the_plane::on_the_screen(half.outline, self.the_camera());
+        let outline =
+            crate::an_edge_in_its_displays_units::a_window_in_the_edges_units(drawn, scale);
         Some(crate::window_menu_paint::ThePreview {
             outline,
             says: the_words_of(side, half.share),

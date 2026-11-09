@@ -123,7 +123,10 @@ impl WhatARowDoes {
     /// Whether this is drawn as a placement picture rather than a row.
     #[must_use]
     pub const fn is_a_picture(self) -> bool {
-        matches!(self, Self::Left | Self::Maximise | Self::Restore | Self::Right)
+        matches!(
+            self,
+            Self::Left | Self::Maximise | Self::Restore | Self::Right
+        )
     }
 
     /// The half this choice puts a window on, for Left and Right.

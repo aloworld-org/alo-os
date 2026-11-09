@@ -15,10 +15,21 @@ fn a_room(x: i32, y: i32, w: i32, h: i32) -> ADisplaysRoom {
 #[test]
 fn left_is_the_left_half_of_the_work_area_under_the_band() {
     let half = the_half(a_room(0, 84, 1329, 788), OneSide::Left, None).expect("a half");
-    assert_eq!(half.outline, Rectangle::new((0, 84).into(), (665, 788).into()));
+    assert_eq!(
+        half.outline,
+        Rectangle::new((0, 84).into(), (665, 788).into())
+    );
     let share = half.share.expect("room");
-    assert_eq!(share.at, (0, 84 + 54), "the band sits at the top of the half");
-    assert_eq!(share.size, (665, 788 - 54), "the left half takes the odd unit");
+    assert_eq!(
+        share.at,
+        (0, 84 + 54),
+        "the band sits at the top of the half"
+    );
+    assert_eq!(
+        share.size,
+        (665, 788 - 54),
+        "the left half takes the odd unit"
+    );
 }
 
 #[test]
@@ -26,7 +37,10 @@ fn right_is_the_rest_and_the_two_meet() {
     let room = a_room(0, 84, 1329, 788);
     let left = the_half(room, OneSide::Left, None).expect("a half");
     let right = the_half(room, OneSide::Right, None).expect("a half");
-    assert_eq!(right.outline.loc.x, left.outline.loc.x + left.outline.size.w);
+    assert_eq!(
+        right.outline.loc.x,
+        left.outline.loc.x + left.outline.size.w
+    );
     assert_eq!(
         left.outline.size.w + right.outline.size.w,
         1329,
@@ -51,11 +65,11 @@ fn a_window_wider_than_the_half_is_refused_and_still_previewed() {
 
 #[test]
 fn a_window_taller_than_the_half_under_its_band_is_refused() {
-    let half = the_half(a_room(0, 0, 1000, 800), OneSide::Right, Some((100, 747)))
-        .expect("an outline");
+    let half =
+        the_half(a_room(0, 0, 1000, 800), OneSide::Right, Some((100, 747))).expect("an outline");
     assert_eq!(half.share, Err(NoRoom::TooShort));
-    let fits = the_half(a_room(0, 0, 1000, 800), OneSide::Right, Some((500, 746)))
-        .expect("an outline");
+    let fits =
+        the_half(a_room(0, 0, 1000, 800), OneSide::Right, Some((500, 746))).expect("an outline");
     assert!(fits.share.is_ok(), "exactly the half's size fits");
 }
 

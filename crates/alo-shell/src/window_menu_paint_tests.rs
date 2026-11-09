@@ -71,11 +71,13 @@ fn the_keyboard_s_choice_is_the_one_in_hand() {
     let both = PointingAtTheMenu {
         hovered: Some(WhatARowDoes::FullScreen),
         focused: Some(WhatARowDoes::Maximise),
+        preview: None,
     };
     assert_eq!(both.in_hand(), Some(WhatARowDoes::Maximise));
     let pointer_only = PointingAtTheMenu {
         hovered: Some(WhatARowDoes::FullScreen),
         focused: None,
+        preview: None,
     };
     assert_eq!(pointer_only.in_hand(), Some(WhatARowDoes::FullScreen));
 }
@@ -95,6 +97,7 @@ fn the_keyboard_s_choice_is_ringed_and_not_told_by_colour_alone() {
     let focused = PointingAtTheMenu {
         hovered: None,
         focused: Some(WhatARowDoes::FullScreen),
+        preview: None,
     };
     let (ringed, _) = the_panel_drawn(&menu, focused, &mut fonts(), 100, (4000, 3000));
     assert_eq!(ringed.len(), plain.len() + 1);
