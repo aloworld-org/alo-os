@@ -74,7 +74,10 @@ granted only by the person choosing full access, knowing what it costs.
   is built; until then the build follows the existing first-start sheets and
   records the departure.
 - How the password is asked for (a system dialog the person recognises, or alo's
-  own). Recommended: the system's own, so it cannot be imitated.
+  own). Recommended: the system's own, so it cannot be imitated. *Settled
+  2026-11-09 by [ADR 0150](0150-administrator-actions-ask-the-persons-password-each-time.md):
+  polkit, with the sheet drawn by alo's own desktop — the owner's "Yes, alo's
+  desktop draws it".*
 
 ## How this is checked
 
@@ -182,3 +185,15 @@ three (`how_much_alo_can_do_sheet_tests.rs`); and Settings tags Full access
 on a real display, between a real first sign-in and the desktop — the display
 loop that shows it needs a seat and a card, and has not yet been walked on a
 booted machine. **Still unbuilt**: the password for administrator actions.
+
+*Added 2026-11-09, with decision 2 built
+([ADR 0150](0150-administrator-actions-ask-the-persons-password-each-time.md)).*
+**An administrator action without the password is refused**, and that now runs
+on every build: a `sudo` command at full access whose password window was
+closed runs nothing, as the person or otherwise, and is written down as an
+administrator's action the person cancelled
+(`crates/alo-agentd/src/running_a_command_tests.rs`); every other way the
+password is not given is refused in its own sentence, and one yes runs the
+command once (`crates/alo-administrator/src/running_tests.rs`). ADR 0150's
+*How this is checked* lists the rest, and what is walked only on a booted
+machine.

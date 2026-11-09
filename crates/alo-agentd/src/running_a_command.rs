@@ -65,11 +65,18 @@ pub struct CommandsHere {
     level_at: PathBuf,
     /// Where a command starts: the person's home on a machine.
     in_folder: PathBuf,
+    /// Where a command written as `sudo ...` is asked for as administrator
+    /// (ADR 0150): `alo-running-as-administrator`'s socket on a machine.
+    administrator_at: PathBuf,
 }
 
 /// A file nobody can have made, because nothing can create a folder under
 /// `/proc` — so a level read from it is always *nothing chosen*.
 const WHERE_NOTHING_IS_CHOSEN: &str = "/proc/alo-nothing-was-chosen/how-code-runs.toml";
+
+/// A socket nobody can have made, for the same reason: a command asked for as
+/// administrator through it is refused as *could not ask*, never run.
+const WHERE_NO_RUNNER_IS: &str = "/proc/alo-no-runner-is-here/socket";
 
 /// [`CommandsHere::where_nothing_was_chosen`], made once.
 static NOTHING_CHOSEN: LazyLock<CommandsHere> =
@@ -87,7 +94,9 @@ impl CommandsHere {
             .map(PathBuf::from)
             .filter(|home| home.is_absolute())
             .unwrap_or_else(|| PathBuf::from("/"));
-        Self::at(Path::new(alo_remembering::THE_LEVEL), &home)
+        Self::at(Path::new(alo_remembering::THE_LEVEL), &home).running_as_administrator_at(
+            Path::new(alo_administrator::answering_as_administrator::THE_RUNNERS_SOCKET),
+        )
     }
 
     /// The level kept at `level_at`, and commands started in `in_folder`.
@@ -96,7 +105,17 @@ impl CommandsHere {
         Self {
             level_at: level_at.to_owned(),
             in_folder: in_folder.to_owned(),
+            administrator_at: PathBuf::from(WHERE_NO_RUNNER_IS),
         }
+    }
+
+    /// These, with a command written as `sudo ...` asked for as administrator
+    /// at `socket` (ADR 0150). Without this, every such command is refused as
+    /// *could not ask*, which is what a test of another door wants.
+    #[must_use]
+    pub fn running_as_administrator_at(mut self, socket: &Path) -> Self {
+        self.administrator_at = socket.to_owned();
+        self
     }
 
     /// Where nobody has chosen a level, so every command is refused as the
@@ -245,6 +264,22 @@ pub fn a_command_approved(
     let Commands { here, mut bracket } = commands;
     take_the_bracket(turning, &command, bracket.as_deref_mut(), strings);
     let kept = bracket_kept(bracket.as_deref());
+    // **A command written as `sudo ...` asks the person's password now**, after
+    // the OK, and runs as administrator only on their yes (ADR 0150).
+    if crate::running_as_administrator::the_administrators_part(&command).is_some() {
+        let mut run = |command: &ACommand| {
+            crate::running_as_administrator::through_the_runner(
+                &here.administrator_at,
+                command,
+                strings,
+            )
+        };
+        return match turning.approving_a_command_as_administrator(number, &mut run, now) {
+            Ok(Ok(did)) => crate::answering::the_change_did(Done::of_a_command(&did), kept),
+            Ok(Err(said)) => ToAPerson::refused(&said),
+            Err(why) => ToAPerson::refused(&said_about(&why, strings)),
+        };
+    }
     let mut run = |command: &ACommand| alo_running::run_as_the_person(command, &here.in_folder);
     match turning.approving_a_command(number, &mut run, now) {
         Ok(did) => crate::answering::the_change_did(Done::of_a_command(&did), kept),
@@ -262,6 +297,22 @@ fn ran(
     now: SystemTime,
 ) -> Result<Done, Said> {
     take_the_bracket(turning, command, bracket, strings);
+    // **A command written as `sudo ...` asks the person's password**, even at
+    // full access, and runs as administrator only on their yes (ADR 0150).
+    if crate::running_as_administrator::the_administrators_part(command).is_some() {
+        let mut run = |command: &ACommand| {
+            crate::running_as_administrator::through_the_runner(
+                &here.administrator_at,
+                command,
+                strings,
+            )
+        };
+        return match turning.running_as_administrator(command, &mut run, now) {
+            Ok(Ok(did)) => Ok(Done::of_a_command(&did)),
+            Ok(Err(said)) => Err(said),
+            Err(why) => Err(said_about(&why, strings)),
+        };
+    }
     let mut run = |command: &ACommand| alo_running::run_as_the_person(command, &here.in_folder);
     match turning.running_a_command(command, &mut run, now) {
         Ok(did) => Ok(Done::of_a_command(&did)),

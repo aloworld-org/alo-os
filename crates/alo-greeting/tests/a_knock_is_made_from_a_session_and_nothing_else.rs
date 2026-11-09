@@ -138,7 +138,10 @@ fn nothing_here_verifies_a_password_itself() {
         assert!(
             one.contains("self.accounts.signs_in(name, password)")
                 || one.contains("self.accounts.created(name, person, password)")
-                || one.contains("self.signs_in(name, password)"),
+                || one.contains("self.signs_in(name, password)")
+                // ADR 0150: once verified, to what keeps the system's list in
+                // step — the one other place it goes, and it goes nowhere here.
+                || one.contains("keeper.keep(self.person, password)"),
             "what somebody typed is handed somewhere other than to alo-accounts: {one}"
         );
     }

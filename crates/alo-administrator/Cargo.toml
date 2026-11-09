@@ -1,0 +1,38 @@
+[package]
+name = "alo-administrator"
+version = "0.0.1"
+description = "Administrator actions ask the person's password each time, through the system's own window: the person's password kept in step with the system's list, checked by polkit's own helper, and one command run as administrator once polkit says the person gave it."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+# Three small privileged programs and what they and their callers share
+# (ADR 0150). Each exists on one kind of host, so on any other this crate
+# compiles to nothing rather than to a version of itself that pretends.
+[target.'cfg(target_os = "linux")'.dependencies]
+# What a command is, and what one that ran did, in the shape the record and
+# the agent are told it in.
+alo-capability = { path = "../alo-capability" }
+# Who is on the other end of a socket: the kernel's answer, never the caller's.
+rustix = { workspace = true, features = ["net", "process"] }
+# The line the agent service and the runner speak.
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+# polkit and logind, on the system bus.
+zbus = { version = "5.19", default-features = false, features = ["async-io", "blocking-api"] }
+
+[target.'cfg(target_os = "linux")'.dev-dependencies]
+tempfile = "3"
+
+[lints]
+workspace = true
+
+[[bin]]
+name = "alo-keeping-the-system-password"
+path = "src/bin/alo-keeping-the-system-password.rs"
+
+[[bin]]
+name = "alo-checking-a-password"
+path = "src/bin/alo-checking-a-password.rs"

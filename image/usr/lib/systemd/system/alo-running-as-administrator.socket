@@ -1,0 +1,25 @@
+# alo OS: where the agent service asks for one command to run as
+# administrator (ADR 0150).
+#
+# The owner, 2026-11-08 (ADR 0149): administrator actions ask "my password
+# each time". alo's commands run as the person in `alo-agentd`, which holds no
+# capability and no new privileges, so `sudo` and `pkexec` can do nothing
+# there, on purpose. A command alo writes as `sudo ...` comes here instead:
+# `alo-running-as-administrator` asks polkit, polkit asks the person on their
+# own screen through the desktop's password sheet, and only a yes runs it.
+#
+# **Only the person's group may open it**, and the program asks the kernel
+# again whether the caller is the agent service itself.
+[Unit]
+Description=alo OS: where the agent service asks for a command run as administrator
+Documentation=https://github.com/aloworld-org/alo-os/blob/main/docs/decisions/0150-administrator-actions-ask-the-persons-password-each-time.md
+
+[Socket]
+ListenStream=/run/alo-running-as-administrator.socket
+SocketUser=root
+SocketGroup=alo
+SocketMode=0660
+Accept=yes
+
+[Install]
+WantedBy=sockets.target

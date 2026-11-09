@@ -28,6 +28,13 @@ alo-portals = { path = "../alo-portals" }
 zbus = { version = "5.19", default-features = false, features = ["async-io", "blocking-api"] }
 # Everything a desktop is drawn from, and the loop that draws it.
 alo-shell = { path = "../alo-shell" }
+# polkit's authentication agent for the person's session: the helper's
+# conversation, whether the system's list holds their password, and polkit's
+# name for alo's own action (ADR 0150).
+alo-administrator = { path = "../alo-administrator" }
+# A wait for the person's answer that does not hold the bus's executor, so a
+# question polkit takes back still arrives while one is waiting.
+blocking = "1.6"
 # Where this machine keeps its record, read from its description so the shell is
 # told rather than reads it. Already in this binary's graph through alo-shell.
 alo-recounting = { path = "../alo-recounting" }
@@ -134,6 +141,8 @@ path = "src/main.rs"
 workspace = true
 
 [target.'cfg(target_os = "linux")'.dev-dependencies]
+# Somewhere for a test to put the checker it plays and the state it reads.
+tempfile = "3"
 # A real Secret Service on a bus nobody else can reach, so the save road is
 # measured against the implementation a machine would really have rather than
 # against a stub whose refusals we wrote ourselves.

@@ -94,6 +94,7 @@ mod a_key_reaches_settings;
 mod a_key_reaches_the_bar;
 mod a_key_reaches_the_docks_surfaces;
 mod a_key_reaches_the_market;
+mod a_key_reaches_the_password_sheet;
 mod a_key_reaches_the_record;
 mod a_key_reaches_the_task_in_front;
 mod a_key_types_into_more_apps;
@@ -234,6 +235,9 @@ mod dock_tooltip;
 /// shadow — at the display scale its geometry is laid out in.
 mod how_a_panel_is_raised;
 mod the_keyboard_on_the_docks_surfaces;
+mod the_password_sheet;
+mod the_password_sheet_drawn;
+mod the_password_sheets_words;
 mod the_pointer_drawn;
 mod the_pointers_look;
 pub mod what_is_on_the_clipboard;
@@ -307,6 +311,7 @@ mod in_use_paint;
 mod in_use_raster;
 /// Vector artwork inked into a raster at its box's size.
 mod inking_a_shape;
+mod keeping_the_system_password;
 mod keyboard;
 mod keyboard_sheet;
 mod language_sheet;
@@ -961,6 +966,9 @@ pub use sign_in_layout::{
     THE_SUBMIT_TARGET_IS, sign_in_laid_out,
 };
 pub use sign_in_password::PASSWORD_BYTES;
+pub use the_password_sheet::{
+    FromTheSheet, PasswordAsked, ThePasswordTyped, ToTheSheet, WhatItIsFor, WhyNotChecked,
+};
 // **`OnTheSignInScreen` is deliberately not exported.** It was, until the
 // screen-reader gate in `alo-access` read this list: that test treats every
 // exported name ending in `Screen` as a surface a person meets, and told me a

@@ -533,3 +533,203 @@ fn where_nothing_was_chosen_a_command_is_refused() {
 fn the_persons_door_does_not_take_a_command() {
     assert!(FromAPerson::read(&a_message(r#"{"run":{"command":"ls"}}"#)).is_err());
 }
+
+/// A runner played by the test (ADR 0150): it hears one line and answers
+/// `answer`, and hands back the line it heard.
+fn a_runner(
+    at: &Path,
+    answer: alo_administrator::answering_as_administrator::Answered,
+) -> std::thread::JoinHandle<String> {
+    use std::io::{BufRead, Write};
+    let listener = std::os::unix::net::UnixListener::bind(at).unwrap();
+    std::thread::spawn(move || {
+        let (stream, _) = listener.accept().unwrap();
+        let mut heard = String::new();
+        std::io::BufReader::new(stream.try_clone().unwrap())
+            .read_line(&mut heard)
+            .unwrap();
+        (&stream).write_all(answer.as_line().as_bytes()).unwrap();
+        heard
+    })
+}
+
+/// The line an agent sends to run `command`.
+fn asking_to_run(command: &str) -> String {
+    a_message(&format!(r#"{{"run":{{"command":"{command}"}}}}"#))
+}
+
+/// **At full access, `sudo` asks the person's password and runs nothing as
+/// the person** (ADR 0150): what follows the word goes to the runner, and a
+/// cancelled password window is a refusal in words, written down as an
+/// administrator's action the person cancelled.
+#[test]
+fn at_full_access_sudo_asks_and_a_cancel_runs_nothing() {
+    use alo_administrator::answering_as_administrator::{Answered, NotAsAdministrator};
+    let elsewhere = Elsewhere::with_the_level("sudo-cancelled", Some(HowCodeRuns::AtFullTrust));
+    let runner_at = elsewhere.folder.join("runner.socket");
+    let runner = a_runner(
+        &runner_at,
+        Answered::Refused(NotAsAdministrator::TheyCancelled),
+    );
+    let here = elsewhere.here().running_as_administrator_at(&runner_at);
+    let mut record = Record::default();
+    let mut bracket = a_bracket();
+    let line = format!(
+        "sudo mkdir -p {}",
+        elsewhere.the_folder_it_makes().display()
+    );
+    on_a_turn(
+        "sudo-cancelled",
+        &mut record,
+        |turning, grants, strings, _| {
+            let said = the_agent_asked(
+                &asking_to_run(&line),
+                turning,
+                grants,
+                strings,
+                &here,
+                &mut bracket,
+            );
+            assert_eq!(
+                said.refusal().map(alo_protocol::Wording::text),
+                Some("nothing ran, because you closed the window that asked for your password"),
+                "{said:?}"
+            );
+        },
+    );
+    assert_eq!(
+        runner.join().unwrap(),
+        format!("mkdir -p {}\n", elsewhere.the_folder_it_makes().display())
+    );
+    assert!(
+        !elsewhere.the_folder_it_makes().exists(),
+        "it ran as the person"
+    );
+    let entries: Vec<_> = record.everything().collect();
+    assert_eq!(entries.len(), 1, "{entries:?}");
+    let entry = entries.first().unwrap();
+    assert!(matches!(
+        entry.happened(),
+        Happened::ACommandWasNotRun { .. }
+    ));
+    assert_eq!(
+        entry.asked_as_an_administrator(),
+        Some(alo_record::AsAnAdministrator::TheyCancelled)
+    );
+}
+
+/// **The person's password given, the runner's run is the answer**, and the
+/// record says it ran as administrator after they authenticated.
+#[test]
+fn at_full_access_sudo_runs_as_administrator_after_the_password() {
+    use alo_administrator::answering_as_administrator::Answered;
+    let elsewhere = Elsewhere::with_the_level("sudo-given", Some(HowCodeRuns::AtFullTrust));
+    let runner_at = elsewhere.folder.join("runner.socket");
+    let _runner = a_runner(
+        &runner_at,
+        Answered::Ran {
+            returned: Some(0),
+            said: "Complete!".to_owned(),
+            cut_short: false,
+            took_too_long: false,
+        },
+    );
+    let here = elsewhere.here().running_as_administrator_at(&runner_at);
+    let mut record = Record::default();
+    let mut bracket = a_bracket();
+    on_a_turn("sudo-given", &mut record, |turning, grants, strings, _| {
+        let said = the_agent_asked(
+            &asking_to_run("sudo dnf install -y htop"),
+            turning,
+            grants,
+            strings,
+            &here,
+            &mut bracket,
+        );
+        assert!(
+            matches!(
+                said.done(),
+                Some(Done::RanACommand {
+                    returned: Some(0),
+                    ..
+                })
+            ),
+            "{said:?}"
+        );
+    });
+    let entries: Vec<_> = record.everything().collect();
+    assert_eq!(entries.len(), 1, "{entries:?}");
+    assert_eq!(
+        entries.first().unwrap().asked_as_an_administrator(),
+        Some(alo_record::AsAnAdministrator::TheyGaveTheirPassword)
+    );
+    assert_eq!(
+        bracket.the_first_sentence_for_tests(),
+        Some("run this command: sudo dnf install -y htop"),
+        "the snapshot was not asked for before the run"
+    );
+}
+
+/// **No runner at all is said, and nothing runs as the person** — a machine
+/// where the administrator's road is missing refuses truthfully rather than
+/// falling back.
+#[test]
+fn no_runner_is_said_and_nothing_runs_as_the_person() {
+    let elsewhere = Elsewhere::with_the_level("sudo-no-runner", Some(HowCodeRuns::AtFullTrust));
+    let mut record = Record::default();
+    let mut bracket = a_bracket();
+    let line = format!(
+        "sudo mkdir -p {}",
+        elsewhere.the_folder_it_makes().display()
+    );
+    on_a_turn(
+        "sudo-no-runner",
+        &mut record,
+        |turning, grants, strings, _| {
+            let said = the_agent_asked(
+                &asking_to_run(&line),
+                turning,
+                grants,
+                strings,
+                &elsewhere.here(),
+                &mut bracket,
+            );
+            assert_eq!(
+                said.refusal().map(alo_protocol::Wording::text),
+                Some(
+                    "nothing ran, because this computer could not ask for administrator rights just now"
+                ),
+                "{said:?}"
+            );
+        },
+    );
+    assert!(!elsewhere.the_folder_it_makes().exists());
+    let entries: Vec<_> = record.everything().collect();
+    assert_eq!(
+        entries.first().unwrap().asked_as_an_administrator(),
+        Some(alo_record::AsAnAdministrator::CouldNotAsk)
+    );
+}
+
+/// **At the sealed box `sudo` is refused as every command is**, and the runner
+/// is never asked.
+#[test]
+fn at_the_sealed_box_sudo_is_refused_and_nothing_is_asked() {
+    let elsewhere = Elsewhere::with_the_level("sudo-sealed", Some(HowCodeRuns::InASealedBox));
+    let mut record = Record::default();
+    let mut bracket = a_bracket();
+    on_a_turn("sudo-sealed", &mut record, |turning, grants, strings, _| {
+        let said = the_agent_asked(
+            &asking_to_run("sudo true"),
+            turning,
+            grants,
+            strings,
+            &elsewhere.here(),
+            &mut bracket,
+        );
+        assert!(said.refusal().is_some(), "{said:?}");
+    });
+    let entries: Vec<_> = record.everything().collect();
+    assert_eq!(entries.len(), 1);
+    assert_eq!(entries.first().unwrap().asked_as_an_administrator(), None);
+}

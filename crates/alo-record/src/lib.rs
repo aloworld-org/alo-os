@@ -132,6 +132,7 @@
 
 #![doc(html_root_url = "https://github.com/aloworld-org/alo-os")]
 
+pub mod as_an_administrator;
 pub mod asked_an_application;
 pub mod brokered;
 pub mod departed;
@@ -152,6 +153,7 @@ mod test_calls;
 #[cfg(test)]
 mod testing;
 
+pub use as_an_administrator::AsAnAdministrator;
 pub use asked_an_application::{Answered, Given, Road, SentDuring};
 pub use brokered::AtTheBroker;
 pub use entry::Entry;
