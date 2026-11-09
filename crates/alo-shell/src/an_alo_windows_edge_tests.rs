@@ -16,15 +16,14 @@ fn a_window() -> Rectangle<i32, Physical> {
     Rectangle::new((200, 124).into(), (1040, 800).into())
 }
 
-/// **Close and nothing else, with a title and an icon**, and the edge's band
-/// ending where the window begins.
+/// **Close and nothing else, with a title** — no band carries an icon since
+/// 2026-11-09 — and the band ending where the window begins.
 #[test]
-fn close_alone_with_a_title_and_an_icon_on_the_window() {
+fn close_alone_with_a_title_on_the_window() {
     let edge = the_edge_over(a_window(), anywhere(), 100);
     let controls: Vec<OnTheEdge> = edge.controls.iter().map(|control| control.does).collect();
     assert_eq!(controls, vec![OnTheEdge::Close]);
     assert!(edge.title.is_some());
-    assert!(edge.icon.is_some());
     assert_eq!(edge.region.loc.y + edge.region.size.h, 124);
     assert_eq!((edge.region.loc.x, edge.region.size.w), (200, 1040));
 }

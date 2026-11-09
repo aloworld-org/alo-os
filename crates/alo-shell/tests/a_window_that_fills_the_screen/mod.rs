@@ -141,3 +141,38 @@ fn the_shell_knows_a_window_is_filling_the_screen() -> Result<(), Box<dyn std::e
     assert!(!after, "the shell still thinks one is, after it stopped");
     Ok(())
 }
+
+/// **Leaving full screen gives back the state before it**: a window a person
+/// maximised, then made full screen, comes back maximised — the window
+/// panel's *Exit full screen* (`docs/design/the-window-controls.md`).
+#[test]
+fn leaving_full_screen_gives_a_maximised_window_back_maximised()
+-> Result<(), Box<dyn std::error::Error>> {
+    let f = Fixture::keyboard();
+    let mut app = mapped(&f);
+    let root = f.root();
+    // **An output to fill**: neither maximise nor full screen has a size
+    // without one.
+    f.render((33, 32), false, 1)?;
+    app.sync();
+
+    for filling_now in [None, Some(true), Some(false)] {
+        let root: WlSurface = root.clone();
+        f.backend(move |s| match filling_now {
+            None => {
+                let _ = s.set_window_maximized(&root, true);
+            }
+            Some(filling) => {
+                let _ = s.set_window_full_screen(&root, filling);
+            }
+        });
+        app.sync();
+    }
+
+    assert!(!filling(&app), "still filling the screen after leaving it");
+    assert!(
+        maximised(&app),
+        "a maximised window came back from full screen as something else"
+    );
+    Ok(())
+}

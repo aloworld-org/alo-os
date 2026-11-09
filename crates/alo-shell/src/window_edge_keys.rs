@@ -25,19 +25,16 @@
 //!
 //! # Where the focus ring is while the menu is open
 //!
-//! On the Menu control, and the menu's own focused row is a second thing a
+//! On Window actions, and the panel's own focused choice is a second thing a
 //! reader is told — `crate::window_menu_reading` carries it. That is how every
 //! menu a person has used behaves: the thing you opened stays lit while you
 //! are in what it opened, and Escape puts you back on it rather than nowhere.
 //!
-//! # What this still does not feed
+//! # What this does not feed
 //!
-//! `Revealing`'s fourth condition, `a_drag`. Pressing Move answers
-//! [`WhatTheEdgeKeyDid::ItRuns`] and the caller decides, exactly as a press
-//! does — and nothing in this repository begins a keyboard move yet, so there
-//! is no drag for this file to report. Recorded rather than faked: a
-//! `the_edge_is_being_dragged` here that nothing ever called would be the
-//! unfed half this file exists to remove.
+//! `Revealing`'s fourth condition, `a_drag`. Nothing begins a move from the
+//! keyboard — the band has no Move control since 2026-11-09, and moving is the
+//! band's drag — so there is no drag for this file to report.
 
 use alo_dock::revealing::{AMenu, TheKeyboard};
 
@@ -93,10 +90,8 @@ pub enum WhatTheEdgeKeyDid {
     TheKeyboardIsOnARow(WhatARowDoes),
     /// This control of the edge was pressed.
     ///
-    /// **The control, not an action.** `Move` has no
-    /// [`alo_shortcuts::Action`] and the caller decides what a press means,
-    /// which is the same arrangement `crate::window_menu_keys` makes for the
-    /// menu's rows and for the same recorded reason.
+    /// **The control, not an action**: the caller decides what a press means,
+    /// as it does for a press with the pointer.
     ItRuns(OnTheEdge),
     /// This row of the menu was pressed. The menu closed and the keyboard is
     /// back on the control that opened it.
@@ -226,16 +221,15 @@ impl TheKeyboardOnTheEdge {
                 WhatTheEdgeKeyDid::TheKeyboardLeft
             }
             AnEdgeKey::Press => match control {
-                // **The Menu control opens the menu**, which is the thing
-                // nothing could do: the menu existed, was laid out, had a
-                // pointer hit test, and no road led into it.
-                OnTheEdge::Menu => {
-                    *self = Self::InTheMenu(TheKeyboardInTheMenu::opened_from(OnTheEdge::Menu));
+                // **Window actions opens the panel**, from the keyboard as from
+                // the pointer.
+                OnTheEdge::WindowActions => {
+                    *self = Self::InTheMenu(TheKeyboardInTheMenu::opened_from(
+                        OnTheEdge::WindowActions,
+                    ));
                     WhatTheEdgeKeyDid::TheMenuOpened
                 }
-                OnTheEdge::Move | OnTheEdge::Minimise | OnTheEdge::Maximise | OnTheEdge::Close => {
-                    WhatTheEdgeKeyDid::ItRuns(control)
-                }
+                OnTheEdge::Minimise | OnTheEdge::Close => WhatTheEdgeKeyDid::ItRuns(control),
             },
             AnEdgeKey::First => self.moved_to(along.first().copied()),
             AnEdgeKey::Last => self.moved_to(along.last().copied()),

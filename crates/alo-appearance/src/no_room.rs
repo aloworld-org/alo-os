@@ -12,7 +12,7 @@
 //!
 //! `docs/design/where-a-new-window-opens.md`, amended 2026-11-07, is the rule.
 //! This file only says which of the two a person chose. Written by name in
-//! `appearance.toml`, beside [`crate::titles::WindowTitles`], so a file a person
+//! `appearance.toml`, beside [`crate::controls_shown::WindowControls`], so a file a person
 //! edits by hand says what it means.
 
 use serde::{Deserialize, Serialize};

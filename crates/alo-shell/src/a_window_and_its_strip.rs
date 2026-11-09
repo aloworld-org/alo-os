@@ -29,14 +29,14 @@
 //!
 //! # And at least as wide as the narrowest strip
 //!
-//! A window narrower than `THE_COMPACT_EDGE_IS` has a strip that wide, centred
+//! A window narrower than `THE_NARROWEST_EDGE_IS` has a strip that wide, centred
 //! over it (`window_edge::where_the_edge_goes`), so it takes that much room
 //! across. The line round the window (one unit) is not counted: it is drawn in
 //! the gap, which is what the gap is between.
 
 use smithay::utils::{Logical, Point, Rectangle, Size};
 
-use crate::window_edge::{THE_COMPACT_EDGE_IS, THE_STRIP_IS_TALL};
+use crate::window_edge::{THE_NARROWEST_EDGE_IS, THE_STRIP_IS_TALL};
 
 /// The ordinary scale, in per cent.
 const ORDINARY: u32 = 100;
@@ -66,7 +66,7 @@ impl ItsStrip {
         };
         Self {
             tall: on_the_plane(THE_STRIP_IS_TALL),
-            at_least_wide: on_the_plane(THE_COMPACT_EDGE_IS),
+            at_least_wide: on_the_plane(THE_NARROWEST_EDGE_IS),
         }
     }
 

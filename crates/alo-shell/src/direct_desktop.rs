@@ -56,14 +56,14 @@ pub trait TheDesktop {
     /// Asked once, when the desktop stands up; Settings tells the seat again
     /// whenever the person changes it. **Always by default**, which is what
     /// this release ships and what a desktop of fixed values draws.
-    fn the_window_titles(&self) -> alo_appearance::WindowTitles {
-        alo_appearance::WindowTitles::default()
+    fn the_window_controls(&self) -> alo_appearance::WindowControls {
+        alo_appearance::WindowControls::default()
     }
 
     /// Where a new window goes when there is no room for it in view, as this
     /// person's own settings say.
     ///
-    /// Asked once, when the desktop stands up, like [`Self::the_window_titles`];
+    /// Asked once, when the desktop stands up, like [`Self::the_window_controls`];
     /// Settings tells the seat again whenever the person changes it. **Gliding
     /// to empty space by default**, which is what this release ships.
     fn when_there_is_no_room(&self) -> alo_appearance::WhenThereIsNoRoom {
@@ -465,7 +465,7 @@ pub trait TheDesktop {
     /// What this person's pointer looks like, as their own settings say.
     ///
     /// Asked once, when the desktop stands up, like
-    /// [`Self::the_window_titles`]. **The kite by default**, which is what this
+    /// [`Self::the_window_controls`]. **The kite by default**, which is what this
     /// release ships.
     fn the_pointers_look(&self) -> crate::ThePointersLook {
         crate::ThePointersLook::default()
@@ -1079,6 +1079,17 @@ impl LoopInput for Desk<'_> {
                 else if server.a_task_is_taking_the_keys() {
                     crate::a_key_reaches_the_task_in_front::a_key_reaches_the_task(
                         server, update, extent, strings,
+                    )
+                }
+                // **Then a window's band or panel, when it holds the keyboard**:
+                // the panel is drawn above every window, and a person who
+                // pressed Alt+F3 is walking it
+                // (`crate::a_key_reaches_a_windows_band`). False unless a
+                // band or panel has the keyboard, so an ordinary frame pays
+                // one walk of a short list.
+                else if server.a_windows_band_is_taking_the_keys() {
+                    crate::a_key_reaches_a_windows_band::a_key_reaches_a_windows_band(
+                        server, update, extent,
                     )
                 }
                 // **Escape dismisses a Dock control's name, and does nothing
@@ -2497,12 +2508,6 @@ impl LoopInput for Desk<'_> {
                 (size.w, size.h),
                 server.the_scale_an_edge_is_drawn_at(u32::from(frame.display_scale)),
             ),
-            crate::RecordLook {
-                scheme: frame.look.scheme(),
-                scale: frame.look.scale(),
-                reading: frame.look.reading(),
-                contrast: frame.look.contrast(),
-            },
         );
         // **The frame is drawn through the per-display road, with one display
         // on it.** `more-than-one-display-plan.md` task 4. This desk builds one

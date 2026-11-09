@@ -537,25 +537,27 @@ pub const WINDOWS: Word = Word::saying("settings.windows", "Windows").noting(
      name of any product: windows as in the rectangles applications are shown in.",
 );
 
-/// Show a window's title only while the pointer is on it.
-pub const SHOW_THE_TITLE_ONLY_WHEN_POINTED_AT: Word = Word::saying(
-    "settings.windows.title-when-pointed-at",
-    "Show the title only when I point at it",
+/// Keep every window's controls on its band, rather than only as the pointer
+/// comes near.
+pub const ALWAYS_SHOW_WINDOW_CONTROLS: Word = Word::saying(
+    "settings.windows.always-show-controls",
+    "Always show window controls",
 )
 .noting(
-    "A switch. Off, the name of every window is always shown on the strip across its top. On, \
-     the strip appears only while the pointer or the keyboard is on that edge of the window. \
-     Spoken by the person, so first person.",
+    "A switch. The controls are the three buttons at the end of the band across the top of every \
+     window: Window actions, Minimise and Close. Off, they appear as the pointer comes near the \
+     band or the keyboard reaches them. On, they are always there. The window's title is shown \
+     either way.",
 );
 
 /// What the switch above does.
-pub const SHOW_THE_TITLE_ONLY_WHEN_POINTED_AT_IS: Word = Word::saying(
-    "settings.windows.title-when-pointed-at.is",
-    "Off, every window shows its name and its application's icon along its top edge.",
+pub const ALWAYS_SHOW_WINDOW_CONTROLS_IS: Word = Word::saying(
+    "settings.windows.always-show-controls.is",
+    "Off, a window's buttons appear when you point near its title. Its title is always shown.",
 )
 .noting(
-    "Under the switch Show the title only when I point at it. Says what is on the screen while \
-     the switch is off, which is how this computer comes.",
+    "Under the switch Always show window controls. Says what is on the screen while the switch is \
+     off, which is how this computer comes. The buttons are Window actions, Minimise and Close.",
 );
 
 /// Choose a country or region from the list.
@@ -918,8 +920,8 @@ pub const THE_WINDOWS_WORDS: [Word; 113] = [
     ALWAYS_SHOWN_IS,
     GIVES_WAY_IS,
     WINDOWS,
-    SHOW_THE_TITLE_ONLY_WHEN_POINTED_AT,
-    SHOW_THE_TITLE_ONLY_WHEN_POINTED_AT_IS,
+    ALWAYS_SHOW_WINDOW_CONTROLS,
+    ALWAYS_SHOW_WINDOW_CONTROLS_IS,
     WHEN_THERE_IS_NO_ROOM,
     GLIDE_TO_EMPTY_SPACE,
     GLIDE_TO_EMPTY_SPACE_IS,

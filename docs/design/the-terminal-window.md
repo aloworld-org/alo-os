@@ -779,14 +779,17 @@ The icon's fill cannot be asked of an instance's child, so it was **read off the
 frame's render, pixel by pixel**: a 16 × 16 tile of `#102a43` (`text/primary`)
 with corners of about 4, and a white prompt-and-line mark about 10 across,
 centred. The mark is `icons/settings/terminal.svg` — the design's own terminal
-artwork — drawn into a 14 frame (`crates/alo-shell/src/the_terminals_icon.rs`).
+artwork — drawn into a 14 frame. *That icon was removed on 2026-11-09*: no
+window's band carries an icon since the owner's window-controls
+specification (`docs/design/the-window-controls.md`), the terminal's included.
 
 **Built**, through the application edge itself (`window_edge::edge_of`,
 `EdgePicture`, `window_edge_pointing`), laid out from where the camera draws
 the terminal, so it pans and zooms with it as #1084 made every application's
 edge do (`crates/alo-shell/src/the_terminals_edge.rs`):
 
-- the strip, the icon and *Terminal* (`terminal.window.title`, externalised);
+- the strip and *Terminal* (`terminal.window.title`, externalised) — and its
+  icon until 2026-11-09;
 - **Close**;
 - the focused look while the keys go to the terminal and the unfocused one
   otherwise — on the strip, and on the body's hairline and shadow, which now

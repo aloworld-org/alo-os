@@ -137,8 +137,8 @@ pub fn stand_the_desktop_up(
     // remember one of the two would be a caller that forgets.
     server.enable_pointer()?;
     // **What this person chose for their windows' titles**, before the first
-    // frame draws one (`crate::the_window_titles_shown`).
-    server.the_window_titles_are(desktop.the_window_titles());
+    // frame draws one (`crate::the_window_controls_shown`).
+    server.the_window_controls_are(desktop.the_window_controls());
     // **Where a new window goes when there is no room, and whether the view
     // may glide to find it one**, before the first window opens
     // (`crate::the_view_glides`).

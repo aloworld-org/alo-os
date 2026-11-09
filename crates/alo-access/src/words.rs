@@ -278,57 +278,73 @@ pub const GO_BACK_NOW: Word = Word::saying(
      away from under them.",
 );
 
-/// Moving a window, which a reader was never told a window could do.
+/// The first of a window's three controls, which opens its window panel.
 ///
-/// **Not an action's word, because there is no action.** The three window
-/// buttons are named by `alo_shortcuts::Action::word` under ADR 0089, and
-/// `alo_shortcuts` has no action for moving a window interactively — moving is
-/// something a person begins and ends rather than one thing the machine does.
-/// So the name lives here, with the other names this crate gives, and moves to
-/// the action's vocabulary on the day there is an action.
+/// **The owner's specification of 2026-11-09**
+/// (`docs/design/the-window-controls.md`): an icon with no word on it, whose
+/// tooltip and accessible name are *Window actions*. The panel it opens holds
+/// placement, full screen and what follows them.
 ///
-/// It is said because the window menu offers it and the edge does not. Until
-/// the menu existed a reader was told three things a window could do; this is
-/// the fourth and `RESIZE_THE_WINDOW` the fifth.
-pub const MOVE_THE_WINDOW: Word = Word::saying("access.move-the-window", "Move the window").noting(
-    "A row in the window menu, and the name a screen reader speaks for it. Beginning it lets \
-         a person move the window with the pointer or the arrow keys, so it is an interaction \
-         rather than one of the shortcut actions - there is no key bound to it and the design \
-         says not to invent one. Has to read naturally spoken on its own.",
+/// In this crate and not `alo-shell`'s because `alo-saying` collects this
+/// crate and not that one, so a word declared there would be a string a person
+/// sees that no translator can reach — `tree`'s
+/// `EVERY_WORD_ANOTHER_CRATES_SURFACE_SAYS` says the same of every word here.
+pub const WINDOW_ACTIONS: Word = Word::saying("access.window-actions", "Window actions").noting(
+    "The name and tooltip of a button on every window's title band, drawn as an icon with no \
+     word. Pressing it opens a small panel of things to do with that window: put it on the left \
+     or right half, maximise it, make it full screen. A short noun phrase, not an instruction.",
 );
 
-/// Resizing a window, the same way and for the same reason.
-///
-/// **The one most often unavailable**: a window whose smallest and largest
-/// size are the same cannot be resized, and the menu keeps the row and marks
-/// it [`crate::tree::State::ReadOnly`] rather than removing it — a row that
-/// vanished would move every row below it between one window and the next.
-pub const RESIZE_THE_WINDOW: Word = Word::saying("access.resize-the-window", "Resize the window")
+/// The second, which puts the window aside.
+pub const MINIMISE: Word = Word::saying("access.minimise", "Minimise").noting(
+    "The name and tooltip of a button on every window's title band, drawn as a short line. It puts \
+     the window away into the panel at the side of the screen without closing it. One word, the \
+     same word the person sees everywhere for this.",
+);
+
+/// The third, which asks the window to close.
+pub const CLOSE: Word = Word::saying("access.close", "Close").noting(
+    "The name and tooltip of a button on every window's title band, drawn as a cross. It asks this \
+     one window to close; the application may ask about unsaved work first. One word.",
+);
+
+/// The heading of the panel Window actions opens, and what a reader is told
+/// on arriving in it.
+pub const THE_WINDOW_PANEL: Word = Word::saying("access.the-window-panel", "Window").noting(
+    "The heading at the top of the small panel a window's Window actions button opens, and what a \
+     screen reader says on entering it. It means this window, the one the panel belongs to. One \
+     word.",
+);
+
+/// The placement choice that makes the window fill the screen.
+pub const MAXIMISE: Word = Word::saying("access.maximise", "Maximise").noting(
+    "A choice in the window panel, under a small picture of a window filling a screen. The window \
+     grows to fill the screen, and its title band and the Dock stay. While the window is maximised \
+     the same choice reads Restore instead. One word.",
+);
+
+/// The same choice, while the window is maximised.
+pub const RESTORE: Word = Word::saying("access.restore", "Restore").noting(
+    "The choice that reads Maximise, while the window already is maximised: it puts the window back \
+     to the size and place it had before. One word.",
+);
+
+/// The choice that makes the window cover the whole display.
+pub const FULL_SCREEN: Word = Word::saying("access.full-screen", "Full screen").noting(
+    "A row in the window panel. The window covers the whole display, and its title band, the Dock \
+     and the side panel give way to it. Different from Maximise, which keeps them. While the window \
+     is full screen the row reads Exit full screen.",
+);
+
+/// The same choice, while the window is full screen.
+pub const EXIT_FULL_SCREEN: Word = Word::saying("access.exit-full-screen", "Exit full screen")
     .noting(
-        "A row in the window menu, and the name a screen reader speaks for it. Beginning it lets \
-         a person change the window's size, so it is an interaction rather than one of the \
-         shortcut actions. Unavailable on a window that has one size, where the row is still \
-         announced and read-only. Has to read naturally spoken on its own.",
+        "The row that reads Full screen, while the window already is: it puts the window back the \
+         way it was before, maximised if it was maximised.",
     );
 
-/// The window menu itself, as the thing a reader arrives in.
-///
-/// **A menu with no name is a list of five things about nothing.** The
-/// contract asks for an accessible name on the menu, and this is it: a reader
-/// entering the panel says *Window menu* and then walks the rows, each of
-/// which is named by what it does.
-///
-/// Named for the panel and not for the window it belongs to, because the
-/// window's own title is already in the menu as selectable text and a reader
-/// meets it there. A name that repeated the title would say it twice.
-pub const THE_WINDOW_MENU: Word = Word::saying("access.the-window-menu", "Window menu").noting(
-    "The name a screen reader speaks on entering a window's menu, before its rows. A short \
-         noun phrase naming the panel, not a sentence and not an instruction - the rows carry \
-         the actions. Has to read naturally spoken on its own.",
-);
-
 /// Every string this crate can say, in the order this file declares them.
-pub const EVERY_WORD: [Word; 39] = [
+pub const EVERY_WORD: [Word; 44] = [
     SCREEN_READER,
     MAGNIFIER,
     HIGH_CONTRAST,
@@ -365,9 +381,14 @@ pub const EVERY_WORD: [Word; 39] = [
     THE_CHOICES,
     GO_BACK_AT_THE_NEXT_RESTART,
     GO_BACK_NOW,
-    MOVE_THE_WINDOW,
-    RESIZE_THE_WINDOW,
-    THE_WINDOW_MENU,
+    WINDOW_ACTIONS,
+    MINIMISE,
+    CLOSE,
+    THE_WINDOW_PANEL,
+    MAXIMISE,
+    RESTORE,
+    FULL_SCREEN,
+    EXIT_FULL_SCREEN,
 ];
 
 /// Why this crate's own list could not be declared.

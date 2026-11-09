@@ -307,8 +307,8 @@ fn the_press_is_carried_out(server: &mut Server, press: crate::SettingsPress, st
         return;
     }
     if let Some(SettingsDid::Kept(SettingsSection::Appearance, SettingsKept::Written)) = did {
-        if let Some(titles) = server.settings.window_titles() {
-            server.the_window_titles_are(titles);
+        if let Some(controls) = server.settings.window_controls() {
+            server.the_window_controls_are(controls);
         }
         // **And where the next window goes when there is no room**, so the
         // next one opens the way the person just chose.

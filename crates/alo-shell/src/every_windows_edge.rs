@@ -54,92 +54,80 @@ pub(crate) fn every_windows_edge(
     scale: u32,
 ) -> Vec<EdgePicture> {
     server.the_edges_were_told_where_the_pointer_is();
+    let now = std::time::Instant::now();
+    let room = crate::window_edge::the_usable_output(
+        smithay::utils::Size::from((output.0, output.1)),
+        scale,
+    );
     let open: Vec<_> = server.mapped_surfaces().cloned().collect();
     open.iter()
         .filter_map(|surface| {
-            // **In the edge's units at this display's scale**: the window is in
-            // the display's pixels and `EdgePicture::of` multiplies by the
-            // scale, so without the division a dense display drew every edge
-            // at twice its window's distance from the corner
-            // (`crate::an_edge_in_its_displays_units`).
             let window = crate::an_edge_in_its_displays_units::a_window_in_the_edges_units(
                 server.where_a_window_is_drawn(surface),
                 scale,
             );
+            // **Laid out with its controls while any of them is still to be
+            // seen**, so a fade out has something to draw. What a press
+            // reaches is asked separately, of the reveal itself
+            // (`crate::a_press_on_an_edge`), so a control fading out is drawn
+            // and is not pressed.
+            let how_shown = server.how_shown_its_controls_are(surface, now);
             let edge = crate::window_edge::edge_of(
                 window,
                 crate::window_edge_who_draws::who_draws_a_frame(),
-                server.is_this_windows_edge_revealed(surface),
-                // The same output this picture is laid out against, in the
-                // units the layout uses. A narrow window's edge is clamped
-                // inside it, so painting and the clamp read one number.
-                crate::window_edge::the_usable_output(
-                    smithay::utils::Size::from((output.0, output.1)),
-                    scale,
-                ),
+                how_shown > 0 || server.is_this_windows_edge_revealed(surface),
+                room,
             );
             let title = server.the_name_of(surface);
-            // **Where the pointer and the keyboard are, not a default.** This
-            // passed `Pointing::default()` until 2026-10-12, so no control on
-            // any window on a real machine ever showed a highlight or a focus
-            // ring: both were built, tested, and fed only by the example.
+            let application = server.the_application_of(surface);
             let keyboard = server.where_the_keyboard_is_on_this_windows_edge(surface);
             let pointing = server.what_this_edge_is_pointing_at_on(
                 &edge,
                 keyboard.what_the_painter_shows(),
                 scale,
             );
-            // **And this window's menu, where it has one open.** Laid out from
-            // the same edge the picture is drawn from, so what a person sees
-            // and what `a_press_in_the_menu` hit-tests are one layout.
             let menu = keyboard.the_menu().and_then(|in_the_menu| {
-                crate::window_menu::the_menu_of(
-                    &edge,
-                    crate::window_menu::WhatTheWindowAllows::everything(),
-                    server.surfaces.has_window_mode(surface),
-                    crate::window_menu::THE_TITLE_BLOCK_IS_TALL,
-                    crate::window_edge::the_usable_output(
-                        smithay::utils::Size::from((output.0, output.1)),
-                        scale,
-                    ),
-                )
-                .map(|menu| (menu, in_the_menu.on()))
+                crate::window_menu::the_menu_of(&edge, server.how_this_window_is(surface), room)
+                    .map(|menu| (menu, in_the_menu.on()))
             });
-            // **Which window it is, for how its edge looks**: the one the
-            // person's typing goes to wears the focused look (`557:456`), and
-            // every window is framed by alo's line and shadow, drawn round its
-            // own rectangle and never over it.
-            let artwork = std::sync::Arc::clone(&server.what_each_application_draws);
-            let icon = server
-                .the_application_of(surface)
-                .and_then(|application| artwork.of(&application));
+            let hovered_in_the_menu = menu.as_ref().and_then(|(menu, _)| {
+                server
+                    .where_the_pointer_is_in_logical_pixels()
+                    .map(|at| {
+                        crate::an_edge_in_its_displays_units::a_point_in_the_edges_units(at, scale)
+                    })
+                    .and_then(|at| menu.what_is_under(at))
+                    .map(|row| row.does)
+            });
             EdgePicture::of(
                 &edge,
-                pointing,
                 crate::window_edge_picture::OverTheEdge {
                     menu: menu.as_ref().map(|(menu, on)| {
                         (
                             menu,
                             crate::window_menu_paint::PointingAtTheMenu {
-                                hovered: None,
+                                hovered: hovered_in_the_menu,
                                 focused: *on,
                             },
                         )
                     }),
-                    // **A reason to show the whole title**, where there is one.
-                    // The title sits in the drag region, so a pointer on the
-                    // title is one the edge classifies as `Drag`; the keyboard's
-                    // road is being on the edge at all, which is the nearest
-                    // thing to focusing the title until a tab stop exists for it.
-                    showing: the_reason_to_show_the_whole_title(server, &edge, keyboard),
+                    showing: the_reason_to_show_a_tooltip(server, &edge, keyboard, scale),
                 },
                 crate::window_edge_picture::TheWindow {
                     title: title.its_own_words(),
+                    application: application.as_ref().map(alo_dock::AppId::name),
                     look: crate::window_edge_look::WhichLook::of(
                         server.is_the_window_typing_goes_to(surface),
                     ),
-                    icon,
                     body: Some(window),
+                    controls: crate::window_edge_paint::HowTheControlsLook {
+                        pointing,
+                        open: keyboard.the_menu().is_some(),
+                        how_shown,
+                        look: crate::window_edge_look::WhichLook::of(
+                            server.is_the_window_typing_goes_to(surface),
+                        ),
+                    },
                 },
                 &mut labels.fonts,
                 output,
@@ -154,33 +142,25 @@ pub(crate) fn every_windows_edge(
 #[path = "every_windows_edge_tests.rs"]
 mod tests;
 
-/// Why the whole title would be shown for this window, if it was cut.
-///
-/// [`None`] where there is no reason, which is most windows most of the time.
-/// `crate::window_edge_tooltip::tooltip_of` answers `None` again for a title
-/// that fits, so this says *a person is looking at this title* and nothing
-/// about whether there is more of it to see.
-fn the_reason_to_show_the_whole_title(
+/// Why a tooltip is shown on this band: the pointer on its band or a control,
+/// or the keyboard on it — and nothing while the panel is open, which says
+/// everything a tooltip would.
+fn the_reason_to_show_a_tooltip(
     server: &crate::Server,
     edge: &crate::window_edge::WindowEdge,
     keyboard: crate::window_edge_keys::TheKeyboardOnTheEdge,
+    scale: u32,
 ) -> Option<crate::window_edge_tooltip::Because> {
-    // **The pointer first**, because it is the specific one: a person pointing
-    // at a title is asking about that title, where the keyboard being
-    // somewhere on the edge is weaker evidence.
-    if let Some(at) = server.where_the_pointer_is_in_logical_pixels()
-        && matches!(
-            crate::window_edge_pointing::what_is_under(edge, at),
-            Some(crate::window_edge_pointing::UnderThePointer::Drag)
-        )
-    {
-        return Some(crate::window_edge_tooltip::Because::APointerIsOnIt);
-    }
     match keyboard {
-        crate::window_edge_keys::TheKeyboardOnTheEdge::Nowhere => None,
-        crate::window_edge_keys::TheKeyboardOnTheEdge::OnAControl(_)
-        | crate::window_edge_keys::TheKeyboardOnTheEdge::InTheMenu(_) => {
-            Some(crate::window_edge_tooltip::Because::TheKeyboardIsOnIt)
+        crate::window_edge_keys::TheKeyboardOnTheEdge::InTheMenu(_) => return None,
+        crate::window_edge_keys::TheKeyboardOnTheEdge::OnAControl(_) => {
+            return Some(crate::window_edge_tooltip::Because::TheKeyboardIsOnIt);
         }
+        crate::window_edge_keys::TheKeyboardOnTheEdge::Nowhere => {}
     }
+    let at = server
+        .where_the_pointer_is_in_logical_pixels()
+        .map(|at| crate::an_edge_in_its_displays_units::a_point_in_the_edges_units(at, scale))?;
+    crate::window_edge_pointing::what_is_under(edge, at)
+        .map(|_| crate::window_edge_tooltip::Because::APointerIsOnIt)
 }

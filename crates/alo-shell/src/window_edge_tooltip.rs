@@ -223,6 +223,51 @@ pub fn tooltip_of(
     })
 }
 
+/// The name of an icon-only control, under it, while it is pointed at or
+/// the keyboard is on it.
+///
+/// **The specification's *tooltips for icon-only controls***: Window
+/// actions, Minimise and Close draw a mark and no word, so the word is shown
+/// here and is the same word a reader speaks. One line, placed by the same rule
+/// as the title's — below the band if it fits, kept on the display — and
+/// starting at the control rather than at the title.
+#[must_use]
+pub fn the_name_of_a_control(
+    edge: &WindowEdge,
+    does: crate::window_edge::OnTheEdge,
+    name: &str,
+    because: Because,
+    fonts: &mut cosmic_text::FontSystem,
+    output: (i32, i32),
+) -> Option<Tooltip> {
+    let control = edge.the_control(does)?;
+    let room = AT_MOST_WIDE - 2 * AROUND_THE_WORDS;
+    let wide = crate::painted_text::how_wide(fonts, name, the_metrics()).min(room);
+    if wide <= 0 {
+        return None;
+    }
+    let size = Size::from((
+        wide + 2 * AROUND_THE_WORDS,
+        A_LINE_IS_TALL + 2 * AROUND_THE_WORDS,
+    ));
+    let at = Point::from((
+        control.target.loc.x + AROUND_THE_WORDS,
+        control.target.loc.y,
+    ));
+    let panel = placed(edge, at, size, output);
+    Some(Tooltip {
+        panel,
+        lines: vec![(
+            name.to_owned(),
+            Point::from((
+                panel.loc.x + AROUND_THE_WORDS,
+                panel.loc.y + AROUND_THE_WORDS,
+            )),
+        )],
+        because,
+    })
+}
+
 /// The metrics the edge's title is drawn with.
 fn the_metrics() -> cosmic_text::Metrics {
     cosmic_text::Metrics::new(12.0, 16.0)

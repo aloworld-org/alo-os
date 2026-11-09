@@ -128,12 +128,16 @@ impl Surfaces {
         surface: &WlSurface,
         filling: bool,
     ) -> Result<Option<Serial>, WindowFullScreenError> {
+        // **Leaving goes back to what it was before**, maximised or in a
+        // share, and to normal only from normal — never to a state the window
+        // did not come from.
+        let leaving_to = self.what_full_screen_gives_back(surface);
         self.set_window_mode(
             surface,
             if filling {
                 Mode::FillingTheScreen
             } else {
-                Mode::Normal
+                leaving_to
             },
         )
         .map_err(full_screen_refusal)

@@ -95,7 +95,6 @@ fn an_edge(y: i32, fonts: &mut cosmic_text::FontSystem) -> EdgePicture {
             true,
             Size::from((1440, 960)),
         ),
-        crate::window_edge_paint::Pointing::default(),
         crate::window_edge_picture::OverTheEdge::default(),
         crate::window_edge_picture::TheWindow {
             body: Some(window),
@@ -126,6 +125,7 @@ fn each_edge_is_drawn_once_with_its_window_or_after_them_all() {
         .map(|_| AnEdgesTextures {
             behind: Vec::new(),
             over: Vec::new(),
+            on_top: Vec::new(),
         })
         .collect();
     let runs = vec![

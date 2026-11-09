@@ -1,4 +1,4 @@
-//! **The record's window edge**: its icon, *What alo did* and Close, in the
+//! **The record's window edge**: *What alo did* and Close, in the
 //! focused or unfocused look, following the camera — `crate::an_alo_windows_edge`,
 //! the edge every one of alo's own windows wears (ADR 0145, stage 4).
 //!
@@ -11,44 +11,17 @@
 //! application edge, `554:56`. On the canvas the window leaves that band to the
 //! shared edge, which draws the same parts in the same places **and** the
 //! unfocused look when the keys are elsewhere, which a window always in front
-//! never needed. The icon is the record's own: its history clock
-//! (`I560:177;554:26`) on its tile.
+//! never needed. Since 2026-11-09 no band carries an icon
+//! (`docs/design/the-window-controls.md`), the record's included.
 //!
 //! **Close shuts the window**, as the strip's own Close always did, Put back
 //! confirmation open or not; Escape is the key that closes a confirmation
 //! first, and keeps doing so.
 
-use alo_dock::artwork::APicture;
 use smithay::utils::{Logical, Physical, Point, Rectangle};
 
 use crate::an_alo_windows_edge::{OnItsEdge, WhatItShows, its_picture, what_a_press_is_on};
-use crate::record_measures as m;
-use crate::settings_canvas::Canvas;
-use crate::the_records_icons::ARecordIcon;
 use crate::which_window_is_in_front::AKindOfWindow;
-
-/// The record's icon, `across` pixels square: its clock on its tile, in the
-/// palette of the person's appearance.
-fn the_records_icon(
-    across: u32,
-    palette: crate::record_palette::RecordPalette,
-) -> Option<APicture> {
-    let side = i32::try_from(across).ok()?;
-    if side <= 0 {
-        return None;
-    }
-    let (_, _, icon, corner) = m::THE_ICON;
-    let tile = Rectangle::<i32, Physical>::from_size((side, side).into());
-    let mut canvas = Canvas::over(tile);
-    #[expect(
-        clippy::cast_precision_loss,
-        reason = "a corner of a few pixels on a tile of a few dozen"
-    )]
-    let rounded = (corner * side) as f32 / icon as f32;
-    canvas.fill(tile, rounded, palette.cool, 1.0);
-    ARecordIcon::WhatAloDid.drawn(&mut canvas, tile, palette.ink);
-    APicture::of(across, across, canvas.washed().pixels).ok()
-}
 
 impl crate::Server {
     /// Where the record's body is seen on the display, while it is open here
@@ -67,19 +40,15 @@ impl crate::Server {
         fonts: &mut cosmic_text::FontSystem,
         says: &alo_strings::Strings,
         (output, scale): ((i32, i32), u32),
-        look: crate::RecordLook,
     ) -> Option<crate::window_edge_picture::EdgePicture> {
         let body = self.where_the_records_body_is_seen()?;
         // **Looked up where the window's words are**, `crate::the_records_words`:
         // the window itself says nothing (`tests/record_source.rs`).
         let title = crate::the_records_words::TheRecordsSentences::of(says).title;
-        let palette = crate::record_palette::RecordPalette::of(look.scheme, look.contrast);
-        let icon = the_records_icon(crate::the_terminals_icon::across_at(scale), palette);
         its_picture(
             body,
             WhatItShows {
                 title: &title,
-                icon: icon.as_ref(),
                 focused: self.the_record_is_taking_the_keys(),
             },
             self.where_the_pointer_is_in_logical_pixels(),

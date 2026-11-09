@@ -43,9 +43,6 @@ pub(crate) fn the_edge_over(
 pub(crate) struct WhatItShows<'a> {
     /// Its title, in the person's language.
     pub(crate) title: &'a str,
-    /// Its icon, where it has one; the grip's mark is drawn where it has none,
-    /// as for an application whose icon this machine does not know.
-    pub(crate) icon: Option<&'a alo_dock::artwork::APicture>,
     /// Whether the keys go to it.
     pub(crate) focused: bool,
 }
@@ -68,7 +65,6 @@ pub(crate) fn its_picture(
     );
     EdgePicture::of(
         &edge,
-        pointing,
         OverTheEdge {
             menu: None,
             showing: None,
@@ -77,9 +73,17 @@ pub(crate) fn its_picture(
         // panel, hairline and shadow.
         crate::window_edge_picture::TheWindow {
             title: Some(shows.title),
+            application: None,
             look: crate::window_edge_look::WhichLook::of(shows.focused),
-            icon: shows.icon,
             body: None,
+            // **Always shown**: alo's own windows carry Close alone, and it
+            // stays on their bands as it always has.
+            controls: crate::window_edge_paint::HowTheControlsLook {
+                pointing,
+                open: false,
+                how_shown: crate::the_controls_fade::ALL_THE_WAY,
+                look: crate::window_edge_look::WhichLook::of(shows.focused),
+            },
         },
         fonts,
         output,

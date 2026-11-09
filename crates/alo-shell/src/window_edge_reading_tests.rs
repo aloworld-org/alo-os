@@ -1,162 +1,82 @@
-//! What a reader is told, and the clause a mouse-shaped build fails quietly.
+//! What a reader is told about a band, held to the specification's names.
 
 use super::*;
-use crate::window_edge::{Decorations, edge_of};
-use smithay::utils::{Logical, Point, Rectangle, Size};
 
-/// A window with room above it for its edge.
-fn window() -> Rectangle<i32, Logical> {
-    Rectangle::new(Point::from((40, 100)), Size::from((600, 400)))
-}
-
-/// **Reachable without hovering.**
-///
-/// The owner: *screen-reader and keyboard users must reach the new edge
-/// without first hovering.* So a concealed edge announces exactly what a
-/// revealed one does. An implementation that gated the tree on `revealed`
-/// would pass every drawing test and leave a keyboard user unable to reach a
-/// control they can hear.
+/// **Window actions, Minimise, Close** — the specification's three, in the
+/// order they are drawn.
 #[test]
-fn a_concealed_edge_is_reached_just_as_a_revealed_one_is() {
-    // The edge draws nothing at rest, correctly - and a reader is told the
-    // same either way, because what a window has does not change with where a
-    // pointer is.
-    let concealed = edge_of(
-        window(),
-        Decorations::TheShellDraws,
-        false,
-        smithay::utils::Size::from((1920, 1080)),
-    );
-    assert!(
-        concealed.controls.is_empty(),
-        "a resting edge draws no control"
-    );
-    let told = what_a_reader_is_told(Decorations::TheShellDraws);
-    // five since the window menu landed: the three the edge draws, and moving and resizing, which only the menu offers and which a reader was never told about.
-    assert_eq!(told.len(), 5, "{told:?}");
-    assert!(
-        told.iter().all(|control| control.can_be_used()),
-        "a person could hear a control they could not reach"
-    );
-}
-
-/// **The three window actions are the ones the machine already has.**
-///
-/// Not new actions and not new words: the edge moved where a control is, not
-/// what pressing it does.
-#[test]
-fn the_edge_reuses_the_window_actions_that_already_exist() {
-    let edge = edge_of(
-        window(),
-        Decorations::TheShellDraws,
-        true,
-        smithay::utils::Size::from((1920, 1080)),
-    );
-    let does: Vec<_> = edge
-        .controls
-        .iter()
-        .filter_map(|control| what_it_does(control.does))
-        .collect();
+fn a_shell_drawn_window_has_the_three_in_their_drawn_order() {
     assert_eq!(
-        does,
+        the_controls_of(Decorations::TheShellDraws),
         vec![
-            Action::MinimiseWindow,
-            Action::MaximiseWindow,
-            Action::CloseWindow,
+            OnTheEdge::WindowActions,
+            OnTheEdge::Minimise,
+            OnTheEdge::Close
         ]
     );
 }
 
-/// **Every control a reader is told about can be acted on**, and is named by
-/// the action's own word rather than by a second string that has to agree.
+/// **The names are the specification's, and the reader says them whatever is
+/// drawn** — a concealed band still has all three.
 #[test]
-fn every_control_is_a_button_a_person_can_use() {
+fn a_reader_hears_the_three_by_their_own_names_without_hovering() {
+    let names: Vec<&str> = what_a_reader_is_told(Decorations::TheShellDraws)
+        .iter()
+        .map(|it| it.name.says())
+        .collect();
+    assert_eq!(names, vec!["Window actions", "Minimise", "Close"]);
+}
+
+/// **Window actions is told as a control that opens something**, so a reader
+/// can be told whether its panel is expanded; the other two are plain buttons.
+#[test]
+fn window_actions_opens_something_and_the_others_do_not() {
     let told = what_a_reader_is_told(Decorations::TheShellDraws);
-    // Five since the window menu landed: the three the edge draws, and moving
-    // and resizing, which only the menu offers.
-    assert_eq!(told.len(), 5, "{told:?}");
-    for control in &told {
-        assert!(
-            control.can_be_used(),
-            "a reader was told about something nobody can press: {control:?}"
-        );
-        assert_eq!(control.role, alo_access::tree::Role::Button);
-        match control.does {
-            // **Named by the action's own word**, which is ADR 0089 and the
-            // reason this test exists: a second string that has to agree is a
-            // second string that will stop agreeing.
-            Some(does) => assert_eq!(
-                control.name,
-                does.word(),
-                "the name is not the action's word"
-            ),
-            // **And the two with no action are named by a word somebody
-            // declares.** Moving and resizing are not in
-            // `alo_shortcuts::Action` and the design forbids inventing a chord
-            // for one, so ADR 0089's rule - name a control by what it does -
-            // is kept by naming them from `alo-access`' own vocabulary rather
-            // than by leaving them unnamed. A name invented here instead would
-            // be the second string the rule is about.
-            None => assert!(
-                alo_access::words::EVERY_WORD
-                    .iter()
-                    .any(|word| word.key() == control.name.key()),
-                "{control:?} performs nothing and is named by a word nobody declares"
-            ),
-        }
-    }
-
-    // **Three of the five have an action and two do not**, asserted so that
-    // this loop cannot pass by every control taking the same branch.
+    let states: Vec<alo_access::State> = told.iter().map(|it| it.state).collect();
     assert_eq!(
-        told.iter().filter(|it| it.does.is_some()).count(),
-        3,
-        "{told:?}"
+        states,
+        vec![
+            alo_access::State::OpensSomething,
+            alo_access::State::CanBeUsed,
+            alo_access::State::CanBeUsed
+        ]
     );
-    assert_eq!(
-        told.iter().filter(|it| it.does.is_none()).count(),
-        2,
-        "{told:?}"
-    );
+    assert!(told.iter().all(alo_access::tree::Control::can_be_used));
 }
 
-/// **An application with its own header is not announced twice.**
-///
-/// It keeps its own buttons, so alo's edge carries only a menu — and until the
-/// menu has an action it has no word, so a reader is told about nothing of
-/// alo's rather than about something alo cannot name.
+/// **An application with its own header is given Window actions alone** — no
+/// second Close beside its own, which is the refusal the 2026-10-09 ruling
+/// asks for.
 #[test]
-fn an_application_with_its_own_header_gets_no_duplicate_controls() {
-    let edge = edge_of(
-        window(),
-        Decorations::TheApplicationDraws,
-        true,
-        smithay::utils::Size::from((1920, 1080)),
-    );
-    // **Movement and the menu, and no Close.** The compact design makes Move a
-    // control of its own, so an app-drawn edge carries two rather than one -
-    // and the ruling it is held to is unchanged, because neither of them is a
-    // duplicate of a button the application already draws.
-    assert_eq!(
-        edge.controls.iter().map(|it| it.does).collect::<Vec<_>>(),
-        vec![OnTheEdge::Move, OnTheEdge::Menu]
-    );
-    assert!(
-        what_a_reader_is_told(Decorations::TheApplicationDraws).is_empty(),
-        "alo announced a control over an application that has its own"
-    );
+fn an_application_with_its_own_header_is_never_given_a_second_close() {
+    let has = the_controls_of(Decorations::TheApplicationDraws);
+    assert_eq!(has, vec![OnTheEdge::WindowActions]);
+    assert!(!has.contains(&OnTheEdge::Close));
+    assert!(!has.contains(&OnTheEdge::Minimise));
 }
 
-/// **The window menu has no action, and that is recorded rather than faked.**
-///
-/// A reader announcing a menu it could only name in English would be worse
-/// than one that does not announce it. The fix is an `Action` with a word like
-/// every other control's, and this test is what will fail when somebody adds
-/// one — at which point the two assertions below swap round.
+/// **Each control does what the chord of the same name does**, so a press and
+/// a key are one action.
 #[test]
-fn the_window_menu_is_the_one_control_with_no_action_yet() {
-    assert!(what_it_does(OnTheEdge::Menu).is_none());
-    for named in [OnTheEdge::Minimise, OnTheEdge::Maximise, OnTheEdge::Close] {
-        assert!(what_it_does(named).is_some(), "{named:?} lost its action");
-    }
+fn each_control_is_the_action_its_chord_performs() {
+    assert_eq!(
+        what_it_does(OnTheEdge::WindowActions),
+        Action::WindowOptions
+    );
+    assert_eq!(what_it_does(OnTheEdge::Minimise), Action::MinimiseWindow);
+    assert_eq!(what_it_does(OnTheEdge::Close), Action::CloseWindow);
+}
+
+/// **The words a band says are exactly the three**, which is what
+/// `alo-access` counts as said by this crate's surface.
+#[test]
+fn the_band_says_exactly_three_words() {
+    let keys: Vec<String> = every_word_this_band_says()
+        .iter()
+        .map(|it| it.named().to_owned())
+        .collect();
+    assert_eq!(
+        keys,
+        vec!["access.window-actions", "access.minimise", "access.close"]
+    );
 }

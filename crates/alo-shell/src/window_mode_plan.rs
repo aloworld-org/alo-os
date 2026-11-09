@@ -77,13 +77,21 @@ impl Surfaces {
         if previous.is_none() && mode == Mode::Normal {
             return Ok(None);
         }
-        let output = if mode == Mode::Maximized {
-            Some(
+        // **Full screen is the whole output too, where there is one.** This
+        // asked for `Mode::Maximized` alone until 2026-11-09, so a window put
+        // into full screen by a person was told *fullscreen* at its ordinary
+        // size and stayed there until the output next changed — found while
+        // making the window panel's Full screen work. Unlike maximise it is
+        // not refused without an output: a client asking to fill the screen
+        // before anything is drawn is answered, at its ordinary size, and
+        // sized when the output arrives (`update_window_mode_output`).
+        let output = match mode {
+            Mode::Maximized => Some(
                 self.window_mode_output
                     .ok_or(WindowModeError::OutputUnavailable)?,
-            )
-        } else {
-            None
+            ),
+            Mode::FillingTheScreen => self.window_mode_output,
+            Mode::Normal | Mode::InAShare(_) => None,
         };
         let share = match mode {
             Mode::InAShare(share) => Some(share),

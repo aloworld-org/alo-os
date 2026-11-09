@@ -26,11 +26,11 @@ use smithay::utils::{Logical, Point, Rectangle, Size};
 /// An edge whose controls reach the origin, so the absent-pointer answer and
 /// the origin answer are different answers.
 ///
-/// Its window starts at `(0, 44)` and is 600 wide, which puts the region at
-/// `(0, 0)` — the specimen `crate::window_edge`'s own tests use.
+/// Its window is 600 wide and placed so that Window actions — 18 + 140 in from
+/// the trailing end — starts at the origin, with the band's top there too.
 fn an_edge_over_the_origin() -> crate::window_edge::WindowEdge {
     let window = Rectangle::new(
-        Point::from((0, crate::window_edge::THE_REGION_IS_TALL)),
+        Point::from((-(600 - 18 - 140), crate::window_edge::THE_REGION_IS_TALL)),
         Size::from((600, 400)),
     );
     edge_of(
@@ -99,9 +99,9 @@ fn a_machine_with_no_pointer_highlights_nothing() {
 fn the_focus_a_host_supplies_survives() {
     let edge = an_edge_over_the_origin();
     let (_directory, server) = a_server();
-    let pointing = server.what_this_edge_is_pointing_at(&edge, Some(OnTheEdge::Maximise));
+    let pointing = server.what_this_edge_is_pointing_at(&edge, Some(OnTheEdge::Minimise));
     assert_eq!(pointing.hovered, None, "there is still no pointer");
-    assert_eq!(pointing.focused, Some(OnTheEdge::Maximise));
+    assert_eq!(pointing.focused, Some(OnTheEdge::Minimise));
 }
 
 /// A concealed edge has nothing to light, which is checked here rather than

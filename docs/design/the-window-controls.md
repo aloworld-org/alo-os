@@ -275,6 +275,24 @@ is the specimen's width, not a window's.
   empty arm). They are not in the panel. Moving is the band; resizing is the
   edges and corners (ADR 0071).
 
+### Readings taken while building, each for the owner to overrule
+
+- **The application's name is what this machine calls the application** — the
+  application's own `app_id`, the name the Dock already shows for it. A
+  friendlier name from the application's desktop entry is not read anywhere in
+  the shell yet, so a window of `org.gnome.TextEditor` says that.
+- **A double-click is two presses within 500 ms and 4 units**, the longest of
+  the common desktop defaults; the design names none. It is never the only
+  road: the panel's Maximise and `Super+Up` do the same.
+- **Tab is not taken inside the panel**: `crate::window_menu_keys` had already
+  declined to decide the whole focus order there. The arrows, Home, End, Enter,
+  Space and Escape walk it.
+- **No band carries an icon**, alo's own windows (the terminal, the record)
+  included, so every band is the one band the frames draw.
+- **Opening a panel does not bring its window forward**; the panel is drawn
+  above every window instead, so it is never covered and a press on it never
+  reaches what is behind.
+
 ## What is built
 
 *Updated with each stage as it lands.* Until a row here names a pull request,
@@ -282,7 +300,8 @@ that part is **not built**.
 
 | stage | what | state |
 |---|---|---|
-| 1 | the band, three controls, reveal and fade, the setting, the panel's placement and full screen, keyboard and reader | not built |
+| 1a | the band (title and application name always, 54 tall), the three controls revealed on approach with the fade, *Always show window controls*, the panel with Maximise / Restore and Full screen / Exit full screen, right-click and double-click on the band, `Alt+F3` and the keys into the band and panel, expanded and selected states for a reader | #1138 |
+| 1b | Left and Right with the preview, Maximise keeping the band, Minimise travelling to the side panel, the full-screen top-edge reveal | not built |
 | 2 | Move to…, Undo placement | not built |
 | 3 | Help with this window, the working state and Stop | not built |
 | 4 | Capture & export | not built |

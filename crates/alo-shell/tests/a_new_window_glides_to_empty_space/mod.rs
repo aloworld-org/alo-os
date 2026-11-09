@@ -29,8 +29,10 @@ use smithay::reexports::wayland_server::protocol::wl_surface::WlSurface;
 use smithay::utils::{Logical, Physical, Rectangle, Size};
 use wayland_client::Proxy as _;
 
-/// A view one window and its strip fill, with the gap round them.
-const A_SMALL_VIEW: (i32, i32) = (180, 80);
+/// A view one window and its band fill, with the gap round them: the narrowest
+/// band is 180 wide and the band 54 tall over a 16-tall window, with 16 of gap
+/// on every side — `180 + 2 × 16` across and `54 + 16 + 2 × 16` down.
+const A_SMALL_VIEW: (i32, i32) = (212, 102);
 
 /// An application by its identifier.
 fn app(named: &str) -> alo_dock::AppId {
@@ -263,7 +265,6 @@ fn with_room_in_view_nothing_glides() {
             Size::from((1_000_000, 1_000_000)),
         )
         .strip
-        .unwrap_or_else(|| panic!("a revealed edge has a strip"))
     };
     let (editors, files) = (strip(editor_is), strip(files_is));
     assert_eq!(
@@ -314,8 +315,7 @@ fn drawn(window: Rectangle<i32, Logical>) -> Rectangle<i32, Logical> {
         true,
         Size::from((1_000_000, 1_000_000)),
     )
-    .strip
-    .unwrap_or_else(|| panic!("a revealed edge has a strip"));
+    .strip;
     strip.merge(window)
 }
 

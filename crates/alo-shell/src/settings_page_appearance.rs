@@ -77,29 +77,29 @@ pub(crate) fn the_blocks(open: &Open, strings: &Strings) -> Vec<ABlock> {
             rows: vec![light_or_dark, accent],
             footnote: Some(said(strings, w::THE_ACCENT_NOTE)),
         }));
-        // **Windows: whether a title is always on its edge.** The owner's
-        // answer of 2026-11-01 is *always*, and this is the choice that answer
-        // keeps open: the quieter edge that appears under the pointer.
-        let only_when_pointed_at = !appearance.drawn().window_titles().are_always_shown();
-        let is = if only_when_pointed_at {
+        // **Windows: whether a window's controls are always on its band.** The
+        // owner's ruling of 2026-11-09: the title is always shown, the
+        // controls come as the pointer nears, and this keeps them there.
+        let always = appearance.drawn().window_controls().are_always_shown();
+        let is = if always {
             crate::settings_page::SwitchIs::On
         } else {
             crate::settings_page::SwitchIs::Off
         };
-        let mut titles = ARow::named(
-            Some(SettingsRow::WindowTitles),
+        let mut controls = ARow::named(
+            Some(SettingsRow::WindowControls),
             TheKind::ASwitch(is),
-            said(strings, w::SHOW_THE_TITLE_ONLY_WHEN_POINTED_AT),
+            said(strings, w::ALWAYS_SHOW_WINDOW_CONTROLS),
         );
-        titles
+        controls
             .lines
-            .push(said(strings, w::SHOW_THE_TITLE_ONLY_WHEN_POINTED_AT_IS));
-        titles.at_its_end = Some(crate::settings_page::AnEnd::Words(
+            .push(said(strings, w::ALWAYS_SHOW_WINDOW_CONTROLS_IS));
+        controls.at_its_end = Some(crate::settings_page::AnEnd::Words(
             crate::settings_page::switch_said(is, strings),
         ));
         blocks.push(ABlock::Section(ASection {
             heading: Some(said(strings, w::WINDOWS)),
-            rows: vec![titles],
+            rows: vec![controls],
             footnote: None,
         }));
         // **When there's no room for a new window**: the owner's choice of

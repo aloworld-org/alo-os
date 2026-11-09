@@ -40,6 +40,11 @@ pub(crate) struct ModeWindow {
     pub(crate) ordinary_on_the_plane: Option<(alo_canvas::At, alo_canvas::Size)>,
     /// Last requested mode, separate from the client's committed state.
     pub(crate) mode: Mode,
+    /// The mode it was in before it was made to fill the screen, which is
+    /// what leaving full screen goes back to — a maximised window comes back
+    /// maximised (`docs/design/the-window-controls.md`). [`None`] outside full
+    /// screen, and for a window that was its ordinary self before it.
+    pub(crate) before_full_screen: Option<Mode>,
     /// Latest configure and origin; older responses cannot place this window.
     pub(crate) pending: Option<(Serial, Anchor)>,
 }
@@ -124,6 +129,15 @@ impl Surfaces {
             .ordinary_on_the_plane
     }
 
+    /// What leaving full screen goes back to: the mode before it, or normal.
+    pub(crate) fn what_full_screen_gives_back(&self, surface: &WlSurface) -> Mode {
+        self.window_modes
+            .iter()
+            .find(|window| window.role.wl_surface() == surface)
+            .and_then(|window| window.before_full_screen)
+            .unwrap_or(Mode::Normal)
+    }
+
     /// Whether this mapping still owns normal-geometry memory or a restore response.
     pub(crate) fn has_window_mode(&self, surface: &WlSurface) -> bool {
         self.window_modes
@@ -149,11 +163,24 @@ impl Surfaces {
             anchor,
         } = plan;
         let serial = configure(&role, mode, size);
+        let before_full_screen = if mode == Mode::FillingTheScreen {
+            self.window_modes
+                .iter()
+                .find(|previous| previous.role == role)
+                .and_then(|previous| match previous.mode {
+                    Mode::FillingTheScreen => previous.before_full_screen,
+                    Mode::Normal => None,
+                    other => Some(other),
+                })
+        } else {
+            None
+        };
         let window = ModeWindow {
             role,
             normal,
             ordinary_on_the_plane,
             mode,
+            before_full_screen,
             pending: Some((serial, anchor)),
         };
         if let Some(previous) = self

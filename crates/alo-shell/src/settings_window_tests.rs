@@ -245,7 +245,7 @@ fn every_setting_the_machine_has_is_in_one_window() {
         .map(SettingsRow::LightOrDark)
         .chain(Accent::ALL.into_iter().map(SettingsRow::Accent))
         // **Then the titles switch**, under *Windows*.
-        .chain(std::iter::once(SettingsRow::WindowTitles))
+        .chain(std::iter::once(SettingsRow::WindowControls))
         // **Then where a new window goes when there is no room**, gliding
         // first because it is how this computer comes.
         .chain(
@@ -750,39 +750,43 @@ fn a_broken_access_file_is_said_and_not_written_over() {
     );
 }
 
-/// **The window titles switch turns over and is kept**, and turns back: the
-/// owner's *always* as shipped, and the quieter edge as the person's choice.
+/// **The window controls switch turns over and is kept**, and turns back:
+/// controls on approach as shipped, and always shown as the person's choice.
 #[test]
-fn the_titles_switch_turns_over_and_back_and_is_kept_each_time() {
-    let machine = a_persons_machine("titles");
+fn the_controls_switch_turns_over_and_back_and_is_kept_each_time() {
+    let machine = a_persons_machine("controls");
     let strings = words();
     let door = CountingDoor::revoking();
     let mut window = machine.opened();
     let at = machine.kept(alo_appearance::keeping::THE_FILE);
     assert_eq!(
-        window.window_titles(),
-        Some(alo_appearance::WindowTitles::Always),
-        "a machine nobody changed shows every title"
+        window.window_controls(),
+        Some(alo_appearance::WindowControls::WhenApproached),
+        "a machine nobody changed shows controls as the pointer comes near"
     );
     for expected in [
-        alo_appearance::WindowTitles::WhenPointedAt,
-        alo_appearance::WindowTitles::Always,
+        alo_appearance::WindowControls::Always,
+        alo_appearance::WindowControls::WhenApproached,
     ] {
         assert_eq!(
-            chosen(&mut window, &SettingsRow::WindowTitles, &strings, &door),
+            chosen(&mut window, &SettingsRow::WindowControls, &strings, &door),
             Some(SettingsDid::Kept(
                 SettingsSection::Appearance,
                 SettingsKept::Written
             ))
         );
-        assert_eq!(window.window_titles(), Some(expected));
+        assert_eq!(window.window_controls(), Some(expected));
         assert_eq!(
-            alo_appearance::keeping::at_sign_in(&at).0.window_titles(),
+            alo_appearance::keeping::at_sign_in(&at).0.window_controls(),
             expected,
             "what a sign-in reads back"
         );
     }
-    assert_eq!(door.knocks.get(), 0, "a title switch knocked on the daemon");
+    assert_eq!(
+        door.knocks.get(),
+        0,
+        "a controls switch knocked on the daemon"
+    );
 }
 
 /// **Where a new window goes when there is no room is kept across sign-ins**,

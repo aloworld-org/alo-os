@@ -22,7 +22,6 @@
 use crate::painted::Washed;
 use crate::window_edge::{Decorations, edge_of};
 use crate::window_edge_look::WhichLook;
-use crate::window_edge_paint::Pointing;
 use crate::window_edge_picture::{EdgePicture, OverTheEdge, TheWindow};
 use smithay::utils::{Logical, Point, Rectangle, Size};
 
@@ -38,15 +37,6 @@ fn fonts() -> cosmic_text::FontSystem {
     fonts
 }
 
-/// A 16 × 16 tile of one colour, standing in for an application's icon the
-/// way the design's own `Proposed / App icon` (`554:23`) does.
-fn a_tile(rgb: [u8; 3]) -> alo_dock::artwork::APicture {
-    let pixels = (0..16 * 16)
-        .flat_map(|_| [rgb[0], rgb[1], rgb[2], 255])
-        .collect();
-    alo_dock::artwork::APicture::of(16, 16, pixels).expect("a whole picture")
-}
-
 /// One window of a frame: its body, what it is, and whether it is focused.
 struct AWindow {
     /// The application's own rectangle, under its edge.
@@ -57,8 +47,6 @@ struct AWindow {
     decorations: Decorations,
     /// Whether the keyboard is on it.
     focused: bool,
-    /// The colour of the tile standing in for its icon, where it has one.
-    icon: Option<[u8; 3]>,
 }
 
 /// A frame's three windows, back to front, as the design places them.
@@ -87,21 +75,18 @@ fn three_windows(at_1440: bool) -> Vec<AWindow> {
             title: "Terminal",
             decorations: Decorations::TheShellDraws,
             focused: false,
-            icon: Some([0x10, 0x2A, 0x43]),
         },
         AWindow {
             body: rect(task),
             title: "",
             decorations: Decorations::ATaskWindow,
             focused: false,
-            icon: None,
         },
         AWindow {
             body: rect(dolphin),
             title: "Home \u{2014} Dolphin",
             decorations: Decorations::TheShellDraws,
             focused: true,
-            icon: Some([0xEE, 0xF2, 0xF4]),
         },
     ]
 }
@@ -155,16 +140,14 @@ fn drawn(at_1440: bool) -> (Vec<EdgePicture>, Vec<[f32; 3]>, (i32, i32)) {
             true,
             Size::from((size.0, size.1)),
         );
-        let icon = window.icon.map(a_tile);
         let picture = EdgePicture::of(
             &edge,
-            Pointing::default(),
             OverTheEdge::default(),
             TheWindow {
                 title: (!window.title.is_empty()).then_some(window.title),
                 look: WhichLook::of(window.focused),
-                icon: icon.as_ref(),
                 body: (window.decorations == Decorations::TheShellDraws).then_some(window.body),
+                ..TheWindow::default()
             },
             &mut fonts,
             size,
@@ -283,14 +266,15 @@ fn the_three_windows_are_told_apart_at_both_sizes() {
             at(&frame, size, terminal.body.loc.x - 1, mid(terminal)),
             [0xE7, 0xEB, 0xEF]
         );
-        // Dolphin's strip lies across the task window behind it, as `557:144`
-        // draws it: its top line is the focused line there, not the task
-        // window's white.
+        // Dolphin's band lies across the task window behind it, as `557:144`
+        // draws it: its top line is the focused line there, not what is
+        // behind. **Its band is 54 since 2026-11-09**, so its top line now
+        // crosses the task window's own band rather than its body.
         let task = &windows[1];
-        let top = dolphin.body.loc.y - 32;
+        let top = dolphin.body.loc.y - crate::window_edge::THE_STRIP_IS_TALL;
         assert!(
-            top > task.body.loc.y,
-            "the premise: Dolphin's strip is over the task window"
+            top > task.body.loc.y - crate::window_edge::THE_STRIP_IS_TALL,
+            "the premise: Dolphin's band is over the task window's"
         );
         assert_eq!(
             at(&frame, size, dolphin.body.loc.x + 360, top),

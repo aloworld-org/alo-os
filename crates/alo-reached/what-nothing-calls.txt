@@ -50,7 +50,6 @@ crates/alo-shell/src/nested_recovery.rs	submit_recovery
 crates/alo-shell/src/nested_settings.rs	pump_settings
 crates/alo-shell/src/nested_settings.rs	submit_with_settings
 crates/alo-shell/src/the_edge_takes_the_keyboard.rs	the_keyboard_reached_this_windows_edge
-crates/alo-shell/src/the_edge_takes_the_keyboard.rs	this_windows_edge_was_told_a_key
 crates/alo-shell/src/window_edge.rs	how_big_a_target_looks
 crates/alo-software/src/road.rs	the_tool_for
 crates/alo-tasks/src/task.rs	activity_mut

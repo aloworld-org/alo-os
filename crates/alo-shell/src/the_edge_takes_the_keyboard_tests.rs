@@ -10,7 +10,7 @@
 //! three one-line methods are not, which is said here rather than left for a
 //! reader to discover from a coverage report.
 
-use super::{looked_up, only_what_is_still_open, remember_in};
+use super::{ByWhat, looked_up, only_what_is_still_open, remember_in};
 use crate::window_edge::OnTheEdge;
 use crate::window_edge_keys::TheKeyboardOnTheEdge;
 use crate::window_menu_keys::TheKeyboardInTheMenu;
@@ -23,7 +23,7 @@ fn on_close() -> TheKeyboardOnTheEdge {
 }
 
 fn in_a_menu() -> TheKeyboardOnTheEdge {
-    TheKeyboardOnTheEdge::InTheMenu(TheKeyboardInTheMenu::opened_from(OnTheEdge::Menu))
+    TheKeyboardOnTheEdge::InTheMenu(TheKeyboardInTheMenu::opened_from(OnTheEdge::WindowActions))
 }
 
 /// **A window nothing has reached is `Nowhere`**, not an absent answer a
@@ -118,4 +118,19 @@ fn nothing_open_leaves_nothing_held() {
     remember_in(&mut table, &"mail", on_close());
     only_what_is_still_open(&mut table, &[]);
     assert!(table.is_empty(), "{table:?}");
+}
+
+/// **Closing a panel gives focus back by the road that closed it**: to Window
+/// actions for a key, the specification's *focus returns to the opener*; and
+/// nowhere for a pointer, so a click leaves no ring holding the controls up.
+#[test]
+fn closing_a_panel_returns_focus_by_the_road_that_closed_it() {
+    assert_eq!(
+        ByWhat::TheKeyboard.where_focus_goes_back(),
+        TheKeyboardOnTheEdge::OnAControl(OnTheEdge::WindowActions)
+    );
+    assert_eq!(
+        ByWhat::ThePointer.where_focus_goes_back(),
+        TheKeyboardOnTheEdge::Nowhere
+    );
 }

@@ -1,11 +1,11 @@
-//! Titles shown always, or under the pointer, as the person said.
+//! Controls shown always, or as the pointer comes near, as the person said.
 #![expect(
     clippy::expect_used,
     reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
 )]
 
 use crate::Server;
-use alo_appearance::WindowTitles;
+use alo_appearance::WindowControls;
 use smithay::input::keyboard::XkbConfig;
 use smithay::reexports::wayland_server::{
     Client, DataInit, Dispatch, Display, DisplayHandle, Resource,
@@ -64,28 +64,36 @@ fn a_session(what: &str) -> (tempfile::TempDir, Server) {
     (runtime, server)
 }
 
-/// **Always, until somebody says otherwise** — and then exactly what they said.
+/// **Controls on approach, until somebody says otherwise** — and then
+/// exactly what they said.
 #[test]
-fn a_seat_shows_every_title_until_told_otherwise() {
-    let (_runtime, mut server) = a_session("titles-told");
-    assert_eq!(server.the_window_titles(), WindowTitles::Always);
-    server.the_window_titles_are(WindowTitles::WhenPointedAt);
-    assert_eq!(server.the_window_titles(), WindowTitles::WhenPointedAt);
+fn a_seat_shows_controls_on_approach_until_told_otherwise() {
+    let (_runtime, mut server) = a_session("controls-told");
+    assert_eq!(server.the_window_controls(), WindowControls::WhenApproached);
+    server.the_window_controls_are(WindowControls::Always);
+    assert_eq!(server.the_window_controls(), WindowControls::Always);
 }
 
-/// **A window nobody has pointed at shows its edge, while titles are always
-/// shown — and does not, once the person chose the quieter edge.** The choice
-/// is not taken away: the machine §5 describes still answers for it.
+/// **A window nobody has pointed at shows no controls — until the person
+/// chose to always show them**, and then shows them fully, with no fade.
 #[test]
-fn an_untouched_windows_edge_is_shown_only_while_titles_are_always_shown() {
-    let (_runtime, mut server) = a_session("titles-revealed");
+fn an_untouched_windows_controls_are_shown_only_when_always_shown() {
+    let (_runtime, mut server) = a_session("controls-revealed");
     let (_display, _peer, window) = a_window();
     assert!(window.is_alive());
-    assert!(server.is_this_windows_edge_revealed(&window));
-    server.the_window_titles_are(WindowTitles::WhenPointedAt);
     assert!(
         !server.is_this_windows_edge_revealed(&window),
-        "the quieter edge was chosen and the edge still showed with nothing pointing at it"
+        "controls showed with nothing pointing at them"
+    );
+    assert_eq!(
+        server.how_shown_its_controls_are(&window, std::time::Instant::now()),
+        0
+    );
+    server.the_window_controls_are(WindowControls::Always);
+    assert!(server.is_this_windows_edge_revealed(&window));
+    assert_eq!(
+        server.how_shown_its_controls_are(&window, std::time::Instant::now()),
+        crate::the_controls_fade::ALL_THE_WAY
     );
 }
 
@@ -93,7 +101,26 @@ fn an_untouched_windows_edge_is_shown_only_while_titles_are_always_shown() {
 /// is the refusal: a seat with no keyboard focus focuses nothing.
 #[test]
 fn a_window_the_keyboard_is_not_on_is_not_focused() {
-    let (_runtime, server) = a_session("titles-focus");
+    let (_runtime, server) = a_session("controls-focus");
     let (_display, _peer, window) = a_window();
     assert!(!server.is_the_window_typing_goes_to(&window));
+}
+
+/// **A choice from the window panel that the window refuses is counted, and
+/// changes nothing** — here a window that was never mapped, so there is
+/// nothing to maximise or fill the screen with. Never swallowed: a refusal
+/// nobody can see is how a broken road reads as working.
+#[test]
+fn a_refused_panel_choice_is_counted_and_changes_nothing() {
+    let (_runtime, mut server) = a_session("controls-refused");
+    let (_display, _peer, window) = a_window();
+    assert_eq!(server.how_many_window_panel_choices_were_refused(), 0);
+    for does in [
+        crate::window_menu::WhatARowDoes::Maximise,
+        crate::window_menu::WhatARowDoes::FullScreen,
+    ] {
+        server.carry_out_the_row(&window, does);
+    }
+    assert_eq!(server.how_many_window_panel_choices_were_refused(), 2);
+    assert!(!server.a_window_is_filling_the_screen());
 }

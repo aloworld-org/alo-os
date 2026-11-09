@@ -48,12 +48,23 @@ const KEYS: &[&str] = &[
     "following",
     "text",
     "accent",
+    "window_controls",
+    // Withdrawn on 2026-11-09 and still read: see `WITHDRAWN`.
     "window_titles",
     "pointer_shape",
     "pointer_size",
     "pointer_colour",
     "when_there_is_no_room",
 ];
+
+/// Keys an older release wrote and this one still reads and never writes.
+///
+/// `window_titles` held *show the title only when I point at it*, which the
+/// owner withdrew on 2026-11-09 (`crate::controls_shown`). A file that has it
+/// is read, the value is set aside, and the next write leaves it out — so a
+/// person's other choices are not refused over a key they did not know had
+/// gone.
+pub const WITHDRAWN: &[&str] = &["window_titles"];
 
 impl Kept for Changes {
     const FILE: &'static str = THE_FILE;
@@ -170,7 +181,7 @@ mod tests {
         ));
         changes.set_text(TextScale::percent(150).unwrap());
         changes.set_accent(Accent::Moss);
-        changes.set_window_titles(crate::titles::WindowTitles::WhenPointedAt);
+        changes.set_window_controls(crate::controls_shown::WindowControls::Always);
         changes.set_pointer_shape(crate::pointer::PointerShape::Classic);
         changes.set_pointer_size(crate::pointer::PointerSize::Larger);
         changes.set_pointer_colour(crate::pointer::PointerColour::White);
@@ -191,10 +202,42 @@ mod tests {
             .map(String::as_str)
             .filter(|key| *key != alo_kept::THE_FORMAT_KEY)
             .collect();
-        assert_eq!(written.len(), KEYS.len(), "{text}");
-        for key in KEYS {
+        assert_eq!(written.len(), KEYS.len() - WITHDRAWN.len(), "{text}");
+        for key in KEYS.iter().filter(|key| !WITHDRAWN.contains(key)) {
             assert!(written.contains(key), "{key} is not written: {text}");
         }
+    }
+
+    /// **A file kept before the owner withdrew the title choice still reads**,
+    /// with every other choice in it, and the next write leaves the withdrawn
+    /// key out. Refusing the file would have taken the person's accent and
+    /// text size away over a key they did not know had gone.
+    #[test]
+    fn a_file_with_the_withdrawn_title_choice_still_reads_and_drops_it() {
+        let old = "format = 1
+accent = \"Moss\"
+window_titles = \"WhenPointedAt\"
+";
+        let read: Changes = alo_kept::read_text(old, Path::new("appearance.toml")).unwrap();
+        assert_eq!(read.accent(), Some(crate::accent::Accent::Moss));
+        assert_eq!(
+            read.window_controls(),
+            None,
+            "the old choice is not carried over"
+        );
+        let again = alo_kept::text_of(&read).unwrap();
+        assert!(!again.contains("window_titles"), "{again}");
+        assert!(again.contains("Moss"), "{again}");
+    }
+
+    /// **A word the withdrawn key never held is still refused**, so reading it
+    /// is a deliberate allowance and not a hole any value fits through.
+    #[test]
+    fn the_withdrawn_key_with_a_word_it_never_held_is_refused() {
+        let old = "format = 1
+window_titles = \"Sometimes\"
+";
+        assert!(alo_kept::read_text::<Changes>(old, Path::new("appearance.toml")).is_err());
     }
 
     /// **An untouched appearance is a format line and nothing else.**

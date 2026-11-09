@@ -107,18 +107,15 @@ impl Server {
             Action::MinimiseWindow => {
                 self.the_person_asked_to_put_aside(&root);
             }
-            // **Alt+Space opens the window's own menu**, which is where the
-            // whole title can be read and copied and where the actions a
-            // compact edge moves off the strip are reached. It is the
-            // chord every desktop a person arrives from spells it with, and
-            // `docs/features.md` promises the habits people arrive with
-            // still work.
-            //
-            // **The same state a press on the Menu control sets**, so a menu
-            // opened by chord and one opened by pointer are one menu. Press
-            // it again and it closes, as the control does.
+            // **Alt+F3 opens the window panel** of the window the keyboard is
+            // in — the panel Window actions opens (`crate::window_menu`) —
+            // and the keys then walk it (`crate::a_key_reaches_a_windows_band`).
+            // Press it again and it closes, as the control does.
             Action::WindowOptions => {
-                self.the_menu_was_opened_on(&root);
+                self.the_menu_was_opened_on(
+                    &root,
+                    crate::the_edge_takes_the_keyboard::ByWhat::TheKeyboard,
+                );
             }
             Action::MaximiseWindow => {
                 let maximize = self.surfaces.requested_window_mode(&root) != Mode::Maximized;

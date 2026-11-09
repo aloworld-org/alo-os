@@ -586,10 +586,13 @@ fn the_served_tree_follows_the_windows_that_open() {
         .into_iter()
         .map(|control| said(&strings, &control))
         .collect();
-    // Five since the window menu landed: the three the edge draws, and moving
-    // and resizing, which only the menu offers and which a reader was told
-    // nothing about before it existed.
-    assert_eq!(wanted.len(), 5, "{wanted:?}");
+    // Three since 2026-11-09: Window actions, Minimise and Close
+    // (`docs/design/the-window-controls.md`).
+    assert_eq!(
+        wanted,
+        ["Window actions", "Minimise", "Close"],
+        "{wanted:?}"
+    );
     let found = controls_under_each_window(&session, bus.answers_as());
     // **The count before the contents.** Everything below is inside a loop, so
     // a bus that carried no list at all would come back empty and assert
@@ -716,10 +719,7 @@ fn a_reader_finds_close_on_each_task_window_and_presses_it() {
     bus.embedded().expect("the registry embedded this machine");
 
     let close = strings
-        .say(
-            &alo_shortcuts::Action::CloseWindow.word().key(),
-            &Filling::nothing(),
-        )
+        .say(&alo_access::words::CLOSE.key(), &Filling::nothing())
         .text()
         .to_owned();
     let found = windows_and_their_controls(&session, bus.answers_as());

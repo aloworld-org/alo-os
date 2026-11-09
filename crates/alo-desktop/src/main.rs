@@ -315,7 +315,7 @@ mod running {
         /// **A file that does not read is the shipped answer** — every title
         /// shown — and Settings says why it did not read when it is opened,
         /// as it does for every other appearance setting.
-        window_titles: alo_appearance::WindowTitles,
+        window_controls: alo_appearance::WindowControls,
         /// What this person's pointer looks like, read from the same file at the
         /// same moment, and changed whenever Settings says so.
         pointers_look: alo_shell::ThePointersLook,
@@ -579,7 +579,7 @@ mod running {
                 alo_appearance::keeping::at_sign_in(&folder.join(alo_appearance::keeping::THE_FILE))
                     .0
             });
-            let window_titles = appearance.window_titles();
+            let window_controls = appearance.window_controls();
             let when_there_is_no_room = appearance.when_there_is_no_room();
             // **And whether they asked for less motion**, from their own
             // accessibility settings in the same folder (ADR 0038): the view
@@ -615,7 +615,7 @@ mod running {
                 layout_at,
                 shortcuts_at,
                 dock_at,
-                window_titles,
+                window_controls,
                 pointers_look,
                 when_there_is_no_room,
                 motion_is_reduced,
@@ -700,8 +700,8 @@ mod running {
 
     impl TheDesktop for ThisPersonsDesktop {
         /// When this person's windows show their titles, as read at sign-in.
-        fn the_window_titles(&self) -> alo_appearance::WindowTitles {
-            self.window_titles
+        fn the_window_controls(&self) -> alo_appearance::WindowControls {
+            self.window_controls
         }
 
         /// What this person's pointer looks like, as read at sign-in.
