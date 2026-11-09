@@ -71,10 +71,6 @@ struct TheAgent {
 #[zbus::interface(name = "org.freedesktop.PolicyKit1.AuthenticationAgent")]
 impl TheAgent {
     /// polkit asks for a password.
-    #[allow(
-        clippy::too_many_arguments,
-        reason = "polkit's interface names six arguments, and this is its signature"
-    )]
     async fn begin_authentication(
         &self,
         action_id: String,

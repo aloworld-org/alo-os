@@ -108,9 +108,5 @@ fn decided(
 }
 
 #[cfg(test)]
-#[expect(
-    clippy::unwrap_used,
-    reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
-)]
 #[path = "running_tests.rs"]
 mod tests;

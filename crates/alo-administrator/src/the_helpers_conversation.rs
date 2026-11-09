@@ -23,7 +23,7 @@
 //! any question asked with echo on are not something the person was asked, so
 //! the conversation is ended rather than answered with their password.
 
-use std::io::{BufRead, Write};
+use std::io::{BufRead, Read, Write};
 
 /// Where `alo-checking-a-password` listens.
 pub const THE_CHECKERS_SOCKET: &str = "/run/alo-checking-a-password.socket";
@@ -81,8 +81,7 @@ pub fn checked(
     let mut answered = false;
     loop {
         let mut line = String::new();
-        let read = (&mut *reading)
-            .take(THE_LONGEST_LINE)
+        let read = Read::take(&mut *reading, THE_LONGEST_LINE)
             .read_line(&mut line)
             .map_err(ended)?;
         if read == 0 {

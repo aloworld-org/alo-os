@@ -11,8 +11,7 @@
     reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
 )]
 
-use std::rc::Rc;
-use std::cell::RefCell;
+use std::sync::{Arc, Mutex};
 
 use alo_accounts::Accounts;
 use alo_greeting::{Greeted, Greeting, Knocking, KeepingTheSystemPassword, NotAnswered};
@@ -33,11 +32,11 @@ impl Knocking for ADoor {
 
 /// A keeper that remembers each number and password it was handed.
 #[derive(Clone, Default)]
-struct AKeeper(Rc<RefCell<Vec<(u32, String)>>>);
+struct AKeeper(Arc<Mutex<Vec<(u32, String)>>>);
 
 impl KeepingTheSystemPassword for AKeeper {
     fn keep(&self, person: u32, typed: &str) {
-        self.0.borrow_mut().push((person, typed.to_owned()));
+        self.0.lock().unwrap().push((person, typed.to_owned()));
     }
 }
 
@@ -55,7 +54,7 @@ fn a_sign_in_that_succeeds_keeps_the_password_in_step() {
     let keeper = AKeeper::default();
     let greeter = a_greeter(&keeper);
     assert!(matches!(greeter.signs_in("ada", HERS), Greeted::SignedIn(_)));
-    assert_eq!(*keeper.0.borrow(), [(1000, HERS.to_owned())]);
+    assert_eq!(*keeper.0.lock().unwrap(), [(1000, HERS.to_owned())]);
 }
 
 /// **A wrong password, and a name with no account, hand nothing over**: the
@@ -66,7 +65,7 @@ fn a_refused_sign_in_keeps_nothing() {
     let greeter = a_greeter(&keeper);
     assert!(matches!(greeter.signs_in("ada", "4321"), Greeted::Refused(_)));
     assert!(matches!(greeter.signs_in("grace", HERS), Greeted::Refused(_)));
-    assert!(keeper.0.borrow().is_empty());
+    assert!(keeper.0.lock().unwrap().is_empty());
 }
 
 /// **An account whose number is not this machine's person keeps nothing**,
@@ -79,7 +78,7 @@ fn somebody_who_is_not_this_machines_person_keeps_nothing() {
     let greeter = Greeting::of(accounts, 1000, ADoor)
         .keeping_the_system_password_with(Box::new(keeper.clone()));
     assert!(matches!(greeter.signs_in("ada", HERS), Greeted::Refused(_)));
-    assert!(keeper.0.borrow().is_empty());
+    assert!(keeper.0.lock().unwrap().is_empty());
 }
 
 /// **A greeter given no keeper keeps nothing and still signs people in** —

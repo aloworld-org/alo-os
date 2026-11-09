@@ -71,7 +71,7 @@ pub struct Greeting<K: Knocking> {
     /// [`None`] for every greeter built in a test or a fixture, which keeps
     /// nothing anywhere: a greeter that wrote into a real machine's password
     /// list because a test signed somebody in would be the worst test on it.
-    keeper: Option<Box<dyn KeepingTheSystemPassword>>,
+    keeper: Option<Box<dyn KeepingTheSystemPassword + Send>>,
 }
 
 impl<K: Knocking> std::fmt::Debug for Greeting<K> {
@@ -154,7 +154,7 @@ impl<K: Knocking> Greeting<K> {
     #[must_use]
     pub fn keeping_the_system_password_with(
         mut self,
-        keeper: Box<dyn KeepingTheSystemPassword>,
+        keeper: Box<dyn KeepingTheSystemPassword + Send>,
     ) -> Self {
         self.keeper = Some(keeper);
         self

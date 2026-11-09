@@ -141,6 +141,8 @@ path = "src/main.rs"
 workspace = true
 
 [target.'cfg(target_os = "linux")'.dev-dependencies]
+# Somewhere for a test to put the checker it plays and the state it reads.
+tempfile = "3"
 # A real Secret Service on a bus nobody else can reach, so the save road is
 # measured against the implementation a machine would really have rather than
 # against a stub whose refusals we wrote ourselves.

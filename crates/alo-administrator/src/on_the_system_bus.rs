@@ -62,15 +62,21 @@ pub fn the_session_on_their_screen(bus: &Connection, person: u32) -> Option<Stri
     let reply = bus
         .call_method(
             Some(LOGIND),
-            user.as_ref(),
+            user.as_str(),
             Some("org.freedesktop.DBus.Properties"),
             "Get",
             &("org.freedesktop.login1.User", "Display"),
         )
         .ok()?;
     let value: zbus::zvariant::OwnedValue = reply.body().deserialize().ok()?;
-    let (id, _path): (String, OwnedObjectPath) = value.try_into().ok()?;
-    (!id.is_empty()).then_some(id)
+    // `(so)`: the session's id and its path, of which the id is wanted.
+    let Value::Structure(display) = &*value else {
+        return None;
+    };
+    match display.fields().first()? {
+        Value::Str(id) if !id.is_empty() => Some(id.as_str().to_owned()),
+        _ => None,
+    }
 }
 
 /// The subject polkit is asked about: one logind session.
@@ -182,12 +188,15 @@ pub fn the_session_this_process_is_in(bus: &Connection) -> Option<String> {
     let reply = bus
         .call_method(
             Some(LOGIND),
-            session.as_ref(),
+            session.as_str(),
             Some("org.freedesktop.DBus.Properties"),
             "Get",
             &("org.freedesktop.login1.Session", "Id"),
         )
         .ok()?;
     let value: zbus::zvariant::OwnedValue = reply.body().deserialize().ok()?;
-    String::try_from(value).ok().filter(|id| !id.is_empty())
+    match &*value {
+        Value::Str(id) if !id.is_empty() => Some(id.as_str().to_owned()),
+        _ => None,
+    }
 }
