@@ -28,7 +28,7 @@ fn the_sheet() -> (tempfile::TempDir, HowMuchAloCanDo) {
 fn drawn_at(
     asking: &HowMuchAloCanDo,
     size: (i32, i32),
-    per_cent: u32,
+    per_cent: u16,
     the_sealed_box_runs_here: bool,
 ) -> SignInPicture {
     let mut labels = crate::WindowControlLabels::new().expect("the font");
@@ -69,7 +69,7 @@ fn three_cards_continue_and_no_way_back_at_every_size_drawn() {
             assert_eq!(choices.len(), 3, "{size:?}: {:?}", picture.controls);
             for (which, it) in choices.iter().enumerate() {
                 assert_eq!(it.what, OnASheet::Choice(which), "{size:?}");
-                let at_one = it.area.size.h * 100 / i32::try_from(per_cent).unwrap_or(100);
+                let at_one = it.area.size.h * 100 / i32::from(per_cent);
                 assert!(at_one >= 85, "{size:?}: card {which} is {at_one} tall");
             }
             for pair in choices.windows(2) {

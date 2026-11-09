@@ -201,3 +201,15 @@ raises it; anything additive does not. A file with a higher number is refused as
 written for an alo OS this is not, **before `chose` is looked at** — a later alo
 OS may define a level this one has no word for, and the honest report is *this
 file is not for me* rather than a complaint about a word.
+
+## Who writes it: Settings, and the first sign-in
+
+*Added 2026-11-09, additively; nothing in the file changed.* Besides Settings →
+Running code, the file is written by the sheet a person sees **right after
+their first sign-in** while there is no file (ADR 0149 decision 4,
+`crates/alo-shell/src/how_much_alo_can_do.rs`). It is the same writer —
+`alo_remembering::the_level_kept`, through the same value Settings holds — and
+the same rule about what alo OS chooses: the sheet arrives with **Full access**
+selected, and nothing is written until the person presses Continue. It asks
+only when there is **no file**: a file that will not read is not asked about and
+is not written over.
