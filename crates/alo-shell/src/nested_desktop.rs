@@ -86,6 +86,8 @@ pub struct DesktopFrame<'a> {
     /// What on this machine is watching or listening, as `alo-in-use` read it
     /// off the media server. Empty while nothing is, which draws nothing.
     pub in_use: &'a [alo_in_use::Line],
+    /// A media reading that failed, displayed instead of claiming the room is quiet.
+    pub in_use_problem: Option<&'a alo_in_use::NotHeard>,
     /// The notifications to show, as `alo-notifying` handed them over. A
     /// notification a locked, shared or quiet machine is holding never becomes
     /// one of these, so there is nothing here to decide.
@@ -583,8 +585,8 @@ pub(crate) fn frame_pictures(
         // the size themselves.
         scale: crate::display_scale::DisplayScale::of_per_cent(desktop.display_scale),
     };
-    let in_use = crate::in_use_raster::picture(
-        desktop.in_use,
+    let in_use = crate::in_use_raster::picture_with_problem(
+        (desktop.in_use, desktop.in_use_problem),
         desktop.strings,
         desktop.dock,
         labels,

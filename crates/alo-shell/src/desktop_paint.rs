@@ -126,6 +126,7 @@ impl DesktopPicture {
         &self,
         frame: &mut F,
         washed: &[(F::TextureId, smithay::utils::Rectangle<i32, Physical>)],
+        dock_ink: Option<&crate::native_inked::Uploaded<F::TextureId>>,
     ) -> Result<(), RenderError> {
         // **The first is the Dock's own surface and goes under its contents.**
         // Anything after it is a panel opened *from* the Dock — the overflow
@@ -159,7 +160,11 @@ impl DesktopPicture {
             for (texture, area) in washed {
                 crate::painted::wash(frame, texture, *area)?;
             }
-            crate::painted::paint(frame, &[], &dock.inked)?;
+            if let Some((texture, area)) = dock_ink {
+                crate::painted::wash(frame, texture, *area)?;
+            } else {
+                crate::painted::paint(frame, &[], &dock.inked)?;
+            }
         }
         // The panel is furniture beside the dock rather than on top of it: two
         // surfaces at two edges, neither drawn over the other, which is why

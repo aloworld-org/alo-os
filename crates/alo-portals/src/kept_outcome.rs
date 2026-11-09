@@ -31,6 +31,8 @@ use crate::refused::Refused;
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "answer", rename_all = "kebab-case")]
 pub enum KeptOutcome {
+    /// A screen session was configured without exposing any screen content.
+    CapturePrepared,
     /// The application was handed its own secret, allowed by these grants.
     SecretHandedOver {
         /// The grant behind each thing the request was for.
@@ -60,6 +62,18 @@ pub enum KeptOutcome {
         /// The grant behind each thing the request was for.
         against: Vec<GrantId>,
     },
+    /// Files selected in the native chooser, allowed by these grants.
+    FilesChosen {
+        /// The specific grants over the selected files.
+        against: Vec<GrantId>,
+    },
+    /// A selected source shared for the current recording session.
+    ScreenShared {
+        /// The grant the person can revoke to stop sharing.
+        against: Vec<GrantId>,
+    },
+    /// The person cancelled the dialog without handing anything over.
+    Cancelled,
     /// The grants refused it.
     Refused {
         /// How.
@@ -92,7 +106,11 @@ impl KeptOutcome {
             | Self::Opened { .. }
             | Self::AppearanceRead { .. }
             | Self::AppearanceSent { .. }
-            | Self::NetworkRead { .. } => false,
+            | Self::NetworkRead { .. }
+            | Self::FilesChosen { .. }
+            | Self::ScreenShared { .. }
+            | Self::CapturePrepared => false,
+            Self::Cancelled => true,
             Self::Refused { .. }
             | Self::NotARequest { .. }
             | Self::NothingOpens { .. }
@@ -135,6 +153,14 @@ impl From<&Outcome> for KeptOutcome {
     /// somebody has decided how the file keeps it.
     fn from(outcome: &Outcome) -> Self {
         match outcome {
+            Outcome::FilesChosen(allowed) => Self::FilesChosen {
+                against: allowed.against().to_vec(),
+            },
+            Outcome::ScreenShared(allowed) => Self::ScreenShared {
+                against: allowed.against().to_vec(),
+            },
+            Outcome::CapturePrepared => Self::CapturePrepared,
+            Outcome::Cancelled => Self::Cancelled,
             Outcome::SecretHandedOver(allowed) => Self::SecretHandedOver {
                 against: allowed.against().to_vec(),
             },

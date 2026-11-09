@@ -121,7 +121,7 @@ pub struct Held {
 }
 
 /// Every grant on this machine.
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Grants {
     /// The next handle to hand out. Kept so that ids stay unique across a
     /// restart, since the list is written down and read back.
@@ -145,6 +145,26 @@ pub struct Grants {
 }
 
 impl Grants {
+    /// A view containing only this handle, for a session bound to one choice.
+    ///
+    /// Judging against this view still uses the ordinary capability policy.
+    /// A missing handle produces an empty view; another broader grant cannot
+    /// stand in for a choice that was revoked. Handle issuance is preserved.
+    #[must_use]
+    pub fn limited_to(&self, id: GrantId) -> Self {
+        Self {
+            next: self.next,
+            // A portal session remains bound to its one explicit choice.
+            full_access: None,
+            held: self
+                .held
+                .iter()
+                .filter(|held| held.id == id)
+                .cloned()
+                .collect(),
+        }
+    }
+
     /// The list a machine kept, with the handles it kept them under.
     ///
     /// The one caller is `alo-remembering`, which reads the file a machine

@@ -25,3 +25,9 @@ Dockerfile text eol=lf
 *.gguf binary
 *.img binary
 *.iso binary
+
+# Preserve the rented package byte-for-byte; review its small mapping overlay.
+engines/smithay/** -text -whitespace linguist-vendored=true
+engines/smithay/ALO_CHANGES.md text eol=lf linguist-vendored=false
+engines/smithay/owned-pixman-mapping.patch text eol=lf linguist-vendored=false
+engines/smithay/upstream-files.sha256.json text eol=lf linguist-vendored=false

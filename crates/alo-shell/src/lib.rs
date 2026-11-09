@@ -178,9 +178,14 @@ mod canvas_space_drag;
 mod canvas_the_room_show_all_fits_into;
 mod canvas_the_world;
 mod canvas_wheel_zoom;
+mod capture_authority;
+mod capture_delivery;
 mod capture_flatten;
+mod capture_frames;
 mod capture_paint;
 mod capture_raster;
+mod capture_sources;
+mod capture_transport;
 /// What one key press means in the Dock's composer.
 pub mod composer_keys;
 /// What an application sends while a person's command runs, on the indicator (ADR 0148).
@@ -228,6 +233,7 @@ mod division_raster;
 mod dock_history_mark;
 mod dock_raster;
 mod dock_surface;
+mod dock_surface_cache;
 mod dock_tooltip;
 /// How a rounded panel is lifted off what is behind it — its corner and its
 /// shadow — at the display scale its geometry is laid out in.
@@ -272,6 +278,7 @@ mod an_alo_windows_edge;
 /// wire, and because whoever wires a compositor together serves the door.
 /// The compositor's hand for the three application acts the door carries.
 mod an_application_verb_is_carried_out;
+pub mod application_permissions;
 /// Closing a running task asks: Stop and close, or Cancel (ADR 0139).
 mod asking_before_closing;
 pub mod bar_raster;
@@ -327,6 +334,7 @@ mod market_measures;
 /// description has to be nameable from outside this crate.
 pub mod market_raster;
 mod market_window;
+mod native_inked;
 mod nested;
 mod nested_approval;
 mod nested_control_input;
@@ -395,6 +403,7 @@ mod region_sheet;
 mod resize_cursor;
 mod resize_transaction;
 mod resource_device;
+mod retained_dumb_buffer;
 /// One rule for every window a person opens into a full view.
 mod room_in_a_full_view;
 mod running_keys;
@@ -509,6 +518,7 @@ pub mod task_raster;
 pub mod task_text;
 /// Task windows on the canvas: where they meet a screen (ADR 0145).
 mod task_windows_on_the_plane;
+mod text_glyph_cache;
 pub mod the_application_door;
 pub mod the_application_doors_place;
 /// The approval card's layout, measured off the approved frame.
@@ -902,7 +912,7 @@ pub use presentation::{FrameTarget, RenderError};
 pub use putting_back_from_the_record::{
     OnTheConfirmation, PutBackHere, ThePlan, ThePutBack, TheSheet,
 };
-pub use readback::{ReadbackError, RowOrder, ScanoutPixels, readback_xrgb};
+pub use readback::{ReadbackError, RowOrder, ScanoutPixels, SharedPixels, readback_xrgb};
 pub use record_clock::RecordClock;
 pub use record_keys::RecordKey;
 pub use record_room::RecordLook;

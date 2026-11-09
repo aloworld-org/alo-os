@@ -11,6 +11,14 @@ use alo_capability::{VerbError, VerbsError};
 /// Why an adapter was not loaded.
 #[derive(Debug, thiserror::Error, PartialEq, Eq)]
 pub enum NotLoaded {
+    /// A change description names no verb in this adapter.
+    #[error("{adapter} has no verb named {verb} to describe")]
+    UnknownVerb {
+        /// The adapter.
+        adapter: String,
+        /// The short verb name.
+        verb: String,
+    },
     /// A name an agent could not be called by.
     #[error(
         "name the adapter in lower-case words joined by underscores, like text_editor — {name} is not one"

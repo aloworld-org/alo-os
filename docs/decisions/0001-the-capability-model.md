@@ -213,6 +213,38 @@ endless grant must never be indistinguishable from a timed one at a glance.
 on, so the least a person can give stays the cheapest to choose, and *until I
 remove it* is a deliberate reach rather than the path of least resistance.
 
+## Read-only discovery of already granted application controls
+
+The owner's request of 2026-11-06 makes application control part of the Studio
+work. Discovering those controls makes an existing promise true: an agent can
+only use the typed application verbs the machine actually offers, under the
+person's application grant. A hardcoded client list cannot describe that grant
+or its revocation at the moment of use.
+
+The agent's protocol therefore also allows `capabilities`, during an invoked
+turn. Its answer contains only the names of the actions currently offered to
+that agent. It reads no application, starts no program, reveals no ungranted
+application and creates or widens no grant. It is protocol metadata, not an
+execution of an application verb. The person's list of grants remains on the
+person's door. An agent cannot approve a change through discovery.
+
+The daemon recomputes the offered list from live grants before answering and
+before constructing a model's next-request instructions. Execution still
+validates arguments, checks the application's grant again and records every
+execution and refusal. A cached discovery answer is never authority. New
+application verbs still require their own declaration, translated approval
+sentence, tested effect and application-specific consent surfaces.
+
+Settings provides the person's application-grant path beside the existing
+folder-grant path. The person first chooses an installed application whose
+controls the daemon actually routes, then chooses an explicit duration. The
+shortest duration is first; an endless grant remains a deliberate choice.
+Closing the picker or choosing no application writes no grant. The selected
+application's exact identity and expiry are persisted using the locked update
+of the latest complete grant file, then the daemon is notified. The existing
+visible grant row supplies revocation. Nothing on the agent's door opens,
+selects, or confirms this picker.
+
 ---
 
 ## Amended 2026-11-06 — the fourth road is the screen road, under ADR 0147's rules

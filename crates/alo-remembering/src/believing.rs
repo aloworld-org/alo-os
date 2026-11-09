@@ -163,6 +163,41 @@ fn o_nofollow() -> i32 {
     rustix::fs::OFlags::NOFOLLOW.bits() as i32
 }
 
+/// Lock a stable sibling, so replacing the grants file cannot replace its lock.
+pub(crate) fn locked_for(at: &Path) -> Result<std::fs::File, NotRemembered> {
+    let mut named = at.as_os_str().to_owned();
+    named.push(".lock");
+    let lock = PathBuf::from(named);
+    let file = std::fs::OpenOptions::new()
+        .read(true)
+        .write(true)
+        .create(true)
+        .truncate(false)
+        .mode(OURS_ALONE)
+        .custom_flags(o_nofollow())
+        .open(&lock)
+        .map_err(|why| NotRemembered::NotWritten {
+            at: at.to_owned(),
+            why: why.to_string(),
+        })?;
+    let about = file.metadata().map_err(|why| NotRemembered::NotWritten {
+        at: at.to_owned(),
+        why: why.to_string(),
+    })?;
+    believed(&lock, about.uid(), about.mode(), us())?;
+    if !about.is_file() {
+        return Err(NotRemembered::NotWritten {
+            at: at.to_owned(),
+            why: "the grants lock is not a regular file".into(),
+        });
+    }
+    file.lock().map_err(|why| NotRemembered::NotWritten {
+        at: at.to_owned(),
+        why: why.to_string(),
+    })?;
+    Ok(file)
+}
+
 /// The path a file is staged at before it replaces the real one.
 fn a_sibling_of(at: &Path) -> PathBuf {
     let mut named = at.as_os_str().to_owned();

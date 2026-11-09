@@ -156,9 +156,8 @@ impl Portal {
     /// The `org.freedesktop.portal.*` interface this machine answers this
     /// portal on, or [`None`] while it answers it on none.
     ///
-    /// Four, for now: the Secret portal, open-with, the appearance settings and
-    /// the network monitor — the portals whose every answer is decided without
-    /// a dialog (tasks 3, 4, 6 and 12 of the applications plan). Every other
+    /// Secret, open-with, appearance, network monitoring, and the native save
+    /// chooser. Other
     /// portal is **not registered** on the bus, so an
     /// application asking one is told by the bus that nothing answers it,
     /// rather than told yes by a backend with nothing to show.
@@ -167,14 +166,14 @@ impl Portal {
     pub const fn answered_on_the_bus(self) -> Option<&'static str> {
         match self {
             Self::Secret => Some("org.freedesktop.portal.Secret"),
+            Self::FileChooser => Some("org.freedesktop.portal.FileChooser"),
+            Self::ScreenCapture => Some("org.freedesktop.portal.ScreenCast"),
             Self::OpenWith => Some("org.freedesktop.portal.OpenURI"),
             Self::Settings => Some("org.freedesktop.portal.Settings"),
             Self::NetworkMonitor => Some("org.freedesktop.portal.NetworkMonitor"),
-            Self::FileChooser
-            | Self::Notifications
+            Self::Notifications
             | Self::Print
             | Self::Screenshot
-            | Self::ScreenCapture
             | Self::Camera
             | Self::Microphone
             | Self::Clipboard

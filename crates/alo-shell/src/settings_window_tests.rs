@@ -176,7 +176,14 @@ fn the_two_rows(window: &SettingsWindow) -> (SettingsRow, SettingsRow) {
         // gives alo a folder sits above them making neither claim.
         // So is the row that opens the record, since 2026-10-27, for the same
         // reason.
-        .filter(|row| !matches!(row, SettingsRow::GrantAFolder | SettingsRow::SeeWhatAloDid))
+        .filter(|row| {
+            !matches!(
+                row,
+                SettingsRow::GrantAFolder
+                    | SettingsRow::GrantAnApplication
+                    | SettingsRow::SeeWhatAloDid
+            )
+        })
         .collect();
     assert_eq!(granted.len(), 2, "{granted:?}");
     (granted[0].clone(), granted[1].clone())
@@ -419,6 +426,9 @@ fn no_choice_the_old_window_offered_is_dropped() {
     if open.granted.a_folder_can_be_given() {
         before.push(SettingsRow::GrantAFolder);
     }
+    if open.granted.an_application_can_be_given() {
+        before.push(SettingsRow::GrantAnApplication);
+    }
     before.extend(
         open.granted
             .rows(noon())
@@ -611,7 +621,11 @@ fn a_fresh_machine_can_answer_only_not_at_all_and_is_offered_the_way_in() {
         // whether or not anything is granted: the record answers *what
         // happened*, and a machine with nothing granted now may have done
         // things under a grant since taken back.
-        [SettingsRow::GrantAFolder, SettingsRow::SeeWhatAloDid],
+        [
+            SettingsRow::GrantAFolder,
+            SettingsRow::GrantAnApplication,
+            SettingsRow::SeeWhatAloDid
+        ],
         "{:?}",
         granted.blocks
     );
@@ -1381,7 +1395,12 @@ fn a_grant_and_a_pairing_are_revoked_the_same_way() {
             // the list is empty that they most need it. The row that opens the
             // record stays for the same reason: what alo did under a grant is
             // still in the record after the grant is gone.
-            .filter(|row| !matches!(row, SettingsRow::GrantAFolder | SettingsRow::SeeWhatAloDid))
+            .filter(|row| !matches!(
+                row,
+                SettingsRow::GrantAFolder
+                    | SettingsRow::GrantAnApplication
+                    | SettingsRow::SeeWhatAloDid
+            ))
             .all(|row| row.section() != SettingsSection::Granted),
         "a revoked row is still drawn"
     );
@@ -1526,8 +1545,8 @@ fn a_session_with_no_folder_offers_nothing_it_could_not_keep() {
     // which a session with no folder cannot keep.
     assert_eq!(
         rows.len(),
-        8,
-        "one grant, one pairing, the record's row, the three levels, their page's row, the switch"
+        9,
+        "grant, pairing, application permissions, record, three code levels, code page and act-without-asking switch"
     );
     assert_eq!(window.appearance(), Some(&Appearance::shipped()));
     assert_eq!(window.dock(), Some(&Dock::shipped()));

@@ -27,6 +27,28 @@ use crate::the_settings_words as w;
 /// The page's blocks.
 pub(crate) fn the_blocks(open: &Open, strings: &Strings, now: SystemTime) -> Vec<ABlock> {
     let section = &open.granted;
+    if let Some(picking) = section.application_picking() {
+        return vec![
+            ABlock::Said(picking.heading(strings)),
+            ABlock::Said(picking.scope(strings)),
+            ABlock::Section(ASection {
+                heading: None,
+                rows: picking
+                    .rows()
+                    .into_iter()
+                    .map(|row| {
+                        let label = picking.said(&row, strings);
+                        ARow::named(
+                            Some(SettingsRow::ApplicationPermission(row)),
+                            TheKind::Plain,
+                            label,
+                        )
+                    })
+                    .collect(),
+                footnote: None,
+            }),
+        ];
+    }
     if let Some(picking) = section.picking() {
         let mut blocks = vec![
             ABlock::Said(picking.asking(strings).into_text()),
@@ -128,6 +150,13 @@ pub(crate) fn the_blocks(open: &Open, strings: &Strings, now: SystemTime) -> Vec
                 .into_text(),
             row: SettingsRow::GrantAFolder,
             beside: said(strings, w::YOU_CHOOSE_FOLDER_AND_HOW_LONG),
+        }));
+    }
+    if section.an_application_can_be_given() {
+        blocks.push(ABlock::AnAction(AnAction {
+            label: said(strings, crate::application_permissions::GIVE),
+            row: SettingsRow::GrantAnApplication,
+            beside: String::new(),
         }));
     }
     let mut record = ARow::named(

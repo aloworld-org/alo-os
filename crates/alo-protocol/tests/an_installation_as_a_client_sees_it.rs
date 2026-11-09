@@ -51,6 +51,12 @@ use alo_turn::{Machine, Turning};
 /// closed enum is for.
 fn as_a_client_sees_it(did: &alo_turn::WhatAVerbDid) -> Done {
     match did {
+        alo_turn::WhatAVerbDid::ApplicationControlled(done) => Done::ApplicationControlled {
+            application: done.application.clone(),
+            action: done.action.clone(),
+            reply: done.reply.clone(),
+            unanswered: done.unanswered,
+        },
         alo_turn::WhatAVerbDid::ToFiles(answer) => Done::of_a_file_verb(answer),
         alo_turn::WhatAVerbDid::AnApplicationInstalled(installed) => {
             Done::of_an_installation(installed)

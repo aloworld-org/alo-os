@@ -94,6 +94,8 @@ impl Answered {
 /// What a request was answered with.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Outcome {
+    /// Session setup succeeded without handing over screen contents.
+    CapturePrepared,
     /// The Secret portal handed the application its own secret.
     ///
     /// Kept before the secret is written to what the application handed over.
@@ -113,6 +115,12 @@ pub enum Outcome {
     AppearanceSent(Allowed),
     /// The application read how far this machine reaches.
     NetworkRead(Allowed),
+    /// The native chooser handed over only the files the person selected.
+    FilesChosen(Allowed),
+    /// The selected screen or window was shared for this session.
+    ScreenShared(Allowed),
+    /// The person cancelled the native dialog.
+    Cancelled,
     /// The grants refused it.
     Refused(Refused),
     /// What arrived was never a request.
@@ -129,9 +137,9 @@ impl Outcome {
     /// one that did what was asked, and `2` — *the interaction was ended in
     /// some other way* — for every other.
     ///
-    /// `1`, *cancelled by the user*, is never sent: nothing here puts a
-    /// question to a person, so no person cancelled anything, and saying so
-    /// would tell an application a person refused it when the grants did.
+    /// `1` is reserved for a cancelled native dialog. Policy failures and
+    /// unavailable services remain `2`, so neither accuses the person of
+    /// cancelling a request they were never shown.
     #[must_use]
     pub const fn response(&self) -> u32 {
         match self {
@@ -139,7 +147,11 @@ impl Outcome {
             | Self::Opened(_)
             | Self::AppearanceRead(_)
             | Self::AppearanceSent(_)
-            | Self::NetworkRead(_) => 0,
+            | Self::NetworkRead(_)
+            | Self::FilesChosen(_)
+            | Self::ScreenShared(_)
+            | Self::CapturePrepared => 0,
+            Self::Cancelled => 1,
             Self::Refused(_)
             | Self::NotARequest(_)
             | Self::NothingOpens(_)
@@ -158,6 +170,18 @@ impl Outcome {
     #[must_use]
     pub fn said(&self, strings: &Strings) -> Said {
         match self {
+            Self::CapturePrepared => {
+                strings.say(&words::CAPTURE_PREPARED.key(), &Filling::nothing())
+            }
+            Self::FilesChosen(allowed) => strings.say(
+                &words::FILES_CHOSEN.key(),
+                &Filling::of("application", allowed.application().as_str()),
+            ),
+            Self::ScreenShared(allowed) => strings.say(
+                &words::SCREEN_SHARED.key(),
+                &Filling::of("application", allowed.application().as_str()),
+            ),
+            Self::Cancelled => strings.say(&words::DIALOG_CANCELLED.key(), &Filling::nothing()),
             Self::SecretHandedOver(allowed) => strings.say(
                 &words::SECRET_HANDED_OVER.key(),
                 &Filling::of("application", allowed.application().as_str()),
@@ -226,6 +250,12 @@ pub enum Unanswered {
     AppearanceUnread,
     /// The network manager could not be asked how far this machine reaches.
     NetworkUnread,
+    /// The trusted native chooser could not be reached or answered incorrectly.
+    DialogUnavailable,
+    /// The selected file could not be exported into the application's sandbox.
+    DocumentUnavailable,
+    /// The compositor or media server could not provide the selected source.
+    CaptureUnavailable,
 }
 
 impl Unanswered {
@@ -247,6 +277,9 @@ impl Unanswered {
             Self::NoSuchSetting => (words::NO_SUCH_SETTING, Filling::nothing()),
             Self::AppearanceUnread => (words::APPEARANCE_UNREAD, Filling::nothing()),
             Self::NetworkUnread => (words::NETWORK_UNREAD, Filling::nothing()),
+            Self::DialogUnavailable => (words::DIALOG_UNAVAILABLE, Filling::nothing()),
+            Self::DocumentUnavailable => (words::DOCUMENT_UNAVAILABLE, Filling::nothing()),
+            Self::CaptureUnavailable => (words::CAPTURE_UNAVAILABLE, Filling::nothing()),
         };
         strings.say(&word.key(), &filling)
     }
@@ -285,6 +318,9 @@ mod tests {
             Unanswered::NoSuchSetting,
             Unanswered::AppearanceUnread,
             Unanswered::NetworkUnread,
+            Unanswered::DialogUnavailable,
+            Unanswered::DocumentUnavailable,
+            Unanswered::CaptureUnavailable,
         ] {
             let outcome = Outcome::Unanswered(unanswered);
             assert_eq!(outcome.response(), 2, "{outcome:?}");
@@ -322,6 +358,9 @@ mod tests {
             Unanswered::NoSuchSetting,
             Unanswered::AppearanceUnread,
             Unanswered::NetworkUnread,
+            Unanswered::DialogUnavailable,
+            Unanswered::DocumentUnavailable,
+            Unanswered::CaptureUnavailable,
         ] {
             let said = unanswered.said(&strings);
             assert!(!said.is_a_bug(), "{unanswered:?}: {said}");

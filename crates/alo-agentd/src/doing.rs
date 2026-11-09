@@ -101,7 +101,7 @@ pub fn what_an_agent_said(
     }
 }
 
-/// The four things an agent can ask for, each through the turn's own door.
+/// Agent requests, each through the turn's own door.
 #[expect(
     clippy::too_many_arguments,
     reason = "one request and everything it can reach; a struct would exist only to be unpacked"
@@ -117,14 +117,17 @@ fn carried_out(
     now: SystemTime,
     commands: Commands<'_>,
 ) -> ToAnAgent {
+    let current = the_grants_as_the_level_is_now(grants, commands.level_at(), turning.grantee());
+    turning.refresh_offered(&current, now);
     match asked {
+        FromAnAgent::Capabilities => ToAnAgent::Capabilities {
+            verbs: turning.offered_action_names(),
+        },
         // **The grants as the person's level is now** (ADR 0149): at full
         // access a copy that reaches everything their account can, made for
         // this one request and never kept.
         FromAnAgent::Read { verb, .. } => {
-            let grants =
-                the_grants_as_the_level_is_now(grants, commands.level_at(), turning.grantee());
-            match turning.reading(verb, &asked.given(), &grants, now) {
+            match turning.reading(verb, &asked.given(), &current, now) {
                 Ok(answer) => ToAnAgent::did(as_a_client_sees_it(&answer, now)),
                 Err(why) => not_done(&why, strings),
             }
@@ -3193,7 +3196,7 @@ endpoint = \"https://{at}\"
             folder.join(alo_choosing::THE_SETTINGS),
             format!(
                 "format = 3\n\n[answers]\nprovider = {{ name = \"Here\", model = \"a-model\" \
-                 }}\n\n[[provider]]\nname = \"Here\"\nendpoint = \"http://127.0.0.1:{port}\"\n"
+                 }}\n\n[[provider]]\nname = \"Here\"\nendpoint = \"http://127.0.0.1:{port}\"\nneeds-a-key = false\n"
             ),
         )
         .unwrap();

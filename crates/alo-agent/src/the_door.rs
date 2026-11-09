@@ -20,6 +20,14 @@ use alo_protocol::{FromAnAgent, ToAnAgent};
 
 /// A machine an agent can ask things of.
 pub trait TheDoor {
+    /// Refresh the daemon's live action list; legacy/test doors may omit discovery.
+    ///
+    /// # Errors
+    /// The daemon could not be reached or returned an unexpected answer.
+    fn offered_verbs(&mut self) -> Result<Option<Vec<String>>, NotAnswered> {
+        Ok(None)
+    }
+
     /// Put one request and wait for the one answer.
     ///
     /// # Errors

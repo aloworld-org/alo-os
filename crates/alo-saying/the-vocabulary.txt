@@ -98,6 +98,89 @@ adapters.not-carried-out.not-an-adapters-verb	{verb} is not something an applica
 adapters.not-carried-out.not-built	What was approved could not be put to {application}, so nothing was done in it
 adapters.not-carried-out.not-there	{application} could not be reached, so nothing was done in it
 adapters.not-carried-out.refused	{application} refused what was approved, and nothing was done in it
+adapters.studio.cancel-countdown.by-hand	In alo Studio, choose Cancel during the countdown
+adapters.studio.cancel-countdown.changes	Cancels the countdown before recording begins.
+adapters.studio.cancel-countdown.purpose	cancel a countdown before recording starts
+adapters.studio.cancel-countdown.sentence	cancel alo Studio's recording countdown
+adapters.studio.choose-screen.by-hand	In alo Studio, choose A screen and Choose a screen
+adapters.studio.choose-screen.changes	Opens the system screen picker; no source is selected for the person.
+adapters.studio.choose-screen.purpose	ask the person to choose a screen to record
+adapters.studio.choose-screen.sentence	open alo Studio's system screen picker
+adapters.studio.choose-window.by-hand	In alo Studio, choose A window and Choose a window
+adapters.studio.choose-window.changes	Opens the system window picker; no source is selected for the person.
+adapters.studio.choose-window.purpose	ask the person to choose a window to record
+adapters.studio.choose-window.sentence	open alo Studio's system window picker
+adapters.studio.countdown-five.by-hand	In alo Studio, choose 5 sec under Countdown
+adapters.studio.countdown-five.changes	Selects a five-second countdown before recording starts.
+adapters.studio.countdown-five.purpose	use a five-second recording countdown
+adapters.studio.countdown-five.sentence	set a five-second countdown in alo Studio
+adapters.studio.countdown-off.by-hand	In alo Studio, choose Off under Countdown
+adapters.studio.countdown-off.changes	Selects no countdown before recording starts.
+adapters.studio.countdown-off.purpose	record without a countdown
+adapters.studio.countdown-off.sentence	turn off the countdown in alo Studio
+adapters.studio.countdown-three.by-hand	In alo Studio, choose 3 sec under Countdown
+adapters.studio.countdown-three.changes	Selects a three-second countdown before recording starts.
+adapters.studio.countdown-three.purpose	use a three-second recording countdown
+adapters.studio.countdown-three.sentence	set a three-second countdown in alo Studio
+adapters.studio.disable-microphone.by-hand	In alo Studio, turn off Record microphone
+adapters.studio.disable-microphone.changes	Disables the microphone option before recording starts.
+adapters.studio.disable-microphone.purpose	disable the microphone option before recording
+adapters.studio.disable-microphone.sentence	disable the microphone for this alo Studio recording
+adapters.studio.enable-microphone.by-hand	In alo Studio, turn on Record microphone
+adapters.studio.enable-microphone.changes	Enables the microphone option; capture starts only when recording starts.
+adapters.studio.enable-microphone.purpose	enable the microphone option for this recording
+adapters.studio.enable-microphone.sentence	enable the microphone for this alo Studio recording
+adapters.studio.export.by-hand	In alo Studio's review, choose Save a copy
+adapters.studio.export.changes	Opens the system save dialog for the current recording.
+adapters.studio.export.purpose	ask where to save a copy of the reviewed recording
+adapters.studio.export.sentence	open the save dialog for the current alo Studio recording
+adapters.studio.finish.by-hand	In alo Studio's recording controls, choose Stop recording
+adapters.studio.finish.changes	Stops capture and begins finalizing the current recording.
+adapters.studio.finish.purpose	finish capture and validate the saved recording
+adapters.studio.finish.sentence	finish the recording in alo Studio
+adapters.studio.full-hd	1080p, up to 30 fps
+adapters.studio.hd	720p, up to 30 fps
+adapters.studio.keep-videos	Existing videos stay in your private library.
+adapters.studio.lightweight	360p, up to 5 fps
+adapters.studio.new-recording.by-hand	In alo Studio, choose New recording
+adapters.studio.new-recording.changes	Clears the previous source selection and turns the microphone option off.
+adapters.studio.new-recording.purpose	prepare a new alo Studio recording
+adapters.studio.new-recording.sentence	prepare a new recording in alo Studio
+adapters.studio.original	original size, up to 30 fps
+adapters.studio.pause.by-hand	In alo Studio's recording controls, choose Pause
+adapters.studio.pause.changes	Pauses video and microphone capture.
+adapters.studio.pause.purpose	pause the current recording and microphone
+adapters.studio.pause.sentence	pause the recording in alo Studio
+adapters.studio.quality	the recording quality
+adapters.studio.recording	the saved recording identifier
+adapters.studio.rename.by-hand	In alo Studio's review, edit the recording title
+adapters.studio.rename.changes	Changes the current recording's saved library name.
+adapters.studio.rename.purpose	name the completed recording being reviewed
+adapters.studio.rename.sentence	name the current alo Studio recording {title}
+adapters.studio.resume.by-hand	In alo Studio's recording controls, choose Resume
+adapters.studio.resume.changes	Resumes video and the recording's chosen microphone.
+adapters.studio.resume.purpose	resume a paused recording and its chosen microphone
+adapters.studio.resume.sentence	resume the recording in alo Studio
+adapters.studio.review.by-hand	In alo Studio's library, open the saved recording
+adapters.studio.review.changes	Replaces any preview with the selected saved video.
+adapters.studio.review.purpose	review a completed recording by its library identifier
+adapters.studio.review.sentence	review {recording} in alo Studio
+adapters.studio.set-quality.by-hand	In alo Studio, choose the named Quality option
+adapters.studio.set-quality.changes	Changes the selected quality for a future recording.
+adapters.studio.set-quality.purpose	choose recording quality before capture starts
+adapters.studio.set-quality.sentence	set alo Studio recording quality to {quality}
+adapters.studio.show-library.by-hand	In alo Studio, choose Your recordings
+adapters.studio.show-library.changes	Closes any preview and opens the private recording library.
+adapters.studio.show-library.purpose	show the private recording library
+adapters.studio.show-library.sentence	show alo Studio's recording library
+adapters.studio.start.by-hand	In alo Studio, choose Start recording
+adapters.studio.start.changes	Begins the performance check and countdown for the selected source.
+adapters.studio.start.purpose	start the selected recording after its performance check and countdown
+adapters.studio.start.sentence	start the selected recording in alo Studio
+adapters.studio.status.by-hand	In alo Studio, read the status beside the preview and recording controls
+adapters.studio.status.purpose	read alo Studio's current recording status
+adapters.studio.status.sentence	read alo Studio's recording status
+adapters.studio.title	the recording's new name
 adapters.text-editor.new-window.by-hand	In GNOME Text Editor, open its menu and choose New Window
 adapters.text-editor.new-window.purpose	open a new, empty GNOME Text Editor window
 adapters.text-editor.new-window.sentence	open a new GNOME Text Editor window
@@ -405,6 +488,7 @@ capability.proposal.read-does-not-wait	{verb} answers a question rather than cha
 capability.reach.application	the application {application}
 capability.reach.file	the file {path}
 capability.reach.folder	{path} and everything in it
+capability.refused.application-control-not-granted	{agent} has not been granted {wanted}. Choose the application and how long access lasts in Settings.
 capability.refused.application-expired	{application} was granted {reach} and that has expired — grant it again to let {application} use {wanted}
 capability.refused.application-never-granted	{application} has not been granted {wanted} — an application reaches only what you grant it, never what it asks for
 capability.refused.application-not-given-but-full-access-reaches-it	{agent} has not been granted {wanted}, and picking a folder will not change that — choose full access ('straight away, without asking') in Settings → Running code, and alo can use any application you can
@@ -1601,11 +1685,26 @@ picking.nothing-above	This is as far up as the picker goes. Open one of the fold
 picking.nothing-there	That folder is not there any more. Go back, and pick another one
 picking.the-whole-machine	The agent is never granted the whole machine. Open a folder, and pick the folder you actually mean
 picking.would-not-be-read	This machine would not open that folder. Pick a folder you can open yourself, or ask whoever looks after this machine
+portals.answer.capture-unavailable	The selected screen or window could not be shared; choose it again to retry
+portals.answer.dialog-cancelled	The request was cancelled; nothing was shared
+portals.answer.dialog-unavailable	The selection window could not be opened; nothing was shared
+portals.answer.document-unavailable	The selected file could not be shared with the application
+portals.answer.files-chosen	The files you selected were shared with {application}
+portals.answer.screen-shared	Your selected screen or window is being shared with {application}
 portals.answered.appearance-read	{application} read your appearance settings, such as light or dark
 portals.answered.appearance-sent	{application} was told your appearance settings changed, such as from light to dark
 portals.answered.network-read	{application} read whether this machine is connected, and whether the connection is metered
 portals.answered.opened-in	{application} had a file it was granted handed to {opener} to open
 portals.answered.secret-handed-over	{application} was given its own secret from your keyring
+portals.capture.body	Choose what to share. Sharing ends when you stop recording or remove this permission in Settings.
+portals.capture.cancel	Cancel
+portals.capture.confirm	Share
+portals.capture.prepared	Screen sharing is ready for your choice; nothing is being shared yet
+portals.capture.screen	Screen
+portals.capture.source	Source
+portals.capture.subtitle	{application} would like to record your selected source
+portals.capture.title	Share a screen or window
+portals.capture.window	Application window
 portals.not-a-request.could-lead-elsewhere	A path with .. in it can lead somewhere else, so a request names a file by its own path
 portals.not-a-request.needs-a-path	This portal is about a file, so a request to it has to say which file
 portals.not-a-request.no-application	A request has to say which application is asking, and this one said none

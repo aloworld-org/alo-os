@@ -236,6 +236,7 @@ pub(crate) fn german_language() -> Language {
 fn everything_this_machine_says() -> alo_strings::Vocabulary {
     let mut vocabulary = file_words().unwrap();
     alo_capability::declare_into(&mut vocabulary).unwrap();
+    alo_adapters::words::declare_into(&mut vocabulary).unwrap();
     alo_keeping::declare_into(&mut vocabulary).unwrap();
     alo_models::declare_into(&mut vocabulary).unwrap();
     alo_egress::declare_into(&mut vocabulary).unwrap();

@@ -74,6 +74,9 @@ fn the_desktop_files() -> Vec<(String, Vec<(usize, String)>)> {
             // shadow, rasterised with alpha. It draws furniture and nothing
             // else, which is what every rule below asks of a `dock_*` file.
             "dock_surface.rs",
+            // Bounded reuse of unchanged panel pixels. Its complete source
+            // remains subject to the same authority and appearance checks.
+            "dock_surface_cache.rs",
             // A control's name beside it on hover and keyboard focus. It draws
             // furniture and words it is handed, and grants or measures nothing.
             "dock_tooltip.rs",

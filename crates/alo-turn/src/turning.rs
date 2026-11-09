@@ -515,6 +515,22 @@ impl<'a, 'm> Turning<'a, 'm> {
         (turn.ending(grants), machine)
     }
 
+    /// Recompute model-visible controls from the grants in force now.
+    pub fn refresh_offered(&mut self, grants: &Grants, now: SystemTime) {
+        self.machine
+            .refresh_offered(self.turn.grantee(), grants, now);
+    }
+
+    /// The names offered to this turn, with no application contact or launch.
+    #[must_use]
+    pub fn offered_action_names(&self) -> Vec<String> {
+        self.machine
+            .offered_verbs()
+            .all()
+            .map(|verb| verb.name().to_owned())
+            .collect()
+    }
+
     /// The agent this turn is for.
     #[must_use]
     pub fn grantee(&self) -> &Grantee {

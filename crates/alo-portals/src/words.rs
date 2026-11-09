@@ -491,7 +491,22 @@ pub const LINES_NOT_READ: Counted = Counted {
 pub const CLAUSES: [Word; 3] = [NOBODY_NAMED, WHAT_IT_ASKED_FOR, THAT_KIND_OF_FILE];
 
 /// Every string this crate can say, in the order this file declares them.
-pub const EVERY_WORD: [Word; 48] = [
+pub const EVERY_WORD: [Word; 63] = [
+    CAPTURE_PREPARED,
+    SHARE_TITLE,
+    SHARE_SUBTITLE,
+    SHARE_BODY,
+    SHARE_SOURCE,
+    SHARE_CONFIRM,
+    SHARE_CANCEL,
+    SHARE_SCREEN,
+    SHARE_WINDOW,
+    FILES_CHOSEN,
+    SCREEN_SHARED,
+    DIALOG_CANCELLED,
+    DIALOG_UNAVAILABLE,
+    DOCUMENT_UNAVAILABLE,
+    CAPTURE_UNAVAILABLE,
     FILE_CHOOSER,
     OPEN_WITH,
     NOTIFICATIONS,
@@ -541,6 +556,65 @@ pub const EVERY_WORD: [Word; 48] = [
     WHOLE,
     SHORTENED,
 ];
+
+/// A native file selection was granted.
+pub const FILES_CHOSEN: Word = Word::saying(
+    "portals.answer.files-chosen",
+    "The files you selected were shared with {application}",
+);
+/// A source was shared for the current session.
+pub const SCREEN_SHARED: Word = Word::saying(
+    "portals.answer.screen-shared",
+    "Your selected screen or window is being shared with {application}",
+);
+/// Cancelling a dialog is distinct from a policy refusal.
+pub const DIALOG_CANCELLED: Word = Word::saying(
+    "portals.answer.dialog-cancelled",
+    "The request was cancelled; nothing was shared",
+);
+/// The trusted native picker did not answer.
+pub const DIALOG_UNAVAILABLE: Word = Word::saying(
+    "portals.answer.dialog-unavailable",
+    "The selection window could not be opened; nothing was shared",
+);
+/// Sandbox file export failed.
+pub const DOCUMENT_UNAVAILABLE: Word = Word::saying(
+    "portals.answer.document-unavailable",
+    "The selected file could not be shared with the application",
+);
+/// A selected capture source could not be opened.
+pub const CAPTURE_UNAVAILABLE: Word = Word::saying(
+    "portals.answer.capture-unavailable",
+    "The selected screen or window could not be shared; choose it again to retry",
+);
+
+/// Session setup has not yet exposed pixels.
+pub const CAPTURE_PREPARED: Word = Word::saying(
+    "portals.capture.prepared",
+    "Screen sharing is ready for your choice; nothing is being shared yet",
+);
+/// Native source chooser heading.
+pub const SHARE_TITLE: Word = Word::saying("portals.capture.title", "Share a screen or window");
+/// The authenticated application's request, never text supplied by that app.
+pub const SHARE_SUBTITLE: Word = Word::saying(
+    "portals.capture.subtitle",
+    "{application} would like to record your selected source",
+);
+/// Scope and revocation, visible before the person confirms.
+pub const SHARE_BODY: Word = Word::saying(
+    "portals.capture.body",
+    "Choose what to share. Sharing ends when you stop recording or remove this permission in Settings.",
+);
+/// The native source dropdown's label.
+pub const SHARE_SOURCE: Word = Word::saying("portals.capture.source", "Source");
+/// Explicit start consent.
+pub const SHARE_CONFIRM: Word = Word::saying("portals.capture.confirm", "Share");
+/// Native source chooser dismissal.
+pub const SHARE_CANCEL: Word = Word::saying("portals.capture.cancel", "Cancel");
+/// A screen's prefix before its compositor-provided name.
+pub const SHARE_SCREEN: Word = Word::saying("portals.capture.screen", "Screen");
+/// A window's prefix before its application-provided title.
+pub const SHARE_WINDOW: Word = Word::saying("portals.capture.window", "Application window");
 
 /// Why this crate's own words could not be declared.
 ///

@@ -50,6 +50,22 @@ since 2026-11-08, `run` (ADR 0149) — and is told `did`, `proposed`, `answered`
 and `refused`, and, since the same day, `done-without-asking` (a change carried
 out at full access).
 
+An invoked agent may also request read-only capability discovery:
+`{"format":1,"asks":{"capabilities":{}}}`. The answer is
+`{"format":1,"tells":{"capabilities":{"verbs":["studio.status"]}}}`,
+with the names of all actions currently offered to that turn. Application
+controls are included only while the turn's agent holds a live grant for that
+application. The daemon recomputes this view before every request. This metadata
+does not contact or start applications, reread the grants file, create a grant,
+or replace the grant checks at execution. It is refused on the person's door.
+Clients refresh discovery before composing each next request and ignore names
+they do not understand. See ADR 0001, read-only discovery.
+
+An application's typed operation answers with `did.application-controlled`,
+holding `application`, `action`, optional bounded `reply`, and `unanswered`.
+A reply is a string of at most 8192 bytes. A timed-out delivery has no reply and
+sets `unanswered` to true; it is never reported as confirmed completion.
+
 **A person's shell** may send `approve`, `decline`, `waiting`, `granted`, and
 — since the local network — `pair`, `confirm-pairing`, `revoke-pairing`,
 `pairings` and `choose-machine-to-answer`; it is told `did`, `waiting`,

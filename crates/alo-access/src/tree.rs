@@ -373,10 +373,14 @@ impl Surface {
             Self::Approval => vec![
                 Control::of(Role::Dialogue, words::SOMETHING_IS_ASKED, State::ReadOnly),
                 Control::of(Role::Label, words::WHAT_THE_TURN_WROTE, State::ReadOnly),
-                Control::of(Role::Button, alo_approving::words::NO, State::CanBeUsed),
                 Control::of(
                     Role::Button,
-                    alo_approving::words::APPROVE,
+                    alo_capability::approval_words::NO,
+                    State::CanBeUsed,
+                ),
+                Control::of(
+                    Role::Button,
+                    alo_capability::approval_words::APPROVE,
                     State::CanBeUsed,
                 ),
             ],
@@ -508,8 +512,10 @@ pub const EVERY_NAME_A_READER_SAYS_IN_ANOTHER_CRATES_WORDS: usize = 5;
 /// how it is checked. A second public list would be a second answer to *which
 /// words does this tree borrow*, kept in step by hand.
 #[cfg(test)]
-const BORROWED_AND_NOT_AN_ACTION: [Word; 2] =
-    [alo_approving::words::NO, alo_approving::words::APPROVE];
+const BORROWED_AND_NOT_AN_ACTION: [Word; 2] = [
+    alo_capability::approval_words::NO,
+    alo_capability::approval_words::APPROVE,
+];
 
 #[cfg(test)]
 mod tests {
@@ -723,8 +729,8 @@ mod tests {
                 // 2026-10-05 these read `access.say-no` and
                 // `access.approve-it`, and the two vocabularies were
                 // translated independently with nothing comparing them.
-                alo_approving::words::NO.key().to_string(),
-                alo_approving::words::APPROVE.key().to_string(),
+                alo_capability::approval_words::NO.key().to_string(),
+                alo_capability::approval_words::APPROVE.key().to_string(),
             ]
         );
         // Nothing carries a state that would read as *chosen*.

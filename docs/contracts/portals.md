@@ -65,13 +65,15 @@ on that path, sent to the caller.
   and underscores, 1 to 64 of them. Any other token is refused on the call with
   `org.freedesktop.DBus.Error.InvalidArgs`, because no handle can be made from
   it. With no token, the backend makes one.
-- **The response is sent before the method returns**, because every answer here
-  is decided while the call is handled. Listen on the predicted handle before
-  calling, as the specification advises and GTK, libportal and libsecret do.
+- **Listen before calling**, as the specification advises. Immediate answers
+  can precede the method reply. Native selection returns its handle immediately
+  and sends its response after the dialog ends. Only the requesting bus owner
+  can `Close` that handle; disconnecting also ends its pending dialog.
 - **`response` is `0`** when what was asked was done, and **`2`** for every
-  refusal and every request that could not be done. It is never `1`, *cancelled
-  by the user*, because no person is asked anything here.
-- **`results` is empty** in every response.
+  refusal and every request that could not be done. A cancelled native chooser
+  is `1`; a backend that cannot open is `2`.
+- **`results`** includes exported document URIs for a successful save selection.
+  Refusals and cancellations carry no results.
 
 Every request that reaches the backend, including every refusal, is recorded
 before its response is sent. The record names the application whenever the
@@ -89,12 +91,18 @@ and a file handed to its opener, only after the answer has been recorded.
 
 | Portal | Interface | Version | What is answered |
 |---|---|---|---|
+| screen capture | `org.freedesktop.portal.ScreenCast` | 3 | `CreateSession`, `SelectSources`, `Start`, and `OpenPipeWireRemote`. One screen or independently rendered application window, with embedded cursor only. Every recording requires a fresh native source choice; persistence and restored choices are refused. Caller identity, native request and session ownership, the exact new grant, and the record are checked before a stream is returned. The granted file descriptor exposes only that stream, including when other media nodes appear later. Session closure, source closure, permission revocation, service exit, desktop lock, and output retirement end its publisher. The live desktop media indicator reads the actual media graph. Native shell windows are currently included in screen capture; the window picker lists Wayland application windows. |
 | secret storage | `org.freedesktop.portal.Secret` | 1 | `RetrieveSecret(h fd, a{sv} options)`: the application's own secret, from the person's one keyring, written to `fd`, then response `0`. Needs a grant of the `secrets` facility to that application. On a refusal, or when the keyring is locked or absent, nothing is written and the response is `2`. The keyring is never unlocked for an application. |
 | settings | `org.freedesktop.portal.Settings` | 2 | The `org.freedesktop.appearance` namespace, and **two keys of `org.gnome.desktop.interface`: `cursor-theme` and `cursor-size`** — the owner's yes of 2026-11-06, so a sandboxed GTK application draws alo's pointer at the person's size; they are read under the same `appearance-settings` grant as the rest. `cursor-theme` (`s`) is the name of alo's cursor theme with the person's arrow in the person's colour — `alo` or `alo-classic` in navy, and their `-white` and `-black` twins (the colours: the owner, 2026-11-06); `cursor-size` (`i`) is the pointer's size in logical pixels, 24, 36 or 48. Every other key of that namespace is not answered. All of it is from the person's appearance settings over what the release ships, resolved at the moment of asking at the machine's time of day. `color-scheme` (`u`): `1` dark, `2` light, never `0`. `accent-color` (`(ddd)`): the person's accent for the scheme showing, red, green and blue from 0 to 1. `contrast` is **not answered**: nothing on this machine keeps a person's contrast preference yet, so no value is invented for it. `ReadAll(as namespaces)` returns, for each of the two namespaces a pattern reaches (the empty list, `""`, a `*` prefix, or its exact name), the keys answered in it, and an empty dictionary when it reaches neither. `ReadOne(s namespace, s key)` returns one value, and the deprecated `Read` returns the same value inside one more variant. Needs a grant of the `appearance-settings` facility to that application. Without one — or from a program with no sandbox — every method replies `org.freedesktop.portal.Error.NotFound`, the same error, in the same words, as a namespace or key that is not answered, and nothing else. Any other namespace or key is `org.freedesktop.portal.Error.NotFound` to every caller, never a value. Grants or settings that could not be read are `org.freedesktop.portal.Error.Failed`. `SettingChanged(s namespace, s key, v value)` is sent, with a destination and never broadcast, to each connection whose application may read the value at the moment it changed — by the person or by their schedule's clock — and to nobody else; the backend looks every second. Every read and every refusal is recorded with the application named, and so is every `SettingChanged` sent. |
 | network monitor | `org.freedesktop.portal.NetworkMonitor` | 3 | Whether this machine reaches anything, and whether the way out is metered, from what NetworkManager reports at the moment of asking (`alo_networks::WhatIsReached`) and from nothing else. `GetAvailable() -> b`: whether anything is reached — a sign-in page in the way counts, because an application that wants to show one needs the connection used; nothing the network manager has worked out does not. `GetMetered() -> b`: **true where the machine does not know**, as well as where it is metered or guessed to be, because an application reads this before spending somebody's data. `GetConnectivity() -> u`: `1` local, `2` limited, `3` captive portal, `4` full — GLib's `GNetworkConnectivity` numbering, which is **not** NetworkManager's: the two swap `2` and `3`, and the mapping is `alo_portals::network_state`'s, never a number passed through. A network manager that has not worked out how far the machine reaches is `1` and `GetAvailable` is `false`; GLib has no *unknown* and none is invented. `GetStatus() -> a{sv}`: `available`, `metered` and `connectivity` read at one moment. **`CanReach(s hostname, u port)` is never answered**, to any caller, granted or not: answering means sending a packet to a host an application named, and it would let an application read a person's network one name at a time. It is `org.freedesktop.portal.Error.NotAllowed`. Every other method needs a grant of the `network-state` facility to that application. Without one — or from a program with no sandbox — every method replies `org.freedesktop.portal.Error.NotAllowed`, in the same words as a machine whose network manager is not answering, so a refused application learns nothing it would not learn from a machine that cannot see its own network. Grants that could not be read are `org.freedesktop.portal.Error.Failed`. Every read and every refusal is recorded with the application named, and an answer the record did not keep is not sent. The `changed` signal is declared and **never sent**: nothing here watches the network manager for changes, so an application that reads on its own schedule is answered correctly and one that waits for the signal waits. |
 | open-with and default applications | `org.freedesktop.portal.OpenURI` | 3 | `OpenFile(s parent_window, h fd, a{sv} options)`: the file behind `fd` is opened in the application that opens its kind, which is the person's choice or the first installed application declaring it. The file's kind is read from its bytes. Needs a grant over the file **and** a grant over that application, and the file is not read until the first is found. The application is asked to open the file through D-Bus activation (`org.freedesktop.Application.Open`), and the response is `0` only if it answered. `OpenURI` (a web link) and `OpenDirectory` (a file's folder) are answered `2`, because nothing on this machine decides yet what opens either. `writable`, `ask` and `activation_token` are accepted and not read. |
 
+| file chooser and documents | `org.freedesktop.portal.FileChooser` | 1 | `SaveFile(s parent_window, s title, a{sv} options)` opens the rented native chooser. A selection makes an exact file grant on the existing permissions list, records it, and uses the Documents portal to give only that file to the authenticated sandbox. It grants no folder or home access. Cancellation is `1`; unavailable services and export failures are `2`. Closing or abandoning the request cancels it. Revocation of the exact grant withdraws its document permissions. `OpenFile` is explicitly refused and multi-file save is not advertised. |
+
 ## Not answered yet
+
+The file chooser above currently supports `SaveFile`. `OpenFile` is explicitly
+answered `2`; multi-file save is not advertised by its version-one interface.
 
 These are **not registered** on the bus. An application that calls one gets
 the bus's own `org.freedesktop.DBus.Error.UnknownInterface` or `UnknownMethod`.
@@ -104,11 +112,9 @@ reaches exists.
 
 | Portal | Why not yet |
 |---|---|
-| file chooser and documents | Choosing a file is a dialog, and the dialog belongs to the desktop lane. |
 | notifications | A notification is something the desktop draws, and nothing is wired from this backend to the desktop yet. |
 | print | Printing asks the person about the printer and pages in a dialog. |
 | screenshot | Taking a picture of the screen shows the person what is being taken before the application gets it, which is a dialog. |
-| screen capture | Choosing what to share is a dialog, and the capture plan puts an indicator beside it. |
 | camera | The camera, and the indicator shown while it is in use, belong to the devices plan. |
 | microphone | The microphone has no portal interface of its own; it is reached through PipeWire, which belongs to the devices plan. |
 | clipboard | The Clipboard portal works inside a remote-desktop session, and this backend serves no such session yet. |

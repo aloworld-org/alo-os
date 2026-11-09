@@ -1,0 +1,55 @@
+From 2770143f506a92e242f8a5b8b870929b515b48c0 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Barnab=C3=A1s=20P=C5=91cze?= <pobrn@protonmail.com>
+Date: Sun, 8 Feb 2026 22:44:46 +0100
+Subject: [PATCH] gst: pool: fix buffer release race condition
+
+A call to `release_buffer()` may happen in a gstreamer thread concurrently
+with the pipewire stream emitting the `remove_buffer` event in the thread
+loop, which, in pipewiresink calls `gst_pipewire_pool_remove_buffer()`, which
+in turn modifies the `GstPipeWirePoolData` object. Thus a data race occurs
+when accessing its members, which can lead to `pw_stream_return_buffer()`
+being called with a null pointer.
+
+Fix that by locking the thread loop before checking the conditions.
+
+Fixes: c0a6a7ea32f6 ("gst: handle flush event in pipewiresink")
+---
+ src/gst/gstpipewirepool.c | 11 +++++------
+ 1 file changed, 5 insertions(+), 6 deletions(-)
+
+diff --git a/src/gst/gstpipewirepool.c b/src/gst/gstpipewirepool.c
+index 3bcf99de75..5e201d3151 100644
+--- a/src/gst/gstpipewirepool.c
++++ b/src/gst/gstpipewirepool.c
+@@ -432,26 +432,25 @@ release_buffer (GstBufferPool * pool, GstBuffer *buffer)
+   GST_LOG_OBJECT (pool, "release buffer %p", buffer);
+ 
+   GstPipeWirePoolData *data = gst_pipewire_pool_get_data(buffer);
++  GstPipeWirePool *p = GST_PIPEWIRE_POOL (pool);
++  g_autoptr (GstPipeWireStream) s = g_weak_ref_get (&p->stream);
+ 
+   GST_OBJECT_LOCK (pool);
++  pw_thread_loop_lock (s->core->loop);
+ 
+   if (!data->queued && data->b != NULL)
+   {
+-    GstPipeWirePool *p = GST_PIPEWIRE_POOL (pool);
+-    g_autoptr (GstPipeWireStream) s = g_weak_ref_get (&p->stream);
+     int res;
+ 
+-    pw_thread_loop_lock (s->core->loop);
+-
+     if ((res = pw_stream_return_buffer (s->pwstream, data->b)) < 0) {
+       GST_ERROR_OBJECT (pool,"can't return buffer %p; gstbuffer : %p, %s",data->b, buffer, spa_strerror(res));
+     } else {
+       data->queued = TRUE;
+       GST_DEBUG_OBJECT (pool, "returned buffer %p; gstbuffer:%p", data->b, buffer);
+     }
+-
+-    pw_thread_loop_unlock (s->core->loop);
+   }
++
++  pw_thread_loop_unlock (s->core->loop);
+   GST_OBJECT_UNLOCK (pool);
+ }
+ 

@@ -9,7 +9,7 @@ repository.workspace = true
 
 # **No policy here.** Every decision about a portal request is `alo-portals`'
 # and this crate reads files and services and hands the readings over, which is
-# task 1's own constraint. So there is no `alo-strings` and no word list: every
+# task 1's own constraint. It loads the shared language bundle without a word list: every
 # sentence a person reads comes out of `alo-portals` in their own language, and
 # what this crate writes is English in a service log for whoever is standing the
 # machine up.
@@ -46,6 +46,8 @@ alo-secrets = { path = "../alo-secrets" }
 # reading that happens at sign-in, and the same refusal for a login with no home
 # directory.
 alo-choosing = { path = "../alo-choosing" }
+alo-saying = { path = "../alo-saying" }
+alo-strings = { path = "../alo-strings" }
 
 # What is installed and what each application declares it opens, read off the
 # machine's own desktop entries. `TheMachine::applications` answered `None` for
@@ -67,6 +69,11 @@ alo-opening = { path = "../alo-opening" }
 # A folder to write a settings file into, for the tests that tell a file which
 # did not parse from a machine nobody has touched.
 tempfile = "3"
+
+[target.'cfg(target_os = "linux")'.dev-dependencies]
+# Private-bus native integration probes, never included in the shipped daemon.
+zbus = { version = "5.19", default-features = false, features = ["async-io", "blocking-api"] }
+url = "2.5"
 
 [[bin]]
 name = "alo-portald"

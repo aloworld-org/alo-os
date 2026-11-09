@@ -98,6 +98,7 @@ pub mod role;
 pub mod session_bus;
 pub mod shown;
 pub mod states;
+pub mod studio;
 pub mod text_editor;
 pub mod verbs;
 pub mod walking;
@@ -129,7 +130,7 @@ pub use pressable::Pressable;
 pub use reading_windows::{ReadingWindows, WindowsRead};
 pub use role::Role;
 #[cfg(target_os = "linux")]
-pub use session_bus::SessionBus;
+pub use session_bus::{ApplicationSession, SessionBus};
 pub use shown::{Contents, Limit, Seen, Shown, ShownWindow};
 pub use states::States;
 pub use text_editor::TEXT_EDITOR;

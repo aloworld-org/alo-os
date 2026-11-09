@@ -46,6 +46,17 @@ use crate::thing::Thing;
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case", deny_unknown_fields)]
 pub enum Done {
+    /// A granted application's semantic operation, with a bounded read reply.
+    ApplicationControlled {
+        /// The application that answered.
+        application: String,
+        /// The validated action.
+        action: String,
+        /// The actual read reply, when one was returned.
+        reply: Option<String>,
+        /// Delivery occurred but completion could not be established.
+        unanswered: bool,
+    },
     /// What is in a folder.
     Listed {
         /// What is in it, by name, in the order a person would read it.
@@ -411,6 +422,7 @@ impl Done {
     #[must_use]
     pub fn left_something_out(&self) -> bool {
         match self {
+            Self::ApplicationControlled { unanswered, .. } => *unanswered,
             Self::Listed {
                 could_not_be_named,
                 cut_short,

@@ -176,6 +176,7 @@ pub mod agent;
 pub mod allowing;
 pub mod alo_in_the_terminal;
 pub mod approval;
+pub mod approval_words;
 pub mod approvals;
 pub mod arg;
 pub mod authorised;

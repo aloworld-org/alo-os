@@ -56,6 +56,11 @@ Environment=DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus
 Environment=HOME=/home/alo
 Environment=XDG_STATE_HOME=/home/alo/.local/state
 
+# The sanitized publisher launcher supplies its fixed private engine settings.
+# This cache belongs to the portal's user and is never shared with applications.
+CacheDirectory=alo-capture-provider
+CacheDirectoryMode=0700
+
 # It holds no privilege at all. It answers questions about a person's own
 # machine, on that person's own bus, as that person — there is nothing here a
 # capability would buy, and saying so is what makes that a fact rather than a

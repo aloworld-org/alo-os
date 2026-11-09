@@ -208,6 +208,9 @@ mod the_file {
             Unanswered::NoSuchSetting,
             Unanswered::AppearanceUnread,
             Unanswered::NetworkUnread,
+            Unanswered::DialogUnavailable,
+            Unanswered::DocumentUnavailable,
+            Unanswered::CaptureUnavailable,
         ] {
             let nobody = unanswered == Unanswered::NotIdentified;
             outcomes.push((

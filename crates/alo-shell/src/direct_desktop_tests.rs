@@ -79,6 +79,7 @@ impl crate::TheDesktop for ADesktop {
             running: &self.running,
             filling: &self.filling,
             in_use: &[],
+            in_use_problem: None,
             notifications: &[],
             capturing: None,
             division: an_undivided_display(),

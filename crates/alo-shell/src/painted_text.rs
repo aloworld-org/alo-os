@@ -5,9 +5,7 @@
 //! this machine. What the sentence says is never decided here: it arrives as
 //! text a crate that owns the words already answered.
 
-use cosmic_text::{
-    Attrs, Buffer, Color, Family, FontSystem, Metrics, Shaping, SwashCache, Weight, Wrap,
-};
+use cosmic_text::{Attrs, Buffer, Color, Family, FontSystem, Metrics, Shaping, Weight, Wrap};
 
 use smithay::utils::Rectangle;
 
@@ -129,6 +127,7 @@ pub(crate) fn alos_own_mono_at<'a>(
 }
 
 /// Text shaped and inked into its own box, not yet placed.
+#[derive(Clone)]
 pub(crate) struct Shaped {
     /// The box's width.
     pub(crate) width_of_box: i32,
@@ -224,10 +223,15 @@ pub(crate) fn sentence(
     ground: [u8; 3],
     ink: [u8; 3],
 ) -> Shaped {
-    let mut buffer = a_wrapping_buffer(fonts, width, metrics);
-    buffer.set_text(fonts, text, &alos_own_text(), Shaping::Advanced);
-    measured_and_inked(fonts, &mut buffer, width, ground, ink)
+    sentence_cache::with(fonts, text, width, metrics, ground, ink, |fonts| {
+        let mut buffer = a_wrapping_buffer(fonts, width, metrics);
+        buffer.set_text(fonts, text, &alos_own_text(), Shaping::Advanced);
+        measured_and_inked(fonts, &mut buffer, width, ground, ink)
+    })
 }
+
+#[path = "sentence_cache.rs"]
+mod sentence_cache;
 
 /// A sentence written in runs, each with its own face, weight or size,
 /// wrapped to `width` as one paragraph.
@@ -354,6 +358,20 @@ pub(crate) fn centred(
     ground: [u8; 3],
     ink: [u8; 3],
 ) -> Shaped {
+    sentence_cache::centred(fonts, text, width, metrics, ground, ink, |fonts| {
+        centred_uncached(fonts, text, width, metrics, ground, ink)
+    })
+}
+
+/// The original shaper, also used for exact-pixel cache comparisons.
+fn centred_uncached(
+    fonts: &mut FontSystem,
+    text: &str,
+    width: i32,
+    metrics: Metrics,
+    ground: [u8; 3],
+    ink: [u8; 3],
+) -> Shaped {
     let mut buffer = Buffer::new(fonts, metrics);
     // **No wrapping.** One letter cannot be broken across lines, and allowing it
     // would let a wide glyph — a flag emoji is two cells — become two rows half
@@ -456,32 +474,35 @@ pub(crate) fn inked(
 ) -> Shaped {
     let (width, height) = size;
     let mut pixels = vec![ground; (width.max(0) * height.max(0)) as usize];
-    buffer.draw(
-        fonts,
-        &mut SwashCache::new(),
-        Color::rgb(ink[0], ink[1], ink[2]),
-        |x, y, w, h, colour| {
-            for dy in 0..h as i32 {
-                for dx in 0..w as i32 {
-                    let (px, py) = (x + dx + shift, y + dy);
-                    if px < 0 || py < 0 || px >= width || py >= height {
-                        continue;
-                    }
-                    let Some(pixel) = pixels.get_mut((py * width + px) as usize) else {
-                        continue;
-                    };
-                    let alpha = u32::from(colour.a());
-                    for (channel, value) in
-                        pixel.iter_mut().zip([colour.r(), colour.g(), colour.b()])
-                    {
-                        *channel =
-                            ((u32::from(value) * alpha + u32::from(*channel) * (255 - alpha) + 127)
+    crate::text_glyph_cache::with(fonts, buffer, |fonts, swash| {
+        buffer.draw(
+            fonts,
+            swash,
+            Color::rgb(ink[0], ink[1], ink[2]),
+            |x, y, w, h, colour| {
+                for dy in 0..h as i32 {
+                    for dx in 0..w as i32 {
+                        let (px, py) = (x + dx + shift, y + dy);
+                        if px < 0 || py < 0 || px >= width || py >= height {
+                            continue;
+                        }
+                        let Some(pixel) = pixels.get_mut((py * width + px) as usize) else {
+                            continue;
+                        };
+                        let alpha = u32::from(colour.a());
+                        for (channel, value) in
+                            pixel.iter_mut().zip([colour.r(), colour.g(), colour.b()])
+                        {
+                            *channel = ((u32::from(value) * alpha
+                                + u32::from(*channel) * (255 - alpha)
+                                + 127)
                                 / 255) as u8;
+                        }
                     }
                 }
-            }
-        },
-    );
+            },
+        )
+    });
     Shaped {
         width_of_box: width,
         width,

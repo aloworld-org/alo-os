@@ -74,11 +74,11 @@ pub const ALO_AND_AI: Word = Word::saying("settings.category.alo-and-ai", "alo a
      alo is the assistant's name, in lower case. AI is artificial intelligence.",
 );
 
-/// The category about the folders alo may read.
+/// The category about the files, folders and applications alo may use.
 pub const FOLDERS_ALO_CAN_USE: Word =
-    Word::saying("settings.category.folders", "Folders alo can use").noting(
-        "A category in Settings: the folders the person has allowed alo, the assistant, to read, \
-         and what alo did with them.",
+    Word::saying("settings.category.access", "Access for alo").noting(
+        "A category in Settings: permissions the person gives alo for files, folders and applications, \
+         and the record of what alo did.",
     );
 
 /// The category about running code.
@@ -121,13 +121,13 @@ pub const ALO_AND_AI_IS: Word = Word::saying(
 )
 .noting("Under the heading of the alo and AI page in Settings.");
 
-/// What the folders page is about.
+/// What the access page is about.
 pub const FOLDERS_ALO_CAN_USE_IS: Word = Word::saying(
-    "settings.page.folders",
-    "alo can read only the folders you give it. Each one stays on this list until it ends or you take it back.",
+    "settings.page.access",
+    "Choose which folders and applications alo can use. Review or remove access here, including files you have shared.",
 )
 .noting(
-    "Under the heading of the page listing the folders alo, the assistant, may read. alo is its \
+    "Under the heading of the page listing access granted to alo, the assistant. alo is its \
      name and stays in lower case at the start of the sentence.",
 );
 
@@ -396,9 +396,9 @@ pub const SHORTCUTS: Word = Word::saying("settings.section.shortcuts", "Shortcut
 pub const TAKE_BACK: Word = Word::saying("settings.take-back", "Take back")
     .noting("A button beside a folder alo may read, or a computer paired with this one, that takes the permission back at once.");
 
-/// Taking a folder back stops it at once: the next thing asked under it is refused.
-pub const TAKING_BACK_STOPS_IT: Word = Word::saying("settings.folders.taking-back", "Taking a folder back stops it at once: the next thing asked under it is refused. It does not undo what was already done — the record and undo are for that.")
-    .noting("Under the list of folders alo may read. The record is the list of what alo did; undo puts files back.");
+/// Revocation prevents the next use of a permission and preserves its history.
+pub const TAKING_BACK_STOPS_IT: Word = Word::saying("settings.access.taking-back", "Removing access prevents the next action that needs it. Previous actions stay in the record; use undo where it is available.")
+    .noting("Under the list of permissions given to alo. Removing permission does not undo earlier work.");
 
 /// You choose the folder and how long, in the same step.
 pub const YOU_CHOOSE_FOLDER_AND_HOW_LONG: Word = Word::saying(

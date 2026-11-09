@@ -170,6 +170,7 @@ mod asking_the_record;
 pub mod became;
 pub mod bounding;
 mod carrying;
+pub mod controlling_an_application;
 pub mod crossing;
 #[cfg(test)]
 mod down_the_corridor;
@@ -210,6 +211,7 @@ pub use how_an_application_starts::{NoRoad, SaysHowAnApplicationStarts, TheRoad}
 pub use kept::Kept;
 pub use machine::{
     Machine, WhatASoftwareVerbNeeds, WhatAnApplicationVerbNeeds, the_verbs_a_whole_machine_offers,
+    the_verbs_with_application_controls,
 };
 pub use places::Places;
 pub use refusing::NotDone;

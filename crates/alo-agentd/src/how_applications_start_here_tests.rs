@@ -20,6 +20,37 @@ fn a_place(called: &str, entries: &[(&str, &str)]) -> PathBuf {
     at
 }
 
+/// A market installation is visible without restarting the agent daemon.
+#[test]
+fn current_inventory_follows_an_application_installed_after_startup() {
+    let place = a_place("new-studio", &[]);
+    let here = HowApplicationsStartHere::in_these(vec![place.clone()]);
+    assert!(
+        !here
+            .applications_installed_now()
+            .unwrap()
+            .has(alo_adapters::studio::APPLICATION)
+    );
+    let entry = place.join("org.aloworld.Studio.desktop");
+    std::fs::write(
+        &entry,
+        "[Desktop Entry]\nType=Application\nName=alo Studio\nExec=alo-studio\n",
+    )
+    .unwrap();
+    assert!(
+        here.applications_installed_now()
+            .unwrap()
+            .has(alo_adapters::studio::APPLICATION)
+    );
+    std::fs::remove_file(entry).unwrap();
+    assert!(
+        !here
+            .applications_installed_now()
+            .unwrap()
+            .has(alo_adapters::studio::APPLICATION)
+    );
+}
+
 #[test]
 fn each_entry_names_its_own_road_or_none() {
     let place = a_place(

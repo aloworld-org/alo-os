@@ -1,0 +1,64 @@
+--- a/src/backend/renderer/pixman/mod.rs
++++ b/src/backend/renderer/pixman/mod.rs
+@@ -979,6 +979,24 @@
+ /// Texture mapping of a pixman texture
+ #[derive(Debug)]
+ pub struct PixmanMapping(pixman::Image<'static, 'static>);
++
++impl AsRef<[u8]> for PixmanMapping {
++    fn as_ref(&self) -> &[u8] {
++        // SAFETY: The mapping owns its image, and its allocated stride covers
++        // every row. The immutable byte view cannot outlive that owner.
++        unsafe { std::slice::from_raw_parts(self.0.data().cast(), self.0.stride() * self.0.height()) }
++    }
++}
++
++impl AsMut<[u8]> for PixmanMapping {
++    fn as_mut(&mut self) -> &mut [u8] {
++        // SAFETY: Exclusive mapping access excludes every borrowed byte view.
++        // No other handle to this owned image is exposed by the mapping.
++        unsafe { std::slice::from_raw_parts_mut(self.0.data().cast(), self.0.stride() * self.0.height()) }
++    }
++}
++
++
+ 
+ impl Texture for PixmanMapping {
+     fn width(&self) -> u32 {
+@@ -1258,6 +1276,36 @@
+     }
+ }
+ 
++impl PixmanRenderer {
++    /// Allocate initialized CPU storage that can be rendered and mapped in place.
++    pub fn create_owned_mapping(
++        &mut self,
++        format: DrmFourcc,
++        size: Size<i32, BufferCoords>,
++    ) -> Result<PixmanMapping, PixmanError> {
++        if size.w <= 0 || size.h <= 0 {
++            return Err(PixmanError::Unsupported);
++        }
++        let code = FormatCode::try_from(format).map_err(|_| PixmanError::UnsupportedPixelFormat(format))?;
++        let stride = ((size.w as u64 * u64::from(FormatCode::bpp(code)) + 31) / 32) * 4;
++        if stride == 0 || stride.checked_mul(size.h as u64).filter(|bytes| *bytes <= i32::MAX as u64).is_none() {
++            return Err(PixmanError::Unsupported);
++        }
++        // The existing allocator clears every pixel before any safe byte view.
++        <Self as Offscreen<Image<'static, 'static>>>::create_buffer(self, format, size).map(PixmanMapping)
++    }
++}
++
++impl Bind<PixmanMapping> for PixmanRenderer {
++    fn bind<'a>(&mut self, target: &'a mut PixmanMapping) -> Result<PixmanTarget<'a>, Self::Error> {
++        Ok(PixmanTarget(PixmanTargetInternal::Image(&mut target.0)))
++    }
++
++    fn supported_formats(&self) -> Option<FormatSet> {
++        <Self as Bind<Image<'static, 'static>>>::supported_formats(self)
++    }
++}
++
+ impl Bind<Image<'static, 'static>> for PixmanRenderer {
+     #[profiling::function]
+     fn bind<'a>(&mut self, target: &'a mut Image<'static, 'static>) -> Result<PixmanTarget<'a>, Self::Error> {

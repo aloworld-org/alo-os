@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=Application
+Name=alo Studio
+GenericName=Screen Recorder
+Comment=Record your screen. Make things clear.
+Exec=alo-studio
+Icon=org.aloworld.Studio
+Terminal=false
+Categories=AudioVideo;Recorder;
+Keywords=screen;record;video;demo;capture;
+StartupNotify=true
+DBusActivatable=false
+X-GNOME-UsesNotifications=false

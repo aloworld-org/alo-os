@@ -39,6 +39,11 @@ use crate::wording::Wording;
 /// One thing the daemon told an agent.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ToAnAgent {
+    /// Currently offered action names; execution still checks permission.
+    Capabilities {
+        /// The action identifiers offered under the turn's current grants.
+        verbs: Vec<String>,
+    },
     /// What a read found.
     Did(Done),
     /// What a change did that was carried out **without the OK**, because the
@@ -154,6 +159,7 @@ impl ToAnAgent {
     /// is only ever given to a person's screen.
     pub fn read(line: &str) -> Result<Self, NotUnderstood> {
         match frame::reply(line)? {
+            Told::Capabilities { verbs } => Ok(Self::Capabilities { verbs }),
             Told::Did(done) => Ok(Self::Did(done)),
             Told::DoneWithoutAsking { did, said } => Ok(Self::DoneWithoutAsking { did, said }),
             Told::Proposed(standing) => Ok(Self::Proposed(standing)),
@@ -232,6 +238,7 @@ impl ToAnAgent {
 impl From<ToAnAgent> for Told {
     fn from(told: ToAnAgent) -> Self {
         match told {
+            ToAnAgent::Capabilities { verbs } => Self::Capabilities { verbs },
             ToAnAgent::Did(done) => Self::Did(done),
             ToAnAgent::DoneWithoutAsking { did, said } => Self::DoneWithoutAsking { did, said },
             ToAnAgent::Proposed(standing) => Self::Proposed(standing),
@@ -282,6 +289,7 @@ mod tests {
         /// What each one is, in a match a new variant breaks.
         fn what_it_carries(said: &ToAnAgent) -> &'static str {
             match said {
+                ToAnAgent::Capabilities { .. } => "currently offered action names",
                 ToAnAgent::Did(_) => "what a read found",
                 ToAnAgent::DoneWithoutAsking { .. } => {
                     "what a change did at full access, and the sentence saying so"

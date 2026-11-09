@@ -41,6 +41,7 @@ mod the_edge_follows_the_camera;
 mod the_world_is_a_step_out;
 mod what_an_application_verb_says_it_does;
 mod window_activation;
+mod window_capture_frames;
 mod window_close;
 mod window_controls;
 mod window_maximize;

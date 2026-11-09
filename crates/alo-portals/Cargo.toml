@@ -61,7 +61,14 @@ serde_json = { workspace = true }
 # no crate to the tree. Linux only: the portals are a Linux session bus's, and
 # a file handed over the bus is a Unix descriptor.
 [target.'cfg(target_os = "linux")'.dependencies]
+alo-capture-protocol = { path = "../alo-capture-protocol" }
+alo-media-server = { path = "../alo-media-server" }
 zbus = { version = "5.19", default-features = false, features = ["async-io", "blocking-api"] }
+# Cancel native dialogs when their caller leaves, without blocking bus dispatch.
+async-io = "2.6"
+futures-lite = "2.6"
+# Native chooser URIs are decoded with the standard URL parser.
+url = "2.5"
 
 [target.'cfg(unix)'.dependencies]
 # The process behind a request, held by a descriptor (`pidfd_open`) rather than

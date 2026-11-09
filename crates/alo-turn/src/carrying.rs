@@ -99,6 +99,16 @@ pub(crate) fn carrying_out(
     origin: Option<&Origin>,
     now: std::time::SystemTime,
 ) -> (Entry, Result<WhatAVerbDid, NotDone>) {
+    if machine
+        .application_controls()
+        .0
+        .carrying_out(authorised.verb())
+        .is_some()
+    {
+        let (entry, result) =
+            crate::controlling_an_application::controlling(machine, authorised, grants);
+        return (entry, result.map(WhatAVerbDid::ApplicationControlled));
+    }
     // **Which executor, decided by the verb's own name and nothing else.**
     // The alternative is asking the arguments what shape they are, which is a
     // second opinion about what a call is: `alo_capability` already decided

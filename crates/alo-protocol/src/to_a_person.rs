@@ -571,7 +571,7 @@ impl ToAPerson {
             Told::Leaving { lines } => Ok(Self::Leaving { lines }),
             // A change carried out without the OK is told to the agent that
             // asked for it, which tells the person in its reply (ADR 0149).
-            Told::Proposed(_) | Told::DoneWithoutAsking { .. } => {
+            Told::Capabilities { .. } | Told::Proposed(_) | Told::DoneWithoutAsking { .. } => {
                 Err(NotUnderstood::NotAnAnswerForAPerson)
             }
         }
