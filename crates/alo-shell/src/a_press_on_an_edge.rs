@@ -136,10 +136,7 @@ impl crate::Server {
         let at = crate::an_edge_in_its_displays_units::a_point_in_the_edges_units(at, scale);
         let now = Instant::now();
         for surface in mapped {
-            let window = crate::an_edge_in_its_displays_units::a_window_in_the_edges_units(
-                self.where_a_window_is_drawn(&surface),
-                scale,
-            );
+            let window = self.the_window_a_band_hangs_from(&surface, scale);
             let edge = edge_of(
                 window,
                 decorations,

@@ -37,3 +37,13 @@ The visible window, a selected area, or the full document where the
 application offers one; PNG, JPEG or a clearly labelled image PDF; copy, or
 save to the folder shown with the normal collision handling; Open and Show in
 folder.
+
+## What stage 1 has built, as it lands
+
+- **The full-screen top-edge reveal.** A full-screen window's band stays above
+  the display, where nothing draws or presses it; the pointer in the top 12
+  units across the window, or the keyboard on the band or in its panel
+  (`Alt+F3`), hangs it over the window's own top, and it stays while the
+  pointer is anywhere in it or the keyboard holds it, then goes with no wait.
+  The window is never moved or resized for it
+  (`crates/alo-shell/src/the_band_over_full_screen.rs`).

@@ -552,6 +552,9 @@ pub struct Server {
     /// takes its reveal state with it rather than leaving one for whatever
     /// surface is allocated at that address next.
     pub(crate) edges_revealed: Vec<(WlSurface, alo_dock::revealing::Revealing)>,
+    /// The full-screen windows whose band is out over their top
+    /// (`crate::the_band_over_full_screen`).
+    pub(crate) bands_out_over_full_screen: Vec<WlSurface>,
     /// How far each window's controls have faded in or out
     /// (`crate::the_controls_fade`), pruned on the same walk as
     /// `edges_revealed`.
@@ -935,6 +938,7 @@ impl Server {
             closing_asked: None,
             close_when_stopped: Vec::new(),
             edges_revealed: Vec::new(),
+            bands_out_over_full_screen: Vec::new(),
             controls_fading: Vec::new(),
             keyboard_on_edges: Vec::new(),
             asked_to_bring_back: Vec::new(),

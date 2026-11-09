@@ -140,10 +140,7 @@ impl Server {
         }
         let scale = self.the_scale_an_edge_is_measured_at();
         let edge = crate::window_edge::edge_of(
-            crate::an_edge_in_its_displays_units::a_window_in_the_edges_units(
-                self.where_a_window_is_drawn(surface),
-                scale,
-            ),
+            self.the_window_a_band_hangs_from(surface, scale),
             crate::window_edge_who_draws::who_draws_a_frame(),
             true,
             self.the_room_an_edge_is_clamped_in(),
