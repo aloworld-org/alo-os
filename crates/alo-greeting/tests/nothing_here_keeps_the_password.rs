@@ -190,8 +190,12 @@ fn the_password_is_a_parameter_and_an_argument_and_nothing_else() {
         "no line naming a password was read at all, so nothing below was checked"
     );
     for (at, which, line) in &found {
+        // ADR 0150: the keeper's one method is declared beside the trait,
+        // and the declaration is the only line there that names it.
         assert!(
-            at.ends_with("greeting.rs"),
+            at.ends_with("greeting.rs")
+                || (at.ends_with("keeping_in_step.rs")
+                    && line == "fn keep(&self, person: u32, password: &str);"),
             "the password reached {}: {line}",
             at.display()
         );
@@ -237,7 +241,10 @@ fn nothing_on_those_two_lines_keeps_or_prints_anything() {
                 if shape == "self."
                     && (line.contains("self.accounts.signs_in(")
                         || line.contains("self.accounts.created(")
-                        || line.contains("self.signs_in(name, password)"))
+                        || line.contains("self.signs_in(name, password)")
+                        // ADR 0150: the described number, beside the password,
+                        // handed to the keeper — a handing on, as above.
+                        || line.contains("keeper.keep(self.person, password)"))
                 {
                     continue;
                 }
@@ -262,11 +269,14 @@ fn nothing_on_those_two_lines_keeps_or_prints_anything() {
 #[test]
 fn every_field_this_crate_has_is_one_somebody_named() {
     /// What the greeter is made of, and the whole of it.
-    const WHAT_IT_HOLDS: [&str; 6] = [
+    const WHAT_IT_HOLDS: [&str; 7] = [
         // `Greeting`: the accounts, the described number, the door, and the
         // store it was read from — a path, held so an account made here can
         // only be written where this greeter reads. Nothing a person typed.
         "accounts", "person", "door", "store",
+        // And what the verified password is handed to, to keep the system's
+        // list in step (ADR 0150): a service, never what was typed.
+        "keeper",
         // `TheOpenersDoor`: where the door is.
         "at", // Every refusal: what the machine said about it.
         "why",
