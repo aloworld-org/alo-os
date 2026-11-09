@@ -306,6 +306,7 @@ mod in_use_paint;
 mod in_use_raster;
 /// Vector artwork inked into a raster at its box's size.
 mod inking_a_shape;
+mod keeping_the_system_password;
 mod keyboard;
 mod keyboard_sheet;
 mod language_sheet;

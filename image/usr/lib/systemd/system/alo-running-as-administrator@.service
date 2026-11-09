@@ -1,0 +1,24 @@
+# alo OS: one command, run as administrator once the person gave their
+# password (ADR 0150).
+#
+# One instance per connection to `alo-running-as-administrator.socket`, as
+# root and with root's capabilities, because what it runs is whatever the
+# person said yes to as administrator. Before it runs anything it asks the
+# kernel who is calling, asks polkit about the person's own session for
+# `org.aloworld.alo.run-as-administrator` (`auth_admin` at every setting, so
+# the password is asked every time), and runs the command only on polkit's
+# yes. `alo_administrator::running` holds that order, and its tests hold every
+# refusal in it.
+[Unit]
+Description=alo OS: run one command as administrator, after the person's password
+Documentation=https://github.com/aloworld-org/alo-os/blob/main/docs/decisions/0150-administrator-actions-ask-the-persons-password-each-time.md
+Requires=alo-running-as-administrator.socket
+
+[Service]
+Type=exec
+ExecStart=/usr/libexec/alo-running-as-administrator
+StandardInput=socket
+StandardOutput=socket
+StandardError=journal
+User=root
+Group=root

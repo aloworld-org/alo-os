@@ -213,7 +213,12 @@ pub fn stand_the_sign_in_screen_up(
     // usual region by name instead.
     let zone = jiff::tz::TimeZone::system();
     let screen = SignInScreen::of(
-        Greeting::at(machine.accounts, machine.person, machine.door),
+        // **And the system's password kept in step at every sign-in** (ADR 0150).
+        Greeting::at(machine.accounts, machine.person, machine.door).map(|greeting| {
+            greeting.keeping_the_system_password_with(Box::new(
+                crate::keeping_the_system_password::TheSystemsKeeper::on_this_machine(),
+            ))
+        }),
         words,
     )
     .where_the_machine_is(

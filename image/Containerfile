@@ -153,6 +153,7 @@ RUN cargo build --release --target ${THE_TARGET} \
       --package alo-looking-once \
       --package alo-giving-a-folder \
       --package alo-giving-a-name \
+      --package alo-administrator \
       --package alo-their-folders \
       --package alo-agent \
       --package alo-try \
@@ -451,6 +452,19 @@ COPY --from=built /alo-os/target/${THE_TARGET}/release/alo-giving-a-folder /usr/
 # shape as the folder helper above and for the same reason: the capability
 # lives in a small unit of its own rather than in anything already root.
 COPY --from=built /alo-os/target/${THE_TARGET}/release/alo-giving-a-name /usr/libexec/alo-giving-a-name
+
+# **Administrator actions ask the person's password each time** (ADR 0150).
+#
+# Three small programs, each started by systemd for one connection and gone
+# after it: the keeper writes the password a person signed in with into the
+# system's list (`CAP_DAC_OVERRIDE` and nothing else); the checker runs
+# polkit's own helper for the caller's own login, because the desktop that
+# draws the password sheet holds no capability and could not; and the runner
+# runs one command as administrator after polkit says the person gave their
+# password. One package, three binaries: selecting the package builds all three.
+COPY --from=built /alo-os/target/${THE_TARGET}/release/alo-keeping-the-system-password /usr/libexec/alo-keeping-the-system-password
+COPY --from=built /alo-os/target/${THE_TARGET}/release/alo-checking-a-password /usr/libexec/alo-checking-a-password
+COPY --from=built /alo-os/target/${THE_TARGET}/release/alo-running-as-administrator /usr/libexec/alo-running-as-administrator
 
 # **The folders a person expects in their home**, made in their own session.
 #
@@ -1109,8 +1123,19 @@ COPY image/etc/alo/ /etc/alo/
 # `/usr/share` because it is what the image ships; `/etc/polkit-1/rules.d` is
 # where a machine's owner adds their own.
 COPY image/usr/share/polkit-1/rules.d/ /usr/share/polkit-1/rules.d/
+# **And the one thing alo asks polkit about** (ADR 0150): a command run as
+# administrator, which asks the person's password every time. The rule at 49
+# refuses the agent's own login everything and keeps alo's action at
+# `auth_admin`; the action file declares it. polkit's own helper and the
+# PAM stack it asks are the base's, and are checked for, not shipped.
+COPY image/usr/share/polkit-1/actions/ /usr/share/polkit-1/actions/
 RUN test -s /usr/share/polkit-1/rules.d/50-alo-time-zone.rules \
- && rpm -q polkit systemd
+ && test -s /usr/share/polkit-1/rules.d/49-alo-administrator.rules \
+ && test -s /usr/share/polkit-1/actions/org.aloworld.alo.policy \
+ && test -u /usr/lib/polkit-1/polkit-agent-helper-1 \
+ && test -s /usr/lib/pam.d/polkit-1 \
+ && test -x /usr/sbin/chpasswd \
+ && rpm -q polkit systemd shadow-utils
 
 # **What this machine says it is.** The base's own file calls it Fedora Linux
 # 42, which a person who installed alo OS did not install, and carries
@@ -1290,6 +1315,9 @@ RUN set -e; \
     /usr/bin/alo-compositor 2>&1 | grep -q 'this machine cannot be signed in to' \
       || { echo "alo-compositor started but did not say why it refused" >&2; exit 1; }
 RUN chmod 0755 /usr/libexec/alo-boundaryd /usr/libexec/alo-sessiond \
+               /usr/libexec/alo-keeping-the-system-password \
+               /usr/libexec/alo-checking-a-password \
+               /usr/libexec/alo-running-as-administrator \
                /usr/libexec/alo-convertd /usr/libexec/alo-portald \
                /usr/libexec/alo-shipping \
                /usr/bin/alo-agentd /usr/bin/alo-agent /usr/bin/alo-try \
@@ -1305,6 +1333,14 @@ RUN chmod 0755 /usr/libexec/alo-boundaryd /usr/libexec/alo-sessiond \
                /usr/lib/systemd/system/alo-asking@.service \
                /usr/lib/systemd/system/alo-giving-a-folder@.service \
                /usr/lib/systemd/system/alo-giving-a-name@.service \
+               /usr/lib/systemd/system/alo-keeping-the-system-password.socket \
+               /usr/lib/systemd/system/alo-keeping-the-system-password@.service \
+               /usr/lib/systemd/system/alo-checking-a-password.socket \
+               /usr/lib/systemd/system/alo-checking-a-password@.service \
+               /usr/lib/systemd/system/alo-running-as-administrator.socket \
+               /usr/lib/systemd/system/alo-running-as-administrator@.service \
+               /usr/share/polkit-1/actions/org.aloworld.alo.policy \
+               /usr/share/polkit-1/rules.d/49-alo-administrator.rules \
                /usr/lib/systemd/system/alo-convertd.service \
                /usr/lib/systemd/system/alo-compositor.service \
                /usr/lib/systemd/system/alo-desktop@.service \
@@ -1324,6 +1360,9 @@ RUN chmod 0755 /usr/libexec/alo-boundaryd /usr/libexec/alo-sessiond \
  && systemctl enable alo-boundaryd.service alo-agentd.service alo-sessiond.service \
                      alo-modeld.service alo-convertd.socket \
                      alo-asking.socket \
+                     alo-keeping-the-system-password.socket \
+                     alo-checking-a-password.socket \
+                     alo-running-as-administrator.socket \
                      alo-compositor.service alo-portald.service \
                      alo-shipping.service \
                      # Not the desktop: `alo-desktop@.service` has no `[Install]`
@@ -1420,4 +1459,5 @@ RUN systemd-sysusers \
  && test "$(getent group alo-model | cut -d: -f3)" = 60991 \
  && test "$(id -u alo-convert)" = 60992 \
  && test "$(getent group alo-convert | cut -d: -f3)" = 60992 \
- && id -nG alo | tr ' ' '\n' | grep -qx alo-agent
+ && id -nG alo | tr ' ' '\n' | grep -qx alo-agent \
+ && id -nG alo | tr ' ' '\n' | grep -qx wheel

@@ -13,6 +13,7 @@ members = [
   "tools/what-a-gate-needs-in-memory",
   "crates/alo-giving-a-folder",
   "crates/alo-giving-a-name",
+  "crates/alo-administrator",
   "crates/alo-their-folders",
   "crates/alo-gettext",
   "crates/alo-as-it-was",

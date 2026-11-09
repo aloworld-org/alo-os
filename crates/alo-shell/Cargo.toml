@@ -13,6 +13,9 @@ publish = false
 alo-folded-light = { path = "../alo-folded-light" }
 
 [target.'cfg(target_os = "linux")'.dependencies]
+# The password a person signs in with, kept in step with the system's list, and
+# the password sheet's road to polkit's own helper (ADR 0150).
+alo-administrator = { path = "../alo-administrator" }
 # The type of the session the sign-in screen hands over to, and nothing else:
 # `tests/sign_in_source.rs` holds this crate to naming `alo_accounts::Session`
 # and never the accounts themselves, which only `alo-greeting` asks.

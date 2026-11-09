@@ -69,6 +69,7 @@
 mod door;
 mod greeted;
 mod greeting;
+mod keeping_in_step;
 mod knocking;
 mod refusing;
 mod standing;
@@ -78,6 +79,7 @@ pub mod words;
 pub use door::TheOpenersDoor;
 pub use greeted::Greeted;
 pub use greeting::Greeting;
+pub use keeping_in_step::KeepingTheSystemPassword;
 pub use knocking::Knocking;
 pub use refusing::{NotAnswered, NotReadable};
 pub use standing::Standing;

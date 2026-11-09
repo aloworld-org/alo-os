@@ -32,6 +32,7 @@ use alo_accounts::{Accounts, Session};
 use alo_sessiond::{Answered, Knock};
 
 use crate::greeted::Greeted;
+use crate::keeping_in_step::KeepingTheSystemPassword;
 use crate::knocking::Knocking;
 use crate::standing::Standing;
 
@@ -64,6 +65,13 @@ pub struct Greeting<K: Knocking> {
     /// there is nowhere to keep one. It says so rather than keeping one in
     /// memory that a restart loses.
     store: Option<std::path::PathBuf>,
+    /// What keeps the system's password in step after a sign-in, when this
+    /// greeter was given one (ADR 0150) — on a machine, always.
+    ///
+    /// [`None`] for every greeter built in a test or a fixture, which keeps
+    /// nothing anywhere: a greeter that wrote into a real machine's password
+    /// list because a test signed somebody in would be the worst test on it.
+    keeper: Option<Box<dyn KeepingTheSystemPassword>>,
 }
 
 impl<K: Knocking> std::fmt::Debug for Greeting<K> {
@@ -80,6 +88,7 @@ impl<K: Knocking> std::fmt::Debug for Greeting<K> {
             .field("person", &self.person)
             .field("door", &self.door)
             .field("accounts", &"<not printed>")
+            .field("keeps_the_system_password", &self.keeper.is_some())
             .finish()
     }
 }
@@ -92,6 +101,7 @@ impl<K: Knocking> Greeting<K> {
             person,
             door,
             store: None,
+            keeper: None,
         }
     }
 
@@ -137,6 +147,17 @@ impl<K: Knocking> Greeting<K> {
     #[must_use]
     pub const fn person(&self) -> u32 {
         self.person
+    }
+
+    /// **This greeter keeps the system's password in step**, through
+    /// `keeper`, after every sign-in that succeeds (ADR 0150).
+    #[must_use]
+    pub fn keeping_the_system_password_with(
+        mut self,
+        keeper: Box<dyn KeepingTheSystemPassword>,
+    ) -> Self {
+        self.keeper = Some(keeper);
+        self
     }
 
     /// The display name of that person, as their account records it.
@@ -261,6 +282,12 @@ impl<K: Knocking> Greeting<K> {
             Ok(session) => session,
             Err(why) => return Greeted::Refused(why.word().key()),
         };
+        // **The system's list is given the same password**, now that it is
+        // known to be this person's and before the session opens (ADR 0150).
+        // Never a reason to refuse: the keeper says on its own what it did.
+        if let Some(keeper) = &self.keeper {
+            keeper.keep(self.person, password);
+        }
         match self.door.knock(for_whom(&session)) {
             Ok(Answered::Opened) => Greeted::SignedIn(session),
             Ok(Answered::Refused(key)) => Greeted::Refused(key),

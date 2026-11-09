@@ -160,7 +160,12 @@ fn names_it(line: &str) -> bool {
 #[test]
 fn the_password_is_a_parameter_and_an_argument_and_nothing_else() {
     /// Every line allowed to name a password, as it is written.
-    const WHERE_IT_MAY_BE: [&str; 5] = [
+    const WHERE_IT_MAY_BE: [&str; 7] = [
+        // Handed once, after it verified, to what keeps the system's list in
+        // step (ADR 0150) — a parameter of the trait and the one call of it,
+        // and the keeper itself lives in another crate this test does not read.
+        "fn keep(&self, person: u32, password: &str);",
+        "keeper.keep(self.person, password);",
         // The two doors that take one from a surface.
         "pub fn signs_in(&self, name: &str, password: &str) -> Greeted {",
         "pub fn makes_an_account(&mut self, name: &str, password: &str) -> Greeted {",

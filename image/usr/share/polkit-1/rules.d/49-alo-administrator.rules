@@ -1,0 +1,30 @@
+// alo OS: who is an administrator, and the one answer alo's own action gets
+// (ADR 0150, the owner's decisions of 2026-11-08 and 2026-11-09).
+//
+// polkit reads rules in the order of their file names across both rule
+// folders, so this one, at 49, is read before the base's 50-default.rules and
+// before 50-alo-time-zone.rules. This file is polkit's own configuration
+// language; it configures the engine and is not code of ours.
+//
+//   - The agent's own login is refused everything, in every session. It is
+//     never an administrator and never asked for a password: "alo's own agent
+//     account is always refused" (the owner, 2026-11-09).
+//   - A command alo was asked to run as administrator always asks for an
+//     administrator's password, and never keeps the answer: "Ask my password
+//     each time". No later rule can make it yes, because polkit stops at the
+//     first rule that answers.
+//   - Everything else is the base's own: 50-default.rules makes members of
+//     `wheel` administrators, and the image makes the person one
+//     (image/usr/lib/sysusers.d/alo.conf, "New and existing").
+//
+// crates/alo-image/tests/administrator_actions_ask_every_time.rs reads this
+// file and the image's accounts and holds them to each other.
+polkit.addRule(function (action, subject) {
+    if (subject.user === "alo-agent") {
+        return polkit.Result.NO;
+    }
+    if (action.id === "org.aloworld.alo.run-as-administrator") {
+        return polkit.Result.AUTH_ADMIN;
+    }
+    return polkit.Result.NOT_HANDLED;
+});
