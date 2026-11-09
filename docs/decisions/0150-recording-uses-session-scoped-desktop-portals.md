@@ -253,3 +253,16 @@ they copy bytes only when that older interface requests Vec ownership. Tests
 must exercise real rendering, exact pixels, pointer identity, live snapshots,
 size changes and bounded retirement. Repeat normally installed media acceptance;
 removing a copy alone does not establish continuous video or synchronized audio.
+
+### Distinguish audio backpressure from actual capture loss
+
+The installed window recording stops after a bounded, non-leaky audio queue
+emits `overrun`. Its decoded PCM remains continuous up to the early stop.
+A full non-leaky queue blocks its producer; it does not itself discard audio.
+Keep the existing buffer and byte limits, but do not classify this signal as
+lost microphone samples. Preserve the existing safe stop when the microphone
+reports actual sample loss through its clock warning. Test a deliberately
+blocked consumer: timestamps with holes do not exhaust storage, retained data
+reaches the same bound, and releasing the consumer drains every buffer through
+EOS. Repeat the installed recording checks; this correction alone makes no
+claim about sustained frame rate or synchronization.

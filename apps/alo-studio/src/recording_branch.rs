@@ -81,7 +81,7 @@ pub(crate) fn attach(
         crate::verification_audio::delay(&source, pipeline)?;
     }
     let start = crate::recording_start::Start::observe(&bin)?;
-    crate::audio_buffering::prepare(&bin, signals.fell_behind.clone())?;
+    crate::audio_buffering::prepare(&bin)?;
     let tee = pipeline
         .by_name("frames")
         .ok_or_else(|| MediaError(t("The selected source is unavailable.")))?;
