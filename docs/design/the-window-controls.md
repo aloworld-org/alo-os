@@ -300,7 +300,7 @@ that part is **not built**.
 
 | stage | what | state |
 |---|---|---|
-| 1a | the band (title and application name always, 54 tall), the three controls revealed on approach with the fade, *Always show window controls*, the panel with Maximise / Restore and Full screen / Exit full screen, right-click and double-click on the band, `Alt+F3` and the keys into the band and panel, expanded and selected states for a reader | this change |
+| 1a | the band (title and application name always, 54 tall), the three controls revealed on approach with the fade, *Always show window controls*, the panel with Maximise / Restore and Full screen / Exit full screen, right-click and double-click on the band, `Alt+F3` and the keys into the band and panel, expanded and selected states for a reader | #1138 |
 | 1b | Left and Right with the preview, Maximise keeping the band, Minimise travelling to the side panel, the full-screen top-edge reveal | not built |
 | 2 | Move to…, Undo placement | not built |
 | 3 | Help with this window, the working state and Stop | not built |
