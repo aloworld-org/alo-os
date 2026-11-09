@@ -802,7 +802,7 @@ impl crate::DirectSession {
                                  {why}"
                             ),
                         }
-                        Desk {
+                        TheDesktopLane {
                             input,
                             others,
                             device: fd,
@@ -876,7 +876,13 @@ impl crate::DirectSession {
 }
 
 /// The desktop lane: the clients' own input, and the desktop drawn above them.
-struct Desk<'a> {
+///
+/// Called `Desk` in many comments here and elsewhere, which is what it was
+/// named until 2026-11-09. It was renamed because `crate::server_desk::Desk`
+/// is another type with the same name, and `tests/sign_in_source.rs` tracks
+/// which types hold a password by name: holding the password sheet made this
+/// one such a type, and the test then held the other `Desk` to its rules.
+struct TheDesktopLane<'a> {
     /// The ordinary routing, unchanged — a client hears the keyboard here.
     input: crate::direct_input_loop::RoutedInput,
     /// Every display but the one the loop itself holds.
@@ -1005,7 +1011,7 @@ fn the_folders_to_send(server: &Server) -> Vec<std::path::PathBuf> {
         })
 }
 
-impl LoopInput for Desk<'_> {
+impl LoopInput for TheDesktopLane<'_> {
     /// Route the input, then tell the desktop where the pointer ended up.
     ///
     /// **The clients' routing is untouched**, which is this lane's standing promise: a client
