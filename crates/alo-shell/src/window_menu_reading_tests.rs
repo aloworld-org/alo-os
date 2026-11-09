@@ -71,10 +71,15 @@ fn every_word_the_panel_says_is_listed() {
         keys,
         vec![
             "access.the-window-panel",
+            "access.left",
+            "access.right",
             "access.maximise",
             "access.restore",
             "access.full-screen",
-            "access.exit-full-screen"
+            "access.exit-full-screen",
+            "access.left-half-preview",
+            "access.right-half-preview",
+            "access.no-room-in-half"
         ]
     );
 }

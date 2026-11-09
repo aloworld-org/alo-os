@@ -207,15 +207,16 @@ pub(crate) fn alone_on_one_side(
     let minimum = window.minimum();
     let with_its_band = Window::at_least(
         window.id(),
-        Size::of(
-            minimum.width,
-            minimum.height.saturating_add(units(band)?),
-        ),
+        Size::of(minimum.width, minimum.height.saturating_add(units(band)?)),
     );
     let on = alo_dividing::alone_on(area, with_its_band, side)?;
     let half = on.half();
     let outline = Rectangle::new(
-        (work.loc.x + as_pixels(half.x()), work.loc.y + as_pixels(half.y())).into(),
+        (
+            work.loc.x + as_pixels(half.x()),
+            work.loc.y + as_pixels(half.y()),
+        )
+            .into(),
         (as_pixels(half.width()), as_pixels(half.height())).into(),
     );
     if outline.size.h <= band {

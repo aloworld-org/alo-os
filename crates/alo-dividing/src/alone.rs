@@ -114,7 +114,9 @@ mod tests {
             division
                 .divide_with_next(any(1), Some(any(2)), side)
                 .expect("divided with the next");
-            let divided = division.share_of(WindowId::from_compositor(1)).expect("a share");
+            let divided = division
+                .share_of(WindowId::from_compositor(1))
+                .expect("a share");
             let alone = alone_on(area, any(1), side).expect("a half");
             assert_eq!(alone.half(), divided, "{side:?}");
             assert_eq!(alone.share().map(Share::area), Ok(divided));
@@ -128,13 +130,24 @@ mod tests {
         let area = an_area(1000, 800);
         let wide = Window::at_least(WindowId::from_compositor(3), Size::of(501, 1));
         let refused = alone_on(area, wide, Side::Left).expect("a half");
-        assert_eq!(refused.share(), Err(Refused::TooNarrow(WindowId::from_compositor(3))));
+        assert_eq!(
+            refused.share(),
+            Err(Refused::TooNarrow(WindowId::from_compositor(3)))
+        );
         assert_eq!(refused.half().width(), 500);
         let tall = Window::at_least(WindowId::from_compositor(4), Size::of(1, 801));
         let refused = alone_on(area, tall, Side::Right).expect("a half");
-        assert_eq!(refused.share(), Err(Refused::TooShort(WindowId::from_compositor(4))));
+        assert_eq!(
+            refused.share(),
+            Err(Refused::TooShort(WindowId::from_compositor(4)))
+        );
         let exactly = Window::at_least(WindowId::from_compositor(5), Size::of(500, 800));
-        assert!(alone_on(area, exactly, Side::Right).expect("a half").share().is_ok());
+        assert!(
+            alone_on(area, exactly, Side::Right)
+                .expect("a half")
+                .share()
+                .is_ok()
+        );
     }
 
     /// An area one unit across has no left half to give, so nothing is.
