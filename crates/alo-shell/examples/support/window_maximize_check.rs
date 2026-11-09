@@ -31,6 +31,7 @@ const RESTORED: ((i32, i32), (i32, i32)) = ((20, 20), (32, 24));
 /// Fixture-only sink of the taller display: it prepares the real scene at its
 /// size and checks every pixel, and never claims a DRM commit.
 struct ATallerDisplay<'a> {
+    /// The real graphics context the production preparation path draws with.
     renderer: &'a mut GlesRenderer,
 }
 
@@ -49,9 +50,22 @@ impl FrameTarget for ATallerDisplay<'_> {
     ) -> Result<Vec<WlSurface>, RenderError> {
         // The pointer is not what this frame is evidence of; stages 1, 4, 6
         // and 7 hold the cursor's pixels.
-        let prepared = render_scanout(self.renderer, DISPLAY.into(), roots, popups, &Cursor::Hidden)?;
+        let prepared = render_scanout(
+            self.renderer,
+            DISPLAY.into(),
+            roots,
+            popups,
+            &Cursor::Hidden,
+        )?;
         let ((x0, y0), (w, h)) = RESTORED;
-        for (index, pixel) in prepared.pixels().pixels().as_chunks::<4>().0.iter().enumerate() {
+        for (index, pixel) in prepared
+            .pixels()
+            .pixels()
+            .as_chunks::<4>()
+            .0
+            .iter()
+            .enumerate()
+        {
             let x = (index % DISPLAY.0 as usize) as i32;
             let y = (index / DISPLAY.0 as usize) as i32;
             let inside = (x0..x0 + w).contains(&x) && (y0..y0 + h).contains(&y);
@@ -69,7 +83,10 @@ pub fn a_display_with_room_for_the_band(
     renderer: &mut GlesRenderer,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let presented = server.render(&mut ATallerDisplay { renderer }, 78)?;
-    assert_eq!(presented, 1, "the one window is presented to the taller display");
+    assert_eq!(
+        presented, 1,
+        "the one window is presented to the taller display"
+    );
     Ok(())
 }
 
