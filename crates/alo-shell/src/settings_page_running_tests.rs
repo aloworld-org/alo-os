@@ -95,3 +95,30 @@ fn the_chosen_level_is_untouched() {
     assert!(matches!(sealed.kind, TheKind::AChoice { chosen: true }));
     assert!(sealed.lines.iter().any(|line| line == NOT_HERE_YET));
 }
+
+/// **Full access carries the *Default* tag and the other two carry none** —
+/// the owner's answer of 2026-11-09, *"Move to Full access"*: it is what a new
+/// machine's first sign-in arrives with chosen (ADR 0149). And the tag is not
+/// a tick: a person who has not chosen still has none of the three chosen.
+#[test]
+fn full_access_carries_the_default_tag_and_nothing_is_ticked_for_it() {
+    let (_held, window) = opened_with(ORDINARY, None);
+    // The words here are the test bundle, so the tag is asked for by its key.
+    assert!(
+        the_row(&window, HowCodeRuns::AtFullTrust)
+            .tag
+            .is_some_and(|tag| tag.contains("settings.default") || tag == "Default"),
+        "Full access does not carry the Default tag"
+    );
+    for level in HowCodeRuns::ALL {
+        let row = the_row(&window, level);
+        if level != HowCodeRuns::AtFullTrust {
+            assert_eq!(row.tag, None, "{level:?} still carries the tag");
+        }
+        assert!(
+            matches!(row.kind, TheKind::AChoice { chosen: false }),
+            "{level:?} reads as chosen for a person who has not chosen: {:?}",
+            row.kind
+        );
+    }
+}

@@ -1389,7 +1389,8 @@ whose entire subject is how much authority alo has.
    screen in the run; `Not now` leaves the optional screen altogether. They
    are two exits and the design draws both.
 
-**This is recorded here and is deliberately not code yet.** The three access
+*(Superseded 2026-11-09 — see "Built, 2026-11-09" just below. Kept as it was
+written.)* **This is recorded here and is deliberately not code yet.** The three access
 levels it must not commit are a **`[v1]` feature** — `docs/features.md` line
 587, *running code, at the level the person picks* — and the current phase is
 `v0.01`. There is no policy value in this repository for `Not now` to leave
@@ -1397,6 +1398,63 @@ unchanged, so writing the action now would mean inventing the policy it is
 supposed to preserve. **The rule is written down so that whoever builds the
 policy inherits it**; building it early would be the scope gate broken for the
 sake of looking finished.
+
+#### Built, 2026-11-09 — *How much can alo do?*, and where it departs from these frames
+
+[ADR 0149](../decisions/0149-full-access-is-everything-the-person-can-do.md)
+turned this screen round: a new machine **asks**, with **Full access already
+selected**. The ADR leaves the screen's design open and says the build follows
+the existing sheets and records the departure; this is that record. The owner
+answered four questions on 2026-11-09, in these words:
+
+| question | the owner's answer |
+|---|---|
+| Where is it shown? | **"Right after first sign-in (Recommended)"** — on the person's own desktop, before the canvas, whenever no level has been chosen; a machine whose person never chose sees it once, at the next sign-in. |
+| What does each choice say? | **"Reuse Settings' lines (Recommended)"** — Settings' own lines under *Ask me each time* and *The sealed box*, ADR 0149's cost sentence under *Full access*, no introduction paragraph. |
+| Which buttons? | **"Continue only (Recommended)"** — Full access pre-selected, the person may pick another before Continue. No *Back*, no *Not now*, so no *Optional* eyebrow. |
+| Where does Settings' *Default* tag go? | **"Move to Full access (Recommended)"**. |
+
+**What is drawn, and how each part departs from `183:10695` / `183:10699` /
+`183:10703`:**
+
+| slot | the frames | built |
+|---|---|---|
+| strip | alo OS | alo OS — unchanged |
+| eyebrow | Optional · alo access | **none**: the sheet is not optional and has no way to decline |
+| title | Choose how much alo may do. | **How much can alo do?** (ADR 0149) |
+| introduction | *Sealed box is the default.* … | **none**, the owner's answer — and the sentence is no longer true |
+| card 1 | **Sealed box** — Work stays inside the approved sandbox. | **The sealed box** — *The system locks the box. What runs inside it sees this project and nothing else.* (`settings.running.sealed-box.is`), plus *The sealed box isn't available on this computer yet.* where Settings says it |
+| card 2 | **Ask me each time** — Ask before each additional protected action. | **Ask me each time** — *Nothing runs until you have read it and said yes. One yes runs it once.* (`settings.running.asking.is`) |
+| card 3 | **Full trust** — Allow approved scope to proceed without repeated prompts. | **Full access** — *Text in a web page, an email or a downloaded project can steer alo, and at this level whatever it steers alo to do, happens.* (ADR 0149) |
+| arrives chosen | Sealed box | **Full access** (`· Selected` and the 2-pixel border, as every chosen card) |
+| note | Activity remains visible, recorded and stoppable. | the same words — the owner removed the introduction, not this line |
+| actions | *Keep sealed box* · *Back* · *Not now* | **Continue** alone |
+| card height | 85 | **each grows to its own words** (`TheRowsAre::ApartEachAs`), never under 85: the lines the owner chose are longer than the frames' one-liners, and the cost of full access is two lines at 1440 × 960 |
+| a short screen | — | **all three cards always show.** Where they do not fit as captured or tightened, the column starts an eighth of the way down instead of at 164 (`HowClose::TightenedToTheTop`) — at 1280 × 720 and 640 × 700 that is the difference between drawing the sheet and not |
+
+**What `Not now` above required is moot rather than broken.** Its whole
+argument was that a way out must not commit the row on show. There is no way
+out now, so the only commit is the person pressing Continue on a row they can
+see chosen — which is ADR 0149's *the person switched it on*.
+
+**Moving is still not choosing.** The arrows and Tab move the ring; Enter,
+Space or a click chooses; nothing is written until Continue.
+
+**When the choice cannot be written** the sheet says so — *That was not saved,
+so nothing has changed. Press Continue to try again; if it still cannot be
+saved, your desktop opens and you can choose in Settings, under Running code.*
+— a sentence the frames do not have and this build had to write, because a
+sheet with no way out that kept a person until the disk agreed would take their
+desktop away. The second refusal opens the desktop with nothing chosen, and the
+next sign-in asks again.
+
+**Not asked**: a person who has chosen, here or in Settings; and a person whose
+file is there and **will not read**, because asking would write the
+pre-selected level over a file nobody has read.
+
+**Still owed to the design file**: a frame of its own for this screen. ADR 0149
+says the screen needs one; until it exists these are readings of the old frames
+and the owner's answers, not measurements.
 
 ## Responsive: the rule for every size, not only the three drawn
 

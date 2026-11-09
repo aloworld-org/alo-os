@@ -116,6 +116,15 @@ impl HowCodeRunsHere {
         }
     }
 
+    /// Whether this is **a person who has not chosen** — no file at all — and
+    /// so somebody the first sign-in asks (`crate::how_much_alo_can_do`).
+    ///
+    /// False for a file that would not read, which is not a person who has
+    /// not chosen: asking them would write over a file nobody has read.
+    pub(crate) const fn has_not_chosen(&self) -> bool {
+        matches!(self.found, TheLevelHere::HasNotChosen)
+    }
+
     // **There is no `did_not_read` accessor, and there was until it had no
     // caller.** The section knows the difference -- `TheLevelHere::WouldNotRead`
     // is its own value and the tests assert on it -- but nothing can draw that
