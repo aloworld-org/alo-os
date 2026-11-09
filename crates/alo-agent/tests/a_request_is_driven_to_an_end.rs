@@ -377,7 +377,8 @@ fn an_answer_on_the_first_round_is_the_answer() {
 #[test]
 fn an_answer_about_the_verbs_is_told_back_and_never_shown() {
     let verbs = the_verbs();
-    let leaked = "Folders cannot be created directly with the given verbs. Please create the                   folder manually in your Documents.";
+    let leaked = "Folders cannot be created directly with the given verbs. Please create the \
+                  folder manually in your Documents.";
     let mut door = ADoorThatAnswers::with(vec![
         the_model_said(&format!(
             r#"{{"format":1,"asks":{{"answer":{{"text":"{leaked}"}}}}}}"#
@@ -396,8 +397,8 @@ fn an_answer_about_the_verbs_is_told_back_and_never_shown() {
             assert_eq!(said, "Done the other way.");
             assert_eq!(after.len(), 1, "the answer about verbs was not a step");
             assert_eq!(
-                after[0].what_came_back(),
-                alo_instructing::NOT_FOR_THE_PERSON
+                after.first().map(alo_instructing::AStep::what_came_back),
+                Some(alo_instructing::NOT_FOR_THE_PERSON)
             );
         }
         other => panic!("{other:?}"),

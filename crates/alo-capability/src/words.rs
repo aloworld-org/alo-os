@@ -317,10 +317,14 @@ pub const NEVER_GRANTED: Word = Word::saying(
 /// Settings to grant access*, which would have changed nothing.
 pub const APPLICATION_NOT_GIVEN: Word = Word::saying(
     "capability.refused.application-not-given",
-    "{agent} has not been granted {wanted} — picking a folder will not change that, because a      folder grant never reaches an application",
+    "{agent} has not been granted {wanted} — picking a folder will not change that, because a \
+     folder grant never reaches an application",
 )
 .noting(
-    "Said to a person whose agent asked to open, bring forward or close an application. The second      half stops them looking in the folders list for a fix that is not there. {agent} is never      translated; {wanted} arrives already in the reader's language, as 'the application      org.gnome.TextEditor'.",
+    "Said to a person whose agent asked to open, bring forward or close an application. The second \
+     half stops them looking in the folders list for a fix that is not there. {agent} is never \
+     translated; {wanted} arrives already in the reader's language, as 'the application \
+     org.gnome.TextEditor'.",
 );
 
 /// A machine where the person declined the agent (ADR 0009).
