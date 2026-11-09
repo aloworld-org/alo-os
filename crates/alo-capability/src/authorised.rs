@@ -47,6 +47,7 @@ use std::time::SystemTime;
 
 use alo_strings::{Filling, Said, Strings};
 
+use crate::a_terminal_for_the_agent::ATerminalForTheAgent;
 use crate::approvals::ProposalId;
 use crate::call::Call;
 use crate::grant::Grantee;
@@ -181,6 +182,9 @@ pub struct Authorised {
     from: Option<ProposalId>,
     /// The grants that permitted it, one for each thing it touches.
     against: Vec<GrantId>,
+    /// Whether something it touches was let through by full access rather than
+    /// by a grant (ADR 0149).
+    by_full_access: bool,
     /// The moment the grants were asked, which is the moment it may run.
     at: SystemTime,
 }
@@ -224,12 +228,13 @@ impl Authorised {
         grants: &Grants,
         now: SystemTime,
     ) -> Result<Self, Refused> {
-        match call.permitting(grants, &under, now) {
-            Ok(against) => Ok(Self {
+        match call.permitted_when(grants, &under, now, ATerminalForTheAgent::NotAtAll) {
+            Ok(permission) => Ok(Self {
                 call,
                 under,
                 from,
-                against,
+                by_full_access: permission.by_full_access(),
+                against: permission.into_against(),
                 at: now,
             }),
             Err(why) => Err(Refused {
@@ -287,6 +292,15 @@ impl Authorised {
     #[must_use]
     pub fn against(&self) -> &[GrantId] {
         &self.against
+    }
+
+    /// Whether something this touches was let through by **full access**
+    /// rather than by a grant (ADR 0149) — the honest other half of
+    /// [`Authorised::against`], so a record can say what allowed it where no
+    /// grant did.
+    #[must_use]
+    pub const fn by_full_access(&self) -> bool {
+        self.by_full_access
     }
 
     /// The moment the grants were last asked.

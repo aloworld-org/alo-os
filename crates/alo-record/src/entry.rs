@@ -90,6 +90,15 @@ pub struct Entry {
     /// ignores it.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     kept_as: Option<Line>,
+    /// Whether the person had chosen **full access** (ADR 0149) at the moment
+    /// this was decided — on what ran and on what was refused alike, so a
+    /// reader can tell a refusal at full access from one at another level.
+    ///
+    /// Absent when false, so an entry written before full access existed, or
+    /// at any other level, reads back exactly as it was written. Additive;
+    /// `format` stays `1`.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    at_full_access: bool,
 }
 
 impl Entry {
@@ -107,7 +116,27 @@ impl Entry {
             origin: None,
             told: Vec::new(),
             kept_as: None,
+            at_full_access: false,
         }
+    }
+
+    /// This entry, as decided while the person had chosen full access
+    /// (ADR 0149).
+    ///
+    /// A stamp, for [`Entry::from_another_machine`]'s reason: it adds the
+    /// level something was decided at and cannot change what happened. What
+    /// was allowed by full access rather than by a grant is said separately,
+    /// on the execution itself ([`Happened::by_full_access`]).
+    #[must_use]
+    pub const fn at_full_access(mut self) -> Self {
+        self.at_full_access = true;
+        self
+    }
+
+    /// Whether this was decided while the person had chosen full access.
+    #[must_use]
+    pub const fn was_at_full_access(&self) -> bool {
+        self.at_full_access
     }
 
     /// This entry, with the place kept before it, by that place's name.
@@ -206,6 +235,7 @@ impl Entry {
                     .iter()
                     .map(|grant| grant.as_u64())
                     .collect(),
+                by_full_access: authorised.by_full_access(),
             },
         )
     }
@@ -1599,5 +1629,40 @@ mod tests {
                 "{nothing_to_put_back:?}"
             );
         }
+    }
+
+    /// **What ran at full access says so, and what ran under a grant does
+    /// not** (ADR 0149) — and both survive being written down and read back,
+    /// while an entry written before full access existed reads back as one
+    /// that was not.
+    #[test]
+    fn what_ran_at_full_access_is_written_down_as_full_access() {
+        let at = Grants::default().at_full_access_for(&files());
+        let authorised = Authorised::read(&listing_invoices(), &files(), &at, noon()).unwrap();
+        let entry = Entry::ran(&authorised, &in_english()).at_full_access();
+        assert!(entry.happened().by_full_access());
+        assert!(entry.happened().against().is_empty());
+        assert!(entry.was_at_full_access());
+
+        let written = serde_json::to_string(&entry).unwrap();
+        assert!(written.contains("\"by_full_access\":true"), "{written}");
+        assert!(written.contains("\"at_full_access\":true"), "{written}");
+        let read = serde_json::from_str::<Entry>(&written).unwrap();
+        assert_eq!(read, entry);
+
+        // Under a grant: neither field is written, so the entry is exactly
+        // what it was before there was such a thing as full access.
+        let grants = granting(&["/home/anna/Invoices"]);
+        let authorised = Authorised::read(&listing_invoices(), &files(), &grants, noon()).unwrap();
+        let entry = Entry::ran(&authorised, &in_english());
+        assert!(!entry.happened().by_full_access());
+        assert!(!entry.was_at_full_access());
+        let written = serde_json::to_string(&entry).unwrap();
+        assert!(!written.contains("full_access"), "{written}");
+        assert!(
+            !serde_json::from_str::<Entry>(&written)
+                .unwrap()
+                .was_at_full_access()
+        );
     }
 }

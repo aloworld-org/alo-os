@@ -18,7 +18,12 @@
 //! **Grants are the durable thing.** Verbs are what may be done; a grant is
 //! what they may be done *to*. Nothing else in the system decides reach: if a
 //! path, a file or an application is not covered by a grant a person made, no
-//! verb can touch it, whatever the model has been persuaded to ask for.
+//! verb can touch it, whatever the model has been persuaded to ask for —
+//! **except at full access** (ADR 0149), which the person chooses in Settings →
+//! Running code and which reaches everything their own account can. That too is
+//! answered by [`Grants`], on a copy made for one moment
+//! ([`Grants::at_full_access_for`], `full_access.rs`), so no door has a second
+//! question to forget.
 //!
 //! The four properties come from ADR 0001 §3 and are enforced by the types
 //! rather than by convention:
@@ -176,6 +181,8 @@ pub mod arg;
 pub mod authorised;
 pub mod call;
 pub mod facility;
+/// Full access: everything the person's account can reach (ADR 0149).
+pub mod full_access;
 pub mod grant;
 pub mod grantee;
 pub mod grants;
@@ -209,8 +216,9 @@ pub use approval::Approved;
 pub use approvals::{AnswerError, Approvals, ProposalId, Waiting};
 pub use arg::{Arg, ArgError, Given, Takes, Value};
 pub use authorised::{Authorised, NotAuthorised, Refused};
-pub use call::{Call, CallError};
+pub use call::{Call, CallError, Permission};
 pub use facility::Facility;
+pub use full_access::Permitted;
 pub use grant::{Grant, GrantError, TheWordRemoved, Until};
 pub use grantee::{Applicant, Grantee};
 pub use grants::{GrantId, Grants, Held, NotOneList};

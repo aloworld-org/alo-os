@@ -93,7 +93,7 @@ impl Reaching {
                 continue;
             };
             // 1. Granted? Refused here, and nothing has been looked for.
-            if let Err(why) = grants.permitting(&under, &Ask::Application(identifier.clone()), at) {
+            if let Err(why) = grants.permitted(&under, &Ask::Application(identifier.clone()), at) {
                 return Err(Refused::not_granted(authorised.call().clone(), why));
             }
             // 2. And is it here at all?

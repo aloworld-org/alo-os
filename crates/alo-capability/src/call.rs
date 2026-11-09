@@ -37,6 +37,7 @@ use serde::Serialize;
 use crate::a_terminal_for_the_agent::ATerminalForTheAgent;
 use crate::arg::{ArgError, Given, Value};
 use crate::grant::Grantee;
+use crate::full_access::Permitted;
 use crate::grants::{GrantId, Grants};
 use crate::persons_own::is_a_persons_own;
 use crate::reach::Ask;
@@ -369,18 +370,8 @@ impl Call {
         now: SystemTime,
         terminal: ATerminalForTheAgent,
     ) -> Result<Vec<GrantId>, NotGranted> {
-        if let Some(identifier) = self.values.values().find_map(|value| match value {
-            Value::Application(identifier)
-                if is_a_persons_own(identifier) && !terminal.may_open_one() =>
-            {
-                Some(identifier)
-            }
-            _ => None,
-        }) {
-            return Err(NotGranted::Never {
-                agent: grantee.as_str().to_owned(),
-                wanted: Ask::Application(identifier.clone()),
-            });
+        if let Some(refused) = self.a_terminal_refused(grantee, terminal) {
+            return Err(refused);
         }
         self.asks
             .iter()
@@ -388,13 +379,67 @@ impl Call {
             .collect()
     }
 
-    /// Whether this agent's grants permit every part of this call.
-    #[must_use]
-    pub fn permitted_by(&self, grants: &Grants, grantee: &Grantee, now: SystemTime) -> bool {
-        self.permitting(grants, grantee, now).is_ok()
+    /// What lets every part of this call through at this moment — the grants
+    /// that cover it, and full access for whatever no grant covers (ADR 0149,
+    /// `crate::full_access`) — or the first refusal.
+    ///
+    /// [`Call::permitting`] answers *which grants*, and on a list without full
+    /// access the two agree exactly. This is the question every door that lets
+    /// something run asks.
+    ///
+    /// # Errors
+    /// As [`Call::permitting`].
+    pub fn permitted_when(
+        &self,
+        grants: &Grants,
+        grantee: &Grantee,
+        now: SystemTime,
+        terminal: ATerminalForTheAgent,
+    ) -> Result<Permission, NotGranted> {
+        if let Some(refused) = self.a_terminal_refused(grantee, terminal) {
+            return Err(refused);
+        }
+        let mut permission = Permission::default();
+        for ask in &self.asks {
+            match grants.permitted_when(grantee, ask, now, terminal)? {
+                Permitted::ByAGrant(id) => permission.against.push(id),
+                Permitted::ByFullAccess => permission.by_full_access = true,
+            }
+        }
+        Ok(permission)
     }
 
-    /// Why it is not permitted — `None` when it is.
+    /// The terminal refusal both questions above ask first.
+    fn a_terminal_refused(
+        &self,
+        grantee: &Grantee,
+        terminal: ATerminalForTheAgent,
+    ) -> Option<NotGranted> {
+        self.values
+            .values()
+            .find_map(|value| match value {
+                Value::Application(identifier)
+                    if is_a_persons_own(identifier) && !terminal.may_open_one() =>
+                {
+                    Some(identifier)
+                }
+                _ => None,
+            })
+            .map(|identifier| NotGranted::Never {
+                agent: grantee.as_str().to_owned(),
+                wanted: Ask::Application(identifier.clone()),
+            })
+    }
+
+    /// Whether every part of this call is permitted — by this agent's grants,
+    /// or by full access.
+    #[must_use]
+    pub fn permitted_by(&self, grants: &Grants, grantee: &Grantee, now: SystemTime) -> bool {
+        self.refusal(grants, grantee, now).is_none()
+    }
+
+    /// Why it is not permitted — `None` when it is, by a grant or by full
+    /// access.
     #[must_use]
     pub fn refusal(
         &self,
@@ -402,7 +447,39 @@ impl Call {
         grantee: &Grantee,
         now: SystemTime,
     ) -> Option<NotGranted> {
-        self.permitting(grants, grantee, now).err()
+        self.permitted_when(grants, grantee, now, ATerminalForTheAgent::NotAtAll)
+            .err()
+    }
+}
+
+/// What let a whole call through: the grants that covered it, one for each
+/// thing a grant covered, and whether full access covered the rest.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct Permission {
+    /// The grants that covered it.
+    against: Vec<GrantId>,
+    /// Whether something in it was covered by full access and no grant.
+    by_full_access: bool,
+}
+
+impl Permission {
+    /// The grants that covered it.
+    #[must_use]
+    pub fn against(&self) -> &[GrantId] {
+        &self.against
+    }
+
+    /// Whether something in it was let through by full access rather than by
+    /// a grant (ADR 0149).
+    #[must_use]
+    pub const fn by_full_access(&self) -> bool {
+        self.by_full_access
+    }
+
+    /// The grants, given up.
+    #[must_use]
+    pub fn into_against(self) -> Vec<GrantId> {
+        self.against
     }
 }
 

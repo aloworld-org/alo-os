@@ -951,4 +951,104 @@ mod tests {
             "a declined open left no record"
         );
     }
+
+    /// The agent every test here is for, at full access.
+    fn at_full_access(grants: &Grants) -> Grants {
+        grants.at_full_access_for(&alo_capability::Grantee::named("@windows"))
+    }
+
+    /// **At full access an application nobody granted is opened** (ADR 0149)
+    /// — after one OK, asked of the door once, and written down as allowed by
+    /// full access rather than by a grant.
+    #[test]
+    fn at_full_access_an_application_nobody_granted_is_opened_once() {
+        let mut door = ADoor::answering(Answer::Acted);
+        let tally = door.a_tally();
+        let (did, record) = on_a_machine_with_a_door(
+            &mut door,
+            the_mail_client_is_here(),
+            false,
+            |turning, grants| {
+                let at = at_full_access(grants);
+                through_a_whole_turn(turning, &at, "open_application", &tally)
+            },
+        );
+        assert!(did.is_ok(), "{did:?}");
+        assert_eq!(
+            door.asked
+                .borrow()
+                .iter()
+                .map(Request::written)
+                .collect::<Vec<_>>(),
+            [format!("open {THE_MAIL_CLIENT}")],
+            "one approval, one ask"
+        );
+        let written: Vec<_> = record.answering(&Asking::anything()).collect();
+        let [entry] = written.as_slice() else {
+            unreachable!("one approval, one entry: {written:?}")
+        };
+        assert!(entry.happened().by_full_access(), "{entry:?}");
+        assert!(entry.happened().against().is_empty(), "{entry:?}");
+        assert!(entry.was_at_full_access(), "{entry:?}");
+    }
+
+    /// **Full access does not skip the OK for an application either**: a
+    /// proposal reaches nothing, and a no is written down as decided at full
+    /// access.
+    #[test]
+    fn at_full_access_an_open_nobody_approved_starts_nothing() {
+        let mut door = ADoor::answering(Answer::Acted);
+        let tally = door.a_tally();
+        let (proposed, _) = on_a_machine_with_a_door(
+            &mut door,
+            the_mail_client_is_here(),
+            false,
+            |turning, grants| {
+                turning.proposing(
+                    "open_application",
+                    &[("application", Given::text(THE_MAIL_CLIENT))],
+                    &at_full_access(grants),
+                    hour(),
+                    noon(),
+                )
+            },
+        );
+        assert!(proposed.is_ok(), "{proposed:?}");
+        assert!(
+            tally.borrow().is_empty(),
+            "an open at full access reached the door before the OK"
+        );
+    }
+
+    /// **And switched off before the OK, it is refused at execution** — the
+    /// door is never asked, and the refusal is written down as decided at a
+    /// level that was no longer full access.
+    #[test]
+    fn an_open_proposed_at_full_access_is_refused_once_full_access_is_off() {
+        let mut door = ADoor::answering(Answer::Acted);
+        let tally = door.a_tally();
+        let (did, record) = on_a_machine_with_a_door(
+            &mut door,
+            the_mail_client_is_here(),
+            false,
+            |turning, grants| {
+                let id = turning.proposing(
+                    "open_application",
+                    &[("application", Given::text(THE_MAIL_CLIENT))],
+                    &at_full_access(grants),
+                    hour(),
+                    noon(),
+                )?;
+                turning.approving(id, grants, noon())
+            },
+        );
+        assert!(matches!(did, Err(NotDone::Refused(_))), "{did:?}");
+        assert!(tally.borrow().is_empty(), "the door was asked");
+        let written: Vec<_> = record.answering(&Asking::anything()).collect();
+        let [entry] = written.as_slice() else {
+            unreachable!("one refusal, one entry: {written:?}")
+        };
+        assert!(entry.happened().was_stopped(), "{entry:?}");
+        assert!(!entry.was_at_full_access(), "{entry:?}");
+    }
 }

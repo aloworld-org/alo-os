@@ -46,6 +46,13 @@
 //! whole of what makes *a revoked grant takes effect immediately* true rather
 //! than eventual.
 //!
+//! **Full access arrives the same way** (ADR 0149): the service hands each door
+//! a list made at that moment with `alo_capability::Grants::at_full_access_for`
+//! when the person's level is full access, and the list as it is otherwise. So
+//! a change proposed at full access and approved after the person switched it
+//! off is asked against a list without it, and every entry a door writes says
+//! whether it was decided at full access (`alo_record::Entry::at_full_access`).
+//!
 //! # And a turn that could not write something down does nothing else
 //!
 //! Every door writes its entry before it answers, and a door that could not
@@ -255,7 +262,7 @@ impl<'a, 'm> Turning<'a, 'm> {
     ) -> Result<WhatAVerbDid, NotDone> {
         let authorised = match Authorised::read(&call, self.turn.grantee(), grants, now) {
             Ok(authorised) => authorised,
-            Err(refused) => return self.stopped_at_the_moment(refused, now),
+            Err(refused) => return self.stopped_under(refused, grants, now),
         };
         self.running(authorised, grants, now)
     }
@@ -309,6 +316,7 @@ impl<'a, 'm> Turning<'a, 'm> {
                     self.machine.strings(),
                     now,
                 );
+                let entry = self.as_the_level_was(entry, grants);
                 self.writing_down(entry)?;
                 return Err(NotDone::NeverAsked(why));
             }
@@ -327,7 +335,7 @@ impl<'a, 'm> Turning<'a, 'm> {
         if let Err(refused) =
             the_sentence_is_about_something(&call, self.machine.resolving(), self.machine.strings())
         {
-            return self.stopped_at_the_moment(refused, now);
+            return self.stopped_under(refused, grants, now);
         }
         let id = self.approvals.propose(proposal);
         self.became.push((id.as_u64(), Became::Waiting));
@@ -371,7 +379,7 @@ impl<'a, 'm> Turning<'a, 'm> {
         self.remembering(id, Became::Approved);
         match approved.redeem(grants, now) {
             Ok(authorised) => Ok(authorised),
-            Err(refused) => self.stopped_at_the_moment(refused, now),
+            Err(refused) => self.stopped_under(refused, grants, now),
         }
     }
 
@@ -392,6 +400,7 @@ impl<'a, 'm> Turning<'a, 'm> {
             Some(named) if entry.happened().ran() => entry.kept_as(named),
             _ => entry,
         };
+        let entry = self.as_the_level_was(entry, grants);
         self.writing_down(entry)?;
         outcome
     }
@@ -945,6 +954,33 @@ impl<'a, 'm> Turning<'a, 'm> {
         let entry = Entry::refused(&refused, self.turn.grantee(), self.machine.strings(), now);
         self.writing_down(entry)?;
         Err(NotDone::Refused(refused))
+    }
+
+    /// [`Turning::stopped_at_the_moment`], for a refusal decided against
+    /// `grants` — so the entry says whether the person had chosen full access
+    /// when it was refused (ADR 0149).
+    fn stopped_under<T>(
+        &mut self,
+        refused: alo_capability::Refused,
+        grants: &Grants,
+        now: SystemTime,
+    ) -> Result<T, NotDone> {
+        let refused = worded_here(refused, self.origin.as_ref(), self.machine.strings());
+        let entry = Entry::refused(&refused, self.turn.grantee(), self.machine.strings(), now);
+        let entry = self.as_the_level_was(entry, grants);
+        self.writing_down(entry)?;
+        Err(NotDone::Refused(refused))
+    }
+
+    /// This entry, stamped *at full access* when `grants` — the list this
+    /// moment was decided against — gave this turn's agent full access
+    /// (ADR 0149), and unchanged otherwise.
+    fn as_the_level_was(&self, entry: Entry, grants: &Grants) -> Entry {
+        if grants.has_full_access(self.turn.grantee()) {
+            entry.at_full_access()
+        } else {
+            entry
+        }
     }
 
     /// Write one thing that happened down, and close the turn if it could not

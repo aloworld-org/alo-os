@@ -105,7 +105,7 @@ impl Touching {
                 continue;
             };
             // 1. As it was written. Refused here, nothing has been looked for.
-            if let Err(why) = grants.permitting(&under, &Ask::Path(given.clone()), at) {
+            if let Err(why) = grants.permitted(&under, &Ask::Path(given.clone()), at) {
                 return Err(Refused::not_granted(authorised.call().clone(), why));
             }
             // 2. Where it really leads.
@@ -123,7 +123,7 @@ impl Touching {
             // (`alo_capability::Grant::really`), and not against the path a
             // person picked, which on this image is itself behind a link.
             if grants
-                .permitting_where_it_really_is(&under, resolved.as_path(), at)
+                .permitted_where_it_really_is(&under, resolved.as_path(), at)
                 .is_err()
             {
                 return Err(Refused::worded_elsewhere(
