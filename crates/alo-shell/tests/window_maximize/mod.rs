@@ -374,7 +374,11 @@ fn window_maximize_ignores_normal_limits_and_restore_uses_only_committed_limits(
     app.sync();
     maximize(&f, &root, true)?;
     ack(&mut app)?;
-    assert_eq!(app.events.sizes.last(), Some(&(80, 60)));
+    assert_eq!(
+        app.events.sizes.last(),
+        Some(&(80, 6)),
+        "the display less the band"
+    );
     app.attach_resized();
     app.sync();
     app.toplevel.set_min_size(18, 19);

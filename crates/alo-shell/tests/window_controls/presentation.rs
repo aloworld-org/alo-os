@@ -197,7 +197,7 @@ fn window_controls_presentation_unobserved_hide_remap_death_and_intent_retire() 
     publish(&f, &root)?;
     assert!(!focused(&f)?);
     assert!(focus(&f));
-    f.render((120, 48), false, 1)?;
+    f.render((120, 102), false, 1)?;
     maximize(&f, &root, true)?;
     assert!(!focused(&f)?);
     assert!(f.backend(|s| s.presented_window_controls(None)).is_none());

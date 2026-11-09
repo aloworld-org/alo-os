@@ -125,7 +125,7 @@ fn window_controls_routing_disabled_excursion_and_live_refusal_keep_release_owne
     let root = f.root();
     let maximize = (40.0, 5.0);
     assert_eq!(route(&f, Some(&root), maximize, DOWN)?, Route::Consumed);
-    f.render((120, 48), false, 1)?;
+    f.render((120, 102), false, 1)?;
     assert_eq!(
         route(&f, Some(&root), maximize, UP)?,
         Route::Released(Release::Cancelled)

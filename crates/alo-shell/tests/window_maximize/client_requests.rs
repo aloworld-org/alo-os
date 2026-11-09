@@ -172,7 +172,7 @@ fn client_maximize_refused_restore_preserves_maximized_mode_and_saved_geometry()
     assert_eq!(app.events.sizes.last(), Some(&(33, 32)));
     app.surface.commit();
     app.sync();
-    assert_eq!(origin(&f, &root), (0.0, 0.0).into());
+    assert_eq!(origin(&f, &root), (0.0, 54.0).into());
     app.toplevel.set_min_size(0, 0);
     app.surface.commit();
     app.sync();
