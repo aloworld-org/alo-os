@@ -132,6 +132,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "alo-administrator"
+version = "0.0.1"
+dependencies = [
+ "alo-capability",
+ "rustix 1.1.4",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror 2.0.20",
+ "zbus",
+]
+
+[[package]]
 name = "alo-admitting"
 version = "0.1.0"
 dependencies = [
@@ -160,6 +173,7 @@ name = "alo-agentd"
 version = "0.0.1"
 dependencies = [
  "alo-acting",
+ "alo-administrator",
  "alo-agent",
  "alo-answering",
  "alo-applications",
@@ -746,6 +760,7 @@ version = "0.1.0"
 dependencies = [
  "alo-access",
  "alo-accounts",
+ "alo-administrator",
  "alo-appearance",
  "alo-applications",
  "alo-arranging",
@@ -783,10 +798,12 @@ dependencies = [
  "alo-sound",
  "alo-strings",
  "alo-tasks",
+ "blocking",
  "image",
  "jiff",
  "resvg",
  "rustix 1.1.4",
+ "tempfile",
  "zbus",
 ]
 
@@ -1642,6 +1659,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "alo-running-as-administrator"
+version = "0.0.1"
+dependencies = [
+ "alo-administrator",
+ "alo-capability",
+ "alo-running",
+ "rustix 1.1.4",
+ "zbus",
+]
+
+[[package]]
 name = "alo-saying"
 version = "0.0.1"
 dependencies = [
@@ -1777,6 +1805,7 @@ dependencies = [
  "alo-accounts",
  "alo-acting",
  "alo-adapters",
+ "alo-administrator",
  "alo-appearance",
  "alo-applications",
  "alo-approving",
