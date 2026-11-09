@@ -91,7 +91,10 @@ fn the_persons_minimise_travels_to_its_card_and_ends_there() {
     let after = Instant::now();
     assert_eq!(put, 1, "the control: the window was put aside");
     assert_eq!(travelling, 1, "the window did not begin to travel");
-    assert!(hidden(&f, &root), "the window is still on the canvas while it travels");
+    assert!(
+        hidden(&f, &root),
+        "the window is still on the canvas while it travels"
+    );
 
     let cards = TheCards::as_revealed(&panel, a_look(), A_DISPLAY, 100);
     let id = panel.previews().first().map(alo_put_aside::Preview::window);
@@ -103,7 +106,10 @@ fn the_persons_minimise_travels_to_its_card_and_ends_there() {
         let gone = s.the_travels_aside_move_on(after + IT_LASTS + IT_LASTS / 2, &cards);
         (first, last, gone, left)
     });
-    let first = first.first().copied().expect("the first frame drew an outline");
+    let first = first
+        .first()
+        .copied()
+        .expect("the first frame drew an outline");
     // Between the two sizes, whichever is larger: the fixture's window is 16
     // square and its card 48, so this outline grows onto its card.
     let between = |it: i32, a: i32, b: i32| a.min(b) <= it && it <= a.max(b);
@@ -112,9 +118,16 @@ fn the_persons_minimise_travels_to_its_card_and_ends_there() {
             && between(first.size.h, window.size.h, card.size.h),
         "the outline is not between the window's size and its card's: {first:?}"
     );
-    assert_eq!(last, vec![card], "the travel did not end exactly on the card");
+    assert_eq!(
+        last,
+        vec![card],
+        "the travel did not end exactly on the card"
+    );
     assert_eq!(left, 0, "the travel stayed after it arrived");
-    assert!(gone.is_empty(), "an outline was drawn after the travel arrived");
+    assert!(
+        gone.is_empty(),
+        "an outline was drawn after the travel arrived"
+    );
     assert_eq!(panel.holding(), 1, "the panel does not hold it");
 }
 
@@ -172,7 +185,10 @@ fn less_motion_asked_for_mid_travel_ends_it() {
         )
     });
     assert_eq!(left, 0, "it went on travelling");
-    assert!(drawn.is_empty(), "an outline was drawn after less motion was asked for");
+    assert!(
+        drawn.is_empty(),
+        "an outline was drawn after less motion was asked for"
+    );
     assert_eq!(panel.holding(), 1);
 }
 
@@ -222,7 +238,10 @@ fn a_client_minimising_itself_does_not_travel() {
     let root = f.root();
     app.toplevel.set_minimized();
     app.sync();
-    assert!(hidden(&f, &root), "the control: the client's request hid it");
+    assert!(
+        hidden(&f, &root),
+        "the control: the client's request hid it"
+    );
     assert_eq!(f.backend(|s| s.how_many_windows_are_travelling_aside()), 0);
 }
 

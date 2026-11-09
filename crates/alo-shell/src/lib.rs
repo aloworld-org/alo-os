@@ -245,8 +245,8 @@ mod the_password_sheets_words;
 mod the_pointer_drawn;
 mod the_pointers_look;
 pub mod what_is_on_the_clipboard;
-mod where_the_docks_surface_is;
 mod where_a_travelling_window_lands;
+mod where_the_docks_surface_is;
 pub use where_a_travelling_window_lands::TheCards;
 
 /// Where the Dock is on one display: the band on its edge and the slots

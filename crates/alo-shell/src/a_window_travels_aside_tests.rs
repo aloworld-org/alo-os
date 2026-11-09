@@ -56,7 +56,10 @@ fn halfway_through_its_time_it_is_halfway_there_and_halfway_shrunk() {
     let began = Instant::now();
     let (from, to) = (the_window(), the_card());
     let half = |a: i32, b: i32| a + (b - a) / 2;
-    assert!((eased(0.5) - 0.5).abs() < f64::EPSILON, "the curve's middle moved");
+    assert!(
+        (eased(0.5) - 0.5).abs() < f64::EPSILON,
+        "the curve's middle moved"
+    );
     assert_eq!(
         travel(began).at(began + THE_TRAVEL_LASTS / 2, to),
         (
@@ -79,10 +82,16 @@ fn it_eases_in_and_out() {
     let way = the_card().loc.x - the_window().loc.x;
     let (early, _) = travel(began).at(began + THE_TRAVEL_LASTS / 10, the_card());
     let early = early.loc.x - the_window().loc.x;
-    assert!(early > 0 && early < way / 10, "a tenth of the time went {early} of {way}");
+    assert!(
+        early > 0 && early < way / 10,
+        "a tenth of the time went {early} of {way}"
+    );
     let (late, _) = travel(began).at(began + THE_TRAVEL_LASTS * 9 / 10, the_card());
     let late = late.loc.x - the_window().loc.x;
-    assert!(late > way * 9 / 10 && late < way, "nine tenths of the time went {late} of {way}");
+    assert!(
+        late > way * 9 / 10 && late < way,
+        "nine tenths of the time went {late} of {way}"
+    );
 }
 
 /// **A duration, never a speed**: a short way and a long way end at the same
@@ -100,7 +109,11 @@ fn a_travel_lasts_the_same_however_far_it_goes_and_ends_on_the_card() {
             "it did not end on its card, at its time"
         );
     }
-    assert_eq!(THE_TRAVEL_LASTS, Duration::from_millis(300), "the glide's length");
+    assert_eq!(
+        THE_TRAVEL_LASTS,
+        Duration::from_millis(300),
+        "the glide's length"
+    );
 }
 
 /// **A window drawn at no size does not travel**: there is no outline to follow.
@@ -169,7 +182,11 @@ fn a_window_with_no_card_is_let_go_undrawn() {
     let only_two = |window: WindowId| (window == WindowId::numbered(2)).then(the_card);
     let drawn = travels.move_on(began + THE_TRAVEL_LASTS / 2, only_two);
     assert_eq!(drawn.len(), 1, "the window with no card was drawn");
-    assert_eq!(travels.how_many(), 1, "the window with no card is still travelling");
+    assert_eq!(
+        travels.how_many(),
+        1,
+        "the window with no card is still travelling"
+    );
 }
 
 /// **The refusal: a travel nobody saw is not drawn late.** Its time was up a

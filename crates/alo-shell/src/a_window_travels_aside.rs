@@ -106,7 +106,11 @@ impl TheTravel {
     /// the card**, never a pixel short from rounding, and that frame is its
     /// last.
     #[must_use]
-    pub(crate) fn at(&self, now: Instant, to: Rectangle<i32, Physical>) -> (Rectangle<i32, Physical>, bool) {
+    pub(crate) fn at(
+        &self,
+        now: Instant,
+        to: Rectangle<i32, Physical>,
+    ) -> (Rectangle<i32, Physical>, bool) {
         let gone = now.saturating_duration_since(self.began);
         if self.lasts.is_zero() || gone >= self.lasts {
             return (to, true);
@@ -257,7 +261,8 @@ impl crate::Server {
         now: Instant,
         cards: &crate::where_a_travelling_window_lands::TheCards,
     ) -> Vec<Rectangle<i32, Physical>> {
-        self.travelling_aside.move_on(now, |window| cards.of(window))
+        self.travelling_aside
+            .move_on(now, |window| cards.of(window))
     }
 
     /// End this window's travel: it was brought back mid-travel.

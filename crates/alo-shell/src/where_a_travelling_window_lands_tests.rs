@@ -40,9 +40,18 @@ fn cards(reading: Direction, size: (i32, i32), scale: u16) -> TheCards {
 #[test]
 fn each_card_is_on_the_right_and_the_newest_is_at_the_top() {
     let cards = cards(Direction::LeftToRight, AS_DRAWN, 100);
-    assert_eq!(cards.of(WindowId::numbered(3)), Some(rect(1360, 160, 48, 48)));
-    assert_eq!(cards.of(WindowId::numbered(2)), Some(rect(1360, 216, 48, 48)));
-    assert_eq!(cards.of(WindowId::numbered(1)), Some(rect(1360, 272, 48, 48)));
+    assert_eq!(
+        cards.of(WindowId::numbered(3)),
+        Some(rect(1360, 160, 48, 48))
+    );
+    assert_eq!(
+        cards.of(WindowId::numbered(2)),
+        Some(rect(1360, 216, 48, 48))
+    );
+    assert_eq!(
+        cards.of(WindowId::numbered(1)),
+        Some(rect(1360, 272, 48, 48))
+    );
 }
 
 /// **On the left for a right-to-left reader**: the rail 24 in from the left
@@ -59,7 +68,10 @@ fn for_a_right_to_left_reader_the_cards_are_on_the_left() {
 #[test]
 fn on_a_dense_display_the_card_is_where_the_panel_draws_it() {
     let cards = cards(Direction::LeftToRight, (2880, 1920), 200);
-    assert_eq!(cards.of(WindowId::numbered(3)), Some(rect(2720, 320, 96, 96)));
+    assert_eq!(
+        cards.of(WindowId::numbered(3)),
+        Some(rect(2720, 320, 96, 96))
+    );
 }
 
 /// **The refusal: a window the panel does not hold has no card.**
@@ -123,7 +135,10 @@ fn an_outline_is_four_sides_inside_the_rectangle() {
 fn an_outline_is_thicker_on_a_dense_display() {
     let cards = cards(Direction::LeftToRight, (2880, 1920), 200);
     let drawn = cards.the_outlines(&[rect(0, 0, 400, 400)]);
-    assert_eq!(drawn.first().map(|solid| solid.area), Some(rect(0, 0, 400, 4)));
+    assert_eq!(
+        drawn.first().map(|solid| solid.area),
+        Some(rect(0, 0, 400, 4))
+    );
 }
 
 /// **An outline too small to have an inside is drawn filled**, and one partly
