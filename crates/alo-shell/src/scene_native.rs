@@ -84,6 +84,12 @@ pub(crate) struct NativeLayers<'a> {
     /// marking what they captured. Above everything, because what a person is
     /// drawing on must not be covered by what arrives while they draw.
     pub(crate) capturing: Option<&'a crate::capture_raster::CapturePicture>,
+    /// **Windows travelling to the put-aside panel**, as the outlines' flat
+    /// shapes (`crate::a_window_travels_aside`). Above the desktop, so an
+    /// outline passing the Dock is not lost under it on its way to the panel;
+    /// below everything that sits over the desktop. Never pressed: nothing in
+    /// any hit test reads it.
+    pub(crate) travelling_aside: &'a [crate::painted::Solid],
     /// alo's own terminal, when one is open and was drawn.
     ///
     /// **A window rather than furniture**, which is why it is its own layer:
@@ -126,6 +132,7 @@ impl NativeLayers<'_> {
             in_use: None,
             notifications: None,
             capturing: None,
+            travelling_aside: &[],
             terminal: None,
             pointer_at: crate::display_scale::DisplayScale::ONE,
             pointer_look: crate::ThePointersLook::SHIPPED,
@@ -148,6 +155,7 @@ impl NativeLayers<'_> {
             && self.in_use.is_none()
             && self.notifications.is_none()
             && self.capturing.is_none()
+            && self.travelling_aside.is_empty()
             // **And the terminal**, or a frame holding nothing but alo's own
             // terminal would read as empty and a caller that skips empty
             // frames would skip it.

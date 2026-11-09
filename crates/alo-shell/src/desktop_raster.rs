@@ -26,7 +26,6 @@
 //! (`crate::egress_status_place`) and sits exactly where it sat.
 
 use alo_dock::{Dock, OnTheDock, Showing};
-use alo_put_aside::the_region_the_panel_claims::WhichEdge;
 use alo_strings::{Direction, Strings};
 use cosmic_text::FontSystem;
 use smithay::utils::{Physical, Rectangle};
@@ -369,10 +368,7 @@ pub(crate) fn picture(
         put_aside,
         look,
         size,
-        match look.reading() {
-            Direction::LeftToRight => WhichEdge::Right,
-            Direction::RightToLeft => WhichEdge::Left,
-        },
+        crate::panel_raster::the_edge_for(look.reading()),
         if panel_is_revealed {
             crate::panel_raster::WhetherRevealed::Revealed
         } else {

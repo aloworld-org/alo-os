@@ -258,6 +258,10 @@ pub struct Server {
     pub(crate) motion_is_reduced: bool,
     /// The view gliding somewhere, while it is (`crate::the_view_glides`).
     pub(crate) the_glide: Option<crate::the_view_glides::TheGlide>,
+    /// Windows the person put aside, travelling to their cards in the panel
+    /// (`crate::a_window_travels_aside`). **Never pruned against what is
+    /// showing**: every window here has just been hidden.
+    pub(crate) travelling_aside: crate::a_window_travels_aside::TheTravels<WlSurface>,
     /// Windows the person opened that have not been placed yet
     /// (`crate::a_window_the_person_opened`): the only ones whose placing may
     /// move the view.
@@ -916,6 +920,7 @@ impl Server {
             when_there_is_no_room: alo_appearance::WhenThereIsNoRoom::default(),
             motion_is_reduced: false,
             the_glide: None,
+            travelling_aside: crate::a_window_travels_aside::TheTravels::none(),
             the_person_opened_these: Vec::new(),
             what_was_typed_into_more_apps: alo_dock::WhatTheyTyped::nothing(),
             pins_owed_to_the_disk: None,

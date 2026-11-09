@@ -2612,6 +2612,25 @@ impl LoopInput for TheDesktopLane<'_> {
         // stops raising and starts reporting.
         // **The pointer as the person chose it**, the same on every display.
         let pointer_look = server.the_pointers_look();
+        // **Windows travelling to the panel move on here, once a frame**, where
+        // they are drawn (`crate::a_window_travels_aside`): stepped in the draw
+        // rather than before it, so a travel's last frame lands exactly on its
+        // card. Each card is where the panel would draw it revealed, at this
+        // frame's look and this display's scale — the same panel and figures
+        // the desktop above was laid out from. Nothing is laid out when nothing
+        // travels, which is nearly every frame.
+        let travelling_aside = if server.how_many_windows_are_travelling_aside() == 0 {
+            Vec::new()
+        } else {
+            let cards = crate::TheCards::as_revealed(
+                frame.put_aside,
+                frame.look,
+                (size.w, size.h),
+                frame.display_scale,
+            );
+            let at = server.the_travels_aside_move_on(std::time::Instant::now(), &cards);
+            cards.the_outlines(&at)
+        };
         let mut layered = Layered {
             target,
             layers: NativeLayers {
@@ -2630,6 +2649,9 @@ impl LoopInput for TheDesktopLane<'_> {
                 // **The password sheet above every window**, in the approval
                 // surface's layer (ADR 0150).
                 approval: the_password_sheet.as_ref(),
+                // **Only on the display being worked on**, whose camera the
+                // window was drawn through when it was put aside.
+                travelling_aside: &travelling_aside,
                 ..pictures.layers(&edges)
             },
         };
