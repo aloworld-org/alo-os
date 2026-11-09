@@ -4,9 +4,13 @@
 //!
 //! **A person who has never chosen has none of the three chosen**, though the
 //! frame draws the sealed box chosen: `crate::how_code_runs_in_settings` holds
-//! why *nobody has chosen* is a state of its own and not the sealed box. The
-//! sealed box carries the frame's *Default* tag, which is true of it whether or
-//! not anybody has chosen.
+//! why *nobody has chosen* is a state of its own and not the sealed box.
+//!
+//! **Full access carries the *Default* tag**, where the frame puts it on the
+//! sealed box — the owner's answer of 2026-11-09, *"Move to Full access"*,
+//! because full access is what a new machine's first sign-in arrives with
+//! chosen (ADR 0149, `crate::how_much_alo_can_do`). Recorded as a departure in
+//! `docs/design/the-first-start.md`.
 //!
 //! **The three protections are rows with nothing to choose**, each marked
 //! *Always on* with a lock: they are not a choice and must not read as one.
@@ -36,9 +40,15 @@ pub(crate) fn the_blocks(open: &Open, strings: &Strings) -> Vec<ABlock> {
                 },
                 in_words(level.the_word()),
             );
+            // **Full access carries the *Default* tag**, the owner's answer of
+            // 2026-11-09 (ADR 0149): it is what a new machine's first sign-in
+            // arrives with chosen. The tag says that and nothing more — a person
+            // who has not chosen still has no row ticked.
+            if level == HowCodeRuns::AtFullTrust {
+                row.tag = Some(said(strings, w::DEFAULT));
+            }
             match (level, level.what_it_costs()) {
                 (HowCodeRuns::InASealedBox, _) => {
-                    row.tag = Some(said(strings, w::DEFAULT));
                     row.lines.push(said(strings, w::SEALED_BOX_IS));
                     // **Said plainly, and nothing taken away** — the owner's
                     // decision of 2026-11-06. The row is still a choice, still

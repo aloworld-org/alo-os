@@ -77,6 +77,14 @@ pub enum TheRowsAre {
     Apart,
     /// Together in one card, each this tall.
     Grouped(i32),
+    /// Each its own card, as [`Self::Apart`], but each this tall, with the
+    /// same gap between one card and the next.
+    ///
+    /// For a sheet whose rows say more than one line under their name — *How
+    /// much can alo do?*, whose cost sentence wraps — where an 85-tall card
+    /// would cut the sentence off. The sheet measures its own words and passes
+    /// the height they need; a card is never shorter than [`THE_CHOICE_IS`]'s.
+    ApartEachAs(i32),
 }
 
 /// The field inside a grouped row: 15 in from the row's leading side, 17 from
@@ -346,17 +354,26 @@ pub fn setup_sheet_laid_out_as(
     )]
     let how_many = tall.choices as i32;
     let (choices, group): (Vec<_>, _) = match tall.rows {
-        TheRowsAre::Apart => (
-            (0..how_many)
-                .map(|which| {
-                    Rectangle::new(
-                        Point::from((left, choices_begin + which * close.choices_apart())),
-                        Size::from((column_wide, THE_CHOICE_IS.1)),
-                    )
-                })
-                .collect(),
-            None,
-        ),
+        TheRowsAre::Apart | TheRowsAre::ApartEachAs(_) => {
+            // **The gap between two cards is the captured one whatever their
+            // height**, so a taller card moves the next down by what it grew.
+            let tall_each = match tall.rows {
+                TheRowsAre::ApartEachAs(it) => it.max(THE_CHOICE_IS.1),
+                TheRowsAre::Apart | TheRowsAre::Grouped(_) => THE_CHOICE_IS.1,
+            };
+            let apart = close.choices_apart() - THE_CHOICE_IS.1 + tall_each;
+            (
+                (0..how_many)
+                    .map(|which| {
+                        Rectangle::new(
+                            Point::from((left, choices_begin + which * apart)),
+                            Size::from((column_wide, tall_each)),
+                        )
+                    })
+                    .collect(),
+                None,
+            )
+        }
         // **One card, its rows inside its hairline and touching**: a row is
         // the card's width less the hairline each side, and the card is the
         // rows and the hairline above and below them.
