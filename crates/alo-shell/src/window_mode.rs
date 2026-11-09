@@ -79,7 +79,7 @@ pub(crate) enum Mode {
 }
 
 /// A rectangle a window was given, in output pixels.
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) struct Share {
     /// Its top-left corner.
     pub(crate) at: (i32, i32),
