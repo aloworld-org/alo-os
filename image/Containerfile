@@ -1136,7 +1136,7 @@ RUN test -s /usr/share/polkit-1/rules.d/50-alo-time-zone.rules \
  && test -s /usr/share/polkit-1/actions/org.aloworld.alo.policy \
  && test -u /usr/lib/polkit-1/polkit-agent-helper-1 \
  && test -s /usr/lib/pam.d/polkit-1 \
- && test -x /usr/sbin/chpasswd \
+ && chpasswd --help >/dev/null \
  && rpm -q polkit systemd shadow-utils
 
 # **What this machine says it is.** The base's own file calls it Fedora Linux
