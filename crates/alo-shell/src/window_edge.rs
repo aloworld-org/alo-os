@@ -292,11 +292,9 @@ pub fn edge_of(
 
     // **The band drags, less the controls that are shown.** The whole height,
     // so a pointer travelling along it never leaves the band.
-    let drag_until = controls
-        .first()
-        .map_or(region.loc.x + region.size.w, |it| {
-            it.target.loc.x - BETWEEN_TARGETS
-        });
+    let drag_until = controls.first().map_or(region.loc.x + region.size.w, |it| {
+        it.target.loc.x - BETWEEN_TARGETS
+    });
     let drag = Rectangle::new(
         region.loc,
         Size::from(((drag_until - region.loc.x).max(0), THE_REGION_IS_TALL)),
@@ -308,8 +306,7 @@ pub fn edge_of(
         decorations,
         Decorations::TheShellDraws | Decorations::AlosOwnWindow
     );
-    let title = carries_a_title
-        .then(|| Point::from((title_at, region.loc.y + THE_TITLE_SITS_AT)));
+    let title = carries_a_title.then(|| Point::from((title_at, region.loc.y + THE_TITLE_SITS_AT)));
 
     WindowEdge {
         region,

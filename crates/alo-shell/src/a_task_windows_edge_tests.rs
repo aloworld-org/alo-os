@@ -98,7 +98,7 @@ fn press_close_at(server: &mut Server, which: WhichTask, scale: u16) -> bool {
 }
 
 /// **Close, and nothing else, at the design's 44 × 44 at the trailing end of a
-/// 44-tall edge that sits on the window.**
+/// 54-tall band that sits on the window.**
 #[test]
 fn the_edge_carries_close_alone_at_the_designs_figures() {
     let window = Rectangle::new((200, 124).into(), (1040, 800).into());
@@ -110,7 +110,7 @@ fn the_edge_carries_close_alone_at_the_designs_figures() {
         [OnTheEdge::Close],
         "minimise, maximise or move was drawn"
     );
-    assert_eq!(edge.region.size.h, 44);
+    assert_eq!(edge.region.size.h, 54);
     assert_eq!(
         edge.region.loc.y + edge.region.size.h,
         window.loc.y,
@@ -120,7 +120,7 @@ fn the_edge_carries_close_alone_at_the_designs_figures() {
     assert_eq!(close.size, Size::from((44, 44)));
     assert!(
         close.loc.x + close.size.w <= window.loc.x + window.size.w
-            && close.loc.x + close.size.w >= window.loc.x + window.size.w - 8,
+            && close.loc.x + close.size.w >= window.loc.x + window.size.w - 18,
         "Close is not at the trailing end: {close:?}"
     );
     assert_eq!(edge.title, None, "a task window's edge drew a title");

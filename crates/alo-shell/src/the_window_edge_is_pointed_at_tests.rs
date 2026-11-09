@@ -26,11 +26,11 @@ use smithay::utils::{Logical, Point, Rectangle, Size};
 /// An edge whose controls reach the origin, so the absent-pointer answer and
 /// the origin answer are different answers.
 ///
-/// Its window starts at `(0, 44)` and is 600 wide, which puts the region at
-/// `(0, 0)` — the specimen `crate::window_edge`'s own tests use.
+/// Its window is 600 wide and placed so that Window actions — 18 + 140 in from
+/// the trailing end — starts at the origin, with the band's top there too.
 fn an_edge_over_the_origin() -> crate::window_edge::WindowEdge {
     let window = Rectangle::new(
-        Point::from((0, crate::window_edge::THE_REGION_IS_TALL)),
+        Point::from((-(600 - 18 - 140), crate::window_edge::THE_REGION_IS_TALL)),
         Size::from((600, 400)),
     );
     edge_of(

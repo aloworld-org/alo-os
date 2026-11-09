@@ -93,7 +93,9 @@ pub(crate) fn every_windows_edge(
             let hovered_in_the_menu = menu.as_ref().and_then(|(menu, _)| {
                 server
                     .where_the_pointer_is_in_logical_pixels()
-                    .map(|at| crate::an_edge_in_its_displays_units::a_point_in_the_edges_units(at, scale))
+                    .map(|at| {
+                        crate::an_edge_in_its_displays_units::a_point_in_the_edges_units(at, scale)
+                    })
                     .and_then(|at| menu.what_is_under(at))
                     .map(|row| row.does)
             });

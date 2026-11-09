@@ -109,7 +109,8 @@ impl crate::Server {
         let decorations = crate::window_edge_who_draws::who_draws_a_frame();
         let room = self.the_room_an_edge_is_clamped_in();
         let scale = self.the_scale_an_edge_is_measured_at();
-        let at = at.map(|at| crate::an_edge_in_its_displays_units::a_point_in_the_edges_units(at, scale));
+        let at = at
+            .map(|at| crate::an_edge_in_its_displays_units::a_point_in_the_edges_units(at, scale));
         let less_motion = self.motion_is_reduced();
 
         for surface in mapped {

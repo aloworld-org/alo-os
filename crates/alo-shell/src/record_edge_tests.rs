@@ -60,10 +60,10 @@ fn close_on_the_edge_shuts_the_record() {
         close.loc.x + close.size.w / 2,
         close.loc.y + close.size.h / 2,
     );
-    // The control: Close is where the window's own strip drew its Close, 4
-    // from the window's edge, in the band above the body.
-    assert_eq!(close.loc.x + close.size.w, 280 + 880 - 4);
-    assert_eq!(close.loc.y, 56);
+    // The control: Close 18 from the window's edge, centred down the 54-tall
+    // band above the body (`docs/design/the-window-controls.md`).
+    assert_eq!(close.loc.x + close.size.w, 280 + 880 - 18);
+    assert_eq!(close.loc.y, 100 - 54 + 5);
     server
         .pointer_motion(f64::from(x), f64::from(y), 1)
         .expect("the pointer moved");

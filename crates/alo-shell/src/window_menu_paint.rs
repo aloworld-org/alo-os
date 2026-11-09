@@ -72,10 +72,7 @@ fn the_full_screen_mark() -> Option<&'static AShape> {
     /// Read once, or not at all.
     static MARK: OnceLock<Option<AShape>> = OnceLock::new();
     MARK.get_or_init(|| {
-        AShape::read(include_str!(
-            "../icons/the-window-controls/full-screen.svg"
-        ))
-        .ok()
+        AShape::read(include_str!("../icons/the-window-controls/full-screen.svg")).ok()
     })
     .as_ref()
 }
@@ -109,7 +106,11 @@ pub(crate) fn the_panel_drawn(
         let area = in_pixels(row.row, scale);
         let held = in_hand == Some(row.does);
         let ground = if row.does.is_a_picture() {
-            if held { rgb(Role::BgCool) } else { rgb(Role::BgCanvas) }
+            if held {
+                rgb(Role::BgCool)
+            } else {
+                rgb(Role::BgCanvas)
+            }
         } else if held {
             rgb(Role::BgCool)
         } else {
@@ -120,7 +121,11 @@ pub(crate) fn the_panel_drawn(
         } else {
             A_ROWS_CORNER
         };
-        rasters.extend(a_rounded_fill(area, as_f32(f64::from(corner) * fraction), ground));
+        rasters.extend(a_rounded_fill(
+            area,
+            as_f32(f64::from(corner) * fraction),
+            ground,
+        ));
         if row.does.is_a_picture() {
             rasters.extend(the_placement_picture(row.row, held, scale, fraction));
         } else if let Some(mark) = the_full_screen_mark() {
@@ -151,13 +156,29 @@ pub(crate) fn the_panel_drawn(
         let held = in_hand == Some(row.does);
         let label = row.does.its_own_word().says();
         if row.does.is_a_picture() {
-            let ground = if held { rgb(Role::BgCool) } else { rgb(Role::BgCanvas) };
-            let shaped = in_a_weight(fonts, label, Weight(500), metrics(12.0, 16.0, fraction), px(A_PICTURE_IS), ground, navy)
-                .cropped_to_its_ink();
+            let ground = if held {
+                rgb(Role::BgCool)
+            } else {
+                rgb(Role::BgCanvas)
+            };
+            let shaped = in_a_weight(
+                fonts,
+                label,
+                Weight(500),
+                metrics(12.0, 16.0, fraction),
+                px(A_PICTURE_IS),
+                ground,
+                navy,
+            )
+            .cropped_to_its_ink();
             let across = px(row.row.loc.x) + (px(A_PICTURE_IS) - shaped.width).max(0) / 2;
             words.extend(shaped.placed(across, px(row.row.loc.y + A_LABEL_SITS_AT), output.1));
         } else {
-            let ground = if held { rgb(Role::BgCool) } else { rgb(Role::BgSurface) };
+            let ground = if held {
+                rgb(Role::BgCool)
+            } else {
+                rgb(Role::BgSurface)
+            };
             let shaped = in_a_weight(
                 fonts,
                 label,
@@ -189,7 +210,15 @@ fn in_a_weight(
     ink: [u8; 3],
 ) -> crate::painted_text::Shaped {
     let attrs: Attrs<'_> = crate::painted_text::alos_own_text().weight(weight);
-    crate::painted_text::sentence_in_runs(fonts, &[(text, attrs.clone())], &attrs, width, metrics, ground, ink)
+    crate::painted_text::sentence_in_runs(
+        fonts,
+        &[(text, attrs.clone())],
+        &attrs,
+        width,
+        metrics,
+        ground,
+        ink,
+    )
 }
 
 /// Type at a size and line height, at the display's scale.
@@ -202,7 +231,10 @@ fn metrics(size: f32, line: f32, fraction: f64) -> Metrics {
 /// reaches past the panel by the shadow's softness.
 fn the_body(panel: Rectangle<i32, Physical>, fraction: f64) -> Option<Washed> {
     let (down, soft, strength) = THE_SHADOW;
-    let (down, soft) = (as_f32(f64::from(down) * fraction), as_f32(f64::from(soft) * fraction));
+    let (down, soft) = (
+        as_f32(f64::from(down) * fraction),
+        as_f32(f64::from(soft) * fraction),
+    );
     let corner = as_f32(f64::from(THE_PANELS_CORNER) * fraction);
     let line = as_f32(fraction).max(1.0);
     #[expect(
@@ -212,7 +244,11 @@ fn the_body(panel: Rectangle<i32, Physical>, fraction: f64) -> Option<Washed> {
     let reach = soft.ceil() as i32;
     let area = Rectangle::<i32, Physical>::new(
         (panel.loc.x - reach, panel.loc.y - reach).into(),
-        (panel.size.w + 2 * reach, panel.size.h + 2 * reach + as_i32(down)).into(),
+        (
+            panel.size.w + 2 * reach,
+            panel.size.h + 2 * reach + as_i32(down),
+        )
+            .into(),
     );
     let (l, t) = (as_f32_i(panel.loc.x), as_f32_i(panel.loc.y));
     let (w, h) = (as_f32_i(panel.size.w), as_f32_i(panel.size.h));
@@ -245,7 +281,11 @@ fn the_placement_picture(
         (THE_OUTLINE.2, THE_OUTLINE.3).into(),
     );
     let placement = Rectangle::<i32, Logical>::new(
-        (outline.loc.x + THE_PLACEMENT.0, outline.loc.y + THE_PLACEMENT.1).into(),
+        (
+            outline.loc.x + THE_PLACEMENT.0,
+            outline.loc.y + THE_PLACEMENT.1,
+        )
+            .into(),
         (THE_PLACEMENT.2, THE_PLACEMENT.3).into(),
     );
     let fill = if held {
@@ -280,7 +320,12 @@ fn a_rounded_fill(area: Rectangle<i32, Physical>, corner: f32, colour: [u8; 3]) 
 
 /// The keyboard's navy ring round a choice, 2 wide.
 fn a_ring(area: Rectangle<i32, Physical>, corner: f32, fraction: f64) -> Option<Washed> {
-    a_ring_of(area, corner, as_f32(2.0 * fraction).max(1.0), rgb(Role::TextPrimary))
+    a_ring_of(
+        area,
+        corner,
+        as_f32(2.0 * fraction).max(1.0),
+        rgb(Role::TextPrimary),
+    )
 }
 
 /// A line `width` wide just inside a rounded rectangle.

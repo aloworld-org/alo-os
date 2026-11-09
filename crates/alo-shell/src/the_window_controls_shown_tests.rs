@@ -85,7 +85,10 @@ fn an_untouched_windows_controls_are_shown_only_when_always_shown() {
         !server.is_this_windows_edge_revealed(&window),
         "controls showed with nothing pointing at them"
     );
-    assert_eq!(server.how_shown_its_controls_are(&window, std::time::Instant::now()), 0);
+    assert_eq!(
+        server.how_shown_its_controls_are(&window, std::time::Instant::now()),
+        0
+    );
     server.the_window_controls_are(WindowControls::Always);
     assert!(server.is_this_windows_edge_revealed(&window));
     assert_eq!(

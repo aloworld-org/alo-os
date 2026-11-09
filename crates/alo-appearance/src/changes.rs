@@ -19,13 +19,13 @@ use serde::{Deserialize, Serialize};
 
 use crate::accent::Accent;
 use crate::background::Background;
+use crate::controls_shown::WindowControls;
 use crate::display::DisplayId;
 use crate::lock::Lock;
 use crate::no_room::WhenThereIsNoRoom;
 use crate::pointer::{PointerColour, PointerShape, PointerSize};
 use crate::scheme::Following;
 use crate::text::TextScale;
-use crate::controls_shown::WindowControls;
 
 /// One thing a person can change, for a settings panel that offers *put it
 /// back*.

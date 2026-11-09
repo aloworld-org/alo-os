@@ -77,10 +77,6 @@ fn the_band_says_exactly_three_words() {
         .collect();
     assert_eq!(
         keys,
-        vec![
-            "access.window-actions",
-            "access.minimise",
-            "access.close"
-        ]
+        vec!["access.window-actions", "access.minimise", "access.close"]
     );
 }

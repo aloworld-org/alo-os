@@ -39,10 +39,8 @@ fn band(revealing: Revealing) -> WindowEdge {
 #[test]
 fn a_pointer_anywhere_in_the_band_reveals_the_controls() {
     for point in [at(30, 25), at(500, 2), at(1000, 30), at(1050, 53)] {
-        let after = Revealing::covered().the_pointer_is(what_the_pointer_is(
-            &band(Revealing::covered()),
-            point,
-        ));
+        let after = Revealing::covered()
+            .the_pointer_is(what_the_pointer_is(&band(Revealing::covered()), point));
         assert!(after.is_revealed(), "{point:?} did not reveal");
     }
 }
@@ -124,6 +122,12 @@ fn a_band_of_no_extent_claims_no_point() {
 #[test]
 fn the_band_does_not_claim_the_column_past_its_end() {
     let edge = band(Revealing::covered());
-    assert_eq!(what_the_pointer_is(&edge, at(1055, 10)), ThePointer::AtTheEdge);
-    assert_eq!(what_the_pointer_is(&edge, at(1056, 10)), ThePointer::Elsewhere);
+    assert_eq!(
+        what_the_pointer_is(&edge, at(1055, 10)),
+        ThePointer::AtTheEdge
+    );
+    assert_eq!(
+        what_the_pointer_is(&edge, at(1056, 10)),
+        ThePointer::Elsewhere
+    );
 }

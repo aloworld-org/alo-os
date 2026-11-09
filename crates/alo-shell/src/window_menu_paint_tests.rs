@@ -31,18 +31,36 @@ fn fonts() -> FontSystem {
 #[test]
 fn the_body_is_drawn_first_and_holds_the_whole_panel() {
     let menu = a_panel();
-    let (rasters, _) = the_panel_drawn(&menu, PointingAtTheMenu::default(), &mut fonts(), 100, (4000, 3000));
+    let (rasters, _) = the_panel_drawn(
+        &menu,
+        PointingAtTheMenu::default(),
+        &mut fonts(),
+        100,
+        (4000, 3000),
+    );
     let body = rasters.first().expect("a body").area;
     let panel = in_pixels(menu.panel, 100);
-    assert!(body.contains_rect(panel), "{body:?} does not hold {panel:?}");
-    assert!(body.size.h > panel.size.h, "the shadow reaches below the panel");
+    assert!(
+        body.contains_rect(panel),
+        "{body:?} does not hold {panel:?}"
+    );
+    assert!(
+        body.size.h > panel.size.h,
+        "the shadow reaches below the panel"
+    );
 }
 
 /// **The heading and one word per choice are written**, and nothing else.
 #[test]
 fn the_heading_and_each_choice_are_written() {
     let menu = a_panel();
-    let (_, words) = the_panel_drawn(&menu, PointingAtTheMenu::default(), &mut fonts(), 100, (4000, 3000));
+    let (_, words) = the_panel_drawn(
+        &menu,
+        PointingAtTheMenu::default(),
+        &mut fonts(),
+        100,
+        (4000, 3000),
+    );
     assert_eq!(words.len(), 1 + menu.rows.len());
 }
 
@@ -67,7 +85,13 @@ fn the_keyboard_s_choice_is_the_one_in_hand() {
 #[test]
 fn the_keyboard_s_choice_is_ringed_and_not_told_by_colour_alone() {
     let menu = a_panel();
-    let (plain, _) = the_panel_drawn(&menu, PointingAtTheMenu::default(), &mut fonts(), 100, (4000, 3000));
+    let (plain, _) = the_panel_drawn(
+        &menu,
+        PointingAtTheMenu::default(),
+        &mut fonts(),
+        100,
+        (4000, 3000),
+    );
     let focused = PointingAtTheMenu {
         hovered: None,
         focused: Some(WhatARowDoes::FullScreen),

@@ -24,11 +24,19 @@ fn a_second_press_too_late_is_not_a_double_click() {
 #[test]
 fn a_second_press_too_far_away_is_not_a_double_click() {
     assert!(!is_a_double_click(true, Duration::from_millis(100), (5, 0)));
-    assert!(!is_a_double_click(true, Duration::from_millis(100), (0, -5)));
+    assert!(!is_a_double_click(
+        true,
+        Duration::from_millis(100),
+        (0, -5)
+    ));
 }
 
 /// **Two presses on two windows' bands are never one double-click.**
 #[test]
 fn presses_on_two_windows_are_never_one_double_click() {
-    assert!(!is_a_double_click(false, Duration::from_millis(100), (0, 0)));
+    assert!(!is_a_double_click(
+        false,
+        Duration::from_millis(100),
+        (0, 0)
+    ));
 }

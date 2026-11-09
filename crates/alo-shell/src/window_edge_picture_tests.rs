@@ -47,7 +47,12 @@ fn notes(how_shown: u16) -> TheWindow<'static> {
 
 /// The band of [`window`], revealed.
 fn band() -> WindowEdge {
-    edge_of(window(), Decorations::TheShellDraws, true, Size::from((4000, 3000)))
+    edge_of(
+        window(),
+        Decorations::TheShellDraws,
+        true,
+        Size::from((4000, 3000)),
+    )
 }
 
 /// **The title, then the application's name** — never the same word twice,
@@ -62,9 +67,18 @@ fn the_band_says_the_title_then_the_name_and_never_one_word_twice() {
         what_the_band_says(Some("Notes"), Some("Notes")),
         (None, Some("Notes"))
     );
-    assert_eq!(what_the_band_says(None, Some("Notes")), (None, Some("Notes")));
-    assert_eq!(what_the_band_says(Some("   "), Some("Notes")), (None, Some("Notes")));
-    assert_eq!(what_the_band_says(Some("Draft"), None), (Some("Draft"), None));
+    assert_eq!(
+        what_the_band_says(None, Some("Notes")),
+        (None, Some("Notes"))
+    );
+    assert_eq!(
+        what_the_band_says(Some("   "), Some("Notes")),
+        (None, Some("Notes"))
+    );
+    assert_eq!(
+        what_the_band_says(Some("Draft"), None),
+        (Some("Draft"), None)
+    );
 }
 
 /// **Both are written on the band**, at rest as much as revealed.
@@ -102,7 +116,14 @@ fn the_controls_layer_follows_the_fade() {
         100,
     );
     assert_eq!(shown.as_ref().map_or(0, |it| it.over().len()), 3);
-    let gone = EdgePicture::of(&band(), OverTheEdge::default(), notes(0), &mut fonts(), (4000, 3000), 100);
+    let gone = EdgePicture::of(
+        &band(),
+        OverTheEdge::default(),
+        notes(0),
+        &mut fonts(),
+        (4000, 3000),
+        100,
+    );
     assert_eq!(gone.as_ref().map_or(1, |it| it.over().len()), 0);
 }
 
@@ -111,10 +132,22 @@ fn the_controls_layer_follows_the_fade() {
 #[test]
 fn a_band_that_would_fall_off_the_display_is_not_drawn() {
     let at_the_very_top = Rectangle::new(Point::from((40, 10)), Size::from((600, 400)));
-    let edge = edge_of(at_the_very_top, Decorations::TheShellDraws, true, Size::from((4000, 3000)));
+    let edge = edge_of(
+        at_the_very_top,
+        Decorations::TheShellDraws,
+        true,
+        Size::from((4000, 3000)),
+    );
     assert!(
-        EdgePicture::of(&edge, OverTheEdge::default(), notes(1000), &mut fonts(), (4000, 3000), 100)
-            .is_none()
+        EdgePicture::of(
+            &edge,
+            OverTheEdge::default(),
+            notes(1000),
+            &mut fonts(),
+            (4000, 3000),
+            100
+        )
+        .is_none()
     );
 }
 
@@ -135,7 +168,9 @@ fn a_pointed_at_control_shows_its_name() {
         (4000, 3000),
         100,
     );
-    let (solids, words) = drawn.as_ref().map_or((0, 0), |it| (it.flat().0.len(), it.flat().1.len()));
+    let (solids, words) = drawn
+        .as_ref()
+        .map_or((0, 0), |it| (it.flat().0.len(), it.flat().1.len()));
     assert_eq!(solids, 2, "the tooltip's line and ground");
     assert_eq!(words, 3, "the title, the name, and the control's name");
 }
@@ -163,5 +198,9 @@ fn an_open_panel_is_drawn_above_every_window() {
         )
     });
     assert!(drawn.as_ref().is_some_and(|it| !it.on_top().is_empty()));
-    assert!(drawn.as_ref().is_some_and(|it| it.on_top_words().len() == 3));
+    assert!(
+        drawn
+            .as_ref()
+            .is_some_and(|it| it.on_top_words().len() == 3)
+    );
 }

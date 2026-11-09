@@ -169,8 +169,8 @@ const fn how_tall() -> i32 {
 /// The panel of a band whose Window actions is shown, or [`None`] on a band
 /// that has no Window actions to open it from.
 ///
-/// **Kept on the display**: anchored [`BEFORE_WINDOW_ACTIONS`] before the
-/// control and [`BELOW_THE_BAND`] under the band, then moved — never cut — to
+/// **Kept on the display**: anchored `BEFORE_WINDOW_ACTIONS` before the
+/// control and `BELOW_THE_BAND` under the band, then moved — never cut — to
 /// stay inside `output`. At 348 × 232 it fits the smallest display this
 /// product lays out for (360 × 360, `crate::sign_in_layout`), so nothing in it
 /// needs to scroll; the rows that would not fit join with the change that

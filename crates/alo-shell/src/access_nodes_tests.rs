@@ -346,10 +346,7 @@ fn what_a_reader_is_told_is_what_the_edge_lays_out() {
     .into_iter()
     .map(|control| control.does)
     .collect();
-    assert_eq!(
-        drawn,
-        the_controls_of(who_draws_a_frame())
-    );
+    assert_eq!(drawn, the_controls_of(who_draws_a_frame()));
 }
 
 /// **An open panel is heard expanded, and its choices under it**, with the one
@@ -404,7 +401,10 @@ fn an_open_window_panel_is_heard_expanded_with_its_choices_under_it() {
         .map(|at| &tree.nodes()[*at])
         .find(|node| node.name == "Window actions")
         .expect("Window actions");
-    assert!(carries(window_actions.states, crate::access_roles::EXPANDED));
+    assert!(carries(
+        window_actions.states,
+        crate::access_roles::EXPANDED
+    ));
     let panel = under
         .iter()
         .map(|at| &tree.nodes()[*at])
@@ -414,7 +414,12 @@ fn an_open_window_panel_is_heard_expanded_with_its_choices_under_it() {
         .children
         .iter()
         .map(|at| &tree.nodes()[*at])
-        .map(|node| (node.name.as_str(), carries(node.states, crate::access_roles::SELECTED)))
+        .map(|node| {
+            (
+                node.name.as_str(),
+                carries(node.states, crate::access_roles::SELECTED),
+            )
+        })
         .collect();
     assert_eq!(choices, vec![("Maximise", false), ("Full screen", true)]);
 }
@@ -424,16 +429,21 @@ fn an_open_window_panel_is_heard_expanded_with_its_choices_under_it() {
 #[test]
 fn a_shut_panel_is_not_heard_at_all() {
     let strings = words();
-    let tree = ReadAloudTree::of(&strings, &Surface::ALL, &TurnedOn::nothing()).with_the_frames_open(
-        &strings,
-        &[FrameName::Given("Ledger for March".to_owned())],
-        &TurnedOn::nothing(),
-    );
+    let tree = ReadAloudTree::of(&strings, &Surface::ALL, &TurnedOn::nothing())
+        .with_the_frames_open(
+            &strings,
+            &[FrameName::Given("Ledger for March".to_owned())],
+            &TurnedOn::nothing(),
+        );
     let list = tree.the_windows_open().expect("a list of windows");
     let window = tree.nodes()[list].children[0];
     for at in &tree.nodes()[window].children {
         let node = &tree.nodes()[*at];
-        assert!(!carries(node.states, crate::access_roles::EXPANDED), "{}", node.name);
+        assert!(
+            !carries(node.states, crate::access_roles::EXPANDED),
+            "{}",
+            node.name
+        );
         assert_ne!(node.name, "Window");
     }
 }

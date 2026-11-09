@@ -112,11 +112,13 @@ fn the_panel_is_moved_onto_the_display_rather_than_cut() {
 fn a_point_finds_the_choice_drawn_under_it() {
     let menu = the_menu_of(&notes(), HowTheWindowIs::default(), roomy()).expect("a panel");
     assert_eq!(
-        menu.what_is_under(Point::from((870, 380))).map(|it| it.does),
+        menu.what_is_under(Point::from((870, 380)))
+            .map(|it| it.does),
         Some(WhatARowDoes::Maximise)
     );
     assert_eq!(
-        menu.what_is_under(Point::from((900, 500))).map(|it| it.does),
+        menu.what_is_under(Point::from((900, 500)))
+            .map(|it| it.does),
         Some(WhatARowDoes::FullScreen)
     );
     assert_eq!(menu.what_is_under(Point::from((845, 330))), None);

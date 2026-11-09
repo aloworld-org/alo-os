@@ -129,7 +129,10 @@ impl Server {
     fn the_band_and_its_panel(
         &self,
         surface: &WlSurface,
-    ) -> Option<(crate::window_edge::WindowEdge, Option<crate::window_menu::WindowMenu>)> {
+    ) -> Option<(
+        crate::window_edge::WindowEdge,
+        Option<crate::window_menu::WindowMenu>,
+    )> {
         if let Some((edge, menu)) = self.the_open_panel(surface)
             && self.whose_panel_is_open().as_ref() == Some(surface)
         {

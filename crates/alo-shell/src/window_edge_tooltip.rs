@@ -246,14 +246,23 @@ pub fn the_name_of_a_control(
     if wide <= 0 {
         return None;
     }
-    let size = Size::from((wide + 2 * AROUND_THE_WORDS, A_LINE_IS_TALL + 2 * AROUND_THE_WORDS));
-    let at = Point::from((control.target.loc.x + AROUND_THE_WORDS, control.target.loc.y));
+    let size = Size::from((
+        wide + 2 * AROUND_THE_WORDS,
+        A_LINE_IS_TALL + 2 * AROUND_THE_WORDS,
+    ));
+    let at = Point::from((
+        control.target.loc.x + AROUND_THE_WORDS,
+        control.target.loc.y,
+    ));
     let panel = placed(edge, at, size, output);
     Some(Tooltip {
         panel,
         lines: vec![(
             name.to_owned(),
-            Point::from((panel.loc.x + AROUND_THE_WORDS, panel.loc.y + AROUND_THE_WORDS)),
+            Point::from((
+                panel.loc.x + AROUND_THE_WORDS,
+                panel.loc.y + AROUND_THE_WORDS,
+            )),
         )],
         because,
     })

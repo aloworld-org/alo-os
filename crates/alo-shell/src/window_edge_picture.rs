@@ -128,7 +128,8 @@ impl EdgePicture {
             output,
         ));
 
-        let over_the_window = crate::window_edge_paint::the_controls_drawn(edge, &window.controls, scale);
+        let over_the_window =
+            crate::window_edge_paint::the_controls_drawn(edge, &window.controls, scale);
 
         let mut inked = Vec::new();
         let mut solids = Vec::new();
@@ -144,8 +145,9 @@ impl EdgePicture {
             // **The application's name keeps its room and the title gives way**,
             // because it is short and says whose window this is; with no room
             // for both, the name goes before the title is cut to nothing.
-            let name_wide = application
-                .map_or(0, |name| painted_text::how_wide_as(fonts, name, name_metrics, &regular));
+            let name_wide = application.map_or(0, |name| {
+                painted_text::how_wide_as(fonts, name, name_metrics, &regular)
+            });
             let title_room = if application.is_some() && title.is_some() {
                 room - BEFORE_THE_APPLICATIONS_NAME - name_wide
             } else {
@@ -159,7 +161,9 @@ impl EdgePicture {
             let fitted = title.map(|title| {
                 crate::window_edge_title::fitted(fonts, title, title_room.max(0), title_metrics)
             });
-            whole = fitted.as_ref().map_or_else(String::new, |it| it.whole.clone());
+            whole = fitted
+                .as_ref()
+                .map_or_else(String::new, |it| it.whole.clone());
             let mut title_ends = at.x;
             if let Some(FittedTitle { shown, .. }) = fitted.as_ref()
                 && !shown.is_empty()

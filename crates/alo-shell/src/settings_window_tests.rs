@@ -782,7 +782,11 @@ fn the_controls_switch_turns_over_and_back_and_is_kept_each_time() {
             "what a sign-in reads back"
         );
     }
-    assert_eq!(door.knocks.get(), 0, "a controls switch knocked on the daemon");
+    assert_eq!(
+        door.knocks.get(),
+        0,
+        "a controls switch knocked on the daemon"
+    );
 }
 
 /// **Where a new window goes when there is no room is kept across sign-ins**,

@@ -157,8 +157,13 @@ impl crate::Server {
         let open_panel = self.whose_panel_is_open().and_then(|surface| {
             let frame = self.mapped_surfaces().position(|it| *it == surface)?;
             let (_, menu) = self.the_open_panel(&surface)?;
-            let keyboard = self.where_the_keyboard_is_on_this_windows_edge(&surface).the_menu();
-            Some((frame, crate::window_menu_reading::what_a_reader_meets(&menu, keyboard)))
+            let keyboard = self
+                .where_the_keyboard_is_on_this_windows_edge(&surface)
+                .the_menu();
+            Some((
+                frame,
+                crate::window_menu_reading::what_a_reader_meets(&menu, keyboard),
+            ))
         });
         let tree = crate::ReadAloudTree::of(strings, showing, turned_on)
             .with_the_docks_slots(strings, &self.the_docks_slots_as_drawn())

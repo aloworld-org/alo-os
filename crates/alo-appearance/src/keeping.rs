@@ -220,7 +220,11 @@ window_titles = \"WhenPointedAt\"
 ";
         let read: Changes = alo_kept::read_text(old, Path::new("appearance.toml")).unwrap();
         assert_eq!(read.accent(), Some(crate::accent::Accent::Moss));
-        assert_eq!(read.window_controls(), None, "the old choice is not carried over");
+        assert_eq!(
+            read.window_controls(),
+            None,
+            "the old choice is not carried over"
+        );
         let again = alo_kept::text_of(&read).unwrap();
         assert!(!again.contains("window_titles"), "{again}");
         assert!(again.contains("Moss"), "{again}");

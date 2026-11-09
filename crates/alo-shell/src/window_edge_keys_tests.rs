@@ -38,7 +38,10 @@ fn a_band_nothing_has_reached_shows_no_focus_ring_and_holds_nothing() {
     let keyboard = TheKeyboardOnTheEdge::default();
     assert_eq!(keyboard, TheKeyboardOnTheEdge::Nowhere);
     assert_eq!(keyboard.what_the_painter_shows(), None);
-    assert_eq!(keyboard.whether_the_keyboard_holds_it(), TheKeyboard::IsElsewhere);
+    assert_eq!(
+        keyboard.whether_the_keyboard_holds_it(),
+        TheKeyboard::IsElsewhere
+    );
 }
 
 /// **Reaching the band lands on Window actions**, the first control.
@@ -84,7 +87,10 @@ fn pressing_window_actions_opens_the_panel() {
         keyboard.told(AnEdgeKey::Press, &band, None),
         WhatTheEdgeKeyDid::TheMenuOpened
     );
-    assert_eq!(keyboard.what_the_painter_shows(), Some(OnTheEdge::WindowActions));
+    assert_eq!(
+        keyboard.what_the_painter_shows(),
+        Some(OnTheEdge::WindowActions)
+    );
     assert_eq!(keyboard.whether_a_menu_holds_it(), AMenu::IsOpen);
 }
 
@@ -145,7 +151,10 @@ fn escape_closes_the_panel_and_then_leaves_the_band() {
         keyboard.told(AnEdgeKey::Leave, &band, Some(&panel)),
         WhatTheEdgeKeyDid::TheMenuClosed
     );
-    assert_eq!(keyboard, TheKeyboardOnTheEdge::OnAControl(OnTheEdge::WindowActions));
+    assert_eq!(
+        keyboard,
+        TheKeyboardOnTheEdge::OnAControl(OnTheEdge::WindowActions)
+    );
     assert_eq!(
         keyboard.told(AnEdgeKey::Leave, &band, None),
         WhatTheEdgeKeyDid::TheKeyboardLeft

@@ -16,7 +16,12 @@ fn a_window() -> Rectangle<i32, Logical> {
 
 /// Its band, revealed.
 fn revealed() -> WindowEdge {
-    edge_of(a_window(), Decorations::TheShellDraws, true, Size::from((4000, 3000)))
+    edge_of(
+        a_window(),
+        Decorations::TheShellDraws,
+        true,
+        Size::from((4000, 3000)),
+    )
 }
 
 /// The middle of a rectangle.
@@ -72,7 +77,12 @@ fn the_title_is_the_drag() {
 /// control nobody can see is never pressed.
 #[test]
 fn at_rest_where_a_control_would_be_is_the_band() {
-    let at_rest = edge_of(a_window(), Decorations::TheShellDraws, false, Size::from((4000, 3000)));
+    let at_rest = edge_of(
+        a_window(),
+        Decorations::TheShellDraws,
+        false,
+        Size::from((4000, 3000)),
+    );
     let where_close_is = revealed()
         .the_control(OnTheEdge::Close)
         .map(|it| middle_of(it.target))
@@ -100,7 +110,10 @@ fn only_a_control_is_hovered() {
         pointing_at(&edge, Some(middle_of(close)), None).hovered,
         Some(OnTheEdge::Close)
     );
-    assert_eq!(pointing_at(&edge, Some(Point::from((40, 27))), None).hovered, None);
+    assert_eq!(
+        pointing_at(&edge, Some(Point::from((40, 27))), None).hovered,
+        None
+    );
     assert_eq!(pointing_at(&edge, None, None).hovered, None);
 }
 

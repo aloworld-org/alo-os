@@ -90,10 +90,7 @@ fn the_mark(of: OnTheEdge) -> Option<&'static AShape> {
 
 /// The colours one control is drawn in: its square (if any) and its mark.
 #[must_use]
-pub(crate) fn its_colours(
-    does: OnTheEdge,
-    how: &HowTheControlsLook,
-) -> (Option<[u8; 3]>, [u8; 3]) {
+pub(crate) fn its_colours(does: OnTheEdge, how: &HowTheControlsLook) -> (Option<[u8; 3]>, [u8; 3]) {
     let rgb = |role: Role| {
         let it = role.colour();
         [it.red(), it.green(), it.blue()]
@@ -101,7 +98,9 @@ pub(crate) fn its_colours(
     let hovered = how.pointing.hovered == Some(does);
     let ink = how.look.colours().ink;
     match does {
-        OnTheEdge::WindowActions if how.open => (Some(rgb(Role::TextPrimary)), rgb(Role::BgSurface)),
+        OnTheEdge::WindowActions if how.open => {
+            (Some(rgb(Role::TextPrimary)), rgb(Role::BgSurface))
+        }
         OnTheEdge::WindowActions => (Some(rgb(Role::BgCool)), ink),
         OnTheEdge::Close if hovered => (Some(rgb(Role::BgCool)), rgb(Role::StatusDanger)),
         OnTheEdge::Minimise | OnTheEdge::Close if hovered => (Some(rgb(Role::BgCool)), ink),
@@ -167,7 +166,10 @@ fn one_control(
     )]
     let (w, h) = (wide as f32, tall as f32);
     let mut pixels = Vec::with_capacity(usize::try_from(wide * tall * 4).unwrap_or(0));
-    for (index, y) in (0..tall).flat_map(|y| (0..wide).map(move |_| y)).enumerate() {
+    for (index, y) in (0..tall)
+        .flat_map(|y| (0..wide).map(move |_| y))
+        .enumerate()
+    {
         let x = u32::try_from(index).unwrap_or(0) % wide;
         #[expect(
             clippy::cast_precision_loss,
@@ -245,13 +247,9 @@ fn away_from_a_rounded_square(px: f32, py: f32, w: f32, h: f32, corner: f32) -> 
 }
 
 /// A logical rectangle in the display's pixels, scaled once.
-fn in_pixels(
-    of: Rectangle<i32, smithay::utils::Logical>,
-    scale: u32,
-) -> Rectangle<i32, Physical> {
-    let scaled = |it: i32| {
-        i32::try_from(i64::from(it) * i64::from(scale.max(1)) / 100).unwrap_or(i32::MAX)
-    };
+fn in_pixels(of: Rectangle<i32, smithay::utils::Logical>, scale: u32) -> Rectangle<i32, Physical> {
+    let scaled =
+        |it: i32| i32::try_from(i64::from(it) * i64::from(scale.max(1)) / 100).unwrap_or(i32::MAX);
     Rectangle::new(
         (scaled(of.loc.x), scaled(of.loc.y)).into(),
         (scaled(of.size.w), scaled(of.size.h)).into(),

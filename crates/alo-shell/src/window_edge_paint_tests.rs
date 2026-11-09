@@ -34,8 +34,10 @@ fn rgb(role: Role) -> [u8; 3] {
 fn most_opaque(raster: &Washed) -> u8 {
     raster
         .pixels
-        .chunks_exact(4)
-        .filter_map(|it| it.get(3).copied())
+        .as_chunks::<4>()
+        .0
+        .iter()
+        .map(|it| it[3])
         .max()
         .unwrap_or(0)
 }
@@ -44,7 +46,11 @@ fn most_opaque(raster: &Washed) -> u8 {
 /// empty square.
 #[test]
 fn every_mark_reads() {
-    for does in [OnTheEdge::WindowActions, OnTheEdge::Minimise, OnTheEdge::Close] {
+    for does in [
+        OnTheEdge::WindowActions,
+        OnTheEdge::Minimise,
+        OnTheEdge::Close,
+    ] {
         assert!(the_mark(does).is_some(), "{does:?} did not read");
     }
 }
@@ -131,7 +137,10 @@ fn the_fade_is_how_opaque_they_are_drawn() {
         half.first().map_or(0, most_opaque),
     );
     assert!(full >= 250, "{full}");
-    assert!((i32::from(half) - i32::from(full) / 2).abs() <= 2, "{half} of {full}");
+    assert!(
+        (i32::from(half) - i32::from(full) / 2).abs() <= 2,
+        "{half} of {full}"
+    );
 }
 
 /// **The focus ring is drawn on the control the keyboard is on and no other**:

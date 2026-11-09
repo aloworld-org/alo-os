@@ -126,7 +126,7 @@ fn heard(server: &Server) -> Vec<AWindowHeard> {
 fn close() -> String {
     words()
         .say(
-            &alo_shortcuts::Action::CloseWindow.word().key(),
+            &alo_access::words::CLOSE.key(),
             &alo_strings::Filling::nothing(),
         )
         .text()
