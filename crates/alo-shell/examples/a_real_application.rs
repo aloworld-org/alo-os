@@ -273,6 +273,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                                 alo_shell::PointingAtTheMenu {
                                     hovered: None,
                                     focused: *on,
+                                    preview: None,
                                 },
                             )
                         }),
