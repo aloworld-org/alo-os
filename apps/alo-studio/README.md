@@ -27,8 +27,9 @@ slow microphone startup does not encode earlier preview frames. Bounded audio
 buffers absorb short processing stalls. Audio queues are bounded by actual
 buffer counts and bytes, so timestamp gaps do not masquerade as retained data.
 Raw audio retains at most 200 buffers and encoded audio at most 500; each queue
-also has a 1 MiB ceiling. Reaching any recording queue's limit requests a
-controlled stop.
+also has a 1 MiB ceiling. Full audio queues apply backpressure and can recover
+without discarding samples. Actual microphone sample loss or a full video queue
+requests a controlled stop.
 The controls show Starting while inputs open. The timer and Pause become active
 after fresh video joins the chosen audio timeline; Stop remains available.
 

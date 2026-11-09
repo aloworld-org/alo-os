@@ -2534,3 +2534,94 @@ microphone restored, the owned audio fixture removed, forced sample rate zero,
 reference units stopped, native chooser size restored, installer unfrozen, and
 no compositor tracer or owned kernel probe. The VM, saved media and verification
 artifacts remain preserved.
+
+### Bounded audio recovery and signed repository preparation
+
+The 9 November follow-up merges main's full-access work and assigns recording
+ADR 0150; ADR 0149 now belongs to full access. Agent capability discovery uses
+the current permission level before constructing the offered controls. A
+regression covers Studio's 19 controls appearing at full access and disappearing
+when it is withdrawn, without contacting an application or mutating saved
+grants. A portal's single-grant view explicitly removes full access: its chosen
+file stays narrow, and revoking that grant cannot restore it through the
+account's broader access.
+
+The previous installed microphone stop was triggered by the non-leaky queue's
+overrun signal. That signal means the bounded queue is applying backpressure;
+it does not establish that audio was discarded. Studio now logs that condition
+once per audio queue and lets it drain. The same 200/500-buffer and 1 MiB limits
+remain. Actual microphone sample-loss warnings and video queue failure still
+stop the recording. A permanent real-GStreamer regression blocks the consumer,
+fills the bounded input queue, releases it and requires all 204 submitted
+buffers to arrive before EOS. Timestamp gaps alone must not fill the queue.
+
+The remaining native text work reuses centred labels within the existing
+font-domain cache. Wrapped and centred geometry have distinct keys, and both
+share the existing entry and byte limits. Regressions compare exact pixels and
+dimensions against uncached rendering, including accents and right-to-left
+text. This is a correctness check, not an installed performance measurement.
+
+Packaging now includes the application licence and can export a signed
+alo-controlled Flatpak repository from a checksummed normal package artifact.
+The exporter signs both the application commit and repository metadata, exports
+only the public key, and emits installation files and source/SDK provenance.
+It requires an existing signing identity and an HTTPS destination; it neither
+uploads a repository nor enables a market entry. The proposed catalogue source
+is `alo-applications` and remains inactive.
+
+A one-time local check on Flatpak 1.14.6 installs the signed application into an
+isolated client without runtime dependencies, rejects a different signing key,
+and rejects tampered summary metadata, including the modern summary index. It
+exits successfully and removes its temporary test keys and clients. Its input
+is the preserved normal `06213b2e` bundle, SHA-256
+`ac0ba3a3aa33af1895fbefd9ed21d0c7b2571128da51a2008b018e5b0697e0ba`;
+this validates repository tooling, not the new application's recording flow.
+Flatpak's bundle import emits GLib/OSTree diagnostics before successful signing
+and installation. Evidence is `repository-signing-november9/verification.json`.
+The package workflow repeats signed installation and both refusal checks on
+every subsequent package build with a fresh test identity.
+
+The hosted package job 129071565112 repeats all three signed-repository checks
+successfully against the new normal `4086b778` build. Its bundle SHA-256 is
+`33418b45dc6ec3aecee4efc9de6ceca6a7c032c32d52baf7c580a0d10f7c380e`.
+The downloaded archive matches GitHub's published digest and contains the
+expected source, feature, SDK, checksum and signing-verification records.
+Evidence is `artifacts/release4086`. Native CI also passes formatting, strict
+lint, lifecycle/storage tests, framebuffer recording and the pinned publisher's
+audio/pause/resume/decode checks at this source. These isolated fixtures do not
+establish installed-OS video cadence or synchronization.
+
+Desktop job 129071565065 passes its optimized regressions, strict desktop/shell
+lint and final desktop build at `4086b778`. Its executable SHA-256 is
+`3b282c86dba63175267669b2c0d7774cbcf7d68f64a06c2c010d5ac9387cc54d`;
+the downloaded archive matches GitHub's published digest. Evidence is
+`artifacts/cache4086`. The normal app and desktop artifacts are copied into
+`/var/lib/alo-studio-verification/november9-4086` in the existing VM, with their
+manifest and payload checksums checked again there. They are staged files,
+not installed updates or new recording-acceptance evidence.
+
+A local, exclusive-lock release build at `4086b778` also produces `alo-agentd`,
+`alo-agent`, `alo-portald`, `alo-capture-provider` and `alo-capture-remote`.
+The Studio discovery/withdrawal regression and the single-grant/full-access
+regression each run and pass. Source, executable checksums and the complete
+build/test log are preserved in `artifacts/services4086`; these services have
+not been installed in this repeat. The local build finishes at 09:40:34 UTC
+on 9 November, releases the shared lock, and resumes the private VM. No other
+work is paused. Cleanup restores normal SSH at 09:30:25 UTC and confirms
+verification ports 8767, 8768 and 8769 closed again at 09:41:52 UTC. Evidence is
+`installed-audio-recovery-cleanup`. The VM remains signed out, so cleanup does
+not claim a Ready application or an active authenticated desktop.
+
+All five hosted checks pass for `4086b778`, including the full repository gate.
+
+The existing VM restarts at the demo account's sign-in screen. The owner asks
+for a dedicated test account and local repository preparation on 9 November.
+This OS version models one desktop owner per machine, so that account is being
+prepared in a private copy of the verification VM, preserving the existing
+account and its recordings. No new installed media result supersedes the
+failed results above. Public repository publication is not requested; the
+signed repository remains a local verification result. Production-image
+validation remains separate from
+this private walk image and follows the repository's main-only release process.
+**Continuous installed video, synchronized audio and complete window recording
+remain open; this change is still a draft.**
