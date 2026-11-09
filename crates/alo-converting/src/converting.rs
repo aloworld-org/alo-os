@@ -257,7 +257,7 @@ fn carry_out(
 
     // 2. Where the copy would go, asked about at the call's own moment.
     let authorised = touching.authorised();
-    if let Err(why) = grants.permitting(
+    if let Err(why) = grants.permitted(
         authorised.under(),
         &Ask::Path(copy.clone()),
         authorised.at(),

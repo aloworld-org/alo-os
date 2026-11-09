@@ -131,6 +131,17 @@ pub struct Grants {
     /// them in.
     #[serde(default)]
     held: Vec<Held>,
+    /// The one agent the person gave **full access** to, as of the moment this
+    /// value was made — ADR 0149's *everything the person's account can
+    /// reach* — and `None` at every other level.
+    ///
+    /// **Never written down and never read back**: the person's level lives in
+    /// its own file, and a grants file that carried it would be a second answer
+    /// to one question. It is set only by [`Grants::at_full_access_for`], on a
+    /// copy made for one moment, so a list that is kept never carries it;
+    /// `crate::full_access` is the rest.
+    #[serde(skip)]
+    pub(crate) full_access: Option<Grantee>,
 }
 
 impl Grants {
@@ -167,7 +178,11 @@ impl Grants {
                 return Err(NotOneList::Reused(one.id));
             }
         }
-        Ok(Self { next, held })
+        Ok(Self {
+            next,
+            held,
+            full_access: None,
+        })
     }
 
     /// The handle the next grant will be given.
@@ -442,13 +457,15 @@ impl Grants {
         ending
     }
 
-    /// Whether this agent may touch this thing, at this moment.
+    /// Whether this agent may touch this thing, at this moment — by a grant,
+    /// or by full access ([`Grants::permitted`]).
     #[must_use]
     pub fn permits(&self, grantee: &Grantee, ask: &Ask, now: SystemTime) -> bool {
-        self.permitting(grantee, ask, now).is_ok()
+        self.permitted(grantee, ask, now).is_ok()
     }
 
-    /// Why an agent may not touch something — `None` when it may.
+    /// Why an agent may not touch something — `None` when it may, by a grant
+    /// or by full access.
     ///
     /// This is read by a person after the fact, in the record of a refusal, so
     /// it says which of the two reasons it was. "It expired" and "you never
@@ -456,7 +473,7 @@ impl Grants {
     /// that covered both would tell them to check something they already know.
     #[must_use]
     pub fn refusal(&self, grantee: &Grantee, ask: &Ask, now: SystemTime) -> Option<NotGranted> {
-        self.permitting(grantee, ask, now).err()
+        self.permitted(grantee, ask, now).err()
     }
 }
 
@@ -755,6 +772,7 @@ mod tests {
                 id: GrantId(0),
                 grant: by_hand(alo.clone(), "app.devsuite.Ptyxis"),
             }],
+            full_access: None,
         };
         let ask = Ask::Application("app.devsuite.Ptyxis".to_owned());
 

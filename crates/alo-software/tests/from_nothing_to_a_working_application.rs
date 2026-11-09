@@ -196,9 +196,12 @@ const WHERE_IT_STOPS: &[(&str, &str, &str)] = &[
         "Ask the agent to use the text editor",
         // Until 2026-11-08 this row was the folder sentence, which sent the
         // person to pick a folder no application is ever inside.
-        "capability.refused.application-not-given",
-        "@alo has not been granted the application org.gnome.TextEditor — picking a folder will \
-         not change that, because a folder grant never reaches an application",
+        // And until full access reached applications (ADR 0149), it named no
+        // fix; now it names the one that is real.
+        "capability.refused.application-not-given-but-full-access-reaches-it",
+        "@alo has not been granted the application org.gnome.TextEditor, and picking a folder \
+         will not change that — choose full access ('straight away, without asking') in Settings \
+         → Running code, and alo can use any application you can",
     ),
     (
         "Remove the text editor",

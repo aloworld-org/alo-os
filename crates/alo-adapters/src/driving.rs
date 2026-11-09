@@ -76,7 +76,7 @@ impl Driving {
         };
         // 2. Granted? Refused here, and nothing has been looked for.
         let application = Ask::Application(adapter.application.to_owned());
-        if let Err(why) = grants.permitting(authorised.under(), &application, authorised.at()) {
+        if let Err(why) = grants.permitted(authorised.under(), &application, authorised.at()) {
             return Err(Refused::not_granted(authorised.call().clone(), why));
         }
         // 3 and 4. Here, and the message.

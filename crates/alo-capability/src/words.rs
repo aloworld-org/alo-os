@@ -315,16 +315,25 @@ pub const NEVER_GRANTED: Word = Word::saying(
 /// one. Walked on a booted machine on 2026-11-08, *open the text editor* was
 /// refused with that sentence and the person was told to *pick a folder in
 /// Settings to grant access*, which would have changed nothing.
+///
+/// **And it names the fix that is real** (ADR 0149): at full access alo can
+/// use any application the person's account can, with no grant. A new key
+/// rather than a rewording of `capability.refused.application-not-given`,
+/// because the old English said what will not help and this says what will —
+/// a different claim, which ADR 0068 gives a key of its own.
 pub const APPLICATION_NOT_GIVEN: Word = Word::saying(
-    "capability.refused.application-not-given",
-    "{agent} has not been granted {wanted} — picking a folder will not change that, because a \
-     folder grant never reaches an application",
+    "capability.refused.application-not-given-but-full-access-reaches-it",
+    "{agent} has not been granted {wanted}, and picking a folder will not change that — choose \
+     full access ('straight away, without asking') in Settings → Running code, and alo can use \
+     any application you can",
 )
 .noting(
-    "Said to a person whose agent asked to open, bring forward or close an application. The second \
-     half stops them looking in the folders list for a fix that is not there. {agent} is never \
-     translated; {wanted} arrives already in the reader's language, as 'the application \
-     org.gnome.TextEditor'.",
+    "Said to a person whose agent asked to open, bring forward or close an application. The middle \
+     stops them looking in the folders list for a fix that is not there; the end names the fix \
+     that is. 'straight away, without asking' and 'Settings → Running code' name a choice and a \
+     page as they are shown in Settings; use the same words your translation uses there. alo is \
+     the assistant. {agent} is never translated; {wanted} arrives already in the reader's \
+     language, as 'the application org.gnome.TextEditor'.",
 );
 
 /// A machine where the person declined the agent (ADR 0009).

@@ -153,6 +153,13 @@ impl<'c> Commands<'c> {
             bracket: None,
         }
     }
+
+    /// Where the person's level is read from, for a door that asks the grants
+    /// as the level is now (`crate::the_grants_as_the_level_is_now`).
+    #[must_use]
+    pub fn level_at(&self) -> &'c CommandsHere {
+        self.here
+    }
 }
 
 /// **A command an agent asked for**, decided by the person's level and

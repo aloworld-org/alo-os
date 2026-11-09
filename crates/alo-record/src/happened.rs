@@ -165,6 +165,14 @@ pub enum Happened {
         /// The grants that permitted it, one for each thing it touched. Empty
         /// for a verb whose author wrote down why it needs no grant.
         against: Vec<u64>,
+        /// Whether something it touched was allowed by **full access** rather
+        /// than by a grant (ADR 0149) — the honest answer to *against which
+        /// grant* where the answer is *none: the person chose full access*.
+        ///
+        /// Absent when false, so an entry written before full access existed
+        /// reads back exactly as it was written. Additive; `format` stays `1`.
+        #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+        by_full_access: bool,
     },
     /// A properly formed call that was refused.
     Stopped {
@@ -1077,6 +1085,19 @@ impl Happened {
         }
     }
 
+    /// Whether a verb that ran was allowed by **full access** rather than by a
+    /// grant (ADR 0149) — `false` for everything that is not a verb that ran.
+    #[must_use]
+    pub const fn by_full_access(&self) -> bool {
+        matches!(
+            self,
+            Self::Ran {
+                by_full_access: true,
+                ..
+            }
+        )
+    }
+
     /// Where something went, or would have gone had the policy permitted it.
     #[must_use]
     pub fn destination(&self) -> Option<&Destination> {
@@ -1198,6 +1219,7 @@ mod tests {
             what: What::of(&archiving_march(), &in_english()),
             from_approval: Some(3),
             against: vec![0, 1],
+            by_full_access: false,
         }
     }
 
@@ -1227,10 +1249,12 @@ mod tests {
             what: What::of(&listing_invoices(), &in_english()),
             from_approval: None,
             against: vec![0],
+            by_full_access: false,
         };
         assert!(happened.ran());
         assert_eq!(happened.from_approval(), None);
         assert_eq!(happened.against(), [0]);
+        assert!(!happened.by_full_access());
     }
 
     /// Three refusals, three different facts about the machine. Flattening them

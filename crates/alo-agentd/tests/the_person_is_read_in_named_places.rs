@@ -68,7 +68,13 @@ const WHAT_NAMES_THE_PERSONS_PLACE: [&str; 4] =
 ///
 /// **Adding a row is a decision, not a formality.** Each is a place that becomes
 /// wrong on the day one process serves two people.
-const WHERE_THE_PERSON_IS_READ: [(&str, &str); 3] = [
+const WHERE_THE_PERSON_IS_READ: [(&str, &str); 4] = [
+    (
+        "running_a_command.rs",
+        "where a command alo runs where no verb fits starts (ADR 0149): the person's \
+         home, as the person this service runs as. Where it starts only; what it \
+         reaches is the account's permissions either way",
+    ),
     (
         "settings.rs",
         "the settings road: whose configuration file this service reads, as the person it runs as",

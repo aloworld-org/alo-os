@@ -56,6 +56,7 @@ use crate::corridor::{Corridor, put_down_the_corridor};
 use crate::questions::{Questions, WhatAnswers};
 use crate::rereading;
 use crate::running_a_command::Commands;
+use crate::the_grants_as_the_level_is_now::the_grants_as_the_level_is_now;
 use crate::what_a_client_is_told_a_verb_did::as_a_client_sees_it;
 use crate::words::{
     AN_ADMINISTRATOR_SET_THAT_RULE, NO_KEY_FOR_THIS_PROVIDER, NO_KEYRING_FOR_A_PROVIDER,
@@ -117,14 +118,21 @@ fn carried_out(
     commands: Commands<'_>,
 ) -> ToAnAgent {
     match asked {
+        // **The grants as the person's level is now** (ADR 0149): at full
+        // access a copy that reaches everything their account can, made for
+        // this one request and never kept.
         FromAnAgent::Read { verb, .. } => {
-            match turning.reading(verb, &asked.given(), grants, now) {
+            let grants =
+                the_grants_as_the_level_is_now(grants, commands.level_at(), turning.grantee());
+            match turning.reading(verb, &asked.given(), &grants, now) {
                 Ok(answer) => ToAnAgent::did(as_a_client_sees_it(&answer, now)),
                 Err(why) => not_done(&why, strings),
             }
         }
         FromAnAgent::Propose { verb, .. } => {
-            match turning.proposing(verb, &asked.given(), grants, standing, now) {
+            let grants =
+                the_grants_as_the_level_is_now(grants, commands.level_at(), turning.grantee());
+            match turning.proposing(verb, &asked.given(), &grants, standing, now) {
                 Ok(number) => waiting_under(turning, number, strings, now),
                 Err(why) => not_done(&why, strings),
             }

@@ -354,7 +354,15 @@ fn answered_to(
                 {
                     turning.a_place_was_kept(named);
                 }
-                match turning.approving(waiting, grants, now) {
+                // **The grants as the person's level is now** (ADR 0149), read
+                // again at the OK: a person who switched full access off while
+                // the question stood is answered against a list without it.
+                let grants = crate::the_grants_as_the_level_is_now::the_grants_as_the_level_is_now(
+                    grants,
+                    commands,
+                    turning.grantee(),
+                );
+                match turning.approving(waiting, &grants, now) {
                     Ok(answer) => the_change_did(
                         as_a_client_sees_it(&answer, now),
                         bracket.taken_at().is_some(),

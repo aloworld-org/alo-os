@@ -93,7 +93,7 @@ impl Reaching {
                 continue;
             };
             // 1. Granted? Refused here, and nothing has been looked for.
-            if let Err(why) = grants.permitting(&under, &Ask::Application(identifier.clone()), at) {
+            if let Err(why) = grants.permitted(&under, &Ask::Application(identifier.clone()), at) {
                 return Err(Refused::not_granted(authorised.call().clone(), why));
             }
             // 2. And is it here at all?
@@ -437,8 +437,12 @@ mod tests {
         // **And it does not send the person to pick a folder**, which is what
         // a booted machine said on 2026-11-08 and which no folder could fix.
         assert!(!said.text().contains("by picking a folder"), "{said}");
+        // **And it names the fix that is real** (ADR 0149): at full access alo
+        // can use any application the person's account can.
         assert!(
-            said.text().contains("never reaches an application"),
+            said.text().contains("will not change that")
+                && said.text().contains("full access")
+                && said.text().contains("Settings → Running code"),
             "{said}"
         );
     }
