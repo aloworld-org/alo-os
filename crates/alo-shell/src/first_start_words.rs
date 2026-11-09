@@ -396,8 +396,8 @@ pub const SELECTED: Word = Word::saying("shell.first-start.selected", "Selected"
 
 /// *How much can alo do?* — the heading ADR 0149 gives the sheet a person sees
 /// right after their first sign-in.
-pub const ACCESS_TITLE: Word = Word::saying("shell.first-start.access.title", "How much can alo do?")
-    .noting(
+pub const ACCESS_TITLE: Word =
+    Word::saying("shell.first-start.access.title", "How much can alo do?").noting(
         "The heading of the sheet, shown once right after a person first signs in, where they \
          choose how much alo - the assistant - may do on this computer. A plain question.",
     );
@@ -409,8 +409,8 @@ pub const ACCESS_FULL: Word = Word::saying("shell.first-start.access.full", "Ful
 );
 
 /// Asking each time.
-pub const ACCESS_ASK: Word =
-    Word::saying("shell.first-start.access.ask", "Ask me each time").noting(
+pub const ACCESS_ASK: Word = Word::saying("shell.first-start.access.ask", "Ask me each time")
+    .noting(
         "One of three choices on that sheet: alo shows each command and waits for the person to \
          say yes. The person is speaking, so 'me' is the person.",
     );

@@ -55,7 +55,10 @@ fn a_person_who_has_not_chosen_is_asked_with_full_access_already_chosen() {
 fn continue_at_once_writes_full_access_where_settings_reads_it() {
     let (_at, file) = somewhere();
     let mut asking = asked(&file);
-    assert_eq!(asking.pressed_on(OnASheet::WayOn), Went::Kept(HowCodeRuns::AtFullTrust));
+    assert_eq!(
+        asking.pressed_on(OnASheet::WayOn),
+        Went::Kept(HowCodeRuns::AtFullTrust)
+    );
     assert_eq!(kept(&file), Some(HowCodeRuns::AtFullTrust));
     assert_eq!(
         HowCodeRunsHere::at_sign_in(&file).chosen(),
@@ -105,9 +108,15 @@ fn moving_the_ring_chooses_nothing_and_writes_nothing() {
         }
     }
     for place in 0..THE_THREE.len() {
-        assert!(seen.contains(&TheRingIs::OnAChoice(place)), "row {place} unreachable");
+        assert!(
+            seen.contains(&TheRingIs::OnAChoice(place)),
+            "row {place} unreachable"
+        );
     }
-    assert!(seen.contains(&TheRingIs::OnContinue), "Continue unreachable");
+    assert!(
+        seen.contains(&TheRingIs::OnContinue),
+        "Continue unreachable"
+    );
     assert!(!file.exists(), "moving the ring wrote the level");
 }
 
@@ -153,7 +162,10 @@ fn a_person_who_chose_is_not_asked() {
     let (_at, file) = somewhere();
     let mut asking = asked(&file);
     assert_eq!(asking.pressed_on(OnASheet::Choice(0)), Went::Stayed);
-    assert_eq!(asking.pressed_on(OnASheet::WayOn), Went::Kept(HowCodeRuns::InASealedBox));
+    assert_eq!(
+        asking.pressed_on(OnASheet::WayOn),
+        Went::Kept(HowCodeRuns::InASealedBox)
+    );
     assert!(matches!(
         HowMuchAloCanDo::to_ask(&file),
         ToAsk::AlreadyChosen(HowCodeRuns::InASealedBox)
@@ -167,7 +179,10 @@ fn a_file_that_would_not_read_is_not_asked_about_and_is_left_as_it_is() {
     let (_at, file) = somewhere();
     let written = "format = 1\nchose = \"full-trust\"\n";
     std::fs::write(&file, written).expect("written");
-    assert!(matches!(HowMuchAloCanDo::to_ask(&file), ToAsk::WouldNotRead));
+    assert!(matches!(
+        HowMuchAloCanDo::to_ask(&file),
+        ToAsk::WouldNotRead
+    ));
     assert_eq!(std::fs::read_to_string(&file).expect("read"), written);
 }
 
@@ -183,7 +198,11 @@ fn a_choice_that_cannot_be_written_is_said_and_never_traps_anybody() {
     assert_eq!(asking.pressed_on(OnASheet::WayOn), Went::Stayed);
     assert!(asking.was_not_saved(), "the refusal is not said");
     assert!(!file.exists());
-    assert_eq!(asking.chosen(), HowCodeRuns::AtFullTrust, "the refusal changed the choice");
+    assert_eq!(
+        asking.chosen(),
+        HowCodeRuns::AtFullTrust,
+        "the refusal changed the choice"
+    );
 
     assert_eq!(asking.pressed(SignInKey::Enter), Went::OnWithNothingChosen);
     assert!(!file.exists(), "a refusal wrote something");
@@ -204,9 +223,15 @@ fn a_refusal_then_a_disk_that_agrees_writes_the_choice() {
     assert_eq!(asking.pressed_on(OnASheet::WayOn), Went::Stayed);
     assert!(asking.was_not_saved());
     assert_eq!(asking.pressed_on(OnASheet::Choice(1)), Went::Stayed);
-    assert!(!asking.was_not_saved(), "a new choice still shows the old refusal");
+    assert!(
+        !asking.was_not_saved(),
+        "a new choice still shows the old refusal"
+    );
 
     std::fs::create_dir(&folder).expect("the folder");
-    assert_eq!(asking.pressed_on(OnASheet::WayOn), Went::Kept(HowCodeRuns::AskingEachTime));
+    assert_eq!(
+        asking.pressed_on(OnASheet::WayOn),
+        Went::Kept(HowCodeRuns::AskingEachTime)
+    );
     assert_eq!(kept(&file), Some(HowCodeRuns::AskingEachTime));
 }

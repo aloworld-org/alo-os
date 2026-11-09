@@ -31,7 +31,7 @@ use crate::a_sheet_that_fits::{ItFits, the_sheet_that_fits};
 use crate::how_much_alo_can_do::{HowMuchAloCanDo, THE_THREE, TheRingIs};
 use crate::painted_text::sentence;
 use crate::setup_sheet_in_pixels::the_column_in_pixels;
-use crate::setup_sheet_layout::{TheRowsAre, TheTextIsTall};
+use crate::setup_sheet_layout::{HowClose, TheRowsAre, TheTextIsTall};
 use crate::setup_sheet_surface::{TheFields, TheMarks, TheRing};
 use crate::sign_in_raster::{Measure, SignInPicture};
 use crate::sign_in_surface::TheColours;
@@ -126,12 +126,15 @@ pub(crate) fn drawn(
             )
         })
         .collect();
-    let tallest = meanings.iter().map(|it| it.height).max().unwrap_or(0);
-    let card_is = THE_SECOND_LINE_IS_AT
-        + UNDER_THE_LAST_LINE
-        // Rounded up, so the last line never touches the card's edge.
-        + i32::try_from(display.logical(tallest)).unwrap_or(i32::MAX)
-        + 1;
+    // Each card as tall as its own words, rounded up so the last line never
+    // touches the card's edge.
+    let mut cards_are = [0; 3];
+    for (card, meaning) in cards_are.iter_mut().zip(&meanings) {
+        *card = THE_SECOND_LINE_IS_AT
+            + UNDER_THE_LAST_LINE
+            + i32::try_from(display.logical(meaning.height)).unwrap_or(i32::MAX)
+            + 1;
+    }
 
     let note = if asking.was_not_saved() {
         (AFirstStartIcon::Info, say_it(say::ACCESS_NOT_SAVED))
@@ -149,34 +152,48 @@ pub(crate) fn drawn(
     .height;
 
     let title = say_it(say::ACCESS_TITLE);
-    let Some(ItFits {
-        laid,
-        title: shaped_title,
-        rows: fit,
-    }) = the_sheet_that_fits(
-        fonts,
-        &title,
-        colours,
-        measure,
-        size,
-        TheTextIsTall {
-            title: 0,
-            // **No introduction**, the owner's answer; a height of zero is how
-            // the layout is told there is none.
-            introduction: 0,
-            consequence: note_height,
-            choices: THE_THREE.len(),
-            actions: 1,
-            rows: TheRowsAre::ApartEachAs(card_is),
-        },
-        THE_THREE.len(),
-    )
-    else {
-        return Err(RenderError::SignInScene);
+    let tall = TheTextIsTall {
+        title: 0,
+        // **No introduction**, the owner's answer; a height of zero is how the
+        // layout is told there is none.
+        introduction: 0,
+        consequence: note_height,
+        choices: THE_THREE.len(),
+        actions: 1,
+        rows: TheRowsAre::ApartEachAs(cards_are),
     };
-    if fit < THE_THREE.len() {
-        return Err(RenderError::SignInScene);
-    }
+    // **As captured, then tightened, then started higher** — never with a
+    // card out of sight (`HowClose::TightenedToTheTop` says why this sheet
+    // alone has the third).
+    let (laid, shaped_title) =
+        match the_sheet_that_fits(fonts, &title, colours, measure, size, tall, THE_THREE.len()) {
+            Some(ItFits {
+                laid,
+                title: shaped,
+                rows,
+            }) if rows == THE_THREE.len() => (laid, shaped),
+            Some(_) | None => {
+                let shaped = sentence(
+                    fonts,
+                    &title,
+                    column,
+                    measure.tight_title_metrics(),
+                    colours.ground,
+                    colours.ink,
+                );
+                let laid = crate::setup_sheet_in_pixels::laid_out_as(
+                    size,
+                    TheTextIsTall {
+                        title: shaped.height,
+                        ..tall
+                    },
+                    display,
+                    HowClose::TightenedToTheTop,
+                )
+                .ok_or(RenderError::SignInScene)?;
+                (laid, shaped)
+            }
+        };
     let chosen = THE_THREE.iter().position(|it| *it == asking.chosen());
 
     let mut drawn = SignInPicture {
@@ -227,12 +244,8 @@ pub(crate) fn drawn(
     ));
 
     let inside = measure.px(INSIDE);
-    for (which, ((card, level), meaning)) in at
-        .choices
-        .iter()
-        .zip(THE_THREE)
-        .zip(meanings)
-        .enumerate()
+    for (which, ((card, level), meaning)) in
+        at.choices.iter().zip(THE_THREE).zip(meanings).enumerate()
     {
         // **One answer decides the word and the border.**
         let name = say_it(the_name_of(level));

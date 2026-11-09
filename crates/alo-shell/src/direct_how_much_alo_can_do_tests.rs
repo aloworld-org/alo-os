@@ -80,11 +80,16 @@ fn a_click_on_a_card_then_continue_writes_that_level_once() {
     // The ground is nothing.
     click(&mut sheet, (5, 5));
     assert_eq!(sheet.asking().chosen(), HowCodeRuns::AtFullTrust);
-    click(&mut sheet, the_middle_of(&drawn.controls, OnASheet::Choice(0)));
+    click(
+        &mut sheet,
+        the_middle_of(&drawn.controls, OnASheet::Choice(0)),
+    );
     assert_eq!(sheet.asking().chosen(), HowCodeRuns::InASealedBox);
     assert!(!file.exists(), "choosing a card wrote the level");
 
-    let drawn = sheet.drawn_for(SIZE, DisplayScale::ONE).expect("drawn again");
+    let drawn = sheet
+        .drawn_for(SIZE, DisplayScale::ONE)
+        .expect("drawn again");
     click(&mut sheet, the_middle_of(&drawn.controls, OnASheet::WayOn));
     assert_eq!(sheet.went(), Went::Kept(HowCodeRuns::InASealedBox));
     assert!(sheet.finished());

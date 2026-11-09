@@ -56,6 +56,8 @@ fn three_cards_continue_and_no_way_back_at_every_size_drawn() {
     for (size, per_cent) in [
         ((1440, 960), 100),
         ((1280, 800), 100),
+        ((1280, 720), 100),
+        ((1366, 768), 100),
         ((640, 700), 100),
         ((2880, 1920), 200),
     ] {
@@ -73,10 +75,12 @@ fn three_cards_continue_and_no_way_back_at_every_size_drawn() {
                 assert!(at_one >= 85, "{size:?}: card {which} is {at_one} tall");
             }
             for pair in choices.windows(2) {
-                assert!(
-                    pair[0].area.loc.y + pair[0].area.size.h <= pair[1].area.loc.y,
-                    "{size:?}: two cards overlap"
-                );
+                if let [above, below] = pair {
+                    assert!(
+                        above.area.loc.y + above.area.size.h <= below.area.loc.y,
+                        "{size:?}: two cards overlap"
+                    );
+                }
             }
             let ways_on = picture
                 .controls
@@ -85,11 +89,17 @@ fn three_cards_continue_and_no_way_back_at_every_size_drawn() {
                 .count();
             assert_eq!(ways_on, 1, "{size:?}");
             assert!(
-                !picture.controls.iter().any(|it| it.what == OnASheet::WayBack),
+                !picture
+                    .controls
+                    .iter()
+                    .any(|it| it.what == OnASheet::WayBack),
                 "{size:?}: a way back is drawn"
             );
             assert!(
-                picture.controls.iter().any(|it| it.what == OnASheet::Accessibility),
+                picture
+                    .controls
+                    .iter()
+                    .any(|it| it.what == OnASheet::Accessibility),
                 "{size:?}"
             );
         }

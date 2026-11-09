@@ -277,8 +277,10 @@ impl<'a> TheSheet<'a> {
         size: (i32, i32),
         display: DisplayScale,
     ) -> Result<SignInPicture, RenderError> {
-        let colours =
-            crate::sign_in_surface::TheColours::of(self.means.look.contrast, self.means.look.scheme);
+        let colours = crate::sign_in_surface::TheColours::of(
+            self.means.look.contrast,
+            self.means.look.scheme,
+        );
         let sheet = HowMuchSheet {
             asking: &self.asking,
             the_sealed_box_runs_here: self.means.the_sealed_box_runs_here,
@@ -306,7 +308,10 @@ impl<'a> TheSheet<'a> {
     /// **A display the sheet cannot be laid out on ends the sheet with nothing
     /// chosen** rather than the session: the desktop opens as it would have,
     /// and the next sign-in asks again.
-    fn present(&mut self, target: &mut impl crate::presentation::NativeTarget) -> Result<(), RenderError> {
+    fn present(
+        &mut self,
+        target: &mut impl crate::presentation::NativeTarget,
+    ) -> Result<(), RenderError> {
         let size = target.size();
         let display = target.metadata().map_or(DisplayScale::ONE, |metadata| {
             crate::the_sign_in_screens_scale::the_sign_in_screens_scale(

@@ -1429,7 +1429,8 @@ answered four questions on 2026-11-09, in these words:
 | arrives chosen | Sealed box | **Full access** (`· Selected` and the 2-pixel border, as every chosen card) |
 | note | Activity remains visible, recorded and stoppable. | the same words — the owner removed the introduction, not this line |
 | actions | *Keep sealed box* · *Back* · *Not now* | **Continue** alone |
-| card height | 85 | **grows to its words** (`TheRowsAre::ApartEachAs`), never under 85: the lines the owner chose are longer than the frames' one-liners, and the cost of full access is two lines at 1440 × 960 |
+| card height | 85 | **each grows to its own words** (`TheRowsAre::ApartEachAs`), never under 85: the lines the owner chose are longer than the frames' one-liners, and the cost of full access is two lines at 1440 × 960 |
+| a short screen | — | **all three cards always show.** Where they do not fit as captured or tightened, the column starts an eighth of the way down instead of at 164 (`HowClose::TightenedToTheTop`) — at 1280 × 720 and 640 × 700 that is the difference between drawing the sheet and not |
 
 **What `Not now` above required is moot rather than broken.** Its whole
 argument was that a way out must not commit the row on show. There is no way

@@ -103,9 +103,12 @@ fn the_chosen_level_is_untouched() {
 #[test]
 fn full_access_carries_the_default_tag_and_nothing_is_ticked_for_it() {
     let (_held, window) = opened_with(ORDINARY, None);
-    assert_eq!(
-        the_row(&window, HowCodeRuns::AtFullTrust).tag.as_deref(),
-        Some("Default")
+    // The words here are the test bundle, so the tag is asked for by its key.
+    assert!(
+        the_row(&window, HowCodeRuns::AtFullTrust)
+            .tag
+            .is_some_and(|tag| tag.contains("settings.default") || tag == "Default"),
+        "Full access does not carry the Default tag"
     );
     for level in HowCodeRuns::ALL {
         let row = the_row(&window, level);
