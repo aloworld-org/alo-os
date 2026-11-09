@@ -11,7 +11,7 @@ fn lightweight_opus_uses_fewer_packets_and_decodes_every_input_sample()
 -> Result<(), Box<dyn std::error::Error>> {
     gst::init()?;
     let pipeline = gst::parse::launch(&format!(
-        "audiotestsrc num-buffers=10 samplesperbuffer=1600 ! audio/x-raw,format=S16LE,rate=16000,channels=1 ! {} ! identity name=packets ! opusdec ! audio/x-raw,format=S16LE,rate=16000,channels=1 ! fakesink name=decoded sync=false async=false",
+        "audiotestsrc num-buffers=10 samplesperbuffer=1600 ! {} ! identity name=packets ! opusdec ! audio/x-raw,format=S16LE,rate=16000,channels=1 ! fakesink name=decoded sync=false async=false",
         super::audio(5),
     ))?
     .downcast::<gst::Pipeline>()
