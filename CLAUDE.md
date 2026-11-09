@@ -281,7 +281,10 @@ cannot demonstrate.
 - **The person grants; the agent never assumes.** No path, window,
   application or device is reachable that a person has not granted.
   Grants are enumerated, visible where the person can find them,
-  revocable, and they expire. There is no grant to `/`.
+  revocable, and they expire. There is no grant to `/` — except
+  **full access**, which the person chooses knowing what it costs:
+  then alo reaches everything the person's account can, and asks for
+  the person's password for anything administrative (ADR 0149).
 - **Context is offered, never watched, unless the person switches
   watching on, knowing what it costs.** The focused window, the
   selection and the open document reach an agent only at the moment

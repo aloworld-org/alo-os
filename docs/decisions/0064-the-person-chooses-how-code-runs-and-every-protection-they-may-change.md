@@ -1,5 +1,6 @@
 # ADR 0064 — The person chooses: how code runs, and every protection a person may change
 
+**Amended 2026-11-08 by [ADR 0149](0149-full-access-is-everything-the-person-can-do.md):** level 3 is called *full access* and reaches everything the person's account can, with no folder grants; administrator actions ask for the password each time; where no verb exists alo runs a command; and a new machine asks at first start, with full access pre-selected.
 **Status:** **accepted, 2026-09-22, by the owner.** **Nothing is built in the
 change that adds this.** Each part below is built by its own task, and that task
 changes, in the same change, the tests that hold the rule it replaces. Until a
