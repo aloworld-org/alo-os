@@ -20,6 +20,18 @@ being read from the live file on 2026-10-09, and by containing `402:26312`,
 
 **It supersedes the earlier 56px strip proposal**, by the owner's direction.
 
+> **Superseded in part on 2026-11-09 by [the window controls](the-window-controls.md).**
+> The owner's specification of that day replaces this note's **controls,
+> layout and reveal**: a 54-tall band carrying the title and the application
+> name at all times, and **three** controls — *Window actions*, *Minimise*,
+> *Close* — revealed as the pointer approaches, with Maximise, Left, Right and
+> Full screen in a window panel. *The measurements*, *Round 2*'s icon and its
+> *show the title only when I point at it* choice (withdrawn by the owner) are
+> history from that day. **What stands from this note**: the decoration
+> decision (keep an application's own header, add alo's edge with no duplicate
+> buttons), *revealing never moves the content*, decoration ownership read from
+> protocol state, and the long-title ruling of 2026-10-10.
+
 ## What it is, and the one thing it must never be
 
 The edge belongs to **alo's shell**, sits **outside** the application's content,
@@ -233,15 +245,22 @@ the one that always exists.
 
 ### What this costs, said plainly
 
-**The window menu does not exist.** `crates/alo-shell/tests/support/wm_capabilities.rs`
-uses `WindowMenu` as its example of a capability this compositor deliberately
-does **not** advertise, and asserts the set is exact without it. So
-`OnTheEdge::Menu` has been a control with no action and no word —
-`window_edge_reading`'s `what_it_does` answers `None` for it, with a test that
-fails the day somebody gives it one.
+*As written on 2026-10-10:* **the window menu does not exist.**
+`crates/alo-shell/tests/support/wm_capabilities.rs` uses `WindowMenu` as its
+example of a capability this compositor deliberately does **not** advertise,
+and asserts the set is exact without it. So `OnTheEdge::Menu` has been a
+control with no action and no word.
 
-This ruling is that day. A menu with a selectable title is the first thing the
-window menu is **for**, rather than a surface built and then furnished.
+**That stopped being true, and this paragraph said otherwise until
+2026-11-09.** The shell has drawn a window menu since — `crate::window_menu`
+lays it out, `crate::a_press_in_the_menu` acts on its Minimise, Maximise and
+Close rows, and `Alt+F3` (`Action::WindowOptions`) opens it. What
+`wm_capabilities.rs` says is a different fact and still true: the compositor
+does not advertise `xdg_toplevel`'s *window menu* capability to applications,
+because the menu is alo's, opened from alo's edge, not one an application asks
+for. The 2026-11-09 specification replaces this menu with the window panel of
+[the window controls](the-window-controls.md); that note says what becomes of
+the full-title road by touch, which this shell cannot yet receive at all.
 
 ### The three already true, and the measurement behind each
 

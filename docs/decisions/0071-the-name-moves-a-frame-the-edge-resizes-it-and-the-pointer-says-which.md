@@ -145,3 +145,12 @@ owner left all three open. **They are decisions about whether a familiar key kee
 its familiar meaning or earns a better one, and they are not resolved by building
 the shortcuts**; an implementation that quietly picked one would settle it without
 anybody deciding.
+
+## Amended 2026-11-09: what else the name does
+
+The owner's window-controls specification ([the window controls](../design/the-window-controls.md))
+keeps this decision whole — **the name moves a frame, and it is the only free-move
+handle** — and gives the same band two more gestures: **double-click maximises
+and restores**, and **right-click opens the window panel**. Neither moves or
+resizes anything by dragging, so the split this record made between the name and
+the edges stands.
