@@ -57,13 +57,27 @@ use crate::words;
 /// two to each other, so the day the text changes this constant fails a test
 /// instead of quietly matching nothing.
 ///
-/// **It changed on 2026-10-27, and no local model is graded under it yet.**
+/// **It changed again on 2026-11-08** (ADR 0149): the words a turn shows gained
+/// the door for one command where no verb fits. **No model is graded under
+/// it yet.** One grade was earned under the text before it,
+/// [`THE_WORDS_A_TURN_SHOWED_UNTIL_ADR_0149`]: `gpt-4o` at OpenAI on
+/// follow-ups, 20 of 20 on 2026-10-28, in `data/follow-ups.toml`, which decides
+/// nothing. By that file's own rule it is no longer read, and it stays there,
+/// naming the text it was earned under, to be re-run.
+///
+/// **It changed on 2026-10-27, and no local model was graded under that text.**
 /// The words a turn shows gained the door a question is answered through
 /// (ADR 0133), and the owner chose that every local model's grade for a turn,
 /// earned under `93a7f458…`, is set aside until it is earned again under this
 /// text. Those grades are still in the catalogue, naming the text they were
 /// earned under; this file simply no longer reads them.
 pub const THE_WORDS_A_TURN_SHOWS: &str =
+    "88d1438548b88af584a086625837fc2ce5f119b769ccce6c3648c0452318a1fd";
+
+/// **The words a turn showed from 2026-10-27 to 2026-11-08** (ADR 0133 until
+/// ADR 0149), which the one follow-up grade in `data/follow-ups.toml` was
+/// earned under. Named so that grade can be found and re-run.
+pub const THE_WORDS_A_TURN_SHOWED_UNTIL_ADR_0149: &str =
     "cf522fc50729caf13ce79d9fcb3fd44d48b95cc531316b9e4dac4a67c84ff406";
 
 /// **The words a turn showed until 2026-10-27**, which every local model's

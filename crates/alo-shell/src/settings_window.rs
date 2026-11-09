@@ -790,7 +790,9 @@ impl SettingsWindow {
             }
             SettingsKey::Choose => return focused.map(|row| open.chosen(&row, doors)),
             // **Left and Right on the text size make it smaller and larger**;
-            // anywhere else they do nothing.
+            // on a row of choices they move along it, the owner's answer of
+            // 2026-11-08 (`crate::settings_along_a_row`); anywhere else they
+            // do nothing.
             SettingsKey::Less | SettingsKey::More => {
                 if focused == Some(SettingsRow::TextSize) {
                     let by = if press.key == SettingsKey::More {
@@ -799,6 +801,14 @@ impl SettingsWindow {
                         -25
                     };
                     return Some(open.the_text_is(by, doors.strings));
+                }
+                let way = if press.key == SettingsKey::More {
+                    crate::settings_along_a_row::Along::TowardsTheLast
+                } else {
+                    crate::settings_along_a_row::Along::TowardsTheFirst
+                };
+                if let Some(at) = open.along_the_row(open.focus, way, doors.strings, doors.now) {
+                    open.focus = at;
                 }
             }
             SettingsKey::PutBackAsShipped => {

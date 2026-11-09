@@ -18,10 +18,14 @@
 //! |---|---|---|
 //! | `a_run_inside_a_box.rs` | `alo-enter-the-box`, and nothing else | a fixed program of ours, named by a constant, never anything a caller passed as the command |
 //! | `entering.rs` | the command | after writing itself into the box, in the same function |
+//! | `at_full_access.rs` | the shell, handed the command | the person chose full access, or said yes to this one command (ADR 0149): nothing alo runs then is boxed, and this is the one file that runs it so |
 //!
-//! So the rule has two halves, one per file, and that is what is checked. The
-//! failure being guarded against is a **third** site, or either of these two
-//! starting the wrong thing — a road into a box that skipped joining it, which
+//! So the rule has one half per file, and that is what is checked. *A third file
+//! was added on 2026-11-08 for ADR 0149, deliberately and by name: at full access
+//! the owner decided nothing alo runs is boxed, so there a command that skips the
+//! box is the decision rather than the fault. It may start the shell and nothing
+//! else, once.* The failure being guarded against is a **fourth** site, or any
+//! of these three starting the wrong thing — a road into a box that skipped joining it, which
 //! would make everything else in this crate a decoration: a command running
 //! outside the boundary while every type says it is inside one.
 //!
@@ -50,6 +54,12 @@ const THE_ADMISSION: &str = "THE_PROCESSES";
 
 /// The file that may start the helper, and only the helper.
 const THE_ONE_THAT_SPAWNS: &str = "a_run_inside_a_box.rs";
+
+/// The file that runs a command at full access, with no box (ADR 0149).
+const THE_ONE_AT_FULL_ACCESS: &str = "at_full_access.rs";
+
+/// The only thing that file may start: the shell, by its constant.
+const ONLY_THE_SHELL: &str = "Command::new(THE_SHELL)";
 
 /// The only thing that file may start.
 ///
@@ -80,6 +90,11 @@ const ONLY_THE_HELPER: &str = "Command::new(self.helper)";
 /// `alo-bounding` has no such collision and is left alone; widening a test in
 /// another crate to fix a name in this one would be the gate weakened to pass
 /// it, backwards.
+///
+/// **And `Command::` must not be the end of a longer name.** `ACommand::of` is
+/// `alo_capability`'s command a person approves (ADR 0149) and starts nothing;
+/// the test found it by failing on `at_full_access_tests.rs` on 2026-11-08, the
+/// same collision as `WhereCommandsRun` above one letter earlier.
 fn starts_a_program(line: &str) -> Option<&'static str> {
     [
         "Command::",
@@ -90,7 +105,15 @@ fn starts_a_program(line: &str) -> Option<&'static str> {
         "posix_spawn",
     ]
     .into_iter()
-    .find(|starting| line.contains(starting))
+    .find(|starting| {
+        line.match_indices(starting).any(|(at, _)| {
+            *starting != "Command::"
+                || !line
+                    .get(..at)
+                    .and_then(|before| before.chars().next_back())
+                    .is_some_and(|it| it.is_alphanumeric() || it == '_')
+        })
+    })
 }
 
 /// Whether a line says something to a reader rather than to the machine.
@@ -127,6 +150,8 @@ fn the_matcher_finds_a_program_being_started() {
         // whose name contains the word and which starts nothing.
         "pub use a_run_inside_a_box::{THE_HELPER, WhereCommandsRun};",
         "let mut where_they_run = WhereCommandsRun::new(boundary, boxes, record);",
+        // The command a person approves, which starts nothing (ADR 0149).
+        "let command = ACommand::of(\"mkdir -p /home/anna/demo\").unwrap();",
     ] {
         assert!(
             starts_a_program(ordinary).is_none(),
@@ -185,6 +210,19 @@ fn only_the_file_that_admits_first_starts_a_program() {
                     "{THE_ONE_THAT_SPAWNS} starts {how_many} programs, and the only one it may \
                      start is the helper"
                 );
+            } else if name == THE_ONE_AT_FULL_ACCESS {
+                // The shell and nothing else, once: a second start here would
+                // be a second road out of the box nobody decided.
+                assert!(
+                    written.contains(ONLY_THE_SHELL),
+                    "{THE_ONE_AT_FULL_ACCESS} starts a program and it is not {ONLY_THE_SHELL}"
+                );
+                let how_many = written.matches("Command::new(").count();
+                assert_eq!(
+                    how_many, 1,
+                    "{THE_ONE_AT_FULL_ACCESS} starts {how_many} programs, and the only one it may \
+                     start is the shell"
+                );
             }
             starting.push(name);
         }
@@ -202,9 +240,11 @@ fn only_the_file_that_admits_first_starts_a_program() {
         starting,
         vec![
             THE_ONE_THAT_SPAWNS.to_owned(),
+            THE_ONE_AT_FULL_ACCESS.to_owned(),
             THE_ONE_THAT_EXECS.to_owned()
         ],
-        "two files in this crate may start a program — the one that starts the helper and the \
-         one that becomes the command — and these do"
+        "three files in this crate may start a program — the one that starts the helper, the \
+         one that runs a command at full access, and the one that becomes the command — and \
+         these do"
     );
 }

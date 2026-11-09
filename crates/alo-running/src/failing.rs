@@ -73,7 +73,8 @@ pub enum NotRun {
     /// started — said by the helper in its own word
     /// (`crate::the_helpers_word`), so this is never a command that ran.
     #[error(
-        "the box was joined, and from inside it {} could not be started ({refused:?})",
+        "the box was joined, and from inside it {} could not be started ({refused:?}); the helper \
+         said: {account}",
         program.display()
     )]
     TheBoxRefusedTheCommand {
@@ -81,6 +82,10 @@ pub enum NotRun {
         program: PathBuf,
         /// Why, as the helper said it.
         refused: crate::the_helpers_word::StartRefused,
+        /// The helper's own account, for whoever administers the machine —
+        /// carried here rather than written to the person's terminal
+        /// (`crate::the_helpers_word`).
+        account: String,
     },
 
     /// Waiting for the command failed, so what it did is unknown.

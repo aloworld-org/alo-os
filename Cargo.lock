@@ -188,6 +188,7 @@ dependencies = [
  "alo-proxy",
  "alo-record",
  "alo-remembering",
+ "alo-running",
  "alo-saying",
  "alo-secrets",
  "alo-software",

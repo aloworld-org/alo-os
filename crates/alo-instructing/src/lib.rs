@@ -26,6 +26,7 @@
 //! | [`Instructions`] | Which set of how-to-answer a model was shown, and the digest a grade names it by |
 //! | [`shown_to_a_model`] | The whole text: the instructions, the verbs, the request |
 //! | [`shown_to_a_turn`] | The same, under the set a turn shows ([`Instructions::SHOWN_TO_A_TURN`]) |
+//! | [`speaks_of_the_verbs`] | Whether an answer meant for the person talks about the verbs instead (ADR 0149) |
 //! | [`TheConversationSoFar`] | What was said before a follow-up, held to its bound, how a model is told it, and the line it travels on (ADR 0138) |
 //! | [`TheConversationSoFar`] | What was said before a follow-up, held to its bound, and how a model is told it (ADR 0138) |
 //!
@@ -51,6 +52,7 @@
 
 pub mod a_turn_in_progress;
 pub mod an_answer;
+pub mod an_answer_about_the_verbs;
 pub mod answering_in;
 pub mod instructions;
 pub mod shown;
@@ -67,10 +69,11 @@ pub use a_turn_in_progress::{
     AStep, ATurnInProgress, shown_in_progress, shown_to_a_turn_in_progress,
 };
 pub use an_answer::{THE_ANSWER_DOOR, the_answer_in};
+pub use an_answer_about_the_verbs::{NOT_FOR_THE_PERSON, speaks_of_the_verbs};
 pub use answering_in::{answering_in, shown_to_a_turn_answering_in_the_language_asked_in};
 pub use instructions::{
-    AND_AN_ANSWER, AND_YOU_MAY_LOOK_FIRST, EVERY_DOOR_AND_AN_ANSWER, HOW_TO_ANSWER, Instructions,
-    ONE_EXAMPLE_PER_DOOR, SEVERAL_STEPS,
+    AND_A_COMMAND, AND_AN_ANSWER, AND_YOU_MAY_LOOK_FIRST, EVERY_DOOR_AN_ANSWER_AND_A_COMMAND,
+    EVERY_DOOR_AND_AN_ANSWER, HOW_TO_ANSWER, Instructions, ONE_EXAMPLE_PER_DOOR, SEVERAL_STEPS,
 };
 pub use shown::{shown_to_a_model, shown_to_a_model_after, shown_to_a_turn, the_products_words};
 pub use the_conversation_on_the_wire::{

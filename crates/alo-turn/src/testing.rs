@@ -575,6 +575,10 @@ pub(crate) fn everything_that_can_come_back() -> Vec<NotDone> {
         NotDone::CouldNotLookAtTheCatalogue(crate::WentWrongLooking::NotALook(
             alo_software::NotALook::Approved,
         )),
+        // A command where no verb fits (ADR 0149) whose shell would not start.
+        NotDone::ACommandDidNotStart(alo_capability::ItDidNotStart::because(
+            "/bin/sh would not start",
+        )),
     ]
 }
 

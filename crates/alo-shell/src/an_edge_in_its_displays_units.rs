@@ -24,6 +24,15 @@
 //! edge is never laid out in one display's room at another's scale. With two
 //! displays at two scales a press on the other one is read at this one's, the
 //! same limit the room has had since it was written.
+//!
+//! # And the zoom
+//!
+//! **The scale every road uses is the display's times the canvas zoom**
+//! (`Server::the_scale_an_edge_is_drawn_at`), since the owner's answer of
+//! 2026-11-08: *"Title bars shrink with zoom"*. The draw, a press, the menu,
+//! the reveal and the keyboard all take it, so the edge is laid out at one
+//! scale for all of them and a press lands where the control is drawn at
+//! every zoom.
 
 use smithay::utils::{Logical, Point, Rectangle};
 
@@ -61,6 +70,30 @@ pub(crate) fn a_point_in_the_edges_units(
     Point::from((down(at.x, scale), down(at.y, scale)))
 }
 
+/// `display` per cent times `zoom`, rounded to a whole per cent and never
+/// below one. A display scale of nought is the ordinary one, and a zoom that
+/// cannot be multiplied by is life size.
+#[must_use]
+pub(crate) fn a_scale_through_the_zoom(display: u32, zoom: f64) -> u32 {
+    let display = if display == 0 { ORDINARY } else { display };
+    let zoom = if zoom.is_finite() && zoom > 0.0 {
+        zoom
+    } else {
+        1.0
+    };
+    let it = (f64::from(display) * zoom).round();
+    if it >= f64::from(u32::MAX) {
+        return u32::MAX;
+    }
+    #[expect(
+        clippy::cast_possible_truncation,
+        clippy::cast_sign_loss,
+        reason = "positive and below u32::MAX, checked on the lines above"
+    )]
+    let it = it as u32;
+    it.max(1)
+}
+
 impl crate::Server {
     /// Where an application's window is **drawn**, in the display's pixels:
     /// its rectangle on the plane, moved and scaled by the canvas camera.
@@ -75,9 +108,8 @@ impl crate::Server {
     /// camera (`crate::scene::trees`); now its edge is drawn through the same
     /// arithmetic (`crate::the_terminal_on_the_plane::on_the_screen`).
     ///
-    /// The edge's own furniture is not zoomed: a title and its controls stay
-    /// the size the display draws them at, round a window of whatever size the
-    /// zoom makes it, which is what a design canvas does with a frame's name.
+    /// **The edge zooms with it** since the owner's answer of 2026-11-08,
+    /// *"Title bars shrink with zoom"*: see [`Self::the_scale_an_edge_is_drawn_at`].
     pub(crate) fn where_a_window_is_drawn(
         &self,
         surface: &smithay::reexports::wayland_server::protocol::wl_surface::WlSurface,
@@ -93,9 +125,34 @@ impl crate::Server {
     }
 
     /// The scale an edge is laid out at for a press, a reveal or the keyboard:
-    /// the last drawn display's, in per cent. See this file's header.
+    /// the last drawn display's, in per cent, **times the canvas zoom** — the
+    /// scale the draw lays it out at ([`Self::the_scale_an_edge_is_drawn_at`]),
+    /// so a press lands on the control drawn under it at every zoom.
     pub(crate) fn the_scale_an_edge_is_measured_at(&self) -> u32 {
+        self.the_scale_an_edge_is_drawn_at(u32::from(self.the_scale_edges_are_measured_at))
+    }
+
+    /// The last drawn display's own scale, in per cent, **without** the zoom:
+    /// what a window's title strip is on the **plane**, where it is the same
+    /// size at every zoom because it zooms with its window
+    /// (`crate::a_window_and_its_strip`).
+    pub(crate) fn the_display_scale_edges_are_measured_at(&self) -> u32 {
         u32::from(self.the_scale_edges_are_measured_at)
+    }
+
+    /// **The scale an edge is drawn at on a display at `display` per cent:
+    /// that scale times the canvas zoom.**
+    ///
+    /// The owner's answer of 2026-11-08, *"Title bars shrink with zoom"*: a
+    /// window's title strip, its controls, its title, its icon, its line and
+    /// its shadow are all laid out at this one scale, so the whole edge grows
+    /// and shrinks with the window it belongs to, and two windows a gap apart
+    /// on the plane are a gap apart on the screen at every zoom. Until then the
+    /// edge was drawn at the display's scale alone, the same size at every
+    /// zoom, and zoomed out a strip reached over the gap into the window above.
+    #[must_use]
+    pub(crate) fn the_scale_an_edge_is_drawn_at(&self, display: u32) -> u32 {
+        a_scale_through_the_zoom(display, crate::scene::drawn_at(self.the_camera()))
     }
 }
 

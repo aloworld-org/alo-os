@@ -75,6 +75,7 @@ pub mod a_change_waiting_reaches_the_person;
 /// The chord that asks why a command is waiting, which was the only road to an
 /// answer that was already built.
 mod a_chord_asks_why_a_command_is_waiting;
+mod a_chord_closes_alos_own_window;
 mod a_chord_moves_between_applications;
 mod a_chord_moves_the_keyboard_between_areas;
 mod a_chord_opens_a_terminal;
@@ -116,6 +117,7 @@ mod a_task_window_scrolls;
 /// A task window's edge, carrying Close.
 mod a_task_windows_edge;
 mod a_wheel_over_a_sheet;
+mod a_window_and_its_strip;
 mod a_window_onto_a_list;
 mod a_window_raised;
 mod alo_in_the_terminal_in_settings;
@@ -423,6 +425,8 @@ mod server_desk;
 mod session_desktop;
 mod session_device;
 mod session_input;
+/// Left and Right along a row of choices in Settings.
+mod settings_along_a_row;
 mod settings_answering;
 /// Settings as a frame drew it, for the press after the frame.
 mod settings_as_drawn;

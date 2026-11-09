@@ -18,7 +18,12 @@
 //! **Grants are the durable thing.** Verbs are what may be done; a grant is
 //! what they may be done *to*. Nothing else in the system decides reach: if a
 //! path, a file or an application is not covered by a grant a person made, no
-//! verb can touch it, whatever the model has been persuaded to ask for.
+//! verb can touch it, whatever the model has been persuaded to ask for —
+//! **except at full access** (ADR 0149), which the person chooses in Settings →
+//! Running code and which reaches everything their own account can. That too is
+//! answered by [`Grants`], on a copy made for one moment
+//! ([`Grants::at_full_access_for`], `full_access.rs`), so no door has a second
+//! question to forget.
 //!
 //! The four properties come from ADR 0001 §3 and are enforced by the types
 //! rather than by convention:
@@ -160,6 +165,10 @@
 
 #![doc(html_root_url = "https://github.com/aloworld-org/alo-os")]
 
+/// One shell command alo was asked to run where no verb fits (ADR 0149).
+pub mod a_command;
+/// A command waiting for the person's OK, under the numbers changes wait under.
+pub mod a_command_waiting;
 /// What a person has allowed their agent to do with a terminal (ADR 0111,
 /// which supersedes ADR 0043's outright wall).
 pub mod a_terminal_for_the_agent;
@@ -173,6 +182,8 @@ pub mod arg;
 pub mod authorised;
 pub mod call;
 pub mod facility;
+/// Full access: everything the person's account can reach (ADR 0149).
+pub mod full_access;
 pub mod grant;
 pub mod grantee;
 pub mod grants;
@@ -187,6 +198,8 @@ pub mod sentence;
 pub mod the_sealed_box_here;
 pub mod verb;
 pub mod verbs;
+/// What a command alo ran did.
+pub mod what_a_command_did;
 pub mod words;
 
 #[cfg(test)]
@@ -194,6 +207,8 @@ mod test_calls;
 #[cfg(test)]
 mod testing;
 
+pub use a_command::{ACommand, NotACommand, THE_LONGEST_COMMAND, THE_SHELL};
+pub use a_command_waiting::{ApprovedCommand, WaitingCommand};
 pub use a_terminal_for_the_agent::ATerminalForTheAgent;
 pub use agent::Agent;
 pub use allowing::NotAllowed;
@@ -202,8 +217,9 @@ pub use approval::Approved;
 pub use approvals::{AnswerError, Approvals, ProposalId, Waiting};
 pub use arg::{Arg, ArgError, Given, Takes, Value};
 pub use authorised::{Authorised, NotAuthorised, Refused};
-pub use call::{Call, CallError};
+pub use call::{Call, CallError, Permission};
 pub use facility::Facility;
+pub use full_access::Permitted;
 pub use grant::{Grant, GrantError, TheWordRemoved, Until};
 pub use grantee::{Applicant, Grantee};
 pub use grants::{GrantId, Grants, Held, NotOneList};
@@ -216,4 +232,5 @@ pub use refusing::NotGranted;
 pub use sentence::{Sentence, SentenceError};
 pub use verb::{Effect, Requires, Verb, VerbError};
 pub use verbs::{Verbs, VerbsError};
+pub use what_a_command_did::{ItDidNotStart, WhatACommandDid};
 pub use words::{EVERY_WORD, WordsError, capability_words, declare_into};

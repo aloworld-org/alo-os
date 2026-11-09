@@ -299,6 +299,9 @@ pub mod refusing;
 pub mod rereading;
 #[cfg(target_os = "linux")]
 pub mod responding;
+/// One command where no verb fits, decided by the person's level (ADR 0149).
+#[cfg(target_os = "linux")]
+pub mod running_a_command;
 /// What the kernel says about this machine's interfaces. **`alo-interfaces`'
 /// reader, re-exported** so every `crate::route_messages` path in this service
 /// reads as it did: the reader moved into a crate of its own on 2026-10-30 so
@@ -327,6 +330,10 @@ pub mod surface;
 pub mod terms;
 #[cfg(target_os = "linux")]
 pub mod the_bracket_this_turn_takes;
+/// The grants a door is asked against, as the person's level is now — at full
+/// access, everything the account can reach (ADR 0149).
+#[cfg(target_os = "linux")]
+pub mod the_grants_as_the_level_is_now;
 #[cfg(all(test, target_os = "linux"))]
 mod the_proxy_on_the_road_a_question_takes;
 #[cfg(target_os = "linux")]

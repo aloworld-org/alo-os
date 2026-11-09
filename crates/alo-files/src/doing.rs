@@ -291,7 +291,7 @@ fn may_create(
     // the folder a link led to, joined with a name — and is never one an
     // agent wrote. Asked against what a person picked, it was refused on
     // every machine whose `/home` is a link.
-    if let Err(why) = grants.permitting_where_it_really_is(under, creating, authorised.at()) {
+    if let Err(why) = grants.permitted_where_it_really_is(under, creating, authorised.at()) {
         return Err(Refused::worded_elsewhere(
             touching.call().clone(),
             strings.say(

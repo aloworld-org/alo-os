@@ -15,6 +15,19 @@
 //! write a word it was never given, so a line carrying it is the helper's.
 //! `Listening` carries the command's error stream to the person as before,
 //! and keeps that one line out of it.
+//!
+//! # The line carries the helper's own account, and nothing else reaches the
+//! person
+//!
+//! **Until 2026-11-08 the helper wrote that line and then its English one
+//! too** — *`/usr/bin/ls did not start inside /sys/fs/cgroup/…: Permission
+//! denied (os error 13)`* — and only the first was kept back, so the second
+//! reached the person's terminal above the plain sentence `alo-try` prints
+//! (walked on image `f7cea72c`). Now the account rides on the word's line
+//! ([`the_refusal_line`]), is heard with it ([`TheHelperSaid`]), and the
+//! helper writes nothing else once it has written the word
+//! ([`what_the_helper_writes`]). The caller decides where the account goes;
+//! `alo-try` gives it to the journal.
 
 use std::hash::{BuildHasher as _, Hasher as _};
 use std::io::Write;
@@ -39,6 +52,17 @@ pub enum StartRefused {
     Otherwise,
 }
 
+/// What the helper said on its line: why the start was refused, and its own
+/// account of it for whoever administers the machine.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TheHelperSaid {
+    /// Why, as a kind the caller can decide on.
+    pub refused: StartRefused,
+    /// The helper's own account, in English, on one line. Empty where it gave
+    /// none.
+    pub account: String,
+}
+
 /// A word for one run, made from this process's random hashing keys.
 pub(crate) fn a_word_of_its_own() -> String {
     let mut hashing = std::collections::hash_map::RandomState::new().build_hasher();
@@ -49,15 +73,46 @@ pub(crate) fn a_word_of_its_own() -> String {
     format!("alo-enter-the-box-{one:016x}{:016x}", again.finish())
 }
 
-/// The line the helper writes, for `word` and the kind of the refusal.
+/// The line the helper writes, for `word`, the kind of the refusal and its own
+/// `account` of it: `<word> denied <account>`.
+///
+/// **One line whatever the account holds**: a line break in it — a program's
+/// name may have one — becomes a space, so the account cannot end the line
+/// early and put the rest in front of the person.
 #[must_use]
-pub fn the_refusal_line(word: &str, kind: std::io::ErrorKind) -> String {
+pub fn the_refusal_line(word: &str, kind: std::io::ErrorKind, account: &str) -> String {
     let said = if kind == std::io::ErrorKind::PermissionDenied {
         DENIED
     } else {
         OTHERWISE
     };
-    format!("{word} {said}\n")
+    let account: String = account
+        .chars()
+        .map(|one| if one == '\n' || one == '\r' { ' ' } else { one })
+        .collect();
+    format!("{word} {said} {account}\n")
+}
+
+/// Everything the helper writes to its error stream when a start is refused:
+/// its `account`, and how.
+///
+/// - **Given a word, and the box was joined**: the word's line, carrying the
+///   account, **and nothing else**. The runner keeps that line from the
+///   person, so a refusal it can name reaches the person only as the
+///   caller's own sentence.
+/// - **Otherwise** — no word, or refused before the box was joined, which the
+///   runner has no word for — the account as an ordinary line, as it always
+///   was: a refusal nobody listens for is said where somebody can read it.
+#[must_use]
+pub fn what_the_helper_writes(
+    word: Option<&str>,
+    joined: Option<std::io::ErrorKind>,
+    account: &str,
+) -> String {
+    match (word, joined) {
+        (Some(word), Some(kind)) => the_refusal_line(word, kind, account),
+        _ => format!("alo-enter-the-box: {account}\n"),
+    }
 }
 
 /// Carries a command's error stream to `to`, and listens for the helper's
@@ -75,7 +130,7 @@ pub(crate) struct Listening<'a> {
     /// Whether the line now arriving is being kept back as the helper's.
     in_its_line: bool,
     /// What the helper said, once heard.
-    heard: Option<StartRefused>,
+    heard: Option<TheHelperSaid>,
 }
 
 impl<'a> Listening<'a> {
@@ -92,19 +147,31 @@ impl<'a> Listening<'a> {
     }
 
     /// What the helper said, if it said anything.
-    pub(crate) const fn heard(&self) -> Option<StartRefused> {
-        self.heard
+    pub(crate) fn heard(&self) -> Option<TheHelperSaid> {
+        self.heard.clone()
     }
 
     /// One byte, as the stream delivers it.
     fn one(&mut self, byte: u8) -> std::io::Result<()> {
         if self.in_its_line {
             if byte == b'\n' {
+                // `denied <account>`: the kind up to the first space, and the
+                // account after it. A line with no account is still heard.
                 let said = self.held.get(self.word.len()..).unwrap_or_default();
-                self.heard = Some(if said == DENIED.as_bytes() {
-                    StartRefused::PermissionDenied
-                } else {
-                    StartRefused::Otherwise
+                let (kind, account) = match said.iter().position(|one| *one == b' ') {
+                    Some(at) => (
+                        said.get(..at).unwrap_or_default(),
+                        said.get(at + 1..).unwrap_or_default(),
+                    ),
+                    None => (said, &[][..]),
+                };
+                self.heard = Some(TheHelperSaid {
+                    refused: if kind == DENIED.as_bytes() {
+                        StartRefused::PermissionDenied
+                    } else {
+                        StartRefused::Otherwise
+                    },
+                    account: String::from_utf8_lossy(account).into_owned(),
                 });
                 self.held.clear();
                 self.in_its_line = false;

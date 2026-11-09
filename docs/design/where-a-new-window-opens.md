@@ -243,7 +243,32 @@ moves the view, and the choice is `alo_appearance::WhenThereIsNoRoom`, kept in
    the view, then to the reading direction's side (rule 3's preference,
    mirrored), then to the higher.
 2. **The 16 gap is kept on every side**, from every window, and between the new
-   window and the edge of the view it glides to.
+   window and the edge of the view it glides to. **A window here is the window
+   and the title strip alo draws above it** (`crate::a_window_and_its_strip`),
+   for every window and every placer — rules 3 to 7 as well as the glide. Until
+   2026-11-08 the placers were handed the windows alone, and a window opened
+   below another had its strip drawn over the gap and into the one above
+   (Dolphin under the terminal, by 14 pixels at life size).
+   **The strip zooms with its window — the owner, 2026-11-08: *"Title bars
+   shrink with zoom"*.** Asked whether the gap should grow with the zoom or the
+   strip shrink, the owner chose the strip. So the whole edge — strip, title,
+   icon, controls, the line round the window and its shadow — is drawn at the
+   display’s scale **times the zoom** (`Server::the_scale_an_edge_is_drawn_at`),
+   a press on it is read at that same scale, and on the plane a strip is the
+   same size at every zoom: a window placed with the gap keeps it however far
+   the person zooms in or out. Until then the strip kept its size at every
+   zoom, and a window placed below another at life size and seen at half had
+   its strip 8 pixels into the window above.
+
+   **Decided by this lane, the owner’s to change: a title smaller than eight
+   pixels is left out.** The design names no minimum for a title on the
+   canvas. Zoomed far enough out the design’s 13 would be a smudge, so below
+   eight pixels on the display (life size zoomed under about 62 %, a display at
+   200 % under about 31 %) the strip keeps its icon and controls and draws no
+   title; a reader is still told the whole title. Eight is a choice, not a
+   measurement of the bundled faces. The controls shrink with the strip too,
+   so zoomed out their press targets are smaller than the 44 of life size,
+   which is what a strip that shrinks with its window means.
 3. **Never further than *Show all* reaches.** A Place so full that no space is
    left within what *Show all* fits at its furthest out gets rule 5 instead —
    in front, offset — rather than a window that could not be brought back.

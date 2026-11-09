@@ -1,6 +1,6 @@
 //! Everything that can arrive, in one closed list.
 //!
-//! Seventeen requests, and there is no eighteenth. What makes this file worth having on
+//! Eighteen requests, and there is no nineteenth. What makes this file worth having on
 //! its own is that it is deliberately **not** public: the two types a caller of
 //! this crate ever holds are [`FromAnAgent`](crate::FromAnAgent) and
 //! [`FromAPerson`](crate::FromAPerson), and this is the list they are each cut
@@ -27,7 +27,15 @@
 //!
 //! # Law 2, at the one place a caller can reach
 //!
-//! Nothing in this list can carry a command. A request names a **verb** — a
+//! **One request carries a command, and it is not a verb**: [`Asked::Run`],
+//! added on 2026-11-08 for ADR 0149. Law 2 has two halves — no `exec` on the
+//! broker's list of verbs, and *running code is a separate grant that only the
+//! person gives* — and this is the second. Whether it runs is the level the
+//! person chose for running code, read by the daemon at the moment it is asked;
+//! a model can ask, and only the person's choice lets it happen. Everything
+//! else below is as it was: no **verb** request can carry a command.
+//!
+//! A verb request names a **verb** — a
 //! string that is looked up against the closed list this machine offers, by
 //! `alo_capability::Verbs::call` and nowhere else — and gives
 //! [`Argument`](crate::Argument)s, which are text or a whole number. There is
@@ -66,6 +74,18 @@ pub(crate) enum Asked {
         verb: String,
         /// What was given for each of its arguments.
         given: Vec<Argument>,
+    },
+    /// One shell command, asked for where no verb fits (ADR 0149).
+    ///
+    /// **Not a verb, and not on the broker's list**: the command and nothing
+    /// else. What happens to it is the person's level for running code, read
+    /// by the daemon from their own file at the moment it arrives — run at full
+    /// access, put to the person at *ask me each time*, and refused at the
+    /// sealed box or when nothing was chosen. Nothing on the wire can choose
+    /// the level.
+    Run {
+        /// The command, exactly as it would run.
+        command: String,
     },
     /// A question put to a model.
     ///
@@ -474,9 +494,14 @@ mod tests {
     /// cannot invent a request any more than it can invent a verb.
     #[test]
     fn a_request_that_is_not_one_of_the_fourteen_is_not_a_request() {
+        // `run` was on this list until 2026-11-08: ADR 0149 made it a request,
+        // carrying a command and nothing else, and the person's level decides
+        // it in the daemon. `exec`, a grant and the rest still land nowhere.
+        assert!(serde_json::from_str::<Asked>(r#"{"run":{"command":"rm -rf /"}}"#).is_ok());
         for message in [
-            r#"{"run":{"command":"rm -rf /"}}"#,
+            r#"{"run":{"command":"rm -rf /","verb":"sh"}}"#,
             r#"{"exec":{"verb":"sh","given":[]}}"#,
+            r#"{"shell":{"command":"sh"}}"#,
             r#"{"grant":{"path":"/"}}"#,
             r#"{"begin":{"agent":"@files"}}"#,
             r#"{"end":{}}"#,

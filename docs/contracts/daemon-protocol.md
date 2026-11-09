@@ -45,8 +45,9 @@ does not do is told so, rather than having the part it cared about dropped.
 
 There are two kinds of caller and they do not share a list.
 
-**An agent, during a turn**, may ask for `read`, `propose` and `ask`, and is
-told `did`, `proposed`, `answered` and `refused`.
+**An agent, during a turn**, may ask for `read`, `propose` and `ask` — and,
+since 2026-11-08, `run` (ADR 0149) — and is told `did`, `proposed`, `answered`
+and `refused`.
 
 An invoked agent may also request read-only capability discovery:
 `{"format":1,"asks":{"capabilities":{}}}`. The answer is
@@ -109,6 +110,16 @@ offers — and `given`, the arguments.
 **Whether something is a read or a change is not settled by which name was
 used.** `alo_capability::Authorised::read` refuses a change and
 `alo_capability::Proposal::checked` refuses a read, whichever request carried it.
+
+**What either may reach is decided by the person's level, read at that moment**
+(ADR 0149, added 2026-11-08; nothing on the wire changed). At full access
+(`at-full-trust` in `docs/contracts/how-code-runs-file.md`) a `read`, a
+`propose` and the `approve` that runs it reach any file and any application the
+person's own account can, with no grant; at every other level, with nothing
+chosen and with a level file that will not read, they reach what was granted
+and nothing else. The level is read again at the `approve`, so a change
+proposed at full access is refused there if the person has switched it off and
+no grant covers it. A change still waits for one `approve` at full access **for now**: `docs/features.md` promises that at full access alo acts *without asking*, and that half is not built yet.
 
 ### `ask` — a question for a model
 
@@ -177,6 +188,62 @@ The daemon reads that decision out of the person's own settings file
 — so a model chosen in Settings answers the next turn, and two questions in one
 turn go to the same place. A turn that asks nothing opens no file and probes no
 runtime.
+
+### `run` — one command, where no verb fits
+
+```json
+{"run":{"command":"mkdir -p /var/home/alo/Documents/demo"}}
+```
+
+Added 2026-11-08, additively, for
+[ADR 0149](../decisions/0149-full-access-is-everything-the-person-can-do.md).
+The owner's words: *"Where no verb exists, alo does it by running a command at
+full access (without asking) and at* ask me each time *(after the OK). "There is
+no verb for that" is never an answer a person sees at either level."*
+
+**It is not a verb, and it is not on the broker's list.** Law 2's first half —
+no `exec` among the verbs — is untouched: `alo-turn`'s machine verb list and
+`alo-declared` do not gain it. This is law 2's second half, *running code is a
+separate grant that only the person gives*: what happens to the command is the
+level the person chose for running code
+(`docs/contracts/how-code-runs-file.md`), read by the daemon from their own file
+at the moment the request arrives. Nothing on the wire can name the level.
+
+| The person's level | What happens | The answer |
+|---|---|---|
+| full access (`at-full-trust`) | it runs now, with `/bin/sh -c`, as the person and in their home, with no folder grants | `did`, with `ran-a-command` |
+| *ask me each time* (`asking-each-time`) | nothing runs; it waits for the person under the **same numbers** a change waits under | `proposed`, whose sentence is `run this command: …` and the command whole |
+| the sealed box, **nothing chosen**, or **a file that will not read** | nothing runs | `refused`, in the sentence the sealed box already says: *"mkdir was not run. The sealed box can't run programs on this computer yet. Choose 'ask each time' in Settings → Running code to run commands after you approve them."* |
+
+- **One line, at most 4,096 bytes, and not empty** — anything else is refused
+  before the level is read, because what a person approves is the sentence and
+  a sentence with a line break in it reads as two.
+- **A waiting command is answered exactly as a change is**: `approve` and
+  `decline` on the person's door, by number; it appears in `waiting`; one
+  approval runs it once; a second approval of the number, or one after it
+  lapsed, is refused. **The level is read again at the approval**: a person who
+  moved to the sealed box while the question stood is refused in the sealed
+  box's sentence and nothing runs.
+- **Every run and every refusal is written down** — `ran-a-command`, with the
+  shell, `-c` and the command, no folders allowed and `the_kernel_was_holding_it`
+  false; or `a-command-was-not-run` with the sentence the person was told.
+- **The snapshot is asked for before every run** (ADR 0045, through the turn's
+  bracket), and a run is stamped with the place kept. One that could not be
+  taken does not stop the run, and the person's `did-and-cannot-be-undone` says
+  so.
+- **What a run answers** is `{"ran-a-command":{"returned":0,"said":"…","cut_short":false,"took_too_long":false}}`:
+  the exit status (absent when a signal ended it), what it wrote to standard
+  output and standard error together, up to 64 KiB, and whether either bound
+  was reached. A command is stopped after two minutes, because this service
+  answers one thing at a time.
+- **The egress indicator does not show what a command sends.** It leaves from
+  the command's own process, and the only counter this repository has for a
+  process's bytes is ADR 0148's, which counts an application's control group
+  at the desktop's request. Making a command's traffic reach the indicator
+  needs a control group of its own for the command and a way for the daemon to
+  ask that it be counted — neither exists yet, and law 1 is not met for a
+  command until they do. This is said here so that nothing reads as though it
+  were.
 
 ## What a person sends
 
@@ -907,9 +974,13 @@ change.
 **Nothing names a moment.** `now` is the machine's clock. A request that named
 one could revive a grant that expired an hour ago.
 
-**Nothing carries a command** — no shell line, no path to an executable, no
-script, no expression. Not because a check refuses them, but because there is no
-field for one to arrive in. That is law 2 at the one place a caller can reach.
+**No verb request carries a command** — no shell line, no path to an
+executable, no script, no expression inside `read` or `propose`. Not because a
+check refuses them, but because there is no field for one to arrive in. That is
+law 2's first half at the one place a caller can reach. *Until 2026-11-08 this
+said no request at all carried one; ADR 0149 added `run`, above, which carries
+a command and nothing else and is governed by the person's level rather than by
+any verb.*
 
 ## Bounds
 

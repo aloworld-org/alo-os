@@ -418,6 +418,24 @@ impl ToAPerson {
         }
     }
 
+    /// Everything waiting for them — the changes, and the commands alo asked to
+    /// run where no verb fits (ADR 0149) — in the order each was put to them,
+    /// which is the order of their numbers, since the two share one counter.
+    #[must_use]
+    pub fn waiting_with_commands<'a>(
+        changes: impl Iterator<Item = &'a Waiting>,
+        commands: impl Iterator<Item = &'a alo_capability::WaitingCommand>,
+        strings: &Strings,
+        now: SystemTime,
+    ) -> Self {
+        let mut standing: Vec<Standing> = changes
+            .map(|waiting| Standing::of(waiting, strings, now))
+            .chain(commands.map(|waiting| Standing::of_a_command(waiting, strings, now)))
+            .collect();
+        standing.sort_by_key(Standing::number);
+        Self::Waiting { changes: standing }
+    }
+
     /// Everything waiting for them that a paired machine proposed, in the
     /// order it was proposed, each change saying which machine.
     ///

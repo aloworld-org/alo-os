@@ -20,10 +20,16 @@ use serde_json::{Value, json};
 pub const THE_PROTOCOL_FORMAT: u64 = 1;
 
 /// The doors an agent has, in the order ADR 0001 names them: a read, a change to
-/// propose, and a question for a model. `alo-driving`'s tests hold these to what
-/// `alo-protocol` accepts from an agent, so the schema cannot admit a door the
-/// protocol refuses or refuse one it reads.
-pub const THE_DOORS: [&str; 3] = ["read", "propose", "ask"];
+/// propose, and a question for a model — and, since ADR 0149, one command where
+/// no verb fits, last. `alo-driving`'s tests hold these to what `alo-protocol`
+/// accepts from an agent, so the schema cannot admit a door the protocol
+/// refuses or refuse one it reads.
+pub const THE_DOORS: [&str; 4] = ["read", "propose", "ask", THE_RUN_DOOR];
+
+/// **The door for one command where no verb fits** (ADR 0149). A door like the
+/// other three — `alo-protocol` reads it from an agent — whose inside is a
+/// command rather than a verb, so a provider's schema spells it differently.
+pub const THE_RUN_DOOR: &str = "run";
 
 /// **The door a model answers the person through**, beside the three above and
 /// not one of them: it is what a model says to the person, not what an agent
@@ -131,6 +137,22 @@ pub fn the_envelope_a_provider_accepts() -> Value {
             },
         })
     };
+    // **The command, specified as fully as a provider requires**: one field,
+    // the command (ADR 0149). It names no verb, so it cannot take the shape
+    // the other doors are given above.
+    let the_run = json!({
+        "type": "object",
+        "additionalProperties": false,
+        "required": [THE_RUN_DOOR],
+        "properties": {
+            THE_RUN_DOOR: {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["command"],
+                "properties": { "command": { "type": "string" } },
+            },
+        },
+    });
     // **The answer, specified as fully as a provider requires**: one field,
     // the words. A door whose contents were any object cannot be said to a
     // provider, for the reason above.
@@ -155,7 +177,7 @@ pub fn the_envelope_a_provider_accepts() -> Value {
             "format": { "type": "integer", "enum": [THE_PROTOCOL_FORMAT] },
             // `anyOf` and not `oneOf`: a provider refuses `oneOf`, and the
             // branches forbid each other's keys so the two mean the same.
-            "asks": { "anyOf": THE_DOORS.iter().map(|door| one_door(door)).chain([the_answer]).collect::<Vec<_>>() },
+            "asks": { "anyOf": THE_DOORS.iter().map(|door| if *door == THE_RUN_DOOR { the_run.clone() } else { one_door(door) }).chain([the_answer]).collect::<Vec<_>>() },
         },
     })
 }

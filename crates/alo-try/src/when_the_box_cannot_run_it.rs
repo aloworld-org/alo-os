@@ -37,6 +37,7 @@ impl WhatItSays {
             NotRun::TheBoxRefusedTheCommand {
                 program,
                 refused: StartRefused::PermissionDenied,
+                ..
             } if root_is_composefs => Self::NotOnThisComputerYet {
                 program: program.clone(),
             },
@@ -59,6 +60,44 @@ impl WhatItSays {
                 .into_text(),
         }
     }
+
+    /// **What reaches the person's terminal, and the account kept for whoever
+    /// administers the machine.**
+    ///
+    /// Where the box cannot run programs here yet, the plain sentence is the
+    /// **only** line the person sees: the account goes to the journal
+    /// (`crate::the_journal`). The walk of 2026-11-08 found the sentence
+    /// between two technical lines, and #1093 meant it to stand alone.
+    ///
+    /// Every other refusal keeps the two lines it always had — the person's
+    /// sentence, then the English an administrator reads — because that is a
+    /// fault in the machine, and the person's terminal is the one place it is
+    /// sure to be seen.
+    #[must_use]
+    pub fn told(&self, not_run: &NotRun, strings: &Strings) -> Told {
+        let account = format!("alo-try: {not_run}");
+        let sentence = self.said(not_run, strings);
+        match self {
+            Self::NotOnThisComputerYet { .. } => Told {
+                on_the_terminal: vec![sentence],
+                for_the_journal: Some(account),
+            },
+            Self::ItsOwn => Told {
+                on_the_terminal: vec![sentence, account],
+                for_the_journal: None,
+            },
+        }
+    }
+}
+
+/// What a refused `try` says, and where.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Told {
+    /// The lines the person's terminal shows, in order.
+    pub on_the_terminal: Vec<String>,
+    /// The account written to the journal instead, where there is one. Said on
+    /// the terminal after all if the journal will not take it.
+    pub for_the_journal: Option<String>,
 }
 
 #[cfg(test)]

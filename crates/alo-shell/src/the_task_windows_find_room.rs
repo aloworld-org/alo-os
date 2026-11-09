@@ -21,7 +21,11 @@ impl crate::Server {
         reading: alo_strings::Direction,
         display_scale: u16,
     ) -> usize {
-        let others = self.the_windows_on_this_place();
+        // **Each with the title strip above it**, at this display's scale
+        // (`crate::a_window_and_its_strip`), so a task window opened beneath
+        // another does not cover the other's strip.
+        let strip = crate::a_window_and_its_strip::ItsStrip::at(u32::from(display_scale));
+        let others = strip.round_each(&self.the_windows_on_this_place());
         let reach = self.as_far_as_show_all_reaches().and_then(|reach| {
             Some(Size::<i32, Logical>::from((
                 i32::try_from(reach.width()).ok()?,

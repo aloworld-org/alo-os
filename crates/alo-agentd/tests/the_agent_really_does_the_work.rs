@@ -232,6 +232,7 @@ impl TheDoor for TheDaemonInThisProcess<'_, '_, '_> {
             self.strings,
             hour(),
             self.now,
+            alo_agentd::running_a_command::Commands::where_nothing_was_chosen(),
         );
         if asking_a_model {
             self.asking_a_model += began.elapsed();

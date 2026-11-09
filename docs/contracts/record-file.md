@@ -203,6 +203,17 @@ or sentence — and it is **opaque**: nothing parses it. Absent, not present and
 empty, on every entry nothing was kept for, so every entry written before it
 existed reads back byte for byte; an entry without it offers no *Put back*.
 
+**Full access is written down in two fields**, added 2026-11-08 and additive
+([ADR 0149](../decisions/0149-full-access-is-everything-the-person-can-do.md)).
+`at_full_access`, on the entry, is `true` on anything a turn decided — what
+`ran`, what was `stopped` — while the person had chosen full access in Settings
+→ Running code. `by_full_access`, inside `ran`, is `true` when something the
+verb touched was allowed by full access and **no grant**: it is the honest
+answer to *against which grant* when the answer is *none, the person chose
+full access*, and `against` then names only the grants that did cover a part
+of it (often none). Both are absent when false, so every entry written before
+they existed, and every entry at another level, reads back byte for byte.
+
 **`let-go` is what the machine was keeping being removed**, added 2026-09-21 and
 additive ([ADR 0045](../decisions/0045-what-undoing-rewinds-to.md), the first
 and second accepted terms). It is written by a privileged unit

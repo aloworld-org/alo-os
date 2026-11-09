@@ -316,6 +316,7 @@ fn the_settings_files() -> Vec<(String, Vec<(usize, String)>)> {
         names,
         [
             "nested_settings.rs",
+            "settings_along_a_row.rs",
             "settings_answering.rs",
             "settings_as_drawn.rs",
             "settings_canvas.rs",

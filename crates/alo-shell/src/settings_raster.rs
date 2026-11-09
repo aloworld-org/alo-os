@@ -359,7 +359,10 @@ pub(crate) fn picture(
     if look.reading == Direction::RightToLeft {
         turned_round(window_area, &mut picture);
     }
-    picture.washed = Some(canvas.washed());
+    // **Premultiplied for the renderer** (`crate::painted::Washed`): the
+    // canvas works in straight alpha, and its shadow handed over straight was
+    // drawn as a white halo round the window.
+    picture.washed = Some(canvas.washed().premultiplied());
     Ok(picture)
 }
 

@@ -308,6 +308,7 @@ mod tests {
                 strings,
                 hour(),
                 noon(),
+                crate::running_a_command::Commands::where_nothing_was_chosen(),
             );
             assert!(
                 matches!(&first, ToAnAgent::Answered { text, .. } if text == "Three are unpaid."),
@@ -325,6 +326,7 @@ mod tests {
                 strings,
                 hour(),
                 noon(),
+                crate::running_a_command::Commands::where_nothing_was_chosen(),
             );
             assert_eq!(
                 second.refusal().unwrap().text(),
@@ -412,6 +414,7 @@ mod tests {
                         0,
                         0,
                     ),
+                    commands: crate::running_a_command::CommandsHere::where_nothing_was_chosen(),
                 },
                 &mut WhatIsGranted::of(&mut Grants::default(), &NothingIsRemembered),
                 &Nearby {
@@ -434,6 +437,7 @@ mod tests {
                 strings,
                 hour(),
                 noon(),
+                crate::running_a_command::Commands::where_nothing_was_chosen(),
             );
             let ToAnAgent::Answered {
                 text, came_from, ..
@@ -499,6 +503,7 @@ mod tests {
                 strings,
                 hour(),
                 two_days_later,
+                crate::running_a_command::Commands::where_nothing_was_chosen(),
             );
             assert_eq!(
                 said.refusal().unwrap().text(),
@@ -544,6 +549,7 @@ mod tests {
                 strings,
                 hour(),
                 noon(),
+                crate::running_a_command::Commands::where_nothing_was_chosen(),
             );
             assert!(said.refusal().is_some(), "{said:?}");
         });
@@ -582,6 +588,7 @@ mod tests {
                 strings,
                 hour(),
                 noon(),
+                crate::running_a_command::Commands::where_nothing_was_chosen(),
             );
             assert_eq!(
                 said.refusal().unwrap().text(),

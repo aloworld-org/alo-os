@@ -215,6 +215,78 @@ done or will be done. Never propose a change the request did not ask for.
 
 These are the only verbs there are:";
 
+/// **The one paragraph [`EVERY_DOOR_AN_ANSWER_AND_A_COMMAND`] adds to
+/// [`EVERY_DOOR_AND_AN_ANSWER`]**: the door for one command where no verb fits
+/// ([ADR 0149](../../../docs/decisions/0149-full-access-is-everything-the-person-can-do.md)).
+///
+/// Held separately for [`AND_YOU_MAY_LOOK_FIRST`]'s reason: a test asserts
+/// that taking it out gives [`EVERY_DOOR_AND_AN_ANSWER`] back, so a measured
+/// difference between the two is these words and nothing else.
+pub const AND_A_COMMAND: &str = "\
+When no verb below can do what the request wants done, run one command on
+this computer instead, with a line of this shape:
+
+{\"format\":1,\"asks\":{\"run\":{\"command\":\"THE COMMAND\"}}}
+
+It is run by /bin/sh as the person, so write it as you would at their prompt,
+with full paths, on one line. Use a verb whenever one fits, and send a run
+line only when none does.
+
+";
+
+/// **Everything [`EVERY_DOOR_AND_AN_ANSWER`] says, and the door for one
+/// command where no verb fits** — what a turn shows since 2026-11-08.
+///
+/// The owner, in ADR 0149: *where no verb exists, alo does it by running a
+/// command at full access (without asking) and at* ask me each time *(after
+/// the OK). "There is no verb for that" is never an answer a person sees at
+/// either level.* A model shown only the verbs could not do that: walked on a
+/// booted machine on 2026-11-08, *make a folder called demo in my Documents*
+/// came back as *"Folders cannot be created directly with the given verbs"*.
+/// This set tells it the run door exists and that it is for when no verb fits.
+///
+/// Written out in full rather than composed, for [`SEVERAL_STEPS`]' reason,
+/// and held to [`EVERY_DOOR_AND_AN_ANSWER`] plus [`AND_A_COMMAND`] by a
+/// test. **Not yet measured**: no grade names it.
+pub const EVERY_DOOR_AN_ANSWER_AND_A_COMMAND: &str = "\
+You are talking to a computer, not to a person. Answer with one line of JSON and
+nothing else: no explanation, no code fence, no second line.
+
+For a verb that only answers a question, the line has this shape:
+
+{\"format\":1,\"asks\":{\"read\":{\"verb\":\"NAME\",\"given\":[{\"named\":\"ARGUMENT\",\"is\":VALUE}]}}}
+
+For a verb that changes something, the line has this shape:
+
+{\"format\":1,\"asks\":{\"propose\":{\"verb\":\"NAME\",\"given\":[{\"named\":\"ARGUMENT\",\"is\":VALUE}]}}}
+
+Each verb below says which it is: (read) or (propose). VALUE is text in quotes,
+or a whole number with no quotes. Give every argument the verb takes and no
+others. A path is always a full path.
+
+When the request wants anything done (a file renamed, moved or archived, an
+application opened, brought to the front or closed), propose it, even when it
+also says how things are now.
+
+When the request only asks to be told something, and what you have been shown
+already tells it, answer the person with a line of this shape:
+
+{\"format\":1,\"asks\":{\"answer\":{\"text\":\"YOUR ANSWER, IN PLAIN WORDS\"}}}
+
+An answer does nothing, so never say in one that something was done, is being
+done or will be done. Never propose a change the request did not ask for.
+
+When no verb below can do what the request wants done, run one command on
+this computer instead, with a line of this shape:
+
+{\"format\":1,\"asks\":{\"run\":{\"command\":\"THE COMMAND\"}}}
+
+It is run by /bin/sh as the person, so write it as you would at their prompt,
+with full paths, on one line. Use a verb whenever one fits, and send a run
+line only when none does.
+
+These are the only verbs there are:";
+
 /// **Which instructions a model was shown.**
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Instructions {
@@ -231,17 +303,22 @@ pub enum Instructions {
     /// text nobody has graded under.
     SeveralSteps,
     /// [`EVERY_DOOR_AND_AN_ANSWER`]: the second set, and the shape a question
-    /// is answered in. What a turn shows since 2026-10-27.
+    /// is answered in. What a turn showed from 2026-10-27 to 2026-11-08.
     EveryDoorAndAnAnswer,
+    /// [`EVERY_DOOR_AN_ANSWER_AND_A_COMMAND`]: the fourth set, and the door for
+    /// one command where no verb fits (ADR 0149). What a turn shows since
+    /// 2026-11-08.
+    EveryDoorAnAnswerAndACommand,
 }
 
 impl Instructions {
     /// Every set, in the order they were written.
-    pub const ALL: [Self; 4] = [
+    pub const ALL: [Self; 5] = [
         Self::AsFirstWritten,
         Self::OneExamplePerDoor,
         Self::SeveralSteps,
         Self::EveryDoorAndAnAnswer,
+        Self::EveryDoorAnAnswerAndACommand,
     ];
 
     /// **The set an agent turn shows a model** (ADR 0037, decision 2, as ADR
@@ -256,7 +333,16 @@ impl Instructions {
     /// this text, rather than ship a turn that cannot answer (ADR 0133). A turn
     /// shown any other text is a turn no grade is about, so what a turn shows is
     /// named here, once, and taken by [`crate::shown_to_a_turn`].
-    pub const SHOWN_TO_A_TURN: Self = Self::EveryDoorAndAnAnswer;
+    ///
+    /// **It is [`Self::EveryDoorAnAnswerAndACommand`] since 2026-11-08, and ADR
+    /// 0149 is why**: the owner decided that where no verb exists alo runs a
+    /// command, at full access and after the OK at *ask me each time*, and a
+    /// model never told of the run door cannot ask for one. **No grade is set
+    /// aside by it**: nothing in the catalogue names
+    /// [`Self::EveryDoorAndAnAnswer`] — its only measurement is ADR 0133's own
+    /// table, made to choose it — so nothing graded is invalidated, and this
+    /// set is earned like any other before a grade names it.
+    pub const SHOWN_TO_A_TURN: Self = Self::EveryDoorAnAnswerAndACommand;
 
     /// The text a model is shown.
     #[must_use]
@@ -266,6 +352,7 @@ impl Instructions {
             Self::OneExamplePerDoor => ONE_EXAMPLE_PER_DOOR,
             Self::SeveralSteps => SEVERAL_STEPS,
             Self::EveryDoorAndAnAnswer => EVERY_DOOR_AND_AN_ANSWER,
+            Self::EveryDoorAnAnswerAndACommand => EVERY_DOOR_AN_ANSWER_AND_A_COMMAND,
         }
     }
 
@@ -277,6 +364,7 @@ impl Instructions {
             Self::OneExamplePerDoor => "one-example-per-door",
             Self::SeveralSteps => "several-steps",
             Self::EveryDoorAndAnAnswer => "every-door-and-an-answer",
+            Self::EveryDoorAnAnswerAndACommand => "every-door-an-answer-and-a-command",
         }
     }
 
@@ -339,10 +427,44 @@ mod tests {
         );
     }
 
-    /// **What a turn shows is the set ADR 0133 chose, and no other.**
+    /// **The fifth set is the fourth plus one paragraph, and nothing else**,
+    /// for the third set's reason above: the run door's paragraph (ADR 0149).
+    #[test]
+    fn the_fifth_set_is_the_fourth_plus_one_paragraph() {
+        assert!(
+            EVERY_DOOR_AN_ANSWER_AND_A_COMMAND.contains(AND_A_COMMAND),
+            "the paragraph the fifth set is supposed to add is not in it"
+        );
+        assert_eq!(
+            EVERY_DOOR_AN_ANSWER_AND_A_COMMAND.replace(AND_A_COMMAND, ""),
+            EVERY_DOOR_AND_AN_ANSWER,
+            "the fifth set differs from the fourth by more than that paragraph"
+        );
+        assert!(
+            AND_A_COMMAND.contains("no verb"),
+            "the run door does not say it is for when no verb fits"
+        );
+        assert!(AND_A_COMMAND.contains(r#"{"format":1,"asks":{"run":{"command":"#));
+    }
+
+    /// **The set every turn showed before ADR 0149 is unchanged**, so ADR
+    /// 0133's measurement of it still names text that exists.
+    #[test]
+    fn the_set_adr_0133_measured_is_unchanged() {
+        assert_eq!(
+            EVERY_DOOR_AN_ANSWER_AND_A_COMMAND.replace(AND_A_COMMAND, ""),
+            Instructions::EveryDoorAndAnAnswer.text()
+        );
+        assert!(
+            !EVERY_DOOR_AND_AN_ANSWER.contains("\"run\""),
+            "the fourth set gained the run door; it was measured without it"
+        );
+    }
+
+    /// **What a turn shows is the set ADR 0149 chose, and no other.**
     ///
     /// `SHOWN_TO_A_TURN` is a decided choice (ADR 0037, decision 2, as ADR 0133
-    /// amends it). Naming another set there would make every grade a statement
+    /// and ADR 0149 amend it). Naming another set there would make every grade a statement
     /// about text nobody graded under, which is the fault this whole enum
     /// exists to prevent. When `several-steps` has been put to the fixed ten,
     /// this test is the one to come back to.
@@ -350,7 +472,7 @@ mod tests {
     fn what_a_turn_shows_is_a_set_that_has_been_measured() {
         assert_eq!(
             Instructions::SHOWN_TO_A_TURN,
-            Instructions::EveryDoorAndAnAnswer
+            Instructions::EveryDoorAnAnswerAndACommand
         );
         assert_ne!(
             Instructions::SHOWN_TO_A_TURN,
@@ -408,13 +530,13 @@ mod tests {
     const FIRST_WRITTEN_DIGEST: &str = include_str!("instructions_first_written.sha256");
 
     /// **The set a turn shows is one this crate has**, and it is the one ADR
-    /// 0133 named. A turn shown text with no digest here is a turn no grade can
+    /// 0149 named. A turn shown text with no digest here is a turn no grade can
     /// ever be about.
     #[test]
     fn what_a_turn_is_shown_is_named_and_measured() {
         assert_eq!(
             Instructions::SHOWN_TO_A_TURN,
-            Instructions::EveryDoorAndAnAnswer
+            Instructions::EveryDoorAnAnswerAndACommand
         );
         assert_eq!(
             Instructions::of_digest(&Instructions::SHOWN_TO_A_TURN.digest()),
@@ -435,12 +557,19 @@ mod tests {
 
     /// Every set has a digest, and each digest finds its own set.
     ///
-    /// Four now. The shape of this test was `let [first, second] = …`, which
+    /// Five now. The shape of this test was `let [first, second] = …`, which
     /// is the honest kind of break: adding a set failed to compile here rather
     /// than quietly leaving the new one unchecked.
     #[test]
     fn a_digest_names_one_set_of_instructions() {
-        let [first, second, third, fourth] = Instructions::ALL.map(Instructions::digest);
+        let [first, second, third, fourth, fifth] = Instructions::ALL.map(Instructions::digest);
+        for earlier in [&first, &second, &third, &fourth] {
+            assert_ne!(&fifth, earlier);
+        }
+        assert_eq!(
+            Instructions::of_digest(&fifth),
+            Some(Instructions::EveryDoorAnAnswerAndACommand)
+        );
         assert_ne!(first, second);
         assert_ne!(second, third);
         assert_ne!(first, third);

@@ -269,12 +269,13 @@ fn answered_to(
     underway: Option<(
         &mut Turning<'_, '_>,
         &mut crate::the_bracket_this_turn_takes::TheTurnsBracket,
+        &crate::running_a_command::CommandsHere,
     )>,
     grants: &Grants,
     strings: &Strings,
     now: SystemTime,
 ) -> ToAPerson {
-    let Some((turning, bracket)) = underway else {
+    let Some((turning, bracket, commands)) = underway else {
         return match answered.number() {
             Some(number) => nothing_is_waiting(number, strings),
             None => ToAPerson::waiting(std::iter::empty(), strings, now),
@@ -282,7 +283,14 @@ fn answered_to(
     };
 
     match answered {
-        FromAPerson::Waiting => ToAPerson::waiting(turning.waiting_at(now), strings, now),
+        // The changes and the commands alike (ADR 0149): one list, in the
+        // order of the numbers they share.
+        FromAPerson::Waiting => ToAPerson::waiting_with_commands(
+            turning.waiting_at(now),
+            turning.commands_waiting_at(now),
+            strings,
+            now,
+        ),
         // The knock is not about the turn, and the one caller answers it before
         // it reaches here. Unreachable while that is so, and answered rather
         // than assumed away — with the sentence that is true of a machine that
@@ -346,7 +354,15 @@ fn answered_to(
                 {
                     turning.a_place_was_kept(named);
                 }
-                match turning.approving(waiting, grants, now) {
+                // **The grants as the person's level is now** (ADR 0149), read
+                // again at the OK: a person who switched full access off while
+                // the question stood is answered against a list without it.
+                let grants = crate::the_grants_as_the_level_is_now::the_grants_as_the_level_is_now(
+                    grants,
+                    commands,
+                    turning.grantee(),
+                );
+                match turning.approving(waiting, &grants, now) {
                     Ok(answer) => the_change_did(
                         as_a_client_sees_it(&answer, now),
                         bracket.taken_at().is_some(),
@@ -354,9 +370,24 @@ fn answered_to(
                     Err(why) => ToAPerson::refused(&why.said(strings)),
                 }
             }
-            None => nothing_is_waiting(number, strings),
+            // **A command waiting under the number** (ADR 0149): run once, if
+            // the person's level still lets one run, after the bracket.
+            None => match under_a_command(turning, number, now) {
+                Some(waiting) => crate::running_a_command::a_command_approved(
+                    turning,
+                    waiting,
+                    crate::running_a_command::Commands::here(commands, Some(bracket)),
+                    strings,
+                    now,
+                ),
+                None => nothing_is_waiting(number, strings),
+            },
         },
-        FromAPerson::Decline { number } => match under(turning, number, now) {
+        // A command is declined the same way a change is: `Turning::declining`
+        // answers a *no* whichever list the number is on.
+        FromAPerson::Decline { number } => match under(turning, number, now)
+            .or_else(|| under_a_command(turning, number, now))
+        {
             Some(waiting) => match turning.declining(waiting, now) {
                 Ok(()) => ToAPerson::Declined,
                 Err(why) => ToAPerson::refused(&why.said(strings)),
@@ -379,7 +410,7 @@ fn answered_to(
 /// that failed, because what the person needs to know is identical. A bracket
 /// taken by an earlier approval in the same turn covers this change too, which
 /// is why the question is asked of the turn and not of this one call.
-fn the_change_did(done: alo_protocol::Done, kept: bool) -> ToAPerson {
+pub(crate) fn the_change_did(done: alo_protocol::Done, kept: bool) -> ToAPerson {
     if kept {
         ToAPerson::did(done)
     } else {
@@ -394,6 +425,15 @@ fn the_change_did(done: alo_protocol::Done, kept: bool) -> ToAPerson {
 fn under(turning: &Turning<'_, '_>, number: u64, now: SystemTime) -> Option<ProposalId> {
     turning
         .waiting_at(now)
+        .find(|waiting| waiting.id.as_u64() == number)
+        .map(|waiting| waiting.id)
+}
+
+/// The command really waiting under this number, if one is (ADR 0149) — found
+/// among what is waiting, as [`under`] finds a change.
+fn under_a_command(turning: &Turning<'_, '_>, number: u64, now: SystemTime) -> Option<ProposalId> {
+    turning
+        .commands_waiting_at(now)
         .find(|waiting| waiting.id.as_u64() == number)
         .map(|waiting| waiting.id)
 }
@@ -470,6 +510,7 @@ mod tests {
                 turning,
                 questions: &mut nothing_has_been_chosen(),
                 bracket,
+                commands: crate::running_a_command::CommandsHere::where_nothing_was_chosen(),
             },
             &mut WhatIsGranted::of(grants, &NothingIsRemembered),
             &Nearby {
@@ -532,6 +573,7 @@ mod tests {
             strings,
             hour(),
             noon(),
+            crate::running_a_command::Commands::where_nothing_was_chosen(),
         );
         assert!(said.waits_for_a_person());
         turning.waiting_at(noon()).next().unwrap().id.as_u64()

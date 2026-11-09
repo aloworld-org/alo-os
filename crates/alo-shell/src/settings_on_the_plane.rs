@@ -136,6 +136,11 @@ impl crate::Server {
         // **Against where the view is going**, as every opening is.
         let camera = self.the_camera_after_the_glide();
         let zoom = crate::scene::drawn_at(camera);
+        // **With the title strip above every window**, its own included
+        // (`crate::a_window_and_its_strip`).
+        let strip = crate::a_window_and_its_strip::ItsStrip::at(
+            self.the_display_scale_edges_are_measured_at(),
+        );
         if zoom <= 0.0 {
             return false;
         }
@@ -158,7 +163,7 @@ impl crate::Server {
             .map(crate::where_a_window_is)
             .chain(self.where_the_terminal_is_on_the_plane())
             .collect();
-        let first = crate::where_a_window_opens(
+        let first = strip.where_a_window_opens(
             view,
             &open,
             open.first().copied(),
@@ -178,6 +183,7 @@ impl crate::Server {
                 wanted: Size::from(window),
                 fixed: &[],
                 reading,
+                strip,
             },
             std::time::Instant::now(),
         );

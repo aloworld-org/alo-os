@@ -477,6 +477,10 @@ impl<'a> Serving<'a> {
             // machine's until something takes it back, and a service that
             // stopped holding one would leave a folder reachable by an agent
             // whose turn is over.
+            // **Where the person's level for running code is, and where a
+            // command starts** (ADR 0149), for this turn. The level itself is
+            // read at the moment a command is asked for or approved.
+            let commands = crate::running_a_command::CommandsHere::on_this_machine();
             let mut over = Ok(false);
             while held.agent.is_some() {
                 // No timeout: a turn is not interrupted by the clock, and there
@@ -488,6 +492,7 @@ impl<'a> Serving<'a> {
                         turning: &mut turning,
                         questions: &mut *questions,
                         bracket: &mut bracket,
+                        commands: &commands,
                     },
                     granted,
                     strings,
@@ -721,7 +726,7 @@ impl<'a> Serving<'a> {
                 looking: self.wire,
                 naming: self.terms.naming,
             };
-            let answered = match (held.agent.as_mut(), holding.underway()) {
+            let answered = match (held.agent.as_mut(), holding.acting()) {
                 // A connection with no turn behind it cannot be served and
                 // cannot be left waiting either: it would be ready for ever and
                 // read by nobody. It is the end of the connection, which for an
@@ -729,7 +734,7 @@ impl<'a> Serving<'a> {
                 // two loops above are the only callers, and answered here
                 // rather than assumed away.
                 (None, _) | (Some(_), None) => Message::Ended,
-                (Some(line), Some((turning, questions))) => {
+                (Some(line), Some((turning, questions, commands))) => {
                     // **Watched while it is answered**, so an agent that hangs
                     // up during its question — the person pressed Stop — has
                     // the provider's connection shut at once (ADR 0139). The
@@ -747,6 +752,7 @@ impl<'a> Serving<'a> {
                                 strings,
                                 self.terms.standing,
                                 now,
+                                commands,
                             )
                             .written()
                             .ok()

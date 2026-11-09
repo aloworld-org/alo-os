@@ -127,9 +127,9 @@ application's.
   the same figures the window drew for itself — and it now has **the unfocused
   look** too: a cream strip, a muted title, a `border/default` body line and
   the quiet shadow while the keys are elsewhere. Close shuts the window, as the
-  strip's own Close did. *A reading:* at a zoom other than 100 % the edge keeps
-  its size round a body of whatever size the zoom makes it, as an application's
-  edge does, so it no longer sits exactly in the window's own band.
+  strip's own Close did. Since the owner's *"Title bars shrink with zoom"* of
+  2026-11-08 the edge zooms with the body, as an application's does
+  (`where-a-new-window-opens.md`).
 - **Opening the record still closes Settings**, as it always has. That order
   was the only safe one while both were fixed to the display; on the canvas they
   could stand side by side, and whether they should is not decided here.

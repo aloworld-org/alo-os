@@ -21,10 +21,11 @@ use alo_protocol::{FORMAT, FromAnAgent};
 
 /// A line through each door, as an agent would write it.
 fn a_line_through(door: &str) -> String {
-    let inside = if door == "ask" {
-        r#"{"question":"how many?"}"#
-    } else {
-        r#"{"verb":"list_folder","given":[]}"#
+    let inside = match door {
+        "ask" => r#"{"question":"how many?"}"#,
+        // ADR 0149: one command where no verb fits.
+        "run" => r#"{"command":"ls"}"#,
+        _ => r#"{"verb":"list_folder","given":[]}"#,
     };
     format!(r#"{{"format":{THE_PROTOCOL_FORMAT},"asks":{{"{door}":{inside}}}}}"#)
 }

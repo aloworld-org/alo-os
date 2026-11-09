@@ -205,3 +205,66 @@ fn nothing_is_drawn_over_the_application_at_any_scale() {
         }
     }
 }
+
+/// The title's inked rows for `title` over [`window`] at `scale` per cent:
+/// how many rows of text were drawn, and the whole title a reader is told.
+fn a_titles_rows(title: &str, scale: u32) -> (usize, String) {
+    let mut fonts = fonts();
+    let edge = edge_of(
+        window(),
+        Decorations::TheShellDraws,
+        true,
+        smithay::utils::Size::from((1920, 1080)),
+    );
+    let picture = EdgePicture::of(
+        &edge,
+        Pointing::default(),
+        OverTheEdge::default(),
+        TheWindow {
+            title: Some(title),
+            ..TheWindow::default()
+        },
+        &mut fonts,
+        (4000, 4000),
+        scale,
+    )
+    .expect("the edge fits");
+    let (_, inked) = picture.flat();
+    let rows = inked.iter().map(|it| it.area.size.h).sum::<i32>();
+    (
+        usize::try_from(rows).unwrap_or(0),
+        picture.the_whole_title().to_owned(),
+    )
+}
+
+/// **The title zooms with its strip** — the owner's *"Title bars shrink with
+/// zoom"* of 2026-11-08. The edge is drawn at the display's scale times the
+/// zoom, so its title is drawn at that scale too: taller at 200 than at 100
+/// and shorter at 75, never the same size round a strip that changed.
+#[test]
+fn the_title_is_drawn_at_the_scale_its_strip_is() {
+    let (at_75, _) = a_titles_rows("Home — Dolphin", 75);
+    let (at_100, _) = a_titles_rows("Home — Dolphin", 100);
+    let (at_200, _) = a_titles_rows("Home — Dolphin", 200);
+    assert!(at_100 > 0, "the control: a title was drawn at 100");
+    assert!(
+        at_200 > at_100,
+        "at 200 the title is no taller: {at_200} against {at_100}"
+    );
+    assert!(
+        at_75 < at_100,
+        "at 75 the title is no shorter: {at_75} against {at_100}"
+    );
+}
+
+/// **Below the smallest a letter is drawn at, the title is left out** — and a
+/// reader is still told all of it. At 50 per cent (life size zoomed to half)
+/// the design's 13 would be 6.5 pixels; at 62 it is just above eight.
+#[test]
+fn a_title_too_small_to_read_is_left_out_and_still_said() {
+    let (at_50, said) = a_titles_rows("Home — Dolphin", 50);
+    assert_eq!(at_50, 0, "a title of 6.5 pixels was drawn");
+    assert_eq!(said, "Home — Dolphin", "a reader lost the title");
+    let (at_62, _) = a_titles_rows("Home — Dolphin", 62);
+    assert!(at_62 > 0, "a title of just over eight pixels was left out");
+}

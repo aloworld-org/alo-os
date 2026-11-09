@@ -88,10 +88,12 @@ impl NotGranted {
     pub fn word(&self) -> words::Word {
         match self {
             Self::Lapsed { .. } => words::HAS_EXPIRED,
+            // An application is not inside any folder, so the sentence that
+            // sends a person to pick one would send them nowhere.
             Self::Never {
                 wanted: Ask::Application(_),
                 ..
-            } => words::APPLICATION_CONTROL_NOT_GRANTED,
+            } => words::APPLICATION_NOT_GIVEN,
             Self::Never { .. } => words::NEVER_GRANTED,
             Self::NoAgent { .. } => words::NO_AGENT,
         }
@@ -152,16 +154,16 @@ mod tests {
     use std::path::PathBuf;
 
     #[test]
-    fn application_control_points_to_the_persons_application_permission_choice() {
+    fn application_control_refusal_keeps_the_current_permission_guidance() {
         let refusal = NotGranted::Never {
             agent: "alo".to_owned(),
             wanted: Ask::Application("org.aloworld.Studio".to_owned()),
         };
-        assert_eq!(refusal.word(), words::APPLICATION_CONTROL_NOT_GRANTED);
+        assert_eq!(refusal.word(), words::APPLICATION_NOT_GIVEN);
         let said = refusal.said(&in_english());
         assert!(!said.is_a_bug());
         assert!(said.text().contains("Settings"));
-        assert!(!said.text().contains("picking a folder"));
+        assert!(said.text().contains("full access"));
     }
 
     fn never() -> NotGranted {
@@ -205,6 +207,35 @@ mod tests {
         // to the panel, rather than a reworded version of it.
         assert_ne!(said.text(), never().said(&strings).text());
         assert!(!said.text().contains("picking a folder"), "{said}");
+    }
+
+    /// **An application nobody granted is not a folder to go and pick.**
+    /// Walked on 2026-11-08: *open the text editor* was refused with the
+    /// folder sentence, and the person was sent to the folders list for a fix
+    /// that is not there.
+    #[test]
+    fn an_application_nobody_granted_does_not_send_somebody_to_pick_a_folder() {
+        let strings = in_english();
+        let said = NotGranted::Never {
+            agent: "@alo".to_owned(),
+            wanted: Ask::application("org.gnome.TextEditor"),
+        }
+        .said(&strings);
+        assert!(!said.is_a_bug(), "{said}");
+        assert!(said.text().contains("org.gnome.TextEditor"), "{said}");
+        assert!(said.text().contains("@alo"), "{said}");
+        assert!(!said.text().contains("by picking a folder"), "{said}");
+        assert_eq!(
+            NotGranted::Never {
+                agent: "@alo".to_owned(),
+                wanted: Ask::application("org.gnome.TextEditor"),
+            }
+            .word(),
+            words::APPLICATION_NOT_GIVEN
+        );
+        // And a path nobody granted still is: picking its folder is the fix.
+        assert_eq!(never().word(), words::NEVER_GRANTED);
+        assert!(never().said(&strings).text().contains("picking a folder"));
     }
 
     /// The third refusal is a refusal like the other two: decided without

@@ -222,6 +222,19 @@ fn the_launcher_draws_at_both_frames_sizes_and_can_be_looked_at() {
             let it = (f32::from(over) * alpha + f32::from(under) * (1.0 - alpha)).round() as u8;
             it
         };
+        // **The panel over it premultiplied**, as the renderer blends it
+        // (`crate::painted::Washed`); the veil above is one straight colour.
+        let over = |colour: u8, under: u8, alpha: f32| {
+            #[expect(
+                clippy::cast_possible_truncation,
+                clippy::cast_sign_loss,
+                reason = "clamped to a byte's range before the cast"
+            )]
+            let it = (f32::from(colour) + f32::from(under) * (1.0 - alpha))
+                .round()
+                .clamp(0.0, 255.0) as u8;
+            it
+        };
         let mut image = image::RgbImage::from_pixel(
             wide,
             tall,
@@ -250,9 +263,9 @@ fn the_launcher_draws_at_both_frames_sizes_and_can_be_looked_at() {
                 x,
                 y,
                 image::Rgb([
-                    mix(red, ur, alpha),
-                    mix(green, ug, alpha),
-                    mix(blue, ub, alpha),
+                    over(red, ur, alpha),
+                    over(green, ug, alpha),
+                    over(blue, ub, alpha),
                 ]),
             );
         }
@@ -298,8 +311,7 @@ fn the_approved_frames_are_drawn() {
             let alpha = f32::from(pixel[3]) / 255.0;
             let under = image.get_pixel(x, y).0;
             let over = |which: usize| {
-                (f32::from(pixel[which]) * alpha + f32::from(under[which]) * (1.0 - alpha)).round()
-                    as u8
+                (f32::from(pixel[which]) + f32::from(under[which]) * (1.0 - alpha)).round() as u8
             };
             image.put_pixel(x, y, image::Rgb([over(0), over(1), over(2)]));
         }

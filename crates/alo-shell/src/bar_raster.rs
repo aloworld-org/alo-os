@@ -518,7 +518,8 @@ pub(crate) fn picture(
 
     Some(BarPicture {
         veil: (screen, canvas_colour, THE_VEIL_IS),
-        panel: canvas.washed(),
+        // **Premultiplied for the renderer** (`crate::painted::Washed`).
+        panel: canvas.washed().premultiplied(),
         places,
     })
 }

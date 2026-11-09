@@ -18,8 +18,15 @@
 //! 5. A **propose** goes to the machine and the loop **ends**: a change waits
 //!    for a person. The turn itself is held open until they answer, by
 //!    `crate::holding_the_turn`, because the change lives in it.
-//! 6. A model that answered in words rather than asking for anything has
-//!    finished the request.
+//! 6. A **run** — one command, where no verb fits (ADR 0149) — goes to the
+//!    machine, which decides it by the person's level for running code. One
+//!    that ran, or was refused, becomes a step: round again. One waiting for the
+//!    person's OK **ends** the loop exactly as a proposal does, because it is a
+//!    change waiting under the same numbers.
+//! 7. A model that answered in words rather than asking for anything has
+//!    finished the request — **unless the words talk about the verbs**, which
+//!    the person never sees: that is told back to the model as a step
+//!    (`alo_instructing::speaks_of_the_verbs`, ADR 0149).
 //!
 //! # Why a refusal is a step and not an end, whichever door it came from
 //!
@@ -52,7 +59,8 @@
 
 use alo_capability::Verbs;
 use alo_instructing::{
-    AStep, ATurnInProgress, Instructions, TheConversationSoFar, WhatItMayReach, shown_in_progress,
+    AStep, ATurnInProgress, Instructions, NOT_FOR_THE_PERSON, TheConversationSoFar, WhatItMayReach,
+    shown_in_progress, speaks_of_the_verbs,
 };
 use alo_protocol::{Answered, FromAnAgent, ToAnAgent};
 
@@ -215,7 +223,15 @@ pub fn driving_after(
         // **An answer to the person ends the turn**, in the shape a held reply
         // can take (ADR 0133). Read before the protocol, because it is not a
         // line of it: it is said to the person, never sent to the machine.
+        //
+        // **Unless it talks about the verbs**, which the person never sees
+        // (ADR 0149): then it is told back to the model as a step, like a
+        // line that tried to be a request, and the turn goes on.
         if let Some(answer) = alo_instructing::the_answer_in(&said) {
+            if speaks_of_the_verbs(&answer, request, verbs) {
+                steps.push(AStep::of(&said, NOT_FOR_THE_PERSON));
+                continue;
+            }
             return WhatHappened::ItWasAnsweredInWords {
                 said: answer,
                 after: steps,
@@ -246,6 +262,10 @@ pub fn driving_after(
             // `Display` on purpose and this loop may not reword it.
             Err(why) if said.trim_start().starts_with('{') => {
                 steps.push(AStep::of(&said, &format!("not a request: {why:?}")));
+                continue;
+            }
+            Err(_) if speaks_of_the_verbs(&said, request, verbs) => {
+                steps.push(AStep::of(&said, NOT_FOR_THE_PERSON));
                 continue;
             }
             Err(_) => {
@@ -305,10 +325,42 @@ pub fn driving_after(
                 }
                 Err(not_answered) => return could_not_be_asked(not_answered, steps),
             },
+            // **One command, where no verb fits** (ADR 0149). The daemon reads
+            // the person's level and answers one of three ways, and this loop
+            // decides nothing from the command itself.
+            FromAnAgent::Run { .. } => match door.asking(&next) {
+                // At *ask me each time* it waits for the person, under the same
+                // numbers a change waits under — so the turn ends as it does
+                // for a proposal, and is held open for the answer.
+                Ok(ToAnAgent::Proposed(standing)) => {
+                    return WhatHappened::AChangeIsWaiting {
+                        number: standing.number(),
+                        sentence: standing.sentence().text().to_owned(),
+                        after: steps,
+                        stands_for: standing.lapses_in().map(std::time::Duration::from_secs),
+                    };
+                }
+                // It ran — at full access — or it was refused: either way the
+                // model is told, as a step, and the turn goes on. A refusal is
+                // a step for this module's header's reason.
+                Ok(answer @ (ToAnAgent::Did(_) | ToAnAgent::Refused(_))) => {
+                    steps.push(AStep::of(&said, &as_a_step(&answer)));
+                }
+                Ok(ToAnAgent::Answered { .. }) => {
+                    return WhatHappened::TheMachineCouldNotBeAsked {
+                        why: "a command was answered as though a model had been asked".to_owned(),
+                        after: steps,
+                    };
+                }
+                Err(not_answered) => return could_not_be_asked(not_answered, steps),
+            },
             // The model asked for a question to be put to a model, which is
             // what we just did for it. Asking again would be the same round
             // with nothing added, so the turn ends rather than spending the
             // bound on a loop with no step in it.
+            FromAnAgent::Ask { .. } if speaks_of_the_verbs(&said, request, verbs) => {
+                steps.push(AStep::of(&said, NOT_FOR_THE_PERSON));
+            }
             FromAnAgent::Ask { .. } | FromAnAgent::Capabilities => {
                 return WhatHappened::ItWasAnsweredInWords { said, after: steps };
             }
