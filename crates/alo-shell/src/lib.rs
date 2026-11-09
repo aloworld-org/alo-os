@@ -234,6 +234,8 @@ mod dock_tooltip;
 /// shadow — at the display scale its geometry is laid out in.
 mod how_a_panel_is_raised;
 mod the_keyboard_on_the_docks_surfaces;
+/// A full-screen window's band, out of sight until the top edge is reached.
+mod the_band_over_full_screen;
 mod the_pointer_drawn;
 mod the_pointers_look;
 pub mod what_is_on_the_clipboard;
@@ -540,8 +542,6 @@ mod the_first_account;
 mod the_nearest_empty_space;
 /// The record drawn as a window on the canvas, for one frame.
 mod the_record_drawn_on_the_canvas;
-/// A full-screen window's band, out of sight until the top edge is reached.
-mod the_band_over_full_screen;
 /// Task windows opened into a full view find room as other windows do.
 mod the_task_windows_find_room;
 /// The view gliding, or jumping where less motion was asked for.
