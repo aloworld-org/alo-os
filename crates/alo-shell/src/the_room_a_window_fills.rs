@@ -78,6 +78,7 @@ impl WhatIsReserved {
         }
     }
 
+    /// Every reserved rectangle that covers anything.
     fn each(self) -> impl Iterator<Item = Rectangle<i32, Physical>> {
         [self.dock, self.panel, self.top, self.leaving]
             .into_iter()
