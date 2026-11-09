@@ -14,6 +14,7 @@ members = [
   "crates/alo-giving-a-folder",
   "crates/alo-giving-a-name",
   "crates/alo-administrator",
+  "crates/alo-running-as-administrator",
   "crates/alo-their-folders",
   "crates/alo-gettext",
   "crates/alo-as-it-was",

@@ -14,9 +14,6 @@ repository.workspace = true
 # What a command is, and what one that ran did, in the shape the record and
 # the agent are told it in.
 alo-capability = { path = "../alo-capability" }
-# The one crate that starts a command (ADR 0117), so a command run as
-# administrator is bounded and captured exactly as one run as the person is.
-alo-running = { path = "../alo-running" }
 # Who is on the other end of a socket: the kernel's answer, never the caller's.
 rustix = { workspace = true, features = ["net", "process"] }
 # The line the agent service and the runner speak.
@@ -39,7 +36,3 @@ path = "src/bin/alo-keeping-the-system-password.rs"
 [[bin]]
 name = "alo-checking-a-password"
 path = "src/bin/alo-checking-a-password.rs"
-
-[[bin]]
-name = "alo-running-as-administrator"
-path = "src/bin/alo-running-as-administrator.rs"

@@ -355,6 +355,12 @@ cameras.microphone-is-off	The microphone is off. Nothing on this machine can use
 cameras.none-here	This machine has no camera
 cameras.only-the-door	This machine cannot release this device, so off is kept at the door. A program you run yourself outside the workspace could still reach it
 cameras.what-it-has-of-its-own	This machine cannot tell whether this camera has a shutter or a light of its own
+capability.administrator.could-not-ask	nothing ran, because this computer could not ask for administrator rights just now
+capability.administrator.no-answer-in-time	nothing ran, because the password was not given within five minutes, so the question was taken back
+capability.administrator.not-accepted	nothing ran, because the password was not accepted
+capability.administrator.not-an-administrator	nothing ran, because your account is not an administrator on this computer
+capability.administrator.nothing-can-ask	nothing ran, because nothing on this computer could ask for your password: you need to be signed in at its screen
+capability.administrator.they-cancelled	nothing ran, because you closed the window that asked for your password
 capability.agent.off	this machine has no agent — turn one on whenever you like, and nothing is reinstalled
 capability.agent.on	this machine has an agent — turn it off whenever you like, and everything it has been granted ends at once
 capability.answer.lapsed	"{sentence}" was proposed too long ago to answer — ask again if it is still wanted

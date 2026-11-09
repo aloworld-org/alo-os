@@ -154,6 +154,7 @@ RUN cargo build --release --target ${THE_TARGET} \
       --package alo-giving-a-folder \
       --package alo-giving-a-name \
       --package alo-administrator \
+      --package alo-running-as-administrator \
       --package alo-their-folders \
       --package alo-agent \
       --package alo-try \
@@ -461,7 +462,8 @@ COPY --from=built /alo-os/target/${THE_TARGET}/release/alo-giving-a-name /usr/li
 # polkit's own helper for the caller's own login, because the desktop that
 # draws the password sheet holds no capability and could not; and the runner
 # runs one command as administrator after polkit says the person gave their
-# password. One package, three binaries: selecting the package builds all three.
+# password. The first two are `alo-administrator`'s binaries; the runner is a
+# package of its own, because it alone needs the crate that starts a command.
 COPY --from=built /alo-os/target/${THE_TARGET}/release/alo-keeping-the-system-password /usr/libexec/alo-keeping-the-system-password
 COPY --from=built /alo-os/target/${THE_TARGET}/release/alo-checking-a-password /usr/libexec/alo-checking-a-password
 COPY --from=built /alo-os/target/${THE_TARGET}/release/alo-running-as-administrator /usr/libexec/alo-running-as-administrator

@@ -6,7 +6,7 @@
   alo OS: the one thing alo asks polkit about (ADR 0150).
 
   A command alo was asked to run, run as administrator. `auth_admin` at every
-  setting and never `auth_admin_keep`, because the owner's answer was "Ask my
+  setting, and never the kind that keeps an answer, because the owner's answer was "Ask my
   password each time" (ADR 0149): a yes is spent on the one command it was
   given for, and the next command asks again.
 
