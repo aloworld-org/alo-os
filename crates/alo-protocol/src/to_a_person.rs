@@ -569,7 +569,11 @@ impl ToAPerson {
                 model,
             }),
             Told::Leaving { lines } => Ok(Self::Leaving { lines }),
-            Told::Proposed(_) => Err(NotUnderstood::NotAnAnswerForAPerson),
+            // A change carried out without the OK is told to the agent that
+            // asked for it, which tells the person in its reply (ADR 0149).
+            Told::Proposed(_) | Told::DoneWithoutAsking { .. } => {
+                Err(NotUnderstood::NotAnAnswerForAPerson)
+            }
         }
     }
 

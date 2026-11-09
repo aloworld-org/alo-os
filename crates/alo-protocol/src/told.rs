@@ -61,6 +61,15 @@ pub(crate) enum Told {
     /// undo it with (ADR 0045's third term: the change still runs, *and says it
     /// is not undoable*). Added 2026-10-28, additively.
     DidAndCannotBeUndone(Done),
+    /// What a change did that was carried out **without the OK**, because the
+    /// person chose full access (ADR 0149), and the sentence the person reads
+    /// about it. Added 2026-11-08, additively; on the agent's door only.
+    DoneWithoutAsking {
+        /// What the change did, as `did` carries it.
+        did: Done,
+        /// What the person is told was done, in their language.
+        said: Wording,
+    },
     /// A change is waiting under this number, with the sentence it waits on.
     Proposed(Standing),
     /// A model answered.

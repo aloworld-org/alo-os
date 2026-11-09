@@ -150,7 +150,8 @@ pub enum NotAnInstallation {
         /// The verb it was for.
         verb: String,
     },
-    /// The authority did not come from an approval.
+    /// The authority did not come from an approval, and was not a change
+    /// carried out without the OK at full access (ADR 0149).
     #[error("{INSTALL_APPLICATION} is a change, and this authority came from no approval")]
     NotApproved,
     /// An argument the declaration requires is missing or of the wrong kind.
@@ -259,13 +260,18 @@ fn install_application() -> Result<Verb, VerbError> {
 /// # Errors
 /// [`NotAnInstallation`] for another verb's authority, one that came from no
 /// approval, or one missing an argument.
+///
+/// **Or a change carried out without the OK** because the person chose full
+/// access (ADR 0149, `alo_capability::Authorised::without_the_ok`): the one
+/// authority with no approval that is still a change somebody chose to have
+/// made — the person, by choosing that level.
 pub fn approved(authorised: &Authorised) -> Result<Wanted, NotAnInstallation> {
     if authorised.verb() != INSTALL_APPLICATION {
         return Err(NotAnInstallation::AnotherVerb {
             verb: authorised.verb().to_owned(),
         });
     }
-    if authorised.from_approval().is_none() {
+    if authorised.from_approval().is_none() && !authorised.without_the_ok() {
         return Err(NotAnInstallation::NotApproved);
     }
     let call = authorised.call();
@@ -519,6 +525,34 @@ mod tests {
                 "{application:?} from {source:?} became a call"
             );
         }
+    }
+
+    /// **At full access an installation carried out without the OK is one this
+    /// crate installs** (ADR 0149), and an authority that is neither that nor
+    /// an approval is still refused — a read's, which is the only other road.
+    #[test]
+    fn an_installation_without_the_ok_at_full_access_is_installed() {
+        use alo_capability::{Authorised, Grantee, Grants};
+        let call = software_verbs()
+            .unwrap()
+            .call(
+                INSTALL_APPLICATION,
+                &[
+                    (words::APPLICATION, Given::text("org.gnome.TextEditor")),
+                    (words::SOURCE, Given::text("flathub")),
+                ],
+            )
+            .unwrap();
+        let agent = Grantee::named("@alo");
+        let now = std::time::SystemTime::UNIX_EPOCH + std::time::Duration::from_secs(1_800_000_000);
+        let at = Grants::default().at_full_access_for(&agent);
+        let authorised = Authorised::at_full_access(&call, &agent, &at, now).unwrap();
+        assert!(authorised.from_approval().is_none());
+        assert!(approved(&authorised).is_ok());
+
+        // Without full access no authority for it is made at all.
+        assert!(Authorised::at_full_access(&call, &agent, &Grants::default(), now).is_err());
+        assert!(Authorised::read(&call, &agent, &Grants::default(), now).is_err());
     }
 
     #[test]

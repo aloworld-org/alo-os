@@ -128,10 +128,13 @@ file verbs and opening, bringing forward and closing an application — reaches
 any file and any application the person's own account can**, with no grant.
 `alo-agentd` reads this file at the moment of each read, each proposal and each
 OK, through the same `the_level_remembered`; nothing chosen and a file that will
-not read are never full access. A change still waits for one OK at this level **for now** — `docs/features.md` promises full access acts *without asking*, and that half is not built yet.
-Switching away from `at-full-trust` takes effect on the next of those moments,
-so a change proposed at full access and approved afterwards is refused unless a
-grant covers it. Grants keep working at every level. Full access does not reach
+not read are never full access. **At this level a change is carried out
+without the OK** (added 2026-11-08): read at the moment of the change, the
+snapshot asked for first, run once, written down as at full access with no
+approval, and the person told it was done (`docs/contracts/daemon-protocol.md`,
+`done-without-asking`). Switching away from `at-full-trust` takes effect on the
+next read, change or OK: the next change waits for one OK, and one outside every
+grant is refused. Grants keep working at every level. Full access does not reach
 the camera, the microphone or the screen, a terminal the person has not allowed
 in Settings → Terminal, or any machine whose person declined the agent. What
 was allowed by full access rather than a grant is written in the record
@@ -177,6 +180,12 @@ in-the-terminal = "at-full-trust"
   writes runs; this decides whether the changes alo proposes for a request typed
   in the terminal are carried out without being shown first. Neither implies the
   other.
+- **At `chose = "at-full-trust"` it has nothing to answer** (added 2026-11-08).
+  Full access carries every change out at once, everywhere a turn is served
+  (the terminal, the alo Bar, task windows), so a request typed in the terminal
+  leaves no change waiting and `alo-ask` neither reads this key nor approves
+  anything. It is not switched off and not rewritten: at every other level it
+  works exactly as above, and Settings keeps showing what the person chose.
 ## What the three protections do not depend on
 
 ADR 0064 keeps three things on at every level — the record, the snapshot taken

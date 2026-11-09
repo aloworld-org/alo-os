@@ -129,14 +129,19 @@ fn carried_out(
                 Err(why) => not_done(&why, strings),
             }
         }
-        FromAnAgent::Propose { verb, .. } => {
-            let grants =
-                the_grants_as_the_level_is_now(grants, commands.level_at(), turning.grantee());
-            match turning.proposing(verb, &asked.given(), &grants, standing, now) {
-                Ok(number) => waiting_under(turning, number, strings, now),
-                Err(why) => not_done(&why, strings),
-            }
-        }
+        // **A change, as the person's level is now** (ADR 0149): carried out at
+        // once at full access, and waiting for one OK at every other level —
+        // `crate::a_change_asked_for` is the whole of it.
+        FromAnAgent::Propose { verb, .. } => crate::a_change_asked_for::a_change_asked_for(
+            verb,
+            &asked.given(),
+            turning,
+            grants,
+            commands,
+            strings,
+            standing,
+            now,
+        ),
         FromAnAgent::Ask { question, answered } => put_to_a_model(
             question, *answered, turning, questions, corridor, strings, now,
         ),
@@ -374,7 +379,7 @@ fn put_to_a_model(
 /// inside — and that one is also said to the service log, in the machine's
 /// English, because the person's sentence deliberately carries no fact about
 /// a kernel and whoever administers the machine needs exactly that fact.
-fn not_done(why: &NotDone, strings: &Strings) -> ToAnAgent {
+pub(crate) fn not_done(why: &NotDone, strings: &Strings) -> ToAnAgent {
     if let NotDone::NotBounded(no_boundary) = why {
         the_boundary_was_not_there(no_boundary);
     }
@@ -457,7 +462,7 @@ fn the_boundary_was_not_there(why: &NoBoundary) {
 /// time at all. It is refused with the capability model's own sentence for a
 /// number nothing is waiting under, rather than with a second one written here
 /// that would say the same thing differently.
-fn waiting_under(
+pub(crate) fn waiting_under(
     turning: &Turning<'_, '_>,
     number: ProposalId,
     strings: &Strings,

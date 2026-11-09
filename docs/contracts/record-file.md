@@ -214,6 +214,16 @@ full access*, and `against` then names only the grants that did cover a part
 of it (often none). Both are absent when false, so every entry written before
 they existed, and every entry at another level, reads back byte for byte.
 
+**A change carried out without the OK** (added 2026-11-08; no field changed) is
+a `ran` entry for a change with **no `from_approval`** and `at_full_access`
+`true`: at full access nobody is asked, so there is no approval to name, and
+the absence is the honest answer to *from which approval*. Before this, a `ran`
+change always carried `from_approval`. And **an attempt the machine refused** —
+a file verb that was allowed and that the disk or the account's own permissions
+then said no to — keeps what the person was told in `told`, at every level, so
+the record does not read it as a change that worked; until 2026-11-08 such an
+attempt carried nothing beside `ran`.
+
 **`let-go` is what the machine was keeping being removed**, added 2026-09-21 and
 additive ([ADR 0045](../decisions/0045-what-undoing-rewinds-to.md), the first
 and second accepted terms). It is written by a privileged unit

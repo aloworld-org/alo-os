@@ -11,6 +11,14 @@
 //! - [`crate::Approved::redeem`], for a change, and the approval is spent
 //!   getting through it.
 //!
+//! *Since 2026-11-08 there is a third, and it is not a way round the second.*
+//! [`Authorised::at_full_access`] (in `crate::without_the_ok`) authorises a
+//! change with no approval **only on a list that says the person chose full
+//! access for this agent** (ADR 0149: *at full access, alo can do anything the
+//! person's own account can do, without asking*). On any other list it refuses
+//! exactly as the read door refuses a change, so at every level that asks,
+//! changes still wait.
+//!
 //! **Both doors ask the grants, and the redemption asks them again at the
 //! moment of execution.** That is what makes a revoked grant take effect
 //! immediately: a person who revokes a folder after approving something stops
@@ -148,6 +156,15 @@ impl Refused {
         }
     }
 
+    /// A refusal of `call`, for `why` — crate-private, for the doors in this
+    /// crate that are not in this file (`crate::without_the_ok`).
+    pub(crate) fn of(call: Call, why: NotAuthorised) -> Self {
+        Self {
+            call: Box::new(call),
+            why,
+        }
+    }
+
     /// What was refused, for the record.
     #[must_use]
     pub fn call(&self) -> &Call {
@@ -185,6 +202,9 @@ pub struct Authorised {
     /// Whether something it touches was let through by full access rather than
     /// by a grant (ADR 0149).
     by_full_access: bool,
+    /// Whether this is a change carried out **without the OK**, because the
+    /// person chose full access (ADR 0149) — see `crate::without_the_ok`.
+    without_the_ok: bool,
     /// The moment the grants were asked, which is the moment it may run.
     at: SystemTime,
 }
@@ -235,6 +255,7 @@ impl Authorised {
                 from,
                 by_full_access: permission.by_full_access(),
                 against: permission.into_against(),
+                without_the_ok: false,
                 at: now,
             }),
             Err(why) => Err(Refused {
@@ -307,6 +328,26 @@ impl Authorised {
     #[must_use]
     pub fn at(&self) -> SystemTime {
         self.at
+    }
+
+    /// Whether this is a change carried out **without the OK**, because the
+    /// person chose full access (ADR 0149): made only by
+    /// [`Authorised::at_full_access`], and `false` for a read and for every
+    /// change that came through an approval.
+    ///
+    /// The honest third answer to *from which approval*: [`None`] from
+    /// [`Authorised::from_approval`] and `true` here is a change nobody was
+    /// asked about, because the person chose that nobody should be.
+    #[must_use]
+    pub const fn without_the_ok(&self) -> bool {
+        self.without_the_ok
+    }
+
+    /// This authority, marked as a change carried out without the OK.
+    /// Crate-private: `crate::without_the_ok` is the one caller.
+    pub(crate) const fn carried_out_without_the_ok(mut self) -> Self {
+        self.without_the_ok = true;
+        self
     }
 }
 
