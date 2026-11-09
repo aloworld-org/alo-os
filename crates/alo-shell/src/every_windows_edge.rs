@@ -62,10 +62,7 @@ pub(crate) fn every_windows_edge(
     let open: Vec<_> = server.mapped_surfaces().cloned().collect();
     open.iter()
         .filter_map(|surface| {
-            let window = crate::an_edge_in_its_displays_units::a_window_in_the_edges_units(
-                server.where_a_window_is_drawn(surface),
-                scale,
-            );
+            let window = server.the_window_a_band_hangs_from(surface, scale);
             // **Laid out with its controls while any of them is still to be
             // seen**, so a fade out has something to draw. What a press
             // reaches is asked separately, of the reveal itself
@@ -119,7 +116,10 @@ pub(crate) fn every_windows_edge(
                     look: crate::window_edge_look::WhichLook::of(
                         server.is_the_window_typing_goes_to(surface),
                     ),
-                    body: Some(window),
+                    // **No line or shadow round a band out over full
+                    // screen**: there is no window card to draw it round,
+                    // only the band laid over the application's top.
+                    body: (!server.is_its_band_out_over_full_screen(surface)).then_some(window),
                     controls: crate::window_edge_paint::HowTheControlsLook {
                         pointing,
                         open: keyboard.the_menu().is_some(),

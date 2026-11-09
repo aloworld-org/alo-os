@@ -112,6 +112,9 @@ impl crate::Server {
         let at = at
             .map(|at| crate::an_edge_in_its_displays_units::a_point_in_the_edges_units(at, scale));
         let less_motion = self.motion_is_reduced();
+        // **A full-screen window's band is brought out or put away first**, so
+        // the reveal below asks about the band where it now hangs.
+        self.the_full_screen_bands_were_told(&mapped, at, scale);
 
         for surface in mapped {
             let was = self
@@ -120,10 +123,7 @@ impl crate::Server {
                 .find(|(it, _)| *it == surface)
                 .map_or_else(Revealing::covered, |(_, machine)| *machine);
             let edge = crate::window_edge::edge_of(
-                crate::an_edge_in_its_displays_units::a_window_in_the_edges_units(
-                    self.where_a_window_is_drawn(&surface),
-                    scale,
-                ),
+                self.the_window_a_band_hangs_from(&surface, scale),
                 decorations,
                 was.is_revealed(),
                 room,
