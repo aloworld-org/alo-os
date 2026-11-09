@@ -158,6 +158,7 @@
 
 #![doc(html_root_url = "https://github.com/aloworld-org/alo-os")]
 
+pub mod a_change_at_full_access;
 pub mod a_command_where_no_verb_exists;
 mod a_question_that_leaves_this_machine;
 mod acting_on_an_application;
@@ -197,6 +198,7 @@ pub mod words;
 #[cfg(test)]
 mod testing;
 
+pub use a_change_at_full_access::{Before, Changed};
 pub use acting_on_an_application::Reached;
 pub use answering_for::AnsweredFor;
 pub use answers::Answers;

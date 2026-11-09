@@ -199,6 +199,9 @@ pub mod verb;
 pub mod verbs;
 /// What a command alo ran did.
 pub mod what_a_command_did;
+/// A change carried out without the OK, because the person chose full access
+/// (ADR 0149).
+pub mod without_the_ok;
 pub mod words;
 
 #[cfg(test)]

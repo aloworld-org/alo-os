@@ -186,8 +186,17 @@ pub(crate) fn carrying_out(
     };
 
     let (authorised, outcome) = did.into_parts();
+    // **What the machine said, when it said no**, kept with the attempt
+    // (`Entry::telling`). Since 2026-11-08 a change at full access runs with
+    // nobody shown it first (ADR 0149), so the record is the one place a person
+    // can read afterwards that it was tried and *not* done: an attempt with
+    // nothing told beside it read exactly like one that worked.
+    let entry = match &outcome {
+        Ok(_) => Entry::ran(&authorised, strings),
+        Err(failed) => Entry::ran(&authorised, strings).telling(&[failed.said(strings)]),
+    };
     (
-        Entry::ran(&authorised, strings),
+        entry,
         outcome
             .map(WhatAVerbDid::from)
             .map_err(NotDone::MachineCouldNot),

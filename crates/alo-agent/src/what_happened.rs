@@ -26,6 +26,7 @@
 //! the first proposal ends it.
 
 use alo_instructing::AStep;
+use alo_protocol::ToAnAgent;
 
 /// How a turn ended.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -115,6 +116,26 @@ impl WhatHappened {
             | Self::ItWasStopped { after }
             | Self::TheMachineCouldNotBeAsked { after, .. } => after,
         }
+    }
+
+    /// **What was carried out without the OK on the way**, because the person
+    /// chose full access (ADR 0149): one sentence for each, in the person's
+    /// language as the machine worded it, oldest first — whichever way the
+    /// turn ended.
+    ///
+    /// Read back from the steps, which keep what the machine answered whole.
+    /// It is what the person is told, because nobody asked them: a model's
+    /// last words are its own and may not mention it, and a turn that ended in
+    /// a refusal still did what it did before it.
+    #[must_use]
+    pub fn done_without_asking(&self) -> Vec<String> {
+        self.after()
+            .iter()
+            .filter_map(|step| match ToAnAgent::read(step.what_came_back()) {
+                Ok(ToAnAgent::DoneWithoutAsking { said, .. }) => Some(said.text().to_owned()),
+                _ => None,
+            })
+            .collect()
     }
 
     /// Whether this is the end a request that changes something reaches.

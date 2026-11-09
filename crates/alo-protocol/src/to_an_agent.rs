@@ -41,6 +41,19 @@ use crate::wording::Wording;
 pub enum ToAnAgent {
     /// What a read found.
     Did(Done),
+    /// What a change did that was carried out **without the OK**, because the
+    /// person chose full access (ADR 0149) — a `did`, with the sentence the
+    /// person is told about it. Added 2026-11-08, additively.
+    ///
+    /// **The agent tells the person**: the turn goes on, as after a read, and
+    /// the person reads `said` with whatever the agent says at the end. Nobody
+    /// was asked, so nobody else would tell them.
+    DoneWithoutAsking {
+        /// What the change did.
+        did: Done,
+        /// What the person is told was done, in their language.
+        said: Wording,
+    },
     /// A change is waiting for the person under this number.
     Proposed(Standing),
     /// A model answered.
@@ -117,6 +130,16 @@ impl ToAnAgent {
         }
     }
 
+    /// What a change did that was carried out without the OK at full access,
+    /// and what the person is told about it (ADR 0149).
+    #[must_use]
+    pub fn done_without_asking(done: Done, said: &Said) -> Self {
+        Self::DoneWithoutAsking {
+            did: done,
+            said: Wording::of(said),
+        }
+    }
+
     /// It did not happen, in the words of whoever refused it.
     #[must_use]
     pub fn refused(said: &Said) -> Self {
@@ -132,6 +155,7 @@ impl ToAnAgent {
     pub fn read(line: &str) -> Result<Self, NotUnderstood> {
         match frame::reply(line)? {
             Told::Did(done) => Ok(Self::Did(done)),
+            Told::DoneWithoutAsking { did, said } => Ok(Self::DoneWithoutAsking { did, said }),
             Told::Proposed(standing) => Ok(Self::Proposed(standing)),
             Told::Answered {
                 text,
@@ -181,7 +205,7 @@ impl ToAnAgent {
     #[must_use]
     pub fn done(&self) -> Option<&Done> {
         match self {
-            Self::Did(done) => Some(done),
+            Self::Did(done) | Self::DoneWithoutAsking { did: done, .. } => Some(done),
             _ => None,
         }
     }
@@ -209,6 +233,7 @@ impl From<ToAnAgent> for Told {
     fn from(told: ToAnAgent) -> Self {
         match told {
             ToAnAgent::Did(done) => Self::Did(done),
+            ToAnAgent::DoneWithoutAsking { did, said } => Self::DoneWithoutAsking { did, said },
             ToAnAgent::Proposed(standing) => Self::Proposed(standing),
             ToAnAgent::Answered {
                 text,
@@ -258,6 +283,9 @@ mod tests {
         fn what_it_carries(said: &ToAnAgent) -> &'static str {
             match said {
                 ToAnAgent::Did(_) => "what a read found",
+                ToAnAgent::DoneWithoutAsking { .. } => {
+                    "what a change did at full access, and the sentence saying so"
+                }
                 ToAnAgent::Proposed(_) => "a change waiting for the person",
                 ToAnAgent::Answered { .. } => "what a model said, in its own words",
                 ToAnAgent::Refused(_) => "a sentence saying it did not happen",
@@ -310,6 +338,24 @@ mod tests {
             let written = told.written().unwrap();
             assert_eq!(ToAnAgent::read(&written).unwrap(), told, "{written}");
         }
+    }
+
+    /// **A change carried out without the OK at full access is read back as
+    /// itself on the agent's door, and refused on the person's** (ADR 0149):
+    /// it is the agent's to tell the person, inside its reply.
+    #[test]
+    fn a_change_done_without_asking_is_for_the_agent_alone() {
+        let done = Done::of_a_file_verb(&Answer::Read("March, 4180.00".to_owned()));
+        let told = ToAnAgent::done_without_asking(done.clone(), &a_sentence());
+        let written = told.written().unwrap();
+        assert!(written.contains("\"done-without-asking\""), "{written}");
+        assert_eq!(ToAnAgent::read(&written).unwrap(), told);
+        assert_eq!(told.done(), Some(&done));
+        assert!(!told.waits_for_a_person());
+        assert_eq!(
+            ToAPerson::read(&written),
+            Err(NotUnderstood::NotAnAnswerForAPerson)
+        );
     }
 
     /// **An agent is never told what its person is being asked.** The one

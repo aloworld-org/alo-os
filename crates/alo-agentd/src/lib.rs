@@ -181,6 +181,10 @@
 mod a_cable_pulled_and_plugged_in_again;
 #[cfg(all(test, target_os = "linux"))]
 mod a_cable_re_laid_between_two_readings;
+/// A change an agent asked for: carried out at once at full access, and put to
+/// the person at every other level (ADR 0149).
+#[cfg(target_os = "linux")]
+pub mod a_change_asked_for;
 #[cfg(all(test, target_os = "linux"))]
 mod a_discovery_answer_leaves_on_the_network_it_arrived_on;
 #[cfg(all(test, target_os = "linux"))]

@@ -121,6 +121,36 @@ built from the paths a call names, not from the grants
 under a grant. And the account's own permissions as the boundary are the
 operating system's: the service runs as the person, and no test here makes a
 file the account cannot read, because the build machine runs its tests as root.
-**Still unbuilt:** a change made through a verb at full access still waits for
-the person's OK, though *What it changes for the person* says alo does it
-*without asking*; that half needs its own change.
+*(This paragraph said, when it was written, that a change made through a verb
+at full access still waited for the person's OK. That is now built; see
+below.)*
+
+*Added 2026-11-08, with the other half of decision 1 built (a change at full
+access is done without asking).* These now run on every build, as tests: at
+full access a change through a verb is carried out at once, exactly once, with
+no approval, after the snapshot was asked for and while the file was still
+where it was; nothing is left waiting for the person; it is written down as
+ran at full access with no approval; and the person is told *Done without
+asking you first, because you chose full access in Settings → Running code*,
+with *it can't be put back* when no snapshot was kept
+(`crates/alo-turn/src/a_change_at_full_access_tests.rs`,
+`crates/alo-agentd/src/a_change_asked_for_tests.rs`). At *ask me each time*,
+the sealed box, with nothing chosen and with a level file that will not read, a
+granted change still waits, takes no snapshot and runs nothing before the OK,
+one OK runs it once and the same number again runs nothing (the second file).
+Switching full access off between two changes: the first is done, the second
+waits, and one outside every grant is refused (the second file). A change the
+disk refuses at full access is answered as a refusal, never as done, and
+written down at full access with what the machine said kept beside the attempt
+(both files). Only a list made at full access for this agent authorises a
+change with no approval (`crates/alo-capability/src/without_the_ok_tests.rs`).
+The agent's loop treats a change done at full access as a step and goes on, and
+hands back what the person is told however the turn ends
+(`crates/alo-agent/tests/a_change_done_at_full_access.rs`); and the terminal's
+own switch has nothing to answer at full access
+(`crates/alo-ask/src/acting_without_the_ok_tests.rs`). **Not checked by any
+test here**, as above: the account's own permissions refusing a change, because
+the build machine runs its tests as root — a disk refusal (a name already
+taken) stands in for it, and the two take the same road. **Still unbuilt:** the
+first-start screen and the password for administrator actions; and what a
+command sends still does not reach the egress indicator.
