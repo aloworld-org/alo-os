@@ -154,6 +154,8 @@ impl Grants {
     pub fn limited_to(&self, id: GrantId) -> Self {
         Self {
             next: self.next,
+            // A portal session remains bound to its one explicit choice.
+            full_access: None,
             held: self
                 .held
                 .iter()
