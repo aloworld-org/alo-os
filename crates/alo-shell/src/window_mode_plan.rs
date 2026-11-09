@@ -39,6 +39,27 @@ pub(crate) struct ModePlan {
 }
 
 impl Surfaces {
+    /// The room of the display this window is on.
+    ///
+    /// Before any display has been seen with its room, the last submitted
+    /// output through the session's camera at a scale of one, with nothing
+    /// reserved — the one display every unarranged session has.
+    pub(crate) fn the_room_for(
+        &self,
+        surface: &WlSurface,
+    ) -> Option<crate::the_room_a_window_fills::ADisplaysRoom> {
+        let rooms: Vec<_> = self.rooms.iter().map(|(_, room, _)| *room).collect();
+        if rooms.is_empty() {
+            return crate::the_room_a_window_fills::ADisplaysRoom::of(
+                self.window_mode_output?,
+                crate::the_room_a_window_fills::WhatIsReserved::default(),
+                self.camera_of(""),
+                100,
+            );
+        }
+        crate::the_room_a_window_fills::the_room_of(&rooms, crate::where_a_window_is(surface))
+    }
+
     /// Whether this window can be given a mode at all, and its role if it can.
     ///
     /// The two conditions that depend on nothing about *which* mode is being
@@ -85,17 +106,24 @@ impl Surfaces {
         // not refused without an output: a client asking to fill the screen
         // before anything is drawn is answered, at its ordinary size, and
         // sized when the output arrives (`update_window_mode_output`).
-        let output = match mode {
+        //
+        // **And both are the room of the display the window is on** since the
+        // same day: maximised is that display's work area with the band kept
+        // on the screen, full screen everything it shows
+        // (`crate::the_room_a_window_fills`). A work area too short to hold
+        // a band is refused as no output, never answered with the band off
+        // the top.
+        let share = match mode {
             Mode::Maximized => Some(
-                self.window_mode_output
+                self.the_room_for(surface)
+                    .and_then(crate::the_room_a_window_fills::ADisplaysRoom::maximised)
                     .ok_or(WindowModeError::OutputUnavailable)?,
             ),
-            Mode::FillingTheScreen => self.window_mode_output,
-            Mode::Normal | Mode::InAShare(_) => None,
-        };
-        let share = match mode {
+            Mode::FillingTheScreen => self
+                .the_room_for(surface)
+                .and_then(crate::the_room_a_window_fills::ADisplaysRoom::full_screen),
             Mode::InAShare(share) => Some(share),
-            _ => None,
+            Mode::Normal => None,
         };
         if previous.is_some_and(|window| {
             window.mode == mode && (!matches!(mode, Mode::InAShare(_)) || window.pending.is_some())
@@ -129,10 +157,9 @@ impl Surfaces {
                 crate::scene::geometry(surface),
             ),
         };
-        let (size, anchor) = match (output, share) {
-            (_, Some(share)) => (share.size, Anchor::Fixed(share.at)),
-            (Some(size), _) => (size, Anchor::Fixed((0, 0))),
-            _ => {
+        let (size, anchor) = match share {
+            Some(share) => (share.size, Anchor::Fixed(share.at)),
+            None => {
                 let size = normal
                     .with_current_limits(surface)
                     .requested_size((0.0, 0.0))?;

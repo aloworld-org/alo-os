@@ -41,8 +41,10 @@ pub(crate) fn maximize_refusal(error: WindowModeError) -> WindowMaximizeError {
 impl Server {
     /// Request maximization or restoration from trusted native shell controls.
     ///
-    /// Maximization uses the last successfully submitted single output at scale
-    /// one, ignores normal client size limits as permitted by XDG, and remembers
+    /// Maximization fills the work area of the display the window is on — what
+    /// that display shows through its camera, less what the shell reserves, with
+    /// the window's band kept at its top — ignores normal client size limits as
+    /// permitted by XDG, and remembers
     /// the original committed geometry. Restore clamps that saved size to current
     /// client limits. Returns `None` for an unchanged request. Neither request
     /// changes focus, stacking, buffers or placement before an acknowledged root

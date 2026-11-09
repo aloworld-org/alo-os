@@ -108,6 +108,14 @@ pub(crate) struct Surfaces {
     pub(crate) window_modes: Vec<crate::window_mode::ModeWindow>,
     /// Last successfully submitted extent, shared by maximize and tile transactions.
     pub(crate) window_mode_output: Option<(i32, i32)>,
+    /// Each display's room on the plane, by name, with what was reserved on
+    /// it — what a maximised or full-screen window fills
+    /// (`crate::the_room_a_window_fills`).
+    pub(crate) rooms: Vec<(
+        String,
+        crate::the_room_a_window_fills::ADisplaysRoom,
+        crate::the_room_a_window_fills::WhatIsReserved,
+    )>,
     /// Resize protocol state owned by one held press and mapping lifetime.
     pub(crate) window_resize: Option<crate::resize_transaction::Resize>,
     /// Pointer-authorized interactive movement of one mapped root.
@@ -359,6 +367,7 @@ impl Surfaces {
         Self {
             window_modes: Vec::new(),
             window_mode_output: None,
+            rooms: Vec::new(),
             window_resize: None,
             window_move: None,
             popups: Default::default(),
