@@ -214,6 +214,17 @@ full access*, and `against` then names only the grants that did cover a part
 of it (often none). Both are absent when false, so every entry written before
 they existed, and every entry at another level, reads back byte for byte.
 
+**A command asked for as administrator** (added 2026-11-09, additive,
+[ADR 0150](../decisions/0150-administrator-actions-ask-the-persons-password-each-time.md))
+carries `as_an_administrator` on the entry — on the `ran-a-command` that ran
+and on the `a-command-was-not-run` that did not — saying what the person did
+when their password was asked for: `they-gave-their-password`,
+`they-cancelled`, `not-accepted`, `nothing-could-ask`,
+`not-an-administrator`, `no-answer-in-time` or `could-not-ask`. Only the
+first means they authenticated. Never the password, and nothing about it but
+whether it was given. Absent on every other entry, so every entry written
+before it existed reads back byte for byte.
+
 **A change carried out without the OK** (added 2026-11-08; no field changed) is
 a `ran` entry for a change with **no `from_approval`** and `at_full_access`
 `true`: at full access nobody is asked, so there is no approval to name, and

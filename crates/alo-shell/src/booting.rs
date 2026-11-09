@@ -327,6 +327,9 @@ pub fn what_this_machine_can_say() -> Result<Strings, WouldNotStand> {
     // for the note above.
     crate::the_closed_windows_words::declare_the_closed_windows_words(&mut vocabulary)
         .map_err(|why| WouldNotStand::Words(why.to_string()))?;
+    // **The password sheet polkit asks through** (ADR 0150), for the note above.
+    crate::the_password_sheets_words::declare_the_password_sheets_words(&mut vocabulary)
+        .map_err(|why| WouldNotStand::Words(why.to_string()))?;
     // **Every translation this machine has, put on the words**, so a language
     // chosen on the first-start sheet — and the one a person's desktop is
     // given from it — is spoken wherever a translation exists. Until

@@ -28,6 +28,13 @@ alo-portals = { path = "../alo-portals" }
 zbus = { version = "5.19", default-features = false, features = ["async-io", "blocking-api"] }
 # Everything a desktop is drawn from, and the loop that draws it.
 alo-shell = { path = "../alo-shell" }
+# polkit's authentication agent for the person's session: the helper's
+# conversation, whether the system's list holds their password, and polkit's
+# name for alo's own action (ADR 0150).
+alo-administrator = { path = "../alo-administrator" }
+# A wait for the person's answer that does not hold the bus's executor, so a
+# question polkit takes back still arrives while one is waiting.
+blocking = "1.6"
 # Where this machine keeps its record, read from its description so the shell is
 # told rather than reads it. Already in this binary's graph through alo-shell.
 alo-recounting = { path = "../alo-recounting" }

@@ -75,6 +75,9 @@ mod telling_applications_about_the_pointer;
 #[cfg(target_os = "linux")]
 mod putting_back;
 
+#[cfg(target_os = "linux")]
+mod asking_for_the_persons_password;
+
 /// Which control groups are an application's (ADR 0148).
 #[cfg(target_os = "linux")]
 mod where_an_application_runs;
@@ -411,6 +414,12 @@ mod running {
         /// Where the listening thread hands over what it was told. Drained on
         /// every frame, and never waited on.
         told: std::sync::mpsc::Receiver<alo_indicator::FromTheDaemon>,
+        /// What polkit asked of the password sheet, handed over by the
+        /// agent's own thread and drained on every frame (ADR 0150).
+        passwords: std::sync::mpsc::Receiver<alo_shell::ToTheSheet>,
+        /// The agent's connection to the system bus, held for the session:
+        /// dropping it would take the password sheet off polkit's list.
+        _the_agent: Option<zbus::blocking::Connection>,
         /// What was told and taken back between two frames, so it is drawn on
         /// the next one rather than on none.
         between_frames: alo_indicator::BetweenFrames,
@@ -534,6 +543,13 @@ mod running {
                 eprintln!("alo-desktop: nothing can listen for what alo-agentd sends: {why}");
             }
             let daemon = alo_indicator::FromTheDaemon::NotYetHeard;
+            // **The password sheet, as polkit's agent for this session**
+            // (ADR 0150). A desktop polkit would not take is a desktop in
+            // which an administrator's password cannot be asked, and that is
+            // said in the journal and to the person who asks for one.
+            let (to_the_sheet, passwords) = std::sync::mpsc::channel();
+            let the_agent =
+                crate::asking_for_the_persons_password::the_agent_for_this_session(to_the_sheet);
             indicating.show_both(Some(&mut egress), &indicator, &daemon);
             // Where the canvas layout lives, if this person has a folder to
             // keep one in. Read from the environment rather than assumed: the
@@ -673,6 +689,8 @@ mod running {
                 indicating,
                 daemon,
                 told,
+                passwords,
+                _the_agent: the_agent,
                 between_frames: alo_indicator::BetweenFrames::nothing_owed(),
                 running: RunningWindow::closed(),
                 filling: FillingWindow::closed(),
@@ -951,6 +969,11 @@ mod running {
                 place.to_owned(),
                 folders.to_vec(),
             ));
+        }
+
+        /// What polkit asked of the password sheet since the last frame.
+        fn passwords_asked(&mut self) -> Vec<alo_shell::ToTheSheet> {
+            std::iter::from_fn(|| self.passwords.try_recv().ok()).collect()
         }
 
         /// The service's answer, once, when it has come.

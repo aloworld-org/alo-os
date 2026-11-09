@@ -81,8 +81,7 @@ pub fn checked(
     let mut answered = false;
     loop {
         let mut line = String::new();
-        let read = reading
-            .by_ref()
+        let read = (&mut *reading)
             .take(THE_LONGEST_LINE)
             .read_line(&mut line)
             .map_err(ended)?;

@@ -93,6 +93,7 @@ mod a_key_reaches_settings;
 mod a_key_reaches_the_bar;
 mod a_key_reaches_the_docks_surfaces;
 mod a_key_reaches_the_market;
+mod a_key_reaches_the_password_sheet;
 mod a_key_reaches_the_record;
 mod a_key_reaches_the_task_in_front;
 mod a_key_types_into_more_apps;
@@ -233,6 +234,9 @@ mod dock_tooltip;
 /// shadow — at the display scale its geometry is laid out in.
 mod how_a_panel_is_raised;
 mod the_keyboard_on_the_docks_surfaces;
+mod the_password_sheet;
+mod the_password_sheet_drawn;
+mod the_password_sheets_words;
 mod the_pointer_drawn;
 mod the_pointers_look;
 pub mod what_is_on_the_clipboard;
@@ -952,6 +956,9 @@ pub use settings_window::{
 pub use shortcut_dispatch::ShortcutDispatchError;
 pub use sign_in_entry::{NAME_BYTES, SignInField};
 pub use sign_in_keys::SignInKey;
+pub use the_password_sheet::{
+    FromTheSheet, PasswordAsked, ThePasswordTyped, ToTheSheet, WhatItIsFor, WhyNotChecked,
+};
 /// **The sign-in and unlock screen's geometry**, read from `176-10686.xml`.
 pub use sign_in_layout::{
     SignInLayout, THE_ARROW_IS, THE_BACK_TARGET_IS, THE_ENTRY_CORNER_IS, THE_ENTRY_IS,

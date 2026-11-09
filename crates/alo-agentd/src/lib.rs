@@ -306,6 +306,10 @@ pub mod responding;
 /// One command where no verb fits, decided by the person's level (ADR 0149).
 #[cfg(target_os = "linux")]
 pub mod running_a_command;
+/// A command written as `sudo ...`, run as administrator after the person's
+/// password, every time (ADR 0150).
+#[cfg(target_os = "linux")]
+pub mod running_as_administrator;
 /// What the kernel says about this machine's interfaces. **`alo-interfaces`'
 /// reader, re-exported** so every `crate::route_messages` path in this service
 /// reads as it did: the reader moved into a crate of its own on 2026-10-30 so
