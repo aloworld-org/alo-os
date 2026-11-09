@@ -220,7 +220,7 @@ fn a_command_that_waited_too_long_runs_nothing() {
 /// change** — the two share numbers and never an answer.
 #[test]
 fn a_command_and_a_change_never_answer_for_each_other() {
-    let ran = RefCell::new(Vec::new());
+    let ran = RefCell::new(Vec::<String>::new());
     let mut record = Record::default();
     on_a_turn(&mut record, |turning| {
         let id = turning
