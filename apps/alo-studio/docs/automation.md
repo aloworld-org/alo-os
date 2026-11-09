@@ -2,9 +2,16 @@
 
 The person enables these controls in **Settings → Access for alo → Give alo
 access to an application**, selects **alo Studio**, and chooses an access
-duration. With that application grant, ask-alo can read recording status and
-propose actions for the person's approval. **Take back** removes access
-immediately; an expired grant also stops further reads and actions.
+duration. At the default permission level, that application grant lets ask-alo
+read recording status and propose actions for the person's approval. **Take
+back** or expiry removes that grant's reach immediately.
+
+The person can instead choose full access in **Settings → Running code**.
+At that level, the daemon derives application reach from the current choice
+and carries out typed changes without another approval, recording that reason.
+Withdrawing full access removes its derived reach immediately; a separate
+application grant still follows its own duration. Source selection and export
+continue to require the native pickers at every level.
 
 Studio exposes `org.aloworld.Studio.Recorder1` at
 `/org/aloworld/Studio/Recorder` on the session-bus name `org.aloworld.Studio`.

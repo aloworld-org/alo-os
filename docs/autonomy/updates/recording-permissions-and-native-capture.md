@@ -1,11 +1,88 @@
 # Recording permissions and native capture
 
 The owner authorised alo Studio's OS integration and a booted recording walk.
-Work remains on `app/alo-studio`, with a draft review. Market publication,
-signed distribution, production-image acceptance, and physical-hardware
-acceptance are separate. The complete booted walk is **not yet accepted**.
+Work remains on `app/alo-studio`, with a draft review. Signed local distribution
+is tested; public market publication, production-image acceptance and physical-
+hardware acceptance remain separate. The complete booted walk is **not yet accepted**.
 
-Current result: native permissions, the normally installed application and 19
+Current result, 9 November: Studio's native recording flow, OS permissions and
+19 typed agent controls are implemented. The normal GNOME 49 package is built
+from `e150618d1f5826f68ddcf6058c6365e5f0e30210`, with verification disabled;
+its bundle SHA-256 is
+`4a9b29550141f2f468c9abe7f630a5ee50a4fe6bee15f5ec353b3caceedb3fe4`.
+All five hosted checks pass at that source: the full repository gate, 35
+application tests, native framebuffer and publisher recording/pause/resume/
+decode checks, optimized desktop regressions, strict lint, and normal packaging.
+The installed desktop and five services are byte-identical to the matched
+six-program artifact produced by that same source's desktop job 129138913907.
+
+The latest complete installed window walk passes source selection, microphone
+capture, stable five-second pause with microphone off, resume, finish, Review,
+renaming, library navigation and byte-identical native export. Its recording
+`1794227627-893209716-2` has SHA-256
+`742a2a7c6af5e949854c2b0a19aa937e6eb275f96a6dfa7207ab8fac1ca157e8`.
+Decoded microphone PCM is continuous for 48.900 seconds, with no measured gap
+or overlap beyond floating-point rounding. The lightweight profile now reads
+100 ms microphone batches and encodes 60 ms Opus packets, retaining 16 kHz mono
+and 24 kbit/s. Unlike the previous installed repeat, this walk does not stop for
+microphone sample loss. This is a one-time installed result, not a claim about
+physical microphones.
+
+**Installed media acceptance still fails.** Window video measures 2.619 fps
+at the selected 5 fps ceiling, with a 1.081-second uncovered gap. Track endings
+differ by 967 ms. Six irregular-marker matches have a median video delay of
+701.5 ms and maximum absolute offset of 850.5 ms; they do not establish sync.
+The reference audio check passes initially but fails after idle. Evidence is
+`installed-steady-reference-window`, with pause/resumption proof in
+`installed-steady-reference-window-validation`.
+
+A subsequent full screen walk also passes source selection, a stable five-second
+pause, resume, finish, Review, naming, library navigation and exact native export.
+Its recording `1794228448-368465997-2` has SHA-256
+`76f5f48822f7faee26be95ba361a1120d86bc6c58d69e0908f44a2eb6421a0b0`.
+The expected single video track has increasing timestamps and no microphone
+track. It measures 2.213 fps with a 1.763-second uncovered gap, so media
+acceptance still fails. Evidence is `installed-screen-confirmation`; its seven
+paused compiler processes resume at 12:50:36 UTC. The window walk's five paused
+processes resume at 12:37:59 UTC. Neither walk establishes continuous video.
+
+An earlier, shorter screen repeat is retained in `installed-accessible-screen`.
+Its startup driver consumed its deadline while accepting the quality warning
+and then finished early. The corrected driver waits afresh after that explicit
+choice. The fresh account also had not enabled Studio's accessibility registry;
+the fixture now enables observation, requires Studio's named identity and
+refuses to substitute an unnamed OS application. These are test-driver fixes,
+not media-performance fixes. The independent reference keeps its original
+timing and continuity limits; its fixture batches reads and excludes a two-second
+warm-up before measuring the same ten seconds of PCM.
+
+The owner-requested dedicated identity `studiotest` is provisioned in a private
+qcow2 copy of the original VM. The OS has one desktop UID, so the old home and
+48 inherited grants are preserved separately within that copy before the test
+profile starts with no grants. Normal PIN sign-in succeeds. This does not claim
+that the graphical account-creation flow passed. The original raw VM, account
+and recordings remain unchanged. Evidence is `test-account-provisioning` and
+`installed-test-account-agent-boundary`.
+
+The live agent walk verifies zero Studio actions before access, 19 after a grant
+made in native Settings, a confirmed status read, one proposed New recording
+action approved on the person's door, and zero actions plus refusal after Take
+back. The resulting application state is Ready with microphone off. Full-access
+discovery/withdrawal and single-grant narrowing also have permanent regressions.
+
+Signed local repository installation, incorrect-key refusal and tampered-metadata
+refusal pass in the package workflow. The owner selected local preparation and
+testing; no public repository is published and the proposed market entry stays
+inactive. Production-image acceptance follows the separate main-only release
+policy. Desktop locking stays a separate OS change. Continuous installed video
+and synchronized audio remain open; this is a draft.
+
+## Historical installed investigations
+
+The following results precede the 9 November status above. They are retained
+with their original source and evidence labels rather than treated as current.
+
+Earlier result: native permissions, the normally installed application and 19
 typed agent actions are implemented. The normal GNOME 49 SDK Flatpak source is
 `06213b2e`, built without verification features; its bundle SHA-256 is
 `ac0ba3a3aa33af1895fbefd9ed21d0c7b2571128da51a2008b018e5b0697e0ba`.
