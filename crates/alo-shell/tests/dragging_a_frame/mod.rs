@@ -40,7 +40,7 @@ use smithay::{
 fn fixture() -> Fixture {
     let f = Fixture::keyboard();
     assert!(f.backend(|s| s.enable_pointer()).is_ok());
-    f.backend(|s| s.the_window_titles_are(alo_appearance::WindowTitles::WhenPointedAt));
+    f.backend(|s| s.the_window_controls_are(alo_appearance::WindowControls::WhenApproached));
     f
 }
 

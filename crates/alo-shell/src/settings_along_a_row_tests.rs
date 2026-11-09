@@ -103,7 +103,7 @@ fn left_and_right_do_nothing_on_a_row_that_is_not_a_row_of_choices() {
     let before = the_files(&machine);
     let access = machine.kept(alo_access::keeping::THE_FILE);
     let access_before = bytes(&access);
-    let mut elsewhere = vec![SettingsRow::WindowTitles];
+    let mut elsewhere = vec![SettingsRow::WindowControls];
     elsewhere.extend(
         alo_appearance::WhenThereIsNoRoom::ALL
             .into_iter()

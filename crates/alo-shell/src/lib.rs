@@ -102,6 +102,7 @@ mod a_person_pins_and_unpins;
 mod a_picture_hashed;
 mod a_press_in_the_menu;
 mod a_press_on_a_setup_sheet;
+mod a_key_reaches_a_windows_band;
 mod a_press_on_an_edge;
 mod a_press_on_the_launcher;
 mod a_press_on_the_record;
@@ -527,6 +528,7 @@ mod the_dock_as_a_reader_meets_it;
 mod the_docks_name_is_held;
 pub mod the_docks_words;
 mod the_door_on_the_desktop;
+mod the_controls_fade;
 mod the_edge_takes_the_keyboard;
 /// The egress indicator's two arrows, from the design file's SVG.
 mod the_egress_indicators_arrows;
@@ -607,7 +609,6 @@ mod the_terminals_edge;
 /// rather than as text on the desktop.
 mod the_terminals_frame;
 /// The terminal's icon on its edge: a navy tile with the prompt mark.
-mod the_terminals_icon;
 /// The question closing the terminal asks, drawn on the terminal's window.
 mod the_terminals_question_drawn;
 /// The strip across the top of alo's own terminal: the folder the shell is in,
@@ -616,7 +617,7 @@ mod the_terminals_strip;
 mod the_title_strip_drawn;
 mod the_window_edge_is_pointed_at;
 mod the_window_edge_reveals;
-mod the_window_titles_shown;
+mod the_window_controls_shown;
 mod the_zone_a_person_chose;
 pub mod the_zone_picker;
 pub mod the_zone_through_timedated;
@@ -746,10 +747,9 @@ pub use window_activation::WindowActivationError;
 pub use window_close::WindowCloseError;
 pub use window_dividing::NotDivided;
 pub use window_edge::{
-    A_TARGET_IS, ARTWORK_IS, BETWEEN_TARGETS, Decorations, EdgeControl, FULL_CONTROLS_NEED,
-    HowItFits, OnTheEdge, THE_COMPACT_EDGE_IS, THE_DRAG_STARTS_AT, THE_GRIP_IS, THE_PADDING_IS,
-    THE_REGION_IS_TALL, THE_STRIP_IS_TALL, THE_STRIP_STARTS_AT, WindowEdge, edge_of,
-    the_usable_output,
+    A_TARGET_IS, BETWEEN_TARGETS, Decorations, EdgeControl, OnTheEdge, THE_CONTROLS_SIT_AT,
+    THE_NARROWEST_EDGE_IS, THE_REGION_IS_TALL, THE_STRIP_IS_TALL, THE_STRIP_STARTS_AT,
+    THE_TITLE_STARTS_AT, THE_TRAILING_INSET, WindowEdge, edge_of, the_usable_output,
 };
 /// What the external window edge is drawn out of: rectangles and roles.
 ///
@@ -759,7 +759,7 @@ pub use window_edge::{
 /// and what holds the edge revealed while a person is using it.
 pub use window_edge_keys::{AnEdgeKey, TheKeyboardOnTheEdge, WhatTheEdgeKeyDid};
 pub use window_edge_look::{EdgeColours, WhichLook};
-pub use window_edge_paint::{Pointing, Solid, solids};
+pub use window_edge_paint::{HowTheControlsLook, Pointing};
 /// One window edge, laid out in owned pixels and ready for a frame.
 pub use window_edge_picture::{EdgePicture, OverTheEdge, TheWindow};
 /// **What a pointer is on, when it is on a window's edge** - the step
@@ -771,7 +771,10 @@ pub use window_edge_pointing::{UnderThePointer, pointing_at, what_is_under};
 /// *has* rather than what is currently drawn: the owner's *without first
 /// hovering* clause of 2026-10-09 is only true if those are different
 /// questions. `crate::access_nodes` hangs these under each open window.
-pub use window_edge_reading::{the_controls_of, what_a_reader_is_told, what_it_does};
+pub use window_edge_reading::{
+    every_word_this_band_says, the_controls_of, what_a_reader_is_told, what_it_does,
+    what_it_is_called,
+};
 pub use window_edge_title::{AN_ELLIPSIS, FittedTitle, fitted};
 /// A window's title on its edge: what is shown, and what is still said aloud.
 /// **The whole title, for somebody who can see and is reading it now.**
@@ -782,7 +785,7 @@ pub use window_edge_title::{AN_ELLIPSIS, FittedTitle, fitted};
 /// be copied, and on a touch screen there is no hover to produce it.
 pub use window_edge_tooltip::{
     A_LINE_IS_TALL, AROUND_THE_WORDS, AT_MOST_LINES, AT_MOST_WIDE, Because, ShowingTheTitle,
-    Tooltip, tooltip_of,
+    Tooltip, the_name_of_a_control, tooltip_of,
 };
 /// **Who draws a frame's header**, in the one place both the drawing and the
 /// reading ask. Its body is what changes when the toplevel's decoration state
@@ -790,11 +793,11 @@ pub use window_edge_tooltip::{
 pub use window_edge_who_draws::who_draws_a_frame;
 pub use window_full_screen::WindowFullScreenError;
 pub use window_maximize::WindowMaximizeError;
-/// **The window menu**, which is what makes the compact edge honest: the
-/// actions it moves off the edge are reachable here rather than nowhere.
+/// **The window panel** Window actions opens: placement and full screen
+/// (`docs/design/the-window-controls.md`).
 pub use window_menu::{
-    A_ROW_IS_TALL, A_ROW_IS_WIDE, BELOW_THE_EDGE, MenuRow, THE_MENU_IS_WIDE,
-    THE_TITLE_BLOCK_IS_TALL, WhatARowDoes, WhatTheWindowAllows, WindowMenu, the_menu_of,
+    A_PICTURE_IS, A_ROW_IS_TALL, A_ROW_IS_WIDE, BELOW_THE_BAND, HowTheWindowIs, MenuRow,
+    THE_PANEL_IS_WIDE, WhatARowDoes, WindowMenu, the_menu_of,
 };
 /// **The keyboard's road to those same actions**, and the control focus goes
 /// back to when the menu closes.
@@ -803,7 +806,7 @@ pub use window_menu_keys::{
 };
 /// **And what it draws**, which is what makes it a menu rather than a list of
 /// rectangles nobody can see.
-pub use window_menu_paint::{PointingAtTheMenu, solids as menu_solids};
+pub use window_menu_paint::PointingAtTheMenu;
 /// **And what a reader is told about it**: the panel's own name, and its rows.
 pub use window_menu_reading::{
     WhatAReaderMeetsInTheMenu, every_word_this_surface_says, what_a_reader_meets,

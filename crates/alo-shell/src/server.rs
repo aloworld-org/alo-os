@@ -188,7 +188,13 @@ pub struct Server {
     /// **A list, like the one above, because two presses in one batch are two
     /// windows** — and because a person may press Close on one window and
     /// Minimise on another before either frame is drawn.
-    pub(crate) asked_on_an_edge: Vec<(WlSurface, crate::window_edge::OnTheEdge)>,
+    pub(crate) asked_on_an_edge: Vec<(WlSurface, crate::a_press_on_an_edge::AskedOnTheBand)>,
+    /// The last primary press on a band, for telling a double-click
+    /// (`crate::a_press_on_an_edge`).
+    pub(crate) the_press_before: Option<crate::a_press_on_an_edge::ThePressBefore>,
+    /// How many choices from a window panel, or double-clicks on a band, the
+    /// window refused — counted, never swallowed.
+    pub(crate) window_panel_refusals: usize,
     /// Which applications a person asked to start, not yet started.
     ///
     /// `docs/features.md` [v0.01] *clicking an application — **nothing open:**
@@ -238,8 +244,8 @@ pub struct Server {
     pub(crate) what_each_application_draws: std::sync::Arc<alo_dock::artwork::TheArtwork>,
     /// When every window's title is on its edge: always, as this release
     /// ships, or only while a person points at it. See
-    /// `crate::the_window_titles_shown`.
-    pub(crate) window_titles: alo_appearance::WindowTitles,
+    /// `crate::the_window_controls_shown`.
+    pub(crate) window_controls: alo_appearance::WindowControls,
     /// What the pointer looks like, as the person last said
     /// (`crate::the_pointers_look`).
     pub(crate) pointers_look: crate::ThePointersLook,
@@ -546,6 +552,10 @@ pub struct Server {
     /// takes its reveal state with it rather than leaving one for whatever
     /// surface is allocated at that address next.
     pub(crate) edges_revealed: Vec<(WlSurface, alo_dock::revealing::Revealing)>,
+    /// How far each window's controls have faded in or out
+    /// (`crate::the_controls_fade`), pruned on the same walk as
+    /// `edges_revealed`.
+    pub(crate) controls_fading: Vec<(WlSurface, crate::the_controls_fade::TheFade)>,
     /// Where the keyboard is on each window's edge.
     ///
     /// §6 of `docs/design/the-external-window-edge.md`, and the sibling of
@@ -857,6 +867,8 @@ impl Server {
             // Nobody has asked for anything yet.
             asked_to_put_aside: Vec::new(),
             asked_on_an_edge: Vec::new(),
+            the_press_before: None,
+            window_panel_refusals: 0,
             asked_to_start: Vec::new(),
             its_agent_asked_to_start: Vec::new(),
             the_person_is_waiting_for: Vec::new(),
@@ -893,7 +905,7 @@ impl Server {
             a_provider_was_not_saved: None,
             what_each_application_draws: std::sync::Arc::new(alo_dock::artwork::TheArtwork::none()),
             // Always, until the desktop says what this person chose.
-            window_titles: alo_appearance::WindowTitles::default(),
+            window_controls: alo_appearance::WindowControls::default(),
             pointers_look: crate::ThePointersLook::default(),
             pointer_change_to_tell: None,
             // Gliding to empty space, until the desktop says what this person
@@ -923,6 +935,7 @@ impl Server {
             closing_asked: None,
             close_when_stopped: Vec::new(),
             edges_revealed: Vec::new(),
+            controls_fading: Vec::new(),
             keyboard_on_edges: Vec::new(),
             asked_to_bring_back: Vec::new(),
             clicks_the_panel_took: std::collections::HashSet::new(),

@@ -501,6 +501,14 @@ where
             }
         }
     }
+    // **A window panel above every window**, whichever window it belongs to:
+    // the panel is in front of everything while it is open, and presses never
+    // pass through it (`crate::a_press_in_the_menu`), so what is drawn on top
+    // must be what a press reaches. Below the Dock, as every window is.
+    for (edge, textures) in native.edges.iter().zip(&edge_textures) {
+        crate::each_window_with_its_edge::wash_all(&mut frame, &textures.on_top)?;
+        edge.paint_on_top(&mut frame)?;
+    }
     // Above every client and control: the dock is furniture no window covers,
     // a task window included; below the record, the question and the
     // indicator.

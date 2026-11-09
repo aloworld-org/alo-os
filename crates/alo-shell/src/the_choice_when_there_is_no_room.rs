@@ -11,7 +11,7 @@
 impl crate::Server {
     /// Where a new window goes when there is no room, as the person last said.
     ///
-    /// **Told rather than read**, for the reason `Server::the_window_titles_are`
+    /// **Told rather than read**, for the reason `Server::the_window_controls_are`
     /// gives: the desktop reads the file at sign-in and says what it holds;
     /// Settings says it again when the person changes it.
     pub fn when_there_is_no_room_is(&mut self, choice: alo_appearance::WhenThereIsNoRoom) {

@@ -121,9 +121,9 @@ impl Appearance {
         self.changes.set_accent(accent);
     }
 
-    /// Show window titles always, or only when pointed at.
-    pub fn set_window_titles(&mut self, titles: crate::titles::WindowTitles) {
-        self.changes.set_window_titles(titles);
+    /// Show window controls always, or as the pointer comes near.
+    pub fn set_window_controls(&mut self, controls: crate::controls_shown::WindowControls) {
+        self.changes.set_window_controls(controls);
     }
 
     /// Make this the arrow the pointer is.
@@ -223,20 +223,21 @@ impl Appearance {
         self.changes.accent().unwrap_or(self.shipped.accent())
     }
 
-    /// When window titles are shown: the person's choice, or always.
+    /// When window controls are shown: the person's choice, or as the
+    /// pointer comes near.
     ///
     /// **Not part of [`Shipped`]**, whose constructor is a public surface that
     /// changes additively: the shipped answer is
-    /// [`WindowTitles::default`](crate::titles::WindowTitles::default), the
-    /// owner's *always visible* of 2026-11-01.
+    /// [`WindowControls::default`](crate::controls_shown::WindowControls::default), the
+    /// owner's ruling of 2026-11-09.
     #[must_use]
-    pub fn window_titles(&self) -> crate::titles::WindowTitles {
-        self.changes.window_titles().unwrap_or_default()
+    pub fn window_controls(&self) -> crate::controls_shown::WindowControls {
+        self.changes.window_controls().unwrap_or_default()
     }
 
     /// Which arrow the pointer is: the person's choice, or the kite.
     ///
-    /// Not part of [`Shipped`], for the reason [`Self::window_titles`] gives.
+    /// Not part of [`Shipped`], for the reason [`Self::window_controls`] gives.
     #[must_use]
     pub fn pointer_shape(&self) -> crate::pointer::PointerShape {
         self.changes.pointer_shape().unwrap_or_default()
@@ -257,7 +258,7 @@ impl Appearance {
     /// Where a new window goes when there is no room for it in the view: the
     /// person's choice, or gliding to empty space, which this release ships.
     ///
-    /// Not part of [`Shipped`], for the reason [`Self::window_titles`] gives.
+    /// Not part of [`Shipped`], for the reason [`Self::window_controls`] gives.
     #[must_use]
     pub fn when_there_is_no_room(&self) -> crate::no_room::WhenThereIsNoRoom {
         self.changes.when_there_is_no_room().unwrap_or_default()

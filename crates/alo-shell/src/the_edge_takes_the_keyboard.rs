@@ -41,6 +41,25 @@ use crate::window_edge_keys::{AnEdgeKey, TheKeyboardOnTheEdge, WhatTheEdgeKeyDid
 use crate::window_menu::{MenuRow, WhatARowDoes, WindowMenu};
 use crate::window_menu_keys::TheKeyboardInTheMenu;
 
+/// Which road closed or opened a window panel, which decides where focus goes.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum ByWhat {
+    /// A key: focus goes back to Window actions.
+    TheKeyboard,
+    /// A pointer: no focus ring is left behind.
+    ThePointer,
+}
+
+impl ByWhat {
+    /// Where the keyboard is on the band once the panel closes.
+    const fn where_focus_goes_back(self) -> TheKeyboardOnTheEdge {
+        match self {
+            Self::TheKeyboard => TheKeyboardOnTheEdge::OnAControl(OnTheEdge::WindowActions),
+            Self::ThePointer => TheKeyboardOnTheEdge::Nowhere,
+        }
+    }
+}
+
 impl crate::Server {
     /// Where the keyboard is on this window's edge.
     ///
@@ -122,43 +141,64 @@ impl crate::Server {
         did
     }
 
-    /// A person pressed the Menu control with a pointer: open the menu.
+    /// A person pressed Window actions, right-clicked the band, or pressed
+    /// `Alt+F3`: open the window panel, or close it if it is open.
     ///
-    /// **The same state the keyboard road sets**, so a menu opened by pointer
-    /// and one opened by Enter on the Menu control are one menu rather than
-    /// two that have to be kept in step. The trigger is recorded as
-    /// [`OnTheEdge::Menu`] either way, which is what a dismissal gives focus
-    /// back to.
+    /// **The same state the keyboard road sets**, so a panel opened by pointer
+    /// and one opened by Enter on Window actions are one panel. **Pressing it
+    /// again closes it**, which is what a person tries first when they opened
+    /// one by mistake.
     ///
-    /// **Pressing it again closes it**, which is what every menu a person has
-    /// used does and what a person will try first when they opened one by
-    /// mistake. Without it the only way out by pointer would be a key.
-    pub(crate) fn the_menu_was_opened_on(&mut self, surface: &WlSurface) {
+    /// `by` says where focus goes when this closes it: back to Window actions
+    /// for the keyboard, which is the specification's *focus returns to the
+    /// opener*, and nowhere for a pointer — a focus ring left behind by a
+    /// click would hold the controls on the screen with nothing using them.
+    pub(crate) fn the_menu_was_opened_on(&mut self, surface: &WlSurface, by: ByWhat) {
         let now = match self.where_the_keyboard_is_on_this_windows_edge(surface) {
-            TheKeyboardOnTheEdge::InTheMenu(_) => TheKeyboardOnTheEdge::OnAControl(OnTheEdge::Menu),
+            TheKeyboardOnTheEdge::InTheMenu(_) => by.where_focus_goes_back(),
             TheKeyboardOnTheEdge::Nowhere | TheKeyboardOnTheEdge::OnAControl(_) => {
-                TheKeyboardOnTheEdge::InTheMenu(TheKeyboardInTheMenu::opened_from(OnTheEdge::Menu))
+                TheKeyboardOnTheEdge::InTheMenu(TheKeyboardInTheMenu::opened_from(
+                    OnTheEdge::WindowActions,
+                ))
             }
         };
+        // **One panel at a time**: opening this window's closes any other,
+        // and takes the keyboard off every other band.
+        if matches!(now, TheKeyboardOnTheEdge::InTheMenu(_)) {
+            self.keyboard_on_edges.retain(|(it, _)| it == surface);
+        }
         self.remember(surface, now);
     }
 
-    /// A person pressed a row of the open menu: it acts, and the menu closes.
-    ///
-    /// Answers what the row does, for a caller that performs it, and [`None`]
-    /// where the press was on a row this window will not allow — which is a
-    /// refusal rather than nothing happening, and the menu stays open so the
-    /// person can see that the row they pressed is the muted one.
+    /// The window panel closed without choosing anything — a click outside it
+    /// or Escape — and focus goes back the way `by` says.
+    pub(crate) fn the_menu_was_dismissed_on(&mut self, surface: &WlSurface, by: ByWhat) {
+        if matches!(
+            self.where_the_keyboard_is_on_this_windows_edge(surface),
+            TheKeyboardOnTheEdge::InTheMenu(_)
+        ) {
+            self.remember(surface, by.where_focus_goes_back());
+        }
+    }
+
+    /// Whether any window's panel is open, and whose.
+    #[must_use]
+    pub(crate) fn whose_panel_is_open(&self) -> Option<WlSurface> {
+        self.keyboard_on_edges
+            .iter()
+            .find(|(_, where_it_is)| matches!(where_it_is, TheKeyboardOnTheEdge::InTheMenu(_)))
+            .map(|(surface, _)| surface.clone())
+    }
+
+    /// A person pressed a choice in the open panel with the pointer: it acts,
+    /// and the panel closes with no focus ring left behind.
     pub(crate) fn a_row_of_the_menu_was_pressed(
         &mut self,
         surface: &WlSurface,
         row: MenuRow,
-    ) -> Option<WhatARowDoes> {
-        if !row.available {
-            return None;
-        }
-        self.remember(surface, TheKeyboardOnTheEdge::OnAControl(OnTheEdge::Menu));
-        Some(row.does)
+    ) -> WhatARowDoes {
+        self.remember(surface, TheKeyboardOnTheEdge::Nowhere);
+        row.does
     }
 
     /// Keep only the windows still open.

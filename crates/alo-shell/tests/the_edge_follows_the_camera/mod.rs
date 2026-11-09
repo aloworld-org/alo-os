@@ -39,7 +39,7 @@ fn a_window_on_the_canvas() -> (Fixture, Application) {
     app.configure();
     app.attach();
     app.sync();
-    f.backend(|s| s.the_window_titles_are(alo_appearance::WindowTitles::WhenPointedAt));
+    f.backend(|s| s.the_window_controls_are(alo_appearance::WindowControls::WhenApproached));
     let root = f.root();
     assert!(f.backend(move |s| s.place_window(&root, PLACED)).is_ok());
     (f, app)

@@ -1,9 +1,5 @@
 //! What a window takes with its strip: its size on the plane at each display
 //! scale, the two ways between a window and what it takes, and the refusals.
-#![expect(
-    clippy::expect_used,
-    reason = "in a test, a panic on an unexpected None is the failure being reported"
-)]
 
 use super::ItsStrip;
 use smithay::utils::{Logical, Point, Rectangle, Size};
@@ -13,14 +9,14 @@ fn at(scale: u32) -> ItsStrip {
     ItsStrip::at(scale)
 }
 
-/// **32 tall at 100 %**, the design’s strip; through the display’s scale
+/// **54 tall at 100 %**, the design’s band (`11:31`, since 2026-11-09); through the display’s scale
 /// and rounded up, never down; and **the same at every zoom**, because since
 /// the owner’s *"Title bars shrink with zoom"* of 2026-11-08 the strip zooms
 /// with its window, so on the plane it does not change.
 #[test]
 fn the_strip_is_the_designs_height_through_the_displays_scale() {
     let window = Rectangle::<i32, Logical>::new((500, 400).into(), (600, 300).into());
-    for (scale, tall) in [(100, 32), (150, 48), (200, 64), (125, 40), (133, 43)] {
+    for (scale, tall) in [(100, 54), (150, 81), (200, 108), (125, 68), (133, 72)] {
         let taken = at(scale).round(window);
         assert_eq!(window.loc.y - taken.loc.y, tall, "at {scale} %");
         assert_eq!(
@@ -54,7 +50,7 @@ fn a_wide_window_takes_its_own_width() {
     let window = Rectangle::<i32, Logical>::new((10, 100).into(), (600, 300).into());
     let taken = at(100).round(window);
     assert_eq!((taken.loc.x, taken.size.w), (10, 600));
-    assert_eq!((taken.loc.y, taken.size.h), (68, 332));
+    assert_eq!((taken.loc.y, taken.size.h), (46, 354));
 }
 
 /// **A narrow window takes its strip's width**, centred over it with the odd
@@ -69,9 +65,8 @@ fn a_narrow_window_takes_the_narrowest_strips_width_centred_over_it() {
         true,
         Size::from((2000, 2000)),
     )
-    .strip
-    .expect("a revealed edge has a strip");
-    assert_eq!(taken.size.w, crate::window_edge::THE_COMPACT_EDGE_IS);
+    .strip;
+    assert_eq!(taken.size.w, crate::window_edge::THE_NARROWEST_EDGE_IS);
     assert_eq!(
         (taken.loc.x, taken.size.w),
         (drawn.loc.x, drawn.size.w),

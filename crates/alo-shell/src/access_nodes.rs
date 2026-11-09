@@ -259,6 +259,71 @@ impl ReadAloudTree {
         self
     }
 
+    /// The same tree, with one window's panel open: its Window actions told as
+    /// **expanded**, and the panel hanging under the window — named *Window*,
+    /// its choices under it, the one the keyboard is on told as **selected**.
+    ///
+    /// `frame` is the window's place in the order [`Self::with_the_frames_open`]
+    /// was given, which is `Server::mapped_surfaces`'. A place with no window
+    /// leaves the tree as it was.
+    #[must_use]
+    pub fn with_a_windows_panel_open(
+        mut self,
+        strings: &Strings,
+        frame: usize,
+        met: &crate::WhatAReaderMeetsInTheMenu,
+    ) -> Self {
+        let Some(at) = self
+            .the_windows_open()
+            .and_then(|list| self.nodes.get(list))
+            .and_then(|list| list.children.get(frame).copied())
+        else {
+            return self;
+        };
+        let window_actions = said(strings, alo_access::words::WINDOW_ACTIONS);
+        let children = self
+            .nodes
+            .get(at)
+            .map(|node| node.children.clone())
+            .unwrap_or_default();
+        for child in children {
+            if let Some(node) = self.nodes.get_mut(child)
+                && node.name == window_actions
+            {
+                node.states = access_roles::words_of(alo_access::State::OpensSomething, Some(true));
+            }
+        }
+        let panel = self.push(
+            at,
+            Node {
+                path: String::new(),
+                role: access_roles::number_of(met.panel.role),
+                name: said(strings, met.panel.name),
+                states: access_roles::words_of(met.panel.state, None),
+                announced: false,
+                parent: at,
+                children: Vec::new(),
+                press: None,
+            },
+        );
+        for (control, selected) in &met.rows {
+            self.push(
+                panel,
+                Node {
+                    path: String::new(),
+                    role: access_roles::number_of(control.role),
+                    name: said(strings, control.name),
+                    states: access_roles::words_of(control.state, Some(*selected)),
+                    announced: false,
+                    parent: panel,
+                    children: Vec::new(),
+                    press: None,
+                },
+            );
+        }
+        self
+    }
+
     /// The same tree, with the task windows now open hanging under *the
     /// windows open* too, after the frames.
     ///

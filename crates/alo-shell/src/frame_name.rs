@@ -152,9 +152,21 @@ impl crate::Server {
             })
             .collect();
         // Each control on the Dock, as the Dock was last drawn.
-        crate::ReadAloudTree::of(strings, showing, turned_on)
+        // **And the one window panel that may be open**, at its window's
+        // place in the same order, so a reader hears it expanded and walks it.
+        let open_panel = self.whose_panel_is_open().and_then(|surface| {
+            let frame = self.mapped_surfaces().position(|it| *it == surface)?;
+            let (_, menu) = self.the_open_panel(&surface)?;
+            let keyboard = self.where_the_keyboard_is_on_this_windows_edge(&surface).the_menu();
+            Some((frame, crate::window_menu_reading::what_a_reader_meets(&menu, keyboard)))
+        });
+        let tree = crate::ReadAloudTree::of(strings, showing, turned_on)
             .with_the_docks_slots(strings, &self.the_docks_slots_as_drawn())
-            .with_the_frames_open(strings, &frames, turned_on)
-            .with_the_task_windows_open(strings, &tasks, turned_on)
+            .with_the_frames_open(strings, &frames, turned_on);
+        let tree = match open_panel {
+            Some((frame, met)) => tree.with_a_windows_panel_open(strings, frame, &met),
+            None => tree,
+        };
+        tree.with_the_task_windows_open(strings, &tasks, turned_on)
     }
 }

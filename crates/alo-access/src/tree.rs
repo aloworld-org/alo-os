@@ -67,6 +67,17 @@ pub enum State {
     OnOrOff,
     /// Announced when it changes, once, whether or not anybody is looking at it.
     AnnouncedWhenItChanges,
+    /// A button that opens and closes something of its own, such as a panel;
+    /// whether it is open now is read from the machine, as a switch's value is.
+    ///
+    /// *Added 2026-11-09 for a window's Window actions button, which the
+    /// specification asks to say whether its panel is expanded.*
+    OpensSomething,
+    /// One of a few choices, of which the one the person is on is selected;
+    /// which it is now is read from the machine.
+    ///
+    /// *Added 2026-11-09 for the window panel's placement choices.*
+    OneOfAFew,
 }
 
 /// One control, as a reader is told about it.
@@ -166,7 +177,10 @@ impl Control {
     /// press about it.
     #[must_use]
     pub const fn can_be_used(&self) -> bool {
-        matches!(self.state, State::CanBeUsed | State::OnOrOff)
+        matches!(
+            self.state,
+            State::CanBeUsed | State::OnOrOff | State::OpensSomething | State::OneOfAFew
+        )
     }
 }
 
@@ -452,11 +466,12 @@ pub const EVERY_NAME_A_READER_SAYS: usize = 36;
 
 /// How many of this crate's words are said by **another crate's** surface.
 ///
-/// Three, all `alo-shell`'s and all about one window's edge and its menu:
-/// `MOVE_THE_WINDOW` and `RESIZE_THE_WINDOW`, which
-/// `window_edge_reading::what_a_reader_is_told` puts into the tree, and
-/// `THE_WINDOW_MENU`, which `window_menu_reading` says on entering the panel.
-/// Nothing here says any of the three.
+/// Eight, all `alo-shell`'s and all about one window's band and its panel
+/// (`docs/design/the-window-controls.md`): `WINDOW_ACTIONS`, `MINIMISE` and
+/// `CLOSE`, which `window_edge_reading::what_a_reader_is_told` puts into the
+/// tree; `THE_WINDOW_PANEL`, which `window_menu_reading` says on entering the
+/// panel; and `MAXIMISE`, `RESTORE`, `FULL_SCREEN` and `EXIT_FULL_SCREEN`, its
+/// choices. Nothing here says any of them.
 ///
 /// **A third count, because there is a third case.** The two above it cover a
 /// word of ours said by our own tree, and somebody else's word said by our
@@ -478,7 +493,7 @@ pub const EVERY_NAME_A_READER_SAYS: usize = 36;
 /// They are in this crate rather than in `alo-shell` for exactly that reason:
 /// `alo-saying`'s `EVERY_LIST` holds seventy crates and `alo-shell` is not one
 /// of them.
-pub const EVERY_WORD_ANOTHER_CRATES_SURFACE_SAYS: usize = 3;
+pub const EVERY_WORD_ANOTHER_CRATES_SURFACE_SAYS: usize = 8;
 
 /// How many names a reader says come from another crate's vocabulary.
 ///

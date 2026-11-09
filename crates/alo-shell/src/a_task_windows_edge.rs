@@ -78,9 +78,13 @@ pub(crate) fn every_task_windows_edge(
                 pointer.map(|at| a_point_in_the_edges_units(at, scale)),
                 None,
             );
+            let look = crate::window_edge_look::WhichLook::of(
+                server.the_kind_in_front()
+                    == crate::which_window_is_in_front::AKindOfWindow::TaskWindows
+                    && server.tasks().the_one_in_front() == Some(which),
+            );
             EdgePicture::of(
                 &edge,
-                pointing,
                 OverTheEdge {
                     menu: None,
                     showing: None,
@@ -89,12 +93,16 @@ pub(crate) fn every_task_windows_edge(
                 // its own title inside it and draws its own body. Its look is
                 // the focused one while it is the window the keys go to.
                 crate::window_edge_picture::TheWindow {
-                    look: crate::window_edge_look::WhichLook::of(
-                        server.the_kind_in_front()
-                            == crate::which_window_is_in_front::AKindOfWindow::TaskWindows
-                            && server.tasks().the_one_in_front() == Some(which),
-                    ),
-                    ..crate::window_edge_picture::TheWindow::default()
+                    title: None,
+                    application: None,
+                    look,
+                    body: None,
+                    controls: crate::window_edge_paint::HowTheControlsLook {
+                        pointing,
+                        open: false,
+                        how_shown: crate::the_controls_fade::ALL_THE_WAY,
+                        look,
+                    },
                 },
                 fonts,
                 output,

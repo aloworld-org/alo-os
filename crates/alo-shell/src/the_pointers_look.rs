@@ -57,7 +57,7 @@ impl ThePointersLook {
 impl crate::Server {
     /// The pointer as the person chose it, told at stand-up.
     ///
-    /// **Told rather than read**, for the reason `Server::the_window_titles_are`
+    /// **Told rather than read**, for the reason `Server::the_window_controls_are`
     /// gives. Not a change to pass on: the desktop read it from the same file and
     /// told the session itself at sign-in.
     pub fn the_pointer_is(&mut self, look: ThePointersLook) {

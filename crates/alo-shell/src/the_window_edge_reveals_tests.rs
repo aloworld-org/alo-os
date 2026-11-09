@@ -1,434 +1,129 @@
-//! §5 held against the laid-out edge, including the two ways it fails silently.
+//! The band's reveal, held to the specification's continuous path.
 //!
-//! **The refusals are the point of most of these.** A classifier that returns
-//! `OnTheSurface` for every point inside the window would pass a happy-path
-//! test about controls and would reveal an edge from the middle of an
-//! application's content. So *what is not the edge* is asserted as carefully as
-//! what is.
-#![expect(
-    clippy::expect_used,
-    reason = "in a test, a panic on an unexpected None is the failure being reported — the words \
-              `crate::window_edge`'s own test module uses"
-)]
+//! These drive [`what_the_pointer_is`] and the shared
+//! [`alo_dock::revealing::Revealing`] machine together, so a pointer is walked
+//! across a band the way a person walks it.
 
 use super::*;
-use crate::window_edge::{Decorations, THE_REGION_IS_TALL, THE_STRIP_IS_TALL, edge_of};
+use crate::window_edge::{Decorations, OnTheEdge, edge_of};
 use alo_dock::revealing::Revealing;
 use smithay::utils::Size;
 
-/// The same specimen `crate::window_edge`'s tests use: a 600-wide edge whose
-/// region lands at the origin, so every figure below reads against the capture.
+/// The Notes window of `11:24`, its band at the origin.
 fn specimen() -> Rectangle<i32, Logical> {
-    Rectangle::new(Point::from((0, THE_REGION_IS_TALL)), Size::from((600, 400)))
+    Rectangle::new(Point::from((0, 54)), Size::from((1056, 466)))
 }
 
+/// A point.
 fn at(x: i32, y: i32) -> Point<i32, Logical> {
     Point::from((x, y))
 }
 
-/// **A concealed edge is all region**, which is what makes the order in
-/// `what_the_pointer_is` safe rather than lucky.
-///
-/// Every point of it answers `AtTheEdge` — the one answer that reveals — and in
-/// particular the band where the strip *would* be once revealed. A classifier
-/// that asked the strip first and found `None` would still arrive here, so this
-/// is checked across the whole height rather than at one point.
-#[test]
-fn a_concealed_edge_is_all_region_and_every_point_of_it_asks() {
-    let edge = edge_of(
+/// A display large enough that nothing is clamped.
+fn roomy() -> Size<i32, Logical> {
+    Size::from((4000, 3000))
+}
+
+/// The band as `revealing` lays it out.
+fn band(revealing: Revealing) -> WindowEdge {
+    edge_of(
         specimen(),
         Decorations::TheShellDraws,
-        false,
-        smithay::utils::Size::from((1920, 1080)),
-    );
-    assert!(
-        edge.strip.is_none(),
-        "a concealed edge draws no strip; this test's premise is that there is nothing more \
-         specific to find"
-    );
-    assert!(
-        edge.controls.is_empty(),
-        "a concealed edge lays out no control. If this ever holds controls, read this file's \
-         header before changing it: a pointer arriving directly on one would classify as \
-         OnTheSurface, and `Revealing` sets *on the surface* from its own current answer, so an \
-         edge nothing had revealed would refuse to reveal"
-    );
+        revealing.is_revealed(),
+        roomy(),
+    )
+}
 
-    for y in 0..THE_REGION_IS_TALL {
-        for x in [0, 1, 299, 598, 599] {
-            assert_eq!(
-                what_the_pointer_is(&edge, at(x, y)),
-                ThePointer::AtTheEdge,
-                "({x}, {y}) is inside a concealed edge's region and must ask for it"
-            );
-        }
+/// **Anywhere in the band reveals** — on the title, on the empty middle, and
+/// where a control will appear.
+#[test]
+fn a_pointer_anywhere_in_the_band_reveals_the_controls() {
+    for point in [at(30, 25), at(500, 2), at(1000, 30), at(1050, 53)] {
+        let after = Revealing::covered().the_pointer_is(what_the_pointer_is(
+            &band(Revealing::covered()),
+            point,
+        ));
+        assert!(after.is_revealed(), "{point:?} did not reveal");
     }
 }
 
-/// **Every control answers on its own target**, asked at each one's centre.
+/// **A pointer in the application is not in the band**, whether the controls
+/// are shown or not — the content below is never part of the reveal.
 #[test]
-fn a_pointer_on_any_control_is_on_the_surface() {
-    let edge = edge_of(
-        specimen(),
-        Decorations::TheShellDraws,
-        true,
-        smithay::utils::Size::from((1920, 1080)),
-    );
-    assert!(
-        !edge.controls.is_empty(),
-        "a revealed shell-drawn edge has controls; without this the loop below proves nothing"
-    );
-    for control in &edge.controls {
-        let middle = at(
-            control.target.loc.x + control.target.size.w / 2,
-            control.target.loc.y + control.target.size.h / 2,
-        );
+fn a_pointer_in_the_application_is_elsewhere() {
+    let shown = Revealing::covered().the_pointer_is(ThePointer::AtTheEdge);
+    for revealing in [Revealing::covered(), shown] {
         assert_eq!(
-            what_the_pointer_is(&edge, middle),
-            ThePointer::OnTheSurface,
-            "the centre of {:?} must be on the surface",
-            control.does
+            what_the_pointer_is(&band(revealing), at(500, 54)),
+            ThePointer::Elsewhere
         );
     }
 }
 
-/// **The 44 × 44 answers, not the 32 × 28 drawn behind it.**
-///
-/// This is the one test here that a correct-looking change breaks. `EdgeControl`
-/// carries `target` and `highlight` as the same type on the same value, so
-/// reading the wrong one compiles, draws identically, and silently shrinks every
-/// control by six pixels each side and fourteen at the top — against a
-/// specification whose one hard floor is *44 × 44, non-overlapping*.
-///
-/// The corners of the target that lie outside the highlight are asserted to be
-/// outside it first, so this cannot pass by the two rectangles having become the
-/// same thing.
-///
-/// **Mutation-tested, 2026-10-10.** Substituting `highlight` for `target` in
-/// `what_the_pointer_is` fails this test, the walk, and the application-drawn
-/// case — three, named, out of eleven. The other eight stay green, and one of
-/// them is the reason this test exists:
-/// `a_pointer_on_any_control_is_on_the_surface` **passes with the fault
-/// present**, because it probes each control's *centre*, which is inside the
-/// highlight as well. A suite of happy paths would have shipped a six-pixel
-/// shrink on every control and reported eleven of eleven.
+/// **The continuous path**: from the title along the band onto Close, the
+/// controls never go — no gap anywhere for them to drop through.
 #[test]
-fn the_target_answers_and_not_the_highlight_drawn_inside_it() {
-    let edge = edge_of(
-        specimen(),
-        Decorations::TheShellDraws,
-        true,
-        smithay::utils::Size::from((1920, 1080)),
-    );
-    let control = edge.controls.first().expect("a revealed edge has controls");
-
-    let corner = at(control.target.loc.x, control.target.loc.y);
-    assert!(
-        !holds(control.highlight, corner),
-        "the premise: a target's top-left corner lies outside the highlight drawn inside it. \
-         target {:?}, highlight {:?}",
-        control.target,
-        control.highlight
-    );
-    assert!(
-        holds(control.target, corner),
-        "and inside the target itself, which is what must answer"
-    );
-    assert_eq!(
-        what_the_pointer_is(&edge, corner),
-        ThePointer::OnTheSurface,
-        "a press at the very corner of a control's target reaches that control. If this fails, \
-         something is hit-testing `highlight` — the field that says what is *filled* while \
-         hovered, not the field that says what *answers*"
-    );
-}
-
-/// **The strip between the controls holds the edge**, which is where the title
-/// and the drag region are and where a person's pointer spends most of its time.
-#[test]
-fn the_strip_away_from_every_control_is_on_the_surface() {
-    let edge = edge_of(
-        specimen(),
-        Decorations::TheShellDraws,
-        true,
-        smithay::utils::Size::from((1920, 1080)),
-    );
-    let strip = edge.strip.expect("a revealed edge draws a strip");
-    // **Picked from the drag slack, not from the strip's left end.** The
-    // compact design puts a 44 × 44 Move target at `x = 4`, so the point this
-    // used to take is now on a control and the premise below would fail for a
-    // reason that has nothing to do with what is being tested. Halfway along
-    // the drag region is strip that no control claims at any width.
-    let bare = at(
-        edge.drag.loc.x + edge.drag.size.w / 2,
-        strip.loc.y + THE_STRIP_IS_TALL / 2,
-    );
-    assert!(
-        edge.controls.iter().all(|it| !holds(it.target, bare)),
-        "the premise: this point is on no control's target"
-    );
-    assert_eq!(what_the_pointer_is(&edge, bare), ThePointer::OnTheSurface);
-}
-
-/// **The application's own content is not the edge**, revealed or not.
-///
-/// The region sits *above* the window. A classifier that tested the window
-/// instead would reveal an edge from a pointer resting in a document, and *hover
-/// must never move, restore, hide or close the application*.
-#[test]
-fn a_pointer_in_the_application_is_elsewhere_in_both_states() {
-    for revealed in [false, true] {
-        let edge = edge_of(
-            specimen(),
-            Decorations::TheShellDraws,
-            revealed,
-            smithay::utils::Size::from((1920, 1080)),
-        );
-        // One below the region's last row, which is the application's first.
-        let inside = at(300, THE_REGION_IS_TALL);
-        assert_eq!(
-            what_the_pointer_is(&edge, inside),
-            ThePointer::Elsewhere,
-            "revealed = {revealed}: the first row of the application is not the edge"
-        );
-        // And well inside it.
-        assert_eq!(
-            what_the_pointer_is(&edge, at(300, 300)),
-            ThePointer::Elsewhere,
-            "revealed = {revealed}"
-        );
+fn a_pointer_walking_from_the_title_to_close_never_loses_the_controls() {
+    let mut revealing = Revealing::covered();
+    for x in (22..1038).step_by(3) {
+        let point = at(x, 27);
+        revealing = revealing.the_pointer_is(what_the_pointer_is(&band(revealing), point));
+        assert!(revealing.is_revealed(), "lost at x = {x}");
     }
-}
-
-/// **Half-open, so a region and whatever abuts it never both claim a point.**
-#[test]
-fn the_region_does_not_claim_the_column_past_its_end() {
-    let edge = edge_of(
-        specimen(),
-        Decorations::TheShellDraws,
-        false,
-        smithay::utils::Size::from((1920, 1080)),
-    );
-    assert_eq!(
-        what_the_pointer_is(&edge, at(599, 0)),
-        ThePointer::AtTheEdge
-    );
-    assert_eq!(
-        what_the_pointer_is(&edge, at(600, 0)),
-        ThePointer::Elsewhere,
-        "600 is past a 600-wide region's end"
-    );
-    assert_eq!(
-        what_the_pointer_is(&edge, at(0, -1)),
-        ThePointer::Elsewhere,
-        "and the row above its top belongs to nothing of this window"
+    let close = band(revealing)
+        .the_control(OnTheEdge::Close)
+        .map(|it| it.target);
+    assert!(
+        close.is_some_and(|it| it.contains(at(1010, 27))),
+        "the walk ends on Close"
     );
 }
 
-/// **A window with no width claims nothing**, rather than claiming everything.
+/// **Leaving the band conceals them at once** — there is no wait; the fade is
+/// how it is drawn, not whether it happened.
 #[test]
-fn an_edge_of_no_extent_claims_no_point() {
-    let flat = Rectangle::new(Point::from((0, THE_REGION_IS_TALL)), Size::from((0, 400)));
-    let edge = edge_of(
-        flat,
-        Decorations::TheShellDraws,
-        true,
-        smithay::utils::Size::from((1920, 1080)),
-    );
-    // **A window of no width still gets an edge**, which is the compact
-    // design's own rule: the edge stops shrinking at 148 and overhangs
-    // whatever it decorates. So the points this used to call `Elsewhere` are
-    // now at the edge, and that is correct rather than a regression — a window
-    // too narrow to hold its own controls is exactly the case the overhang
-    // exists for.
-    //
-    // What still holds is that the edge is finite. Asked well beyond it.
-    assert_eq!(edge.region.size.w, crate::window_edge::THE_COMPACT_EDGE_IS);
-    for x in [-400, -200, 900, 2000] {
-        assert_eq!(
-            what_the_pointer_is(&edge, at(x, 0)),
-            ThePointer::Elsewhere,
-            "({x}, 0) is well outside a 148-wide edge"
-        );
-    }
-    // And the control: a point inside it is not Elsewhere, so the four above
-    // are about being outside and not about the classifier refusing
-    // everything.
-    assert_ne!(
-        what_the_pointer_is(&edge, at(edge.region.loc.x + 70, 0)),
-        ThePointer::Elsewhere,
-        "the premise: the middle of the edge is on the edge"
+fn leaving_the_band_conceals_them_with_no_wait() {
+    let revealing = Revealing::covered().the_pointer_is(ThePointer::AtTheEdge);
+    let left = revealing.the_pointer_is(what_the_pointer_is(&band(revealing), at(500, 300)));
+    assert!(!left.is_revealed());
+    assert!(
+        band(left).controls.is_empty(),
+        "a control that has gone cannot be pressed"
     );
 }
 
-/// **A continuous pointer path, and no timed grace period** — the specification's
-/// own words, as the behaviour rather than as a promise.
-///
-/// A person comes from above the window, crosses the region, and travels along it
-/// to the furthest control. Every step is fed to the real `Revealing`, and the
-/// edge must be revealed at every one of them after the first. There is nothing
-/// to wait for and nothing that depends on how fast the walk is, because the
-/// machine holds no instant — the walk could take an hour between steps and
-/// produce the same answers.
+/// **An open panel holds them**, with the pointer gone from the band.
 #[test]
-fn a_pointer_walking_to_the_furthest_control_never_loses_the_edge() {
-    let mut machine = Revealing::covered();
-    assert!(
-        !machine.is_revealed(),
-        "the premise: it starts concealed, so the first step below is doing the revealing"
-    );
-
-    // Entering at the region's top row, as somebody coming from above does.
-    let first = edge_of(
-        specimen(),
-        Decorations::TheShellDraws,
-        machine.is_revealed(),
-        smithay::utils::Size::from((1920, 1080)),
-    );
-    machine = machine.the_pointer_is(what_the_pointer_is(&first, at(0, 0)));
-    assert!(
-        machine.is_revealed(),
-        "the region is what reveals the edge, and a concealed edge is all region"
-    );
-
-    // Then along it, one logical pixel at a time, laying the edge out afresh at
-    // each step **from the machine's own answer** — which is the loop a frame
-    // actually runs, and the only way a reveal that depended on the previous
-    // geometry would show up.
-    let mut steps = 0_u32;
-    for x in 0..600 {
-        let edge = edge_of(
-            specimen(),
-            Decorations::TheShellDraws,
-            machine.is_revealed(),
-            smithay::utils::Size::from((1920, 1080)),
-        );
-        let was = what_the_pointer_is(&edge, at(x, 0));
-        assert_ne!(
-            was,
-            ThePointer::Elsewhere,
-            "({x}, 0) is on the path along a 600-wide edge and must not be nothing"
-        );
-        machine = machine.the_pointer_is(was);
-        assert!(
-            machine.is_revealed(),
-            "the edge went away at x = {x} while the pointer was still on it. That is the \
-             failure *a continuous pointer path* forbids: a person moving towards a control \
-             must not have it disappear"
-        );
-        steps += 1;
-    }
-    assert_eq!(steps, 600, "the walk ran");
-
-    // And the furthest control is reachable at the end of it.
-    let edge = edge_of(
-        specimen(),
-        Decorations::TheShellDraws,
-        machine.is_revealed(),
-        smithay::utils::Size::from((1920, 1080)),
-    );
-    let last = edge.controls.last().expect("a revealed edge has controls");
-    assert_eq!(
-        what_the_pointer_is(&edge, at(last.target.loc.x, last.target.loc.y)),
-        ThePointer::OnTheSurface
-    );
+fn an_open_panel_holds_the_controls_with_the_pointer_elsewhere() {
+    let held = Revealing::covered()
+        .the_pointer_is(ThePointer::AtTheEdge)
+        .a_menu(alo_dock::revealing::AMenu::IsOpen)
+        .the_pointer_is(ThePointer::Elsewhere);
+    assert!(held.is_revealed());
 }
 
-/// **Leaving conceals it**, with no delay, which is the other half of no timer.
+/// **The keyboard holds them**, so focus is never on a control that cannot be
+/// seen.
 #[test]
-fn a_pointer_leaving_conceals_the_edge_at_once() {
-    let mut machine = Revealing::covered();
-    let concealed = edge_of(
-        specimen(),
-        Decorations::TheShellDraws,
-        false,
-        smithay::utils::Size::from((1920, 1080)),
-    );
-    machine = machine.the_pointer_is(what_the_pointer_is(&concealed, at(10, 10)));
-    assert!(machine.is_revealed());
-
-    let revealed = edge_of(
-        specimen(),
-        Decorations::TheShellDraws,
-        true,
-        smithay::utils::Size::from((1920, 1080)),
-    );
-    let away = what_the_pointer_is(&revealed, at(300, 300));
-    assert_eq!(away, ThePointer::Elsewhere);
-    machine = machine.the_pointer_is(away);
-    assert!(
-        !machine.is_revealed(),
-        "it conceals on the step the pointer left, not a step later"
-    );
+fn the_keyboard_holds_the_controls() {
+    let held = Revealing::covered().the_keyboard(alo_dock::revealing::TheKeyboard::IsOnIt);
+    assert!(held.is_revealed());
 }
 
-/// **An application that draws its own header still has an edge to reveal.**
-///
-/// The specification keeps movement and the menu for those, so the region is the
-/// same and only what is on it differs. A classifier that worked for one
-/// decoration mode and not the other would leave those applications unmovable,
-/// which is the clause *borderless applications stay movable and recoverable*.
+/// **A band of no extent claims nothing**, so a window of no width reveals
+/// nothing from wherever the pointer is.
 #[test]
-fn an_application_drawn_edge_classifies_the_same_way() {
-    let edge = edge_of(
-        specimen(),
-        Decorations::TheApplicationDraws,
-        true,
-        smithay::utils::Size::from((1920, 1080)),
-    );
-    assert_eq!(what_the_pointer_is(&edge, at(0, 0)), ThePointer::AtTheEdge);
-    assert!(
-        !edge.controls.is_empty(),
-        "alo adds movement and the menu even here; without this the loop proves nothing"
-    );
-    for control in &edge.controls {
-        assert_eq!(
-            what_the_pointer_is(&edge, at(control.target.loc.x, control.target.loc.y)),
-            ThePointer::OnTheSurface,
-            "{:?} must answer on its own target",
-            control.does
-        );
-    }
+fn a_band_of_no_extent_claims_no_point() {
+    let mut edge = band(Revealing::covered());
+    edge.region = Rectangle::new(at(0, 0), Size::from((0, 54)));
+    assert_eq!(what_the_pointer_is(&edge, at(0, 0)), ThePointer::Elsewhere);
 }
 
-/// **`THE_STRIP_STARTS_AT` is used, so the region above the strip is still the
-/// edge.** The twelve rows between the region's top and the strip's are the
-/// approach, and a person crossing them has not reached the strip yet.
+/// **The band does not claim the column just past its end**, so two bands side
+/// by side do not both reveal on the line they share.
 #[test]
-fn the_rows_above_the_strip_are_the_approach_and_not_nothing() {
-    let edge = edge_of(
-        specimen(),
-        Decorations::TheShellDraws,
-        true,
-        smithay::utils::Size::from((1920, 1080)),
-    );
-    let strip = edge.strip.expect("a revealed edge draws a strip");
-    // **The premise, read off the edge rather than off the constants.** Two
-    // `const`s compared is an assertion clippy rejects as constant-valued, and
-    // it would be the weaker claim anyway: what matters is that the edge *as
-    // laid out* has rows above its strip, not that two numbers differ.
-    assert!(
-        strip.loc.y > edge.region.loc.y,
-        "the premise: the strip starts below the region's top. region {:?}, strip {strip:?}",
-        edge.region
-    );
-    // Left of every control, above the strip.
-    // Taken from the drag slack for the reason the sibling test gives: `x = 4`
-    // is Move's target now, and a target is the region's full height, so the
-    // rows above the strip there are on a control.
-    let approach = at(edge.drag.loc.x + edge.drag.size.w / 2, strip.loc.y - 1);
-    assert!(
-        !holds(strip, approach),
-        "the premise: this point is above the strip"
-    );
-    assert!(
-        edge.controls.iter().all(|it| !holds(it.target, approach)),
-        "and left of every control — a control's target is the region's full height, which is \
-         why the approach above the strip is only found away from them"
-    );
-    assert_eq!(
-        what_the_pointer_is(&edge, approach),
-        ThePointer::AtTheEdge,
-        "above the strip and left of the controls is the region, which keeps the edge revealed"
-    );
+fn the_band_does_not_claim_the_column_past_its_end() {
+    let edge = band(Revealing::covered());
+    assert_eq!(what_the_pointer_is(&edge, at(1055, 10)), ThePointer::AtTheEdge);
+    assert_eq!(what_the_pointer_is(&edge, at(1056, 10)), ThePointer::Elsewhere);
 }

@@ -77,7 +77,12 @@ impl Surfaces {
         if previous.is_none() && mode == Mode::Normal {
             return Ok(None);
         }
-        let output = if mode == Mode::Maximized {
+        // **Full screen is the whole output too.** This asked for
+        // `Mode::Maximized` alone until 2026-11-09, so a window put into full
+        // screen by a person was told *fullscreen* at its ordinary size and
+        // stayed there until the output next changed — found while making the
+        // window panel's Full screen work.
+        let output = if matches!(mode, Mode::Maximized | Mode::FillingTheScreen) {
             Some(
                 self.window_mode_output
                     .ok_or(WindowModeError::OutputUnavailable)?,

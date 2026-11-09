@@ -58,7 +58,6 @@ impl crate::Server {
             window,
             WhatItShows {
                 title: title.text(),
-                icon: None,
                 focused: self.settings_is_taking_the_keys(),
             },
             self.where_the_pointer_is_in_logical_pixels(),

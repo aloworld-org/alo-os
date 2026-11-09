@@ -90,12 +90,9 @@ impl Server {
             &alo_terminal::words::TERMINAL.key(),
             &alo_strings::Filling::nothing(),
         );
-        let icon = crate::the_terminals_icon::the_terminals_icon(
-            crate::the_terminals_icon::across_at(scale),
-        );
+        let look = crate::window_edge_look::WhichLook::of(self.the_terminal_is_taking_the_keys());
         EdgePicture::of(
             &edge,
-            pointing,
             OverTheEdge {
                 menu: None,
                 showing: None,
@@ -105,11 +102,15 @@ impl Server {
             // look as this strip.
             crate::window_edge_picture::TheWindow {
                 title: Some(title.text()),
-                look: crate::window_edge_look::WhichLook::of(
-                    self.the_terminal_is_taking_the_keys(),
-                ),
-                icon: icon.as_ref(),
+                application: None,
+                look,
                 body: None,
+                controls: crate::window_edge_paint::HowTheControlsLook {
+                    pointing,
+                    open: false,
+                    how_shown: crate::the_controls_fade::ALL_THE_WAY,
+                    look,
+                },
             },
             fonts,
             output,

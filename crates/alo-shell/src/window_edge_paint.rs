@@ -1,255 +1,258 @@
-//! What the external window edge is drawn out of.
+//! How a band's three controls are drawn: their marks, their squares, the
+//! focus ring, and how far they have faded.
 //!
-//! `crate::window_edge` says **where** everything is; this says **what colour**
-//! and **what shape**, and nothing else. Two files because they are two
-//! reasons to change: the design moving a control is the first, the design
-//! recolouring one is the second.
+//! Separate from `crate::window_edge` because they are two reasons to change —
+//! the design moving a control, and the design redrawing one.
 //!
-//! # Every colour is a role, and no new one was added
+//! # From the design's own artwork
 //!
-//! The contract asks to *reuse the file's existing variables*, and all five it
-//! names already exist as roles resolving to the measured hexes:
+//! Each mark is the SVG the design exported for its 44-unit target
+//! (`crates/alo-shell/icons/the-window-controls/`, with where each came from),
+//! read by `alo_vector_shapes` and drawn at the display's scale, so a mark is
+//! the designer's stroke of 1.4 with round caps rather than a staircase of
+//! rectangles.
 //!
-//! | the design says | the role | and it is |
-//! |---|---|---|
-//! | `bg/surface` | [`Role::BgSurface`] | `#FFFFFF` |
-//! | `border/default` | [`Role::BorderDefault`] | `#E7EBEF` |
-//! | `text/primary` | [`Role::TextPrimary`] | `#102A43` |
-//! | `text/muted` | [`Role::TextMuted`] | `#596B78` |
-//! | `bg/cool` | [`Role::BgCool`] | `#EEF2F4` |
-//! | `status/danger` | [`Role::StatusDanger`] | `#B42318` |
+//! # The looks, measured
 //!
-//! **No teal.** The contract rules it out for ordinary window controls, and
-//! `the-canvas-as-a-workspace.md` §6 reserves it for alo acting.
+//! | | at rest, revealed | hovered | panel open |
+//! |---|---|---|---|
+//! | Window actions | `bg/cool` square, corner 8, navy mark (`11:164`) | the same | navy square, white mark (`11:42`) |
+//! | Minimise | navy mark, no square (`11:45`) | `bg/cool` square | — |
+//! | Close | navy mark, no square (`11:49`) | `bg/cool` square, `status/danger` mark | — |
 //!
-//! # What the contract forbids, and how this is shaped to obey
-//!
-//! > Transparent button backgrounds at rest. Subtle highlight only on the
-//! > hovered control. No permanent square button tiles, bouncing or hover
-//! > enlargement.
-//!
-//! So a control at rest contributes **nothing** — not a tile, not a border,
-//! not a background. Only its artwork is drawn. The one thing that ever
-//! appears behind a control is the hovered highlight, and that is the 32 × 28
-//! pill `crate::window_edge` measured, never the 44 × 44 target.
-//!
-//! Nothing here grows, moves or animates a control. Hover changes two things
-//! and both are colour: a highlight appears, and Close's artwork turns
-//! `status/danger`.
-//!
-//! # What is not here
-//!
-//! **The title's text.** Drawing a string needs the font machinery
-//! `crate::window_control_label` owns, and a glyph run is a different
-//! responsibility from a rectangle. [`WindowEdge::title`](crate::WindowEdge::title) is
-//! where it goes and a caller with fonts puts it there.
-//!
-//! **The strip itself.** Since 2026-11-01 its top corners are rounded at 10
-//! (`554:25`), which a rectangle cannot be, so `crate::the_title_strip_drawn`
-//! draws it as a raster and this draws what sits on it.
+//! **Red only on Close, and only while it is pointed at** — the specification's
+//! *restrained red hover*. The keyboard's focus ring is navy, 2 wide, round the
+//! whole target with the same corner, so focus is never shown by colour alone.
+//! An unfocused window's marks are its look's quieter ink, as its title is.
 
-use alo_appearance::{Colour, Role};
-use smithay::utils::{Logical, Rectangle};
+use std::sync::OnceLock;
 
-use crate::window_edge::{EdgeControl, OnTheEdge, WindowEdge};
+use alo_appearance::Role;
+use alo_vector_shapes::AShape;
+use smithay::utils::{Physical, Rectangle};
+
+use crate::painted::Washed;
+use crate::window_edge::{OnTheEdge, WindowEdge};
 use crate::window_edge_look::WhichLook;
 
-/// One rectangle to fill, and what to fill it with.
-pub type Solid = (Rectangle<i32, Logical>, Colour);
+/// A focus ring's width, in logical units.
+const A_FOCUS_RING_IS: f32 = 2.0;
 
-/// How thick the keyboard-focus ring is.
-///
-/// **Two, and not the strip's one-unit line.** Measured from `414:27609` on
-/// 2026-10-12: at the ring's middle row the rendered pixels read
-/// `#ffffff #102a43 #102a43 #ffffff` — the ink exactly, twice, with no
-/// partial values either side, so it is two units and not one spread over
-/// two by antialiasing. The strip's own border is a different line and
-/// stays at one; sharing a constant would have made a design change to
-/// either silently move the other.
-const A_FOCUS_RING_IS: i32 = 2;
+/// The corner of every control's square: `11:42` and `11:164`, `rx = 8`.
+const A_SQUARES_CORNER: f32 = 8.0;
 
-/// What a person is doing to the edge, which is all that changes its colour.
+/// Where a pointer and the keyboard are on a band.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct Pointing {
-    /// The control the pointer is over, if it is over one.
+    /// The control under the pointer, if any.
     pub hovered: Option<OnTheEdge>,
-    /// The control keyboard focus is on, if any. Drawn with a navy outline.
+    /// The control the keyboard is on, if any.
     pub focused: Option<OnTheEdge>,
 }
 
-/// Everything to fill for this edge, in the order it is drawn.
-///
-/// Back to front: each control's highlight, then its artwork, then any focus
-/// outline. A caller fills them in order and gets the design.
-///
-/// **The strip is not here any more.** Its top corners are rounded at 10 since
-/// the owner approved `554:56` on 2026-11-01, and a rounded corner is partial
-/// coverage a rectangle cannot be, so it is a raster:
-/// `crate::the_title_strip_drawn`. What is here is drawn over it.
-///
-/// `look` is which window this is — the one the person's typing goes to, or
-/// another — and decides the controls' ink (`crate::window_edge_look`).
-#[must_use]
-pub fn solids(edge: &WindowEdge, pointing: Pointing, look: WhichLook) -> Vec<Solid> {
-    let mut solids = Vec::new();
-
-    // The grip: quiet at rest and a mark when revealed, and **`text/muted`
-    // either way**. The contract says *navy human controls* and the grip is
-    // not one of them — measured from `398:26244`, which resolves
-    // `text/muted` and not `text/primary`.
-    solids.extend(grip_of(edge));
-
-    let [red, green, blue] = look.colours().ink;
-    let ink_of_the_look = Colour::of(red, green, blue);
-    for control in &edge.controls {
-        if pointing.hovered == Some(control.does) {
-            solids.push((control.highlight, Role::BgCool.colour()));
-        }
-        let ink = if pointing.hovered == Some(control.does) && control.does == OnTheEdge::Close {
-            // **Only Close, and only hovered.** Measured: `status/danger`
-            // resolves on the Close-hover variant and on no other.
-            Role::StatusDanger.colour()
-        } else {
-            // **Navy on the focused window, muted on every other**, by the
-            // board `557:456`: *title, icon and controls in text/muted — still
-            // readable, still 44 × 44.*
-            ink_of_the_look
-        };
-        // **Move draws no artwork of its own**, because `grip_of` above already
-        // drew its mark: the design's *Move window / 14px glyph* is the same
-        // 14 × 14 the grip occupies. Two draws of one rectangle would be two
-        // places deciding what that control looks like.
-        if control.does != OnTheEdge::Move {
-            solids.extend(artwork_of(control, ink));
-        }
-        if pointing.focused == Some(control.does) {
-            // **The target, not the highlight**, which this rang until
-            // 2026-10-12. `control.highlight` is 32 × 28 at `(+6, +14)` and
-            // is right for hover — it is byte-for-byte the rectangle
-            // `State=Menu open` draws. The design rings the whole 44 × 44
-            // interaction envelope, so the real ring stands 12 units above
-            // the visible strip and the drawn one sat inside it. Measured
-            // from `414:27609`; `MANIFEST.md` carries the reading and why
-            // `get_metadata` could not show it.
-            solids.extend(outline_of(control.target, Role::TextPrimary));
-        }
-    }
-    solids
+/// Everything about a band's controls that is not where they are.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct HowTheControlsLook {
+    /// Pointer and keyboard.
+    pub pointing: Pointing,
+    /// Whether this window's panel is open, which is Window actions' open look.
+    pub open: bool,
+    /// How far they have faded in, in thousandths (`crate::the_controls_fade`).
+    pub how_shown: u16,
+    /// The window's look: the typing window's or every other's.
+    pub look: WhichLook,
 }
 
-/// The grip, drawn as the design draws it in each state.
-///
-/// **Nothing, on an edge that shows the application's icon**: the approved
-/// edge (`554:24`) draws the icon where the grip's mark was, inside the Move
-/// target, and two marks in one place would be two answers to *what is this*.
-/// An edge with no icon to show keeps the mark — `the_grip_mark`.
-fn grip_of(edge: &WindowEdge) -> Vec<Solid> {
-    let quiet = Role::TextMuted.colour();
-    if edge.strip.is_none() {
-        // At rest it is the whole mark: a 24 × 2 bar.
-        return vec![(edge.grip, quiet)];
+/// The mark each control is drawn with, read once.
+fn the_mark(of: OnTheEdge) -> Option<&'static AShape> {
+    /// The three, in [`OnTheEdge`]'s order, each read once or not at all.
+    static MARKS: OnceLock<[Option<AShape>; 3]> = OnceLock::new();
+    let marks = MARKS.get_or_init(|| {
+        [
+            AShape::read(include_str!(
+                "../icons/the-window-controls/window-actions-mark.svg"
+            ))
+            .ok(),
+            AShape::read(include_str!("../icons/the-window-controls/minimise.svg")).ok(),
+            AShape::read(include_str!("../icons/the-window-controls/close.svg")).ok(),
+        ]
+    });
+    let which = match of {
+        OnTheEdge::WindowActions => 0,
+        OnTheEdge::Minimise => 1,
+        OnTheEdge::Close => 2,
+    };
+    marks.get(which).and_then(Option::as_ref)
+}
+
+/// The colours one control is drawn in: its square (if any) and its mark.
+#[must_use]
+pub(crate) fn its_colours(
+    does: OnTheEdge,
+    how: &HowTheControlsLook,
+) -> (Option<[u8; 3]>, [u8; 3]) {
+    let rgb = |role: Role| {
+        let it = role.colour();
+        [it.red(), it.green(), it.blue()]
+    };
+    let hovered = how.pointing.hovered == Some(does);
+    let ink = how.look.colours().ink;
+    match does {
+        OnTheEdge::WindowActions if how.open => (Some(rgb(Role::TextPrimary)), rgb(Role::BgSurface)),
+        OnTheEdge::WindowActions => (Some(rgb(Role::BgCool)), ink),
+        OnTheEdge::Close if hovered => (Some(rgb(Role::BgCool)), rgb(Role::StatusDanger)),
+        OnTheEdge::Minimise | OnTheEdge::Close if hovered => (Some(rgb(Role::BgCool)), ink),
+        OnTheEdge::Minimise | OnTheEdge::Close => (None, ink),
     }
-    if edge.icon.is_some() {
+}
+
+/// Every control on this band, drawn, in the display's pixels.
+///
+/// **Nothing at all when they have faded right out**, so a concealed band
+/// costs no rasters.
+#[must_use]
+pub(crate) fn the_controls_drawn(
+    edge: &WindowEdge,
+    how: &HowTheControlsLook,
+    scale: u32,
+) -> Vec<Washed> {
+    if how.how_shown == 0 {
         return Vec::new();
     }
-    the_grip_mark(edge)
+    let fraction = f64::from(scale.max(1)) / 100.0;
+    edge.controls
+        .iter()
+        .filter_map(|control| {
+            let target = in_pixels(control.target, scale);
+            one_control(target, control.does, how, fraction)
+        })
+        .collect()
 }
 
-/// The revealed grip's two bars, for an edge with no icon in its place — an
-/// application with its own header, or a shell-drawn window whose application
-/// has no icon this machine knows.
-#[must_use]
-pub(crate) fn the_grip_mark(edge: &WindowEdge) -> Vec<Solid> {
-    let quiet = Role::TextMuted.colour();
-    // Revealed it is a 14 × 14 mark. Two bars, which is what a grip is: the
-    // affordance says *this is the part you pull*, and two lines say it in
-    // the space the design gives.
-    let mut bars = Vec::new();
-    for down in [5, 9] {
-        bars.push((
-            Rectangle::new(
-                (edge.grip.loc.x, edge.grip.loc.y + down).into(),
-                (edge.grip.size.w, 2).into(),
-            ),
-            quiet,
-        ));
-    }
-    bars
-}
-
-/// A control's 14 × 14 artwork, as rectangles.
-///
-/// Drawn from rectangles rather than the design's SVG assets, the way
-/// `crate::window_control_paint` already draws its glyphs — this renderer
-/// fills rectangles and has no path support, and inventing one for three
-/// marks would be a renderer nobody asked for. **The shapes are the design's
-/// and the fidelity is this renderer's**, which is a limitation worth naming
-/// rather than a choice worth defending.
-fn artwork_of(control: &EdgeControl, colour: Colour) -> Vec<Solid> {
-    let at = control.artwork.loc;
-    let size = control.artwork.size.w;
-    let thick = 2;
-    let mut marks = Vec::new();
-    let mut bar = |x: i32, y: i32, w: i32, h: i32| {
-        marks.push((
-            Rectangle::new((at.x + x, at.y + y).into(), (w, h).into()),
-            colour,
-        ));
+/// One control, drawn into its target.
+fn one_control(
+    target: Rectangle<i32, Physical>,
+    does: OnTheEdge,
+    how: &HowTheControlsLook,
+    fraction: f64,
+) -> Option<Washed> {
+    let (Ok(wide), Ok(tall)) = (u32::try_from(target.size.w), u32::try_from(target.size.h)) else {
+        return None;
     };
-    match control.does {
-        // **Move draws nothing here.** Its mark is the grip, which `grip_of` has
-        // already placed, and `solids` skips this call for Move - so the arm
-        // is unreachable in practice and is here because a match must be
-        // total, an `unreachable!` being a panic in a compositor.
-        OnTheEdge::Move => {}
-        // A single bar along the bottom.
-        OnTheEdge::Minimise => bar(0, size - thick, size, thick),
-        // A hollow square.
-        OnTheEdge::Maximise => {
-            bar(0, 0, size, thick);
-            bar(0, size - thick, size, thick);
-            bar(0, 0, thick, size);
-            bar(size - thick, 0, thick, size);
-        }
-        // A cross, as a stack of short bars stepping across — this renderer
-        // has no diagonal, so a diagonal is drawn one row at a time.
-        OnTheEdge::Close => {
-            for step in 0..size {
-                bar(step, step, thick, thick);
-                bar(size - thick - step, step, thick, thick);
-            }
-        }
-        // Three bars: the menu.
-        OnTheEdge::Menu => {
-            for down in [0, (size - thick) / 2, size - thick] {
-                bar(0, down, size, thick);
-            }
-        }
+    if wide == 0 || tall == 0 {
+        return None;
     }
-    marks
+    let (square, ink) = its_colours(does, how);
+    let mark = the_mark(does).map(|shape| shape.coverage(wide, tall));
+    #[expect(
+        clippy::cast_possible_truncation,
+        reason = "a corner and a ring at a display's scale are well inside an f32"
+    )]
+    let (corner, ring) = (
+        (f64::from(A_SQUARES_CORNER) * fraction) as f32,
+        (f64::from(A_FOCUS_RING_IS) * fraction).max(1.0) as f32,
+    );
+    let focused = how.pointing.focused == Some(does);
+    let navy = {
+        let it = Role::TextPrimary.colour();
+        [it.red(), it.green(), it.blue()]
+    };
+    let shown = f32::from(how.how_shown) / 1000.0;
+    #[expect(
+        clippy::cast_precision_loss,
+        reason = "a control's size in pixels is far inside an f32's exact range"
+    )]
+    let (w, h) = (wide as f32, tall as f32);
+    let mut pixels = Vec::with_capacity(usize::try_from(wide * tall * 4).unwrap_or(0));
+    for (index, y) in (0..tall).flat_map(|y| (0..wide).map(move |_| y)).enumerate() {
+        let x = u32::try_from(index).unwrap_or(0) % wide;
+        #[expect(
+            clippy::cast_precision_loss,
+            reason = "a pixel's place in a control is far inside an f32's exact range"
+        )]
+        let (px, py) = (x as f32 + 0.5, y as f32 + 0.5);
+        let inside = (0.5 - away_from_a_rounded_square(px, py, w, h, corner)).clamp(0.0, 1.0);
+        let (mut colour, mut alpha) = match square {
+            Some(fill) => (fill, inside),
+            None => ([0, 0, 0], 0.0),
+        };
+        let covered = mark
+            .as_ref()
+            .and_then(|it| it.get(index))
+            .map_or(0.0, |it| f32::from(*it) / 255.0);
+        if covered > 0.0 {
+            (colour, alpha) = over((colour, alpha), (ink, covered));
+        }
+        if focused {
+            let d = away_from_a_rounded_square(px, py, w, h, corner);
+            let on_the_ring = ((0.5 - d).clamp(0.0, 1.0)) * ((d + ring + 0.5).clamp(0.0, 1.0));
+            if on_the_ring > 0.0 {
+                (colour, alpha) = over((colour, alpha), (navy, on_the_ring));
+            }
+        }
+        #[expect(
+            clippy::cast_possible_truncation,
+            clippy::cast_sign_loss,
+            reason = "clamped to a byte's range before the cast"
+        )]
+        let byte = ((alpha * shown).clamp(0.0, 1.0) * 255.0).round() as u8;
+        pixels.extend_from_slice(&[colour[0], colour[1], colour[2], byte]);
+    }
+    Some(
+        Washed {
+            area: target,
+            pixels,
+        }
+        .premultiplied(),
+    )
 }
 
-/// A one-unit outline around a rectangle, for keyboard focus.
-///
-/// **Navy, and visible.** The contract asks for a *visible navy keyboard-focus
-/// outline*, and the focus variant resolves no colour the revealed one does
-/// not — so it is `text/primary` rather than a colour of its own.
-fn outline_of(around: Rectangle<i32, Logical>, ink: Role) -> Vec<Solid> {
-    let colour = ink.colour();
-    let thick = A_FOCUS_RING_IS;
-    let (x, y, w, h) = (around.loc.x, around.loc.y, around.size.w, around.size.h);
-    vec![
-        (Rectangle::new((x, y).into(), (w, thick).into()), colour),
-        (
-            Rectangle::new((x, y + h - thick).into(), (w, thick).into()),
-            colour,
-        ),
-        (Rectangle::new((x, y).into(), (thick, h).into()), colour),
-        (
-            Rectangle::new((x + w - thick, y).into(), (thick, h).into()),
-            colour,
-        ),
-    ]
+/// `top` painted over `under`, both in straight alpha.
+fn over(under: ([u8; 3], f32), top: ([u8; 3], f32)) -> ([u8; 3], f32) {
+    let (under_colour, under_alpha) = under;
+    let (top_colour, top_alpha) = top;
+    let alpha = top_alpha + under_alpha * (1.0 - top_alpha);
+    if alpha <= 0.0 {
+        return ([0, 0, 0], 0.0);
+    }
+    let mut colour = [0_u8; 3];
+    for ((out, a), b) in colour.iter_mut().zip(under_colour).zip(top_colour) {
+        let mixed =
+            (f32::from(b) * top_alpha + f32::from(a) * under_alpha * (1.0 - top_alpha)) / alpha;
+        #[expect(
+            clippy::cast_possible_truncation,
+            clippy::cast_sign_loss,
+            reason = "clamped to a byte's range before the cast"
+        )]
+        let byte = mixed.round().clamp(0.0, 255.0) as u8;
+        *out = byte;
+    }
+    (colour, alpha)
+}
+
+/// How far a point is outside a `w × h` square with rounded corners, negative
+/// inside — the signed distance every rounded shape in this shell is drawn by.
+fn away_from_a_rounded_square(px: f32, py: f32, w: f32, h: f32, corner: f32) -> f32 {
+    let corner = corner.min(w / 2.0).min(h / 2.0);
+    let (cx, cy) = (w / 2.0, h / 2.0);
+    let qx = (px - cx).abs() - (cx - corner);
+    let qy = (py - cy).abs() - (cy - corner);
+    let outside = qx.max(0.0).hypot(qy.max(0.0));
+    outside + qx.max(qy).min(0.0) - corner
+}
+
+/// A logical rectangle in the display's pixels, scaled once.
+fn in_pixels(
+    of: Rectangle<i32, smithay::utils::Logical>,
+    scale: u32,
+) -> Rectangle<i32, Physical> {
+    let scaled = |it: i32| {
+        i32::try_from(i64::from(it) * i64::from(scale.max(1)) / 100).unwrap_or(i32::MAX)
+    };
+    Rectangle::new(
+        (scaled(of.loc.x), scaled(of.loc.y)).into(),
+        (scaled(of.size.w), scaled(of.size.h)).into(),
+    )
 }
 
 #[cfg(test)]

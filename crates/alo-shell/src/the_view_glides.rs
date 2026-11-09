@@ -110,7 +110,7 @@ impl crate::Server {
     /// **Whether the person asked for less motion**, as their accessibility
     /// settings say — told at stand-up, like the rest of what they chose.
     ///
-    /// Told rather than read, for `Server::the_window_titles_are`'s reason: a
+    /// Told rather than read, for `Server::the_window_controls_are`'s reason: a
     /// compositor that opened a person's settings file would be a compositor
     /// measuring. Off until told, which is how this computer comes.
     pub fn the_motion_is_reduced(&mut self, reduced: bool) {

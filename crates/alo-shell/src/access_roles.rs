@@ -108,6 +108,15 @@ pub(crate) const IS_DEFAULT: u32 = 39;
 /// was told a setting **can** be on or off and never which it is.*
 pub(crate) const CHECKED: u32 = 4;
 
+/// `ATSPI_STATE_EXPANDABLE` — a button that opens something of its own.
+const EXPANDABLE: u32 = 9;
+/// `ATSPI_STATE_EXPANDED` — and what it opens is open now.
+pub(crate) const EXPANDED: u32 = 10;
+/// `ATSPI_STATE_SELECTABLE` — one of a few choices.
+const SELECTABLE: u32 = 22;
+/// `ATSPI_STATE_SELECTED` — and it is the one the person is on.
+pub(crate) const SELECTED: u32 = 23;
+
 /// The `live` attribute, for what is announced rather than looked for.
 pub(crate) const LIVE: (&str, &str) = ("live", "assertive");
 
@@ -131,6 +140,10 @@ pub(crate) const fn words_of(state: State, set: Option<bool>) -> [u32; 2] {
         State::ReadOnly | State::AnnouncedWhenItChanges => ON_THE_SCREEN | (1 << READ_ONLY),
         State::CanBeUsed => ON_THE_SCREEN | (1 << SENSITIVE) | (1 << FOCUSABLE),
         State::OnOrOff => ON_THE_SCREEN | (1 << SENSITIVE) | (1 << FOCUSABLE) | (1 << CHECKABLE),
+        State::OpensSomething => {
+            ON_THE_SCREEN | (1 << SENSITIVE) | (1 << FOCUSABLE) | (1 << EXPANDABLE)
+        }
+        State::OneOfAFew => ON_THE_SCREEN | (1 << SENSITIVE) | (1 << FOCUSABLE) | (1 << SELECTABLE),
     };
     // **Only a switch can be on.** A value handed in for anything else is
     // ignored rather than honoured: the function is the last place that can
@@ -140,8 +153,11 @@ pub(crate) const fn words_of(state: State, set: Option<bool>) -> [u32; 2] {
     // *Its own test caught this. The first version added the bit for whatever
     // state was passed, which no caller does today — and a permissive function
     // is how it arrives tomorrow.*
-    if matches!((state, set), (State::OnOrOff, Some(true))) {
-        set_bits |= 1 << CHECKED;
+    match (state, set) {
+        (State::OnOrOff, Some(true)) => set_bits |= 1 << CHECKED,
+        (State::OpensSomething, Some(true)) => set_bits |= 1 << EXPANDED,
+        (State::OneOfAFew, Some(true)) => set_bits |= 1 << SELECTED,
+        _ => {}
     }
     let set = set_bits;
     #[expect(

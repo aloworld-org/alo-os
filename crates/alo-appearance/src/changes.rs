@@ -25,7 +25,7 @@ use crate::no_room::WhenThereIsNoRoom;
 use crate::pointer::{PointerColour, PointerShape, PointerSize};
 use crate::scheme::Following;
 use crate::text::TextScale;
-use crate::titles::WindowTitles;
+use crate::controls_shown::WindowControls;
 
 /// One thing a person can change, for a settings panel that offers *put it
 /// back*.
@@ -42,8 +42,8 @@ pub enum Setting {
     Text,
     /// Which of the five accents the shell follows.
     Accent,
-    /// Whether a window's title is always on its edge.
-    WindowTitles,
+    /// Whether a window's controls are always on its band.
+    WindowControls,
     /// Which arrow the pointer is.
     PointerShape,
     /// How large the pointer is.
@@ -74,8 +74,8 @@ pub struct Changes {
     text: Option<TextScale>,
     /// Which accent they chose.
     accent: Option<Accent>,
-    /// Whether they asked for windows' titles only when pointed at.
-    window_titles: Option<WindowTitles>,
+    /// Whether they asked for windows' controls always shown.
+    window_controls: Option<WindowControls>,
     /// Which arrow they chose for their pointer.
     pointer_shape: Option<PointerShape>,
     /// How large they made the pointer.
@@ -103,7 +103,7 @@ impl Changes {
             && self.following.is_none()
             && self.text.is_none()
             && self.accent.is_none()
-            && self.window_titles.is_none()
+            && self.window_controls.is_none()
             && self.pointer_shape.is_none()
             && self.pointer_size.is_none()
             && self.pointer_colour.is_none()
@@ -149,9 +149,9 @@ impl Changes {
         self.accent = Some(accent);
     }
 
-    /// Show window titles always, or only when pointed at.
-    pub fn set_window_titles(&mut self, titles: WindowTitles) {
-        self.window_titles = Some(titles);
+    /// Show window controls always, or as the pointer comes near.
+    pub fn set_window_controls(&mut self, controls: WindowControls) {
+        self.window_controls = Some(controls);
     }
 
     /// Make this the arrow the pointer is.
@@ -185,7 +185,7 @@ impl Changes {
             Setting::Following => self.following.take().is_some(),
             Setting::Text => self.text.take().is_some(),
             Setting::Accent => self.accent.take().is_some(),
-            Setting::WindowTitles => self.window_titles.take().is_some(),
+            Setting::WindowControls => self.window_controls.take().is_some(),
             Setting::PointerShape => self.pointer_shape.take().is_some(),
             Setting::PointerSize => self.pointer_size.take().is_some(),
             Setting::PointerColour => self.pointer_colour.take().is_some(),
@@ -255,10 +255,10 @@ impl Changes {
         self.accent
     }
 
-    /// When window titles are shown, if the person said.
+    /// When window controls are shown, if the person said.
     #[must_use]
-    pub fn window_titles(&self) -> Option<WindowTitles> {
-        self.window_titles
+    pub fn window_controls(&self) -> Option<WindowControls> {
+        self.window_controls
     }
 
     /// Which arrow the pointer is, if the person chose.
@@ -308,9 +308,13 @@ struct Written {
     /// Which accent the shell follows.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     accent: Option<Accent>,
-    /// When window titles are shown.
+    /// When window controls are shown.
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    window_titles: Option<WindowTitles>,
+    window_controls: Option<WindowControls>,
+    /// The withdrawn `window_titles` key: read, set aside, never written
+    /// (`crate::keeping::WITHDRAWN`).
+    #[serde(default, skip_serializing)]
+    window_titles: Option<crate::controls_shown::WithdrawnTitles>,
     /// Which arrow the pointer is.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pointer_shape: Option<PointerShape>,
@@ -330,6 +334,10 @@ impl From<Written> for Changes {
     /// twice means what the file says last, which is the only reading that does
     /// not throw one of the two away at random.
     fn from(written: Written) -> Self {
+        // **Read and set aside.** The title is always shown since 2026-11-09,
+        // whatever this said; it is taken here so that saying so is a line of
+        // code rather than a field nothing reads.
+        let _withdrawn_by_the_owner = written.window_titles;
         let mut changes = Self {
             background: written.background,
             displays: Vec::new(),
@@ -337,7 +345,7 @@ impl From<Written> for Changes {
             following: written.following,
             text: written.text,
             accent: written.accent,
-            window_titles: written.window_titles,
+            window_controls: written.window_controls,
             pointer_shape: written.pointer_shape,
             pointer_size: written.pointer_size,
             pointer_colour: written.pointer_colour,
@@ -359,7 +367,8 @@ impl From<Changes> for Written {
             following: changes.following,
             text: changes.text,
             accent: changes.accent,
-            window_titles: changes.window_titles,
+            window_controls: changes.window_controls,
+            window_titles: None,
             pointer_shape: changes.pointer_shape,
             pointer_size: changes.pointer_size,
             pointer_colour: changes.pointer_colour,
@@ -408,8 +417,8 @@ mod tests {
         changes.set_text(TextScale::percent(125).unwrap());
         changes.set_accent(Accent::Rose);
         assert_eq!(changes.accent(), Some(Accent::Rose));
-        changes.set_window_titles(WindowTitles::WhenPointedAt);
-        assert_eq!(changes.window_titles(), Some(WindowTitles::WhenPointedAt));
+        changes.set_window_controls(WindowControls::Always);
+        assert_eq!(changes.window_controls(), Some(WindowControls::Always));
         changes.set_when_there_is_no_room(WhenThereIsNoRoom::OpenInFront);
         assert_eq!(
             changes.when_there_is_no_room(),
@@ -423,7 +432,7 @@ mod tests {
             Setting::Following,
             Setting::Text,
             Setting::Accent,
-            Setting::WindowTitles,
+            Setting::WindowControls,
             Setting::WhenThereIsNoRoom,
         ] {
             assert!(changes.forget(setting), "{setting:?} was there to forget");

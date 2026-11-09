@@ -43,6 +43,8 @@ pub(crate) struct AnEdgesTextures<T> {
     pub(crate) behind: Uploaded<T>,
     /// Over its window: the icon.
     pub(crate) over: Uploaded<T>,
+    /// What is drawn above every window: an open window panel.
+    pub(crate) on_top: Uploaded<T>,
 }
 
 /// One window's run of imported elements, its popups included.
@@ -109,6 +111,7 @@ where
             Ok(AnEdgesTextures {
                 behind: upload(edge.behind())?,
                 over: upload(edge.over())?,
+                on_top: upload(edge.on_top())?,
             })
         })
         .collect()

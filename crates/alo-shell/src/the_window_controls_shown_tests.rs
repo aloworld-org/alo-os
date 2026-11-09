@@ -5,7 +5,7 @@
 )]
 
 use crate::Server;
-use alo_appearance::WindowTitles;
+use alo_appearance::WindowControls;
 use smithay::input::keyboard::XkbConfig;
 use smithay::reexports::wayland_server::{
     Client, DataInit, Dispatch, Display, DisplayHandle, Resource,
@@ -68,9 +68,9 @@ fn a_session(what: &str) -> (tempfile::TempDir, Server) {
 #[test]
 fn a_seat_shows_every_title_until_told_otherwise() {
     let (_runtime, mut server) = a_session("titles-told");
-    assert_eq!(server.the_window_titles(), WindowTitles::Always);
-    server.the_window_titles_are(WindowTitles::WhenPointedAt);
-    assert_eq!(server.the_window_titles(), WindowTitles::WhenPointedAt);
+    assert_eq!(server.the_window_controls(), WindowControls::Always);
+    server.the_window_controls_are(WindowControls::WhenApproached);
+    assert_eq!(server.the_window_controls(), WindowControls::WhenApproached);
 }
 
 /// **A window nobody has pointed at shows its edge, while titles are always
@@ -82,7 +82,7 @@ fn an_untouched_windows_edge_is_shown_only_while_titles_are_always_shown() {
     let (_display, _peer, window) = a_window();
     assert!(window.is_alive());
     assert!(server.is_this_windows_edge_revealed(&window));
-    server.the_window_titles_are(WindowTitles::WhenPointedAt);
+    server.the_window_controls_are(WindowControls::WhenApproached);
     assert!(
         !server.is_this_windows_edge_revealed(&window),
         "the quieter edge was chosen and the edge still showed with nothing pointing at it"

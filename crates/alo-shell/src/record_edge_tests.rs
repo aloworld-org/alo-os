@@ -1,4 +1,4 @@
-//! The record's edge: its icon on its tile, drawn over the body where the last
+//! The record's edge, drawn over the body where the last
 //! frame drew it, and Close on it shutting the window through the pointer road.
 
 use std::os::unix::fs::PermissionsExt as _;
@@ -8,35 +8,8 @@ use smithay::backend::input::ButtonState;
 use smithay::input::keyboard::XkbConfig;
 use smithay::utils::{Physical, Rectangle, Size};
 
-use super::the_records_icon;
 use crate::Server;
-use crate::record_palette::RecordPalette;
-use crate::record_testing::{an_afternoon_kept, light, words};
-
-/// **The icon is the record's clock on its `bg/cool` tile**, drawn at the
-/// display's own scale.
-#[test]
-fn the_icon_is_the_clock_on_its_tile() {
-    let palette = RecordPalette::of(light().scheme, light().contrast);
-    let icon = the_records_icon(32, palette).expect("a tile");
-    assert_eq!((icon.across(), icon.down()), (32, 32));
-    let at = |x: u32, y: u32| -> [u8; 4] {
-        let i = usize::try_from((y * 32 + x) * 4).expect("a place");
-        let mut out = [0; 4];
-        out.copy_from_slice(icon.pixels().get(i..i + 4).expect("a pixel"));
-        out
-    };
-    let [r, g, b, a] = at(1, 16);
-    assert_eq!(([r, g, b], a), (palette.cool, 255), "the tile is bg/cool");
-    let inked = (0..32)
-        .flat_map(|y| (0..32).map(move |x| (x, y)))
-        .filter(|(x, y)| {
-            let [r, g, b, _] = at(*x, *y);
-            [r, g, b] == palette.ink
-        })
-        .count();
-    assert!(inked > 10, "the clock is not drawn: {inked} pixels");
-}
+use crate::record_testing::{an_afternoon_kept, words};
 
 /// **Close on the edge shuts the record**, pressed where the edge is drawn over
 /// the body — and an edge is drawn only while the body has been.
@@ -65,7 +38,7 @@ fn close_on_the_edge_shuts_the_record() {
         .fonts;
     assert!(
         server
-            .the_records_edge_picture(&mut fonts, &words(), ((1440, 960), 100), light())
+            .the_records_edge_picture(&mut fonts, &words(), ((1440, 960), 100))
             .is_none(),
         "an edge was drawn over a body not drawn yet"
     );
@@ -73,7 +46,7 @@ fn close_on_the_edge_shuts_the_record() {
     server.where_the_records_body_was_drawn = Some(body);
     assert!(
         server
-            .the_records_edge_picture(&mut fonts, &words(), ((1440, 960), 100), light())
+            .the_records_edge_picture(&mut fonts, &words(), ((1440, 960), 100))
             .is_some()
     );
     let edge = crate::an_alo_windows_edge::the_edge_over(body, Size::from((10_000, 10_000)), 100);

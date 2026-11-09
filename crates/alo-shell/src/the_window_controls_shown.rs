@@ -4,7 +4,7 @@
 //! **The owner's answer of 2026-11-01**: *window titles are always visible on
 //! every window's edge, with the app's icon; Settings offers "show the title
 //! only when I point at it". The focused window has its own look.* The first
-//! half is `alo_appearance::WindowTitles`, told to this seat at stand-up and
+//! half is `alo_appearance::WindowControls`, told to this seat at stand-up and
 //! again whenever Settings keeps a new answer; the second is asked of the
 //! keyboard, because *focused* on the board `557:456` means *the window your
 //! typing goes to*.
@@ -20,14 +20,14 @@ impl crate::Server {
     /// gives: a compositor that opened a person's settings file would be a
     /// compositor measuring. The desktop reads the file at sign-in and says
     /// what it holds; Settings says it again when the person changes it.
-    pub fn the_window_titles_are(&mut self, titles: alo_appearance::WindowTitles) {
-        self.window_titles = titles;
+    pub fn the_window_controls_are(&mut self, titles: alo_appearance::WindowControls) {
+        self.window_controls = titles;
     }
 
     /// When windows' titles are shown.
     #[must_use]
-    pub const fn the_window_titles(&self) -> alo_appearance::WindowTitles {
-        self.window_titles
+    pub const fn the_window_controls(&self) -> alo_appearance::WindowControls {
+        self.window_controls
     }
 
     /// Whether `surface` is the window the person's typing goes to.
@@ -50,5 +50,5 @@ impl crate::Server {
 }
 
 #[cfg(test)]
-#[path = "the_window_titles_shown_tests.rs"]
+#[path = "the_window_controls_shown_tests.rs"]
 mod tests;

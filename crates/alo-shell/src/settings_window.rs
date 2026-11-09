@@ -247,13 +247,13 @@ pub enum SettingsRow {
     GoTo(SettingsCategory),
     /// Light, dark, or following the time of day: Enter chooses it.
     LightOrDark(LightOrDark),
-    /// *Show the title only when I point at it*: one switch, and Enter turns
-    /// it over.
+    /// *Always show window controls*: one switch, and Enter turns it over.
     ///
-    /// **Off as this release ships**, which is every window's title always on
-    /// its edge — the owner's answer of 2026-11-01. On is the edge as it was
-    /// drawn before that day, kept as a choice (`alo_appearance::WindowTitles`).
-    WindowTitles,
+    /// **Off as this release ships**: a window's controls appear as the pointer
+    /// comes near its band, and its title is always there either way — the
+    /// owner's ruling of 2026-11-09, which replaced *show the title only when I
+    /// point at it* with this (`alo_appearance::WindowControls`).
+    WindowControls,
     /// How large text is drawn everywhere: Left and Right make it smaller and
     /// larger, a step of 25 per cent at a time, and Enter makes it larger.
     TextSize,
@@ -302,7 +302,7 @@ impl SettingsRow {
             Self::TimeZone(_) => SettingsSection::TimeZone,
             Self::Hiding(_) | Self::Edge(_) => SettingsSection::Dock,
             Self::GoTo(_) => SettingsSection::Terminal,
-            Self::LightOrDark(_) | Self::WindowTitles | Self::WhenThereIsNoRoom(_) => {
+            Self::LightOrDark(_) | Self::WindowControls | Self::WhenThereIsNoRoom(_) => {
                 SettingsSection::Appearance
             }
             Self::TextSize
@@ -640,10 +640,10 @@ impl SettingsWindow {
 
     /// When windows' titles are shown, as Settings holds it.
     #[must_use]
-    pub fn window_titles(&self) -> Option<alo_appearance::WindowTitles> {
+    pub fn window_controls(&self) -> Option<alo_appearance::WindowControls> {
         self.open
             .as_ref()
-            .map(|open| open.appearance.drawn().window_titles())
+            .map(|open| open.appearance.drawn().window_controls())
     }
 
     /// Where a new window goes when there is no room for it, as Settings
@@ -890,7 +890,7 @@ impl Open {
                 if self.appearance.at().is_some() {
                     rows.extend(LightOrDark::ALL.into_iter().map(SettingsRow::LightOrDark));
                     rows.extend(Accent::ALL.into_iter().map(SettingsRow::Accent));
-                    rows.push(SettingsRow::WindowTitles);
+                    rows.push(SettingsRow::WindowControls);
                     rows.extend(
                         alo_appearance::WhenThereIsNoRoom::ALL
                             .into_iter()
@@ -1311,18 +1311,18 @@ impl Open {
             }
             // **One switch, turned over**, and kept with the rest of the
             // appearance; the seat is told by `crate::a_key_reaches_settings`.
-            SettingsRow::WindowTitles => {
-                let turned = match self.appearance.drawn().window_titles() {
-                    alo_appearance::WindowTitles::Always => {
-                        alo_appearance::WindowTitles::WhenPointedAt
+            SettingsRow::WindowControls => {
+                let turned = match self.appearance.drawn().window_controls() {
+                    alo_appearance::WindowControls::Always => {
+                        alo_appearance::WindowControls::WhenApproached
                     }
-                    alo_appearance::WindowTitles::WhenPointedAt => {
-                        alo_appearance::WindowTitles::Always
+                    alo_appearance::WindowControls::WhenApproached => {
+                        alo_appearance::WindowControls::Always
                     }
                 };
                 let kept = self.appearance.changed(
                     |appearance| {
-                        appearance.set_window_titles(turned);
+                        appearance.set_window_controls(turned);
                         Ok(())
                     },
                     doors.strings,

@@ -1,171 +1,368 @@
-//! What the window menu draws, so that a person can see it.
+//! What the window panel draws: its body, its placement pictures, its rows and
+//! their words.
 //!
-//! `crate::window_menu` laid the panel out and `crate::window_menu_keys` walks
-//! it, and **until this file nothing painted it**. A menu with a hit test, a
-//! keyboard road and a screen-reader reading, that no one can see, is not a
-//! menu. It is the same fault the edge had before `window_edge_paint`: every
-//! half present except the one a person meets.
+//! Every figure is `11:51`'s, read with `get_design_context` on 2026-11-09 and
+//! recorded in `docs/design/the-window-controls.md`; every colour is one of the
+//! twelve roles, mapped from the design's literal where it has no variable
+//! (the note's *Readings taken* says which).
 //!
-//! # The same shape as the edge's painter, on purpose
+//! | part | figure |
+//! |---|---|
+//! | body | `bg/surface`, corner 16, line 1 `border/default`, shadow 0 / 16 blur 40 at 10 % of navy |
+//! | heading *Window* | SemiBold 14, navy, at (22, 20) |
+//! | a placement picture | 94 × 94, corner 10, `bg/canvas`; an outline 46 × 30 at (24, 16), corner 4, line 1; the placement inside, corner 2 |
+//! | its label | Medium 12, navy, centred, at y 62 |
+//! | a row | 304 × 40, corner 7; its mark 12 × 12 at (2, 12); its label Regular 13 at x 30 |
 //!
-//! [`Solid`](crate::Solid) is `(rectangle, colour)` and a caller fills them
-//! back to front. One painter would have been wrong — the edge is a strip of
-//! 44 × 44 targets and the menu is a panel of 248 × 48 rows — and one *shape*
-//! is right, because the thing that consumes them is the same renderer.
-//!
-//! # The five colours are the five the project already has
-//!
-//! The design's own note says so: *existing semantic colours; same geometry*.
-//! So nothing here asks `alo-appearance` for a role it does not have.
-//!
-//! | what | role | light |
-//! |---|---|---|
-//! | the panel | `bg/surface` in a `border/default` frame | `#FFFFFF` on `#E7EBEF` |
-//! | the row under the pointer | `bg/cool` | `#EEF2F4` |
-//! | a row that will act | `text/primary` | `#102A43` |
-//! | a row this window will not allow | `text/muted` | `#596B78` |
-//! | the keyboard's ring | `text/primary`, two units | `#102A43` |
-//!
-//! **An unavailable row is drawn muted rather than hidden**, which is the
-//! same decision `crate::window_menu::MenuRow::available` records for the
-//! reading: a row that vanished would move every row below it between one
-//! window and the next.
-//!
-//! # What this does not draw
-//!
-//! **Text.** The title and each row's words are `Inked`, which needs the font
-//! system, and `crate::window_edge_picture` is where that is done for the
-//! edge. This draws the shapes; the picture that carries both is
-//! `crate::window_menu_picture`'s job and it calls this.
+//! **The choice in hand wears navy**: its placement is navy and the others are
+//! `text/muted`, and the keyboard's choice also gets the navy ring — so which
+//! choice is in hand is never told by colour alone.
+
+use std::sync::OnceLock;
 
 use alo_appearance::Role;
-use smithay::utils::{Logical, Rectangle};
+use alo_vector_shapes::AShape;
+use cosmic_text::{Attrs, FontSystem, Metrics, Weight};
+use smithay::utils::{Logical, Physical, Rectangle};
 
-use crate::window_edge_paint::Solid;
-use crate::window_menu::{MenuRow, WhatARowDoes, WindowMenu};
+use crate::painted::{Inked, Washed};
+use crate::window_menu::{A_PICTURE_IS, WhatARowDoes, WindowMenu};
 
-/// How thick the panel's border is, one logical unit, as the edge's is.
-const THE_BORDER_IS: i32 = 1;
-
-/// How thick the ring on the row with the keyboard is.
-///
-/// Two, for `crate::window_edge_paint::A_FOCUS_RING_IS`' reason and measured
-/// from the same place: a focus indicator the design draws at two units.
-const A_FOCUS_RING_IS: i32 = 2;
-
-/// What a person is doing to the menu, which is all that changes its colour.
+/// What a person is doing to the panel, which is all that changes its colour.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct PointingAtTheMenu {
-    /// The row the pointer is over, if it is over one.
+    /// The choice the pointer is over, if it is over one.
     pub hovered: Option<WhatARowDoes>,
-    /// The row the keyboard is on, if it is on one.
+    /// The choice the keyboard is on, if it is on one.
     pub focused: Option<WhatARowDoes>,
 }
 
-/// Everything to fill for this menu, back to front.
-///
-/// The panel's border, its surface, then each row: its hover fill, its ink,
-/// and any focus ring. A caller fills them in order and gets the design.
-///
-/// **The rows come from the menu that was laid out.** Nothing here computes a
-/// row's position, for `crate::window_menu_reading`'s reason in the other
-/// direction: two files deciding where a row is would be two answers, and the
-/// one that is drawn and the one that is pressed would come apart.
+impl PointingAtTheMenu {
+    /// The choice in hand: the keyboard's, or else the pointer's.
+    #[must_use]
+    pub const fn in_hand(self) -> Option<WhatARowDoes> {
+        match self.focused {
+            Some(it) => Some(it),
+            None => self.hovered,
+        }
+    }
+}
+
+/// The panel's corner. `11:51`.
+const THE_PANELS_CORNER: f32 = 16.0;
+/// A placement picture's corner. `11:55`.
+const A_PICTURES_CORNER: f32 = 10.0;
+/// A row's corner. `11:68`.
+const A_ROWS_CORNER: f32 = 7.0;
+/// The shadow: how far down, how soft, how strong. `11:51`'s effect.
+const THE_SHADOW: (f32, f32, f32) = (16.0, 40.0, 0.10);
+/// The outline inside a placement picture: where, and how big. `11:56`.
+const THE_OUTLINE: (i32, i32, i32, i32) = (24, 16, 46, 30);
+/// The placement inside that outline, for Maximise: `11:61`, 38 × 22 at (4, 4).
+const THE_PLACEMENT: (i32, i32, i32, i32) = (4, 4, 38, 22);
+/// Where a picture's label sits down it. `11:58`.
+const A_LABEL_SITS_AT: i32 = 62;
+/// Where a row's mark is. `11:69`, inside its exported 13.4 box.
+const A_ROWS_MARK: (i32, i32, i32) = (1, 11, 13);
+/// Where a row's label starts across and down. `11:70`.
+const A_ROWS_LABEL: (i32, i32) = (30, 10);
+
+/// The expand mark beside Full screen, read once.
+fn the_full_screen_mark() -> Option<&'static AShape> {
+    /// Read once, or not at all.
+    static MARK: OnceLock<Option<AShape>> = OnceLock::new();
+    MARK.get_or_init(|| {
+        AShape::read(include_str!(
+            "../icons/the-window-controls/full-screen.svg"
+        ))
+        .ok()
+    })
+    .as_ref()
+}
+
+/// A role as three bytes.
+fn rgb(role: Role) -> [u8; 3] {
+    let it = role.colour();
+    [it.red(), it.green(), it.blue()]
+}
+
+/// The panel, drawn: its rasters, back to front, and its words.
 #[must_use]
-pub fn solids(menu: &WindowMenu, pointing: PointingAtTheMenu) -> Vec<Solid> {
-    let mut solids = vec![(menu.panel, Role::BorderDefault.colour())];
-    if let Some(inside) = inset(menu.panel, THE_BORDER_IS) {
-        solids.push((inside, Role::BgSurface.colour()));
-    }
-
+pub(crate) fn the_panel_drawn(
+    menu: &WindowMenu,
+    pointing: PointingAtTheMenu,
+    fonts: &mut FontSystem,
+    scale: u32,
+    output: (i32, i32),
+) -> (Vec<Washed>, Vec<Inked>) {
+    let fraction = f64::from(scale.max(1)) / 100.0;
+    let px = |it: i32| scaled(it, scale);
+    let mut rasters = Vec::new();
+    rasters.extend(the_body(in_pixels(menu.panel, scale), fraction));
+    rasters.extend(a_rounded_fill(
+        in_pixels(menu.divider, scale),
+        0.0,
+        rgb(Role::BorderDefault),
+    ));
+    let in_hand = pointing.in_hand();
     for row in &menu.rows {
-        solids.extend(a_row(*row, pointing));
+        let area = in_pixels(row.row, scale);
+        let held = in_hand == Some(row.does);
+        let ground = if row.does.is_a_picture() {
+            if held { rgb(Role::BgCool) } else { rgb(Role::BgCanvas) }
+        } else if held {
+            rgb(Role::BgCool)
+        } else {
+            rgb(Role::BgSurface)
+        };
+        let corner = if row.does.is_a_picture() {
+            A_PICTURES_CORNER
+        } else {
+            A_ROWS_CORNER
+        };
+        rasters.extend(a_rounded_fill(area, as_f32(f64::from(corner) * fraction), ground));
+        if row.does.is_a_picture() {
+            rasters.extend(the_placement_picture(row.row, held, scale, fraction));
+        } else if let Some(mark) = the_full_screen_mark() {
+            let at = Rectangle::new(
+                (row.row.loc.x + A_ROWS_MARK.0, row.row.loc.y + A_ROWS_MARK.1).into(),
+                (A_ROWS_MARK.2, A_ROWS_MARK.2).into(),
+            );
+            rasters.extend(a_mark(in_pixels(at, scale), mark, rgb(Role::TextPrimary)));
+        }
+        if pointing.focused == Some(row.does) {
+            rasters.extend(a_ring(area, as_f32(f64::from(corner) * fraction), fraction));
+        }
     }
-    solids
-}
 
-/// One row: what is filled behind it, and the mark that says what it does.
-fn a_row(row: MenuRow, pointing: PointingAtTheMenu) -> Vec<Solid> {
-    let mut solids = Vec::new();
-
-    // **Only a row that can be used is highlighted.** Filling behind a row
-    // that will not act would say *this one* to a pointer and then do
-    // nothing, which is the shape of fault the edge's painter avoids by
-    // highlighting the hovered control and no other.
-    if pointing.hovered == Some(row.does) && row.available {
-        solids.push((row.row, Role::BgCool.colour()));
-    }
-
-    // **Muted where the window will not allow it**, which is the drawn half
-    // of what a reader is told as `State::ReadOnly`. The two must agree: a row
-    // spoken as unavailable and drawn as ordinary would be one surface saying
-    // two things.
-    let ink = if row.available {
-        Role::TextPrimary
-    } else {
-        Role::TextMuted
-    };
-    solids.extend(the_mark_of(row, ink));
-
-    if pointing.focused == Some(row.does) {
-        // The whole row, as the edge's ring is the whole target: the thing a
-        // person is on is the thing that is ringed.
-        solids.extend(outline_of(row.row, Role::TextPrimary));
-    }
-    solids
-}
-
-/// The mark drawn in a row, standing for the words until text is drawn.
-///
-/// **A bar and not a glyph.** The design's rows carry words, and words need
-/// the font system this file deliberately does not have — see the header. A
-/// bar at the row's own leading edge is honest about that: it marks where the
-/// words go and claims to be nothing else. `crate::window_menu_picture` is
-/// what replaces it with the words.
-fn the_mark_of(row: MenuRow, ink: Role) -> Vec<Solid> {
-    // Inset so the mark sits where the words will, not against the border.
-    let inset_by = 16;
-    let tall = 2;
-    let wide = (row.row.size.w - inset_by * 2).max(0);
-    if wide == 0 || row.row.size.h <= tall {
-        return Vec::new();
-    }
-    vec![(
-        Rectangle::new(
-            (
-                row.row.loc.x + inset_by,
-                row.row.loc.y + (row.row.size.h - tall) / 2,
+    let mut words = Vec::new();
+    let navy = rgb(Role::TextPrimary);
+    let heading = crate::painted_text::sentence(
+        fonts,
+        alo_access::words::THE_WINDOW_PANEL.says(),
+        px(crate::window_menu::A_ROW_IS_WIDE),
+        metrics(14.0, 19.0, fraction),
+        rgb(Role::BgSurface),
+        navy,
+    )
+    .cropped_to_its_ink();
+    words.extend(heading.placed(px(menu.heading.x), px(menu.heading.y), output.1));
+    for row in &menu.rows {
+        let held = in_hand == Some(row.does);
+        let label = row.does.its_own_word().says();
+        if row.does.is_a_picture() {
+            let ground = if held { rgb(Role::BgCool) } else { rgb(Role::BgCanvas) };
+            let shaped = in_a_weight(fonts, label, Weight(500), metrics(12.0, 16.0, fraction), px(A_PICTURE_IS), ground, navy)
+                .cropped_to_its_ink();
+            let across = px(row.row.loc.x) + (px(A_PICTURE_IS) - shaped.width).max(0) / 2;
+            words.extend(shaped.placed(across, px(row.row.loc.y + A_LABEL_SITS_AT), output.1));
+        } else {
+            let ground = if held { rgb(Role::BgCool) } else { rgb(Role::BgSurface) };
+            let shaped = in_a_weight(
+                fonts,
+                label,
+                Weight(400),
+                metrics(13.0, 18.0, fraction),
+                px(row.row.size.w - A_ROWS_LABEL.0),
+                ground,
+                navy,
             )
-                .into(),
-            (wide, tall).into(),
-        ),
-        ink.colour(),
+            .cropped_to_its_ink();
+            words.extend(shaped.placed(
+                px(row.row.loc.x + A_ROWS_LABEL.0),
+                px(row.row.loc.y + A_ROWS_LABEL.1),
+                output.1,
+            ));
+        }
+    }
+    (rasters, words)
+}
+
+/// Text in alo's own face at another weight than its labels'.
+fn in_a_weight(
+    fonts: &mut FontSystem,
+    text: &str,
+    weight: Weight,
+    metrics: Metrics,
+    width: i32,
+    ground: [u8; 3],
+    ink: [u8; 3],
+) -> crate::painted_text::Shaped {
+    let attrs: Attrs<'_> = crate::painted_text::alos_own_text().weight(weight);
+    crate::painted_text::sentence_in_runs(fonts, &[(text, attrs.clone())], &attrs, width, metrics, ground, ink)
+}
+
+/// Type at a size and line height, at the display's scale.
+fn metrics(size: f32, line: f32, fraction: f64) -> Metrics {
+    let fraction = as_f32(fraction);
+    Metrics::new(size * fraction, line * fraction)
+}
+
+/// The panel's body: its shadow, its line and its white, as one raster that
+/// reaches past the panel by the shadow's softness.
+fn the_body(panel: Rectangle<i32, Physical>, fraction: f64) -> Option<Washed> {
+    let (down, soft, strength) = THE_SHADOW;
+    let (down, soft) = (as_f32(f64::from(down) * fraction), as_f32(f64::from(soft) * fraction));
+    let corner = as_f32(f64::from(THE_PANELS_CORNER) * fraction);
+    let line = as_f32(fraction).max(1.0);
+    #[expect(
+        clippy::cast_possible_truncation,
+        reason = "a shadow's reach in pixels is well inside an i32"
     )]
+    let reach = soft.ceil() as i32;
+    let area = Rectangle::<i32, Physical>::new(
+        (panel.loc.x - reach, panel.loc.y - reach).into(),
+        (panel.size.w + 2 * reach, panel.size.h + 2 * reach + as_i32(down)).into(),
+    );
+    let (l, t) = (as_f32_i(panel.loc.x), as_f32_i(panel.loc.y));
+    let (w, h) = (as_f32_i(panel.size.w), as_f32_i(panel.size.h));
+    let navy = rgb(Role::TextPrimary);
+    let edging = rgb(Role::BorderDefault);
+    let white = rgb(Role::BgSurface);
+    crate::a_window_raised::raster(area, |x, y| {
+        let d = away(x - l, y - t, w, h, corner);
+        if d < 0.5 {
+            let inside = (0.5 - d).clamp(0.0, 1.0);
+            let within = (0.5 - (d + line)).clamp(0.0, 1.0);
+            let colour = if within > 0.5 { white } else { edging };
+            return (colour, inside);
+        }
+        let shadow = away(x - l, y - t - down, w, h, corner).max(0.0);
+        let fall = (1.0 - shadow / soft.max(1.0)).clamp(0.0, 1.0);
+        (navy, strength * fall * fall)
+    })
 }
 
-/// A ring around a rectangle, at the focus ring's own thickness.
-fn outline_of(around: Rectangle<i32, Logical>, ink: Role) -> Vec<Solid> {
-    let colour = ink.colour();
-    let thick = A_FOCUS_RING_IS;
-    let (x, y, w, h) = (around.loc.x, around.loc.y, around.size.w, around.size.h);
-    vec![
-        (Rectangle::new((x, y).into(), (w, thick).into()), colour),
-        (
-            Rectangle::new((x, y + h - thick).into(), (w, thick).into()),
-            colour,
-        ),
-        (Rectangle::new((x, y).into(), (thick, h).into()), colour),
-        (
-            Rectangle::new((x + w - thick, y).into(), (thick, h).into()),
-            colour,
-        ),
-    ]
+/// A placement picture's outline and the placement in it.
+fn the_placement_picture(
+    picture: Rectangle<i32, Logical>,
+    held: bool,
+    scale: u32,
+    fraction: f64,
+) -> Vec<Washed> {
+    let outline = Rectangle::<i32, Logical>::new(
+        (picture.loc.x + THE_OUTLINE.0, picture.loc.y + THE_OUTLINE.1).into(),
+        (THE_OUTLINE.2, THE_OUTLINE.3).into(),
+    );
+    let placement = Rectangle::<i32, Logical>::new(
+        (outline.loc.x + THE_PLACEMENT.0, outline.loc.y + THE_PLACEMENT.1).into(),
+        (THE_PLACEMENT.2, THE_PLACEMENT.3).into(),
+    );
+    let fill = if held {
+        rgb(Role::TextPrimary)
+    } else {
+        rgb(Role::TextMuted)
+    };
+    let mut drawn = Vec::new();
+    drawn.extend(a_ring_of(
+        in_pixels(outline, scale),
+        as_f32(4.0 * fraction),
+        as_f32(fraction).max(1.0),
+        rgb(Role::TextMuted),
+    ));
+    drawn.extend(a_rounded_fill(
+        in_pixels(placement, scale),
+        as_f32(2.0 * fraction),
+        fill,
+    ));
+    drawn
 }
 
-/// A rectangle shrunk by `by` on every side, or [`None`] if nothing is left.
-fn inset(of: Rectangle<i32, Logical>, by: i32) -> Option<Rectangle<i32, Logical>> {
-    let (w, h) = (of.size.w - by * 2, of.size.h - by * 2);
-    (w > 0 && h > 0).then(|| Rectangle::new((of.loc.x + by, of.loc.y + by).into(), (w, h).into()))
+/// A filled rounded rectangle.
+fn a_rounded_fill(area: Rectangle<i32, Physical>, corner: f32, colour: [u8; 3]) -> Option<Washed> {
+    let (l, t) = (as_f32_i(area.loc.x), as_f32_i(area.loc.y));
+    let (w, h) = (as_f32_i(area.size.w), as_f32_i(area.size.h));
+    crate::a_window_raised::raster(area, |x, y| {
+        let d = away(x - l, y - t, w, h, corner);
+        (colour, (0.5 - d).clamp(0.0, 1.0))
+    })
+}
+
+/// The keyboard's navy ring round a choice, 2 wide.
+fn a_ring(area: Rectangle<i32, Physical>, corner: f32, fraction: f64) -> Option<Washed> {
+    a_ring_of(area, corner, as_f32(2.0 * fraction).max(1.0), rgb(Role::TextPrimary))
+}
+
+/// A line `width` wide just inside a rounded rectangle.
+fn a_ring_of(
+    area: Rectangle<i32, Physical>,
+    corner: f32,
+    width: f32,
+    colour: [u8; 3],
+) -> Option<Washed> {
+    let (l, t) = (as_f32_i(area.loc.x), as_f32_i(area.loc.y));
+    let (w, h) = (as_f32_i(area.size.w), as_f32_i(area.size.h));
+    crate::a_window_raised::raster(area, |x, y| {
+        let d = away(x - l, y - t, w, h, corner);
+        let on = (0.5 - d).clamp(0.0, 1.0) * (d + width + 0.5).clamp(0.0, 1.0);
+        (colour, on)
+    })
+}
+
+/// A vector mark inked into its box.
+fn a_mark(at: Rectangle<i32, Physical>, shape: &AShape, ink: [u8; 3]) -> Option<Washed> {
+    let (Ok(wide), Ok(tall)) = (u32::try_from(at.size.w), u32::try_from(at.size.h)) else {
+        return None;
+    };
+    if wide == 0 || tall == 0 {
+        return None;
+    }
+    let pixels = shape
+        .coverage(wide, tall)
+        .into_iter()
+        .flat_map(|covered| [ink[0], ink[1], ink[2], covered])
+        .collect();
+    Some(Washed { area: at, pixels }.premultiplied())
+}
+
+/// How far a point is outside a `w × h` rectangle at the origin with rounded
+/// corners, negative inside.
+fn away(px: f32, py: f32, w: f32, h: f32, corner: f32) -> f32 {
+    let corner = corner.min(w / 2.0).min(h / 2.0).max(0.0);
+    let (cx, cy) = (w / 2.0, h / 2.0);
+    let qx = (px - cx).abs() - (cx - corner);
+    let qy = (py - cy).abs() - (cy - corner);
+    qx.max(0.0).hypot(qy.max(0.0)) + qx.max(qy).min(0.0) - corner
+}
+
+/// A length at the display's scale.
+fn scaled(length: i32, scale: u32) -> i32 {
+    i32::try_from(i64::from(length) * i64::from(scale.max(1)) / 100).unwrap_or(i32::MAX)
+}
+
+/// A logical rectangle in the display's pixels.
+fn in_pixels(of: Rectangle<i32, Logical>, scale: u32) -> Rectangle<i32, Physical> {
+    Rectangle::new(
+        (scaled(of.loc.x, scale), scaled(of.loc.y, scale)).into(),
+        (scaled(of.size.w, scale), scaled(of.size.h, scale)).into(),
+    )
+}
+
+/// A scale as an `f32`.
+#[expect(
+    clippy::cast_possible_truncation,
+    reason = "a display's scale and a few hundred units at it are well inside an f32"
+)]
+fn as_f32(it: f64) -> f32 {
+    it as f32
+}
+
+/// A pixel count as an `f32`.
+#[expect(
+    clippy::cast_precision_loss,
+    reason = "a position on a display is far inside an f32's exact range"
+)]
+fn as_f32_i(it: i32) -> f32 {
+    it as f32
+}
+
+/// A length in pixels, rounded up.
+#[expect(
+    clippy::cast_possible_truncation,
+    reason = "a shadow's offset in pixels is well inside an i32"
+)]
+fn as_i32(it: f32) -> i32 {
+    it.ceil() as i32
 }
 
 #[cfg(test)]
