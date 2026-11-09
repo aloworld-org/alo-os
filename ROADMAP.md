@@ -981,6 +981,7 @@ carries its own tasks, their state and what each depends on.
 | [`hands-on-the-desktop-plan.md`](docs/autonomy/hands-on-the-desktop-plan.md) | the development PC | pointer, keyboard and the desktop's own controls |
 | [`putting-a-window-aside.md`](docs/autonomy/putting-a-window-aside.md) | the development PC | the minimised-window panel, and getting a window back |
 | [`the-canvas-and-its-places.md`](docs/autonomy/the-canvas-and-its-places.md) | the Mac and the development PC | Places, the World, and moving between them |
+| [`the-window-controls-plan.md`](docs/autonomy/the-window-controls-plan.md) | this PC (`alo-os-shell` checkout) | a window's band, its three controls and its window panel — the owner's specification of 2026-11-09 |
 | [`the-smallest-canvas-worth-showing.md`](docs/autonomy/the-smallest-canvas-worth-showing.md) | the Mac | the least canvas worth putting on a screen |
 
 

@@ -8,6 +8,17 @@ that prose was 55 top-level frames behind without anything saying so.
 **Approved by the owner on 2026-10-04**, with the size explicitly accepted: *an untraceable
 design change is the larger problem.*
 
+## The window controls, 2026-11-09 — a second design file
+
+**`window-controls-XbSmsBYix0TrcQ0Qzaup64.xml` is from a different file**,
+`XbSmsBYix0TrcQ0Qzaup64`, which the owner named with the window-controls
+specification of 2026-11-09. Six frames (`11:2`, `11:24`, `11:84`, `11:146`,
+`19:2`, `19:96`), each read with `get_metadata` on its own id and written
+unchanged inside one `<frames>` root, because six reads of one file make one
+record. **Geometry and layer names only**; fills, strokes and type are in
+[`../the-window-controls.md`](../the-window-controls.md), and the control marks
+are SVG in `crates/alo-shell/icons/the-window-controls/`.
+
 ## The Settings window and the alo window, 2026-10-31
 
 **`544-30910.xml` is the page the owner approved on 2026-10-31**, *Proposed ·

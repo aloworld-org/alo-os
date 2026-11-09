@@ -66,8 +66,10 @@ Settings → Keyboard and shortcuts says *Also ⊞ + =* under the action's name
 | Pan faster | faster two-finger scroll | Shift + arrow |
 | Pan sideways with a mouse | Shift + wheel on empty canvas | ← / → while the canvas is focused |
 | Zoom toward the pointer | pinch, or Ctrl + wheel on empty canvas | `⊞` + Plus / Minus |
-| Fit the selected window in view | double-click its name | `⊞` + 2 |
+| Fit the selected window in view | — *(double-click on the name maximises since 2026-11-09; see below the table)* | `⊞` + 2 |
 | Show the whole canvas | the dock's *Show all* | `⊞` + 0 |
+
+*Double-click its name* was this row's pointer road until 2026-11-09, and it was never built. The owner's window-controls specification of that day gives the double-click on a window's band to **maximise and restore** ([the window controls](the-window-controls.md)); `⊞` + 2 is unchanged.
 
 **Scrolling inside an application scrolls that application. Scrolling over empty
 canvas moves the canvas.** Space + drag deliberately takes panning even when the

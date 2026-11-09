@@ -1,0 +1,57 @@
+# Where the window controls' marks came from.
+#
+# Taken from the design file on 2026-11-09 with the Figma connector's
+# `get_design_context`, from the frames the owner named in the window-controls
+# specification of that day (docs/design/the-window-controls.md), and committed
+# byte for byte as it answered — every file below but one.
+#
+# Each 44-box file is the whole 44 x 44 control target as the design draws it,
+# so the mark sits at the design's own place inside its target and nothing here
+# re-centres it.
+#
+# THE ONE FILE THAT IS NOT BYTE FOR BYTE: window-actions-mark.svg. The design
+# draws Window actions as a rounded square with the mark on it, in two states
+# (window-actions-closed.svg, window-actions-open.svg), and `alo-vector-shapes`
+# reads paths and refuses a <rect> by name. So the mark is that same path, the
+# same `d`, stroke width, caps and joins, in a file of its own; the square is
+# drawn by the shell in the colour the state asks for. Both exported files are
+# kept beside it so the derivation can be checked.
+
+file = "XbSmsBYix0TrcQ0Qzaup64"
+fetched = "2026-11-09"
+
+[[icon]]
+svg = "window-actions-closed.svg"
+names = "Window actions, revealed and not open: #f0f1ed square, corner 8, navy mark"
+node = "11:164"
+box = 44
+
+[[icon]]
+svg = "window-actions-open.svg"
+names = "Window actions while its panel is open: navy square, corner 8, white mark"
+node = "11:42"
+box = 44
+
+[[icon]]
+svg = "window-actions-mark.svg"
+names = "the layout mark alone, derived from the two above; the shell draws the square"
+node = "11:42"
+box = 44
+
+[[icon]]
+svg = "minimise.svg"
+names = "Minimise"
+node = "11:45"
+box = 44
+
+[[icon]]
+svg = "close.svg"
+names = "Close"
+node = "11:49"
+box = 44
+
+[[icon]]
+svg = "full-screen.svg"
+names = "the expand mark beside Full screen in the window panel, drawn 12 x 12"
+node = "11:69"
+box = 13.4

@@ -261,6 +261,32 @@ promised with a keyboard form**, which is a larger gap than it reads: there is n
 keyboard road to move or resize a frame at all, and the three keyboard forms this
 repository has are zoom in, zoom out and *Show all*.
 
+### The window panel
+
+**Shown by:** nothing yet.
+
+**Still owed:** all of it. Added 2026-11-09 by the owner's direction; the
+specification and every measurement are in `docs/design/the-window-controls.md`,
+which says per stage what is built. Where the work is: task 1 of
+`docs/autonomy/the-window-controls-plan.md`.
+
+### Undo a window's placement
+
+**Shown by:** nothing yet.
+
+**Still owed:** all of it, and a history of placements for each window that
+nothing keeps yet — *a Place remembers time* is a different, whole-Place series
+and is not offered as this. Where the work is: task 2 of
+`docs/autonomy/the-window-controls-plan.md`.
+
+### Capture & export a window
+
+**Shown by:** nothing yet.
+
+**Still owed:** all of it. `alo_capturing` can describe one window, and the
+native scene does not capture at all yet. Where the work is: task 4 of
+`docs/autonomy/the-window-controls-plan.md`.
+
 ### A frame arrives the shape its work is
 
 **Shown by:** nothing yet.
@@ -1632,7 +1658,7 @@ contract are updated together before this is called complete.
 
 ## What this audit found
 
-**The audit in figures: 87 promises, 4 shown whole, 55 shown in part, 28 with no
+**The audit in figures: 90 promises, 4 shown whole, 55 shown in part, 31 with no
 evidence at all.**
 
 *This line is the ledger's own count of itself and it is checked.*
