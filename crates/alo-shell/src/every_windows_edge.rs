@@ -108,6 +108,13 @@ pub(crate) fn every_windows_edge(
                             crate::window_menu_paint::PointingAtTheMenu {
                                 hovered: hovered_in_the_menu,
                                 focused: *on,
+                                // Where Left or Right in hand would put it,
+                                // drawn without moving anything.
+                                preview: server.the_preview_of(
+                                    surface,
+                                    on.or(hovered_in_the_menu),
+                                    scale,
+                                ),
                             },
                         )
                     }),

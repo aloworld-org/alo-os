@@ -10,10 +10,11 @@
 //!
 //! **A choice that does not work yet is not drawn** — not greyed, not *coming
 //! soon* — which is the specification's rule and law 3's. So this panel holds
-//! what this machine can do today: **Maximise** (or **Restore**) and **Full
-//! screen** (or **Exit full screen**). Left, Right, Move to…, Help with this
-//! window and Capture & export each join it in the change that makes them work,
-//! and the layout below leaves their places measured rather than invented.
+//! what this machine can do today: **Left**, **Maximise** (or **Restore**) and
+//! **Right**, and **Full screen** (or **Exit full screen**). Move to…, Help
+//! with this window and Capture & export each join it in the change that makes
+//! them work, and the layout below leaves their places measured rather than
+//! invented.
 //!
 //! It replaced a window menu with five rows — Minimise, Maximise, Move, Resize,
 //! Close — and a title block. Minimise and Close are on the band and are not
@@ -63,6 +64,9 @@ pub const THE_PICTURES_START_AT: i32 = 50;
 /// How big one placement picture is. `11:55`.
 pub const A_PICTURE_IS: i32 = 94;
 
+/// The gap between placement pictures: `11:55` at 22, `11:59` at 126.
+pub const BETWEEN_PICTURES: i32 = 10;
+
 /// Where the divider under the pictures is. `11:67`.
 pub const THE_DIVIDER_IS_AT: i32 = 160;
 
@@ -85,11 +89,17 @@ pub const BELOW_THE_LAST: i32 = 20;
 /// left to right, then the rows top to bottom.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum WhatARowDoes {
+    /// Put the window on the left half of its display's work area, moving no
+    /// other (`crate::a_window_on_one_side`).
+    Left,
     /// Make the window fill the work area, keeping its band and the shell's
     /// areas. The same picture as [`Self::Restore`]; only one is present.
     Maximise,
-    /// Put it back to the size and place it had. While it is maximised.
+    /// Put it back to the size and place it had. While it is maximised, or
+    /// on a half.
     Restore,
+    /// Put the window on the right half, moving no other.
+    Right,
     /// Make it cover the whole display, hiding its band and the shell's areas.
     FullScreen,
     /// Put it back the way it was before full screen. While it is full screen.
@@ -101,6 +111,8 @@ impl WhatARowDoes {
     #[must_use]
     pub const fn its_own_word(self) -> Word {
         match self {
+            Self::Left => alo_access::words::LEFT,
+            Self::Right => alo_access::words::RIGHT,
             Self::Maximise => alo_access::words::MAXIMISE,
             Self::Restore => alo_access::words::RESTORE,
             Self::FullScreen => alo_access::words::FULL_SCREEN,
@@ -111,14 +123,24 @@ impl WhatARowDoes {
     /// Whether this is drawn as a placement picture rather than a row.
     #[must_use]
     pub const fn is_a_picture(self) -> bool {
-        matches!(self, Self::Maximise | Self::Restore)
+        matches!(self, Self::Left | Self::Maximise | Self::Restore | Self::Right)
+    }
+
+    /// The half this choice puts a window on, for Left and Right.
+    #[must_use]
+    pub(crate) const fn the_side(self) -> Option<crate::a_window_on_one_side::OneSide> {
+        match self {
+            Self::Left => Some(crate::a_window_on_one_side::OneSide::Left),
+            Self::Right => Some(crate::a_window_on_one_side::OneSide::Right),
+            _ => None,
+        }
     }
 }
 
 /// How the window is now, which decides which word each choice reads.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct HowTheWindowIs {
-    /// Maximised now: the picture reads *Restore*.
+    /// Maximised or on a half now: the middle picture reads *Restore*.
     pub maximised: bool,
     /// Full screen now: the row reads *Exit full screen*.
     pub full_screen: bool,
@@ -201,14 +223,20 @@ pub fn the_menu_of(
     } else {
         WhatARowDoes::FullScreen
     };
+    let a_picture = |nth: i32, does: WhatARowDoes| MenuRow {
+        does,
+        row: Rectangle::new(
+            Point::from((
+                at_x + THE_INSET + nth * (A_PICTURE_IS + BETWEEN_PICTURES),
+                at_y + THE_PICTURES_START_AT,
+            )),
+            Size::from((A_PICTURE_IS, A_PICTURE_IS)),
+        ),
+    };
     let rows = vec![
-        MenuRow {
-            does: maximise,
-            row: Rectangle::new(
-                Point::from((at_x + THE_INSET, at_y + THE_PICTURES_START_AT)),
-                Size::from((A_PICTURE_IS, A_PICTURE_IS)),
-            ),
-        },
+        a_picture(0, WhatARowDoes::Left),
+        a_picture(1, maximise),
+        a_picture(2, WhatARowDoes::Right),
         MenuRow {
             does: full_screen,
             row: Rectangle::new(

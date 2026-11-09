@@ -122,15 +122,15 @@ fn inside_the_panel_the_keys_walk_and_enter_chooses() {
     let _ = keyboard.told(AnEdgeKey::Press, &band, None);
     assert_eq!(
         keyboard.told(AnEdgeKey::Next, &band, Some(&panel)),
-        WhatTheEdgeKeyDid::TheKeyboardIsOnARow(WhatARowDoes::Maximise)
+        WhatTheEdgeKeyDid::TheKeyboardIsOnARow(WhatARowDoes::Left)
     );
     assert_eq!(
         keyboard.told(AnEdgeKey::Next, &band, Some(&panel)),
-        WhatTheEdgeKeyDid::TheKeyboardIsOnARow(WhatARowDoes::FullScreen)
+        WhatTheEdgeKeyDid::TheKeyboardIsOnARow(WhatARowDoes::Maximise)
     );
     assert_eq!(
         keyboard.told(AnEdgeKey::Press, &band, Some(&panel)),
-        WhatTheEdgeKeyDid::ARowRuns(WhatARowDoes::FullScreen)
+        WhatTheEdgeKeyDid::ARowRuns(WhatARowDoes::Maximise)
     );
     assert_eq!(
         keyboard,

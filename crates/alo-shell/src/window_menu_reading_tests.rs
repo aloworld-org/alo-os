@@ -20,7 +20,7 @@ fn a_panel() -> WindowMenu {
 /// **The panel is named *Window*, its heading**, and is a list a reader walks.
 #[test]
 fn the_panel_is_named_by_its_heading() {
-    let met = what_a_reader_meets(&a_panel(), None);
+    let met = what_a_reader_meets(&a_panel(), None, None);
     assert_eq!(met.panel.name.says(), "Window");
     assert_eq!(met.panel.role, Role::List);
     assert!(!met.panel.can_be_used(), "the panel itself is not pressed");
@@ -31,19 +31,27 @@ fn the_panel_is_named_by_its_heading() {
 #[test]
 fn the_choice_the_keyboard_is_on_is_told_as_selected() {
     let panel = a_panel();
-    let nothing = what_a_reader_meets(&panel, None);
+    let nothing = what_a_reader_meets(&panel, None, None);
     assert!(nothing.rows.iter().all(|(_, selected)| !selected));
 
     let mut keyboard = TheKeyboardInTheMenu::opened_from(OnTheEdge::WindowActions);
     let _ = keyboard.told(crate::window_menu_keys::AMenuKey::Next, &panel);
     let _ = keyboard.told(crate::window_menu_keys::AMenuKey::Next, &panel);
-    let met = what_a_reader_meets(&panel, Some(keyboard));
+    let met = what_a_reader_meets(&panel, Some(keyboard), None);
     let told: Vec<(&str, bool)> = met
         .rows
         .iter()
         .map(|(control, selected)| (control.name.says(), *selected))
         .collect();
-    assert_eq!(told, vec![("Maximise", false), ("Full screen", true)]);
+    assert_eq!(
+        told,
+        vec![
+            ("Left", false),
+            ("Maximise", true),
+            ("Right", false),
+            ("Full screen", false)
+        ]
+    );
     assert!(
         met.rows
             .iter()
@@ -69,4 +77,22 @@ fn every_word_the_panel_says_is_listed() {
             "access.exit-full-screen"
         ]
     );
+}
+
+/// **A placement preview has a spoken equivalent**: with the keyboard on
+/// Left, a reader hears where the window would go — or that it cannot fit —
+/// and no other choice is renamed.
+#[test]
+fn a_reader_hears_the_preview_of_the_side_in_hand() {
+    let panel = a_panel();
+    let mut keyboard = TheKeyboardInTheMenu::opened_from(OnTheEdge::WindowActions);
+    let _ = keyboard.told(crate::window_menu_keys::AMenuKey::Next, &panel);
+    for says in [
+        alo_access::words::LEFT_HALF_PREVIEW,
+        alo_access::words::NO_ROOM_IN_HALF,
+    ] {
+        let met = what_a_reader_meets(&panel, Some(keyboard), Some(says));
+        let told: Vec<&str> = met.rows.iter().map(|(it, _)| it.name.says()).collect();
+        assert_eq!(told, vec![says.says(), "Maximise", "Right", "Full screen"]);
+    }
 }

@@ -35,7 +35,32 @@ pub struct PointingAtTheMenu {
     pub hovered: Option<WhatARowDoes>,
     /// The choice the keyboard is on, if it is on one.
     pub focused: Option<WhatARowDoes>,
+    /// Where Left or Right in hand would put the window, while it is.
+    pub preview: Option<ThePreview>,
 }
+
+/// The outline of where a placement would put a window, before it is chosen —
+/// `11:84`, *Left half · preview*.
+///
+/// **It never moves or resizes the real window**: it is drawn over the
+/// screen, above every window, and is gone as soon as the choice is not in
+/// hand.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ThePreview {
+    /// The destination, band included, in the band's own units on this
+    /// display.
+    pub outline: Rectangle<i32, Logical>,
+    /// What its corner says: which half and that it is a preview, or that the
+    /// window cannot fit there.
+    pub says: alo_strings::Word,
+}
+
+/// The preview's line and corner: `11:90`, 2 wide, corner 15.
+const THE_PREVIEWS_LINE: (f32, f32) = (2.0, 15.0);
+/// Where the preview's words sit: 20 in from its left, 30 up from its foot.
+const THE_PREVIEWS_WORDS: (i32, i32) = (20, 30);
+/// The room round the preview's words, so they read over any window.
+const ROUND_THE_PREVIEWS_WORDS: i32 = 6;
 
 impl PointingAtTheMenu {
     /// The choice in hand: the keyboard's, or else the pointer's.
@@ -58,8 +83,15 @@ const A_ROWS_CORNER: f32 = 7.0;
 const THE_SHADOW: (f32, f32, f32) = (16.0, 40.0, 0.10);
 /// The outline inside a placement picture: where, and how big. `11:56`.
 const THE_OUTLINE: (i32, i32, i32, i32) = (24, 16, 46, 30);
-/// The placement inside that outline, for Maximise: `11:61`, 38 × 22 at (4, 4).
-const THE_PLACEMENT: (i32, i32, i32, i32) = (4, 4, 38, 22);
+/// The placement inside that outline: Maximise `11:61`, 38 × 22 at (4, 4);
+/// Left `11:57`, 18 × 22 at (4, 4); Right 18 × 22 at (24, 4).
+const fn the_placement(does: WhatARowDoes) -> (i32, i32, i32, i32) {
+    match does {
+        WhatARowDoes::Left => (4, 4, 18, 22),
+        WhatARowDoes::Right => (24, 4, 18, 22),
+        _ => (4, 4, 38, 22),
+    }
+}
 /// Where a picture's label sits down it. `11:58`.
 const A_LABEL_SITS_AT: i32 = 62;
 /// Where a row's mark is. `11:69`, inside its exported 13.4 box.
@@ -127,7 +159,7 @@ pub(crate) fn the_panel_drawn(
             ground,
         ));
         if row.does.is_a_picture() {
-            rasters.extend(the_placement_picture(row.row, held, scale, fraction));
+            rasters.extend(the_placement_picture(row.row, row.does, held, scale, fraction));
         } else if let Some(mark) = the_full_screen_mark() {
             let at = Rectangle::new(
                 (row.row.loc.x + A_ROWS_MARK.0, row.row.loc.y + A_ROWS_MARK.1).into(),
@@ -139,8 +171,41 @@ pub(crate) fn the_panel_drawn(
             rasters.extend(a_ring(area, as_f32(f64::from(corner) * fraction), fraction));
         }
     }
-
+    // **The preview goes under the panel**, which stays readable over it.
     let mut words = Vec::new();
+    let mut under = Vec::new();
+    if let Some(preview) = pointing.preview {
+        under.extend(a_ring_of(
+            in_pixels(preview.outline, scale),
+            as_f32(f64::from(THE_PREVIEWS_LINE.1) * fraction),
+            as_f32(f64::from(THE_PREVIEWS_LINE.0) * fraction).max(1.0),
+            rgb(Role::TextPrimary),
+        ));
+        let shaped = in_a_weight(
+            fonts,
+            preview.says.says(),
+            Weight(400),
+            metrics(12.0, 16.0, fraction),
+            px((preview.outline.size.w - 2 * THE_PREVIEWS_WORDS.0).max(1)),
+            rgb(Role::BgSurface),
+            rgb(Role::TextMuted),
+        )
+        .cropped_to_its_ink();
+        let across = px(preview.outline.loc.x + THE_PREVIEWS_WORDS.0);
+        let down = px(preview.outline.loc.y + preview.outline.size.h - THE_PREVIEWS_WORDS.1);
+        let room = px(ROUND_THE_PREVIEWS_WORDS);
+        under.extend(a_rounded_fill(
+            Rectangle::new(
+                (across - room, down - room).into(),
+                (shaped.width + 2 * room, shaped.height + 2 * room).into(),
+            ),
+            as_f32(4.0 * fraction),
+            rgb(Role::BgSurface),
+        ));
+        words.extend(shaped.placed(across, down, output.1));
+    }
+    rasters.splice(0..0, under);
+
     let navy = rgb(Role::TextPrimary);
     let heading = crate::painted_text::sentence(
         fonts,
@@ -272,6 +337,7 @@ fn the_body(panel: Rectangle<i32, Physical>, fraction: f64) -> Option<Washed> {
 /// A placement picture's outline and the placement in it.
 fn the_placement_picture(
     picture: Rectangle<i32, Logical>,
+    does: WhatARowDoes,
     held: bool,
     scale: u32,
     fraction: f64,
@@ -280,13 +346,10 @@ fn the_placement_picture(
         (picture.loc.x + THE_OUTLINE.0, picture.loc.y + THE_OUTLINE.1).into(),
         (THE_OUTLINE.2, THE_OUTLINE.3).into(),
     );
+    let (x, y, w, h) = the_placement(does);
     let placement = Rectangle::<i32, Logical>::new(
-        (
-            outline.loc.x + THE_PLACEMENT.0,
-            outline.loc.y + THE_PLACEMENT.1,
-        )
-            .into(),
-        (THE_PLACEMENT.2, THE_PLACEMENT.3).into(),
+        (outline.loc.x + x, outline.loc.y + y).into(),
+        (w, h).into(),
     );
     let fill = if held {
         rgb(Role::TextPrimary)

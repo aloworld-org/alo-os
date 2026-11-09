@@ -105,3 +105,43 @@ fn the_keyboard_s_choice_is_ringed_and_not_told_by_colour_alone() {
 fn the_full_screen_mark_reads() {
     assert!(the_full_screen_mark().is_some());
 }
+
+/// **A placement preview is an outline and its words, drawn under the panel**
+/// — `11:84` — and nothing of it is drawn when no Left or Right is in hand.
+#[test]
+fn a_preview_is_drawn_under_the_panel_with_its_words() {
+    let menu = a_panel();
+    let outline = Rectangle::new(Point::from((0, 84)), Size::from((640, 700)));
+    let (rasters, words) = the_panel_drawn(
+        &menu,
+        PointingAtTheMenu {
+            hovered: Some(WhatARowDoes::Left),
+            focused: None,
+            preview: Some(ThePreview {
+                outline,
+                says: alo_access::words::LEFT_HALF_PREVIEW,
+            }),
+        },
+        &mut fonts(),
+        100,
+        (4000, 3000),
+    );
+    assert_eq!(
+        rasters.first().expect("the outline").area,
+        in_pixels(outline, 100),
+        "the outline is drawn first, so the panel stays readable over it"
+    );
+    assert_eq!(words.len(), 2 + menu.rows.len(), "the preview says where");
+    let (plain, _) = the_panel_drawn(
+        &menu,
+        PointingAtTheMenu::default(),
+        &mut fonts(),
+        100,
+        (4000, 3000),
+    );
+    assert_eq!(
+        plain.len() + 2,
+        rasters.len(),
+        "an outline and a ground for its words, and nothing else"
+    );
+}

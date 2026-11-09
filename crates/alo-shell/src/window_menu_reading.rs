@@ -38,10 +38,17 @@ pub struct WhatAReaderMeetsInTheMenu {
 ///
 /// **The choices come from the panel that was laid out**, so a reader cannot
 /// be told about a choice the panel does not draw.
+///
+/// **A placement preview has a spoken equivalent**: while Left or Right is
+/// the choice the keyboard is on, `preview` is what its outline's corner
+/// says — *Left half · preview*, or that the window cannot fit — and the
+/// choice is named with it, so a reader hears where the window would go
+/// before anything moves.
 #[must_use]
 pub fn what_a_reader_meets(
     menu: &WindowMenu,
     keyboard: Option<TheKeyboardInTheMenu>,
+    preview: Option<Word>,
 ) -> WhatAReaderMeetsInTheMenu {
     let on = keyboard.and_then(TheKeyboardInTheMenu::on);
     WhatAReaderMeetsInTheMenu {
@@ -56,7 +63,14 @@ pub fn what_a_reader_meets(
         rows: menu
             .rows
             .iter()
-            .map(|row| (a_row(row.does), on == Some(row.does)))
+            .map(|row| {
+                let held = on == Some(row.does);
+                let mut control = a_row(row.does);
+                if let (true, Some(says), Some(_)) = (held, preview, row.does.the_side()) {
+                    control.name = says;
+                }
+                (control, held)
+            })
             .collect(),
     }
 }
@@ -82,6 +96,8 @@ fn a_row(does: WhatARowDoes) -> Control {
 pub fn every_word_this_surface_says() -> Vec<Word> {
     let mut words = vec![alo_access::words::THE_WINDOW_PANEL];
     for does in [
+        WhatARowDoes::Left,
+        WhatARowDoes::Right,
         WhatARowDoes::Maximise,
         WhatARowDoes::Restore,
         WhatARowDoes::FullScreen,
@@ -89,6 +105,11 @@ pub fn every_word_this_surface_says() -> Vec<Word> {
     ] {
         words.push(does.its_own_word());
     }
+    words.extend([
+        alo_access::words::LEFT_HALF_PREVIEW,
+        alo_access::words::RIGHT_HALF_PREVIEW,
+        alo_access::words::NO_ROOM_IN_HALF,
+    ]);
     words
 }
 

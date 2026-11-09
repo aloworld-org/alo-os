@@ -133,7 +133,13 @@ impl crate::Server {
     pub(crate) fn how_this_window_is(&self, surface: &WlSurface) -> HowTheWindowIs {
         let mode = self.surfaces.requested_window_mode(surface);
         HowTheWindowIs {
-            maximised: mode == crate::window_mode::Mode::Maximized,
+            // **A window on a half reads Restore too**: a share cannot be
+            // dragged, so Restore is how it goes back to the size and place
+            // it had.
+            maximised: matches!(
+                mode,
+                crate::window_mode::Mode::Maximized | crate::window_mode::Mode::InAShare(_)
+            ),
             full_screen: mode == crate::window_mode::Mode::FillingTheScreen,
         }
     }
@@ -147,6 +153,9 @@ impl crate::Server {
         let done = match does {
             WhatARowDoes::Maximise => self.set_window_maximized(surface, true).is_ok(),
             WhatARowDoes::Restore => self.set_window_maximized(surface, false).is_ok(),
+            WhatARowDoes::Left | WhatARowDoes::Right => does
+                .the_side()
+                .is_some_and(|side| self.put_this_window_on(surface, side).is_ok()),
             WhatARowDoes::FullScreen => self.set_window_full_screen(surface, true).is_ok(),
             WhatARowDoes::ExitFullScreen => self.set_window_full_screen(surface, false).is_ok(),
         };

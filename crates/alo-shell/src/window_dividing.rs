@@ -190,7 +190,7 @@ fn as_pixels(units: u32) -> i32 {
 ///
 /// [`None`] where it has said nothing, which is a window with no minimum rather
 /// than one of no size.
-fn smallest(surface: &WlSurface) -> Option<Size> {
+pub(crate) fn smallest(surface: &WlSurface) -> Option<Size> {
     with_states(surface, |states| {
         let min = states
             .cached_state
