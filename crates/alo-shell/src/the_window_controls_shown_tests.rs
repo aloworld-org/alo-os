@@ -105,3 +105,22 @@ fn a_window_the_keyboard_is_not_on_is_not_focused() {
     let (_display, _peer, window) = a_window();
     assert!(!server.is_the_window_typing_goes_to(&window));
 }
+
+/// **A choice from the window panel that the window refuses is counted, and
+/// changes nothing** — here a window that was never mapped, so there is
+/// nothing to maximise or fill the screen with. Never swallowed: a refusal
+/// nobody can see is how a broken road reads as working.
+#[test]
+fn a_refused_panel_choice_is_counted_and_changes_nothing() {
+    let (_runtime, mut server) = a_session("controls-refused");
+    let (_display, _peer, window) = a_window();
+    assert_eq!(server.how_many_window_panel_choices_were_refused(), 0);
+    for does in [
+        crate::window_menu::WhatARowDoes::Maximise,
+        crate::window_menu::WhatARowDoes::FullScreen,
+    ] {
+        server.carry_out_the_row(&window, does);
+    }
+    assert_eq!(server.how_many_window_panel_choices_were_refused(), 2);
+    assert!(!server.a_window_is_filling_the_screen());
+}

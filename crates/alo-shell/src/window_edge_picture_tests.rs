@@ -101,6 +101,11 @@ fn the_title_and_the_name_are_written_whether_or_not_the_controls_are_shown() {
         );
         let words = drawn.as_ref().map_or(0, |it| it.flat().1.len());
         assert_eq!(words, 2, "shown {how_shown}: the title and the name");
+        assert_eq!(
+            drawn.as_ref().map(EdgePicture::the_whole_title),
+            Some("The next chapter"),
+            "a reader is given the whole title"
+        );
     }
 }
 

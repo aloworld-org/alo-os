@@ -15,16 +15,20 @@
 access.an-application	an application
 access.ask-the-agent	ask the agent
 access.bounce-keys	ignore the same key pressed twice quickly
+access.close	Close
+access.exit-full-screen	Exit full screen
 access.focus-always-visible	always show where the keyboard is
+access.full-screen	Full screen
 access.go-back-at-the-next-restart	go back the next time this machine starts
 access.go-back-now	go back now, restarting this machine
 access.high-contrast	use strong colours that are easier to read
 access.larger-text	make all text larger
 access.magnifier	magnify what is under the pointer
-access.move-the-window	Move the window
+access.maximise	Maximise
+access.minimise	Minimise
 access.one-thing-that-happened	one thing that happened
 access.reduced-motion	stop things sliding and fading
-access.resize-the-window	Resize the window
+access.restore	Restore
 access.screen-reader	read the screen aloud
 access.settings	settings
 access.settings-here	settings for seeing, hearing and typing
@@ -43,7 +47,7 @@ access.the-password	password
 access.the-record	the record
 access.the-recovery-screen	getting this machine started again
 access.the-status-area	what this machine is doing
-access.the-window-menu	Window menu
+access.the-window-panel	Window
 access.the-windows-open	the windows that are open
 access.what-can-be-changed	what can be changed
 access.what-happened	what has happened
@@ -51,6 +55,7 @@ access.what-is-running	the version of this machine you are running
 access.what-it-replaced	the version it replaced
 access.what-the-turn-wrote	what will happen if you approve
 access.who-is-signing-in	who is signing in
+access.window-actions	Window actions
 accounts.name-is-taken	somebody already has an account under that name on this machine — choose another
 accounts.needs-a-password	an account needs a password, and an empty one is not one
 accounts.not-a-name	that is not a name an account can go under — use lowercase letters, digits, `-` and `_`, starting with a letter, up to 32 characters
