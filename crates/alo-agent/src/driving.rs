@@ -352,6 +352,14 @@ pub fn driving_after(
                         after: steps,
                     };
                 }
+                Ok(ToAnAgent::Capabilities { .. }) => {
+                    return WhatHappened::TheMachineCouldNotBeAsked {
+                        why:
+                            "a command received capability metadata instead of an execution result"
+                                .to_owned(),
+                        after: steps,
+                    };
+                }
                 Err(not_answered) => return could_not_be_asked(not_answered, steps),
             },
             // The model asked for a question to be put to a model, which is

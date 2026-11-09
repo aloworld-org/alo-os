@@ -19,12 +19,72 @@ fn fonts(locale: &str) -> FontSystem {
 /// A fixed native label request, varied explicitly in pixel comparisons.
 fn key(text: &str) -> Key {
     Key {
+        layout: Layout::Wrapped,
         text: text.to_owned(),
         width: 120,
         metrics: [16f32.to_bits(), 24f32.to_bits()],
         ground: [20; 3],
         ink: [240; 3],
     }
+}
+
+#[test]
+fn centred_labels_keep_exact_pixels_and_cannot_reuse_a_wrapped_paragraph() {
+    let mut fonts = fonts("en-US");
+    for text in ["M", "Áyg", "Screen recording", "עברית", ""] {
+        for width in [24, 120] {
+            let metrics = Metrics::new(16.0, 24.0);
+            let (ground, ink) = ([20, 30, 40], [240, 230, 220]);
+            let expected = crate::painted_text::centred_uncached(
+                &mut fonts, text, width, metrics, ground, ink,
+            );
+            let wrapped = sentence(&mut fonts, text, width, metrics, ground, ink);
+            for _ in 0..2 {
+                let actual =
+                    crate::painted_text::centred(&mut fonts, text, width, metrics, ground, ink);
+                assert_eq!(
+                    (actual.width_of_box, actual.width, actual.height),
+                    (expected.width_of_box, expected.width, expected.height)
+                );
+                assert_eq!(actual.pixels, expected.pixels);
+                let still_wrapped = sentence(&mut fonts, text, width, metrics, ground, ink);
+                assert_eq!(
+                    (
+                        still_wrapped.width_of_box,
+                        still_wrapped.width,
+                        still_wrapped.height
+                    ),
+                    (wrapped.width_of_box, wrapped.width, wrapped.height)
+                );
+                assert_eq!(still_wrapped.pixels, wrapped.pixels);
+            }
+        }
+    }
+}
+
+#[test]
+fn repeated_centred_labels_shape_once_within_the_shared_cache_budget() {
+    let mut fonts = fonts("en-US");
+    let mut rendered = 0;
+    for _ in 0..3 {
+        centred(
+            &mut fonts,
+            "M",
+            24,
+            Metrics::new(16.0, 24.0),
+            [0; 3],
+            [255; 3],
+            |_| {
+                rendered += 1;
+                pixels(10)
+            },
+        );
+    }
+    assert_eq!(rendered, 1);
+    SENTENCES.with_borrow(|cache| {
+        assert!(cache.bytes <= MAX_BYTES);
+        assert!(cache.entries.len() <= MAX_ENTRIES);
+    });
 }
 
 /// Owned initialized storage for retention and independent-copy checks.

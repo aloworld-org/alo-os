@@ -21,6 +21,8 @@ thread_local! {
 /// Every value that changes the pixels or dimensions of a native sentence.
 #[derive(PartialEq, Eq)]
 struct Key {
+    /// Wrapped paragraphs and trimmed icon letters have different geometry.
+    layout: Layout,
     /// Full text includes paragraph direction and line breaks.
     text: String,
     /// Wrapping width in physical pixels.
@@ -31,6 +33,13 @@ struct Key {
     ground: [u8; 3],
     /// Glyph colour.
     ink: [u8; 3],
+}
+
+/// Both paths use the same font-domain and memory bounds.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Layout {
+    Wrapped,
+    Centred,
 }
 
 /// Owned output, never a mutable alias of a returned sentence.
@@ -124,16 +133,56 @@ pub(super) fn with(
     ink: [u8; 3],
     render: impl FnOnce(&mut FontSystem) -> Shaped,
 ) -> Shaped {
-    if text.len() > MAX_TEXT {
-        return render(fonts);
-    }
-    let key = Key {
+    cached(
+        fonts,
+        request(text, width, metrics, ground, ink, Layout::Wrapped),
+        render,
+    )
+}
+
+/// Reuse the same exact-pixel cache for trimmed, unwrapped native icon text.
+pub(super) fn centred(
+    fonts: &mut FontSystem,
+    text: &str,
+    width: i32,
+    metrics: Metrics,
+    ground: [u8; 3],
+    ink: [u8; 3],
+    render: impl FnOnce(&mut FontSystem) -> Shaped,
+) -> Shaped {
+    cached(
+        fonts,
+        request(text, width, metrics, ground, ink, Layout::Centred),
+        render,
+    )
+}
+
+/// Refuse large keys before allocating their text.
+fn request(
+    text: &str,
+    width: i32,
+    metrics: Metrics,
+    ground: [u8; 3],
+    ink: [u8; 3],
+    layout: Layout,
+) -> Option<Key> {
+    (text.len() <= MAX_TEXT).then(|| Key {
+        layout,
         text: text.to_owned(),
         width,
         metrics: [metrics.font_size.to_bits(), metrics.line_height.to_bits()],
         ground,
         ink,
-    };
+    })
+}
+
+/// Both layout kinds share one bounded cache and font invalidation policy.
+fn cached(
+    fonts: &mut FontSystem,
+    key: Option<Key>,
+    render: impl FnOnce(&mut FontSystem) -> Shaped,
+) -> Shaped {
+    let Some(key) = key else { return render(fonts) };
     SENTENCES.with_borrow_mut(|cache| {
         cache.prepare(fonts);
         if let Some(shaped) = cache.get(&key) {

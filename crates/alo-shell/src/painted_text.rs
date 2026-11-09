@@ -358,6 +358,20 @@ pub(crate) fn centred(
     ground: [u8; 3],
     ink: [u8; 3],
 ) -> Shaped {
+    sentence_cache::centred(fonts, text, width, metrics, ground, ink, |fonts| {
+        centred_uncached(fonts, text, width, metrics, ground, ink)
+    })
+}
+
+/// The original shaper, also used for exact-pixel cache comparisons.
+fn centred_uncached(
+    fonts: &mut FontSystem,
+    text: &str,
+    width: i32,
+    metrics: Metrics,
+    ground: [u8; 3],
+    ink: [u8; 3],
+) -> Shaped {
     let mut buffer = Buffer::new(fonts, metrics);
     // **No wrapping.** One letter cannot be broken across lines, and allowing it
     // would let a wide glyph — a flag emoji is two cells — become two rows half
