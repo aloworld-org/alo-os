@@ -299,7 +299,10 @@ is the specimen's width, not a window's.
   `alo-dividing` to divide the window's share with the next window, which
   moves that one too; the panel's choices are promised to move no other
   window, so they give this window a share of its own, half the work area of
-  the display it is on. The left half takes the odd unit.
+  the display it is on. **The half is still `alo-dividing`'s**: it answers one
+  window alone on a side (`alo_dividing::alone_on`) with the cut the chords
+  use, so both give the same half, and the odd unit is the right half's —
+  there is one layout decider (`tests/one_layout_decider.rs`).
 - **A window on a half reads Restore** in the middle picture, as a maximised
   one does: a window in a share cannot be dragged, so Restore is how it goes
   back to the size and place it had.
