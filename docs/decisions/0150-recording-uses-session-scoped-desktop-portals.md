@@ -266,3 +266,21 @@ blocked consumer: timestamps with holes do not exhaust storage, retained data
 reaches the same bound, and releasing the consumer drains every buffer through
 EOS. Repeat the installed recording checks; this correction alone makes no
 claim about sustained frame rate or synchronization.
+
+### Batch lightweight audio without reducing its sample rate
+
+The 9 November installed repeat reaches actual microphone sample loss after
+the non-leaky input queue fills. A separate instrumented repeat shows slow
+processing between that queue and encoded audio; pushes out of the encoded
+queue remain short. Video already arrives slowly before encoding. Keep those
+findings separate: batching audio does not establish that video is fixed.
+
+For the explicitly chosen 360p/5 fps profile, read the microphone in 100 ms
+chunks and encode 60 ms Opus packets. Retain 16 kHz mono, 24 kbit/s voice
+encoding, original capture timestamps, the two-second microphone ring and the
+existing queue count/byte ceilings. Other profiles retain their existing
+microphone read size and encoding. This reduces per-buffer work without
+discarding, synthesizing or retiming samples. Verify a real encode/decode
+round trip retains every input sample while emitting fewer packets, and repeat
+the installed microphone, pause/resume and synchronization checks. A codec
+microbenchmark is not installed recording acceptance.

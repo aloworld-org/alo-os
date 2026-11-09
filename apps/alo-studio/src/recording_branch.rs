@@ -36,14 +36,7 @@ pub(crate) fn attach(
     let generated_audio = matches!(audio, Audio::Generated);
     let audio_source = match audio {
         Audio::Off => None,
-        Audio::Microphone => {
-            // Recording tolerates more scheduling jitter than a live call. The
-            // two-second ring still reads in 20 ms chunks; it does not wait for
-            // the ring to fill before supplying sound.
-            Some(
-                "pulsesrc name=microphone client-name=alo-Studio do-timestamp=true buffer-time=2000000 latency-time=20000",
-            )
-        }
+        Audio::Microphone => Some(crate::encoding_profile::microphone(frame_rate)),
         #[cfg(feature = "verification")]
         Audio::Generated => Some(
             "audiotestsrc name=microphone is-live=true do-timestamp=true wave=sine volume=0.05",
