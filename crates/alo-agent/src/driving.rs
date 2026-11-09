@@ -17,7 +17,10 @@
 //!    again.
 //! 5. A **propose** goes to the machine and the loop **ends**: a change waits
 //!    for a person. The turn itself is held open until they answer, by
-//!    `crate::holding_the_turn`, because the change lives in it.
+//!    `crate::holding_the_turn`, because the change lives in it. **Unless the
+//!    person chose full access** (ADR 0149): then the machine carries it out at
+//!    once and answers `done-without-asking`, which is a step like a read, and
+//!    the loop goes round again.
 //! 6. A **run** — one command, where no verb fits (ADR 0149) — goes to the
 //!    machine, which decides it by the person's level for running code. One
 //!    that ran, or was refused, becomes a step: round again. One waiting for the
@@ -211,7 +214,12 @@ pub fn driving_after(
             }
             // We asked a question; an answer about a verb means this machine
             // answered something we did not ask. Its own fault, in English.
-            Ok(ToAnAgent::Capabilities { .. } | ToAnAgent::Did(_) | ToAnAgent::Proposed(_)) => {
+            Ok(
+                ToAnAgent::Capabilities { .. }
+                | ToAnAgent::Did(_)
+                | ToAnAgent::DoneWithoutAsking { .. }
+                | ToAnAgent::Proposed(_),
+            ) => {
                 return WhatHappened::TheMachineCouldNotBeAsked {
                     why: "a question was answered with what a verb did".to_owned(),
                     after: steps,
@@ -315,6 +323,14 @@ pub fn driving_after(
                     let line = ToAnAgent::Refused(why).written().unwrap_or_default();
                     steps.push(AStep::of(&said, &line));
                 }
+                // **Carried out at once, because the person chose full access**
+                // (ADR 0149): a step, as a command that ran at full access is,
+                // and the turn goes on. What the person is told about it is in
+                // the step, and `WhatHappened::done_without_asking` reads it
+                // back for them whichever way the turn ends.
+                Ok(answer @ ToAnAgent::DoneWithoutAsking { .. }) => {
+                    steps.push(AStep::of(&said, &as_a_step(&answer)));
+                }
                 Ok(
                     ToAnAgent::Capabilities { .. } | ToAnAgent::Did(_) | ToAnAgent::Answered { .. },
                 ) => {
@@ -343,7 +359,11 @@ pub fn driving_after(
                 // It ran — at full access — or it was refused: either way the
                 // model is told, as a step, and the turn goes on. A refusal is
                 // a step for this module's header's reason.
-                Ok(answer @ (ToAnAgent::Did(_) | ToAnAgent::Refused(_))) => {
+                Ok(
+                    answer @ (ToAnAgent::Did(_)
+                    | ToAnAgent::DoneWithoutAsking { .. }
+                    | ToAnAgent::Refused(_)),
+                ) => {
                     steps.push(AStep::of(&said, &as_a_step(&answer)));
                 }
                 Ok(ToAnAgent::Answered { .. }) => {

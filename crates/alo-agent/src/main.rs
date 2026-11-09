@@ -192,6 +192,13 @@ const A_LINE_WORTH_READING: usize = 160;
 /// stopped where it must. A non-zero exit there would teach whoever wrapped this
 /// that a waiting approval is a fault to be retried.
 fn said(happened: &WhatHappened) -> ExitCode {
+    // **What was carried out without the OK, said to the person first**
+    // (ADR 0149) — except where a change waits, whose line must stay first
+    // because `alo-ask` reads it there. Nobody asked the person about these,
+    // so this is where they are told; a model's last words may not say.
+    if !happened.is_waiting_for_the_person() {
+        tell_what_was_done(happened);
+    }
     match happened {
         WhatHappened::ItWasAnsweredInWords { said, after } => {
             // **Never read as a change waiting**, whatever the model wrote:
@@ -217,6 +224,7 @@ fn said(happened: &WhatHappened) -> ExitCode {
                 "{}",
                 alo_protocol::what_the_agent_says_back::a_change_is_waiting(*number, sentence)
             );
+            tell_what_was_done(happened);
             eprintln!("alo-agent: after {} step(s)", after.len());
             ExitCode::SUCCESS
         }
@@ -283,6 +291,18 @@ fn said(happened: &WhatHappened) -> ExitCode {
             );
             ExitCode::FAILURE
         }
+    }
+}
+
+/// One line for each change carried out without the OK on the way (ADR 0149),
+/// on the output the person's window shows, worded by the machine in their
+/// language. Never read as a change waiting, whatever the sentence holds.
+fn tell_what_was_done(happened: &WhatHappened) {
+    for done in happened.done_without_asking() {
+        println!(
+            "{}",
+            alo_protocol::what_the_agent_says_back::never_read_as_a_change(&done)
+        );
     }
 }
 

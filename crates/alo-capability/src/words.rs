@@ -813,6 +813,33 @@ pub const DONE_WITHOUT_ASKING_AND_IT_CANNOT_BE_PUT_BACK: Word = Word::saying(
      a copy of the person's files from before it, so Put back cannot undo it.",
 );
 
+/// What a person reads about a change alo carried out at once, because they
+/// chose full access (ADR 0149).
+pub const DONE_AT_FULL_ACCESS: Word = Word::saying(
+    "capability.full-access.done",
+    "Done without asking you first, because you chose full access in Settings → Running code: \
+     {sentence}.",
+)
+.noting(
+    "Shown under what alo did, once for each change it carried out without the person's OK, \
+     because the person chose full access (shown in Settings as 'straight away, without \
+     asking'). {sentence} is what was done, as the person would have been asked about it, for \
+     example 'rename /home/anna/march.pdf to march-final.pdf'. 'Settings → Running code' names a \
+     page as Settings shows it; use the same words your translation uses there.",
+);
+
+/// The same, for a change the machine could not keep a copy from before.
+pub const DONE_AT_FULL_ACCESS_AND_IT_CANNOT_BE_PUT_BACK: Word = Word::saying(
+    "capability.full-access.done-cannot-be-put-back",
+    "Done without asking you first, because you chose full access in Settings → Running code: \
+     {sentence}. This one can't be put back: a copy of your files from before it could not be \
+     kept.",
+)
+.noting(
+    "Like the sentence above, for a change the computer carried out without being able to keep \
+     a copy of the person's files from before it, so Put back cannot undo it.",
+);
+
 /// The question the terminal asks before a change alo proposed is carried out:
 /// ADR 0124's own words, drawn in `docs/design/the-terminal-window.md`.
 pub const RUN_THIS_COMMAND: Word = Word::saying(
@@ -937,7 +964,7 @@ pub const A_COMMAND_THAT_IS_NOT_ONE_LINE: Word = Word::saying(
 );
 
 /// Every string this crate can say, in the order a translator meets them.
-pub const EVERY_WORD: [Word; 82] = [
+pub const EVERY_WORD: [Word; 84] = [
     ANONYMOUS,
     NO_APPLICATION_NAMED,
     NOTHING_NAMED,
@@ -1008,6 +1035,8 @@ pub const EVERY_WORD: [Word; 82] = [
     WHAT_ACTING_WITHOUT_ASKING_COSTS,
     DONE_WITHOUT_ASKING,
     DONE_WITHOUT_ASKING_AND_IT_CANNOT_BE_PUT_BACK,
+    DONE_AT_FULL_ACCESS,
+    DONE_AT_FULL_ACCESS_AND_IT_CANNOT_BE_PUT_BACK,
     RUN_THIS_COMMAND,
     DONE_AFTER_YOUR_OK,
     DONE_AFTER_YOUR_OK_AND_IT_CANNOT_BE_PUT_BACK,

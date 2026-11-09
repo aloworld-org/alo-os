@@ -975,7 +975,7 @@ impl<'a, 'm> Turning<'a, 'm> {
     /// [`Turning::stopped_at_the_moment`], for a refusal decided against
     /// `grants` — so the entry says whether the person had chosen full access
     /// when it was refused (ADR 0149).
-    fn stopped_under<T>(
+    pub(crate) fn stopped_under<T>(
         &mut self,
         refused: alo_capability::Refused,
         grants: &Grants,

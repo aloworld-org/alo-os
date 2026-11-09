@@ -47,7 +47,8 @@ There are two kinds of caller and they do not share a list.
 
 **An agent, during a turn**, may ask for `read`, `propose` and `ask` — and,
 since 2026-11-08, `run` (ADR 0149) — and is told `did`, `proposed`, `answered`
-and `refused`.
+and `refused`, and, since the same day, `done-without-asking` (a change carried
+out at full access).
 
 An invoked agent may also request read-only capability discovery:
 `{"format":1,"asks":{"capabilities":{}}}`. The answer is
@@ -119,7 +120,23 @@ person's own account can, with no grant; at every other level, with nothing
 chosen and with a level file that will not read, they reach what was granted
 and nothing else. The level is read again at the `approve`, so a change
 proposed at full access is refused there if the person has switched it off and
-no grant covers it. A change still waits for one `approve` at full access **for now**: `docs/features.md` promises that at full access alo acts *without asking*, and that half is not built yet.
+no grant covers it.
+
+**At full access a `propose` is carried out at once** (added 2026-11-08,
+additively). ADR 0149: *"**At full access, alo can do anything the person's own
+account can do**, without asking."* So when the level read at the moment of a
+`propose` is full access, the daemon does not hand out a number: it asks the
+grants as full access answers them, asks the turn's bracket for the snapshot
+(ADR 0045), runs the change **once**, writes it down — `ran`, with no
+`from_approval` (none was asked for) and `at_full_access` — and answers
+`done-without-asking` (below), which carries what `did` carries and the sentence
+the person is told. The agent goes on with its turn, and tells the person. A
+change the grants, a missing file, the disk or the account's own permissions
+refuse is answered `refused` and written down, never `done-without-asking`. At
+every other level, with nothing chosen and with a level file that will not
+read, a `propose` is what it always was: `proposed`, and nothing runs before one
+`approve`. **The verbs did not change, and nothing an agent sends can choose
+which road it takes.**
 
 ### `ask` — a question for a model
 
@@ -776,6 +793,7 @@ chosen. A list without the field reads as `false`.
 {"did":{"installed":{"application":"org.gnome.TextEditor","sandboxed":true}}}
 {"did":{"reached":{"act":"focus","application":"org.gnome.Geary"}}}
 {"did-and-cannot-be-undone":{"renamed":{"now_at":"/home/anna/Invoices/march-final.pdf"}}}
+{"done-without-asking":{"did":{"renamed":{"now_at":"/home/anna/Invoices/march-final.pdf"}},"said":{"text":"Done without asking you first, because you chose full access in Settings → Running code: rename /home/anna/Invoices/march.pdf to march-final.pdf.","came_from":"the-source"}}}
 {"proposed":{"number":7,"sentence":{"text":"…","came_from":"translation"},"lapses_in":300}}
 {"answered":{"text":"Three are unpaid.","came_from":{"text":"by Mistral, in the EU","came_from":"translation"},"model":"mistral-small-latest"}}
 {"waiting":{"changes":[{"number":7,"sentence":{"text":"…","came_from":"translation"},"lapses_in":300}]}}
@@ -802,6 +820,20 @@ and said `did`, which reads exactly like a change that can be undone. It is
 person approves a change — and the agent's door refuses it as an answer that is
 not an agent's. A client written before it reads it as an answer it has never
 heard of, and must not read it as `did`, for the reason under *Versioning*.
+
+`done-without-asking` was added **additively on 2026-11-08**
+([ADR 0149](../decisions/0149-full-access-is-everything-the-person-can-do.md)).
+It is sent on the **agent's door only**, as the answer to a `propose` the daemon
+carried out at once because the person chose full access: `did` is what `did`
+would carry, and `said` is the sentence the person reads — *Done without asking
+you first, because you chose full access in Settings → Running code:* and the
+sentence they would otherwise have been asked, or the same with *This one can't
+be put back* when the snapshot could not be kept. Nobody was asked, so the
+agent is the one that tells the person: `alo-agent` prints each `said` in its
+reply, after a change waiting where one is, and before its own words otherwise.
+The person's door refuses it as an answer that is not a person's. A client
+written before it reads it as an answer it has never heard of, and must not
+read it as `did` — it is a change that has already happened, not a read.
 
 `installed` was added **additively on 2026-10-13**, with the second family of
 verbs this machine can carry out. Until then `did` was `alo_files::Answer`'s six

@@ -256,3 +256,21 @@ fn words_are_never_asked_about_even_words_that_imitate_the_prompt() {
         );
     }
 }
+
+/// **At full access the switch has nothing to answer** (ADR 0149): the service
+/// carried the change out already and the agent's reply begins with what was
+/// done, not with a change waiting — so, whether the switch is on or off,
+/// nothing is approved, nobody is asked and the switch is not even read.
+#[test]
+fn at_full_access_a_change_already_done_is_answered_by_nobody() {
+    let reply = "Done without asking you first, because you chose full access in Settings → \
+                 Running code: rename /home/anna/march.pdf to march-final.pdf.\nIt is renamed.";
+    for switch in [
+        AloInTheTerminal::ActsWithoutAsking,
+        AloInTheTerminal::AsksFirst,
+    ] {
+        let (did, happened) = run(reply, Some(Vec::new()), switch, TheirAnswer::Yes);
+        assert_eq!(did, WhatTheTerminalDid::NothingWaited, "{switch:?}");
+        assert!(happened.is_empty(), "{switch:?}: {happened:?}");
+    }
+}

@@ -344,26 +344,26 @@ fn at_full_access_a_read_reaches_a_file_no_grant_names() {
     assert!(entry.was_at_full_access(), "{entry:?}");
 }
 
-/// **At full access a change reaches a file outside every grant — after the
-/// person's OK, exactly once** — and is written down as full access.
+/// **At full access a change reaches a file outside every grant**, carried out
+/// at once with no OK (`crate::a_change_asked_for`, whose tests hold the rest)
+/// and written down as full access rather than a grant.
+///
+/// *Until 2026-11-08 this waited for one OK, and the test after it switched
+/// full access off before that OK. Nothing waits at full access now, so that
+/// moment no longer exists; switching off between two changes is
+/// `crate::a_change_asked_for`'s test.*
 #[test]
-fn at_full_access_a_change_reaches_a_file_no_grant_names_after_one_ok() {
+fn at_full_access_a_change_reaches_a_file_no_grant_names() {
     let elsewhere = Elsewhere::with_the_level("change-full", Some(HowCodeRuns::AtFullTrust));
     let mut record = Record::default();
-    let (first, again) = on_a_turn("change-full", &mut record, |turning, grants, strings, _| {
+    let said = on_a_turn("change-full", &mut record, |turning, grants, strings, _| {
         let here = elsewhere.here();
-        let said = the_agent_asked(&elsewhere.renaming_it(), turning, grants, strings, &here);
-        let number = the_number(&said);
-        assert!(
-            elsewhere.invoice.exists(),
-            "a change ran before anybody said yes"
-        );
-        let first = the_person_approved(number, turning, grants, strings, &here);
-        let again = the_person_approved(number, turning, grants, strings, &here);
-        (first, again)
+        the_agent_asked(&elsewhere.renaming_it(), turning, grants, strings, &here)
     });
-    assert!(first.done().is_some(), "{first:?}");
-    assert!(again.refusal().is_some(), "one OK ran twice: {again:?}");
+    assert!(
+        matches!(said, ToAnAgent::DoneWithoutAsking { .. }),
+        "{said:?}"
+    );
     assert!(elsewhere.renamed().exists(), "the change did not happen");
     let written = what_was_written(&record);
     let ran: Vec<_> = written
@@ -371,47 +371,10 @@ fn at_full_access_a_change_reaches_a_file_no_grant_names_after_one_ok() {
         .filter(|entry| entry.happened().ran())
         .collect();
     let [ran] = ran.as_slice() else {
-        unreachable!("one approval, one execution: {written:?}");
+        unreachable!("one change, one execution: {written:?}");
     };
     assert!(ran.happened().by_full_access(), "{ran:?}");
     assert!(ran.was_at_full_access(), "{ran:?}");
-}
-
-/// **Switching full access off takes effect immediately**: a change proposed at
-/// full access and approved after the person moved to *ask me each time*, with
-/// no grant covering it, is refused at execution, written down, and changes
-/// nothing.
-#[test]
-fn switching_full_access_off_before_the_ok_refuses_the_change() {
-    let elsewhere = Elsewhere::with_the_level("switched-off", Some(HowCodeRuns::AtFullTrust));
-    let mut record = Record::default();
-    let approved = on_a_turn(
-        "switched-off",
-        &mut record,
-        |turning, grants, strings, _| {
-            let here = elsewhere.here();
-            let said = the_agent_asked(&elsewhere.renaming_it(), turning, grants, strings, &here);
-            let number = the_number(&said);
-            elsewhere.choosing(HowCodeRuns::AskingEachTime);
-            the_person_approved(number, turning, grants, strings, &here)
-        },
-    );
-    assert!(approved.refusal().is_some(), "{approved:?}");
-    assert!(approved.done().is_none(), "{approved:?}");
-    assert!(
-        elsewhere.invoice.exists(),
-        "the change ran after full access was switched off"
-    );
-    assert!(!elsewhere.renamed().exists());
-    let written = what_was_written(&record);
-    let [refused] = written.as_slice() else {
-        unreachable!("the refusal is the one entry: {written:?}");
-    };
-    assert!(refused.happened().was_stopped(), "{refused:?}");
-    assert!(
-        !refused.was_at_full_access(),
-        "a refusal decided after full access was switched off says it was at full access"
-    );
 }
 
 /// **And for the next read**: a read at full access answers, the person

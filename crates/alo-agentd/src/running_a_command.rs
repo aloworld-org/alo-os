@@ -160,6 +160,13 @@ impl<'c> Commands<'c> {
     pub fn level_at(&self) -> &'c CommandsHere {
         self.here
     }
+
+    /// Where the level is, and the turn's bracket — for a change at full
+    /// access, which takes the bracket as a command does
+    /// (`crate::a_change_asked_for`).
+    pub(crate) fn into_parts(self) -> (&'c CommandsHere, Option<&'c mut TheTurnsBracket>) {
+        (self.here, self.bracket)
+    }
 }
 
 /// **A command an agent asked for**, decided by the person's level and
