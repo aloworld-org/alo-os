@@ -85,6 +85,10 @@ pub(crate) struct ThePressBefore {
     /// Where the window was: a second press on a window that has since been
     /// maximised, restored or moved is a new first press, not a double-click.
     window: smithay::utils::Rectangle<i32, Logical>,
+    /// How the window was — maximised, full screen — for the same reason: a
+    /// window can change mode and keep the rectangle it is drawn at until the
+    /// application answers.
+    how: crate::window_menu::HowTheWindowIs,
 }
 
 impl ThePressBefore {
@@ -97,9 +101,10 @@ impl ThePressBefore {
         now: Instant,
         where_: Point<i32, Logical>,
         window: smithay::utils::Rectangle<i32, Logical>,
+        how: crate::window_menu::HowTheWindowIs,
     ) -> bool {
         is_a_double_click(
-            &self.surface == surface && self.window == window,
+            &self.surface == surface && self.window == window && self.how == how,
             now.saturating_duration_since(self.at),
             (where_.x - self.where_.x, where_.y - self.where_.y),
         )
@@ -163,7 +168,13 @@ impl crate::Server {
                         return self.surfaces.start_move_from_the_name(&surface, button);
                     }
                     let twice = self.the_press_before.as_ref().is_some_and(|before| {
-                        before.makes_a_double_click(&surface, now, at, window)
+                        before.makes_a_double_click(
+                            &surface,
+                            now,
+                            at,
+                            window,
+                            self.how_this_window_is(&surface),
+                        )
                     });
                     if twice {
                         self.the_press_before = None;
@@ -176,6 +187,7 @@ impl crate::Server {
                         at: now,
                         where_: at,
                         window,
+                        how: self.how_this_window_is(&surface),
                     });
                     return self.surfaces.start_move_from_the_name(&surface, button);
                 }
