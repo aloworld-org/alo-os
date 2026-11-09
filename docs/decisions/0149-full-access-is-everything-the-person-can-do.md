@@ -96,3 +96,31 @@ Still unchecked, because still unbuilt: full access reaching files through the
 verbs without grants, the first-start screen, and the password for
 administrator actions. **And not yet true:** what a command sends does not
 reach the egress indicator (`docs/contracts/daemon-protocol.md`, under `run`).
+
+*Added 2026-11-08, with decision 1 built (the verbs reach what the account
+can).* These now run on every build, as tests: at full access a read and a
+change reach a file in a folder no grant names, the change after one OK and
+exactly once, and both are written down as allowed by full access rather than
+a grant (`crates/alo-agentd/src/the_grants_as_the_level_is_now_tests.rs`); an
+application nobody granted is opened after one OK
+(`crates/alo-turn/src/acting_on_an_application.rs`); switching full access off
+refuses a change proposed under it at its OK, and refuses the next read, and
+those refusals are written down as not at full access (both files); at *ask me
+each time*, the sealed box, with nothing chosen and with a level file that will
+not read, a read and a change outside the grants are refused and written down,
+and a granted change waits for its OK (the first file); full access is one
+agent's, never an application's, never kept on the list or in the grants file,
+does not reach the camera, the microphone, the screen or a terminal the person
+has not allowed, does not widen a machine whose person declined the agent, and
+adds to grants rather than replacing them
+(`crates/alo-capability/src/full_access_tests.rs`). **Not checked by any test
+here:** the kernel boundary (ADR 0013) with full access on a real kernel. It is
+built from the paths a call names, not from the grants
+(`alo_files::Reaching::of`), so nothing in it changed;
+`crates/alo-agentd/tests/a_turn_is_bounded_by_the_kernel.rs` still runs only
+under a grant. And the account's own permissions as the boundary are the
+operating system's: the service runs as the person, and no test here makes a
+file the account cannot read, because the build machine runs its tests as root.
+**Still unbuilt:** a change made through a verb at full access still waits for
+the person's OK, though *What it changes for the person* says alo does it
+*without asking*; that half needs its own change.

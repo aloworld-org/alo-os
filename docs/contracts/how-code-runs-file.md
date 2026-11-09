@@ -114,6 +114,29 @@ over the single question of how much of their machine an agent may use.
   that would be acting as the person, which ADR 0004 forbids.
 
 
+## What `at-full-trust` reaches through the verbs
+
+*Added 2026-11-08, additively; nothing in the file changed.*
+[ADR 0149](../decisions/0149-full-access-is-everything-the-person-can-do.md),
+decision 1: *"**Full access** (ADR 0064's level 3, renamed for the person)
+reaches **everything the person's account can reach**. There are no folder
+grants at this level; the account's own permissions are the boundary."*
+
+So `chose = "at-full-trust"` now decides two things: that a command runs without
+asking (where no verb fits), and that **every verb held to grants — the six
+file verbs and opening, bringing forward and closing an application — reaches
+any file and any application the person's own account can**, with no grant.
+`alo-agentd` reads this file at the moment of each read, each proposal and each
+OK, through the same `the_level_remembered`; nothing chosen and a file that will
+not read are never full access. A change still waits for one OK at this level **for now** — `docs/features.md` promises full access acts *without asking*, and that half is not built yet.
+Switching away from `at-full-trust` takes effect on the next of those moments,
+so a change proposed at full access and approved afterwards is refused unless a
+grant covers it. Grants keep working at every level. Full access does not reach
+the camera, the microphone or the screen, a terminal the person has not allowed
+in Settings → Terminal, or any machine whose person declined the agent. What
+was allowed by full access rather than a grant is written in the record
+(`docs/contracts/record-file.md`, `by_full_access` and `at_full_access`).
+
 ## And whether alo in the terminal acts without the OK
 
 *Added 2026-11-06, additively; `format` stays `1`.* `docs/features.md`: *in

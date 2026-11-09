@@ -983,7 +983,8 @@ mod tests {
             [format!("open {THE_MAIL_CLIENT}")],
             "one approval, one ask"
         );
-        let written: Vec<_> = record.answering(&Asking::anything()).collect();
+        let anything = Asking::anything();
+        let written: Vec<_> = record.answering(&anything).collect();
         let [entry] = written.as_slice() else {
             unreachable!("one approval, one entry: {written:?}")
         };
@@ -1044,7 +1045,8 @@ mod tests {
         );
         assert!(matches!(did, Err(NotDone::Refused(_))), "{did:?}");
         assert!(tally.borrow().is_empty(), "the door was asked");
-        let written: Vec<_> = record.answering(&Asking::anything()).collect();
+        let anything = Asking::anything();
+        let written: Vec<_> = record.answering(&anything).collect();
         let [entry] = written.as_slice() else {
             unreachable!("one refusal, one entry: {written:?}")
         };

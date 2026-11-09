@@ -122,14 +122,16 @@ fn carried_out(
         // access a copy that reaches everything their account can, made for
         // this one request and never kept.
         FromAnAgent::Read { verb, .. } => {
-            let grants = the_grants_as_the_level_is_now(grants, commands.level_at(), turning.grantee());
+            let grants =
+                the_grants_as_the_level_is_now(grants, commands.level_at(), turning.grantee());
             match turning.reading(verb, &asked.given(), &grants, now) {
                 Ok(answer) => ToAnAgent::did(as_a_client_sees_it(&answer, now)),
                 Err(why) => not_done(&why, strings),
             }
         }
         FromAnAgent::Propose { verb, .. } => {
-            let grants = the_grants_as_the_level_is_now(grants, commands.level_at(), turning.grantee());
+            let grants =
+                the_grants_as_the_level_is_now(grants, commands.level_at(), turning.grantee());
             match turning.proposing(verb, &asked.given(), &grants, standing, now) {
                 Ok(number) => waiting_under(turning, number, strings, now),
                 Err(why) => not_done(&why, strings),

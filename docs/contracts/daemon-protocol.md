@@ -95,6 +95,16 @@ offers — and `given`, the arguments.
 used.** `alo_capability::Authorised::read` refuses a change and
 `alo_capability::Proposal::checked` refuses a read, whichever request carried it.
 
+**What either may reach is decided by the person's level, read at that moment**
+(ADR 0149, added 2026-11-08; nothing on the wire changed). At full access
+(`at-full-trust` in `docs/contracts/how-code-runs-file.md`) a `read`, a
+`propose` and the `approve` that runs it reach any file and any application the
+person's own account can, with no grant; at every other level, with nothing
+chosen and with a level file that will not read, they reach what was granted
+and nothing else. The level is read again at the `approve`, so a change
+proposed at full access is refused there if the person has switched it off and
+no grant covers it. A change still waits for one `approve` at full access **for now**: `docs/features.md` promises that at full access alo acts *without asking*, and that half is not built yet.
+
 ### `ask` — a question for a model
 
 ```json

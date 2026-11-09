@@ -85,7 +85,11 @@ fn full_access_is_for_one_agent_and_never_for_an_application() {
     let cheese = crate::grantee::Applicant::named("org.gnome.Cheese").grantee();
     let for_an_application = Grants::default().at_full_access_for(&cheese);
     assert_eq!(for_an_application.full_access_for(), None);
-    assert!(for_an_application.permitted(&cheese, &taxes(), noon()).is_err());
+    assert!(
+        for_an_application
+            .permitted(&cheese, &taxes(), noon())
+            .is_err()
+    );
 }
 
 /// **What ADR 0149 does not name stays a grant of its own**: the camera, the
@@ -104,7 +108,12 @@ fn full_access_does_not_reach_a_facility_or_a_terminal_nobody_allowed() {
     let terminal = Ask::application("app.devsuite.Ptyxis");
     assert!(at.permitted(&files(), &terminal, noon()).is_err());
     assert_eq!(
-        at.permitted_when(&files(), &terminal, noon(), ATerminalForTheAgent::MayOpenOne),
+        at.permitted_when(
+            &files(),
+            &terminal,
+            noon(),
+            ATerminalForTheAgent::MayOpenOne
+        ),
         Ok(Permitted::ByFullAccess)
     );
     // And any other application is reached.
@@ -169,7 +178,10 @@ fn switching_full_access_off_stops_an_approved_change_at_execution() {
 
     let refused = approved.redeem(&nothing, noon()).unwrap_err();
     assert!(
-        matches!(refused.why(), NotAuthorised::NotGranted(NotGranted::Never { .. })),
+        matches!(
+            refused.why(),
+            NotAuthorised::NotGranted(NotGranted::Never { .. })
+        ),
         "{refused:?}"
     );
 }
@@ -183,13 +195,21 @@ fn an_approved_change_runs_at_full_access_and_under_grants_without_it() {
     let mut approvals = Approvals::default();
     let id = approvals
         .propose(Proposal::checked(&archiving_march(), &files(), &at, noon(), hour()).unwrap());
-    let running = approvals.approve(id, noon()).unwrap().redeem(&at, noon()).unwrap();
+    let running = approvals
+        .approve(id, noon())
+        .unwrap()
+        .redeem(&at, noon())
+        .unwrap();
     assert!(running.by_full_access());
 
     let both = granting_both();
     let id = approvals
         .propose(Proposal::checked(&archiving_march(), &files(), &at, noon(), hour()).unwrap());
-    let running = approvals.approve(id, noon()).unwrap().redeem(&both, noon()).unwrap();
+    let running = approvals
+        .approve(id, noon())
+        .unwrap()
+        .redeem(&both, noon())
+        .unwrap();
     assert!(!running.by_full_access());
     assert_eq!(running.against().len(), 2);
 }

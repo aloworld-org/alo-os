@@ -405,7 +405,7 @@ capability.reach.file	the file {path}
 capability.reach.folder	{path} and everything in it
 capability.refused.application-expired	{application} was granted {reach} and that has expired — grant it again to let {application} use {wanted}
 capability.refused.application-never-granted	{application} has not been granted {wanted} — an application reaches only what you grant it, never what it asks for
-capability.refused.application-not-given	{agent} has not been granted {wanted} — picking a folder will not change that, because a folder grant never reaches an application
+capability.refused.application-not-given-but-full-access-reaches-it	{agent} has not been granted {wanted}, and picking a folder will not change that — choose full access ('straight away, without asking') in Settings → Running code, and alo can use any application you can
 capability.refused.change-waits	{verb} changes something — propose it with the sentence describing it and let one person approve that, rather than running it in the turn
 capability.refused.expired	{agent} had a grant to {reach} and it has expired — grant it again to let {agent} reach {wanted}
 capability.refused.never-granted	{agent} has not been granted {wanted} — grants are made by picking a folder, never by asking for one

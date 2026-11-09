@@ -248,10 +248,20 @@ fn only_full_access_chosen_gives_full_access() {
 fn at_full_access_a_read_reaches_a_file_no_grant_names() {
     let elsewhere = Elsewhere::with_the_level("read-full", Some(HowCodeRuns::AtFullTrust));
     let mut record = Record::default();
-    let said = on_a_turn("read-full", &mut record, |turning, grants, strings, granted| {
-        assert!(!elsewhere.invoice.starts_with(granted));
-        the_agent_asked(&elsewhere.reading_it(), turning, grants, strings, &elsewhere.here())
-    });
+    let said = on_a_turn(
+        "read-full",
+        &mut record,
+        |turning, grants, strings, granted| {
+            assert!(!elsewhere.invoice.starts_with(granted));
+            the_agent_asked(
+                &elsewhere.reading_it(),
+                turning,
+                grants,
+                strings,
+                &elsewhere.here(),
+            )
+        },
+    );
     assert!(said.done().is_some(), "{said:?}");
     let written = what_was_written(&record);
     let [entry] = written.as_slice() else {
@@ -285,7 +295,10 @@ fn at_full_access_a_change_reaches_a_file_no_grant_names_after_one_ok() {
     assert!(again.refusal().is_some(), "one OK ran twice: {again:?}");
     assert!(elsewhere.renamed().exists(), "the change did not happen");
     let written = what_was_written(&record);
-    let ran: Vec<_> = written.iter().filter(|entry| entry.happened().ran()).collect();
+    let ran: Vec<_> = written
+        .iter()
+        .filter(|entry| entry.happened().ran())
+        .collect();
     let [ran] = ran.as_slice() else {
         unreachable!("one approval, one execution: {written:?}");
     };
@@ -301,16 +314,23 @@ fn at_full_access_a_change_reaches_a_file_no_grant_names_after_one_ok() {
 fn switching_full_access_off_before_the_ok_refuses_the_change() {
     let elsewhere = Elsewhere::with_the_level("switched-off", Some(HowCodeRuns::AtFullTrust));
     let mut record = Record::default();
-    let approved = on_a_turn("switched-off", &mut record, |turning, grants, strings, _| {
-        let here = elsewhere.here();
-        let said = the_agent_asked(&elsewhere.renaming_it(), turning, grants, strings, &here);
-        let number = the_number(&said);
-        elsewhere.choosing(HowCodeRuns::AskingEachTime);
-        the_person_approved(number, turning, grants, strings, &here)
-    });
+    let approved = on_a_turn(
+        "switched-off",
+        &mut record,
+        |turning, grants, strings, _| {
+            let here = elsewhere.here();
+            let said = the_agent_asked(&elsewhere.renaming_it(), turning, grants, strings, &here);
+            let number = the_number(&said);
+            elsewhere.choosing(HowCodeRuns::AskingEachTime);
+            the_person_approved(number, turning, grants, strings, &here)
+        },
+    );
     assert!(approved.refusal().is_some(), "{approved:?}");
     assert!(approved.done().is_none(), "{approved:?}");
-    assert!(elsewhere.invoice.exists(), "the change ran after full access was switched off");
+    assert!(
+        elsewhere.invoice.exists(),
+        "the change ran after full access was switched off"
+    );
     assert!(!elsewhere.renamed().exists());
     let written = what_was_written(&record);
     let [refused] = written.as_slice() else {
@@ -366,20 +386,27 @@ fn every_other_level_still_refuses_a_file_no_grant_names() {
             std::fs::write(&elsewhere.level_at, "chose = [\"everything\"").unwrap();
         }
         let mut record = Record::default();
-        let (read, proposed) =
-            on_a_turn(&format!("refused-{what}"), &mut record, |turning, grants, strings, _| {
+        let (read, proposed) = on_a_turn(
+            &format!("refused-{what}"),
+            &mut record,
+            |turning, grants, strings, _| {
                 let here = elsewhere.here();
                 (
                     the_agent_asked(&elsewhere.reading_it(), turning, grants, strings, &here),
                     the_agent_asked(&elsewhere.renaming_it(), turning, grants, strings, &here),
                 )
-            });
+            },
+        );
         assert!(read.refusal().is_some(), "{what}: {read:?}");
         assert!(proposed.refusal().is_some(), "{what}: {proposed:?}");
         assert!(!proposed.waits_for_a_person(), "{what}: {proposed:?}");
         assert!(elsewhere.invoice.exists(), "{what}");
         let written = what_was_written(&record);
-        assert_eq!(written.len(), 2, "{what}: every refusal leaves a record: {written:?}");
+        assert_eq!(
+            written.len(),
+            2,
+            "{what}: every refusal leaves a record: {written:?}"
+        );
         for entry in &written {
             assert!(entry.happened().was_stopped(), "{what}: {entry:?}");
             assert!(!entry.was_at_full_access(), "{what}: {entry:?}");
@@ -394,20 +421,24 @@ fn every_other_level_still_refuses_a_file_no_grant_names() {
 fn asking_each_time_a_granted_change_waits_for_the_ok() {
     let elsewhere = Elsewhere::with_the_level("asking-granted", Some(HowCodeRuns::AskingEachTime));
     let mut record = Record::default();
-    let renamed = on_a_turn("asking-granted", &mut record, |turning, grants, strings, granted| {
-        let here = elsewhere.here();
-        let invoice = granted.join("march.pdf");
-        let line = a_message(&format!(
-            r#"{{"propose":{{"verb":"rename_file","given":[{{"named":"file","is":"{}"}},{{"named":"name","is":"march-final.pdf"}}]}}}}"#,
-            invoice.display()
-        ));
-        let said = the_agent_asked(&line, turning, grants, strings, &here);
-        let number = the_number(&said);
-        assert!(invoice.exists(), "it ran before the OK");
-        let approved = the_person_approved(number, turning, grants, strings, &here);
-        assert!(approved.done().is_some(), "{approved:?}");
-        granted.join("march-final.pdf").exists()
-    });
+    let renamed = on_a_turn(
+        "asking-granted",
+        &mut record,
+        |turning, grants, strings, granted| {
+            let here = elsewhere.here();
+            let invoice = granted.join("march.pdf");
+            let line = a_message(&format!(
+                r#"{{"propose":{{"verb":"rename_file","given":[{{"named":"file","is":"{}"}},{{"named":"name","is":"march-final.pdf"}}]}}}}"#,
+                invoice.display()
+            ));
+            let said = the_agent_asked(&line, turning, grants, strings, &here);
+            let number = the_number(&said);
+            assert!(invoice.exists(), "it ran before the OK");
+            let approved = the_person_approved(number, turning, grants, strings, &here);
+            assert!(approved.done().is_some(), "{approved:?}");
+            granted.join("march-final.pdf").exists()
+        },
+    );
     assert!(renamed, "the approved change did not run");
     let ran: Vec<_> = what_was_written(&record)
         .into_iter()
