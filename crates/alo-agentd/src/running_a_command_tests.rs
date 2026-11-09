@@ -567,28 +567,51 @@ fn at_full_access_sudo_asks_and_a_cancel_runs_nothing() {
     use alo_administrator::answering_as_administrator::{Answered, NotAsAdministrator};
     let elsewhere = Elsewhere::with_the_level("sudo-cancelled", Some(HowCodeRuns::AtFullTrust));
     let runner_at = elsewhere.folder.join("runner.socket");
-    let runner = a_runner(&runner_at, Answered::Refused(NotAsAdministrator::TheyCancelled));
+    let runner = a_runner(
+        &runner_at,
+        Answered::Refused(NotAsAdministrator::TheyCancelled),
+    );
     let here = elsewhere.here().running_as_administrator_at(&runner_at);
     let mut record = Record::default();
     let mut bracket = a_bracket();
-    let line = format!("sudo mkdir -p {}", elsewhere.the_folder_it_makes().display());
-    on_a_turn("sudo-cancelled", &mut record, |turning, grants, strings, _| {
-        let said = the_agent_asked(&asking_to_run(&line), turning, grants, strings, &here, &mut bracket);
-        assert_eq!(
-            said.refusal().map(alo_protocol::Wording::text),
-            Some("nothing ran, because you closed the window that asked for your password"),
-            "{said:?}"
-        );
-    });
+    let line = format!(
+        "sudo mkdir -p {}",
+        elsewhere.the_folder_it_makes().display()
+    );
+    on_a_turn(
+        "sudo-cancelled",
+        &mut record,
+        |turning, grants, strings, _| {
+            let said = the_agent_asked(
+                &asking_to_run(&line),
+                turning,
+                grants,
+                strings,
+                &here,
+                &mut bracket,
+            );
+            assert_eq!(
+                said.refusal().map(alo_protocol::Wording::text),
+                Some("nothing ran, because you closed the window that asked for your password"),
+                "{said:?}"
+            );
+        },
+    );
     assert_eq!(
         runner.join().unwrap(),
         format!("mkdir -p {}\n", elsewhere.the_folder_it_makes().display())
     );
-    assert!(!elsewhere.the_folder_it_makes().exists(), "it ran as the person");
+    assert!(
+        !elsewhere.the_folder_it_makes().exists(),
+        "it ran as the person"
+    );
     let entries: Vec<_> = record.everything().collect();
     assert_eq!(entries.len(), 1, "{entries:?}");
     let entry = entries.first().unwrap();
-    assert!(matches!(entry.happened(), Happened::ACommandWasNotRun { .. }));
+    assert!(matches!(
+        entry.happened(),
+        Happened::ACommandWasNotRun { .. }
+    ));
     assert_eq!(
         entry.asked_as_an_administrator(),
         Some(alo_record::AsAnAdministrator::TheyCancelled)
@@ -624,7 +647,13 @@ fn at_full_access_sudo_runs_as_administrator_after_the_password() {
             &mut bracket,
         );
         assert!(
-            matches!(said.done(), Some(Done::RanACommand { returned: Some(0), .. })),
+            matches!(
+                said.done(),
+                Some(Done::RanACommand {
+                    returned: Some(0),
+                    ..
+                })
+            ),
             "{said:?}"
         );
     });
@@ -649,22 +678,31 @@ fn no_runner_is_said_and_nothing_runs_as_the_person() {
     let elsewhere = Elsewhere::with_the_level("sudo-no-runner", Some(HowCodeRuns::AtFullTrust));
     let mut record = Record::default();
     let mut bracket = a_bracket();
-    let line = format!("sudo mkdir -p {}", elsewhere.the_folder_it_makes().display());
-    on_a_turn("sudo-no-runner", &mut record, |turning, grants, strings, _| {
-        let said = the_agent_asked(
-            &asking_to_run(&line),
-            turning,
-            grants,
-            strings,
-            &elsewhere.here(),
-            &mut bracket,
-        );
-        assert_eq!(
-            said.refusal().map(alo_protocol::Wording::text),
-            Some("nothing ran, because this computer could not ask for administrator rights just now"),
-            "{said:?}"
-        );
-    });
+    let line = format!(
+        "sudo mkdir -p {}",
+        elsewhere.the_folder_it_makes().display()
+    );
+    on_a_turn(
+        "sudo-no-runner",
+        &mut record,
+        |turning, grants, strings, _| {
+            let said = the_agent_asked(
+                &asking_to_run(&line),
+                turning,
+                grants,
+                strings,
+                &elsewhere.here(),
+                &mut bracket,
+            );
+            assert_eq!(
+                said.refusal().map(alo_protocol::Wording::text),
+                Some(
+                    "nothing ran, because this computer could not ask for administrator rights just now"
+                ),
+                "{said:?}"
+            );
+        },
+    );
     assert!(!elsewhere.the_folder_it_makes().exists());
     let entries: Vec<_> = record.everything().collect();
     assert_eq!(

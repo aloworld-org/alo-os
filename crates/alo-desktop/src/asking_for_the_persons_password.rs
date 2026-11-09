@@ -108,7 +108,13 @@ impl TheAgent {
         let to_the_sheet = self.to_the_sheet.clone();
         let person = self.person;
         blocking::unblock(move || {
-            the_conversation(&cookie, &answered, &to_the_sheet, person, Places::on_this_machine())
+            the_conversation(
+                &cookie,
+                &answered,
+                &to_the_sheet,
+                person,
+                Places::on_this_machine(),
+            )
         })
         .await
     }
@@ -160,11 +166,17 @@ fn the_conversation(
         let typed = match answered.recv() {
             Ok(FromTheSheet::Typed(typed)) => typed,
             Ok(FromTheSheet::Cancelled) => {
-                return Err(AgentError::Cancelled("the person closed the sheet".to_owned()));
+                return Err(AgentError::Cancelled(
+                    "the person closed the sheet".to_owned(),
+                ));
             }
             // The sheet let the question go: polkit took it back, or the
             // desktop is ending.
-            Err(_) => return Err(AgentError::Cancelled("the question was taken back".to_owned())),
+            Err(_) => {
+                return Err(AgentError::Cancelled(
+                    "the question was taken back".to_owned(),
+                ));
+            }
         };
         let told = match checked_once(places.checker, cookie, typed.as_str()) {
             Ok(Checked::Yes) => {
@@ -192,7 +204,9 @@ fn the_conversation(
         };
         drop(typed);
         if to_the_sheet.send(told).is_err() {
-            return Err(AgentError::Cancelled("the desktop is not drawing".to_owned()));
+            return Err(AgentError::Cancelled(
+                "the desktop is not drawing".to_owned(),
+            ));
         }
     }
 }

@@ -48,7 +48,14 @@ fn a_sheet(command: &str, typed: &str) -> ThePasswordSheet {
 /// The sheet drawn on `size`.
 fn on(sheet: &ThePasswordSheet, size: (i32, i32)) -> Result<ApprovalPicture, RenderError> {
     let mut labels = WindowControlLabels::new().unwrap();
-    drawn(sheet.shows().unwrap(), &words(), &mut labels, size, light(), ONE)
+    drawn(
+        sheet.shows().unwrap(),
+        &words(),
+        &mut labels,
+        size,
+        light(),
+        ONE,
+    )
 }
 
 /// **The command is drawn whole, as it will run**, inside the panel, and the
@@ -70,10 +77,17 @@ fn the_command_is_drawn_whole() {
 #[test]
 fn how_long_the_password_is_is_never_drawn() {
     let short = on(&a_sheet("true", "1"), (1920, 1080)).unwrap();
-    let long = on(&a_sheet("true", "correct horse battery staple"), (1920, 1080)).unwrap();
+    let long = on(
+        &a_sheet("true", "correct horse battery staple"),
+        (1920, 1080),
+    )
+    .unwrap();
     assert_eq!(short.solids, long.solids);
     let empty = on(&a_sheet("true", ""), (1920, 1080)).unwrap();
-    assert_ne!(empty.solids, short.solids, "typed and not typed are told apart");
+    assert_ne!(
+        empty.solids, short.solids,
+        "typed and not typed are told apart"
+    );
 }
 
 /// **A display too small for the sheet is refused, never drawn in part.**
@@ -94,6 +108,9 @@ fn a_display_too_small_is_refused() {
 #[test]
 fn it_is_laid_out_on_small_and_large_displays() {
     for size in [(1280, 720), (1440, 960), (3840, 2160)] {
-        assert!(on(&a_sheet("dnf upgrade -y", "12"), size).is_ok(), "{size:?}");
+        assert!(
+            on(&a_sheet("dnf upgrade -y", "12"), size).is_ok(),
+            "{size:?}"
+        );
     }
 }

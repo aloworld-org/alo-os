@@ -81,7 +81,10 @@ pub fn the_session_on_their_screen(bus: &Connection, person: u32) -> Option<Stri
 
 /// The subject polkit is asked about: one logind session.
 fn a_session(session: &str) -> (&'static str, HashMap<&'static str, Value<'_>>) {
-    ("unix-session", HashMap::from([("session-id", Value::from(session))]))
+    (
+        "unix-session",
+        HashMap::from([("session-id", Value::from(session))]),
+    )
 }
 
 /// **Whether the person in `session` gave their password for `command`**:

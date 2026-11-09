@@ -98,7 +98,10 @@ mod tests {
     fn the_agent_is_never_a_person() {
         let edited = "alo-agent:x:1000:1000::/:/bin/sh\n";
         assert_eq!(a_person(edited, 1000), None);
-        assert!(!is_an_administrator("wheel:x:10:alo-agent\n", THE_AGENTS_LOGIN));
+        assert!(!is_an_administrator(
+            "wheel:x:10:alo-agent\n",
+            THE_AGENTS_LOGIN
+        ));
     }
 
     /// **An administrator is a member of `wheel`**, and a member of another

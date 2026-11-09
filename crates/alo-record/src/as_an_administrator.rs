@@ -73,14 +73,29 @@ mod tests {
             "{written}"
         );
         assert_eq!(serde_json::from_str::<Entry>(&written).unwrap(), ran);
-        assert!(ran.asked_as_an_administrator().unwrap().they_authenticated());
+        assert!(
+            ran.asked_as_an_administrator()
+                .unwrap()
+                .they_authenticated()
+        );
 
-        let refused = Entry::a_command_was_not_run(&agent, "/bin/sh", "nothing ran", SystemTime::UNIX_EPOCH)
-            .as_an_administrator(AsAnAdministrator::TheyCancelled);
-        assert!(!refused.asked_as_an_administrator().unwrap().they_authenticated());
+        let refused =
+            Entry::a_command_was_not_run(&agent, "/bin/sh", "nothing ran", SystemTime::UNIX_EPOCH)
+                .as_an_administrator(AsAnAdministrator::TheyCancelled);
+        assert!(
+            !refused
+                .asked_as_an_administrator()
+                .unwrap()
+                .they_authenticated()
+        );
 
-        let ordinary = Entry::a_command_was_not_run(&agent, "/bin/sh", "nothing ran", SystemTime::UNIX_EPOCH);
-        assert!(!serde_json::to_string(&ordinary).unwrap().contains("as_an_administrator"));
+        let ordinary =
+            Entry::a_command_was_not_run(&agent, "/bin/sh", "nothing ran", SystemTime::UNIX_EPOCH);
+        assert!(
+            !serde_json::to_string(&ordinary)
+                .unwrap()
+                .contains("as_an_administrator")
+        );
         assert_eq!(ordinary.asked_as_an_administrator(), None);
     }
 }

@@ -56,7 +56,8 @@ pub fn as_read(text: &str) -> InStep {
 /// What the file under `folder` says for `person`, now.
 #[must_use]
 pub fn now(folder: &Path, person: u32) -> InStep {
-    std::fs::read_to_string(where_for(folder, person)).map_or(InStep::NotKnown, |text| as_read(&text))
+    std::fs::read_to_string(where_for(folder, person))
+        .map_or(InStep::NotKnown, |text| as_read(&text))
 }
 
 #[cfg(test)]

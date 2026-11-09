@@ -56,7 +56,12 @@ impl TheMachine for AMachine {
     fn run(&self, command: &ACommand) -> Result<WhatACommandDid, ItDidNotStart> {
         self.ran.set(self.ran.get() + 1);
         if self.starts {
-            Ok(WhatACommandDid::of(Some(0), format!("ran {}", command.text()), false, false))
+            Ok(WhatACommandDid::of(
+                Some(0),
+                format!("ran {}", command.text()),
+                false,
+                false,
+            ))
         } else {
             Err(ItDidNotStart::because("no shell"))
         }
@@ -183,7 +188,10 @@ fn only_the_agent_service_may_ask() {
         uid: 1000,
         groups: "0::/system.slice/alo-agentd.service/turn-3\n".to_owned(),
     };
-    assert!(inside.is_the_agent_service(), "a group the service made is still its own");
+    assert!(
+        inside.is_the_agent_service(),
+        "a group the service made is still its own"
+    );
 }
 
 /// **A line that is not one command is refused before anything is asked.**

@@ -259,7 +259,9 @@ impl ThePasswordSheet {
 
     /// Whether `cookie` is the question on screen.
     fn is_in_front(&self, cookie: &str) -> bool {
-        self.waiting.front().is_some_and(|asked| asked.cookie == cookie)
+        self.waiting
+            .front()
+            .is_some_and(|asked| asked.cookie == cookie)
     }
 
     /// The field empty and the first line back, for the question now in front.

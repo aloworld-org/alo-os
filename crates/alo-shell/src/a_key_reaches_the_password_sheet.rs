@@ -53,7 +53,8 @@ impl Server {
             time,
             |_, held, symbol| {
                 FilterResult::Intercept(
-                    (state == KeyState::Pressed).then(|| SignInKey::of(symbol.modified_sym(), held)),
+                    (state == KeyState::Pressed)
+                        .then(|| SignInKey::of(symbol.modified_sym(), held)),
                 )
             },
         );
@@ -184,12 +185,16 @@ mod tests {
     fn an_enter_held_down_sends_once() {
         let (_runtime, mut server) = seat();
         assert_eq!(
-            server.password_sheet_key(KEY_ENTER, KeyState::Pressed, 1).unwrap(),
+            server
+                .password_sheet_key(KEY_ENTER, KeyState::Pressed, 1)
+                .unwrap(),
             Some(SignInKey::Enter)
         );
         for time in 2..6 {
             assert_eq!(
-                server.password_sheet_key(KEY_ENTER, KeyState::Pressed, time).unwrap(),
+                server
+                    .password_sheet_key(KEY_ENTER, KeyState::Pressed, time)
+                    .unwrap(),
                 None
             );
         }

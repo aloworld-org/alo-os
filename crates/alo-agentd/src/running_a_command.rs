@@ -94,9 +94,9 @@ impl CommandsHere {
             .map(PathBuf::from)
             .filter(|home| home.is_absolute())
             .unwrap_or_else(|| PathBuf::from("/"));
-        Self::at(Path::new(alo_remembering::THE_LEVEL), &home).running_as_administrator_at(Path::new(
-            alo_administrator::answering_as_administrator::THE_RUNNERS_SOCKET,
-        ))
+        Self::at(Path::new(alo_remembering::THE_LEVEL), &home).running_as_administrator_at(
+            Path::new(alo_administrator::answering_as_administrator::THE_RUNNERS_SOCKET),
+        )
     }
 
     /// The level kept at `level_at`, and commands started in `in_folder`.
@@ -268,7 +268,11 @@ pub fn a_command_approved(
     // the OK, and runs as administrator only on their yes (ADR 0150).
     if crate::running_as_administrator::the_administrators_part(&command).is_some() {
         let mut run = |command: &ACommand| {
-            crate::running_as_administrator::through_the_runner(&here.administrator_at, command, strings)
+            crate::running_as_administrator::through_the_runner(
+                &here.administrator_at,
+                command,
+                strings,
+            )
         };
         return match turning.approving_a_command_as_administrator(number, &mut run, now) {
             Ok(Ok(did)) => crate::answering::the_change_did(Done::of_a_command(&did), kept),
@@ -297,7 +301,11 @@ fn ran(
     // full access, and runs as administrator only on their yes (ADR 0150).
     if crate::running_as_administrator::the_administrators_part(command).is_some() {
         let mut run = |command: &ACommand| {
-            crate::running_as_administrator::through_the_runner(&here.administrator_at, command, strings)
+            crate::running_as_administrator::through_the_runner(
+                &here.administrator_at,
+                command,
+                strings,
+            )
         };
         return match turning.running_as_administrator(command, &mut run, now) {
             Ok(Ok(did)) => Ok(Done::of_a_command(&did)),

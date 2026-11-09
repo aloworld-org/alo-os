@@ -2627,17 +2627,19 @@ impl LoopInput for Desk<'_> {
         // and because a refusal on a later one must not delay it.
         let mut painted: Vec<Layered<'_>> = theirs
             .iter_mut()
-            .map(|(other, its_pictures, its_edges, its_scale, its_sheet)| Layered {
-                target: *other,
-                layers: crate::scene_native::NativeLayers {
-                    // **The pointer at this display's own scale**, as its
-                    // edges and its Dock are.
-                    pointer_at: crate::display_scale::DisplayScale::of_per_cent(*its_scale),
-                    pointer_look,
-                    approval: its_sheet.as_ref(),
-                    ..its_pictures.layers(its_edges)
+            .map(
+                |(other, its_pictures, its_edges, its_scale, its_sheet)| Layered {
+                    target: *other,
+                    layers: crate::scene_native::NativeLayers {
+                        // **The pointer at this display's own scale**, as its
+                        // edges and its Dock are.
+                        pointer_at: crate::display_scale::DisplayScale::of_per_cent(*its_scale),
+                        pointer_look,
+                        approval: its_sheet.as_ref(),
+                        ..its_pictures.layers(its_edges)
+                    },
                 },
-            })
+            )
             .collect();
         let mut displays: Vec<&mut dyn crate::FrameTarget> = Vec::with_capacity(1 + painted.len());
         displays.push(&mut layered);

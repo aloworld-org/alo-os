@@ -24,7 +24,13 @@ fn anything_else_is_refused_before_anything_is_written() {
     for sent in ["1000\n1234", "1234\n", "alo\n1234\n", "\n1234\n", ""] {
         assert_eq!(what_was_sent(sent), Err(NotKept::NotTwoLines), "{sent:?}");
     }
-    for sent in ["1000\n\n", "1000\na:b\n", "1000\na\rb\n", "1000\na\0b\n", "1000\na\nb\n"] {
+    for sent in [
+        "1000\n\n",
+        "1000\na:b\n",
+        "1000\na\rb\n",
+        "1000\na\0b\n",
+        "1000\na\nb\n",
+    ] {
         assert_eq!(what_was_sent(sent), Err(NotKept::CannotHoldIt), "{sent:?}");
     }
     let too_long = format!("1000\n{}\n", "a".repeat(THE_LONGEST_PASSWORD + 1));

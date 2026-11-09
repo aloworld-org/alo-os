@@ -35,7 +35,9 @@ fn main() -> ExitCode {
     };
     let logins = std::fs::read_to_string(logins::THE_LOGINS).unwrap_or_default();
     let Some(name) = logins::a_person(&logins, caller) else {
-        eprintln!("alo-checking-a-password: number {caller} is not a person, so nothing is checked");
+        eprintln!(
+            "alo-checking-a-password: number {caller} is not a person, so nothing is checked"
+        );
         println!("FAILURE");
         return ExitCode::FAILURE;
     };

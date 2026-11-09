@@ -86,7 +86,9 @@ fn the_action_asks_every_time() {
     assert!(!policy.contains("auth_admin_keep"), "an answer is kept");
     assert!(policy.contains("<message>$(command)</message>"));
     let asked = read("crates/alo-administrator/src/what_polkit_said.rs");
-    assert!(asked.contains(r#"pub const THE_ACTION: &str = "org.aloworld.alo.run-as-administrator";"#));
+    assert!(
+        asked.contains(r#"pub const THE_ACTION: &str = "org.aloworld.alo.run-as-administrator";"#)
+    );
     assert!(asked.contains(r#"pub const THE_COMMAND_DETAIL: &str = "command";"#));
 }
 
@@ -100,7 +102,9 @@ fn the_person_is_an_administrator() {
         "the person is not made a member of wheel"
     );
     assert!(
-        !accounts.lines().any(|line| line.trim() == "m alo-agent wheel"),
+        !accounts
+            .lines()
+            .any(|line| line.trim() == "m alo-agent wheel"),
         "the agent is made an administrator"
     );
     let recipe = read("image/Containerfile");
@@ -119,7 +123,10 @@ fn the_three_sockets_are_installed_enabled_and_opened_as_they_say() {
         ("alo-running-as-administrator", "0660", "alo"),
     ] {
         let unit = read(&format!("image/usr/lib/systemd/system/{socket}.socket"));
-        assert!(unit.contains(&format!("ListenStream=/run/{socket}.socket")), "{socket}");
+        assert!(
+            unit.contains(&format!("ListenStream=/run/{socket}.socket")),
+            "{socket}"
+        );
         assert!(unit.contains(&format!("SocketMode={mode}")), "{socket}");
         assert!(unit.contains(&format!("SocketGroup={group}")), "{socket}");
         assert!(unit.contains("Accept=yes"), "{socket}");
@@ -146,7 +153,9 @@ fn the_three_sockets_are_installed_enabled_and_opened_as_they_say() {
         r#"pub const THE_KEEPERS_SOCKET: &str = "/run/alo-keeping-the-system-password.socket";"#
     ));
     let named = read("crates/alo-administrator/src/the_helpers_conversation.rs");
-    assert!(named.contains(r#"pub const THE_CHECKERS_SOCKET: &str = "/run/alo-checking-a-password.socket";"#));
+    assert!(named.contains(
+        r#"pub const THE_CHECKERS_SOCKET: &str = "/run/alo-checking-a-password.socket";"#
+    ));
     let named = read("crates/alo-administrator/src/answering_as_administrator.rs");
     assert!(named.contains(
         r#"pub const THE_RUNNERS_SOCKET: &str = "/run/alo-running-as-administrator.socket";"#

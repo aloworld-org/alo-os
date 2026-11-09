@@ -71,14 +71,16 @@ fn main() -> ExitCode {
             match read {
                 Ok(_) => {
                     let machine = ThisMachine {
-                        bus: on_the_system_bus::the_system_bus(THE_LONGEST_THE_PERSON_IS_WAITED_FOR)
-                            .map_err(|why| {
-                                eprintln!(
-                                    "alo-running-as-administrator: the system bus did not answer: \
+                        bus: on_the_system_bus::the_system_bus(
+                            THE_LONGEST_THE_PERSON_IS_WAITED_FOR,
+                        )
+                        .map_err(|why| {
+                            eprintln!(
+                                "alo-running-as-administrator: the system bus did not answer: \
                                      {why}"
-                                );
-                            })
-                            .ok(),
+                            );
+                        })
+                        .ok(),
                     };
                     answered(&machine, &caller, line.trim_end_matches(['\n', '\r']))
                 }

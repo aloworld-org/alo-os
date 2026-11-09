@@ -78,7 +78,12 @@ pub(crate) fn drawn(
     if inner < measure.px(160) {
         return Err(RenderError::ApprovalScene);
     }
-    let say = |word: alo_strings::Word| strings.say(&word.key(), &Filling::nothing()).text().to_owned();
+    let say = |word: alo_strings::Word| {
+        strings
+            .say(&word.key(), &Filling::nothing())
+            .text()
+            .to_owned()
+    };
     let (heading, what) = match shows.what_for {
         WhatItIsFor::ACommandAloWasAsked(command) => (say(words::ALO_ASKS_TO_RUN_THIS), command),
         WhatItIsFor::SomethingElse(message) => (say(words::SOMETHING_ASKS), message),
@@ -149,7 +154,13 @@ pub(crate) fn drawn(
 
     let field = Rectangle::new((left + pad, y).into(), (inner, field_height).into());
     framed(&mut picture.solids, field, measure.px(1), palette);
-    the_field_holds(&mut picture.solids, field, shows.typed_something, measure, palette);
+    the_field_holds(
+        &mut picture.solids,
+        field,
+        shows.typed_something,
+        measure,
+        palette,
+    );
     y += field_height + gap;
     picture.inked.extend(placed(under_shaped, left + pad, y));
     Ok(picture)

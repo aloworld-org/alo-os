@@ -114,7 +114,12 @@ impl Answered {
                 said,
                 cut_short,
                 took_too_long,
-            } => Ok(WhatACommandDid::of(returned, said, cut_short, took_too_long)),
+            } => Ok(WhatACommandDid::of(
+                returned,
+                said,
+                cut_short,
+                took_too_long,
+            )),
             Self::Refused(why) => Err(why),
         }
     }
@@ -122,9 +127,8 @@ impl Answered {
     /// The one line it is sent as.
     #[must_use]
     pub fn as_line(&self) -> String {
-        let mut line = serde_json::to_string(self).unwrap_or_else(|_| {
-            r#"{"refused":"the-runner-did-not-answer"}"#.to_owned()
-        });
+        let mut line = serde_json::to_string(self)
+            .unwrap_or_else(|_| r#"{"refused":"the-runner-did-not-answer"}"#.to_owned());
         line.push('\n');
         line
     }
@@ -137,7 +141,10 @@ impl Answered {
 /// [`NotAsAdministrator::TheRunnerDidNotAnswer`] when it could not be reached,
 /// said nothing in [`THE_LONGEST_THE_SERVICE_WAITS`], or said something that
 /// is not an answer; otherwise whatever the runner refused for.
-pub fn asked_of_the_runner(socket: &Path, line: &str) -> Result<WhatACommandDid, NotAsAdministrator> {
+pub fn asked_of_the_runner(
+    socket: &Path,
+    line: &str,
+) -> Result<WhatACommandDid, NotAsAdministrator> {
     let unanswered = |_| NotAsAdministrator::TheRunnerDidNotAnswer;
     let mut stream = UnixStream::connect(socket).map_err(unanswered)?;
     stream
@@ -170,12 +177,20 @@ mod tests {
     /// **Every answer is one line and reads back as itself.**
     #[test]
     fn every_answer_is_one_line_and_reads_back() {
-        let ran = Answered::of(&WhatACommandDid::of(Some(0), "done\nand more\n".to_owned(), false, false));
+        let ran = Answered::of(&WhatACommandDid::of(
+            Some(0),
+            "done\nand more\n".to_owned(),
+            false,
+            false,
+        ));
         let refused = Answered::Refused(NotAsAdministrator::TheyCancelled);
         for answer in [ran, refused] {
             let line = answer.as_line();
             assert_eq!(line.matches('\n').count(), 1, "{line}");
-            assert_eq!(serde_json::from_str::<Answered>(line.trim_end()).unwrap(), answer);
+            assert_eq!(
+                serde_json::from_str::<Answered>(line.trim_end()).unwrap(),
+                answer
+            );
         }
         assert_eq!(
             Answered::Refused(NotAsAdministrator::NothingCanAsk).as_line(),
@@ -193,9 +208,15 @@ mod tests {
         let runner = std::thread::spawn(move || {
             let (stream, _) = listener.accept().unwrap();
             let mut asked = String::new();
-            BufReader::new(stream.try_clone().unwrap()).read_line(&mut asked).unwrap();
+            BufReader::new(stream.try_clone().unwrap())
+                .read_line(&mut asked)
+                .unwrap();
             (&stream)
-                .write_all(Answered::Refused(NotAsAdministrator::NotAccepted).as_line().as_bytes())
+                .write_all(
+                    Answered::Refused(NotAsAdministrator::NotAccepted)
+                        .as_line()
+                        .as_bytes(),
+                )
                 .unwrap();
             asked
         });

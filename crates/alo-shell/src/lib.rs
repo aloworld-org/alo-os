@@ -956,9 +956,6 @@ pub use settings_window::{
 pub use shortcut_dispatch::ShortcutDispatchError;
 pub use sign_in_entry::{NAME_BYTES, SignInField};
 pub use sign_in_keys::SignInKey;
-pub use the_password_sheet::{
-    FromTheSheet, PasswordAsked, ThePasswordTyped, ToTheSheet, WhatItIsFor, WhyNotChecked,
-};
 /// **The sign-in and unlock screen's geometry**, read from `176-10686.xml`.
 pub use sign_in_layout::{
     SignInLayout, THE_ARROW_IS, THE_BACK_TARGET_IS, THE_ENTRY_CORNER_IS, THE_ENTRY_IS,
@@ -966,6 +963,9 @@ pub use sign_in_layout::{
     THE_SUBMIT_TARGET_IS, sign_in_laid_out,
 };
 pub use sign_in_password::PASSWORD_BYTES;
+pub use the_password_sheet::{
+    FromTheSheet, PasswordAsked, ThePasswordTyped, ToTheSheet, WhatItIsFor, WhyNotChecked,
+};
 // **`OnTheSignInScreen` is deliberately not exported.** It was, until the
 // screen-reader gate in `alo-access` read this list: that test treats every
 // exported name ending in `Screen` as a surface a person meets, and told me a

@@ -23,7 +23,9 @@ fn a_checker(at: &Path, connections: usize) -> std::thread::JoinHandle<Vec<Strin
             let mut cookie = String::new();
             reading.read_line(&mut cookie).unwrap();
             cookies.push(cookie.trim_end().to_owned());
-            (&stream).write_all(b"PAM_PROMPT_ECHO_OFF Password: \n").unwrap();
+            (&stream)
+                .write_all(b"PAM_PROMPT_ECHO_OFF Password: \n")
+                .unwrap();
             let mut typed = String::new();
             reading.read_line(&mut typed).unwrap();
             let verdict: &[u8] = if typed.trim_end() == "1234" {
@@ -58,7 +60,11 @@ fn told(to_the_sheet: &Receiver<ToTheSheet>) -> Vec<String> {
 /// A folder where the keeper said the password was kept.
 fn kept_in_step() -> tempfile::TempDir {
     let folder = tempfile::tempdir().unwrap();
-    std::fs::write(in_step::where_for(folder.path(), 1000), in_step::as_written(Ok(()))).unwrap();
+    std::fs::write(
+        in_step::where_for(folder.path(), 1000),
+        in_step::as_written(Ok(())),
+    )
+    .unwrap();
     folder
 }
 
@@ -100,7 +106,9 @@ fn not_in_step_is_said_rather_than_not_right() {
     let nothing_written = tempfile::tempdir().unwrap();
     let (answer, answered) = channel();
     let (to_the_sheet, sheet) = channel();
-    answer.send(typed("1234-but-the-list-holds-another")).unwrap();
+    answer
+        .send(typed("1234-but-the-list-holds-another"))
+        .unwrap();
     answer.send(FromTheSheet::Cancelled).unwrap();
     let came = the_conversation(
         "c1",

@@ -116,7 +116,11 @@ mod tests {
     use super::*;
 
     /// The helper's side, played: what it says, in order.
-    fn the_helper_says(lines: &str, cookie: &str, password: &str) -> (Result<Checked, NotChecked>, String) {
+    fn the_helper_says(
+        lines: &str,
+        cookie: &str,
+        password: &str,
+    ) -> (Result<Checked, NotChecked>, String) {
         let mut reading = std::io::Cursor::new(lines.as_bytes().to_vec());
         let mut written = Vec::new();
         let came = checked(&mut reading, &mut written, cookie, password);
@@ -168,8 +172,14 @@ mod tests {
     /// one line is never sent.
     #[test]
     fn no_verdict_is_said_as_none() {
-        assert!(matches!(the_helper_says("", "c", "1").0, Err(NotChecked::Ended(_))));
-        assert!(matches!(the_helper_says("HELLO\n", "c", "1").0, Err(NotChecked::Ended(_))));
+        assert!(matches!(
+            the_helper_says("", "c", "1").0,
+            Err(NotChecked::Ended(_))
+        ));
+        assert!(matches!(
+            the_helper_says("HELLO\n", "c", "1").0,
+            Err(NotChecked::Ended(_))
+        ));
         let (came, written) = the_helper_says("SUCCESS\n", "a\nb", "1");
         assert_eq!(came, Err(NotChecked::NotACookie));
         assert_eq!(written, "");

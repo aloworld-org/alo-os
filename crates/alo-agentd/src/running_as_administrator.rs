@@ -63,15 +63,18 @@ pub fn through_the_runner(
 #[must_use]
 pub fn said(why: NotAsAdministrator, strings: &Strings) -> (Said, AsAnAdministrator) {
     let (word, how) = match why {
-        NotAsAdministrator::TheyCancelled => {
-            (words::NOTHING_RAN_THEY_CANCELLED, AsAnAdministrator::TheyCancelled)
-        }
-        NotAsAdministrator::NotAccepted => {
-            (words::NOTHING_RAN_NOT_ACCEPTED, AsAnAdministrator::NotAccepted)
-        }
-        NotAsAdministrator::NothingCanAsk => {
-            (words::NOTHING_RAN_NOTHING_CAN_ASK, AsAnAdministrator::NothingCouldAsk)
-        }
+        NotAsAdministrator::TheyCancelled => (
+            words::NOTHING_RAN_THEY_CANCELLED,
+            AsAnAdministrator::TheyCancelled,
+        ),
+        NotAsAdministrator::NotAccepted => (
+            words::NOTHING_RAN_NOT_ACCEPTED,
+            AsAnAdministrator::NotAccepted,
+        ),
+        NotAsAdministrator::NothingCanAsk => (
+            words::NOTHING_RAN_NOTHING_CAN_ASK,
+            AsAnAdministrator::NothingCouldAsk,
+        ),
         NotAsAdministrator::NotAnAdministrator => (
             words::NOTHING_RAN_NOT_AN_ADMINISTRATOR,
             AsAnAdministrator::NotAnAdministrator,
@@ -80,9 +83,10 @@ pub fn said(why: NotAsAdministrator, strings: &Strings) -> (Said, AsAnAdministra
             words::NOTHING_RAN_NO_ANSWER_IN_TIME,
             AsAnAdministrator::NoAnswerInTime,
         ),
-        NotAsAdministrator::DidNotStart => {
-            (words::NOTHING_RAN_WOULD_NOT_START, AsAnAdministrator::CouldNotAsk)
-        }
+        NotAsAdministrator::DidNotStart => (
+            words::NOTHING_RAN_WOULD_NOT_START,
+            AsAnAdministrator::CouldNotAsk,
+        ),
         NotAsAdministrator::NotTheAgentService
         | NotAsAdministrator::NotACommand
         | NotAsAdministrator::PolkitDidNotAnswer
@@ -150,7 +154,11 @@ mod tests {
             NotAsAdministrator::TheRunnerDidNotAnswer,
         ] {
             let (sentence, how) = said(why, &strings);
-            assert!(sentence.text().starts_with("nothing ran"), "{why:?}: {}", sentence.text());
+            assert!(
+                sentence.text().starts_with("nothing ran"),
+                "{why:?}: {}",
+                sentence.text()
+            );
             assert!(!how.they_authenticated(), "{why:?}");
         }
         assert_eq!(
@@ -171,6 +179,10 @@ mod tests {
         );
         let (sentence, how) = came.unwrap_err();
         assert_eq!(how, AsAnAdministrator::CouldNotAsk);
-        assert!(sentence.text().contains("could not ask"), "{}", sentence.text());
+        assert!(
+            sentence.text().contains("could not ask"),
+            "{}",
+            sentence.text()
+        );
     }
 }

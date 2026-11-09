@@ -64,7 +64,12 @@ fn counting(
     move |command| {
         ran.borrow_mut().push(command.text().to_owned());
         match with {
-            Answering::Yes => Ok(WhatACommandDid::of(Some(0), "installed".to_owned(), false, false)),
+            Answering::Yes => Ok(WhatACommandDid::of(
+                Some(0),
+                "installed".to_owned(),
+                false,
+                false,
+            )),
             Answering::No(how) => Err((
                 in_english().say(
                     &alo_capability::words::NOTHING_RAN_THEY_CANCELLED.key(),
@@ -115,7 +120,11 @@ fn every_refusal_is_written_down_with_what_the_person_did() {
         let mut record = Record::default();
         let came = on_a_turn(&mut record, |turning| {
             turning
-                .running_as_administrator(&installing(), &mut counting(&ran, Answering::No(how)), noon())
+                .running_as_administrator(
+                    &installing(),
+                    &mut counting(&ran, Answering::No(how)),
+                    noon(),
+                )
                 .unwrap()
         });
         assert!(came.is_err(), "{how:?}");
@@ -142,13 +151,21 @@ fn one_approval_is_one_run_as_administrator() {
             .unwrap();
         assert!(
             turning
-                .approving_a_command_as_administrator(id, &mut counting(&ran, Answering::Yes), noon())
+                .approving_a_command_as_administrator(
+                    id,
+                    &mut counting(&ran, Answering::Yes),
+                    noon()
+                )
                 .unwrap()
                 .is_ok()
         );
         assert!(
             turning
-                .approving_a_command_as_administrator(id, &mut counting(&ran, Answering::Yes), noon())
+                .approving_a_command_as_administrator(
+                    id,
+                    &mut counting(&ran, Answering::Yes),
+                    noon()
+                )
                 .is_err()
         );
     });

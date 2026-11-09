@@ -14,7 +14,7 @@
 use std::sync::{Arc, Mutex};
 
 use alo_accounts::Accounts;
-use alo_greeting::{Greeted, Greeting, Knocking, KeepingTheSystemPassword, NotAnswered};
+use alo_greeting::{Greeted, Greeting, KeepingTheSystemPassword, Knocking, NotAnswered};
 use alo_sessiond::{Answered, Knock};
 
 /// Hers, and it is right.
@@ -53,7 +53,10 @@ fn a_greeter(keeper: &AKeeper) -> Greeting<ADoor> {
 fn a_sign_in_that_succeeds_keeps_the_password_in_step() {
     let keeper = AKeeper::default();
     let greeter = a_greeter(&keeper);
-    assert!(matches!(greeter.signs_in("ada", HERS), Greeted::SignedIn(_)));
+    assert!(matches!(
+        greeter.signs_in("ada", HERS),
+        Greeted::SignedIn(_)
+    ));
     assert_eq!(*keeper.0.lock().unwrap(), [(1000, HERS.to_owned())]);
 }
 
@@ -63,8 +66,14 @@ fn a_sign_in_that_succeeds_keeps_the_password_in_step() {
 fn a_refused_sign_in_keeps_nothing() {
     let keeper = AKeeper::default();
     let greeter = a_greeter(&keeper);
-    assert!(matches!(greeter.signs_in("ada", "4321"), Greeted::Refused(_)));
-    assert!(matches!(greeter.signs_in("grace", HERS), Greeted::Refused(_)));
+    assert!(matches!(
+        greeter.signs_in("ada", "4321"),
+        Greeted::Refused(_)
+    ));
+    assert!(matches!(
+        greeter.signs_in("grace", HERS),
+        Greeted::Refused(_)
+    ));
     assert!(keeper.0.lock().unwrap().is_empty());
 }
 
@@ -88,5 +97,8 @@ fn a_greeter_with_no_keeper_still_signs_people_in() {
     let mut accounts = Accounts::none().unwrap();
     accounts.created("ada", 1000, HERS).unwrap();
     let greeter = Greeting::of(accounts, 1000, ADoor);
-    assert!(matches!(greeter.signs_in("ada", HERS), Greeted::SignedIn(_)));
+    assert!(matches!(
+        greeter.signs_in("ada", HERS),
+        Greeted::SignedIn(_)
+    ));
 }
