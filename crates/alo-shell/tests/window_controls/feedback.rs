@@ -103,7 +103,7 @@ fn window_controls_feedback_cancelled_disabled_and_unavailable_never_look_armed(
         assert_eq!(states(&view(&f, &root, position)?), [Feedback::Idle; 3]);
     }
     route(&f, Some(&root), (40.0, 5.0), DOWN)?;
-    f.render((120, 48), false, 1)?;
+    f.render((120, 102), false, 1)?;
     assert_eq!(
         states(&view(&f, &root, Some((40.0, 5.0)))?),
         [Feedback::Idle; 3]

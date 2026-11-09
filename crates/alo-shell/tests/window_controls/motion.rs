@@ -83,7 +83,7 @@ fn window_controls_motion_layout_and_intent_changes_cancel_permanently() -> Resu
         assert!(motion(&f, (76.0, 5.0)));
         assert_eq!(release(&f)?, Release::Cancelled);
     }
-    f.render((120, 48), false, 1)?;
+    f.render((120, 102), false, 1)?;
     let root = f.root();
     let target = root.clone();
     assert!(f.backend(move |s| s.press_window_control(&target, (120, 48), (3, 4), (40.0, 5.0)))?);

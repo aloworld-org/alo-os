@@ -8,11 +8,13 @@
 //! answered with **silence rather than a refusal**. Nothing promised to a
 //! person is new below.
 //!
-//! # What distinguishes it from maximised here, which is not the area
+//! # What distinguishes it from maximised here
 //!
-//! Both are the whole submitted output — that is what this compositor hands its
-//! window modes, so there is no smaller *work area* for maximise to stop at.
-//! Two things differ.
+//! **The area, since 2026-11-09**: full screen is everything the window's
+//! display shows, and maximised is that display's work area with the window's
+//! band kept on the screen (`crate::the_room_a_window_fills`). Until then both
+//! were the whole submitted output at the plane's origin. Two more things
+//! differ.
 //!
 //! **The client is told `Fullscreen`**, which is what makes an application hide
 //! its own chrome. Told `Maximized` it keeps it, and a person gets a title bar

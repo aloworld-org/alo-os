@@ -284,7 +284,8 @@ pub fn run(fixture: Fixture, send: mpsc::Sender<u8>, receive: mpsc::Receiver<()>
     assert!(receive.recv_timeout(Duration::from_secs(5)).is_ok());
     fresh.sync();
     assert_eq!(fresh.events.maximized.last(), Some(&true));
-    // The production coordinator last successfully submitted a 33x32 output.
+    // The production coordinator last submitted a 33x86 output; the band
+    // keeps its top 54, which leaves 33x32.
     assert_eq!(fresh.events.sizes.last(), Some(&(33, 32)));
     if let Some(serial) = fresh.events.serial {
         fresh.xdg.ack_configure(serial);

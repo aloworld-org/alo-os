@@ -74,7 +74,17 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
                         crate::window_minimize_check::run(&mut server, renderer)?;
                     }
                 }
-                13..=16 => crate::interactive_resize_check::stage(&mut server, renderer, stage)?,
+                13..=16 => {
+                    crate::interactive_resize_check::stage(&mut server, renderer, stage)?;
+                    // The client asks to be maximised after this stage, so the
+                    // display it is sized from must hold the band above it.
+                    if stage == 16 {
+                        crate::window_maximize_check::a_display_with_room_for_the_band(
+                            &mut server,
+                            renderer,
+                        )?;
+                    }
+                }
                 11 => {
                     // The cursor fixture must not inject a second motion between
                     // this press and the drag it begins.

@@ -51,6 +51,8 @@ impl Server {
             presentation.withdraw(&handle);
         }
         self.surfaces.popups.output_size = None;
+        // Every presentation is withdrawn, so no display has a room.
+        self.surfaces.rooms.clear();
         self.surfaces.update_window_mode_output(None);
         self.the_display_retired();
         Ok(())

@@ -107,7 +107,8 @@ fn window_maximize_captures_effective_geometry_and_refuses_excessive_tree_withou
     app.xdg.set_window_geometry(4, 5, 10, 9);
     app.surface.commit();
     app.sync();
-    assert_eq!(origin(&f, &root), (-4.0, -5.0).into());
+    // The band keeps the top 54 of the work area, so the window sits under it.
+    assert_eq!(origin(&f, &root), (-4.0, 49.0).into());
     maximize(&f, &root, false)?;
     ack(&mut app)?;
     assert_eq!(app.events.sizes.last(), Some(&(12, 10)));
@@ -143,10 +144,10 @@ fn window_maximize_retirement_invalidates_pending_anchor_and_new_output_reconfig
     assert_eq!(origin(&f, &root), (8.0, 9.0).into());
     f.render((100, 70), false, 2)?;
     ack(&mut app)?;
-    assert_eq!(app.events.sizes.last(), Some(&(100, 70)));
+    assert_eq!(app.events.sizes.last(), Some(&(100, 16)));
     app.surface.commit();
     app.sync();
-    assert_eq!(origin(&f, &root), (0.0, 0.0).into());
+    assert_eq!(origin(&f, &root), (0.0, 54.0).into());
     f.backend(|s| s.retire_output(&mut RetireTarget(false)))?;
     maximize(&f, &root, false)?;
     ack(&mut app)?;
@@ -196,7 +197,8 @@ fn window_maximize_and_pointer_operations_refuse_competing_ownership()
     ack(&mut app)?;
     app.surface.commit();
     app.sync();
-    f.backend(|s| s.pointer_motion(4.0, 5.0, 4))?;
+    // The maximised window is under its band, from 54 down.
+    f.backend(|s| s.pointer_motion(4.0, 59.0, 4))?;
     f.backend(|s| s.pointer_button(0x110, Pressed, 5))?;
     app.sync();
     let count = app.events.sizes.len();
@@ -207,17 +209,17 @@ fn window_maximize_and_pointer_operations_refuse_competing_ownership()
     // frame in a window mode refuses the shell's own road too.
     app.toplevel._move(&seat, app.events.pointer.button_serial);
     app.sync();
-    f.backend(|s| s.pointer_motion(9.0, 10.0, 6))?;
+    f.backend(|s| s.pointer_motion(9.0, 58.0, 6))?;
     app.sync();
     assert_eq!(app.events.sizes.len(), count);
-    assert_eq!(origin(&f, &root), (0.0, 0.0).into());
+    assert_eq!(origin(&f, &root), (0.0, 54.0).into());
     f.backend(|s| s.pointer_button(0x110, Released, 61))?;
-    f.backend(|s| s.pointer_motion(4.0, -16.0, 62))?;
+    f.backend(|s| s.pointer_motion(4.0, 38.0, 62))?;
     f.backend(|s| s.pointer_button(0x110, Pressed, 63))?;
-    f.backend(|s| s.pointer_motion(24.0, 4.0, 64))?;
+    f.backend(|s| s.pointer_motion(24.0, 58.0, 64))?;
     assert_eq!(
         origin(&f, &root),
-        (0.0, 0.0).into(),
+        (0.0, 54.0).into(),
         "a maximised frame was dragged by its name"
     );
     f.backend(|s| s.pointer_button(0x110, Released, 65))?;
@@ -258,7 +260,8 @@ fn window_maximize_preserves_pixels_and_keyboard_until_commit_and_restores_norma
     let placed = root.clone();
     f.backend(move |s| s.place_window(&placed, (23, -7)))?;
     f.focus_surface(root.clone())?;
-    f.render((33, 32), false, 1)?;
+    // 54 taller than the window it maximises to, for the band.
+    f.render((33, 86), false, 1)?;
     app.sync();
     other.sync();
     let others = other.events.sizes.len();
@@ -281,7 +284,7 @@ fn window_maximize_preserves_pixels_and_keyboard_until_commit_and_restores_norma
     // A conforming application commits the complete output-sized buffer.
     app.attach_maximized();
     app.sync();
-    assert_eq!(origin(&f, &root), (0.0, 0.0).into());
+    assert_eq!(origin(&f, &root), (0.0, 54.0).into());
     let target = root.clone();
     assert_eq!(
         f.backend(move |s| s.request_window_size(&target, (20, 20))),
@@ -298,7 +301,7 @@ fn window_maximize_preserves_pixels_and_keyboard_until_commit_and_restores_norma
     assert_eq!(app.events.maximized.last(), Some(&false));
     assert_eq!(maximize(&f, &root, false), Ok(None));
     ack(&mut app)?;
-    assert_eq!(origin(&f, &root), (0.0, 0.0).into());
+    assert_eq!(origin(&f, &root), (0.0, 54.0).into());
     app.attach();
     app.sync();
     assert_eq!(origin(&f, &root), (23.0, -7.0).into());
@@ -334,7 +337,7 @@ fn window_maximize_output_success_supersedes_old_responses_and_toggles_keep_orig
     assert_eq!(app.events.sizes.len(), count);
     f.render((90, 70), false, 4)?;
     app.sync();
-    assert_eq!(app.events.sizes.last(), Some(&(90, 70)));
+    assert_eq!(app.events.sizes.last(), Some(&(90, 16)));
     app.xdg.ack_configure(old);
     app.attach_resized();
     app.sync();
@@ -342,14 +345,14 @@ fn window_maximize_output_success_supersedes_old_responses_and_toggles_keep_orig
     ack(&mut app)?;
     app.surface.commit();
     app.sync();
-    assert_eq!(origin(&f, &root), (0.0, 0.0).into());
+    assert_eq!(origin(&f, &root), (0.0, 54.0).into());
     let restore = maximize(&f, &root, false)?.ok_or("missing restore")?;
     maximize(&f, &root, true)?;
     app.sync();
     app.xdg.ack_configure(restore);
     app.attach();
     app.sync();
-    assert_eq!(origin(&f, &root), (0.0, 0.0).into());
+    assert_eq!(origin(&f, &root), (0.0, 54.0).into());
     maximize(&f, &root, false)?;
     ack(&mut app)?;
     assert_eq!(app.events.sizes.last(), Some(&(16, 16)));
@@ -371,7 +374,11 @@ fn window_maximize_ignores_normal_limits_and_restore_uses_only_committed_limits(
     app.sync();
     maximize(&f, &root, true)?;
     ack(&mut app)?;
-    assert_eq!(app.events.sizes.last(), Some(&(80, 60)));
+    assert_eq!(
+        app.events.sizes.last(),
+        Some(&(80, 6)),
+        "the display less the band"
+    );
     app.attach_resized();
     app.sync();
     app.toplevel.set_min_size(18, 19);
@@ -482,6 +489,53 @@ fn window_maximize_refuses_foreign_child_popup_unmapped_and_dead_targets_and_for
     assert_eq!(
         maximize(&f, &root, true),
         Err(WindowMaximizeError::Unmapped)
+    );
+    Ok(())
+}
+
+/// **A maximised window keeps its band on the screen.**
+///
+/// `docs/design/the-window-controls.md`: *Maximise fills the work area and
+/// keeps the band*. The band is 54 tall and sits above the window, so a window
+/// maximised to the whole output at its top had its title and controls off the
+/// screen — which is what this changed on 2026-11-09. The window now fills the
+/// display under its band, and nothing of the band is above the display's top.
+#[test]
+fn a_maximised_window_keeps_its_band_on_the_screen() -> Result<(), Box<dyn std::error::Error>> {
+    let f = Fixture::new();
+    let mut app = mapped(&f);
+    let root = f.root();
+    f.render((200, 300), false, 1)?;
+    maximize(&f, &root, true)?;
+    ack(&mut app)?;
+    assert_eq!(
+        app.events.sizes.last(),
+        Some(&(200, 246)),
+        "the window is the display less its band"
+    );
+    app.surface.commit();
+    app.sync();
+    let target = root.clone();
+    let window = f.backend(move |_| alo_shell::where_a_window_is(&target));
+    assert_eq!(
+        window.loc.y,
+        alo_shell::THE_REGION_IS_TALL,
+        "the band's top is the display's top, not above it"
+    );
+    Ok(())
+}
+
+/// **A display too short to hold a band and a window under it refuses to
+/// maximise**, rather than maximising with the band off the screen.
+#[test]
+fn a_display_too_short_for_a_band_refuses_to_maximise() -> Result<(), Box<dyn std::error::Error>> {
+    let f = Fixture::new();
+    let _app = mapped(&f);
+    let root = f.root();
+    f.render((200, 54), false, 1)?;
+    assert_eq!(
+        maximize(&f, &root, true),
+        Err(WindowMaximizeError::OutputUnavailable)
     );
     Ok(())
 }

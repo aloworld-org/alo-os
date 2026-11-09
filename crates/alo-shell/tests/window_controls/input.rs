@@ -75,7 +75,7 @@ fn window_controls_input_disabled_hit_cannot_arm_when_output_arrives() -> Result
     let mut app = mapped(&f);
     let root = f.root();
     assert!(press(&f, &root, 40.0)?);
-    f.render((120, 48), false, 1)?;
+    f.render((120, 102), false, 1)?;
     assert!(press(&f, &root, 40.0)?);
     assert_eq!(release(&f, 40.0)?, Release::Cancelled);
     app.sync();
@@ -105,7 +105,7 @@ fn window_controls_input_live_policy_refuses_and_changed_intent_cancels() -> Res
     let f = Fixture::new();
     let _app = mapped(&f);
     let root = f.root();
-    f.render((120, 48), false, 1)?;
+    f.render((120, 102), false, 1)?;
     assert!(press(&f, &root, 40.0)?);
     f.backend(|s| s.retire_output(&mut Retire))?;
     assert!(matches!(
@@ -115,7 +115,7 @@ fn window_controls_input_live_policy_refuses_and_changed_intent_cancels() -> Res
         ))
     ));
     assert_eq!(release(&f, 40.0)?, Release::Unowned);
-    f.render((120, 48), false, 2)?;
+    f.render((120, 102), false, 2)?;
     assert!(press(&f, &root, 40.0)?);
     maximize(&f, &root, true)?;
     assert_eq!(release(&f, 40.0)?, Release::Cancelled);
@@ -229,7 +229,7 @@ fn window_controls_input_popup_started_after_press_refuses_live_maximize() -> Re
     f.backend(|s| s.enable_popup_protocol());
     let mut app = mapped(&f);
     let root = f.root();
-    f.render((120, 48), false, 1)?;
+    f.render((120, 102), false, 1)?;
     f.focus_surface(root.clone())?;
     assert!(press(&f, &root, 40.0)?);
     assert!(f.key(30, KeyState::Pressed)?);

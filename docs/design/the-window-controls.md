@@ -293,6 +293,12 @@ is the specimen's width, not a window's.
   Space and Escape walk it.
 - **No band carries an icon**, alo's own windows (the terminal, the record)
   included, so every band is the one band the frames draw.
+- **The work area includes the top controls' 84-unit band.** The shell
+  reserves it whether or not anything is drawn in it (`crate::top_controls_region`),
+  so a maximised window starts under it, with its band; a window that took that
+  room would be under the top controls once they are drawn.
+- **A display too short for a band and a window under it refuses Maximise**
+  (`OutputUnavailable`), rather than maximising with the band off the screen.
 - **Opening a panel does not bring its window forward**; the panel is drawn
   above every window instead, so it is never covered and a press on it never
   reaches what is behind.
@@ -320,8 +326,9 @@ that part is **not built**.
 | stage | what | state |
 |---|---|---|
 | 1a | the band (title and application name always, 54 tall), the three controls revealed on approach with the fade, *Always show window controls*, the panel with Maximise / Restore and Full screen / Exit full screen, right-click and double-click on the band, `Alt+F3` and the keys into the band and panel, expanded and selected states for a reader | #1138 |
-| 1b | Minimise travelling to the side panel (the outline above); restoring was already returning a window to its Place and its size, and now has a test that drives it from the panel | #1144 |
-| 1b | Left and Right with the preview, Maximise keeping the band, the full-screen top-edge reveal | not built |
+| 1b | Maximise keeping the band: the work area of the window's display (through that display's camera, less the Dock's band, the panel's column, the top controls and the indicator), the band at its top; full screen filling that display; a restore on the Place already shown leaves the view where it is while the window is in sight | this change |
+| 1c | Minimise travelling to the side panel (the outline above); restoring was already returning a window to its Place and its size, and now has a test that drives it from the panel | #1144 |
+| 1d | Left and Right with the preview, the full-screen top-edge reveal | not built |
 | 2 | Move to…, Undo placement | not built |
 | 3 | Help with this window, the working state and Stop | not built |
 | 4 | Capture & export | not built |

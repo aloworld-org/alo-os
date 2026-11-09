@@ -79,7 +79,7 @@ pub(crate) enum Mode {
 }
 
 /// A rectangle a window was given, in output pixels.
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) struct Share {
     /// Its top-left corner.
     pub(crate) at: (i32, i32),
@@ -209,13 +209,27 @@ impl Surfaces {
         }
         self.window_mode_output = size;
         self.prune_window_modes();
-        for window in &mut self.window_modes {
+        let rooms: Vec<_> = self
+            .window_modes
+            .iter()
+            .map(|window| {
+                size.and_then(|_| self.the_room_for(window.role.wl_surface()))
+                    .and_then(|room| match window.mode {
+                        Mode::Maximized => room.maximised(),
+                        Mode::FillingTheScreen => room.full_screen(),
+                        Mode::Normal | Mode::InAShare(_) => None,
+                    })
+            })
+            .collect();
+        for (window, room) in self.window_modes.iter_mut().zip(rooms) {
             window.pending = match window.mode {
                 Mode::Normal => window.pending,
-                Mode::Maximized | Mode::FillingTheScreen => size.map(|size| {
+                // **The room of the display it is on**, as the request was
+                // planned (`crate::the_room_a_window_fills`).
+                Mode::Maximized | Mode::FillingTheScreen => room.map(|room| {
                     (
-                        configure(&window.role, window.mode, size),
-                        Anchor::Fixed((0, 0)),
+                        configure(&window.role, window.mode, room.size),
+                        Anchor::Fixed(room.at),
                     )
                 }),
                 // A share does not change because the output did: what a

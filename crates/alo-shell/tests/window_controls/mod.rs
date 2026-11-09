@@ -116,13 +116,13 @@ fn window_controls_output_availability_and_pending_toggles_follow_execution()
     let f = Fixture::new(); // No input seat required.
     let mut app = mapped(&f);
     let root = f.root();
-    assert!(f.render((120, 48), true, 1).is_err());
+    assert!(f.render((120, 102), true, 1).is_err());
     available(&snapshot(&f, &root)?, false, false);
     assert_eq!(
         maximize(&f, &root, true),
         Err(WindowMaximizeError::OutputUnavailable)
     );
-    f.render((120, 48), false, 2)?;
+    f.render((120, 102), false, 2)?;
     available(&snapshot(&f, &root)?, true, false);
     for value in [true, false, true, false] {
         maximize(&f, &root, value)?;
@@ -135,9 +135,9 @@ fn window_controls_output_availability_and_pending_toggles_follow_execution()
     available(&snapshot(&f, &root)?, true, true); // Restore needs no output.
     maximize(&f, &root, false)?;
     available(&snapshot(&f, &root)?, false, false);
-    f.render((1_000_001, 48), false, 3)?;
+    f.render((1_000_001, 102), false, 3)?;
     available(&snapshot(&f, &root)?, false, false);
-    f.render((121, 49), false, 4)?;
+    f.render((121, 103), false, 4)?;
     available(&snapshot(&f, &root)?, true, false);
     // **A window in a share is not a window restoring.** What stood here was a
     // window tiled to half an output; the half went with `window_tiling` on
@@ -165,7 +165,7 @@ fn window_controls_restore_uses_committed_limits_and_keeps_refusal_state()
     let f = Fixture::new();
     let mut app = mapped(&f);
     let root = f.root();
-    f.render((120, 48), false, 1)?;
+    f.render((120, 102), false, 1)?;
     maximize(&f, &root, true)?;
     app.sync();
     app.xdg
@@ -208,7 +208,7 @@ fn window_controls_hidden_unmapped_remapped_dead_and_foreign_targets_never_fall_
         snapshot(&f, &foreign.root()),
         Err(WindowControlSnapshotError::Unmapped)
     ));
-    f.render((120, 48), false, 1)?;
+    f.render((120, 102), false, 1)?;
     maximize(&f, &root, true)?;
     let old = snapshot(&f, &root)?;
     let target = root.clone();
@@ -256,7 +256,7 @@ fn window_controls_popup_busy_only_disables_maximize_and_capture_preserves_grab(
     let mut app = mapped(&f);
     let root = f.root();
     f.focus_surface(root.clone())?;
-    f.render((120, 48), false, 1)?;
+    f.render((120, 102), false, 1)?;
     assert!(f.key(30, KeyState::Pressed)?);
     app.sync();
     let (surface, xdg, role) = app.popup(true, 1);
@@ -297,7 +297,7 @@ fn window_controls_excessive_geometry_disables_maximize_without_changing_client(
     let f = Fixture::new();
     let mut app = mapped(&f);
     let root = f.root();
-    f.render((120, 48), false, 1)?;
+    f.render((120, 102), false, 1)?;
     let (_child, _role) = app.child((i32::MAX, i32::MAX));
     app.surface.commit();
     app.sync();

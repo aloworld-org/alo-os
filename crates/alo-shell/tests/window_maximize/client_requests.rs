@@ -12,7 +12,8 @@ fn client_maximize_roundtrip_preserves_focus_and_restores_after_repeated_request
     let target = root.clone();
     f.backend(move |s| s.place_window(&target, (12, 13)))?;
     f.focus_surface(root.clone())?;
-    f.render((33, 32), false, 1)?;
+    // 54 taller than the window it maximises to, for its band.
+    f.render((33, 86), false, 1)?;
     app.sync();
     other.sync();
     let other_count = other.events.sizes.len();
@@ -34,7 +35,7 @@ fn client_maximize_roundtrip_preserves_focus_and_restores_after_repeated_request
     assert_eq!(app.events.keyboard.keys.len(), 2);
     assert!(other.events.keyboard.keys.is_empty());
     assert_eq!(other.events.sizes.len(), other_count);
-    assert_eq!(origin(&f, &root), (0.0, 0.0).into());
+    assert_eq!(origin(&f, &root), (0.0, 54.0).into());
     let count = app.events.sizes.len();
     app.toplevel.unset_maximized();
     app.toplevel.unset_maximized();
@@ -42,7 +43,7 @@ fn client_maximize_roundtrip_preserves_focus_and_restores_after_repeated_request
     assert_eq!(app.events.sizes.len(), count + 2);
     assert_eq!(app.events.maximized.last(), Some(&false));
     assert_eq!(app.events.sizes.last(), Some(&(16, 16)));
-    assert_eq!(origin(&f, &root), (0.0, 0.0).into());
+    assert_eq!(origin(&f, &root), (0.0, 54.0).into());
     app.attach();
     app.sync();
     assert_eq!(origin(&f, &root), (12.0, 13.0).into());
@@ -53,7 +54,8 @@ fn client_maximize_roundtrip_preserves_focus_and_restores_after_repeated_request
 fn client_maximize_premap_declines_at_initial_commit_and_unmap_forgets_intent()
 -> Result<(), Box<dyn std::error::Error>> {
     let f = Fixture::new();
-    f.render((33, 32), false, 1)?;
+    // 54 taller than the window it maximises to, for its band.
+    f.render((33, 86), false, 1)?;
     let mut app = Application::new(&f);
     app.toplevel.set_maximized();
     app.toplevel.unset_maximized();
@@ -115,7 +117,8 @@ fn client_maximize_refuses_unavailable_output_and_busy_resize_with_response()
     ack(&mut app)?;
     assert_eq!(app.events.maximized, [false, false]);
     assert_eq!(app.events.sizes.last(), Some(&(0, 0)));
-    f.render((33, 32), false, 1)?;
+    // 54 taller than the window it maximises to, for its band.
+    f.render((33, 86), false, 1)?;
     f.backend(|s| s.pointer_motion(4.0, 5.0, 1))?;
     f.backend(|s| s.pointer_button(0x110, ButtonState::Pressed, 2))?;
     app.sync();
@@ -152,7 +155,8 @@ fn client_maximize_refused_restore_preserves_maximized_mode_and_saved_geometry()
     let root = f.root();
     let target = root.clone();
     f.backend(move |s| s.place_window(&target, (9, 10)))?;
-    f.render((33, 32), false, 1)?;
+    // 54 taller than the window it maximises to, for its band.
+    f.render((33, 86), false, 1)?;
     app.toplevel.set_maximized();
     ack(&mut app)?;
     app.attach_maximized();
@@ -168,7 +172,7 @@ fn client_maximize_refused_restore_preserves_maximized_mode_and_saved_geometry()
     assert_eq!(app.events.sizes.last(), Some(&(33, 32)));
     app.surface.commit();
     app.sync();
-    assert_eq!(origin(&f, &root), (0.0, 0.0).into());
+    assert_eq!(origin(&f, &root), (0.0, 54.0).into());
     app.toplevel.set_min_size(0, 0);
     app.surface.commit();
     app.sync();

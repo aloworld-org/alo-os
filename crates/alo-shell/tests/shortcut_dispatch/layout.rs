@@ -151,7 +151,8 @@ fn shortcut_dispatch_layout_toggles_pending_intent_and_preserves_normal_geometry
     let target = root.clone();
     f.backend(move |s| s.place_window(&target, (8, 9)))?;
     f.focus(Some(0))?;
-    f.render((33, 32), false, 1)?;
+    // 54 taller than the window it maximises to, for the band.
+    f.render((33, 86), false, 1)?;
     app.sync();
     for maximized in [true, false, true, false] {
         assert_eq!(
@@ -301,7 +302,8 @@ fn shortcut_dispatch_minimize_uses_focus_and_does_not_retarget_hidden_or_dead_wi
     first.attach();
     first.sync();
     f.focus_surface(root)?;
-    f.render((33, 32), false, 1)?;
+    // 54 taller than the window it maximises to, for the band.
+    f.render((33, 86), false, 1)?;
     command(&f, Action::MaximiseWindow)?;
     first.sync();
     assert_eq!(first.events.maximized.last(), Some(&true));

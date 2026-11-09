@@ -22,7 +22,14 @@
 //! # What travelling is
 //!
 //! Two things and no more: the Place the person is on becomes the window's, and
-//! the camera looks at the window. The window is not moved, not resized, not
+//! the camera looks at the window — **where it must**. On the Place already
+//! shown, a window any part of which is on the screen is left where the person
+//! sees it, and the camera does not move: *a restore on the Place already being
+//! looked at moves nobody*. Until 2026-11-09 the camera was pointed at every
+//! restored window, which put the window's corner at the screen's corner and
+//! its band, which is above it, off the top — unseen while maximise put windows
+//! at the plane's origin, and the first thing a maximised window restored from
+//! the panel did once maximise kept the band. The window is not moved, not resized, not
 //! raised and not activated — `crate::window_minimize`'s own note already says
 //! revealing neither activates nor raises, and travelling does not change that.
 
@@ -48,12 +55,14 @@ impl crate::Server {
         // And look at it, on whichever Place it turned out to be on. Done after
         // the Place so that `the_frames_on_the_plane` is already answering about
         // the surface the window is on rather than the one being left.
-        let looked = self.look_at_this_window(window);
+        let looked = self.look_at_this_window(window, somewhere_else);
         somewhere_else || looked
     }
 
-    /// Put the camera where this window is, if the canvas can say where that is.
-    fn look_at_this_window(&mut self, window: &WlSurface) -> bool {
+    /// Put the camera where this window is, if the canvas can say where that is
+    /// and the person cannot already see it: always on another Place, and on
+    /// this one only when no part of it is on the screen.
+    fn look_at_this_window(&mut self, window: &WlSurface, somewhere_else: bool) -> bool {
         let Some(frame) = self
             .the_frames_on_the_plane()
             .into_iter()
@@ -61,7 +70,28 @@ impl crate::Server {
         else {
             return false;
         };
+        if !somewhere_else && self.is_in_sight(frame) {
+            return false;
+        }
         self.look_at_the_canvas(frame.at()).is_some()
+    }
+
+    /// Whether any of this frame is on the screen through the camera now.
+    ///
+    /// `false` before anything is drawn, where there is no screen to be on, so
+    /// the restore looks at the window as it always did.
+    fn is_in_sight(&self, frame: alo_canvas::Frame) -> bool {
+        let Some(screen) = self.surfaces.popups.output_size else {
+            return false;
+        };
+        let size = frame.size();
+        let wide = |units: u32| i32::try_from(units).unwrap_or(i32::MAX);
+        let on_the_plane = smithay::utils::Rectangle::new(
+            (frame.at().x, frame.at().y).into(),
+            (wide(size.width()), wide(size.height())).into(),
+        );
+        crate::the_terminal_on_the_plane::on_the_screen(on_the_plane, self.the_camera())
+            .overlaps(smithay::utils::Rectangle::from_size(screen))
     }
 
     /// Which Place this window is on, for a caller that wants to check rather than
