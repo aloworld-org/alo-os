@@ -82,3 +82,17 @@ Nothing checks it yet. The change that builds it adds, as tests: full access
 reaches a file outside any grant; ask-each-time does not run without the OK;
 the sealed box still cannot reach outside its box; an administrator action
 without the password is refused; every run is in the record with a snapshot.
+
+*Added 2026-11-08, with decision 3 built (a command where no verb fits).* These
+now run on every build, as tests: at full access a command reaches a folder no
+grant names and is written down with no grants and no box
+(`crates/alo-agentd/src/running_a_command_tests.rs`); at *ask me each time*
+nothing runs before the OK, one OK runs it exactly once, a repeated or stale
+number runs nothing and a no is written down (the same file, and
+`crates/alo-turn/src/a_command_where_no_verb_exists_tests.rs`); at the sealed
+box, with nothing chosen and with a file that will not read, nothing runs and
+the refusal is written down; and the snapshot is asked for before each run.
+Still unchecked, because still unbuilt: full access reaching files through the
+verbs without grants, the first-start screen, and the password for
+administrator actions. **And not yet true:** what a command sends does not
+reach the egress indicator (`docs/contracts/daemon-protocol.md`, under `run`).
