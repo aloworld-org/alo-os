@@ -233,9 +233,9 @@ mod dock_tooltip;
 /// How a rounded panel is lifted off what is behind it — its corner and its
 /// shadow — at the display scale its geometry is laid out in.
 mod how_a_panel_is_raised;
-mod the_keyboard_on_the_docks_surfaces;
 /// A full-screen window's band, out of sight until the top edge is reached.
 mod the_band_over_full_screen;
+mod the_keyboard_on_the_docks_surfaces;
 mod the_pointer_drawn;
 mod the_pointers_look;
 pub mod what_is_on_the_clipboard;
