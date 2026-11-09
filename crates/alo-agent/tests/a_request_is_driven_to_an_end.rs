@@ -403,7 +403,8 @@ fn an_answer_about_the_verbs_is_told_back_and_never_shown() {
         other => panic!("{other:?}"),
     }
     assert!(
-        door.the_question(1).contains(alo_instructing::NOT_FOR_THE_PERSON),
+        door.the_question(1)
+            .contains(alo_instructing::NOT_FOR_THE_PERSON),
         "the model was not told why its answer was not shown"
     );
 }

@@ -64,7 +64,8 @@ const THE_WORD: [&str; 2] = ["verb", "verbs"];
 pub fn speaks_of_the_verbs(answer: &str, request: &str, verbs: &Verbs) -> bool {
     let said = words_in(answer);
     let asked = words_in(request);
-    let unasked = |word: &str| said.iter().any(|it| it == word) && !asked.iter().any(|it| it == word);
+    let unasked =
+        |word: &str| said.iter().any(|it| it == word) && !asked.iter().any(|it| it == word);
     THE_WORD.iter().any(|word| unasked(word)) || verbs.all().any(|verb| unasked(verb.name()))
 }
 

@@ -437,6 +437,9 @@ mod tests {
         // **And it does not send the person to pick a folder**, which is what
         // a booted machine said on 2026-11-08 and which no folder could fix.
         assert!(!said.text().contains("by picking a folder"), "{said}");
-        assert!(said.text().contains("never reaches an application"), "{said}");
+        assert!(
+            said.text().contains("never reaches an application"),
+            "{said}"
+        );
     }
 }
