@@ -415,6 +415,7 @@ mod tests {
             &strings,
             hour(),
             noon(),
+            crate::running_a_command::Commands::where_nothing_was_chosen(),
         );
         let _ = turning.ending(&mut grants);
         said

@@ -113,6 +113,27 @@ impl Standing {
         }
     }
 
+    /// A command waiting for the person's OK (ADR 0149), as it goes on the
+    /// wire: its number, its sentence — the command, whole — and how long is
+    /// left. It touches nothing a call names and its verb says nothing, because
+    /// it has no verb, so those three fields are absent.
+    #[must_use]
+    pub fn of_a_command(
+        waiting: &alo_capability::WaitingCommand,
+        strings: &Strings,
+        now: SystemTime,
+    ) -> Self {
+        Self {
+            number: waiting.id.as_u64(),
+            sentence: Wording::of(&waiting.sentence(strings)),
+            lapses_in: waiting.lapses_in(now).map(|left| left.as_secs().max(1)),
+            from: None,
+            touches: Vec::new(),
+            changes: None,
+            leaves: None,
+        }
+    }
+
     /// What the change changes, where its verb says.
     #[must_use]
     pub const fn changes(&self) -> Option<&Wording> {

@@ -46,6 +46,10 @@ pub enum Holding<'a, 'm, 't> {
         /// `crate::the_bracket_this_turn_takes` for why that is a constraint
         /// rather than a tidiness.
         bracket: &'a mut crate::the_bracket_this_turn_takes::TheTurnsBracket,
+        /// Where the person's level for running code is kept, and where a
+        /// command starts (ADR 0149) — read at the moment a command is asked
+        /// for or approved, never held.
+        commands: &'a crate::running_a_command::CommandsHere,
     },
     /// Nobody is, so the machine itself is here.
     Nobody(&'a mut Machine<'m>),
@@ -107,16 +111,51 @@ impl<'a, 'm, 't> Holding<'a, 'm, 't> {
     /// one belonging to another turn. `crate::answering` needs both at the
     /// moment an approval is redeemed, because the snapshot has to be taken
     /// before the change runs.
+    ///
+    /// And where the person's level is, since a command waits under the same
+    /// numbers as a change and is run only if that level still lets it (ADR
+    /// 0149).
     pub fn approving(
         &mut self,
     ) -> Option<(
         &mut Turning<'m, 't>,
         &mut crate::the_bracket_this_turn_takes::TheTurnsBracket,
+        &crate::running_a_command::CommandsHere,
     )> {
         match self {
             Self::ATurn {
-                turning, bracket, ..
-            } => Some((turning, bracket)),
+                turning,
+                bracket,
+                commands,
+                ..
+            } => Some((turning, bracket, *commands)),
+            Self::Nobody(_) | Self::TheNetwork { .. } => None,
+        }
+    }
+
+    /// The turn, where a question in it goes, and what a command it asks for
+    /// reaches — the person's level and the turn's bracket (ADR 0149).
+    ///
+    /// What `crate::doing` needs, as one call for [`Holding::underway`]'s
+    /// reason.
+    pub fn acting(
+        &mut self,
+    ) -> Option<(
+        &mut Turning<'m, 't>,
+        &mut Questions,
+        crate::running_a_command::Commands<'_>,
+    )> {
+        match self {
+            Self::ATurn {
+                turning,
+                questions,
+                bracket,
+                commands,
+            } => Some((
+                turning,
+                questions,
+                crate::running_a_command::Commands::here(commands, Some(bracket)),
+            )),
             Self::Nobody(_) | Self::TheNetwork { .. } => None,
         }
     }

@@ -48,8 +48,8 @@ use alo_capability::Verbs;
 /// rounds left to use.
 pub const NOT_FOR_THE_PERSON: &str = "\
 not shown to the person: that answer talks about verbs, which the person never sees. \
-Do what the request asks with a read or a propose line, or answer in the person's own terms \
-without mentioning verbs.";
+Do what the request asks with a read or a propose line, or a run line where no verb fits, or \
+answer in the person's own terms without mentioning verbs.";
 
 /// The word this text uses for what a model may ask for, in the forms a model
 /// writes it.

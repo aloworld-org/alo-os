@@ -250,6 +250,11 @@ impl AtTheDoor {
             // what happened, and why is a fact about somebody else's machine
             // that a pairing does not carry.
             NotDone::CouldNotAskTheRecord(_) => Some(Self::MachineCouldNot),
+            // **Unreachable through this door too**: a command where no verb
+            // fits (ADR 0149) is asked for on this machine's own agent door and
+            // never across a pairing. [`Self::MachineCouldNot`] if it ever
+            // were, for the arm above's reason.
+            NotDone::ACommandDidNotStart(_) => Some(Self::MachineCouldNot),
             NotDone::NotRecorded(_) | NotDone::TurnClosed => None,
         }
     }

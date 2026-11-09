@@ -296,7 +296,10 @@ impl FromAPerson {
             Asked::APlaceToReturnTo => Ok(Self::APlaceToReturnTo),
             Asked::PutBack { place, folders } => Ok(Self::PutBack { place, folders }),
             Asked::WatchWhatLeaves {} => Ok(Self::WatchWhatLeaves),
-            Asked::Read { .. } | Asked::Propose { .. } | Asked::Ask { .. } => {
+            // A command is what an agent asks for where no verb fits (ADR
+            // 0149), and a person's own command is typed at their own prompt —
+            // so on this door it is refused like the agent's other three.
+            Asked::Read { .. } | Asked::Propose { .. } | Asked::Ask { .. } | Asked::Run { .. } => {
                 Err(NotUnderstood::NotForAPerson)
             }
         }

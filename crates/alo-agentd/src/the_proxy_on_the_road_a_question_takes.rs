@@ -213,6 +213,7 @@ fn a_question_on_a_machine(
             strings,
             hour(),
             noon(),
+            crate::running_a_command::Commands::where_nothing_was_chosen(),
         )
     });
     let said = said
@@ -406,6 +407,7 @@ fn a_question_answered_by_a_runtime_on_this_machine_is_never_sent_through_the_pr
             strings,
             hour(),
             noon(),
+            crate::running_a_command::Commands::where_nothing_was_chosen(),
         )
     });
 

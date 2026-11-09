@@ -55,6 +55,7 @@ use crate::a_provider_ready_to_be_asked::{
 use crate::corridor::{Corridor, put_down_the_corridor};
 use crate::questions::{Questions, WhatAnswers};
 use crate::rereading;
+use crate::running_a_command::Commands;
 use crate::what_a_client_is_told_a_verb_did::as_a_client_sees_it;
 use crate::words::{
     AN_ADMINISTRATOR_SET_THAT_RULE, NO_KEY_FOR_THIS_PROVIDER, NO_KEYRING_FOR_A_PROVIDER,
@@ -81,10 +82,11 @@ pub fn what_an_agent_said(
     strings: &Strings,
     standing: Duration,
     now: SystemTime,
+    commands: Commands<'_>,
 ) -> ToAnAgent {
     match FromAnAgent::read(line) {
         Ok(asked) => carried_out(
-            &asked, turning, questions, corridor, grants, strings, standing, now,
+            &asked, turning, questions, corridor, grants, strings, standing, now, commands,
         ),
         // **An agent reaching for the person's own list of grants is written
         // down**, and it is the one refusal here that is: the rest of what
@@ -98,7 +100,7 @@ pub fn what_an_agent_said(
     }
 }
 
-/// The three things an agent can ask for, each through the turn's own door.
+/// The four things an agent can ask for, each through the turn's own door.
 #[expect(
     clippy::too_many_arguments,
     reason = "one request and everything it can reach; a struct would exist only to be unpacked"
@@ -112,6 +114,7 @@ fn carried_out(
     strings: &Strings,
     standing: Duration,
     now: SystemTime,
+    commands: Commands<'_>,
 ) -> ToAnAgent {
     match asked {
         FromAnAgent::Read { verb, .. } => {
@@ -128,6 +131,11 @@ fn carried_out(
         }
         FromAnAgent::Ask { question, answered } => put_to_a_model(
             question, *answered, turning, questions, corridor, strings, now,
+        ),
+        // **One command, where no verb fits** (ADR 0149): the person's level,
+        // read now, decides it — `crate::running_a_command` is the whole of it.
+        FromAnAgent::Run { command } => crate::running_a_command::a_command_asked_for(
+            command, turning, commands, strings, standing, now,
         ),
     }
 }
@@ -2531,6 +2539,7 @@ endpoint = \"https://{at}\"
                 strings,
                 hour(),
                 noon(),
+                crate::running_a_command::Commands::where_nothing_was_chosen(),
             );
 
             assert!(matches!(
@@ -2558,6 +2567,7 @@ endpoint = \"https://{at}\"
                 strings,
                 hour(),
                 noon(),
+                crate::running_a_command::Commands::where_nothing_was_chosen(),
             );
 
             assert!(said.waits_for_a_person());
@@ -2580,6 +2590,7 @@ endpoint = \"https://{at}\"
                 strings,
                 hour(),
                 noon(),
+                crate::running_a_command::Commands::where_nothing_was_chosen(),
             );
 
             let refusal = said.refusal().unwrap();
@@ -2605,6 +2616,7 @@ endpoint = \"https://{at}\"
                 strings,
                 hour(),
                 noon(),
+                crate::running_a_command::Commands::where_nothing_was_chosen(),
             );
 
             let said = what_an_agent_said(
@@ -2616,6 +2628,7 @@ endpoint = \"https://{at}\"
                 strings,
                 hour(),
                 noon(),
+                crate::running_a_command::Commands::where_nothing_was_chosen(),
             );
 
             assert!(
@@ -2641,7 +2654,9 @@ endpoint = \"https://{at}\"
             for line in [
                 "not json at all",
                 r#"{"format":9,"asks":{"read":{"verb":"list_folder","given":[]}}}"#,
-                r#"{"format":1,"asks":{"run":{"command":"rm -rf /"}}}"#,
+                // `run` is a request since ADR 0149 and is refused by the
+                // person's level, not by the protocol: `crate::running_a_command`
+                // holds that.
             ] {
                 let said = what_an_agent_said(
                     line,
@@ -2652,6 +2667,7 @@ endpoint = \"https://{at}\"
                     strings,
                     hour(),
                     noon(),
+                    crate::running_a_command::Commands::where_nothing_was_chosen(),
                 );
                 assert!(said.refusal().is_some(), "{line}");
             }
@@ -2674,6 +2690,7 @@ endpoint = \"https://{at}\"
                 strings,
                 hour(),
                 noon(),
+                crate::running_a_command::Commands::where_nothing_was_chosen(),
             );
 
             let refusal = said.refusal().unwrap();
@@ -2703,6 +2720,7 @@ endpoint = \"https://{at}\"
                 strings,
                 Duration::from_secs(0),
                 noon(),
+                crate::running_a_command::Commands::where_nothing_was_chosen(),
             );
 
             assert!(!said.waits_for_a_person());
@@ -2736,6 +2754,7 @@ endpoint = \"https://{at}\"
                 strings,
                 hour(),
                 noon(),
+                crate::running_a_command::Commands::where_nothing_was_chosen(),
             );
 
             assert!(
@@ -2781,6 +2800,7 @@ endpoint = \"https://{at}\"
                 strings,
                 hour(),
                 noon(),
+                crate::running_a_command::Commands::where_nothing_was_chosen(),
             );
             assert!(
                 matches!(&said, ToAnAgent::Answered { text, .. } if text.contains("\"asks\"")),
@@ -2838,6 +2858,7 @@ endpoint = \"https://{at}\"
                 strings,
                 hour(),
                 noon(),
+                crate::running_a_command::Commands::where_nothing_was_chosen(),
             );
         });
 
@@ -2897,6 +2918,7 @@ endpoint = \"https://{at}\"
                 strings,
                 hour(),
                 noon(),
+                crate::running_a_command::Commands::where_nothing_was_chosen(),
             );
         });
 
@@ -2927,6 +2949,7 @@ endpoint = \"https://{at}\"
                 strings,
                 hour(),
                 noon(),
+                crate::running_a_command::Commands::where_nothing_was_chosen(),
             );
             assert!(
                 matches!(&said, ToAnAgent::Answered { text, .. } if text == "a sublet clause"),
@@ -2959,6 +2982,7 @@ endpoint = \"https://{at}\"
                     strings,
                     hour(),
                     noon(),
+                    crate::running_a_command::Commands::where_nothing_was_chosen(),
                 );
                 let refusal = said.refusal().unwrap();
                 assert!(!refusal.is_a_bug(), "{refusal:?}");
@@ -2982,6 +3006,7 @@ endpoint = \"https://{at}\"
                 strings,
                 hour(),
                 noon(),
+                crate::running_a_command::Commands::where_nothing_was_chosen(),
             );
 
             let refusal = said.refusal().unwrap();
@@ -3030,6 +3055,7 @@ endpoint = \"https://{at}\"
                 strings,
                 hour(),
                 noon(),
+                crate::running_a_command::Commands::where_nothing_was_chosen(),
             );
 
             let refusal = said.refusal().unwrap();
@@ -3056,6 +3082,7 @@ endpoint = \"https://{at}\"
                 strings,
                 hour(),
                 noon(),
+                crate::running_a_command::Commands::where_nothing_was_chosen(),
             );
 
             assert!(!said.waits_for_a_person());
@@ -3095,6 +3122,7 @@ endpoint = \"https://{at}\"
                 strings,
                 hour(),
                 noon(),
+                crate::running_a_command::Commands::where_nothing_was_chosen(),
             )
         });
         assert_eq!(said.refusal().unwrap().text(), expected);
@@ -3126,6 +3154,7 @@ endpoint = \"https://{at}\"
                     strings,
                     hour(),
                     noon(),
+                    crate::running_a_command::Commands::where_nothing_was_chosen(),
                 )
             });
             assert!(said.refusal().is_some(), "{message}");

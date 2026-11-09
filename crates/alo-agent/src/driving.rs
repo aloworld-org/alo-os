@@ -18,7 +18,12 @@
 //! 5. A **propose** goes to the machine and the loop **ends**: a change waits
 //!    for a person. The turn itself is held open until they answer, by
 //!    `crate::holding_the_turn`, because the change lives in it.
-//! 6. A model that answered in words rather than asking for anything has
+//! 6. A **run** — one command, where no verb fits (ADR 0149) — goes to the
+//!    machine, which decides it by the person's level for running code. One
+//!    that ran, or was refused, becomes a step: round again. One waiting for the
+//!    person's OK **ends** the loop exactly as a proposal does, because it is a
+//!    change waiting under the same numbers.
+//! 7. A model that answered in words rather than asking for anything has
 //!    finished the request — **unless the words talk about the verbs**, which
 //!    the person never sees: that is told back to the model as a step
 //!    (`alo_instructing::speaks_of_the_verbs`, ADR 0149).
@@ -299,6 +304,35 @@ pub fn driving_after(
                 Ok(ToAnAgent::Did(_) | ToAnAgent::Answered { .. }) => {
                     return WhatHappened::TheMachineCouldNotBeAsked {
                         why: "a change was answered as though it had already run".to_owned(),
+                        after: steps,
+                    };
+                }
+                Err(not_answered) => return could_not_be_asked(not_answered, steps),
+            },
+            // **One command, where no verb fits** (ADR 0149). The daemon reads
+            // the person's level and answers one of three ways, and this loop
+            // decides nothing from the command itself.
+            FromAnAgent::Run { .. } => match door.asking(&next) {
+                // At *ask me each time* it waits for the person, under the same
+                // numbers a change waits under — so the turn ends as it does
+                // for a proposal, and is held open for the answer.
+                Ok(ToAnAgent::Proposed(standing)) => {
+                    return WhatHappened::AChangeIsWaiting {
+                        number: standing.number(),
+                        sentence: standing.sentence().text().to_owned(),
+                        after: steps,
+                        stands_for: standing.lapses_in().map(std::time::Duration::from_secs),
+                    };
+                }
+                // It ran — at full access — or it was refused: either way the
+                // model is told, as a step, and the turn goes on. A refusal is
+                // a step for this module's header's reason.
+                Ok(answer @ (ToAnAgent::Did(_) | ToAnAgent::Refused(_))) => {
+                    steps.push(AStep::of(&said, &as_a_step(&answer)));
+                }
+                Ok(ToAnAgent::Answered { .. }) => {
+                    return WhatHappened::TheMachineCouldNotBeAsked {
+                        why: "a command was answered as though a model had been asked".to_owned(),
                         after: steps,
                     };
                 }

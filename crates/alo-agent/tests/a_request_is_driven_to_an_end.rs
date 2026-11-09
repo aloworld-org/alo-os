@@ -565,10 +565,14 @@ fn every_request_it_makes_is_one_an_agent_may_make() {
 
     assert!(!door.asked.is_empty(), "it asked for nothing at all");
     for request in &door.asked {
-        // Total on purpose: a fourth variant on `FromAnAgent` fails to compile
+        // Total on purpose: a fifth variant on `FromAnAgent` fails to compile
         // here, which is where a widening of the agent's half gets noticed.
+        // The fourth, `Run`, arrived with ADR 0149 and is not a verb.
         match request {
-            FromAnAgent::Read { .. } | FromAnAgent::Propose { .. } | FromAnAgent::Ask { .. } => {}
+            FromAnAgent::Read { .. }
+            | FromAnAgent::Propose { .. }
+            | FromAnAgent::Ask { .. }
+            | FromAnAgent::Run { .. } => {}
         }
     }
 }

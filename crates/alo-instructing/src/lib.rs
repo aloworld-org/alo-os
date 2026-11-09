@@ -72,8 +72,8 @@ pub use an_answer::{THE_ANSWER_DOOR, the_answer_in};
 pub use an_answer_about_the_verbs::{NOT_FOR_THE_PERSON, speaks_of_the_verbs};
 pub use answering_in::{answering_in, shown_to_a_turn_answering_in_the_language_asked_in};
 pub use instructions::{
-    AND_AN_ANSWER, AND_YOU_MAY_LOOK_FIRST, EVERY_DOOR_AND_AN_ANSWER, HOW_TO_ANSWER, Instructions,
-    ONE_EXAMPLE_PER_DOOR, SEVERAL_STEPS,
+    AND_A_COMMAND, AND_AN_ANSWER, AND_YOU_MAY_LOOK_FIRST, EVERY_DOOR_AN_ANSWER_AND_A_COMMAND,
+    EVERY_DOOR_AND_AN_ANSWER, HOW_TO_ANSWER, Instructions, ONE_EXAMPLE_PER_DOOR, SEVERAL_STEPS,
 };
 pub use shown::{shown_to_a_model, shown_to_a_model_after, shown_to_a_turn, the_products_words};
 pub use the_conversation_on_the_wire::{

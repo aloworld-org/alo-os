@@ -174,6 +174,22 @@ pub enum Done {
         /// second.
         only_what_alo_did: String,
     },
+    /// A command alo ran where no verb fits (ADR 0149), and what came of it.
+    ///
+    /// Added 2026-11-08, additively. What the command wrote is carried as the
+    /// command wrote it — standard output and standard error together — and
+    /// both bounds say when they were reached.
+    RanACommand {
+        /// Its exit status, and absent when a signal ended it.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        returned: Option<i32>,
+        /// What it wrote, up to the bound.
+        said: String,
+        /// Whether it wrote more than was kept.
+        cut_short: bool,
+        /// Whether it was stopped for running longer than a command is let run.
+        took_too_long: bool,
+    },
 }
 
 /// One thing the record says was done to a file, as it goes back to a client.
@@ -311,6 +327,20 @@ impl Done {
                     kind_of_work: one.category().as_an_option(),
                 })
                 .collect(),
+        }
+    }
+
+    /// What a command alo ran did, as it goes on the wire (ADR 0149).
+    ///
+    /// Takes `alo_capability::WhatACommandDid`, which only the crate that ran
+    /// it makes — so a daemon cannot answer with a run that did not happen.
+    #[must_use]
+    pub fn of_a_command(did: &alo_capability::WhatACommandDid) -> Self {
+        Self::RanACommand {
+            returned: did.returned(),
+            said: did.said().to_owned(),
+            cut_short: did.cut_short(),
+            took_too_long: did.took_too_long(),
         }
     }
 
@@ -458,6 +488,13 @@ impl Done {
             // caveat on nothing* and this one would be on every answer while
             // being right about almost none of them.
             Self::TouchedThatFile { .. } => false,
+            // **A command says both of its bounds**: what it wrote beyond the
+            // most kept, and a run stopped for taking too long.
+            Self::RanACommand {
+                cut_short,
+                took_too_long,
+                ..
+            } => *cut_short || *took_too_long,
         }
     }
 }
