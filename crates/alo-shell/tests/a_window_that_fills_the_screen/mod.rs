@@ -153,7 +153,7 @@ fn leaving_full_screen_gives_a_maximised_window_back_maximised()
     let root = f.root();
     // **An output to fill**: neither maximise nor full screen has a size
     // without one.
-    f.render((33, 32), false, 1)?;
+    f.render((33, 86), false, 1)?;
     app.sync();
 
     for filling_now in [None, Some(true), Some(false)] {

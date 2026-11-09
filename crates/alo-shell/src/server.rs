@@ -1101,9 +1101,6 @@ impl Server {
             // **And that display's scale, with it**, so the room an edge is
             // clamped in and the scale it is laid out at are one display's.
             self.the_scale_edges_are_measured_at = self.the_scale_of_display(&named.name);
-            // **And its room**, which a maximised or full-screen window on it
-            // fills (`crate::the_room_a_window_fills`).
-            self.this_displays_room_was_seen(&named.name, (size.w, size.h));
             // **And where every display is**, so a popup is constrained to
             // the screen its parent is on rather than to whichever display
             // drew last — `more-than-one-display-plan.md` task 6.
@@ -1183,6 +1180,10 @@ impl Server {
             .entry(metadata.name.clone())
             .or_default()
             .render(&handle, target, (&roots, &popups), &cursor, time)?;
+        // **And this display's room**, which a maximised or full-screen window
+        // on it fills (`crate::the_room_a_window_fills`) — noted only once the
+        // frame was submitted, as the extent beside it is.
+        self.this_displays_room_was_seen(&metadata.name, (size.w, size.h));
         self.surfaces.update_window_mode_output(Some(size));
         // The output this frame went to is the display a session holds its
         // divisions and desktops on; see `crate::display_lifecycle`.
