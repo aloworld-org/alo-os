@@ -9,27 +9,34 @@
 //! window's minimum size is respected; if it cannot fit, the person is told
 //! rather than given a smaller half.*
 //!
-//! # Not the division, and why
+//! # Not the division's operation, and still the division's half
 //!
 //! The `Super+Left` and `Super+Right` chords ask `alo-dividing` to divide the
 //! focused window's share **with the next window** (`crate::window_dividing`),
 //! which moves that second window too. The panel's choice is promised to touch
 //! no other window, so it is not that operation. It puts this window into a
 //! share of its own — the same mode a division's share uses, so a client is
-//! told it is tiled — whose rectangle is half the work area of **the display
-//! the window is on** (`crate::the_room_a_window_fills`), which is also what
-//! lets it work on a machine with more than one display, where the division
-//! refuses.
+//! told it is tiled — on half the work area of **the display the window is
+//! on** (`crate::the_room_a_window_fills`), which is also what lets it work on
+//! a machine with more than one display, where the division refuses.
+//!
+//! **The half is not worked out here.** `tests/one_layout_decider.rs` holds
+//! that one file builds a window's share and that it asks `alo-dividing`
+//! rather than dividing a display itself, so this asks
+//! `crate::window_dividing::alone_on_one_side`, which asks
+//! `alo_dividing::alone_on` — cut by the same rule the chords' halving uses,
+//! the odd unit on the right. A window put on the left by the panel and by the
+//! chord gets the same half.
 //!
 //! # The half
 //!
-//! The work area split down the middle — the left half takes the odd unit —
-//! with the window's band at the top of it, as a maximised window's is. A
-//! window whose own minimum is wider or taller than that is refused with
-//! [`NoRoom`], and the refusal is what the preview says before anything is
-//! chosen, so the person is told at the moment they look.
+//! The work area cut down the middle, with the window's band at the top of
+//! it, as a maximised window's is. A window whose own minimum is wider or
+//! taller than that is refused with [`NoRoom`], and the refusal is what the
+//! preview says before anything is chosen, so the person is told at the moment
+//! they look.
 
-use alo_dividing::Axis;
+use alo_dividing::{Refused, Side, Window, WindowId};
 use smithay::reexports::wayland_server::protocol::wl_surface::WlSurface;
 use smithay::utils::{Logical, Rectangle};
 
@@ -64,34 +71,37 @@ pub(crate) struct TheHalf {
     pub(crate) share: Result<Share, NoRoom>,
 }
 
-/// This side of this room, for a window whose minimum is `smallest`.
+impl OneSide {
+    /// The side `alo-dividing` calls this.
+    const fn in_the_division(self) -> Side {
+        match self {
+            Self::Left => Side::Left,
+            Self::Right => Side::Right,
+        }
+    }
+}
+
+/// This side of this room, for this window.
 ///
 /// [`None`] where the room has no half to give — a work area too small to
 /// hold a band and a window under it on either side.
-pub(crate) fn the_half(
-    room: ADisplaysRoom,
-    side: OneSide,
-    smallest: Option<(i32, i32)>,
-) -> Option<TheHalf> {
-    let work = room.work;
-    let left_wide = work.size.w - work.size.w / 2;
-    let (x, wide) = match side {
-        OneSide::Left => (work.loc.x, left_wide),
-        OneSide::Right => (work.loc.x + left_wide, work.size.w / 2),
-    };
-    let tall = work.size.h - room.band;
-    if wide <= 0 || tall <= 0 {
-        return None;
-    }
-    let outline = Rectangle::new((x, work.loc.y).into(), (wide, work.size.h).into());
-    let share = match smallest {
-        Some((w, _)) if w > wide => Err(NoRoom::TooNarrow),
-        Some((_, h)) if h > tall => Err(NoRoom::TooShort),
-        _ => Ok(Share {
-            at: (x, work.loc.y + room.band),
-            size: (wide, tall),
-        }),
-    };
+pub(crate) fn the_half(room: ADisplaysRoom, side: OneSide, window: Window) -> Option<TheHalf> {
+    let (outline, share) = crate::window_dividing::alone_on_one_side(
+        room.work,
+        room.band,
+        side.in_the_division(),
+        window,
+    )?;
+    let share = share.map_err(|refused| match refused {
+        Refused::TooShort(_) => NoRoom::TooShort,
+        // `alone_on` answers only the two squeezes; the rest are a
+        // division's and are named so a new one is a compile error here.
+        Refused::TooNarrow(_)
+        | Refused::NotDivided(_)
+        | Refused::NothingToShareWith
+        | Refused::NoNeighbour { .. }
+        | Refused::Changed => NoRoom::TooNarrow,
+    });
     Some(TheHalf { outline, share })
 }
 
@@ -103,14 +113,17 @@ impl crate::Server {
         side: OneSide,
     ) -> Option<TheHalf> {
         let room = self.surfaces.the_room_for(surface)?;
-        let smallest = crate::window_dividing::smallest(surface).map(|size| {
-            let it = |along: u32| i32::try_from(along).unwrap_or(i32::MAX);
-            (
-                it(size.along(Axis::SideBySide)),
-                it(size.along(Axis::OneAboveTheOther)),
-            )
-        });
-        the_half(room, side, smallest)
+        // The number is only carried back in a refusal, which is told as this
+        // window's; a window not yet numbered is asked as window 0 rather than
+        // given a number by being looked at.
+        let id = WindowId::from_compositor(
+            crate::window_number::Numbers::given_to(surface).unwrap_or_default(),
+        );
+        let window = match crate::window_dividing::smallest(surface) {
+            Some(minimum) => Window::at_least(id, minimum),
+            None => Window::any_size(id),
+        };
+        the_half(room, side, window)
     }
 
     /// The preview of the choice in hand, where it is Left or Right: the half

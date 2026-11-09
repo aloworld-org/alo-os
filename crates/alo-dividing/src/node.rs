@@ -275,7 +275,7 @@ impl Node {
         };
         let axis = side.axis();
         let length = share.area().size().along(axis);
-        let first_length = length / 2;
+        let first_length = the_first_half_of(length);
         let (incoming_length, target_length) = if side.is_first() {
             (first_length, length - first_length)
         } else {
@@ -325,6 +325,16 @@ impl Node {
             Self::Cut(_) => None,
         }
     }
+}
+
+/// Where a length is cut in two: **the first piece rounded down**, so the odd
+/// unit goes to the second.
+///
+/// The one place this is decided, for halving a share
+/// ([`Node::halve`]) and for a window put alone on one side of an area
+/// ([`crate::alone::alone_on`]), so the two give the same half.
+pub(crate) const fn the_first_half_of(length: u32) -> u32 {
+    length / 2
 }
 
 #[cfg(test)]

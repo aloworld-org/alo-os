@@ -11,6 +11,7 @@
 //!
 //! | | |
 //! |---|---|
+//! | [`alone`] | One window alone on one side of an area, by the division's cut |
 //! | [`area`] | Points, sizes and rectangles, in logical units |
 //! | [`scale`] | Logical units into pixels, edge by edge, so shares still meet |
 //! | [`side`] | Which way a share is cut, and which side a window goes on |
@@ -68,6 +69,7 @@
 
 #![doc(html_root_url = "https://github.com/aloworld-org/alo-os")]
 
+pub mod alone;
 pub mod area;
 pub mod division;
 pub mod dropping;
@@ -86,6 +88,7 @@ pub mod words;
 #[cfg(test)]
 mod testing;
 
+pub use alone::{OnASide, alone_on};
 pub use area::{Area, AreaError, LARGEST, Point, Size};
 pub use division::Division;
 pub use dropping::{NEAR_A_CORNER, NEAR_AN_EDGE, Offer, Proposal};
