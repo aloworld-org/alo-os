@@ -536,10 +536,10 @@ mod the_edge_takes_the_keyboard;
 /// The egress indicator's two arrows, from the design file's SVG.
 mod the_egress_indicators_arrows;
 mod the_first_account;
-/// The nearest empty space on a Place for a window with no room in view.
-mod the_nearest_empty_space;
 /// The title and the application name a window's band shows.
 mod the_name_on_the_band;
+/// The nearest empty space on a Place for a window with no room in view.
+mod the_nearest_empty_space;
 /// The record drawn as a window on the canvas, for one frame.
 mod the_record_drawn_on_the_canvas;
 /// Task windows opened into a full view find room as other windows do.

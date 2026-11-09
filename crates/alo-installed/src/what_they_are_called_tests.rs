@@ -82,7 +82,8 @@ fn an_actions_translated_name_is_never_the_applications() {
 
 #[test]
 fn an_entry_asking_not_to_be_listed_has_no_name_here_either() {
-    let hidden = "[Desktop Entry]\nType=Application\nName=Secret\nName[fr]=Secret\nNoDisplay=true\n";
+    let hidden =
+        "[Desktop Entry]\nType=Application\nName=Secret\nName[fr]=Secret\nNoDisplay=true\n";
     let at = a_place("hidden", &[("secret.desktop", hidden)]);
     assert!(what_they_are_called(&[at], &["fr"]).is_empty());
 }
