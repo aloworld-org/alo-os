@@ -148,6 +148,10 @@ pub enum NotDone {
     /// one's two causes is not a fault**: a record kept on a disk is a file,
     /// and a file can be unreadable. [`WentWrongAsking`]'s header says which.
     CouldNotAskTheRecord(WentWrongAsking),
+    /// A command alo was to run where no verb fits (ADR 0149) did not start —
+    /// the shell would not, or the machine lost track of it. Written down as a
+    /// command that was not run; the English is for the service log.
+    ACommandDidNotStart(alo_capability::ItDidNotStart),
 }
 
 impl NotDone {
@@ -181,6 +185,10 @@ impl NotDone {
             Self::CouldNotAskTheRecord(_) => {
                 strings.say(&words::COULD_NOT_ASK_THE_RECORD.key(), &Filling::nothing())
             }
+            Self::ACommandDidNotStart(_) => strings.say(
+                &alo_capability::words::NOTHING_RAN_WOULD_NOT_START.key(),
+                &Filling::nothing(),
+            ),
         }
     }
 
@@ -334,7 +342,9 @@ mod tests {
                 // And alo OS unable to read its own shipped catalogue, which
                 // is the same kind of fact one verb along.
                 | NotDone::CouldNotLookAtTheCatalogue(_)
-                | NotDone::CouldNotAskTheRecord(_) => {
+                | NotDone::CouldNotAskTheRecord(_)
+                // A shell that would not start: the machine, not a rule.
+                | NotDone::ACommandDidNotStart(_) => {
                     assert!(!refused && !over);
                 }
             }

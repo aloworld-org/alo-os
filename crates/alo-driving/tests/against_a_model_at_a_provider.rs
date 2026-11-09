@@ -117,9 +117,13 @@ fn the_fixed_set_is_put_to_a_model_at_a_provider() {
         Some("as-first-written") => alo_driving::Instructions::AsFirstWritten,
         Some("several-steps") => alo_driving::Instructions::SeveralSteps,
         Some("every-door-and-an-answer") => alo_driving::Instructions::EveryDoorAndAnAnswer,
+        Some("every-door-an-answer-and-a-command") => {
+            alo_driving::Instructions::EveryDoorAnAnswerAndACommand
+        }
         Some(other) => panic!(
             "{WHICH_INSTRUCTIONS} is `one-example-per-door`, `several-steps`, \
-             `every-door-and-an-answer`, `as-first-written` or unset, not `{other}`"
+             `every-door-and-an-answer`, `every-door-an-answer-and-a-command`, \
+             `as-first-written` or unset, not `{other}`"
         ),
     };
     let key = Secret::typed(&key).expect("the key read from the environment is a sendable one");

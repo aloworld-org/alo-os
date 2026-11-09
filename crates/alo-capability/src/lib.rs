@@ -160,6 +160,10 @@
 
 #![doc(html_root_url = "https://github.com/aloworld-org/alo-os")]
 
+/// One shell command alo was asked to run where no verb fits (ADR 0149).
+pub mod a_command;
+/// A command waiting for the person's OK, under the numbers changes wait under.
+pub mod a_command_waiting;
 /// What a person has allowed their agent to do with a terminal (ADR 0111,
 /// which supersedes ADR 0043's outright wall).
 pub mod a_terminal_for_the_agent;
@@ -186,6 +190,8 @@ pub mod sentence;
 pub mod the_sealed_box_here;
 pub mod verb;
 pub mod verbs;
+/// What a command alo ran did.
+pub mod what_a_command_did;
 pub mod words;
 
 #[cfg(test)]
@@ -193,6 +199,8 @@ mod test_calls;
 #[cfg(test)]
 mod testing;
 
+pub use a_command::{ACommand, NotACommand, THE_LONGEST_COMMAND, THE_SHELL};
+pub use a_command_waiting::{ApprovedCommand, WaitingCommand};
 pub use a_terminal_for_the_agent::ATerminalForTheAgent;
 pub use agent::Agent;
 pub use allowing::NotAllowed;
@@ -215,4 +223,5 @@ pub use refusing::NotGranted;
 pub use sentence::{Sentence, SentenceError};
 pub use verb::{Effect, Requires, Verb, VerbError};
 pub use verbs::{Verbs, VerbsError};
+pub use what_a_command_did::{ItDidNotStart, WhatACommandDid};
 pub use words::{EVERY_WORD, WordsError, capability_words, declare_into};

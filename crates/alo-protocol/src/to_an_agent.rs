@@ -85,6 +85,17 @@ impl ToAnAgent {
         Self::Proposed(Standing::of(waiting, strings, now))
     }
 
+    /// A command is waiting for the person's OK under this number (ADR 0149),
+    /// with the command as the sentence it waits on.
+    #[must_use]
+    pub fn a_command_proposed(
+        waiting: &alo_capability::WaitingCommand,
+        strings: &Strings,
+        now: std::time::SystemTime,
+    ) -> Self {
+        Self::Proposed(Standing::of_a_command(waiting, strings, now))
+    }
+
     /// A model answered.
     ///
     /// The provenance is an argument and not an option: `docs/features.md`

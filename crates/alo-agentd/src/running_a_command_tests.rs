@@ -1,0 +1,535 @@
+//! **Where no verb fits, the person's level decides — and every run and every
+//! refusal is written down** (ADR 0149).
+//!
+//! These run real commands, through `alo_running::run_as_the_person`, into
+//! folders of each test's own that no grant names — so *a command reaches a
+//! file outside every grant* is a thing that happened on the disk, not a
+//! statement about a stand-in. Every folder is this test's own and is removed
+//! afterwards; nothing assumes it is alone on the machine.
+
+use std::path::{Path, PathBuf};
+
+use alo_capability::HowCodeRuns;
+use alo_egress::Indicator;
+use alo_files::OnThisMachine;
+use alo_protocol::{Done, FromAPerson, ToAPerson};
+use alo_record::{Happened, Record};
+use alo_turn::Machine;
+
+use super::*;
+use crate::answering::what_a_person_said;
+use crate::doing::what_an_agent_said;
+use crate::holding::Holding;
+use crate::network::TheNetwork;
+use crate::pairing::Nearby;
+use crate::rereading::WhatIsGranted;
+use crate::testing::{
+    NobodyIsNearby, NothingIsBounded, NothingIsRemembered, a_directory_of_our_own,
+    a_folder_with_an_invoice, a_message, granting, hour, in_english, noon, nothing_has_been_chosen,
+    the_studio,
+};
+
+/// A folder of this test's own that no grant names, and where its level file
+/// is kept.
+struct Elsewhere {
+    /// A folder the turn's grants do not reach.
+    folder: PathBuf,
+    /// Where the person's level is kept, for this test.
+    level_at: PathBuf,
+}
+
+impl Elsewhere {
+    /// A fresh one, with the level as given — or no file at all.
+    fn with_the_level(what: &str, level: Option<HowCodeRuns>) -> Self {
+        let folder = a_directory_of_our_own(what);
+        let level_at = a_directory_of_our_own(&format!("{what}-level")).join("how-code-runs.toml");
+        if let Some(level) = level {
+            alo_remembering::the_level_kept(&level_at, level).unwrap();
+        }
+        Self { folder, level_at }
+    }
+
+    /// Where commands run and the level is read, for this test.
+    fn here(&self) -> CommandsHere {
+        CommandsHere::at(&self.level_at, &self.folder)
+    }
+
+    /// The folder a command is asked to make, which nothing granted.
+    fn the_folder_it_makes(&self) -> PathBuf {
+        self.folder.join("demo")
+    }
+
+    /// The line an agent sends to make it.
+    fn asking_to_make_it(&self) -> String {
+        a_message(&format!(
+            r#"{{"run":{{"command":"mkdir -p {}"}}}}"#,
+            self.the_folder_it_makes().display()
+        ))
+    }
+}
+
+impl Drop for Elsewhere {
+    fn drop(&mut self) {
+        let _ = std::fs::remove_dir_all(&self.folder);
+        if let Some(level) = self.level_at.parent() {
+            let _ = std::fs::remove_dir_all(level);
+        }
+    }
+}
+
+/// A turn whose grants reach one folder of its own, on a machine whose record
+/// is `record`.
+fn on_a_turn<T>(
+    what: &str,
+    record: &mut Record,
+    doing: impl FnOnce(&mut Turning<'_, '_>, &mut alo_capability::Grants, &Strings, &Path) -> T,
+) -> T {
+    let strings = in_english();
+    let (granted, _) = a_folder_with_an_invoice(what);
+    let mut indicator = Indicator::default();
+    let mut bounding = NothingIsBounded;
+    let mut machine = Machine::carrying_out_file_verbs(
+        &strings,
+        &OnThisMachine,
+        &mut bounding,
+        &mut indicator,
+        record,
+    )
+    .unwrap();
+    let mut grants = granting(&granted, noon());
+    let mut turning = Turning::beginning(
+        alo_context::Context::at_invocation(noon()),
+        "@files",
+        hour(),
+        &mut grants,
+        &mut machine,
+    )
+    .unwrap();
+    let done = doing(&mut turning, &mut grants, &strings, &granted);
+    let _ = std::fs::remove_dir_all(&granted);
+    done
+}
+
+/// What an agent's line is answered with, on this turn and this level.
+fn the_agent_asked(
+    line: &str,
+    turning: &mut Turning<'_, '_>,
+    grants: &alo_capability::Grants,
+    strings: &Strings,
+    here: &CommandsHere,
+    bracket: &mut TheTurnsBracket,
+) -> ToAnAgent {
+    what_an_agent_said(
+        line,
+        turning,
+        &mut nothing_has_been_chosen(),
+        None,
+        grants,
+        strings,
+        hour(),
+        noon(),
+        Commands::here(here, Some(bracket)),
+    )
+}
+
+/// What the person's door answers this line with, on this turn and level.
+fn the_person_said(
+    line: &str,
+    turning: &mut Turning<'_, '_>,
+    grants: &mut alo_capability::Grants,
+    strings: &Strings,
+    here: &CommandsHere,
+    bracket: &mut TheTurnsBracket,
+) -> ToAPerson {
+    let network = TheNetwork::on(the_studio());
+    what_a_person_said(
+        line,
+        &mut Holding::ATurn {
+            turning,
+            questions: &mut nothing_has_been_chosen(),
+            bracket,
+            commands: here,
+        },
+        &mut WhatIsGranted::of(grants, &NothingIsRemembered),
+        &Nearby {
+            network: &network,
+            looking: &NobodyIsNearby,
+            advertising: &crate::testing::nothing_is_advertised(),
+        },
+        strings,
+        noon(),
+    )
+    .unwrap()
+}
+
+/// A bracket with nowhere to go: a session with no home, which is still asked
+/// for its snapshot before every run.
+fn a_bracket() -> TheTurnsBracket {
+    TheTurnsBracket::none_yet(None, std::time::SystemTime::UNIX_EPOCH, 0, 0)
+}
+
+/// Every entry the record holds, by what happened.
+fn what_was_written(record: &Record) -> Vec<Happened> {
+    record
+        .everything()
+        .map(|entry| entry.happened().clone())
+        .collect()
+}
+
+/// The plain sentence for a command the sealed box does not run (#1093).
+const NOT_IN_THE_BOX: &str = "mkdir was not run. The sealed box can't run programs on this computer yet. Choose 'ask \
+     each time' in Settings → Running code to run commands after you approve them.";
+
+/// **At full access a command runs now, without any grant, and reaches a
+/// folder outside every grant** — after the snapshot was asked for, and
+/// written down as a run with no grants and no box.
+#[test]
+fn at_full_access_a_command_runs_and_reaches_what_no_grant_names() {
+    let elsewhere = Elsewhere::with_the_level("full-access", Some(HowCodeRuns::AtFullTrust));
+    let mut record = Record::default();
+    let mut bracket = a_bracket();
+    on_a_turn(
+        "full-access",
+        &mut record,
+        |turning, grants, strings, granted| {
+            assert!(!elsewhere.folder.starts_with(granted));
+            let said = the_agent_asked(
+                &elsewhere.asking_to_make_it(),
+                turning,
+                grants,
+                strings,
+                &elsewhere.here(),
+                &mut bracket,
+            );
+            assert!(
+                matches!(
+                    said.done(),
+                    Some(Done::RanACommand {
+                        returned: Some(0),
+                        ..
+                    })
+                ),
+                "{said:?}"
+            );
+        },
+    );
+    assert!(
+        elsewhere.the_folder_it_makes().is_dir(),
+        "the command did not reach a folder no grant names"
+    );
+    assert_eq!(
+        bracket.the_first_sentence_for_tests(),
+        Some(
+            format!(
+                "run this command: mkdir -p {}",
+                elsewhere.the_folder_it_makes().display()
+            )
+            .as_str()
+        ),
+        "the snapshot was not asked for before the run"
+    );
+    let written = what_was_written(&record);
+    assert!(
+        matches!(
+            written.as_slice(),
+            [Happened::RanACommand { allowed, the_kernel_was_holding_it: false, returned: Some(0), .. }]
+                if allowed.is_empty()
+        ),
+        "{written:?}"
+    );
+}
+
+/// **At *ask me each time* nothing runs before the OK; one OK runs it exactly
+/// once; the same number again is refused** — on the person's own door, with
+/// the command in the list of what waits.
+#[test]
+fn asking_each_time_runs_a_command_once_after_one_ok() {
+    let elsewhere = Elsewhere::with_the_level("asking", Some(HowCodeRuns::AskingEachTime));
+    let counted = elsewhere.folder.join("ran");
+    let line = a_message(&format!(
+        r#"{{"run":{{"command":"echo once >> {}"}}}}"#,
+        counted.display()
+    ));
+    let mut record = Record::default();
+    let mut bracket = a_bracket();
+    on_a_turn("asking", &mut record, |turning, grants, strings, _| {
+        let here = elsewhere.here();
+        let said = the_agent_asked(&line, turning, grants, strings, &here, &mut bracket);
+        assert!(said.waits_for_a_person(), "{said:?}");
+        assert!(!counted.exists(), "it ran before anybody said yes");
+        let standing = match said {
+            ToAnAgent::Proposed(standing) => standing,
+            other => unreachable!("not waiting: {other:?}"),
+        };
+        assert_eq!(
+            standing.sentence().text(),
+            format!("run this command: echo once >> {}", counted.display())
+        );
+
+        let waiting = the_person_said(
+            &a_message(r#"{"waiting":{}}"#),
+            turning,
+            grants,
+            strings,
+            &here,
+            &mut bracket,
+        );
+        assert!(
+            waiting.changes().is_some_and(|changes| changes
+                .iter()
+                .any(|change| change.number() == standing.number()
+                    && change.sentence() == standing.sentence())),
+            "the person is not shown the command waiting: {waiting:?}"
+        );
+
+        let approve = a_message(&format!(
+            r#"{{"approve":{{"number":{}}}}}"#,
+            standing.number()
+        ));
+        let first = the_person_said(&approve, turning, grants, strings, &here, &mut bracket);
+        assert!(first.done().is_some(), "{first:?}");
+        assert!(
+            first.cannot_be_undone(),
+            "a session with no home kept no place, and the person must be told"
+        );
+        let again = the_person_said(&approve, turning, grants, strings, &here, &mut bracket);
+        assert!(again.refusal().is_some(), "{again:?}");
+    });
+    assert_eq!(
+        std::fs::read_to_string(&counted).unwrap(),
+        "once\n",
+        "one approval did not run it exactly once"
+    );
+    assert!(bracket.the_first_sentence_for_tests().is_some());
+    let written = what_was_written(&record);
+    assert!(
+        matches!(written.as_slice(), [Happened::RanACommand { .. }]),
+        "{written:?}"
+    );
+}
+
+/// **A no is written down, and nothing runs.**
+#[test]
+fn a_declined_command_is_written_down_and_never_runs() {
+    let elsewhere = Elsewhere::with_the_level("declined", Some(HowCodeRuns::AskingEachTime));
+    let mut record = Record::default();
+    let mut bracket = a_bracket();
+    on_a_turn("declined", &mut record, |turning, grants, strings, _| {
+        let here = elsewhere.here();
+        let said = the_agent_asked(
+            &elsewhere.asking_to_make_it(),
+            turning,
+            grants,
+            strings,
+            &here,
+            &mut bracket,
+        );
+        let standing = match said {
+            ToAnAgent::Proposed(standing) => standing,
+            other => unreachable!("not waiting: {other:?}"),
+        };
+        let no = the_person_said(
+            &a_message(&format!(
+                r#"{{"decline":{{"number":{}}}}}"#,
+                standing.number()
+            )),
+            turning,
+            grants,
+            strings,
+            &here,
+            &mut bracket,
+        );
+        assert_eq!(no, ToAPerson::Declined);
+        let yes_after = the_person_said(
+            &a_message(&format!(
+                r#"{{"approve":{{"number":{}}}}}"#,
+                standing.number()
+            )),
+            turning,
+            grants,
+            strings,
+            &here,
+            &mut bracket,
+        );
+        assert!(yes_after.refusal().is_some(), "{yes_after:?}");
+    });
+    assert!(
+        !elsewhere.the_folder_it_makes().exists(),
+        "a declined command ran"
+    );
+    let written = what_was_written(&record);
+    assert!(
+        matches!(written.as_slice(), [Happened::ACommandWasNotRun { .. }]),
+        "{written:?}"
+    );
+}
+
+/// **The sealed box, nothing chosen, and a file that will not read all refuse
+/// in the plain sentence, write the refusal down, and run nothing.**
+#[test]
+fn the_sealed_box_nothing_chosen_and_an_unreadable_level_refuse_and_run_nothing() {
+    let sealed = Elsewhere::with_the_level("sealed", Some(HowCodeRuns::InASealedBox));
+    let not_chosen = Elsewhere::with_the_level("not-chosen", None);
+    let unreadable = Elsewhere::with_the_level("unreadable", None);
+    std::fs::write(&unreadable.level_at, "format = 1\nchose = \"full-trust\"\n").unwrap();
+    assert!(alo_remembering::the_level_remembered(&unreadable.level_at).is_err());
+
+    for elsewhere in [&sealed, &not_chosen, &unreadable] {
+        let mut record = Record::default();
+        let mut bracket = a_bracket();
+        on_a_turn("refused", &mut record, |turning, grants, strings, _| {
+            let said = the_agent_asked(
+                &elsewhere.asking_to_make_it(),
+                turning,
+                grants,
+                strings,
+                &elsewhere.here(),
+                &mut bracket,
+            );
+            assert_eq!(
+                said.refusal().map(alo_protocol::Wording::text),
+                Some(NOT_IN_THE_BOX),
+                "{:?}",
+                elsewhere.level_at
+            );
+            assert_eq!(turning.commands_waiting_at(noon()).count(), 0);
+        });
+        assert!(
+            !elsewhere.the_folder_it_makes().exists(),
+            "{:?} ran a command",
+            elsewhere.level_at
+        );
+        assert!(
+            bracket.the_first_sentence_for_tests().is_none(),
+            "a snapshot was taken for a command that did not run"
+        );
+        let written = what_was_written(&record);
+        assert!(
+            matches!(
+                written.as_slice(),
+                [Happened::ACommandWasNotRun { why, .. }] if why.is(NOT_IN_THE_BOX)
+            ),
+            "{written:?}"
+        );
+    }
+}
+
+/// **A level taken back while the question stood is the person's no**: moved
+/// to the sealed box before saying yes, the command is refused, written down,
+/// and does not run.
+#[test]
+fn a_command_approved_after_the_level_was_taken_back_does_not_run() {
+    let elsewhere = Elsewhere::with_the_level("taken-back", Some(HowCodeRuns::AskingEachTime));
+    let mut record = Record::default();
+    let mut bracket = a_bracket();
+    on_a_turn("taken-back", &mut record, |turning, grants, strings, _| {
+        let here = elsewhere.here();
+        let said = the_agent_asked(
+            &elsewhere.asking_to_make_it(),
+            turning,
+            grants,
+            strings,
+            &here,
+            &mut bracket,
+        );
+        let standing = match said {
+            ToAnAgent::Proposed(standing) => standing,
+            other => unreachable!("not waiting: {other:?}"),
+        };
+        alo_remembering::the_level_kept(&elsewhere.level_at, HowCodeRuns::InASealedBox).unwrap();
+        let yes = the_person_said(
+            &a_message(&format!(
+                r#"{{"approve":{{"number":{}}}}}"#,
+                standing.number()
+            )),
+            turning,
+            grants,
+            strings,
+            &here,
+            &mut bracket,
+        );
+        assert_eq!(
+            yes.refusal().map(alo_protocol::Wording::text),
+            Some(NOT_IN_THE_BOX)
+        );
+        assert_eq!(turning.commands_waiting_at(noon()).count(), 0);
+    });
+    assert!(!elsewhere.the_folder_it_makes().exists());
+    assert!(bracket.the_first_sentence_for_tests().is_none());
+    let written = what_was_written(&record);
+    assert!(
+        matches!(written.as_slice(), [Happened::ACommandWasNotRun { why, .. }] if why.is(NOT_IN_THE_BOX)),
+        "{written:?}"
+    );
+}
+
+/// **A line that is not a command is refused and written down**, at every
+/// level — even full access runs nothing that is not one line.
+#[test]
+fn a_line_that_is_not_a_command_is_refused_and_written_down() {
+    let elsewhere = Elsewhere::with_the_level("not-a-command", Some(HowCodeRuns::AtFullTrust));
+    let mut record = Record::default();
+    let mut bracket = a_bracket();
+    on_a_turn(
+        "not-a-command",
+        &mut record,
+        |turning, grants, strings, _| {
+            let said = the_agent_asked(
+                &a_message(r#"{"run":{"command":"   "}}"#),
+                turning,
+                grants,
+                strings,
+                &elsewhere.here(),
+                &mut bracket,
+            );
+            assert_eq!(
+                said.refusal().map(alo_protocol::Wording::text),
+                Some("Nothing ran: the command was empty.")
+            );
+        },
+    );
+    assert!(bracket.the_first_sentence_for_tests().is_none());
+    assert!(matches!(
+        what_was_written(&record).as_slice(),
+        [Happened::ACommandWasNotRun { .. }]
+    ));
+}
+
+/// **Every other door's road refuses a command as the sealed box does**: a
+/// caller with no person's file to read is never a higher level.
+#[test]
+fn where_nothing_was_chosen_a_command_is_refused() {
+    let mut record = Record::default();
+    on_a_turn("nowhere", &mut record, |turning, grants, strings, _| {
+        let said = what_an_agent_said(
+            &a_message(r#"{"run":{"command":"mkdir -p /tmp/alo-never-made"}}"#),
+            turning,
+            &mut nothing_has_been_chosen(),
+            None,
+            grants,
+            strings,
+            hour(),
+            noon(),
+            Commands::where_nothing_was_chosen(),
+        );
+        assert_eq!(
+            said.refusal().map(alo_protocol::Wording::text),
+            Some(NOT_IN_THE_BOX)
+        );
+    });
+    assert_eq!(
+        CommandsHere::where_nothing_was_chosen().the_level_now(),
+        HowCodeRuns::InASealedBox
+    );
+    assert!(matches!(
+        what_was_written(&record).as_slice(),
+        [Happened::ACommandWasNotRun { .. }]
+    ));
+}
+
+/// The person's door still refuses a command of its own: theirs is typed at
+/// their own prompt.
+#[test]
+fn the_persons_door_does_not_take_a_command() {
+    assert!(FromAPerson::read(&a_message(r#"{"run":{"command":"ls"}}"#)).is_err());
+}

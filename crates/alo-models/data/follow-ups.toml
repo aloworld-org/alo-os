@@ -21,6 +21,10 @@
 # Measured once, by hand, on 2026-10-28: the five follow-ups, four rounds,
 # every answer the call alo OS would act on and about what the conversation
 # meant. `against_a_model_at_a_provider the_follow_ups` re-runs it.
+#
+# Not read since 2026-11-08: the words a turn shows gained the run door (ADR
+# 0149), so this grade names text a turn no longer shows. It is kept, naming
+# that text, to be re-run under the new words.
 [[follow_up]]
 model = "gpt-4o"
 at = "OpenAI"

@@ -877,8 +877,48 @@ pub const NO_WORD_BACK_IN_THE_TERMINAL: Word = Word::saying(
      use the same words your translation uses for it.",
 );
 
+/// What the person approves when alo asks to run a command where no verb fits
+/// (ADR 0149): the command, whole (`crate::ACommand::sentence`).
+pub const RUN_A_COMMAND: Word = Word::saying(
+    "capability.running.run-a-command",
+    "run this command: {command}",
+)
+.noting(
+    "The change alo proposes when nothing else it can do fits what was asked: running one \
+     command on this computer, as the person. {command} is the command exactly as it will run, \
+     and is never translated. Lower case at the start, like every other change alo proposes, \
+     because it is shown after other words.",
+);
+
+/// A command alo was asked to run had nothing in it.
+pub const A_COMMAND_THAT_IS_EMPTY: Word = Word::saying(
+    "capability.running.command-empty",
+    "Nothing ran: the command was empty.",
+)
+.noting("Said when alo was asked to run a command and the command had nothing in it.");
+
+/// A command alo was asked to run was longer than it will run.
+pub const A_COMMAND_THAT_IS_TOO_LONG: Word = Word::saying(
+    "capability.running.command-too-long",
+    "Nothing ran: the command was longer than {most} characters.",
+)
+.noting(
+    "Said when alo was asked to run a command too long for a person to read before approving \
+     it. {most} is a number.",
+);
+
+/// A command alo was asked to run was more than one line.
+pub const A_COMMAND_THAT_IS_NOT_ONE_LINE: Word = Word::saying(
+    "capability.running.command-not-one-line",
+    "Nothing ran: a command must be one line.",
+)
+.noting(
+    "Said when alo was asked to run a command that had a line break in it. A command is shown \
+     to the person on one line before it runs, so a second line is refused.",
+);
+
 /// Every string this crate can say, in the order a translator meets them.
-pub const EVERY_WORD: [Word; 77] = [
+pub const EVERY_WORD: [Word; 81] = [
     ANONYMOUS,
     NO_APPLICATION_NAMED,
     NOTHING_NAMED,
@@ -956,6 +996,10 @@ pub const EVERY_WORD: [Word; 77] = [
     NOT_DONE_NO_LONGER_WAITING,
     IT_WAITS_FOR_A_TERMINAL,
     NO_WORD_BACK_IN_THE_TERMINAL,
+    RUN_A_COMMAND,
+    A_COMMAND_THAT_IS_EMPTY,
+    A_COMMAND_THAT_IS_TOO_LONG,
+    A_COMMAND_THAT_IS_NOT_ONE_LINE,
 ];
 
 /// Why this crate's own list could not be declared.

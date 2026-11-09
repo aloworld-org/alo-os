@@ -140,6 +140,7 @@ impl TheDoor for TheDaemonInThisProcess<'_, '_, '_> {
             self.strings,
             hour(),
             self.now,
+            alo_agentd::running_a_command::Commands::where_nothing_was_chosen(),
         ))
     }
 }
@@ -353,7 +354,8 @@ fn a_request_to_read_is_answered_and_proposes_nothing() {
         Ok("several-steps") => Instructions::SeveralSteps,
         Ok("as-first-written") => Instructions::AsFirstWritten,
         Ok("every-door-and-an-answer") => Instructions::EveryDoorAndAnAnswer,
-        Ok(other) => panic!("ALO_INSTRUCTIONS is one of the four sets, not `{other}`"),
+        Ok("every-door-an-answer-and-a-command") => Instructions::EveryDoorAnAnswerAndACommand,
+        Ok(other) => panic!("ALO_INSTRUCTIONS is one of the five sets, not `{other}`"),
     };
     println!(
         "model {model} at {endpoint}, under {} (sha256 {}), {rounds} round(s) each",

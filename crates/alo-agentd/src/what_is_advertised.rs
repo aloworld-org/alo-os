@@ -438,6 +438,7 @@ mod tests {
                 strings,
                 hour(),
                 noon(),
+                crate::running_a_command::Commands::where_nothing_was_chosen(),
             );
             let refusal = said.refusal().unwrap();
             assert!(!refusal.is_a_bug(), "{refusal:?}");

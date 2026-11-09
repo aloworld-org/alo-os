@@ -15,6 +15,7 @@
 //! | [`WhatHappened`] | What a run did, in a form the record can take |
 //! | [`NotRun`] | Why a command was not run, which is always a refusal |
 //! | [`enter_the_box_and_become`] | What `alo-enter-the-box` does: admit itself, then become the command |
+//! | [`run_as_the_person`] | A command at full access, or approved at *ask me each time*: as the person, with no box (ADR 0149) |
 //!
 //! # This is the one crate in the repository that starts a program
 //!
@@ -85,6 +86,8 @@
 #![cfg(target_os = "linux")]
 
 mod a_run_inside_a_box;
+/// A command run at full access: as the person, with no box (ADR 0149).
+pub mod at_full_access;
 mod carrying_what_it_says;
 mod entering;
 mod failing;
@@ -97,6 +100,7 @@ mod what_was_asked;
 pub mod the_helpers_word;
 
 pub use a_run_inside_a_box::{THE_HELPER, WhereCommandsRun, checked_and_written_down};
+pub use at_full_access::{THE_LONGEST_A_COMMAND_RUNS, THE_MOST_IT_SAYS, run_as_the_person};
 pub use carrying_what_it_says::{Carrying, carried_until_it_ends};
 pub use entering::{MEANING_ME, THE_PROCESSES, enter_the_box_and_become, it_was_joined};
 pub use failing::NotRun;

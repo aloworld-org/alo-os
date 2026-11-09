@@ -208,6 +208,7 @@ mod tests {
                     0,
                     0,
                 ),
+                commands: crate::running_a_command::CommandsHere::where_nothing_was_chosen(),
             },
             &mut WhatIsGranted::of(&mut grants, &NothingIsRemembered),
             &Nearby {
@@ -251,6 +252,7 @@ mod tests {
                 strings,
                 hour(),
                 noon(),
+                crate::running_a_command::Commands::where_nothing_was_chosen(),
             );
             assert!(before.refusal().is_some(), "{before:?}");
 
@@ -278,6 +280,7 @@ mod tests {
                 strings,
                 hour(),
                 noon(),
+                crate::running_a_command::Commands::where_nothing_was_chosen(),
             );
             assert!(
                 matches!(&after, ToAnAgent::Answered { text, .. } if text == "Three are unpaid."),
@@ -533,6 +536,7 @@ mod tests {
                 strings,
                 hour(),
                 noon(),
+                crate::running_a_command::Commands::where_nothing_was_chosen(),
             );
             let refusal = said.refusal().unwrap();
             assert!(!refusal.is_a_bug(), "{refusal:?}");
@@ -553,6 +557,7 @@ mod tests {
                 strings,
                 hour(),
                 noon(),
+                crate::running_a_command::Commands::where_nothing_was_chosen(),
             );
             assert!(asked.refusal().is_some(), "{asked:?}");
         });

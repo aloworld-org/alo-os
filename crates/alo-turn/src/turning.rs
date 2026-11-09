@@ -407,6 +407,11 @@ impl<'a, 'm> Turning<'a, 'm> {
     pub fn declining(&mut self, id: ProposalId, now: SystemTime) -> Result<(), NotDone> {
         self.still_open()?;
         let Some(proposal) = self.approvals.decline(id) else {
+            // **A command waiting under the number is declined the same way**
+            // (ADR 0149): one *no*, written down, and nothing runs.
+            if let Some(declined) = self.declining_a_command(id, now) {
+                return declined;
+            }
             return Err(NotDone::NotAnswered(AnswerError::NothingWaiting {
                 number: id.as_u64(),
             }));
@@ -575,6 +580,10 @@ impl<'a, 'm> Turning<'a, 'm> {
                 if self
                     .waiting_at(now)
                     .any(|waiting| waiting.id.as_u64() == number)
+                    || self
+                        .approvals
+                        .commands_waiting_at(now)
+                        .any(|waiting| waiting.id.as_u64() == number)
                 {
                     Became::Waiting
                 } else {
@@ -587,8 +596,28 @@ impl<'a, 'm> Turning<'a, 'm> {
     }
 
     /// Remember what the person did about a change.
-    fn remembering(&mut self, id: ProposalId, became: Became) {
+    ///
+    /// `pub(crate)`, for `crate::a_command_where_no_verb_exists`, whose
+    /// commands wait under the same numbers.
+    pub(crate) fn remembering(&mut self, id: ProposalId, became: Became) {
         self.became.push((id.as_u64(), became));
+    }
+
+    /// The changes and commands waiting, for the doors in
+    /// `crate::a_command_where_no_verb_exists`.
+    pub(crate) fn approvals(&self) -> &Approvals {
+        &self.approvals
+    }
+
+    /// The same, to put a command on or answer one.
+    pub(crate) fn approvals_mut(&mut self) -> &mut Approvals {
+        &mut self.approvals
+    }
+
+    /// The place the service kept before this turn's first change, by name,
+    /// once it has kept one.
+    pub(crate) fn kept_as(&self) -> Option<&str> {
+        self.kept_as.as_deref()
     }
 
     /// The words the person in front of this machine reads.

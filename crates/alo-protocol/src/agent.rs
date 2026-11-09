@@ -1,8 +1,10 @@
 //! What an agent may ask, during a turn that is already under way.
 //!
-//! Three requests, and every one of them is something ADR 0001 lets an agent
+//! Four requests, and every one of them is something ADR 0001 lets an agent
 //! do: read something it was granted, propose a change for the person to
-//! approve, and put a question to a model. What comes back is the turn's, and
+//! approve, and put a question to a model — and, since ADR 0149, ask for one
+//! command where no verb fits, which the person's own level for running code
+//! decides. What comes back is the turn's, and
 //! this crate never sees it.
 //!
 //! # What is deliberately not here
@@ -57,9 +59,9 @@ use crate::refusing::NotUnderstood;
 
 /// One thing an agent asked for during a turn.
 ///
-/// There are three, and a fourth is a change to what an agent can express —
-/// which belongs in ADR 0001 and in `docs/contracts/daemon-protocol.md` before
-/// it belongs here.
+/// There are four, and a fifth is a change to what an agent can express —
+/// which belongs in an ADR and in `docs/contracts/daemon-protocol.md` before
+/// it belongs here. The fourth, [`FromAnAgent::Run`], arrived with ADR 0149.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum FromAnAgent {
     /// A read, which answers inside the turn.
@@ -85,6 +87,15 @@ pub enum FromAnAgent {
         /// decides how the pinned runtime is asked (ADR 0032) and nothing else.
         answered: Answered,
     },
+    /// One shell command, where no verb fits (ADR 0149).
+    ///
+    /// **Not a verb.** Nothing has looked at it; whether it runs, waits for the
+    /// person or is refused is the person's level for running code, which the
+    /// daemon reads when it arrives and nothing here can name.
+    Run {
+        /// The command, as it was asked for.
+        command: String,
+    },
 }
 
 impl FromAnAgent {
@@ -99,6 +110,7 @@ impl FromAnAgent {
             Asked::Read { verb, given } => Ok(Self::Read { verb, given }),
             Asked::Propose { verb, given } => Ok(Self::Propose { verb, given }),
             Asked::Ask { question, answered } => Ok(Self::Ask { question, answered }),
+            Asked::Run { command } => Ok(Self::Run { command }),
             // The four about pairing are refused in the same words as an
             // approval: a pairing is made by two people (ADR 0003), and an
             // agent that could propose, confirm or revoke one would be an
@@ -164,7 +176,7 @@ impl FromAnAgent {
     pub fn verb(&self) -> Option<&str> {
         match self {
             Self::Read { verb, .. } | Self::Propose { verb, .. } => Some(verb),
-            Self::Ask { .. } => None,
+            Self::Ask { .. } | Self::Run { .. } => None,
         }
     }
 
@@ -181,7 +193,7 @@ impl FromAnAgent {
                 .iter()
                 .map(|argument| (argument.named(), argument.given().clone()))
                 .collect(),
-            Self::Ask { .. } => Vec::new(),
+            Self::Ask { .. } | Self::Run { .. } => Vec::new(),
         }
     }
 
@@ -190,7 +202,7 @@ impl FromAnAgent {
     pub fn question(&self) -> Option<&str> {
         match self {
             Self::Ask { question, .. } => Some(question),
-            Self::Read { .. } | Self::Propose { .. } => None,
+            Self::Read { .. } | Self::Propose { .. } | Self::Run { .. } => None,
         }
     }
 
@@ -199,12 +211,24 @@ impl FromAnAgent {
     pub fn answered(&self) -> Option<Answered> {
         match self {
             Self::Ask { answered, .. } => Some(*answered),
-            Self::Read { .. } | Self::Propose { .. } => None,
+            Self::Read { .. } | Self::Propose { .. } | Self::Run { .. } => None,
+        }
+    }
+
+    /// The command, for the one request that carries one (ADR 0149).
+    #[must_use]
+    pub fn command(&self) -> Option<&str> {
+        match self {
+            Self::Run { command } => Some(command),
+            Self::Read { .. } | Self::Propose { .. } | Self::Ask { .. } => None,
         }
     }
 
     /// Whether this is a change, which waits for a person, rather than a read,
     /// which answers inside the turn.
+    ///
+    /// False for a command: whether one waits is the person's level for
+    /// running code, which this crate cannot see.
     ///
     /// A convenience for a daemon choosing a door, and **not** the decision:
     /// `alo_capability::Authorised::read` refuses a change and
@@ -222,6 +246,7 @@ impl From<FromAnAgent> for Asked {
             FromAnAgent::Read { verb, given } => Self::Read { verb, given },
             FromAnAgent::Propose { verb, given } => Self::Propose { verb, given },
             FromAnAgent::Ask { question, answered } => Self::Ask { question, answered },
+            FromAnAgent::Run { command } => Self::Run { command },
         }
     }
 }
@@ -311,14 +336,21 @@ mod tests {
         }
     }
 
-    /// **Nothing here carries a command**, and it is the absence of a field
-    /// rather than a check: law 2 at the one place a caller can reach.
+    /// **No verb request carries a command**, and it is the absence of a field
+    /// rather than a check: law 2's first half at the one place a caller can
+    /// reach. *Until 2026-11-08 this test also refused `run` itself; ADR 0149
+    /// made it the one request that carries a command, governed by the
+    /// person's level rather than by any verb — see the test below.*
     #[test]
-    fn no_request_carries_something_that_could_be_run() {
+    fn no_verb_request_carries_something_that_could_be_run() {
         for message in [
             r#"{"format":1,"asks":{"read":{"verb":"list_folder","given":[],"then":"rm -rf /"}}}"#,
-            r#"{"format":1,"asks":{"run":{"command":"/bin/sh"}}}"#,
+            r#"{"format":1,"asks":{"propose":{"verb":"rename_file","given":[],"command":"sh"}}}"#,
             r#"{"format":1,"asks":{"read":{"verb":"list_folder","given":[{"named":"folder","is":{"run":"sh"}}]}}}"#,
+            // A command arrives in its own request, with nothing beside it.
+            r#"{"format":1,"asks":{"run":{"command":"ls","verb":"list_folder"}}}"#,
+            r#"{"format":1,"asks":{"run":{"command":["ls","-l"]}}}"#,
+            r#"{"format":1,"asks":{"run":{}}}"#,
         ] {
             assert_eq!(
                 FromAnAgent::read(message),
@@ -326,6 +358,36 @@ mod tests {
                 "{message}"
             );
         }
+    }
+
+    /// **A command is its own request** (ADR 0149): read off the wire with the
+    /// command and nothing else, named by no verb, carrying no arguments, and
+    /// not answered as waiting for a person by this crate — the person's level
+    /// decides that, in the daemon.
+    #[test]
+    fn a_command_is_its_own_request_and_names_no_verb() {
+        let run = FromAnAgent::read(
+            r#"{"format":1,"asks":{"run":{"command":"mkdir -p /var/home/alo/Documents/demo"}}}"#,
+        )
+        .unwrap();
+        assert_eq!(
+            run,
+            FromAnAgent::Run {
+                command: "mkdir -p /var/home/alo/Documents/demo".to_owned()
+            }
+        );
+        assert_eq!(run.command(), Some("mkdir -p /var/home/alo/Documents/demo"));
+        assert_eq!(run.verb(), None);
+        assert!(run.given().is_empty());
+        assert_eq!(run.question(), None);
+        assert!(!run.waits_for_a_person());
+        assert_eq!(FromAnAgent::read(&run.written().unwrap()).unwrap(), run);
+        // And a person's door refuses it: a person's own command is typed at
+        // their own prompt.
+        assert_eq!(
+            crate::FromAPerson::read(&run.written().unwrap()),
+            Err(NotUnderstood::NotForAPerson)
+        );
     }
 
     /// A verb's name arriving as text that happens to look like a command is

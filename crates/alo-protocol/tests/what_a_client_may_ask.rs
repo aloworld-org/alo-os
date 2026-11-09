@@ -354,7 +354,9 @@ fn a_message_that_is_not_a_request_reaches_no_turn_and_no_record() {
         for line in [
             "not json at all",
             r#"{"format":9,"asks":{"read":{"verb":"list_folder","given":[]}}}"#,
-            r#"{"format":1,"asks":{"run":{"command":"rm -rf /"}}}"#,
+            // A command with something beside it. A bare `run` is a request
+            // since ADR 0149, decided by the person's level in the daemon.
+            r#"{"format":1,"asks":{"run":{"command":"rm -rf /","then":"sh"}}}"#,
         ] {
             assert!(FromAnAgent::read(line).is_err(), "{line}");
         }

@@ -22,10 +22,12 @@ use std::time::SystemTime;
 use alo_strings::{Filling, Said, Strings};
 use serde::Serialize;
 
+use crate::a_command::ACommand;
+use crate::a_command_waiting::{ApprovedCommand, WaitingCommand};
 use crate::approval::Approved;
 use crate::call::Call;
 use crate::grant::Grantee;
-use crate::proposal::Proposal;
+use crate::proposal::{Proposal, ProposalError};
 use crate::words;
 
 /// The number a person answers a proposal by.
@@ -77,6 +79,11 @@ pub enum AnswerError {
         /// What the question was, since the person is being told to ask again.
         call: Box<Call>,
     },
+    /// A command that waited too long for the person's OK (ADR 0149).
+    ACommandLapsed {
+        /// The command, since the person is being told to ask again.
+        command: ACommand,
+    },
 }
 
 impl AnswerError {
@@ -92,6 +99,10 @@ impl AnswerError {
                 &words::LAPSED.key(),
                 &Filling::of("sentence", call.sentence(strings).into_text()),
             ),
+            Self::ACommandLapsed { command } => strings.say(
+                &words::LAPSED.key(),
+                &Filling::of("sentence", command.sentence(strings).into_text()),
+            ),
         }
     }
 }
@@ -103,6 +114,10 @@ pub struct Approvals {
     next: u64,
     /// In the order they were proposed, which is the order they are read in.
     waiting: Vec<Waiting>,
+    /// The commands waiting for the person's OK (ADR 0149), numbered from
+    /// `next` like everything above — `crate::a_command_waiting` says why one
+    /// counter and two lists.
+    commands: Vec<WaitingCommand>,
 }
 
 impl Approvals {
@@ -190,24 +205,114 @@ impl Approvals {
     /// Housekeeping only: a lapsed question cannot be approved whether or not
     /// this has been called.
     pub fn forget_lapsed(&mut self, now: SystemTime) -> usize {
-        let before = self.waiting.len();
+        let before = self.len();
         self.waiting
             .retain(|waiting| waiting.proposal.is_waiting_at(now));
-        before.saturating_sub(self.waiting.len())
+        self.commands.retain(|waiting| waiting.is_waiting_at(now));
+        before.saturating_sub(self.len())
     }
 
-    /// How many proposals are on the list, lapsed ones included.
+    /// How many proposals and commands are on the lists, lapsed ones included.
     #[must_use]
     pub fn len(&self) -> usize {
-        self.waiting.len()
+        self.waiting.len().saturating_add(self.commands.len())
     }
 
-    /// Whether nothing is waiting at all.
+    /// Whether nothing is waiting at all, change or command.
     #[must_use]
     pub fn is_empty(&self) -> bool {
-        self.waiting.is_empty()
+        self.waiting.is_empty() && self.commands.is_empty()
+    }
+
+    /// Put a command to the person (ADR 0149), and return the number it is
+    /// answered by — taken from the same counter as every proposal's.
+    ///
+    /// # Errors
+    /// [`ProposalError::NoTime`] for a question that would stand for no time,
+    /// and [`ProposalError::NoEnd`] for one that would stand longer than this
+    /// machine can represent — the two a proposal is refused for that are not
+    /// about a verb.
+    pub fn propose_a_command(
+        &mut self,
+        command: ACommand,
+        grantee: &Grantee,
+        from: SystemTime,
+        standing: std::time::Duration,
+    ) -> Result<ProposalId, ProposalError> {
+        if standing.is_zero() {
+            return Err(ProposalError::NoTime);
+        }
+        let lapses = from.checked_add(standing).ok_or(ProposalError::NoEnd)?;
+        let id = ProposalId(self.next);
+        self.next = self.next.saturating_add(1);
+        self.commands
+            .push(WaitingCommand::new(id, command, grantee.clone(), lapses));
+        Ok(id)
+    }
+
+    /// Approve one waiting command, and take it off the list in the same act.
+    ///
+    /// **One approval, one execution**: the second approval of a number finds
+    /// nothing, and so does a number a proposal is waiting under — the two
+    /// lists share numbers and never an answer.
+    ///
+    /// # Errors
+    /// [`AnswerError::NothingWaiting`] for a number no command is waiting
+    /// under, and [`AnswerError::ACommandLapsed`] for one that stood too long
+    /// — which is taken off the list as it is refused.
+    pub fn approve_a_command(
+        &mut self,
+        id: ProposalId,
+        now: SystemTime,
+    ) -> Result<ApprovedCommand, AnswerError> {
+        let waiting = self.take_a_command(id)?;
+        if !waiting.is_waiting_at(now) {
+            return Err(AnswerError::ACommandLapsed {
+                command: waiting.command().clone(),
+            });
+        }
+        Ok(waiting.approved())
+    }
+
+    /// Decline one waiting command, and give it back so the record can keep
+    /// that it was declined. `None` when no command waits under that number.
+    pub fn decline_a_command(&mut self, id: ProposalId) -> Option<WaitingCommand> {
+        self.take_a_command(id).ok()
+    }
+
+    /// The commands still waiting to be answered, in the order they were asked.
+    pub fn commands_waiting_at(&self, now: SystemTime) -> impl Iterator<Item = &WaitingCommand> {
+        self.commands
+            .iter()
+            .filter(move |waiting| waiting.is_waiting_at(now))
+    }
+
+    /// One waiting command, by number, whether or not it has lapsed.
+    #[must_use]
+    pub fn command_of(&self, id: ProposalId) -> Option<&WaitingCommand> {
+        self.commands.iter().find(|waiting| waiting.id == id)
+    }
+
+    /// Take a command off its list, by number.
+    fn take_a_command(&mut self, id: ProposalId) -> Result<WaitingCommand, AnswerError> {
+        let position = self
+            .commands
+            .iter()
+            .position(|waiting| waiting.id == id)
+            .ok_or(AnswerError::NothingWaiting {
+                number: id.as_u64(),
+            })?;
+        Ok(self.commands.remove(position))
     }
 }
+
+#[cfg(test)]
+#[expect(
+    clippy::unwrap_used,
+    reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
+)]
+#[path = "a_command_waiting_tests.rs"]
+mod a_command_waiting_tests;
 
 #[cfg(test)]
 #[expect(

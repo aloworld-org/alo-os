@@ -299,6 +299,9 @@ pub mod refusing;
 pub mod rereading;
 #[cfg(target_os = "linux")]
 pub mod responding;
+/// One command where no verb fits, decided by the person's level (ADR 0149).
+#[cfg(target_os = "linux")]
+pub mod running_a_command;
 /// What the kernel says about this machine's interfaces. **`alo-interfaces`'
 /// reader, re-exported** so every `crate::route_messages` path in this service
 /// reads as it did: the reader moved into a crate of its own on 2026-10-30 so

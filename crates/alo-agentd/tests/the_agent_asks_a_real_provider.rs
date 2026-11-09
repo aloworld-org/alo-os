@@ -253,6 +253,7 @@ fn the_agent_asks_a_real_provider_with_a_key_it_looked_up() {
             &strings,
             Duration::from_secs(60 * 60),
             now,
+            alo_agentd::running_a_command::Commands::where_nothing_was_chosen(),
         )
     };
 

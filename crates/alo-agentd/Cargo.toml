@@ -170,7 +170,16 @@ alo-secrets = { path = "../alo-secrets" }
 # a client can say reaches a path, which is what makes *nothing an agent sends
 # writes a byte of that file* a fact about the shape of this crate rather than a
 # rule somebody has to keep.
+#
+# Since 2026-11-08 `src/running_a_command.rs` names it as well, to **read** the
+# level the person chose for running code (ADR 0149) at the moment a command is
+# asked for. It writes nothing, and nothing a client says names the path.
 alo-remembering = { path = "../alo-remembering" }
+
+# The one crate that starts a program (ADR 0117): a command alo runs where no
+# verb fits, as the person, at full access or after their OK (ADR 0149).
+# `src/running_a_command.rs` is the only file that reaches it.
+alo-running = { path = "../alo-running" }
 
 # The port presence advertises, and the three wires on it. `alo-nearby` is
 # what a machine says about itself, the pairing wire and the framing every

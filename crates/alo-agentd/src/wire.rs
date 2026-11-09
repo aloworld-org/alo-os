@@ -876,6 +876,7 @@ mod a_hosted_workspace {
                     strings,
                     hour(),
                     noon(),
+                    crate::running_a_command::Commands::where_nothing_was_chosen(),
                 );
                 assert!(said.refusal().is_some(), "the agent's door: {line}");
             }

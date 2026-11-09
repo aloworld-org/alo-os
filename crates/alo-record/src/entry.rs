@@ -591,7 +591,8 @@ impl Entry {
         )
     }
 
-    /// A command the person allowed the agent to run, run inside a sealed box.
+    /// A command the person allowed the agent to run: inside a sealed box, or
+    /// — at full access, or once they said yes to it — with none (ADR 0149).
     ///
     /// ADR 0064 keeps the record on at every one of its three levels, and this
     /// is the entry that keeps it. `alo-running` is the box and ADR 0117 is why
@@ -602,11 +603,12 @@ impl Entry {
     /// status and any number put there — `0` as much as `-1` — is a sentence a
     /// person could act on that nothing said.
     ///
-    /// `the_kernel_was_holding_it` is false only for a run at full trust whose
-    /// boundary could not be applied, which `docs/features.md` permits if the
-    /// person chooses and requires the record to say. Nothing in this repository
-    /// passes false yet; the parameter exists because a record that could only
-    /// ever say one of the two could not keep that promise when something does.
+    /// `the_kernel_was_holding_it` is false for a run nothing boxed. Since
+    /// 2026-11-08 that is every command alo runs where no verb fits — at full
+    /// access, or approved at *ask me each time* — because ADR 0149 decides that
+    /// then nothing alo runs is boxed (`alo_turn`'s
+    /// `a_command_where_no_verb_exists`). The record says so rather than leave
+    /// a reader to assume a box that was not there.
     ///
     /// **Not [`Entry::ran`], and not reachable from it.** That one takes an
     /// [`Authorised`] — a verb redeemed from an approval and checked against
