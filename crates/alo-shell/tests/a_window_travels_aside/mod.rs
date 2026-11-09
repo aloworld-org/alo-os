@@ -79,7 +79,7 @@ fn hidden(f: &Fixture, root: &WlSurface) -> bool {
 }
 
 /// **The person's Minimise: the window is gone at once, an outline travels
-/// from it toward its card, shrinking, and the travel ends exactly on the card
+/// from it toward its card, taking on its size, and the travel ends exactly on the card
 /// and is then gone.**
 #[test]
 fn the_persons_minimise_travels_to_its_card_and_ends_there() {
@@ -104,11 +104,12 @@ fn the_persons_minimise_travels_to_its_card_and_ends_there() {
         (first, last, gone, left)
     });
     let first = first.first().copied().expect("the first frame drew an outline");
+    // Between the two sizes, whichever is larger: the fixture's window is 16
+    // square and its card 48, so this outline grows onto its card.
+    let between = |it: i32, a: i32, b: i32| a.min(b) <= it && it <= a.max(b);
     assert!(
-        first.size.w <= window.size.w
-            && first.size.w >= card.size.w
-            && first.size.h <= window.size.h
-            && first.size.h >= card.size.h,
+        between(first.size.w, window.size.w, card.size.w)
+            && between(first.size.h, window.size.h, card.size.h),
         "the outline is not between the window's size and its card's: {first:?}"
     );
     assert_eq!(last, vec![card], "the travel did not end exactly on the card");
@@ -218,9 +219,9 @@ fn with_no_card_nothing_travels_and_the_window_is_still_put_aside() {
 fn a_client_minimising_itself_does_not_travel() {
     let f = Fixture::keyboard();
     let mut app = mapped(&f, "Launch strategy");
+    let root = f.root();
     app.toplevel.set_minimized();
     app.sync();
-    let root = f.root();
     assert!(hidden(&f, &root), "the control: the client's request hid it");
     assert_eq!(f.backend(|s| s.how_many_windows_are_travelling_aside()), 0);
 }

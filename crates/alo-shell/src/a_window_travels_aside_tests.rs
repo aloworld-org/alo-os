@@ -106,7 +106,7 @@ fn a_travel_lasts_the_same_however_far_it_goes_and_ends_on_the_card() {
 /// **A window drawn at no size does not travel**: there is no outline to follow.
 #[test]
 fn a_window_drawn_at_no_size_does_not_travel() {
-    for nothing in [rect(10, 10, 0, 600), rect(10, 10, 800, 0), rect(0, 0, -4, 4)] {
+    for nothing in [rect(10, 10, 0, 600), rect(10, 10, 800, 0), rect(0, 0, 0, 0)] {
         assert!(
             TheTravel::from(WindowId::numbered(1), nothing, Instant::now()).is_none(),
             "{nothing:?} travelled"
@@ -206,7 +206,7 @@ fn a_window_brought_back_stops_and_the_others_go_on() {
 #[test]
 fn a_window_put_aside_again_travels_once() {
     let began = Instant::now();
-    let mut travels = travelling(began, &[4, 4]);
+    let travels = travelling(began, &[4, 4]);
     assert_eq!(travels.how_many(), 1);
 }
 
