@@ -57,6 +57,11 @@ use crate::words;
 /// two to each other, so the day the text changes this constant fails a test
 /// instead of quietly matching nothing.
 ///
+/// **And again on 2026-11-09** (ADR 0150): the door for a command gained one
+/// sentence, that a command needing administrator rights starts with `sudo`
+/// and asks the person's password every time. Nothing was graded under the
+/// text of 2026-11-08 (`88d14385…`), so no grade is set aside by it.
+///
 /// **It changed again on 2026-11-08** (ADR 0149): the words a turn shows gained
 /// the door for one command where no verb fits. **No model is graded under
 /// it yet.** One grade was earned under the text before it,
@@ -72,7 +77,7 @@ use crate::words;
 /// text. Those grades are still in the catalogue, naming the text they were
 /// earned under; this file simply no longer reads them.
 pub const THE_WORDS_A_TURN_SHOWS: &str =
-    "88d1438548b88af584a086625837fc2ce5f119b769ccce6c3648c0452318a1fd";
+    "1dd7243b1984c2a710b0da702edbad2652e150caba7029641da271c8de0f641e";
 
 /// **The words a turn showed from 2026-10-27 to 2026-11-08** (ADR 0133 until
 /// ADR 0149), which the one follow-up grade in `data/follow-ups.toml` was
