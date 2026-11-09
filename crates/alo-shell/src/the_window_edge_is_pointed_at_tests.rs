@@ -99,9 +99,9 @@ fn a_machine_with_no_pointer_highlights_nothing() {
 fn the_focus_a_host_supplies_survives() {
     let edge = an_edge_over_the_origin();
     let (_directory, server) = a_server();
-    let pointing = server.what_this_edge_is_pointing_at(&edge, Some(OnTheEdge::Maximise));
+    let pointing = server.what_this_edge_is_pointing_at(&edge, Some(OnTheEdge::Minimise));
     assert_eq!(pointing.hovered, None, "there is still no pointer");
-    assert_eq!(pointing.focused, Some(OnTheEdge::Maximise));
+    assert_eq!(pointing.focused, Some(OnTheEdge::Minimise));
 }
 
 /// A concealed edge has nothing to light, which is checked here rather than

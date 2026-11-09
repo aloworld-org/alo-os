@@ -236,16 +236,12 @@ fn a_fitted_title_never_reaches_the_controls() {
             true,
             smithay::utils::Size::from((1920, 1080)),
         );
-        // **The first action, not the first control.** Move sits at the
-        // leading padding, to the *left* of the title, so comparing against it
-        // asked whether the title ended before the edge began — which it
-        // never does. The control the title must not reach is the first one
-        // after it.
+        // **The first control**, which is Window actions: the title must end
+        // before it whether or not it is shown.
         let first = edge
             .controls
-            .iter()
-            .find(|it| it.does != crate::window_edge::OnTheEdge::Move)
-            .expect("a shell-drawn edge lays out actions");
+            .first()
+            .expect("a shell-drawn band lays out its controls");
 
         // What the edge says the title has, which is the same number the
         // picture lays it out with — one derivation, so a test of the fit

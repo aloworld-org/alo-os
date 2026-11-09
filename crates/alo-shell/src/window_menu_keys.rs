@@ -1,10 +1,10 @@
-//! Walking the window menu with the keyboard, and giving focus back.
+//! Walking the window panel with the keyboard, and giving focus back.
 //!
 //! The contract's *every action must be reachable by pointer, touch, keyboard
 //! and assistive technology*, for the half that is the keyboard. `#630` laid
 //! the menu out and gave it a pointer hit test
 //! ([`WindowMenu::what_is_under`](crate::WindowMenu::what_is_under)); this is
-//! the road a person who never touches a mouse takes to the same five rows.
+//! the road a person who never touches a mouse takes to the same choices.
 //!
 //! # Why focus return is in the type and not in a caller's discipline
 //!
@@ -25,8 +25,8 @@
 //! # The trigger is carried, not assumed
 //!
 //! [`the_menu_of`](crate::the_menu_of) refuses to build a menu for an edge with
-//! no Menu control, so in practice the trigger is always
-//! [`OnTheEdge::Menu`]. It is stored anyway, set when the menu opens, because
+//! no Window actions, so in practice the trigger is always
+//! [`OnTheEdge::WindowActions`]. It is stored anyway, set when the menu opens, because
 //! *the thing that opened it* and *the only control a menu can anchor to* are
 //! two facts that happen to agree today, and a keyboard route opened from
 //! somewhere else later would otherwise hand focus to a control that was never
@@ -42,12 +42,10 @@
 //! | Enter | runs the focused row, closes, gives focus back |
 //! | Escape | closes with nothing run, gives focus back |
 //!
-//! **Unavailable rows are stepped over, never landed on.** They stay drawn and
-//! a reader still meets them — `crate::window_menu::MenuRow::available` says
-//! why that is — but a person pressing Down four times must reach four things
-//! they can use, not stop on a row that will not act. Stepping over is
-//! `WindowMenu::what_can_be_used`, which is the same list the pointer road
-//! would act on, so the two roads cannot come to differ about which rows work.
+//! **Every choice in the panel works**, because a choice that does not is not
+//! drawn (`crate::window_menu`). `WindowMenu::what_can_be_used` is the list
+//! the keyboard walks and the pointer acts on, so the two roads cannot come to
+//! differ about which choices there are.
 //!
 //! Tab is not handled here. It is the shell's own between-surfaces key and
 //! taking it inside a menu is a decision about the whole focus order, which
@@ -92,10 +90,9 @@ pub enum WhatTheKeyDid {
     /// This row acts, the menu closes, and the keyboard goes back to the
     /// control that opened it.
     ///
-    /// **The row is what it does, not an action to run.** Move and Resize have
-    /// no [`alo_shortcuts::Action`] — `WhatARowDoes::what_it_does` records why
-    /// — so a caller reads the row and decides, exactly as the pointer road
-    /// does with `WindowMenu::what_is_under`.
+    /// **The choice is what it does, not an action to run**: a caller reads
+    /// it and decides, exactly as the pointer road does with
+    /// `WindowMenu::what_is_under`.
     ItRuns {
         /// The row that was pressed.
         does: WhatARowDoes,

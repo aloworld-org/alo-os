@@ -51,7 +51,10 @@ pub struct Pointing {
 }
 
 /// Everything about a band's controls that is not where they are.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+///
+/// **The default is controls not shown**, so a picture built without saying
+/// draws none.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct HowTheControlsLook {
     /// Pointer and keyboard.
     pub pointing: Pointing,

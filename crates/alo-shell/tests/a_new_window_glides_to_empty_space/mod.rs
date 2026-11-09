@@ -263,7 +263,6 @@ fn with_room_in_view_nothing_glides() {
             Size::from((1_000_000, 1_000_000)),
         )
         .strip
-        .unwrap_or_else(|| panic!("a revealed edge has a strip"))
     };
     let (editors, files) = (strip(editor_is), strip(files_is));
     assert_eq!(
@@ -314,8 +313,7 @@ fn drawn(window: Rectangle<i32, Logical>) -> Rectangle<i32, Logical> {
         true,
         Size::from((1_000_000, 1_000_000)),
     )
-    .strip
-    .unwrap_or_else(|| panic!("a revealed edge has a strip"));
+    .strip;
     strip.merge(window)
 }
 

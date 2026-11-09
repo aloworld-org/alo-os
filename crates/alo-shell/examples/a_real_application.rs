@@ -222,7 +222,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                 // person with no mouse on that window sees.
                 let revealed = server.is_this_windows_edge_revealed(surface);
                 // The output this walk draws into, in logical units, so a
-                // window narrower than 148 gets its edge clamped the same way
+                // window narrower than the narrowest band gets it clamped the same way
                 // the shell clamps it.
                 let edge = alo_shell::edge_of(
                     window,
@@ -255,9 +255,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                 let menu = keyboard.the_menu().and_then(|in_the_menu| {
                     alo_shell::the_menu_of(
                         &edge,
-                        alo_shell::WhatTheWindowAllows::everything(),
-                        false,
-                        alo_shell::THE_TITLE_BLOCK_IS_TALL,
+                        alo_shell::HowTheWindowIs::default(),
                         alo_shell::the_usable_output(
                             (THE_OUTPUT_IS.0, THE_OUTPUT_IS.1).into(),
                             100,
@@ -265,9 +263,9 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                     )
                     .map(|menu| (menu, in_the_menu.on()))
                 });
+                let pointing = server.what_this_edge_is_pointing_at(&edge, focused);
                 alo_shell::EdgePicture::of(
                     &edge,
-                    server.what_this_edge_is_pointing_at(&edge, focused),
                     alo_shell::OverTheEdge {
                         menu: menu.as_ref().map(|(menu, on)| {
                             (
@@ -282,6 +280,12 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                     },
                     alo_shell::TheWindow {
                         title: title.its_own_words(),
+                        controls: alo_shell::HowTheControlsLook {
+                            pointing,
+                            open: menu.is_some(),
+                            how_shown: if revealed { 1000 } else { 0 },
+                            look: alo_shell::WhichLook::default(),
+                        },
                         ..alo_shell::TheWindow::default()
                     },
                     &mut faces,

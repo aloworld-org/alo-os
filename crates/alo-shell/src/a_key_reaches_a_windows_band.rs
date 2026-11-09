@@ -15,11 +15,15 @@
 //!
 //! | key | in the panel | on the band |
 //! |---|---|---|
-//! | Right, Down, Tab | the next choice | the next control |
+//! | Right, Down | the next choice | the next control |
 //! | Left, Up | the one before | the one before |
 //! | Home, End | the first, the last | the first, the last |
 //! | Enter, Space | do it; the panel closes and focus goes back to Window actions | press it |
 //! | Escape | close the panel; focus goes back to Window actions | leave the band |
+//!
+//! **Tab is not taken**: it is the shell's key between surfaces, and taking
+//! it inside the panel is a decision about the whole focus order that
+//! `crate::window_menu_keys` already declined to make here.
 //!
 //! **Any other key is the application's**, so a person who opened the panel by
 //! mistake and starts typing loses nothing. A key's release always goes on to
@@ -37,8 +41,6 @@ use crate::{InputError, InputUpdate, Server};
 mod codes {
     /// Escape.
     pub(super) const ESCAPE: u32 = 1;
-    /// Tab.
-    pub(super) const TAB: u32 = 15;
     /// Enter.
     pub(super) const ENTER: u32 = 28;
     /// Space.
@@ -65,7 +67,7 @@ mod codes {
 pub(crate) const fn which_key(code: u32) -> Option<AnEdgeKey> {
     match code {
         codes::ESCAPE => Some(AnEdgeKey::Leave),
-        codes::TAB | codes::RIGHT | codes::DOWN => Some(AnEdgeKey::Next),
+        codes::RIGHT | codes::DOWN => Some(AnEdgeKey::Next),
         codes::LEFT | codes::UP => Some(AnEdgeKey::Previous),
         codes::HOME => Some(AnEdgeKey::First),
         codes::END => Some(AnEdgeKey::Last),

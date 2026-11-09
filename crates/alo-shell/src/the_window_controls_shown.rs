@@ -1,11 +1,11 @@
-//! Whether every window's title is on its edge, and which window wears the
-//! focused look — the two things a person tells windows apart by.
+//! Whether every window's controls are always on its band, and which window
+//! wears the focused look.
 //!
-//! **The owner's answer of 2026-11-01**: *window titles are always visible on
-//! every window's edge, with the app's icon; Settings offers "show the title
-//! only when I point at it". The focused window has its own look.* The first
-//! half is `alo_appearance::WindowControls`, told to this seat at stand-up and
-//! again whenever Settings keeps a new answer; the second is asked of the
+//! **The owner's ruling of 2026-11-09** (`docs/design/the-window-controls.md`):
+//! the title is always on the band, the controls come as the pointer nears, and
+//! Settings offers *Always show window controls* — `alo_appearance::WindowControls`,
+//! told to this seat at stand-up and again whenever Settings keeps a new answer.
+//! The focused look is the 2026-11-01 answer's, kept, and is asked of the
 //! keyboard, because *focused* on the board `557:456` means *the window your
 //! typing goes to*.
 
@@ -14,17 +14,17 @@ use smithay::reexports::wayland_server::protocol::wl_surface::WlSurface;
 use crate::which_window_is_in_front::AKindOfWindow;
 
 impl crate::Server {
-    /// When windows' titles are shown, as the person last said.
+    /// When windows' controls are shown, as the person last said.
     ///
     /// **Told rather than read**, for the reason `Server::the_shortcuts_are`
     /// gives: a compositor that opened a person's settings file would be a
     /// compositor measuring. The desktop reads the file at sign-in and says
     /// what it holds; Settings says it again when the person changes it.
-    pub fn the_window_controls_are(&mut self, titles: alo_appearance::WindowControls) {
-        self.window_controls = titles;
+    pub fn the_window_controls_are(&mut self, controls: alo_appearance::WindowControls) {
+        self.window_controls = controls;
     }
 
-    /// When windows' titles are shown.
+    /// When windows' controls are shown.
     #[must_use]
     pub const fn the_window_controls(&self) -> alo_appearance::WindowControls {
         self.window_controls

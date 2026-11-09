@@ -35,7 +35,7 @@ use crate::window_edge_title::FittedTitle;
 use crate::{RenderError, painted_text};
 
 /// What only the window knows: its name, its application's, how it looks.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Default)]
 pub struct TheWindow<'a> {
     /// What the application called this window, if it said.
     pub title: Option<&'a str>,

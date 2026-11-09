@@ -95,7 +95,6 @@ fn an_edge(y: i32, fonts: &mut cosmic_text::FontSystem) -> EdgePicture {
             true,
             Size::from((1440, 960)),
         ),
-        crate::window_edge_paint::Pointing::default(),
         crate::window_edge_picture::OverTheEdge::default(),
         crate::window_edge_picture::TheWindow {
             body: Some(window),

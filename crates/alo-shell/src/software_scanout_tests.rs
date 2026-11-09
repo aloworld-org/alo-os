@@ -415,7 +415,6 @@ fn a_frame_with_no_scene_but_a_layer_on_it_is_drawn() {
 #[test]
 fn both_windows_edges_reach_the_bytes_a_display_would_scan_out() {
     use crate::window_edge::{Decorations, edge_of};
-    use crate::window_edge_paint::Pointing;
     use crate::window_edge_picture::{EdgePicture, OverTheEdge, TheWindow};
     use smithay::utils::Logical;
 
@@ -444,7 +443,6 @@ fn both_windows_edges_reach_the_bytes_a_display_would_scan_out() {
             true,
             smithay::utils::Size::from((1920, 1080)),
         ),
-        Pointing::default(),
         OverTheEdge::default(),
         TheWindow::default(),
         &mut faces,
@@ -459,7 +457,6 @@ fn both_windows_edges_reach_the_bytes_a_display_would_scan_out() {
             true,
             smithay::utils::Size::from((1920, 1080)),
         ),
-        Pointing::default(),
         OverTheEdge::default(),
         TheWindow::default(),
         &mut faces,
@@ -552,7 +549,6 @@ fn both_windows_edges_reach_the_bytes_a_display_would_scan_out() {
 fn a_windows_shadow_never_lightens_the_ground_under_it() {
     use crate::window_edge::{Decorations, edge_of};
     use crate::window_edge_look::WhichLook;
-    use crate::window_edge_paint::Pointing;
     use crate::window_edge_picture::{EdgePicture, OverTheEdge, TheWindow};
     use smithay::utils::Logical;
 
@@ -582,13 +578,12 @@ fn a_windows_shadow_never_lightens_the_ground_under_it() {
                 true,
                 smithay::utils::Size::from(size),
             ),
-            Pointing::default(),
             OverTheEdge::default(),
             TheWindow {
                 title: None,
                 look,
-                icon: None,
                 body: Some(window),
+                ..TheWindow::default()
             },
             &mut faces,
             size,
