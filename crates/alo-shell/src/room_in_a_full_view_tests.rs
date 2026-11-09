@@ -165,7 +165,7 @@ fn drawn(window: Rectangle<i32, Logical>, zoom: f64, scale: u32) -> Rectangle<f6
         true,
         Size::from((1_000_000, 1_000_000)),
     );
-    let strip = edge.strip.expect("a revealed edge has a strip");
+    let strip = edge.strip;
     let back = |units: i32| f64::from(units) * f64::from(edges_scale) / 100.0 / zoom;
     let strip = Rectangle::<f64, Logical>::new(
         (back(strip.loc.x), back(strip.loc.y)).into(),

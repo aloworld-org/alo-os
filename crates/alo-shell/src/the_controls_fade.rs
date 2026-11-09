@@ -104,13 +104,6 @@ impl TheFade {
             began: now,
         }
     }
-
-    /// Whether they are still on their way, so a frame should come to show it.
-    #[must_use]
-    pub(crate) fn is_moving(&self, now: Instant, less_motion: bool) -> bool {
-        let goal = if self.towards_shown { ALL_THE_WAY } else { 0 };
-        self.how_shown(now, less_motion) != goal
-    }
 }
 
 #[cfg(test)]

@@ -63,9 +63,6 @@ pub const THE_PICTURES_START_AT: i32 = 50;
 /// How big one placement picture is. `11:55`.
 pub const A_PICTURE_IS: i32 = 94;
 
-/// The gap between placement pictures: `11:59` at 104 after one at 0, 94 wide.
-pub const BETWEEN_PICTURES: i32 = 10;
-
 /// Where the divider under the pictures is. `11:67`.
 pub const THE_DIVIDER_IS_AT: i32 = 160;
 

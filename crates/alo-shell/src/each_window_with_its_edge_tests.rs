@@ -125,6 +125,7 @@ fn each_edge_is_drawn_once_with_its_window_or_after_them_all() {
         .map(|_| AnEdgesTextures {
             behind: Vec::new(),
             over: Vec::new(),
+            on_top: Vec::new(),
         })
         .collect();
     let runs = vec![

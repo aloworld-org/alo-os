@@ -15,7 +15,6 @@ fn they_come_in_over_a_hundred_and_twenty_milliseconds() {
     assert_eq!(fade.how_shown(t, false), 0, "no jump at the start");
     assert_eq!(fade.how_shown(t + Duration::from_millis(60), false), 500);
     assert_eq!(fade.how_shown(t + THEY_COME_IN, false), ALL_THE_WAY);
-    assert!(!fade.is_moving(t + THEY_COME_IN, false));
 }
 
 /// **Out over 160 ms**, from the moment it truly leaves — no wait first.
@@ -37,7 +36,6 @@ fn under_reduced_motion_the_change_is_immediate() {
     let t = then();
     let coming = TheFade::settled(false, t).heading(true, t, true);
     assert_eq!(coming.how_shown(t, true), ALL_THE_WAY);
-    assert!(!coming.is_moving(t, true));
     let going = TheFade::settled(true, t).heading(false, t, true);
     assert_eq!(going.how_shown(t, true), 0);
 }
