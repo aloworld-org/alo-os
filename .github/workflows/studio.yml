@@ -58,16 +58,19 @@ jobs:
           cargo +1.97.0 clippy --locked --release -p alo-desktop --all-targets -- -D warnings
           cargo +1.97.0 clippy --locked --release -p alo-dock --all-targets -- -D warnings
           cargo +1.97.0 clippy --locked --release -p alo-shell --lib -- -D warnings
-      - name: Build the desktop for installed recording verification
+      - name: Build the desktop and services for installed recording verification
         run: |
           # Retain function names for profiling the optimized VM binary.
           # This adds no instrumentation and leaves dependency profiles alone.
           cargo +1.97.0 rustc --locked --release -p alo-desktop -- -C strip=debuginfo
+          cargo +1.97.0 build --locked --release -p alo-agentd -p alo-agent -p alo-portald -p alo-capture-provider -p alo-capture-remote
           mkdir -p desktop-verification
-          cp target/release/alo-desktop desktop-verification/alo-desktop
+          for program in alo-desktop alo-agentd alo-agent alo-portald alo-capture-provider alo-capture-remote; do
+            cp "target/release/$program" "desktop-verification/$program"
+          done
           git rev-parse HEAD > desktop-verification/source.txt
           cd desktop-verification
-          sha256sum alo-desktop > sha256.txt
+          sha256sum alo-desktop alo-agentd alo-agent alo-portald alo-capture-provider alo-capture-remote > sha256.txt
       - uses: actions/upload-artifact@v4
         with:
           name: studio-desktop
