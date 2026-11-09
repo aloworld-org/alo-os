@@ -515,6 +515,9 @@ where
     if let Some(desktop) = native.desktop {
         desktop.paint(&mut frame, &washed)?;
     }
+    // **A window travelling to the put-aside panel**, as an outline above the
+    // desktop it is heading into (`crate::a_window_travels_aside`).
+    crate::painted::paint(&mut frame, native.travelling_aside, &[])?;
     // **The record fixed to the display**, which only the nested lane still
     // draws: above every client and control; below the question and the
     // indicator. The record on the canvas was drawn among the windows above.

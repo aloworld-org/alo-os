@@ -152,6 +152,10 @@ impl crate::Server {
         let id = crate::window_number::the_window_id_of(frame);
         let preview = panel.bring_back(id)?;
         let _ = self.set_window_minimized(frame, false);
+        // **Back mid-travel, so the travel ends**: an outline still heading for
+        // the panel while its window is on the canvas would be the same window
+        // in two places (`crate::a_window_travels_aside`).
+        self.this_window_stops_travelling_aside(frame);
         Ok(preview)
     }
 
@@ -283,6 +287,8 @@ impl crate::Server {
             return 0;
         };
         let zoom = self.the_camera().zoom();
+        // One moment for every window put aside together, so they travel as one.
+        let now = std::time::Instant::now();
         let mut put = 0;
         for frame in asked {
             let Some(at) = self.the_patch_of_the_window(&frame) else {
@@ -293,10 +299,12 @@ impl crate::Server {
             // that had not objected, and would have **lost the whole panel** had a second
             // lookup answered `None`. A workaround for a problem that does not exist is how a
             // person loses everything they put away.
-            if self
-                .put_this_window_aside(panel, &frame, at, zoom, Privacy::Ordinary)
-                .is_ok()
-            {
+            if let Ok(id) = self.put_this_window_aside(panel, &frame, at, zoom, Privacy::Ordinary) {
+                // **And it travels to its card**, after the panel took it and
+                // the window was hidden — the person's road only, so a client
+                // that minimised itself never travels
+                // (`crate::a_window_travels_aside`).
+                self.a_window_begins_to_travel_aside(&frame, id, now);
                 put += 1;
             }
         }

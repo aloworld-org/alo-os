@@ -1,0 +1,26 @@
+[package]
+name = "alo-running-as-administrator"
+version = "0.0.1"
+description = "Runs one command as administrator, once polkit says the person gave their password (ADR 0150)."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+# A crate of its own, apart from `alo-administrator`, because it is the one
+# piece that starts a command and so needs `alo-running` — and `alo-running`
+# brings the kernel boundary's crates, which the desktop and the shell must
+# never be built with (`alo-desktop/tests/the_desktop_is_built_without_the_agent_service.rs`).
+[target.'cfg(target_os = "linux")'.dependencies]
+alo-administrator = { path = "../alo-administrator" }
+alo-capability = { path = "../alo-capability" }
+alo-running = { path = "../alo-running" }
+rustix = { workspace = true, features = ["net", "process"] }
+zbus = { version = "5.19", default-features = false, features = ["async-io", "blocking-api"] }
+
+[lints]
+workspace = true
+
+[[bin]]
+name = "alo-running-as-administrator"
+path = "src/main.rs"

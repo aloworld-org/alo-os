@@ -94,6 +94,7 @@ mod a_key_reaches_settings;
 mod a_key_reaches_the_bar;
 mod a_key_reaches_the_docks_surfaces;
 mod a_key_reaches_the_market;
+mod a_key_reaches_the_password_sheet;
 mod a_key_reaches_the_record;
 mod a_key_reaches_the_task_in_front;
 mod a_key_types_into_more_apps;
@@ -123,6 +124,7 @@ mod a_window_and_its_strip;
 mod a_window_on_one_side;
 mod a_window_onto_a_list;
 mod a_window_raised;
+mod a_window_travels_aside;
 mod alo_in_the_terminal_in_settings;
 /// alo's words read for the emphasis a model marks in Markdown.
 ///
@@ -132,6 +134,7 @@ pub mod alos_marked_words;
 /// Closing a task window, and which ones may close.
 pub mod closing_a_task_window;
 mod each_window_with_its_edge;
+mod ease_in_and_out;
 pub use a_provider_is_added_in_settings::WhyNotSaved;
 mod a_reader_presses;
 pub use a_reader_presses::WhatAReaderPressCameTo;
@@ -235,11 +238,18 @@ mod dock_tooltip;
 /// How a rounded panel is lifted off what is behind it — its corner and its
 /// shadow — at the display scale its geometry is laid out in.
 mod how_a_panel_is_raised;
+/// A full-screen window's band, out of sight until the top edge is reached.
+mod the_band_over_full_screen;
 mod the_keyboard_on_the_docks_surfaces;
+mod the_password_sheet;
+mod the_password_sheet_drawn;
+mod the_password_sheets_words;
 mod the_pointer_drawn;
 mod the_pointers_look;
 pub mod what_is_on_the_clipboard;
+mod where_a_travelling_window_lands;
 mod where_the_docks_surface_is;
+pub use where_a_travelling_window_lands::TheCards;
 
 /// Where the Dock is on one display: the band on its edge and the slots
 /// inside it, worked out once for the draw and for a press.
@@ -309,6 +319,7 @@ mod in_use_paint;
 mod in_use_raster;
 /// Vector artwork inked into a raster at its box's size.
 mod inking_a_shape;
+mod keeping_the_system_password;
 mod keyboard;
 mod keyboard_sheet;
 mod language_sheet;
@@ -538,6 +549,8 @@ mod the_edge_takes_the_keyboard;
 /// The egress indicator's two arrows, from the design file's SVG.
 mod the_egress_indicators_arrows;
 mod the_first_account;
+/// The title and the application name a window's band shows.
+mod the_name_on_the_band;
 /// The nearest empty space on a Place for a window with no room in view.
 mod the_nearest_empty_space;
 /// The record drawn as a window on the canvas, for one frame.
@@ -965,6 +978,9 @@ pub use sign_in_layout::{
     THE_SUBMIT_TARGET_IS, sign_in_laid_out,
 };
 pub use sign_in_password::PASSWORD_BYTES;
+pub use the_password_sheet::{
+    FromTheSheet, PasswordAsked, ThePasswordTyped, ToTheSheet, WhatItIsFor, WhyNotChecked,
+};
 // **`OnTheSignInScreen` is deliberately not exported.** It was, until the
 // screen-reader gate in `alo-access` read this list: that test treats every
 // exported name ending in `Screen` as a surface a person meets, and told me a

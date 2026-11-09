@@ -34,6 +34,8 @@ use std::time::{Duration, Instant};
 
 use alo_canvas::{At, Place};
 
+use crate::ease_in_and_out::eased;
+
 /// How long the view takes to glide, however far it goes.
 ///
 /// **300 ms, chosen by this lane on 2026-11-07, because the design is silent.**
@@ -95,17 +97,6 @@ impl TheGlide {
     }
 }
 
-/// Ease in and out, cubic: slow at both ends, fastest in the middle.
-fn eased(t: f64) -> f64 {
-    let t = t.clamp(0.0, 1.0);
-    if t < 0.5 {
-        4.0 * t * t * t
-    } else {
-        let back = -2.0 * t + 2.0;
-        1.0 - back * back * back / 2.0
-    }
-}
-
 impl crate::Server {
     /// **Whether the person asked for less motion**, as their accessibility
     /// settings say — told at stand-up, like the rest of what they chose.
@@ -118,6 +109,10 @@ impl crate::Server {
         if reduced && let Some(glide) = self.the_glide.take() {
             // Asked for less motion mid-glide: finish it now.
             self.the_glide_writes(&glide, glide.to);
+        }
+        if reduced {
+            // And a window travelling to the panel is already there.
+            self.every_window_stops_travelling_aside();
         }
     }
 

@@ -230,21 +230,39 @@ pub fn what_is_offered(at: &WhereToLook, tool: &(impl Tool + ?Sized)) -> Offered
     // its kind either.
     let languages: Vec<&str> = at.languages.iter().map(String::as_str).collect();
     let mut what_each_is = alo_installed::what_they_are(&at.entries, &languages);
+    // **And a fourth, for the name in the person's language** — what a
+    // window's band and the alo Bar show (`docs/design/the-window-controls.md`
+    // §3). The packager's unlocalised name is kept among what it *is*, so a
+    // person reading French who types the English name still finds it.
+    let mut translated = alo_installed::what_they_are_called(&at.entries, &languages);
     let installed = found
         .all()
-        .map(|application| AnApplicationHere {
-            is: what_each_is
-                .remove(application.identifier())
-                .unwrap_or_default(),
-            identifier: application.identifier().to_owned(),
-            called: match application.name() {
+        .map(|application| {
+            let packaged = match application.name() {
                 Some(alo_applications::application::Called::ByWhoeverPackagedIt(called)) => {
                     Some(called.clone())
                 }
                 // An entry read off a disk is always the packager's words; ours
                 // are only ever given in code, never read here.
                 _ => None,
-            },
+            };
+            let mut is = what_each_is
+                .remove(application.identifier())
+                .unwrap_or_default();
+            let called = match (translated.remove(application.identifier()), packaged) {
+                (Some(translated), Some(packaged)) if translated != packaged => {
+                    if !is.contains(&packaged) {
+                        is.push(packaged);
+                    }
+                    Some(translated)
+                }
+                (translated, packaged) => translated.or(packaged),
+            };
+            AnApplicationHere {
+                is,
+                identifier: application.identifier().to_owned(),
+                called,
+            }
         })
         .collect();
     let (roles, terminal) = the_roles_and_the_terminal(tool, at.arrived.already());

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE policyconfig PUBLIC
+ "-//freedesktop//DTD PolicyKit Policy Configuration 1.0//EN"
+ "http://www.freedesktop.org/standards/PolicyKit/1/policyconfig.dtd">
+<!--
+  alo OS: the one thing alo asks polkit about (ADR 0150).
+
+  A command alo was asked to run, run as administrator. `auth_admin` at every
+  setting, and never the kind that keeps an answer, because the owner's answer was "Ask my
+  password each time" (ADR 0149): a yes is spent on the one command it was
+  given for, and the next command asks again.
+
+  The message is the command itself, `$(command)`, which the runner hands
+  polkit as a detail; the desktop's password sheet draws its own sentence
+  above it, in the person's language. This file is polkit's own
+  configuration language: it configures the engine, it is not code of ours.
+
+  crates/alo-image/tests/administrator_actions_ask_every_time.rs reads it.
+-->
+<policyconfig>
+  <vendor>alo OS</vendor>
+  <action id="org.aloworld.alo.run-as-administrator">
+    <description>Run a command alo was asked to run, as administrator</description>
+    <message>$(command)</message>
+    <defaults>
+      <allow_any>auth_admin</allow_any>
+      <allow_inactive>auth_admin</allow_inactive>
+      <allow_active>auth_admin</allow_active>
+    </defaults>
+  </action>
+</policyconfig>

@@ -258,6 +258,10 @@ pub struct Server {
     pub(crate) motion_is_reduced: bool,
     /// The view gliding somewhere, while it is (`crate::the_view_glides`).
     pub(crate) the_glide: Option<crate::the_view_glides::TheGlide>,
+    /// Windows the person put aside, travelling to their cards in the panel
+    /// (`crate::a_window_travels_aside`). **Never pruned against what is
+    /// showing**: every window here has just been hidden.
+    pub(crate) travelling_aside: crate::a_window_travels_aside::TheTravels<WlSurface>,
     /// Windows the person opened that have not been placed yet
     /// (`crate::a_window_the_person_opened`): the only ones whose placing may
     /// move the view.
@@ -552,6 +556,9 @@ pub struct Server {
     /// takes its reveal state with it rather than leaving one for whatever
     /// surface is allocated at that address next.
     pub(crate) edges_revealed: Vec<(WlSurface, alo_dock::revealing::Revealing)>,
+    /// The full-screen windows whose band is out over their top
+    /// (`crate::the_band_over_full_screen`).
+    pub(crate) bands_out_over_full_screen: Vec<WlSurface>,
     /// How far each window's controls have faded in or out
     /// (`crate::the_controls_fade`), pruned on the same walk as
     /// `edges_revealed`.
@@ -913,6 +920,7 @@ impl Server {
             when_there_is_no_room: alo_appearance::WhenThereIsNoRoom::default(),
             motion_is_reduced: false,
             the_glide: None,
+            travelling_aside: crate::a_window_travels_aside::TheTravels::none(),
             the_person_opened_these: Vec::new(),
             what_was_typed_into_more_apps: alo_dock::WhatTheyTyped::nothing(),
             pins_owed_to_the_disk: None,
@@ -935,6 +943,7 @@ impl Server {
             closing_asked: None,
             close_when_stopped: Vec::new(),
             edges_revealed: Vec::new(),
+            bands_out_over_full_screen: Vec::new(),
             controls_fading: Vec::new(),
             keyboard_on_edges: Vec::new(),
             asked_to_bring_back: Vec::new(),

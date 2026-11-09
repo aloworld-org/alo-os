@@ -181,3 +181,62 @@ fn putting_a_window_aside_never_travels() {
         "putting a window aside took the person to it"
     );
 }
+
+/// **A window in sight is restored where the person sees it**, and the
+/// camera stays where it was — on the Place already shown nothing moves. The
+/// window is placed away from the plane's origin, where a camera pointed at
+/// its corner would have moved.
+#[test]
+fn a_restore_of_a_window_in_sight_leaves_the_view_where_it_is() {
+    let f = fixture();
+    let (_app, surface) = a_frame(&f);
+    f.backend({
+        let surface = surface.clone();
+        move |s| s.place_window(&surface, (200, 120))
+    })
+    .expect("a mapped window can be placed");
+    let before = f.backend(|s| s.the_camera());
+    for minimized in [true, false] {
+        f.backend({
+            let surface = surface.clone();
+            move |s| s.set_window_minimized(&surface, minimized).ok()
+        });
+    }
+    assert_eq!(
+        f.backend(|s| s.the_camera()),
+        before,
+        "restoring a window the person could see moved the view"
+    );
+    assert_eq!(
+        f.backend(move |_| alo_shell::window_buffer_origin(&surface)),
+        (200.0, 120.0).into(),
+        "and the window is where it was"
+    );
+}
+
+/// **A window out of sight on this Place is still travelled to**: the view
+/// is pointed at it, because the person asked for it back and could not see
+/// it.
+#[test]
+fn a_restore_of_a_window_out_of_sight_looks_at_it() {
+    let f = fixture();
+    let (_app, surface) = a_frame(&f);
+    let far = (VIEWPORT.0 * 3, VIEWPORT.1 * 3);
+    f.backend({
+        let surface = surface.clone();
+        move |s| s.place_window(&surface, far)
+    })
+    .expect("a mapped window can be placed");
+    for minimized in [true, false] {
+        f.backend({
+            let surface = surface.clone();
+            move |s| s.set_window_minimized(&surface, minimized).ok()
+        });
+    }
+    let camera = f.backend(|s| s.the_camera());
+    assert_eq!(
+        (camera.at().x, camera.at().y),
+        far,
+        "the view did not go to the window the person could not see"
+    );
+}

@@ -726,6 +726,73 @@ pub const NOTHING_RAN_WOULD_NOT_START: Word = Word::saying(
      than a refusal by any rule.",
 );
 
+/// Nothing ran as administrator: the person closed the password window
+/// (ADR 0150).
+pub const NOTHING_RAN_THEY_CANCELLED: Word = Word::saying(
+    "capability.administrator.they-cancelled",
+    "nothing ran, because you closed the window that asked for your password",
+)
+.noting(
+    "Read in a record, and shown to a person, after alo asked to run a command as administrator \
+     (with the rights to change the whole computer) and the person closed the password window \
+     instead of typing their password.",
+);
+
+/// Nothing ran as administrator: the password was not accepted.
+pub const NOTHING_RAN_NOT_ACCEPTED: Word = Word::saying(
+    "capability.administrator.not-accepted",
+    "nothing ran, because the password was not accepted",
+)
+.noting(
+    "Read in a record, and shown to a person, after the computer asked for their password to run \
+     a command as administrator and did not accept what was given.",
+);
+
+/// Nothing ran as administrator: nothing could ask for the password.
+pub const NOTHING_RAN_NOTHING_CAN_ASK: Word = Word::saying(
+    "capability.administrator.nothing-can-ask",
+    "nothing ran, because nothing on this computer could ask for your password: you need to be \
+     signed in at its screen",
+)
+.noting(
+    "Read in a record, and shown to a person, when alo wanted to run a command as administrator \
+     and there was no desktop signed in where the password window could appear. It is not saying \
+     a password was wrong.",
+);
+
+/// Nothing ran as administrator: the account is not an administrator.
+pub const NOTHING_RAN_NOT_AN_ADMINISTRATOR: Word = Word::saying(
+    "capability.administrator.not-an-administrator",
+    "nothing ran, because your account is not an administrator on this computer",
+)
+.noting(
+    "Read in a record, and shown to a person, when alo wanted to run a command as administrator \
+     (with the rights to change the whole computer) and the person's account does not have those \
+     rights here.",
+);
+
+/// Nothing ran as administrator: nobody answered the password window.
+pub const NOTHING_RAN_NO_ANSWER_IN_TIME: Word = Word::saying(
+    "capability.administrator.no-answer-in-time",
+    "nothing ran, because the password was not given within five minutes, so the question was \
+     taken back",
+)
+.noting(
+    "Read in a record, and shown to a person, when the password window was left open for five \
+     minutes without an answer and closed itself.",
+);
+
+/// Nothing ran as administrator: the part that runs it did not answer.
+pub const NOTHING_RAN_AS_ADMINISTRATOR_COULD_NOT_ASK: Word = Word::saying(
+    "capability.administrator.could-not-ask",
+    "nothing ran, because this computer could not ask for administrator rights just now",
+)
+.noting(
+    "Read in a record, and shown to a person, when the part of the computer that runs a command \
+     as administrator, or the part that asks for the password, did not answer. A fault in the \
+     computer, not a refusal by the person.",
+);
+
 /// The sealed box was joined and refused to start the program, on a machine
 /// whose system layer it cannot read yet — the owner's *say so plainly, keep
 /// going* of 2026-11-06 (`crate::the_sealed_box_here`).
@@ -954,7 +1021,7 @@ pub const A_COMMAND_THAT_IS_NOT_ONE_LINE: Word = Word::saying(
 );
 
 /// Every string this crate can say, in the order a translator meets them.
-pub const EVERY_WORD: [Word; 83] = [
+pub const EVERY_WORD: [Word; 89] = [
     ANONYMOUS,
     NO_APPLICATION_NAMED,
     NOTHING_NAMED,
@@ -1038,6 +1105,12 @@ pub const EVERY_WORD: [Word; 83] = [
     A_COMMAND_THAT_IS_EMPTY,
     A_COMMAND_THAT_IS_TOO_LONG,
     A_COMMAND_THAT_IS_NOT_ONE_LINE,
+    NOTHING_RAN_THEY_CANCELLED,
+    NOTHING_RAN_NOT_ACCEPTED,
+    NOTHING_RAN_NOTHING_CAN_ASK,
+    NOTHING_RAN_NOT_AN_ADMINISTRATOR,
+    NOTHING_RAN_NO_ANSWER_IN_TIME,
+    NOTHING_RAN_AS_ADMINISTRATOR_COULD_NOT_ASK,
 ];
 
 /// Why this crate's own list could not be declared.

@@ -10,8 +10,9 @@ use std::time::{Duration, Instant};
 
 use alo_canvas::At;
 
-use super::{THE_GLIDE_LASTS, eased};
+use super::THE_GLIDE_LASTS;
 use crate::Server;
+use crate::ease_in_and_out::eased;
 
 /// A server on a socket of its own.
 fn server(named: &str) -> (tempfile::TempDir, Server) {
