@@ -122,6 +122,7 @@ mod a_wheel_over_a_sheet;
 mod a_window_and_its_strip;
 mod a_window_onto_a_list;
 mod a_window_raised;
+mod a_window_travels_aside;
 mod alo_in_the_terminal_in_settings;
 /// alo's words read for the emphasis a model marks in Markdown.
 ///
@@ -131,6 +132,7 @@ pub mod alos_marked_words;
 /// Closing a task window, and which ones may close.
 pub mod closing_a_task_window;
 mod each_window_with_its_edge;
+mod ease_in_and_out;
 pub use a_provider_is_added_in_settings::WhyNotSaved;
 mod a_reader_presses;
 pub use a_reader_presses::WhatAReaderPressCameTo;
@@ -243,7 +245,9 @@ mod the_password_sheets_words;
 mod the_pointer_drawn;
 mod the_pointers_look;
 pub mod what_is_on_the_clipboard;
+mod where_a_travelling_window_lands;
 mod where_the_docks_surface_is;
+pub use where_a_travelling_window_lands::TheCards;
 
 /// Where the Dock is on one display: the band on its edge and the slots
 /// inside it, worked out once for the draw and for a press.
