@@ -1,8 +1,8 @@
-# Proposed catalogue entry. Do not copy into the live catalogue until Flathub
-# actually serves a reviewed, signed build under this identifier.
+# Proposed catalogue entry. Activate only after the configured, signature-checked
+# alo repository serves this application. Match the source to its enabled remote.
 [[application]]
 category = "video"
 identifier = "org.aloworld.Studio"
-source = "flathub"
+source = "alo-applications"
 version = "0.1.0"
 licence = "GPL-3.0-or-later"

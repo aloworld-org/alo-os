@@ -38,7 +38,9 @@ struct Key {
 /// Both paths use the same font-domain and memory bounds.
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Layout {
+    /// Shape paragraphs within the requested wrapping width.
     Wrapped,
+    /// Trim and centre a native label within the requested width.
     Centred,
 }
 

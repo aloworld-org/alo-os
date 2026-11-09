@@ -89,6 +89,43 @@ and export an installable bundle. A market publisher must publish this build to
 a signed Flatpak remote before adding its identifier and source to alo OS's
 catalogue. **It is not on Flathub merely because it has a manifest.**
 
+### Prepare a signed alo repository
+
+`packaging/export-repository.sh` takes the normal package artifact directory,
+an existing signing key's full fingerprint, the HTTPS repository URL, and a
+new output directory:
+
+```sh
+bash packaging/export-repository.sh PACKAGE_DIRECTORY SIGNING_FINGERPRINT HTTPS_REPOSITORY_URL NEW_OUTPUT_DIRECTORY
+```
+
+The artifact directory must contain the bundle and its original source,
+feature, SDK and checksum records. The exporter verifies those records,
+requires verification features to be disabled, signs the application commit
+and repository metadata, and writes installable `.flatpakrepo` and
+`.flatpakref` files with the public signing key. It neither uploads anything
+nor adds a trusted remote to the person's machine. A missing signing key,
+damaged input, unexpected application ref or existing output directory refuses
+the operation.
+
+Publish the contents of `repository/` at the specified HTTPS URL and distribute
+`alo-studio.flatpakref` to install Studio. Add the proposed catalogue entry only
+after the enabled source actually serves that signed application. Its source
+name must match the configured remote; the repository registration file uses
+`alo-applications` as its suggested name.
+
+`packaging/verify-repository.sh PACKAGE_DIRECTORY` creates temporary test keys
+and isolated Flatpak installations. It verifies a signed install, refusal of
+a different signing key, and refusal of damaged metadata. It removes its test
+keys and installations on exit. The package workflow runs this check on every
+package build; passing it proves the release path, not publication or installed
+recording quality.
+
+Flathub submission is a separate human process. Its current requirements prohibit
+AI-generated manifests and agent-created submissions; the scripts here prepare
+an independently hosted alo repository, not a Flathub submission. See the
+[Flathub requirements](https://docs.flathub.org/docs/for-app-authors/requirements#generative-ai-policy).
+
 ## Agent control
 
 The versioned [automation interface](docs/automation.md) provides semantic

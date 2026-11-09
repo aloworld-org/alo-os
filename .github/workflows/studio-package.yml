@@ -37,6 +37,12 @@ jobs:
           flatpak list --runtime --columns=application,branch,active:full > /tmp/studio-flatpak/sdk-versions.txt
           cd /tmp/studio-flatpak
           sha256sum alo-studio-0.1.0.flatpak source.txt features.txt sdk-versions.txt > checksums.txt
+      - name: Verify signed installation and signature refusals
+        shell: bash
+        run: |
+          set -euo pipefail
+          command -v ostree gpg
+          dbus-run-session -- bash apps/alo-studio/packaging/verify-repository.sh /tmp/studio-flatpak | tee /tmp/studio-flatpak/repository-signing-verification.txt
       - uses: actions/upload-artifact@v4
         with:
           name: studio-flatpak
@@ -46,5 +52,6 @@ jobs:
             /tmp/studio-flatpak/features.txt
             /tmp/studio-flatpak/sdk-versions.txt
             /tmp/studio-flatpak/checksums.txt
+            /tmp/studio-flatpak/repository-signing-verification.txt
           if-no-files-found: error
           retention-days: 14

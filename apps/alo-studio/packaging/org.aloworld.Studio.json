@@ -19,6 +19,7 @@
         "install -Dm755 target/release/alo-studio /app/bin/alo-studio",
         "install -Dm644 data/org.aloworld.Studio.desktop /app/share/applications/org.aloworld.Studio.desktop",
         "install -Dm644 data/org.aloworld.Studio.metainfo.xml /app/share/metainfo/org.aloworld.Studio.metainfo.xml",
+        "install -Dm644 LICENSE /app/share/licenses/org.aloworld.Studio/LICENSE",
         "install -Dm644 data/org.aloworld.Studio.svg /app/share/icons/hicolor/scalable/apps/org.aloworld.Studio.svg"
       ],
       "sources": [{"type": "dir", "path": "..", "skip": ["target", "repo", "build", ".flatpak-builder"]}]
