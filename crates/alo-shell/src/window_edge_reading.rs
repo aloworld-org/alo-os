@@ -68,7 +68,9 @@ pub fn what_a_reader_is_told(decorations: Decorations) -> Vec<Control> {
                 alo_access::State::CanBeUsed
             },
             setting: None,
-            does: None,
+            // **What pressing it does**, so a reader's press reaches the same
+            // action a pointer's does — the task window's Close among them.
+            does: Some(what_it_does(control)),
         })
         .collect()
 }

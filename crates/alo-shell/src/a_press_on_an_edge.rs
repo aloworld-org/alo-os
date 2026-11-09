@@ -82,6 +82,9 @@ pub(crate) struct ThePressBefore {
     at: Instant,
     /// Where, in the band's units.
     where_: Point<i32, Logical>,
+    /// Where the window was: a second press on a window that has since been
+    /// maximised, restored or moved is a new first press, not a double-click.
+    window: smithay::utils::Rectangle<i32, Logical>,
 }
 
 impl ThePressBefore {
@@ -93,9 +96,10 @@ impl ThePressBefore {
         surface: &WlSurface,
         now: Instant,
         where_: Point<i32, Logical>,
+        window: smithay::utils::Rectangle<i32, Logical>,
     ) -> bool {
         is_a_double_click(
-            &self.surface == surface,
+            &self.surface == surface && self.window == window,
             now.saturating_duration_since(self.at),
             (where_.x - self.where_.x, where_.y - self.where_.y),
         )
@@ -127,11 +131,12 @@ impl crate::Server {
         let at = crate::an_edge_in_its_displays_units::a_point_in_the_edges_units(at, scale);
         let now = Instant::now();
         for surface in mapped {
+            let window = crate::an_edge_in_its_displays_units::a_window_in_the_edges_units(
+                self.where_a_window_is_drawn(&surface),
+                scale,
+            );
             let edge = edge_of(
-                crate::an_edge_in_its_displays_units::a_window_in_the_edges_units(
-                    self.where_a_window_is_drawn(&surface),
-                    scale,
-                ),
+                window,
                 decorations,
                 self.is_this_windows_edge_revealed(&surface),
                 self.the_room_an_edge_is_clamped_in(),
@@ -157,10 +162,9 @@ impl crate::Server {
                     if button != THE_PRIMARY_BUTTON {
                         return self.surfaces.start_move_from_the_name(&surface, button);
                     }
-                    let twice = self
-                        .the_press_before
-                        .as_ref()
-                        .is_some_and(|before| before.makes_a_double_click(&surface, now, at));
+                    let twice = self.the_press_before.as_ref().is_some_and(|before| {
+                        before.makes_a_double_click(&surface, now, at, window)
+                    });
                     if twice {
                         self.the_press_before = None;
                         self.asked_on_an_edge
@@ -171,6 +175,7 @@ impl crate::Server {
                         surface: surface.clone(),
                         at: now,
                         where_: at,
+                        window,
                     });
                     return self.surfaces.start_move_from_the_name(&surface, button);
                 }
