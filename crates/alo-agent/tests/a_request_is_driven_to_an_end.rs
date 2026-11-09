@@ -371,6 +371,93 @@ fn an_answer_on_the_first_round_is_the_answer() {
     }
 }
 
+/// **An answer that talks about the verbs never reaches the person** (ADR
+/// 0149). The words walked on a booted machine on 2026-11-08 are told back to
+/// the model as a step, and what the person reads is the answer it gave next.
+#[test]
+fn an_answer_about_the_verbs_is_told_back_and_never_shown() {
+    let verbs = the_verbs();
+    let leaked = "Folders cannot be created directly with the given verbs. Please create the \
+                  folder manually in your Documents.";
+    let mut door = ADoorThatAnswers::with(vec![
+        the_model_said(&format!(
+            r#"{{"format":1,"asks":{{"answer":{{"text":"{leaked}"}}}}}}"#
+        )),
+        the_model_said(r#"{"format":1,"asks":{"answer":{"text":"Done the other way."}}}"#),
+    ]);
+    match driving(
+        "make a folder called demo in my Documents",
+        &verbs,
+        &WhatItMayReach::not_said(),
+        &mut door,
+        HowFar::THE_ORDINARY,
+        Instructions::SHOWN_TO_A_TURN,
+    ) {
+        WhatHappened::ItWasAnsweredInWords { said, after } => {
+            assert_eq!(said, "Done the other way.");
+            assert_eq!(after.len(), 1, "the answer about verbs was not a step");
+            assert_eq!(
+                after.first().map(alo_instructing::AStep::what_came_back),
+                Some(alo_instructing::NOT_FOR_THE_PERSON)
+            );
+        }
+        other => panic!("{other:?}"),
+    }
+    assert!(
+        door.the_question(1)
+            .contains(alo_instructing::NOT_FOR_THE_PERSON),
+        "the model was not told why its answer was not shown"
+    );
+}
+
+/// **And in plain prose too**: a reply that is not a line at all, talking
+/// about the verbs, is not the person's either. A model that never stops runs
+/// out of rounds, and nothing it said about verbs is what ends the turn.
+#[test]
+fn prose_about_the_verbs_is_never_the_answer_however_often_it_comes() {
+    let verbs = the_verbs();
+    let answers = (0..HowFar::THE_ORDINARY.rounds())
+        .map(|_| the_model_said("None of the verbs can do that."))
+        .collect();
+    let mut door = ADoorThatAnswers::with(answers);
+    match driving(
+        "make a folder called demo",
+        &verbs,
+        &WhatItMayReach::not_said(),
+        &mut door,
+        HowFar::THE_ORDINARY,
+        Instructions::SHOWN_TO_A_TURN,
+    ) {
+        WhatHappened::ItRanOutOfRounds { after } => {
+            assert_eq!(after.len(), HowFar::THE_ORDINARY.rounds());
+        }
+        other => panic!("words about verbs reached the person: {other:?}"),
+    }
+}
+
+/// **The refusal half: a person who asked about verbs is answered.** The word
+/// came from them, so the model's answer is theirs.
+#[test]
+fn a_person_who_asked_about_verbs_gets_the_answer() {
+    let verbs = the_verbs();
+    let mut door = ADoorThatAnswers::with(vec![the_model_said(
+        r#"{"format":1,"asks":{"answer":{"text":"A verb is a word for an action."}}}"#,
+    )]);
+    match driving(
+        "what is a verb",
+        &verbs,
+        &WhatItMayReach::not_said(),
+        &mut door,
+        HowFar::THE_ORDINARY,
+        Instructions::SHOWN_TO_A_TURN,
+    ) {
+        WhatHappened::ItWasAnsweredInWords { said, .. } => {
+            assert_eq!(said, "A verb is a word for an action.");
+        }
+        other => panic!("{other:?}"),
+    }
+}
+
 /// **A refused read is a step, not an end**: the model is told so and may ask
 /// for something else, which is the behaviour `driving`'s header argues for and
 /// a test is the only way to hold.

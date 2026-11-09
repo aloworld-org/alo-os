@@ -194,9 +194,11 @@ const WHERE_IT_STOPS: &[(&str, &str, &str)] = &[
     ),
     (
         "Ask the agent to use the text editor",
-        "capability.refused.never-granted",
-        "@alo has not been granted the application org.gnome.TextEditor — grants are made by \
-         picking a folder, never by asking for one",
+        // Until 2026-11-08 this row was the folder sentence, which sent the
+        // person to pick a folder no application is ever inside.
+        "capability.refused.application-not-given",
+        "@alo has not been granted the application org.gnome.TextEditor — picking a folder will \
+         not change that, because a folder grant never reaches an application",
     ),
     (
         "Remove the text editor",
