@@ -19,7 +19,9 @@
 //!    for a person. The turn itself is held open until they answer, by
 //!    `crate::holding_the_turn`, because the change lives in it.
 //! 6. A model that answered in words rather than asking for anything has
-//!    finished the request.
+//!    finished the request — **unless the words talk about the verbs**, which
+//!    the person never sees: that is told back to the model as a step
+//!    (`alo_instructing::speaks_of_the_verbs`, ADR 0149).
 //!
 //! # Why a refusal is a step and not an end, whichever door it came from
 //!
@@ -52,7 +54,8 @@
 
 use alo_capability::Verbs;
 use alo_instructing::{
-    AStep, ATurnInProgress, Instructions, TheConversationSoFar, WhatItMayReach, shown_in_progress,
+    AStep, ATurnInProgress, Instructions, NOT_FOR_THE_PERSON, TheConversationSoFar, WhatItMayReach,
+    shown_in_progress, speaks_of_the_verbs,
 };
 use alo_protocol::{Answered, FromAnAgent, ToAnAgent};
 
@@ -201,7 +204,15 @@ pub fn driving_after(
         // **An answer to the person ends the turn**, in the shape a held reply
         // can take (ADR 0133). Read before the protocol, because it is not a
         // line of it: it is said to the person, never sent to the machine.
+        //
+        // **Unless it talks about the verbs**, which the person never sees
+        // (ADR 0149): then it is told back to the model as a step, like a
+        // line that tried to be a request, and the turn goes on.
         if let Some(answer) = alo_instructing::the_answer_in(&said) {
+            if speaks_of_the_verbs(&answer, request, verbs) {
+                steps.push(AStep::of(&said, NOT_FOR_THE_PERSON));
+                continue;
+            }
             return WhatHappened::ItWasAnsweredInWords {
                 said: answer,
                 after: steps,
@@ -232,6 +243,10 @@ pub fn driving_after(
             // `Display` on purpose and this loop may not reword it.
             Err(why) if said.trim_start().starts_with('{') => {
                 steps.push(AStep::of(&said, &format!("not a request: {why:?}")));
+                continue;
+            }
+            Err(_) if speaks_of_the_verbs(&said, request, verbs) => {
+                steps.push(AStep::of(&said, NOT_FOR_THE_PERSON));
                 continue;
             }
             Err(_) => {
@@ -293,6 +308,9 @@ pub fn driving_after(
             // what we just did for it. Asking again would be the same round
             // with nothing added, so the turn ends rather than spending the
             // bound on a loop with no step in it.
+            FromAnAgent::Ask { .. } if speaks_of_the_verbs(&said, request, verbs) => {
+                steps.push(AStep::of(&said, NOT_FOR_THE_PERSON));
+            }
             FromAnAgent::Ask { .. } => {
                 return WhatHappened::ItWasAnsweredInWords { said, after: steps };
             }

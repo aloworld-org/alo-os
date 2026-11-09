@@ -308,6 +308,21 @@ pub const NEVER_GRANTED: Word = Word::saying(
      translated; {wanted} arrives already in the reader's language.",
 );
 
+/// An application nothing this agent holds has ever covered.
+///
+/// Its own sentence because [`NEVER_GRANTED`]'s second half — *grants are made
+/// by picking a folder* — is false of an application: no folder grant reaches
+/// one. Walked on a booted machine on 2026-11-08, *open the text editor* was
+/// refused with that sentence and the person was told to *pick a folder in
+/// Settings to grant access*, which would have changed nothing.
+pub const APPLICATION_NOT_GIVEN: Word = Word::saying(
+    "capability.refused.application-not-given",
+    "{agent} has not been granted {wanted} — picking a folder will not change that, because a      folder grant never reaches an application",
+)
+.noting(
+    "Said to a person whose agent asked to open, bring forward or close an application. The second      half stops them looking in the folders list for a fix that is not there. {agent} is never      translated; {wanted} arrives already in the reader's language, as 'the application      org.gnome.TextEditor'.",
+);
+
 /// A machine where the person declined the agent (ADR 0009).
 pub const NO_AGENT: Word = Word::saying(
     "capability.refused.no-agent",
@@ -859,7 +874,7 @@ pub const NO_WORD_BACK_IN_THE_TERMINAL: Word = Word::saying(
 );
 
 /// Every string this crate can say, in the order a translator meets them.
-pub const EVERY_WORD: [Word; 76] = [
+pub const EVERY_WORD: [Word; 77] = [
     ANONYMOUS,
     NO_APPLICATION_NAMED,
     NOTHING_NAMED,
@@ -887,6 +902,7 @@ pub const EVERY_WORD: [Word; 76] = [
     ITS_OWN_SECRETS,
     HAS_EXPIRED,
     NEVER_GRANTED,
+    APPLICATION_NOT_GIVEN,
     NO_AGENT,
     APPLICATION_LAPSED,
     APPLICATION_NEVER_GRANTED,
