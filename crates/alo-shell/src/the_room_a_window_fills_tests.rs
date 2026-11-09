@@ -59,32 +59,49 @@ fn a_dock_that_gave_way_still_bounds_the_work_area() {
         top_controls: None,
     };
     let now = WhatIsReserved::drawn(Some(drawn), before);
-    assert_eq!(now.dock, before.dock, "a hidden Dock must not grow the work area");
+    assert_eq!(
+        now.dock, before.dock,
+        "a hidden Dock must not grow the work area"
+    );
     assert_eq!(now.top, before.top);
     assert_eq!(now.leaving, None);
 }
 
 #[test]
 fn a_maximised_window_keeps_its_band_inside_the_work_area() {
-    let room = ADisplaysRoom::of((1440, 960), as_drawn(), alo_canvas::Camera::new(), 100)
-        .expect("a room");
+    let room =
+        ADisplaysRoom::of((1440, 960), as_drawn(), alo_canvas::Camera::new(), 100).expect("a room");
     let share = room.maximised().expect("room for a window");
-    assert_eq!(share.at, (0, 84 + 54), "the band sits at the top of the work area");
+    assert_eq!(
+        share.at,
+        (0, 84 + 54),
+        "the band sits at the top of the work area"
+    );
     assert_eq!(share.size, (1328, 788 - 54));
 }
 
 #[test]
 fn the_band_grows_with_the_displays_scale() {
-    let room = ADisplaysRoom::of((2880, 1920), WhatIsReserved::default(), alo_canvas::Camera::new(), 200)
-        .expect("a room");
+    let room = ADisplaysRoom::of(
+        (2880, 1920),
+        WhatIsReserved::default(),
+        alo_canvas::Camera::new(),
+        200,
+    )
+    .expect("a room");
     assert_eq!(room.band, 108);
     assert_eq!(room.maximised().expect("room").at, (0, 108));
 }
 
 #[test]
 fn a_work_area_too_short_for_a_band_refuses_to_maximise() {
-    let room = ADisplaysRoom::of((400, 54), WhatIsReserved::default(), alo_canvas::Camera::new(), 100)
-        .expect("a room");
+    let room = ADisplaysRoom::of(
+        (400, 54),
+        WhatIsReserved::default(),
+        alo_canvas::Camera::new(),
+        100,
+    )
+    .expect("a room");
     assert_eq!(
         room.maximised(),
         None,
@@ -94,8 +111,8 @@ fn a_work_area_too_short_for_a_band_refuses_to_maximise() {
 
 #[test]
 fn full_screen_is_everything_the_display_shows() {
-    let room = ADisplaysRoom::of((1440, 960), as_drawn(), alo_canvas::Camera::new(), 100)
-        .expect("a room");
+    let room =
+        ADisplaysRoom::of((1440, 960), as_drawn(), alo_canvas::Camera::new(), 100).expect("a room");
     let share = room.full_screen().expect("a display");
     assert_eq!((share.at, share.size), ((0, 0), (1440, 960)));
 }
@@ -105,8 +122,8 @@ fn a_panned_camera_puts_the_room_where_the_person_is_looking() {
     let camera = alo_canvas::Camera::new()
         .looking_at(alo_canvas::At::checked(3000, -500).expect("on the plane"))
         .expect("a camera");
-    let room = ADisplaysRoom::of((1440, 960), WhatIsReserved::default(), camera, 100)
-        .expect("a room");
+    let room =
+        ADisplaysRoom::of((1440, 960), WhatIsReserved::default(), camera, 100).expect("a room");
     assert_eq!(room.maximised().expect("room").at, (3000, -500 + 54));
     assert_eq!(room.full_screen().expect("room").at, (3000, -500));
 }

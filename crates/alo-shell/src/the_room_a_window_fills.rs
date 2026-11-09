@@ -161,7 +161,7 @@ impl ADisplaysRoom {
         // The band is laid out in logical units at the display's scale and is
         // the same size on the plane at every zoom, because it zooms with its
         // window (`crate::a_window_and_its_strip`).
-        let band = (i32::from(scale) * crate::window_edge::THE_REGION_IS_TALL).div_ceil(100);
+        let band = (i32::from(scale) * crate::window_edge::THE_REGION_IS_TALL + 99) / 100;
         Some(Self { whole, work, band })
     }
 
@@ -232,9 +232,7 @@ impl crate::Server {
         let scale = self.the_scale_of_display(named);
         self.surfaces.rooms.retain(|(name, _, _)| name != named);
         if let Some(room) = ADisplaysRoom::of(size, reserved, camera, scale) {
-            self.surfaces
-                .rooms
-                .push((named.to_owned(), room, reserved));
+            self.surfaces.rooms.push((named.to_owned(), room, reserved));
         }
     }
 }

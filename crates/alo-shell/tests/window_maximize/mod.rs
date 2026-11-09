@@ -524,8 +524,7 @@ fn a_maximised_window_keeps_its_band_on_the_screen() -> Result<(), Box<dyn std::
 /// **A display too short to hold a band and a window under it refuses to
 /// maximise**, rather than maximising with the band off the screen.
 #[test]
-fn a_display_too_short_for_a_band_refuses_to_maximise() -> Result<(), Box<dyn std::error::Error>>
-{
+fn a_display_too_short_for_a_band_refuses_to_maximise() -> Result<(), Box<dyn std::error::Error>> {
     let f = Fixture::new();
     let _app = mapped(&f);
     let root = f.root();
