@@ -277,10 +277,14 @@ is the specimen's width, not a window's.
 
 ### Readings taken while building, each for the owner to overrule
 
-- **The application's name is what this machine calls the application** — the
-  application's own `app_id`, the name the Dock already shows for it. A
-  friendlier name from the application's desktop entry is not read anywhere in
-  the shell yet, so a window of `org.gnome.TextEditor` says that.
+- **The application's name is its desktop entry's `Name`, in the person's
+  language** — `Name[fr]` and the rest, read in the order `GenericName` already
+  is — from the one map the alo Bar shows, so the Bar and the band never call
+  one application two things. A window of `org.gnome.TextEditor` says *Text
+  Editor*. The `app_id` is shown only where no installed entry names the
+  application, and a window with no title shows the name once, never its
+  `app_id` beside it. *(Until the change after #1138 the band showed the
+  `app_id`.)*
 - **A double-click is two presses within 500 ms and 4 units**, the longest of
   the common desktop defaults; the design names none. It is never the only
   road: the panel's Maximise and `Super+Up` do the same.
