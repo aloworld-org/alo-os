@@ -62,10 +62,7 @@ pub(crate) fn every_windows_edge(
     let open: Vec<_> = server.mapped_surfaces().cloned().collect();
     open.iter()
         .filter_map(|surface| {
-            let window = crate::an_edge_in_its_displays_units::a_window_in_the_edges_units(
-                server.where_a_window_is_drawn(surface),
-                scale,
-            );
+            let window = server.the_window_a_band_hangs_from(surface, scale);
             // **Laid out with its controls while any of them is still to be
             // seen**, so a fade out has something to draw. What a press
             // reaches is asked separately, of the reveal itself
@@ -79,7 +76,7 @@ pub(crate) fn every_windows_edge(
                 room,
             );
             let title = server.the_name_of(surface);
-            let application = server.the_application_of(surface);
+            let application = server.the_application_on_the_band(surface);
             let keyboard = server.where_the_keyboard_is_on_this_windows_edge(surface);
             let pointing = server.what_this_edge_is_pointing_at_on(
                 &edge,
@@ -114,12 +111,15 @@ pub(crate) fn every_windows_edge(
                     showing: the_reason_to_show_a_tooltip(server, &edge, keyboard, scale),
                 },
                 crate::window_edge_picture::TheWindow {
-                    title: title.its_own_words(),
-                    application: application.as_ref().map(alo_dock::AppId::name),
+                    title: crate::the_name_on_the_band::the_title_to_show(&title),
+                    application: application.as_deref(),
                     look: crate::window_edge_look::WhichLook::of(
                         server.is_the_window_typing_goes_to(surface),
                     ),
-                    body: Some(window),
+                    // **No line or shadow round a band out over full
+                    // screen**: there is no window card to draw it round,
+                    // only the band laid over the application's top.
+                    body: (!server.is_its_band_out_over_full_screen(surface)).then_some(window),
                     controls: crate::window_edge_paint::HowTheControlsLook {
                         pointing,
                         open: keyboard.the_menu().is_some(),

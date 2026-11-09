@@ -81,6 +81,9 @@ pub use icons::Icons;
 mod what_they_are;
 pub use what_they_are::{WhatEachIs, the_keys_a_language_reads, what_they_are};
 
+mod what_they_are_called;
+pub use what_they_are_called::{WhatEachIsCalled, what_they_are_called};
+
 mod not_read;
 pub use not_read::{NotRead, WhyNotRead};
 

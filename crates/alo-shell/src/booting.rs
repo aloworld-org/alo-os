@@ -213,7 +213,12 @@ pub fn stand_the_sign_in_screen_up(
     // usual region by name instead.
     let zone = jiff::tz::TimeZone::system();
     let screen = SignInScreen::of(
-        Greeting::at(machine.accounts, machine.person, machine.door),
+        // **And the system's password kept in step at every sign-in** (ADR 0150).
+        Greeting::at(machine.accounts, machine.person, machine.door).map(|greeting| {
+            greeting.keeping_the_system_password_with(Box::new(
+                crate::keeping_the_system_password::TheSystemsKeeper::on_this_machine(),
+            ))
+        }),
         words,
     )
     .where_the_machine_is(
@@ -321,6 +326,9 @@ pub fn what_this_machine_can_say() -> Result<Strings, WouldNotStand> {
     // **The notice a window that could not be drawn leaves behind**, declared
     // for the note above.
     crate::the_closed_windows_words::declare_the_closed_windows_words(&mut vocabulary)
+        .map_err(|why| WouldNotStand::Words(why.to_string()))?;
+    // **The password sheet polkit asks through** (ADR 0150), for the note above.
+    crate::the_password_sheets_words::declare_the_password_sheets_words(&mut vocabulary)
         .map_err(|why| WouldNotStand::Words(why.to_string()))?;
     // **Every translation this machine has, put on the words**, so a language
     // chosen on the first-start sheet — and the one a person's desktop is

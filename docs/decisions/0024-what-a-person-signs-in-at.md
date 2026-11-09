@@ -5,6 +5,14 @@ said it owed was taken and answered in its favour. See *The measurement, taken*
 at the end. Accepted under a standing delegation from the owner; everything
 below is left exactly as it was argued while unaccepted, so the reasoning can be
 checked against the outcome rather than rewritten to match it.
+**Partly amended 2026-11-09 by
+[ADR 0150](0150-administrator-actions-ask-the-persons-password-each-time.md)**,
+on the owner's *"Keep both in step"*: the sentence *"The person's system
+password is not the alo account"* no longer holds — every sign-in now writes
+the person's alo password into `/etc/shadow`, so polkit and `sudo` ask for the
+same one. Everything else stands: nobody is signed in by the system password,
+`alo-accounts` is still the only authenticator, and `/etc/shadow` is written
+from it and never read by it.
 **Date:** 2026-09-10
 **Proposed by:** the v0.01 delivery workstream
 **Context:** [ADR 0002](0002-the-shell-is-native.md) (the shell is native),

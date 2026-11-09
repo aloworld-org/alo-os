@@ -11,6 +11,10 @@ repository.workspace = true
 # for one. On any other host it compiles to nothing at all rather than to a
 # version of itself that pretends; `lib.rs` is the whole of that argument.
 [target.'cfg(target_os = "linux")'.dependencies]
+# A command written as `sudo ...` runs as administrator through the runner, after
+# the person's password, and the record says so and what they did (ADR 0150).
+alo-administrator = { path = "../alo-administrator" }
+alo-record = { path = "../alo-record" }
 # The one rented thing here, and `unix.rs` is the only file that names it.
 # `UnixStream::peer_cred` and waiting on several descriptors at once are both
 # outside what std will do on a stable compiler, `CLAUDE.md` forbids unsafe, and

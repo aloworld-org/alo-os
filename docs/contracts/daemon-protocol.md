@@ -216,6 +216,23 @@ at the moment the request arrives. Nothing on the wire can name the level.
 | *ask me each time* (`asking-each-time`) | nothing runs; it waits for the person under the **same numbers** a change waits under | `proposed`, whose sentence is `run this command: …` and the command whole |
 | the sealed box, **nothing chosen**, or **a file that will not read** | nothing runs | `refused`, in the sentence the sealed box already says: *"mkdir was not run. The sealed box can't run programs on this computer yet. Choose 'ask each time' in Settings → Running code to run commands after you approve them."* |
 
+- **A command whose line starts with `sudo` or `pkexec` runs as administrator,
+  after the person's password — every time** (added 2026-11-09, additively,
+  for [ADR 0150](../decisions/0150-administrator-actions-ask-the-persons-password-each-time.md)).
+  This service holds no capability and no new privileges, so it does not run
+  such a line itself: what follows the word is sent to
+  `alo-running-as-administrator` (`/run/alo-running-as-administrator.socket`),
+  which asks polkit, which asks the person on their screen through the
+  desktop's password sheet. At full access that happens without an OK; at
+  *ask me each time* it happens after the OK; at the sealed box the line is
+  refused as every command is. The answer is `did` with `ran-a-command` when
+  the person gave their password, and otherwise `refused` in one of six
+  sentences — they closed the window; the password was not accepted; nothing
+  could ask (nobody signed in at the screen); the account is not an
+  administrator; nobody answered within five minutes; the machine could not
+  ask. **Nothing is ever run as the person instead.** Only the first word
+  decides: `cd /tmp && sudo make install` is an ordinary command, in which
+  `sudo` fails as it does at a prompt with no terminal.
 - **One line, at most 4,096 bytes, and not empty** — anything else is refused
   before the level is read, because what a person approves is the sentence and
   a sentence with a line break in it reads as two.

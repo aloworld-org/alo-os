@@ -145,6 +145,20 @@ pub(crate) struct PanelPicture {
     pub(crate) solids: Vec<Solid>,
 }
 
+/// **Which edge the panel belongs to, for a person reading in `reading`.**
+///
+/// The owner's ruling of 2026-09-30: the panel is on the right, and a
+/// right-to-left layout mirrors it to the left. One answer, read by the
+/// desktop that draws the panel and by a window travelling to it, so the two
+/// cannot disagree about which side it is on.
+#[must_use]
+pub(crate) const fn the_edge_for(reading: alo_strings::Direction) -> WhichEdge {
+    match reading {
+        alo_strings::Direction::LeftToRight => WhichEdge::Right,
+        alo_strings::Direction::RightToLeft => WhichEdge::Left,
+    }
+}
+
 /// The column the put-aside panel owns on a display of `size` drawn at
 /// `scale`, or `None` when the display is too narrow to hold one.
 ///

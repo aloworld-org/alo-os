@@ -277,10 +277,14 @@ is the specimen's width, not a window's.
 
 ### Readings taken while building, each for the owner to overrule
 
-- **The application's name is what this machine calls the application** — the
-  application's own `app_id`, the name the Dock already shows for it. A
-  friendlier name from the application's desktop entry is not read anywhere in
-  the shell yet, so a window of `org.gnome.TextEditor` says that.
+- **The application's name is its desktop entry's `Name`, in the person's
+  language** — `Name[fr]` and the rest, read in the order `GenericName` already
+  is — from the one map the alo Bar shows, so the Bar and the band never call
+  one application two things. A window of `org.gnome.TextEditor` says *Text
+  Editor*. The `app_id` is shown only where no installed entry names the
+  application, and a window with no title shows the name once, never its
+  `app_id` beside it. *(Until the change after #1138 the band showed the
+  `app_id`.)*
 - **A double-click is two presses within 500 ms and 4 units**, the longest of
   the common desktop defaults; the design names none. It is never the only
   road: the panel's Maximise and `Super+Up` do the same.
@@ -298,6 +302,21 @@ is the specimen's width, not a window's.
 - **Opening a panel does not bring its window forward**; the panel is drawn
   above every window instead, so it is never covered and a press on it never
   reaches what is behind.
+- **Minimise's travel is an outline, 300 ms, eased in and out, to the
+  window's own card.** The design says *travelling toward the panel* and
+  names no duration, easing or path. The window is hidden at once, as it was,
+  so nothing a person can press changes mid-travel (*the-windows-put-aside.md*:
+  animations must not change hit targets midway through a pointer move). An
+  outline of where it was — the cards' accent, the focus ring's weight — moves
+  and shrinks onto the card the panel would draw for it revealed, on the
+  panel's edge (left for a right-to-left reader), and is gone when it arrives.
+  An outline and not the window's pixels, because the painter has no
+  per-window transform. 300 ms and the curve are the view glide's
+  (*where-a-new-window-opens.md* rule 4). Under reduced motion nothing travels,
+  and turning it on mid-travel ends the travel; a window with no card (no room
+  for the panel, a rail too short) is put aside without travelling; a client
+  that minimises itself never travels; a window brought back mid-travel stops.
+  `crate::a_window_travels_aside`, `crate::where_a_travelling_window_lands`.
 
 ## What is built
 
@@ -307,8 +326,9 @@ that part is **not built**.
 | stage | what | state |
 |---|---|---|
 | 1a | the band (title and application name always, 54 tall), the three controls revealed on approach with the fade, *Always show window controls*, the panel with Maximise / Restore and Full screen / Exit full screen, right-click and double-click on the band, `Alt+F3` and the keys into the band and panel, expanded and selected states for a reader | #1138 |
-| 1b | Maximise keeping the band: the work area of the window's display (through that display's camera, less the Dock's band, the panel's column, the top controls and the indicator), the band at its top; full screen filling that display | this change |
-| 1c | Left and Right with the preview, Minimise travelling to the side panel, the full-screen top-edge reveal | not built |
+| 1b | Maximise keeping the band: the work area of the window's display (through that display's camera, less the Dock's band, the panel's column, the top controls and the indicator), the band at its top; full screen filling that display; a restore on the Place already shown leaves the view where it is while the window is in sight | this change |
+| 1c | Minimise travelling to the side panel (the outline above); restoring was already returning a window to its Place and its size, and now has a test that drives it from the panel | #1144 |
+| 1d | Left and Right with the preview, the full-screen top-edge reveal | not built |
 | 2 | Move to…, Undo placement | not built |
 | 3 | Help with this window, the working state and Stop | not built |
 | 4 | Capture & export | not built |

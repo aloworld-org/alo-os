@@ -99,6 +99,14 @@ pub struct Entry {
     /// `format` stays `1`.
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     at_full_access: bool,
+    /// For a command asked for as administrator (ADR 0150): that it was,
+    /// and what the person did when their password was asked for.
+    ///
+    /// Absent for everything else, so an entry written before there were
+    /// administrator actions reads back exactly as it was written. Additive;
+    /// `format` stays `1`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    as_an_administrator: Option<crate::AsAnAdministrator>,
 }
 
 impl Entry {
@@ -117,6 +125,7 @@ impl Entry {
             told: Vec::new(),
             kept_as: None,
             at_full_access: false,
+            as_an_administrator: None,
         }
     }
 
@@ -131,6 +140,21 @@ impl Entry {
     pub const fn at_full_access(mut self) -> Self {
         self.at_full_access = true;
         self
+    }
+
+    /// This entry, as a command asked for as administrator, and what the
+    /// person did when their password was asked for (ADR 0150).
+    #[must_use]
+    pub const fn as_an_administrator(mut self, how: crate::AsAnAdministrator) -> Self {
+        self.as_an_administrator = Some(how);
+        self
+    }
+
+    /// What this entry says about being asked for as administrator, if it
+    /// was.
+    #[must_use]
+    pub const fn asked_as_an_administrator(&self) -> Option<crate::AsAnAdministrator> {
+        self.as_an_administrator
     }
 
     /// Whether this was decided while the person had chosen full access.

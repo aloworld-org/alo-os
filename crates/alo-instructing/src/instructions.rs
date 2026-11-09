@@ -230,7 +230,8 @@ this computer instead, with a line of this shape:
 
 It is run by /bin/sh as the person, so write it as you would at their prompt,
 with full paths, on one line. Use a verb whenever one fits, and send a run
-line only when none does.
+line only when none does. When it needs administrator rights, start the line
+with sudo: the person is asked for their password every time.
 
 ";
 
@@ -283,7 +284,8 @@ this computer instead, with a line of this shape:
 
 It is run by /bin/sh as the person, so write it as you would at their prompt,
 with full paths, on one line. Use a verb whenever one fits, and send a run
-line only when none does.
+line only when none does. When it needs administrator rights, start the line
+with sudo: the person is asked for their password every time.
 
 These are the only verbs there are:";
 

@@ -442,6 +442,17 @@ pub trait TheDesktop {
         None
     }
 
+    /// **What polkit asked of this desktop's password sheet since the last
+    /// frame** (ADR 0150): a question to put up, a password that was not
+    /// right, a question that is over.
+    ///
+    /// Empty by default, and then the sheet never comes up — a desktop with no
+    /// authentication agent, which polkit answers by finding nothing that can
+    /// ask, and the agent service says so to the person.
+    fn passwords_asked(&mut self) -> Vec<crate::ToTheSheet> {
+        Vec::new()
+    }
+
     /// **How this person writes a time and a day**, asked for once as the
     /// session starts: what they chose in `formats.toml` and the language they
     /// read.
@@ -791,7 +802,7 @@ impl crate::DirectSession {
                                  {why}"
                             ),
                         }
-                        Desk {
+                        TheDesktopLane {
                             input,
                             others,
                             device: fd,
@@ -847,6 +858,7 @@ impl crate::DirectSession {
                             told: alo_arranging::Arrangement::fresh(),
                             series: layout,
                             reader,
+                            password_sheet: crate::the_password_sheet::ThePasswordSheet::none(),
                         }
                     },
                 ),
@@ -864,7 +876,13 @@ impl crate::DirectSession {
 }
 
 /// The desktop lane: the clients' own input, and the desktop drawn above them.
-struct Desk<'a> {
+///
+/// Called `Desk` in many comments here and elsewhere, which is what it was
+/// named until 2026-11-09. It was renamed because `crate::server_desk::Desk`
+/// is another type with the same name, and `tests/sign_in_source.rs` tracks
+/// which types hold a password by name: holding the password sheet made this
+/// one such a type, and the test then held the other `Desk` to its rules.
+struct TheDesktopLane<'a> {
     /// The ordinary routing, unchanged — a client hears the keyboard here.
     input: crate::direct_input_loop::RoutedInput,
     /// Every display but the one the loop itself holds.
@@ -970,6 +988,10 @@ struct Desk<'a> {
     /// cannot run the engine says so rather than failing*. The desktop runs
     /// either way; what changes is whether anybody can read it.
     reader: Option<crate::TheReaderIsTold>,
+    /// **polkit asking for the person's password**, when it is (ADR 0150).
+    /// While a question is up every key is the sheet's, and it is drawn above
+    /// every window in the approval surface's layer.
+    password_sheet: crate::the_password_sheet::ThePasswordSheet,
 }
 
 /// The folders this person has granted, for a request about to be sent.
@@ -989,7 +1011,7 @@ fn the_folders_to_send(server: &Server) -> Vec<std::path::PathBuf> {
         })
 }
 
-impl LoopInput for Desk<'_> {
+impl LoopInput for TheDesktopLane<'_> {
     /// Route the input, then tell the desktop where the pointer ended up.
     ///
     /// **The clients' routing is untouched**, which is this lane's standing promise: a client
@@ -1021,6 +1043,7 @@ impl LoopInput for Desk<'_> {
     ) -> Result<(), DirectLoopError> {
         let extent = self.input.extent;
         let strings = self.strings;
+        let password_sheet = &mut self.password_sheet;
         self.input.owner.dispatch(
             || poll().map_err(std::io::Error::other),
             |update| {
@@ -1036,7 +1059,17 @@ impl LoopInput for Desk<'_> {
                 // Settings and it is the one open window that answered a
                 // person's own chord most recently. Its question is false
                 // unless it is open, so an ordinary frame pays one `is_open`.
-                let went = if server.the_record_is_taking_the_keys() {
+                // **The password sheet before everything** (ADR 0150): while
+                // polkit is asking for the person's password, no key reaches
+                // any window, alo's own included.
+                let went = if password_sheet.is_up() {
+                    crate::a_key_reaches_the_password_sheet::a_key_reaches_the_password_sheet(
+                        server,
+                        password_sheet,
+                        update,
+                        extent,
+                    )
+                } else if server.the_record_is_taking_the_keys() {
                     crate::a_key_reaches_the_record::a_key_reaches_the_record(
                         server, update, extent,
                     )
@@ -1308,6 +1341,11 @@ impl LoopInput for Desk<'_> {
         // is on this frame's Dock and in this frame's alo Bar.
         if let Some(now) = self.desktop.what_this_machine_offers_now() {
             server.the_machine_now_offers(now, &mut *self.desktop);
+        }
+        // **And what polkit asked of the password sheet** (ADR 0150), before
+        // this frame draws it.
+        for told in self.desktop.passwords_asked() {
+            self.password_sheet.told(told);
         }
         // Asked before the frame is made, never after: a frame drawn from
         // readings taken after it would show a person the moment before.
@@ -1974,6 +2012,34 @@ impl LoopInput for Desk<'_> {
             (size.w, size.h),
             terminal,
         )?;
+        // **The password sheet, while polkit is asking** (ADR 0150). A sheet
+        // that cannot be drawn on this display cancels its question rather
+        // than hold every key with nothing on the screen.
+        let the_password_sheet = match self.password_sheet.shows() {
+            Some(shows) => match crate::the_password_sheet_drawn::drawn(
+                shows,
+                self.strings,
+                self.labels,
+                (size.w, size.h),
+                crate::the_password_sheet_drawn::TheSheetsLook {
+                    scheme: frame.look.scheme(),
+                    scale: frame.look.scale(),
+                    contrast: frame.look.contrast(),
+                },
+                crate::display_scale::DisplayScale::of_per_cent(frame.display_scale),
+            ) {
+                Ok(drawn) => Some(drawn),
+                Err(why) => {
+                    eprintln!(
+                        "alo-shell: the password sheet could not be drawn on {named:?}, so its \
+                         question is cancelled: {why}"
+                    );
+                    self.password_sheet.could_not_be_drawn();
+                    None
+                }
+            },
+            None => None,
+        };
         // **A question that could not be drawn is left out of this frame, not
         // the desktop** — see `crate::a_surface_that_cannot_draw`.
         if let Some(why) = &pictures.approval_refused {
@@ -2197,7 +2263,26 @@ impl LoopInput for Desk<'_> {
                 (size.w, size.h),
                 server.the_scale_an_edge_is_drawn_at(u32::from(its_scale)),
             );
-            theirs.push((other, its_pictures, its_edges, its_scale));
+            // **The password sheet on this display too** (ADR 0150), so it is
+            // in front of the person whichever screen they are looking at. One
+            // this display cannot hold is left off it; the first display's is
+            // the one whose failure cancels the question.
+            let its_sheet = self.password_sheet.shows().and_then(|shows| {
+                crate::the_password_sheet_drawn::drawn(
+                    shows,
+                    self.strings,
+                    self.labels,
+                    (size.w, size.h),
+                    crate::the_password_sheet_drawn::TheSheetsLook {
+                        scheme: frame.look.scheme(),
+                        scale: frame.look.scale(),
+                        contrast: frame.look.contrast(),
+                    },
+                    crate::display_scale::DisplayScale::of_per_cent(its_scale),
+                )
+                .ok()
+            });
+            theirs.push((other, its_pictures, its_edges, its_scale, its_sheet));
         }
         // **Every display's controls, from the one list that also draws
         // them.** `more-than-one-display-plan.md` task 9.
@@ -2220,7 +2305,7 @@ impl LoopInput for Desk<'_> {
         // `bring_back_frames_the_moved_controls_hide` below, which until now
         // asked its question with only the first display's bounds recorded —
         // so a frame hidden by the second display's dock was not found.
-        for (other, its_pictures, _its_edges, _its_scale) in &theirs {
+        for (other, its_pictures, _its_edges, _its_scale, _its_sheet) in &theirs {
             let Ok(its) = FrameTarget::metadata(*other) else {
                 continue;
             };
@@ -2527,6 +2612,25 @@ impl LoopInput for Desk<'_> {
         // stops raising and starts reporting.
         // **The pointer as the person chose it**, the same on every display.
         let pointer_look = server.the_pointers_look();
+        // **Windows travelling to the panel move on here, once a frame**, where
+        // they are drawn (`crate::a_window_travels_aside`): stepped in the draw
+        // rather than before it, so a travel's last frame lands exactly on its
+        // card. Each card is where the panel would draw it revealed, at this
+        // frame's look and this display's scale — the same panel and figures
+        // the desktop above was laid out from. Nothing is laid out when nothing
+        // travels, which is nearly every frame.
+        let travelling_aside = if server.how_many_windows_are_travelling_aside() == 0 {
+            Vec::new()
+        } else {
+            let cards = crate::TheCards::as_revealed(
+                frame.put_aside,
+                frame.look,
+                (size.w, size.h),
+                frame.display_scale,
+            );
+            let at = server.the_travels_aside_move_on(std::time::Instant::now(), &cards);
+            cards.the_outlines(&at)
+        };
         let mut layered = Layered {
             target,
             layers: NativeLayers {
@@ -2542,6 +2646,12 @@ impl LoopInput for Desk<'_> {
                 // draws it sharper rather than smaller (`crate::the_pointer_drawn`).
                 pointer_at: crate::display_scale::DisplayScale::of_per_cent(this_displays_scale),
                 pointer_look,
+                // **The password sheet above every window**, in the approval
+                // surface's layer (ADR 0150).
+                approval: the_password_sheet.as_ref(),
+                // **Only on the display being worked on**, whose camera the
+                // window was drawn through when it was put aside.
+                travelling_aside: &travelling_aside,
                 ..pictures.layers(&edges)
             },
         };
@@ -2550,16 +2660,19 @@ impl LoopInput for Desk<'_> {
         // and because a refusal on a later one must not delay it.
         let mut painted: Vec<Layered<'_>> = theirs
             .iter_mut()
-            .map(|(other, its_pictures, its_edges, its_scale)| Layered {
-                target: *other,
-                layers: crate::scene_native::NativeLayers {
-                    // **The pointer at this display's own scale**, as its
-                    // edges and its Dock are.
-                    pointer_at: crate::display_scale::DisplayScale::of_per_cent(*its_scale),
-                    pointer_look,
-                    ..its_pictures.layers(its_edges)
+            .map(
+                |(other, its_pictures, its_edges, its_scale, its_sheet)| Layered {
+                    target: *other,
+                    layers: crate::scene_native::NativeLayers {
+                        // **The pointer at this display's own scale**, as its
+                        // edges and its Dock are.
+                        pointer_at: crate::display_scale::DisplayScale::of_per_cent(*its_scale),
+                        pointer_look,
+                        approval: its_sheet.as_ref(),
+                        ..its_pictures.layers(its_edges)
+                    },
                 },
-            })
+            )
             .collect();
         let mut displays: Vec<&mut dyn crate::FrameTarget> = Vec::with_capacity(1 + painted.len());
         displays.push(&mut layered);
