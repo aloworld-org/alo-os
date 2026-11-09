@@ -92,9 +92,12 @@ fn every_edge_road_reads_the_window_where_it_is_drawn() {
         "the_edge_takes_the_keyboard.rs",
     ] {
         let text = std::fs::read_to_string(here.join(file)).expect("a file this crate ships");
+        // **Through the one rectangle a band hangs from**, which asks where
+        // the window is drawn and hangs a full-screen window's band over its
+        // top while it is out (`crate::the_band_over_full_screen`).
         assert!(
-            text.contains("where_a_window_is_drawn("),
-            "{file} lays an edge out without asking where the window is drawn"
+            text.contains("the_window_a_band_hangs_from("),
+            "{file} lays an edge out without asking where its band hangs"
         );
         assert!(
             !text.contains("where_a_window_is(surface)")
@@ -102,4 +105,10 @@ fn every_edge_road_reads_the_window_where_it_is_drawn() {
             "{file} reads the window's plane rectangle as though it were on the screen"
         );
     }
+    let hangs = std::fs::read_to_string(here.join("the_band_over_full_screen.rs"))
+        .expect("a file this crate ships");
+    assert!(
+        hangs.contains("where_a_window_is_drawn("),
+        "the rectangle a band hangs from does not ask where the window is drawn"
+    );
 }
