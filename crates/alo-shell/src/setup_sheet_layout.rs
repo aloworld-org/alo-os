@@ -77,6 +77,15 @@ pub enum TheRowsAre {
     Apart,
     /// Together in one card, each this tall.
     Grouped(i32),
+    /// Each its own card, as [`Self::Apart`], but each of the first three as
+    /// tall as its words need, with the same gap between one card and the next.
+    ///
+    /// For a sheet whose rows say more than one line under their name — *How
+    /// much can alo do?*, whose cost sentence wraps — where an 85-tall card
+    /// would cut the sentence off. The sheet measures its own words and passes
+    /// the height each card needs; a card is never shorter than
+    /// [`THE_CHOICE_IS`]'s, and a card past the third is that tall.
+    ApartEachAs([i32; 3]),
 }
 
 /// The field inside a grouped row: 15 in from the row's leading side, 17 from
@@ -163,6 +172,15 @@ pub enum HowClose {
     AsCaptured,
     /// The design's short-screen gaps: 8 between blocks, cards 93 apart.
     Tightened,
+    /// [`Self::Tightened`], with the column starting an eighth of the way down
+    /// rather than a quarter.
+    ///
+    /// **One sheet's last resort, and no other sheet's**: *How much can alo
+    /// do?* must show all three of its cards, where a list sheet shows fewer
+    /// rows instead, and on a 1280 × 720 or a 640 × 700 screen the three do not
+    /// fit under a column that starts at the design's 164. Nothing shrinks; the
+    /// space above the heading is what is given up.
+    TightenedToTheTop,
 }
 
 impl HowClose {
@@ -170,7 +188,7 @@ impl HowClose {
     const fn between_blocks(self) -> i32 {
         match self {
             Self::AsCaptured => gaps::AFTER_THE_TITLE,
-            Self::Tightened => 8,
+            Self::Tightened | Self::TightenedToTheTop => 8,
         }
     }
 
@@ -178,7 +196,7 @@ impl HowClose {
     const fn choices_apart(self) -> i32 {
         match self {
             Self::AsCaptured => THE_CHOICES_ARE_APART_BY,
-            Self::Tightened => THE_CHOICE_IS.1 + 8,
+            Self::Tightened | Self::TightenedToTheTop => THE_CHOICE_IS.1 + 8,
         }
     }
 }
@@ -300,7 +318,7 @@ pub fn setup_sheet_laid_out_as(
     // The capture's gaps are all 16, so one figure stands for each of them;
     // a grouped sheet has the approved first start's own, unless tightened.
     let between = close.between_blocks();
-    let tight = close == HowClose::Tightened;
+    let tight = matches!(close, HowClose::Tightened | HowClose::TightenedToTheTop);
     let gap = |captured: i32, approved: i32| match (tall.rows, tight) {
         (TheRowsAre::Grouped(_), false) => approved,
         _ => between.min(captured),
@@ -317,7 +335,13 @@ pub fn setup_sheet_laid_out_as(
         return None;
     }
     let left = margin;
-    let top = THE_COLUMN_SITS_AT.1.min(screen.h / 4);
+    let top = THE_COLUMN_SITS_AT
+        .1
+        .min(if close == HowClose::TightenedToTheTop {
+            screen.h / 8
+        } else {
+            screen.h / 4
+        });
 
     let line = |y: i32, h: i32| {
         Rectangle::new(Point::from((left, y)), Size::from((column_wide, h.max(0))))
@@ -346,17 +370,33 @@ pub fn setup_sheet_laid_out_as(
     )]
     let how_many = tall.choices as i32;
     let (choices, group): (Vec<_>, _) = match tall.rows {
-        TheRowsAre::Apart => (
-            (0..how_many)
-                .map(|which| {
-                    Rectangle::new(
-                        Point::from((left, choices_begin + which * close.choices_apart())),
-                        Size::from((column_wide, THE_CHOICE_IS.1)),
-                    )
-                })
-                .collect(),
-            None,
-        ),
+        TheRowsAre::Apart | TheRowsAre::ApartEachAs(_) => {
+            // **The gap between two cards is the captured one whatever their
+            // height**, so a taller card moves the next down by what it grew.
+            let between_cards = close.choices_apart() - THE_CHOICE_IS.1;
+            let tall_of = |which: i32| match tall.rows {
+                TheRowsAre::ApartEachAs(each) => usize::try_from(which)
+                    .ok()
+                    .and_then(|it| each.get(it).copied())
+                    .unwrap_or(THE_CHOICE_IS.1)
+                    .max(THE_CHOICE_IS.1),
+                TheRowsAre::Apart | TheRowsAre::Grouped(_) => THE_CHOICE_IS.1,
+            };
+            let mut y = choices_begin;
+            (
+                (0..how_many)
+                    .map(|which| {
+                        let card = Rectangle::new(
+                            Point::from((left, y)),
+                            Size::from((column_wide, tall_of(which))),
+                        );
+                        y += card.size.h + between_cards;
+                        card
+                    })
+                    .collect(),
+                None,
+            )
+        }
         // **One card, its rows inside its hairline and touching**: a row is
         // the card's width less the hairline each side, and the card is the
         // rows and the hairline above and below them.

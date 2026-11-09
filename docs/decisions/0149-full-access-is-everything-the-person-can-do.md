@@ -154,3 +154,31 @@ the build machine runs its tests as root — a disk refusal (a name already
 taken) stands in for it, and the two take the same road. **Still unbuilt:** the
 first-start screen and the password for administrator actions; and what a
 command sends still does not reach the egress indicator.
+
+*Added 2026-11-09, with decision 4 built (the first sign-in asks).* The owner
+settled what *Not decided here* left open, in these words: where it is shown,
+**"Right after first sign-in (Recommended)"**; what each choice says, **"Reuse
+Settings' lines (Recommended)"**; which buttons, **"Continue only
+(Recommended)"**; and Settings' *Default* tag, **"Move to Full access
+(Recommended)"**. The sheet and every departure from the old access frames are
+in `docs/design/the-first-start.md`, under *Built, 2026-11-09*. It is shown in
+the person's own session rather than on the sign-in screen because only the
+person can write `/var/lib/alo/how-code-runs.toml` (`0700`, theirs); the
+sign-in screen runs as root with every capability dropped. These now run on
+every build, as tests: a person with no file is asked with Full access chosen,
+and being asked writes nothing; Continue writes the level through Settings' own
+value and Settings reads it back as chosen; each of the three can be chosen, by
+key and by press; moving the ring chooses and writes nothing; keys and presses
+with no meaning change nothing; a person who chose, at any level, is not asked;
+a file that will not read is not asked about and is left byte for byte as it
+was; a choice that cannot be written is said and changes nothing, and a second
+refusal opens the desktop with nothing chosen and the next sign-in asks again;
+one Continue writes once (`crates/alo-shell/src/how_much_alo_can_do_tests.rs`,
+`direct_how_much_alo_can_do_tests.rs`); the sheet draws three cards, one
+Continue and no way back at four sizes and refuses a screen too small for all
+three (`how_much_alo_can_do_sheet_tests.rs`); and Settings tags Full access
+*Default* with nothing ticked for a person who has not chosen
+(`settings_page_running_tests.rs`). **Not checked by any test here**: the sheet
+on a real display, between a real first sign-in and the desktop — the display
+loop that shows it needs a seat and a card, and has not yet been walked on a
+booted machine. **Still unbuilt**: the password for administrator actions.

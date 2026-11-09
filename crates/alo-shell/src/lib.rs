@@ -200,6 +200,7 @@ mod desktop_swipes;
 #[cfg(test)]
 mod desktop_testing;
 mod direct_desktop;
+mod direct_how_much_alo_can_do;
 mod direct_input_loop;
 mod direct_keyboard;
 mod direct_loop;
@@ -299,6 +300,8 @@ mod frame_handle;
 mod frame_name;
 mod how_code_runs_in_settings;
 pub mod how_long_a_grant_lasts;
+mod how_much_alo_can_do;
+mod how_much_alo_can_do_sheet;
 mod in_use_mark;
 mod in_use_paint;
 mod in_use_raster;

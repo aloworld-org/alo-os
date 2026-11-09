@@ -393,8 +393,69 @@ pub const SELECTED: Word = Word::saying("shell.first-start.selected", "Selected"
      a choice is never shown by colour alone - somebody who cannot see the border reads this \
      word. Keep it a single word if your language has one.",
 );
+
+/// *How much can alo do?* — the heading ADR 0149 gives the sheet a person sees
+/// right after their first sign-in.
+pub const ACCESS_TITLE: Word =
+    Word::saying("shell.first-start.access.title", "How much can alo do?").noting(
+        "The heading of the sheet, shown once right after a person first signs in, where they \
+         choose how much alo - the assistant - may do on this computer. A plain question.",
+    );
+
+/// The first of the three, which arrives chosen (ADR 0149).
+pub const ACCESS_FULL: Word = Word::saying("shell.first-start.access.full", "Full access").noting(
+    "One of three choices on that sheet, and the one already selected when it opens: alo can do \
+     everything the person's own account can, without asking. Short, like a name.",
+);
+
+/// Asking each time.
+pub const ACCESS_ASK: Word = Word::saying("shell.first-start.access.ask", "Ask me each time")
+    .noting(
+        "One of three choices on that sheet: alo shows each command and waits for the person to \
+         say yes. The person is speaking, so 'me' is the person.",
+    );
+
+/// The sealed box.
+pub const ACCESS_SEALED: Word = Word::saying("shell.first-start.access.sealed", "The sealed box")
+    .noting(
+        "One of three choices on that sheet: what alo runs is shut in a box the system locks, \
+         which sees only the project. The same box Settings calls the sealed box.",
+    );
+
+/// What full access costs — ADR 0149's sentence, kept as it was written.
+pub const ACCESS_FULL_COSTS: Word = Word::saying(
+    "shell.first-start.access.full.costs",
+    "Text in a web page, an email or a downloaded project can steer alo, and at this level \
+     whatever it steers alo to do, happens.",
+)
+.noting(
+    "Under the Full access choice: the one risk of choosing it, said plainly. It informs and does \
+     not forbid; do not soften it into reassurance or sharpen it into a warning.",
+);
+
+/// The line under the three — frame `183:10695`'s consequence, word for word.
+pub const ACCESS_CONSEQUENCE: Word = Word::saying(
+    "shell.first-start.access.consequence",
+    "Activity remains visible, recorded and stoppable.",
+)
+.noting(
+    "Under the three choices: at every level, what alo does is shown, written down and can be \
+     stopped.",
+);
+
+/// The choice could not be saved.
+pub const ACCESS_NOT_SAVED: Word = Word::saying(
+    "shell.first-start.access.not-saved",
+    "That was not saved, so nothing has changed. Press Continue to try again; if it still \
+     cannot be saved, your desktop opens and you can choose in Settings, under Running code.",
+)
+.noting(
+    "Shown under the choices when the computer could not write the choice down. Nothing was \
+     changed. 'Settings' and 'Running code' are the names of the Settings window and its page.",
+);
+
 /// Every string these sheets draw.
-pub const FIRST_START_WORDS: [Word; 54] = [
+pub const FIRST_START_WORDS: [Word; 61] = [
     STAGE,
     NAME_EYEBROW,
     NAME_TITLE,
@@ -449,6 +510,13 @@ pub const FIRST_START_WORDS: [Word; 54] = [
     ZONE_TITLE,
     ZONE_INTRODUCTION,
     USE_THIS_ZONE,
+    ACCESS_TITLE,
+    ACCESS_FULL,
+    ACCESS_ASK,
+    ACCESS_SEALED,
+    ACCESS_FULL_COSTS,
+    ACCESS_CONSEQUENCE,
+    ACCESS_NOT_SAVED,
 ];
 
 /// Invalid declaration or collision while registering this wording.

@@ -1670,6 +1670,11 @@ to development.* So these are in scope, and the first of them is being built —
 which is why the line below says what is done rather than only what is
 promised.
 - ★ **Full access: alo can do everything the person can** — at the top level, alo reaches every file and folder the person's account can, runs any command and drives any application, without asking and without folder grants; anything administrative asks for the person's password each time. Where alo has no ready-made action, it runs a command (after the OK at *ask me each time*), so *"there is no verb for that"* is never an answer. **A new machine asks during first start**, with Full access already selected and its cost in one sentence; the person presses Continue or picks another level. The record, Put back and the egress indicator stay on at every level. *The owner, 2026-11-08: "Alo should be able to do all the human can do without limits, when the users gives alo full access alo should be able to do anything on the pc without any limitations." [ADR 0149](decisions/0149-full-access-is-everything-the-person-can-do.md)*
+  **The first-start question is built, 2026-11-09**: it is shown right after the
+  person's first sign-in, before the desktop, whenever no level has been chosen,
+  and Settings → Running code tags Full access *Default* (the owner's answers,
+  quoted in `docs/design/the-first-start.md`). Not yet walked on a booted
+  machine.
 
 
 *Recorded here rather than only in a commit, because `CLAUDE.md` says scope is

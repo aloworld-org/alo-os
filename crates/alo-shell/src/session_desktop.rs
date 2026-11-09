@@ -223,6 +223,18 @@ pub fn stand_the_desktop_up(
             .into_text(),
     );
     let mut session = DirectSession::new(display.display.to_owned())?;
+    // **How much can alo do?, once, before the desktop** — for a person who has
+    // not chosen a level for running code (ADR 0149, the owner's answer of
+    // 2026-11-09: *right after first sign-in*). Everything it reads and writes
+    // goes through Settings' own value; see `crate::direct_how_much_alo_can_do`.
+    crate::direct_how_much_alo_can_do::ask_if_nobody_has_chosen(
+        &mut session,
+        &mut server,
+        desktop,
+        &mut labels,
+        &strings,
+        &mut next,
+    );
     let stood = session.desktop(&mut server, desktop, &mut labels, &strings, &mut next)?;
     // **Read after the loop, from the seat that did the routing and the
     // refusing.** The counts live on the `Server` rather than in the loop's
