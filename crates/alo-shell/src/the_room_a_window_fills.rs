@@ -34,7 +34,19 @@
 
 use smithay::utils::{Logical, Physical, Rectangle};
 
-use crate::window_mode::Share;
+/// The rectangle a maximised or full-screen window is given, on the plane.
+///
+/// **Not a `crate::window_mode::Share`**, which is what `alo-dividing` gives a
+/// window and is built in one file only (`tests/one_layout_decider.rs`).
+/// Maximise and full screen were never shares: they had their own area — the
+/// output at the origin — before this, and this is that area made per display.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct TheAreaItFills {
+    /// Its top-left corner.
+    pub(crate) at: (i32, i32),
+    /// How big it is.
+    pub(crate) size: (i32, i32),
+}
 
 /// One display's room on the plane.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -170,17 +182,17 @@ impl ADisplaysRoom {
     ///
     /// [`None`] where the work area is too short to hold a band and anything
     /// under it — a refusal, never a window whose band is off the screen.
-    pub(crate) fn maximised(self) -> Option<Share> {
+    pub(crate) fn maximised(self) -> Option<TheAreaItFills> {
         let height = self.work.size.h - self.band;
-        (height > 0 && self.work.size.w > 0).then_some(Share {
+        (height > 0 && self.work.size.w > 0).then_some(TheAreaItFills {
             at: (self.work.loc.x, self.work.loc.y + self.band),
             size: (self.work.size.w, height),
         })
     }
 
     /// Where a full-screen window goes: everything the display shows.
-    pub(crate) fn full_screen(self) -> Option<Share> {
-        (self.whole.size.w > 0 && self.whole.size.h > 0).then_some(Share {
+    pub(crate) fn full_screen(self) -> Option<TheAreaItFills> {
+        (self.whole.size.w > 0 && self.whole.size.h > 0).then_some(TheAreaItFills {
             at: (self.whole.loc.x, self.whole.loc.y),
             size: (self.whole.size.w, self.whole.size.h),
         })

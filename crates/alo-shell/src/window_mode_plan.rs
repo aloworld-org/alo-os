@@ -122,7 +122,10 @@ impl Surfaces {
             Mode::FillingTheScreen => self
                 .the_room_for(surface)
                 .and_then(crate::the_room_a_window_fills::ADisplaysRoom::full_screen),
-            Mode::InAShare(share) => Some(share),
+            Mode::InAShare(share) => Some(crate::the_room_a_window_fills::TheAreaItFills {
+                at: share.at,
+                size: share.size,
+            }),
             Mode::Normal => None,
         };
         if previous.is_some_and(|window| {
