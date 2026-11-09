@@ -15,7 +15,7 @@
 //! `tests/only_one_place_in_this_crate_starts_a_program.rs` holds every file
 //! here to it. This is the third file that test names, and the only one that
 //! starts a program outside a box — which is the point of it, and why it takes
-//! nothing but an [`ACommand`]: it is reached only once the person's level has
+//! nothing but an [`alo_capability::ACommand`]: it is reached only once the person's level has
 //! been read and said yes, by the caller that read it. Nothing here reads the
 //! level, and nothing here decides it.
 //!

@@ -414,10 +414,14 @@ capability.running.always.indicator	anything that leaves this machine is shown a
 capability.running.always.record	every command and what it printed is written down
 capability.running.always.snapshot	your files are copied before each run, so it can be undone
 capability.running.asking-each-time	after showing you the command and waiting for you
+capability.running.command-empty	Nothing ran: the command was empty.
+capability.running.command-not-one-line	Nothing ran: a command must be one line.
+capability.running.command-too-long	Nothing ran: the command was longer than {most} characters.
 capability.running.full-trust	straight away, without asking
 capability.running.no-box	nothing ran, because this machine could not build the box it runs commands in
 capability.running.not-a-command	nothing ran, because what was asked for was not a command this machine could run
 capability.running.not-that-way	nothing ran, because running a command this way is not what you chose
+capability.running.run-a-command	run this command: {command}
 capability.running.sealed-box	in a sealed box that sees only this project
 capability.running.sealed-box-not-available-here	The sealed box isn't available on this computer yet.
 capability.running.sealed-box-not-here-yet	{program} was not run. The sealed box can't run programs on this computer yet. Choose 'ask each time' in Settings → Running code to run commands after you approve them.

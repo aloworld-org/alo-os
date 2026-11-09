@@ -90,6 +90,11 @@ const ONLY_THE_HELPER: &str = "Command::new(self.helper)";
 /// `alo-bounding` has no such collision and is left alone; widening a test in
 /// another crate to fix a name in this one would be the gate weakened to pass
 /// it, backwards.
+///
+/// **And `Command::` must not be the end of a longer name.** `ACommand::of` is
+/// `alo_capability`'s command a person approves (ADR 0149) and starts nothing;
+/// the test found it by failing on `at_full_access_tests.rs` on 2026-11-08, the
+/// same collision as `WhereCommandsRun` above one letter earlier.
 fn starts_a_program(line: &str) -> Option<&'static str> {
     [
         "Command::",
@@ -100,7 +105,15 @@ fn starts_a_program(line: &str) -> Option<&'static str> {
         "posix_spawn",
     ]
     .into_iter()
-    .find(|starting| line.contains(starting))
+    .find(|starting| {
+        line.match_indices(starting).any(|(at, _)| {
+            *starting != "Command::"
+                || !line
+                    .get(..at)
+                    .and_then(|before| before.chars().next_back())
+                    .is_some_and(|it| it.is_alphanumeric() || it == '_')
+        })
+    })
 }
 
 /// Whether a line says something to a reader rather than to the machine.
@@ -137,6 +150,8 @@ fn the_matcher_finds_a_program_being_started() {
         // whose name contains the word and which starts nothing.
         "pub use a_run_inside_a_box::{THE_HELPER, WhereCommandsRun};",
         "let mut where_they_run = WhereCommandsRun::new(boundary, boxes, record);",
+        // The command a person approves, which starts nothing (ADR 0149).
+        "let command = ACommand::of(\"mkdir -p /home/anna/demo\").unwrap();",
     ] {
         assert!(
             starts_a_program(ordinary).is_none(),

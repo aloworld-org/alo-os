@@ -492,9 +492,14 @@ mod tests {
     /// cannot invent a request any more than it can invent a verb.
     #[test]
     fn a_request_that_is_not_one_of_the_fourteen_is_not_a_request() {
+        // `run` was on this list until 2026-11-08: ADR 0149 made it a request,
+        // carrying a command and nothing else, and the person's level decides
+        // it in the daemon. `exec`, a grant and the rest still land nowhere.
+        assert!(serde_json::from_str::<Asked>(r#"{"run":{"command":"rm -rf /"}}"#).is_ok());
         for message in [
-            r#"{"run":{"command":"rm -rf /"}}"#,
+            r#"{"run":{"command":"rm -rf /","verb":"sh"}}"#,
             r#"{"exec":{"verb":"sh","given":[]}}"#,
+            r#"{"shell":{"command":"sh"}}"#,
             r#"{"grant":{"path":"/"}}"#,
             r#"{"begin":{"agent":"@files"}}"#,
             r#"{"end":{}}"#,

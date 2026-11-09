@@ -143,4 +143,10 @@ fn the_digest_the_catalogue_decides_by_is_the_one_a_turn_is_shown() {
         Instructions::of_digest(alo_models::THE_WORDS_A_TURN_SHOWED_BEFORE),
         Some(Instructions::OneExamplePerDoor)
     );
+    // And the words the one follow-up grade was earned under, before ADR 0149
+    // gave a turn the run door.
+    assert_eq!(
+        Instructions::of_digest(alo_models::THE_WORDS_A_TURN_SHOWED_UNTIL_ADR_0149),
+        Some(Instructions::EveryDoorAndAnAnswer)
+    );
 }
