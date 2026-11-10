@@ -182,7 +182,8 @@ const NOT_IN_THE_BOX: &str = "mkdir was not run. The sealed box can't run progra
 
 /// **At full access a command runs now, without any grant, and reaches a
 /// folder outside every grant** — after the snapshot was asked for, and
-/// written down as a run with no grants and no box.
+/// written down as a run with no grants and no box, and the person told it
+/// was done without asking.
 #[test]
 fn at_full_access_a_command_runs_and_reaches_what_no_grant_names() {
     let elsewhere = Elsewhere::with_the_level("full-access", Some(HowCodeRuns::AtFullTrust));
@@ -210,6 +211,23 @@ fn at_full_access_a_command_runs_and_reaches_what_no_grant_names() {
                     })
                 ),
                 "{said:?}"
+            );
+            // **The person is told, in the machine's own words**, that it was
+            // done without asking and why — and, since this bracket keeps
+            // nothing, that it cannot be put back. Until 2026-11-09 a command
+            // was answered `did`, and the person read only the model's own
+            // sentence about it.
+            let ToAnAgent::DoneWithoutAsking { said: told, .. } = &said else {
+                panic!("a command run at full access was not answered as done without asking: {said:?}");
+            };
+            assert_eq!(
+                told.text(),
+                format!(
+                    "Done without asking you first, because you chose full access in Settings → \
+                     Running code: run this command: mkdir -p {}. This one can't be put back: a \
+                     copy of your files from before it could not be kept.",
+                    elsewhere.the_folder_it_makes().display()
+                )
             );
         },
     );
@@ -654,6 +672,12 @@ fn at_full_access_sudo_runs_as_administrator_after_the_password() {
                     ..
                 })
             ),
+            "{said:?}"
+        );
+        // **The person was asked, for their password**, so it is not told
+        // as done without asking.
+        assert!(
+            !matches!(said, ToAnAgent::DoneWithoutAsking { .. }),
             "{said:?}"
         );
     });

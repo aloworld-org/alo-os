@@ -42,13 +42,13 @@ use std::ffi::OsStr;
 use std::path::Path;
 use std::time::{Duration, SystemTime};
 
-use alo_capability::words::{DONE_AT_FULL_ACCESS, DONE_AT_FULL_ACCESS_AND_IT_CANNOT_BE_PUT_BACK};
 use alo_capability::{Given, Grants};
 use alo_protocol::ToAnAgent;
-use alo_strings::{Filling, Said, Strings};
+use alo_strings::{Said, Strings};
 use alo_turn::{Changed, Turning};
 
 use crate::running_a_command::Commands;
+use crate::saying_it_was_done_without_asking::done_without_asking;
 use crate::the_grants_as_the_level_is_now::the_grants_as_the_level_is_now;
 use crate::what_a_client_is_told_a_verb_did::as_a_client_sees_it;
 
@@ -89,13 +89,7 @@ pub fn a_change_asked_for(
     match changed {
         Ok(Changed::Done { did, sentence }) => {
             let kept = bracket.is_some_and(|bracket| bracket.taken_at().is_some());
-            let word = if kept {
-                DONE_AT_FULL_ACCESS
-            } else {
-                DONE_AT_FULL_ACCESS_AND_IT_CANNOT_BE_PUT_BACK
-            };
-            let said = strings.say(&word.key(), &Filling::of("sentence", sentence.into_text()));
-            ToAnAgent::done_without_asking(as_a_client_sees_it(&did, now), &said)
+            done_without_asking(as_a_client_sees_it(&did, now), sentence, kept, strings)
         }
         Ok(Changed::Waiting(number)) => crate::doing::waiting_under(turning, number, strings, now),
         Err(why) => crate::doing::not_done(&why, strings),
