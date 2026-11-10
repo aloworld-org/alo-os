@@ -16,7 +16,7 @@ struct AMachine {
     /// Whether the shell starts.
     starts: bool,
     /// What polkit was asked about.
-    asked: RefCell<Vec<(String, String)>>,
+    asked: RefCell<Vec<(u32, String, String)>>,
     /// How many times a command ran.
     ran: Cell<usize>,
 }
@@ -47,10 +47,15 @@ impl TheMachine for AMachine {
     fn the_session_on_their_screen(&self, person: u32) -> Option<String> {
         (person == 1000).then(|| self.session.clone()).flatten()
     }
-    fn the_person_said_yes(&self, session: &str, command: &str) -> Result<(), NotAsAdministrator> {
+    fn the_person_said_yes(
+        &self,
+        person: u32,
+        session: &str,
+        command: &str,
+    ) -> Result<(), NotAsAdministrator> {
         self.asked
             .borrow_mut()
-            .push((session.to_owned(), command.to_owned()));
+            .push((person, session.to_owned(), command.to_owned()));
         self.says
     }
     fn run(&self, command: &ACommand) -> Result<WhatACommandDid, ItDidNotStart> {
@@ -77,7 +82,7 @@ fn the_agent_service() -> TheCaller {
 }
 
 /// **One yes runs the command exactly once, as asked**, and polkit was asked
-/// about the person's own session and the command itself.
+/// about the person, their own session and the command itself.
 #[test]
 fn one_yes_runs_it_once() {
     let machine = AMachine::ordinary();
@@ -94,7 +99,7 @@ fn one_yes_runs_it_once() {
     assert_eq!(machine.ran.get(), 1);
     assert_eq!(
         *machine.asked.borrow(),
-        [("2".to_owned(), "dnf install -y htop".to_owned())]
+        [(1000, "2".to_owned(), "dnf install -y htop".to_owned())]
     );
 }
 

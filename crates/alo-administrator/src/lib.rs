@@ -38,6 +38,7 @@
 //! | `answering_as_administrator` | The line `alo-agentd` and the runner speak |
 //! | `what_polkit_said` | polkit's three answers, read as the person's |
 //! | `running` | The runner's order: who asked, what, the person's yes, the run |
+//! | `the_process_polkit_is_asked_about` | The session's leader, named so polkit 126 can be asked about it |
 //! | `on_the_system_bus` | logind and polkit, asked on the system bus |
 
 #![cfg(target_os = "linux")]
@@ -49,4 +50,5 @@ pub mod logins;
 pub mod on_the_system_bus;
 pub mod running;
 pub mod the_helpers_conversation;
+pub mod the_process_polkit_is_asked_about;
 pub mod what_polkit_said;
