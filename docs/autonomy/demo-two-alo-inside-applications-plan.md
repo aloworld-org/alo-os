@@ -179,8 +179,9 @@ when the turn ends.
 
 ### 9. What a driven application sends is on the indicator
 
-**Status:** blocked — on two questions to the owner, and on stage 4. Read
-against `main` on 2026-11-10; no code written. **Size:** L. **Nothing that
+**Status:** in progress — the owner answered both questions on 2026-11-10
+(below); what can be built before stage 4 is being built, and nothing a person
+can see works until stage 4 drives an application. **Size:** L. **Nothing that
 publishes is walked before this lands.**
 
 *What was found.* Three things this stage needs do not exist, and none is in
@@ -209,6 +210,17 @@ they would sign in to GitHub inside alo's editor window (stage 10), and features
 says alo posts *in the person's own browser*. Is signing in again in alo's
 window what was meant, or do publishing and posting run at the turned-up
 setting?
+
+*The owner's answers, 2026-11-10*, given in the question dialog and relayed by
+the coordinator. **A:** *"Refuse, point to the setting (Recommended)"* — at the
+default, alo refuses to work in an application that cannot open a separate
+window of its own, says plainly that it cannot work there safely at this
+setting, and names the Settings choice that lets it use the person's own
+window, where the indicator says *that* the application is sending and not how
+much. **B:** *"You sign in once in alo's copy (Recommended)"* — the first time
+alo needs a service such as GitHub, alo's own copy shows the sign-in page and the
+person signs in themselves; alo never sees the password; and it stays signed in
+until the person signs it out. Both are recorded in ADR 0143.
 
 **For the person:** when alo makes the editor or the browser send something, the
 indicator says so while it happens and the record says so afterwards — law 1,
