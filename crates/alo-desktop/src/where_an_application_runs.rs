@@ -3,7 +3,7 @@
 //!
 //! An application a person starts runs in a unit of the person's manager,
 //! under `app.slice`: `app-alo-<id>@<n>.service` when this desktop started it,
-//! `app-flatpak-<id>-<n>.scope` once Flatpak has moved it. Which names count is
+//! `app-flatpak-<escaped id>-<n>.scope` once Flatpak has moved it. Which names count is
 //! `alo_launching::is_a_unit_of`, beside the rule that makes them. This file
 //! walks the directories and answers each one's number — **a control group's
 //! number is its directory's inode**, which is what the kernel's

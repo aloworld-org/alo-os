@@ -48,9 +48,18 @@ pub fn the_unit_for(identifier: &str, distinct: u64) -> Option<String> {
 ///
 /// - `app-alo-<escaped identifier>@<n>.service` — what this desktop starts when a
 ///   person presses an application ([`the_unit_for`]);
-/// - `app-flatpak-<identifier>-<n>.scope` — what Flatpak moves an application
-///   into when it starts it, with the identifier as Flatpak writes it, unescaped,
-///   and `<n>` a number.
+/// - `app-flatpak-<escaped identifier>-<n>.scope` — what Flatpak moves an
+///   application into when it starts it, `<n>` a number. **Flatpak escapes the
+///   identifier too**, so `io.gitlab.librewolf-community` runs in
+///   `app-flatpak-io.gitlab.librewolf\x2dcommunity-<n>.scope`: Flatpak's
+///   `flatpak_run_in_transient_unit` passes the ID through its
+///   `systemd_unit_name_escape`, which keeps letters, digits, `:`, `_` and `.`
+///   and writes every other byte `\xNN` (read in Flatpak's source at 1.8.0,
+///   1.10.0, 1.12.0, 1.14.0 and `main` on 2026-11-10). Until then this matched
+///   the identifier unescaped, so an application with a `-` in its ID was never
+///   found in its Flatpak scope. Flatpak does not escape a leading `.` and
+///   this crate's escaping does, which cannot matter: an application ID never begins with
+///   one.
 ///
 /// **Exact, never a prefix of another application's name**: `org.gnome.Text`
 /// is not `org.gnome.TextEditor`, because what follows the identifier must be
@@ -72,7 +81,7 @@ pub fn is_a_unit_of(unit: &str, identifier: &str) -> bool {
         });
     }
     unit.strip_prefix("app-flatpak-")
-        .and_then(|rest| rest.strip_prefix(identifier))
+        .and_then(|rest| rest.strip_prefix(escaped(identifier).as_str()))
         .and_then(|rest| rest.strip_prefix('-'))
         .and_then(|rest| rest.strip_suffix(".scope"))
         .is_some_and(|number| !number.is_empty() && number.bytes().all(|b| b.is_ascii_digit()))
