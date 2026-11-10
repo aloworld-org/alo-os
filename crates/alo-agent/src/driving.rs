@@ -62,8 +62,8 @@
 
 use alo_capability::Verbs;
 use alo_instructing::{
-    AStep, ATurnInProgress, Instructions, NOT_FOR_THE_PERSON, TheConversationSoFar, TheWindowOffered,
-    WhatItMayReach, shown_in_progress, speaks_of_the_verbs,
+    AStep, ATurnInProgress, Instructions, NOT_FOR_THE_PERSON, TheConversationSoFar,
+    TheWindowOffered, WhatItMayReach, shown_in_progress, speaks_of_the_verbs,
 };
 use alo_protocol::{Answered, FromAnAgent, ToAnAgent};
 

@@ -7,7 +7,10 @@ fn a_window_written_is_read_back_whole() {
     let line = offered.written();
     assert!(line.starts_with(THE_WINDOW_OFFERED));
     assert!(!line.contains('\n'), "a line that is two lines: {line}");
-    assert_eq!(TheWindowOffered::read(&format!("{line}\n")).unwrap(), offered);
+    assert_eq!(
+        TheWindowOffered::read(&format!("{line}\n")).unwrap(),
+        offered
+    );
 }
 
 /// **A request with no window still sends the line**, as the marker alone,
@@ -78,7 +81,10 @@ fn what_a_shell_would_not_write_is_refused() {
         TheWindowOffered::read("alo-earlier:"),
         Err(NotTheWindow::NotMarked)
     );
-    let too_long = format!("{THE_WINDOW_OFFERED}{}", "x".repeat(THE_LONGEST_WINDOW_LINE));
+    let too_long = format!(
+        "{THE_WINDOW_OFFERED}{}",
+        "x".repeat(THE_LONGEST_WINDOW_LINE)
+    );
     assert!(matches!(
         TheWindowOffered::read(&too_long),
         Err(NotTheWindow::TooLong(_))

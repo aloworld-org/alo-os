@@ -157,8 +157,7 @@ impl TheWindowOffered {
                 .and_then(Value::as_str)
                 .ok_or_else(|| not("its title and application are not both text"))
         };
-        Self::of(text("title")?, text("application")?)
-            .ok_or_else(|| not("it names no window"))
+        Self::of(text("title")?, text("application")?).ok_or_else(|| not("it names no window"))
     }
 
     /// **The line a shell writes for this request**, without its newline: the
