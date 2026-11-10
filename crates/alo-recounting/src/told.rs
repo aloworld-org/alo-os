@@ -643,7 +643,10 @@ mod tests {
             Told::of(&alo_record::Entry::ran_a_command(
                 &alo_capability::Grantee::named("@terminal"),
                 "/bin/sh",
-                &["-c".to_owned(), "mkdir /home/anna/Documents/demo".to_owned()],
+                &[
+                    "-c".to_owned(),
+                    "mkdir /home/anna/Documents/demo".to_owned(),
+                ],
                 &[],
                 returned,
                 false,

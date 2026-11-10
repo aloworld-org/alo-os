@@ -277,42 +277,46 @@ fn at_full_access_a_command_that_fails_is_not_answered_done() {
     ));
     let mut record = Record::default();
     let mut bracket = a_bracket();
-    on_a_turn("full-access-fails", &mut record, |turning, grants, strings, _| {
-        let said = the_agent_asked(
-            &line,
-            turning,
-            grants,
-            strings,
-            &elsewhere.here(),
-            &mut bracket,
-        );
-        // **The model is told the run whole**, status and all.
-        assert!(
-            matches!(
-                said.done(),
-                Some(Done::RanACommand {
-                    returned: Some(1),
-                    ..
-                })
-            ),
-            "{said:?}"
-        );
-        let told = match &said {
-            ToAnAgent::DoneWithoutAsking { said, .. } => Some(said.text().to_owned()),
-            _ => None,
-        };
-        assert_eq!(
-            told,
-            Some(format!(
-                "Tried without asking you first, because you chose full access in Settings → \
+    on_a_turn(
+        "full-access-fails",
+        &mut record,
+        |turning, grants, strings, _| {
+            let said = the_agent_asked(
+                &line,
+                turning,
+                grants,
+                strings,
+                &elsewhere.here(),
+                &mut bracket,
+            );
+            // **The model is told the run whole**, status and all.
+            assert!(
+                matches!(
+                    said.done(),
+                    Some(Done::RanACommand {
+                        returned: Some(1),
+                        ..
+                    })
+                ),
+                "{said:?}"
+            );
+            let told = match &said {
+                ToAnAgent::DoneWithoutAsking { said, .. } => Some(said.text().to_owned()),
+                _ => None,
+            };
+            assert_eq!(
+                told,
+                Some(format!(
+                    "Tried without asking you first, because you chose full access in Settings → \
                  Running code: run this command: mkdir {}. It did not work: the command ended \
                  with exit status 1. If it changed anything, that can't be put back: a copy of \
                  your files from before it could not be kept.",
-                nowhere.display()
-            )),
-            "a command that failed at full access was not told as one that did not work: {said:?}"
-        );
-    });
+                    nowhere.display()
+                )),
+                "a command that failed at full access was not told as one that did not work: {said:?}"
+            );
+        },
+    );
     assert!(!nowhere.exists(), "the command made the folder after all");
     let written = what_was_written(&record);
     assert!(

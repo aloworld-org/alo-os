@@ -68,7 +68,9 @@ pub fn what_the_terminal_says(
                     match it_did_not_work(done, true, strings) {
                         Some(said) => (said, false),
                         None => (
-                            say(alo_capability::words::DONE_AFTER_YOUR_OK_AND_IT_CANNOT_BE_PUT_BACK),
+                            say(
+                                alo_capability::words::DONE_AFTER_YOUR_OK_AND_IT_CANNOT_BE_PUT_BACK,
+                            ),
                             true,
                         ),
                     }
@@ -152,7 +154,10 @@ fn it_did_not_work(
     };
     Some(
         strings
-            .say(&word.key(), &Filling::nothing().and_said("why", &why.said(strings)))
+            .say(
+                &word.key(),
+                &Filling::nothing().and_said("why", &why.said(strings)),
+            )
             .text()
             .to_owned(),
     )
@@ -264,10 +269,12 @@ mod tests {
         );
         assert_eq!(
             stopped.lines,
-            ["It did not work: the command was stopped before it finished. If it changed \
+            [
+                "It did not work: the command was stopped before it finished. If it changed \
               anything, that can't be put back: a copy of your files from before it could not \
               be kept."
-                .to_owned()]
+                    .to_owned()
+            ]
         );
         assert!(!stopped.worked);
     }

@@ -127,11 +127,26 @@ mod it_did_not_work {
     #[test]
     fn only_an_end_with_status_zero_in_time_worked() {
         assert_eq!(ItDidNotWork::of(Some(0), false), None);
-        assert_eq!(ItDidNotWork::of(Some(1), false), Some(ItDidNotWork::EndedWith(1)));
-        assert_eq!(ItDidNotWork::of(Some(-3), false), Some(ItDidNotWork::EndedWith(-3)));
-        assert_eq!(ItDidNotWork::of(None, false), Some(ItDidNotWork::WasStopped));
-        assert_eq!(ItDidNotWork::of(None, true), Some(ItDidNotWork::TookTooLong));
-        assert_eq!(ItDidNotWork::of(Some(0), true), Some(ItDidNotWork::TookTooLong));
+        assert_eq!(
+            ItDidNotWork::of(Some(1), false),
+            Some(ItDidNotWork::EndedWith(1))
+        );
+        assert_eq!(
+            ItDidNotWork::of(Some(-3), false),
+            Some(ItDidNotWork::EndedWith(-3))
+        );
+        assert_eq!(
+            ItDidNotWork::of(None, false),
+            Some(ItDidNotWork::WasStopped)
+        );
+        assert_eq!(
+            ItDidNotWork::of(None, true),
+            Some(ItDidNotWork::TookTooLong)
+        );
+        assert_eq!(
+            ItDidNotWork::of(Some(0), true),
+            Some(ItDidNotWork::TookTooLong)
+        );
     }
 }
 
