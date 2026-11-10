@@ -41,6 +41,26 @@ fn main() -> ExitCode {
         println!("FAILURE");
         return ExitCode::FAILURE;
     };
+    // **The helper's real number is the caller's; its effective one stays 0.**
+    // polkit takes the helper's answer only for an agent registered by the
+    // number the helper sends, which is its real one (`getuid()`), and the
+    // agent is the person's. As root it sent 0, and polkit answered *No
+    // session for cookie* to a right password. This is how the helper runs
+    // under every other desktop's agent: setuid from the person's process.
+    // One thread, about to become the helper, so the thread's number is the
+    // process's.
+    if let Err(why) = rustix::thread::set_thread_res_uid(
+        Some(rustix::process::Uid::from_raw(caller)),
+        None,
+        None,
+    ) {
+        eprintln!(
+            "alo-checking-a-password: the helper could not be made number {caller}'s, so \
+             polkit would not take its answer: {why}"
+        );
+        println!("FAILURE");
+        return ExitCode::FAILURE;
+    }
     // Standard input and output are the connection, inherited.
     let why = Command::new(THE_HELPER).arg(name).exec();
     eprintln!("alo-checking-a-password: {THE_HELPER} would not start: {why}");

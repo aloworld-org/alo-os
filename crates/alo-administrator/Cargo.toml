@@ -14,8 +14,9 @@ repository.workspace = true
 # What a command is, and what one that ran did, in the shape the record and
 # the agent are told it in.
 alo-capability = { path = "../alo-capability" }
-# Who is on the other end of a socket: the kernel's answer, never the caller's.
-rustix = { workspace = true, features = ["net", "process"] }
+# Who is on the other end of a socket: the kernel's answer, never the caller's;
+# and the helper's real number made the caller's, which polkit matches.
+rustix = { workspace = true, features = ["net", "process", "thread"] }
 # The line the agent service and the runner speak.
 serde = { workspace = true }
 serde_json = { workspace = true }
