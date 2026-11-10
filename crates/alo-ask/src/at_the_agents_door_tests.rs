@@ -141,3 +141,43 @@ fn every_line_the_agent_wrote_comes_back() {
     assert!(said.contains("grant"), "{said:?}");
     let _ = std::fs::remove_file(&at);
 }
+
+/// **At a terminal the request goes with where the person's folders are**, on
+/// the fifth line, after the two markers, and read by the agent as the shell
+/// meant it.
+#[test]
+fn a_request_held_open_carries_where_the_persons_folders_are() {
+    let at = a_socket_called("their-folders");
+    let listening = UnixListener::bind(&at).expect("binding");
+    let heard = thread::spawn(move || {
+        let (stream, _) = listening.accept().expect("a caller");
+        let mut reading = BufReader::new(&stream);
+        let mut lines = Vec::new();
+        for _ in 0..4 {
+            let mut line = String::new();
+            reading.read_line(&mut line).expect("a line");
+            lines.push(line);
+        }
+        (&stream).write_all(b"ok\n").expect("answering");
+        lines
+    });
+    let home = alo_instructing::ThePersonsFolders::of(
+        std::path::Path::new("/var/home/alo"),
+        [("Documents", std::path::Path::new("/var/home/alo/Documents"))],
+    )
+    .expect("an absolute home");
+
+    let (said, held) =
+        super::what_the_agent_says_holding_the_turn(&at, "make a folder", Some(&home))
+            .expect("an answer");
+    held.let_go();
+    assert_eq!(said, "ok");
+    let lines = heard.join().expect("the thread");
+    assert_eq!(lines.first().map(String::as_str), Some("make a folder\n"));
+    let fifth = lines.get(3).expect("a fourth line after the request");
+    assert_eq!(
+        alo_instructing::ThePersonsFolders::read_the_line(fifth).expect("a line a shell writes"),
+        Some(home)
+    );
+    let _ = std::fs::remove_file(&at);
+}

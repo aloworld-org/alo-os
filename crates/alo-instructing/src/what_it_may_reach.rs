@@ -40,6 +40,8 @@
 
 use std::path::Path;
 
+use crate::the_persons_folders::ThePersonsFolders;
+
 /// The folders a model is told it may reach.
 ///
 /// Sealed: built from what a machine really holds, so nothing downstream can
@@ -49,6 +51,10 @@ pub struct WhatItMayReach {
     /// The folders, sorted and without repeats — [`None`] where whoever built
     /// this does not know what is granted and must not pretend to.
     folders: Option<Vec<String>>,
+    /// **Where the person's home and standard folders are**, when their shell
+    /// said (`crate::the_persons_folders`). Where things are, never what may
+    /// be reached: it changes nothing above, and nothing here grants.
+    home: Option<ThePersonsFolders>,
 }
 
 impl WhatItMayReach {
@@ -65,7 +71,10 @@ impl WhatItMayReach {
     /// speaks.
     #[must_use]
     pub fn not_said() -> Self {
-        Self { folders: None }
+        Self {
+            folders: None,
+            home: None,
+        }
     }
 
     /// A machine where nothing has been granted, and this is known.
@@ -73,6 +82,7 @@ impl WhatItMayReach {
     pub fn nothing() -> Self {
         Self {
             folders: Some(Vec::new()),
+            home: None,
         }
     }
 
@@ -93,7 +103,24 @@ impl WhatItMayReach {
         folders.dedup();
         Self {
             folders: Some(folders),
+            home: None,
         }
+    }
+
+    /// **The same, with where the person's own folders are** on this
+    /// computer, or nothing where their shell did not say.
+    ///
+    /// Told before what may be reached, so a model learns where things are
+    /// and then which of them it may touch (`crate::the_persons_folders`).
+    #[must_use]
+    pub fn in_this_home(self, home: Option<ThePersonsFolders>) -> Self {
+        Self { home, ..self }
+    }
+
+    /// Where the person's own folders are, when their shell said.
+    #[must_use]
+    pub const fn home(&self) -> Option<&ThePersonsFolders> {
+        self.home.as_ref()
     }
 
     /// Whether this says nothing at all, because nobody knew.
@@ -119,6 +146,17 @@ impl WhatItMayReach {
     /// nothing at all.
     #[must_use]
     pub fn told(&self) -> String {
+        let mut text = self
+            .home
+            .as_ref()
+            .map_or_else(String::new, ThePersonsFolders::told);
+        text.push_str(&self.what_may_be_reached());
+        text
+    }
+
+    /// What a model is told about the folders granted, or nothing where nobody
+    /// knew.
+    fn what_may_be_reached(&self) -> String {
         let Some(folders) = &self.folders else {
             return String::new();
         };

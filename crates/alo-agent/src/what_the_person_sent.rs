@@ -15,6 +15,12 @@
 //!    this window* (`alo_instructing::TheWindowOffered`). A current shell
 //!    always sends it, with nothing after the marker for a request about no
 //!    window. A hint for the model, never a capability, as the folders are.
+//! 5. `alo-their-folders:` and where the person's home and standard folders
+//!    are on this computer (`alo_instructing::ThePersonsFolders`), read on
+//!    their side as they sent the request. A current shell always sends it,
+//!    with nothing after the marker where it knows no home. It travels inside
+//!    [`WhatThePersonSent::may_reach`], since it is told to the model with
+//!    the folders and, like them, permits nothing.
 //!
 //! # Why the later lines are after the request, and waited for briefly
 //!
@@ -39,7 +45,7 @@ use std::os::fd::BorrowedFd;
 use std::path::Path;
 use std::time::Duration;
 
-use alo_instructing::{TheConversationSoFar, TheWindowOffered, WhatItMayReach};
+use alo_instructing::{TheConversationSoFar, ThePersonsFolders, TheWindowOffered, WhatItMayReach};
 
 /// The marker a line of granted folders begins with.
 ///
@@ -106,13 +112,13 @@ pub fn read_what_the_person_sent(
             .to_owned(),
         );
     }
-    let (earlier, window, may_stop) = match socket {
+    let (earlier, window, home, may_stop) = match socket {
         Some(socket) => the_lines_after_the_request(input, socket)?,
-        None => (TheConversationSoFar::nothing(), None, false),
+        None => (TheConversationSoFar::nothing(), None, None, false),
     };
     Ok(WhatThePersonSent {
         request,
-        may_reach,
+        may_reach: may_reach.in_this_home(home),
         earlier,
         window,
         may_stop,
@@ -155,12 +161,22 @@ fn a_line(input: &mut dyn BufRead, most: usize, what: &str) -> Result<ALine, Str
     }
 }
 
+/// What the lines after the request carried: the conversation so far, the
+/// window offered, where the person's folders are, and whether the caller
+/// left its sending side open.
+type AfterTheRequest = (
+    TheConversationSoFar,
+    Option<TheWindowOffered>,
+    Option<ThePersonsFolders>,
+    bool,
+);
+
 /// The lines after the request, each waited for briefly, or nothing — and
 /// whether the caller left its sending side open.
 fn the_lines_after_the_request(
     input: &mut dyn BufRead,
     socket: BorrowedFd<'_>,
-) -> Result<(TheConversationSoFar, Option<TheWindowOffered>, bool), String> {
+) -> Result<AfterTheRequest, String> {
     use rustix::net::sockopt::{Timeout, set_socket_timeout};
 
     if set_socket_timeout(
@@ -171,7 +187,7 @@ fn the_lines_after_the_request(
     .is_err()
     {
         // Not a socket after all: nobody could have sent a third line.
-        return Ok((TheConversationSoFar::nothing(), None, false));
+        return Ok((TheConversationSoFar::nothing(), None, None, false));
     }
     let read = the_third_and_fourth(input);
     // Back to waiting as long as it takes; `crate::holding_the_turn` sets its
@@ -180,10 +196,9 @@ fn the_lines_after_the_request(
     read
 }
 
-/// The conversation so far, then — only after it — the window offered.
-fn the_third_and_fourth(
-    input: &mut dyn BufRead,
-) -> Result<(TheConversationSoFar, Option<TheWindowOffered>, bool), String> {
+/// The conversation so far, then — only after it — the window offered, and
+/// only after that, where the person's folders are.
+fn the_third_and_fourth(input: &mut dyn BufRead) -> Result<AfterTheRequest, String> {
     let third = a_line(
         input,
         alo_instructing::THE_LONGEST_LINE,
@@ -192,8 +207,8 @@ fn the_third_and_fourth(
     let earlier = match third {
         // **It has finished writing**: the end of the input came where a
         // third line could have.
-        ALine::Ended => return Ok((TheConversationSoFar::nothing(), None, false)),
-        ALine::NotSent => return Ok((TheConversationSoFar::nothing(), None, true)),
+        ALine::Ended => return Ok((TheConversationSoFar::nothing(), None, None, false)),
+        ALine::NotSent => return Ok((TheConversationSoFar::nothing(), None, None, true)),
         ALine::Read(line) => TheConversationSoFar::read(&line).map_err(|why| why.to_string())?,
     };
     let window = match a_line(
@@ -204,10 +219,22 @@ fn the_third_and_fourth(
         ALine::Read(line) => {
             TheWindowOffered::read_the_line(&line).map_err(|why| why.to_string())?
         }
-        // A shell from before the fourth line: a request about no window.
+        // A shell from before the fourth line: a request about no window, and
+        // nothing after it to wait for.
+        ALine::Ended | ALine::NotSent => return Ok((earlier, None, None, true)),
+    };
+    let home = match a_line(
+        input,
+        alo_instructing::THE_LONGEST_FOLDERS_LINE,
+        "the person's folders",
+    )? {
+        ALine::Read(line) => {
+            ThePersonsFolders::read_the_line(&line).map_err(|why| why.to_string())?
+        }
+        // A shell from before the fifth line: no home was said.
         ALine::Ended | ALine::NotSent => None,
     };
-    Ok((earlier, window, true))
+    Ok((earlier, window, home, true))
 }
 
 #[cfg(test)]

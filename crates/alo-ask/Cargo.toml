@@ -61,6 +61,9 @@ rustix = { workspace = true, features = ["termios", "event"] }
 # marker an empty earlier conversation is written with is `alo-instructing`'s.
 alo-changing = { path = "../alo-changing" }
 alo-instructing = { path = "../alo-instructing" }
+# Where this person's standard folders are, read back from the record the
+# account was made with, so the agent is told the folders really there.
+alo-their-folders = { path = "../alo-their-folders" }
 alo-remembering = { path = "../alo-remembering" }
 
 # One error type for four word lists that could not be gathered — read by

@@ -29,6 +29,7 @@
 //! | [`speaks_of_the_verbs`] | Whether an answer meant for the person talks about the verbs instead (ADR 0149) |
 //! | [`TheConversationSoFar`] | What was said before a follow-up, held to its bound, how a model is told it, and the line it travels on (ADR 0138) |
 //! | [`TheWindowOffered`] | The window a person offered with *Help with this window*, the line it travels on, and how a model is told it |
+//! | [`ThePersonsFolders`] | Where the person's home and standard folders are on this computer, the line it travels on, and how a model is told it |
 //!
 //! # What this crate does not do
 //!
@@ -59,6 +60,7 @@ pub mod shown;
 pub mod the_conversation_on_the_wire;
 pub mod the_conversation_so_far;
 pub mod the_language_asked_in;
+pub mod the_persons_folders;
 pub mod the_window_offered;
 pub mod verb_as_told;
 pub mod what_it_may_reach;
@@ -85,6 +87,9 @@ pub use the_conversation_on_the_wire::{
 };
 pub use the_conversation_so_far::{AnEarlierTurn, TheAnswer, TheConversationSoFar};
 pub use the_language_asked_in::the_language_of;
+pub use the_persons_folders::{
+    NotTheirFolders, THE_LONGEST_FOLDERS_LINE, THE_PERSONS_FOLDERS, ThePersonsFolders,
+};
 pub use the_window_offered::{
     NotTheWindow, THE_LONGEST_TITLE, THE_LONGEST_WINDOW_LINE, THE_WINDOW_OFFERED, TheWindowOffered,
 };
