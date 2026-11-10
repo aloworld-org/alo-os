@@ -72,7 +72,7 @@ use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
 use alo_agent::{AtTheDaemonsSocket, HowFar, WhatHappened, driving_until_stopped};
-use alo_instructing::{Instructions, TheConversationSoFar, WhatItMayReach};
+use alo_instructing::{Instructions, TheConversationSoFar, TheWindowOffered, WhatItMayReach};
 
 /// Where the daemon's doors live, which the image makes at boot.
 ///
@@ -150,6 +150,7 @@ fn run() -> Result<ExitCode, String> {
     };
     let happened = driving_until_stopped(
         &asked.earlier,
+        asked.window.as_ref(),
         &asked.request,
         &verbs,
         &asked.may_reach,
@@ -329,6 +330,9 @@ struct Asked {
     /// What was said before, when this is a follow-up typed in a task window
     /// (ADR 0138); nothing for a first request and for a request typed here.
     earlier: TheConversationSoFar,
+    /// The window the person offered with *Help with this window*, if any: a
+    /// hint for the model, never a capability.
+    window: Option<TheWindowOffered>,
     /// Whether the person can stop this turn from their shell (ADR 0139).
     may_stop: bool,
 }
@@ -381,6 +385,7 @@ fn what_was_asked() -> Result<Asked, String> {
             at,
             may_reach: WhatItMayReach::nothing(),
             earlier: TheConversationSoFar::nothing(),
+            window: None,
             may_stop: false,
         });
     }
@@ -395,6 +400,7 @@ fn what_was_asked() -> Result<Asked, String> {
         at,
         may_reach: sent.may_reach,
         earlier: sent.earlier,
+        window: sent.window,
         may_stop: sent.may_stop,
     })
 }

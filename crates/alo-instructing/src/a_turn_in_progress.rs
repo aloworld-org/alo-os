@@ -54,8 +54,9 @@
 use alo_capability::Verbs;
 
 use crate::instructions::Instructions;
-use crate::shown::shown_to_a_model_after;
+use crate::shown::shown_to_a_model_about;
 use crate::the_conversation_so_far::TheConversationSoFar;
+use crate::the_window_offered::TheWindowOffered;
 use crate::what_it_may_reach::WhatItMayReach;
 
 /// One request a turn has already made, and what came back.
@@ -145,6 +146,9 @@ pub struct ATurnInProgress<'a> {
     /// On the turn rather than beside it for `may_reach`'s reason: every round
     /// of one turn is shown the same earlier conversation.
     earlier: &'a TheConversationSoFar,
+    /// The window the person offered with the request, if they offered one
+    /// (`crate::the_window_offered`). On the turn for `may_reach`'s reason.
+    window: Option<&'a TheWindowOffered>,
 }
 
 /// The conversation before a first request, which is none.
@@ -159,7 +163,15 @@ impl<'a> ATurnInProgress<'a> {
             steps,
             may_reach,
             earlier: &NOTHING_EARLIER,
+            window: None,
         }
+    }
+
+    /// **The same turn, about the window the person offered** with it, or
+    /// about none.
+    #[must_use]
+    pub const fn about(self, window: Option<&'a TheWindowOffered>) -> Self {
+        Self { window, ..self }
     }
 
     /// **The same turn, following this earlier conversation** — a follow-up a
@@ -205,11 +217,12 @@ pub fn shown_in_progress(
     verbs: &Verbs,
     turn: ATurnInProgress<'_>,
 ) -> String {
-    let mut text = shown_to_a_model_after(
+    let mut text = shown_to_a_model_about(
         instructions,
         verbs,
         turn.may_reach,
         turn.earlier,
+        turn.window,
         turn.request,
     );
     if !turn.has_begun() {
@@ -304,6 +317,26 @@ mod tests {
         );
         assert!(answer_at < next_at, "the instruction is not last");
         assert!(shown.ends_with(super::WHAT_TO_SEND_NEXT));
+    }
+
+    /// **Every round of a turn about a window is told the same window**, so a
+    /// second round cannot lose what the first was asked about.
+    #[test]
+    fn every_round_is_told_the_window_offered() {
+        let verbs = the_verbs();
+        let window =
+            crate::the_window_offered::TheWindowOffered::of("Notes", "org.gnome.TextEditor")
+                .unwrap();
+        let steps = [AStep::of("asked", "came back")];
+        let nothing: [AStep; 0] = [];
+        for steps in [&steps[..], &nothing[..]] {
+            let shown = shown_to_a_turn_in_progress(
+                &verbs,
+                ATurnInProgress::of("summarise this", steps, &WhatItMayReach::nothing())
+                    .about(Some(&window)),
+            );
+            assert!(shown.contains(&window.told()), "{shown}");
+        }
     }
 
     /// **A continued turn is told it may answer**, and is not told that a

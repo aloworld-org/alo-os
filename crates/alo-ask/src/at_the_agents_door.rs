@@ -148,9 +148,9 @@ impl TheTurnHeldOpen {
 /// Hand one sentence to the agent and wait for what it says, **keeping the turn
 /// open** until the returned [`TheTurnHeldOpen`] is dropped.
 ///
-/// It also writes the earlier-conversation marker with nothing after it — a
-/// first request — so that the agent need not wait to learn there is none
-/// (`docs/contracts/asking-socket.md`). Keeping the sending side open makes the
+/// It also writes the earlier-conversation marker and the window marker with
+/// nothing after either — a first request, about no window — so that the agent
+/// need not wait to learn there is none (`docs/contracts/asking-socket.md`). Keeping the sending side open makes the
 /// agent read a close as a Stop, and that is what it is.
 ///
 /// **The reply is kept as written, only its end trimmed.** Its first line is
@@ -179,8 +179,9 @@ pub fn what_the_agent_says_holding_the_turn(
     talking
         .write_all(
             format!(
-                "{one_line}\n{}\n",
-                alo_instructing::THE_EARLIER_CONVERSATION
+                "{one_line}\n{}\n{}\n",
+                alo_instructing::THE_EARLIER_CONVERSATION,
+                alo_instructing::THE_WINDOW_OFFERED
             )
             .as_bytes(),
         )

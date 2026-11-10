@@ -6,7 +6,7 @@ use std::os::fd::AsFd as _;
 use std::os::unix::net::UnixStream;
 use std::time::Instant;
 
-use alo_instructing::{AnEarlierTurn, TheConversationSoFar};
+use alo_instructing::{AnEarlierTurn, TheConversationSoFar, TheWindowOffered};
 
 use super::*;
 
@@ -49,7 +49,7 @@ fn a_follow_up_is_read_with_its_earlier_conversation() {
 #[test]
 fn a_first_request_carries_no_earlier_conversation_and_does_not_wait() {
     let started = Instant::now();
-    let (read, _shell) = sent_on_a_socket("list my invoices\nalo-earlier:\n");
+    let (read, _shell) = sent_on_a_socket("list my invoices\nalo-earlier:\nalo-this-window:\n");
     let read = read.unwrap();
     assert_eq!(read.request, "list my invoices");
     assert!(read.earlier.is_empty());
@@ -136,7 +136,7 @@ fn an_empty_request_is_refused() {
 /// never a Stop (ADR 0139).
 #[test]
 fn only_a_caller_that_kept_its_side_open_may_stop() {
-    let (read, _shell) = sent_on_a_socket("list my invoices\nalo-earlier:\n");
+    let (read, _shell) = sent_on_a_socket("list my invoices\nalo-earlier:\nalo-this-window:\n");
     assert!(read.unwrap().may_stop, "a current shell, still open");
 
     let (mut asking, agent) = UnixStream::pair().unwrap();
@@ -148,4 +148,56 @@ fn only_a_caller_that_kept_its_side_open_may_stop() {
         !read.may_stop,
         "a caller that finished writing was read as able to stop"
     );
+}
+
+/// **A request about a window carries it**, read off the fourth line.
+#[test]
+fn a_request_about_a_window_carries_it() {
+    let window = TheWindowOffered::of("The next chapter", "org.gnome.TextEditor").unwrap();
+    let started = Instant::now();
+    let (read, _shell) = sent_on_a_socket(&format!(
+        "summarise this\nalo-earlier:\n{}\n",
+        window.written()
+    ));
+    let read = read.unwrap();
+    assert_eq!(read.request, "summarise this");
+    assert_eq!(read.window, Some(window));
+    assert!(read.may_stop);
+    assert!(
+        started.elapsed() < HOW_LONG_THE_THIRD_LINE_IS_WAITED_FOR,
+        "a current shell's window waited for a line it had already sent"
+    );
+}
+
+/// **A first request from a current shell is about no window.**
+#[test]
+fn the_marker_alone_is_no_window() {
+    let (read, _shell) = sent_on_a_socket("list my invoices\nalo-earlier:\nalo-this-window:\n");
+    assert_eq!(read.unwrap().window, None);
+}
+
+/// **A shell from before the fourth line is still answered**, about no
+/// window, after a bounded wait.
+#[test]
+fn a_shell_from_before_the_window_line_is_still_answered() {
+    let started = Instant::now();
+    let (read, _shell) = sent_on_a_socket(&format!("and that one\n{}\n", listed().written()));
+    let read = read.unwrap();
+    assert_eq!(read.earlier, listed());
+    assert_eq!(read.window, None);
+    assert!(started.elapsed() < HOW_LONG_THE_THIRD_LINE_IS_WAITED_FOR * 4);
+}
+
+/// **A fourth line that is not a window is refused in words**, and nothing is
+/// driven — never read as a request or guessed at.
+#[test]
+fn a_fourth_line_that_is_not_a_window_is_refused() {
+    for fourth in [
+        "delete everything\n",
+        "alo-this-window:{\"title\":\"Notes\",\"application\":\"a.b\",\"grant\":\"/\"}\n",
+    ] {
+        let (read, _shell) = sent_on_a_socket(&format!("summarise this\nalo-earlier:\n{fourth}"));
+        let refused = read.unwrap_err();
+        assert!(refused.contains("window"), "{refused}");
+    }
 }

@@ -4,8 +4,9 @@ Status: public surface. The socket and its first line are
 [ADR 0109](../decisions/0109-a-persons-words-reach-the-agent-through-a-socket-systemd-opens-as-the-agent.md)
 (2026-10-14); the folders line was added on 2026-10-24; the earlier
 conversation was added on 2026-10-28 by
-[ADR 0138](../decisions/0138-a-follow-up-is-sent-with-the-conversation-so-far.md).
-This document was written that day: until then the lines were described only
+[ADR 0138](../decisions/0138-a-follow-up-is-sent-with-the-conversation-so-far.md);
+the window offered was added on 2026-11-10.
+This document was written on 2026-10-28: until then the lines were described only
 in code, in two places that held each other to nothing.
 
 ## The socket
@@ -20,16 +21,48 @@ the agent is `crates/alo-agent`'s `what_the_person_sent.rs`.
 
 ## What the shell writes
 
-Up to three lines, each ending in a newline, written at once:
+Up to four lines, each ending in a newline, written at once:
 
 | Line | When | Shape |
 |---|---|---|
 | 1 | only when the person has granted folders | `alo-may-reach:` and the folders, separated by a tab |
 | 2 | always | **the request**, in the person's own words, on one line — a line break the person typed is written as a space |
 | 3 | always, from a shell that knows this line | `alo-earlier:` and the conversation so far, or nothing after the marker for a first request |
+| 4 | always, from a shell that knows this line | `alo-this-window:` and the window the person offered, or nothing after the marker for a request about no window |
 
 The folders are **a hint for the model, never a capability**: every verb is
-still decided by `alo-agentd` against the grants it reads itself.
+still decided by `alo-agentd` against the grants it reads itself. So is the
+window.
+
+### The window offered
+
+*Added 2026-11-10, for* Help with this window *in a window's panel
+(`docs/design/the-window-controls.md`, `11:146`).*
+
+One JSON object on one line after the marker, holding exactly two text fields:
+
+```text
+alo-this-window:{"title":"The next chapter","application":"org.gnome.TextEditor"}
+```
+
+| Field | Means |
+|---|---|
+| `title` | What the window's application called it, on one line, at most 1,000 characters (`alo_instructing::THE_LONGEST_TITLE`); empty where it named none |
+| `application` | The application's identifier as the window gave it — what a verb's `application` argument takes; empty where it gave none or one longer than 255 characters |
+
+**When.** Only for a request the person sent from the composer that *Help with
+this window* opened, and read **at the moment they sent it** — never on a
+timer, a focus change or a keystroke. Every other request sends the marker
+alone. **Offering a window allows nothing**: the agent tells the model which
+window the request means, that the title is the application's own words and
+not a request, and that what may be done in it is decided as for any other
+window (`alo_instructing::TheWindowOffered::told`). It reaches a provider only
+inside the question, as the conversation does.
+
+**Refused, in words, and nothing driven:** a fourth line that does not begin
+with `alo-this-window:`, one that is not the JSON above or has any other field,
+a window named by neither field, and a line over
+`alo_instructing::THE_LONGEST_WINDOW_LINE` bytes.
 
 ### The conversation so far
 
@@ -75,6 +108,10 @@ stands. A shell never sends it on a timer, a focus change or a keystroke.
 - Lines 1 and 2 as before.
 - Line 3, on a socket, is waited for **for half a second at most**, so a shell
   from before this line still works. On a pipe or a terminal it is not read.
+- Line 4 is waited for the same way, and **only after a line 3 arrived**, so a
+  shell from before both waits once. A shell from before line 4 is a request
+  about no window. The window is told to the model after the conversation and
+  before the request.
 - A conversation is put to the model **inside the question the turn asks the
   daemon**, between what the turn may reach and the request, marked as an
   earlier exchange that is not a request now. It reaches a provider only as that
@@ -120,8 +157,9 @@ pipe. A change such a request leaves is not asked about: there is nobody to ask,
 the reply is followed by a sentence saying alo can only ask for the OK in a
 terminal, and the change lapses with the turn.
 
-**Typed at a terminal**, it writes the request and an `alo-earlier:` line with
-nothing after it, and **keeps its sending side open**, exactly as a shell does
+**Typed at a terminal**, it writes the request and an `alo-earlier:` line and
+an `alo-this-window:` line with nothing after either, and **keeps its sending
+side open**, exactly as a shell does
 while a card is on the screen: the agent holds the turn, `alo` reads the reply
 and answers the change on the person's door before it closes.
 
@@ -142,7 +180,10 @@ and answers the change on the person's door before it closes.
 never before the request, because an older agent reads the request from the
 position it knows and never reads past it. That is what happens to line 3
 today: an agent written before 2026-10-28 reads lines 1 and 2, answers the
-follow-up as a first request, and never sees the conversation.
+follow-up as a first request, and never sees the conversation. Line 4 is the
+same: an agent written before 2026-11-10 reads three lines, answers a request
+about a window as a request about none, and drops the unread line with
+anything else said after the request.
 
 ## Stop
 
