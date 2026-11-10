@@ -98,12 +98,6 @@ impl ItDidNotWork {
         }
     }
 
-    /// The same, of what a command did.
-    #[must_use]
-    pub const fn of_what_it_did(did: &WhatACommandDid) -> Option<Self> {
-        Self::of(did.returned, did.took_too_long)
-    }
-
     /// Why, as the person reads it: one clause, to go after *it did not work:*.
     #[must_use]
     pub fn said(self, strings: &alo_strings::Strings) -> alo_strings::Said {
