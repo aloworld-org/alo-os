@@ -7,13 +7,13 @@
 //!
 //! alo asks the compositor's door to work in an application and holds the
 //! connection while it does (`alo_acting::working_in`). The door hands the
-//! connection here ([`AskedToWork`]), and from then on, once a frame:
+//! connection here ([`AskedToWork`](crate::alo_at_work::AskedToWork)), and from then on, once a frame:
 //!
 //! - **at the default — alo's own copy** — the copy is started, or found
-//!   running, by the desktop ([`StartsAlosCopy`]); its control groups, and only
+//!   running, by the desktop ([`StartsAlosCopy`](crate::alo_at_work::StartsAlosCopy)); its control groups, and only
 //!   its, are counted; and **from the first byte the indicator says so**. A
 //!   machine with no counter, a copy whose groups cannot be found within
-//!   [`FOUND_WITHIN`], or one part of it that cannot be counted, puts the line
+//!   [`FOUND_WITHIN`](crate::alo_at_work::FOUND_WITHIN), or one part of it that cannot be counted, puts the line
 //!   *this machine cannot count what it sends* up at once instead, for the whole
 //!   time: **never silence** (law 1);
 //! - **turned up — the person's own window** — the line *may be sending, and
@@ -24,12 +24,12 @@
 //!   setting lets alo work in the person's window instead.
 //!
 //! When alo says `done` it is answered with what the copy sent; when it hangs
-//! up the line comes off; and after [`THE_LONGEST`] the desktop ends it,
+//! up the line comes off; and after [`THE_LONGEST`](crate::alo_at_work::THE_LONGEST) the desktop ends it,
 //! because a line can only be trusted while somebody is still holding it. A
-//! line stays up at least [`SEEN_FOR_AT_LEAST`].
+//! line stays up at least [`SEEN_FOR_AT_LEAST`](crate::alo_at_work::SEEN_FOR_AT_LEAST).
 //!
 //! **alo's copies are not the person's application**: their groups are handed
-//! to [`CountingForCommands`] so that a person's own command never counts them.
+//! to [`CountingForCommands`](crate::counting_during_their_commands::CountingForCommands) so that a person's own command never counts them.
 //!
 //! # Nothing calls this yet
 //!

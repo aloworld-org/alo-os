@@ -14,7 +14,10 @@ fn firefox() -> Application {
 fn each_place_is_written_and_read_back_whole() {
     for (place, line) in [
         (Where::InAlosCopy, "work-in-alos-copy org.mozilla.firefox"),
-        (Where::InTheirWindow, "work-in-their-window org.mozilla.firefox"),
+        (
+            Where::InTheirWindow,
+            "work-in-their-window org.mozilla.firefox",
+        ),
     ] {
         let asked = ToWorkIn::at(firefox(), place);
         assert_eq!(asked.written(), line);
@@ -69,7 +72,10 @@ fn every_answer_reads_back_and_nothing_else_does() {
 /// one of them.
 #[test]
 fn only_a_line_on_the_indicator_lets_alo_work() {
-    let may: Vec<Working> = Working::ALL.into_iter().filter(|one| one.may_work()).collect();
+    let may: Vec<Working> = Working::ALL
+        .into_iter()
+        .filter(|one| one.may_work())
+        .collect();
     assert_eq!(
         may,
         [Working::Counting, Working::CannotCount, Working::Showing]

@@ -22,7 +22,7 @@
 //!
 //! An application not on the list is refused at the default — the owner's
 //! answer A of 2026-11-10 — and the person is told which setting lets alo work
-//! in their own window instead. [`alos_copy`] answers [`None`] for it.
+//! in their own window instead. [`alos_copy`](crate::alos_copy()) answers [`None`] for it.
 //!
 //! **What each entry says is the application's own documentation, not a
 //! measurement**: none has been started this way on an alo machine yet, and the

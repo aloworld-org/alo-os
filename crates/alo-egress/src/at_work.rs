@@ -9,12 +9,12 @@
 //!
 //! - **At the default**, alo works in a separate copy of the application
 //!   started for it, and only that copy is counted: the line goes up when the
-//!   copy is seen sending ([`HowItIsShown::Counted`]), or, on a machine that
+//!   copy is seen sending ([`HowItIsShown::Counted`](crate::HowItIsShown::Counted)), or, on a machine that
 //!   cannot count, for the whole time alo works in it and saying so
-//!   ([`HowItIsShown::Uncounted`]).
+//!   ([`HowItIsShown::Uncounted`](crate::HowItIsShown::Uncounted)).
 //! - **Turned up**, alo works in the person's own window, and the line is up for
 //!   the whole time saying the application *may* be sending
-//!   ([`HowItIsShown::TheirWindow`]) — never how much, because counting the
+//!   ([`HowItIsShown::TheirWindow`](crate::HowItIsShown::TheirWindow)) — never how much, because counting the
 //!   person's own window would be watching them.
 //!
 //! **It has no destination**, for [`crate::DuringTheirCommand`]'s reason: the

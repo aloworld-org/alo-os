@@ -113,10 +113,10 @@ impl AlosCopies {
     /// The copy of this application if it is still running, found again from
     /// what was written down if this desktop did not start it.
     fn still_running(&mut self, application: &str) -> bool {
-        if !self.running.contains_key(application) {
-            if let Some(found) = self.written_down(application) {
-                self.running.insert(application.to_owned(), found);
-            }
+        if !self.running.contains_key(application)
+            && let Some(found) = self.written_down(application)
+        {
+            self.running.insert(application.to_owned(), found);
         }
         let Some(copy) = self.running.get_mut(application) else {
             return false;
@@ -137,7 +137,10 @@ impl AlosCopies {
     /// Start a copy, and answer whether it is running.
     fn start(&mut self, application: &str) -> Result<(), NoCopy> {
         let Some(home) = self.home.clone() else {
-            return Err(said(application, "this desktop does not know the person's home"));
+            return Err(said(
+                application,
+                "this desktop does not know the person's home",
+            ));
         };
         let Some(copy) = alo_launching::alos_copy(application, &home) else {
             return Err(NoCopy::OfItsOwn);
@@ -148,7 +151,10 @@ impl AlosCopies {
         };
         let Some(program) = alo_launching::the_program(first, self.search.as_deref(), is_runnable)
         else {
-            return Err(said(application, &format!("{first} is not a program on this machine")));
+            return Err(said(
+                application,
+                &format!("{first} is not a program on this machine"),
+            ));
         };
         let Some(handed) = self.handed.clone() else {
             return Err(said(application, "there is no display to hand it"));
@@ -160,7 +166,10 @@ impl AlosCopies {
         {
             return Err(said(
                 application,
-                &format!("its profile at {} could not be made: {why}", copy.profile().display()),
+                &format!(
+                    "its profile at {} could not be made: {why}",
+                    copy.profile().display()
+                ),
             ));
         }
         let child = Command::new(program)
