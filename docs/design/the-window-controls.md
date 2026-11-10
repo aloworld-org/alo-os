@@ -346,12 +346,8 @@ that part is **not built**.
 | 1a | the band (title and application name always, 54 tall), the three controls revealed on approach with the fade, *Always show window controls*, the panel with Maximise / Restore and Full screen / Exit full screen, right-click and double-click on the band, `Alt+F3` and the keys into the band and panel, expanded and selected states for a reader | #1138 |
 | 1b | Maximise keeping the band: the work area of the window's display (through that display's camera, less the Dock's band, the panel's column, the top controls and the indicator), the band at its top; full screen filling that display; a restore on the Place already shown leaves the view where it is while the window is in sight | #1141 |
 | 1c | Minimise travelling to the side panel (the outline above); restoring was already returning a window to its Place and its size, and now has a test that drives it from the panel | #1144 |
-<<<<<<< HEAD
 | 1d | Left and Right with the preview: this window alone on half its display's work area under its band, the `11:84` outline and its words drawn under the panel while either is in hand, the same words for a reader, *This window needs more room than half the screen* where its minimum does not fit | this change |
 | 1e | the full-screen top-edge reveal | not built |
-=======
-| 1d | Left and Right with the preview, the full-screen top-edge reveal | not built |
->>>>>>> origin/main
 | 2 | Move to…, Undo placement | not built |
 | 3 | Help with this window, the working state and Stop | not built |
 | 4 | Capture & export | not built |
