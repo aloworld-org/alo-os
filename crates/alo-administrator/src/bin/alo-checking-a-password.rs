@@ -49,11 +49,9 @@ fn main() -> ExitCode {
     // under every other desktop's agent: setuid from the person's process.
     // One thread, about to become the helper, so the thread's number is the
     // process's.
-    if let Err(why) = rustix::thread::set_thread_res_uid(
-        Some(rustix::process::Uid::from_raw(caller)),
-        None,
-        None,
-    ) {
+    if let Err(why) =
+        rustix::thread::set_thread_res_uid(Some(rustix::process::Uid::from_raw(caller)), None, None)
+    {
         eprintln!(
             "alo-checking-a-password: the helper could not be made number {caller}'s, so \
              polkit would not take its answer: {why}"
