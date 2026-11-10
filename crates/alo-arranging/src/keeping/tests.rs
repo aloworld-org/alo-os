@@ -1,6 +1,7 @@
 //! Whether a layout reaches a person's folder, and what happens when it does not.
 #![expect(
     clippy::unwrap_used,
+    clippy::expect_used,
     clippy::indexing_slicing,
     reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
 )]
