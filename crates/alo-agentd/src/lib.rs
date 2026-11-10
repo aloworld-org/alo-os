@@ -310,6 +310,10 @@ pub mod running_a_command;
 /// password, every time (ADR 0150).
 #[cfg(target_os = "linux")]
 pub mod running_as_administrator;
+/// What the person is told about a change carried out at full access, on
+/// every road a change takes (ADR 0149).
+#[cfg(target_os = "linux")]
+pub mod saying_it_was_done_without_asking;
 /// What the kernel says about this machine's interfaces. **`alo-interfaces`'
 /// reader, re-exported** so every `crate::route_messages` path in this service
 /// reads as it did: the reader moved into a crate of its own on 2026-10-30 so

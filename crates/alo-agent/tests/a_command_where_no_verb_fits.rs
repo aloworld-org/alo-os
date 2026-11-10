@@ -141,6 +141,45 @@ fn a_command_that_ran_is_a_step_and_the_turn_goes_on() {
     );
 }
 
+/// **A command run at full access is told to the person in the machine's own
+/// words**, whatever the model says at the end: the daemon answers a command
+/// as it answers a verb's change, and the line reaches
+/// `WhatHappened::done_without_asking`, which is what the terminal prints.
+/// A booted machine on 2026-11-09 showed only the model's sentence.
+#[test]
+fn a_command_run_at_full_access_is_told_to_the_person() {
+    let strings = everything_this_machine_says();
+    let told = strings.say(
+        &alo_capability::words::DONE_AT_FULL_ACCESS.key(),
+        &Filling::of(
+            "sentence",
+            "run this command: mkdir -p /home/anna/Documents/demo",
+        ),
+    );
+    let ran = ToAnAgent::done_without_asking(
+        Done::of_a_command(&WhatACommandDid::of(Some(0), String::new(), false, false)),
+        &told,
+    );
+    let mut door = answering(vec![
+        the_model_said(A_RUN),
+        Ok(ran),
+        the_model_said(AN_ANSWER),
+    ]);
+    let happened = driven(&mut door);
+    assert!(
+        matches!(happened, WhatHappened::ItWasAnsweredInWords { .. }),
+        "{happened:?}"
+    );
+    assert_eq!(
+        happened.done_without_asking(),
+        vec![
+            "Done without asking you first, because you chose full access in Settings → Running \
+             code: run this command: mkdir -p /home/anna/Documents/demo."
+                .to_owned()
+        ]
+    );
+}
+
 /// **A command waiting for the OK ends the turn as a proposal does**, with the
 /// number the person answers by and the command as the sentence.
 #[test]

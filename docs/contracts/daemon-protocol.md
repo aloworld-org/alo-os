@@ -212,7 +212,7 @@ at the moment the request arrives. Nothing on the wire can name the level.
 
 | The person's level | What happens | The answer |
 |---|---|---|
-| full access (`at-full-trust`) | it runs now, with `/bin/sh -c`, as the person and in their home, with no folder grants | `did`, with `ran-a-command` |
+| full access (`at-full-trust`) | it runs now, with `/bin/sh -c`, as the person and in their home, with no folder grants | `done-without-asking`, with `ran-a-command` and the sentence the person is told: *"Done without asking you first, because you chose full access in Settings → Running code: run this command: …"*, and that it cannot be put back when no copy from before it was kept. **It was `did` until 2026-11-09**, and a verb's change already answered this way; `alo-agent` reads both as a step. A `sudo` line is still `did` (below), because the person was asked for their password |
 | *ask me each time* (`asking-each-time`) | nothing runs; it waits for the person under the **same numbers** a change waits under | `proposed`, whose sentence is `run this command: …` and the command whole |
 | the sealed box, **nothing chosen**, or **a file that will not read** | nothing runs | `refused`, in the sentence the sealed box already says: *"mkdir was not run. The sealed box can't run programs on this computer yet. Choose 'ask each time' in Settings → Running code to run commands after you approve them."* |
 
