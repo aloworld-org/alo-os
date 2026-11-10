@@ -62,8 +62,8 @@
 
 use alo_capability::Verbs;
 use alo_instructing::{
-    AStep, ATurnInProgress, Instructions, NOT_FOR_THE_PERSON, TheConversationSoFar, WhatItMayReach,
-    shown_in_progress, speaks_of_the_verbs,
+    AStep, ATurnInProgress, Instructions, NOT_FOR_THE_PERSON, TheConversationSoFar, TheWindowOffered,
+    WhatItMayReach, shown_in_progress, speaks_of_the_verbs,
 };
 use alo_protocol::{Answered, FromAnAgent, ToAnAgent};
 
@@ -110,11 +110,12 @@ pub fn driving(
 /// answer, so it lapses with the turn and is never answered by the Stop.
 #[expect(
     clippy::too_many_arguments,
-    reason = "driving_after's seven, and the one way to stop them; a struct would be a second \
+    reason = "driving_about's eight, and the one way to stop them; a struct would be a second \
               name for the same call"
 )]
 pub fn driving_until_stopped(
     earlier: &TheConversationSoFar,
+    window: Option<&TheWindowOffered>,
     request: &str,
     verbs: &Verbs,
     may_reach: &WhatItMayReach,
@@ -124,8 +125,9 @@ pub fn driving_until_stopped(
     stopped: &dyn Fn() -> bool,
 ) -> WhatHappened {
     let mut watched = Watched { door, stopped };
-    let happened = driving_after(
+    let happened = driving_about(
         earlier,
+        window,
         request,
         verbs,
         may_reach,
@@ -178,13 +180,49 @@ pub fn driving_after(
     how_far: HowFar,
     instructions: Instructions,
 ) -> WhatHappened {
+    driving_about(
+        earlier,
+        None,
+        request,
+        verbs,
+        may_reach,
+        door,
+        how_far,
+        instructions,
+    )
+}
+
+/// **Drive a request about a window the person offered**: [`driving_after`],
+/// with that window told to the model on every round
+/// (`alo_instructing::TheWindowOffered`).
+///
+/// **Offering a window allows nothing.** It reaches the model inside the
+/// question, as the earlier conversation does; every verb the model then asks
+/// for is decided by the machine exactly as it would be without it.
+#[expect(
+    clippy::too_many_arguments,
+    reason = "driving_after's seven and the window; a struct would be a second name for the same \
+              call"
+)]
+pub fn driving_about(
+    earlier: &TheConversationSoFar,
+    window: Option<&TheWindowOffered>,
+    request: &str,
+    verbs: &Verbs,
+    may_reach: &WhatItMayReach,
+    door: &mut dyn TheDoor,
+    how_far: HowFar,
+    instructions: Instructions,
+) -> WhatHappened {
     let mut steps: Vec<AStep> = Vec::new();
 
     for _ in 0..how_far.rounds() {
         let shown = shown_in_progress(
             instructions,
             verbs,
-            ATurnInProgress::of(request, &steps, may_reach).after(earlier),
+            ATurnInProgress::of(request, &steps, may_reach)
+                .after(earlier)
+                .about(window),
         );
         let asked = FromAnAgent::Ask {
             question: shown,

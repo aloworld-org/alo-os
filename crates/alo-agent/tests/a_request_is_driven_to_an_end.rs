@@ -708,6 +708,42 @@ fn a_follow_up_carries_the_earlier_conversation_in_every_question_it_asks() {
     );
 }
 
+/// **A request about a window shows the model that window on every round**,
+/// inside the question and nowhere else — and asks the machine for nothing
+/// more than the model asked for: offering a window allows nothing by itself.
+#[test]
+fn a_request_about_a_window_carries_it_in_every_question_and_asks_nothing_more() {
+    use alo_instructing::{TheConversationSoFar, TheWindowOffered};
+
+    let verbs = the_verbs();
+    let window = TheWindowOffered::of("Invoices", "org.kde.dolphin").expect("a window");
+    let mut door = ADoorThatAnswers::with(vec![
+        the_model_said(&a_read_of("/home/anna/Invoices")),
+        Ok(it_listed("march.pdf\napril.pdf")),
+        the_model_said("two invoices are in it"),
+    ]);
+    let happened = alo_agent::driving_about(
+        &TheConversationSoFar::nothing(),
+        Some(&window),
+        "what is in this folder?",
+        &verbs,
+        &WhatItMayReach::not_said(),
+        &mut door,
+        HowFar::THE_ORDINARY,
+        Instructions::SHOWN_TO_A_TURN,
+    );
+    assert!(matches!(
+        happened,
+        WhatHappened::ItWasAnsweredInWords { .. }
+    ));
+    for nth in 0..2 {
+        let question = door.the_question(nth);
+        assert!(question.contains(&window.told()), "round {nth}: {question}");
+    }
+    // Two questions and the one read the model wrote: nothing else.
+    assert_eq!(door.asked.len(), 3, "{:?}", door.asked);
+}
+
 /// **A Stop between rounds ends the turn, and nothing more is asked** (ADR
 /// 0139): the read that was answered is kept, and the model is not asked again.
 #[test]
@@ -728,6 +764,7 @@ fn a_stop_between_rounds_ends_the_turn_and_asks_nothing_more() {
     };
     let happened = driving_until_stopped(
         &alo_instructing::TheConversationSoFar::nothing(),
+        None,
         "list my invoices",
         &verbs,
         &WhatItMayReach::not_said(),
@@ -766,6 +803,7 @@ fn a_change_waiting_when_stop_arrives_is_never_held_or_answered() {
     };
     let happened = driving_until_stopped(
         &alo_instructing::TheConversationSoFar::nothing(),
+        None,
         "rename the scan",
         &verbs,
         &WhatItMayReach::not_said(),

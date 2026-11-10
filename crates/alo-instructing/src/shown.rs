@@ -13,6 +13,7 @@ use alo_capability::Verbs;
 
 use crate::instructions::Instructions;
 use crate::the_conversation_so_far::TheConversationSoFar;
+use crate::the_window_offered::TheWindowOffered;
 use crate::verb_as_told::as_told;
 use crate::what_it_may_reach::WhatItMayReach;
 
@@ -56,9 +57,29 @@ pub fn shown_to_a_model_after(
     earlier: &TheConversationSoFar,
     request: &str,
 ) -> String {
+    shown_to_a_model_about(instructions, verbs, may_reach, earlier, None, request)
+}
+
+/// **The same text, with the window the person offered**
+/// (`crate::the_window_offered`): after the conversation so far and before the
+/// request, so the request is still last.
+///
+/// With no window this is [`shown_to_a_model_after`]'s text to the byte.
+#[must_use]
+pub fn shown_to_a_model_about(
+    instructions: Instructions,
+    verbs: &Verbs,
+    may_reach: &WhatItMayReach,
+    earlier: &TheConversationSoFar,
+    window: Option<&TheWindowOffered>,
+    request: &str,
+) -> String {
     let mut text = the_products_words(instructions, verbs);
     text.push_str(&may_reach.told());
     text.push_str(&earlier.told());
+    if let Some(window) = window {
+        text.push_str(&window.told());
+    }
     text.push_str("\n\nThe request: ");
     text.push_str(request);
     text
@@ -258,6 +279,45 @@ mod tests {
                 request
             ),
             first
+        );
+    }
+
+    /// **A window offered goes between the conversation and the request**, the
+    /// request still last; with none the text is a follow-up's to the byte.
+    #[test]
+    fn a_window_offered_is_told_before_the_request_and_nothing_else_moves() {
+        let verbs = the_verbs();
+        let earlier = TheConversationSoFar::nothing();
+        let request = "summarise this";
+        let last = "\n\nThe request: summarise this";
+        let without = shown_to_a_model_after(
+            Instructions::SHOWN_TO_A_TURN,
+            &verbs,
+            &WhatItMayReach::nothing(),
+            &earlier,
+            request,
+        );
+        let window = TheWindowOffered::of("The next chapter", "org.gnome.TextEditor").unwrap();
+        let about = shown_to_a_model_about(
+            Instructions::SHOWN_TO_A_TURN,
+            &verbs,
+            &WhatItMayReach::nothing(),
+            &earlier,
+            Some(&window),
+            request,
+        );
+        let before = without.strip_suffix(last).unwrap();
+        assert_eq!(about, format!("{before}{}{last}", window.told()));
+        assert_eq!(
+            shown_to_a_model_about(
+                Instructions::SHOWN_TO_A_TURN,
+                &verbs,
+                &WhatItMayReach::nothing(),
+                &earlier,
+                None,
+                request,
+            ),
+            without
         );
     }
 

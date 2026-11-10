@@ -282,7 +282,7 @@ fn a_follow_up_carries_the_conversation_after_the_request() {
     use alo_instructing::{AnEarlierTurn, TheConversationSoFar};
 
     let at = a_socket("follow-up");
-    let heard = an_agent_reading(&at, 3, "april.pdf, at 40 KB.\n");
+    let heard = an_agent_reading(&at, 4, "april.pdf, at 40 KB.\n");
     let door = TheAgentsDoor::at(&at);
     let earlier = TheConversationSoFar::of(vec![
         AnEarlierTurn::ThePersonSaid("list the files in /home/anna".to_owned()),
@@ -304,6 +304,7 @@ fn a_follow_up_carries_the_conversation_after_the_request() {
             "alo-may-reach:/home/anna",
             "and how big is the biggest one?",
             earlier.written().as_str(),
+            "alo-this-window:",
         ],
         "{crossed}"
     );
@@ -321,7 +322,7 @@ fn a_follow_up_carries_the_conversation_after_the_request() {
 #[test]
 fn a_first_request_carries_the_marker_and_no_conversation() {
     let at = a_socket("first-request");
-    let heard = an_agent_reading(&at, 2, "Three are unpaid.\n");
+    let heard = an_agent_reading(&at, 3, "Three are unpaid.\n");
     let door = TheAgentsDoor::at(&at);
 
     door.ask(
@@ -332,7 +333,7 @@ fn a_first_request_carries_the_marker_and_no_conversation() {
 
     assert_eq!(
         heard.recv().unwrap(),
-        "how many invoices are unpaid?\nalo-earlier:\n"
+        "how many invoices are unpaid?\nalo-earlier:\nalo-this-window:\n"
     );
     let _ = one_answer(&door);
     let _ = std::fs::remove_dir_all(at.parent().unwrap());

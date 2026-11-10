@@ -47,7 +47,7 @@ use std::path::{Path, PathBuf};
 use std::sync::mpsc::{Receiver, Sender, TryRecvError, channel};
 use std::time::Duration;
 
-use alo_instructing::TheConversationSoFar;
+use alo_instructing::{TheConversationSoFar, TheWindowOffered};
 
 /// Where a person's words are handed to their agent.
 ///
@@ -201,9 +201,30 @@ impl TheAgentsDoor {
         earlier: &TheConversationSoFar,
         may_reach: &[std::path::PathBuf],
     ) {
+        self.ask_with(who, request, earlier, None, may_reach);
+    }
+
+    /// Hand a request over with what travels after it: the conversation so
+    /// far, and the window the person offered, or none.
+    fn ask_with(
+        &self,
+        who: WhoAsked,
+        request: &str,
+        earlier: &TheConversationSoFar,
+        window: Option<&TheWindowOffered>,
+        may_reach: &[std::path::PathBuf],
+    ) {
         let socket = self.socket.clone();
         let request = request.to_owned();
-        let earlier = earlier.written();
+        // **Both lines, always**: the conversation's marker and the window's,
+        // each alone when there is nothing after it, so a current agent never
+        // waits for a line that is not coming
+        // (`docs/contracts/asking-socket.md`).
+        let earlier = format!(
+            "{}\n{}",
+            earlier.written(),
+            TheWindowOffered::the_line_for(window)
+        );
         let may_reach: Vec<std::path::PathBuf> = may_reach.to_vec();
         let posting = self.posting.clone();
         let running = self.running.clone();
@@ -298,8 +319,9 @@ impl Said {
 /// drop the sentence they are being asked to approve. Which is the one thing on
 /// this wire that must never be lost.
 ///
-/// `earlier` is the line the conversation so far travels on — the marker
-/// alone for a first request — written **after** the request, where an agent
+/// `earlier` is the lines after the request: the conversation so far — the marker
+/// alone for a first request — and the window offered, or its marker alone,
+/// written **after** the request, where an agent
 /// from before ADR 0138 never reads, so an older agent answers a follow-up as
 /// a first request rather than mistaking the conversation for one.
 fn ask_and_wait(

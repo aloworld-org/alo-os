@@ -28,7 +28,7 @@
 //! | [`shown_to_a_turn`] | The same, under the set a turn shows ([`Instructions::SHOWN_TO_A_TURN`]) |
 //! | [`speaks_of_the_verbs`] | Whether an answer meant for the person talks about the verbs instead (ADR 0149) |
 //! | [`TheConversationSoFar`] | What was said before a follow-up, held to its bound, how a model is told it, and the line it travels on (ADR 0138) |
-//! | [`TheConversationSoFar`] | What was said before a follow-up, held to its bound, and how a model is told it (ADR 0138) |
+//! | [`TheWindowOffered`] | The window a person offered with *Help with this window*, the line it travels on, and how a model is told it |
 //!
 //! # What this crate does not do
 //!
@@ -59,6 +59,7 @@ pub mod shown;
 pub mod the_conversation_on_the_wire;
 pub mod the_conversation_so_far;
 pub mod the_language_asked_in;
+pub mod the_window_offered;
 pub mod verb_as_told;
 pub mod what_it_may_reach;
 
@@ -75,10 +76,16 @@ pub use instructions::{
     AND_A_COMMAND, AND_AN_ANSWER, AND_YOU_MAY_LOOK_FIRST, EVERY_DOOR_AN_ANSWER_AND_A_COMMAND,
     EVERY_DOOR_AND_AN_ANSWER, HOW_TO_ANSWER, Instructions, ONE_EXAMPLE_PER_DOOR, SEVERAL_STEPS,
 };
-pub use shown::{shown_to_a_model, shown_to_a_model_after, shown_to_a_turn, the_products_words};
+pub use shown::{
+    shown_to_a_model, shown_to_a_model_about, shown_to_a_model_after, shown_to_a_turn,
+    the_products_words,
+};
 pub use the_conversation_on_the_wire::{
     NotTheConversation, THE_EARLIER_CONVERSATION, THE_LONGEST_LINE, THE_MOST_A_QUESTION_IS,
 };
 pub use the_conversation_so_far::{AnEarlierTurn, TheAnswer, TheConversationSoFar};
 pub use the_language_asked_in::the_language_of;
+pub use the_window_offered::{
+    NotTheWindow, THE_LONGEST_TITLE, THE_LONGEST_WINDOW_LINE, THE_WINDOW_OFFERED, TheWindowOffered,
+};
 pub use what_it_may_reach::WhatItMayReach;

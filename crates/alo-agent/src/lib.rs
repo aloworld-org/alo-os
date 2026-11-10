@@ -49,7 +49,7 @@ pub mod what_happened;
 pub mod what_the_person_sent;
 
 pub use at_the_daemons_socket::AtTheDaemonsSocket;
-pub use driving::{driving, driving_after, driving_until_stopped};
+pub use driving::{driving, driving_about, driving_after, driving_until_stopped};
 pub use holding_the_turn::{Held, held_until_answered};
 pub use how_far::HowFar;
 pub use the_door::{NotAnswered, TheDoor};
