@@ -100,6 +100,13 @@ pub enum Outcome {
     /// so a person reading their record meets the two as different things —
     /// which is also why `Happened::ran` answers false about this one.
     RanACommand,
+    /// **A command that ran and did not work**: it ended with a status other
+    /// than 0, or something stopped it before it ended by itself.
+    ///
+    /// Told apart from [`Outcome::RanACommand`] since 2026-11-10, so that a
+    /// person reading their record is never told a failed command as one that
+    /// ran as asked. The entry has always kept the status; nothing read it.
+    ACommandDidNotWork,
     /// A command the agent asked to run, that did not run.
     ACommandWasNotRun,
     /// A person's own command asked an application to do something
@@ -169,7 +176,14 @@ impl Outcome {
             Happened::Paired { .. } => Self::Paired,
             Happened::WorkspaceOpened { .. } => Self::WorkspaceOpened,
             Happened::NotBounded { .. } => Self::NotBounded,
-            Happened::RanACommand { .. } => Self::RanACommand,
+            // **Only a command that ended by itself with 0 worked**; any other
+            // status, and no status at all, is one that did not
+            // (`alo_capability::ItDidNotWork` decides the same for the person's
+            // own line).
+            Happened::RanACommand {
+                returned: Some(0), ..
+            } => Self::RanACommand,
+            Happened::RanACommand { .. } => Self::ACommandDidNotWork,
             Happened::ACommandWasNotRun { .. } => Self::ACommandWasNotRun,
             // **No road means nothing carried it**: the entry's own sign that
             // it was refused before the application was reached.
@@ -229,6 +243,7 @@ impl Outcome {
             Self::WorkspaceOpened => words::WORKSPACE_OPENED,
             Self::NotBounded => words::NOT_BOUNDED,
             Self::RanACommand => words::RAN_A_COMMAND,
+            Self::ACommandDidNotWork => words::A_COMMAND_DID_NOT_WORK,
             Self::ACommandWasNotRun => words::A_COMMAND_WAS_NOT_RUN,
             Self::AskedAnApplication => words::ASKED_AN_APPLICATION,
             Self::AnApplicationWasNotAsked => words::AN_APPLICATION_WAS_NOT_ASKED,
@@ -617,6 +632,35 @@ mod tests {
         assert_eq!(told.because(), None);
         assert_eq!(told.asked_for(), None);
         assert_eq!(told.went_to(), None);
+    }
+
+    /// **A command that ran and failed reads back as one that did not work**,
+    /// and one that ended with 0 as one that ran — so the record a person
+    /// reads never tells a failed `mkdir` as a folder made.
+    #[test]
+    fn a_command_that_failed_reads_back_as_not_having_worked() {
+        let ended_with = |returned: Option<i32>| {
+            Told::of(&alo_record::Entry::ran_a_command(
+                &alo_capability::Grantee::named("@terminal"),
+                "/bin/sh",
+                &[
+                    "-c".to_owned(),
+                    "mkdir /home/anna/Documents/demo".to_owned(),
+                ],
+                &[],
+                returned,
+                false,
+                noon(),
+            ))
+            .outcome()
+        };
+        assert_eq!(ended_with(Some(0)), Outcome::RanACommand);
+        assert_eq!(ended_with(Some(1)), Outcome::ACommandDidNotWork);
+        assert_eq!(ended_with(None), Outcome::ACommandDidNotWork);
+        assert_eq!(
+            Outcome::ACommandDidNotWork.word().says(),
+            "the agent ran a command, and it did not work"
+        );
     }
 
     /// A read ran under nobody's approval, and the account says so rather than
