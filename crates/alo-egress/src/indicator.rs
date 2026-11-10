@@ -40,6 +40,7 @@ use alo_strings::{Said, Strings};
 use serde::Serialize;
 
 use crate::departing::Departing;
+use crate::at_work::AloAtWork;
 use crate::during::DuringTheirCommand;
 use crate::itself::OnItsOwn;
 use crate::leaving::Leaving;
@@ -47,6 +48,7 @@ use crate::policy::EgressPolicy;
 use crate::refusing::NotPermitted;
 use crate::showing::Showing;
 use crate::underway::Underway;
+use crate::while_alo_works::WhileAloWorks;
 use crate::while_it_runs::WhileItRuns;
 
 /// Which line on the indicator an egress is.
@@ -329,6 +331,24 @@ impl Indicator {
     /// Takes the [`WhileItRuns`], so one command ends exactly one line.
     pub fn ended_during_their_command(&mut self, while_it_runs: WhileItRuns) -> bool {
         self.take_off(while_it_runs.shown())
+    }
+
+    /// Show that alo is working in an application (ADR 0143 Q6), and answer
+    /// the one handle that takes the line off again.
+    ///
+    /// Like [`Self::beginning_during_their_command`], nothing is decided here:
+    /// whether alo may work in the application was the turn's question. What
+    /// this does is make sure what the application may send is **seen**.
+    pub fn beginning_alo_at_work(&mut self, at_work: AloAtWork, now: SystemTime) -> WhileAloWorks {
+        let id = self.line(now, Showing::AloAtWork(at_work.clone()));
+        WhileAloWorks::new(at_work, now, id)
+    }
+
+    /// Stop showing an application alo has stopped working in.
+    ///
+    /// Takes the [`WhileAloWorks`], so one piece of work ends exactly one line.
+    pub fn ended_alo_at_work(&mut self, while_alo_works: WhileAloWorks) -> bool {
+        self.take_off(while_alo_works.shown())
     }
 
     /// Put one line on the list and answer which line it is.

@@ -263,6 +263,52 @@ pub const IS_SENDING_DURING_YOUR_COMMAND: Word = Word::saying(
      the application's own name as its menu entry shows it, already in the reader's language.",
 );
 
+// ---------------------------------------------------------------------------
+// alo working in an application — [`crate::AloAtWork`], ADR 0143 Q6 and the
+// owner's answers of 2026-11-10.
+//
+// The fourth kind: an application alo is working in. At the default it is a
+// copy of the application started for alo and counted on its own; turned up,
+// it is the person's own window and nothing is counted. No destination is
+// named in any of them, because none is read.
+// ---------------------------------------------------------------------------
+
+/// alo's own copy of an application, seen sending.
+pub const ALOS_COPY_IS_SENDING: Word = Word::saying(
+    "egress.alo-at-work.copy",
+    "{application}, in the copy alo is working in, is sending",
+)
+.noting(
+    "Shown while alo works in a separate copy of an application started for it, from the \
+     moment that copy is seen sending until alo stops working in it. Only the copy is counted, \
+     never the person's own windows of the same application. No destination is named because \
+     none is read. {application} is the application's own name as its menu entry shows it, \
+     already in the reader's language.",
+);
+
+/// alo's own copy of an application, on a machine that cannot count it.
+pub const ALOS_COPY_CANNOT_BE_COUNTED: Word = Word::saying(
+    "egress.alo-at-work.copy-uncounted",
+    "alo is working in its own copy of {application}, and this machine cannot count what it sends",
+)
+.noting(
+    "Shown for the whole time alo works in its own copy of an application on a machine that \
+     cannot count what the copy sends, so that something leaving is never unshown. \
+     {application} is the application's own name, already in the reader's language.",
+);
+
+/// alo working in the person's own window, at the setting turned up.
+pub const ALO_IS_IN_YOUR_WINDOW: Word = Word::saying(
+    "egress.alo-at-work.their-window",
+    "alo is working in your {application} window, which may be sending, and alo cannot count what",
+)
+.noting(
+    "Shown for the whole time alo works in the person's own window of an application, which the \
+     person chose in Settings. Nothing is counted there, because counting the person's own \
+     window would be watching what they do in it. {application} is the application's own name, \
+     already in the reader's language.",
+);
+
 /// The promise that goes with the list of reasons.
 pub const ALO_REACHES_NOTHING_ELSE: Word = Word::saying(
     "egress.itself.nothing-else",
@@ -374,7 +420,7 @@ pub const NOTHING_LEAVES: Word = Word::saying(
 ///
 /// The array is what a test reads down and what [`declare_into`] walks, so a
 /// word declared above and left out here is a string nothing can look up.
-pub const EVERY_WORD: [Word; 22] = [
+pub const EVERY_WORD: [Word; 25] = [
     A_PAIRED_MACHINE,
     A_PROVIDER,
     A_PROVIDER_SOMEWHERE,
@@ -390,6 +436,9 @@ pub const EVERY_WORD: [Word; 22] = [
     ALO_IS_UPDATING_AN_APPLICATION,
     ALO_REACHES_NOTHING_ELSE,
     IS_SENDING_DURING_YOUR_COMMAND,
+    ALOS_COPY_IS_SENDING,
+    ALOS_COPY_CANNOT_BE_COUNTED,
+    ALO_IS_IN_YOUR_WINDOW,
     OUTSIDE_THE_BUILDING,
     OUTSIDE_THE_REGION,
     NOTHING_MAY_LEAVE,
@@ -524,6 +573,9 @@ mod tests {
             ALO_IS_UPDATING_AN_APPLICATION,
             ALO_REACHES_NOTHING_ELSE,
             IS_SENDING_DURING_YOUR_COMMAND,
+            ALOS_COPY_IS_SENDING,
+            ALOS_COPY_CANNOT_BE_COUNTED,
+            ALO_IS_IN_YOUR_WINDOW,
             A_PAIRED_MACHINE,
             A_PROVIDER,
             A_PROVIDER_SOMEWHERE,

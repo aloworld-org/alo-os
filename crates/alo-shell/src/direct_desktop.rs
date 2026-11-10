@@ -173,6 +173,23 @@ pub trait TheDesktop {
         }
     }
 
+    /// **What an application sends while alo works in it**, once a frame: the
+    /// work asked for at the door since the last frame, and a look at all of
+    /// it (ADR 0143 Q6). `crate::alo_at_work` is what it answers with.
+    ///
+    /// **By default every ask is refused** — *cannot show* — for
+    /// [`Self::the_indicator`]'s reason: alo may not work where nothing it
+    /// causes to leave could be shown.
+    fn alo_at_work(
+        &mut self,
+        asked: Vec<crate::alo_at_work::AskedToWork>,
+        _now: std::time::Instant,
+    ) {
+        for one in asked {
+            one.refused();
+        }
+    }
+
     /// The panel this desktop keeps, for the one act that has to change it.
     ///
     /// **Lent mutably, and only here.** Every other seam in this trait hands the compositor
@@ -1259,6 +1276,10 @@ impl LoopInput for TheDesktopLane<'_> {
         let counts = self.door.asked_to_count();
         self.desktop
             .counted_during_their_commands(counts, std::time::Instant::now());
+        // **And everything alo was asked to work in** (ADR 0143 Q6), the same
+        // way and for the same reason.
+        let work = self.door.asked_to_work();
+        self.desktop.alo_at_work(work, std::time::Instant::now());
         for not_started in server.start_what_was_asked_for_now() {
             // **Said rather than dropped**, the same rule the edge's menu
             // follows two blocks up: a press that reached here and vanished is

@@ -791,6 +791,9 @@ dock.windows.footer	Choose a window · Escape returns to apps
 dock.windows.heading	{app} windows
 dock.windows.open	Open
 dock.windows.put-aside	Minimised
+egress.alo-at-work.copy	{application}, in the copy alo is working in, is sending
+egress.alo-at-work.copy-uncounted	alo is working in its own copy of {application}, and this machine cannot count what it sends
+egress.alo-at-work.their-window	alo is working in your {application} window, which may be sending, and alo cannot count what
 egress.command.sending	{application} is sending, during your command
 egress.destination.nameless	say where this is going — an egress with nowhere named cannot be shown to anybody
 egress.destination.not-printable	the address contains a character that cannot be shown — the indicator has to be readable in one line

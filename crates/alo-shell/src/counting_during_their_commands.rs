@@ -32,7 +32,7 @@
 //! What another process sends for the application, and anything sent before a
 //! newly started unit is found — ADR 0148 §5 says both where a person reads.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::io::{ErrorKind, Read as _, Write as _};
 use std::os::unix::net::UnixStream;
 use std::time::{Duration, Instant, SystemTime};
@@ -166,9 +166,12 @@ pub struct CountingForCommands {
     commands: Vec<OneCommand>,
     /// Lines staying on until they have been seen.
     lingering: Vec<Lingering>,
-    /// How many commands count each control group, so its entry ends with the
-    /// last of them.
+    /// How many counts hold each control group — a person's commands and alo's
+    /// work alike — so its entry ends with the last of them.
     in_use: BTreeMap<u64, usize>,
+    /// The control groups alo's own copies run in, which a person's command
+    /// never counts: they are not the person's application (ADR 0143 Q6).
+    alos: BTreeSet<u64>,
 }
 
 impl CountingForCommands {
@@ -185,6 +188,7 @@ impl CountingForCommands {
             commands: Vec::new(),
             lingering: Vec::new(),
             in_use: BTreeMap::new(),
+            alos: BTreeSet::new(),
         }
     }
 
@@ -290,7 +294,7 @@ impl CountingForCommands {
             return;
         };
         for group in self.finding.groups_of(command.during.application()) {
-            if command.groups.contains_key(&group) {
+            if command.groups.contains_key(&group) || self.alos.contains(&group) {
                 continue;
             }
             if command.groups.len() >= THE_MOST_GROUPS || !counter.begun(group) {
@@ -339,18 +343,53 @@ impl CountingForCommands {
     /// is holding.
     fn released(&mut self, command: &OneCommand) {
         for group in command.groups.keys() {
-            let last = match self.in_use.get_mut(group) {
-                Some(holding) if *holding > 1 => {
-                    *holding -= 1;
-                    false
-                }
-                _ => true,
-            };
-            if last {
-                self.in_use.remove(group);
-                if let Some(counter) = self.counter.as_mut() {
-                    counter.ended(*group);
-                }
+            self.let_go(*group);
+        }
+    }
+
+    /// Whether this machine has a counter at all.
+    #[must_use]
+    pub fn can_count(&self) -> bool {
+        self.counter.is_some()
+    }
+
+    /// The control groups alo's own copies run in now, which no person's
+    /// command will count from the next look on.
+    pub fn alos_copies_run_in(&mut self, groups: BTreeSet<u64>) {
+        self.alos = groups;
+    }
+
+    /// Hold a count of one control group for somebody other than a command —
+    /// alo's work in its own copy — and answer what it had sent when the
+    /// hold began, or [`None`] if it cannot be counted.
+    pub fn held(&mut self, group: u64) -> Option<u64> {
+        let counter = self.counter.as_mut()?;
+        if !counter.begun(group) {
+            return None;
+        }
+        *self.in_use.entry(group).or_insert(0) += 1;
+        Some(counter.so_far(group).unwrap_or(0))
+    }
+
+    /// What one control group has sent since its count began.
+    #[must_use]
+    pub fn so_far(&self, group: u64) -> Option<u64> {
+        self.counter.as_ref()?.so_far(group)
+    }
+
+    /// Let go of one hold, ending the count if nobody else is holding it.
+    pub fn let_go(&mut self, group: u64) {
+        let last = match self.in_use.get_mut(&group) {
+            Some(holding) if *holding > 1 => {
+                *holding -= 1;
+                false
+            }
+            _ => true,
+        };
+        if last {
+            self.in_use.remove(&group);
+            if let Some(counter) = self.counter.as_mut() {
+                counter.ended(group);
             }
         }
     }
