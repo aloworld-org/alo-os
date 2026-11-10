@@ -11,7 +11,8 @@
 //! # The road in, and the layers out
 //!
 //! `Alt+F3` (*Show the window's options*) opens the panel of the window the
-//! keyboard is in. Then:
+//! keyboard is in, **with the keyboard on its first choice** (Left), so it is
+//! somewhere a person can see — a pointer opens it on none. Then:
 //!
 //! | key | in the panel | on the band |
 //! |---|---|---|

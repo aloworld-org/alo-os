@@ -128,17 +128,33 @@ pub struct TheKeyboardInTheMenu {
 }
 
 impl TheKeyboardInTheMenu {
-    /// Open, with the keyboard on no row yet.
+    /// Opened by the pointer, with the keyboard on no row yet.
     ///
     /// **No row rather than the first.** A menu opened with the pointer must
-    /// not show a focus ring on Minimise that nobody asked for, and a person
-    /// who opened it with the keyboard presses Down once to get there — which
-    /// is one press for the keyboard road and none of the pointer road's
-    /// phantom highlight. `crate::window_edge_paint` draws from the focused
-    /// control, so *no row* and *the first row* are visibly different states.
+    /// not show a focus ring on a choice nobody asked for.
+    /// `crate::window_edge_paint` draws from the focused control, so *no row*
+    /// and *the first row* are visibly different states.
     #[must_use]
     pub const fn opened_from(trigger: OnTheEdge) -> Self {
         Self { on: None, trigger }
+    }
+
+    /// Opened by a key, with the keyboard **on the first choice**.
+    ///
+    /// *Safe initial focus* and *keyboard focus never invisible* (§9 of
+    /// `docs/design/the-window-controls.md`): a person who opened the panel
+    /// with `Alt+F3` or Enter is in it, so the keyboard is somewhere they can
+    /// see. **Until 2026-11-09 it opened on no row**, as the pointer's does, and
+    /// the first arrow only reached the first choice — so a boot walk pressed
+    /// Right once after `Alt+F3`, saw *Left* and not *Maximise*, and reported
+    /// the arrows as doing nothing. The first choice previews a half and moves
+    /// nothing, so landing on it is safe.
+    #[must_use]
+    pub const fn opened_by_the_keyboard(trigger: OnTheEdge) -> Self {
+        Self {
+            on: Some(crate::window_menu::THE_FIRST_CHOICE),
+            trigger,
+        }
     }
 
     /// The row with the keyboard, for the painter and for a reader.

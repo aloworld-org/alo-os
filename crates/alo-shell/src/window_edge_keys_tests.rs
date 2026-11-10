@@ -92,6 +92,11 @@ fn pressing_window_actions_opens_the_panel() {
         Some(OnTheEdge::WindowActions)
     );
     assert_eq!(keyboard.whether_a_menu_holds_it(), AMenu::IsOpen);
+    assert_eq!(
+        keyboard.the_menu().and_then(TheKeyboardInTheMenu::on),
+        Some(WhatARowDoes::Left),
+        "a panel a key opened has the keyboard on its first choice"
+    );
 }
 
 /// **Enter on Minimise or Close answers that control**, for the caller to do.
@@ -122,11 +127,8 @@ fn inside_the_panel_the_keys_walk_and_enter_chooses() {
     let _ = keyboard.told(AnEdgeKey::Press, &band, None);
     assert_eq!(
         keyboard.told(AnEdgeKey::Next, &band, Some(&panel)),
-        WhatTheEdgeKeyDid::TheKeyboardIsOnARow(WhatARowDoes::Left)
-    );
-    assert_eq!(
-        keyboard.told(AnEdgeKey::Next, &band, Some(&panel)),
-        WhatTheEdgeKeyDid::TheKeyboardIsOnARow(WhatARowDoes::Maximise)
+        WhatTheEdgeKeyDid::TheKeyboardIsOnARow(WhatARowDoes::Maximise),
+        "opened on Left, so the first Next is the second choice"
     );
     assert_eq!(
         keyboard.told(AnEdgeKey::Press, &band, Some(&panel)),

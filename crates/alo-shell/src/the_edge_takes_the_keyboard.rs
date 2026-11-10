@@ -60,6 +60,24 @@ impl ByWhat {
     }
 }
 
+/// Where the keyboard is once Window actions, a right-click or `Alt+F3` has
+/// asked for the panel, from where it `was`.
+///
+/// **An open panel closes**, focus going back the way `by` says. **A closed
+/// one opens** — on its first choice for a key, on no choice for a pointer
+/// (`TheKeyboardInTheMenu::opened_by_the_keyboard` says why).
+pub(crate) const fn once_opened(was: TheKeyboardOnTheEdge, by: ByWhat) -> TheKeyboardOnTheEdge {
+    match (was, by) {
+        (TheKeyboardOnTheEdge::InTheMenu(_), _) => by.where_focus_goes_back(),
+        (_, ByWhat::TheKeyboard) => TheKeyboardOnTheEdge::InTheMenu(
+            TheKeyboardInTheMenu::opened_by_the_keyboard(OnTheEdge::WindowActions),
+        ),
+        (_, ByWhat::ThePointer) => TheKeyboardOnTheEdge::InTheMenu(
+            TheKeyboardInTheMenu::opened_from(OnTheEdge::WindowActions),
+        ),
+    }
+}
+
 impl crate::Server {
     /// Where the keyboard is on this window's edge.
     ///
@@ -151,14 +169,7 @@ impl crate::Server {
     /// opener*, and nowhere for a pointer — a focus ring left behind by a
     /// click would hold the controls on the screen with nothing using them.
     pub(crate) fn the_menu_was_opened_on(&mut self, surface: &WlSurface, by: ByWhat) {
-        let now = match self.where_the_keyboard_is_on_this_windows_edge(surface) {
-            TheKeyboardOnTheEdge::InTheMenu(_) => by.where_focus_goes_back(),
-            TheKeyboardOnTheEdge::Nowhere | TheKeyboardOnTheEdge::OnAControl(_) => {
-                TheKeyboardOnTheEdge::InTheMenu(TheKeyboardInTheMenu::opened_from(
-                    OnTheEdge::WindowActions,
-                ))
-            }
-        };
+        let now = once_opened(self.where_the_keyboard_is_on_this_windows_edge(surface), by);
         // **One panel at a time**: opening this window's closes any other,
         // and takes the keyboard off every other band.
         if matches!(now, TheKeyboardOnTheEdge::InTheMenu(_)) {

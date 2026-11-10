@@ -84,7 +84,7 @@ impl AnEdgeKey {
 pub enum WhatTheEdgeKeyDid {
     /// The keyboard is now on this control of the edge.
     TheKeyboardIsOn(OnTheEdge),
-    /// The menu opened, with the keyboard on no row yet.
+    /// The menu opened, with the keyboard on its first choice.
     TheMenuOpened,
     /// The keyboard is now on this row of the open menu.
     TheKeyboardIsOnARow(WhatARowDoes),
@@ -223,8 +223,9 @@ impl TheKeyboardOnTheEdge {
             AnEdgeKey::Press => match control {
                 // **Window actions opens the panel**, from the keyboard as from
                 // the pointer.
+                // On its first choice, because a key opened it.
                 OnTheEdge::WindowActions => {
-                    *self = Self::InTheMenu(TheKeyboardInTheMenu::opened_from(
+                    *self = Self::InTheMenu(TheKeyboardInTheMenu::opened_by_the_keyboard(
                         OnTheEdge::WindowActions,
                     ));
                     WhatTheEdgeKeyDid::TheMenuOpened
