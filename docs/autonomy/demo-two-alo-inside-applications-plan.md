@@ -45,8 +45,9 @@ to `## Tasks`, its row in `ROADMAP.md`'s phase 6 written by the integration
 owner, and the owning machine's row in the charter. The two reconciling tests
 count it from that change on.
 
-Each stage's **Status** was read again against `main` in the same change. One
-moved, stage 3, and its line says why; the rest are still not started.
+Each stage's **Status** was read again against `main` in the same change.
+Stage 3 moved, and its line says why. Stage 9 was already marked in progress
+(#1154, #1163). The rest are still not started.
 
 ## Sizes
 
@@ -250,10 +251,8 @@ window of its own, so what that window sends is counted; turned up, it works in
 the person's own window and the indicator says *that* it is sending, not how
 much. Never unshown, at any setting.
 **Reuses:** `alo-egress`'s indicator lines; `alo-bounding`'s socket counting;
-ADR 0134's road to the desktop; ADR 0148's kernel counter, which since #1116 and
-#1118 counts what an application sends during a person's own `alo-app`
-command — not yet during alo's turn, which is this stage.
-**Test:** a driven instance's departure is shown and counted; at the turned-up setting the line is shown; the person's own
+ADR 0134's road to the desktop. **Test:** a driven instance's departure is
+shown and counted; at the turned-up setting the line is shown; the person's own
 window of the same application is **not** counted at either.
 
 ### 10. The person signs in to GitHub
