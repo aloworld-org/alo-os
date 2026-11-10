@@ -148,3 +148,64 @@ fn a_preview_is_drawn_under_the_panel_with_its_words() {
         "an outline and a ground for its words, and nothing else"
     );
 }
+
+/// Which family and weight drew the first letter of `words`, read back off the
+/// glyph rather than off the ask.
+fn what_drew(fonts: &mut FontSystem, words: &str, attrs: &Attrs<'_>) -> (String, u16) {
+    let mut buffer = cosmic_text::Buffer::new(fonts, Metrics::new(12.0, 16.0));
+    buffer.set_size(fonts, None, None);
+    buffer.set_text(fonts, words, attrs, cosmic_text::Shaping::Advanced);
+    buffer.shape_until_scroll(fonts, false);
+    let id = buffer
+        .layout_runs()
+        .flat_map(|run| run.glyphs.iter())
+        .map(|glyph| glyph.font_id)
+        .next()
+        .expect("a glyph");
+    let face = fonts.db().face(id).expect("a face");
+    (
+        face.families.first().expect("a family").0.clone(),
+        face.weight.0,
+    )
+}
+
+/// **Every choice's label is drawn in Manrope, at the weight the design
+/// gives it** — read back off the glyph, through the font system the machine
+/// draws with rather than this file's own one-face [`fonts`].
+///
+/// A booted machine on 2026-11-09 drew *Left*, *Maximise* and *Right* in Geist
+/// Mono: Medium had no Manrope face, so cosmic-text left the family and took
+/// the only face at 500. [`fonts`] holds Manrope alone, which is why every test
+/// above passed while the machine drew the wrong face.
+#[test]
+fn a_choices_label_is_drawn_in_manrope() {
+    let mut machines = crate::window_control_label::WindowControlLabels::new()
+        .expect("the shell's own fonts")
+        .fonts;
+    let both = the_menu_of(
+        &edge_of(
+            Rectangle::new(Point::from((112, 314)), Size::from((1056, 466))),
+            Decorations::TheShellDraws,
+            true,
+            Size::from((4000, 3000)),
+        ),
+        HowTheWindowIs {
+            maximised: true,
+            full_screen: true,
+        },
+        Size::from((4000, 3000)),
+    )
+    .expect("a panel");
+    for row in a_panel().rows.iter().chain(both.rows.iter()) {
+        let weight = the_labels_weight(row.does);
+        let attrs = crate::painted_text::alos_own_text().weight(weight);
+        assert_eq!(
+            what_drew(&mut machines, row.does.its_own_word().says(), &attrs),
+            ("Manrope".to_owned(), weight.0),
+            "{:?}",
+            row.does
+        );
+    }
+    assert_eq!(the_labels_weight(WhatARowDoes::Left), Weight::MEDIUM);
+    assert_eq!(the_labels_weight(WhatARowDoes::FullScreen), Weight::NORMAL);
+}

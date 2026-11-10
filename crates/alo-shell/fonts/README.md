@@ -1,6 +1,6 @@
 # Native control typefaces
 
-Seven files, three families, and they are not interchangeable. **Manrope is what alo's own
+Eight files, three families, and they are not interchangeable. **Manrope is what alo's own
 surfaces are drawn in**, because it is what the design is drawn in. Inter
 remains for everything not yet moved to it, and as fallback. **Geist Mono is
 what a terminal's cells are drawn in**, and nothing else.
@@ -131,6 +131,33 @@ that drew a Body letter.
 
 SHA-256: `d23d6eedf51dd495138aa1a83588027d4a63549cdfcc2fa5e0d8e84e09cf4cb1`.
 143,112 bytes.
+Upstream: <https://github.com/googlefonts/manrope/tree/468c0dbe38efa331b80bfe9448256abe27be44c3/fonts/ttf>.
+
+## Manrope Medium — the static cut the window panel's pictures need
+
+Static instance, **unmodified**, under the same SIL Open Font License 1.1 in
+`Manrope-OFL.txt`. From the Manrope project's own repository at the **same
+revision as the SemiBold and Regular cuts** — `468c0dbe38efa331b80bfe9448256abe27be44c3`,
+path `fonts/ttf/manrope-medium.ttf`. The SemiBold file fetched from that
+revision on 2026-11-09 hashed to the value recorded above, so the three come
+from one place.
+
+**Why a fourth Manrope file.** The window panel's placement pictures are
+labelled *Medium 12* (`11:56`, `docs/design/the-window-controls.md`). With no
+Manrope face at 500, an ask for it left the family — and the only face at 500
+in the database is **Geist Mono Medium**, so a booted machine on 2026-11-09 drew
+*Left*, *Maximise* and *Right* in the terminal's monospace beside *Full
+screen* in Manrope.
+
+**Verified before it was added**: typographic family (name ID 16) is
+`Manrope`, subfamily (ID 17) `Medium`; `usWeightClass` is 500; and there is
+no `fvar` table, so it is static. **Measured rather than assumed**:
+`a_choices_label_is_drawn_in_manrope` in `../src/window_menu_paint_tests.rs`
+shapes every panel label through the shell's own fonts and reads back the
+face that drew it.
+
+SHA-256: `502ee33a6e140ad6ef10ef8b762a8e5cf01f33316f318800795725f4cfd539d9`.
+144,696 bytes.
 Upstream: <https://github.com/googlefonts/manrope/tree/468c0dbe38efa331b80bfe9448256abe27be44c3/fonts/ttf>.
 
 ## Geist Mono Medium — the static cut `Terminal/Command` needs
