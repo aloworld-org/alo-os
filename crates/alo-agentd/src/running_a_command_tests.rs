@@ -217,17 +217,19 @@ fn at_full_access_a_command_runs_and_reaches_what_no_grant_names() {
             // nothing, that it cannot be put back. Until 2026-11-09 a command
             // was answered `did`, and the person read only the model's own
             // sentence about it.
-            let ToAnAgent::DoneWithoutAsking { said: told, .. } = &said else {
-                panic!("a command run at full access was not answered as done without asking: {said:?}");
+            let told = match &said {
+                ToAnAgent::DoneWithoutAsking { said, .. } => Some(said.text().to_owned()),
+                _ => None,
             };
             assert_eq!(
-                told.text(),
-                format!(
+                told,
+                Some(format!(
                     "Done without asking you first, because you chose full access in Settings → \
                      Running code: run this command: mkdir -p {}. This one can't be put back: a \
                      copy of your files from before it could not be kept.",
                     elsewhere.the_folder_it_makes().display()
-                )
+                )),
+                "a command run at full access was not answered as done without asking: {said:?}"
             );
         },
     );

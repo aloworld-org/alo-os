@@ -208,7 +208,14 @@ pub fn a_command_asked_for(
             let Commands { here, mut bracket } = commands;
             let as_administrator =
                 crate::running_as_administrator::the_administrators_part(&command).is_some();
-            match ran(turning, &command, here, bracket.as_deref_mut(), strings, now) {
+            match ran(
+                turning,
+                &command,
+                here,
+                bracket.as_deref_mut(),
+                strings,
+                now,
+            ) {
                 // **Asked, for their password**, so not done without asking.
                 Ok(did) if as_administrator => ToAnAgent::did(did),
                 // **Done without asking**, and the person is told so in the
