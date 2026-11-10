@@ -1622,11 +1622,18 @@ mod tests {
             Some("%i"),
             "the desktop a person arrives at does not run as them"
         );
+        // **Given nothing, and not bounded either.** The person's shell is
+        // the desktop's child, so a bounding set here is a limit on the
+        // owner's terminal: an empty one refused `sudo` there (*unable to
+        // change to root gid*), measured 2026-11-09 (ADR 0150, *The person's
+        // terminal*). The desktop still holds nothing, because it runs as the
+        // person and is handed no capability.
         assert!(
-            desktop.holds_nothing(),
-            "the largest surface on the machine holds capabilities: bounded to {:?}, given {:?}",
-            desktop.bounded_to(),
-            desktop.given()
+            desktop.given().is_empty() && !desktop.says_how_far_it_is_bounded(),
+            "the desktop is given capabilities ({:?}) or bounded ({:?}), and a bound is a limit \
+             on the person's own terminal",
+            desktop.given(),
+            desktop.bounded_to()
         );
         assert_eq!(desktop.opens_a_session_with(), Some("alo-desktop"));
         assert_eq!(desktop.on_the_terminal(), Some("/dev/tty1"));

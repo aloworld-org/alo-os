@@ -117,6 +117,14 @@ impl Service {
         self.unit.listed(SERVICE, "CapabilityBoundingSet")
     }
 
+    /// Whether the unit has a `CapabilityBoundingSet=` line at all — which,
+    /// for a service whose children are the person's own programs, is a limit
+    /// on those programs too.
+    #[must_use]
+    pub fn says_how_far_it_is_bounded(&self) -> bool {
+        self.unit.says(SERVICE, "CapabilityBoundingSet")
+    }
+
     /// What it is given to start with.
     #[must_use]
     pub fn given(&self) -> Vec<&str> {
