@@ -338,3 +338,35 @@ fn a_first_request_carries_the_marker_and_no_conversation() {
     let _ = one_answer(&door);
     let _ = std::fs::remove_dir_all(at.parent().unwrap());
 }
+
+/// **A request about a window carries it on the fourth line**, after the
+/// conversation's marker, and nothing else about the window crosses.
+#[test]
+fn a_request_about_a_window_carries_it_after_the_conversation() {
+    use alo_instructing::{TheConversationSoFar, TheWindowOffered};
+
+    let at = a_socket("about-a-window");
+    let heard = an_agent_reading(&at, 3, "It is a note about the next chapter.\n");
+    let door = TheAgentsDoor::at(&at);
+    let window = TheWindowOffered::of("The next chapter", "org.gnome.TextEditor").unwrap();
+
+    door.ask_about(
+        WhoAsked::ATaskWindow(WhichTask::numbered(0)),
+        "summarise this",
+        &TheConversationSoFar::nothing(),
+        Some(&window),
+        &[],
+    );
+
+    let crossed = heard.recv().unwrap();
+    assert_eq!(
+        crossed,
+        format!("summarise this\nalo-earlier:\n{}\n", window.written())
+    );
+    assert_eq!(
+        TheWindowOffered::read_the_line(crossed.lines().nth(2).unwrap_or_default()),
+        Ok(Some(window))
+    );
+    let _ = one_answer(&door);
+    let _ = std::fs::remove_dir_all(at.parent().unwrap());
+}

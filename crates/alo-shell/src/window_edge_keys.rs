@@ -272,6 +272,16 @@ impl TheKeyboardOnTheEdge {
                 *self = Self::Nowhere;
                 WhatTheEdgeKeyDid::ARowRuns(WhatARowDoes::FullScreen)
             }
+            // **And Help with this window, which hands the keys to the
+            // composer** it opens: the person chose to type a request, so the
+            // keyboard is there rather than back on Window actions.
+            WhatTheKeyDid::ItRuns {
+                does: WhatARowDoes::HelpWithThisWindow,
+                ..
+            } => {
+                *self = Self::Nowhere;
+                WhatTheEdgeKeyDid::ARowRuns(WhatARowDoes::HelpWithThisWindow)
+            }
             WhatTheKeyDid::ItRuns {
                 does,
                 focus_goes_back_to,

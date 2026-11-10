@@ -96,6 +96,17 @@ pub(crate) fn every_windows_edge(
                     .and_then(|at| menu.what_is_under(at))
                     .map(|row| row.does)
             });
+            // **alo, while it is at work in this window and in no other**
+            // (`crate::alo_in_a_window`), round the whole card: band and window.
+            let alo_here = server.alo_in_this_window(surface);
+            let card = edge.region.merge(window);
+            let stop_pointed_at = crate::alos_band_in_a_window::the_band_of(window)
+                .zip(server.where_the_pointer_is_in_logical_pixels())
+                .is_some_and(|(band, at)| {
+                    band.stop.contains(
+                        crate::an_edge_in_its_displays_units::a_point_in_the_edges_units(at, scale),
+                    )
+                });
             EdgePicture::of(
                 &edge,
                 crate::window_edge_picture::OverTheEdge {
@@ -116,6 +127,14 @@ pub(crate) fn every_windows_edge(
                         )
                     }),
                     showing: the_reason_to_show_a_tooltip(server, &edge, keyboard, scale),
+                    alo: alo_here
+                        .as_ref()
+                        .map(|here| crate::alos_band_in_a_window::AlosBand {
+                            here,
+                            card,
+                            window,
+                            stop_pointed_at,
+                        }),
                 },
                 crate::window_edge_picture::TheWindow {
                     title: crate::the_name_on_the_band::the_title_to_show(&title),

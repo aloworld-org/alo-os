@@ -376,8 +376,26 @@ pub const NO_ROOM_IN_HALF: Word = Word::saying(
     "Written in the outline of where Left or Right would put a window, and said by a screen      reader, when the application says it cannot be made that small. Choosing it then changes      nothing.",
 );
 
+/// The choice in the window panel that asks alo, with this window as the
+/// context (`docs/design/the-window-controls.md`, `11:76`).
+pub const HELP_WITH_THIS_WINDOW: Word =
+    Word::saying("access.help-with-this-window", "Help with this window").noting(
+        "A choice in the small panel a window's Window actions button opens, beside the word alo. \
+         Choosing it opens the box where a person types a request to alo, the assistant, with \
+         this window named as what the request is about. Choosing it asks nothing by itself. Not \
+         shown while the person has switched AI off.",
+    );
+
+/// The button on the band alo draws across a window it is working in, which
+/// stops that work (`11:175`).
+pub const STOP: Word = Word::saying("access.stop", "Stop").noting(
+    "A button on the band shown across the foot of a window while alo, the assistant, is working \
+     in it. Pressing it stops alo's work; what alo already did stays done and is not undone. One \
+     word, an instruction.",
+);
+
 /// Every string this crate can say, in the order this file declares them.
-pub const EVERY_WORD: [Word; 49] = [
+pub const EVERY_WORD: [Word; 51] = [
     SCREEN_READER,
     MAGNIFIER,
     HIGH_CONTRAST,
@@ -427,6 +445,8 @@ pub const EVERY_WORD: [Word; 49] = [
     LEFT_HALF_PREVIEW,
     RIGHT_HALF_PREVIEW,
     NO_ROOM_IN_HALF,
+    HELP_WITH_THIS_WINDOW,
+    STOP,
 ];
 
 /// Why this crate's own list could not be declared.

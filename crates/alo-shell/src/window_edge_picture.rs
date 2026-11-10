@@ -64,6 +64,9 @@ pub struct OverTheEdge<'a> {
     )>,
     /// Why the whole title, or a control's name, is being shown.
     pub showing: Option<crate::window_edge_tooltip::Because>,
+    /// alo, while it is at work in this window: the teal edge and the band
+    /// with Stop (`crate::alos_band_in_a_window`).
+    pub alo: Option<crate::alos_band_in_a_window::AlosBand<'a>>,
 }
 
 /// One window's band, drawn.
@@ -251,6 +254,14 @@ impl EdgePicture {
             if let Some(shown) = tooltip {
                 draw_a_tooltip(&shown, fonts, scale, output, &mut solids, &mut inked);
             }
+        }
+
+        // **alo's presence, over the window and under any panel**: drawn after
+        // the controls, so a panel opened on this window still covers it.
+        if let Some(alo) = over.alo {
+            let (rasters, words) = crate::alos_band_in_a_window::drawn(alo, fonts, scale, output);
+            over_the_window.extend(rasters);
+            inked.extend(words);
         }
 
         let (on_top, on_top_inked) = over.menu.map_or_else(

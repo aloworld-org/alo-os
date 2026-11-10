@@ -11,10 +11,11 @@
 //! **A choice that does not work yet is not drawn** — not greyed, not *coming
 //! soon* — which is the specification's rule and law 3's. So this panel holds
 //! what this machine can do today: **Left**, **Maximise** (or **Restore**) and
-//! **Right**, and **Full screen** (or **Exit full screen**). Move to…, Help
-//! with this window and Capture & export each join it in the change that makes
-//! them work, and the layout below leaves their places measured rather than
-//! invented.
+//! **Right**, **Full screen** (or **Exit full screen**), and **Help with this
+//! window** — drawn only while alo may be asked, and never while the person
+//! has set AI to *Not at all* (`crate::alo_in_a_window`). Move to… and Capture
+//! & export each join it in the change that makes them work, and the layout
+//! below leaves their places measured rather than invented.
 //!
 //! It replaced a window menu with five rows — Minimise, Maximise, Move, Resize,
 //! Close — and a title block. Minimise and Close are on the band and are not
@@ -32,7 +33,13 @@
 //! | placement pictures | 94 × 94, 10 apart, from (22, 50) |
 //! | divider | 304 × 1 at y 160 |
 //! | Full screen | a 304 × 40 row at y 172 |
+//! | the divider before alo | 11 below the row above it — `11:75` at 267, under *Move to…* ending at 256 |
+//! | Help with this window | a 304 × 52 row, 17 below that divider — `11:76` at 284 |
 //! | below the last thing drawn | 20 — `397 − 377`, under `11:80`'s `›` |
+//!
+//! **Without *Move to…* the divider and Help keep their distances, not their
+//! places**: they follow Full screen as `11:75` and `11:76` follow *Move to…*,
+//! so nothing floats where a row that is not built would be.
 
 use alo_strings::Word;
 use smithay::utils::{Logical, Point, Rectangle, Size};
@@ -83,6 +90,22 @@ pub const A_ROW_IS_TALL: i32 = 40;
 /// panel.
 pub const BELOW_THE_LAST: i32 = 20;
 
+/// How far below the row above it the divider before alo is: `11:75` at 267
+/// under *Move to…*, which ends at `216 + 40`.
+pub const BEFORE_THE_DIVIDER_TO_ALO: i32 = 11;
+
+/// How far below that divider *Help with this window* starts: `11:76` at 284.
+pub const AFTER_THE_DIVIDER_TO_ALO: i32 = 17;
+
+/// How tall *Help with this window* is. `11:76`.
+pub const THE_ALO_ROW_IS_TALL: i32 = 52;
+
+/// Where the divider before alo is, down the panel: under Full screen.
+const THE_DIVIDER_TO_ALO_IS_AT: i32 = THE_ROWS_START_AT + A_ROW_IS_TALL + BEFORE_THE_DIVIDER_TO_ALO;
+
+/// Where *Help with this window* starts, down the panel.
+const THE_ALO_ROW_IS_AT: i32 = THE_DIVIDER_TO_ALO_IS_AT + AFTER_THE_DIVIDER_TO_ALO;
+
 /// The choice the keyboard lands on when a key opens the panel: the first, as
 /// the pictures and rows are laid out in [`the_menu_of`].
 pub const THE_FIRST_CHOICE: WhatARowDoes = WhatARowDoes::Left;
@@ -108,6 +131,10 @@ pub enum WhatARowDoes {
     FullScreen,
     /// Put it back the way it was before full screen. While it is full screen.
     ExitFullScreen,
+    /// **Open an alo request with this window as its context**, asking
+    /// nothing until the person sends it (`crate::alo_in_a_window`). Only
+    /// while alo may be asked.
+    HelpWithThisWindow,
 }
 
 impl WhatARowDoes {
@@ -121,6 +148,7 @@ impl WhatARowDoes {
             Self::Restore => alo_access::words::RESTORE,
             Self::FullScreen => alo_access::words::FULL_SCREEN,
             Self::ExitFullScreen => alo_access::words::EXIT_FULL_SCREEN,
+            Self::HelpWithThisWindow => alo_access::words::HELP_WITH_THIS_WINDOW,
         }
     }
 
@@ -151,6 +179,11 @@ pub struct HowTheWindowIs {
     pub maximised: bool,
     /// Full screen now: the row reads *Exit full screen*.
     pub full_screen: bool,
+    /// **Whether alo may be asked now**, so *Help with this window* is in the
+    /// panel: something is chosen to answer, and AI is not set to *Not at
+    /// all*. Not about the window, but carried with it because it decides what
+    /// the panel holds; `false`, the default, is the panel without it.
+    pub alo_may_help: bool,
 }
 
 /// One choice in the panel, and where it answers.
@@ -171,6 +204,8 @@ pub struct WindowMenu {
     pub heading: Point<i32, Logical>,
     /// The divider under the pictures.
     pub divider: Rectangle<i32, Logical>,
+    /// The divider before *Help with this window*, while it is there.
+    pub before_alo: Option<Rectangle<i32, Logical>>,
     /// The choices, in keyboard order.
     pub rows: Vec<MenuRow>,
 }
@@ -191,8 +226,12 @@ impl WindowMenu {
 
 /// How tall the panel is with these choices: to the last row drawn, and
 /// [`BELOW_THE_LAST`] under it.
-const fn how_tall() -> i32 {
-    THE_ROWS_START_AT + A_ROW_IS_TALL + BELOW_THE_LAST
+const fn how_tall(alo_may_help: bool) -> i32 {
+    if alo_may_help {
+        THE_ALO_ROW_IS_AT + THE_ALO_ROW_IS_TALL + BELOW_THE_LAST
+    } else {
+        THE_ROWS_START_AT + A_ROW_IS_TALL + BELOW_THE_LAST
+    }
 }
 
 /// The panel of a band whose Window actions is shown, or [`None`] on a band
@@ -200,10 +239,10 @@ const fn how_tall() -> i32 {
 ///
 /// **Kept on the display**: anchored `BEFORE_WINDOW_ACTIONS` before the
 /// control and `BELOW_THE_BAND` under the band, then moved — never cut — to
-/// stay inside `output`. At 348 × 232 it fits the smallest display this
-/// product lays out for (360 × 360, `crate::sign_in_layout`), so nothing in it
-/// needs to scroll; the rows that would not fit join with the change that
-/// draws them.
+/// stay inside `output`. At 348 × 312 with *Help with this window* it fits the
+/// smallest display this product lays out for (360 × 360,
+/// `crate::sign_in_layout`), so nothing in it needs to scroll; the rows that
+/// would not fit join with the change that draws them.
 #[must_use]
 pub fn the_menu_of(
     edge: &WindowEdge,
@@ -211,7 +250,7 @@ pub fn the_menu_of(
     output: Size<i32, Logical>,
 ) -> Option<WindowMenu> {
     let anchor = edge.the_control(OnTheEdge::WindowActions)?;
-    let tall = how_tall();
+    let tall = how_tall(how.alo_may_help);
     let at_x = (anchor.target.loc.x - BEFORE_WINDOW_ACTIONS)
         .clamp(0, (output.w - THE_PANEL_IS_WIDE).max(0));
     let at_y = (edge.region.loc.y + edge.region.size.h + BELOW_THE_BAND)
@@ -240,7 +279,7 @@ pub fn the_menu_of(
             Size::from((A_PICTURE_IS, A_PICTURE_IS)),
         ),
     };
-    let rows = vec![
+    let mut rows = vec![
         a_picture(0, THE_FIRST_CHOICE),
         a_picture(1, maximise),
         a_picture(2, WhatARowDoes::Right),
@@ -252,6 +291,19 @@ pub fn the_menu_of(
             ),
         },
     ];
+    let before_alo = how.alo_may_help.then(|| {
+        rows.push(MenuRow {
+            does: WhatARowDoes::HelpWithThisWindow,
+            row: Rectangle::new(
+                Point::from((at_x + THE_INSET, at_y + THE_ALO_ROW_IS_AT)),
+                Size::from((A_ROW_IS_WIDE, THE_ALO_ROW_IS_TALL)),
+            ),
+        });
+        Rectangle::new(
+            Point::from((at_x + THE_INSET, at_y + THE_DIVIDER_TO_ALO_IS_AT)),
+            Size::from((A_ROW_IS_WIDE, 1)),
+        )
+    });
     Some(WindowMenu {
         panel,
         heading: Point::from((at_x + THE_INSET, at_y + THE_HEADING_SITS_AT)),
@@ -259,6 +311,7 @@ pub fn the_menu_of(
             Point::from((at_x + THE_INSET, at_y + THE_DIVIDER_IS_AT)),
             Size::from((A_ROW_IS_WIDE, 1)),
         ),
+        before_alo,
         rows,
     })
 }

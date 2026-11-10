@@ -1478,6 +1478,28 @@ impl LoopInput for TheDesktopLane<'_> {
             server.that_put_back_answered(answer);
         }
 
+        // **Whether alo may be asked**, told once a frame from the same answer
+        // that decides whether the launcher offers to ask: *Help with this
+        // window* is in a window's panel only while it may, and an offer made
+        // while it could is let go the moment it cannot.
+        server.alo_may_be_asked(self.desktop.where_a_question_would_go().is_some());
+        // **A request about a window becomes a task that wears that window**,
+        // and goes to the agent with the window it was about — read when the
+        // person sent it (`crate::alo_in_a_window`).
+        for asked in server.take_what_was_asked_about_a_window() {
+            if let Some(task) = self.desktop.a_task_for(&asked.request) {
+                let which = server.tasks_mut().and_now_this_one(task);
+                server.this_task_took_the_keyboard(which);
+                server.alo_works_in(which, asked.surface);
+                self.asking.ask_about(
+                    crate::what_a_person_asked_goes_to_the_agent::WhoAsked::ATaskWindow(which),
+                    &asked.request,
+                    &alo_instructing::TheConversationSoFar::nothing(),
+                    Some(&asked.window),
+                    &the_folders_to_send(server),
+                );
+            }
+        }
         for request in server.take_what_was_asked_of_alo() {
             if let Some(task) = self.desktop.a_task_for(&request) {
                 let which = server.tasks_mut().and_now_this_one(task);
@@ -1500,13 +1522,17 @@ impl LoopInput for TheDesktopLane<'_> {
         // **And a follow-up typed in a task window goes to the agent with the
         // conversation so far** (ADR 0138), into the window it was typed in.
         // Taken for the same reason as the requests above: one Enter, one ask.
+        // A follow-up in a task about a window is about that window too, read
+        // now; once the window has gone it is about none.
         for follow_up in server.take_the_follow_ups() {
-            self.asking.ask_following(
+            let window = server.the_window_a_task_is_about(follow_up.which);
+            self.asking.ask_about(
                 crate::what_a_person_asked_goes_to_the_agent::WhoAsked::ATaskWindow(
                     follow_up.which,
                 ),
                 &follow_up.said,
                 &follow_up.earlier,
+                window.as_ref(),
                 &the_folders_to_send(server),
             );
         }
@@ -1755,9 +1781,14 @@ impl LoopInput for TheDesktopLane<'_> {
         // appeared the moment somebody pressed the chord would flash every
         // application on the machine under their first keystroke.
         let typed_into_the_bar = server.composer().typed().to_owned();
-        let bar_is_open =
-            server.composer().has_the_keyboard() && !typed_into_the_bar.trim().is_empty();
-        let found = if bar_is_open {
+        // **Open for a window offered with *Help with this window* even before
+        // anything is typed**, so the window it will be about is named from the
+        // first moment — and then it finds no applications, because a request
+        // about a window asks alo and opens nothing else.
+        let offered = server.the_window_offered_reads();
+        let bar_is_open = server.composer().has_the_keyboard()
+            && (!typed_into_the_bar.trim().is_empty() || offered.is_some());
+        let found = if bar_is_open && offered.is_none() {
             crate::the_bar_finds::what_the_bar_finds(
                 &typed_into_the_bar,
                 &server.what_this_machine_has,
@@ -1786,6 +1817,13 @@ impl LoopInput for TheDesktopLane<'_> {
         // answered.
         let where_from = if !bar_is_open {
             String::new()
+        } else if let Some(window) = &offered {
+            self.strings
+                .say(
+                    &alo_dock::words::ABOUT_THIS_WINDOW.key(),
+                    &alo_strings::Filling::of("window", window.clone()),
+                )
+                .into_text()
         } else if self.desktop.anything_is_chosen_to_answer() {
             crate::the_bar_finds::where_these_came_from(found.len(), self.strings)
         } else {
@@ -1813,18 +1851,32 @@ impl LoopInput for TheDesktopLane<'_> {
             say(alo_dock::words::THE_KEY_CLOSES),
             say(alo_dock::words::ESC),
         ];
-        let asking_about = self.desktop.where_a_question_would_go().map(|source| {
-            (
-                self.strings
-                    .say(
-                        &alo_dock::words::ASK_ALO_ABOUT.key(),
-                        &alo_strings::Filling::of("what", typed_into_the_bar.trim().to_owned()),
-                    )
-                    .into_text(),
-                say(alo_dock::words::A_NEW_TASK),
-                source.said(self.strings).into_text(),
-            )
-        });
+        // **The heading names what the person chose**, so the launcher opened
+        // for a window reads *Help with this window* rather than *Find, open,
+        // or ask*: it will not find or open anything.
+        let heading = if offered.is_some() {
+            say(alo_access::words::HELP_WITH_THIS_WINDOW)
+        } else {
+            heading
+        };
+        // **And it offers to ask only once there is something to ask.**
+        let something_to_ask = !typed_into_the_bar.trim().is_empty();
+        let asking_about = self
+            .desktop
+            .where_a_question_would_go()
+            .filter(|_| something_to_ask)
+            .map(|source| {
+                (
+                    self.strings
+                        .say(
+                            &alo_dock::words::ASK_ALO_ABOUT.key(),
+                            &alo_strings::Filling::of("what", typed_into_the_bar.trim().to_owned()),
+                        )
+                        .into_text(),
+                    say(alo_dock::words::A_NEW_TASK),
+                    source.said(self.strings).into_text(),
+                )
+            });
         let what_each_draws = std::sync::Arc::clone(&server.what_each_application_draws);
         let the_bar = bar_is_open.then(|| crate::bar_raster::TheBarOnTheDisplay {
             typed: &typed_into_the_bar,

@@ -394,6 +394,12 @@ impl Server {
         if state == ButtonState::Pressed && self.a_press_in_the_menu(state) {
             return Ok(false);
         }
+        // **alo's band across a window it is working in**, after the menu
+        // that may lie over it and before the application under it: Stop is
+        // the band's, and a press on the band never reaches the application.
+        if state == ButtonState::Pressed && self.a_press_on_alos_band(state) {
+            return Ok(false);
+        }
         if state == ButtonState::Pressed && self.a_press_on_an_edge(button, state) {
             return Ok(false);
         }

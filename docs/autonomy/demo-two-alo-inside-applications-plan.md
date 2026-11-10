@@ -169,7 +169,15 @@ level.
 
 ### 8. The window alo is working in wears its presence
 
-**Status:** not started. **Size:** M. **Waits on:** nothing; it is already
+**Status:** partly built, 2026-11-10, with the window controls' stage 3. A
+window the person offers with *Help with this window* wears the teal edge, and
+across its foot alo's mark, what it is doing in the person's words and Stop,
+for the turn, on no other window, gone when the turn ends
+(`crates/alo-shell/src/alos_band_in_a_window.rs`). **Not yet:** a window alo
+picks itself while answering a request typed in the launcher — which is the
+demo's road into the editor — because the shell learns which window only when
+the person offers it; that needs the agent to say which window it is acting in
+as it goes, on the asking socket. **Size:** M. **Waits on:** nothing; it is already
 promised (*the agent's presence*, a deep teal edge with its mark and word).
 
 **For the person:** they can always tell when it is alo's hands on their editor.

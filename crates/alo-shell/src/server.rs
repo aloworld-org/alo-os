@@ -527,6 +527,9 @@ pub struct Server {
     /// that is a reading of a person's settings. This crate shows and never
     /// measures.
     pub(crate) asked_alo: Vec<String>,
+    /// The window a person offered with *Help with this window*, the requests
+    /// sent about one, and the window each task works in.
+    pub(crate) alo_in_a_window: crate::alo_in_a_window::AloInAWindow,
     /// Follow-ups a person sent from a task window, waiting to be handed to the
     /// agent with the conversation so far (ADR 0138).
     ///
@@ -938,6 +941,7 @@ impl Server {
                 crate::a_change_waiting_reaches_the_person::AChangeWaiting::nothing_yet(),
             the_composer: crate::the_composer_a_person_types_in::TheComposer::empty(),
             asked_alo: Vec::new(),
+            alo_in_a_window: crate::alo_in_a_window::AloInAWindow::default(),
             follow_ups: Vec::new(),
             stops: Vec::new(),
             closing_asked: None,
