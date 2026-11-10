@@ -80,6 +80,7 @@ fn what_a_person_typed_goes_out_and_the_answer_comes_back() {
         WhoAsked::ATaskWindow(WhichTask::numbered(0)),
         "how many invoices are unpaid?",
         &[],
+        None,
     );
 
     assert_eq!(heard.recv().unwrap(), "how many invoices are unpaid?\n");
@@ -112,6 +113,7 @@ fn a_waiting_change_keeps_the_sentence_a_person_approves() {
         WhoAsked::ATaskWindow(WhichTask::numbered(3)),
         "rename the march invoice",
         &[],
+        None,
     );
     assert_eq!(heard.recv().unwrap(), "rename the march invoice\n");
 
@@ -142,6 +144,7 @@ fn a_machine_with_nothing_listening_says_so_and_keeps_going() {
         WhoAsked::ATaskWindow(WhichTask::numbered(1)),
         "anything",
         &[],
+        None,
     );
 
     let came = one_answer(&door);
@@ -167,6 +170,7 @@ fn an_agent_that_says_nothing_is_the_machines_fault() {
         WhoAsked::ATaskWindow(WhichTask::numbered(2)),
         "anything",
         &[],
+        None,
     );
 
     let came = one_answer(&door);
@@ -201,6 +205,7 @@ fn asking_comes_back_at_once_however_slow_the_agent_is() {
         WhoAsked::ATaskWindow(WhichTask::numbered(0)),
         "anything",
         &[],
+        None,
     );
     let took = began.elapsed();
     assert!(
@@ -225,6 +230,7 @@ fn an_answer_is_handed_over_once() {
         WhoAsked::ATaskWindow(WhichTask::numbered(0)),
         "anything",
         &[],
+        None,
     );
     let came = one_answer(&door);
     assert_eq!(came.said, "done");
@@ -294,6 +300,7 @@ fn a_follow_up_carries_the_conversation_after_the_request() {
         "and how big is\nthe biggest one?",
         &earlier,
         &[PathBuf::from("/home/anna")],
+        None,
     );
 
     let crossed = heard.recv().unwrap();
@@ -329,11 +336,48 @@ fn a_first_request_carries_the_marker_and_no_conversation() {
         WhoAsked::ATaskWindow(WhichTask::numbered(0)),
         "how many invoices are unpaid?",
         &[],
+        None,
     );
 
     assert_eq!(
         heard.recv().unwrap(),
         "how many invoices are unpaid?\nalo-earlier:\nalo-this-window:\n"
+    );
+    let _ = one_answer(&door);
+    let _ = std::fs::remove_dir_all(at.parent().unwrap());
+}
+
+/// **A request says where the person's folders are**, on the fifth line — and
+/// the marker alone where the shell knows no home, so a current agent is never
+/// left waiting for it.
+#[test]
+fn a_request_carries_where_the_persons_folders_are() {
+    let at = a_socket("their-folders");
+    let heard = an_agent_reading(&at, 4, "Made it.\n");
+    let door = TheAgentsDoor::at(&at);
+    let home = alo_instructing::ThePersonsFolders::of(
+        std::path::Path::new("/var/home/alo"),
+        [(
+            "Documents",
+            std::path::Path::new("/var/home/alo/Documents"),
+        )],
+    )
+    .unwrap();
+
+    door.ask(
+        WhoAsked::ATaskWindow(WhichTask::numbered(0)),
+        "make a folder called demo in my Documents",
+        &[],
+        Some(&home),
+    );
+
+    let crossed = heard.recv().unwrap();
+    let lines: Vec<&str> = crossed.lines().collect();
+    assert_eq!(lines.len(), 4, "{crossed}");
+    assert_eq!(
+        alo_instructing::ThePersonsFolders::read_the_line(lines.get(3).copied().unwrap_or_default()),
+        Ok(Some(home)),
+        "{crossed}"
     );
     let _ = one_answer(&door);
     let _ = std::fs::remove_dir_all(at.parent().unwrap());

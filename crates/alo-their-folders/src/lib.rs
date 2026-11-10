@@ -52,11 +52,14 @@
 //!   becomes a directory;
 //! - [`made_for`] — making them, making what it can, and saying what it could
 //!   not;
+//! - [`where_they_are`] — reading back where the record says they are, so
+//!   the agent can be told the folders that are really there;
 //! - [`Disk`] and [`OnThisDisk`] — the one road onto a real filesystem, so
 //!   every rule above is tested without one;
 //! - [`NotMade`] — every way it can fail, each with a sentence for whoever
 //!   looks after the machine.
 
+pub mod finding;
 pub mod folders;
 pub mod making;
 pub mod naming;
@@ -69,6 +72,7 @@ pub mod words;
 mod testing;
 
 pub use alo_gettext::Catalogue;
+pub use finding::where_they_are;
 pub use folders::Folder;
 pub use folders::THE_CATALOGUE;
 pub use making::{Disk, Made, NamedDifferently, made_for};

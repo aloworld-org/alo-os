@@ -149,8 +149,9 @@ impl TheTurnHeldOpen {
 /// open** until the returned [`TheTurnHeldOpen`] is dropped.
 ///
 /// It also writes the earlier-conversation marker and the window marker with
-/// nothing after either — a first request, about no window — so that the agent
-/// need not wait to learn there is none (`docs/contracts/asking-socket.md`). Keeping the sending side open makes the
+/// nothing after either — a first request, about no window — and then where
+/// the person's folders are, or that marker alone, so that the agent need not
+/// wait to learn there is none (`docs/contracts/asking-socket.md`). Keeping the sending side open makes the
 /// agent read a close as a Stop, and that is what it is.
 ///
 /// **The reply is kept as written, only its end trimmed.** Its first line is
@@ -163,6 +164,7 @@ impl TheTurnHeldOpen {
 pub fn what_the_agent_says_holding_the_turn(
     at: &Path,
     typed: &str,
+    their_folders: Option<&alo_instructing::ThePersonsFolders>,
 ) -> Result<(String, TheTurnHeldOpen), NothingCameBack> {
     let mut talking = UnixStream::connect(at).map_err(|_| NothingCameBack::NobodyThere {
         at: at.display().to_string(),
@@ -179,9 +181,10 @@ pub fn what_the_agent_says_holding_the_turn(
     talking
         .write_all(
             format!(
-                "{one_line}\n{}\n{}\n",
+                "{one_line}\n{}\n{}\n{}\n",
                 alo_instructing::THE_EARLIER_CONVERSATION,
-                alo_instructing::THE_WINDOW_OFFERED
+                alo_instructing::THE_WINDOW_OFFERED,
+                alo_instructing::ThePersonsFolders::the_line_for(their_folders)
             )
             .as_bytes(),
         )

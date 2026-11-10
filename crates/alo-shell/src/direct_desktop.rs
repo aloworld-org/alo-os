@@ -994,6 +994,26 @@ struct TheDesktopLane<'a> {
     password_sheet: crate::the_password_sheet::ThePasswordSheet,
 }
 
+/// **Where this person's home and standard folders are, read now**, as the
+/// request is sent: the home the session handed Settings, and the record
+/// `alo-their-folders` wrote when the account was made. [`None`] for a
+/// session with no home, which sends the marker alone. The machine's layout,
+/// never what is in a folder (`alo_instructing::ThePersonsFolders`).
+fn the_persons_folders_to_send(server: &Server) -> Option<alo_instructing::ThePersonsFolders> {
+    let home = server.settings_places.as_ref()?.home()?;
+    let found = alo_their_folders::where_they_are(
+        home,
+        &alo_their_folders::OnThisDisk,
+        &std::path::Path::is_dir,
+    );
+    alo_instructing::ThePersonsFolders::of(
+        home,
+        found
+            .iter()
+            .map(|(folder, at)| (folder.xdg_name(), at.as_path())),
+    )
+}
+
 /// The folders this person has granted, for a request about to be sent.
 ///
 /// A free function rather than a method, because the two call sites are in a
@@ -1232,6 +1252,7 @@ impl LoopInput for TheDesktopLane<'_> {
                 crate::what_a_person_asked_goes_to_the_agent::WhoAsked::TheTerminal,
                 &request,
                 &the_folders_to_send(server),
+                the_persons_folders_to_send(server).as_ref(),
             );
         }
         server.meet_what_was_pressed_on_an_edge();
@@ -1494,6 +1515,7 @@ impl LoopInput for TheDesktopLane<'_> {
                     crate::what_a_person_asked_goes_to_the_agent::WhoAsked::ATaskWindow(which),
                     &request,
                     &the_folders_to_send(server),
+                    the_persons_folders_to_send(server).as_ref(),
                 );
             }
         }
@@ -1508,6 +1530,7 @@ impl LoopInput for TheDesktopLane<'_> {
                 &follow_up.said,
                 &follow_up.earlier,
                 &the_folders_to_send(server),
+                the_persons_folders_to_send(server).as_ref(),
             );
         }
         // **And a Stop the person pressed travels the road its request took**
