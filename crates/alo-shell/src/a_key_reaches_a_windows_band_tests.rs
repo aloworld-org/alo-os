@@ -101,5 +101,9 @@ fn a_panel_the_pointer_opened_starts_on_no_choice() {
         None
     );
     let again = once_opened(opened, ByWhat::ThePointer);
-    assert_eq!(again, TheKeyboardOnTheEdge::Nowhere, "asked again, it closes");
+    assert_eq!(
+        again,
+        TheKeyboardOnTheEdge::Nowhere,
+        "asked again, it closes"
+    );
 }
