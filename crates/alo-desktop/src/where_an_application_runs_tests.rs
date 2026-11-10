@@ -101,3 +101,19 @@ fn more_than_can_be_counted_is_answered_as_more() {
     assert_eq!(found.len(), THE_MOST_GROUPS + 1);
     let _ = std::fs::remove_dir_all(slice);
 }
+
+/// **An application whose ID holds a `-` is found in the scope Flatpak names
+/// for it**, where Flatpak wrote the `-` as `\x2d` — and its unescaped spelling,
+/// which Flatpak never writes, is not taken for it.
+#[test]
+fn a_flatpak_scope_with_an_escaped_dash_is_found() {
+    let slice = a_slice("dash");
+    let flatpak = slice.join(r"app-flatpak-io.gitlab.librewolf\x2dcommunity-2716289303.scope");
+    std::fs::create_dir_all(&flatpak).unwrap();
+    std::fs::create_dir_all(slice.join("app-flatpak-io.gitlab.librewolf-community-1.scope")).unwrap();
+
+    let found = UnderTheAppSlice::beneath(&slice).groups_of("io.gitlab.librewolf-community");
+    assert_eq!(found, vec![number_of(&flatpak)]);
+
+    let _ = std::fs::remove_dir_all(slice);
+}
