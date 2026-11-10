@@ -292,7 +292,9 @@ fn a_huge_relative_jump_is_clamped_and_the_next_move_still_moves() -> Result<(),
         .collect();
     assert!(seen.contains(&(8.0, 6.0)), "{seen:?}");
     assert_eq!(app.events.pointer.motion.last(), Some(&(10.5, 7.0)));
-    // And past the far corner, which a jump the other way reaches.
+    // And past the far corner: the output is 32 wide, so a jump of +8000 stops at
+    // 31 and coming back by 20 lands at 11 — inside the client's 16 by 16
+    // surface at the origin, where motion reaches it as surface coordinates.
     route(
         &f,
         DirectPointerEvent::Relative {
@@ -304,12 +306,12 @@ fn a_huge_relative_jump_is_clamped_and_the_next_move_still_moves() -> Result<(),
     route(
         &f,
         DirectPointerEvent::Relative {
-            dx: -6.0,
-            dy: -11.0,
+            dx: -20.0,
+            dy: -20.0,
             time: 5,
         },
     )?;
     app.sync();
-    assert_eq!(app.events.pointer.motion.last(), Some(&(25.0, 20.0)));
+    assert_eq!(app.events.pointer.motion.last(), Some(&(11.0, 11.0)));
     Ok(())
 }
