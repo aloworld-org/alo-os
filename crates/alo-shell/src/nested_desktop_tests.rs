@@ -260,7 +260,8 @@ fn the_record_window_sits_in_the_desktop_frame() {
 /// exactly that.
 ///
 /// The panel holds windows, because a concealed panel and an empty one draw the
-/// same picture.
+/// same picture, and a window fills the screen, because that is the only time
+/// the panel conceals (`crate::desktop_raster`'s `panel_is_revealed`).
 #[test]
 fn the_frame_carries_whether_the_panel_is_revealed() {
     let strings = words();
@@ -290,7 +291,7 @@ fn the_frame_carries_whether_the_panel_is_revealed() {
                 windows: &[],
                 put_aside: crate::desktop_testing::three_windows_put_aside(),
                 panel_is_revealed: revealed,
-                filling_the_screen: false,
+                filling_the_screen: true,
                 display_scale: 100,
                 on_the_dock: &[],
                 in_more_apps: &[],

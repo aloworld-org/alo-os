@@ -120,7 +120,9 @@ pub struct DesktopFrame<'a> {
     /// the crate that knows the display. An empty panel is the true answer on a
     /// desk where nothing has been put aside, not a placeholder.
     pub put_aside: &'a alo_put_aside::Panel,
-    /// Whether the put-aside panel is on the screen at this moment.
+    /// Whether somebody has reached for the put-aside panel, which is read only
+    /// while a window fills the screen: everywhere else the panel is on the
+    /// screen (`crate::desktop_raster`).
     ///
     /// **`alo_dock::Revealing::is_revealed`, asked of whoever holds the machine.** It decides
     /// this from the edge, the surface, the keyboard, a drag and an open menu — any one of

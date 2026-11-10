@@ -587,6 +587,14 @@ fn the_dock_gives_way_to_a_window_over_it_and_only_if_asked() {
 ///
 /// The panel holds three windows, because a concealed panel and an empty one
 /// draw the same picture.
+///
+/// **And it conceals only while a window fills the screen.**
+/// `docs/design/the-windows-put-aside.md` rule 8 is *true full screen conceals
+/// the panel until deliberately revealed*; everywhere else it is on the screen
+/// whether or not anybody reached for it. Until 2026-11-10 it concealed
+/// everywhere, and a boot walk of `f028d5ec` minimised a maximised window and
+/// saw it vanish with no card at the right edge — only the empty column the
+/// maximised window had stopped short of.
 #[test]
 fn concealing_the_panel_reaches_the_draw_path_from_the_whole_desktop() {
     let appearance = an_appearance();
@@ -594,7 +602,7 @@ fn concealing_the_panel_reaches_the_draw_path_from_the_whole_desktop() {
     let (running, filling, _folder) = both_open();
     let strings = words();
 
-    let drawn = |revealed: bool| {
+    let drawn_over = |filling_the_screen: bool, revealed: bool| {
         let mut labels = WindowControlLabels::new().unwrap();
         picture(
             &Dock::shipped(),
@@ -612,7 +620,7 @@ fn concealing_the_panel_reaches_the_draw_path_from_the_whole_desktop() {
                 windows: &[],
                 put_aside: crate::desktop_testing::three_windows_put_aside(),
                 panel_is_revealed: revealed,
-                filling_the_screen: false,
+                filling_the_screen,
                 display_scale: 100,
                 on_the_dock: &[],
                 in_more_apps: &[],
@@ -625,8 +633,8 @@ fn concealing_the_panel_reaches_the_draw_path_from_the_whole_desktop() {
         )
     };
 
-    let shown = drawn(true).unwrap();
-    let hidden = drawn(false).unwrap();
+    let shown = drawn_over(true, true).unwrap();
+    let hidden = drawn_over(true, false).unwrap();
 
     assert!(
         shown.panel.rail.size.h > 0,
@@ -635,12 +643,26 @@ fn concealing_the_panel_reaches_the_draw_path_from_the_whole_desktop() {
     );
     assert_eq!(
         hidden.panel.rail.size.h, 0,
-        "the desktop drew the panel's rail for a panel nobody has reached for, so the reveal \
-         state never reaches crate::panel_raster"
+        "the desktop drew the panel's rail over a window filling the screen for a panel nobody \
+         has reached for, so the reveal state never reaches crate::panel_raster"
     );
     assert_eq!(
         hidden.panel.reserved, shown.panel.reserved,
         "the desktop gave up the panel's column when it concealed"
+    );
+
+    // **Outside full screen nobody has to reach for it**: a window put aside
+    // is a card a person can see, exactly as one they reached for.
+    let not_reached_for = drawn_over(false, false).unwrap();
+    let reached_for = drawn_over(false, true).unwrap();
+    assert!(
+        not_reached_for.panel.rail.size.h > 0,
+        "with no window filling the screen, a panel holding three windows drew no rail, so a \
+         window put aside left no card anybody could see"
+    );
+    assert_eq!(
+        not_reached_for.panel, reached_for.panel,
+        "outside full screen, reaching for the panel changed what it draws"
     );
 }
 

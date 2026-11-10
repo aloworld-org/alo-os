@@ -156,15 +156,19 @@ pub(crate) struct Shown<'a> {
     /// Dock*. Asked of the shell by the caller, because only the caller knows
     /// which display's windows these are — the seam `windows` already takes.
     pub(crate) filling_the_screen: bool,
-    /// Whether the put-aside panel is on the screen at this moment.
+    /// Whether somebody has reached for the put-aside panel **while a window
+    /// fills the screen**.
     ///
     /// **Asked of the desktop, because `alo_dock::Revealing` is session state.** That machine
     /// decides it from the edge, the surface, the keyboard, a drag and an open menu, and the
     /// crate on the other side of `crate::TheDesktop` holds it — the compositor holds none.
     ///
-    /// A desktop that never advances the machine answers `false` for ever, which draws a panel
-    /// that keeps its column and never its rail. That is the honest picture for a desktop with
-    /// no pointer rather than a panel stuck shut by a bug.
+    /// **It is read only under full screen.** Everywhere else the panel is on the screen,
+    /// because `docs/design/the-windows-put-aside.md` rule 8 is *true full screen conceals the
+    /// panel until deliberately revealed* and the machine's own header is *reaching a surface
+    /// at a screen edge when a window is filling the screen*. Until 2026-11-10 it was read
+    /// always, so a window minimised from a maximised one vanished and no card appeared at the
+    /// right edge: a boot walk of `f028d5ec` saw exactly that.
     pub(crate) panel_is_revealed: bool,
     /// How many physical pixels this display draws for one logical one, in
     /// hundredths. 100 is one to one; 200 is a dense screen.
@@ -369,7 +373,11 @@ pub(crate) fn picture(
         look,
         size,
         crate::panel_raster::the_edge_for(look.reading()),
-        if panel_is_revealed {
+        // **Concealed only under full screen, and then until somebody reaches
+        // for it** — the Dock's rule above, at the right edge. Outside full
+        // screen the panel is always there, so a window put aside is a card a
+        // person can see and press.
+        if !filling_the_screen || panel_is_revealed {
             crate::panel_raster::WhetherRevealed::Revealed
         } else {
             crate::panel_raster::WhetherRevealed::Concealed
