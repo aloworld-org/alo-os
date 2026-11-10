@@ -65,7 +65,7 @@ impl Turning<'_, '_> {
         now: SystemTime,
     ) -> Result<WhatACommandDid, NotDone> {
         self.still_open()?;
-        self.ran(command, run, now)
+        self.ran(command, run, AtFullAccess(true), now)
     }
 
     /// **Put a command to the person** — what *ask me each time* means where
@@ -116,7 +116,7 @@ impl Turning<'_, '_> {
         self.still_open()?;
         let approved = self.approvals_mut().approve_a_command(id, now)?;
         self.remembering(id, Became::Approved);
-        self.ran(approved.command(), run, now)
+        self.ran(approved.command(), run, AtFullAccess(false), now)
     }
 
     /// A command that was asked for and is not going to run, written down with
@@ -192,10 +192,15 @@ impl Turning<'_, '_> {
     }
 
     /// Run it, and write down what it did — or that it did not start.
+    ///
+    /// `at_full_access` is which door called: what ran is stamped with it, so
+    /// the record a person reads back says what bounded the run — their choice
+    /// of full access, or their yes — rather than leave it to be guessed.
     fn ran(
         &mut self,
         command: &ACommand,
         run: &mut Running<'_>,
+        at_full_access: AtFullAccess,
         now: SystemTime,
     ) -> Result<WhatACommandDid, NotDone> {
         match run(command) {
@@ -212,6 +217,7 @@ impl Turning<'_, '_> {
                     false,
                     now,
                 );
+                let entry = at_full_access.stamped(entry);
                 let entry = match self.kept_as() {
                     Some(named) => entry.kept_as(named),
                     None => entry,
@@ -224,12 +230,28 @@ impl Turning<'_, '_> {
                     &alo_capability::words::NOTHING_RAN_WOULD_NOT_START.key(),
                     &Filling::nothing(),
                 );
-                let entry =
-                    Entry::a_command_was_not_run(self.grantee(), THE_SHELL, said.text(), now);
+                let entry = at_full_access.stamped(Entry::a_command_was_not_run(
+                    self.grantee(),
+                    THE_SHELL,
+                    said.text(),
+                    now,
+                ));
                 self.writing_down(entry)?;
                 Err(NotDone::ACommandDidNotStart(not_started))
             }
         }
+    }
+}
+
+/// Whether a command ran because the person chose full access, rather than
+/// because they said yes to it — which door it came through.
+#[derive(Debug, Clone, Copy)]
+pub(crate) struct AtFullAccess(pub(crate) bool);
+
+impl AtFullAccess {
+    /// The entry, stamped *at full access* when it was.
+    pub(crate) const fn stamped(self, entry: Entry) -> Entry {
+        if self.0 { entry.at_full_access() } else { entry }
     }
 }
 

@@ -100,6 +100,20 @@ pub enum Outcome {
     /// so a person reading their record meets the two as different things —
     /// which is also why `Happened::ran` answers false about this one.
     RanACommand,
+    /// **A command that ran at full access** (ADR 0149): nobody was asked, and
+    /// nothing boxed it, so it could reach whatever the person's account can.
+    ///
+    /// Told apart from [`Outcome::RanACommand`] since 2026-11-10. Until then
+    /// every command that ran read back as *inside a box that could reach only
+    /// what you chose*, which ADR 0149 made untrue of every command run where
+    /// no verb fits.
+    RanACommandAtFullAccess,
+    /// **A command that ran once the person said yes to it**, at *ask me each
+    /// time* (ADR 0149): nothing boxed it either.
+    RanACommandYouSaidYesTo,
+    /// **A command that ran as administrator**, once the person gave their
+    /// password for it (ADR 0150).
+    RanACommandAsAdministrator,
     /// **A command that ran and did not work**: it ended with a status other
     /// than 0, or something stopped it before it ended by itself.
     ///
@@ -160,8 +174,12 @@ pub enum Outcome {
 
 impl Outcome {
     /// What became of this entry, read off the entry itself.
-    fn of(happened: &Happened) -> Self {
-        match happened {
+    ///
+    /// The whole entry rather than only what happened, because what bounded a
+    /// command is said by two stamps beside it: whether it was decided at full
+    /// access, and whether it was asked for as administrator.
+    fn of(entry: &Entry) -> Self {
+        match entry.happened() {
             Happened::Ran { .. } => Self::Ran,
             Happened::Stopped { how, .. } => match how {
                 Stopped::BeforeAnybodyWasAsked(_) => Self::NobodyWasAsked,
@@ -181,8 +199,10 @@ impl Outcome {
             // (`alo_capability::ItDidNotWork` decides the same for the person's
             // own line).
             Happened::RanACommand {
-                returned: Some(0), ..
-            } => Self::RanACommand,
+                returned: Some(0),
+                the_kernel_was_holding_it,
+                ..
+            } => Self::what_bounded_a_command(entry, *the_kernel_was_holding_it),
             Happened::RanACommand { .. } => Self::ACommandDidNotWork,
             Happened::ACommandWasNotRun { .. } => Self::ACommandWasNotRun,
             // **No road means nothing carried it**: the entry's own sign that
@@ -225,6 +245,25 @@ impl Outcome {
         }
     }
 
+    /// **What bounded a command that ran**, read off the entry's own fields.
+    ///
+    /// The box first, because a boxed run is bounded by it at whatever level it
+    /// was allowed. Then administrator, because the password the person typed
+    /// is what let it run. Then the level: a run nothing boxed and not decided
+    /// at full access is one the person said yes to, since ADR 0149 there being
+    /// no other way for one to happen.
+    fn what_bounded_a_command(entry: &Entry, the_kernel_was_holding_it: bool) -> Self {
+        if the_kernel_was_holding_it {
+            Self::RanACommand
+        } else if entry.asked_as_an_administrator().is_some() {
+            Self::RanACommandAsAdministrator
+        } else if entry.was_at_full_access() {
+            Self::RanACommandAtFullAccess
+        } else {
+            Self::RanACommandYouSaidYesTo
+        }
+    }
+
     /// The string this crate declares for it: the key a translator's file is
     /// sorted by, and the English beside it.
     #[must_use]
@@ -243,6 +282,9 @@ impl Outcome {
             Self::WorkspaceOpened => words::WORKSPACE_OPENED,
             Self::NotBounded => words::NOT_BOUNDED,
             Self::RanACommand => words::RAN_A_COMMAND,
+            Self::RanACommandAtFullAccess => words::RAN_A_COMMAND_AT_FULL_ACCESS,
+            Self::RanACommandYouSaidYesTo => words::RAN_A_COMMAND_YOU_SAID_YES_TO,
+            Self::RanACommandAsAdministrator => words::RAN_A_COMMAND_AS_ADMINISTRATOR,
             Self::ACommandDidNotWork => words::A_COMMAND_DID_NOT_WORK,
             Self::ACommandWasNotRun => words::A_COMMAND_WAS_NOT_RUN,
             Self::AskedAnApplication => words::ASKED_AN_APPLICATION,
@@ -389,7 +431,7 @@ impl Told {
         Self {
             at: entry.at(),
             agent: entry.agent().cloned(),
-            outcome: Outcome::of(happened),
+            outcome: Outcome::of(entry),
             verb: what.map(|what| what.verb().clone()),
             sentence: what.map(|what| what.sentence().clone()).or(kept_for),
             because: happened.why_stopped().cloned(),
@@ -654,13 +696,78 @@ mod tests {
             ))
             .outcome()
         };
-        assert_eq!(ended_with(Some(0)), Outcome::RanACommand);
+        assert_eq!(ended_with(Some(0)), Outcome::RanACommandYouSaidYesTo);
         assert_eq!(ended_with(Some(1)), Outcome::ACommandDidNotWork);
         assert_eq!(ended_with(None), Outcome::ACommandDidNotWork);
         assert_eq!(
             Outcome::ACommandDidNotWork.word().says(),
             "the agent ran a command, and it did not work"
         );
+    }
+
+    /// A command that ended with 0, boxed or not, as the record kept it.
+    fn a_command_that_worked(boxed: bool) -> alo_record::Entry {
+        alo_record::Entry::ran_a_command(
+            &alo_capability::Grantee::named("@terminal"),
+            "/bin/sh",
+            &["-c".to_owned(), "mkdir /home/anna/Documents/demo".to_owned()],
+            &[],
+            Some(0),
+            boxed,
+            noon(),
+        )
+    }
+
+    /// **A command reads back with what really bounded it**, one sentence for
+    /// each way a command runs — never *inside a box* for a run nothing boxed.
+    /// Until 2026-11-10 all four read as the first.
+    #[test]
+    fn a_command_reads_back_with_what_bounded_it() {
+        let read = |entry: &alo_record::Entry| {
+            let outcome = Told::of(entry).outcome();
+            (outcome, outcome.word().says())
+        };
+        assert_eq!(
+            read(&a_command_that_worked(true)),
+            (
+                Outcome::RanACommand,
+                "the agent ran a command you allowed it to run, inside a box that could reach                  only what you chose"
+            )
+        );
+        assert_eq!(
+            read(&a_command_that_worked(false).at_full_access()),
+            (
+                Outcome::RanACommandAtFullAccess,
+                "the agent ran a command without asking you first, because you chose full                  access, and it could reach everything your account can"
+            )
+        );
+        assert_eq!(
+            read(&a_command_that_worked(false)),
+            (
+                Outcome::RanACommandYouSaidYesTo,
+                "the agent ran a command after you said yes to it, and it could reach everything                  your account can"
+            )
+        );
+        for level in [false, true] {
+            let entry = a_command_that_worked(false)
+                .as_an_administrator(alo_record::AsAnAdministrator::TheyGaveTheirPassword);
+            let entry = if level { entry.at_full_access() } else { entry };
+            assert_eq!(
+                read(&entry),
+                (
+                    Outcome::RanACommandAsAdministrator,
+                    "the agent ran a command as administrator, after you gave your password for it"
+                )
+            );
+        }
+        // **Only a boxed run is ever told as boxed**: no unboxed entry, at any
+        // level, reads back with the word.
+        for entry in [
+            a_command_that_worked(false),
+            a_command_that_worked(false).at_full_access(),
+        ] {
+            assert!(!Told::of(&entry).outcome().word().says().contains("box"));
+        }
     }
 
     /// A read ran under nobody's approval, and the account says so rather than

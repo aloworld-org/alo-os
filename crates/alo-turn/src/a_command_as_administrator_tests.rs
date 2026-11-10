@@ -102,6 +102,10 @@ fn a_run_is_written_down_as_an_administrators() {
         entry.asked_as_an_administrator(),
         Some(AsAnAdministrator::TheyGaveTheirPassword)
     );
+    assert!(
+        entry.was_at_full_access(),
+        "a run at full access was written down as one at another level"
+    );
 }
 
 /// **Every refusal is written down with the sentence and what the person
@@ -170,4 +174,9 @@ fn one_approval_is_one_run_as_administrator() {
         );
     });
     assert_eq!(ran.borrow().len(), 1);
+    let entries: Vec<_> = record.everything().collect();
+    assert!(
+        entries.iter().all(|entry| !entry.was_at_full_access()),
+        "a run the person said yes to was written down as one at full access"
+    );
 }

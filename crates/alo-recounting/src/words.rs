@@ -1,6 +1,6 @@
 //! Every string this crate can say, and the English beside each one.
 //!
-//! Thirty-six, and they divide in four. Twenty-eight are **what became of one
+//! Forty-four, and they divide in four. Thirty-six are **what became of one
 //! entry** — the short clause read at the head of a line, before the sentence
 //! the machine generated when it happened. One is **who said yes** to a change
 //! that ran, read beneath that sentence where the record holds the approval it
@@ -32,7 +32,7 @@
 //! of one moment, and the one a person read afterwards would be the one nothing
 //! checked.
 //!
-//! # Twenty-six clauses, and none of them is a category
+//! # Thirty-six clauses, and none of them is a category
 //!
 //! The outcomes are sentences about a machine rather than labels for a
 //! column — *the agent asked to do this and the person at this machine said no*
@@ -214,6 +214,41 @@ pub const RAN_A_COMMAND: Word = Word::saying(
      commands on this machine; this is one that ran. The \"box\" is a confinement the operating \
      system itself holds, so the command could open only the folders the person chose and nothing \
      else. What ran, and what it was allowed to reach, are shown beside it.",
+);
+
+/// A command the agent ran at **full access** (ADR 0149): nobody was asked and
+/// nothing boxed it, so what bounded it was the person's own account.
+///
+/// Its own key rather than [`RAN_A_COMMAND`] reworded: that one says the run
+/// was boxed, which stays true of a boxed run, and ADR 0068 gives a new meaning
+/// a new key.
+pub const RAN_A_COMMAND_AT_FULL_ACCESS: Word = Word::saying(
+    "recounting.outcome.ran-a-command-at-full-access",
+    "the agent ran a command without asking you first, because you chose full access, and it      could reach everything your account can",
+)
+.noting(
+    "Read at the head of one line of a record somebody is reading back — the agent being the      assistant built into alo OS and not a person. The person had chosen \"full access\" in      Settings, which lets the agent run commands without asking each time; this is one that ran.      Nothing confined it: it could open, change or delete anything the person's own user account      can, and no more. What ran is shown beside it.",
+);
+
+/// A command the agent ran once the person said yes to it, at *ask me each
+/// time* (ADR 0149): nothing boxed it, so what bounded it was the person's
+/// answer and their own account.
+pub const RAN_A_COMMAND_YOU_SAID_YES_TO: Word = Word::saying(
+    "recounting.outcome.ran-a-command-you-said-yes-to",
+    "the agent ran a command after you said yes to it, and it could reach everything your account      can",
+)
+.noting(
+    "Read at the head of one line of a record somebody is reading back — the agent being the      assistant built into alo OS and not a person. The person had chosen to be asked each time;      they were shown this command and said yes, and then it ran. Nothing confined it: it could      open, change or delete anything the person's own user account can, and no more. What ran is      shown beside it.",
+);
+
+/// A command the agent ran as administrator, once the person gave their
+/// password for it (ADR 0150).
+pub const RAN_A_COMMAND_AS_ADMINISTRATOR: Word = Word::saying(
+    "recounting.outcome.ran-a-command-as-administrator",
+    "the agent ran a command as administrator, after you gave your password for it",
+)
+.noting(
+    "Read at the head of one line of a record somebody is reading back — the agent being the      assistant built into alo OS and not a person. The command needed the rights of the person      who administers this computer, which can change the whole system; the person was asked for      their own password and typed it, and then it ran. What ran is shown beside it.",
 );
 
 /// A command the agent ran, that did not work.
@@ -606,7 +641,7 @@ pub const AN_APPLICATION_WAS_NOT_ASKED: Word = Word::saying(
 );
 
 /// Every string this crate can say, in the order a translator meets them.
-pub const EVERY_WORD: [Word; 41] = [
+pub const EVERY_WORD: [Word; 44] = [
     RAN,
     NOBODY_WAS_ASKED,
     THE_PERSON_SAID_NO,
@@ -620,6 +655,9 @@ pub const EVERY_WORD: [Word; 41] = [
     WORKSPACE_OPENED,
     NOT_BOUNDED,
     RAN_A_COMMAND,
+    RAN_A_COMMAND_AT_FULL_ACCESS,
+    RAN_A_COMMAND_YOU_SAID_YES_TO,
+    RAN_A_COMMAND_AS_ADMINISTRATOR,
     A_COMMAND_DID_NOT_WORK,
     A_COMMAND_WAS_NOT_RUN,
     ASKED_AN_APPLICATION,
@@ -655,7 +693,7 @@ pub const EVERY_WORD: [Word; 41] = [
 /// Named apart from the rest so the tests below can hold each group to the rule
 /// that is actually its own: a clause is read beside a sentence and does not end
 /// in a full stop, and a refusal says what to do next.
-pub const EVERY_OUTCOME: [Word; 33] = [
+pub const EVERY_OUTCOME: [Word; 36] = [
     RAN,
     NOBODY_WAS_ASKED,
     THE_PERSON_SAID_NO,
@@ -669,6 +707,9 @@ pub const EVERY_OUTCOME: [Word; 33] = [
     WORKSPACE_OPENED,
     NOT_BOUNDED,
     RAN_A_COMMAND,
+    RAN_A_COMMAND_AT_FULL_ACCESS,
+    RAN_A_COMMAND_YOU_SAID_YES_TO,
+    RAN_A_COMMAND_AS_ADMINISTRATOR,
     A_COMMAND_DID_NOT_WORK,
     A_COMMAND_WAS_NOT_RUN,
     ASKED_AN_APPLICATION,

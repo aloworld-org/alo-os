@@ -45,6 +45,9 @@ impl EntryKind {
         match outcome {
             Outcome::Ran
             | Outcome::RanACommand
+            | Outcome::RanACommandAtFullAccess
+            | Outcome::RanACommandYouSaidYesTo
+            | Outcome::RanACommandAsAdministrator
             | Outcome::AskedAnApplication
             | Outcome::MachineChangeHandedOn
             | Outcome::PutBack

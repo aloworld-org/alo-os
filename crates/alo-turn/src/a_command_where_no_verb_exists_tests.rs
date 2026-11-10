@@ -92,6 +92,9 @@ fn a_command_that_runs_is_written_down_with_the_place_kept_before_it() {
             .is_some_and(|kept| kept.is("1760000000-7-1")),
         "Put back cannot be asked from this run"
     );
+    // **It says it was at full access**, so the record a person reads back
+    // says what let it run rather than claim a box (ADR 0149).
+    assert!(entry.was_at_full_access(), "{entry:?}");
     let happened = the_one_entry(&record);
     assert!(
         matches!(happened, Happened::RanACommand { .. }),
@@ -176,11 +179,13 @@ fn a_waiting_command_runs_once_after_one_approval_and_never_again() {
         );
         assert_eq!(ran.borrow().len(), 1, "one approval ran it twice");
     });
-    // The proposal wrote nothing; the run wrote one entry.
+    // The proposal wrote nothing; the run wrote one entry — and not as one at
+    // full access, because what let it run was the person's yes.
     assert!(matches!(
         the_one_entry(&record),
         Happened::RanACommand { .. }
     ));
+    assert!(!record.everything().next().unwrap().was_at_full_access());
 }
 
 /// **A question that stood too long runs nothing, and neither does the same
