@@ -288,14 +288,6 @@ is the specimen's width, not a window's.
 - **A double-click is two presses within 500 ms and 4 units**, the longest of
   the common desktop defaults; the design names none. It is never the only
   road: the panel's Maximise and `Super+Up` do the same.
-- **The band out over full screen has a ground of its own**, drawn over the
-  application's top in the band's look and line, with square corners because
-  it runs edge to edge; a band at rest has its ground under its window, on the
-  card. It **starts after the egress indicator**, which keeps the top-left
-  corner over everything (law 1), so the title is never under it. **Choosing
-  Full screen by key gives the keys back to the application** rather than to
-  Window actions, because Window actions is what the choice hides; `Alt+F3` or
-  the top edge brings the band back.
 - **Tab is not taken inside the panel**: `crate::window_menu_keys` had already
   declined to decide the whole focus order there. The arrows, Home, End, Enter,
   Space and Escape walk it.
@@ -328,6 +320,14 @@ is the specimen's width, not a window's.
 - **Opening a panel does not bring its window forward**; the panel is drawn
   above every window instead, so it is never covered and a press on it never
   reaches what is behind.
+- **The band out over full screen has a ground of its own**, drawn over the
+  application's top in the band's look and line, with square corners because
+  it runs edge to edge; a band at rest has its ground under its window, on the
+  card. It **starts after the egress indicator**, which keeps the top-left
+  corner over everything (law 1), so the title is never under it. **Choosing
+  Full screen by key gives the keys back to the application** rather than to
+  Window actions, because Window actions is what the choice hides; `Alt+F3` or
+  the top edge brings the band back.
 - **Minimise's travel is an outline, 300 ms, eased in and out, to the
   window's own card.** The design says *travelling toward the panel* and
   names no duration, easing or path. The window is hidden at once, as it was,
