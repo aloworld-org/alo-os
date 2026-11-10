@@ -284,7 +284,10 @@ fn a_huge_relative_jump_is_clamped_and_the_next_move_still_moves() -> Result<(),
     app.sync();
     // The jump puts the pointer on the corner, which is on the surface, and the
     // next two moves reach the client as motion from there.
-    assert_eq!(app.events.pointer.enters.last().map(|(_, x, y)| (*x, *y)), Some((0.0, 0.0)));
+    assert_eq!(
+        app.events.pointer.enters.last().map(|(_, x, y)| (*x, *y)),
+        Some((0.0, 0.0))
+    );
     assert_eq!(app.events.pointer.motion, [(8.0, 6.0), (10.5, 7.0)]);
     // And past the far corner: the output is 32 wide, so a jump of +8000 stops at
     // 31, off the client's 16 by 16 surface at the origin, so it leaves; coming
