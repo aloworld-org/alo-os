@@ -153,7 +153,7 @@ fn escape_asks_nothing() {
     let (_notes, root) = a_window(&f, "The next chapter", "org.gnome.TextEditor");
     f.backend(move |s| {
         s.alo_may_be_asked(true);
-        drop(s.help_with_this_window(&root));
+        let _ = s.help_with_this_window(&root);
     });
     type_and_press(&f, "summarise", ComposerKey::Clear);
     let (about, plain, offered) = f.backend(|s| {
@@ -175,7 +175,7 @@ fn a_window_that_closes_before_enter_asks_nothing() {
     let (notes, root) = a_window(&f, "The next chapter", "org.gnome.TextEditor");
     f.backend(move |s| {
         s.alo_may_be_asked(true);
-        drop(s.help_with_this_window(&root));
+        let _ = s.help_with_this_window(&root);
     });
     drop(notes);
     // Until the compositor has seen the client go.

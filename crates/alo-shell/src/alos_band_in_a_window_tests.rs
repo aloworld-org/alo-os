@@ -84,7 +84,7 @@ fn the_band_says_the_status_and_what_was_asked() {
 fn solid_colours(rasters: &[Washed]) -> Vec<[u8; 3]> {
     rasters
         .iter()
-        .flat_map(|it| it.pixels.chunks_exact(4))
+        .flat_map(|it| it.pixels.as_chunks::<4>().0)
         .filter_map(|pixel| match pixel {
             [red, green, blue, 255] => Some([*red, *green, *blue]),
             _ => None,
