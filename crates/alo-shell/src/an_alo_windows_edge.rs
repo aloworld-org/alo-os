@@ -76,6 +76,7 @@ pub(crate) fn its_picture(
             application: None,
             look: crate::window_edge_look::WhichLook::of(shows.focused),
             body: None,
+            laid_over: false,
             // **Always shown**: alo's own windows carry Close alone, and it
             // stays on their bands as it always has.
             controls: crate::window_edge_paint::HowTheControlsLook {

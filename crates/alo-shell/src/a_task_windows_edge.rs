@@ -97,6 +97,7 @@ pub(crate) fn every_task_windows_edge(
                     application: None,
                     look,
                     body: None,
+                    laid_over: false,
                     controls: crate::window_edge_paint::HowTheControlsLook {
                         pointing,
                         open: false,

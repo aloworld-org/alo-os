@@ -48,3 +48,31 @@ fn the_keyboard_brings_it_out_and_keeps_it() {
 fn no_pointer_and_no_keyboard_is_no_band() {
     assert!(!is_the_band_out(true, filling(), None, false));
 }
+
+/// **A band out over full screen starts after the egress indicator**, so the
+/// indicator never sits on the title — and hangs one band down over the
+/// window's top, its trailing end where it was.
+///
+/// The indicator is where a 1280 × 800 machine drew it on 2026-11-09: a circle
+/// 36 across, 20 in and 14 down, over the title of a full-screen Dolphin.
+#[test]
+fn the_band_starts_after_the_indicator() {
+    let window = Rectangle::new((0, 0).into(), (1280, 800).into());
+    let indicator = Rectangle::new((20, 14).into(), (36, 36).into());
+    let hung = hung_over_its_top(window, &[indicator]);
+    assert_eq!(hung.loc, Point::from((56, 54)));
+    assert_eq!(
+        hung.loc.x + hung.size.w,
+        1280,
+        "the controls stay at the trailing end"
+    );
+    assert_eq!(hung.size.h, 800 - 54);
+
+    let below = Rectangle::new((20, 400).into(), (36, 36).into());
+    assert_eq!(
+        hung_over_its_top(window, &[below]).loc,
+        Point::from((0, 54)),
+        "an indicator the band does not meet moves nothing"
+    );
+    assert_eq!(hung_over_its_top(window, &[]).loc, Point::from((0, 54)));
+}

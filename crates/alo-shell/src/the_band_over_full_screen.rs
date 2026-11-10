@@ -65,6 +65,38 @@ pub(crate) fn is_the_band_out(
     across && (0..reach).contains(&down)
 }
 
+/// The rectangle a band out over full screen is laid out from: the window's
+/// own, moved one band down so the band lies over its top — and **starting
+/// after the egress indicator** where the indicator is on that band.
+///
+/// The indicator owns the display's top-left corner and is drawn above every
+/// window (`crate::top_controls_region`, the owner's ruling of 2026-10-31), so
+/// a band laid over a full-screen window's top meets it. A booted machine on
+/// 2026-11-09 drew the title under it. The band gives way rather than the
+/// indicator, which is law 1's: *nothing leaves silently* is never covered.
+/// `indicators` are where it was last drawn on each display, in band units.
+#[must_use]
+pub(crate) fn hung_over_its_top(
+    drawn: Rectangle<i32, Logical>,
+    indicators: &[Rectangle<i32, Logical>],
+) -> Rectangle<i32, Logical> {
+    let band = Rectangle::new(drawn.loc, (drawn.size.w, THE_REGION_IS_TALL).into());
+    let starts = indicators
+        .iter()
+        .filter(|it| it.size.w > 0 && it.size.h > 0 && it.overlaps(band))
+        .map(|it| it.loc.x + it.size.w)
+        .fold(drawn.loc.x, i32::max)
+        .min(drawn.loc.x + drawn.size.w);
+    Rectangle::new(
+        (starts, drawn.loc.y + THE_REGION_IS_TALL).into(),
+        (
+            drawn.size.w - (starts - drawn.loc.x),
+            (drawn.size.h - THE_REGION_IS_TALL).max(0),
+        )
+            .into(),
+    )
+}
+
 impl crate::Server {
     /// The window a band is laid out from, in the band's units at `scale`.
     ///
@@ -82,10 +114,14 @@ impl crate::Server {
         if !self.bands_out_over_full_screen.contains(surface) {
             return drawn;
         }
-        Rectangle::new(
-            (drawn.loc.x, drawn.loc.y + THE_REGION_IS_TALL).into(),
-            (drawn.size.w, (drawn.size.h - THE_REGION_IS_TALL).max(0)).into(),
-        )
+        let indicators: Vec<Rectangle<i32, Logical>> = self
+            .surfaces
+            .rooms
+            .iter()
+            .filter_map(|(_, _, reserved)| reserved.leaving)
+            .map(|it| crate::an_edge_in_its_displays_units::a_window_in_the_edges_units(it, scale))
+            .collect();
+        hung_over_its_top(drawn, &indicators)
     }
 
     /// Bring each full-screen window's band out, or put it away, for where the
