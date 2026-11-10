@@ -343,8 +343,41 @@ pub const EXIT_FULL_SCREEN: Word = Word::saying("access.exit-full-screen", "Exit
          way it was before, maximised if it was maximised.",
     );
 
+/// The placement choice that puts the window on the left half.
+pub const LEFT: Word = Word::saying("access.left", "Left").noting(
+    "A choice in the window panel, under a small picture of a window filling the left half of a      screen. The window moves to the left half; no other window moves. One word.",
+);
+
+/// The placement choice that puts the window on the right half.
+pub const RIGHT: Word = Word::saying("access.right", "Right").noting(
+    "A choice in the window panel, under a small picture of a window filling the right half of a      screen. The window moves to the right half; no other window moves. One word.",
+);
+
+/// What the outline of where Left would put a window says, before anything
+/// moves.
+pub const LEFT_HALF_PREVIEW: Word = Word::saying("access.left-half-preview", "Left half · preview")
+    .noting(
+        "Written in the corner of an outline drawn on the screen while the person points at Left          in the window panel, and said by a screen reader: the outline is where the window would          go, and nothing has moved yet. The dot separates two short parts.",
+    );
+
+/// The same, for Right.
+pub const RIGHT_HALF_PREVIEW: Word =
+    Word::saying("access.right-half-preview", "Right half · preview").noting(
+        "Written in the corner of an outline drawn on the screen while the person points at Right          in the window panel, and said by a screen reader: the outline is where the window would          go, and nothing has moved yet. The dot separates two short parts.",
+    );
+
+/// What the outline says, and a reader is told, where the window cannot fit
+/// in that half.
+pub const NO_ROOM_IN_HALF: Word = Word::saying(
+    "access.no-room-in-half",
+    "This window needs more room than half the screen",
+)
+.noting(
+    "Written in the outline of where Left or Right would put a window, and said by a screen      reader, when the application says it cannot be made that small. Choosing it then changes      nothing.",
+);
+
 /// Every string this crate can say, in the order this file declares them.
-pub const EVERY_WORD: [Word; 44] = [
+pub const EVERY_WORD: [Word; 49] = [
     SCREEN_READER,
     MAGNIFIER,
     HIGH_CONTRAST,
@@ -389,6 +422,11 @@ pub const EVERY_WORD: [Word; 44] = [
     RESTORE,
     FULL_SCREEN,
     EXIT_FULL_SCREEN,
+    LEFT,
+    RIGHT,
+    LEFT_HALF_PREVIEW,
+    RIGHT_HALF_PREVIEW,
+    NO_ROOM_IN_HALF,
 ];
 
 /// Why this crate's own list could not be declared.

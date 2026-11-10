@@ -30,7 +30,7 @@ fn a_press_on_a_choice_chooses_it() {
     let (edge, menu) = notes();
     assert_eq!(
         where_it_landed(&menu, window_actions(&edge), Point::from((900, 400))),
-        ThePress::Chose(WhatARowDoes::Maximise)
+        ThePress::Chose(WhatARowDoes::Left)
     );
     assert_eq!(
         where_it_landed(&menu, window_actions(&edge), Point::from((1000, 510))),

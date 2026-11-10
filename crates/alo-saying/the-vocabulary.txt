@@ -23,12 +23,17 @@ access.go-back-at-the-next-restart	go back the next time this machine starts
 access.go-back-now	go back now, restarting this machine
 access.high-contrast	use strong colours that are easier to read
 access.larger-text	make all text larger
+access.left	Left
+access.left-half-preview	Left half · preview
 access.magnifier	magnify what is under the pointer
 access.maximise	Maximise
 access.minimise	Minimise
+access.no-room-in-half	This window needs more room than half the screen
 access.one-thing-that-happened	one thing that happened
 access.reduced-motion	stop things sliding and fading
 access.restore	Restore
+access.right	Right
+access.right-half-preview	Right half · preview
 access.screen-reader	read the screen aloud
 access.settings	settings
 access.settings-here	settings for seeing, hearing and typing

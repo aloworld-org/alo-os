@@ -21,8 +21,9 @@
 //! impossible to reach, which is a protection lost rather than a detail
 //! skipped.
 
-use alo_dividing::{Refused, Side, Window, area::Size};
+use alo_dividing::{Area, Point, Refused, Side, Window, area::Size};
 use smithay::reexports::wayland_server::protocol::wl_surface::WlSurface;
+use smithay::utils::{Logical, Rectangle};
 use smithay::wayland::compositor::with_states;
 
 /// Why a chord could not divide the display.
@@ -176,6 +177,58 @@ impl crate::Server {
     }
 }
 
+/// **One window alone on one side of a work area**: the panel's Left and Right.
+///
+/// `alo_dividing::alone_on`'s half, which is cut where the chords' division
+/// cuts, put on the plane at `work` — a display's work area — with the
+/// window's `band` at its top, as a maximised window's is. The band is added
+/// to the window's own minimum height before it is asked, so a window that
+/// fits the half only by losing its band is refused rather than given less.
+///
+/// The half, band included, is what a preview outlines; the share is the
+/// window's under the band, or the division's refusal. [`None`] where the
+/// work area has no half to give, or a half too short to hold a band and
+/// anything under it.
+pub(crate) fn alone_on_one_side(
+    work: Rectangle<i32, Logical>,
+    band: i32,
+    side: Side,
+    window: Window,
+) -> Option<(
+    Rectangle<i32, Logical>,
+    Result<crate::window_mode::Share, Refused>,
+)> {
+    let units = |pixels: i32| u32::try_from(pixels).ok();
+    let area = Area::of(
+        Point::at(0, 0),
+        Size::of(units(work.size.w)?, units(work.size.h)?),
+    )
+    .ok()?;
+    let minimum = window.minimum();
+    let with_its_band = Window::at_least(
+        window.id(),
+        Size::of(minimum.width, minimum.height.saturating_add(units(band)?)),
+    );
+    let on = alo_dividing::alone_on(area, with_its_band, side)?;
+    let half = on.half();
+    let outline = Rectangle::new(
+        (
+            work.loc.x + as_pixels(half.x()),
+            work.loc.y + as_pixels(half.y()),
+        )
+            .into(),
+        (as_pixels(half.width()), as_pixels(half.height())).into(),
+    );
+    if outline.size.h <= band {
+        return None;
+    }
+    let share = on.share().map(|_| crate::window_mode::Share {
+        at: (outline.loc.x, outline.loc.y + band),
+        size: (outline.size.w, outline.size.h - band),
+    });
+    Some((outline, share))
+}
+
 /// A measure a division gives, as a display's pixels count it.
 ///
 /// A division measures in logical units and never in a number larger than a
@@ -190,7 +243,7 @@ fn as_pixels(units: u32) -> i32 {
 ///
 /// [`None`] where it has said nothing, which is a window with no minimum rather
 /// than one of no size.
-fn smallest(surface: &WlSurface) -> Option<Size> {
+pub(crate) fn smallest(surface: &WlSurface) -> Option<Size> {
     with_states(surface, |states| {
         let min = states
             .cached_state

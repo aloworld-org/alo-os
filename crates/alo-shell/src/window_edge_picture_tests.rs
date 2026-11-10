@@ -206,6 +206,7 @@ fn an_open_panel_is_drawn_above_every_window() {
     assert!(
         drawn
             .as_ref()
-            .is_some_and(|it| it.on_top_words().len() == 3)
+            .is_some_and(|it| it.on_top_words().len() == 5),
+        "the heading and one word for each of the four rows: Left, Maximise, Right and Full screen"
     );
 }

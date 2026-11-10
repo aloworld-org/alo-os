@@ -34,18 +34,25 @@ fn the_panel_opens_where_the_design_draws_it() {
     );
 }
 
-/// **Only what works is there**: Maximise and Full screen, in keyboard order —
-/// no Left or Right until they work, and no Minimise or Close, which are on
-/// the band.
+/// **Only what works is there**: Left, Maximise, Right and Full screen, in
+/// keyboard order — and no Minimise or Close, which are on the band.
 #[test]
 fn only_what_works_is_in_the_panel_and_nothing_is_on_it_twice() {
     let menu = the_menu_of(&notes(), HowTheWindowIs::default(), roomy()).expect("a panel");
     let does: Vec<WhatARowDoes> = menu.rows.iter().map(|it| it.does).collect();
-    assert_eq!(does, vec![WhatARowDoes::Maximise, WhatARowDoes::FullScreen]);
+    assert_eq!(
+        does,
+        vec![
+            WhatARowDoes::Left,
+            WhatARowDoes::Maximise,
+            WhatARowDoes::Right,
+            WhatARowDoes::FullScreen
+        ]
+    );
 }
 
-/// **The Maximise picture is the first of the three slots**, 94 square at
-/// (22, 50), and Full screen a 304 × 40 row at (22, 172).
+/// **The three pictures are 94 square from (22, 50), 10 apart** — Left,
+/// Maximise, Right — and Full screen a 304 × 40 row at (22, 172).
 #[test]
 fn the_choices_are_where_the_design_measures_them() {
     let menu = the_menu_of(&notes(), HowTheWindowIs::default(), roomy()).expect("a panel");
@@ -54,6 +61,8 @@ fn the_choices_are_where_the_design_measures_them() {
         rows,
         vec![
             Rectangle::new(Point::from((864, 372)), Size::from((94, 94))),
+            Rectangle::new(Point::from((968, 372)), Size::from((94, 94))),
+            Rectangle::new(Point::from((1072, 372)), Size::from((94, 94))),
             Rectangle::new(Point::from((864, 494)), Size::from((304, 40))),
         ]
     );
@@ -72,7 +81,12 @@ fn the_choices_read_restore_and_exit_while_the_window_is_so() {
     let does: Vec<WhatARowDoes> = menu.rows.iter().map(|it| it.does).collect();
     assert_eq!(
         does,
-        vec![WhatARowDoes::Restore, WhatARowDoes::ExitFullScreen]
+        vec![
+            WhatARowDoes::Left,
+            WhatARowDoes::Restore,
+            WhatARowDoes::Right,
+            WhatARowDoes::ExitFullScreen
+        ]
     );
     assert_eq!(WhatARowDoes::Restore.its_own_word().says(), "Restore");
     assert_eq!(
@@ -114,7 +128,22 @@ fn a_point_finds_the_choice_drawn_under_it() {
     assert_eq!(
         menu.what_is_under(Point::from((870, 380)))
             .map(|it| it.does),
+        Some(WhatARowDoes::Left)
+    );
+    assert_eq!(
+        menu.what_is_under(Point::from((975, 380)))
+            .map(|it| it.does),
         Some(WhatARowDoes::Maximise)
+    );
+    assert_eq!(
+        menu.what_is_under(Point::from((1080, 380)))
+            .map(|it| it.does),
+        Some(WhatARowDoes::Right)
+    );
+    assert_eq!(
+        menu.what_is_under(Point::from((963, 380))),
+        None,
+        "the gap between two pictures is neither"
     );
     assert_eq!(
         menu.what_is_under(Point::from((900, 500)))

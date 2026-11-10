@@ -120,6 +120,8 @@ mod a_task_window_scrolls;
 mod a_task_windows_edge;
 mod a_wheel_over_a_sheet;
 mod a_window_and_its_strip;
+/// Left and Right: one window on one half of its display's work area.
+mod a_window_on_one_side;
 mod a_window_onto_a_list;
 mod a_window_raised;
 mod a_window_travels_aside;

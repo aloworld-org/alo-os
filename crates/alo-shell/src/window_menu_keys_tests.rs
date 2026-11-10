@@ -42,11 +42,13 @@ fn a_panel_opens_with_the_keyboard_on_no_choice() {
 fn down_walks_every_choice_and_wraps() {
     let panel = a_panel();
     assert_eq!(
-        pressing(&[AMenuKey::Next, AMenuKey::Next, AMenuKey::Next], &panel),
+        pressing(&[AMenuKey::Next; 5], &panel),
         vec![
+            WhatTheKeyDid::TheKeyboardIsOn(WhatARowDoes::Left),
             WhatTheKeyDid::TheKeyboardIsOn(WhatARowDoes::Maximise),
+            WhatTheKeyDid::TheKeyboardIsOn(WhatARowDoes::Right),
             WhatTheKeyDid::TheKeyboardIsOn(WhatARowDoes::FullScreen),
-            WhatTheKeyDid::TheKeyboardIsOn(WhatARowDoes::Maximise),
+            WhatTheKeyDid::TheKeyboardIsOn(WhatARowDoes::Left),
         ]
     );
 }
@@ -67,7 +69,7 @@ fn home_and_end_reach_the_first_and_the_last() {
         pressing(&[AMenuKey::Last, AMenuKey::First], &a_panel()),
         vec![
             WhatTheKeyDid::TheKeyboardIsOn(WhatARowDoes::FullScreen),
-            WhatTheKeyDid::TheKeyboardIsOn(WhatARowDoes::Maximise),
+            WhatTheKeyDid::TheKeyboardIsOn(WhatARowDoes::Left),
         ]
     );
 }
@@ -78,7 +80,7 @@ fn enter_does_the_choice_in_hand_and_returns_focus() {
     assert_eq!(
         pressing(&[AMenuKey::Next, AMenuKey::Run], &a_panel()).last(),
         Some(&WhatTheKeyDid::ItRuns {
-            does: WhatARowDoes::Maximise,
+            does: WhatARowDoes::Left,
             focus_goes_back_to: OnTheEdge::WindowActions,
         })
     );

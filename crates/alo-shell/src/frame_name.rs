@@ -160,9 +160,16 @@ impl crate::Server {
             let keyboard = self
                 .where_the_keyboard_is_on_this_windows_edge(&surface)
                 .the_menu();
+            let preview = self
+                .the_preview_of(
+                    &surface,
+                    keyboard.and_then(crate::window_menu_keys::TheKeyboardInTheMenu::on),
+                    self.the_scale_an_edge_is_measured_at(),
+                )
+                .map(|it| it.says);
             Some((
                 frame,
-                crate::window_menu_reading::what_a_reader_meets(&menu, keyboard),
+                crate::window_menu_reading::what_a_reader_meets(&menu, keyboard, preview),
             ))
         });
         let tree = crate::ReadAloudTree::of(strings, showing, turned_on)

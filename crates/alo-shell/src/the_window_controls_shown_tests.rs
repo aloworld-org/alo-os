@@ -118,9 +118,11 @@ fn a_refused_panel_choice_is_counted_and_changes_nothing() {
     for does in [
         crate::window_menu::WhatARowDoes::Maximise,
         crate::window_menu::WhatARowDoes::FullScreen,
+        crate::window_menu::WhatARowDoes::Left,
+        crate::window_menu::WhatARowDoes::Right,
     ] {
         server.carry_out_the_row(&window, does);
     }
-    assert_eq!(server.how_many_window_panel_choices_were_refused(), 2);
+    assert_eq!(server.how_many_window_panel_choices_were_refused(), 4);
     assert!(!server.a_window_is_filling_the_screen());
 }
