@@ -11,9 +11,11 @@
 //! 3. **The person is an administrator** (`wheel`), or polkit would ask
 //!    somebody else's password, which nobody here wants asked.
 //! 4. **The person has a desktop signed in**, which is where the sheet is.
-//! 5. **polkit says the person gave their password** — asked about *their
-//!    session*, so the sheet appears on the screen in front of them and not
-//!    for the service, which is in no session at all.
+//! 5. **polkit says the person gave their password** — asked about the
+//!    process that leads *their session*, so the sheet appears on the screen
+//!    in front of them and not for the service, which is in no session at
+//!    all. Never about the session itself, which polkit 126 aborts on
+//!    (`crate::the_process_polkit_is_asked_about`).
 //! 6. Only then the command runs, as root, bounded as every command alo runs
 //!    is bounded.
 //!
@@ -59,14 +61,19 @@ pub trait TheMachine {
     fn groups(&self) -> String;
     /// The session `person` has signed in at on a screen, if they have one.
     fn the_session_on_their_screen(&self, person: u32) -> Option<String>;
-    /// Whether polkit says the person in `session` gave their password for
+    /// Whether polkit says `person`, in `session`, gave their password for
     /// `command`.
     ///
     /// # Errors
     /// What polkit's answer means ([`crate::what_polkit_said`]), or
     /// [`NotAsAdministrator::PolkitDidNotAnswer`] /
     /// [`NotAsAdministrator::NoAnswerInTime`].
-    fn the_person_said_yes(&self, session: &str, command: &str) -> Result<(), NotAsAdministrator>;
+    fn the_person_said_yes(
+        &self,
+        person: u32,
+        session: &str,
+        command: &str,
+    ) -> Result<(), NotAsAdministrator>;
     /// Run `command` as this process, bounded.
     ///
     /// # Errors
@@ -101,7 +108,7 @@ fn decided(
     let session = machine
         .the_session_on_their_screen(caller.uid)
         .ok_or(NotAsAdministrator::NothingCanAsk)?;
-    machine.the_person_said_yes(&session, command.text())?;
+    machine.the_person_said_yes(caller.uid, &session, command.text())?;
     machine
         .run(&command)
         .map_err(|_| NotAsAdministrator::DidNotStart)

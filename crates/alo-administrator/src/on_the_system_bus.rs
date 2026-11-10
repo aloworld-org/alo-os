@@ -13,6 +13,7 @@ use zbus::blocking::Connection;
 use zbus::zvariant::{OwnedObjectPath, Value};
 
 use crate::answering_as_administrator::NotAsAdministrator;
+use crate::the_process_polkit_is_asked_about::{AProcess, its_start_time};
 use crate::what_polkit_said::{THE_ACTION, THE_COMMAND_DETAIL, what_it_means};
 
 /// polkit's name on the bus.
@@ -79,7 +80,11 @@ pub fn the_session_on_their_screen(bus: &Connection, person: u32) -> Option<Stri
     }
 }
 
-/// The subject polkit is asked about: one logind session.
+/// The subject an agent is registered for: one logind session.
+///
+/// **Never the subject of a question.** polkit 126 aborts on a
+/// `CheckAuthorization` about a session, so a question is asked about the
+/// session's leader instead ([`its_leader`]).
 fn a_session(session: &str) -> (&'static str, HashMap<&'static str, Value<'_>>) {
     (
         "unix-session",
@@ -87,20 +92,79 @@ fn a_session(session: &str) -> (&'static str, HashMap<&'static str, Value<'_>>) 
     )
 }
 
-/// **Whether the person in `session` gave their password for `command`**:
-/// polkit's `CheckAuthorization` for [`THE_ACTION`], the person allowed to be
-/// asked, and the question taken back if `bus`'s bound passes first.
+/// **The process logind started `session` with**, for `person`: its number,
+/// its start time and its login. [`None`] when logind does not know the
+/// session, the session is somebody else's, or its leader has gone — in each
+/// of which no password sheet can be put in front of the person.
+#[must_use]
+pub fn its_leader(bus: &Connection, session: &str, person: u32) -> Option<AProcess> {
+    let path: OwnedObjectPath = bus
+        .call_method(
+            Some(LOGIND),
+            "/org/freedesktop/login1",
+            Some("org.freedesktop.login1.Manager"),
+            "GetSession",
+            &(session,),
+        )
+        .ok()?
+        .body()
+        .deserialize()
+        .ok()?;
+    let property = |name: &str| -> Option<zbus::zvariant::OwnedValue> {
+        bus.call_method(
+            Some(LOGIND),
+            path.as_str(),
+            Some("org.freedesktop.DBus.Properties"),
+            "Get",
+            &("org.freedesktop.login1.Session", name),
+        )
+        .ok()?
+        .body()
+        .deserialize()
+        .ok()
+    };
+    // `User` is `(uo)`: the login's number and its path.
+    let user = property("User")?;
+    let Value::Structure(user) = &*user else {
+        return None;
+    };
+    match user.fields().first()? {
+        Value::U32(uid) if *uid == person => {}
+        _ => return None,
+    }
+    let leader = property("Leader")?;
+    let Value::U32(pid) = &*leader else {
+        return None;
+    };
+    let stat = std::fs::read_to_string(format!("/proc/{pid}/stat")).ok()?;
+    Some(AProcess {
+        pid: *pid,
+        start_time: its_start_time(&stat)?,
+        uid: person,
+    })
+}
+
+/// **Whether `person`, in `session`, gave their password for `command`**:
+/// polkit's `CheckAuthorization` for [`THE_ACTION`] about the session's leader
+/// ([`its_leader`]), the person allowed to be asked, and the question taken
+/// back if `bus`'s bound passes first.
 ///
 /// # Errors
-/// What polkit's answer means; [`NotAsAdministrator::NoAnswerInTime`] when the
-/// bound passed, and [`NotAsAdministrator::PolkitDidNotAnswer`] when polkit
-/// could not be asked.
+/// What polkit's answer means; [`NotAsAdministrator::NothingCanAsk`] when the
+/// session has no leader of the person's to ask about;
+/// [`NotAsAdministrator::NoAnswerInTime`] when the bound passed, and
+/// [`NotAsAdministrator::PolkitDidNotAnswer`] when polkit could not be asked.
 pub fn the_person_said_yes(
     bus: &Connection,
     session: &str,
+    person: u32,
     command: &str,
     within: Duration,
 ) -> Result<(), NotAsAdministrator> {
+    let leader = its_leader(bus, session, person).ok_or(NotAsAdministrator::NothingCanAsk)?;
+    let subject = leader
+        .as_polkits_subject()
+        .ok_or(NotAsAdministrator::NothingCanAsk)?;
     let cancellation = format!("alo-{}-{}", std::process::id(), session);
     let details = HashMap::from([(THE_COMMAND_DETAIL, command)]);
     let began = Instant::now();
@@ -110,7 +174,7 @@ pub fn the_person_said_yes(
         Some(THE_AUTHORITY),
         "CheckAuthorization",
         &(
-            a_session(session),
+            subject,
             THE_ACTION,
             details,
             ALLOW_USER_INTERACTION,

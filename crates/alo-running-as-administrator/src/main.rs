@@ -39,7 +39,12 @@ impl TheMachine for ThisMachine {
         on_the_system_bus::the_session_on_their_screen(self.bus.as_ref()?, person)
     }
 
-    fn the_person_said_yes(&self, session: &str, command: &str) -> Result<(), NotAsAdministrator> {
+    fn the_person_said_yes(
+        &self,
+        person: u32,
+        session: &str,
+        command: &str,
+    ) -> Result<(), NotAsAdministrator> {
         let bus = self
             .bus
             .as_ref()
@@ -47,6 +52,7 @@ impl TheMachine for ThisMachine {
         on_the_system_bus::the_person_said_yes(
             bus,
             session,
+            person,
             command,
             THE_LONGEST_THE_PERSON_IS_WAITED_FOR,
         )

@@ -29,9 +29,11 @@ has one registered.
 - `alo_administrator::what_polkit_said` reads *not authorised and a challenge*
   as **nothing could ask**, and says that to the person, never *the password
   was wrong*.
-- The runner asks polkit about **the person's own session**, which logind
-  names as their `Display` session, and not about the agent service's process,
-  so the sheet that is registered there is the one asked.
+- The runner asks polkit about **the leader of the person's own session**,
+  which logind names as their `Display` session, and not about the agent
+  service's process, so the sheet that is registered there is the one asked.
+  It asked about the session itself until 2026-11-09, which polkit 126 aborts
+  on (`polkit-aborts-on-a-session-subject.md`).
 
 **Not yet seen on a booted machine.** This was read from source; the next boot
 walk is where it is measured.
