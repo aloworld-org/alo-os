@@ -264,3 +264,61 @@ fn direct_pointer_requires_an_enabled_pointer() {
         Err(InputError::PointerUnavailable)
     ));
 }
+
+/// **A jump far past the corner leaves the pointer free to move again.**
+///
+/// On 2026-11-10 a walk on a booted image moved the pointer by -8000, -8000 and
+/// saw it stay drawn at the top-left corner through every later move, which
+/// read as the shell's position being poisoned by one huge delta. It was not:
+/// qemu's PS/2 mouse carries what it cannot send yet and pays it out 508 units
+/// per input sync, so the moves that followed reached the guest as more
+/// movement into the corner (`docs/quirks/qemu-ps2-carries-a-huge-move-forward.md`).
+/// This holds the half the shell owns: a delta of any size is clamped to the
+/// output and the next ordinary one moves from the edge.
+#[test]
+fn a_huge_relative_jump_is_clamped_and_the_next_move_still_moves() -> Result<(), InputError> {
+    let (f, mut app) = setup();
+    for (dx, dy, time) in [(-8000.0, -8000.0, 1), (8.0, 6.0, 2), (2.5, 1.0, 3)] {
+        route(&f, DirectPointerEvent::Relative { dx, dy, time })?;
+    }
+    app.sync();
+    // The jump puts the pointer on the corner, which is on the surface, and the
+    // next two moves reach the client as motion from there.
+    assert_eq!(
+        app.events.pointer.enters.last().map(|(_, x, y)| (*x, *y)),
+        Some((0.0, 0.0))
+    );
+    assert_eq!(app.events.pointer.motion, [(8.0, 6.0), (10.5, 7.0)]);
+    // And past the far corner: the output is 32 wide, so a jump of +8000 stops at
+    // 31, off the client's 16 by 16 surface at the origin, so it leaves; coming
+    // back by 20 lands at 11, which enters it again there. Measured, not
+    // assumed: an earlier version of this test asserted a motion here and failed.
+    route(
+        &f,
+        DirectPointerEvent::Relative {
+            dx: 8000.0,
+            dy: 8000.0,
+            time: 4,
+        },
+    )?;
+    route(
+        &f,
+        DirectPointerEvent::Relative {
+            dx: -20.0,
+            dy: -20.0,
+            time: 5,
+        },
+    )?;
+    app.sync();
+    assert_eq!(app.events.pointer.leaves, 1);
+    assert_eq!(
+        app.events
+            .pointer
+            .enters
+            .iter()
+            .map(|(_, x, y)| (*x, *y))
+            .collect::<Vec<_>>(),
+        [(0.0, 0.0), (11.0, 11.0)]
+    );
+    Ok(())
+}
