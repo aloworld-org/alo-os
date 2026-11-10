@@ -81,6 +81,49 @@ fn the_band_says_the_title_then_the_name_and_never_one_word_twice() {
     );
 }
 
+/// **A title that ends in its application's name says it once**: Dolphin's
+/// *Home — Dolphin* reads *Home*, then *Dolphin* quietly — the boot walk of
+/// 2026-11-09 showed *Home — Dolphin · Dolphin*.
+#[test]
+fn a_title_ending_in_its_applications_name_does_not_say_it_twice() {
+    assert_eq!(
+        what_the_band_says(Some("Home — Dolphin"), Some("Dolphin")),
+        (Some("Home"), Some("Dolphin"))
+    );
+    for title in [
+        "Draft – Text Editor",
+        "Draft - Text Editor",
+        "Draft | Text Editor",
+        "Draft · Text Editor",
+    ] {
+        assert_eq!(
+            what_the_band_says(Some(title), Some("Text Editor")),
+            (Some("Draft"), Some("Text Editor")),
+            "{title}"
+        );
+    }
+    assert_eq!(
+        what_the_band_says(Some(" — Dolphin"), Some("Dolphin")),
+        (None, Some("Dolphin")),
+        "nothing left of the title is no title"
+    );
+    // **A title that only mentions the application keeps every word**, and
+    // so does one whose ending is a different application.
+    assert_eq!(
+        what_the_band_says(Some("Dolphin tips"), Some("Dolphin")),
+        (Some("Dolphin tips"), Some("Dolphin"))
+    );
+    assert_eq!(
+        what_the_band_says(Some("Home — Mozilla Firefox"), Some("Firefox")),
+        (Some("Home — Mozilla Firefox"), Some("Firefox"))
+    );
+    assert_eq!(
+        what_the_band_says(Some("Home—Dolphin"), Some("Dolphin")),
+        (Some("Home—Dolphin"), Some("Dolphin")),
+        "no separator, no ending taken"
+    );
+}
+
 /// **Both are written on the band**, at rest as much as revealed.
 #[test]
 fn the_title_and_the_name_are_written_whether_or_not_the_controls_are_shown() {

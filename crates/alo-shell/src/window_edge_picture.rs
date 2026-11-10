@@ -323,8 +323,49 @@ pub(crate) fn what_the_band_says<'a>(
     let title = title.filter(|it| !it.trim().is_empty());
     let application = application.filter(|it| !it.trim().is_empty());
     match (title, application) {
-        (Some(title), Some(name)) if title.trim() == name.trim() => (None, Some(name)),
+        (Some(title), Some(name)) => match without_its_applications_name(title, name) {
+            Some(shorter) => (Some(shorter), Some(name)),
+            None => (None, Some(name)),
+        },
         (title, application) => (title, application),
+    }
+}
+
+/// The separators an application puts between its window's title and its own
+/// name: KDE's em dash (*Home — Dolphin*), an en dash, a hyphen, a bar, a dot.
+const BEFORE_AN_APPLICATIONS_NAME: [&str; 5] = [" — ", " – ", " - ", " | ", " · "];
+
+/// A title with its application's name taken off its end, where the
+/// application put it there — or [`None`] where nothing is left, because the
+/// title *was* the name.
+///
+/// **The quiet name stays and the title's copy goes**, so a Dolphin window
+/// reads *Home · Dolphin*, which is the design's own shape (*The next chapter ·
+/// Notes*), rather than *Home — Dolphin · Dolphin*, which the boot walk of
+/// 2026-11-09 showed. Not the other way round, because the quiet name is the
+/// one place every band says whose window it is, in the same words the Dock
+/// uses; a title that ends in the name is one application's habit.
+///
+/// Only an exact name after one of [`BEFORE_AN_APPLICATIONS_NAME`]: a title
+/// that merely mentions the application keeps every word.
+fn without_its_applications_name<'a>(title: &'a str, name: &str) -> Option<&'a str> {
+    let (title, name) = (title.trim(), name.trim());
+    if title == name {
+        return None;
+    }
+    let shorter = BEFORE_AN_APPLICATIONS_NAME.iter().find_map(|between| {
+        title
+            .strip_suffix(name)
+            .and_then(|before| {
+                before
+                    .strip_suffix(between)
+                    .or_else(|| (before.trim() == between.trim()).then_some(""))
+            })
+    });
+    match shorter.map(str::trim) {
+        Some("") => None,
+        Some(shorter) => Some(shorter),
+        None => Some(title),
     }
 }
 
