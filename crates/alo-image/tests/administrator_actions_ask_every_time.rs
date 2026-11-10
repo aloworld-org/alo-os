@@ -173,3 +173,28 @@ fn the_agent_service_still_cannot_gain_a_privilege() {
     assert!(service.contains("NoNewPrivileges=yes"));
     assert!(service.contains("CapabilityBoundingSet=\n"));
 }
+
+/// **polkit's helper answers as the person**, or polkit throws a right
+/// password away as *No session for cookie*: the helper tells polkit its real
+/// number, and polkit looks for the question only among that number's agents
+/// (`docs/quirks/polkit-takes-the-helpers-answer-only-from-the-agents-owner.md`).
+/// So the checker makes its real number the caller's before it becomes the
+/// helper, and its unit holds the one capability that takes.
+#[test]
+fn polkits_helper_answers_as_the_person() {
+    let checker = read("image/usr/lib/systemd/system/alo-checking-a-password@.service");
+    for line in ["CapabilityBoundingSet=", "AmbientCapabilities="] {
+        assert!(
+            checker
+                .lines()
+                .any(|it| it.starts_with(line) && it.contains("CAP_SETUID")),
+            "the checker's {line} does not hold CAP_SETUID, so the helper answers as root"
+        );
+    }
+    assert!(checker.contains("NoNewPrivileges=yes"));
+    let program = read("crates/alo-administrator/src/bin/alo-checking-a-password.rs");
+    assert!(
+        program.contains("set_thread_res_uid(") && program.contains("Uid::from_raw(caller)"),
+        "the checker no longer gives the helper the caller's real number"
+    );
+}

@@ -218,11 +218,23 @@ The helper's conversation and polkit's three answers were read from polkit
 
 **Not checked by anything yet, and not walked on a booted machine:**
 
-- polkit taking the desktop's registration;
 - the sheet appearing over a real desktop;
 - the helper accepting the right password through `alo-checking-a-password`
-  under the base's SELinux policy and PAM stack;
-- the keeper writing `/etc/shadow` under SELinux;
-- polkit asking about the person's session from the runner.
+  under the base's SELinux policy;
+- the keeper writing `/etc/shadow` under SELinux.
 
 Each is a step on the next boot walk.
+
+**What the 2026-11-09 boot walk found, and what was fixed.** polkit took the
+desktop's registration (*the password sheet is polkit's agent for session 3*).
+Asking polkit about the person's **session** then killed polkitd 126, whose
+rules engine aborts on any subject but a process or a bus name; the runner now
+asks about the session's leader
+(`docs/quirks/polkit-aborts-on-a-session-subject.md`). Behind that was a
+second fault no walk had reached yet: polkit refused a right password as *No
+session for cookie*, because the helper ran with a real number of 0
+(`docs/quirks/polkit-takes-the-helpers-answer-only-from-the-agents-owner.md`).
+**Measured once, by hand, the same day**, in `localhost/alo-os:dev` run as a
+container with polkitd 126, a session agent and the runner's own code: a right
+password was accepted, a wrong one was not, a session that is not the person's
+or that logind does not know asks nobody, and polkitd stayed up throughout.
