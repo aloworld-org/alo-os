@@ -238,5 +238,8 @@ fn choosing_full_screen_by_key_leaves_the_band() {
         WhatTheEdgeKeyDid::ARowRuns(WhatARowDoes::FullScreen)
     );
     assert_eq!(keyboard, TheKeyboardOnTheEdge::Nowhere);
-    assert_eq!(keyboard.whether_the_keyboard_holds_it(), TheKeyboard::IsElsewhere);
+    assert_eq!(
+        keyboard.whether_the_keyboard_holds_it(),
+        TheKeyboard::IsElsewhere
+    );
 }

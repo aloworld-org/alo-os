@@ -242,7 +242,9 @@ fn a_band_out_over_full_screen_has_its_own_ground_over_the_window() {
     assert_eq!(drawn.over().len(), 1 + 3, "the ground, then three controls");
     let ground = drawn.over().first().expect("the ground");
     assert!(
-        ground.area.contains(Point::from((edge.strip.loc.x + 1, edge.strip.loc.y + 1)))
+        ground
+            .area
+            .contains(Point::from((edge.strip.loc.x + 1, edge.strip.loc.y + 1)))
             && ground.area.contains(Point::from((
                 edge.strip.loc.x + edge.strip.size.w - 2,
                 edge.strip.loc.y + edge.strip.size.h - 2,
@@ -268,6 +270,10 @@ fn a_band_out_over_full_screen_has_its_own_ground_over_the_window() {
         100,
     )
     .expect("a band on the display");
-    assert_eq!(at_rest.over().len(), 3, "at rest the ground is under the window");
+    assert_eq!(
+        at_rest.over().len(),
+        3,
+        "at rest the ground is under the window"
+    );
     assert!(!at_rest.behind().is_empty());
 }
