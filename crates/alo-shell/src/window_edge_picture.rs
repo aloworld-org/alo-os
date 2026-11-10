@@ -354,13 +354,11 @@ fn without_its_applications_name<'a>(title: &'a str, name: &str) -> Option<&'a s
         return None;
     }
     let shorter = BEFORE_AN_APPLICATIONS_NAME.iter().find_map(|between| {
-        title
-            .strip_suffix(name)
-            .and_then(|before| {
-                before
-                    .strip_suffix(between)
-                    .or_else(|| (before.trim() == between.trim()).then_some(""))
-            })
+        title.strip_suffix(name).and_then(|before| {
+            before
+                .strip_suffix(between)
+                .or_else(|| (before.trim() == between.trim()).then_some(""))
+        })
     });
     match shorter.map(str::trim) {
         Some("") => None,
