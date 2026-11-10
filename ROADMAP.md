@@ -1973,6 +1973,7 @@ carries its own tasks, their state and what each depends on.
 |---|---|---|
 | [`applications-and-what-they-expect-plan.md`](docs/autonomy/applications-and-what-they-expect-plan.md) | the Mac | what a real application expects of a desktop |
 | [`applications-people-already-use.md`](docs/autonomy/applications-people-already-use.md) | the development PC | a terminal, a browser, and the portals they need |
+| [`demo-two-alo-inside-applications-plan.md`](docs/autonomy/demo-two-alo-inside-applications-plan.md) | this PC (`alo-os-shell` checkout) | Demo 2: alo working inside a granted application, and publishing from the shipped code editor — approved by the owner on 2026-11-10 |
 | [`kernel-enforcement-plan.md`](docs/autonomy/kernel-enforcement-plan.md) | the development PC | what the kernel refuses, so a grant means something |
 | [`software-and-the-web-plan.md`](docs/autonomy/software-and-the-web-plan.md) | the third PC | installing software, and opening the web |
 | [`the-executable-plan.md`](docs/autonomy/the-executable-plan.md) | every machine, per task | the agent overlay, approvals, and the record |
