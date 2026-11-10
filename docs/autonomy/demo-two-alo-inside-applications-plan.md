@@ -179,9 +179,36 @@ when the turn ends.
 
 ### 9. What a driven application sends is on the indicator
 
-**Status:** not started. **Size:** L. **Waits on:** nothing further — the owner
-answered how it is shown. **Nothing that publishes is walked before this
-lands.**
+**Status:** blocked — on two questions to the owner, and on stage 4. Read
+against `main` on 2026-11-10; no code written. **Size:** L. **Nothing that
+publishes is walked before this lands.**
+
+*What was found.* Three things this stage needs do not exist, and none is in
+another stage. (1) **Nothing starts a window of alo's own.** The door's `open`
+starts an application if it is not running and shows it either way, so it is
+always the person's window; and VSCodium, Firefox and LibreOffice, by their own
+documentation, hand a second start to the copy already running unless started with a profile of their own,
+which a person's agent may not pass as an argument (law 2), so each needs a
+reviewed recipe. (2) **ADR 0148's count is of the whole application** — every
+unit with its identifier, the person's own window included. Used for a turn
+as it stands, it would count the person's own use, which ADR 0143 does not
+offer at any setting. It needs a count of the one unit alo started; which
+Flatpak scope belongs to that start is unmeasured, and stage 1's list does
+not yet ask it. (3) **Nothing in a
+turn drives an application yet** — the two accessibility verbs are stage 4 —
+so a count built now would have no caller.
+
+*The two questions, which change what a person can do.* **A.** At the default,
+alo works only in a window of its own. An application that cannot open a
+second, separate window — every one started over the session bus, most GNOME
+applications among them — could then not be used by alo at all until the person
+turns the setting up, and alo would say so and point to it. Is that the
+intended reading of *any installed application* at the default? **B.** alo's own
+window is a separate profile, so the person is signed in to nothing there:
+they would sign in to GitHub inside alo's editor window (stage 10), and features.md
+says alo posts *in the person's own browser*. Is signing in again in alo's
+window what was meant, or do publishing and posting run at the turned-up
+setting?
 
 **For the person:** when alo makes the editor or the browser send something, the
 indicator says so while it happens and the record says so afterwards — law 1,
