@@ -1103,7 +1103,7 @@ pub const A_COMMAND_THAT_IS_NOT_ONE_LINE: Word = Word::saying(
 );
 
 /// Every string this crate can say, in the order a translator meets them.
-pub const EVERY_WORD: [Word; 89] = [
+pub const EVERY_WORD: [Word; 96] = [
     ANONYMOUS,
     NO_APPLICATION_NAMED,
     NOTHING_NAMED,
