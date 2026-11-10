@@ -231,7 +231,7 @@ pub(crate) fn the_panel_drawn(
             let shaped = in_a_weight(
                 fonts,
                 label,
-                Weight(500),
+                the_labels_weight(row.does),
                 metrics(12.0, 16.0, fraction),
                 px(A_PICTURE_IS),
                 ground,
@@ -249,7 +249,7 @@ pub(crate) fn the_panel_drawn(
             let shaped = in_a_weight(
                 fonts,
                 label,
-                Weight(400),
+                the_labels_weight(row.does),
                 metrics(13.0, 18.0, fraction),
                 px(row.row.size.w - A_ROWS_LABEL.0),
                 ground,
@@ -264,6 +264,25 @@ pub(crate) fn the_panel_drawn(
         }
     }
     (rasters, words)
+}
+
+/// The weight a choice's label is drawn at: **Medium** under a placement
+/// picture and **Regular** on a row, as `11:56` and `11:68` give them.
+///
+/// **Each is a weight a bundled Manrope file declares exactly**, because
+/// cosmic-text keeps the family asked for only among faces of exactly the
+/// weight asked for (`docs/quirks.md`). Until `fonts/Manrope-Medium.ttf`
+/// was bundled, Medium had no Manrope face, and the only face at 500 was Geist
+/// Mono Medium — so a booted machine drew *Left*, *Maximise* and *Right* in
+/// the terminal's monospace beside *Full screen* in Manrope (2026-11-09).
+/// `a_choices_label_is_drawn_in_manrope` shapes each label through the
+/// shell's own fonts and reads back the face.
+pub(crate) const fn the_labels_weight(does: WhatARowDoes) -> Weight {
+    if does.is_a_picture() {
+        Weight::MEDIUM
+    } else {
+        Weight::NORMAL
+    }
 }
 
 /// Text in alo's own face at another weight than its labels'.

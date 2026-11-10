@@ -115,6 +115,11 @@ impl WindowControlLabels {
             // window's messages drew at SemiBold, and alo's bold — the
             // design's SemiBold — could not be told from them.
             include_bytes!("../fonts/Manrope-Regular.ttf").to_vec(),
+            // **And Medium, which the window panel's picture labels are.**
+            // Without it the only face at 500 was Geist Mono Medium, and
+            // *Left*, *Maximise* and *Right* were drawn in the terminal's
+            // monospace (`crate::window_menu_paint::the_labels_weight`).
+            include_bytes!("../fonts/Manrope-Medium.ttf").to_vec(),
             include_bytes!("../fonts/GeistMono-Medium.ttf").to_vec(),
             // **And the weight a bold cell asks for.** A program setting bold
             // makes the terminal ask for Geist Mono at 700, and a family is
