@@ -83,6 +83,10 @@ pub const A_ROW_IS_TALL: i32 = 40;
 /// panel.
 pub const BELOW_THE_LAST: i32 = 20;
 
+/// The choice the keyboard lands on when a key opens the panel: the first, as
+/// the pictures and rows are laid out in [`the_menu_of`].
+pub const THE_FIRST_CHOICE: WhatARowDoes = WhatARowDoes::Left;
+
 /// One thing the panel can do to the window.
 ///
 /// In the order a keyboard walks them and a reader meets them — the pictures
@@ -237,7 +241,7 @@ pub fn the_menu_of(
         ),
     };
     let rows = vec![
-        a_picture(0, WhatARowDoes::Left),
+        a_picture(0, THE_FIRST_CHOICE),
         a_picture(1, maximise),
         a_picture(2, WhatARowDoes::Right),
         MenuRow {

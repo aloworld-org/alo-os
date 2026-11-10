@@ -112,3 +112,22 @@ fn an_open_panel_keeps_the_band_revealed() {
     assert_eq!(the_edge_stays_revealed(Some(&opened())), AMenu::IsOpen);
     assert_eq!(the_edge_stays_revealed(None), AMenu::IsNot);
 }
+
+/// **A panel a key opened has the keyboard on its first choice**, so the
+/// keyboard is never somewhere a person cannot see, and Down moves on from it.
+#[test]
+fn a_panel_a_key_opened_starts_on_the_first_choice() {
+    let menu = a_panel();
+    let mut keyboard = TheKeyboardInTheMenu::opened_by_the_keyboard(OnTheEdge::WindowActions);
+    assert_eq!(keyboard.on(), Some(crate::window_menu::THE_FIRST_CHOICE));
+    assert_eq!(
+        menu.what_can_be_used().first().map(|row| row.does),
+        Some(crate::window_menu::THE_FIRST_CHOICE),
+        "the first choice is the one laid out first"
+    );
+    assert_eq!(
+        keyboard.told(AMenuKey::Next, &menu),
+        WhatTheKeyDid::TheKeyboardIsOn(WhatARowDoes::Maximise)
+    );
+    assert_eq!(keyboard.trigger(), OnTheEdge::WindowActions);
+}

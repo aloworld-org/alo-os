@@ -288,6 +288,12 @@ is the specimen's width, not a window's.
 - **A double-click is two presses within 500 ms and 4 units**, the longest of
   the common desktop defaults; the design names none. It is never the only
   road: the panel's Maximise and `Super+Up` do the same.
+- **A panel opened by a key starts on its first choice, Left**; one opened by
+  the pointer starts on none. *Safe initial focus* and *keyboard focus never
+  invisible* ask for the keyboard to be somewhere visible; Left previews a half
+  and moves nothing. Until 2026-11-09 a key opened it on none too, and a boot
+  walk that pressed Right once after `Alt+F3` saw Left and reported the arrows
+  as doing nothing.
 - **Tab is not taken inside the panel**: `crate::window_menu_keys` had already
   declined to decide the whole focus order there. The arrows, Home, End, Enter,
   Space and Escape walk it.
