@@ -191,10 +191,10 @@ pub const LEVEL_NOT_A_TERMINAL_ANSWER: Word = Word::saying(
 /// `in-applications` says a word that is neither of its two.
 pub const LEVEL_NOT_AN_APPLICATIONS_ANSWER: Word = Word::saying(
     "remembering.level.not-an-applications-answer",
-    "{path} says {said} for applications, which is neither in-alos-copy nor in-their-window, so      this machine does not know how you want code run, and alo works only in its own copy of an      application",
+    "{path} says {said} for applications, which is neither in-alos-copy nor in-their-window, so this machine does not know how you want code run, and alo works only in its own copy of an application",
 )
 .noting(
-    "{path} and {said} are both taken from the file exactly as written and are never translated,      and neither are the two words in-alos-copy and in-their-window: they are what the file      holds. Said of the line that decides whether alo may work in the person's own application      window. Nothing is guessed at; until it is fixed, alo works only in a separate copy of an      application of its own.",
+    "{path} and {said} are both taken from the file exactly as written and are never translated, and neither are the two words in-alos-copy and in-their-window: they are what the file holds. Said of the line that decides whether alo may work in the person's own application window. Nothing is guessed at; until it is fixed, alo works only in a separate copy of an application of its own.",
 );
 
 /// The file could not be written.

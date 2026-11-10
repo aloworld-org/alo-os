@@ -854,16 +854,16 @@ pub const WORKS_IN_ITS_OWN_COPY: Word = Word::saying(
     "alo works in its own copy of an application",
 )
 .noting(
-    "The name of a choice in Settings. alo is the assistant built into alo OS. When alo works in      an application for the person — a web browser or a code editor — it starts a separate copy      of that application for itself, with its own profile, so the person's own windows are left      alone and only what alo's copy sends over the network is counted.",
+    "The name of a choice in Settings. alo is the assistant built into alo OS. When alo works in an application for the person — a web browser or a code editor — it starts a separate copy of that application for itself, with its own profile, so the person's own windows are left alone and only what alo's copy sends over the network is counted.",
 );
 
 /// The line under [`WORKS_IN_ITS_OWN_COPY`].
 pub const WORKS_IN_ITS_OWN_COPY_IS: Word = Word::saying(
     "capability.in-applications.in-its-own-copy-is",
-    "What alo's copy sends is counted and shown while it works. An application that cannot open      a separate copy is refused",
+    "What alo's copy sends is counted and shown while it works. An application that cannot open a separate copy is refused",
 )
 .noting(
-    "Under the choice \"alo works in its own copy of an application\" in Settings. \"Refused\"      means alo will say it cannot work in that application at this setting.",
+    "Under the choice \"alo works in its own copy of an application\" in Settings. \"Refused\" means alo will say it cannot work in that application at this setting.",
 );
 
 /// Where alo works in an application, turned up: the row's name in Settings
@@ -874,26 +874,26 @@ pub const MAY_WORK_IN_YOUR_WINDOW: Word = Word::saying(
     "alo may work in your own window",
 )
 .noting(
-    "The name of a choice in Settings. alo is the assistant built into alo OS. Chosen, alo may      work in the window of an application the person already has open, rather than in a separate      copy of its own. The sentence that tells a person alo cannot work in an application quotes      this name exactly, so translate both the same way.",
+    "The name of a choice in Settings. alo is the assistant built into alo OS. Chosen, alo may work in the window of an application the person already has open, rather than in a separate copy of its own. The sentence that tells a person alo cannot work in an application quotes this name exactly, so translate both the same way.",
 );
 
 /// The line under [`MAY_WORK_IN_YOUR_WINDOW`].
 pub const MAY_WORK_IN_YOUR_WINDOW_IS: Word = Word::saying(
     "capability.in-applications.in-your-window-is",
-    "Any application can be used. While alo works, the indicator says the application may be      sending",
+    "Any application can be used. While alo works, the indicator says the application may be sending",
 )
 .noting(
-    "Under the choice \"alo may work in your own window\" in Settings. The indicator is the mark      at the edge of the screen that shows when something leaves this computer.",
+    "Under the choice \"alo may work in your own window\" in Settings. The indicator is the mark at the edge of the screen that shows when something leaves this computer.",
 );
 
 /// What letting alo work in the person's own window costs: **ADR 0143's own
 /// words**, from the table of settings, kept as they were written.
 pub const WHAT_WORKING_IN_YOUR_WINDOW_COSTS: Word = Word::saying(
     "capability.in-applications.what-your-window-costs",
-    "alo will show that the application is sending, but cannot count what it sends, and works      where your other tabs are",
+    "alo will show that the application is sending, but cannot count what it sends, and works where your other tabs are",
 )
 .noting(
-    "Shown beside the choice that lets alo work in the person's own application window, so the      person choosing it knows what it costs: alo's work happens beside their own open tabs and      documents, and the computer can say that something is being sent but not how much. A plain      statement, not a refusal, a scare or a recommendation. Keep it one sentence.",
+    "Shown beside the choice that lets alo work in the person's own application window, so the person choosing it knows what it costs: alo's work happens beside their own open tabs and documents, and the computer can say that something is being sent but not how much. A plain statement, not a refusal, a scare or a recommendation. Keep it one sentence.",
 );
 
 /// **Refusal A** (the owner, 2026-11-10): at the default, an application that
@@ -902,10 +902,10 @@ pub const WHAT_WORKING_IN_YOUR_WINDOW_COSTS: Word = Word::saying(
 /// page.
 pub const NO_COPY_OF_ITS_OWN: Word = Word::saying(
     "capability.in-applications.no-copy-of-its-own",
-    "alo cannot work in {application} safely at this setting, because it cannot open a separate      copy of its own for alo. To let alo work in your own window instead, choose “alo may work      in your own window” in Settings → Folders alo can use",
+    "alo cannot work in {application} safely at this setting, because it cannot open a separate copy of its own for alo. To let alo work in your own window instead, choose “alo may work in your own window” in Settings → Folders alo can use",
 )
 .noting(
-    "Told to the person when they asked alo to do something inside an application. {application}      is the application's name, such as Text Editor. alo works in a separate copy of an      application so that what it sends can be counted; this one cannot start such a copy, so alo      did nothing in it. The words in quotation marks are the name of a choice in Settings, and      \"Folders alo can use\" is the name of the Settings page it is on: use exactly the      translations those have there.",
+    "Told to the person when they asked alo to do something inside an application. {application} is the application's name, such as Text Editor. alo works in a separate copy of an application so that what it sends can be counted; this one cannot start such a copy, so alo did nothing in it. The words in quotation marks are the name of a choice in Settings, and \"Folders alo can use\" is the name of the Settings page it is on: use exactly the translations those have there.",
 );
 
 /// Printed in the terminal after alo did what was asked without waiting for
