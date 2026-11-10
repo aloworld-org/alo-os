@@ -205,8 +205,9 @@ fn the_desktop_is_a_template_and_the_old_unit_is_gone() {
 /// What ADR 0141 rests on, read off the file this component starts: pid 1
 /// becomes the person (`User=%i`), opens their session through a PAM stack
 /// with `pam_systemd` in it (`PAMName=`), on the terminal that gives it a seat
-/// (`TTYPath=`), as a person's session rather than a greeter's — and holds no
-/// capability, because becoming the person is pid 1's act, not the desktop's.
+/// (`TTYPath=`), as a person's session rather than a greeter's — and is handed
+/// no capability, because becoming the person is pid 1's act, not the
+/// desktop's. What it may not *limit* is the next test's.
 #[test]
 fn the_desktops_unit_opens_the_persons_session_and_holds_nothing() {
     let unit = the_desktops_unit();
@@ -232,16 +233,10 @@ fn the_desktops_unit_opens_the_persons_session_and_holds_nothing() {
         "the desktop's session is not a person's session"
     );
     assert_eq!(
-        every(&unit, "CapabilityBoundingSet"),
-        vec![""],
-        "the desktop holds a capability"
-    );
-    assert_eq!(
         every(&unit, "AmbientCapabilities"),
         vec![""],
         "the desktop is handed a capability"
     );
-    assert_eq!(every(&unit, "NoNewPrivileges"), vec!["yes"]);
 
     let pam = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../image/usr/lib/pam.d/alo-desktop");
     let stack = std::fs::read_to_string(&pam)
@@ -254,6 +249,49 @@ fn the_desktops_unit_opens_the_persons_session_and_holds_nothing() {
         "{} does not require pam_systemd, so the desktop's unit opens no session",
         pam.display()
     );
+}
+
+/// **The person's terminal is not locked down, and the agent still is.**
+///
+/// The terminal is drawn inside the desktop and the person's shell is started
+/// from it, so a limit on the desktop's unit is a limit on the shell. On
+/// 2026-11-09 a booted machine refused `sudo` in the person's own terminal —
+/// *the "no new privileges" flag is set* — because this unit said
+/// `NoNewPrivileges=yes`, and the empty `CapabilityBoundingSet=` beside it
+/// refused it too (*unable to change to root gid*), measured in the dev image
+/// the same day. CLAUDE.md, law 2: *the law binds the agent, never the person:
+/// alo OS ships a terminal.*
+///
+/// **The other half is what makes that safe.** The agent is not in the
+/// desktop: it runs in `alo-asking@` and asks `alo-agentd`, which runs every
+/// command alo runs. Both keep `NoNewPrivileges=yes`, so nothing alo runs can
+/// use `sudo` or any other setuid program, and what alo runs as administrator
+/// goes through the runner and the person's password (ADR 0150).
+#[test]
+fn the_persons_terminal_may_use_sudo_and_the_agent_may_not() {
+    let desktop = the_desktops_unit();
+    assert_eq!(
+        every(&desktop, "NoNewPrivileges"),
+        Vec::<String>::new(),
+        "the desktop's unit sets NoNewPrivileges=, so `sudo` in the person's own terminal \
+         is refused"
+    );
+    assert_eq!(
+        every(&desktop, "CapabilityBoundingSet"),
+        Vec::<String>::new(),
+        "the desktop's unit narrows the capability bounding set, so `sudo` in the person's \
+         own terminal cannot become root"
+    );
+    for agents in ["alo-agentd.service", "alo-asking@.service"] {
+        let at = the_images_units().join(agents);
+        let unit = std::fs::read_to_string(&at)
+            .unwrap_or_else(|why| panic!("{} could not be read: {why}", at.display()));
+        assert_eq!(
+            every(&unit, "NoNewPrivileges"),
+            vec!["yes"],
+            "{agents} no longer sets NoNewPrivileges=yes, so a command alo runs could use sudo"
+        );
+    }
 }
 
 /// **Nothing starts the desktop from the person's own manager**, and nothing
