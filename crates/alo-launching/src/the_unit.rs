@@ -58,7 +58,7 @@ pub fn the_unit_for(identifier: &str, distinct: u64) -> Option<String> {
 ///   1.10.0, 1.12.0, 1.14.0 and `main` on 2026-11-10). Until then this matched
 ///   the identifier unescaped, so an application with a `-` in its ID was never
 ///   found in its Flatpak scope. Flatpak does not escape a leading `.` and
-///   [`escaped`] does, which cannot matter: an application ID never begins with
+///   this crate's escaping does, which cannot matter: an application ID never begins with
 ///   one.
 ///
 /// **Exact, never a prefix of another application's name**: `org.gnome.Text`
