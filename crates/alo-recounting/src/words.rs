@@ -164,7 +164,7 @@ pub const GRANTS_NOT_READ_AGAIN: Word = Word::saying(
     "what you have granted could not be read again, so this machine went on with the list it already had",
 )
 .noting(
-    "Read at the head of one line of a record somebody is reading back. Somebody's side of the      machine said that what they had granted had changed, and the machine could not read its own      list of grants — so nothing was widened and nothing was forgotten either. The reason is shown      after it in the words the person was shown at the time. \"Granted\" is what a person does by      picking a folder for their agent to reach.",
+    "Read at the head of one line of a record somebody is reading back. Somebody's side of the machine said that what they had granted had changed, and the machine could not read its own list of grants — so nothing was widened and nothing was forgotten either. The reason is shown after it in the words the person was shown at the time. \"Granted\" is what a person does by picking a folder for their agent to reach.",
 );
 
 /// A pairing with another machine was kept on this one.
@@ -199,7 +199,7 @@ pub const NOT_BOUNDED: Word = Word::saying(
     "the agent asked for this and nothing was done, because this machine could not hold the agent inside what was granted",
 )
 .noting(
-    "Read at the head of one line of a record somebody is reading back — the agent being the      assistant built into alo OS and not a person. The machine refused to run the agent's turn      because it could not put the boundary around it that keeps the agent inside the folders and      files the person granted. Nothing was attempted and nothing was refused by any rule: it is      a fault in the machine, and the reason is shown after it in the words the person was shown      at the time.",
+    "Read at the head of one line of a record somebody is reading back — the agent being the assistant built into alo OS and not a person. The machine refused to run the agent's turn because it could not put the boundary around it that keeps the agent inside the folders and files the person granted. Nothing was attempted and nothing was refused by any rule: it is a fault in the machine, and the reason is shown after it in the words the person was shown at the time.",
 );
 
 /// A command the person allowed the agent to run, run inside a sealed box.
@@ -224,10 +224,10 @@ pub const RAN_A_COMMAND: Word = Word::saying(
 /// a new key.
 pub const RAN_A_COMMAND_AT_FULL_ACCESS: Word = Word::saying(
     "recounting.outcome.ran-a-command-at-full-access",
-    "the agent ran a command without asking you first, because you chose full access, and it      could reach everything your account can",
+    "the agent ran a command without asking you first, because you chose full access, and it could reach everything your account can",
 )
 .noting(
-    "Read at the head of one line of a record somebody is reading back — the agent being the      assistant built into alo OS and not a person. The person had chosen \"full access\" in      Settings, which lets the agent run commands without asking each time; this is one that ran.      Nothing confined it: it could open, change or delete anything the person's own user account      can, and no more. What ran is shown beside it.",
+    "Read at the head of one line of a record somebody is reading back — the agent being the assistant built into alo OS and not a person. The person had chosen \"full access\" in Settings, which lets the agent run commands without asking each time; this is one that ran. Nothing confined it: it could open, change or delete anything the person's own user account can, and no more. What ran is shown beside it.",
 );
 
 /// A command the agent ran once the person said yes to it, at *ask me each
@@ -235,10 +235,10 @@ pub const RAN_A_COMMAND_AT_FULL_ACCESS: Word = Word::saying(
 /// answer and their own account.
 pub const RAN_A_COMMAND_YOU_SAID_YES_TO: Word = Word::saying(
     "recounting.outcome.ran-a-command-you-said-yes-to",
-    "the agent ran a command after you said yes to it, and it could reach everything your account      can",
+    "the agent ran a command after you said yes to it, and it could reach everything your account can",
 )
 .noting(
-    "Read at the head of one line of a record somebody is reading back — the agent being the      assistant built into alo OS and not a person. The person had chosen to be asked each time;      they were shown this command and said yes, and then it ran. Nothing confined it: it could      open, change or delete anything the person's own user account can, and no more. What ran is      shown beside it.",
+    "Read at the head of one line of a record somebody is reading back — the agent being the assistant built into alo OS and not a person. The person had chosen to be asked each time; they were shown this command and said yes, and then it ran. Nothing confined it: it could open, change or delete anything the person's own user account can, and no more. What ran is shown beside it.",
 );
 
 /// A command the agent ran as administrator, once the person gave their
@@ -248,7 +248,7 @@ pub const RAN_A_COMMAND_AS_ADMINISTRATOR: Word = Word::saying(
     "the agent ran a command as administrator, after you gave your password for it",
 )
 .noting(
-    "Read at the head of one line of a record somebody is reading back — the agent being the      assistant built into alo OS and not a person. The command needed the rights of the person      who administers this computer, which can change the whole system; the person was asked for      their own password and typed it, and then it ran. What ran is shown beside it.",
+    "Read at the head of one line of a record somebody is reading back — the agent being the assistant built into alo OS and not a person. The command needed the rights of the person who administers this computer, which can change the whole system; the person was asked for their own password and typed it, and then it ran. What ran is shown beside it.",
 );
 
 /// A command the agent ran, that did not work.

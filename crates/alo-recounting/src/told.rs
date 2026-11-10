@@ -336,7 +336,7 @@ impl Outcome {
 ///     // after it is the record's own and is not worded here at all.
 ///     let clause = told.outcome().said(strings);
 ///     match told.sentence() {
-///         Some(sentence) => format!("{clause} — {sentence}"),
+/// Some(sentence) => format!("{clause} — {sentence}"),
 ///         None => clause.into_text(),
 ///     }
 /// }
@@ -710,7 +710,10 @@ mod tests {
         alo_record::Entry::ran_a_command(
             &alo_capability::Grantee::named("@terminal"),
             "/bin/sh",
-            &["-c".to_owned(), "mkdir /home/anna/Documents/demo".to_owned()],
+            &[
+                "-c".to_owned(),
+                "mkdir /home/anna/Documents/demo".to_owned(),
+            ],
             &[],
             Some(0),
             boxed,
@@ -731,21 +734,21 @@ mod tests {
             read(&a_command_that_worked(true)),
             (
                 Outcome::RanACommand,
-                "the agent ran a command you allowed it to run, inside a box that could reach                  only what you chose"
+                "the agent ran a command you allowed it to run, inside a box that could reach only what you chose"
             )
         );
         assert_eq!(
             read(&a_command_that_worked(false).at_full_access()),
             (
                 Outcome::RanACommandAtFullAccess,
-                "the agent ran a command without asking you first, because you chose full                  access, and it could reach everything your account can"
+                "the agent ran a command without asking you first, because you chose full access, and it could reach everything your account can"
             )
         );
         assert_eq!(
             read(&a_command_that_worked(false)),
             (
                 Outcome::RanACommandYouSaidYesTo,
-                "the agent ran a command after you said yes to it, and it could reach everything                  your account can"
+                "the agent ran a command after you said yes to it, and it could reach everything your account can"
             )
         );
         for level in [false, true] {

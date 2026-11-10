@@ -251,7 +251,11 @@ pub(crate) struct AtFullAccess(pub(crate) bool);
 impl AtFullAccess {
     /// The entry, stamped *at full access* when it was.
     pub(crate) const fn stamped(self, entry: Entry) -> Entry {
-        if self.0 { entry.at_full_access() } else { entry }
+        if self.0 {
+            entry.at_full_access()
+        } else {
+            entry
+        }
     }
 }
 
