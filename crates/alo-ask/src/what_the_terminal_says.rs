@@ -57,11 +57,22 @@ pub fn what_the_terminal_says(
         // printed before the person answered, so only what came of it is left.
         WhatTheTerminalDid::TheySaidYes { answered } => {
             let (outcome, worked) = match answered {
-                Some(Answered::It(_)) => (say(alo_capability::words::DONE_AFTER_YOUR_OK), true),
-                Some(Answered::ItCannotBeUndone(_)) => (
-                    say(alo_capability::words::DONE_AFTER_YOUR_OK_AND_IT_CANNOT_BE_PUT_BACK),
-                    true,
-                ),
+                // **A command that ran and failed is not *Done*** (2026-11-10):
+                // what it ended with is said instead, and the request did not
+                // end as the person wanted.
+                Some(Answered::It(done)) => match it_did_not_work(done, false, strings) {
+                    Some(said) => (said, false),
+                    None => (say(alo_capability::words::DONE_AFTER_YOUR_OK), true),
+                },
+                Some(Answered::ItCannotBeUndone(done)) => {
+                    match it_did_not_work(done, true, strings) {
+                        Some(said) => (said, false),
+                        None => (
+                            say(alo_capability::words::DONE_AFTER_YOUR_OK_AND_IT_CANNOT_BE_PUT_BACK),
+                            true,
+                        ),
+                    }
+                }
                 Some(Answered::Refused { told }) => (told.clone(), false),
                 Some(Answered::Declined) | None => (
                     say(alo_capability::words::NO_WORD_BACK_IN_THE_TERMINAL),
@@ -112,6 +123,39 @@ pub fn what_the_terminal_says(
             }
         }
     }
+}
+
+/// **What the person reads about a command they said yes to that did not
+/// work**, or [`None`] for anything else — a change, or a command that did.
+///
+/// `alo_capability::ItDidNotWork` decides, from what the command ended with,
+/// so this line and the machine's own at full access cannot disagree about
+/// whether a run worked.
+fn it_did_not_work(
+    done: &alo_protocol::Done,
+    cannot_be_put_back: bool,
+    strings: &Strings,
+) -> Option<String> {
+    let alo_protocol::Done::RanACommand {
+        returned,
+        took_too_long,
+        ..
+    } = done
+    else {
+        return None;
+    };
+    let why = alo_capability::ItDidNotWork::of(*returned, *took_too_long)?;
+    let word = if cannot_be_put_back {
+        alo_capability::words::DID_NOT_WORK_AFTER_YOUR_OK_AND_IT_CANNOT_BE_PUT_BACK
+    } else {
+        alo_capability::words::DID_NOT_WORK_AFTER_YOUR_OK
+    };
+    Some(
+        strings
+            .say(&word.key(), &Filling::nothing().and_said("why", &why.said(strings)))
+            .text()
+            .to_owned(),
+    )
 }
 
 /// What a request that did not come from a terminal is told: the reply, and —
@@ -179,6 +223,66 @@ mod tests {
                 "Done without asking you first, as you chose in Settings → Terminal.".to_owned()
             ]
         );
+        assert!(said.worked);
+    }
+
+    /// A command that ran, as the daemon answers it, ending with `returned`.
+    fn a_command_that_ended_with(returned: Option<i32>) -> Box<Done> {
+        Box::new(Done::RanACommand {
+            returned,
+            said: "mkdir: cannot create directory: No such file or directory\n".to_owned(),
+            cut_short: false,
+            took_too_long: false,
+        })
+    }
+
+    /// **A command the person said yes to that failed is not *Done***: the
+    /// line says it did not work and what it ended with, and the request did
+    /// not end as they wanted. A boot walk of `f028d5ec` read *Done* about a
+    /// `mkdir` that made nothing.
+    #[test]
+    fn a_command_that_failed_after_the_ok_is_not_done() {
+        let said = what_the_terminal_says(
+            &a_change_is_waiting(3, RENAME),
+            &WhatTheTerminalDid::TheySaidYes {
+                answered: Some(Answered::It(a_command_that_ended_with(Some(1)))),
+            },
+            &in_english(),
+        );
+        assert_eq!(
+            said.lines,
+            ["It did not work: the command ended with exit status 1.".to_owned()]
+        );
+        assert!(!said.worked);
+
+        let stopped = what_the_terminal_says(
+            &a_change_is_waiting(3, RENAME),
+            &WhatTheTerminalDid::TheySaidYes {
+                answered: Some(Answered::ItCannotBeUndone(a_command_that_ended_with(None))),
+            },
+            &in_english(),
+        );
+        assert_eq!(
+            stopped.lines,
+            ["It did not work: the command was stopped before it finished. If it changed \
+              anything, that can't be put back: a copy of your files from before it could not \
+              be kept."
+                .to_owned()]
+        );
+        assert!(!stopped.worked);
+    }
+
+    /// **And one that worked is still *Done*.**
+    #[test]
+    fn a_command_that_worked_after_the_ok_is_done() {
+        let said = what_the_terminal_says(
+            &a_change_is_waiting(3, RENAME),
+            &WhatTheTerminalDid::TheySaidYes {
+                answered: Some(Answered::It(a_command_that_ended_with(Some(0)))),
+            },
+            &in_english(),
+        );
+        assert_eq!(said.lines, ["Done.".to_owned()]);
         assert!(said.worked);
     }
 

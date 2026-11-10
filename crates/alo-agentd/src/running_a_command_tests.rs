@@ -259,6 +259,74 @@ fn at_full_access_a_command_runs_and_reaches_what_no_grant_names() {
     );
 }
 
+/// **At full access a command that fails is never answered *Done***: the
+/// person is told what was tried, that it did not work and what it ended
+/// with — and the record keeps the status it ended with.
+///
+/// The boot walk of `f028d5ec`: *make a folder called demo in my Documents*
+/// ran `mkdir /Users/username/Documents/demo`, which ended with status 1, and
+/// the machine's own line said *Done without asking you first* above the
+/// model's *the directory does not exist*.
+#[test]
+fn at_full_access_a_command_that_fails_is_not_answered_done() {
+    let elsewhere = Elsewhere::with_the_level("full-access-fails", Some(HowCodeRuns::AtFullTrust));
+    let nowhere = elsewhere.folder.join("not-there").join("demo");
+    let line = a_message(&format!(
+        r#"{{"run":{{"command":"mkdir {}"}}}}"#,
+        nowhere.display()
+    ));
+    let mut record = Record::default();
+    let mut bracket = a_bracket();
+    on_a_turn("full-access-fails", &mut record, |turning, grants, strings, _| {
+        let said = the_agent_asked(
+            &line,
+            turning,
+            grants,
+            strings,
+            &elsewhere.here(),
+            &mut bracket,
+        );
+        // **The model is told the run whole**, status and all.
+        assert!(
+            matches!(
+                said.done(),
+                Some(Done::RanACommand {
+                    returned: Some(1),
+                    ..
+                })
+            ),
+            "{said:?}"
+        );
+        let told = match &said {
+            ToAnAgent::DoneWithoutAsking { said, .. } => Some(said.text().to_owned()),
+            _ => None,
+        };
+        assert_eq!(
+            told,
+            Some(format!(
+                "Tried without asking you first, because you chose full access in Settings → \
+                 Running code: run this command: mkdir {}. It did not work: the command ended \
+                 with exit status 1. If it changed anything, that can't be put back: a copy of \
+                 your files from before it could not be kept.",
+                nowhere.display()
+            )),
+            "a command that failed at full access was not told as one that did not work: {said:?}"
+        );
+    });
+    assert!(!nowhere.exists(), "the command made the folder after all");
+    let written = what_was_written(&record);
+    assert!(
+        matches!(
+            written.as_slice(),
+            [Happened::RanACommand {
+                returned: Some(1),
+                ..
+            }]
+        ),
+        "the record does not keep the status the command failed with: {written:?}"
+    );
+}
+
 /// **At *ask me each time* nothing runs before the OK; one OK runs it exactly
 /// once; the same number again is refused** — on the person's own door, with
 /// the command in the list of what waits.

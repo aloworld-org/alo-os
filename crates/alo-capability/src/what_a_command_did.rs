@@ -59,6 +59,88 @@ impl WhatACommandDid {
     }
 }
 
+/// **Why a command that ran did not work**, or nothing when it did.
+///
+/// A command that ran is not a command that did what was asked: `mkdir` of a
+/// folder whose parent is not there runs, writes one line and ends with status
+/// 1. Until 2026-11-10 every surface answered a run as *done* whatever it ended
+/// with, and a booted machine told a person *Done without asking you first …
+/// mkdir /Users/username/Documents/demo* about a folder that was never made.
+/// So *did it work* is decided here, once, from what the run itself said — and
+/// every surface that tells a person about a run asks this rather than its own
+/// opinion of an exit status.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ItDidNotWork {
+    /// It ended by itself, with a status other than 0.
+    EndedWith(i32),
+    /// A signal ended it, so it has no status at all.
+    WasStopped,
+    /// It ran longer than a command is let run, and was stopped.
+    TookTooLong,
+}
+
+impl ItDidNotWork {
+    /// Why a command that ended this way did not work, or [`None`] for one
+    /// that ended by itself with status 0 in time — the only end that is
+    /// *done*.
+    ///
+    /// Running too long is asked first: a command stopped for it was ended by
+    /// a signal too, and the person is owed the reason rather than the means.
+    #[must_use]
+    pub const fn of(returned: Option<i32>, took_too_long: bool) -> Option<Self> {
+        if took_too_long {
+            return Some(Self::TookTooLong);
+        }
+        match returned {
+            Some(0) => None,
+            Some(status) => Some(Self::EndedWith(status)),
+            None => Some(Self::WasStopped),
+        }
+    }
+
+    /// The same, of what a command did.
+    #[must_use]
+    pub const fn of_what_it_did(did: &WhatACommandDid) -> Option<Self> {
+        Self::of(did.returned, did.took_too_long)
+    }
+
+    /// Why, as the person reads it: one clause, to go after *it did not work:*.
+    #[must_use]
+    pub fn said(self, strings: &alo_strings::Strings) -> alo_strings::Said {
+        match self {
+            Self::EndedWith(status) => strings.say(
+                &crate::words::A_COMMAND_ENDED_WITH_A_STATUS.key(),
+                &alo_strings::Filling::of("status", status.to_string()),
+            ),
+            Self::WasStopped => strings.say(
+                &crate::words::A_COMMAND_WAS_STOPPED.key(),
+                &alo_strings::Filling::nothing(),
+            ),
+            Self::TookTooLong => strings.say(
+                &crate::words::A_COMMAND_RAN_TOO_LONG.key(),
+                &alo_strings::Filling::nothing(),
+            ),
+        }
+    }
+}
+
+#[cfg(test)]
+mod it_did_not_work {
+    use super::ItDidNotWork;
+
+    /// **Only status 0, in time, is done.** Every other end is a reason,
+    /// and running too long is named even though a signal ended it.
+    #[test]
+    fn only_an_end_with_status_zero_in_time_worked() {
+        assert_eq!(ItDidNotWork::of(Some(0), false), None);
+        assert_eq!(ItDidNotWork::of(Some(1), false), Some(ItDidNotWork::EndedWith(1)));
+        assert_eq!(ItDidNotWork::of(Some(-3), false), Some(ItDidNotWork::EndedWith(-3)));
+        assert_eq!(ItDidNotWork::of(None, false), Some(ItDidNotWork::WasStopped));
+        assert_eq!(ItDidNotWork::of(None, true), Some(ItDidNotWork::TookTooLong));
+        assert_eq!(ItDidNotWork::of(Some(0), true), Some(ItDidNotWork::TookTooLong));
+    }
+}
+
 /// A command that never started — the shell would not start, or the machine
 /// lost track of it before it could say anything.
 ///

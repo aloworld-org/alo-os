@@ -13,8 +13,21 @@
 //!
 //! A command run as administrator is not one of these: the person was asked,
 //! for their password, so it is not answered as done without asking.
+//!
+//! # A command that failed is not *done*
+//!
+//! **Since 2026-11-10 a command is answered by [`ran_without_asking`]**, which
+//! says *done* only for a run that worked (`alo_capability::ItDidNotWork`) and
+//! otherwise what was tried and why it did not work. The walk of `f028d5ec`
+//! read *Done without asking you first … run this command: mkdir
+//! /Users/username/Documents/demo* above the model's own *the directory does
+//! not exist*: the machine's line claimed a change that was never made.
 
-use alo_capability::words::{DONE_AT_FULL_ACCESS, DONE_AT_FULL_ACCESS_AND_IT_CANNOT_BE_PUT_BACK};
+use alo_capability::ItDidNotWork;
+use alo_capability::words::{
+    DID_NOT_WORK_AT_FULL_ACCESS, DID_NOT_WORK_AT_FULL_ACCESS_AND_IT_CANNOT_BE_PUT_BACK,
+    DONE_AT_FULL_ACCESS, DONE_AT_FULL_ACCESS_AND_IT_CANNOT_BE_PUT_BACK,
+};
 use alo_protocol::{Done, ToAnAgent};
 use alo_strings::{Filling, Said, Strings};
 
@@ -29,5 +42,37 @@ pub fn done_without_asking(did: Done, sentence: Said, kept: bool, strings: &Stri
         DONE_AT_FULL_ACCESS_AND_IT_CANNOT_BE_PUT_BACK
     };
     let said = strings.say(&word.key(), &Filling::of("sentence", sentence.into_text()));
+    ToAnAgent::done_without_asking(did, &said)
+}
+
+/// **A command run without asking, answered as what became of it**: done, as
+/// [`done_without_asking`] says it, when it worked — and otherwise *tried*,
+/// with why it did not work, so the person is never told a failed command was
+/// done.
+///
+/// `did` still carries the whole run, status and all, so the model is told
+/// the same thing the person is.
+#[must_use]
+pub fn ran_without_asking(did: Done, sentence: Said, kept: bool, strings: &Strings) -> ToAnAgent {
+    let failed = match &did {
+        Done::RanACommand {
+            returned,
+            took_too_long,
+            ..
+        } => ItDidNotWork::of(*returned, *took_too_long),
+        _ => None,
+    };
+    let Some(failed) = failed else {
+        return done_without_asking(did, sentence, kept, strings);
+    };
+    let word = if kept {
+        DID_NOT_WORK_AT_FULL_ACCESS
+    } else {
+        DID_NOT_WORK_AT_FULL_ACCESS_AND_IT_CANNOT_BE_PUT_BACK
+    };
+    let said = strings.say(
+        &word.key(),
+        &Filling::of("sentence", sentence.into_text()).and_said("why", &failed.said(strings)),
+    );
     ToAnAgent::done_without_asking(did, &said)
 }

@@ -403,6 +403,8 @@ capability.facility.screen-continuously	the screen, continuously
 capability.facility.screen-once	one picture of the screen
 capability.facility.secrets	a place for its own passwords in your keyring
 capability.facility.sleep	keeping the machine awake
+capability.full-access.did-not-work	Tried without asking you first, because you chose full access in Settings → Running code: {sentence}. It did not work: {why}.
+capability.full-access.did-not-work-cannot-be-put-back	Tried without asking you first, because you chose full access in Settings → Running code: {sentence}. It did not work: {why}. If it changed anything, that can't be put back: a copy of your files from before it could not be kept.
 capability.full-access.done	Done without asking you first, because you chose full access in Settings → Running code: {sentence}.
 capability.full-access.done-cannot-be-put-back	Done without asking you first, because you chose full access in Settings → Running code: {sentence}. This one can't be put back: a copy of your files from before it could not be kept.
 capability.grant.a-persons-own	you have not allowed alo to open a terminal
@@ -435,16 +437,21 @@ capability.running.asking-each-time	after showing you the command and waiting fo
 capability.running.command-empty	Nothing ran: the command was empty.
 capability.running.command-not-one-line	Nothing ran: a command must be one line.
 capability.running.command-too-long	Nothing ran: the command was longer than {most} characters.
+capability.running.ended-with-a-status	the command ended with exit status {status}
 capability.running.full-trust	straight away, without asking
 capability.running.no-box	nothing ran, because this machine could not build the box it runs commands in
 capability.running.not-a-command	nothing ran, because what was asked for was not a command this machine could run
 capability.running.not-that-way	nothing ran, because running a command this way is not what you chose
+capability.running.ran-too-long	the command ran longer than a command may, and was stopped
 capability.running.run-a-command	run this command: {command}
 capability.running.sealed-box	in a sealed box that sees only this project
 capability.running.sealed-box-not-available-here	The sealed box isn't available on this computer yet.
 capability.running.sealed-box-not-here-yet	{program} was not run. The sealed box can't run programs on this computer yet. Choose 'ask each time' in Settings → Running code to run commands after you approve them.
+capability.running.was-stopped	the command was stopped before it finished
 capability.running.what-full-trust-costs	text in a web page, an email or a downloaded project can steer the agent, and at this level whatever it steers the agent to run, runs
 capability.running.would-not-start	nothing ran, because the command could not be started
+capability.terminal.did-not-work	It did not work: {why}.
+capability.terminal.did-not-work-cannot-be-put-back	It did not work: {why}. If it changed anything, that can't be put back: a copy of your files from before it could not be kept.
 capability.terminal.done	Done.
 capability.terminal.done-cannot-be-put-back	Done. This one can't be put back: a copy of your files from before it could not be kept.
 capability.terminal.done-without-asking	Done without asking you first, as you chose in Settings → Terminal.
@@ -1761,6 +1768,7 @@ recounting.not-a-description	What this machine did cannot be shown to you: what 
 recounting.nothing-to-show-on	What this machine's record says cannot be put in front of you: no screen is connected. Connect a screen, and ask again
 recounting.nothing-to-tell	nothing in this machine's record answers that question
 recounting.only-the-most-recent	this is the most recent part of what answers that question, and not all of it
+recounting.outcome.a-command-did-not-work	the agent ran a command, and it did not work
 recounting.outcome.a-command-was-not-run	the agent asked to run a command and it did not run
 recounting.outcome.an-application-was-not-asked	you asked an application to do something, from the terminal, and it was not asked
 recounting.outcome.answered-for-another-machine	a machine you paired with asked a question and it was answered on this machine

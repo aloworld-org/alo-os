@@ -897,6 +897,88 @@ pub const DONE_AT_FULL_ACCESS_AND_IT_CANNOT_BE_PUT_BACK: Word = Word::saying(
      a copy of the person's files from before it, so Put back cannot undo it.",
 );
 
+/// What a person reads about a command alo ran at once, because they chose
+/// full access, **that did not work** (ADR 0149). Never *Done*: a run that
+/// ended with a failure is not a change that was made.
+pub const DID_NOT_WORK_AT_FULL_ACCESS: Word = Word::saying(
+    "capability.full-access.did-not-work",
+    "Tried without asking you first, because you chose full access in Settings → Running code: \
+     {sentence}. It did not work: {why}.",
+)
+.noting(
+    "Shown under what alo did, for a command it ran without the person's OK, because the person \
+     chose full access, when the command failed. {sentence} is what was run, for example 'run this \
+     command: mkdir /home/anna/Documents/demo'. {why} is one of the clauses that say why, such as \
+     'the command ended with exit status 1'. 'Settings → Running code' names a page as Settings \
+     shows it; use the same words your translation uses there.",
+);
+
+/// The same, for a run the machine could not keep a copy from before.
+pub const DID_NOT_WORK_AT_FULL_ACCESS_AND_IT_CANNOT_BE_PUT_BACK: Word = Word::saying(
+    "capability.full-access.did-not-work-cannot-be-put-back",
+    "Tried without asking you first, because you chose full access in Settings → Running code: \
+     {sentence}. It did not work: {why}. If it changed anything, that can't be put back: a copy of \
+     your files from before it could not be kept.",
+)
+.noting(
+    "Like the sentence above, for a failed command the computer ran without being able to keep a \
+     copy of the person's files from before it. A command can fail part of the way through, so the \
+     person is told that whatever it did change cannot be undone with Put back.",
+);
+
+/// The person said yes in the terminal, the command ran, and it did not work.
+pub const DID_NOT_WORK_AFTER_YOUR_OK: Word = Word::saying(
+    "capability.terminal.did-not-work",
+    "It did not work: {why}.",
+)
+.noting(
+    "Printed in the terminal after the person answered yes to a command alo proposed, when the \
+     command ran and failed. {why} is one of the clauses that say why, such as 'the command ended \
+     with exit status 1'.",
+);
+
+/// The same, for a run the machine could not keep a copy from before.
+pub const DID_NOT_WORK_AFTER_YOUR_OK_AND_IT_CANNOT_BE_PUT_BACK: Word = Word::saying(
+    "capability.terminal.did-not-work-cannot-be-put-back",
+    "It did not work: {why}. If it changed anything, that can't be put back: a copy of your files \
+     from before it could not be kept.",
+)
+.noting(
+    "Like the sentence above, when the computer could not keep a copy of the person's files from \
+     before the command, so Put back cannot undo whatever it changed before it failed.",
+);
+
+/// Why a command did not work: it ended by itself with a failure.
+pub const A_COMMAND_ENDED_WITH_A_STATUS: Word = Word::saying(
+    "capability.running.ended-with-a-status",
+    "the command ended with exit status {status}",
+)
+.noting(
+    "Follows 'It did not work:' in a sentence about a command that ran. {status} is a number the \
+     program gave as it ended, and any number but 0 means it failed; keep the number as it is. \
+     'exit status' is the usual name for that number in a terminal.",
+);
+
+/// Why a command did not work: something stopped it before it ended by itself.
+pub const A_COMMAND_WAS_STOPPED: Word = Word::saying(
+    "capability.running.was-stopped",
+    "the command was stopped before it finished",
+)
+.noting(
+    "Follows 'It did not work:' for a command that something outside it ended, such as the \
+     computer or another program, so it never said whether it succeeded.",
+);
+
+/// Why a command did not work: it ran longer than one is let run.
+pub const A_COMMAND_RAN_TOO_LONG: Word = Word::saying(
+    "capability.running.ran-too-long",
+    "the command ran longer than a command may, and was stopped",
+)
+.noting(
+    "Follows 'It did not work:' for a command the computer stopped because it had run for longer \
+     than alo lets one command run.",
+);
+
 /// The question the terminal asks before a change alo proposed is carried out:
 /// ADR 0124's own words, drawn in `docs/design/the-terminal-window.md`.
 pub const RUN_THIS_COMMAND: Word = Word::saying(
@@ -1093,6 +1175,13 @@ pub const EVERY_WORD: [Word; 89] = [
     DONE_WITHOUT_ASKING_AND_IT_CANNOT_BE_PUT_BACK,
     DONE_AT_FULL_ACCESS,
     DONE_AT_FULL_ACCESS_AND_IT_CANNOT_BE_PUT_BACK,
+    DID_NOT_WORK_AT_FULL_ACCESS,
+    DID_NOT_WORK_AT_FULL_ACCESS_AND_IT_CANNOT_BE_PUT_BACK,
+    DID_NOT_WORK_AFTER_YOUR_OK,
+    DID_NOT_WORK_AFTER_YOUR_OK_AND_IT_CANNOT_BE_PUT_BACK,
+    A_COMMAND_ENDED_WITH_A_STATUS,
+    A_COMMAND_WAS_STOPPED,
+    A_COMMAND_RAN_TOO_LONG,
     RUN_THIS_COMMAND,
     DONE_AFTER_YOUR_OK,
     DONE_AFTER_YOUR_OK_AND_IT_CANNOT_BE_PUT_BACK,
