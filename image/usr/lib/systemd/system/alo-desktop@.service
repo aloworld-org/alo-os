@@ -154,13 +154,36 @@ Environment=ALO_AGENT=alo
 RuntimeDirectory=alo-desktop
 RuntimeDirectoryMode=0700
 
-# **No capability at all.** The greeter's unit makes the same claim for the same
-# reason: this process needs a seat and a socket, and saying so here is what
-# makes it a fact rather than a sentence. A desktop is the largest surface on
-# the machine and the one a person spends the day in front of; it holds nothing.
-CapabilityBoundingSet=
+# **No capability at all, and nothing more than the person's own account.**
+# This process runs as the person and is handed nothing: it needs a seat and a
+# socket, and a desktop is the largest surface on the machine and the one a
+# person spends the day in front of.
 AmbientCapabilities=
-NoNewPrivileges=yes
+
+# **And no `NoNewPrivileges=` or `CapabilityBoundingSet=` here, on purpose: the
+# person's terminal is a child of this process.** `alo-shell` draws the
+# terminal inside the desktop and starts the person's shell from it, so every
+# limit set on this unit is set on their shell and on everything they type into
+# it. Both lines were here until 2026-11-09, and a booted machine answered
+# `sudo` in the person's own terminal with *The "no new privileges" flag is
+# set, which prevents sudo from running as root* — while ADR 0150 had just told
+# them their sign-in password now works for `sudo`. Measured the same day in
+# `localhost/alo-os:dev`, a process of the person's started under each line:
+#
+#   NoNewPrivileges=yes                 sudo: The "no new privileges" flag is set
+#   CapabilityBoundingSet=              sudo: unable to change to root gid
+#   neither                             root
+#
+# **CLAUDE.md, law 2: the law binds the agent, never the person: alo OS ships a
+# terminal, because a system that does not trust its owner with a shell is a
+# toy.** A limit on this unit is a limit on the owner's shell, so neither line
+# belongs here. The agent is not in this process: it runs in `alo-asking@` and
+# asks `alo-agentd`, and both of those keep `NoNewPrivileges=yes`, so nothing
+# alo runs can use `sudo` or any other setuid program. What alo runs as
+# administrator goes through `alo-running-as-administrator`, which asks for
+# the person's password every time (ADR 0150, *The person's terminal*).
+# `crates/alo-sessiond/tests/the_units_this_starts_are_on_the_image.rs` holds
+# both halves of that to each other.
 
 ExecStart=/usr/bin/alo-desktop
 

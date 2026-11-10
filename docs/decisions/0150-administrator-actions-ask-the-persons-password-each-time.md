@@ -41,7 +41,10 @@ cancels it. The next command asks again: a password is never remembered.
 
 - It is the **same password, or PIN, they sign in with**. Every sign-in hands
   it to the system's list, so it stays the same everywhere, including for
-  `sudo` in their own terminal, which now works with that password too.
+  `sudo` in their own terminal. **That last clause was false when it was
+  written**: the desktop's unit refused every `sudo` in the person's terminal
+  until 2026-11-09 (below, *The person's terminal*). That change takes the
+  refusal away; the next boot walk is where `sudo` working is measured.
 - A **wrong password** leaves the sheet up and says so. A password that
   **cannot be checked here** says why instead of calling it wrong.
 - If they **cancel**, or nothing could ask them (nobody signed in at the
@@ -97,6 +100,52 @@ cancels it. The next command asks again: a password is never remembered.
    nothing could ask, not an administrator, no answer in five minutes, could
    not ask: each is a sentence the person reads and a value in the record
    (`as_an_administrator`, `docs/contracts/record-file.md`).
+
+## The person's terminal
+
+*Added 2026-11-09, after a boot walk of an image built from `main` at
+`90babddc`.*
+
+**`sudo` in the person's own terminal was refused**: *The "no new privileges"
+flag is set, which prevents sudo from running as root.* The terminal is drawn
+inside alo's desktop, and the person's shell is started by the desktop's own
+process (`alo-shell`, through `alo_terminal::AShellOnAPseudoterminal`), so it
+carries every limit the desktop's unit sets. `alo-desktop@.service` set
+`NoNewPrivileges=yes` and an empty `CapabilityBoundingSet=`. Measured the same
+day in `localhost/alo-os:dev`, a process of the person's under each line:
+`NoNewPrivileges=yes` gives the walk's message, the empty bounding set gives
+*unable to change to root gid*, and with neither `sudo` answered `root`.
+
+**Decided: the desktop's unit sets neither.** CLAUDE.md, law 2: *the law binds
+the agent, never the person: alo OS ships a terminal, because a system that
+does not trust its owner with a shell is a toy.* A limit on the desktop is a
+limit on the owner's shell, and the owner's shell may do what the owner's
+account may do. The desktop is still handed no capability
+(`AmbientCapabilities=` stays empty) and runs as the person.
+
+**The agent's boundary does not move.** The agent is not in the desktop: it
+runs in `alo-asking@` and asks `alo-agentd`, which runs every command alo
+runs, and both keep `NoNewPrivileges=yes`. So nothing alo runs can use `sudo`
+or another setuid program, and what alo runs as administrator still goes only
+through `alo-running-as-administrator` and the person's password, every time.
+`sudo`'s own memory of a password is per terminal on this base, so a password
+the person gave in their terminal is not one alo's commands can borrow.
+
+**Considered and not chosen: starting the shell outside the desktop**, as a
+unit in the person's own manager with the terminal handed to it. It would keep
+the desktop locked down, but the terminal reads the shell's process for its
+folder, the command in front and why it is waiting, and every one of those is
+built on the shell being the desktop's child. It is a rebuild of the terminal,
+not a fix, and the locked-down desktop it would keep protects nothing the
+person's own account could not already do.
+
+**How this is checked, on every build**:
+`crates/alo-sessiond/tests/the_units_this_starts_are_on_the_image.rs`,
+`the_persons_terminal_may_use_sudo_and_the_agent_may_not`, fails if the
+desktop's unit sets either line again, or if `alo-agentd.service` or
+`alo-asking@.service` stops setting `NoNewPrivileges=yes`. That `sudo` works in
+the terminal on a booted machine is **not** checked by anything here; it is a
+step on the next boot walk.
 
 ## Machines already in use
 
