@@ -24,6 +24,7 @@ use alo_capability::Grantee;
 use alo_strings::{Said, Strings};
 use serde::{Deserialize, Serialize};
 
+use crate::at_work::{HowItIsShown, said_of_alo_at_work};
 use crate::destination::Destination;
 use crate::during::said_of_their_command;
 use crate::errand::Errand;
@@ -62,6 +63,16 @@ pub enum Reported {
         /// What a person calls it.
         called: String,
     },
+    /// An application alo is working in (ADR 0143 Q6). No destination, for
+    /// the same reason.
+    AloAtWork {
+        /// The application, by its identifier.
+        application: String,
+        /// What a person calls it.
+        called: String,
+        /// Which of the three lines.
+        how: HowItIsShown,
+    },
 }
 
 impl Reported {
@@ -83,6 +94,11 @@ impl Reported {
                 application: during.application().to_owned(),
                 called: during.called().to_owned(),
             },
+            Showing::AloAtWork(at_work) => Self::AloAtWork {
+                application: at_work.application().to_owned(),
+                called: at_work.called().to_owned(),
+                how: at_work.how(),
+            },
         }
     }
 
@@ -92,7 +108,7 @@ impl Reported {
     pub fn destination(&self) -> Option<&Destination> {
         match self {
             Self::Agent { destination, .. } | Self::Itself { destination, .. } => Some(destination),
-            Self::TheirCommand { .. } => None,
+            Self::TheirCommand { .. } | Self::AloAtWork { .. } => None,
         }
     }
 
@@ -111,6 +127,7 @@ impl Reported {
                 destination,
             } => said_of_an_errand(*errand, destination, strings),
             Self::TheirCommand { called, .. } => said_of_their_command(called, strings),
+            Self::AloAtWork { called, how, .. } => said_of_alo_at_work(called, *how, strings),
         }
     }
 }

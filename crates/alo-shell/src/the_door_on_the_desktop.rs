@@ -82,6 +82,15 @@ impl TheDoorOnTheDesktop {
             .unwrap_or_default()
     }
 
+    /// alo's asks to work in an application since the last frame (ADR 0143
+    /// Q6), or none while the door is not served.
+    pub(crate) fn asked_to_work(&mut self) -> Vec<crate::alo_at_work::AskedToWork> {
+        self.served
+            .as_mut()
+            .map(TheApplicationDoor::asked_to_work)
+            .unwrap_or_default()
+    }
+
     /// Whether the door is served — for a test; the desktop only answers.
     #[cfg(test)]
     pub(crate) const fn is_served(&self) -> bool {

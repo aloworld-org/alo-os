@@ -37,8 +37,9 @@
 use std::io::{ErrorKind, Read as _, Write as _};
 use std::os::unix::net::{UnixListener, UnixStream};
 
-use alo_acting::{Answer, Request, ToCount};
+use alo_acting::{Answer, Request, ToCount, ToWorkIn};
 
+use crate::alo_at_work::AskedToWork;
 use crate::counting_during_their_commands::AskedToCount;
 
 use crate::the_application_doors_place::{NoDoor, ThePlace};
@@ -108,6 +109,9 @@ pub struct TheApplicationDoor {
     /// Callers who asked to count what an application sends, for the desktop
     /// to take (ADR 0148).
     counting: Vec<AskedToCount>,
+    /// alo asking to work in an application, for the desktop to take (ADR
+    /// 0143 Q6).
+    working: Vec<AskedToWork>,
 }
 
 impl TheApplicationDoor {
@@ -126,6 +130,7 @@ impl TheApplicationDoor {
             person,
             waiting: Vec::new(),
             counting: Vec::new(),
+            working: Vec::new(),
         })
     }
 
@@ -146,6 +151,7 @@ impl TheApplicationDoor {
             person,
             waiting: Vec::new(),
             counting: Vec::new(),
+            working: Vec::new(),
         }
     }
 
@@ -178,6 +184,13 @@ impl TheApplicationDoor {
     /// only reads the line and hands the connection on, still not blocking.
     pub fn asked_to_count(&mut self) -> Vec<AskedToCount> {
         std::mem::take(&mut self.counting)
+    }
+
+    /// Every time alo has asked to work in an application since the last time
+    /// this was asked, handed over with its connection — answered by the
+    /// desktop, which holds the copies, the counter and the indicator.
+    pub fn asked_to_work(&mut self) -> Vec<AskedToWork> {
+        std::mem::take(&mut self.working)
     }
 
     /// Take the door away. The socket goes; the daemon's directory stays.
@@ -258,15 +271,24 @@ impl TheApplicationDoor {
                         drop(caller.talking);
                         continue;
                     }
+                    // **And so does alo working in an application**, for the
+                    // same reason.
+                    match ToWorkIn::read(&line) {
+                        Some(Ok(asked)) => {
+                            let after = what_followed(&caller.heard);
+                            self.working
+                                .push(AskedToWork::of(asked, caller.talking, after));
+                            continue;
+                        }
+                        Some(Err(_)) => {
+                            drop(caller.talking);
+                            continue;
+                        }
+                        None => {}
+                    }
                     match ToCount::read(&line) {
                         Some(Ok(asked)) => {
-                            let after = caller
-                                .heard
-                                .iter()
-                                .position(|byte| *byte == b'\n')
-                                .and_then(|end| caller.heard.get(end + 1..))
-                                .map(<[u8]>::to_vec)
-                                .unwrap_or_default();
+                            let after = what_followed(&caller.heard);
                             self.counting
                                 .push(AskedToCount::of(asked, caller.talking, after));
                             continue;
@@ -317,6 +339,16 @@ impl TheApplicationDoor {
         self.waiting = still_waiting;
         acted
     }
+}
+
+/// Whatever a caller said after its first line, which is the start of its next.
+fn what_followed(heard: &[u8]) -> Vec<u8> {
+    heard
+        .iter()
+        .position(|byte| *byte == b'\n')
+        .and_then(|end| heard.get(end + 1..))
+        .map(<[u8]>::to_vec)
+        .unwrap_or_default()
 }
 
 /// How far one caller has got.

@@ -124,6 +124,22 @@ the moment its unit appears.
   kernel writes down *about a turn*, and this map holds nothing about any turn.
   Any other third map beside a proposed ADR 0029 is still refused.
 
+## Amended 2026-11-10: the same count, of alo's own copy of an application
+
+ADR 0143's owner answers of 2026-10-31 (Q6) and 2026-11-10 put alo, by default,
+in **a copy of an application of its own**, counted apart from the person's
+windows. This record's map and program are unchanged, and nothing is counted
+that a person's command could not already have counted: the desktop holds
+`COUNTED` entries for **alo's copy's control groups only** — the scope it hands
+the copy's process to, `app-alocopy-<id>@<n>.scope`, and the Flatpak scope that
+process is moved into, read off the process itself — for as long as alo holds
+the door's `work-in-alos-copy` connection, and at most fifteen minutes on one
+connection. **The person's own windows are not counted while alo works**, and
+alo's copy is left out of a person's own count. At the setting turned up,
+`work-in-their-window` holds no entry at all. The wire is in
+`docs/contracts/application-door.md`; nothing asks for it until a turn drives
+an application.
+
 ## Alternatives the lane put beside it
 
 - **Watching the application's connections from outside**, with no kernel

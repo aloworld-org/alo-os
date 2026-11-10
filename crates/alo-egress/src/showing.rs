@@ -21,6 +21,7 @@ use alo_capability::Grantee;
 use alo_strings::{Said, Strings};
 use serde::Serialize;
 
+use crate::at_work::AloAtWork;
 use crate::destination::Destination;
 use crate::during::DuringTheirCommand;
 use crate::itself::OnItsOwn;
@@ -41,6 +42,8 @@ pub enum Showing {
     Itself(OnItsOwn),
     /// An application, sending while a person's own command runs (ADR 0148).
     TheirCommand(DuringTheirCommand),
+    /// An application alo is working in (ADR 0143 Q6).
+    AloAtWork(AloAtWork),
 }
 
 impl Showing {
@@ -54,7 +57,7 @@ impl Showing {
         match self {
             Self::Agent(leaving) => Some(leaving.destination()),
             Self::Itself(errand) => Some(errand.destination()),
-            Self::TheirCommand(_) => None,
+            Self::TheirCommand(_) | Self::AloAtWork(_) => None,
         }
     }
 
@@ -67,7 +70,7 @@ impl Showing {
     pub fn agent(&self) -> Option<&Grantee> {
         match self {
             Self::Agent(leaving) => Some(leaving.agent()),
-            Self::Itself(_) | Self::TheirCommand(_) => None,
+            Self::Itself(_) | Self::TheirCommand(_) | Self::AloAtWork(_) => None,
         }
     }
 
@@ -76,7 +79,7 @@ impl Showing {
     pub fn leaving(&self) -> Option<&Leaving> {
         match self {
             Self::Agent(leaving) => Some(leaving),
-            Self::Itself(_) | Self::TheirCommand(_) => None,
+            Self::Itself(_) | Self::TheirCommand(_) | Self::AloAtWork(_) => None,
         }
     }
 
@@ -84,7 +87,7 @@ impl Showing {
     #[must_use]
     pub fn on_its_own(&self) -> Option<&OnItsOwn> {
         match self {
-            Self::Agent(_) | Self::TheirCommand(_) => None,
+            Self::Agent(_) | Self::TheirCommand(_) | Self::AloAtWork(_) => None,
             Self::Itself(errand) => Some(errand),
         }
     }
@@ -94,7 +97,16 @@ impl Showing {
     pub fn during_their_command(&self) -> Option<&DuringTheirCommand> {
         match self {
             Self::TheirCommand(during) => Some(during),
-            Self::Agent(_) | Self::Itself(_) => None,
+            Self::Agent(_) | Self::Itself(_) | Self::AloAtWork(_) => None,
+        }
+    }
+
+    /// The application alo is working in this is, if it is one.
+    #[must_use]
+    pub fn alo_at_work(&self) -> Option<&AloAtWork> {
+        match self {
+            Self::AloAtWork(at_work) => Some(at_work),
+            Self::Agent(_) | Self::Itself(_) | Self::TheirCommand(_) => None,
         }
     }
 
@@ -109,6 +121,7 @@ impl Showing {
             Self::Agent(leaving) => leaving.said(strings),
             Self::Itself(errand) => errand.said(strings),
             Self::TheirCommand(during) => during.said(strings),
+            Self::AloAtWork(at_work) => at_work.said(strings),
         }
     }
 }

@@ -63,6 +63,7 @@ pub mod answer;
 pub mod counting;
 pub mod front;
 pub mod request;
+pub mod working_in;
 
 pub use acting::Acting;
 pub use alos_tree::{WhereAlosTreeIs, is_alo_tree};
@@ -70,3 +71,4 @@ pub use answer::{Answer, NotActed};
 pub use counting::{Begun, Counted, NotACount, ToCount};
 pub use front::{InFront, is_front};
 pub use request::{NotRead, Request};
+pub use working_in::{NotToWorkIn, ToWorkIn, Where, Worked, Working};

@@ -622,6 +622,27 @@ read.
 own piece of work afterwards. It is promised, so it is not a question of
 whether; it is a question of when, which is the owner's.
 
+## The owner's answers, 2026-11-10 — where alo works, and signing in there
+
+Two questions found by the lane building the plan's stage 9 and put to the
+owner in the question dialog, relayed by the coordinator. The answers are the
+owner's; the wording around them is the lane's.
+
+- **An application that cannot open a window of alo's own is refused at the
+  default.** The owner: *"Refuse, point to the setting (Recommended)"*. At the
+  default, alo works only in a separate copy of the application started for it,
+  so only that copy's traffic is counted. Where an application cannot start a
+  separate copy — every one started over the session bus, and any whose second
+  start hands over to the copy already running unless it is given a profile of
+  its own — alo says plainly that it cannot work there safely at this setting,
+  and names the Settings choice that lets it work in the person's own window,
+  where the indicator says *that* the application is sending and not how much.
+- **The person signs in once in alo's copy.** The owner: *"You sign in once in
+  alo's copy (Recommended)"*. alo's copy is a separate profile and is signed in
+  to nothing at first. The first time alo needs a service — GitHub — alo's copy
+  shows the sign-in page and the person signs in themselves; alo never sees the
+  password; and the copy stays signed in until the person signs it out.
+
 ## What this record does not do
 
 It writes no code and declares no verb. It amends no contract: the argument kind

@@ -75,7 +75,7 @@ impl FindsWhereItRuns for UnderTheAppSlice {
 }
 
 /// This control group's number, and every one beneath it.
-fn with_everything_beneath(group: &Path, depth: usize, found: &mut Vec<u64>) {
+pub(crate) fn with_everything_beneath(group: &Path, depth: usize, found: &mut Vec<u64>) {
     let Ok(about) = std::fs::symlink_metadata(group) else {
         return;
     };

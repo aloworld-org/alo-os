@@ -79,7 +79,7 @@ pub fn is_a_unit_of(unit: &str, identifier: &str) -> bool {
 }
 
 /// An application ID written so that it is one part of a unit name.
-fn escaped(identifier: &str) -> String {
+pub(crate) fn escaped(identifier: &str) -> String {
     let mut out = String::with_capacity(identifier.len());
     for (at, byte) in identifier.bytes().enumerate() {
         let kept = byte.is_ascii_alphanumeric() || byte == b'_' || byte == b':' || byte == b'.';
