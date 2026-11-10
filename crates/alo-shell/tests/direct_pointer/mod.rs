@@ -264,3 +264,52 @@ fn direct_pointer_requires_an_enabled_pointer() {
         Err(InputError::PointerUnavailable)
     ));
 }
+
+/// **A jump far past the corner leaves the pointer free to move again.**
+///
+/// On 2026-11-10 a walk on a booted image moved the pointer by -8000, -8000 and
+/// saw it stay drawn at the top-left corner through every later move, which
+/// read as the shell's position being poisoned by one huge delta. It was not:
+/// qemu's PS/2 mouse carries what it cannot send yet and pays it out 508 units
+/// per input sync, so the moves that followed reached the guest as more
+/// movement into the corner (`docs/quirks/qemu-ps2-carries-a-huge-move-forward.md`).
+/// This holds the half the shell owns: a delta of any size is clamped to the
+/// output and the next ordinary one moves from the edge.
+#[test]
+fn a_huge_relative_jump_is_clamped_and_the_next_move_still_moves() -> Result<(), InputError> {
+    let (f, mut app) = setup();
+    for (dx, dy, time) in [(-8000.0, -8000.0, 1), (8.0, 6.0, 2), (2.5, 1.0, 3)] {
+        route(&f, DirectPointerEvent::Relative { dx, dy, time })?;
+    }
+    app.sync();
+    let seen: Vec<(f64, f64)> = app
+        .events
+        .pointer
+        .enters
+        .iter()
+        .map(|(_, x, y)| (*x, *y))
+        .chain(app.events.pointer.motion.iter().copied())
+        .collect();
+    assert!(seen.contains(&(8.0, 6.0)), "{seen:?}");
+    assert_eq!(app.events.pointer.motion.last(), Some(&(10.5, 7.0)));
+    // And past the far corner, which a jump the other way reaches.
+    route(
+        &f,
+        DirectPointerEvent::Relative {
+            dx: 8000.0,
+            dy: 8000.0,
+            time: 4,
+        },
+    )?;
+    route(
+        &f,
+        DirectPointerEvent::Relative {
+            dx: -6.0,
+            dy: -11.0,
+            time: 5,
+        },
+    )?;
+    app.sync();
+    assert_eq!(app.events.pointer.motion.last(), Some(&(25.0, 20.0)));
+    Ok(())
+}
