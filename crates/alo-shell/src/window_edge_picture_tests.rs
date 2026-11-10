@@ -1,6 +1,10 @@
 //! The band turned into pixels: the title and the application's name, the
 //! controls' layer, the panel above every window, and refusing what will not
 //! fit.
+#![expect(
+    clippy::expect_used,
+    reason = "in a test, a panic on an unexpected None is the failure being reported"
+)]
 
 use super::*;
 use crate::window_edge::{Decorations, OnTheEdge, edge_of};
@@ -41,6 +45,7 @@ fn notes(how_shown: u16) -> TheWindow<'static> {
         application: Some("Notes"),
         look: WhichLook::of(true),
         body: Some(window()),
+        laid_over: false,
         controls: controls(how_shown),
     }
 }
@@ -209,4 +214,60 @@ fn an_open_panel_is_drawn_above_every_window() {
             .is_some_and(|it| it.on_top_words().len() == 5),
         "the heading and one word for each of the four rows: Left, Maximise, Right and Full screen"
     );
+}
+
+/// **Out over full screen, the band's ground is drawn over the window**, first
+/// and under its controls, opaque in the look's ground — and nothing is drawn
+/// under the window, where the application would cover it.
+///
+/// A booted machine on 2026-11-09 drew the band out over a full-screen Dolphin
+/// with its ground under the window, so the title and the three controls lay
+/// straight over Dolphin's toolbar.
+#[test]
+fn a_band_out_over_full_screen_has_its_own_ground_over_the_window() {
+    let edge = band();
+    let mut over_full_screen = notes(crate::the_controls_fade::ALL_THE_WAY);
+    over_full_screen.body = None;
+    over_full_screen.laid_over = true;
+    let drawn = EdgePicture::of(
+        &edge,
+        OverTheEdge::default(),
+        over_full_screen,
+        &mut fonts(),
+        (4000, 3000),
+        100,
+    )
+    .expect("a band on the display");
+    assert!(drawn.behind().is_empty(), "nothing under the window");
+    assert_eq!(drawn.over().len(), 1 + 3, "the ground, then three controls");
+    let ground = drawn.over().first().expect("the ground");
+    assert!(
+        ground.area.contains(Point::from((edge.strip.loc.x + 1, edge.strip.loc.y + 1)))
+            && ground.area.contains(Point::from((
+                edge.strip.loc.x + edge.strip.size.w - 2,
+                edge.strip.loc.y + edge.strip.size.h - 2,
+            ))),
+        "the ground covers the whole band, corners included: {:?}",
+        ground.area
+    );
+    let (w, h) = (ground.area.size.w, ground.area.size.h);
+    let middle = usize::try_from(((h / 2) * w + w / 2) * 4).expect("an index");
+    let colours = WhichLook::of(true).colours();
+    assert_eq!(
+        ground.pixels.get(middle..middle + 4),
+        Some(&[colours.strip[0], colours.strip[1], colours.strip[2], 255][..]),
+        "opaque, in the look's ground"
+    );
+
+    let at_rest = EdgePicture::of(
+        &edge,
+        OverTheEdge::default(),
+        notes(crate::the_controls_fade::ALL_THE_WAY),
+        &mut fonts(),
+        (4000, 3000),
+        100,
+    )
+    .expect("a band on the display");
+    assert_eq!(at_rest.over().len(), 3, "at rest the ground is under the window");
+    assert!(!at_rest.behind().is_empty());
 }

@@ -29,6 +29,39 @@ pub(crate) fn the_strip(
     look: WhichLook,
     output: (i32, i32),
 ) -> Option<Washed> {
+    drawn(strip, scale, look, output, Which::Strip)
+}
+
+/// **The band's own ground while it is out over a full-screen window.**
+///
+/// `docs/design/the-window-controls.md`: in full screen the top edge reveals
+/// the title and controls *as an overlay*. A band at rest is drawn under its
+/// window, where the window card is; out over full screen it lies on the
+/// application's own top, so a ground drawn under the window is covered by
+/// it. **That is what a booted machine showed on 2026-11-09**: the title, the
+/// application's name and the three controls drawn straight over Dolphin's
+/// toolbar with nothing behind them. So this is drawn **over** the window,
+/// before the controls and the words, in the same look and line as the strip
+/// at rest — and with **square corners**, because it runs from edge to edge
+/// of a display rather than sitting on a card.
+#[must_use]
+pub(crate) fn the_strip_over_full_screen(
+    strip: Rectangle<i32, Physical>,
+    scale: f64,
+    look: WhichLook,
+    output: (i32, i32),
+) -> Option<Washed> {
+    drawn(strip, scale, look, output, Which::StripLaidOver)
+}
+
+/// A strip of either kind; only [`Which::Strip`] is rounded.
+fn drawn(
+    strip: Rectangle<i32, Physical>,
+    scale: f64,
+    look: WhichLook,
+    output: (i32, i32),
+    which: Which,
+) -> Option<Washed> {
     if strip.size.w <= 0 || strip.size.h <= 0 {
         return None;
     }
@@ -43,7 +76,10 @@ pub(crate) fn the_strip(
     )]
     let (line, corner) = (
         (f64::from(A_LINE_IS) * scale).round().max(1.0) as f32,
-        (f64::from(THE_STRIPS_CORNER) * scale) as f32,
+        match which {
+            Which::Strip => (f64::from(THE_STRIPS_CORNER) * scale) as f32,
+            Which::StripLaidOver | Which::Round => 0.0,
+        },
     );
     #[expect(
         clippy::cast_possible_truncation,
@@ -53,7 +89,7 @@ pub(crate) fn the_strip(
     // **Made once for a size and a look, at the origin**, and moved and
     // clipped each frame (`crate::window_rasters_kept`).
     let size = (strip.size.w + wider * 2, strip.size.h);
-    let key = TheKey::of(Which::Strip, size, scale, look);
+    let key = TheKey::of(which, size, scale, look);
     let kept = kept_or_made(key, || {
         made_at_the_origin(size, (line, corner), look)
             .into_iter()

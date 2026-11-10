@@ -127,6 +127,7 @@ pub(crate) fn every_windows_edge(
                     // screen**: there is no window card to draw it round,
                     // only the band laid over the application's top.
                     body: (!server.is_its_band_out_over_full_screen(surface)).then_some(window),
+                    laid_over: server.is_its_band_out_over_full_screen(surface),
                     controls: crate::window_edge_paint::HowTheControlsLook {
                         pointing,
                         open: keyboard.the_menu().is_some(),

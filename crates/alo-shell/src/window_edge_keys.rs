@@ -94,7 +94,8 @@ pub enum WhatTheEdgeKeyDid {
     /// as it does for a press with the pointer.
     ItRuns(OnTheEdge),
     /// This row of the menu was pressed. The menu closed and the keyboard is
-    /// back on the control that opened it.
+    /// back on the control that opened it — or, for Full screen, which hides
+    /// that control, off the band and back with the application.
     ARowRuns(WhatARowDoes),
     /// The menu closed with nothing run, and the keyboard is back on the
     /// control that opened it.
@@ -256,6 +257,20 @@ impl TheKeyboardOnTheEdge {
             // **Focus returns to the trigger, and this is where that promise
             // is kept.** `window_menu_keys` names the control; this is the
             // file that puts the keyboard back on it.
+            //
+            // **Except Full screen, which hides the opener.** The person chose
+            // to put the band away; a keyboard left on Window actions would
+            // hold the band out over the window they asked to fill the screen
+            // (`crate::the_band_over_full_screen`), which a booted machine did
+            // on 2026-11-09. So the keys go back to the application, and
+            // `Alt+F3` or the top edge brings the band out again.
+            WhatTheKeyDid::ItRuns {
+                does: WhatARowDoes::FullScreen,
+                ..
+            } => {
+                *self = Self::Nowhere;
+                WhatTheEdgeKeyDid::ARowRuns(WhatARowDoes::FullScreen)
+            }
             WhatTheKeyDid::ItRuns {
                 does,
                 focus_goes_back_to,

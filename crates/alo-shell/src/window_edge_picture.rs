@@ -46,6 +46,10 @@ pub struct TheWindow<'a> {
     pub look: WhichLook,
     /// The window's own rectangle, for the line and shadow round it.
     pub body: Option<Rectangle<i32, Logical>>,
+    /// The band is out over a full-screen window, so its ground is drawn
+    /// **over** the window rather than under it
+    /// (`crate::the_title_strip_drawn::the_strip_over_full_screen`).
+    pub laid_over: bool,
     /// How its controls look now.
     pub controls: HowTheControlsLook,
 }
@@ -121,15 +125,27 @@ impl EdgePicture {
                 output,
             ));
         }
-        behind.extend(crate::the_title_strip_drawn::the_strip(
-            into_pixels(edge.strip, scale),
-            as_a_fraction,
-            window.look,
-            output,
+        let mut over_the_window = Vec::new();
+        if window.laid_over {
+            over_the_window.extend(crate::the_title_strip_drawn::the_strip_over_full_screen(
+                into_pixels(edge.strip, scale),
+                as_a_fraction,
+                window.look,
+                output,
+            ));
+        } else {
+            behind.extend(crate::the_title_strip_drawn::the_strip(
+                into_pixels(edge.strip, scale),
+                as_a_fraction,
+                window.look,
+                output,
+            ));
+        }
+        over_the_window.extend(crate::window_edge_paint::the_controls_drawn(
+            edge,
+            &window.controls,
+            scale,
         ));
-
-        let over_the_window =
-            crate::window_edge_paint::the_controls_drawn(edge, &window.controls, scale);
 
         let mut inked = Vec::new();
         let mut solids = Vec::new();

@@ -221,3 +221,22 @@ fn a_concealed_band_has_nothing_to_land_on() {
     let mut keyboard = TheKeyboardOnTheEdge::default();
     assert_eq!(keyboard.reached(&concealed), WhatTheEdgeKeyDid::Nothing);
 }
+
+/// **Choosing Full screen by key gives the keys back to the application**,
+/// so the band goes away as the person asked — a keyboard left on Window
+/// actions would hold it out over the full-screen window. Every other choice
+/// gives focus back to Window actions.
+#[test]
+fn choosing_full_screen_by_key_leaves_the_band() {
+    let (band, panel) = (a_band(), a_panel());
+    let mut keyboard = TheKeyboardOnTheEdge::default();
+    let _ = keyboard.reached(&band);
+    let _ = keyboard.told(AnEdgeKey::Press, &band, None);
+    let _ = keyboard.told(AnEdgeKey::Last, &band, Some(&panel));
+    assert_eq!(
+        keyboard.told(AnEdgeKey::Press, &band, Some(&panel)),
+        WhatTheEdgeKeyDid::ARowRuns(WhatARowDoes::FullScreen)
+    );
+    assert_eq!(keyboard, TheKeyboardOnTheEdge::Nowhere);
+    assert_eq!(keyboard.whether_the_keyboard_holds_it(), TheKeyboard::IsElsewhere);
+}

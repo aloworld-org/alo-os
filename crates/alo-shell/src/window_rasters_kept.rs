@@ -42,13 +42,16 @@ use crate::window_edge_look::WhichLook;
 /// for a dozen windows in both looks.
 pub(crate) const AT_MOST: usize = 24;
 
-/// Which of the two drawings a raster is.
+/// Which of the drawings a raster is.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub(crate) enum Which {
     /// The line round the window and the shadow under it.
     Round,
     /// The title strip.
     Strip,
+    /// The title strip laid over a full-screen window: square-cornered, so a
+    /// raster of one is never handed out for the other.
+    StripLaidOver,
 }
 
 /// What a raster is kept under.
