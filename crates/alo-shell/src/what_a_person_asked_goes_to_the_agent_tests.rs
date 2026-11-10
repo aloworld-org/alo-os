@@ -357,10 +357,7 @@ fn a_request_carries_where_the_persons_folders_are() {
     let door = TheAgentsDoor::at(&at);
     let home = alo_instructing::ThePersonsFolders::of(
         std::path::Path::new("/var/home/alo"),
-        [(
-            "Documents",
-            std::path::Path::new("/var/home/alo/Documents"),
-        )],
+        [("Documents", std::path::Path::new("/var/home/alo/Documents"))],
     )
     .unwrap();
 
@@ -375,7 +372,9 @@ fn a_request_carries_where_the_persons_folders_are() {
     let lines: Vec<&str> = crossed.lines().collect();
     assert_eq!(lines.len(), 4, "{crossed}");
     assert_eq!(
-        alo_instructing::ThePersonsFolders::read_the_line(lines.get(3).copied().unwrap_or_default()),
+        alo_instructing::ThePersonsFolders::read_the_line(
+            lines.get(3).copied().unwrap_or_default()
+        ),
         Ok(Some(home)),
         "{crossed}"
     );

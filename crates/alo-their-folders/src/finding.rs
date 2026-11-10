@@ -103,10 +103,8 @@ mod tests {
     /// model from here is one that resolves.
     #[test]
     fn on_a_real_disk_every_folder_it_finds_is_there() {
-        let home = std::env::temp_dir().join(format!(
-            "alo-their-folders-finding-{}",
-            std::process::id()
-        ));
+        let home =
+            std::env::temp_dir().join(format!("alo-their-folders-finding-{}", std::process::id()));
         std::fs::create_dir_all(&home).unwrap();
         let german = in_german(&[(Folder::Documents, "Dokumente")]);
         let made = crate::made_for(&home, Some(&german), &crate::OnThisDisk);
@@ -115,6 +113,9 @@ mod tests {
         let found = where_they_are(&home, &crate::OnThisDisk, &Path::is_dir);
         let _ = std::fs::remove_dir_all(&home);
         assert_eq!(found.len(), 3, "{found:?}");
-        assert_eq!(found.first().unwrap(), &(Folder::Documents, home.join("Dokumente")));
+        assert_eq!(
+            found.first().unwrap(),
+            &(Folder::Documents, home.join("Dokumente"))
+        );
     }
 }

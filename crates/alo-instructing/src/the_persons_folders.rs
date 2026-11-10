@@ -97,9 +97,7 @@ impl std::error::Error for NotTheirFolders {}
 
 /// Whether `path` is one a line may name: absolute, one line, within the bound.
 fn a_path_a_line_may_name(path: &str) -> bool {
-    path.starts_with('/')
-        && path.len() <= THE_LONGEST_PATH
-        && !path.contains(['\n', '\r', '\0'])
+    path.starts_with('/') && path.len() <= THE_LONGEST_PATH && !path.contains(['\n', '\r', '\0'])
 }
 
 /// Whether `role` is a name a line may give a folder.
@@ -117,7 +115,10 @@ impl ThePersonsFolders {
     /// because a model told a relative home would guess again. A folder that
     /// could not travel is left out, and the others still go.
     #[must_use]
-    pub fn of<'a>(home: &Path, folders: impl IntoIterator<Item = (&'a str, &'a Path)>) -> Option<Self> {
+    pub fn of<'a>(
+        home: &Path,
+        folders: impl IntoIterator<Item = (&'a str, &'a Path)>,
+    ) -> Option<Self> {
         let home = home.to_str()?.to_owned();
         if !a_path_a_line_may_name(&home) {
             return None;
@@ -306,7 +307,10 @@ mod tests {
     fn the_model_is_told_the_home_and_the_names_the_folders_really_have() {
         let told = annas().told();
         assert!(told.contains("home folder is /var/home/anna"), "{told}");
-        assert!(told.contains("Documents: /var/home/anna/Dokumente"), "{told}");
+        assert!(
+            told.contains("Documents: /var/home/anna/Dokumente"),
+            "{told}"
+        );
         assert!(told.contains("/Users/name"), "{told}");
         assert!(told.contains("does not allow reaching it"), "{told}");
     }

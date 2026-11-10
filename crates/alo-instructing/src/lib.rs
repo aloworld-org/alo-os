@@ -87,10 +87,10 @@ pub use the_conversation_on_the_wire::{
 };
 pub use the_conversation_so_far::{AnEarlierTurn, TheAnswer, TheConversationSoFar};
 pub use the_language_asked_in::the_language_of;
-pub use the_window_offered::{
-    NotTheWindow, THE_LONGEST_TITLE, THE_LONGEST_WINDOW_LINE, THE_WINDOW_OFFERED, TheWindowOffered,
-};
 pub use the_persons_folders::{
     NotTheirFolders, THE_LONGEST_FOLDERS_LINE, THE_PERSONS_FOLDERS, ThePersonsFolders,
+};
+pub use the_window_offered::{
+    NotTheWindow, THE_LONGEST_TITLE, THE_LONGEST_WINDOW_LINE, THE_WINDOW_OFFERED, TheWindowOffered,
 };
 pub use what_it_may_reach::WhatItMayReach;

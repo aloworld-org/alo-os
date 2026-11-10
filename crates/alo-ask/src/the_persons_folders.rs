@@ -25,7 +25,8 @@ pub fn now() -> Option<ThePersonsFolders> {
 /// The folders of the home at `home`, read off this disk.
 #[must_use]
 pub fn of_this_home(home: &Path) -> Option<ThePersonsFolders> {
-    let found = alo_their_folders::where_they_are(home, &alo_their_folders::OnThisDisk, &Path::is_dir);
+    let found =
+        alo_their_folders::where_they_are(home, &alo_their_folders::OnThisDisk, &Path::is_dir);
     ThePersonsFolders::of(
         home,
         found
@@ -47,7 +48,8 @@ mod tests {
     /// would be shown — the home and each folder — resolves on the disk.
     #[test]
     fn every_path_the_model_is_told_resolves() {
-        let home = std::env::temp_dir().join(format!("alo-ask-their-folders-{}", std::process::id()));
+        let home =
+            std::env::temp_dir().join(format!("alo-ask-their-folders-{}", std::process::id()));
         std::fs::create_dir_all(&home).expect("a home for this test");
         let made = alo_their_folders::made_for(&home, None, &alo_their_folders::OnThisDisk);
         let told = of_this_home(&home);
@@ -64,7 +66,10 @@ mod tests {
 
         assert!(made.everything_was_made(), "{made:?}");
         let told = told.expect("an absolute home is told");
-        assert_eq!(told.home(), home.to_str().expect("a home with a printable name"));
+        assert_eq!(
+            told.home(),
+            home.to_str().expect("a home with a printable name")
+        );
         assert_eq!(resolved, [true, true, true], "{told:?}");
         let documents = home.join("Documents");
         assert!(
@@ -81,10 +86,8 @@ mod tests {
     /// a fact the session gives, and the folders are only ever the record's.
     #[test]
     fn a_home_with_no_record_is_told_with_no_folders() {
-        let home = std::env::temp_dir().join(format!(
-            "alo-ask-their-folders-none-{}",
-            std::process::id()
-        ));
+        let home =
+            std::env::temp_dir().join(format!("alo-ask-their-folders-none-{}", std::process::id()));
         std::fs::create_dir_all(&home).expect("a home for this test");
         let told = of_this_home(&home);
         let _ = std::fs::remove_dir_all(&home);

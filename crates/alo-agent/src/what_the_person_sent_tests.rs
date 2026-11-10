@@ -6,7 +6,7 @@ use std::os::fd::AsFd as _;
 use std::os::unix::net::UnixStream;
 use std::time::Instant;
 
-use alo_instructing::{AnEarlierTurn, ThePersonsFolders, TheConversationSoFar, TheWindowOffered};
+use alo_instructing::{AnEarlierTurn, TheConversationSoFar, ThePersonsFolders, TheWindowOffered};
 
 use super::*;
 
@@ -49,9 +49,8 @@ fn a_follow_up_is_read_with_its_earlier_conversation() {
 #[test]
 fn a_first_request_carries_no_earlier_conversation_and_does_not_wait() {
     let started = Instant::now();
-    let (read, _shell) = sent_on_a_socket(
-        "list my invoices\nalo-earlier:\nalo-this-window:\nalo-their-folders:\n",
-    );
+    let (read, _shell) =
+        sent_on_a_socket("list my invoices\nalo-earlier:\nalo-this-window:\nalo-their-folders:\n");
     let read = read.unwrap();
     assert_eq!(read.request, "list my invoices");
     assert!(read.earlier.is_empty());
@@ -227,7 +226,10 @@ fn a_request_carries_where_the_persons_folders_are() {
     );
     assert_eq!(read.request, "make a folder called demo in my Documents");
     assert_eq!(read.may_reach.home(), Some(&home));
-    assert_eq!(read.may_reach.folders(), ["/var/home/alo/Documents".to_owned()]);
+    assert_eq!(
+        read.may_reach.folders(),
+        ["/var/home/alo/Documents".to_owned()]
+    );
     let told = read.may_reach.told();
     assert!(told.contains("home folder is /var/home/alo"), "{told}");
 }
@@ -236,9 +238,8 @@ fn a_request_carries_where_the_persons_folders_are() {
 /// the fifth line is still answered, with no home said.
 #[test]
 fn no_home_is_said_by_the_marker_alone_or_by_a_shell_from_before() {
-    let (read, _shell) = sent_on_a_socket(
-        "list my invoices\nalo-earlier:\nalo-this-window:\nalo-their-folders:\n",
-    );
+    let (read, _shell) =
+        sent_on_a_socket("list my invoices\nalo-earlier:\nalo-this-window:\nalo-their-folders:\n");
     assert_eq!(read.unwrap().may_reach.home(), None);
     let (read, _shell) = sent_on_a_socket("list my invoices\nalo-earlier:\nalo-this-window:\n");
     assert_eq!(read.unwrap().may_reach.home(), None);

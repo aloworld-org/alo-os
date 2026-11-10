@@ -163,10 +163,7 @@ fn a_request_held_open_carries_where_the_persons_folders_are() {
     });
     let home = alo_instructing::ThePersonsFolders::of(
         std::path::Path::new("/var/home/alo"),
-        [(
-            "Documents",
-            std::path::Path::new("/var/home/alo/Documents"),
-        )],
+        [("Documents", std::path::Path::new("/var/home/alo/Documents"))],
     )
     .expect("an absolute home");
 

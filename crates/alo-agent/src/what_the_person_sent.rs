@@ -45,7 +45,7 @@ use std::os::fd::BorrowedFd;
 use std::path::Path;
 use std::time::Duration;
 
-use alo_instructing::{ThePersonsFolders, TheConversationSoFar, TheWindowOffered, WhatItMayReach};
+use alo_instructing::{TheConversationSoFar, ThePersonsFolders, TheWindowOffered, WhatItMayReach};
 
 /// The marker a line of granted folders begins with.
 ///

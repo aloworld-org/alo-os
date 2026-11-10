@@ -47,7 +47,7 @@ use std::path::{Path, PathBuf};
 use std::sync::mpsc::{Receiver, Sender, TryRecvError, channel};
 use std::time::Duration;
 
-use alo_instructing::{ThePersonsFolders, TheConversationSoFar, TheWindowOffered};
+use alo_instructing::{TheConversationSoFar, ThePersonsFolders, TheWindowOffered};
 
 /// Where a person's words are handed to their agent.
 ///
