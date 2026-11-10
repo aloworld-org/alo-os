@@ -16,7 +16,7 @@
 //!
 //! # A command that failed is not *done*
 //!
-//! **Since 2026-11-10 a command is answered by [`ran_without_asking`]**, which
+//! **Since 2026-11-10 a command is answered by `ran_without_asking`**, which
 //! says *done* only for a run that worked (`alo_capability::ItDidNotWork`) and
 //! otherwise what was tried and why it did not work. The walk of `f028d5ec`
 //! read *Done without asking you first … run this command: mkdir

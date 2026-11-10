@@ -62,8 +62,8 @@ impl WhatACommandDid {
 /// **Why a command that ran did not work**, or nothing when it did.
 ///
 /// A command that ran is not a command that did what was asked: `mkdir` of a
-/// folder whose parent is not there runs, writes one line and ends with status
-/// 1. Until 2026-11-10 every surface answered a run as *done* whatever it ended
+/// folder whose parent is not there runs, writes one line and ends with
+/// status 1. Until 2026-11-10 every surface answered a run as *done* whatever it ended
 /// with, and a booted machine told a person *Done without asking you first …
 /// mkdir /Users/username/Documents/demo* about a folder that was never made.
 /// So *did it work* is decided here, once, from what the run itself said — and
