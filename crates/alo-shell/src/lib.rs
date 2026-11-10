@@ -149,6 +149,8 @@ mod access_nodes;
 mod access_roles;
 mod access_serving;
 mod active_session;
+/// What an application sends while alo works in it, on the indicator (ADR 0143 Q6).
+pub mod alo_at_work;
 mod approval_answers;
 mod approval_keys;
 mod approval_paint;
@@ -190,7 +192,6 @@ mod capture_raster;
 /// What one key press means in the Dock's composer.
 pub mod composer_keys;
 /// What an application sends while a person's command runs, on the indicator (ADR 0148).
-pub mod alo_at_work;
 pub mod counting_during_their_commands;
 mod cursor;
 mod cursor_shapes;

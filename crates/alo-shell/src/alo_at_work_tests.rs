@@ -336,10 +336,17 @@ fn a_turn_that_hangs_up_ends_its_line_once_it_has_been_seen() {
     assert_eq!(machine.lines(), [HowItIsShown::Counted]);
     drop(alo);
     machine.looked(1);
-    assert_eq!(machine.lines(), [HowItIsShown::Counted], "seen for two seconds");
+    assert_eq!(
+        machine.lines(),
+        [HowItIsShown::Counted],
+        "seen for two seconds"
+    );
     machine.looked(3);
     assert!(machine.lines().is_empty());
-    assert!(machine.kernel.borrow().counted.is_empty(), "a count was left running");
+    assert!(
+        machine.kernel.borrow().counted.is_empty(),
+        "a count was left running"
+    );
 }
 
 #[test]

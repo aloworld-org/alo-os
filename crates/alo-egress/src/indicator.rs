@@ -39,8 +39,8 @@ use std::time::SystemTime;
 use alo_strings::{Said, Strings};
 use serde::Serialize;
 
-use crate::departing::Departing;
 use crate::at_work::AloAtWork;
+use crate::departing::Departing;
 use crate::during::DuringTheirCommand;
 use crate::itself::OnItsOwn;
 use crate::leaving::Leaving;

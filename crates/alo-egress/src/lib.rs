@@ -115,9 +115,9 @@
 
 #![doc(html_root_url = "https://github.com/aloworld-org/alo-os")]
 
+pub mod at_work;
 pub mod departing;
 pub mod destination;
-pub mod at_work;
 pub mod during;
 pub mod errand;
 pub mod indicator;

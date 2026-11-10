@@ -228,7 +228,10 @@ impl AlosCopies {
             // Started over the bus only, the bus has one name for it, and a
             // second start is the first one's window: no copy of its own.
             Ok(HowItStarts::OverTheBus { or_else: None }) => Err(NoCopy::OfItsOwn),
-            Err(why) => Err(said(application, &format!("its entry cannot start it: {why:?}"))),
+            Err(why) => Err(said(
+                application,
+                &format!("its entry cannot start it: {why:?}"),
+            )),
         }
     }
 
@@ -347,7 +350,10 @@ impl StartsAlosCopy for AlosCopies {
 /// The control group a process runs in, if it is in the person's `app.slice`
 /// and is not the slice itself — anywhere else is not an application's.
 fn where_it_runs(pid: u32, slice: &Path) -> Option<PathBuf> {
-    the_group_in(&std::fs::read_to_string(format!("/proc/{pid}/cgroup")).ok()?, slice)
+    the_group_in(
+        &std::fs::read_to_string(format!("/proc/{pid}/cgroup")).ok()?,
+        slice,
+    )
 }
 
 /// The control group `/proc/<pid>/cgroup` names, held to the person's slice.

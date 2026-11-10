@@ -24,8 +24,8 @@ use alo_capability::Grantee;
 use alo_strings::{Said, Strings};
 use serde::{Deserialize, Serialize};
 
-use crate::destination::Destination;
 use crate::at_work::{HowItIsShown, said_of_alo_at_work};
+use crate::destination::Destination;
 use crate::during::said_of_their_command;
 use crate::errand::Errand;
 use crate::indicator::Shown;
