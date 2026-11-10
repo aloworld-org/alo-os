@@ -358,6 +358,63 @@ fn a_place_keeps_what_it_was_when_the_next_layout_is_kept() {
     assert!(read_back.earlier_on(second()).is_empty());
 }
 
+/// A moment part of the way through a second, as a real clock gives.
+fn a_clock_moment(after: std::time::SystemTime) -> std::time::SystemTime {
+    after + std::time::Duration::from_millis(437)
+}
+
+/// **A rearrangement is kept when the clock is not on a whole second.**
+///
+/// The fault a booted machine showed on 2026-11-09: the file writes a stop's
+/// moment in whole seconds, the moment in memory had its fraction, the read-back
+/// proof compared the two and refused — so every keep after the first move said
+/// *ReadBackAsSomethingElse* and nothing after it reached the disk. Every other
+/// test here uses whole seconds, which is how all of them passed.
+#[test]
+fn a_rearrangement_is_kept_at_a_moment_part_way_through_a_second() {
+    let folder = a_folder("fraction");
+    let at_file = folder.join("canvas.toml");
+
+    keep(&at_file, &two_places(), a_clock_moment(noon())).unwrap();
+    let mut moved = two_places();
+    moved.looking(first(), a_camera(0, 0, 1_000));
+    let kept = keep(&at_file, &moved, a_clock_moment(later()))
+        .expect("a keep at an ordinary moment is not refused");
+
+    let (read_back, why) = at_sign_in(&at_file);
+    assert!(why.is_none(), "{why:?}");
+    assert_eq!(read_back, kept, "what was kept is what a sign-in reads");
+    assert_eq!(
+        read_back.earlier_on(first())[0].when(),
+        later(),
+        "the stop is held to the second, as the file holds it"
+    );
+}
+
+/// **Going back on a ribbon holds the state left to the second too.**
+///
+/// `Arrangement::as_it_was` is the other road a moment enters the series by,
+/// so the stop it adds is the moment the file would hold for it.
+#[test]
+fn going_back_holds_the_state_left_to_the_second() {
+    let folder = a_folder("fraction-back");
+    let at_file = folder.join("canvas.toml");
+
+    keep(&at_file, &two_places(), noon()).unwrap();
+    let mut moved = two_places();
+    moved.looking(first(), a_camera(0, 0, 1_000));
+    let mut kept = keep(&at_file, &moved, later()).unwrap();
+    let stop = kept.earlier_on(first())[0].when();
+
+    let back_at = later() + std::time::Duration::from_secs(60);
+    assert!(kept.as_it_was(first(), stop, a_clock_moment(back_at)));
+    assert_eq!(
+        kept.earlier_on(first()).last().map(crate::AsItWas::when),
+        Some(back_at),
+        "the state left is held at the second the file would write"
+    );
+}
+
 /// **A ribbon is capped, and the oldest stop is the one that goes.**
 #[test]
 fn a_place_remembers_no_more_than_the_cap_and_forgets_the_oldest() {

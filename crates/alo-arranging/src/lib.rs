@@ -296,6 +296,25 @@ struct TheFile {
     places: BTreeMap<String, APlacesOwn>,
 }
 
+/// **A moment held as the file holds it: to the whole second.**
+///
+/// The file writes a stop's moment in whole seconds since the epoch (a moment
+/// before the epoch as the epoch), and `keeping::keep` reads every file back and
+/// refuses one that does not read as the layout it meant to write. So a moment
+/// held to the nanosecond in memory never matched its own file, and **every
+/// keep after the first rearrangement was refused** — on a booted machine on
+/// 2026-11-09, five times in an hour, as *the canvas layout was not kept:
+/// ReadBackAsSomethingElse*. Every test used a clock of whole seconds, which is
+/// why none saw it. Held here as it is written, so memory and the file are one
+/// value.
+fn to_the_second(when: SystemTime) -> SystemTime {
+    UNIX_EPOCH
+        + std::time::Duration::from_secs(
+            when.duration_since(UNIX_EPOCH)
+                .map_or(0, |since| since.as_secs()),
+        )
+}
+
 /// **One stop on a Place's ribbon**: when it was, and enough to draw it.
 ///
 /// What a ribbon needs and no more. The windows themselves are not handed out
@@ -580,7 +599,7 @@ impl Arrangement {
         };
         let held = one.earlier.remove(at);
         one.earlier.push(Held {
-            when: now,
+            when: to_the_second(now),
             camera: one.camera,
             windows: std::mem::take(&mut one.windows),
         });
@@ -607,7 +626,7 @@ impl Arrangement {
             entry.earlier.clone_from(&was.earlier);
             if entry.camera != was.camera || entry.windows != was.windows {
                 entry.earlier.push(Held {
-                    when,
+                    when: to_the_second(when),
                     camera: was.camera,
                     windows: was.windows.clone(),
                 });
