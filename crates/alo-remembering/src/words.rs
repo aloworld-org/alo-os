@@ -188,6 +188,15 @@ pub const LEVEL_NOT_A_TERMINAL_ANSWER: Word = Word::saying(
      first.",
 );
 
+/// `in-applications` says a word that is neither of its two.
+pub const LEVEL_NOT_AN_APPLICATIONS_ANSWER: Word = Word::saying(
+    "remembering.level.not-an-applications-answer",
+    "{path} says {said} for applications, which is neither in-alos-copy nor in-their-window, so      this machine does not know how you want code run, and alo works only in its own copy of an      application",
+)
+.noting(
+    "{path} and {said} are both taken from the file exactly as written and are never translated,      and neither are the two words in-alos-copy and in-their-window: they are what the file      holds. Said of the line that decides whether alo may work in the person's own application      window. Nothing is guessed at; until it is fixed, alo works only in a separate copy of an      application of its own.",
+);
+
 /// The file could not be written.
 pub const LEVEL_NOT_WRITTEN: Word = Word::saying(
     "remembering.level.not-written",
@@ -200,7 +209,7 @@ pub const LEVEL_NOT_WRITTEN: Word = Word::saying(
 );
 
 /// Every word this crate can say.
-pub const EVERY_WORD: [Word; 11] = [
+pub const EVERY_WORD: [Word; 12] = [
     LEVEL_A_LINK,
     LEVEL_NOT_READ,
     LEVEL_SOMEBODY_ELSES,
@@ -208,6 +217,7 @@ pub const EVERY_WORD: [Word; 11] = [
     LEVEL_SAYS_NOTHING,
     LEVEL_NO_SUCH_LEVEL,
     LEVEL_NOT_A_TERMINAL_ANSWER,
+    LEVEL_NOT_AN_APPLICATIONS_ANSWER,
     LEVEL_NOT_THE_SHAPE,
     LEVEL_FROM_A_NEWER_ALO_OS,
     LEVEL_NOT_WRITTEN_DOWN,

@@ -20,9 +20,19 @@
 //!
 //! → work-in-their-window org.mozilla.firefox   (the setting turned up)
 //! ← showing            a line is up for as long as alo works: nothing counted
+//!   (or, at the default: not-chosen)
 //! → done
 //! ← uncounted
 //! ```
+//!
+//! **Which of the two alo may ask for is the person's**, read by the door at
+//! each ask from their own settings (`alo_capability::AloInApplications`),
+//! never taken from the word alo sent. At the default `work-in-their-window`
+//! is answered `not-chosen` and nothing is shown or started. Turned up,
+//! `work-in-alos-copy` still uses alo's copy where the application has one —
+//! that is counted, and the person chose *may*, not *must* — and the person's
+//! own window where it has none, answered `showing` rather than
+//! `no-copy-of-its-own`.
 //!
 //! **`cannot-count` is not a refusal.** alo's copy is running and alo may work
 //! in it, and the line that is up says *this machine cannot count what it
@@ -157,11 +167,15 @@ pub enum Working {
     CouldNotStart,
     /// This desktop has nowhere to show a line, so alo may not work there.
     CannotShow,
+    /// alo asked to work in the person's own window, and the person has not
+    /// chosen to let it (`alo_capability::AloInApplications`): nothing was
+    /// shown or started.
+    NotChosen,
 }
 
 impl Working {
     /// Every answer, for a test that reads each back.
-    pub const ALL: [Self; 7] = [
+    pub const ALL: [Self; 8] = [
         Self::Counting,
         Self::CannotCount,
         Self::Showing,
@@ -169,6 +183,7 @@ impl Working {
         Self::NotInstalled,
         Self::CouldNotStart,
         Self::CannotShow,
+        Self::NotChosen,
     ];
 
     /// The word on the wire.
@@ -182,6 +197,7 @@ impl Working {
             Self::NotInstalled => "not-installed",
             Self::CouldNotStart => "could-not-start",
             Self::CannotShow => "cannot-show",
+            Self::NotChosen => "not-chosen",
         }
     }
 

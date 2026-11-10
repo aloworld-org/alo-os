@@ -425,6 +425,12 @@ fn no_choice_the_old_window_offered_is_dropped() {
             .into_iter()
             .map(SettingsRow::Granted),
     );
+    // **Where alo works in an application** (ADR 0143 Q6), added 2026-11-10.
+    before.extend(
+        alo_capability::AloInApplications::ALL
+            .into_iter()
+            .map(SettingsRow::WhereAloWorks),
+    );
     assert!(
         before.len() > 30,
         "the control: today's window had dozens of choices on this machine"
@@ -1516,7 +1522,11 @@ fn a_session_with_no_folder_offers_nothing_it_could_not_keep() {
     assert!(
         rows.iter().all(|row| matches!(
             row.section(),
-            SettingsSection::Granted | SettingsSection::HowCodeRuns
+            SettingsSection::Granted
+                | SettingsSection::HowCodeRuns
+                // **And where alo works in an application**, kept in the same
+                // machine file.
+                | SettingsSection::InApplications
         ) || matches!(
             row,
             SettingsRow::GoTo(SettingsCategory::RunningCode)
@@ -1530,8 +1540,9 @@ fn a_session_with_no_folder_offers_nothing_it_could_not_keep() {
     // which a session with no folder cannot keep.
     assert_eq!(
         rows.len(),
-        8,
-        "one grant, one pairing, the record's row, the three levels, their page's row, the switch"
+        10,
+        "one grant, one pairing, the record's row, the two answers for applications, the three \
+         levels, their page's row, the switch"
     );
     assert_eq!(window.appearance(), Some(&Appearance::shipped()));
     assert_eq!(window.dock(), Some(&Dock::shipped()));
@@ -2451,4 +2462,86 @@ fn every_pointer_choice_is_reached_and_chosen_from_the_keyboard() {
         None,
         "a pointer choice wrote access.toml"
     );
+}
+
+/// **Where alo works in an application is a choice on Folders alo can use**
+/// (ADR 0143 Q6, the owner's answer A of 2026-11-10): alo's own copy, chosen
+/// as a machine arrives and tagged *Default*; the person's own window, with
+/// what it costs said in ADR 0143's words — and the refusal for an
+/// application with no copy of its own names that row and its page exactly.
+#[test]
+fn where_alo_works_is_offered_with_its_cost_and_the_refusal_names_it() {
+    use alo_capability::AloInApplications;
+    let machine = a_persons_machine("where-alo-works");
+    let strings = words();
+    let door = CountingDoor::revoking();
+    let mut window = machine.opened();
+    let page = the_page_at(&window, SettingsCategory::FoldersAloCanUse, &strings, noon());
+    let rows: Vec<&ARow> = rows_drawn(&page)
+        .into_iter()
+        .filter(|row| matches!(row.row, Some(SettingsRow::WhereAloWorks(_))))
+        .collect();
+    let names: Vec<(&str, bool, Option<&str>)> = rows
+        .iter()
+        .map(|row| {
+            (
+                row.title.as_str(),
+                matches!(row.kind, TheKind::AChoice { chosen: true }),
+                row.risk.as_ref().map(|risk| risk.words.as_str()),
+            )
+        })
+        .collect();
+    assert_eq!(
+        names,
+        [
+            ("alo works in its own copy of an application", true, None),
+            (
+                "alo may work in your own window",
+                false,
+                Some(
+                    "alo will show that the application is sending, but cannot count what it \
+                     sends, and works where your other tabs are"
+                )
+            ),
+        ]
+    );
+
+    // **The refusal points at this row, on this page, in their own words.**
+    let refusal = strings
+        .say(
+            &alo_capability::words::NO_COPY_OF_ITS_OWN.key(),
+            &Filling::of("application", "Text Editor"),
+        )
+        .into_text();
+    let page_name = SettingsCategory::FoldersAloCanUse.said(&strings);
+    let row_name = rows[1].title.clone();
+    assert!(
+        refusal.contains(&format!("“{row_name}” in Settings → {page_name}")),
+        "the refusal does not name the row and its page exactly: {refusal}"
+    );
+
+    // **Choosing the person's window is written first and ticked second**, and
+    // the door reads the same file.
+    let at = machine.places.how_code_runs().to_owned();
+    for answer in [
+        AloInApplications::InTheirWindow,
+        AloInApplications::InItsOwnCopy,
+    ] {
+        assert_eq!(
+            chosen(
+                &mut window,
+                &SettingsRow::WhereAloWorks(answer),
+                &strings,
+                &door
+            ),
+            Some(SettingsDid::Kept(
+                SettingsSection::InApplications,
+                SettingsKept::Written
+            ))
+        );
+        assert_eq!(
+            alo_remembering::alo_in_applications_remembered(&at).unwrap(),
+            answer
+        );
+    }
 }

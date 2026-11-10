@@ -115,8 +115,8 @@ mod written;
 
 #[cfg(unix)]
 pub use how_code_runs::{
-    THE_LEVEL, alo_in_the_terminal_kept, alo_in_the_terminal_remembered, the_level_kept,
-    the_level_remembered,
+    THE_LEVEL, alo_in_applications_kept, alo_in_applications_remembered, alo_in_the_terminal_kept,
+    alo_in_the_terminal_remembered, the_level_kept, the_level_remembered,
 };
 #[cfg(unix)]
 pub use keeping::{THE_FOLDER, THE_GRANTS, kept, remembered};
@@ -128,7 +128,7 @@ pub use names::{MachineNames, NotNames, THE_NAMES_FORMAT};
 pub use pairings::{THE_PAIRINGS, pairings_kept, pairings_remembered};
 pub use refusing::NotRemembered;
 pub use the_level::{
-    ASKING_EACH_TIME, AT_FULL_TRUST, IN_A_SEALED_BOX, NotTheLevel, THE_LEVEL_FORMAT,
+    ASKING_EACH_TIME, AT_FULL_TRUST, IN_A_SEALED_BOX, IN_ALOS_COPY, IN_THEIR_WINDOW, NotTheLevel, THE_LEVEL_FORMAT,
     the_level_called, the_word_for,
 };
 #[cfg(unix)]

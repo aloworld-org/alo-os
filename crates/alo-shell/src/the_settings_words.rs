@@ -356,6 +356,13 @@ pub const PAIRED_MACHINES: Word = Word::saying(
      back. Sentence case.",
 );
 
+/// The heading over where alo works in an application (ADR 0143 Q6).
+pub const IN_APPLICATIONS: Word = Word::saying("settings.section.in-applications", "In applications")
+    .noting(
+        "A heading over two choices: whether alo, the assistant, works in its own separate copy of \
+         an application or may work in the person's own window. Sentence case.",
+    );
+
 /// The heading over the three levels of running code.
 pub const ALO_RUNS_CODE: Word = Word::saying("settings.section.alo-runs-code", "alo runs code")
     .noting("A heading over three choices of how alo runs commands. alo is the assistant's name.");
@@ -841,7 +848,7 @@ pub const AS_A_PERCENTAGE: Word = Word::saying("settings.access.percent", "{perc
 /// The length is written out so that adding a word above and forgetting it
 /// here does not compile — a word declared and left out of this list reaches a
 /// person as its own key.
-pub const THE_WINDOWS_WORDS: [Word; 113] = [
+pub const THE_WINDOWS_WORDS: [Word; 114] = [
     SETTINGS,
     EVERYTHING_IN_ONE_PLACE,
     THE_GROUP_ALO,
@@ -887,6 +894,7 @@ pub const THE_WINDOWS_WORDS: [Word; 113] = [
     GIVEN_TO_ALO,
     WHAT_ALO_DID,
     PAIRED_MACHINES,
+    IN_APPLICATIONS,
     ALO_RUNS_CODE,
     STAYS_ON,
     IN_THE_TERMINAL,
