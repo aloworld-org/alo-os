@@ -179,9 +179,14 @@ when the turn ends.
 
 ### 9. What a driven application sends is on the indicator
 
-**Status:** in progress — the owner answered both questions on 2026-11-10
-(below); what can be built before stage 4 is being built, and nothing a person
-can see works until stage 4 drives an application. **Size:** L. **Nothing that
+**Status:** in progress. **Built 2026-11-10, reached by nothing yet:** the
+desktop starts alo's own copy of Firefox, VSCodium or VS Code with a profile of
+its own, counts only that copy, and shows one of three lines; the person's own
+window is counted at neither setting; any other application is refused at the
+default (answer A); the door's words are in `application-door.md`. **Not yet:**
+a turn that asks the door (stage 4), the record entry that turn writes, the
+Settings choice answer A names, and any of it run on a machine. The owner
+answered both questions on 2026-11-10 (below). **Size:** L. **Nothing that
 publishes is walked before this lands.**
 
 *What was found.* Three things this stage needs do not exist, and none is in

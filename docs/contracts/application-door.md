@@ -313,6 +313,55 @@ cannot forget to end:
 Nothing an agent sends reaches this act: `alo-agentd` writes only `open`, `focus`
 and `close`, and the answer is the person's own command's to read.
 
+## alo working in an application — added 2026-11-10 (ADR 0143 Q6)
+
+**What it gives a person:** when alo works in an application — presses
+*Publish* in an editor, say — what that application sends is on the indicator
+while alo works, never unshown. **Nothing asks this yet**: no turn drives an
+application until stage 4 of the Demo 2 plan, so a person sees none of it today.
+[ADR 0143](../decisions/0143-alo-works-inside-applications-and-may-post-in-the-persons-name.md)
+Q6 and the owner's answers of 2026-11-10 are the decision; this is the wire.
+
+Like a count, it holds its connection for as long as alo works:
+
+```
+→ work-in-alos-copy <application>        (the default setting)
+← counting | cannot-count | no-copy-of-its-own | not-installed
+  | could-not-start | cannot-show
+→ work-in-their-window <application>     (the setting turned up)
+← showing | not-installed | cannot-show
+  … alo works …
+→ done
+← sent <bytes> | stopped <bytes> | uncounted
+```
+
+- `work-in-alos-copy` starts **alo's own copy** of the application, with a
+  profile of its own (`alo_launching::alos_copy`), or finds the one already
+  running, and counts **only that copy** — its scope, `app-alocopy-<id>@<n>.scope`,
+  and the scope Flatpak moved its process into. **The person's own windows of
+  the same application are never counted**, and a person's own `count` no longer
+  counts alo's copy either.
+- `counting`: the copy runs and is counted; the line *{application}, in the copy
+  alo is working in, is sending* is up from the first byte. `cannot-count`: the
+  copy runs and this machine cannot count it; the line *alo is working in its own
+  copy of {application}, and this machine cannot count what it sends* is up for
+  the whole time. A `counting` copy whose groups are not found within two
+  seconds, or a part of which cannot be counted, becomes the second line at once.
+- `no-copy-of-its-own` is **the owner's answer A**: the application cannot open
+  a separate copy for alo — it is not on alo's reviewed list, or it is started
+  only over the session bus — so alo may not work in it at this setting, and the
+  turn names the Settings choice that lets it use the person's own window.
+- `work-in-their-window` counts nothing at all. `showing`: the line *alo is
+  working in your {application} window, which may be sending, and alo cannot
+  count what* is up for the whole time.
+- `cannot-show`: this desktop has nowhere to draw a line, so alo may not work.
+  **Only `counting`, `cannot-count` and `showing` let alo begin**
+  (`alo_acting::Working::may_work`).
+- `done` is the only thing said after that. `sent <bytes>` is what alo's copy
+  sent while alo worked in it; `stopped <bytes>` that the desktop ended it first,
+  after fifteen minutes, and a turn that works longer asks again; `uncounted`
+  that nothing was counted. Closing the connection takes the line down.
+
 ## The window you were working in — `front`, added 2026-11-07
 
 **What it gives a person:** typing `alo-app front press button "Save"` in a
