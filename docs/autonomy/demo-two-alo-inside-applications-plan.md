@@ -1,5 +1,11 @@
 # Demo 2: alo working inside applications
 
+**Status: approved by the owner on 2026-11-10.** Asked *"Should I mark the
+Demo 2 plan approved and start its stage 1?"*, the owner answered *"Yes
+please"*. It is owned by the coordinator lane on this PC (`alo-os-shell`
+checkout), as the charter's row says, and stage 1 — a measurement on the booted
+qemu machine — comes first.
+
 **What it is for.** The public demo for developers, decided by the owner on
 2026-10-31: alo builds something simple **inside the open-source code editor
 alo OS ships**, and presses *Publish* to put it on GitHub Pages. alo must be able
@@ -28,17 +34,20 @@ once `CLAUDE.md` carries those words, which is the owner's edit (ADR 0143).
 keys, under the rule `docs/walks/a-day-on-alo-os.md` sets: *nothing is
 simulated*, and a walk that stops is a finding.
 
-## Why this has stages and not yet tasks
+## How it became a plan with tasks
 
-This plan is **proposed and not yet approved**, and nobody owns it yet. A plan
-with a `## Tasks` section must be named in `ROADMAP.md` and in
-`a-new-machine-becomes-a-lane.md`, and `ROADMAP.md` has one writer, the
-integration owner (`SHARED_MAIN.md`). So the stages below sit under their own
-heading on purpose. **When the owner approves**, three edits make it a plan with
-tasks, in one change: rename the heading to `## Tasks`, add the row to
-`ROADMAP.md` (the integration owner's), and add the owning machine's row to the
-charter. Until then the two reconciling tests do not count it, and that is the
-honest state rather than a way round them.
+Until 2026-11-10 this plan was **proposed and not yet approved**, and its stages
+sat under a heading of their own on purpose: a plan with a `## Tasks` section
+must be named in `ROADMAP.md` and in `a-new-machine-becomes-a-lane.md`, and
+`ROADMAP.md` has one writer, the integration owner (`SHARED_MAIN.md`). The
+owner's approval made it a plan with tasks in one change: the heading renamed
+to `## Tasks`, its row in `ROADMAP.md`'s phase 6 written by the integration
+owner, and the owning machine's row in the charter. The two reconciling tests
+count it from that change on.
+
+Each stage's **Status** was read again against `main` in the same change.
+Stage 3 moved, and its line says why. Stage 9 was already marked in progress
+(#1154, #1163). The rest are still not started.
 
 ## Sizes
 
@@ -46,7 +55,7 @@ honest state rather than a way round them.
 one lane with its gate. The owner answered ADR 0143's questions on 2026-10-31;
 what a stage still waits on is named in its own lines.
 
-## Proposed stages
+## Tasks
 
 ### 1. Measure the ground on the qemu machine
 
@@ -83,12 +92,19 @@ the bus launcher is installed and **answers**, not that a file exists.
 
 ### 3. A person can let alo use an application
 
-**Status:** not started. **Size:** M. **Waits on:** nothing for the default;
-`CLAUDE.md` carrying the owner's change (ADR 0143) for *every application*.
+**Status:** its top level is in, by another road; its default is not started.
+At **full access** (ADR 0149), alo opens, brings forward and closes any
+application the person's account can, with no grant (#1134), and a new machine
+offers full access already chosen at first sign-in (#1137). At *ask me each
+time* and the sealed box every application is still refused, because nothing
+yet lets a person grant one: the Settings list, the compositor's offer and the
+install-time grant are unbuilt. **Size:** M. **Waits on:** nothing for the
+default; for an *every application* setting below full access, if one is still
+wanted, `CLAUDE.md` carrying the owner's change (ADR 0143).
 
-**For the person:** today alo is offered opening and closing applications and
-every one is refused on a real machine, because nothing lets anybody grant it an
-application. After this, Settings lists the installed applications, and the
+**For the person:** today alo is offered opening and closing applications and,
+below full access, every one is refused on a real machine, because nothing lets
+anybody grant it an application. After this, Settings lists the installed applications, and the
 person lets alo use one, for an hour, a day, a month or until removed, and takes
 it back in one action; and when alo needs one it has not got, a surface the
 compositor draws — not alo — offers it. Also at install, and *every application
@@ -107,9 +123,10 @@ a terminal refused unless ADR 0111's choice is made; and every refusal recorded.
 
 **For the person:** alo can read what a granted application shows and press a
 named button in it — the first time it works inside an application at all.
-**Reuses:** `crates/alo-adapters`' fallback, unchanged; `alo-turn`'s executor
-pattern (`acting_on_an_application.rs`). **Test:** the twelve-verb test becomes
-fourteen and `agent-verbs.md` says *offered*; with no invocation the tree is
+**Reuses:** `crates/alo-adapters`' fallback, unchanged, whose walk and press
+the person's `alo-app` command already shares (#1118) — but no turn offers
+them; `alo-turn`'s executor pattern (`acting_on_an_application.rs`).
+**Test:** the twelve-verb test becomes fourteen and `agent-verbs.md` says *offered*; with no invocation the tree is
 never asked; a revoked grant stops the next press; on qemu, Firefox's window
 read and a button pressed.
 
