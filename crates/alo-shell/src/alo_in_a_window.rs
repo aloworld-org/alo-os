@@ -7,14 +7,14 @@
 //!
 //! 1. **Help with this window** opens an alo request with that window clearly
 //!    named, and **opening it asks nothing**. The window is held as
-//!    [`AloInAWindow::offered`] while the person types; what travels to alo —
+//!    `AloInAWindow::offered` while the person types; what travels to alo —
 //!    its title and its application's identifier — is read **at the moment
 //!    they send it**, and never before or after (`CLAUDE.md`, *context is
 //!    offered, never watched*). Escape, a click away, AI switched off, or the
 //!    window closing all let the offer go, and nothing is asked.
 //! 2. **The window alo is working in wears its presence** for the turn, on no
 //!    other window, and is bare again when the turn ends. A task asked about a
-//!    window remembers which one ([`AloInAWindow::works_in`]); what it is
+//!    window remembers which one (`AloInAWindow::works_in`); what it is
 //!    doing now is the task's own reading
 //!    (`alo_tasks::ATask::what_is_happening`), so the window's band and the
 //!    task window can never disagree about whether alo is working.
@@ -201,9 +201,10 @@ impl crate::Server {
             .offered()
             .filter(|offered| self.mapped_surfaces().any(|it| it == *offered))?;
         let name = self.the_name_of(surface);
+        let named = self.the_application_on_the_band(surface);
         let (title, application) = crate::window_edge_picture::what_the_band_says(
             crate::the_name_on_the_band::the_title_to_show(&name),
-            self.the_application_on_the_band(surface).as_deref(),
+            named.as_deref(),
         );
         let reads = match (title, application) {
             (Some(title), Some(application)) => format!("{title} \u{b7} {application}"),

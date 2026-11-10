@@ -278,6 +278,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                             )
                         }),
                         showing: None,
+                        alo: None,
                     },
                     alo_shell::TheWindow {
                         title: title.its_own_words(),

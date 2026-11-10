@@ -410,5 +410,5 @@ that part is **not built**.
 | 1d | Left and Right with the preview: this window alone on half its display's work area under its band, the `11:84` outline and its words drawn under the panel while either is in hand, the same words for a reader, *This window needs more room than half the screen* where its minimum does not fit | this change |
 | 1e | the full-screen top-edge reveal | not built |
 | 2 | Move to…, Undo placement | not built |
-| 3 | Help with this window, the working state and Stop: the panel's row while alo may be asked; the launcher opened for the window, naming it, asking nothing until sent; the window's title and identifier read at Enter and sent to alo as a hint (`docs/contracts/asking-socket.md`, line 4); the teal edge and the `11:173` band with alo's mark, the person's words and Stop on that window for the turn | this change, on #(the window line) |
+| 3 | Help with this window, the working state and Stop: the panel's row while alo may be asked; the launcher opened for the window, naming it, asking nothing until sent; the window's title and identifier read at Enter and sent to alo as a hint (`docs/contracts/asking-socket.md`, line 4); the teal edge and the `11:173` band with alo's mark, the person's words and Stop on that window for the turn | #1156, on #1155 |
 | 4 | Capture & export | not built |

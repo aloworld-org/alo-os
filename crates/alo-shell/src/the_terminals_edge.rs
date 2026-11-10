@@ -96,6 +96,7 @@ impl Server {
             OverTheEdge {
                 menu: None,
                 showing: None,
+                alo: None,
             },
             // **No body from the edge**: the terminal draws its own panel,
             // hairline and shadow (`crate::the_terminals_frame`), in the same

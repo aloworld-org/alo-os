@@ -244,9 +244,10 @@ pub(crate) fn drawn(
     )
     .cropped_to_its_ink();
     let stop = in_pixels(the_band.stop, scale);
+    let (wide, tall) = (shaped.width, shaped.height);
     words.extend(shaped.placed(
-        stop.loc.x + (stop.size.w - shaped.width).max(0) / 2,
-        stop.loc.y + (stop.size.h - shaped.height).max(0) / 2,
+        stop.loc.x + (stop.size.w - wide).max(0) / 2,
+        stop.loc.y + (stop.size.h - tall).max(0) / 2,
         output.1,
     ));
     (rasters, words)
