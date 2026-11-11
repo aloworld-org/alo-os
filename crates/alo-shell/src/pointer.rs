@@ -453,6 +453,10 @@ impl Server {
             && let Some(window) = self.the_window_under(location)
         {
             self.the_composer.it_gave_the_keyboard_up();
+            // **A window somebody has pressed on is theirs to work in**, so it
+            // is never placed again because its application resized it
+            // (`crate::a_window_that_grows_is_placed_again`).
+            crate::a_window_that_grows_is_placed_again::it_is_settled(&window);
             // **And the applications come in front** of the terminal and any
             // task window (the owner, 2026-10-31), which lets go of a task
             // window's keyboard: the window a person clicks is the one they

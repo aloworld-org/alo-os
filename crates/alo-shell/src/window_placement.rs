@@ -129,7 +129,12 @@ pub fn place_unless_already_placed(surface: &WlSurface, point: Point<i32, Logica
 }
 
 /// Replace compositor-owned placement on the display thread.
+///
+/// **And forget that alo placed it**: whatever positions a window now — a
+/// drag, a resize, a maximise, a restore, an unmap — has the last word, so
+/// `crate::a_window_that_grows_is_placed_again` never moves it on its own.
 pub(crate) fn set(surface: &WlSurface, point: Option<Point<i32, Logical>>) {
+    crate::a_window_that_grows_is_placed_again::it_is_settled(surface);
     with_states(surface, |states| {
         states.data_map.insert_if_missing(Placement::default);
         if let Some(data) = states.data_map.get::<Placement>() {
