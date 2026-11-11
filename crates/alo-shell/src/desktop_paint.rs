@@ -165,7 +165,7 @@ impl DesktopPicture {
         // surfaces at two edges, neither drawn over the other, which is why
         // their areas are kept apart rather than ordered. An empty panel has no
         // solids, so a person who has put nothing aside is painted nothing.
-        crate::painted::paint(frame, &self.panel.solids, &[])?;
+        crate::painted::paint(frame, &self.panel.solids, &self.panel.inked)?;
         // **No task windows here.** They were painted here, above the Dock,
         // while they were in front, until they became windows on the canvas
         // (ADR 0145): a window on the canvas is under the Dock and every fixed
