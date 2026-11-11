@@ -23,8 +23,7 @@ for that waits. Writing a body over many lines is task 14, straight after.
 the same typeface, colours, pointer, keyboard keys and screen-reader names as
 the desktop, on a machine with no graphics card, at any display scale. **What
 the person gets until alo Mails is built on it, after task 13: nothing they
-can see.** The desktop draws
-exactly what it drew before (law 3), and that is a test, not a hope.
+can see.** The desktop draws exactly what it drew before (law 3), and that is a test, not a hope.
 
 ## What the shell already has, surveyed 2026-11-11
 
@@ -116,7 +115,7 @@ is not announced**, so an application at 150 % cannot be told to draw at
 Settings (colour scheme and accent), NetworkMonitor and `OpenURI.OpenFile`.
 **A web link is answered `2`** and **the file chooser and notifications are not
 answered at all**, so a link in a message and an attachment cannot work in any
-application yet. Those are alo OS's to build, not the kit's; task 11 lists
+application yet. Those are alo OS's to build, not the kit's; task 12 lists
 which lane holds each.
 
 **AccessKit's Unix adapter, read off crates.io on 2026-11-11, once:**
@@ -237,7 +236,7 @@ key and a composed letter arrive as the right character.
 **For the person:** every control can be reached with Tab and Shift+Tab, in
 reading order, and the one with the keyboard is visibly marked; Escape leaves
 what it can leave. **Reuses:** `alo-access`'s reading order. **Test:** a
-window of every control in tasks 9 and 10 visited by Tab in reading order and
+window of every control in tasks 9 to 11 visited by Tab in reading order and
 back by Shift+Tab, and **a control no key reaches fails the test**.
 
 ### 7. Measure the accessibility road, then choose
