@@ -61,6 +61,7 @@
 pub mod acting;
 pub mod alos_tree;
 pub mod answer;
+pub mod choosing_a_link;
 pub mod counting;
 pub mod front;
 pub mod opening_a_link;
@@ -70,6 +71,7 @@ pub mod working_in;
 pub use acting::Acting;
 pub use alos_tree::{WhereAlosTreeIs, is_alo_tree};
 pub use answer::{Answer, NotActed};
+pub use choosing_a_link::{CHOOSE_LINK, Chose, NotALinkToChoose, ToChooseALink};
 pub use counting::{Begun, Counted, NotACount, ToCount};
 pub use front::{InFront, is_front};
 pub use opening_a_link::{NotALinkToOpen, OPEN_LINK, ToOpenALink};

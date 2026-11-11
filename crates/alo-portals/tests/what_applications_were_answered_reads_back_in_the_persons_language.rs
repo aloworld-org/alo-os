@@ -173,8 +173,14 @@ mod the_file {
             KeptOutcome::SecretHandedOver { .. } => "secret-handed-over".to_owned(),
             KeptOutcome::Opened { .. } => "opened".to_owned(),
             KeptOutcome::LinkOpened {
-                asked_to_choose, ..
-            } => format!("link-opened/{asked_to_choose}"),
+                asked_to_choose,
+                chosen_on_the_sheet,
+                ..
+            } => format!("link-opened/{asked_to_choose}/{chosen_on_the_sheet}"),
+            KeptOutcome::LinkNotChosen { why, .. } => format!(
+                "link-not-chosen/{}",
+                serde_json::to_value(why).unwrap().as_str().unwrap()
+            ),
             KeptOutcome::NotALink { why } => format!(
                 "not-a-link/{}",
                 match why {
@@ -266,13 +272,28 @@ mod the_file {
                 against: Vec::new(),
             },
         ];
-        for asked_to_choose in [false, true] {
+        for (asked_to_choose, chosen_on_the_sheet) in [(false, false), (true, false), (false, true)]
+        {
             every.push(KeptOutcome::LinkOpened {
                 opener: "org.mozilla.firefox".to_owned(),
                 link: "web".to_owned(),
                 address: "https://example.com/invoice".to_owned(),
                 chosen: false,
                 asked_to_choose,
+                chosen_on_the_sheet,
+            });
+        }
+        for why in [
+            alo_portals::NotChosen::Cancelled,
+            alo_portals::NotChosen::Unanswered,
+            alo_portals::NotChosen::CannotShow,
+            alo_portals::NotChosen::NoDesktop,
+            alo_portals::NotChosen::CouldNotAsk,
+        ] {
+            every.push(KeptOutcome::LinkNotChosen {
+                link: "web".to_owned(),
+                address: "https://example.com/invoice".to_owned(),
+                why,
             });
         }
         for why in [

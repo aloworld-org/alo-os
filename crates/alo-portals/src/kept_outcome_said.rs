@@ -52,8 +52,18 @@ impl KeptOutcome {
                 opener,
                 address,
                 asked_to_choose,
+                chosen_on_the_sheet,
                 ..
-            } => said_as_opened(asked, address, opener, *asked_to_choose, strings),
+            } => said_as_opened(
+                asked,
+                address,
+                opener,
+                (*asked_to_choose, *chosen_on_the_sheet),
+                strings,
+            ),
+            Self::LinkNotChosen { address, why, .. } => {
+                crate::link_not_chosen::said_as_not_chosen(asked, address, *why, strings)
+            }
             Self::AppearanceRead { .. } => strings.say(&words::APPEARANCE_READ.key(), &asked),
             Self::AppearanceSent { .. } => strings.say(&words::APPEARANCE_SENT.key(), &asked),
             Self::NetworkRead { .. } => strings.say(&words::NETWORK_READ.key(), &asked),

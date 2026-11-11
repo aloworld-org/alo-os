@@ -120,6 +120,7 @@ pub mod kept_answer_said;
 pub mod kept_outcome;
 mod kept_outcome_said;
 pub mod link_answered;
+pub mod link_not_chosen;
 pub mod network_state;
 pub mod not_a_request;
 pub mod not_recorded;
@@ -149,6 +150,8 @@ pub mod held_process;
 mod network_monitor_portal;
 #[cfg(target_os = "linux")]
 mod open_uri_portal;
+#[cfg(target_os = "linux")]
+mod the_person_chooses_a_link;
 #[cfg(target_os = "linux")]
 mod opening;
 // **Gated with its module**, which it was not until 2026-10-19. The module is
@@ -184,10 +187,11 @@ pub use kept_answer::KeptAnswer;
 pub use kept_answer_said::AnswerSaid;
 pub use kept_outcome::{KeptOutcome, NotALinkAs, NothingOpensAs, PassedOverAs, RefusedAs};
 pub use link_answered::{LinkNotOpened, LinkOpened, link_answered};
+pub use link_not_chosen::{LinkNotChosen, NotChosen};
 pub use not_a_request::NotARequest;
 pub use not_recorded::NotRecorded;
 pub use open_with::{NotOpened, OpensWith};
-pub use opening_links::{LinkStarted, NoDesktopToAsk, OpensLinks};
+pub use opening_links::{LinkChosen, LinkStarted, NoDesktopToAsk, OpensLinks};
 pub use portal::{Over, Portal};
 #[cfg(unix)]
 pub use read_back_said::ReadBackSaid;

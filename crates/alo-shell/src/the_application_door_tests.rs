@@ -581,3 +581,51 @@ fn a_line_that_is_not_a_link_to_open_is_closed_with_nothing() {
     door.taken_away();
     let _ = std::fs::remove_dir_all(root);
 }
+
+/// **The person choosing what opens a link is handed on with its connection
+/// held**, nothing answered by the door itself — and a line meant as
+/// `choose-link` that is not one is closed with nothing written.
+#[test]
+fn a_link_to_choose_for_is_handed_on_with_its_connection_held() {
+    let (root, place) = a_place("choose-link");
+    let mut door = TheApplicationDoor::served(place.clone(), us()).unwrap();
+    let mut hand = AHand::answering(Answer::Acted);
+    let mut portal = UnixStream::connect(place.socket()).unwrap();
+    portal
+        .write_all(
+            b"choose-link org.gnome.Papers https://example.com/invoice org.mozilla.firefox \
+              io.gitlab.librewolf-community\n",
+        )
+        .unwrap();
+    assert_eq!(door.answered(&mut hand), 0);
+    let mut asked = door.asked_to_choose();
+    assert_eq!(asked.len(), 1);
+    assert!(door.asked_to_choose().is_empty(), "handed over once");
+    let mut sheet = crate::the_open_with_sheet::TheOpenWithSheet::none();
+    sheet.asked(asked.drain(..).collect(), true, std::time::Instant::now());
+    sheet.pressed(
+        crate::the_open_with_sheet::SheetKey::Next,
+        std::time::Instant::now(),
+    );
+    sheet.pressed(
+        crate::the_open_with_sheet::SheetKey::Open,
+        std::time::Instant::now(),
+    );
+    assert_eq!(
+        one_line(&mut portal).as_deref(),
+        Some("chosen io.gitlab.librewolf-community")
+    );
+    for line in [
+        "choose-link org.gnome.Papers https://example.com/\n",
+        "choose-link org.gnome.Papers file:///etc/shadow org.mozilla.firefox\n",
+    ] {
+        let mut portal = UnixStream::connect(place.socket()).unwrap();
+        portal.write_all(line.as_bytes()).unwrap();
+        assert_eq!(door.answered(&mut hand), 0, "{line}");
+        assert_eq!(one_line(&mut portal), None, "{line}");
+        assert!(door.asked_to_choose().is_empty(), "{line}");
+    }
+    assert!(hand.links.is_empty() && hand.carried.is_empty());
+    door.taken_away();
+    let _ = std::fs::remove_dir_all(root);
+}

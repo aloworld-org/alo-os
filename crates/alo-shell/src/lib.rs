@@ -94,6 +94,7 @@ mod a_key_reaches_settings;
 mod a_key_reaches_the_bar;
 mod a_key_reaches_the_docks_surfaces;
 mod a_key_reaches_the_market;
+mod a_key_reaches_the_open_with_sheet;
 mod a_key_reaches_the_password_sheet;
 mod a_key_reaches_the_record;
 mod a_key_reaches_the_task_in_front;
@@ -264,6 +265,11 @@ mod how_a_panel_is_raised;
 /// A full-screen window's band, out of sight until the top edge is reached.
 mod the_band_over_full_screen;
 mod the_keyboard_on_the_docks_surfaces;
+/// The *Open with* sheet: an application asked for the person to choose what
+/// opens a link (frame `25:52`). Public for the one type the door hands it.
+pub mod the_open_with_sheet;
+mod the_open_with_sheet_drawn;
+mod the_open_with_sheets_words;
 mod the_password_sheet;
 mod the_password_sheet_drawn;
 mod the_password_sheets_words;

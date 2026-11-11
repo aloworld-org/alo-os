@@ -113,6 +113,12 @@ impl Asked {
         self.application.as_deref()
     }
 
+    /// Where its response goes — returned at once by a request whose answer
+    /// waits on the person (`crate::open_uri_portal`'s `ask`).
+    pub(crate) fn handle(&self) -> &OwnedObjectPath {
+        &self.handle
+    }
+
     /// Record `outcome`, send it as the response — or the refusal, when it was
     /// not recorded — and give back the handle.
     ///

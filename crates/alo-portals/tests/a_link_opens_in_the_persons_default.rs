@@ -29,8 +29,8 @@ use alo_capability::{Applicant, Grants};
 use alo_keyring_fixture::AKeyringOfOurOwn;
 use alo_portals::{
     Allowed, Answered, Appearance, Applications, Backend, KeepsSecrets, Kept, KeptOutcome,
-    LinkStarted, NotKept, OpensLinks, Outcome, Request, Sandboxes, Served, TheMachine, TimeOfDay,
-    Unanswered,
+    LinkChosen, LinkStarted, NotChosen, NotKept, OpensLinks, Outcome, Request, Sandboxes, Served,
+    TheMachine, TimeOfDay, Unanswered,
 };
 use zbus::blocking::{Connection, Proxy};
 use zbus::zvariant::{OwnedObjectPath, OwnedValue, Value};
@@ -107,10 +107,13 @@ impl KeepsSecrets for NoKeyring {
 }
 
 /// A desktop that keeps every application and link it is asked to start, and
-/// answers `answering`.
+/// answers `answering` — and every sheet it is asked to show, which the person
+/// answers `the_person`.
 struct ADesktop {
     asked: Mutex<Vec<(String, String)>>,
     answering: LinkStarted,
+    shown: Mutex<Vec<(String, String, Vec<String>)>>,
+    the_person: Mutex<LinkChosen>,
 }
 
 impl OpensLinks for ADesktop {
@@ -120,6 +123,15 @@ impl OpensLinks for ADesktop {
             .unwrap()
             .push((application.to_owned(), link.as_str().to_owned()));
         self.answering
+    }
+
+    fn chosen(&self, asking: &str, link: &Link, offered: &[String]) -> LinkChosen {
+        self.shown.lock().unwrap().push((
+            asking.to_owned(),
+            link.as_str().to_owned(),
+            offered.to_vec(),
+        ));
+        self.the_person.lock().unwrap().clone()
     }
 }
 
@@ -154,6 +166,8 @@ impl Serving {
             Arc::new(ADesktop {
                 asked: Mutex::new(Vec::new()),
                 answering,
+                shown: Mutex::new(Vec::new()),
+                the_person: Mutex::new(LinkChosen::Cancelled),
             })
         });
         let backend = match &desktop {
@@ -291,6 +305,7 @@ fn a_web_link_opens_in_the_default_with_nothing_granted_and_is_recorded() {
             address: "https://example.com/invoice?n=7".to_owned(),
             chosen: false,
             asked_to_choose: false,
+            chosen_on_the_sheet: false,
         }
     );
 }
@@ -373,16 +388,105 @@ fn with_no_desktop_the_link_is_refused_and_the_record_says_why() {
     );
 }
 
-/// **`ask` opens the default and the record says the application asked to
-/// choose**, because no chooser is offered yet.
+impl Serving {
+    /// From now on the person answers the sheet with `chose`.
+    fn the_person_answers(&self, chose: LinkChosen) {
+        if let Some(desktop) = &self.desktop {
+            *desktop.the_person.lock().unwrap() = chose;
+        }
+    }
+
+    /// Every sheet the desktop was asked to show.
+    fn sheets_shown(&self) -> Vec<(String, String, Vec<String>)> {
+        self.desktop
+            .as_ref()
+            .map(|desktop| desktop.shown.lock().unwrap().clone())
+            .unwrap_or_default()
+    }
+}
+
+/// **`ask` shows the sheet with the default first and every other handler
+/// after it; what the person chooses is recorded, then started** — and the
+/// default is not what opens.
 #[test]
-fn asking_to_choose_opens_the_default_and_is_recorded_as_asked() {
+fn asking_shows_the_sheet_and_opens_what_the_person_chose() {
     let serving = Serving::started("ask", untouched(true), Some(LinkStarted::Asked));
+    serving.the_person_answers(LinkChosen::Chosen(LIBREWOLF.to_owned()));
     assert_eq!(serving.open_uri("https://example.com/", "ask", true), 0);
-    match KeptOutcome::from(serving.everything().first().unwrap().outcome()) {
+    assert_eq!(
+        serving.sheets_shown(),
+        [(
+            MAIL.to_owned(),
+            "https://example.com/".to_owned(),
+            vec![FIREFOX.to_owned(), LIBREWOLF.to_owned()],
+        )]
+    );
+    assert_eq!(
+        serving.asked_of_the_desktop(),
+        [(LIBREWOLF.to_owned(), "https://example.com/".to_owned())]
+    );
+    let everything = serving.everything();
+    assert_eq!(everything.len(), 1);
+    assert_eq!(
+        KeptOutcome::from(everything.first().unwrap().outcome()),
         KeptOutcome::LinkOpened {
-            asked_to_choose, ..
-        } => assert!(asked_to_choose),
+            opener: LIBREWOLF.to_owned(),
+            link: "web".to_owned(),
+            address: "https://example.com/".to_owned(),
+            chosen: false,
+            asked_to_choose: false,
+            chosen_on_the_sheet: true,
+        }
+    );
+}
+
+/// **Cancel is response `1` and opens nothing; nobody answering, no sheet,
+/// no desktop and an answer that was not offered are `2` and open nothing** —
+/// each recorded with its reason, and never the default instead.
+#[test]
+fn nothing_chosen_opens_nothing_and_says_why() {
+    for (what, chose, response, why) in [
+        ("cancel", LinkChosen::Cancelled, 1, NotChosen::Cancelled),
+        ("nobody", LinkChosen::Unanswered, 2, NotChosen::Unanswered),
+        ("no-sheet", LinkChosen::CannotShow, 2, NotChosen::CannotShow),
+        ("gone", LinkChosen::NoDesktop, 2, NotChosen::NoDesktop),
+        ("broken", LinkChosen::CouldNotAsk, 2, NotChosen::CouldNotAsk),
+        (
+            "not-offered",
+            LinkChosen::Chosen(MAIL.to_owned()),
+            2,
+            NotChosen::CouldNotAsk,
+        ),
+    ] {
+        let serving = Serving::started(what, untouched(true), Some(LinkStarted::Asked));
+        serving.the_person_answers(chose);
+        assert_eq!(
+            serving.open_uri("https://example.com/", "sheet", true),
+            response,
+            "{what}"
+        );
+        assert!(serving.asked_of_the_desktop().is_empty(), "{what} opened something");
+        let everything = serving.everything();
+        assert_eq!(everything.len(), 1, "{what}");
+        assert_eq!(
+            KeptOutcome::from(everything.first().unwrap().outcome()),
+            KeptOutcome::LinkNotChosen {
+                link: "web".to_owned(),
+                address: "https://example.com/".to_owned(),
+                why,
+            },
+            "{what}"
+        );
+    }
+}
+
+/// **With no desktop at all, a sheet is never shown and nothing opens.**
+#[test]
+fn asking_with_no_desktop_opens_nothing() {
+    let serving = Serving::started("ask-nobody", untouched(true), None);
+    assert_eq!(serving.open_uri("https://example.com/", "nobody", true), 2);
+    match KeptOutcome::from(serving.everything().first().unwrap().outcome()) {
+        KeptOutcome::LinkNotChosen { why, .. } => assert_eq!(why, NotChosen::NoDesktop),
         other => panic!("{other:?}"),
     }
 }

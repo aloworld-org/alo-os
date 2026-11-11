@@ -91,6 +91,15 @@ impl TheDoorOnTheDesktop {
             .unwrap_or_default()
     }
 
+    /// The portal's asks for the person to choose what opens a link since the
+    /// last frame, or none while the door is not served.
+    pub(crate) fn asked_to_choose(&mut self) -> Vec<crate::the_open_with_sheet::AskedToChoose> {
+        self.served
+            .as_mut()
+            .map(TheApplicationDoor::asked_to_choose)
+            .unwrap_or_default()
+    }
+
     /// Whether the door is served — for a test; the desktop only answers.
     #[cfg(test)]
     pub(crate) const fn is_served(&self) -> bool {

@@ -145,7 +145,7 @@ which is `daemon-protocol.md`'s rule for a stranger and its reason: an answer
 tells whoever knocked that there is an alo OS here.
 
 **A message is a line.** One request, then one answer, terminated by a newline.
-A request is at most **512 bytes** (an `open-link` line excepted, below), so that a caller cannot make a window system
+A request is at most **512 bytes** (an `open-link` and a `choose-link` line excepted, below), so that a caller cannot make a window system
 hold a line open while it reads it.
 
 ## The request
@@ -419,6 +419,56 @@ by the open-with portal (`portals.md`, `OpenURI`), and recorded there.
   else. **Nothing an agent sends reaches this act**: `alo-agentd` writes only
   `open`, `focus` and `close`, and the agent is a different login. A link the
   agent wants opened is an agent action and goes through the agent's own verbs.
+
+## The person chooses what opens a link — `choose-link`, added 2026-11-12
+
+**What it gives a person:** when an application asks for them to choose —
+`ask` on `OpenURI` — the desktop shows the *Open with* sheet the owner approved
+on 2026-11-12 (frame `25:52`, `docs/design/default-apps-and-open-with.md`):
+*&lt;App&gt; asked to open &lt;address&gt;*, the installed applications that
+open that kind of link with their default already chosen, and *Cancel* and
+*Open*. Without `ask` no sheet appears and `open-link` above is all there is.
+
+**The one act on this door that waits on the person**, so it holds its
+connection while the sheet is up:
+
+```
+→ choose-link <asking-application> <link> <default> [<another> …]
+← chosen <application> | cancelled | unanswered | cannot-show
+```
+
+- **The words.** The act; the identifier of the application that asked, as its
+  sandbox named it; one link held to `open-link`'s shape; then the
+  applications offered, **the person's default first** and every other
+  installed handler of that kind after it in the order they declared it, each
+  an identifier held to the shape above and each once — **at least one, at most
+  sixteen**. The line is at most **4096 bytes**. A line beginning `choose-link`
+  that is not exactly that is not a request and is closed with nothing
+  written.
+- **Who decides what is offered is the portal**, from the same answers
+  Settings → Default apps draws (`alo_applications::WhatOpensWhat`'s
+  `what_could_open_links` and `what_opens_links`), and a terminal is never
+  among them. The desktop draws what it is sent and offers nothing else.
+- `chosen <application>`: the person pressed *Open*, or Enter, on that one,
+  which is always one of those offered. **It starts nothing.** The portal
+  records the choice and then asks `open-link` for it, so the application is
+  started exactly as every other link's is, and a caller never reads `chosen`
+  of an application it did not offer as anything but a fault.
+- `cancelled`: the person pressed *Cancel* or Escape. Nothing opens.
+- `unanswered`: nobody answered while the sheet was up for **five minutes**,
+  and the desktop took it down. Nothing opens. Not `cancelled`, because the
+  person did not say no.
+- `cannot-show`: this desktop cannot ask the person now — no person is signed
+  in at it, or four other sheets are already waiting. Nothing opens.
+- **One sheet at a time**, in the order they were asked; up to four more wait
+  behind it, each with its connection held.
+- **Nothing here changes the default.** That is chosen in Settings → Default
+  apps and nowhere else; what the person picks on the sheet is for this one
+  link.
+- **A caller that hangs up takes the sheet down**, with nothing opened.
+- Nothing an agent sends reaches this act, for `open-link`'s reason: the
+  portal service writes it, as the person, and `alo-agentd` writes only
+  `open`, `focus` and `close`.
 
 ## The window you were working in — `front`, added 2026-11-07
 

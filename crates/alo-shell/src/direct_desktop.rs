@@ -886,6 +886,9 @@ impl crate::DirectSession {
                             series: layout,
                             reader,
                             password_sheet: crate::the_password_sheet::ThePasswordSheet::none(),
+                            open_with: crate::the_open_with_sheet::TheOpenWithSheet::none(),
+                            open_with_drawn:
+                                crate::a_key_reaches_the_open_with_sheet::WhereTheSheetIs::default(),
                         }
                     },
                 ),
@@ -1019,6 +1022,12 @@ struct TheDesktopLane<'a> {
     /// While a question is up every key is the sheet's, and it is drawn above
     /// every window in the approval surface's layer.
     password_sheet: crate::the_password_sheet::ThePasswordSheet,
+    /// **An application asking for the person to choose what opens a link**
+    /// (frame `25:52`): the *Open with* sheet the portal is waiting on. While
+    /// one is up every key and press is its.
+    open_with: crate::the_open_with_sheet::TheOpenWithSheet,
+    /// Where that sheet was last drawn, for a press to land on.
+    open_with_drawn: crate::a_key_reaches_the_open_with_sheet::WhereTheSheetIs,
 }
 
 /// **Where this person's home and standard folders are, read now**, as the
@@ -1092,6 +1101,8 @@ impl LoopInput for TheDesktopLane<'_> {
         let extent = self.input.extent;
         let strings = self.strings;
         let password_sheet = &mut self.password_sheet;
+        let open_with = &mut self.open_with;
+        let open_with_drawn = &self.open_with_drawn;
         self.input.owner.dispatch(
             || poll().map_err(std::io::Error::other),
             |update| {
@@ -1114,6 +1125,17 @@ impl LoopInput for TheDesktopLane<'_> {
                     crate::a_key_reaches_the_password_sheet::a_key_reaches_the_password_sheet(
                         server,
                         password_sheet,
+                        update,
+                        extent,
+                    )
+                }
+                // **Then the *Open with* sheet**, which a portal is waiting
+                // on: every key and press is its while it is up.
+                else if open_with.is_up() {
+                    crate::a_key_reaches_the_open_with_sheet::a_key_reaches_the_open_with_sheet(
+                        server,
+                        open_with,
+                        open_with_drawn,
                         update,
                         extent,
                     )
@@ -1312,6 +1334,13 @@ impl LoopInput for TheDesktopLane<'_> {
         // way and for the same reason.
         let work = self.door.asked_to_work();
         self.desktop.alo_at_work(work, std::time::Instant::now());
+        // **And every link an application asked the person to choose for**,
+        // shown one at a time on the *Open with* sheet; a sheet whose portal
+        // hung up, or nobody answered in five minutes, comes down here.
+        let choosing = self.door.asked_to_choose();
+        self.open_with
+            .asked(choosing, true, std::time::Instant::now());
+        self.open_with.waited(std::time::Instant::now());
         for not_started in server.start_what_was_asked_for_now() {
             // **Said rather than dropped**, the same rule the edge's menu
             // follows two blocks up: a press that reached here and vanished is
@@ -2152,6 +2181,59 @@ impl LoopInput for TheDesktopLane<'_> {
             },
             None => None,
         };
+        // **The *Open with* sheet, while a portal is waiting on the person**
+        // (frame `25:52`). One this display cannot hold is answered *cannot
+        // show* rather than hold every key with nothing on the screen.
+        let the_open_with_sheet = match self.open_with.shows() {
+            Some(shows) => {
+                let names = |identifier: &str| {
+                    let name = server
+                        .what_each_is_called
+                        .get(identifier)
+                        .filter(|called| !called.trim().is_empty())
+                        .cloned()
+                        .unwrap_or_else(|| identifier.to_owned());
+                    let picture = alo_dock::AppId::named(identifier)
+                        .ok()
+                        .and_then(|app| server.what_each_application_draws.of(&app).cloned());
+                    (name, picture)
+                };
+                match crate::the_open_with_sheet_drawn::drawn(
+                    shows,
+                    self.strings,
+                    self.labels,
+                    (size.w, size.h),
+                    crate::SettingsLook {
+                        scheme: frame.look.scheme(),
+                        scale: frame.look.scale(),
+                        reading: frame.look.reading(),
+                        contrast: frame.look.contrast(),
+                        accent: frame.look.accent(),
+                    },
+                    crate::display_scale::DisplayScale::of_per_cent(frame.display_scale),
+                    &names,
+                ) {
+                    Ok(drawn) => Some(drawn),
+                    Err(why) => {
+                        eprintln!(
+                            "alo-shell: the Open with sheet could not be drawn on {named:?}, so \
+                             its question is answered cannot-show: {why}"
+                        );
+                        self.open_with.could_not_be_drawn(now);
+                        None
+                    }
+                }
+            }
+            None => None,
+        };
+        self.open_with_drawn = the_open_with_sheet.as_ref().map_or_else(
+            crate::a_key_reaches_the_open_with_sheet::WhereTheSheetIs::default,
+            |drawn| crate::a_key_reaches_the_open_with_sheet::WhereTheSheetIs {
+                rows: drawn.rows.clone(),
+                cancel: Some(drawn.cancel),
+                open: Some(drawn.open),
+            },
+        );
         // **A question that could not be drawn is left out of this frame, not
         // the desktop** — see `crate::a_surface_that_cannot_draw`.
         if let Some(why) = &pictures.approval_refused {
@@ -2762,6 +2844,8 @@ impl LoopInput for TheDesktopLane<'_> {
                 // **The password sheet above every window**, in the approval
                 // surface's layer (ADR 0150).
                 approval: the_password_sheet.as_ref(),
+                // **And the *Open with* sheet above it**, while one is up.
+                open_with: the_open_with_sheet.as_ref(),
                 // **Only on the display being worked on**, whose camera the
                 // window was drawn through when it was put aside.
                 travelling_aside: &travelling_aside,
