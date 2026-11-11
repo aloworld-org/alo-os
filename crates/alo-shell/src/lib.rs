@@ -385,6 +385,7 @@ mod painted;
 use alo_drawing::painted_flat;
 use alo_drawing::painted_text;
 use alo_drawing::painted_text_wrapping;
+mod the_terminals_face;
 mod panel_cards;
 mod panel_raster;
 mod peeking_at_a_put_aside_window;

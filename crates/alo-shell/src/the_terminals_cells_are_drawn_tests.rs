@@ -1185,7 +1185,7 @@ fn bold_is_drawn_in_the_terminals_own_face() {
     buffer.set_text(
         &mut fonts,
         "ok",
-        &crate::painted_text::alos_own_mono_at(bold),
+        &crate::the_terminals_face::alos_own_mono_at(bold),
         cosmic_text::Shaping::Advanced,
     );
     buffer.shape_until_scroll(&mut fonts, false);
@@ -1238,7 +1238,7 @@ fn a_bold_cell_is_the_same_width_as_an_ordinary_one() {
         buffer.set_text(
             &mut fonts,
             "iWl.8@m",
-            &crate::painted_text::alos_own_mono_at(look(bold)),
+            &crate::the_terminals_face::alos_own_mono_at(look(bold)),
             cosmic_text::Shaping::Advanced,
         );
         buffer.shape_until_scroll(&mut fonts, false);

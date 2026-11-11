@@ -57,7 +57,8 @@ use cosmic_text::{Buffer, FontSystem, Metrics, Shaping, Wrap};
 use smithay::utils::{Physical, Rectangle};
 
 use crate::painted::{Inked, Solid, Washed};
-use crate::painted_text::{ALOS_OWN_MONO, alos_own_mono, alos_own_mono_at, alos_own_text, inked};
+use crate::painted_text::{ALOS_OWN_MONO, alos_own_text, inked};
+use crate::the_terminals_face::{alos_own_mono, alos_own_mono_at};
 
 /// How much of the display's width the window takes: 1040 of 1440.
 const ACROSS_THE_DISPLAY: f32 = 1040.0 / 1440.0;
