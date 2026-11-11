@@ -272,3 +272,50 @@ mechanisms table's last row, the paragraph under it, the refusal of `synthetic`,
 and *nothing is found or pressed by position* — are made above, each marked with
 the date. They were made before any screen-road code, as the owner's answer 15
 required. **Nothing of the screen road is built.**
+
+## Amended 2026-11-12 — an adapter may come from a crate alo OS pins, with its licence stated
+
+*The owner's ruling of 2026-11-12, given in a question dialog. Asked: "alo
+Mail's adapter (its commands for alo and the terminal) is compiled into alo OS.
+Which licence and where should it live?" Answered: "Keep AGPL, separate crate
+alo-os uses". Additive: nothing above changes meaning, and the adapter that
+loaded before still loads.*
+
+**An adapter may be written outside this repository.** Its author publishes it
+as a crate of its own that declares one `alo_adapters::Adapter` constant
+exactly as *How this machine loads one* says, and alo OS depends on **a tagged
+release** of that crate — never a branch — so the declaration a reviewer read
+is the one that is built. It is loaded through the same `load`, and everything
+under *What is refused when an adapter is loaded* refuses it as it refuses one
+written here. Writing it elsewhere changes who maintains it, never what it may
+declare.
+
+**Its licence is stated where it is pinned.** The crate's manifest names its
+licence, and the line in this repository that pins it says the licence beside
+the release. Where that licence is not this repository's GPL-3.0-or-later, the
+part of alo OS built from it carries that licence's terms, and this page says so
+below.
+
+**The first is alo Mails' adapter.** The `alo-workplace` lane publishes it as
+its own crate under **AGPL-3.0**, the licence of alo Mails itself: application
+`com.alomails.Mails`, mechanism `dbus`. alo OS pins a tagged release, and **the
+part of alo OS built from it carries AGPL-3.0 terms** — section 13 of the GNU
+GPL v3 and of the AGPL v3 is what lets the two be combined in one program, with
+each part keeping its own licence.
+
+**Not built on the day this was written.** No such crate is published, nothing
+here pins one, and alo OS ships one adapter, GNOME Text Editor's
+(`crates/alo-adapters/src/verbs.rs`). Three things the first pin has to answer,
+found while writing this and not decided here:
+
+- **Where the pin goes.** The external crate depends on `alo-adapters` for the
+  `Adapter` type, so `alo-adapters` cannot depend on it back; `shipped_adapters`
+  in `crates/alo-adapters/src/verbs.rs` has to be assembled one crate above, or
+  the type has to move into a crate both can depend on.
+- **Its words.** Every word an adapter declares is a key this machine says, and
+  `crates/alo-saying/the-vocabulary.txt` is generated from this workspace. A
+  crate outside the workspace has to reach that snapshot and its translations
+  the way a crate inside does.
+- **Its licence is not checked by anything.** This repository has no
+  dependency-licence check today, so the sentence above is a rule a reviewer
+  holds, not a test.
