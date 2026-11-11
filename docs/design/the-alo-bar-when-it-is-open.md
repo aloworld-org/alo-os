@@ -1,5 +1,54 @@
 # The alo Bar when it is open
 
+## Round 3: typing in the Dock's own field — a departure from `561:275` / `561:370`
+
+**The owner's decision of 2026-11-11**, in their words: *"Clicking 'Find, open,
+or ask…' on the Dock should not open the same panel as Super+Space. It should
+allow user to text inside it"* — then, of the matches, **rise just above the
+field** (*"a small list grows upward from the Dock field as you type — same
+matches and 'Ask alo' row, anchored to the field, nothing in the middle of the
+screen; Enter opens the highlighted one"*), and of Super+Space, **the same as
+clicking the field** (*"Super+Space puts the cursor in the Dock field too — one
+place to type, by mouse or keyboard"*).
+
+**So a click on the field, Super+Space and Super+A no longer open the centred
+panel of Round 2.** The design file has no frame for this yet; the rules below
+are taken from what it does have, and each is for the owner to overrule.
+
+| | the rule | taken from |
+|---|---|---|
+| the field | the Dock's composer, unchanged — the typed words replace the prompt and the key in `TEXT_AT_ORDINARY`, the **end** of them when they are wider than the field, and a 2-wide caret after them while it has the keyboard; with nothing typed, the prompt stays and the caret sits just before it | the Dock's own field |
+| the list | **448 wide** (`More apps`), starting where the field starts; **12 from the bar** (`BESIDE_THE_DOCK`); air inside **8** (`GAP`) | *More apps*' placement, ADR 0102/0103 |
+| where | above a bottom Dock, below a top one, inward from a side one; inside the display and clear of the put-aside panel's column | `docs/features.md`'s *More apps* line, now one function for both |
+| rows | Round 2's rows exactly: an application's 56, the hairline, the row that asks's 64, 4 between, the chosen row in the accent at 12 % | `561:324`, `561:339` |
+| how tall | what it holds, up to **three fifths** of the display and never past the room between the bar and the far edge; the rows scroll from there, keeping the chosen one in view; the row that asks is never scrolled away | Round 2's own bound |
+| panel | white, 1 `border/default`, corner 18, `Elevation/Floating` — Round 2's panel | `561:276` |
+| behind it | **nothing dimmed**: the list is non-modal, as *More apps* is | *More apps* |
+
+**Readings taken where the decision is silent:**
+
+- **A side Dock's field is a 48-wide slot** and cannot hold a line of text, so on
+  the left and right Docks the list opens the moment the field takes the
+  keyboard, with what is typed on its first row in Round 2's field style (the
+  cool well, the 2 outline, the search mark, the caret).
+- **Nothing typed on a bottom or top Dock is no list** — Round 2's own rule, so a
+  chord does not flash every application on the machine.
+- **A press outside the list closes it and does the thing it landed on**, which is
+  what every list opened from the Dock does; the words stay in the field, as they
+  do when a person clicks a window. Round 2's *a press on the dimmed screen is
+  the panel's* does not carry over, because there is no dimmed screen.
+- **Escape empties the field and gives the keyboard back** in one press, as it
+  did in Round 2.
+- **Over a full-screen window the Dock is shown** while its field has the
+  keyboard, since that is where the words are.
+- **A screen reader** meets the field as the text entry it already was, with the
+  matches as a list under it, the chosen row *selected* — which Round 2 noted as
+  missing.
+
+**The centred panel of Round 2 is not removed.** *Help with this window* still
+opens it, headed with that name; another change is moving that road into the
+window's own panel, and the panel can go when nothing opens it.
+
 ## Round 2: the launcher the owner approved on 2026-11-01
 
 **This section supersedes the tables below where they disagree.** `561:275`
