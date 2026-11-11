@@ -11,7 +11,7 @@ use std::os::unix::fs::PermissionsExt as _;
 use crate::Server;
 use crate::composer_keys::ComposerKey;
 use crate::display_scale::DisplayScale;
-use crate::where_the_bar_opens::WhatItHolds;
+use crate::where_the_bars_matches_rise::WhatItHolds;
 use smithay::utils::{Rectangle, Size};
 
 fn english() -> alo_strings::Strings {
@@ -33,6 +33,7 @@ fn typing(what: &str, asks: bool) -> (tempfile::TempDir, Server) {
         WhatItHolds {
             found: 0,
             asks,
+            says: true,
             chosen: None,
         },
         crate::where_the_bars_matches_rise::TheFieldOnTheDock {

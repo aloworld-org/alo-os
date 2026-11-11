@@ -1,5 +1,5 @@
 //! **Every road into the Bar opens the Dock's own field** — a click on it,
-//! `Super`+`Space` and `Super`+`A` — and none of them the centred panel.
+//! `Super`+`Space` and `Super`+`A`.
 #![expect(
     clippy::expect_used,
     reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
@@ -11,7 +11,6 @@ use alo_shortcuts::{Action, Shortcuts};
 
 use crate::Server;
 use crate::a_press_on_the_dock::WhatAPressOnTheDockDoes;
-use crate::bar_raster::TheBarOpens;
 
 fn a_session(what: &str) -> (tempfile::TempDir, Server) {
     let runtime = tempfile::tempdir().expect("a runtime directory of this test's own");
@@ -24,21 +23,18 @@ fn a_session(what: &str) -> (tempfile::TempDir, Server) {
 #[test]
 fn with_the_keyboard_elsewhere_the_bar_shows_nothing() {
     let (_runtime, server) = a_session("bar-face-shut");
-    assert_eq!(server.which_face_the_bar_shows(), None);
+    assert!(!server.the_bar_is_open());
 }
 
 #[test]
-fn a_click_on_the_docks_field_opens_the_field_and_not_the_panel() {
+fn a_click_on_the_docks_field_opens_the_bar() {
     let (_runtime, mut server) = a_session("bar-face-click");
     assert!(
         server.carry_out_what_the_bar_was_asked_for(Some(
             WhatAPressOnTheDockDoes::TypeIntoTheComposer
         ))
     );
-    assert_eq!(
-        server.which_face_the_bar_shows(),
-        Some(TheBarOpens::AboveTheDocksField)
-    );
+    assert!(server.the_bar_is_open());
 }
 
 /// **Both chords land in the same field** — the owner's *Super+Space: same as
@@ -56,11 +52,7 @@ fn super_space_and_super_a_land_in_the_docks_field() {
             server.a_chord_opens_the_bar(&shortcuts, chord),
             "{action:?}"
         );
-        assert_eq!(
-            server.which_face_the_bar_shows(),
-            Some(TheBarOpens::AboveTheDocksField),
-            "{action:?}"
-        );
+        assert!(server.the_bar_is_open(), "{action:?}");
     }
 }
 
@@ -71,6 +63,6 @@ fn escape_closes_the_field() {
     server.the_composer.it_took_the_keyboard();
     drop(server.a_key_reached_the_composer(crate::composer_keys::ComposerKey::Letter('f')));
     drop(server.a_key_reached_the_composer(crate::composer_keys::ComposerKey::Clear));
-    assert_eq!(server.which_face_the_bar_shows(), None);
+    assert!(!server.the_bar_is_open());
     assert!(server.composer().typed().is_empty());
 }

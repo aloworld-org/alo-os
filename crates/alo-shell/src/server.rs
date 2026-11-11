@@ -458,20 +458,16 @@ pub struct Server {
     /// Which row of the alo Bar the keyboard is on, if any.
     ///
     /// **Not the same thing as `which_slot_on_the_bar`**, which is a control on
-    /// the Dock's own bar. This is a row in the panel the alo Bar opens, and
+    /// the Dock's own bar. This is a row in the list the alo Bar raises, and
     /// the two are never both meaningful: the Dock's controls are walked with
     /// Tab, the Bar's rows with the arrows.
     ///
     /// [`None`] is somebody typing rather than choosing, which is every frame
     /// until they press an arrow.
     pub(crate) which_row_in_the_bar: Option<usize>,
-    /// Where the launcher was drawn on the last frame, for the press that
-    /// comes after it (`crate::a_press_on_the_launcher`). [`None`] while it is
-    /// shut, or on a display too small to hold it.
-    pub(crate) the_launchers_places: Option<crate::where_the_bar_opens::TheBarsPlaces>,
     /// Where the matches rising from the Dock's field were drawn on the last
-    /// frame, for the press after it. [`None`] while nothing is typed there,
-    /// and whenever the centred panel is the Bar's face instead.
+    /// frame, for the press after it (`crate::a_press_on_the_launcher`).
+    /// [`None`] while no list is shown there.
     pub(crate) the_bars_matches_places:
         Option<crate::where_the_bars_matches_rise::TheMatchesPlaces>,
     /// What the Settings entry is called, in this person's language.
@@ -952,7 +948,6 @@ impl Server {
             // hands already are.
             which_area_has_the_keyboard: None,
             which_row_in_the_bar: None,
-            the_launchers_places: None,
             the_bars_matches_places: None,
             which_slot_on_the_bar: None,
             the_settings_entry_is_called: String::new(),

@@ -1865,14 +1865,14 @@ impl LoopInput for TheDesktopLane<'_> {
         // empty field is the Dock's own prompt and no list, because a list that
         // appeared the moment somebody pressed the chord would flash every
         // application on the machine under their first keystroke.
-        let typed_into_the_bar = server.composer().typed().to_owned();
         //
-        // **One face, so open is exactly *the composer has the keyboard*.** The
-        // centred launcher is gone: *Help with this window* moved into the
-        // window's own panel, and every other road types in the Dock's field.
-        // The Dock is shown while it is open — over a window filling the screen
-        // too — and the list rises from it once something is typed.
-        let bar_is_open = server.composer().has_the_keyboard();
+        // **One face, so open is exactly *the composer has the keyboard***
+        // (`crate::the_bar_is_open`). The centred launcher is gone: *Help with
+        // this window* moved into the window's own panel, and every other road
+        // types in the Dock's field. The Dock is shown while it is open — over a
+        // window filling the screen too.
+        let typed_into_the_bar = server.composer().typed().to_owned();
+        let bar_is_open = server.the_bar_is_open();
         let found = if bar_is_open {
             crate::the_bar_finds::what_the_bar_finds(
                 &typed_into_the_bar,
@@ -1900,7 +1900,12 @@ impl LoopInput for TheDesktopLane<'_> {
         // found are in the rows directly below, where a person can see them; the
         // one fact those rows cannot carry is that a question will not be
         // answered.
-        let where_from = if !bar_is_open {
+        //
+        // **Said once something is typed**, and then always — the list rises for
+        // it even where nothing matches and nothing can be asked
+        // (`crate::where_the_bars_matches_rise`), so the sentence is read while
+        // the person is still typing.
+        let where_from = if !bar_is_open || typed_into_the_bar.trim().is_empty() {
             String::new()
         } else if self.desktop.anything_is_chosen_to_answer() {
             crate::the_bar_finds::where_these_came_from(found.len(), self.strings)
@@ -1908,8 +1913,8 @@ impl LoopInput for TheDesktopLane<'_> {
             crate::the_bar_finds::nothing_can_answer_a_question(self.strings)
         };
         // **Where it goes is worked out where it is drawn**, by
-        // `crate::bar_raster`, because that is where this display's scale is
-        // known; a display too small for it draws no Bar there.
+        // `crate::bar_matches_raster`, because that is where this display's scale
+        // is known; a display too small for it draws no list there.
         // **The launcher's own words, and the row that asks alo** — the owner's
         // answer of 2026-11-01: *the launcher shows an "Ask alo '…'" row under
         // the results, saying where the answer would come from, and hidden when
@@ -1921,14 +1926,7 @@ impl LoopInput for TheDesktopLane<'_> {
                 .say(&word.key(), &alo_strings::Filling::nothing())
                 .into_text()
         };
-        let [heading, open_it, choose, open, close, esc] = [
-            say(alo_dock::words::THE_LAUNCHERS_HEADING),
-            say(alo_dock::words::OPEN_IT),
-            say(alo_dock::words::THE_KEYS_CHOOSE),
-            say(alo_dock::words::THE_KEY_OPENS),
-            say(alo_dock::words::THE_KEY_CLOSES),
-            say(alo_dock::words::ESC),
-        ];
+        let open_it = say(alo_dock::words::OPEN_IT);
         // **And it offers to ask only once there is something to ask.**
         let something_to_ask = !typed_into_the_bar.trim().is_empty();
         let asking_about = self
@@ -1948,29 +1946,21 @@ impl LoopInput for TheDesktopLane<'_> {
                 )
             });
         let what_each_draws = std::sync::Arc::clone(&server.what_each_application_draws);
-        let the_bar = bar_is_open.then(|| crate::bar_raster::TheBarOnTheDisplay {
+        let the_bar = bar_is_open.then(|| crate::what_the_bar_shows::TheBarOnTheDisplay {
             typed: &typed_into_the_bar,
             origin: &where_from,
             results: &found,
             chosen: server.which_row_in_the_bar,
             display: size,
-            words: crate::bar_raster::TheLaunchersWords {
-                heading: &heading,
-                open_it: &open_it,
-                choose: &choose,
-                open: &open,
-                close: &close,
-                esc: &esc,
-            },
+            words: crate::what_the_bar_shows::TheLaunchersWords { open_it: &open_it },
             asks: asking_about.as_ref().map(|(asking, what_it_is, from)| {
-                crate::bar_raster::TheAskRow {
+                crate::what_the_bar_shows::TheAskRow {
                     asking,
                     what_it_is,
                     from,
                 }
             }),
             artwork: Some(&what_each_draws),
-            opens: crate::bar_raster::TheBarOpens::AboveTheDocksField,
         });
         // **An `Arc` of its own, lent to the frame.** The frame holds the
         // reference for as long as it lives and this lane uses the server
@@ -2193,17 +2183,8 @@ impl LoopInput for TheDesktopLane<'_> {
         server.where_the_records_body_was_drawn = the_record.as_ref().and_then(|drawn| drawn.body);
         let the_records_places = the_record.as_ref().and_then(|drawn| drawn.places.clone());
         pictures.record = the_record.map(|drawn| drawn.picture);
-        // **Where the launcher went, for the press after this frame**: laid
+        // **Where the matches rose to, for the press after this frame**: laid
         // out where the display's scale is known, and nowhere else.
-        server.the_launcher_was_drawn(
-            pictures
-                .desktop
-                .the_bar
-                .as_ref()
-                .map(|bar| bar.places.clone()),
-        );
-        // **And where the matches rose to**, when they rose from the Dock's
-        // field instead (the owner's decision of 2026-11-11).
         server.the_bars_matches_were_drawn(
             pictures
                 .desktop

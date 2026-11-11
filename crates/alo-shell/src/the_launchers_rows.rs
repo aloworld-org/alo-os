@@ -1,26 +1,25 @@
 //! The alo Bar's rows as they are drawn — each application found, the hairline
 //! and the row that asks alo — **wherever the Bar is shown**.
 //!
-//! Split out of `crate::bar_raster` on 2026-11-11, when the owner's decision
-//! put the matches in a list rising from the Dock's field
-//! (`crate::bar_matches_raster`) while the centred panel stays for *Help with
-//! this window*. Both draw the same rows from the same measures (`561:324`,
-//! `561:339`), so they are drawn by one function: two copies is how the list a
-//! person types into comes to tint its chosen row differently from the panel.
+//! Split out of the centred launcher's raster on 2026-11-11, when the owner's
+//! decision put the matches in a list rising from the Dock's field
+//! (`crate::bar_matches_raster`). The centred launcher was removed the same day,
+//! once nothing opened it, so the list is the one surface drawing these rows
+//! now, at the measures read off `561:324` and `561:339`.
 
 use alo_appearance::Role;
 use cosmic_text::FontSystem;
 use smithay::utils::{Physical, Rectangle};
 
-use crate::bar_raster::TheBarOnTheDisplay;
 use crate::desktop_look::Measure;
 use crate::display_scale::DisplayScale;
 use crate::settings_canvas::{Area, Canvas};
 use crate::settings_type::{TheType, written};
 use crate::the_bar_finds::AResult;
 use crate::the_launchers_icons::ALaunchersIcon;
+use crate::what_the_bar_shows::TheBarOnTheDisplay;
 
-/// The field's, a row's and the close control's corner: 12.
+/// The typed line's and a row's corner: 12.
 pub(crate) const A_WELLS_CORNER: u32 = 12;
 
 /// An application icon's tile: 32 across, corner 8, 12 in from the row.

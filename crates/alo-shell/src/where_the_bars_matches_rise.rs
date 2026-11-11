@@ -25,10 +25,23 @@
 //! - **kept on the display and out of the panel's column** by
 //!   `crate::where_a_popover_is_kept`, the function *More apps* now uses too.
 //!
-//! **The rows are the centred launcher's rows**, at the same measures
-//! (`crate::where_the_bar_opens`): an application's 56, the row that asks
-//! alo's 64, 4 between rows and the hairline over the row that asks. Same rows,
-//! same order, same keys; only where they are shown has changed.
+//! **The rows are the centred launcher's rows**, at the measures read off
+//! `561:275` / `561:370` on 2026-11-01 and declared below: an application's 56,
+//! the row that asks alo's 64, 4 between rows and the hairline over the row
+//! that asks. Same rows, same order, same keys; only where they are shown has
+//! changed. The centred launcher itself is gone — nothing opened it once *Help
+//! with this window* moved into the window's own panel — so these measures are
+//! declared here, by the one surface that still draws them.
+//!
+//! # The line that says where the results came from
+//!
+//! **Carried over from the centred launcher, under what is typed**, at its 18
+//! and with its 12 below: *On this computer · 3 applications*, or — on a
+//! machine where nothing is chosen to answer a question — that nothing is
+//! (`crate::the_bar_finds::nothing_can_answer_a_question`). So **anything typed
+//! shows the list**, even where nothing matches and nothing can be asked: the
+//! person is told while they are still typing, which is what that sentence
+//! exists for, rather than meeting silence on Enter.
 //!
 //! # A side Dock has no room to type in, so the list carries the line
 //!
@@ -50,13 +63,42 @@
 use smithay::utils::{Physical, Rectangle, Size};
 
 use crate::display_scale::DisplayScale;
-use crate::where_the_bar_opens::{
-    A_TARGET_IS_TALL, BETWEEN_ROWS, THE_ASK_ROW_IS_TALL, WhatItHolds,
-};
+
+/// How tall an application's row is: 56 (`561:324`).
+pub(crate) const A_TARGET_IS_TALL: u32 = 56;
+
+/// How tall the row that asks alo is: 64, for its second line (`561:339`).
+pub(crate) const THE_ASK_ROW_IS_TALL: u32 = 64;
+
+/// The gap between one row and the next, and either side of the hairline over
+/// the row that asks: 4 (`561:338` at 60 under a row of 56, the ask row at 65).
+pub(crate) const BETWEEN_ROWS: u32 = 4;
+
+/// How tall the line saying where the results came from is: 18.
+const THE_ORIGIN_LINE_IS_TALL: u32 = 18;
+
+/// The gap between that line and the rows under it: 12, the centred launcher's
+/// gap between things.
+const UNDER_THE_ORIGIN_LINE: u32 = 12;
 
 /// The most of the display's height the list takes before it scrolls: the
 /// centred launcher's three fifths.
 const AT_MOST: f32 = 3.0 / 5.0;
+
+/// What the list holds, which is all its height depends on.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct WhatItHolds {
+    /// How many applications were found.
+    pub(crate) found: usize,
+    /// Whether the row that asks alo is offered.
+    pub(crate) asks: bool,
+    /// Whether the line saying where the results came from is shown — while
+    /// something is typed.
+    pub(crate) says: bool,
+    /// Which row the keyboard is on: an application's, or past the last of
+    /// them, the row that asks.
+    pub(crate) chosen: Option<usize>,
+}
 
 /// Where the field the list rises from is, on the Dock as last drawn.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -79,6 +121,8 @@ pub(crate) struct TheMatchesPlaces {
     pub(crate) field: Rectangle<i32, Physical>,
     /// The line that shows what is typed, on a side Dock only.
     pub(crate) typed: Option<Rectangle<i32, Physical>>,
+    /// The line saying where the results came from, while something is typed.
+    pub(crate) origin: Option<Rectangle<i32, Physical>>,
     /// Each application row shown, with which result it is.
     pub(crate) rows: Vec<(usize, Rectangle<i32, Physical>)>,
     /// The hairline over the row that asks, where there is one.
@@ -93,8 +137,7 @@ pub(crate) struct TheMatchesPlaces {
 /// `scale`, from `dock`'s field, clear of `clear_of`.
 ///
 /// [`None`] when there is nothing to show — nothing typed on a bottom or top
-/// Dock, or nothing found and nothing to ask — and when the display has no room
-/// for the list at all.
+/// Dock — and when the display has no room for the list at all.
 pub(crate) fn where_the_matches_rise(
     display: Size<i32, Physical>,
     scale: DisplayScale,
@@ -104,7 +147,7 @@ pub(crate) fn where_the_matches_rise(
 ) -> Option<TheMatchesPlaces> {
     let px = |logical: u32| scale.px(logical);
     let carries_the_line = !dock.edge.runs_across();
-    if holds.found == 0 && !holds.asks && !carries_the_line {
+    if holds.found == 0 && !holds.asks && !holds.says && !carries_the_line {
         return None;
     }
     let gap = px(alo_dock::measures::BESIDE_THE_DOCK);
@@ -143,7 +186,12 @@ pub(crate) fn where_the_matches_rise(
     } else {
         0
     };
-    let room_for_rows = most - air * 2 - typed_line - asking;
+    let origin_line = if holds.says {
+        px(THE_ORIGIN_LINE_IS_TALL) + px(UNDER_THE_ORIGIN_LINE)
+    } else {
+        0
+    };
+    let room_for_rows = most - air * 2 - typed_line - origin_line - asking;
     if room_for_rows < 0 {
         return None;
     }
@@ -159,10 +207,15 @@ pub(crate) fn where_the_matches_rise(
     } else {
         i32::try_from(fit).unwrap_or(0) * row_to_row - px(BETWEEN_ROWS)
     };
-    let tall = air * 2 + typed_line + rows_tall + asking;
-    // A side Dock's list with only its typed line has no gap under it.
+    let tall = air * 2 + typed_line + origin_line + rows_tall + asking;
+    // **A list with nothing under its last line has no gap under that line**:
+    // the line saying where the results came from, or a side Dock's typed line.
     let tall = if fit == 0 && asking == 0 {
-        tall - px(BETWEEN_ROWS)
+        if holds.says {
+            tall - px(UNDER_THE_ORIGIN_LINE)
+        } else {
+            tall - px(BETWEEN_ROWS)
+        }
     } else {
         tall
     };
@@ -187,6 +240,14 @@ pub(crate) fn where_the_matches_rise(
     let typed = carries_the_line.then(|| {
         let at = Rectangle::new((left, y).into(), (inner, a_row).into());
         y += a_row + px(BETWEEN_ROWS);
+        at
+    });
+    let where_from = holds.says.then(|| {
+        let at = Rectangle::new(
+            (left, y).into(),
+            (inner, px(THE_ORIGIN_LINE_IS_TALL)).into(),
+        );
+        y += px(THE_ORIGIN_LINE_IS_TALL) + px(UNDER_THE_ORIGIN_LINE);
         at
     });
 
@@ -224,6 +285,7 @@ pub(crate) fn where_the_matches_rise(
         panel,
         field: dock.field,
         typed,
+        origin: where_from,
         rows,
         hairline,
         ask,

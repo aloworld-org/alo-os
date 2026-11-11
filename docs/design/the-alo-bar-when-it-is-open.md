@@ -20,6 +20,7 @@ are taken from what it does have, and each is for the owner to overrule.
 | the field | the Dock's composer, unchanged — the typed words replace the prompt and the key in `TEXT_AT_ORDINARY`, the **end** of them when they are wider than the field, and a 2-wide caret after them while it has the keyboard; with nothing typed, the prompt stays and the caret sits just before it | the Dock's own field |
 | the list | **448 wide** (`More apps`), starting where the field starts; **12 from the bar** (`BESIDE_THE_DOCK`); air inside **8** (`GAP`) | *More apps*' placement, ADR 0102/0103 |
 | where | above a bottom Dock, below a top one, inward from a side one; inside the display and clear of the put-aside panel's column | `docs/features.md`'s *More apps* line, now one function for both |
+| the line saying where they came from | Round 2's line under the field, carried over: **18** tall, in `Label` and the quiet ink, with **12** under it before the rows — *On this computer · 3 applications*, or *nothing is chosen yet to answer questions*; under a side Dock's typed line, at the top of the list otherwise. **Anything typed raises the list**, even where nothing matches and nothing can be asked, so that sentence is read while the person types | `561:275`, and #933's reason for the sentence |
 | rows | Round 2's rows exactly: an application's 56, the hairline, the row that asks's 64, 4 between, the chosen row in the accent at 12 % | `561:324`, `561:339` |
 | how tall | what it holds, up to **three fifths** of the display and never past the room between the bar and the far edge; the rows scroll from there, keeping the chosen one in view; the row that asks is never scrolled away | Round 2's own bound |
 | panel | white, 1 `border/default`, corner 18, `Elevation/Floating` — Round 2's panel | `561:276` |
@@ -33,6 +34,10 @@ are taken from what it does have, and each is for the owner to overrule.
   cool well, the 2 outline, the search mark, the caret).
 - **Nothing typed on a bottom or top Dock is no list** — Round 2's own rule, so a
   chord does not flash every application on the machine.
+- **The line saying where the results came from is carried into the list**,
+  though the decision names only *the matches and the Ask alo row*: it was the
+  one place a person is told that nothing is chosen to answer a question (#933),
+  and the centred panel that drew it is gone. For the owner to overrule.
 - **A press outside the list closes it and does the thing it landed on**, which is
   what every list opened from the Dock does; the words stay in the field, as they
   do when a person clicks a window. Round 2's *a press on the dimmed screen is
@@ -45,9 +50,16 @@ are taken from what it does have, and each is for the owner to overrule.
   matches as a list under it, the chosen row *selected* — which Round 2 noted as
   missing.
 
-**The centred panel of Round 2 is not removed.** *Help with this window* still
-opens it, headed with that name; another change is moving that road into the
-window's own panel, and the panel can go when nothing opens it.
+**The centred panel of Round 2 is removed** (2026-11-11). After this decision it
+was left only for *Help with this window*; that road moved into the window's own
+panel the same day (#1182), and with nothing left to open it the panel went —
+its heading and Close, its field, its dimmed screen and its row of keys (*choose*,
+*open*, *close*, *Esc*, whose words were retired). What it held lives on in the
+list: the rows, their measures, and the line saying where the results came
+from, which only the panel drew and which a person typing a question on a
+machine with nothing chosen to answer would otherwise never see. **Round 2 below
+is kept as the record of what was approved and measured**, not as a surface that
+is drawn.
 
 ## Round 2: the launcher the owner approved on 2026-11-01
 

@@ -35,6 +35,7 @@ fn a_dock(w: i32, h: i32, edge: alo_dock::Edge) -> TheFieldOnTheDock {
 const TWO_AND_ASK: WhatItHolds = WhatItHolds {
     found: 2,
     asks: true,
+    says: true,
     chosen: None,
 };
 
@@ -96,6 +97,14 @@ fn every_part_of_the_list_is_inside_its_panel_on_every_edge() {
         assert!(at.rows.iter().all(|(_, row)| inside(*row)), "{edge:?}");
         assert!(at.ask.is_some_and(inside), "{edge:?}");
         assert!(at.typed.is_none_or(inside), "{edge:?}");
+        assert!(at.origin.is_some_and(inside), "{edge:?}");
+        let first_row = at.rows.first().map(|(_, row)| row.loc.y);
+        assert!(
+            at.origin
+                .zip(first_row)
+                .is_some_and(|(origin, row)| origin.loc.y + origin.size.h + 12 == row),
+            "{edge:?}: the line saying where they came from sits 12 over the first row"
+        );
         assert!(!at.panel.overlaps(a_dock(1440, 960, edge).band), "{edge:?}");
     }
 }
@@ -105,6 +114,7 @@ fn nothing_typed_on_a_bottom_dock_is_no_list_and_on_a_side_dock_is_the_line_alon
     let nothing = WhatItHolds {
         found: 0,
         asks: false,
+        says: false,
         chosen: None,
     };
     assert!(
@@ -129,6 +139,7 @@ fn with_ai_off_there_is_no_row_that_asks() {
         WhatItHolds {
             found: 1,
             asks: false,
+            says: true,
             chosen: None,
         },
     );
@@ -160,6 +171,7 @@ fn on_a_small_display_the_list_stays_on_it_and_scrolls_to_the_row_chosen() {
         let holds = WhatItHolds {
             found: 30,
             asks: true,
+            says: true,
             chosen: Some(29),
         };
         let at = where_the_matches_rise(Size::from((w, h)), DisplayScale::ONE, holds, dock, None)
@@ -214,4 +226,43 @@ fn at_two_hundred_the_list_is_twice_as_wide() {
     .expect("room");
     assert_eq!(two.panel.size.w, one.panel.size.w * 2);
     assert_eq!(two.panel.size.h, one.panel.size.h * 2);
+}
+
+/// **Something typed raises the list even where nothing matches and nothing
+/// can be asked**, so the line saying so is read while the person is typing —
+/// `crate::the_bar_finds::nothing_can_answer_a_question`'s whole purpose.
+#[test]
+fn something_typed_with_nothing_found_and_nothing_to_ask_raises_the_line_alone() {
+    let at = rises(
+        alo_dock::Edge::Bottom,
+        WhatItHolds {
+            found: 0,
+            asks: false,
+            says: true,
+            chosen: None,
+        },
+    );
+    let origin = at.origin.expect("the line");
+    assert!(at.rows.is_empty() && at.ask.is_none() && at.hairline.is_none());
+    assert_eq!(
+        at.panel.size.h,
+        8 + 18 + 8,
+        "the line and the air around it, and no gap under it"
+    );
+    assert_eq!(origin.loc.y, at.panel.loc.y + 8);
+}
+
+/// **Nothing typed says nothing**: a side Dock's list is its typed line alone.
+#[test]
+fn with_nothing_typed_there_is_no_line_saying_where_they_came_from() {
+    let side = rises(
+        alo_dock::Edge::Left,
+        WhatItHolds {
+            found: 0,
+            asks: false,
+            says: false,
+            chosen: None,
+        },
+    );
+    assert!(side.origin.is_none());
 }

@@ -2,14 +2,15 @@
 //! — the owner's decision of 2026-11-11.
 //!
 //! **The geometry is `crate::where_the_bars_matches_rise`' and the rows are
-//! `crate::the_launchers_rows`'**, the same rows the centred panel draws. What
-//! is this file's own is the list's panel — white, a hairline, corner 18 and
-//! the floating shadow, the centred panel's own surface — and, on a side Dock,
+//! `crate::the_launchers_rows`'**, the rows the centred launcher drew before it
+//! was removed. What is this file's own is the list's panel — white, a
+//! hairline, corner 18 and the floating shadow, the centred launcher's own
+//! surface — the line saying where the results came from, and, on a side Dock,
 //! the line showing what is typed.
 //!
 //! # No dimmed screen
 //!
-//! The centred panel lies over a screen dimmed to 45 %. **This list does not**:
+//! The centred launcher lay over a screen dimmed to 45 %. **This list does not**:
 //! it is non-modal, as *More apps* is, so the canvas behind it is not dimmed,
 //! not blurred and not disabled, and a press outside it reaches what it lands
 //! on (`crate::a_press_on_the_launcher`).
@@ -17,7 +18,6 @@
 use cosmic_text::FontSystem;
 use smithay::utils::{Physical, Rectangle};
 
-use crate::bar_raster::TheBarOnTheDisplay;
 use crate::desktop_look::Measure;
 use crate::display_scale::DisplayScale;
 use crate::painted::Washed;
@@ -25,8 +25,8 @@ use crate::settings_canvas::{AShadow, Area, Canvas};
 use crate::settings_type::TheType;
 use crate::the_launchers_icons::ALaunchersIcon;
 use crate::the_launchers_rows::{A_WELLS_CORNER, TheRowsColours, WhereTheRowsAre, said, shrunk};
-use crate::where_the_bar_opens::WhatItHolds;
-use crate::where_the_bars_matches_rise::{TheFieldOnTheDock, TheMatchesPlaces};
+use crate::what_the_bar_shows::TheBarOnTheDisplay;
+use crate::where_the_bars_matches_rise::{TheFieldOnTheDock, TheMatchesPlaces, WhatItHolds};
 
 /// The panel's corner, `radius/lg`, the centred panel's own.
 const THE_PANELS_CORNER: u32 = 18;
@@ -66,6 +66,7 @@ pub(crate) fn picture(
         WhatItHolds {
             found: bar.results.len(),
             asks: bar.asks.is_some(),
+            says: !bar.origin.is_empty(),
             chosen: bar.chosen,
         },
         from.dock,
@@ -107,6 +108,19 @@ pub(crate) fn picture(
 
     if let Some(typed) = places.typed {
         what_is_typed(&mut canvas, fonts, bar, typed, palette, scale);
+    }
+    // **The line saying where the results came from**, on the list's own white,
+    // as it sat under the centred launcher's field.
+    if let Some(origin) = places.origin {
+        said(
+            &mut canvas,
+            fonts,
+            Measure::of(alo_appearance::TextScale::ordinary()).on(scale),
+            bar.origin,
+            TheType::Label,
+            (origin.loc.x, origin.loc.y, origin.size.w),
+            (palette.dock, palette.ink_quiet),
+        );
     }
     crate::the_launchers_rows::the_rows(
         &mut canvas,

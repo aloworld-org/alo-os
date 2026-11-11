@@ -9,7 +9,7 @@
 //! list's first line.
 
 use super::*;
-use crate::bar_raster::{TheAskRow, TheBarOpens, TheLaunchersWords};
+use crate::what_the_bar_shows::{TheAskRow, TheLaunchersWords};
 use crate::the_bar_finds::{AResult, WhatARowDoes};
 use smithay::utils::Size;
 
@@ -63,25 +63,17 @@ fn drawn(edge: alo_dock::Edge, results: &[AResult]) -> Option<MatchesPicture> {
     picture(
         &TheBarOnTheDisplay {
             typed: "files",
-            origin: "",
+            origin: "On this computer  \u{b7}  1 application",
             results,
             chosen: None,
             display: Size::from((1440, 960)),
-            words: TheLaunchersWords {
-                heading: "Find, open, or ask",
-                open_it: "Open",
-                choose: "choose",
-                open: "open",
-                close: "close",
-                esc: "Esc",
-            },
+            words: TheLaunchersWords { open_it: "Open" },
             asks: Some(TheAskRow {
                 asking: "Ask alo \u{201c}files\u{201d}",
                 what_it_is: "a new task",
                 from: "on this computer",
             }),
             artwork: None,
-            opens: TheBarOpens::AboveTheDocksField,
         },
         a_palette(),
         WhereItRisesFrom {
@@ -145,4 +137,24 @@ fn a_side_docks_list_carries_the_typed_line() {
     }
     let bottom = drawn(alo_dock::Edge::Bottom, &[]).expect("drawn");
     assert!(bottom.places.typed.is_none());
+}
+
+/// **The line saying where the results came from is drawn**, under what is
+/// typed and over the rows — the centred launcher's line, carried over when it
+/// was removed, so a person is still told when nothing can answer a question.
+#[test]
+fn the_line_saying_where_they_came_from_is_inked() {
+    for edge in alo_dock::Edge::EVERY {
+        let it = drawn(edge, &dolphin()).expect("drawn");
+        let line = it.places.origin.expect("something is typed");
+        let area = it.panel.area;
+        let inked = (line.loc.y..line.loc.y + line.size.h).any(|y| {
+            (line.loc.x..line.loc.x + line.size.w).any(|x| {
+                let at = usize::try_from(((y - area.loc.y) * area.size.w + (x - area.loc.x)) * 4)
+                    .expect("inside the raster");
+                it.panel.pixels[at..at + 3] != [0xFF_u8, 0xFF, 0xFF]
+            })
+        });
+        assert!(inked, "{edge:?}: the line is not drawn");
+    }
 }
