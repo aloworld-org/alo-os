@@ -340,7 +340,9 @@ fn the_persons_terminal_inherits_no_capability_from_their_session() {
     // A bounding set the stack narrows itself is a second road to the same
     // answer, and this test reads only the first; one appearing must be read.
     assert!(
-        !arguments.iter().any(|it| it.starts_with("default-capability-bounding-set=")),
+        !arguments
+            .iter()
+            .any(|it| it.starts_with("default-capability-bounding-set=")),
         "{} narrows the session's bounding set itself, which this test does not read: \
          {arguments:?}",
         pam.display()
