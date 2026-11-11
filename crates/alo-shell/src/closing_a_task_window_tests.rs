@@ -1,6 +1,7 @@
 //! That a finished task window closes and hands the keyboard to the window now
 //! in front, that a running one asks rather than closing, and that closing
-//! never answers a change.
+//! never answers a change; and that *Keep running* sends a running one into
+//! the right-hand panel, still running.
 //!
 //! Alt+F4 is pressed by evdev code through the seat, the road a person's key
 //! takes, rather than by calling the closing function.
@@ -329,8 +330,9 @@ fn press(server: &mut Server, code: u32, daemon: &ADaemon) {
     }
 }
 
-/// **Closing a running task asks *Stop and close* or *Cancel***, and
-/// *Cancel* closes nothing and stops nothing (ADR 0139).
+/// **Closing a running task asks *Stop and close*, *Keep running* or
+/// *Cancel***, and *Cancel* — the third — closes nothing and stops nothing
+/// (ADR 0139).
 #[test]
 fn closing_a_running_task_asks_and_cancel_changes_nothing() {
     let (_runtime, mut server) = a_session();
@@ -344,10 +346,15 @@ fn closing_a_running_task_asks_and_cancel_changes_nothing() {
     );
     press(&mut server, TAB, &daemon);
     press(&mut server, TAB, &daemon);
+    press(&mut server, TAB, &daemon);
     press(&mut server, ENTER, &daemon);
 
     assert!(server.closing_asked_about(which).is_none());
     assert!(server.tasks().is_open(which), "Cancel closed the window");
+    assert!(
+        !server.tasks().is_put_aside(which) && server.put_tasks_aside_that_were_asked(Some(&mut alo_put_aside::Panel::new())) == 0,
+        "Cancel sent the window into the panel"
+    );
     assert!(
         server.take_the_stops().is_empty(),
         "Cancel stopped the work"
@@ -523,4 +530,110 @@ fn alt_f4_on_a_stopping_task_closes_nothing() {
         "it asked again"
     );
     assert!(server.a_task_is_taking_the_keys());
+}
+
+/// **Keep running leaves the task running, in the panel**: nothing is
+/// stopped, the window stays open, and once a frame lends the panel it is
+/// there — by Minimise's own road — and the keyboard has left it.
+#[test]
+fn keep_running_puts_the_running_task_in_the_panel() {
+    let (_runtime, mut server) = a_session();
+    let which = a_task(&mut server, "tidy my invoices");
+    let daemon = ADaemon::default();
+    alt_f4(&mut server, &daemon);
+    press(&mut server, TAB, &daemon);
+    press(&mut server, TAB, &daemon);
+    press(&mut server, ENTER, &daemon);
+
+    assert!(server.closing_asked_about(which).is_none(), "it asked on");
+    assert!(
+        server.take_the_stops().is_empty(),
+        "Keep running stopped the work"
+    );
+    assert!(server.tasks().is_open(which), "Keep running closed it");
+
+    let mut panel = alo_put_aside::Panel::new();
+    assert_eq!(
+        server.put_tasks_aside_that_were_asked(Some(&mut panel)),
+        1,
+        "Keep running did not send the window to the panel"
+    );
+    assert!(server.tasks().is_put_aside(which));
+    assert_eq!(panel.holding_everything(), 1);
+    assert!(server.tasks().is_open(which), "in the panel, it closed");
+    assert_ne!(
+        server.tasks().the(which).expect("open").what_is_happening(),
+        alo_tasks::words::STOPPING,
+        "in the panel, it was stopping"
+    );
+    assert!(
+        !server.a_task_is_taking_the_keys(),
+        "a window in the panel still took the keys"
+    );
+}
+
+/// **Keep running hands the keyboard to the task window now in front**, as
+/// closing does, rather than leaving it in a window nobody can see.
+#[test]
+fn keep_running_hands_the_keyboard_to_the_window_now_in_front() {
+    let (_runtime, mut server) = a_session();
+    let behind = a_task(&mut server, "explain an invoice");
+    let front = a_task(&mut server, "tidy my invoices");
+    let daemon = ADaemon::default();
+    alt_f4(&mut server, &daemon);
+    press(&mut server, TAB, &daemon);
+    press(&mut server, TAB, &daemon);
+    press(&mut server, ENTER, &daemon);
+    let _ = server.put_tasks_aside_that_were_asked(Some(&mut alo_put_aside::Panel::new()));
+
+    assert!(server.tasks().is_put_aside(front));
+    assert_eq!(server.the_task_with_the_keyboard, Some(behind));
+}
+
+/// **With no panel to hold it, Keep running keeps the window where it is** —
+/// never a running task with no window and no entry in the panel, which is
+/// the one thing the promise forbids. It is not stopped either.
+#[test]
+fn keep_running_with_no_panel_leaves_the_window_on_the_screen() {
+    let (_runtime, mut server) = a_session();
+    let which = a_task(&mut server, "tidy my invoices");
+    let daemon = ADaemon::default();
+    alt_f4(&mut server, &daemon);
+    press(&mut server, TAB, &daemon);
+    press(&mut server, TAB, &daemon);
+    press(&mut server, ENTER, &daemon);
+
+    assert_eq!(server.put_tasks_aside_that_were_asked(None), 0);
+    assert!(!server.tasks().is_put_aside(which));
+    assert!(
+        server.tasks().each_open_window().iter().any(|(w, _)| *w == which),
+        "the window left the screen with nowhere to go"
+    );
+    assert!(server.take_the_stops().is_empty());
+}
+
+/// **Keep running never answers a waiting change**: it goes on waiting, and
+/// is neither approved nor declined.
+#[test]
+fn keep_running_never_answers_a_waiting_change() {
+    let (_runtime, mut server) = a_session();
+    let which = a_task(&mut server, "rename my invoices");
+    let daemon = holding(7, "Delete everything in Invoices");
+    server.an_answer_came_back(
+        which,
+        "Shall I?".to_owned(),
+        false,
+        None,
+        Some(&daemon),
+        &in_english(),
+    );
+    alt_f4(&mut server, &daemon);
+    press(&mut server, TAB, &daemon);
+    press(&mut server, TAB, &daemon);
+    press(&mut server, ENTER, &daemon);
+
+    assert!(daemon.approved.borrow().is_empty(), "Keep running approved it");
+    assert!(daemon.declined.borrow().is_empty(), "Keep running declined it");
+    assert!(server.the_change_waiting.is_asking(), "the change was dropped");
+    assert!(server.take_the_stops().is_empty());
 }

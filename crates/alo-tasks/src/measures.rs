@@ -128,6 +128,16 @@ pub const ALLOW_ONCE_IS_WIDE: u32 = 144;
 /// behind anything.
 pub const DENY_IS_WIDE: u32 = 104;
 
+/// *Keep running* on the question about closing a running task: Quiet, as wide
+/// as *Stop and close* beside it, `A_CONTROL_IS` high.
+///
+/// **Not a figure off a frame**: the design has not drawn this question
+/// (ADR 0139), so it takes the width of the approval card's wider answer,
+/// whose label is about as long. Three answers and their gaps still fit a
+/// window at its least width — `the_least_width_leaves_room_for_three_answers`
+/// in `alo-shell` holds that.
+pub const KEEP_RUNNING_IS_WIDE: u32 = ALLOW_ONCE_IS_WIDE;
+
 /// How wide the control naming the model is.
 pub const THE_MODEL_CONTROL_IS_WIDE: u32 = 176;
 

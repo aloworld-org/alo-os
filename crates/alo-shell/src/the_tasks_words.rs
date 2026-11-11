@@ -87,8 +87,13 @@ struct ATasksWords {
     stop_and_close: String,
     /// *Cancel*, said once for this task.
     cancel: String,
-    /// Which of those two the keyboard is on.
+    /// *Keep running*, said once for this task: the choice between the other
+    /// two.
+    keep_running: String,
+    /// Which of *Stop and close* and *Cancel* the keyboard is on.
     closing_selected: Option<crate::a_change_waiting_reaches_the_person::WhichAnswer>,
+    /// Whether the keyboard is on *Keep running* instead.
+    keep_running_selected: bool,
 }
 
 /// Every task window's words, said once for this frame.
@@ -186,7 +191,9 @@ impl TheTasksWords {
                     closing_after: None,
                     stop_and_close: String::new(),
                     cancel: String::new(),
+                    keep_running: String::new(),
                     closing_selected: None,
+                    keep_running_selected: false,
                 })
             })
             .collect();
@@ -194,7 +201,8 @@ impl TheTasksWords {
     }
 
     /// **And the question about closing a running task**, on a card at the end
-    /// of that task's conversation, with *Stop and close* and *Cancel* under it
+    /// of that task's conversation, with *Stop and close*, *Keep running* and
+    /// *Cancel* under it
     /// (`crate::asking_before_closing`; ADR 0139). Nothing when nothing is
     /// asked.
     pub(crate) fn with_the_closing_question(
@@ -222,10 +230,13 @@ impl TheTasksWords {
             one.closing_after = Some(one.said.len().saturating_sub(1));
             one.stop_and_close = say(crate::the_closing_words::STOP_AND_CLOSE);
             one.cancel = say(crate::the_closing_words::CANCEL);
-            one.closing_selected = asked.selected.map(|choice| match choice {
-                WhichChoice::StopAndClose => WhichAnswer::AllowOnce,
-                WhichChoice::Cancel => WhichAnswer::Deny,
+            one.keep_running = say(crate::the_closing_words::KEEP_RUNNING);
+            one.closing_selected = asked.selected.and_then(|choice| match choice {
+                WhichChoice::StopAndClose => Some(WhichAnswer::AllowOnce),
+                WhichChoice::Cancel => Some(WhichAnswer::Deny),
+                WhichChoice::KeepRunning => None,
             });
+            one.keep_running_selected = asked.selected == Some(WhichChoice::KeepRunning);
         }
         self
     }
@@ -306,10 +317,12 @@ impl TheTasksWords {
                                 once: Some(&one.once),
                                 touches: &one.touches,
                                 does: (one.does.0.as_deref(), one.does.1.as_deref()),
+                                between: None,
                             })
                         } else if one.closing_after == Some(at) {
                             // **The approval card's two answers, with the
-                            // closing question's words** (ADR 0139).
+                            // closing question's words** and *Keep running*
+                            // between them (ADR 0139).
                             Some(crate::task_text::TheTwoAnswers {
                                 allow_once: &one.stop_and_close,
                                 deny: &one.cancel,
@@ -321,6 +334,10 @@ impl TheTasksWords {
                                 once: None,
                                 touches: &[],
                                 does: (None, None),
+                                between: Some(crate::task_text::TheAnswerBetween {
+                                    words: &one.keep_running,
+                                    selected: one.keep_running_selected,
+                                }),
                             })
                         } else {
                             None
