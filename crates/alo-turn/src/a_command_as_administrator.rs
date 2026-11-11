@@ -25,6 +25,7 @@ use alo_capability::{ACommand, ProposalId, THE_SHELL, WhatACommandDid};
 use alo_record::{AsAnAdministrator, Entry};
 use alo_strings::Said;
 
+use crate::a_command_where_no_verb_exists::AtFullAccess;
 use crate::became::Became;
 use crate::refusing::NotDone;
 use crate::turning::Turning;
@@ -50,7 +51,7 @@ impl Turning<'_, '_> {
         now: SystemTime,
     ) -> Result<Result<WhatACommandDid, Said>, NotDone> {
         self.still_open()?;
-        self.ran_as_administrator(command, run, now)
+        self.ran_as_administrator(command, run, AtFullAccess(true), now)
     }
 
     /// **The person said yes to a waiting command that needs administrator
@@ -68,14 +69,16 @@ impl Turning<'_, '_> {
         self.still_open()?;
         let approved = self.approvals_mut().approve_a_command(id, now)?;
         self.remembering(id, Became::Approved);
-        self.ran_as_administrator(approved.command(), run, now)
+        self.ran_as_administrator(approved.command(), run, AtFullAccess(false), now)
     }
 
-    /// Run it as administrator, and write down what happened.
+    /// Run it as administrator, and write down what happened — stamped with
+    /// the level it was asked at, run or refused.
     fn ran_as_administrator(
         &mut self,
         command: &ACommand,
         run: &mut RunningAsAdministrator<'_>,
+        at_full_access: AtFullAccess,
         now: SystemTime,
     ) -> Result<Result<WhatACommandDid, Said>, NotDone> {
         match run(command) {
@@ -90,6 +93,7 @@ impl Turning<'_, '_> {
                     now,
                 )
                 .as_an_administrator(AsAnAdministrator::TheyGaveTheirPassword);
+                let entry = at_full_access.stamped(entry);
                 let entry = match self.kept_as() {
                     Some(named) => entry.kept_as(named),
                     None => entry,
@@ -101,6 +105,7 @@ impl Turning<'_, '_> {
                 let entry =
                     Entry::a_command_was_not_run(self.grantee(), THE_SHELL, said.text(), now)
                         .as_an_administrator(how);
+                let entry = at_full_access.stamped(entry);
                 self.writing_down(entry)?;
                 Ok(Err(said))
             }

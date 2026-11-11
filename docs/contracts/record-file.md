@@ -319,6 +319,14 @@ requires the record to say. It is present from the first such entry ever written
 rather than added when something needs it, because a record that could only say
 one of the two could not keep that promise at the moment it mattered.
 
+**What bounded a command is read off three fields together**, since
+2026-11-10: `the-kernel-was-holding-it` true is a sealed box; otherwise
+`as_an_administrator` present is a run the person gave their password for;
+otherwise `at_full_access` true is a run at full access, nobody asked; and
+otherwise it is a run the person said yes to at *ask me each time*. A command
+run at full access is stamped `at_full_access` from that date — before it,
+none was, so an older unboxed entry reads as one the person said yes to.
+
 **It is not `ran`, and a reader must not add the two together.** `ran` is a verb
 from the broker's closed list, redeemed from an approval and checked against
 grants, and carries `from_approval` and `against`. A command is none of those —
