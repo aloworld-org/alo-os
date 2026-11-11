@@ -490,7 +490,10 @@ fn a_card_stays_while_its_window_is_still_aside() -> Result<(), Box<dyn std::err
         })
     };
 
-    assert_eq!(let_go, 0, "a card left the panel while its window was aside");
+    assert_eq!(
+        let_go, 0,
+        "a card left the panel while its window was aside"
+    );
     assert_eq!(holding, 1);
     Ok(())
 }
@@ -503,8 +506,8 @@ fn a_card_stays_while_its_window_is_still_aside() -> Result<(), Box<dyn std::err
 /// `set_window_minimized`), and not through `bring_this_window_back`, which is
 /// the one road that already emptied the panel.
 #[test]
-fn a_window_brought_back_by_another_road_leaves_the_panel()
--> Result<(), Box<dyn std::error::Error>> {
+fn a_window_brought_back_by_another_road_leaves_the_panel() -> Result<(), Box<dyn std::error::Error>>
+{
     let f = Fixture::keyboard();
     let _app = mapped(&f);
     let root = f.root();
