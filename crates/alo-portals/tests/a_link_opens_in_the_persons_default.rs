@@ -266,7 +266,7 @@ fn a_web_link_opens_in_the_default_with_nothing_granted_and_is_recorded() {
     );
     let everything = serving.everything();
     assert_eq!(everything.len(), 1, "one link, one line");
-    let answered = &everything[0];
+    let answered = everything.first().unwrap();
     assert_eq!(answered.application(), Some(&Applicant::named(MAIL)));
     assert_eq!(
         KeptOutcome::from(answered.outcome()),
@@ -294,8 +294,8 @@ fn the_persons_chosen_browser_is_the_one_asked() {
         Some(LinkStarted::Asked),
     );
     assert_eq!(serving.open_uri("http://example.com/", "chosen", false), 0);
-    assert_eq!(serving.asked_of_the_desktop()[0].0, LIBREWOLF);
-    match KeptOutcome::from(serving.everything()[0].outcome()) {
+    assert_eq!(serving.asked_of_the_desktop().first().unwrap().0, LIBREWOLF);
+    match KeptOutcome::from(serving.everything().first().unwrap().outcome()) {
         KeptOutcome::LinkOpened { chosen, .. } => assert!(chosen),
         other => panic!("{other:?}"),
     }
@@ -308,12 +308,12 @@ fn the_persons_chosen_browser_is_the_one_asked() {
 fn mailto_opens_in_the_mail_application_or_is_refused_naming_the_kind() {
     let with = Serving::started("mail", untouched(true), Some(LinkStarted::Asked));
     assert_eq!(with.open_uri("mailto:anna@example.com?subject=Hi", "mail", false), 0);
-    assert_eq!(with.asked_of_the_desktop()[0].0, THUNDERBIRD);
+    assert_eq!(with.asked_of_the_desktop().first().unwrap().0, THUNDERBIRD);
 
     let without = Serving::started("no-mail", untouched(false), Some(LinkStarted::Asked));
     assert_eq!(without.open_uri("mailto:anna@example.com", "no_mail", false), 2);
     assert!(without.asked_of_the_desktop().is_empty());
-    match without.everything()[0].outcome() {
+    match without.everything().first().unwrap().outcome() {
         Outcome::NothingOpensLinks(nothing) => assert_eq!(nothing.kind(), LinkKind::Mail),
         other => panic!("{other:?}"),
     }
@@ -328,9 +328,9 @@ fn with_no_desktop_the_link_is_refused_and_the_record_says_why() {
     assert_eq!(serving.open_uri("https://example.com/", "nobody", false), 2);
     let everything = serving.everything();
     assert_eq!(everything.len(), 2);
-    assert!(matches!(everything[0].outcome(), Outcome::LinkOpened(_)));
+    assert!(matches!(everything.first().unwrap().outcome(), Outcome::LinkOpened(_)));
     assert_eq!(
-        everything[1].outcome(),
+        everything.get(1).unwrap().outcome(),
         &Outcome::Unanswered(Unanswered::NoDesktop {
             opener: FIREFOX.to_owned()
         })
@@ -339,7 +339,7 @@ fn with_no_desktop_the_link_is_refused_and_the_record_says_why() {
     let refusing = Serving::started("could-not", untouched(true), Some(LinkStarted::CouldNotAsk));
     assert_eq!(refusing.open_uri("https://example.com/", "could_not", false), 2);
     assert_eq!(
-        refusing.everything()[1].outcome(),
+        refusing.everything().get(1).unwrap().outcome(),
         &Outcome::Unanswered(Unanswered::NotOpenedALink {
             opener: FIREFOX.to_owned()
         })
@@ -352,7 +352,7 @@ fn with_no_desktop_the_link_is_refused_and_the_record_says_why() {
 fn asking_to_choose_opens_the_default_and_is_recorded_as_asked() {
     let serving = Serving::started("ask", untouched(true), Some(LinkStarted::Asked));
     assert_eq!(serving.open_uri("https://example.com/", "ask", true), 0);
-    match KeptOutcome::from(serving.everything()[0].outcome()) {
+    match KeptOutcome::from(serving.everything().first().unwrap().outcome()) {
         KeptOutcome::LinkOpened {
             asked_to_choose, ..
         } => assert!(asked_to_choose),

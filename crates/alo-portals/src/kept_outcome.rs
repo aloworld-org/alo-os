@@ -58,7 +58,7 @@ pub enum KeptOutcome {
         chosen: bool,
         /// Whether the application asked for the person to choose, which this
         /// machine does not offer yet.
-        #[serde(rename = "asked-to-choose", default, skip_serializing_if = "is_false")]
+        #[serde(rename = "asked-to-choose", default, skip_serializing_if = "std::ops::Not::not")]
         asked_to_choose: bool,
     },
     /// The application read the appearance settings, allowed by these grants.
@@ -186,15 +186,6 @@ pub enum PassedOverAs {
     NotInstalled(String),
     /// It is a terminal.
     ATerminal(String),
-}
-
-/// Whether a flag is off, so the file leaves it out.
-#[expect(
-    clippy::trivially_copy_pass_by_ref,
-    reason = "serde's skip_serializing_if hands the field by reference"
-)]
-const fn is_false(flag: &bool) -> bool {
-    !*flag
 }
 
 impl From<&NotALink> for NotALinkAs {
