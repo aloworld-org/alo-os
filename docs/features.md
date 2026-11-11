@@ -1610,6 +1610,16 @@ of it, so a person can read at a glance what is real, what is proposed, and who
 is acting: **a ghost is proposed, solid is real, and deep teal is the agent** —
 deep teal always with its mark and its word, never by colour alone.
 
+**Three rulings of the owner, 2026-11-11, given as answers in a question dialog
+and quoted as chosen.** *"Deep teal everywhere (Recommended)"*: deep teal
+`#0F6B72` means *alo is acting* on every alo product and platform — alo OS, the
+workplace applications and alo's own browser alike, which retires terracotta
+for that role. *"Allowed: a logo is a mark"*: a brand mark or logo may use deep
+teal; **the reserved-teal rule covers interface states only** — what the
+machine is doing — and not alo's marks. *"Manrope (Recommended)"*: **Manrope is
+the final typeface for alo's interfaces**, which settles a question the owner
+had left open (`docs/design/figma-snapshot/variables.toml`).
+
 - ★ **Ghost previews** — before the agent changes anything, a translucent ghost of the result appears in place: the files with their new names, the draft, the edited design. Accepting makes it solid; declining fades it away
 - **The agent's presence** — a thin deep teal edge on the window the agent is working in, and its named cursor inside applications: *alo, for Disan*. Where the agent is, always, without a pop-up. *The edge is built (2026-11-10) for a window the person offered with* Help with this window*: while alo works on that request the window wears the teal edge and, across its foot, alo's mark, what it is doing in the person's own words and* **Stop** *(`11:146`), on no other window, gone when the turn ends; waiting on the person it is navy, as the task window is. **Not yet** for a window alo chooses itself while answering a request typed in the Bar — the shell does not learn which window that is until the agent says so as it goes — and not yet the named cursor ([the window controls](design/the-window-controls.md), stage 3; Demo 2 plan, stage 8)*
 - **The trust dial** — ADR 0064's three levels for running code as one dial in the agent's capsule, set per project
