@@ -15,7 +15,8 @@
 //! |---|---|---|---|
 //! | GTK 3, LibreOffice | always | — | `NO_AT_BRIDGE=1` |
 //! | GTK 4 | always | — | `GTK_A11Y=none` |
-//! | Qt 5 and 6 | only if asked | `QT_LINUX_ACCESSIBILITY_ALWAYS_ON` being set at all | its absence |
+//! | Qt 5, and Qt 6 outside Flatpak | only if asked | `QT_LINUX_ACCESSIBILITY_ALWAYS_ON` being set at all | its absence |
+//! | Qt 6 inside Flatpak | always: Flatpak sets `AT_SPI_BUS_ADDRESS`, which Qt 6 obeys | — | **nothing alo can set** |
 //! | Firefox | only if asked | `GNOME_ACCESSIBILITY=1` | `GNOME_ACCESSIBILITY=0` |
 //! | Chromium, Electron: the window | only if asked | `ACCESSIBILITY_ENABLED=1` | `ACCESSIBILITY_ENABLED=0` |
 //! | Chromium, Electron: the page inside it | only if asked | the command-line switch [`THE_PAGE_TOO`] | its absence |

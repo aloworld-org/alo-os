@@ -1008,6 +1008,7 @@ each portal request is a grant in the sense of ADR 0001.
 - Community translation, so a language nobody sold us on can still be complete
 - Screen reader, magnifier, high contrast, larger text
 - ★ **Reduced motion, a switch in Settings → Accessibility** — off as a machine comes; on, everything alo animates jumps to where it is going instead. On 2026-11-07 that is the view gliding to a new window, the only motion alo draws; the next animation anybody builds is held to the same switch. Kept in the person's own `access.toml`, the file sign-in already reads. *The owner, 2026-11-07, asked whether Settings should have the switch: "Yes".*
+- ★ **Every installed application describes itself to alo and to screen readers from the start** — its buttons, fields and text are on the accessibility bus from the moment it opens, so alo can work inside it and a screen reader can read it, without anybody having to switch anything on. **On as a machine comes, with a switch in Settings → Accessibility**: *Apps describe themselves to alo and screen readers*, said with its cost — a little more memory and processor time — so a person can turn it off; a change reaches the applications opened after it. Each toolkit has its own switch and alo sets each one (`alo_launching::describing_themselves`); an application drawn by Chromium also needs a switch on its command line, which the desktop adds when it starts one. **Nothing reads an application's tree because it describes itself**: alo asks only in a turn the person started, and a screen reader only when the person runs one. *The owner, 2026-11-11, asked "Can we make it automatic that the installed apps accessibility tree switched on", chose "On by default, switch in Settings (Recommended)".*
 - ★ **A published accessibility conformance report against EN 301 549** — the harmonised European standard, and the mandatory technical specification for public-sector ICT procurement across the EU. Procurement asks for the report, not the intention
 - Sticky keys, slow keys, and keyboard-only operation of everything
 - Voice control of the shell — which for us is the agent, arriving somewhere it was always going
@@ -1081,7 +1082,9 @@ running code. It is built once `CLAUDE.md` carries those words (ADR 0143).*
   alo may reach, with its length, removed in one action. **What "any" honestly covers** is written down
   in ADR 0143, application by application: an application that describes its
   own window to assistive technology (most GTK, Qt and LibreOffice windows,
-  browsers, and Electron applications started the right way) can be driven; one
+  browsers, and Electron applications started the right way — which alo does
+  for them by default, *Apps describe themselves* under Language and access,
+  the owner, 2026-11-11) can be driven; one
   that draws everything itself — a game, a 3D or painting canvas, a remote
   desktop — **cannot be driven reliably by any mechanism**, and alo says so
   rather than guessing — unless the person has switched on, for that

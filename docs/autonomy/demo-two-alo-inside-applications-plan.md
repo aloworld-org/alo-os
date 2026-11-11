@@ -80,6 +80,17 @@ and names which later stage turns each answer into a check that runs again.
 **Delivers:** a report in `docs/autonomy/updates/`, and decides how alo types
 on evidence — the owner left that to engineering (ADR 0143).
 
+**What the boot walk of 2026-11-11 found, and what it changed.** The bus runs in
+the person's session. VSCodium showed alo **only its window frame** — *This
+window shows no control that can be named* — after `ACCESSIBILITY_ENABLED=1`,
+because Chromium describes the page inside its window only when started with
+`--force-renderer-accessibility` (`docs/quirks/chromium-describes-only-its-window-frame-until-asked.md`).
+The owner then decided that **every application describes itself from the
+start, with a switch in Settings → Accessibility** (`docs/features.md`, 2026-11-11),
+so this question is now answered by default rather than by hand: the image
+asks every toolkit, and the desktop adds Chromium's switch when it starts
+VSCodium, VS Code or Chromium. The rest of this stage's questions stand.
+
 ### 2. The accessibility bus is on the image, started and not stat-ed
 
 **Status:** not started. **Size:** S. **Waits on:** stage 1, and only if the
@@ -129,6 +140,15 @@ them; `alo-turn`'s executor pattern (`acting_on_an_application.rs`).
 **Test:** the twelve-verb test becomes fourteen and `agent-verbs.md` says *offered*; with no invocation the tree is
 never asked; a revoked grant stops the next press; on qemu, Firefox's window
 read and a button pressed.
+
+**What it can now rest on (2026-11-11):** an application describes itself from
+the moment it opens, because the person's *Apps describe themselves* switch is
+on as a machine comes (`alo_launching::describing_themselves`). That makes the
+tree **able to answer**; it does not make anything read it. The verbs this stage
+offers still ask only inside a turn the person started. **And where the person
+turned the switch off**, a verb that finds no tree should say so and name the
+switch, rather than *this window shows no control that can be named* — which
+is this stage's to build, because the refusal is said by the verb.
 
 ### 5. An argument can carry text, shown in full
 
