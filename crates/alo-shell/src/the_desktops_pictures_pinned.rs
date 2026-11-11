@@ -4,7 +4,7 @@
 //! The kit moves the shell's drawing into crates of its own. A move is meant to
 //! change nothing a person sees, and *meant to* is not a check, so each surface
 //! below is drawn at three display scales (100, 150 and 200 per cent) and at two
-//! text sizes (100 and 150 per cent), every picture is hashed with
+//! text sizes (100 and 125 per cent), every picture is hashed with
 //! [`crate::a_picture_hashed::Hashed`], and the hashes are held to a table
 //! written into the surface's own file.
 //!
@@ -65,7 +65,13 @@ struct Drawn {
 const SCALES: [u16; 3] = [100, 150, 200];
 
 /// The text sizes every surface that takes one is drawn at.
-const TEXT_SIZES: [u16; 2] = [100, 150];
+///
+/// **125 rather than 150**, measured on the first run: the egress status's
+/// pill is laid out at the display's scale times the text size, so its picture
+/// at text 150 on a display at 100 was the same picture as at text 100 on a
+/// display at 150, and [`held`] rightly refused two equal hashes. At 125 no two
+/// of the six products are equal.
+const TEXT_SIZES: [u16; 2] = [100, 125];
 
 /// The display every surface is drawn on, in logical pixels: the design's
 /// frames are 1440 × 960.
@@ -85,7 +91,7 @@ fn every_way(mut draw: impl FnMut(DisplayScale, TextScale) -> u64) -> Vec<Drawn>
             let hash = draw(
                 DisplayScale::of_per_cent(scale),
                 TextScale::percent(text)
-                    .unwrap_or_else(|_| unreachable!("100 and 150 are text sizes")),
+                    .unwrap_or_else(|_| unreachable!("100 and 125 are text sizes")),
             );
             drawn.push(Drawn { scale, text, hash });
         }
