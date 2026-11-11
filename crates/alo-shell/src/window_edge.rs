@@ -96,10 +96,12 @@ pub const THE_NARROWEST_EDGE_IS: i32 =
 /// or how something looks.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Decorations {
-    /// The application draws its own header. alo's band adds **Window actions
-    /// only** — no second Minimise or Close, by the owner's ruling of
-    /// 2026-10-09, which the 2026-11-09 specification keeps.
-    TheApplicationDraws,
+    /// The application draws its own header, with the window buttons it
+    /// shows itself. alo's band adds **Window actions, and whichever of
+    /// Minimise and Close the application does not show** — the owner,
+    /// 2026-11-12: *No need to add controls if the app has, we can only add
+    /// the ones that are not there.* Its own buttons stay.
+    TheApplicationDraws(ItsOwnButtons),
     /// The application leaves it to the shell: the band carries the title, the
     /// application's name and all three controls.
     TheShellDraws,
@@ -116,6 +118,33 @@ pub enum Decorations {
     /// reaches nothing looks live and is not. `crate::the_terminals_edge` draws
     /// and presses it.
     AlosOwnWindow,
+}
+
+/// Which of the band's controls an application that draws its own header
+/// shows itself.
+///
+/// **Never read off the application's pixels or its accessibility tree**:
+/// `crate::window_edge_who_draws` answers it from what the application
+/// declared and a reviewed table of what each was measured to draw, and where
+/// neither says, [`Self::NOT_KNOWN`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ItsOwnButtons {
+    /// The application draws a Minimise button of its own.
+    pub minimise: bool,
+    /// The application draws a Close button of its own.
+    pub close: bool,
+}
+
+impl ItsOwnButtons {
+    /// What alo assumes where it cannot know: that the application shows both,
+    /// so alo adds **Window actions only** and never a duplicate. The cost — a
+    /// window that in fact has neither reaches Minimise and Close through the
+    /// keyboard alone — is named in
+    /// `docs/quirks/an-application-that-draws-its-own-header-is-not-asked-which-buttons.md`.
+    pub const NOT_KNOWN: Self = Self {
+        minimise: true,
+        close: true,
+    };
 }
 
 /// What one control on the band does.

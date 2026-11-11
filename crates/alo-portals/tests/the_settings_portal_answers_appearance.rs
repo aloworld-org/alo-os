@@ -72,6 +72,11 @@ fn the_contract_lists_settings_as_answered_with_what_it_answers() {
         "cursor-theme",
         "cursor-size",
         "2026-11-06",
+        // The window buttons' one key, and the owner's words that put it here.
+        "org.gnome.desktop.wm.preferences",
+        "button-layout",
+        "appmenu:minimize,maximize,close",
+        "2026-11-12",
     ] {
         assert!(
             row.contains(named),
@@ -421,8 +426,8 @@ mod on_the_bus {
         serving.set_clock(19);
         for (asked, namespaces) in [
             (vec![APPEARANCE], 1),
-            (vec![], 2),
-            (vec![""], 2),
+            (vec![], 3),
+            (vec![""], 3),
             (vec!["org.freedesktop.*"], 1),
         ] {
             let mut everything = serving.read_all(&asked).unwrap();
@@ -470,6 +475,29 @@ mod on_the_bus {
             36
         );
 
+        // **The window buttons GTK is told to draw**: its own Minimise, Maximise
+        // and Close, whatever the person's appearance, so the shell knows which
+        // it shows (the owner, 2026-11-12).
+        let window = serving.read_all(&["org.gnome.desktop.wm.preferences"]).unwrap();
+        assert_eq!(window.len(), 1, "{window:?}");
+        let buttons = window
+            .get("org.gnome.desktop.wm.preferences")
+            .expect("the window namespace");
+        let keys: Vec<&str> = buttons.keys().map(String::as_str).collect();
+        assert_eq!(keys, ["button-layout"], "only the buttons' key");
+        assert_eq!(
+            text(buttons.get("button-layout").unwrap()),
+            "appmenu:minimize,maximize,close"
+        );
+        assert_eq!(
+            text(
+                &serving
+                    .read_one("org.gnome.desktop.wm.preferences", "button-layout")
+                    .unwrap()
+            ),
+            "appmenu:minimize,maximize,close"
+        );
+
         // The deprecated `Read`, which wraps the value in one more variant.
         let wrapped: OwnedValue = serving
             .call("Read", &(APPEARANCE, "color-scheme"))
@@ -512,6 +540,12 @@ mod on_the_bus {
             for refused in [
                 serving.read_one(APPEARANCE, "color-scheme").unwrap_err(),
                 serving.read_one(APPEARANCE, "accent-color").unwrap_err(),
+                // The window buttons' key is under the same grant: an
+                // ungranted application draws GTK's own layout, which is the
+                // same one (`the_window_buttons_gtk_is_told`).
+                serving
+                    .read_one("org.gnome.desktop.wm.preferences", "button-layout")
+                    .unwrap_err(),
                 serving.read_all(&[APPEARANCE]).unwrap_err(),
                 serving.read_all(&[]).unwrap_err(),
                 serving
@@ -629,6 +663,8 @@ mod on_the_bus {
             for (namespace, key) in [
                 ("org.gnome.desktop.interface", "color-scheme"),
                 ("org.gnome.desktop.interface", "gtk-theme"),
+                ("org.gnome.desktop.wm.preferences", "theme"),
+                ("org.gnome.desktop.interface", "button-layout"),
                 ("org.kde.kdeglobals.General", "ColorScheme"),
                 (APPEARANCE, "contrast"),
                 (APPEARANCE, "anything"),

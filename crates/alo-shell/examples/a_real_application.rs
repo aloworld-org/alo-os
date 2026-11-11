@@ -601,7 +601,10 @@ fn what_was_asked() -> Result<Asked, Box<dyn std::error::Error>> {
     while let Some(argument) = arguments.next() {
         match argument.as_str() {
             "--run" => programs.push(arguments.next().ok_or("--run needs a program after it")?),
-            "--app-draws-its-own" => decorations = alo_shell::Decorations::TheApplicationDraws,
+            "--app-draws-its-own" => {
+                decorations =
+                    alo_shell::Decorations::TheApplicationDraws(alo_shell::ItsOwnButtons::NOT_KNOWN);
+            }
             "--seconds" => {
                 seconds = arguments
                     .next()

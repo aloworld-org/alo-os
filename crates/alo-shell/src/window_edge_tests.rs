@@ -121,15 +121,58 @@ fn revealing_the_controls_does_not_move_or_narrow_the_title() {
     assert_eq!(concealed.title_room, revealed.title_room);
 }
 
-/// **An application with its own header gets Window actions and nothing
-/// else**, and no title of alo's over its own.
+/// **An application with its own header gets the controls it lacks**, laid
+/// out at the trailing end like the shell's, and no title of alo's over its
+/// own.
 #[test]
-fn an_application_with_its_own_header_gets_window_actions_only() {
-    let edge = edge_of(specimen(), Decorations::TheApplicationDraws, true, roomy());
+fn an_application_with_its_own_header_gets_the_controls_it_lacks() {
+    let close_only = Decorations::TheApplicationDraws(crate::window_edge::ItsOwnButtons {
+        minimise: false,
+        close: true,
+    });
+    let edge = edge_of(specimen(), close_only, true, roomy());
     let does: Vec<OnTheEdge> = edge.controls.iter().map(|it| it.does).collect();
-    assert_eq!(does, vec![OnTheEdge::WindowActions]);
+    assert_eq!(does, vec![OnTheEdge::WindowActions, OnTheEdge::Minimise]);
     assert_eq!(edge.title, None);
     assert_eq!(edge.the_room_a_title_has(), 0);
+    // The last one ends where the shell's Close ends: the trailing inset.
+    let last = edge.controls.last().expect("two controls");
+    assert_eq!(
+        last.target.loc.x + last.target.size.w,
+        edge.region.loc.x + edge.region.size.w - THE_TRAILING_INSET
+    );
+}
+
+/// **Revealing an application's added controls never moves its content**:
+/// the band is above the window in every mode, concealed or revealed.
+#[test]
+fn revealing_an_applications_added_controls_never_moves_its_window() {
+    for its_own in [
+        crate::window_edge::ItsOwnButtons::NOT_KNOWN,
+        crate::window_edge::ItsOwnButtons {
+            minimise: false,
+            close: true,
+        },
+        crate::window_edge::ItsOwnButtons {
+            minimise: false,
+            close: false,
+        },
+    ] {
+        for revealed in [false, true] {
+            let edge = edge_of(
+                specimen(),
+                Decorations::TheApplicationDraws(its_own),
+                revealed,
+                roomy(),
+            );
+            assert_eq!(
+                edge.region.loc.y + edge.region.size.h,
+                specimen().loc.y,
+                "the band does not end where the window begins"
+            );
+            assert!(!edge.region.overlaps(specimen()), "the band covers the window");
+        }
+    }
 }
 
 /// **A task window carries Minimise and Close; alo's own windows Close alone.**

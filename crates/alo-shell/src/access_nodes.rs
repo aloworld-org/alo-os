@@ -33,7 +33,6 @@ use crate::the_dock_as_a_reader_meets_it::{ItsName, as_read};
 use crate::the_tasks_a_person_opened::WhichTask;
 use crate::window_edge::Decorations;
 use crate::window_edge_reading::what_a_reader_is_told;
-use crate::window_edge_who_draws::who_draws_a_frame;
 
 /// Where every application's tree starts, as at-spi2 fixes it.
 pub(crate) const ROOT: &str = "/org/a11y/atspi/accessible/root";
@@ -219,13 +218,13 @@ impl ReadAloudTree {
     pub fn with_the_frames_open(
         mut self,
         strings: &Strings,
-        frames: &[FrameName],
+        frames: &[(FrameName, Decorations)],
         turned_on: &TurnedOn,
     ) -> Self {
         let Some(list) = self.the_windows_open() else {
             return self;
         };
-        for frame in frames {
+        for (frame, decorations) in frames {
             let name = frame.its_own_words().map_or_else(
                 || said(strings, alo_access::words::AN_APPLICATION),
                 str::to_owned,
@@ -247,11 +246,11 @@ impl ReadAloudTree {
             // Until now the list held names and nothing else: a reader was
             // told a window was open and never that anything could be done to
             // it. The controls are the ones `crate::window_edge` draws, asked
-            // of the same `who_draws_a_frame`, so what a person hears and what
+            // of the same `who_draws_the_header`, so what a person hears and what
             // is drawn cannot disagree - and they are here whether or not the
             // edge is revealed, because revealing is what a person sees and is
             // never what a person can reach.
-            for control in what_a_reader_is_told(who_draws_a_frame()) {
+            for control in what_a_reader_is_told(*decorations) {
                 let node = of_control(strings, control, turned_on);
                 self.push(frame, node);
             }
