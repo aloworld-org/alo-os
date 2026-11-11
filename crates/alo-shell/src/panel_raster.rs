@@ -74,14 +74,14 @@
 //! panel holds. It is given a panel and a display and answers with rectangles.
 
 use alo_dock::measures::{GAP, ICON, MARGIN};
-use alo_put_aside::Panel;
+use alo_put_aside::{Aside, Panel, TaskNumber};
 use alo_put_aside::the_region_the_panel_claims::WhichEdge;
 use smithay::utils::{Physical, Point, Rectangle, Size};
 
 use crate::RenderError;
 use crate::desktop_look::DesktopLook;
 use crate::display_scale::DisplayScale;
-use crate::painted::Solid;
+use crate::painted::{Solid, Washed};
 
 /// The largest display side, in pixels, the panel is laid out for. The same
 /// ceiling `crate::dock_raster` holds, and for the same reason: beyond it the
@@ -143,6 +143,17 @@ pub(crate) struct PanelPicture {
     pub(crate) slots: Vec<Rectangle<i32, Physical>>,
     /// Flat shapes, in painting order.
     pub(crate) solids: Vec<Solid>,
+    /// **One slot per task put aside**, with which task it is — in the same
+    /// walk down the rail as [`Self::slots`], so windows and tasks sit in the
+    /// order they were put aside (the approved design `23:2`). Nothing is
+    /// painted in them here: `crate::task_card_raster` draws each square.
+    pub(crate) task_squares: Vec<(TaskNumber, Rectangle<i32, Physical>)>,
+    /// Rasters composited over the solids: the tasks' squares, then the
+    /// open card, from `crate::task_card_raster`. Empty for a panel holding
+    /// no task.
+    pub(crate) washed: Vec<Washed>,
+    /// The card a person opened from a task's square, where one is open.
+    pub(crate) open_card: Option<crate::task_card_raster::TheOpenCard>,
 }
 
 /// **Which edge the panel belongs to, for a person reading in `reading`.**
@@ -253,7 +264,7 @@ pub(crate) fn picture(
         return Err(RenderError::DesktopScene);
     };
 
-    let holding = i32::try_from(panel.holding()).map_err(|_| RenderError::DesktopScene)?;
+    let holding = i32::try_from(panel.holding_everything()).map_err(|_| RenderError::DesktopScene)?;
     // **A concealed panel draws no rail and keeps its column.** The same picture an empty
     // panel gives, and for a reason worth stating: in both states there is nothing to be *on*,
     // and the column still asks, because the panel owns its edge whether or not it is showing.
@@ -288,6 +299,7 @@ pub(crate) fn picture(
     );
 
     let mut slots = Vec::new();
+    let mut task_squares = Vec::new();
     let mut solids = Vec::new();
     let mut control = None;
     if rail_height > 0 {
@@ -305,7 +317,9 @@ pub(crate) fn picture(
             area: its_own,
             colour: palette.accent,
         });
-        for which in 0..holding {
+        // **Windows and tasks in one walk**, newest put aside first, so each
+        // lands in the slot its turn in the panel gives it.
+        for (which, aside) in (0..holding).zip(panel.everything()) {
             // `which + 1`, because the control is the slot above them all.
             let top = rail_y.saturating_add(margin).saturating_add(
                 which
@@ -319,11 +333,16 @@ pub(crate) fn picture(
                 Point::from((rail_x.saturating_add(margin), top)),
                 Size::from((icon, icon)),
             );
-            slots.push(slot);
-            solids.push(Solid {
-                area: slot,
-                colour: palette.accent,
-            });
+            match aside {
+                Aside::AWindow(_) => {
+                    slots.push(slot);
+                    solids.push(Solid {
+                        area: slot,
+                        colour: palette.accent,
+                    });
+                }
+                Aside::ATask(task) => task_squares.push((task.task(), slot)),
+            }
         }
     }
 
@@ -334,6 +353,9 @@ pub(crate) fn picture(
         control,
         slots,
         solids,
+        task_squares,
+        washed: Vec::new(),
+        open_card: None,
     })
 }
 

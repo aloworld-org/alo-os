@@ -61,6 +61,17 @@ impl crate::Server {
         std::mem::take(&mut self.stops)
     }
 
+    /// **The Stop could not be handed to the agent**, so nothing can confirm
+    /// the work ended: the task says *Stop requested · not confirmed*, never
+    /// *stopped*, and a window *Stop and close* asked about stays open,
+    /// because work may still be running in it.
+    pub(crate) fn its_stop_could_not_be_delivered(&mut self, which: WhichTask) {
+        if let Some(task) = self.the_tasks.the_mut(which) {
+            task.its_stop_could_not_be_confirmed();
+        }
+        self.close_when_stopped.retain(|asked| *asked != which);
+    }
+
     /// **The agent has gone after a Stop**: the task says *stopped*, naming
     /// the changes the person allowed before it, and nothing else.
     pub(crate) fn it_really_stopped(&mut self, which: WhichTask) {

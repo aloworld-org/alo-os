@@ -132,14 +132,21 @@ fn an_application_with_its_own_header_gets_window_actions_only() {
     assert_eq!(edge.the_room_a_title_has(), 0);
 }
 
-/// **A task window and alo's own windows carry Close alone.**
+/// **A task window carries Minimise and Close; alo's own windows Close alone.**
 #[test]
-fn a_task_window_and_alos_own_windows_carry_close_alone() {
-    for decorations in [Decorations::ATaskWindow, Decorations::AlosOwnWindow] {
-        let edge = edge_of(specimen(), decorations, true, roomy());
-        let does: Vec<OnTheEdge> = edge.controls.iter().map(|it| it.does).collect();
-        assert_eq!(does, vec![OnTheEdge::Close], "{decorations:?}");
-    }
+fn a_task_window_carries_minimise_and_alos_own_windows_close_alone() {
+    let does = |decorations| -> Vec<OnTheEdge> {
+        edge_of(specimen(), decorations, true, roomy())
+            .controls
+            .iter()
+            .map(|it| it.does)
+            .collect()
+    };
+    assert_eq!(
+        does(Decorations::ATaskWindow),
+        vec![OnTheEdge::Minimise, OnTheEdge::Close]
+    );
+    assert_eq!(does(Decorations::AlosOwnWindow), vec![OnTheEdge::Close]);
     assert_eq!(
         edge_of(specimen(), Decorations::ATaskWindow, true, roomy()).title,
         None

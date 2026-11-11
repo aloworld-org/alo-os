@@ -98,6 +98,11 @@ enum ItsWindow {
     /// the canvas unmoved; `crate::task_windows_on_the_plane` puts it on a
     /// screen through the camera.
     At(Rectangle<i32, Physical>, alo_canvas::Place),
+    /// **Put aside in the right-hand panel, still running** — where it was,
+    /// and the Place it was asked on, kept so it comes back to exactly there.
+    /// Not on the screen and not pressable; the panel holds its card
+    /// (`crate::a_task_in_the_panel`).
+    PutAside(Rectangle<i32, Physical>, alo_canvas::Place),
     /// The person closed it.
     ///
     /// **Its place in the list is kept**, and that is the point of this state
@@ -113,7 +118,7 @@ impl ItsWindow {
     const fn on_the_screen(self) -> Option<Rectangle<i32, Physical>> {
         match self {
             Self::At(at, _) => Some(at),
-            Self::NowhereYet | Self::Closed => None,
+            Self::NowhereYet | Self::PutAside(..) | Self::Closed => None,
         }
     }
 
@@ -174,6 +179,45 @@ impl TheTasks {
         }
     }
 
+    /// **This task's window went into the right-hand panel**, still running.
+    /// Answers the Place it was on, which is where it comes back to, or
+    /// [`None`] when it was not on the screen to put aside — not yet placed,
+    /// already aside, or closed.
+    ///
+    /// **Bookkeeping only**: nothing here touches the task's work, which is
+    /// what makes *minimising keeps it running* true rather than hoped.
+    pub(crate) fn put_aside(&mut self, which: WhichTask) -> Option<alo_canvas::Place> {
+        let window = self.placed.get_mut(which.at())?;
+        let ItsWindow::At(at, place) = *window else {
+            return None;
+        };
+        *window = ItsWindow::PutAside(at, place);
+        Some(place)
+    }
+
+    /// **This task's window comes back from the panel**, exactly where it was
+    /// on the Place it was asked on. Answers whether it was aside to bring
+    /// back.
+    pub(crate) fn brought_back(&mut self, which: WhichTask) -> bool {
+        let Some(window) = self.placed.get_mut(which.at()) else {
+            return false;
+        };
+        let ItsWindow::PutAside(at, place) = *window else {
+            return false;
+        };
+        *window = ItsWindow::At(at, place);
+        true
+    }
+
+    /// Whether this task's window is in the right-hand panel.
+    #[must_use]
+    pub fn is_put_aside(&self, which: WhichTask) -> bool {
+        matches!(
+            self.placed.get(which.at()),
+            Some(ItsWindow::PutAside(..))
+        )
+    }
+
     /// Every window on the screen and the task it is, oldest first — the
     /// order they are drawn in, so the last is in front.
     #[must_use]
@@ -193,7 +237,7 @@ impl TheTasks {
     pub fn the_one_in_front(&self) -> Option<WhichTask> {
         self.placed
             .iter()
-            .rposition(|window| *window != ItsWindow::Closed)
+            .rposition(|window| matches!(window, ItsWindow::NowhereYet | ItsWindow::At(..)))
             .map(WhichTask)
     }
 
@@ -350,7 +394,7 @@ impl TheTasks {
     #[must_use]
     pub(crate) fn the_place_of(&self, which: WhichTask) -> Option<alo_canvas::Place> {
         match self.placed.get(which.at()) {
-            Some(ItsWindow::At(_, place)) => Some(*place),
+            Some(ItsWindow::At(_, place) | ItsWindow::PutAside(_, place)) => Some(*place),
             _ => None,
         }
     }

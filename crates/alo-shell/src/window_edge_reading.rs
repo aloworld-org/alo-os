@@ -93,10 +93,14 @@ pub fn the_controls_of(decorations: Decorations) -> Vec<OnTheEdge> {
         // with its own header keeps its own buttons, and a second Minimise or
         // Close beside them is the duplicate set the ruling forbids.
         Decorations::TheApplicationDraws => vec![OnTheEdge::WindowActions],
-        // **Close only**: a task window does not move or go aside, and alo's
-        // own windows cannot yet be put aside or given a panel — a control
-        // that reaches nothing would look live.
-        Decorations::ATaskWindow | Decorations::AlosOwnWindow => vec![OnTheEdge::Close],
+        // **Minimise and Close** on a task window: minimising puts the task in
+        // the right-hand panel, still running (`crate::a_task_goes_aside`), the
+        // owner's *minimise later with the right-hand panel* of 2026-10-28.
+        // It does not move, so there are no window actions.
+        Decorations::ATaskWindow => vec![OnTheEdge::Minimise, OnTheEdge::Close],
+        // **Close only** on alo's own windows: they cannot yet be put aside or
+        // given a panel, and a control that reaches nothing would look live.
+        Decorations::AlosOwnWindow => vec![OnTheEdge::Close],
     }
 }
 

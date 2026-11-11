@@ -1536,6 +1536,7 @@ mod running {
         fn now(&self) -> DesktopFrame<'_> {
             DesktopFrame {
                 tasks: &[],
+                tasks_aside: alo_shell::TheTasksAside::NONE,
                 // **The lane fills this**, like the two below it and for the
                 // same reason: whether a person has the market open is decided
                 // by a press, and presses reach the `Server`.

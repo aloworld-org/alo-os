@@ -157,7 +157,23 @@ impl crate::Server {
             return 0;
         };
 
-        let chosen: Vec<WindowId> = asked
+        // **A press on a running task first** — its square, its card or the
+        // card's button (`crate::a_task_card_is_pressed`). A press that was a
+        // task's is not also asked about as a window.
+        let mut on_windows = Vec::new();
+        for at in asked {
+            let on_a_task = self
+                .panel_as_drawn
+                .as_ref()
+                .and_then(|drawn| crate::a_task_card_is_pressed::what_was_pressed(drawn, at));
+            match on_a_task {
+                Some(on) => {
+                    let _ = self.a_press_on_a_task(panel, on);
+                }
+                None => on_windows.push(at),
+            }
+        }
+        let chosen: Vec<WindowId> = on_windows
             .iter()
             .filter_map(|at| self.which_window_was_clicked(panel, *at))
             .collect();

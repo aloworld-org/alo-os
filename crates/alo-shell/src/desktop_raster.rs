@@ -116,6 +116,8 @@ pub(crate) struct Shown<'a> {
     pub(crate) filling: &'a ListShows,
     /// The task windows open on this display, already placed.
     pub(crate) tasks: &'a [crate::task_raster::ATaskOnTheDisplay<'a>],
+    /// The running tasks put aside, said, and which card is open.
+    pub(crate) tasks_aside: crate::TheTasksAside<'a>,
     /// The window of what a person can install, where one is open.
     pub(crate) market: Option<crate::market_raster::AMarketOnTheDisplay<'a>>,
     /// How this display is divided.
@@ -255,6 +257,7 @@ pub(crate) fn picture(
 ) -> Result<DesktopPicture, RenderError> {
     let Shown {
         tasks,
+        tasks_aside,
         market,
         running,
         filling,
@@ -386,6 +389,17 @@ pub(crate) fn picture(
         // rail beside it is the same size to the eye on a dense screen.
         crate::display_scale::DisplayScale::of_per_cent(display_scale),
     )?;
+    // **And each running task put aside, drawn into its slot**, with the card
+    // the person opened beside the rail (the approved design `23:2`).
+    let panel = crate::task_card_raster::with_the_tasks(
+        panel,
+        tasks_aside.cards,
+        tasks_aside.open,
+        fonts,
+        look.measure()
+            .on(crate::display_scale::DisplayScale::of_per_cent(display_scale)),
+        crate::panel_raster::the_edge_for(look.reading()),
+    );
 
     // **After the panel, because the band's right edge is the panel's left one.**
     // The owner's ruling of 2026-09-30: the top controls span the screen up to the

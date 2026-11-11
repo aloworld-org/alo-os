@@ -71,6 +71,12 @@ pub(crate) fn what_the_pointer_is(drawn: &ThePanelAsDrawn, at: Point<i32, Physic
     if holds(drawn.rail(), at) {
         return ThePointer::OnTheSurface;
     }
+    // **The card a person opened from a task's square is the panel's surface
+    // too**, though it sits inward of the column: a press on its Stop is a
+    // press on the panel, never on the window under it.
+    if drawn.open_card().is_some_and(|card| holds(card.area, at)) {
+        return ThePointer::OnTheSurface;
+    }
     if holds(drawn.reserved(), at) {
         return ThePointer::AtTheEdge;
     }
