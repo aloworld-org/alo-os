@@ -75,7 +75,8 @@ impl crate::Server {
         if self.the_task_card_open == Some(task) {
             self.the_task_card_open = None;
         }
-        self.tasks_mut()
-            .brought_back(WhichTask::numbered(task.at()))
+        self.tasks()
+            .the_task_numbered(task.at())
+            .is_some_and(|which| self.tasks_mut().brought_back(which))
     }
 }

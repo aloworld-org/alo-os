@@ -207,6 +207,75 @@ never restores the application's other windows with it.
 arrives here because the Dock ran out of room; ADR 0102 settled that and ADR
 0103 leaves it standing.
 
+## A running task in the panel — frame `23:2`, approved as drawn
+
+**The owner approved `07 / A running task in the put-aside panel` (`23:2` in
+`XbSmsBYix0TrcQ0Qzaup64`) on 2026-11-11 with *"Approve as drawn"*.** A task a
+person minimises keeps working and waits here, **windows and tasks together,
+newest put aside first**, and a task returns to the Place it was asked on.
+Measured on 2026-11-10 with `get_metadata`, `get_design_context` and
+`get_screenshot` on `23:8`, `23:28` and `23:83`; `get_variable_defs` on `23:2`
+answers `{}` — its fills are not bound to variables — so the colours below are
+read off the fills and matched to `alo_appearance::Role`. The node tree is
+`figma-snapshot/running-task-XbSmsBYix0TrcQ0Qzaup64-23-2.xml`; the figures are
+the logical measures in `crates/alo-shell/src/a_task_card_measures.rs`.
+
+**The square** (`23:10`, `23:14`, `23:19`, `23:23`): 48 × 48, corner 12, alo's
+mark *alo* at 13 centred.
+
+| state | ground | ring | mark | extra |
+|---|---|---|---|---|
+| Working | `#E8F4F2` AccentSoft | 2 solid `#0F6B72` | `#0F6B72` | |
+| Needs you | white | 2 solid `#102A43` | `#102A43` | 10 × 10 navy dot at (34, 4) |
+| Stopping… | white | 1 dashed `#596B78` | `#596B78` | |
+| Stopped · Done | white | 1 solid `#E7EBEF` | `#596B78` | |
+
+**The card** (`23:29`…`23:79`): 216 × 106, corner 12, white, 1 border
+`#E7EBEF`, shadow `0 2 8 rgba(15,41,66,0.06)`, a 3-wide left edge in the state's
+colour, no preview picture. Line 1 at y 10: *alo* at x 12 and the state at x 36,
+160 wide, both 11 SemiBold in the state's colour. Line 2 at y 32: the task in
+the person's words, 13 SemiBold `#102A43`, 192 wide, one line ending in an
+ellipsis. Line 3 at y 54: how far, 11 Regular `#274C68`. Line 4 at y 78: the
+last thing approved, 11 Regular `#596B78`. Lines 3 and 4 are 124 wide beside a
+button and 192 without. The button is 64 × 30, corner 8, 12 from the right and
+10 from the bottom, 12 SemiBold: **Stop** navy-filled with white words while
+alo works, **Review** outlined when it needs the OK, **Open** outlined once it
+is stopped, done or its Stop is unconfirmed; none while *Stopping…*.
+
+| state | edge | mark and state word |
+|---|---|---|
+| alo is working | `#0F6B72` | `#0F6B72` |
+| Needs your OK | `#102A43` | `#102A43` |
+| Stopping… | `#596B78` | `#596B78` |
+| Stopped · changes kept | `#E7EBEF` | `#274C68` |
+| Stop requested · not confirmed | `#8C5A0A` | `#8C5A0A` |
+| Done | `#E7EBEF` | `#146C43` |
+
+**Built on 2026-11-10** (#1172): the square, and pressing it opens that one
+card beside the rail, inward, top-aligned with the square. Its button acts;
+selecting the card elsewhere brings the task window back.
+
+**Departures, each written down here because it is one:**
+
+- **The mark is drawn at SemiBold**, not Bold: no Manrope Bold is bundled
+  (`crates/alo-shell/fonts/README.md`), and a weight no face has draws Inter.
+- **Two words the frame does not have**: *Stopped · nothing changed* for a task
+  stopped before it changed anything, where *changes kept* would be false; and
+  *Nothing approved yet* for line 4 of a task with no approval.
+- **No step count and no finishing time.** The frame's *step 2 of 5* and
+  *Finished 14:32* are facts this machine does not record; line 3 says what alo
+  is doing, and line 4 of a finished task is its last approval.
+- **The rail's unconfirmed square is not in the frame**, which draws four
+  states; it is dashed in the card's amber.
+- **The light palette in both schemes**: the frame is drawn in light only.
+
+**Not built yet**, and named so a status cannot read as done: the expanded lane
+(the rail's expansion control still opens nothing, for windows too), the word
+under a square on focus or hover, F6 and the arrows into the panel, Delete on a
+focused square, the square's name reaching a screen reader, travelling to the
+task's Place when it is on another one, and a task that needs the person under
+full screen raising a notification.
+
 ## Full screen and the keyboard
 
 The approved edge-reveal behaviour stands, with a **continuous pointer path**

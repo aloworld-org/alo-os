@@ -241,6 +241,16 @@ impl TheTasks {
             .map(WhichTask)
     }
 
+    /// **The task the panel numbered `at`**, if there is one — the way back from
+    /// `alo_put_aside::TaskNumber`, which is a [`WhichTask`]'s own number.
+    ///
+    /// Answers only for a task that was opened, so a number that names nothing
+    /// names no task rather than minting one.
+    #[must_use]
+    pub fn the_task_numbered(&self, at: usize) -> Option<WhichTask> {
+        (at < self.open.len()).then_some(WhichTask(at))
+    }
+
     /// Whether this task's window is still open — placed or about to be.
     #[must_use]
     pub fn is_open(&self, which: WhichTask) -> bool {

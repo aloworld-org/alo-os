@@ -19,7 +19,6 @@ use alo_put_aside::{Panel, TaskNumber};
 use alo_tasks::TheCardsButton;
 use smithay::utils::{Physical, Point, Rectangle};
 
-use crate::the_tasks_a_person_opened::WhichTask;
 use crate::which_preview_the_pointer_is_on::ThePanelAsDrawn;
 
 /// What part of a running task in the panel a press landed on.
@@ -98,7 +97,8 @@ impl crate::Server {
                 }
             }
             OnATask::ItsButton(_, TheCardsButton::Stop) => {
-                if self.the_person_stops_a_task(WhichTask::numbered(task.at())) {
+                let which = self.tasks().the_task_numbered(task.at());
+                if which.is_some_and(|which| self.the_person_stops_a_task(which)) {
                     WhatThePressDid::Stopped
                 } else {
                     WhatThePressDid::Nothing

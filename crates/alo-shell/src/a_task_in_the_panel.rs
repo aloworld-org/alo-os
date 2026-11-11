@@ -50,7 +50,7 @@ pub(crate) fn the_cards(
         .each()
         .iter()
         .enumerate()
-        .filter(|(at, _)| tasks.is_open(crate::the_tasks_a_person_opened::WhichTask::numbered(*at)))
+        .filter(|(at, _)| tasks.the_task_numbered(*at).is_some_and(|which| tasks.is_open(which)))
         .map(|(at, task)| said(TaskNumber::numbered(at), task, strings))
         .collect()
 }
