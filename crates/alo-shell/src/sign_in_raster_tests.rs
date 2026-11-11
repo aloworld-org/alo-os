@@ -393,7 +393,9 @@ fn every_label_and_mark_is_drawn_and_not_merely_placed() {
                         (box_of.loc.x, box_of.loc.y).into(),
                         (box_of.size.w, box_of.size.h).into(),
                     );
-                ink.area.intersection(crate::painted::drawn_at(same)).is_some()
+                ink.area
+                    .intersection(crate::painted::drawn_at(same))
+                    .is_some()
             })
             .map(dark)
             .sum();
@@ -570,6 +572,14 @@ fn fnv_of(value: &impl std::fmt::Debug) -> u64 {
 ///
 /// Three screens at two sizes: a returning person with nothing typed and with
 /// a PIN typed, and a machine that asks for a name with one letter of it typed.
+///
+/// **Re-taken on 2026-11-11, once, from this test's own failure on CI**, when
+/// the shapes moved to `alo-drawing` (the UI kit plan, task 2, step 2). This
+/// hash reads the picture's `Debug`, and `Debug` names each shape's
+/// rectangle type — Smithay's before, `alo_drawing::area::Area` after — so
+/// the text changed and the pixels did not. What says the pixels did not is
+/// `crate::the_desktops_pictures_pinned`'s sign-in table, which hashes the
+/// pixels and areas themselves and was left exactly as it was.
 #[test]
 fn at_one_hundred_the_pixels_are_mains() {
     let mut labels = WindowControlLabels::new().unwrap();
@@ -606,12 +616,12 @@ fn at_one_hundred_the_pixels_are_mains() {
     assert_eq!(
         hashes,
         [
-            0xe3c4_51de_9d6f_927b,
-            0xdd31_62a6_bc81_62b9,
-            0xb5f9_6082_9d80_1781,
-            0x8c0b_fe33_57b1_b364,
-            0x0623_194d_c787_8f03,
-            0x33d2_c3f3_7c7c_319f,
+            0x3b58_3c5e_4446_cd14,
+            0x4767_bfba_8119_313c,
+            0xe6a9_bfc2_7ca5_089d,
+            0xbc9a_8076_c9e2_e6e2,
+            0xa6aa_2276_5bbc_1a75,
+            0xe60b_bbce_312d_be0f,
         ],
         "a screen at 100 per cent is not the pixels main drew"
     );

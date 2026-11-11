@@ -221,7 +221,10 @@ fn outline(
         Rectangle::new((x + w - thick, y).into(), (thick, h).into()),
     ] {
         if let Some(kept) = edge.intersection(whole) {
-            picture.solids.push(Solid { area: crate::painted::drawn_at(kept), colour });
+            picture.solids.push(Solid {
+                area: crate::painted::drawn_at(kept),
+                colour,
+            });
         }
     }
 }
@@ -243,7 +246,10 @@ fn line(
         let y = y0 + (y1 - y0) * step / steps;
         let dot = Rectangle::new((x, y).into(), (thick, thick).into());
         if let Some(kept) = dot.intersection(whole) {
-            picture.solids.push(Solid { area: crate::painted::drawn_at(kept), colour });
+            picture.solids.push(Solid {
+                area: crate::painted::drawn_at(kept),
+                colour,
+            });
         }
     }
 }

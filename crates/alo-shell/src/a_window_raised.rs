@@ -202,7 +202,13 @@ pub(crate) fn raster(
             pixels.extend_from_slice(&[red, green, blue, alpha]);
         }
     }
-    Some(Washed { area: crate::painted::drawn_at(area), pixels }.premultiplied())
+    Some(
+        Washed {
+            area: crate::painted::drawn_at(area),
+            pixels,
+        }
+        .premultiplied(),
+    )
 }
 
 #[cfg(test)]

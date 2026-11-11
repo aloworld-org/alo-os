@@ -188,4 +188,3 @@ fn solid_run(
         )
         .map_err(|error| RenderError::Submission(format!("paint native pixels: {error}")))
 }
-

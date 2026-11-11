@@ -192,10 +192,13 @@ impl Laid {
         let kept = solids
             .into_iter()
             .filter_map(|solid| {
-                solid.area.intersection(crate::painted::drawn_at(whole)).map(|area| Solid {
-                    area,
-                    colour: solid.colour,
-                })
+                solid
+                    .area
+                    .intersection(crate::painted::drawn_at(whole))
+                    .map(|area| Solid {
+                        area,
+                        colour: solid.colour,
+                    })
             })
             .collect();
         let words_area = Rectangle::new(

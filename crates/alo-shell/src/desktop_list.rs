@@ -299,7 +299,10 @@ pub(crate) fn picture(
             }
             if !remarks.is_empty() {
                 drawn.solids.push(Solid {
-                    area: alo_drawing::area::Area::new((room.text_x, y).into(), (room.inner, 1).into()),
+                    area: alo_drawing::area::Area::new(
+                        (room.text_x, y).into(),
+                        (room.inner, 1).into(),
+                    ),
                     colour: look.palette.ink,
                 });
                 y += 1 + room.gap;

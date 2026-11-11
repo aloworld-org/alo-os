@@ -119,7 +119,9 @@ impl TerminalPicture {
         size: smithay::utils::Size<i32, Physical>,
     ) -> Result<(), crate::RenderError> {
         let output: Rectangle<i32, Physical> = Rectangle::from_size(size);
-        let inside = |area: alo_drawing::area::Area| output.contains_rect(crate::painted::on_the_frame(area));
+        let inside = |area: alo_drawing::area::Area| {
+            output.contains_rect(crate::painted::on_the_frame(area))
+        };
         if self.size == (size.w, size.h)
             && self.panel.iter().all(|panel| inside(panel.area))
             && self.solids.iter().all(|solid| inside(solid.area))
@@ -1127,7 +1129,10 @@ fn the_cursor(
             colour: ink,
         }],
         alo_terminal::ACursorShape::Underline => vec![Solid {
-            area: alo_drawing::area::Area::new((across, down + tall - thin).into(), (wide, thin).into()),
+            area: alo_drawing::area::Area::new(
+                (across, down + tall - thin).into(),
+                (wide, thin).into(),
+            ),
             colour: ink,
         }],
         alo_terminal::ACursorShape::Beam => vec![Solid {
@@ -1141,7 +1146,10 @@ fn the_cursor(
                 colour: ink,
             },
             Solid {
-                area: alo_drawing::area::Area::new((across, down + tall - thin).into(), (wide, thin).into()),
+                area: alo_drawing::area::Area::new(
+                    (across, down + tall - thin).into(),
+                    (wide, thin).into(),
+                ),
                 colour: ink,
             },
             Solid {
@@ -1149,7 +1157,10 @@ fn the_cursor(
                 colour: ink,
             },
             Solid {
-                area: alo_drawing::area::Area::new((across + wide - thin, down).into(), (thin, tall).into()),
+                area: alo_drawing::area::Area::new(
+                    (across + wide - thin, down).into(),
+                    (thin, tall).into(),
+                ),
                 colour: ink,
             },
         ],

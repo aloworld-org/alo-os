@@ -205,7 +205,12 @@ fn nothing_is_preselected_and_selection_is_never_colour_alone() {
                 .solids
                 .iter()
                 .filter(|solid| area.contains_rect(crate::painted::on_the_frame(solid.area)))
-                .map(|solid| (crate::painted::on_the_frame(solid.area).loc - area.loc, crate::painted::on_the_frame(solid.area).size))
+                .map(|solid| {
+                    (
+                        crate::painted::on_the_frame(solid.area).loc - area.loc,
+                        crate::painted::on_the_frame(solid.area).size,
+                    )
+                })
                 .collect::<Vec<_>>()
         };
         let no = shapes_in(&fresh, fresh.answers[0].area);
