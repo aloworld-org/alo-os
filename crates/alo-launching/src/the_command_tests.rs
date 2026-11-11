@@ -5,6 +5,7 @@ use super::*;
 
 /// Nothing to fill a code with.
 const NOTHING: Filling<'static> = Filling {
+    link: None,
     icon: None,
     name: None,
     location: None,
@@ -52,6 +53,7 @@ fn a_flatpak_line_becomes_flatpak_run() {
 #[test]
 fn the_codes_that_are_not_files_are_filled() {
     let filling = Filling {
+        link: None,
         icon: Some("org.kde.dolphin"),
         name: Some("Dolphin"),
         location: Some("/usr/share/applications/org.kde.dolphin.desktop"),

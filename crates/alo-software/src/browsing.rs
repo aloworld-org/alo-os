@@ -34,8 +34,17 @@
 //!
 //! The answer is a name and a reason, as `alo_applications::Opener` is. Asking
 //! the application to open the address is the acting half, which needs a running
-//! session and is not this crate's; [`crate::opening_the_web`] is where the
-//! grants are asked first.
+//! session and is not this crate's.
+//!
+//! # What a link a person follows is opened in is not answered here
+//!
+//! Since the owner's decision of 2026-11-12 the open-with portal opens a web
+//! link in `alo_applications::WhatOpensWhat::what_opens_links`'s answer: the
+//! person's default from `what-opens-what.toml`, or the first installed
+//! application declaring `x-scheme-handler/http`. This answer — the person's
+//! choice, then the browser this machine *ships* — is what a fresh machine's
+//! walk in this crate's tests says about the shipped browser, and nothing on a
+//! running machine reads it.
 
 use alo_applications::{Application, Installed};
 use alo_capability::is_a_persons_own;

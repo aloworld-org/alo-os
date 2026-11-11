@@ -58,6 +58,8 @@
 //! | [`judging`] | A request judged against the grants, and what allowed it |
 //! | [`refused`] | Why a request was refused, and what a person is told |
 //! | [`open_with`] | An open-with request, answered from what opens what |
+//! | [`link_answered`](mod@link_answered) | A link an application asks to open, answered from the person's default with no grant |
+//! | [`opening_links`] | Asking the desktop to start the application a link opens in |
 //! | [`answered`] | What the backend answered a request with, as the record keeps it |
 //! | [`recording`] | Where every answer is written, and why an answer that is not kept is not sent |
 //! | [`not_recorded`] | Why an answer could not be kept |
@@ -117,10 +119,12 @@ pub mod kept_answer;
 pub mod kept_answer_said;
 pub mod kept_outcome;
 mod kept_outcome_said;
+pub mod link_answered;
 pub mod network_state;
 pub mod not_a_request;
 pub mod not_recorded;
 pub mod open_with;
+pub mod opening_links;
 pub mod portal;
 #[cfg(unix)]
 pub mod read_back_said;
@@ -153,7 +157,7 @@ mod opening;
 // is `installer-candidate.yml`, which runs on a manual dispatch. `main` was
 // green for every Linux gate in between.
 #[cfg(target_os = "linux")]
-pub use opening::activated;
+pub use opening::{activated, opened_at};
 #[cfg(target_os = "linux")]
 mod secret_portal;
 #[cfg(target_os = "linux")]
@@ -178,10 +182,12 @@ pub use judging::Allowed;
 pub use keeping_secrets::{KeepsSecrets, NotKept};
 pub use kept_answer::KeptAnswer;
 pub use kept_answer_said::AnswerSaid;
-pub use kept_outcome::{KeptOutcome, NothingOpensAs, RefusedAs};
+pub use kept_outcome::{KeptOutcome, NotALinkAs, NothingOpensAs, PassedOverAs, RefusedAs};
+pub use link_answered::{LinkNotOpened, LinkOpened, link_answered};
 pub use not_a_request::NotARequest;
 pub use not_recorded::NotRecorded;
 pub use open_with::{NotOpened, OpensWith};
+pub use opening_links::{LinkStarted, NoDesktopToAsk, OpensLinks};
 pub use portal::{Over, Portal};
 #[cfg(unix)]
 pub use read_back_said::ReadBackSaid;

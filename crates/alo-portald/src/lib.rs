@@ -30,14 +30,12 @@
 //!
 //! # What it cannot do yet, said here rather than discovered
 //!
-//! **OpenURI is refused on every machine this runs on**, because nothing in this
-//! repository can say what a person has installed.
-//! `ThisMachine`'s [`TheMachine::applications`](alo_portals::TheMachine::applications) answers `None` and
-//! [`this_machine`]'s header carries the argument at length: an empty list of
-//! installed applications would make *what opens this* answer **nothing opens
-//! it**, confidently, about a machine with seven applications on it. A refusal
-//! the person can read is the better answer, and it is the one
-//! `alo_portals::Unanswered::ApplicationsUnread` exists for.
+//! **OpenURI answers from this machine's own desktop entries** and the
+//! person's `what-opens-what.toml` (`this_machine`), and **a link is started by
+//! the desktop** through its door (`at_the_desktops_door`), as the owner
+//! decided on 2026-11-12. *This paragraph said until that day that OpenURI was
+//! refused on every machine because nothing read what is installed; the reader
+//! had existed since `alo-installed` arrived, and the paragraph had outlived it.*
 //!
 //! **FileChooser is not served at all**, and that is `alo-portals`' deliberate
 //! choice rather than this crate's omission: `serving.rs` registers only the
@@ -47,6 +45,10 @@
 //! not let an application open a file — which is the second half of task 1's own
 //! text and the content of task 6.
 
+#[cfg(unix)]
+pub mod at_the_desktops_door;
 pub mod this_machine;
 
+#[cfg(unix)]
+pub use at_the_desktops_door::AtTheDesktopsDoor;
 pub use this_machine::ThisMachine;

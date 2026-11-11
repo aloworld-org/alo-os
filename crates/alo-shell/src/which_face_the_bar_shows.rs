@@ -22,11 +22,7 @@ impl crate::Server {
         if !self.the_composer.has_the_keyboard() {
             return None;
         }
-        Some(if self.alo_in_a_window.offered().is_some() {
-            TheBarOpens::InTheMiddle
-        } else {
-            TheBarOpens::AboveTheDocksField
-        })
+        Some(TheBarOpens::AboveTheDocksField)
     }
 }
 

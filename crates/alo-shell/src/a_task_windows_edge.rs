@@ -87,6 +87,7 @@ pub(crate) fn every_task_windows_edge(
                 &edge,
                 OverTheEdge {
                     menu: None,
+                    field: None,
                     showing: None,
                     alo: None,
                 },

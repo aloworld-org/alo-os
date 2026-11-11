@@ -376,14 +376,20 @@ pub const NO_ROOM_IN_HALF: Word = Word::saying(
     "Written in the outline of where Left or Right would put a window, and said by a screen      reader, when the application says it cannot be made that small. Choosing it then changes      nothing.",
 );
 
-/// The choice in the window panel that asks alo, with this window as the
-/// context (`docs/design/the-window-controls.md`, `11:76`).
-pub const HELP_WITH_THIS_WINDOW: Word =
-    Word::saying("access.help-with-this-window", "Help with this window").noting(
-        "A choice in the small panel a window's Window actions button opens, beside the word alo. \
-         Choosing it opens the box where a person types a request to alo, the assistant, with \
-         this window named as what the request is about. Choosing it asks nothing by itself. Not \
-         shown while the person has switched AI off.",
+/// The field in the window panel where a person asks alo about this window
+/// (`docs/design/the-window-controls.md`, `11:76`, and the owner's ruling of
+/// 2026-11-11 that it is typed in rather than opening another window).
+///
+/// **A new key, not a rewording** (ADR 0068): it replaced
+/// `access.help-with-this-window`, a choice that opened a box elsewhere, and a
+/// correct translation of that would name the wrong thing here.
+pub const ASK_ABOUT_THIS_WINDOW: Word =
+    Word::saying("access.ask-about-this-window", "Ask about this window…").noting(
+        "The prompt in a one-line box in the small panel a window's Window actions button opens, \
+         after the word alo. The person types a request to alo, the assistant, about this \
+         window, and Enter sends it. It is also the name a screen reader gives the box. Typing \
+         asks nothing until Enter. Not shown while the person has switched AI off. Keep the \
+         ellipsis, which says something is to be typed.",
     );
 
 /// The button on the band alo draws across a window it is working in, which
@@ -445,7 +451,7 @@ pub const EVERY_WORD: [Word; 51] = [
     LEFT_HALF_PREVIEW,
     RIGHT_HALF_PREVIEW,
     NO_ROOM_IN_HALF,
-    HELP_WITH_THIS_WINDOW,
+    ASK_ABOUT_THIS_WINDOW,
     STOP,
 ];
 

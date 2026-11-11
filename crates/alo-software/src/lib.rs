@@ -111,14 +111,15 @@
 //! # The web browser, and what it may take from the machine
 //!
 //! The browser [`Shipped`] names for [`Role::WebBrowser`] is an application like
-//! any other on this machine, and this crate adds three things around it and
-//! nothing else.
+//! any other on this machine, and this crate adds two things around it and
+//! nothing else. *Until 2026-11-12 it also held what a web address is and an
+//! application's request to open one, judged against a grant over the browser;
+//! the owner withdrew that grant, and the address moved to `alo_applications`
+//! where the open-with portal reads it.*
 //!
 //! | | |
 //! |---|---|
-//! | [`web_address`] | What a web address is, checked before anything is decided about it |
 //! | [`browsing`] | Which application opens web addresses: the person's choice, or the one this machine ships, and never a guess |
-//! | [`opening_the_web`] | An application's request to open one, judged against the grants in the open-with portal's own order |
 //! | [`browser_settings`], [`browser_configuration`] | The configuration alo OS ships with the browser — three settings, held to being three |
 //!
 //! **It has no grants of its own.** It arrives through [`installing`](mod@installing)
@@ -149,7 +150,6 @@ pub mod enabled;
 pub(crate) mod fields;
 pub mod heard;
 pub mod installing;
-pub mod opening_the_web;
 pub mod refusing;
 pub mod removing;
 pub mod rented;
@@ -162,7 +162,6 @@ pub mod the_applications_arrived;
 pub mod tool;
 pub mod updating;
 pub mod verbs;
-pub mod web_address;
 pub mod what_the_catalogue_holds;
 pub mod what_this_machine_has;
 pub mod whether_it_is_sandboxed;
@@ -179,7 +178,6 @@ pub use catalogue::{Catalogue, Listed, NotCatalogued};
 pub use category::Category;
 pub use enabled::Enabled;
 pub use installing::{Installed, Wanted, install, installing};
-pub use opening_the_web::{NotOpened, Opened, opened};
 pub use refusing::NotDone;
 pub use removing::{Removed, remove};
 pub use rented::TheRentedTool;
@@ -195,7 +193,6 @@ pub use verbs::{
     Declaring, INSTALL_APPLICATION, NotALook, NotAnInstallation, WHAT_CAN_BE_INSTALLED, approved,
     looked_at, software_verbs,
 };
-pub use web_address::{NotAWebAddress, WebAddress};
 pub use what_the_catalogue_holds::WhatTheCatalogueHolds;
 pub use whether_it_is_sandboxed::Sandboxing;
 pub use words::{Word, WordsError, declare_into, software_words};

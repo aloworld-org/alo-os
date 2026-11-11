@@ -64,6 +64,21 @@ impl<'a> WhatOpensWhat<'a> {
         }
     }
 
+    /// What is installed.
+    pub(crate) const fn installed(&self) -> &'a Installed {
+        self.installed
+    }
+
+    /// What the applications say they open.
+    pub(crate) const fn declared(&self) -> &'a Declared {
+        self.declared
+    }
+
+    /// What the person chose.
+    pub(crate) const fn chosen(&self) -> &'a Chosen {
+        self.chosen
+    }
+
     /// What opens this file, read from its own bytes.
     ///
     /// The file is handed over open, because which file may be read is a

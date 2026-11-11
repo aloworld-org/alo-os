@@ -36,7 +36,7 @@ pub const FORMAT: i64 = 1;
 
 /// Every key the file may have besides `format` — which is every field a
 /// [`Chosen`] writes, and a test holds the two together.
-const KEYS: &[&str] = &["kinds"];
+const KEYS: &[&str] = &["kinds", "links"];
 
 impl Kept for Chosen {
     const FILE: &'static str = THE_FILE;
@@ -125,6 +125,10 @@ mod tests {
         chosen.choose(
             Kind::Pdf,
             &Application::identified("org.gnome.Papers").unwrap(),
+        );
+        chosen.choose_for_links(
+            crate::LinkKind::Web,
+            &Application::identified("org.mozilla.firefox").unwrap(),
         );
         let text = alo_kept::text_of(&chosen).unwrap();
         let table: toml::Table = toml::from_str(&text).unwrap();

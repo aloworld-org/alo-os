@@ -5,13 +5,17 @@
 //! (`docs/design/the-window-controls.md`, `11:146`; `docs/features.md`, *The
 //! agent's presence*):
 //!
-//! 1. **Help with this window** opens an alo request with that window clearly
-//!    named, and **opening it asks nothing**. The window is held as
-//!    `AloInAWindow::offered` while the person types; what travels to alo —
-//!    its title and its application's identifier — is read **at the moment
-//!    they send it**, and never before or after (`CLAUDE.md`, *context is
-//!    offered, never watched*). Escape, a click away, AI switched off, or the
-//!    window closing all let the offer go, and nothing is asked.
+//! 1. **Help with this window** is asked in the window's own panel: its alo
+//!    row is a field, *alo · Ask about this window…*, and **reaching it asks
+//!    nothing** (`crate::the_window_panels_field`; the owner, 2026-11-11: *"the
+//!    user should be able to type in here not to open another window"*). The
+//!    words are held with the window whose panel it is
+//!    (`AloInAWindow::the_field`) while the person types; what travels to
+//!    alo — the window's title and its application's identifier — is read
+//!    **at the moment they send it**, and never before or after (`CLAUDE.md`,
+//!    *context is offered, never watched*). Escape, the panel closing, AI
+//!    switched off, or the window closing all let the words go, and nothing
+//!    is asked.
 //! 2. **The window alo is working in wears its presence** for the turn, on no
 //!    other window, and is bare again when the turn ends. A task asked about a
 //!    window remembers which one (`AloInAWindow::works_in`); what it is
@@ -36,6 +40,7 @@ use smithay::reexports::wayland_server::protocol::wl_surface::WlSurface;
 use alo_instructing::TheWindowOffered;
 
 use crate::the_tasks_a_person_opened::WhichTask;
+use crate::the_window_panels_field::TheWindowField;
 
 /// One request a person sent about a window, waiting to become a task.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -51,9 +56,9 @@ pub struct AskedAbout {
 /// alo and the windows it is offered and works in.
 #[derive(Debug, Default)]
 pub struct AloInAWindow {
-    /// The window *Help with this window* was chosen on, while the composer is
-    /// open for it. Nothing has been asked.
-    offered: Option<WlSurface>,
+    /// What is typed into a window panel's field, and whose panel it is, while
+    /// that panel is open. Nothing has been asked.
+    the_field: Option<(WlSurface, TheWindowField)>,
     /// Requests sent about a window, waiting for the frame loop.
     asked_about: Vec<AskedAbout>,
     /// Which window each task was asked about, oldest first.
@@ -91,16 +96,29 @@ pub struct AloHere {
 }
 
 impl AloInAWindow {
-    /// The window offered, while the composer is open for it.
+    /// What is typed into this window's panel field, if anything has been.
     #[must_use]
-    pub const fn offered(&self) -> Option<&WlSurface> {
-        self.offered.as_ref()
+    pub fn the_field_of(&self, surface: &WlSurface) -> Option<&TheWindowField> {
+        self.the_field
+            .as_ref()
+            .filter(|(its, _)| its == surface)
+            .map(|(_, field)| field)
     }
 
-    /// **Let the offer go**, asking nothing: the person pressed Escape or
-    /// closed the composer.
-    pub fn let_the_offer_go(&mut self) {
-        self.offered = None;
+    /// This window's panel field, to type in: a fresh one where another
+    /// window's was held, since one panel is open at a time.
+    pub(crate) fn the_field_to_type_in(&mut self, surface: &WlSurface) -> &mut TheWindowField {
+        if self
+            .the_field
+            .as_ref()
+            .is_none_or(|(its, _)| its != surface)
+        {
+            self.the_field = None;
+        }
+        let (_, field) = self
+            .the_field
+            .get_or_insert_with(|| (surface.clone(), TheWindowField::default()));
+        field
     }
 
     /// Whether alo may be asked now.
@@ -128,18 +146,14 @@ impl AloInAWindow {
             .map(|(which, _)| *which)
     }
 
-    /// Let go of everything about windows that are gone, and of an offer whose
-    /// composer has closed or which alo may no longer be asked about.
-    fn pruned(&mut self, alive: &[WlSurface], composer_open: bool) {
-        if !composer_open || !self.may_be_asked {
-            self.offered = None;
-        }
-        if self
-            .offered
-            .as_ref()
-            .is_some_and(|offered| !alive.contains(offered))
-        {
-            self.offered = None;
+    /// Let go of everything about windows that are gone, and of words typed
+    /// into a panel that has closed or about which alo may no longer be asked.
+    fn pruned(&mut self, alive: &[WlSurface], panel_open: Option<&WlSurface>) {
+        let keep = self.the_field.as_ref().is_some_and(|(its, _)| {
+            self.may_be_asked && alive.contains(its) && panel_open == Some(its)
+        });
+        if !keep {
+            self.the_field = None;
         }
         self.works_in.retain(|(_, surface)| alive.contains(surface));
     }
@@ -169,13 +183,18 @@ impl crate::Server {
     pub fn alo_may_be_asked(&mut self, may: bool) {
         self.alo_in_a_window.may_be_asked = may;
         let alive: Vec<WlSurface> = self.mapped_surfaces().cloned().collect();
-        let open = self.the_composer.has_the_keyboard();
-        self.alo_in_a_window.pruned(&alive, open);
+        let open = self.whose_panel_is_open();
+        self.alo_in_a_window.pruned(&alive, open.as_ref());
     }
 
-    /// **Help with this window, chosen.** The composer opens with this window
-    /// named, and nothing is asked. Answers whether it opened: never while alo
-    /// may not be asked, which is also why the choice is not in the panel then.
+    /// **Help with this window, chosen**: this window's panel opens, if it is
+    /// not open, with the keyboard in its field, and nothing is asked. Answers
+    /// whether the field has the keyboard: never while alo may not be asked,
+    /// which is also why the field is not in the panel then, and never for a
+    /// window that is not on the screen.
+    ///
+    /// What a click on the field does; the arrows reach it by walking the
+    /// panel, which is the same place by the other road.
     pub fn help_with_this_window(&mut self, surface: &WlSurface) -> bool {
         if !self.alo_in_a_window.may_be_asked {
             return false;
@@ -183,68 +202,58 @@ impl crate::Server {
         if !self.mapped_surfaces().any(|it| it == surface) {
             return false;
         }
-        self.alo_in_a_window.offered = Some(surface.clone());
-        // **The keyboard goes to the field**, as the chord that opens the Bar
-        // sends it, so the person types their request at once.
+        // **The keyboard goes to the field**, so the person types their
+        // request at once — and away from a task window, which would otherwise
+        // be asked for every key first.
         self.the_task_gave_the_keyboard_up();
-        self.which_row_in_the_bar = None;
-        self.the_composer.it_took_the_keyboard();
+        self.the_keyboard_goes_to_the_window_field(surface);
         true
     }
 
-    /// The window offered, as it reads now: its title and its application's
-    /// name as its band shows them, for the line under the composer's field.
+    /// What is typed in this window's panel field, and the caret, for
+    /// drawing it. [`None`] until something is typed.
     #[must_use]
-    pub fn the_window_offered_reads(&self) -> Option<String> {
-        let surface = self
-            .alo_in_a_window
-            .offered()
-            .filter(|offered| self.mapped_surfaces().any(|it| it == *offered))?;
-        let name = self.the_name_of(surface);
-        let named = self.the_application_on_the_band(surface);
-        let (title, application) = crate::window_edge_picture::what_the_band_says(
-            crate::the_name_on_the_band::the_title_to_show(&name),
-            named.as_deref(),
-        );
-        let reads = match (title, application) {
-            (Some(title), Some(application)) => format!("{title} \u{b7} {application}"),
-            (Some(one), None) | (None, Some(one)) => one.to_owned(),
-            (None, None) => name.its_own_words().unwrap_or_default().to_owned(),
-        };
-        Some(reads)
+    pub fn what_is_typed_in_the_window_field(
+        &self,
+        surface: &WlSurface,
+    ) -> Option<crate::window_field_paint::TheFieldAsTyped<'_>> {
+        self.alo_in_a_window.the_field_of(surface).map(|field| {
+            crate::window_field_paint::TheFieldAsTyped {
+                typed: field.typed(),
+                caret: field.caret(),
+            }
+        })
     }
 
-    /// **The person sent a request about the window offered**: read the window
-    /// now, at the moment they sent it, and record the asking.
+    /// **The person sent a request about this window**: read the window now,
+    /// at the moment they sent it, and record the asking.
     ///
-    /// Answers whether anything was asked. **Nothing is**, and the offer is let
-    /// go, when the window has gone or names nothing: the line under the field
-    /// changes, and the person's words stay in it to send again or not.
-    pub(crate) fn a_person_asked_alo_about_the_window(&mut self, request: &str) -> bool {
+    /// Answers whether anything was asked. **Nothing is** when the request is
+    /// empty, or the window has gone or names nothing — and then the person's
+    /// words stay where they typed them, to send again or not.
+    pub(crate) fn a_person_asked_alo_about_the_window(
+        &mut self,
+        surface: &WlSurface,
+        request: &str,
+    ) -> bool {
         let request = request.trim();
-        let Some(surface) = self.alo_in_a_window.offered.clone() else {
-            return false;
-        };
         // **Asked first, and nothing read from a window that has gone.**
-        if request.is_empty() || !self.mapped_surfaces().any(|it| *it == surface) {
-            self.alo_in_a_window.offered = None;
+        if request.is_empty() || !self.mapped_surfaces().any(|it| it == surface) {
             return false;
         }
         let title = self
-            .the_name_of(&surface)
+            .the_name_of(surface)
             .its_own_words()
             .map(str::to_owned)
             .unwrap_or_default();
-        let application = self.the_app_id_of(&surface).unwrap_or_default();
+        let application = self.the_app_id_of(surface).unwrap_or_default();
         let Some(window) = TheWindowOffered::of(&title, &application) else {
-            self.alo_in_a_window.offered = None;
             return false;
         };
-        self.alo_in_a_window.offered = None;
         self.alo_in_a_window.asked_about.push(AskedAbout {
             request: request.to_owned(),
             window,
-            surface,
+            surface: surface.clone(),
         });
         true
     }

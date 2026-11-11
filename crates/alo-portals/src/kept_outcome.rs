@@ -19,7 +19,7 @@
 //! **There is no way back** to an [`Outcome`], a grant or a request. A record is
 //! evidence, not an instruction.
 
-use alo_applications::{Because, NothingOpens};
+use alo_applications::{Because, LinkKind, NotALink, NotAWebAddress, NothingOpens, PassedOver};
 use alo_capability::{GrantId, NotAllowed};
 use serde::{Deserialize, Serialize};
 
@@ -44,6 +44,26 @@ pub enum KeptOutcome {
         chosen: bool,
         /// The grants over the file and over the opener.
         against: Vec<GrantId>,
+    },
+    /// A link the person followed was handed to `opener`, with no grant asked.
+    LinkOpened {
+        /// The application that opens it.
+        opener: String,
+        /// Which default: `web` or `mail`.
+        link: String,
+        /// The link, exactly as the application gave it — the owner's decision
+        /// of 2026-11-12 is that which address was opened is recorded.
+        address: String,
+        /// Whether that was the person's choice, rather than a declaration.
+        chosen: bool,
+        /// Whether the application asked for the person to choose, which this
+        /// machine does not offer yet.
+        #[serde(
+            rename = "asked-to-choose",
+            default,
+            skip_serializing_if = "std::ops::Not::not"
+        )]
+        asked_to_choose: bool,
     },
     /// The application read the appearance settings, allowed by these grants.
     AppearanceRead {
@@ -75,6 +95,19 @@ pub enum KeptOutcome {
         /// Why nothing does.
         why: NothingOpensAs,
     },
+    /// What was asked to be opened as a link is not one.
+    NotALink {
+        /// Why not.
+        why: NotALinkAs,
+    },
+    /// Nothing on this machine opens that kind of link.
+    NothingOpensLinks {
+        /// Which kind: `web` or `mail`.
+        link: String,
+        /// What the person chose, where it was passed over and why.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        passed_over: Option<PassedOverAs>,
+    },
     /// It could not be answered with what it asked for.
     Unanswered {
         /// Why not.
@@ -90,12 +123,15 @@ impl KeptOutcome {
         match self {
             Self::SecretHandedOver { .. }
             | Self::Opened { .. }
+            | Self::LinkOpened { .. }
             | Self::AppearanceRead { .. }
             | Self::AppearanceSent { .. }
             | Self::NetworkRead { .. } => false,
             Self::Refused { .. }
             | Self::NotARequest { .. }
             | Self::NothingOpens { .. }
+            | Self::NotALink { .. }
+            | Self::NothingOpensLinks { .. }
             | Self::Unanswered { .. } => true,
         }
     }
@@ -130,6 +166,58 @@ pub enum NothingOpensAs {
     Unreadable,
 }
 
+/// Why what arrived is not a link, as the file keeps it — the scheme where
+/// there was one, and never the address.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum NotALinkAs {
+    /// A scheme this machine does not open.
+    NotOpenedHere {
+        /// The scheme, lower-cased.
+        scheme: String,
+    },
+    /// A web address with a name and a password written into it.
+    CarriesAPassword,
+    /// No scheme, or a web or email address that does not hold.
+    NotALink,
+}
+
+/// What the person chose for a kind of link, and why it was passed over.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum PassedOverAs {
+    /// It is not installed.
+    NotInstalled(String),
+    /// It is a terminal.
+    ATerminal(String),
+}
+
+impl From<&NotALink> for NotALinkAs {
+    fn from(not: &NotALink) -> Self {
+        match not {
+            NotALink::NotOpenedHere { scheme } => Self::NotOpenedHere {
+                scheme: scheme.clone(),
+            },
+            NotALink::Web(NotAWebAddress::CarriesAPassword) => Self::CarriesAPassword,
+            NotALink::NoScheme | NotALink::Web(_) | NotALink::Mail(_) => Self::NotALink,
+        }
+    }
+}
+
+impl From<&PassedOver> for PassedOverAs {
+    fn from(passed: &PassedOver) -> Self {
+        match passed {
+            PassedOver::NotInstalled(chosen) => Self::NotInstalled(chosen.clone()),
+            PassedOver::ATerminal(chosen) => Self::ATerminal(chosen.clone()),
+        }
+    }
+}
+
+/// How a kind of link is written in the file.
+const fn spelled(kind: LinkKind) -> &'static str {
+    kind.spelled()
+}
+
 impl From<&Outcome> for KeptOutcome {
     /// Exhaustive on purpose: a new way of answering does not compile until
     /// somebody has decided how the file keeps it.
@@ -142,6 +230,13 @@ impl From<&Outcome> for KeptOutcome {
                 opener: opens.opener().application().identifier().to_owned(),
                 chosen: matches!(opens.opener().because(), Because::ThePersonChoseIt),
                 against: opens.allowed().against().to_vec(),
+            },
+            Outcome::LinkOpened(opened) => Self::LinkOpened {
+                opener: opened.opener().application().identifier().to_owned(),
+                link: spelled(opened.link().kind()).to_owned(),
+                address: opened.link().as_str().to_owned(),
+                chosen: opened.opener().was_chosen(),
+                asked_to_choose: opened.asked_to_choose(),
             },
             Outcome::AppearanceRead(allowed) => Self::AppearanceRead {
                 against: allowed.against().to_vec(),
@@ -158,6 +253,13 @@ impl From<&Outcome> for KeptOutcome {
             Outcome::NotARequest(not) => Self::NotARequest { why: *not },
             Outcome::NothingOpens(nothing) => Self::NothingOpens {
                 why: NothingOpensAs::from(nothing),
+            },
+            Outcome::NotALink(not) => Self::NotALink {
+                why: NotALinkAs::from(not),
+            },
+            Outcome::NothingOpensLinks(nothing) => Self::NothingOpensLinks {
+                link: spelled(nothing.kind()).to_owned(),
+                passed_over: nothing.passed_over().map(PassedOverAs::from),
             },
             Outcome::Unanswered(unanswered) => Self::Unanswered {
                 why: unanswered.clone(),

@@ -204,12 +204,20 @@ mod running {
             ),
         }
 
+        // **A link is started by the desktop, at its door** — the person's own
+        // `/run/alo/<uid>/shell.sock`, the uid the kernel gave this process.
+        let door = alo_portald::AtTheDesktopsDoor::of(bus.whose());
+        eprintln!(
+            "alo-portald: a link an application asks to open is started by the desktop at {}",
+            door.socket().display()
+        );
         let backend = Backend::answering_from(
             Arc::new(machine),
             keyring,
             Sandboxes::under(THE_PROCESSES),
             Arc::new(record),
-        );
+        )
+        .opening_links_with(Arc::new(door));
 
         // `serve_on` wants an address rather than a path, and the one this bus is
         // at is the only one it may take.

@@ -13,6 +13,7 @@
 # One line per key: the key, a tab, then the English exactly as the crate declares it.
 
 access.an-application	an application
+access.ask-about-this-window	Ask about this window…
 access.ask-the-agent	ask the agent
 access.bounce-keys	ignore the same key pressed twice quickly
 access.close	Close
@@ -21,7 +22,6 @@ access.focus-always-visible	always show where the keyboard is
 access.full-screen	Full screen
 access.go-back-at-the-next-restart	go back the next time this machine starts
 access.go-back-now	go back now, restarting this machine
-access.help-with-this-window	Help with this window
 access.high-contrast	use strong colours that are easier to read
 access.larger-text	make all text larger
 access.left	Left
@@ -288,6 +288,12 @@ applications.kept.not-understood	your choices of what opens each kind of file, a
 applications.kept.not-understood-at	your choices of what opens each kind of file, at {path}, stop making sense at line {line}, so nothing in the file has been used and each kind opens in the application that says it can
 applications.kept.not-written	your choices of what opens each kind of file, at {path}, could not be written, so nothing about what opens what has been changed
 applications.kept.unknown-key	your choices of what opens each kind of file, at {path}, say {key}, which is not something alo OS can change about what opens what, so nothing in the file has been used
+applications.links.no-mail-application	No email application is installed on this machine, so the email address was not opened. Install one, and email addresses open in it
+applications.links.no-mail-application-choice-a-terminal	{chosen}, which you chose as your email application, is a terminal, and a link is never handed to a terminal. No email application is installed, so the email address was not opened
+applications.links.no-mail-application-choice-gone	{chosen}, which you chose as your email application, is no longer installed, and no other email application is, so the email address was not opened
+applications.links.no-web-browser	No web browser is installed on this machine, so the web link was not opened. Install one, and web links open in it
+applications.links.no-web-browser-choice-a-terminal	{chosen}, which you chose as your web browser, is a terminal, and a link is never handed to a terminal. No web browser is installed, so the web link was not opened
+applications.links.no-web-browser-choice-gone	{chosen}, which you chose as your web browser, is no longer installed, and no other web browser is, so the web link was not opened
 applications.no-window	{application} has no window open here — open it first, or name one that is open
 applications.not-installed	nothing installed on this machine is {application} — install it, or name one that is here
 applications.nothing-starts-it	{application}'s entry gives this machine no way to start it — nothing was changed
@@ -755,7 +761,6 @@ dock.announced.focused	focused
 dock.announced.open	{app}, {windows} open
 dock.announced.some-put-aside	{app}, {windows} open, {aside} minimised
 dock.announced.where	on the canvas, {across} across and {down} down
-dock.bar.about-this-window	About this window: {window}
 dock.bar.ask	Ask alo “{what}”
 dock.bar.ask.new-task	a new task
 dock.bar.found.applications	On this computer  ·  {how_many} applications
@@ -1638,9 +1643,14 @@ picking.the-whole-machine	The agent is never granted the whole machine. Open a f
 picking.would-not-be-read	This machine would not open that folder. Pick a folder you can open yourself, or ask whoever looks after this machine
 portals.answered.appearance-read	{application} read your appearance settings, such as light or dark
 portals.answered.appearance-sent	{application} was told your appearance settings changed, such as from light to dark
+portals.answered.link-opened	{application} asked for {address} to be opened, and it was handed to {opener}
+portals.answered.link-opened-instead-of-asking	{application} asked for {address} to be opened and for you to choose what opens it. Choosing is not on this machine yet, so it was handed to your default, {opener}
 portals.answered.network-read	{application} read whether this machine is connected, and whether the connection is metered
 portals.answered.opened-in	{application} had a file it was granted handed to {opener} to open
 portals.answered.secret-handed-over	{application} was given its own secret from your keyring
+portals.not-a-link.carries-a-password	That web link carries a name and a password inside it, so it was not opened. Open the site and sign in there instead
+portals.not-a-link.not-a-link	That is not a web link or an email address this machine can open, so nothing was opened
+portals.not-a-link.scheme	A {scheme}: link is not one this machine opens, so nothing was opened. Web links and email addresses are
 portals.not-a-request.could-lead-elsewhere	A path with .. in it can lead somewhere else, so a request names a file by its own path
 portals.not-a-request.needs-a-path	This portal is about a file, so a request to it has to say which file
 portals.not-a-request.no-application	A request has to say which application is asking, and this one said none
@@ -1676,15 +1686,18 @@ portals.read-back.whole	Nothing has been removed from what applications on this 
 portals.refused.nothing-granted	{application} has not been granted anything on this machine, so what it asked for was refused without asking you
 portals.unanswered.appearance-unread	Your appearance settings could not be read, so the application was not told them
 portals.unanswered.applications-unread	Which application opens a kind of file could not be read, so nothing was opened
+portals.unanswered.folder-not-decided-here	This machine does not yet decide what opens a folder, so nothing was opened
 portals.unanswered.grants-unread	The grants on this machine could not be read, so the request was refused
 portals.unanswered.keyring-unavailable	Your keyring could not be reached or is locked, so the application was not given its secret
 portals.unanswered.network-unread	This machine could not tell whether it is connected, so the application was not told
+portals.unanswered.no-desktop	{opener} was not asked to open the link, because the alo desktop that starts applications is not running
 portals.unanswered.no-such-setting	An application asked for a setting this machine does not share with applications, and was told there is none
 portals.unanswered.not-a-file	An application can ask for a file to be opened, and what it handed over was not a file
 portals.unanswered.not-a-token	A request names itself with letters, digits and underscores, and this one did not
 portals.unanswered.not-decided-here	This machine does not yet decide what opens a web link or a folder, so nothing was opened
 portals.unanswered.not-identified	A request came from a program that is not a sandboxed application, so no application could be named and it was refused
 portals.unanswered.not-opened	{opener} did not open the file when it was asked to, so nothing was opened
+portals.unanswered.not-opened-a-link	The alo desktop could not start {opener} to open the link, so nothing was opened
 portals.unanswered.not-written	The application stopped listening before its secret could be handed over
 power.getting-low	The battery is getting low
 power.how-long-is-left	About this long at what this machine is doing now
@@ -1975,10 +1988,6 @@ software.web.opens.chosen	{application} opens web addresses, because you chose i
 software.web.opens.instead	{application} opens web addresses, because {chosen}, which you chose, is not installed. Install it again, or choose another
 software.web.opens.instead-of-a-persons-own	{application} opens web addresses. {chosen}, which you chose, is yours alone, and a web address written by somebody else is never handed to it
 software.web.opens.shipped	{application} opens web addresses. It came with this machine, and you can choose another or remove it
-software.web.refused.carries-a-password	That web address carries a name and a password inside it, so nothing was opened. Open the site and sign in there instead
-software.web.refused.not-a-web-address	That is not a web address, so nothing was opened. A web address begins with http:// or https://
-software.web.refused.not-an-application	Something asked to open a web address without saying which application it is, so nothing was opened. An application that cannot name itself cannot be allowed anything either
-software.web.refused.nothing-granted	{application} has not been allowed anything on this machine, so the web address was not opened. Allow it the web browser you want it to open addresses in, and it can ask again
 sound.muted	Muted — nothing is heard from it
 sound.not-muted	On
 sound.pinned	Always use this one when it is here

@@ -222,6 +222,10 @@ pub struct Server {
     /// application door — held apart from [`Self::asked_to_start`] so the
     /// sender is told who asked. See `crate::an_application_is_started`.
     pub(crate) its_agent_asked_to_start: Vec<alo_dock::AppId>,
+    /// The applications asked to start with a link the person followed, through
+    /// the application door's `open-link` — the open-with portal's ask on the
+    /// person's behalf. See `crate::a_link_is_opened`.
+    pub(crate) asked_to_open_a_link: Vec<(alo_dock::AppId, alo_applications::Link)>,
     /// The applications the person started whose first window has not come
     /// yet, oldest first. When it comes it is brought in front and given the
     /// keyboard: `crate::a_window_the_person_opened`.
@@ -896,6 +900,7 @@ impl Server {
             window_panel_refusals: 0,
             asked_to_start: Vec::new(),
             its_agent_asked_to_start: Vec::new(),
+            asked_to_open_a_link: Vec::new(),
             the_person_is_waiting_for: Vec::new(),
             the_terminal: None,
             alos_own_terminal: None,

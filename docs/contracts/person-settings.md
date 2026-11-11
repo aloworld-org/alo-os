@@ -79,7 +79,7 @@ declares its shape, at a path that crate is handed, and by nobody else:
 | `appearance.toml` | `alo_appearance::keeping` | `1` | `background`, `displays`, `lock`, `following`, `text`, `accent` |
 | `dock.toml` | `alo_dock::keeping` | `1` | `edge`, `hiding`, `displays` |
 | `shortcuts.toml` | `alo_shortcuts::keeping` | `1` | `changed` — one `[[changed]]` table per action, with `action` and, unless the person wants no shortcut for it, `chord` |
-| `what-opens-what.toml` | `alo_applications::keeping` | `1` | `kinds` — a table from a kind of file to the identifier of the application the person chose to open it |
+| `what-opens-what.toml` | `alo_applications::keeping` | `1` | `kinds` — a table from a kind of file to the identifier of the application the person chose to open it; `links` — the same for a web link (`web`) and an email address (`mail`) |
 | `sleeping.toml` | `alo_sleeping::keeping` | `1` | `keep-awake`, `lid` |
 | `displays.toml` | `alo_displays::keeping` | `1` | `arrangements` — one `[[arrangements]]` table per set of screens, each holding its own `screens`; `night-light` |
 | `leaving.toml` | `alo_leaving::keeping` | `1` | `reopen`; `was-open` — one `[[was-open]]` table per window that was open |
@@ -122,7 +122,7 @@ read at the next sign-in. Each section below —
 [`appearance.toml`](#appearancetoml--how-this-persons-machine-looks),
 [`dock.toml`](#docktoml--where-the-dock-goes-and-whether-it-gives-way),
 [`shortcuts.toml`](#shortcutstoml--the-shortcuts-this-person-changed),
-[`what-opens-what.toml`](#what-opens-whattoml--which-application-opens-each-kind-of-file),
+[`what-opens-what.toml`](#what-opens-whattoml--which-application-opens-each-kind-of-file-and-each-kind-of-link),
 [`sleeping.toml`](#sleepingtoml--what-closing-the-lid-does-and-what-keeps-this-machine-awake),
 [`displays.toml`](#displaystoml--where-this-persons-screens-are-and-when-they-warm),
 [`leaving.toml`](#leavingtoml--whether-what-was-open-opens-again),
@@ -1281,13 +1281,16 @@ lost to the next shortcut they change in Settings.
 `alo_shortcuts::keeping::put_back_as_shipped` is the one door that replaces
 such a file, and it writes `format = 1` alone.
 
-## `what-opens-what.toml` — which application opens each kind of file
+## `what-opens-what.toml` — which application opens each kind of file, and each kind of link
 
 Kept by `alo_applications::keeping`, beside the other three, at the path the
 crate is handed. It holds `alo_applications::Chosen`: the application the person
 chose for each kind of file they chose one for, and nothing for a kind they did
 not. `docs/features.md`, v0.5: *file associations — what opens what, changeable
-by a person.*
+by a person.* Since 2026-11-12 it also holds the person's **default browser and
+default mail application** — which application opens a web link and which an
+email address — under `links`, an additive key: a file with no `links` is the
+same file it was, byte for byte.
 
 A kind with no entry opens in the first installed application that declares it
 in its desktop entry; an entry wins over every declaration. What answers *what
@@ -1303,6 +1306,7 @@ Besides `format`, and optional:
 | Key | Meaning |
 |---|---|
 | `kinds` | A table from a kind of file to the identifier of the application chosen to open it. |
+| `links` | A table from a kind of link — `web` or `mail` — to the identifier of the application chosen to open it: the person's default browser and default mail application. |
 
 ### `format`
 
@@ -1310,7 +1314,8 @@ Besides `format`, and optional:
 
 ### What alo OS writes
 
-A person who chose Okular for PDF documents and Papers for PNG images:
+A person who chose Okular for PDF documents, Papers for PNG images and Firefox
+as their web browser:
 
 ```toml
 format = 1
@@ -1318,6 +1323,9 @@ format = 1
 [kinds]
 pdf = "org.kde.okular"
 png-image = "org.gnome.Papers"
+
+[links]
+web = "org.mozilla.firefox"
 ```
 
 ### Values
@@ -1334,6 +1342,21 @@ it — the kind a file is read as from its own bytes, never its extension:
 `webm-video`, `mp4-video`, `mp4-audio`, `avi-video`, `ogg-media`, `mp3-audio`,
 `wave-audio` or `flac-audio`. A kind is matched exactly. A program, an empty file and bytes of no kind alo OS recognises are
 not kinds, and nothing is ever chosen to open them.
+
+Each key of `[links]` is `web` — an `http` or `https` link, one choice for
+both — or `mail`, a `mailto:` address. A link with no entry opens in the first
+installed application whose desktop entry declares `x-scheme-handler/http` or
+`x-scheme-handler/https` (for `web`) or `x-scheme-handler/mailto` (for
+`mail`), and `alo_applications::WhatOpensWhat::what_opens_links` answers it.
+**A terminal is never what opens a link**, even where it is chosen here: a link
+is written outside this machine, and what a terminal is handed may run. No
+Settings surface writes `[links]` yet — the owner is drafting its design (*"I
+draft a design first"*, 2026-11-12) — so until it arrives a person sets it by
+editing this file, or from the terminal.
+
+**A machine rolled back to a release from before 2026-11-12 refuses a file with
+`[links]` in it whole**, as it refuses any key it does not know, and every
+kind then opens in what the applications declare until the key is removed.
 
 Each value is an application's identifier, as this machine knows it — never the
 name it calls itself, because two applications can share a name and no two

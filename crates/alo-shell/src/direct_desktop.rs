@@ -1866,16 +1866,14 @@ impl LoopInput for TheDesktopLane<'_> {
         // appeared the moment somebody pressed the chord would flash every
         // application on the machine under their first keystroke.
         let typed_into_the_bar = server.composer().typed().to_owned();
-        // **The centred panel stays for a window offered with *Help with this
-        // window***, open even before anything is typed so the window it will
-        // be about is named from the first moment — and then it finds no
-        // applications, because a request about a window asks alo and opens
-        // nothing else. Another change is moving that road into the window's
-        // own panel; until it lands the centred panel is its surface.
-        let offered = server.the_window_offered_reads();
-        let the_bar_opens = server.which_face_the_bar_shows();
-        let bar_is_open = the_bar_opens.is_some();
-        let found = if bar_is_open && offered.is_none() {
+        //
+        // **One face, so open is exactly *the composer has the keyboard*.** The
+        // centred launcher is gone: *Help with this window* moved into the
+        // window's own panel, and every other road types in the Dock's field.
+        // The Dock is shown while it is open — over a window filling the screen
+        // too — and the list rises from it once something is typed.
+        let bar_is_open = server.composer().has_the_keyboard();
+        let found = if bar_is_open {
             crate::the_bar_finds::what_the_bar_finds(
                 &typed_into_the_bar,
                 &server.what_this_machine_has,
@@ -1904,13 +1902,6 @@ impl LoopInput for TheDesktopLane<'_> {
         // answered.
         let where_from = if !bar_is_open {
             String::new()
-        } else if let Some(window) = &offered {
-            self.strings
-                .say(
-                    &alo_dock::words::ABOUT_THIS_WINDOW.key(),
-                    &alo_strings::Filling::of("window", window.clone()),
-                )
-                .into_text()
         } else if self.desktop.anything_is_chosen_to_answer() {
             crate::the_bar_finds::where_these_came_from(found.len(), self.strings)
         } else {
@@ -1938,14 +1929,6 @@ impl LoopInput for TheDesktopLane<'_> {
             say(alo_dock::words::THE_KEY_CLOSES),
             say(alo_dock::words::ESC),
         ];
-        // **The heading names what the person chose**, so the launcher opened
-        // for a window reads *Help with this window* rather than *Find, open,
-        // or ask*: it will not find or open anything.
-        let heading = if offered.is_some() {
-            say(alo_access::words::HELP_WITH_THIS_WINDOW)
-        } else {
-            heading
-        };
         // **And it offers to ask only once there is something to ask.**
         let something_to_ask = !typed_into_the_bar.trim().is_empty();
         let asking_about = self
@@ -1987,7 +1970,7 @@ impl LoopInput for TheDesktopLane<'_> {
                 }
             }),
             artwork: Some(&what_each_draws),
-            opens: the_bar_opens.unwrap_or(crate::bar_raster::TheBarOpens::AboveTheDocksField),
+            opens: crate::bar_raster::TheBarOpens::AboveTheDocksField,
         });
         // **An `Arc` of its own, lent to the frame.** The frame holds the
         // reference for as long as it lives and this lane uses the server

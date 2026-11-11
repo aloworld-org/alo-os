@@ -77,7 +77,7 @@ fn every_word_the_panel_says_is_listed() {
             "access.restore",
             "access.full-screen",
             "access.exit-full-screen",
-            "access.help-with-this-window",
+            "access.ask-about-this-window",
             "access.left-half-preview",
             "access.right-half-preview",
             "access.no-room-in-half"
@@ -101,4 +101,34 @@ fn a_reader_hears_the_preview_of_the_side_in_hand() {
         let told: Vec<&str> = met.rows.iter().map(|(it, _)| it.name.says()).collect();
         assert_eq!(told, vec![says.says(), "Maximise", "Right", "Full screen"]);
     }
+}
+
+/// **The alo row is told as a place to type**, named by its prompt — and
+/// every other choice is still a button.
+#[test]
+fn the_alo_row_is_an_entry_and_the_rest_are_buttons() {
+    let window = Rectangle::new(Point::from((112, 314)), Size::from((1056, 466)));
+    let roomy = Size::from((4000, 3000));
+    let edge = edge_of(window, Decorations::TheShellDraws, true, roomy);
+    let how = HowTheWindowIs {
+        alo_may_help: true,
+        ..HowTheWindowIs::default()
+    };
+    let panel = the_menu_of(&edge, how, roomy).expect("a panel");
+    let keyboard = TheKeyboardInTheMenu::in_the_field(OnTheEdge::WindowActions);
+    let met = what_a_reader_meets(&panel, Some(keyboard), None);
+    let (field, selected) = met
+        .rows
+        .iter()
+        .find(|(control, _)| control.role == Role::Entry)
+        .expect("the alo row is an entry");
+    assert_eq!(field.name.says(), "Ask about this window…");
+    assert!(selected, "the keyboard in the field is not told");
+    assert_eq!(
+        met.rows
+            .iter()
+            .filter(|(control, _)| control.role == Role::Button)
+            .count(),
+        met.rows.len() - 1
+    );
 }
