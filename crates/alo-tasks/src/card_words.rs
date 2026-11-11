@@ -22,21 +22,26 @@ pub const NEEDS_YOUR_OK: Word = Word::saying("tasks.card.needs-your-ok", "Needs 
 );
 
 /// The card's first line after a confirmed Stop that kept changes.
-pub const STOPPED_CHANGES_KEPT: Word =
-    Word::saying("tasks.card.stopped-changes-kept", "Stopped \u{b7} changes kept").noting(
-        "On a task's card after Stop was confirmed and the task had already changed \
+pub const STOPPED_CHANGES_KEPT: Word = Word::saying(
+    "tasks.card.stopped-changes-kept",
+    "Stopped \u{b7} changes kept",
+)
+.noting(
+    "On a task's card after Stop was confirmed and the task had already changed \
          something. **Stopping is not undoing**: the second half tells the person the changes \
          are still there, and a translation must keep it.",
-    );
+);
 
 /// The card's first line after a confirmed Stop that changed nothing.
-pub const STOPPED_NOTHING_CHANGED: Word =
-    Word::saying("tasks.card.stopped-nothing-changed", "Stopped \u{b7} nothing changed")
-        .noting(
-            "On a task's card after Stop was confirmed and the task had changed nothing. Not \
+pub const STOPPED_NOTHING_CHANGED: Word = Word::saying(
+    "tasks.card.stopped-nothing-changed",
+    "Stopped \u{b7} nothing changed",
+)
+.noting(
+    "On a task's card after Stop was confirmed and the task had changed nothing. Not \
              in the approved drawing, which shows only a task that had changed something; \
              *changes kept* would be false here, so this says so instead.",
-        );
+);
 
 /// The card's first line when the task finished on its own.
 pub const DONE: Word = Word::saying("tasks.card.done", "Done").noting(
@@ -45,32 +50,44 @@ pub const DONE: Word = Word::saying("tasks.card.done", "Done").noting(
 );
 
 /// Line three while a Stop is on its way.
-pub const WAITING_FOR_ALO_TO_CONFIRM: Word =
-    Word::saying("tasks.card.waiting-to-confirm", "Waiting for alo to confirm").noting(
-        "Under the task's name on its card, after the person pressed Stop and before alo has \
+pub const WAITING_FOR_ALO_TO_CONFIRM: Word = Word::saying(
+    "tasks.card.waiting-to-confirm",
+    "Waiting for alo to confirm",
+)
+.noting(
+    "Under the task's name on its card, after the person pressed Stop and before alo has \
          confirmed the work ended. Says the work may still be running.",
-    );
+);
 
 /// Line three after a confirmed Stop, counting what it kept.
-pub const CHANGES_KEPT_BEFORE_STOP: Word =
-    Word::saying("tasks.card.changes-kept", "Changes kept before Stop: {count}").noting(
-        "Under the task's name on its card once Stop is confirmed. `{count}` is how many \
+pub const CHANGES_KEPT_BEFORE_STOP: Word = Word::saying(
+    "tasks.card.changes-kept",
+    "Changes kept before Stop: {count}",
+)
+.noting(
+    "Under the task's name on its card once Stop is confirmed. `{count}` is how many \
          changes the person had approved and alo had made before it stopped, as a number.",
-    );
+);
 
 /// Line three after a confirmed Stop that changed nothing.
-pub const NOTHING_CHANGED_BEFORE_STOP: Word =
-    Word::saying("tasks.card.nothing-changed", "Nothing was changed before Stop").noting(
-        "Under the task's name on its card once Stop is confirmed, for a task that had changed \
+pub const NOTHING_CHANGED_BEFORE_STOP: Word = Word::saying(
+    "tasks.card.nothing-changed",
+    "Nothing was changed before Stop",
+)
+.noting(
+    "Under the task's name on its card once Stop is confirmed, for a task that had changed \
          nothing. A real answer, said rather than left blank.",
-    );
+);
 
 /// Line three when the Stop could not be delivered.
-pub const CANNOT_CONFIRM_IT_STOPPED: Word =
-    Word::saying("tasks.card.cannot-confirm", "This machine cannot confirm it stopped").noting(
-        "Under the task's name on its card when the person pressed Stop and this machine \
+pub const CANNOT_CONFIRM_IT_STOPPED: Word = Word::saying(
+    "tasks.card.cannot-confirm",
+    "This machine cannot confirm it stopped",
+)
+.noting(
+    "Under the task's name on its card when the person pressed Stop and this machine \
          could not deliver it. **It is not saying the work stopped**; it may still be running.",
-    );
+);
 
 /// Line three when a task finished with an answer.
 pub const ANSWER_READY: Word = Word::saying("tasks.card.answer-ready", "Answer ready").noting(
@@ -79,8 +96,8 @@ pub const ANSWER_READY: Word = Word::saying("tasks.card.answer-ready", "Answer r
 );
 
 /// Line four: the last change the person approved.
-pub const LAST_APPROVED: Word =
-    Word::saying("tasks.card.last-approved", "Last approved: {what}").noting(
+pub const LAST_APPROVED: Word = Word::saying("tasks.card.last-approved", "Last approved: {what}")
+    .noting(
         "The fourth line of a task's card. `{what}` is the sentence of the last change the \
          person approved in this task, exactly as it was put to them.",
     );

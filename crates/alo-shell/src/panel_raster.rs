@@ -74,8 +74,8 @@
 //! panel holds. It is given a panel and a display and answers with rectangles.
 
 use alo_dock::measures::{GAP, ICON, MARGIN};
-use alo_put_aside::{Aside, Panel, TaskNumber};
 use alo_put_aside::the_region_the_panel_claims::WhichEdge;
+use alo_put_aside::{Aside, Panel, TaskNumber};
 use smithay::utils::{Physical, Point, Rectangle, Size};
 
 use crate::RenderError;
@@ -264,7 +264,8 @@ pub(crate) fn picture(
         return Err(RenderError::DesktopScene);
     };
 
-    let holding = i32::try_from(panel.holding_everything()).map_err(|_| RenderError::DesktopScene)?;
+    let holding =
+        i32::try_from(panel.holding_everything()).map_err(|_| RenderError::DesktopScene)?;
     // **A concealed panel draws no rail and keeps its column.** The same picture an empty
     // panel gives, and for a reason worth stating: in both states there is nothing to be *on*,
     // and the column still asks, because the panel owns its edge whether or not it is showing.

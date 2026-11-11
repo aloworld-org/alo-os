@@ -48,7 +48,10 @@ fn a_task_waiting_says_needs_your_ok_and_offers_review() {
 
     assert_eq!(card.state, "Needs your OK");
     assert_eq!(card.how_far, "Move 14 files to Archive");
-    assert_eq!(card.button, Some((TheCardsButton::Review, "Review".to_owned())));
+    assert_eq!(
+        card.button,
+        Some((TheCardsButton::Review, "Review".to_owned()))
+    );
     assert_eq!(card.under_the_square, "Needs you");
 }
 

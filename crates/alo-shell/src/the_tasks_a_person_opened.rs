@@ -212,10 +212,7 @@ impl TheTasks {
     /// Whether this task's window is in the right-hand panel.
     #[must_use]
     pub fn is_put_aside(&self, which: WhichTask) -> bool {
-        matches!(
-            self.placed.get(which.at()),
-            Some(ItsWindow::PutAside(..))
-        )
+        matches!(self.placed.get(which.at()), Some(ItsWindow::PutAside(..)))
     }
 
     /// Every window on the screen and the task it is, oldest first — the

@@ -172,7 +172,14 @@ fn one_line(
 }
 
 /// alo's mark, centred in `square`.
-fn the_mark(canvas: &mut Canvas, fonts: &mut FontSystem, square: Area, measure: Measure, ground: [u8; 3], ink: [u8; 3]) {
+fn the_mark(
+    canvas: &mut Canvas,
+    fonts: &mut FontSystem,
+    square: Area,
+    measure: Measure,
+    ground: [u8; 3],
+    ink: [u8; 3],
+) {
     let mark = one_line(
         fonts,
         "alo",
@@ -190,19 +197,32 @@ fn the_mark(canvas: &mut Canvas, fonts: &mut FontSystem, square: Area, measure: 
 
 /// A dashed rounded ring: the ring drawn whole, kept only inside every other
 /// stretch of `dash` along each side.
-fn a_dashed_ring(canvas: &mut Canvas, at: Area, corner: f32, width: f32, colour: [u8; 3], dash: i32) {
+fn a_dashed_ring(
+    canvas: &mut Canvas,
+    at: Area,
+    corner: f32,
+    width: f32,
+    colour: [u8; 3],
+    dash: i32,
+) {
     let dash = dash.max(1);
     let mut stretches = Vec::new();
     let mut along = 0;
     while along < at.size.w {
         let wide = dash.min(at.size.w - along);
-        stretches.push(Rectangle::new((at.loc.x + along, at.loc.y).into(), (wide, at.size.h).into()));
+        stretches.push(Rectangle::new(
+            (at.loc.x + along, at.loc.y).into(),
+            (wide, at.size.h).into(),
+        ));
         along += 2 * dash;
     }
     let mut down = 0;
     while down < at.size.h {
         let tall = dash.min(at.size.h - down);
-        stretches.push(Rectangle::new((at.loc.x, at.loc.y + down).into(), (at.size.w, tall).into()));
+        stretches.push(Rectangle::new(
+            (at.loc.x, at.loc.y + down).into(),
+            (at.size.w, tall).into(),
+        ));
         down += 2 * dash;
     }
     for stretch in stretches {
@@ -213,13 +233,26 @@ fn a_dashed_ring(canvas: &mut Canvas, at: Area, corner: f32, width: f32, colour:
 }
 
 /// One task's square, at `at`.
-fn a_square(canvas: &mut Canvas, fonts: &mut FontSystem, at: Area, stands: HowItStands, measure: Measure) {
+fn a_square(
+    canvas: &mut Canvas,
+    fonts: &mut FontSystem,
+    at: Area,
+    stands: HowItStands,
+    measure: Measure,
+) {
     let (ground, ring, width, kind, mark) = the_squares_look(stands);
     let corner = fx(measure, m::CORNER);
     canvas.fill(at, corner, rgb(ground), 1.0);
     match kind {
         Ring::Solid => canvas.border(at, corner, fx(measure, width), rgb(ring)),
-        Ring::Dashed => a_dashed_ring(canvas, at, corner, fx(measure, width), rgb(ring), px(measure, m::DASH)),
+        Ring::Dashed => a_dashed_ring(
+            canvas,
+            at,
+            corner,
+            fx(measure, width),
+            rgb(ring),
+            px(measure, m::DASH),
+        ),
     }
     if stands == HowItStands::NeedsYourOk {
         let radius = fx(measure, m::DOT) / 2.0;
@@ -261,7 +294,10 @@ fn a_card(
     // **The state's colour down the left edge**, inside the card's own corner
     // so it is cut by the same curve.
     let (edge, word) = the_cards_colours(card.stands);
-    canvas.clipped_to(Rectangle::new(at.loc, (px(measure, m::EDGE), at.size.h).into()));
+    canvas.clipped_to(Rectangle::new(
+        at.loc,
+        (px(measure, m::EDGE), at.size.h).into(),
+    ));
     canvas.fill(at, corner, rgb(edge), 1.0);
     canvas.unclipped();
     canvas.border(at, corner, fx(measure, 1), rgb(Role::BorderDefault));
@@ -279,13 +315,47 @@ fn a_card(
         );
         (*which, area)
     });
-    let beside = if button.is_some() { m::LINE_BESIDE_A_BUTTON } else { m::LINE_WIDE };
+    let beside = if button.is_some() {
+        m::LINE_BESIDE_A_BUTTON
+    } else {
+        m::LINE_WIDE
+    };
     let lines: [(&str, u32, u32, Weight, [u8; 3]); 5] = [
-        ("alo", m::INSET, m::LINE_WIDE, crate::painted_text::ALOS_OWN_WEIGHT, rgb(word)),
-        (&card.state, m::STATE_FROM_LEFT, m::STATE_WIDE, crate::painted_text::ALOS_OWN_WEIGHT, rgb(word)),
-        (&card.title, m::INSET, m::LINE_WIDE, crate::painted_text::ALOS_OWN_WEIGHT, rgb(Role::TextPrimary)),
-        (&card.how_far, m::INSET, beside, Weight::NORMAL, rgb(Role::TextSecondary)),
-        (&card.last, m::INSET, beside, Weight::NORMAL, rgb(Role::TextMuted)),
+        (
+            "alo",
+            m::INSET,
+            m::LINE_WIDE,
+            crate::painted_text::ALOS_OWN_WEIGHT,
+            rgb(word),
+        ),
+        (
+            &card.state,
+            m::STATE_FROM_LEFT,
+            m::STATE_WIDE,
+            crate::painted_text::ALOS_OWN_WEIGHT,
+            rgb(word),
+        ),
+        (
+            &card.title,
+            m::INSET,
+            m::LINE_WIDE,
+            crate::painted_text::ALOS_OWN_WEIGHT,
+            rgb(Role::TextPrimary),
+        ),
+        (
+            &card.how_far,
+            m::INSET,
+            beside,
+            Weight::NORMAL,
+            rgb(Role::TextSecondary),
+        ),
+        (
+            &card.last,
+            m::INSET,
+            beside,
+            Weight::NORMAL,
+            rgb(Role::TextMuted),
+        ),
     ];
     for (which, (text, from_left, wide, weight, ink)) in lines.into_iter().enumerate() {
         if text.is_empty() {
@@ -293,19 +363,38 @@ fn a_card(
         }
         // The mark and the state share the first line.
         let row = which.saturating_sub(1);
-        let (Some(top), Some(tall), Some(size)) =
-            (m::LINE_TOPS.get(row), m::LINE_TALL.get(row), m::LINE_TYPE.get(row))
-        else {
+        let (Some(top), Some(tall), Some(size)) = (
+            m::LINE_TOPS.get(row),
+            m::LINE_TALL.get(row),
+            m::LINE_TYPE.get(row),
+        ) else {
             continue;
         };
-        let shaped = one_line(fonts, text, measure, (*size, *tall), weight, px(measure, wide), white, ink);
-        canvas.words(at.loc.x + px(measure, from_left), at.loc.y + px(measure, *top), &shaped);
+        let shaped = one_line(
+            fonts,
+            text,
+            measure,
+            (*size, *tall),
+            weight,
+            px(measure, wide),
+            white,
+            ink,
+        );
+        canvas.words(
+            at.loc.x + px(measure, from_left),
+            at.loc.y + px(measure, *top),
+            &shaped,
+        );
     }
 
     if let (Some((which, area)), Some((_, said))) = (button, card.button.as_ref()) {
         let navy = rgb(Role::TextPrimary);
         let corner = fx(measure, m::BUTTON_CORNER);
-        let (ground, ink) = if which == TheCardsButton::Stop { (navy, white) } else { (white, navy) };
+        let (ground, ink) = if which == TheCardsButton::Stop {
+            (navy, white)
+        } else {
+            (white, navy)
+        };
         canvas.fill(area, corner, ground, 1.0);
         canvas.border(area, corner, fx(measure, 1), navy);
         let shaped = one_line(
@@ -366,7 +455,10 @@ pub(crate) fn with_the_tasks(
             WhichEdge::Left => picture.rail.loc.x + picture.rail.size.w + gap,
         };
         let lowest = (picture.size.1 - tall).max(0);
-        let area = Rectangle::new((x.max(0), square.loc.y.min(lowest)).into(), (wide, tall).into());
+        let area = Rectangle::new(
+            (x.max(0), square.loc.y.min(lowest)).into(),
+            (wide, tall).into(),
+        );
         let reach = px(measure, m::SHADOW_BLURS) + px(measure, m::SHADOW_FALLS);
         let around = Rectangle::new(
             (area.loc.x - reach, area.loc.y - reach).into(),

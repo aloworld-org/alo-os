@@ -1095,6 +1095,7 @@ fn a_task_window_reaches_the_desktop_picture_and_is_painted() {
             look,
             crate::desktop_raster::Shown {
                 tasks,
+                tasks_aside: crate::TheTasksAside::NONE,
                 market: None,
                 what_each_application_draws: &alo_dock::artwork::NOTHING,
                 the_dock_has_open: &crate::what_the_dock_has_open::NOTHING,
@@ -1192,6 +1193,7 @@ fn a_task_window_too_small_is_left_out_rather_than_refusing_the_frame() {
         crate::desktop_raster::Shown {
             market: None,
             tasks: &impossible,
+            tasks_aside: crate::TheTasksAside::NONE,
             what_each_application_draws: &alo_dock::artwork::NOTHING,
             the_dock_has_open: &crate::what_the_dock_has_open::NOTHING,
             the_docks_words: crate::desktop_testing::no_words(),

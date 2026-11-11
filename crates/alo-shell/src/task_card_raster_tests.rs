@@ -8,8 +8,8 @@
 )]
 
 use alo_models::InferenceSource;
-use alo_put_aside::{Panel, TaskNumber};
 use alo_put_aside::the_region_the_panel_claims::WhichEdge;
+use alo_put_aside::{Panel, TaskNumber};
 use alo_strings::{Direction, Strings, Vocabulary};
 use alo_tasks::{ATask, Act, TheCardsButton};
 
@@ -49,8 +49,15 @@ fn drawn(
     scale: DisplayScale,
 ) -> PanelPicture {
     let look = noon_look(&an_appearance(), Direction::LeftToRight);
-    let laid = picture(panel, look, AS_DRAWN, WhichEdge::Right, WhetherRevealed::Revealed, scale)
-        .unwrap();
+    let laid = picture(
+        panel,
+        look,
+        AS_DRAWN,
+        WhichEdge::Right,
+        WhetherRevealed::Revealed,
+        scale,
+    )
+    .unwrap();
     let mut labels = WindowControlLabels::new().unwrap();
     with_the_tasks(
         laid,
@@ -102,8 +109,14 @@ fn the_open_card_sits_beside_the_rail_where_the_design_puts_it() {
     let (which, button) = card.button.expect("a working task offers Stop");
     assert_eq!(which, TheCardsButton::Stop);
     assert_eq!((button.size.w, button.size.h), (64, 30));
-    assert_eq!(button.loc.x + button.size.w, card.area.loc.x + card.area.size.w - 12);
-    assert_eq!(button.loc.y + button.size.h, card.area.loc.y + card.area.size.h - 10);
+    assert_eq!(
+        button.loc.x + button.size.w,
+        card.area.loc.x + card.area.size.w - 12
+    );
+    assert_eq!(
+        button.loc.y + button.size.h,
+        card.area.loc.y + card.area.size.h - 10
+    );
     assert_eq!(picture.washed.len(), 2, "the card was not drawn");
 }
 
@@ -142,7 +155,12 @@ fn a_dense_display_draws_the_card_at_its_scale() {
 #[test]
 fn a_task_with_no_card_said_draws_nothing() {
     let panel = a_panel_holding_one_task();
-    let picture = drawn(&panel, &[], Some(TaskNumber::numbered(0)), DisplayScale::ONE);
+    let picture = drawn(
+        &panel,
+        &[],
+        Some(TaskNumber::numbered(0)),
+        DisplayScale::ONE,
+    );
 
     assert!(picture.open_card.is_none());
     let rail = picture.washed.first().expect("the squares' raster");

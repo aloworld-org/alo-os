@@ -49,7 +49,9 @@ fn windows_and_tasks_are_held_together_newest_first() {
     panel
         .put_aside(&window(1), Zoom::LIFE_SIZE, a_place(), Privacy::Ordinary)
         .unwrap();
-    panel.put_a_task_aside(TaskNumber::numbered(0), a_place()).unwrap();
+    panel
+        .put_a_task_aside(TaskNumber::numbered(0), a_place())
+        .unwrap();
     panel
         .put_aside(&window(2), Zoom::LIFE_SIZE, a_place(), Privacy::Ordinary)
         .unwrap();
@@ -63,7 +65,9 @@ fn windows_and_tasks_are_held_together_newest_first() {
 #[test]
 fn a_task_remembers_the_place_it_was_asked_on() {
     let mut panel = Panel::new();
-    panel.put_a_task_aside(TaskNumber::numbered(3), a_place()).unwrap();
+    panel
+        .put_a_task_aside(TaskNumber::numbered(3), a_place())
+        .unwrap();
 
     let back = panel.bring_a_task_back(TaskNumber::numbered(3)).unwrap();
 
@@ -76,7 +80,9 @@ fn a_task_remembers_the_place_it_was_asked_on() {
 #[test]
 fn a_task_cannot_be_put_aside_twice() {
     let mut panel = Panel::new();
-    panel.put_a_task_aside(TaskNumber::numbered(0), a_place()).unwrap();
+    panel
+        .put_a_task_aside(TaskNumber::numbered(0), a_place())
+        .unwrap();
 
     assert_eq!(
         panel.put_a_task_aside(TaskNumber::numbered(0), a_place()),
@@ -98,7 +104,11 @@ fn a_task_that_is_not_there_cannot_be_brought_back() {
         panel.bring_a_task_back(TaskNumber::numbered(9)),
         Err(NotPutAside::ItIsNotThere)
     );
-    assert_eq!(panel.holding_everything(), 1, "a refused bring-back took something out");
+    assert_eq!(
+        panel.holding_everything(),
+        1,
+        "a refused bring-back took something out"
+    );
 }
 
 /// **Taking a task out leaves every window where it was**, and bringing a window back
@@ -109,7 +119,9 @@ fn a_task_and_a_window_come_out_without_disturbing_each_other() {
     panel
         .put_aside(&window(1), Zoom::LIFE_SIZE, a_place(), Privacy::Ordinary)
         .unwrap();
-    panel.put_a_task_aside(TaskNumber::numbered(0), a_place()).unwrap();
+    panel
+        .put_a_task_aside(TaskNumber::numbered(0), a_place())
+        .unwrap();
     panel
         .put_aside(&window(2), Zoom::LIFE_SIZE, a_place(), Privacy::Ordinary)
         .unwrap();
@@ -117,7 +129,9 @@ fn a_task_and_a_window_come_out_without_disturbing_each_other() {
     panel.bring_a_task_back(TaskNumber::numbered(0)).unwrap();
     assert_eq!(in_order(&panel), ["window 2", "window 1"]);
 
-    panel.put_a_task_aside(TaskNumber::numbered(0), a_place()).unwrap();
+    panel
+        .put_a_task_aside(TaskNumber::numbered(0), a_place())
+        .unwrap();
     panel.bring_back(WindowId::numbered(2)).unwrap();
     assert_eq!(in_order(&panel), ["task 0", "window 1"]);
 }
@@ -126,7 +140,9 @@ fn a_task_and_a_window_come_out_without_disturbing_each_other() {
 #[test]
 fn a_panel_holding_only_a_task_is_not_empty() {
     let mut panel = Panel::new();
-    panel.put_a_task_aside(TaskNumber::numbered(0), a_place()).unwrap();
+    panel
+        .put_a_task_aside(TaskNumber::numbered(0), a_place())
+        .unwrap();
 
     assert_ne!(
         panel.showing(a_place()),

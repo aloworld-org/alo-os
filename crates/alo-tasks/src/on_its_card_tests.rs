@@ -5,10 +5,10 @@
 use alo_models::InferenceSource;
 
 use super::{HowFar, HowItStands, LastApproved, TheCardsButton};
+use crate::ATask;
 use crate::activity::Act;
 use crate::changed::WhatChanged;
 use crate::conversation::Turn;
-use crate::ATask;
 
 fn a_task() -> ATask {
     ATask::asked_for("Summarise the Q3 report", InferenceSource::ThisMachine)
@@ -51,9 +51,15 @@ fn a_task_waiting_for_an_ok_offers_review_and_says_what_it_wants() {
     let card = task.on_its_card();
 
     assert_eq!(card.stands, HowItStands::NeedsYourOk);
-    assert_eq!(card.how_far, HowFar::Wants("Move 14 files to Archive".to_owned()));
+    assert_eq!(
+        card.how_far,
+        HowFar::Wants("Move 14 files to Archive".to_owned())
+    );
     assert_eq!(card.button, TheCardsButton::Review);
-    assert!(card.stands.may_be_stopped(), "a task waiting on the person is still running");
+    assert!(
+        card.stands.may_be_stopped(),
+        "a task waiting on the person is still running"
+    );
 }
 
 /// **The last approved change is the last one the person said yes to.**
@@ -85,7 +91,10 @@ fn a_stop_on_its_way_is_stopping_with_no_button() {
     assert_eq!(card.stands, HowItStands::Stopping);
     assert_eq!(card.how_far, HowFar::WaitingForAloToConfirm);
     assert_eq!(card.button, TheCardsButton::None);
-    assert!(!card.stands.may_be_stopped(), "Stop offered twice for one Stop");
+    assert!(
+        !card.stands.may_be_stopped(),
+        "Stop offered twice for one Stop"
+    );
 }
 
 /// **Stopped · changes kept**: how many, where to undo them, and Open.
@@ -167,5 +176,8 @@ fn a_finished_task_is_done_with_its_answer_ready() {
     assert_eq!(card.stands, HowItStands::Done);
     assert_eq!(card.how_far, HowFar::AnswerReady);
     assert_eq!(card.button, TheCardsButton::Open);
-    assert!(!card.stands.may_be_stopped(), "Stop offered for work that is over");
+    assert!(
+        !card.stands.may_be_stopped(),
+        "Stop offered for work that is over"
+    );
 }

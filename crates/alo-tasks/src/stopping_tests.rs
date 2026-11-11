@@ -123,7 +123,10 @@ fn a_stop_that_could_not_be_delivered_is_not_called_stopped() {
     let unconfirmed = Stopping::nobody_asked().asked().could_not_be_confirmed();
 
     assert!(unconfirmed.is_unconfirmed());
-    assert!(!unconfirmed.has_stopped(), "an undelivered Stop was called stopped");
+    assert!(
+        !unconfirmed.has_stopped(),
+        "an undelivered Stop was called stopped"
+    );
     assert!(!unconfirmed.is_waiting());
     assert_eq!(unconfirmed.what_changed(), None);
 }
@@ -146,5 +149,8 @@ fn only_an_asked_stop_can_go_unconfirmed() {
 fn stop_can_be_pressed_again_after_it_went_unconfirmed() {
     let unconfirmed = Stopping::nobody_asked().asked().could_not_be_confirmed();
 
-    assert!(unconfirmed.asked().is_waiting(), "the second press did nothing");
+    assert!(
+        unconfirmed.asked().is_waiting(),
+        "the second press did nothing"
+    );
 }

@@ -116,10 +116,10 @@ mod a_sheet_that_fits;
 mod a_surface_that_cannot_draw;
 /// A press on a running task in the right-hand panel.
 mod a_task_card_is_pressed;
-/// A running task's window goes into the right-hand panel, and comes back.
-mod a_task_goes_aside;
 /// The logical measures of a task's square and card in the right-hand panel.
 mod a_task_card_measures;
+/// A running task's window goes into the right-hand panel, and comes back.
+mod a_task_goes_aside;
 /// A running task's card in the right-hand panel, in words.
 pub mod a_task_in_the_panel;
 mod a_task_window_hands_on_a_chord;
@@ -525,10 +525,10 @@ mod stopping_what_was_asked;
 mod surfaces;
 /// Everything on the Dock that a person reads, said once a frame.
 mod tab_moves_among_the_bars_controls;
-/// The colours a task window draws in, mapped from the design's tokens.
-mod task_look;
 /// A running task's square and card in the right-hand panel, drawn.
 mod task_card_raster;
+/// The colours a task window draws in, mapped from the design's tokens.
+mod task_look;
 /// A task window's furniture, rasterised.
 pub mod task_raster;
 /// The type styles a task window is written in, and the words a window says.
@@ -768,8 +768,8 @@ mod window_size;
 mod window_switch;
 mod zone_sheet;
 
-pub use peeking_at_a_put_aside_window::{ThePeek, what_a_classification_does_to_a_peek};
 pub use a_task_in_the_panel::TheTasksAside;
+pub use peeking_at_a_put_aside_window::{ThePeek, what_a_classification_does_to_a_peek};
 pub use putting_a_window_aside::NotAside;
 pub use status_items::StatusItems;
 /// Where alo puts a window when alo is the one choosing.

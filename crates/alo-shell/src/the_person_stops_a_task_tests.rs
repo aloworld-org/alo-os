@@ -128,7 +128,13 @@ fn a_stop_that_could_not_be_delivered_says_so_and_can_be_pressed_again() {
 
     server.its_stop_could_not_be_delivered(which);
 
-    assert_eq!(happening(&server, which), alo_tasks::words::STOP_NOT_CONFIRMED);
-    assert!(server.the_person_stops_a_task(which), "Stop was withheld after it failed");
+    assert_eq!(
+        happening(&server, which),
+        alo_tasks::words::STOP_NOT_CONFIRMED
+    );
+    assert!(
+        server.the_person_stops_a_task(which),
+        "Stop was withheld after it failed"
+    );
     assert_eq!(server.take_the_stops().len(), 1);
 }

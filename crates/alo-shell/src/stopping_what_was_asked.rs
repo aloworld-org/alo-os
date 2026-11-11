@@ -28,7 +28,6 @@ use std::sync::{Arc, Mutex, PoisonError};
 
 use crate::what_a_person_asked_goes_to_the_agent::{WhatCameBack, WhoAsked};
 
-/// One request still being read, and whether a Stop was sent on it.
 /// What became of a Stop this side tried to hand to the agent.
 ///
 /// **Three answers, not a `bool`.** Until 2026-11-10 this answered `true` or
@@ -47,6 +46,7 @@ pub enum TheStop {
     CouldNotBeSent,
 }
 
+/// One request still being read, and whether a Stop was sent on it.
 #[derive(Debug)]
 struct Running {
     /// Who asked.

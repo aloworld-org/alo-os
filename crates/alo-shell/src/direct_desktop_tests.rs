@@ -68,6 +68,7 @@ impl crate::TheDesktop for ADesktop {
     fn now(&self) -> crate::DesktopFrame<'_> {
         crate::DesktopFrame {
             tasks: &self.tasks,
+            tasks_aside: crate::TheTasksAside::NONE,
             market: None,
             what_each_application_draws: &alo_dock::artwork::NOTHING,
             the_dock_has_open: &crate::what_the_dock_has_open::NOTHING,

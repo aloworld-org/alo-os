@@ -116,8 +116,7 @@ impl Panel {
             .iter()
             .position(|preview| preview.window() == window)
             .ok_or(NotPutAside::ItIsNotThere)?;
-        self.order
-            .retain(|one| *one != OneAside::Window(window));
+        self.order.retain(|one| *one != OneAside::Window(window));
         Ok(self.previews.remove(at))
     }
 

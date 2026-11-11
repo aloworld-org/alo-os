@@ -50,7 +50,11 @@ pub(crate) fn the_cards(
         .each()
         .iter()
         .enumerate()
-        .filter(|(at, _)| tasks.the_task_numbered(*at).is_some_and(|which| tasks.is_open(which)))
+        .filter(|(at, _)| {
+            tasks
+                .the_task_numbered(*at)
+                .is_some_and(|which| tasks.is_open(which))
+        })
         .map(|(at, task)| said(TaskNumber::numbered(at), task, strings))
         .collect()
 }
@@ -92,7 +96,10 @@ pub(crate) fn said(task: TaskNumber, of: &ATask, strings: &Strings) -> ATaskAsid
     };
     let last = match &card.last_approved {
         LastApproved::This(what) => strings
-            .say(&words::LAST_APPROVED.key(), &Filling::of("what", what.clone()))
+            .say(
+                &words::LAST_APPROVED.key(),
+                &Filling::of("what", what.clone()),
+            )
             .into_text(),
         LastApproved::Nothing => say(words::NOTHING_APPROVED_YET),
         LastApproved::UndoIsInHistory => say(words::UNDO_IS_IN_HISTORY),

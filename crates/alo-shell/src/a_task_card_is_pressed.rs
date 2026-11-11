@@ -25,31 +25,34 @@ use crate::which_preview_the_pointer_is_on::ThePanelAsDrawn;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum OnATask {
     /// Its square in the rail.
-    ItsSquare(TaskNumber),
+    Square(TaskNumber),
     /// Its open card, away from the button.
-    ItsCard(TaskNumber),
+    Card(TaskNumber),
     /// The open card's button.
-    ItsButton(TaskNumber, TheCardsButton),
+    Button(TaskNumber, TheCardsButton),
 }
 
 /// What a press at `at` landed on, if it was a task: the button first, then
 /// the card around it, then the squares.
-pub(crate) fn what_was_pressed(drawn: &ThePanelAsDrawn, at: Point<i32, Physical>) -> Option<OnATask> {
+pub(crate) fn what_was_pressed(
+    drawn: &ThePanelAsDrawn,
+    at: Point<i32, Physical>,
+) -> Option<OnATask> {
     if let Some(card) = drawn.open_card() {
         if let Some((which, button)) = card.button
             && holds(button, at)
         {
-            return Some(OnATask::ItsButton(card.task, which));
+            return Some(OnATask::Button(card.task, which));
         }
         if holds(card.area, at) {
-            return Some(OnATask::ItsCard(card.task));
+            return Some(OnATask::Card(card.task));
         }
     }
     drawn
         .task_squares()
         .iter()
         .find(|(_, square)| holds(*square, at))
-        .map(|(task, _)| OnATask::ItsSquare(*task))
+        .map(|(task, _)| OnATask::Square(*task))
 }
 
 /// Whether `at` is inside `rectangle`.
@@ -81,13 +84,13 @@ impl crate::Server {
     /// **Act on a press on a running task in the panel.**
     pub(crate) fn a_press_on_a_task(&mut self, panel: &mut Panel, on: OnATask) -> WhatThePressDid {
         let task = match on {
-            OnATask::ItsSquare(task) | OnATask::ItsCard(task) | OnATask::ItsButton(task, _) => task,
+            OnATask::Square(task) | OnATask::Card(task) | OnATask::Button(task, _) => task,
         };
         if !panel.holds_the_task(task) {
             return WhatThePressDid::Nothing;
         }
         match on {
-            OnATask::ItsSquare(_) => {
+            OnATask::Square(_) => {
                 if self.the_task_card_open == Some(task) {
                     self.the_task_card_open = None;
                     WhatThePressDid::ClosedItsCard
@@ -96,7 +99,7 @@ impl crate::Server {
                     WhatThePressDid::OpenedItsCard
                 }
             }
-            OnATask::ItsButton(_, TheCardsButton::Stop) => {
+            OnATask::Button(_, TheCardsButton::Stop) => {
                 let which = self.tasks().the_task_numbered(task.at());
                 if which.is_some_and(|which| self.the_person_stops_a_task(which)) {
                     WhatThePressDid::Stopped
@@ -104,18 +107,17 @@ impl crate::Server {
                     WhatThePressDid::Nothing
                 }
             }
-            OnATask::ItsCard(_)
-            | OnATask::ItsButton(_, TheCardsButton::Review | TheCardsButton::Open) => {
+            OnATask::Card(_)
+            | OnATask::Button(_, TheCardsButton::Review | TheCardsButton::Open) => {
                 if self.bring_a_task_back(panel, task) {
                     WhatThePressDid::BroughtItBack
                 } else {
                     WhatThePressDid::Nothing
                 }
             }
-            OnATask::ItsButton(_, TheCardsButton::None) => WhatThePressDid::Nothing,
+            OnATask::Button(_, TheCardsButton::None) => WhatThePressDid::Nothing,
         }
     }
-
 }
 
 #[cfg(test)]

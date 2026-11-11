@@ -397,7 +397,9 @@ pub(crate) fn picture(
         tasks_aside.open,
         fonts,
         look.measure()
-            .on(crate::display_scale::DisplayScale::of_per_cent(display_scale)),
+            .on(crate::display_scale::DisplayScale::of_per_cent(
+                display_scale,
+            )),
         crate::panel_raster::the_edge_for(look.reading()),
     );
 

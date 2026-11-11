@@ -119,7 +119,8 @@ impl ATask {
             Stopping::NobodyAsked => {
                 if self.is_waiting_for_the_person() {
                     HowItStands::NeedsYourOk
-                } else if self.activity().doing_now().is_some() || self.conversation().is_alos_turn()
+                } else if self.activity().doing_now().is_some()
+                    || self.conversation().is_alos_turn()
                 {
                     HowItStands::Working
                 } else {
@@ -144,18 +145,26 @@ impl ATask {
             HowItStands::Working => (
                 self.activity()
                     .doing_now()
-                    .map_or(HowFar::NothingToSayYet, |act| HowFar::Doing(act.said().to_owned())),
+                    .map_or(HowFar::NothingToSayYet, |act| {
+                        HowFar::Doing(act.said().to_owned())
+                    }),
                 approved,
                 TheCardsButton::Stop,
             ),
             HowItStands::NeedsYourOk => (
                 self.permissions()
                     .asking()
-                    .map_or(HowFar::NothingToSayYet, |what| HowFar::Wants(what.to_owned())),
+                    .map_or(HowFar::NothingToSayYet, |what| {
+                        HowFar::Wants(what.to_owned())
+                    }),
                 approved,
                 TheCardsButton::Review,
             ),
-            HowItStands::Stopping => (HowFar::WaitingForAloToConfirm, approved, TheCardsButton::None),
+            HowItStands::Stopping => (
+                HowFar::WaitingForAloToConfirm,
+                approved,
+                TheCardsButton::None,
+            ),
             HowItStands::Stopped { changes_kept } => (
                 HowFar::ChangesKept(changes_kept),
                 if changes_kept > 0 {
@@ -165,9 +174,11 @@ impl ATask {
                 },
                 TheCardsButton::Open,
             ),
-            HowItStands::StopNotConfirmed => {
-                (HowFar::CannotConfirmItStopped, approved, TheCardsButton::Open)
-            }
+            HowItStands::StopNotConfirmed => (
+                HowFar::CannotConfirmItStopped,
+                approved,
+                TheCardsButton::Open,
+            ),
             HowItStands::Done => (HowFar::AnswerReady, approved, TheCardsButton::Open),
         };
         OnItsCard {
