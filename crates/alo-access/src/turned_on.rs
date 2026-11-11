@@ -298,7 +298,10 @@ mod tests {
     #[test]
     fn apps_describe_themselves_until_the_person_turns_it_off() {
         let mut turned_on = TurnedOn::nothing();
-        assert!(turned_on.apps_describe_themselves(), "on as a machine comes");
+        assert!(
+            turned_on.apps_describe_themselves(),
+            "on as a machine comes"
+        );
         assert!(!turned_on.chose_whether_apps_describe_themselves());
 
         turned_on.let_apps_describe_themselves(false);

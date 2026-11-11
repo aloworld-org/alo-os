@@ -168,6 +168,7 @@ mod approval_seat;
 mod approval_shown;
 #[cfg(test)]
 mod approval_testing;
+mod apps_describing_themselves;
 mod atomic_inventory;
 mod atomic_output;
 mod atomic_test;
@@ -254,7 +255,6 @@ mod the_password_sheet;
 mod the_password_sheet_drawn;
 mod the_password_sheets_words;
 mod the_pointer_drawn;
-mod apps_describing_themselves;
 mod the_pointers_look;
 pub mod what_is_on_the_clipboard;
 mod where_a_travelling_window_lands;

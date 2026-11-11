@@ -15,7 +15,10 @@ fn on_every_toolkit_is_asked() {
             "ACCESSIBILITY_ENABLED=1"
         ]
     );
-    assert_eq!(told.the_manager_only, ["QT_LINUX_ACCESSIBILITY_ALWAYS_ON=1"]);
+    assert_eq!(
+        told.the_manager_only,
+        ["QT_LINUX_ACCESSIBILITY_ALWAYS_ON=1"]
+    );
     assert!(told.forgotten.is_empty());
 }
 
@@ -100,10 +103,11 @@ fn only_chromium_gains_the_switch_and_only_on() {
 /// does, and VSCodium answers it by changing how its editor behaves.
 #[test]
 fn the_switch_names_a_mode_and_not_a_screen_reader() {
-    let (switch, mode) = THE_PAGE_TOO
-        .split_once('=')
-        .unwrap_or((THE_PAGE_TOO, ""));
+    let (switch, mode) = THE_PAGE_TOO.split_once('=').unwrap_or((THE_PAGE_TOO, ""));
     assert_eq!(switch, "--force-renderer-accessibility");
-    assert!(!mode.is_empty(), "the bare switch says a screen reader is running");
+    assert!(
+        !mode.is_empty(),
+        "the bare switch says a screen reader is running"
+    );
     assert_ne!(mode, "screen-reader");
 }
