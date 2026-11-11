@@ -351,6 +351,9 @@ fn every_setting_the_machine_has_is_in_one_window() {
             SettingsRow::PointerShape(alo_appearance::PointerShape::Kite),
             // And the colour it ships in.
             SettingsRow::PointerColour(alo_appearance::PointerColour::Navy),
+            // **And applications describe themselves**: the one switch on as a
+            // machine comes, the owner's decision of 2026-11-11.
+            SettingsRow::AppsDescribeThemselves,
         ]
     );
 }

@@ -652,11 +652,10 @@ pub const REDUCED_MOTION_IS: Word = Word::saying(
 .noting("Under the switch Reduced motion. Says what changes on the screen while it is on.");
 
 /// Applications.
-pub const APPLICATIONS: Word = Word::saying("settings.access.applications", "Applications")
-    .noting(
-        "A heading on the accessibility page over the setting for how installed applications \
-         work with alo and with screen readers. Sentence case.",
-    );
+pub const APPLICATIONS: Word = Word::saying("settings.access.applications", "Applications").noting(
+    "A heading on the accessibility page over the setting for how installed applications \
+     work with alo and with screen readers. Sentence case.",
+);
 
 /// Apps describe themselves to alo and screen readers.
 pub const APPS_DESCRIBE_THEMSELVES: Word = Word::saying(
