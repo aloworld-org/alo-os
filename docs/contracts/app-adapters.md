@@ -284,17 +284,17 @@ loaded before still loads.*
 **An adapter may be written outside this repository.** Its author publishes it
 as a crate of its own that declares one `alo_adapters::Adapter` constant
 exactly as *How this machine loads one* says, and alo OS depends on **a tagged
-release** of that crate — never a branch — so the declaration a reviewer read
-is the one that is built. It is loaded through the same `load`, and everything
+release or an exact commit** of that crate — never a branch — so the
+declaration a reviewer read is the one that is built. It is loaded through the same `load`, and everything
 under *What is refused when an adapter is loaded* refuses it as it refuses one
 written here. Writing it elsewhere changes who maintains it, never what it may
 declare.
 
 **Its licence is stated where it is pinned.** The crate's manifest names its
 licence, and the line in this repository that pins it says the licence beside
-the release. Where that licence is not this repository's GPL-3.0-or-later, the
-part of alo OS built from it carries that licence's terms, and this page says so
-below.
+the release or commit. Where that licence is not this repository's
+GPL-3.0-or-later, the part of alo OS built from it carries that licence's
+terms, and this page says so below.
 
 **The first is alo Mails' adapter.** The `alo-workplace` lane publishes it as
 its own crate under **AGPL-3.0**, the licence of alo Mails itself: application
@@ -303,10 +303,23 @@ part of alo OS built from it carries AGPL-3.0 terms** — section 13 of the GNU
 GPL v3 and of the AGPL v3 is what lets the two be combined in one program, with
 each part keeping its own licence.
 
-**Not built on the day this was written.** No such crate is published, nothing
-here pins one, and alo OS ships one adapter, GNOME Text Editor's
-(`crates/alo-adapters/src/verbs.rs`). Three things the first pin has to answer,
-found while writing this and not decided here:
+**The second is alo Browser's adapter**, reported by the alo-browser lane on
+2026-11-12 as its owner's decision: its own crate, kept in the
+`aloworld-org/alo-browser` repository under **MPL-2.0**, declaring an
+`alo_adapters::Adapter` that reaches alo Browser over its own agent socket,
+mechanism `api`, with **no verb that runs a script**. alo OS pins its crate name
+and commit when it is built. MPL-2.0 is file-level copyleft: those files keep
+MPL-2.0 terms, and its section 3.3 lets them be part of a larger work under the
+GNU GPL, unless the files are marked *Incompatible With Secondary Licenses*.
+**Mechanism `api` is refused when an adapter is loaded today** (*What is
+refused*, above), so this adapter cannot load until this machine carries `api`
+verbs out — that is part of the work of pinning it, not a reason to declare it
+as another mechanism.
+
+**Not built on the day this was written.** Nothing here pins either crate,
+and alo OS ships one adapter, GNOME Text Editor's
+(`crates/alo-adapters/src/verbs.rs`). Three things the first pin has to
+answer, for either adapter, found while writing this and not decided here:
 
 - **Where the pin goes.** The external crate depends on `alo-adapters` for the
   `Adapter` type, so `alo-adapters` cannot depend on it back; `shipped_adapters`
