@@ -210,6 +210,16 @@ pub(crate) const A_SLIDER_AT_MOST: u32 = 360;
 /// Its knob, the radius.
 pub(crate) const A_SLIDERS_KNOB: u32 = 11;
 
+/// A row that chooses an application, as frame `25:28` draws it: 72 tall.
+pub(crate) const A_ROW_WITH_AN_APPLICATION: u32 = 72;
+/// Above that row's name: `25:33` is at 14 in its 72.
+pub(crate) const ABOVE_AN_APPLICATIONS_NAME: u32 = 14;
+/// The application's picture on that row: `25:31`, 28 × 28.
+pub(crate) const AN_APPLICATIONS_PICTURE: u32 = 28;
+/// That picture's corner: radius 8, the coordinator's reading of the
+/// approved frame.
+pub(crate) const AN_APPLICATIONS_CORNER: u32 = 8;
+
 /// Between a page's blocks, per page, as each frame draws it.
 ///
 /// **Three figures for one relationship**, and recorded rather than tidied:
@@ -221,6 +231,9 @@ pub(crate) const fn between_blocks_on(category: crate::SettingsCategory) -> u32 
     match category {
         C::AloAndAi => BETWEEN_BLOCKS_ON_ALO_AND_AI,
         C::Appearance | C::KeyboardAndShortcuts => 28,
+        // Frame `25:2`: the first card ends at 281 and the next section's
+        // label is at 313.
+        C::DefaultApps => 32,
         C::FoldersAloCanUse
         | C::RunningCode
         | C::Terminal

@@ -103,6 +103,9 @@ pub enum SettingsSection {
     TimeZone,
     /// Which edge the dock is on.
     Dock,
+    /// Which application opens a web link and an email address
+    /// (`crate::settings_default_apps`).
+    DefaultApps,
     /// The shortcuts.
     Shortcuts,
     /// The terminal: today, whether alo may read what a person types in it.
@@ -307,6 +310,13 @@ pub enum SettingsRow {
     /// (`alo_capability::words::NO_COPY_OF_ITS_OWN`) names the second by its
     /// exact words, and `crate::alo_in_applications_in_settings` keeps it.
     WhereAloWorks(alo_capability::AloInApplications),
+    /// This installed application opens this kind of link: Enter chooses it,
+    /// and it is written in the person's `what-opens-what.toml` under
+    /// `[links]` (frame `25:28`).
+    ///
+    /// **By identifier**, as every choice of an application is: two
+    /// applications may both call themselves *Browser*.
+    DefaultFor(alo_applications::LinkKind, String),
 }
 
 impl SettingsRow {
@@ -340,6 +350,7 @@ impl SettingsRow {
             }
             Self::HowCodeRuns(_) => SettingsSection::HowCodeRuns,
             Self::WhereAloWorks(_) => SettingsSection::InApplications,
+            Self::DefaultFor(..) => SettingsSection::DefaultApps,
             Self::ShellIntegration | Self::APlaceToReturnTo | Self::ActWithoutAsking => {
                 SettingsSection::Terminal
             }
@@ -453,6 +464,8 @@ pub(crate) struct Open {
     pub(crate) time_zone: TimeZoneSection,
     /// The dock.
     pub(crate) dock: KeptSection<DockKept>,
+    /// Which application opens a link, and the person's file it is kept in.
+    pub(crate) default_apps: crate::settings_default_apps::DefaultAppsHere,
     /// What the person turned on for access: reduced motion.
     pub(crate) access: KeptSection<crate::settings_keepers::AccessKept>,
     /// Shortcuts.
@@ -536,6 +549,11 @@ impl SettingsWindow {
                 jiff::tz::TimeZone::system().iana_name().map(str::to_owned),
             ),
             dock: KeptSection::at_sign_in(places.kept(alo_dock::keeping::THE_FILE)),
+            // **The applications are filled in by the host**, which was told
+            // what the machine has; see [`SettingsWindow::the_applications_are`].
+            default_apps: crate::settings_default_apps::DefaultAppsHere::at_sign_in(
+                places.kept(alo_applications::keeping::THE_FILE),
+            ),
             access: KeptSection::at_sign_in(places.kept(alo_access::keeping::THE_FILE)),
             shortcuts: KeptSection::at_sign_in(places.kept(alo_shortcuts::keeping::THE_FILE)),
             granted,
@@ -603,6 +621,19 @@ impl SettingsWindow {
                 .0
                 .and_then(|it| alo_formats::RegionCode::named(&it).ok());
             open.time_zone.follows(region.as_ref(), formats.reading());
+        }
+    }
+
+    /// **The applications Default apps offers are these**: what the seat was
+    /// last told the machine has, what each declares it opens and what each
+    /// draws — handed in by the host when Settings opens, because this window
+    /// reads nothing off the machine (`crate::what_the_machine_offers_now`).
+    pub(crate) fn the_applications_are(
+        &mut self,
+        here: crate::settings_default_apps::WhatCouldOpenLinks,
+    ) {
+        if let Some(open) = self.open.as_mut() {
+            open.default_apps.the_machine_has(here);
         }
     }
 
@@ -936,6 +967,9 @@ impl Open {
                 }
                 rows
             }
+            // **Every installed application that opens a web link, then every
+            // one that opens an email address**, in the order they declared it.
+            SettingsCategory::DefaultApps => self.default_apps.rows(),
             // **Two rows, each opening its list**; every region and zone is a
             // row of the list it opens.
             SettingsCategory::RegionAndTime => {
@@ -1558,6 +1592,13 @@ impl Open {
                 SettingsSection::InApplications,
                 self.alo_in_applications.picked(*answer),
             ),
+            // **Kept before the ring moves**, through `alo_applications`'
+            // keeper: the next link any application opens goes to this one.
+            SettingsRow::DefaultFor(kind, identifier) => SettingsDid::Kept(
+                SettingsSection::DefaultApps,
+                self.default_apps
+                    .choose(*kind, identifier, doors.strings),
+            ),
         }
     }
 
@@ -1570,6 +1611,9 @@ impl Open {
             SettingsSection::Formats => self.formats.put_back_as_shipped(strings),
             SettingsSection::Dock => self.dock.put_back_as_shipped(strings),
             SettingsSection::Shortcuts => self.shortcuts.put_back_as_shipped(strings),
+            // **Put back as shipped is no choice at all**: every kind of file
+            // and of link then opens in what the applications declare.
+            SettingsSection::DefaultApps => self.default_apps.kept_mut().put_back_as_shipped(strings),
             // **Not offered for the terminal, and never will be.** The file
             // this section appends to is the person's own shell startup, not a
             // file of alo's: putting it back as alo ships it would throw away

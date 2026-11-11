@@ -168,6 +168,17 @@ impl ANote {
     }
 }
 
+/// An application's mark on its row: its own picture where this machine has
+/// one, and otherwise the first letter of its name on the cool tile — the
+/// Dock's own fallback, and what frame `25:31` draws.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct AnApplicationsMark {
+    /// The picture its desktop entry names, as the Dock has it.
+    pub(crate) picture: Option<alo_dock::artwork::APicture>,
+    /// The first letter of its name, drawn where there is no picture.
+    pub(crate) letter: String,
+}
+
 /// What a choice risks: a heading and a sentence, in a box of their own.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct ARisk {
@@ -201,6 +212,10 @@ pub(crate) struct ARow {
     pub(crate) lead: Option<ASettingsIcon>,
     /// A small tag beside its name: *Default* (`550:951`).
     pub(crate) tag: Option<String>,
+    /// An application's own picture after a choice's ring, for a row that
+    /// chooses an application (`25:31`): the row is then drawn as frame
+    /// `25:28` draws it — ring, picture, name and line, centred in 72.
+    pub(crate) application: Option<AnApplicationsMark>,
     /// Its side-by-side choices, for a segmented choice or colours.
     pub(crate) parts: Vec<APart>,
 }
@@ -219,6 +234,7 @@ impl ARow {
             at_its_end: None,
             lead: None,
             tag: None,
+            application: None,
             parts: Vec::new(),
         }
     }
@@ -269,6 +285,9 @@ pub(crate) fn the_page(
         SettingsCategory::RunningCode => crate::settings_page_running::the_blocks(open, strings),
         SettingsCategory::Terminal => crate::settings_page_terminal::the_blocks(open, strings),
         SettingsCategory::Appearance => crate::settings_page_appearance::the_blocks(open, strings),
+        SettingsCategory::DefaultApps => {
+            crate::settings_page_default_apps::the_blocks(open, strings)
+        }
         SettingsCategory::KeyboardAndShortcuts => {
             crate::settings_page_keyboard::the_blocks(open, strings)
         }

@@ -329,6 +329,7 @@ impl Server {
                         crate::settings_command::WhatTheChordDid::SettingsOpened(_)
                     ))
                 ) {
+                    self.settings_is_told_what_could_open_links();
                     self.the_person_went_to_settings();
                 }
                 match did {

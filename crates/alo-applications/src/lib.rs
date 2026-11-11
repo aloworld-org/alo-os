@@ -93,6 +93,7 @@ pub mod declared;
 pub mod installed;
 pub mod keeping;
 pub mod link;
+pub mod link_choices;
 pub mod link_opener;
 pub mod mail_address;
 pub mod media_types;

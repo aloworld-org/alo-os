@@ -94,10 +94,21 @@ chosen or cancelled, the link is written in the record either way.
 
 ## Built, and not
 
-**Neither surface is built by the change that records this note.** Until they
-are: the default is the person's `[links]` choice or the first installed
-application declaring the kind, and `ask` uses the default and the record says
-the application asked to choose (`docs/contracts/portals.md`, `OpenURI`).
+**08 is built** (`crates/alo-shell/src/settings_default_apps.rs`, its page
+`settings_page_default_apps.rs`). Two things it does that the frame does not
+say, each a judgement written down here rather than left in a diff:
+
+- **The side column's icon is borrowed.** Frame `25:8` draws its side column
+  with no icons at all, for any category, while the approved Settings window
+  draws one beside each. *Default apps* borrows the window's own file sign
+  (`icons/settings/file.svg`) until the designer draws one.
+- **A section with no handler** says *No app on this computer opens web links.
+  Install a browser and it will be here.* (and the same for email addresses)
+  in a plain line under its heading. Where the email section has no card, the
+  record's footnote stands beneath it on its own.
+
+**09 is not built yet.** Until it is, `ask` uses the default and the record
+says the application asked to choose (`docs/contracts/portals.md`, `OpenURI`).
 
 **Figures every screen size has to derive, not copy** (`CLAUDE.md`, *nothing is
 built to one screen size*): the 72 row, the 22 ring, the 28 icon and the 480

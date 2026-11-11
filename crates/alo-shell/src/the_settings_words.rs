@@ -882,12 +882,96 @@ pub const AS_A_PERCENTAGE: Word = Word::saying("settings.access.percent", "{perc
     "Beside the text size slider: the size as a percentage of the ordinary size. {percent} is      the number. Write a percentage the way your language does, with or without a space.",
 );
 
+/// Default apps, in the side column and as its page's heading (`25:18`).
+pub const DEFAULT_APPS: Word = Word::saying("settings.category.default-apps", "Default apps")
+    .noting(
+        "A category in Settings: the page where a person chooses which app opens a web link and \
+         which opens an email address. Sentence case.",
+    );
+
+/// The sentence under the Default apps heading (`25:24`).
+pub const DEFAULT_APPS_IS: Word = Word::saying(
+    "settings.category.default-apps.is",
+    "Which app opens a link, an email address or a kind of file.",
+)
+.noting("Under the heading of the Default apps page. A short sentence saying what the page is for.");
+
+/// The section of browsers (`25:26`).
+pub const WEB_LINKS: Word = Word::saying("settings.default-apps.web-links", "Web links").noting(
+    "A small heading over the list of web browsers a person can choose to open web links \
+     (addresses starting http or https). Sentence case.",
+);
+
+/// The section of mail applications (`25:42`).
+pub const EMAIL_ADDRESSES: Word =
+    Word::saying("settings.default-apps.email-addresses", "Email addresses").noting(
+        "A small heading over the list of mail apps a person can choose to open an email address \
+         someone clicks. Sentence case.",
+    );
+
+/// Under the browser that opens web links now (`25:34`).
+pub const OPENS_WEB_LINKS_NOW: Word =
+    Word::saying("settings.default-apps.opens-web-links-now", "Opens web links now").noting(
+        "Under the name of the browser that opens web links on this computer at the moment.",
+    );
+
+/// Under an installed application that is not the one chosen (`25:40`).
+pub const INSTALLED: Word = Word::saying("settings.default-apps.installed", "Installed").noting(
+    "Under the name of an app that could open links but is not the one that does now. It says \
+     the app is on this computer.",
+);
+
+/// Under the mail application that opens email addresses now (`25:50`).
+pub const OPENS_A_NEW_MESSAGE: Word = Word::saying(
+    "settings.default-apps.opens-a-new-message",
+    "Opens a new message to the address",
+)
+.noting(
+    "Under the name of the mail app that opens email addresses now: clicking an address starts a \
+     new message to it in this app.",
+);
+
+/// A section with no browser installed says so instead of an empty card.
+pub const NO_APP_OPENS_WEB_LINKS: Word = Word::saying(
+    "settings.default-apps.no-app-opens-web-links",
+    "No app on this computer opens web links. Install a browser and it will be here.",
+)
+.noting("Under the Web links heading when no installed app can open web links.");
+
+/// A section with no mail application installed says so.
+pub const NO_APP_OPENS_EMAIL_ADDRESSES: Word = Word::saying(
+    "settings.default-apps.no-app-opens-email-addresses",
+    "No app on this computer opens email addresses. Install a mail app and it will be here.",
+)
+.noting("Under the Email addresses heading when no installed app can open an email address.");
+
+/// The page's footnote (`25:51`).
+pub const EVERY_LINK_IS_RECORDED: Word = Word::saying(
+    "settings.default-apps.every-link-is-recorded",
+    "Every link an app opens is written in your record: which app asked, the address, and which \
+     app opened it.",
+)
+.noting(
+    "At the foot of the Default apps page. The record is the list of everything done on this \
+     computer that a person can read back.",
+);
+
+/// An application chosen that left the computer while the page was open.
+pub const THAT_APP_IS_GONE: Word = Word::saying(
+    "settings.default-apps.that-app-is-gone",
+    "That app is not on this computer any more, so nothing changed.",
+)
+.noting(
+    "Shown when a person chose an app on the Default apps page that had been removed from the \
+     computer a moment before.",
+);
+
 /// Every word this window says of its own.
 ///
 /// The length is written out so that adding a word above and forgetting it
 /// here does not compile — a word declared and left out of this list reaches a
 /// person as its own key.
-pub const THE_WINDOWS_WORDS: [Word; 118] = [
+pub const THE_WINDOWS_WORDS: [Word; 129] = [
     SETTINGS,
     EVERYTHING_IN_ONE_PLACE,
     THE_GROUP_ALO,
@@ -1006,6 +1090,17 @@ pub const THE_WINDOWS_WORDS: [Word; 118] = [
     APPS_DESCRIBE_THEMSELVES_LATER,
     ACCESS_NOT_READ,
     ACCESS_NOT_WRITTEN,
+    DEFAULT_APPS,
+    DEFAULT_APPS_IS,
+    WEB_LINKS,
+    EMAIL_ADDRESSES,
+    OPENS_WEB_LINKS_NOW,
+    INSTALLED,
+    OPENS_A_NEW_MESSAGE,
+    NO_APP_OPENS_WEB_LINKS,
+    NO_APP_OPENS_EMAIL_ADDRESSES,
+    EVERY_LINK_IS_RECORDED,
+    THAT_APP_IS_GONE,
 ];
 
 /// Why this window's words could not be declared.
