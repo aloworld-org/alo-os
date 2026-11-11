@@ -186,8 +186,10 @@ fn the_applications(open: &Open, strings: &Strings) -> ABlock {
         TheKind::ASwitch(is),
         said(strings, w::APPS_DESCRIBE_THEMSELVES),
     );
-    row.lines.push(said(strings, w::APPS_DESCRIBE_THEMSELVES_IS));
-    row.lines.push(said(strings, w::APPS_DESCRIBE_THEMSELVES_LATER));
+    row.lines
+        .push(said(strings, w::APPS_DESCRIBE_THEMSELVES_IS));
+    row.lines
+        .push(said(strings, w::APPS_DESCRIBE_THEMSELVES_LATER));
     row.at_its_end = Some(AnEnd::Words(crate::settings_page::switch_said(is, strings)));
     ABlock::Section(ASection {
         heading: Some(said(strings, w::APPLICATIONS)),

@@ -813,7 +813,10 @@ fn apps_describe_themselves_says_its_cost() {
         "Apps describe themselves to alo and screen readers"
     );
     let is = w::APPS_DESCRIBE_THEMSELVES_IS.says();
-    assert!(is.contains("a little more memory and processor time"), "{is}");
+    assert!(
+        is.contains("a little more memory and processor time"),
+        "{is}"
+    );
     assert!(is.contains("Off,"), "turning it off is not said: {is}");
     let later = w::APPS_DESCRIBE_THEMSELVES_LATER.says();
     assert!(later.contains("already open"), "{later}");
