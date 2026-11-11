@@ -150,6 +150,8 @@ pub mod alos_marked_words;
 pub mod closing_a_task_window;
 mod each_window_with_its_edge;
 mod ease_in_and_out;
+#[cfg(test)]
+mod the_desktops_pictures_pinned;
 pub use a_provider_is_added_in_settings::WhyNotSaved;
 mod a_reader_presses;
 pub use a_reader_presses::WhatAReaderPressCameTo;
@@ -176,6 +178,7 @@ mod approval_seat;
 mod approval_shown;
 #[cfg(test)]
 mod approval_testing;
+mod apps_describing_themselves;
 mod atomic_inventory;
 mod atomic_output;
 mod atomic_test;

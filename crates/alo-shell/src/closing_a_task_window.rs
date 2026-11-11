@@ -14,14 +14,15 @@
 //! (`crate::a_task_windows_edge`), and a screen reader pressing that Close
 //! (`crate::a_reader_presses`).
 //!
-//! # A running task asks: Stop and close, or Cancel
+//! # A running task asks: Stop and close, Keep running, or Cancel
 //!
 //! Since 2026-10-29 (ADR 0139) closing a running task asks the person, on a
 //! card at the end of its conversation (`crate::asking_before_closing`):
 //! *Stop and close* stops alo and closes the window **once alo has really
-//! stopped**, and *Cancel* closes nothing. *Keep running* waits for the
-//! right-hand panel's place for a task and is not offered until then. A task
-//! already stopping is not asked again; it closes once it has stopped.
+//! stopped**, and *Cancel* closes nothing. Since 2026-11-11 *Keep running*
+//! sends the window into the right-hand panel by Minimise's road, still
+//! running. A task already stopping is not asked again; it closes once it has
+//! stopped.
 //!
 //! **Nothing here can approve anything**: this file never reaches a daemon,
 //! and a change waiting when a person closes the window is neither approved
@@ -92,12 +93,7 @@ impl Server {
         if !self.the_tasks.closed(which) {
             return WhatClosingCameTo::NothingToClose;
         }
-        if self.the_task_with_the_keyboard == Some(which) {
-            match self.the_tasks.the_one_in_front() {
-                Some(in_front) => self.this_task_took_the_keyboard(in_front),
-                None => self.the_task_gave_the_keyboard_up(),
-            }
-        }
+        self.the_keyboard_leaves_a_window_that_went(which);
         WhatClosingCameTo::Closed
     }
 }

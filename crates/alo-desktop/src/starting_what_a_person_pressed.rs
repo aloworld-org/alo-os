@@ -182,9 +182,24 @@ impl HowThisMachineStartsThings {
         entry: &TheEntry,
         command: &[String],
     ) -> bool {
-        let Some(handed) = self.handed.clone() else {
+        let Some(mut handed) = self.handed.clone() else {
             return said(identifier, "there is no display to hand it");
         };
+        // **Whether it describes itself, read again at this start** from the
+        // person's own answer (`crate::telling_applications_to_describe_themselves`):
+        // handed only where they answered, so a variable they set themselves
+        // is otherwise left as their manager has it.
+        let (describe, chose) =
+            crate::telling_applications_to_describe_themselves::the_persons_answer();
+        if chose {
+            handed.extend(alo_launching::what_a_start_is_handed(describe));
+        }
+        let mut command = command.to_vec();
+        command.extend(
+            alo_launching::what_its_command_gains(identifier, describe)
+                .iter()
+                .map(|it| (*it).to_owned()),
+        );
         let Some((first, _)) = command.split_first() else {
             return said(identifier, "its command names nothing");
         };
@@ -213,7 +228,7 @@ impl HowThisMachineStartsThings {
             ),
             (
                 "ExecStart",
-                Value::from(vec![(program, command.to_vec(), false)]),
+                Value::from(vec![(program, command.clone(), false)]),
             ),
             ("Environment", Value::from(handed)),
             ("WorkingDirectory", Value::from(folder)),
