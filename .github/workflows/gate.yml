@@ -268,20 +268,67 @@ jobs:
       # 8 + 8 + 21.6 + about 1 — is 38.6 against a budget of 45, so a doubly
       # slowed run that would still have passed, still does.
       #
-      # What this does **not** do is make the network faster, and it
-      # deliberately does not retry: a retry would restore the silence. If these
-      # steps begin failing often, that is the signal to cache what they fetch.
+      # What this does **not** do is make the network faster.
+      #
+      # **One fallback, and it announces itself.** On 2026-11-11 from 14:07 UTC
+      # every gate died here with *Temporary failure resolving
+      # 'azure.archive.ubuntu.com'*, twenty seconds a package, until the clock
+      # (job 130579513235; `docs/quirks/the-runners-ubuntu-mirror-stopped-resolving.md`).
+      # The runner's sources say `mirror+file:/etc/apt/apt-mirrors.txt`, which
+      # lists `archive.ubuntu.com` after Azure's mirror, and that did not save
+      # it: every failure still named Azure's host. So the fetch runs first, on
+      # a clock of its own — a download can be killed safely, an unpack cannot —
+      # and if it does not finish, the sources are rewritten to Ubuntu's own
+      # archive and it is fetched once more. A run that takes that path says so
+      # as a warning on the run and in `apt path:` in this step's log, so it is
+      # not the silence a quiet retry would be. The rewrite stays for the rest
+      # of the job, which the LLVM and Windows steps below also fetch through.
+      #
+      # **The packages are the same either way**: one list, fetched, then
+      # installed with `--no-download` from exactly what was fetched.
+      #
+      # **Not cached, measured rather than assumed:** this workflow runs on
+      # `pull_request` and `merge_group` only, so a cache belongs to one pull
+      # request or one queue candidate. On 2026-11-11 all 43 of this
+      # repository's caches were such refs and none was `main`'s, so a queue
+      # candidate — the run that lands — would never find one.
       - name: the libraries this workspace links, and a compositor for the
               fixtures that start their own
         timeout-minutes: 8
         run: |
-          sudo apt-get update
-          sudo apt-get install --no-install-recommends --yes \
-            libwayland-dev libinput-dev libseat-dev libxkbcommon-dev \
-            libpixman-1-dev libegl1-mesa-dev libgbm-dev libudev-dev \
-            weston \
-            dbus-x11 dbus-daemon gnome-keyring at-spi2-core \
+          packages=(
+            libwayland-dev libinput-dev libseat-dev libxkbcommon-dev
+            libpixman-1-dev libegl1-mesa-dev libgbm-dev libudev-dev
+            weston
+            dbus-x11 dbus-daemon gnome-keyring at-spi2-core
             libgtk-3-bin
+          )
+          printf 'Acquire::Retries "3";\nAcquire::http::Timeout "15";\nAcquire::https::Timeout "15";\n' \
+            | sudo tee /etc/apt/apt.conf.d/80-gate-network > /dev/null
+          # Package lists, then package files, each on a clock; nothing unpacked.
+          # 60 + 90 s, then 90 + 150 s: 6.5 minutes at worst, leaving the
+          # unpack its time inside eight. The whole step took 30–48 s healthy.
+          fetch() {
+            sudo timeout "$1" apt-get update &&
+              sudo timeout "$2" apt-get install --download-only \
+                --no-install-recommends --yes "${packages[@]}"
+          }
+          path=mirror
+          if ! fetch 60 90; then
+            path="archive.ubuntu.com (fallback)"
+            echo "::warning title=Ubuntu mirror::the runner's mirror did not deliver in time; fetching from archive.ubuntu.com instead"
+            getent hosts azure.archive.ubuntu.com archive.ubuntu.com || true
+            for source in $(sudo grep -lrE 'apt-mirrors\.txt|azure\.archive' \
+                /etc/apt/sources.list /etc/apt/sources.list.d/ 2> /dev/null); do
+              sudo sed -i -E \
+                -e 's#mirror\+file:/etc/apt/apt-mirrors\.txt#http://archive.ubuntu.com/ubuntu/#g' \
+                -e 's#azure\.archive\.ubuntu\.com#archive.ubuntu.com#g' "$source"
+              echo "rewrote $source"
+            done
+            fetch 90 150
+          fi
+          sudo apt-get install --no-download --no-install-recommends --yes "${packages[@]}"
+          echo "apt path: $path"
           weston --version
           # **The three programs `alo-adapters` starts a real application with**,
           # named here because that test refuses to skip when they are absent —
