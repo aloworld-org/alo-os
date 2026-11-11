@@ -178,7 +178,10 @@ fn a_window_that_grows_over_nothing_stays_where_it_is() {
     let (f, mut codium, theirs, neighbour, _kept) = a_small_first_frame_beside_a_neighbour();
     let before = where_it_is(&f, &theirs);
     moved_to(&f, &neighbour, (before.loc.x + 5000, before.loc.y));
-    grows_to(&mut codium, (600, 300));
+    // **By less than the gap kept round every window**, so it cannot reach the
+    // editor whichever side of it the first placing chose: 600 × 300 did, on
+    // the first run of this test, because it was placed above the editor.
+    grows_to(&mut codium, (457 + 8, 157 + 8));
     assert_eq!(placed(&f), 0, "a window that covers nothing was moved");
     assert_eq!(where_it_is(&f, &theirs).loc, before.loc);
     // And it is still alo's to answer for: grown again over the neighbour,
