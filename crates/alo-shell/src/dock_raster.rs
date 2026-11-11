@@ -1450,7 +1450,7 @@ pub(crate) fn picture(
                 crate::painted_text::how_wide(fonts, text, body_is)
             })
         } else {
-            ""
+            <&str>::default()
         };
         if along && shown.has_the_keyboard {
             let caret_is = scale.px(2).max(1);
@@ -1473,7 +1473,7 @@ pub(crate) fn picture(
             });
         }
         let (prompt, key) = if typing {
-            (typed, "")
+            (typed, <&str>::default())
         } else {
             (words.prompt.as_str(), words.key.as_str())
         };
