@@ -455,4 +455,4 @@ that part is **not built**.
 | 3b | Help asked in the panel's own field: typed in place, sent with the window read at Enter, no launcher | this change |
 | 3c | The answer card under the panel, its working line and Stop, Continue in a task window | not built: no frame draws it |
 | 4 | Capture & export | not built |
-| 5 | Every application's window offers the three; alo adds only the ones an application that draws its own header does not show (the owner, 2026-11-12) | this change |
+| 5 | Every application's window offers the three; alo adds only the ones an application that draws its own header does not show (the owner, 2026-11-12) | #1189 |
