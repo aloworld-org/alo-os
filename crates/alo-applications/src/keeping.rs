@@ -36,7 +36,7 @@ pub const FORMAT: i64 = 1;
 
 /// Every key the file may have besides `format` — which is every field a
 /// [`Chosen`] writes, and a test holds the two together.
-const KEYS: &[&str] = &["kinds"];
+const KEYS: &[&str] = &["kinds", "links"];
 
 impl Kept for Chosen {
     const FILE: &'static str = THE_FILE;

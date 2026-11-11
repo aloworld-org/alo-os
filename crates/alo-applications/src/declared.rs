@@ -24,6 +24,7 @@
 use alo_opening::Kind;
 
 use crate::application::Application;
+use crate::link::LinkKind;
 use crate::media_types::kinds_declared_by;
 
 /// What the applications on this machine say they open, in the order they said
@@ -33,6 +34,10 @@ pub struct Declared {
     /// Each kind and the identifier of an application that declared it, in the
     /// order the declarations arrived.
     declarations: Vec<(Kind, String)>,
+    /// Each kind of link and the identifier of an application that declared
+    /// it, in the order the declarations arrived — the same first-declared rule
+    /// as files, for the same reason.
+    links: Vec<(LinkKind, String)>,
 }
 
 impl Declared {
@@ -66,27 +71,66 @@ impl Declared {
         added
     }
 
+    /// This application says it opens these kinds of link.
+    ///
+    /// Answers how many of them were new, as [`Self::declares`] does.
+    pub fn declares_links(
+        &mut self,
+        application: &Application,
+        kinds: impl IntoIterator<Item = LinkKind>,
+    ) -> usize {
+        let mut added = 0;
+        for kind in kinds {
+            let already = self
+                .links
+                .iter()
+                .any(|(declared, by)| *declared == kind && by == application.identifier());
+            if !already {
+                self.links.push((kind, application.identifier().to_owned()));
+                added += 1;
+            }
+        }
+        added
+    }
+
     /// This application says it opens these media types, as its desktop entry
     /// lists them.
     ///
     /// A type this machine does not read declares nothing
-    /// ([`crate::media_types`]). Answers how many kinds were new.
+    /// ([`crate::media_types`]), and an `x-scheme-handler/http`,
+    /// `…/https` or `…/mailto` declares a kind of link
+    /// ([`LinkKind::declared_by`]). Answers how many kinds, of file or of link,
+    /// were new.
     pub fn declares_media_types<'a>(
         &mut self,
         application: &Application,
         media_types: impl IntoIterator<Item = &'a str>,
     ) -> usize {
+        let media_types: Vec<&str> = media_types.into_iter().collect();
         let kinds: Vec<Kind> = media_types
-            .into_iter()
+            .iter()
             .flat_map(|media_type| kinds_declared_by(media_type).iter().copied())
             .collect();
-        self.declares(application, kinds)
+        let links: Vec<LinkKind> = media_types
+            .iter()
+            .filter_map(|media_type| LinkKind::declared_by(media_type))
+            .collect();
+        self.declares(application, kinds) + self.declares_links(application, links)
     }
 
     /// The identifiers of every application that declared this kind, first
     /// declared first.
     pub fn declaring(&self, kind: Kind) -> impl Iterator<Item = &str> {
         self.declarations
+            .iter()
+            .filter(move |(declared, _)| *declared == kind)
+            .map(|(_, by)| by.as_str())
+    }
+
+    /// The identifiers of every application that declared this kind of link,
+    /// first declared first.
+    pub fn declaring_links(&self, kind: LinkKind) -> impl Iterator<Item = &str> {
+        self.links
             .iter()
             .filter(move |(declared, _)| *declared == kind)
             .map(|(_, by)| by.as_str())
@@ -149,5 +193,32 @@ mod tests {
             1
         );
         assert_eq!(declared.declaring(Kind::PngImage).count(), 0);
+    }
+
+    /// **A scheme handler declares a kind of link**, `http` and `https` one
+    /// kind between them, and a later declaration joins the end.
+    #[test]
+    fn scheme_handlers_are_declared_as_links() {
+        let firefox = Application::identified("org.mozilla.firefox").unwrap();
+        let mail = Application::identified("org.mozilla.Thunderbird").unwrap();
+        let mut declared = Declared::nothing();
+        let added = declared.declares_media_types(
+            &firefox,
+            [
+                "text/html",
+                "x-scheme-handler/http",
+                "x-scheme-handler/https",
+            ],
+        );
+        assert_eq!(added, 1, "http and https are one kind of link");
+        declared.declares_media_types(&mail, ["x-scheme-handler/mailto", "x-scheme-handler/http"]);
+        assert_eq!(
+            declared.declaring_links(LinkKind::Web).collect::<Vec<_>>(),
+            ["org.mozilla.firefox", "org.mozilla.Thunderbird"]
+        );
+        assert_eq!(
+            declared.declaring_links(LinkKind::Mail).collect::<Vec<_>>(),
+            ["org.mozilla.Thunderbird"]
+        );
     }
 }

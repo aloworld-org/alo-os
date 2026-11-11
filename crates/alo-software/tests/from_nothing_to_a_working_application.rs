@@ -43,7 +43,7 @@ use std::time::{Duration, SystemTime};
 use alo_adapters::{Delivers, Driving, Message, NotDelivered, shipped_adapters};
 use alo_applications::Application;
 use alo_capability::{
-    Agent, Applicant, Approvals, Given, Grant, Grantee, Proposal, Reach, Refused,
+    Agent, Approvals, Given, Grant, Grantee, Proposal, Reach, Refused,
 };
 use alo_egress::Indicator;
 use alo_granted::Listing;
@@ -53,7 +53,7 @@ use alo_proxy::{
 };
 use alo_software::{
     Bound, Configured, Enabled, Failed, Role, Shipped, SourceName, Tool, Wanted,
-    WhatOpensWebAddresses, install, installing, opened, remove,
+    WhatOpensWebAddresses, install, installing, remove,
 };
 use alo_strings::{Language, Said, Strings, Translation};
 
@@ -96,26 +96,9 @@ const THE_WALK: &[(&str, &str, &str)] = &[
     ),
     (
         "Open a web link",
-        "software.web.refused.nothing-granted",
-        "org.gnome.TextEditor has not been allowed anything on this machine, so the web address \
-         was not opened. Allow it the web browser you want it to open addresses in, and it can \
-         ask again",
-    ),
-    (
-        "Open a web link",
-        "granted.one-grant",
-        "org.gnome.TextEditor has been granted the application org.mozilla.firefox",
-    ),
-    (
-        "Open a web link",
         "software.web.opens.shipped",
         "org.mozilla.firefox opens web addresses. It came with this machine, and you can choose \
          another or remove it",
-    ),
-    (
-        "Ask the agent to use the text editor",
-        "granted.one-grant",
-        "org.gnome.TextEditor has been granted the application org.mozilla.firefox",
     ),
     (
         "Ask the agent to use the text editor",
@@ -509,43 +492,17 @@ fn the_walk_from_nothing_to_a_working_application_is_the_table() {
     let listing = Listing::of(machine.allowed(), at(2));
     met.said("Install the text editor", &listing.said(&strings).unwrap());
 
-    // 3. Open a web link in the browser, from the text editor. It was given
-    //    nothing, so it is refused and told what to allow; the person allows it
-    //    the browser, and the link opens there.
+    // 3. Open a web link in the browser, from the text editor. **Nothing is
+    //    granted and nothing has to be**: the owner's decision of 2026-11-12
+    //    (*"No — open in my default, but record it"*) opens a link the person
+    //    followed in their default browser with no grant over it, and what the
+    //    walk meets is the sentence saying which browser that is.
     let installed_here = tool.installed_here();
     let what_opens = WhatOpensWebAddresses::on(&installed_here, &shipped, None);
-    let refused = opened(
-        THE_TEXT_EDITOR,
-        "https://example.com/march",
-        &what_opens,
-        machine.allowed(),
-        at(3),
-    )
-    .unwrap_err();
-    met.said("Open a web link", &refused.said(&strings));
     let browser = shipped.the(Role::WebBrowser).application().identifier();
-    machine.grants_mut().unwrap().grant(
-        Grant::checked_for(
-            &Applicant::named(THE_TEXT_EDITOR).grantee(),
-            Reach::Application(browser.to_owned()),
-            at(4),
-            a_day(),
-        )
-        .unwrap(),
-    );
-    for row in Listing::of(machine.allowed(), at(4)).rows() {
-        met.said("Open a web link", &row.said(&strings));
-    }
-    let opened_it = opened(
-        THE_TEXT_EDITOR,
-        "https://example.com/march",
-        &what_opens,
-        machine.allowed(),
-        at(5),
-    )
-    .unwrap();
-    assert_eq!(opened_it.browser().application().identifier(), browser);
-    met.said("Open a web link", &opened_it.browser().said(&strings));
+    let the_browser = what_opens.what_opens_them().unwrap();
+    assert_eq!(the_browser.application().identifier(), browser);
+    met.said("Open a web link", &the_browser.said(&strings));
 
     // 4. Ask the agent to use the reference adapter: the person lets it use the
     //    text editor and the notes folder, it proposes one sentence, the person

@@ -420,56 +420,6 @@ pub const NOTHING_OPENS_THE_WEB_CHOICE_GONE: Word = Word::saying(
      chose and is not translated.",
 );
 
-/// What arrived was not a web address.
-pub const NOT_A_WEB_ADDRESS: Word = Word::saying(
-    "software.web.refused.not-a-web-address",
-    "That is not a web address, so nothing was opened. A web address begins with http:// or \
-     https://",
-)
-.noting(
-    "Said when an application asked this machine to open something as a web address and it was not \
-     one — it named no site, or named something that is not the web at all, such as a file on this \
-     machine. What arrived is deliberately not repeated back: it was written outside this machine. \
-     Leave http:// and https:// exactly as they are.",
-);
-
-/// The web address carries a name and a password in it.
-pub const WEB_CARRIES_A_PASSWORD: Word = Word::saying(
-    "software.web.refused.carries-a-password",
-    "That web address carries a name and a password inside it, so nothing was opened. Open the \
-     site and sign in there instead",
-)
-.noting(
-    "Said when a web address had a name and password written into it, before the site's own name. \
-     Opening it would hand them to the application that opened it and write them into its history, \
-     and an address in that shape is also how one site is made to look like another. The address \
-     is not repeated back.",
-);
-
-/// What asked did not name itself as an application.
-pub const WEB_NOT_AN_APPLICATION: Word = Word::saying(
-    "software.web.refused.not-an-application",
-    "Something asked to open a web address without saying which application it is, so nothing was \
-     opened. An application that cannot name itself cannot be allowed anything either",
-)
-.noting(
-    "Said when a request to open a web address arrived without the name of the application making \
-     it. Everything this machine allows is allowed to a named application, so an unnamed one could \
-     not be answered even in principle.",
-);
-
-/// The asking application holds nothing at all.
-pub const WEB_NOTHING_GRANTED: Word = Word::saying(
-    "software.web.refused.nothing-granted",
-    "{application} has not been allowed anything on this machine, so the web address was not \
-     opened. Allow it the web browser you want it to open addresses in, and it can ask again",
-)
-.noting(
-    "Said when an application asked to have a web address opened before the person had allowed it \
-     anything. {application} is its identifier and is not translated. The person is told exactly \
-     what to allow, because *it was not allowed* on its own leaves them guessing.",
-);
-
 /// Every word that names something, read inside another sentence.
 pub const THE_NAMES: [Word; 5] = [
     VERB_PURPOSE,
@@ -480,7 +430,7 @@ pub const THE_NAMES: [Word; 5] = [
 ];
 
 /// Every word that is a line or a sentence of its own.
-pub const THE_SENTENCES: [Word; 44] = [
+pub const THE_SENTENCES: [Word; 40] = [
     READ_SENTENCE,
     INSTALLED,
     INSTALLED_UNSANDBOXED,
@@ -507,10 +457,6 @@ pub const THE_SENTENCES: [Word; 44] = [
     OPENS_THE_WEB_INSTEAD_OF_A_PERSONS_OWN,
     NOTHING_OPENS_THE_WEB,
     NOTHING_OPENS_THE_WEB_CHOICE_GONE,
-    NOT_A_WEB_ADDRESS,
-    WEB_CARRIES_A_PASSWORD,
-    WEB_NOT_AN_APPLICATION,
-    WEB_NOTHING_GRANTED,
     THE_APPLICATIONS,
     EACH_ARRIVES_WITH_NOTHING,
     INSTALL_IT,
@@ -529,7 +475,7 @@ pub const THE_SENTENCES: [Word; 44] = [
 
 /// Every refusal, so that a test can hold each of them to saying what did not
 /// happen **and** what a person does about it.
-pub const THE_REFUSALS: [Word; 17] = [
+pub const THE_REFUSALS: [Word; 13] = [
     NOT_ENABLED,
     OUTSIDE_THE_BOUND_BY_AN_ADMINISTRATOR,
     OUTSIDE_THE_BOUND_BY_THIS_PERSON,
@@ -543,10 +489,6 @@ pub const THE_REFUSALS: [Word; 17] = [
     DID_NOT_ANSWER,
     NOTHING_OPENS_THE_WEB,
     NOTHING_OPENS_THE_WEB_CHOICE_GONE,
-    NOT_A_WEB_ADDRESS,
-    WEB_CARRIES_A_PASSWORD,
-    WEB_NOT_AN_APPLICATION,
-    WEB_NOTHING_GRANTED,
 ];
 
 // ---------------------------------------------------------------------------
@@ -687,7 +629,7 @@ pub const VERB_LEAVES: Word = Word::saying(
 );
 
 /// Every string this crate can say.
-pub const EVERY_WORD: [Word; 49] = [
+pub const EVERY_WORD: [Word; 45] = [
     VERB_PURPOSE,
     VERB_APPLICATION,
     VERB_SOURCE,
@@ -719,10 +661,6 @@ pub const EVERY_WORD: [Word; 49] = [
     OPENS_THE_WEB_INSTEAD_OF_A_PERSONS_OWN,
     NOTHING_OPENS_THE_WEB,
     NOTHING_OPENS_THE_WEB_CHOICE_GONE,
-    NOT_A_WEB_ADDRESS,
-    WEB_CARRIES_A_PASSWORD,
-    WEB_NOT_AN_APPLICATION,
-    WEB_NOTHING_GRANTED,
     THE_APPLICATIONS,
     EACH_ARRIVES_WITH_NOTHING,
     INSTALL_IT,

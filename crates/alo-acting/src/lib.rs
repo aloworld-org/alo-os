@@ -43,6 +43,7 @@
 //! | [`Acting`] | The closed list: what may be asked of a window |
 //! | [`Request`], [`Answer`] | One line in, one line out |
 //! | [`NotRead`], [`NotActed`] | Why a line is not a request, and why a request did nothing |
+//! | [`ToOpenALink`] | The portal asking for an application to be started with a link a person followed |
 //!
 //! Not here: the socket, the compositor's windows, and the authority. The
 //! socket is `alo-shell`'s to listen on and `alo-agentd`'s to connect to —
@@ -62,6 +63,7 @@ pub mod alos_tree;
 pub mod answer;
 pub mod counting;
 pub mod front;
+pub mod opening_a_link;
 pub mod request;
 pub mod working_in;
 
@@ -70,5 +72,6 @@ pub use alos_tree::{WhereAlosTreeIs, is_alo_tree};
 pub use answer::{Answer, NotActed};
 pub use counting::{Begun, Counted, NotACount, ToCount};
 pub use front::{InFront, is_front};
+pub use opening_a_link::{NotALinkToOpen, OPEN_LINK, ToOpenALink};
 pub use request::{NotRead, Request};
 pub use working_in::{NotToWorkIn, ToWorkIn, Where, Worked, Working};

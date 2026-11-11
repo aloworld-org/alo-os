@@ -1,12 +1,15 @@
 //! What a web address is, checked before anything is decided about it.
 //!
-//! `docs/autonomy/software-and-the-web-plan.md`, task 3: the browser opens
-//! web addresses **from any application**. An address that arrives that way is
-//! the least trustworthy value on the machine — it is written by a web page, a
-//! message somebody was sent, or a file that came off a disk — and it ends up
-//! being handed to an application as an argument. So it is a checked value with
-//! a closed list of refusals, the way every argument a verb takes is (ADR 0001
-//! §2), and never a string passed along.
+//! An address an application asks this machine to open — the open-with
+//! portal's `OpenURI`, through [`crate::Link`] — is the least trustworthy value
+//! on the machine: it is written by a web page, a message somebody was sent, or
+//! a file that came off a disk, and it ends up being handed to an application
+//! as an argument. So it is a checked value with a closed list of refusals, the
+//! way every argument a verb takes is (ADR 0001 §2), and never a string passed
+//! along.
+//!
+//! *This file was `alo-software`'s until 2026-11-12, when the portal began
+//! opening links and needed it from a crate the portal can read.*
 //!
 //! # Only the open web
 //!
@@ -16,19 +19,19 @@
 //! an address; `about:` reaches into the browser's own settings. None of them
 //! is the open web, so none of them is here — and each is refused naming the
 //! scheme it asked for, because *what tried* is the part worth writing down.
+//! A `mailto:` address is not a web address either: [`crate::MailAddress`]
+//! holds it.
 //!
 //! # A password in an address is refused rather than passed on
 //!
 //! `https://anna:hunter2@example.com/` hands a name and a password to whatever
 //! opens it, writes them into that application's history, and is the shape a
 //! forged address takes when it wants the part before the `@` read as the site.
-//! It is refused ([`NotAWebAddress::CarriesAPassword`]), and the person is told
-//! to sign in on the site instead.
+//! It is refused ([`NotAWebAddress::CarriesAPassword`]).
 //!
 //! # Nothing that arrived is read back to a person
 //!
-//! [`crate::words::NOT_A_WEB_ADDRESS`] says *that is not a web address* without
-//! repeating what arrived. An address is attacker-written text, and a sentence
+//! A refusal says *that is not a web address* without repeating what arrived. An address is attacker-written text, and a sentence
 //! that quotes it is a sentence whoever wrote it helped compose. The value keeps
 //! the scheme — which is short, checked and the only part worth a record — and
 //! nothing else.

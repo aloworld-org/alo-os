@@ -274,6 +274,99 @@ pub const OPENED_IN: Word = Word::saying(
      line saying so follows this one.",
 );
 
+/// A link the person followed is handed to their default application.
+///
+/// Written down before the desktop is asked to start it, so it says the link
+/// was handed over; when the desktop could not be asked, [`NO_DESKTOP`] or
+/// [`NOT_OPENED_A_LINK`] follows.
+pub const LINK_OPENED: Word = Word::saying(
+    "portals.answered.link-opened",
+    "{application} asked for {address} to be opened, and it was handed to {opener}",
+)
+.noting(
+    "{application} and {opener} are identifiers of applications, like org.gnome.Geary and \
+     org.mozilla.firefox, and are never translated. {address} is the link exactly as the \
+     application gave it, a web address or a mailto: address, and is never translated. The \
+     owner chose to record which link was opened: no permission is asked for a link a person \
+     follows, so this line is how they can see afterwards what was opened and from where.",
+);
+
+/// The same, where the application asked for the person to choose.
+pub const LINK_OPENED_INSTEAD_OF_ASKING: Word = Word::saying(
+    "portals.answered.link-opened-instead-of-asking",
+    "{application} asked for {address} to be opened and for you to choose what opens it. \
+     Choosing is not on this machine yet, so it was handed to your default, {opener}",
+)
+.noting(
+    "{application} and {opener} are identifiers of applications and are never translated. \
+     {address} is the link exactly as the application gave it and is never translated. An \
+     application may ask for the person to be shown a choice of applications; until that choice \
+     is designed, the person's default is used and this line says so.",
+);
+
+/// What arrived names a scheme this machine does not open.
+pub const NOT_A_LINK_SCHEME: Word = Word::saying(
+    "portals.not-a-link.scheme",
+    "A {scheme}: link is not one this machine opens, so nothing was opened. Web links and email \
+     addresses are",
+)
+.noting(
+    "{scheme} is the part of a link before its colon, like file or javascript, and is never \
+     translated. The rest of what arrived is deliberately not repeated: it was written outside \
+     this machine.",
+);
+
+/// What arrived is not a link at all, or is a web or email address that does
+/// not hold.
+pub const NOT_A_LINK: Word = Word::saying(
+    "portals.not-a-link.not-a-link",
+    "That is not a web link or an email address this machine can open, so nothing was opened",
+)
+.noting(
+    "Said when an application asked for something to be opened as a link and it was not one: it \
+     named no site, was two lines, or was too long. What arrived is deliberately not repeated.",
+);
+
+/// A web link with a name and a password written into it.
+pub const LINK_CARRIES_A_PASSWORD: Word = Word::saying(
+    "portals.not-a-link.carries-a-password",
+    "That web link carries a name and a password inside it, so it was not opened. Open the site \
+     and sign in there instead",
+)
+.noting(
+    "Opening it would hand the name and password to the browser and write them into its \
+     history, and an address in that shape is also how one site is made to look like another. \
+     The link is not repeated.",
+);
+
+/// The desktop that starts applications is not there to ask.
+pub const NO_DESKTOP: Word = Word::saying(
+    "portals.unanswered.no-desktop",
+    "{opener} was not asked to open the link, because the alo desktop that starts applications \
+     is not running",
+)
+.noting(
+    "{opener} is the identifier of an application, like org.mozilla.firefox, and is never \
+     translated. The desktop is what starts an application when a link is followed; without it \
+     nothing is started.",
+);
+
+/// The desktop was asked and did not start the application.
+pub const NOT_OPENED_A_LINK: Word = Word::saying(
+    "portals.unanswered.not-opened-a-link",
+    "The alo desktop could not start {opener} to open the link, so nothing was opened",
+)
+.noting(
+    "{opener} is the identifier of an application, like org.mozilla.firefox, and is never \
+     translated.",
+);
+
+/// A folder, which nothing here decides what opens yet.
+pub const FOLDER_NOT_DECIDED_HERE: Word = Word::saying(
+    "portals.unanswered.folder-not-decided-here",
+    "This machine does not yet decide what opens a folder, so nothing was opened",
+);
+
 /// The caller is not a sandboxed application.
 pub const NOT_IDENTIFIED: Word = Word::saying(
     "portals.unanswered.not-identified",
@@ -325,7 +418,10 @@ pub const NOT_OPENED: Word = Word::saying(
     "{opener} is the identifier of an application, like org.gnome.Papers, and is never translated.",
 );
 
-/// A link or a folder, which nothing here decides yet.
+/// A link or a folder, which nothing here decided until 2026-11-12. **Said only
+/// of answers kept before that day**: a link is now opened ([`LINK_OPENED`])
+/// and a folder is [`FOLDER_NOT_DECIDED_HERE`]. The key is kept, unreworded,
+/// because a line kept then was true when it was kept.
 pub const NOT_DECIDED_HERE: Word = Word::saying(
     "portals.unanswered.not-decided-here",
     "This machine does not yet decide what opens a web link or a folder, so nothing was opened",
@@ -491,7 +587,7 @@ pub const LINES_NOT_READ: Counted = Counted {
 pub const CLAUSES: [Word; 3] = [NOBODY_NAMED, WHAT_IT_ASKED_FOR, THAT_KIND_OF_FILE];
 
 /// Every string this crate can say, in the order this file declares them.
-pub const EVERY_WORD: [Word; 48] = [
+pub const EVERY_WORD: [Word; 57] = [
     FILE_CHOOSER,
     OPEN_WITH,
     NOTIFICATIONS,
@@ -517,6 +613,14 @@ pub const EVERY_WORD: [Word; 48] = [
     COULD_LEAD_ELSEWHERE,
     SECRET_HANDED_OVER,
     OPENED_IN,
+    LINK_OPENED,
+    LINK_OPENED_INSTEAD_OF_ASKING,
+    NOT_A_LINK_SCHEME,
+    NOT_A_LINK,
+    LINK_CARRIES_A_PASSWORD,
+    NO_DESKTOP,
+    NOT_OPENED_A_LINK,
+    FOLDER_NOT_DECIDED_HERE,
     NOT_IDENTIFIED,
     GRANTS_UNREAD,
     APPLICATIONS_UNREAD,

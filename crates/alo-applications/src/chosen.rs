@@ -28,6 +28,7 @@ use alo_opening::Kind;
 use serde::{Deserialize, Serialize};
 
 use crate::application::Application;
+use crate::link::LinkKind;
 use crate::spelled::{kind_spelled, spelled};
 
 /// Every kind a person chose an application for, and the application.
@@ -36,6 +37,9 @@ use crate::spelled::{kind_spelled, spelled};
 pub struct Chosen {
     /// Each kind chosen for, and the identifier of the application chosen.
     kinds: BTreeMap<Kind, String>,
+    /// Each kind of link chosen for — the person's default browser and mail
+    /// application — and the identifier of the application chosen.
+    links: BTreeMap<LinkKind, String>,
 }
 
 impl Chosen {
@@ -49,7 +53,7 @@ impl Chosen {
     /// Whether the person has chosen nothing at all.
     #[must_use]
     pub fn is_untouched(&self) -> bool {
-        self.kinds.is_empty()
+        self.kinds.is_empty() && self.links.is_empty()
     }
 
     /// Open files of this kind with this application, replacing whatever was
@@ -74,6 +78,26 @@ impl Chosen {
         self.kinds.get(&kind).map(String::as_str)
     }
 
+    /// Open links of this kind with this application — the person's default
+    /// browser, or their default mail application — replacing what was chosen
+    /// before.
+    pub fn choose_for_links(&mut self, kind: LinkKind, application: &Application) {
+        self.links.insert(kind, application.identifier().to_owned());
+    }
+
+    /// Forget the default for this kind of link, so the first installed
+    /// application declaring it answers again. Says whether there was one.
+    pub fn forget_for_links(&mut self, kind: LinkKind) -> bool {
+        self.links.remove(&kind).is_some()
+    }
+
+    /// The identifier of the application chosen for this kind of link, if one
+    /// was.
+    #[must_use]
+    pub fn for_links(&self, kind: LinkKind) -> Option<&str> {
+        self.links.get(&kind).map(String::as_str)
+    }
+
     /// Every choice, in the order [`Kind::EVERY`] lists the kinds — for a
     /// Settings surface showing what the person picked.
     pub fn all(&self) -> impl Iterator<Item = (Kind, &str)> {
@@ -91,6 +115,11 @@ struct Written {
     /// Each kind's spelling and the identifier chosen for it.
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
     kinds: BTreeMap<String, String>,
+    /// Each kind of link's spelling — `web`, `mail` — and the identifier
+    /// chosen for it. Absent when nothing was chosen, so a file written before
+    /// links were chosen is the same file.
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    links: BTreeMap<String, String>,
 }
 
 impl TryFrom<Written> for Chosen {
@@ -103,17 +132,29 @@ impl TryFrom<Written> for Chosen {
         for (name, identifier) in written.kinds {
             let kind = kind_spelled(&name)
                 .ok_or_else(|| format!("`{name}` is not a kind of file alo OS reads"))?;
-            let application = Application::identified(&identifier)
-                .map_err(|_| format!("`{identifier}` is not an application's identifier"))?;
-            if application.identifier() != identifier {
-                return Err(format!(
-                    "`{identifier}` has spaces around it, and an identifier has none"
-                ));
-            }
-            kinds.insert(kind, identifier);
+            kinds.insert(kind, an_identifier(identifier)?);
         }
-        Ok(Self { kinds })
+        let mut links = BTreeMap::new();
+        for (name, identifier) in written.links {
+            let kind = LinkKind::spelled_as(&name)
+                .ok_or_else(|| format!("`{name}` is not a kind of link: it is web or mail"))?;
+            links.insert(kind, an_identifier(identifier)?);
+        }
+        Ok(Self { kinds, links })
     }
+}
+
+/// An identifier as the file wrote it, refused when no verb could name it or
+/// when it carries spaces an identifier never has.
+fn an_identifier(identifier: String) -> Result<String, String> {
+    let application = Application::identified(&identifier)
+        .map_err(|_| format!("`{identifier}` is not an application's identifier"))?;
+    if application.identifier() != identifier {
+        return Err(format!(
+            "`{identifier}` has spaces around it, and an identifier has none"
+        ));
+    }
+    Ok(identifier)
 }
 
 impl From<Chosen> for Written {
@@ -123,6 +164,11 @@ impl From<Chosen> for Written {
                 .kinds
                 .into_iter()
                 .map(|(kind, application)| (spelled(kind).to_owned(), application))
+                .collect(),
+            links: chosen
+                .links
+                .into_iter()
+                .map(|(kind, application)| (kind.spelled().to_owned(), application))
                 .collect(),
         }
     }
@@ -175,6 +221,28 @@ mod tests {
         assert_eq!(back, chosen);
     }
 
+    /// **A default browser and mail application are chosen, written by their
+    /// spelling, and forgotten** — and choosing them leaves the kinds alone.
+    #[test]
+    fn a_default_for_links_is_chosen_written_and_forgotten() {
+        let firefox = Application::identified("org.mozilla.firefox").unwrap();
+        let mut chosen = Chosen::untouched();
+        chosen.choose_for_links(LinkKind::Web, &firefox);
+        assert!(!chosen.is_untouched());
+        assert_eq!(chosen.for_links(LinkKind::Web), Some("org.mozilla.firefox"));
+        assert_eq!(chosen.for_links(LinkKind::Mail), None);
+        assert_eq!(
+            serde_json::to_string(&chosen).unwrap(),
+            r#"{"links":{"web":"org.mozilla.firefox"}}"#
+        );
+        let back: Chosen =
+            serde_json::from_str(r#"{"links":{"web":"org.mozilla.firefox"}}"#).unwrap();
+        assert_eq!(back, chosen);
+        assert!(chosen.forget_for_links(LinkKind::Web));
+        assert!(!chosen.forget_for_links(LinkKind::Web));
+        assert!(chosen.is_untouched());
+    }
+
     /// **A kind that is not one, or an identifier that is not one, refuses the
     /// whole value.**
     #[test]
@@ -186,6 +254,8 @@ mod tests {
             r#"{"kinds":{"pdf":" org.gnome.Papers"}}"#,
             r#"{"kinds":{"pdf":""}}"#,
             r#"{"kinds":{},"default":"org.gnome.TextEditor"}"#,
+            r#"{"links":{"browser":"org.mozilla.firefox"}}"#,
+            r#"{"links":{"web":"org mozilla"}}"#,
         ] {
             assert!(
                 serde_json::from_str::<Chosen>(written).is_err(),
