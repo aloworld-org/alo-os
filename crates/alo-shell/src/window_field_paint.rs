@@ -93,7 +93,8 @@ pub(crate) fn the_field_drawn(
         navy,
     )
     .cropped_to_its_ink();
-    words.extend(alo.placed(px(row.loc.x + ACROSS.0), centred(alo.height), output.1));
+    let down = centred(alo.height);
+    words.extend(alo.placed(px(row.loc.x + ACROSS.0), down, output.1));
 
     let room = px((row.size.w - ACROSS.1 - BEFORE_THE_END).max(1));
     let line = px(THE_LINE);
@@ -143,7 +144,8 @@ pub(crate) fn the_field_drawn(
             ink,
         )
         .cropped_to_its_ink();
-        words.extend(shaped.placed(across, centred(shaped.height), output.1));
+        let down = centred(shaped.height);
+        words.extend(shaped.placed(across, down, output.1));
     }
     if now.has_the_keyboard {
         let caret =
