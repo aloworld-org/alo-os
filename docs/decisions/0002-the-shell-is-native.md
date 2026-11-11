@@ -147,3 +147,18 @@ the machine it was measured on:
 
 Until every line holds, alo's browser may be installed and chosen by a person
 like any other; it is not made the default.
+
+**Owed by alo OS, not by the browser.** *A link opened from another application
+opens in it* cannot pass today for any browser: `docs/contracts/portals.md`
+answers `OpenURI` (a web link) with `2`, because nothing on this machine yet
+decides what opens one. alo OS owes an `OpenURI.OpenURI` answer for `http` and
+`https` that opens the person's chosen default browser. It is recorded here as
+owed and is not built by the change that wrote this section.
+
+**Its colour and its type** follow the owner's rulings of the same day, quoted
+as chosen in a question dialog: *"Deep teal everywhere (Recommended)"* — deep
+teal `#0F6B72` means *alo is acting* in the browser as on every alo product,
+retiring terracotta for that role; *"Allowed: a logo is a mark"* — the browser's
+logo may use teal, since the reservation covers interface states only; and
+*"Manrope (Recommended)"* — its interface is set in Manrope. All three are
+recorded in `docs/features.md`, *alo's visual language*.
