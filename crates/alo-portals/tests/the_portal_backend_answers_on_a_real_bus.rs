@@ -485,7 +485,9 @@ mod on_the_bus {
             &Outcome::Unanswered(Unanswered::NotAFile)
         );
 
-        // A web link, and a folder: nothing here decides what opens them.
+        // A web link on a machine with no browser — answered with no grant
+        // asked, and refused naming the kind — and a folder, which nothing here
+        // decides what opens.
         let code = serving.ask("a_link", |client| {
             client.call_method(
                 Some(DESKTOP),
@@ -498,9 +500,13 @@ mod on_the_bus {
         assert_eq!(code, 2);
         let answered = serving.last_answer();
         assert_eq!(answered.application(), Some(&Applicant::named(MAIL)));
-        assert_eq!(
-            answered.outcome(),
-            &Outcome::Unanswered(Unanswered::NotDecidedHere)
+        assert!(
+            matches!(
+                answered.outcome(),
+                Outcome::NothingOpensLinks(nothing) if nothing.kind() == alo_applications::LinkKind::Web
+            ),
+            "{:?}",
+            answered.outcome()
         );
         let in_it = File::open(&invoice).unwrap();
         let code = serving.ask("the_folder", |client| {
@@ -515,7 +521,7 @@ mod on_the_bus {
         assert_eq!(code, 2);
         assert_eq!(
             serving.last_answer().outcome(),
-            &Outcome::Unanswered(Unanswered::NotDecidedHere)
+            &Outcome::Unanswered(Unanswered::FolderNotDecidedHere)
         );
 
         // Nothing above was opened.

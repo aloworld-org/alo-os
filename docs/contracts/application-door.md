@@ -145,7 +145,7 @@ which is `daemon-protocol.md`'s rule for a stranger and its reason: an answer
 tells whoever knocked that there is an alo OS here.
 
 **A message is a line.** One request, then one answer, terminated by a newline.
-A request is at most **512 bytes**, so that a caller cannot make a window system
+A request is at most **512 bytes** (an `open-link` line excepted, below), so that a caller cannot make a window system
 hold a line open while it reads it.
 
 ## The request
@@ -373,6 +373,52 @@ Like a count, it holds its connection for as long as alo works:
   sent while alo worked in it; `stopped <bytes>` that the desktop ended it first,
   after fifteen minutes, and a turn that works longer asks again; `uncounted`
   that nothing was counted. Closing the connection takes the line down.
+
+## A link the person followed — `open-link`, added 2026-11-12
+
+**What it gives a person:** a link they click in their mail, a document, a
+code editor or a terminal application opens in their default browser — or, for
+an email address, a new message in their default mail application — and the
+window comes up on the canvas, in front, as a window they opened does. The
+owner's decision, quoted as chosen: *"Yes, add it (Recommended)"* — a narrow
+connection by which the portal service asks the desktop to start the chosen
+application **exactly as a person's press does**. Which application, and
+whether the link may be opened at all, is decided before this line is written,
+by the open-with portal (`portals.md`, `OpenURI`), and recorded there.
+
+```
+→ open-link <application> <link>
+← acted | not-installed | could-not-ask
+```
+
+- **Three words.** The act, one application identifier held to the shape
+  above, and one link: `http:`, `https:` or `mailto:`, on one line, with no
+  space in it, at most 2048 bytes, and a web link with no name and password in
+  it (`alo_applications::Link`). A line beginning `open-link` that is not
+  exactly that is not a request and is closed with nothing written.
+- **The one act longer than 512 bytes.** An `open-link` line is at most
+  **2560 bytes**, because a link alone may be 2048; the door reads up to that
+  many before a newline, and every other act's own reader still refuses a line
+  longer than 512.
+- **`acted` means asked**, as for `open`: the desktop has taken the start and
+  sends it off the frame loop. The application is started with the link the way
+  a press starts it — `org.freedesktop.Application.Open` with the link over the
+  bus where its entry says `DBusActivatable=true`, and otherwise its own
+  `Exec` line with `%u` or `%U` filled with the link as one argument. An
+  application already running is started again with it, which a browser answers
+  by opening a tab: its own single-instance handling. **An entry with nowhere
+  to put a link — no `%u` and no `%U` — is not started at all**, rather than
+  started without the link, and the desktop's journal says so.
+- `not-installed` is permitted and alo OS's own desktop never says it, for the
+  reason `open` never does. `could-not-ask` is the machine.
+- **The link can never be an option or a command.** It begins with a letter, so
+  no program reads it as `--something`; it has no space, so it is one argument;
+  and it is never handed to a shell.
+- **Who writes it.** The open-with portal service, `alo-portald`, which runs as
+  the person — so the door's `SO_PEERCRED` check admits it, and admits nobody
+  else. **Nothing an agent sends reaches this act**: `alo-agentd` writes only
+  `open`, `focus` and `close`, and the agent is a different login. A link the
+  agent wants opened is an agent action and goes through the agent's own verbs.
 
 ## The window you were working in — `front`, added 2026-11-07
 

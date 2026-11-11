@@ -93,8 +93,8 @@ mod the_file {
     use alo_capability::{Applicant, Facility, Grant, Grants, Reach};
     use alo_keeping::Keeping;
     use alo_portals::{
-        Answered, AnswersFile, KeptAnswer, KeptOutcome, NotARequest, NothingOpensAs, Outcome,
-        Portal, ReadBack, Recording, RefusedAs, Request, Unanswered,
+        Answered, AnswersFile, KeptAnswer, KeptOutcome, NotALinkAs, NotARequest, NothingOpensAs, Outcome,
+        PassedOverAs, Portal, ReadBack, Recording, RefusedAs, Request, Unanswered,
     };
     use alo_strings::{Key, Language, Said, Strings, Translation};
 
@@ -172,6 +172,25 @@ mod the_file {
         match outcome {
             KeptOutcome::SecretHandedOver { .. } => "secret-handed-over".to_owned(),
             KeptOutcome::Opened { .. } => "opened".to_owned(),
+            KeptOutcome::LinkOpened {
+                asked_to_choose, ..
+            } => format!("link-opened/{asked_to_choose}"),
+            KeptOutcome::NotALink { why } => format!(
+                "not-a-link/{}",
+                match why {
+                    NotALinkAs::NotOpenedHere { .. } => "not-opened-here",
+                    NotALinkAs::CarriesAPassword => "carries-a-password",
+                    NotALinkAs::NotALink => "not-a-link",
+                }
+            ),
+            KeptOutcome::NothingOpensLinks { link, passed_over } => format!(
+                "nothing-opens-links/{link}/{}",
+                match passed_over {
+                    None => "none",
+                    Some(PassedOverAs::NotInstalled(_)) => "not-installed",
+                    Some(PassedOverAs::ATerminal(_)) => "a-terminal",
+                }
+            ),
             KeptOutcome::AppearanceRead { .. } => "appearance-read".to_owned(),
             KeptOutcome::AppearanceSent { .. } => "appearance-sent".to_owned(),
             KeptOutcome::NetworkRead { .. } => "network-read".to_owned(),
@@ -215,6 +234,9 @@ mod the_file {
                     Unanswered::NotAFile => "not-a-file",
                     Unanswered::NotOpened { .. } => "not-opened",
                     Unanswered::NotDecidedHere => "not-decided-here",
+                    Unanswered::FolderNotDecidedHere => "folder-not-decided-here",
+                    Unanswered::NoDesktop { .. } => "no-desktop",
+                    Unanswered::NotOpenedALink { .. } => "not-opened-a-link",
                     Unanswered::NoSuchSetting => "no-such-setting",
                     Unanswered::AppearanceUnread => "appearance-unread",
                     Unanswered::NetworkUnread => "network-unread",
@@ -244,6 +266,36 @@ mod the_file {
                 against: Vec::new(),
             },
         ];
+        for asked_to_choose in [false, true] {
+            every.push(KeptOutcome::LinkOpened {
+                opener: "org.mozilla.firefox".to_owned(),
+                link: "web".to_owned(),
+                address: "https://example.com/invoice".to_owned(),
+                chosen: false,
+                asked_to_choose,
+            });
+        }
+        for why in [
+            NotALinkAs::NotOpenedHere {
+                scheme: "file".to_owned(),
+            },
+            NotALinkAs::CarriesAPassword,
+            NotALinkAs::NotALink,
+        ] {
+            every.push(KeptOutcome::NotALink { why });
+        }
+        for link in ["web", "mail"] {
+            for passed_over in [
+                None,
+                Some(PassedOverAs::NotInstalled("org.example.Gone".to_owned())),
+                Some(PassedOverAs::ATerminal("app.devsuite.Ptyxis".to_owned())),
+            ] {
+                every.push(KeptOutcome::NothingOpensLinks {
+                    link: link.to_owned(),
+                    passed_over,
+                });
+            }
+        }
         for why in [
             RefusedAs::NothingGranted,
             RefusedAs::NeverGranted,
@@ -283,6 +335,13 @@ mod the_file {
                 opener: "org.gnome.Papers".to_owned(),
             },
             Unanswered::NotDecidedHere,
+            Unanswered::FolderNotDecidedHere,
+            Unanswered::NoDesktop {
+                opener: "org.mozilla.firefox".to_owned(),
+            },
+            Unanswered::NotOpenedALink {
+                opener: "org.mozilla.firefox".to_owned(),
+            },
             Unanswered::NoSuchSetting,
             Unanswered::AppearanceUnread,
             Unanswered::NetworkUnread,
@@ -303,7 +362,7 @@ mod the_file {
         let outcomes = every_kept_outcome();
         let kinds: BTreeSet<String> = outcomes.iter().map(kind_of).collect();
         assert_eq!(kinds.len(), outcomes.len(), "each kind once");
-        assert_eq!(kinds.len(), 30);
+        assert_eq!(kinds.len(), 44);
 
         let mut lines = Vec::new();
         let mut second = 0;
