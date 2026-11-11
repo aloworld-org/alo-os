@@ -462,13 +462,16 @@ in `https://github.com/aloworld-org/alomails`, under `web/src/mail` and
 with the commit it read, as for the design file, because a layout matched by
 eye is one nobody can check.
 
-**How the two are read together, and what is still the owner's.** This plan
-reads it this way: **the webmail decides what alo Mails shows and where** — the
-folder list, the message list, the reading pane, the toolbar and how each
-behaves — and **the kit decides how each thing is drawn**: Manrope, the
-desktop's palette and accent, its controls and its band, so that alo Mails
-still looks like the desktop around it, which is what the owner chose the kit
-for. Where the webmail's own look disagrees with the desktop's (its colours and
-typeface in `web/src/ds`), this plan takes the desktop's. **That reading has
-not been put to the owner yet**, and is to be before task 11 takes a figure
-from the webmail.
+**How the two are read together, as the owner ruled.** **The webmail decides
+what alo Mails shows and where** — the folder list, the message list, the
+reading pane, the toolbar and how each behaves — and **the kit decides how each
+thing is drawn**: Manrope, the desktop's palette and accent, its controls and
+its band, so that alo Mails still looks like the desktop around it, which is
+what the owner chose the kit for. Where the webmail's own look disagrees with
+the desktop's (its colours and typeface in `web/src/ds`), **the desktop's
+wins.** The owner ruled it on 2026-11-12 in the question dialog: asked *"For
+the native alo Mail: the webmail (alomails/web) decides WHAT it shows and
+where. When the webmail's look and alo OS's look disagree (fonts, colours,
+buttons), which wins?"*, the owner answered *"alo OS's look wins
+(Recommended)"*. So task 11 takes the webmail's layout and none of its look,
+and nothing in this reading is left open.

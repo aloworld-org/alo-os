@@ -429,3 +429,13 @@ Each was decided one way to build this, and is listed so it can be answered:
    of that file is written back as it was. A file that does not read is said
    above the section and the switch is not offered, so one switch never writes
    over a person's broken file.
+10. **"Apps describe themselves to alo and screen readers" is a fourth section on
+   the Accessibility page**, headed *Applications*, with one switch in the
+   design's own switch row (`550:256` off, `551:196` on) and two lines under it:
+   what it does and what it costs — *a little more memory and processor time* —
+   and that a change reaches the apps opened after it. The owner's decision of
+   2026-11-11, *on by default, switch in Settings*, and the cost in the words the owner approved.
+   No frame draws it, so the section, its heading and its words are this
+   lane's. It is **on** as a machine comes, the other way round from every
+   other switch on the page, and is kept in the same `access.toml` as *Reduced
+   motion*, so it is offered only where that file read.

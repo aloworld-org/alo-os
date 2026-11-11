@@ -261,7 +261,8 @@ panel — and closing a running task will offer **Stop and close** and
 always revealed, Close 44 × 44 at its trailing end, scaled with the display. A
 task window is placed with the edge's 44 above it inside the view, so Close is
 never off the screen. Close and Alt+F4 are one door: a finished or stopped
-task closes; a running task asks *Stop and close* or *Cancel* (ADR 0139), and
+task closes; a running task asks *Stop and close*, *Keep running* (since
+2026-11-11, into the right-hand panel) or *Cancel* (ADR 0139), and
 closing never answers a waiting change for the person.
 
 **The window in front keeps the keyboard** — the owner, 2026-10-30: *like every

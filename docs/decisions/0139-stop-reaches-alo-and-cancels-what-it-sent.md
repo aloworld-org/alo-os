@@ -59,11 +59,13 @@ thing the promise forbids.
 Closing the window of a task alo is still working on now offers **Stop and
 close** and **Cancel**. *Stop and close* is Stop, and the window closes once alo
 has stopped; *Cancel* closes nothing. The third choice the features list names,
-**Keep running**, waits for the right-hand panel's place for a task, which is
-not built; it is not offered rather than offered and broken. The design has not
-drawn the sheet these choices sit on, so they are drawn as a card in the
-conversation, in the approval card's shell, with its two answers — a deliberate
-departure, recorded here so the design can replace it.
+**Keep running**, waited for the right-hand panel's place for a task and was not
+offered until it was built; since 2026-11-11 it sits between the other two and
+sends the window into the panel by Minimise's road, still running. The design
+has not drawn the sheet these choices sit on, so they are drawn as a card in the
+conversation, in the approval card's shell, with its two answers and *Keep
+running* between them, as wide as *Stop and close* and Quiet like *Cancel* — a
+deliberate departure, recorded here so the design can replace it.
 
 ## A model on this machine
 

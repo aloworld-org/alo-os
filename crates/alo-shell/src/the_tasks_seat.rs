@@ -181,4 +181,22 @@ impl Server {
     pub const fn the_task_gave_the_keyboard_up(&mut self) {
         self.the_task_with_the_keyboard = None;
     }
+
+    /// **This task's window has left the screen** — closed, or gone into the
+    /// right-hand panel — so if it held the keyboard, the keyboard goes to the
+    /// task window now in front, or is let go when none is left.
+    ///
+    /// A window nobody can see that still holds the keyboard swallows every
+    /// key typed, Escape included, which is the fault this exists to prevent.
+    /// **Only when it held the keyboard**: a person typing elsewhere who sent
+    /// another window away has not asked to type somewhere else.
+    pub(crate) fn the_keyboard_leaves_a_window_that_went(&mut self, which: WhichTask) {
+        if self.the_task_with_the_keyboard != Some(which) {
+            return;
+        }
+        match self.tasks().the_one_in_front() {
+            Some(in_front) => self.this_task_took_the_keyboard(in_front),
+            None => self.the_task_gave_the_keyboard_up(),
+        }
+    }
 }

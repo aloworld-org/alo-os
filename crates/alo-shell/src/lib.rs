@@ -176,6 +176,7 @@ mod approval_seat;
 mod approval_shown;
 #[cfg(test)]
 mod approval_testing;
+mod apps_describing_themselves;
 mod atomic_inventory;
 mod atomic_output;
 mod atomic_test;
