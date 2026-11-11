@@ -1,5 +1,9 @@
 //! How a key moves on the question about closing a running task, and that its
 //! three answers fit the narrowest task window.
+#![expect(
+    clippy::expect_used,
+    reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
+)]
 
 use super::*;
 

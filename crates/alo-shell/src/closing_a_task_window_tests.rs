@@ -352,7 +352,8 @@ fn closing_a_running_task_asks_and_cancel_changes_nothing() {
     assert!(server.closing_asked_about(which).is_none());
     assert!(server.tasks().is_open(which), "Cancel closed the window");
     assert!(
-        !server.tasks().is_put_aside(which) && server.put_tasks_aside_that_were_asked(Some(&mut alo_put_aside::Panel::new())) == 0,
+        !server.tasks().is_put_aside(which)
+            && server.put_tasks_aside_that_were_asked(Some(&mut alo_put_aside::Panel::new())) == 0,
         "Cancel sent the window into the panel"
     );
     assert!(
@@ -606,7 +607,11 @@ fn keep_running_with_no_panel_leaves_the_window_on_the_screen() {
     assert_eq!(server.put_tasks_aside_that_were_asked(None), 0);
     assert!(!server.tasks().is_put_aside(which));
     assert!(
-        server.tasks().each_open_window().iter().any(|(w, _)| *w == which),
+        server
+            .tasks()
+            .each_open_window()
+            .iter()
+            .any(|(w, _)| *w == which),
         "the window left the screen with nowhere to go"
     );
     assert!(server.take_the_stops().is_empty());
@@ -632,8 +637,17 @@ fn keep_running_never_answers_a_waiting_change() {
     press(&mut server, TAB, &daemon);
     press(&mut server, ENTER, &daemon);
 
-    assert!(daemon.approved.borrow().is_empty(), "Keep running approved it");
-    assert!(daemon.declined.borrow().is_empty(), "Keep running declined it");
-    assert!(server.the_change_waiting.is_asking(), "the change was dropped");
+    assert!(
+        daemon.approved.borrow().is_empty(),
+        "Keep running approved it"
+    );
+    assert!(
+        daemon.declined.borrow().is_empty(),
+        "Keep running declined it"
+    );
+    assert!(
+        server.the_change_waiting.is_asking(),
+        "the change was dropped"
+    );
     assert!(server.take_the_stops().is_empty());
 }

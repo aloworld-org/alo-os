@@ -82,7 +82,13 @@ fn the_three_answers_are_on_one_row_in_reading_order() {
             .expect("the labels differ somewhere");
         // The first label is the same in both; the difference starts at the
         // one after it.
-        let at = |n: usize| &three.inked.get(n).expect("a label the order says is there").area;
+        let at = |n: usize| {
+            &three
+                .inked
+                .get(n)
+                .expect("a label the order says is there")
+                .area
+        };
         let (stop, keep, cancel) = (at(first_new - 1), at(first_new), at(first_new + 1));
         assert!(
             stop.loc.x < keep.loc.x && keep.loc.x < cancel.loc.x,
@@ -114,6 +120,12 @@ fn the_outline_is_on_keep_running_when_the_keyboard_is() {
         None,
     );
     let cancel = with_the_question(1040, Some(KEEP_RUNNING), Some(WhichAnswer::Deny));
-    assert_ne!(none.panel.pixels, keep.panel.pixels, "no outline on Keep running");
-    assert_ne!(keep.panel.pixels, cancel.panel.pixels, "the outline did not move");
+    assert_ne!(
+        none.panel.pixels, keep.panel.pixels,
+        "no outline on Keep running"
+    );
+    assert_ne!(
+        keep.panel.pixels, cancel.panel.pixels,
+        "the outline did not move"
+    );
 }

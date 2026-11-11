@@ -94,11 +94,17 @@ impl ClosingAsked {
     pub fn pressed(&mut self, key: ApprovalKey) -> WhatTheKeyDid {
         match key {
             ApprovalKey::NextAnswer => {
-                self.selected = Some(self.selected.map_or(WhichChoice::StopAndClose, WhichChoice::after));
+                self.selected = Some(
+                    self.selected
+                        .map_or(WhichChoice::StopAndClose, WhichChoice::after),
+                );
                 WhatTheKeyDid::Moved
             }
             ApprovalKey::PreviousAnswer => {
-                self.selected = Some(self.selected.map_or(WhichChoice::Cancel, WhichChoice::before));
+                self.selected = Some(
+                    self.selected
+                        .map_or(WhichChoice::Cancel, WhichChoice::before),
+                );
                 WhatTheKeyDid::Moved
             }
             ApprovalKey::Choose => self
