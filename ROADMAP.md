@@ -2346,6 +2346,7 @@ goes missing.
 | [`devices-and-media-plan.md`](docs/autonomy/devices-and-media-plan.md) | the Mac | sound, cameras and devices — v0.5 |
 | [`documents-and-paper-plan.md`](docs/autonomy/documents-and-paper-plan.md) | the development PC | documents, printing and paper — v0.5 |
 | [`the-local-network-plan.md`](docs/autonomy/the-local-network-plan.md) | the development PC | machines finding each other — v0.5 |
+| [`the-alo-ui-kit-plan.md`](docs/autonomy/the-alo-ui-kit-plan.md) | this PC (`alo-os-shell` checkout), its coordinator lane | the alo UI kit alo's own applications are drawn with, alo Mails first — decided by the owner on 2026-11-11 |
 
 ## v0.5 — a person can work on it all day
 
