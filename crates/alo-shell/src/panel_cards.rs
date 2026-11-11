@@ -220,8 +220,7 @@ fn an_icon_onto(tile: &mut Inked, icon: &alo_dock::artwork::APicture, glyph: i32
     let scaled = icon.scaled_to(side, side);
     let left = (tile.area.size.w - glyph) / 2;
     let top = (tile.area.size.h - glyph) / 2;
-    for (index, &[red, green, blue, alpha]) in
-        scaled.pixels().as_chunks::<4>().0.iter().enumerate()
+    for (index, &[red, green, blue, alpha]) in scaled.pixels().as_chunks::<4>().0.iter().enumerate()
     {
         let Ok(index) = i32::try_from(index) else {
             return;

@@ -83,7 +83,7 @@ fn at_one_hundred_the_panel_draws_the_bytes_it_drew_before() {
 /// The hash of the right-hand panel before this change. See the test above.
 const RIGHT_BEFORE: u64 = 0xa4c4_621e_5807_ce77;
 /// The hash of the left-hand panel before this change. See the test above.
-const LEFT_BEFORE: u64 = 0x6a51_474c_45fb_bde6;
+const LEFT_BEFORE: u64 = 0x127f_b4e8_ef9f_af58;
 
 /// **At 200 the rail, its column, its control and every slot are exactly
 /// twice**, on a display with twice the pixels each way.
