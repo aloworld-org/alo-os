@@ -558,7 +558,7 @@ fn the_walk_from_nothing_to_a_working_application_is_the_table() {
     assert_eq!(bus.handed.borrow().len(), 1, "one approval, one message");
 
     // 5. Remove the text editor. Nothing leaves, so nothing is shown; what it
-    //    was allowed and what was allowed over it end in the same act, and the
+    //    was allowed over it ends in the same act, and the
     //    one list keeps only the notes folder.
     let removed = remove(
         Application::identified(THE_TEXT_EDITOR).unwrap(),
@@ -571,7 +571,9 @@ fn the_walk_from_nothing_to_a_working_application_is_the_table() {
         indicator.is_quiet(),
         "removing puts nothing on the indicator"
     );
-    assert_eq!(removed.grants_ended(), 2);
+    // One: the agent's grant over the text editor. The text editor itself
+    // holds nothing since a link needs no grant over the browser (2026-11-12).
+    assert_eq!(removed.grants_ended(), 1);
     met.said("Remove the text editor", &removed.said(&strings));
     for row in Listing::of(machine.allowed(), at(9)).rows() {
         met.said("Remove the text editor", &row.said(&strings));

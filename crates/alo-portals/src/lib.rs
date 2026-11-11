@@ -58,7 +58,7 @@
 //! | [`judging`] | A request judged against the grants, and what allowed it |
 //! | [`refused`] | Why a request was refused, and what a person is told |
 //! | [`open_with`] | An open-with request, answered from what opens what |
-//! | [`link_answered`] | A link an application asks to open, answered from the person's default with no grant |
+//! | [`link_answered`](mod@link_answered) | A link an application asks to open, answered from the person's default with no grant |
 //! | [`opening_links`] | Asking the desktop to start the application a link opens in |
 //! | [`answered`] | What the backend answered a request with, as the record keeps it |
 //! | [`recording`] | Where every answer is written, and why an answer that is not kept is not sent |

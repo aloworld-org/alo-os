@@ -126,6 +126,10 @@ mod tests {
             Kind::Pdf,
             &Application::identified("org.gnome.Papers").unwrap(),
         );
+        chosen.choose_for_links(
+            crate::LinkKind::Web,
+            &Application::identified("org.mozilla.firefox").unwrap(),
+        );
         let text = alo_kept::text_of(&chosen).unwrap();
         let table: toml::Table = toml::from_str(&text).unwrap();
         let written: Vec<&str> = table

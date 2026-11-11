@@ -1476,6 +1476,7 @@ dependencies = [
 name = "alo-portald"
 version = "0.0.1"
 dependencies = [
+ "alo-acting",
  "alo-appearance",
  "alo-applications",
  "alo-capability",
