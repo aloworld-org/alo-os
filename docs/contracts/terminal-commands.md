@@ -401,7 +401,10 @@ deprecation period, as `CLAUDE.md`'s *contracts outlive code* requires:
   arguments' names; `controls` one control per line as
   `<kind>⇥<name>⇥<states>`, where `<kind>` is a kind `press` takes or `field` or
   `password_field`, and `<states>` is any of `greyed-out`, `on` and `off`
-  separated by commas; `read` each piece of text a window shows; and an act
+  separated by commas; `read` each piece of text a window shows — and where a
+  window shows none, nothing on the output and a sentence saying so on the
+  error stream, naming the window (added 2026-11-12, additively: nothing that
+  was printed before is printed differently); and an act
   gives back nothing, because no ability declares `gives` yet;
 - `--json` for `list` is `{"format":1,"applications":[…]}`, each with
   `identifier`, `name`, `typed_as`, `short_name` (`null` where it does not reach

@@ -67,6 +67,21 @@ pub fn looked(
         (Look::Controls, Telling::Values) => controls_as_values(&shown),
         (Look::Read, _) => text_of(&shown),
     };
+    // **A read that finds nothing says so**, window by window, on the warning
+    // side so a program reading the values still reads none — never a silent
+    // success that looks like an empty document.
+    if look == Look::Read && lines.is_empty() {
+        for window in shown.windows() {
+            machine.warned(
+                strings
+                    .say(
+                        &words::NOTHING_TO_READ.key(),
+                        &Filling::of(words::WINDOW, window.title().to_owned()),
+                    )
+                    .text(),
+            );
+        }
+    }
     for line in lines {
         machine.told(&line);
     }

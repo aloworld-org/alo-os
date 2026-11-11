@@ -106,6 +106,35 @@ fn list_show_controls_and_read_write_nothing() {
     assert!(machine.told.iter().any(|line| line == "Hello"));
 }
 
+/// **A read that finds nothing says so**, naming the window and the switch
+/// that is the likeliest reason, and prints no value a program could take for
+/// an empty document — found on the boot walk of 2026-11-12, where
+/// `alo-app codium read` printed nothing and ended as done.
+#[test]
+fn a_read_that_finds_nothing_says_so() {
+    let known = Known::holding(&[EDITOR]);
+    for piped in [false, true] {
+        let mut machine = AMachine {
+            tree: Some(ATree::default().with(":1.20", Some(EDITOR), "Welcome", &[], "")),
+            ..AMachine::default()
+        };
+        let line = &["texteditor", "read"][..];
+        let ended = if piped {
+            known.piped(line, &mut machine)
+        } else {
+            known.running(line, &mut machine)
+        };
+        assert_eq!(ended, Ended::Done, "piped = {piped}");
+        assert!(machine.told.is_empty(), "{:?}", machine.told);
+        assert!(
+            machine.warned.iter().any(|said| said.contains("“Welcome”")
+                && said.contains("Apps describe themselves")),
+            "piped = {piped}: {:?}",
+            machine.warned
+        );
+    }
+}
+
 /// **On a pipe, a control is one line of values**, never translated.
 #[test]
 fn controls_on_a_pipe_are_one_value_per_line() {

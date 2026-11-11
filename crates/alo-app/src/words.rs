@@ -474,6 +474,15 @@ pub const NO_CONTROLS: Word = Word::saying(
 )
 .noting("Said under a window's heading.");
 
+/// A window that shows no text, said rather than printing nothing.
+pub const NOTHING_TO_READ: Word = Word::saying(
+    "app.read.none",
+    "The window “{window}” shows no text that can be read. An app shows none when it is not \n     describing itself: Settings, Accessibility, Apps describe themselves.",
+)
+.noting(
+    "Said when a person asked to read an application's window and nothing in it could be read. \n     {window} is the window's title. The last part names a switch in Settings by its words.",
+);
+
 /// A text field, as a kind.
 pub const A_FIELD: Word =
     Word::saying("app.role.field", "field").noting("A kind of control: a box a person types into.");
@@ -709,7 +718,7 @@ pub const CANNOT_BE_UNDONE_ONCE_SENT: Word = Word::saying(
 .noting("The contract's own words, said beside an ability that sends, or may send, something off the machine.");
 
 /// Every word of this crate's own.
-pub const EVERY_WORD: [Word; 83] = [
+pub const EVERY_WORD: [Word; 84] = [
     NOTHING_ASKED,
     NOTHING_TO_DO,
     LEFT_OVER,
@@ -755,6 +764,7 @@ pub const EVERY_WORD: [Word; 83] = [
     A_CONTROL,
     A_CONTROL_WITH,
     NO_CONTROLS,
+    NOTHING_TO_READ,
     A_FIELD,
     A_PASSWORD_FIELD,
     GREYED_OUT,
