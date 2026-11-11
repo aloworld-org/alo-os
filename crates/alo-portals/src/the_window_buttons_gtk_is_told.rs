@@ -12,9 +12,10 @@
 //!
 //! # Why this value
 //!
-//! Measured once, by hand, on 2026-11-12, against GNOME Text Editor and Papers
-//! from Flathub (GNOME runtime 51), Loupe and Ptyxis (runtime 50), and GTK 4 and
-//! libadwaita windows of our own (runtime 51). The method is in
+//! Measured once, by hand, on 2026-11-12, against GNOME Text Editor, Papers and
+//! Loupe from Flathub (GNOME runtime 51) and Ptyxis (runtime 50), each in all
+//! four states below except `appmenu:close`, which was Text Editor's and
+//! a libadwaita window of our own (runtime 51). The method is in
 //! `docs/quirks/an-application-that-draws-its-own-header-is-not-asked-which-buttons.md`.
 //!
 //! | what this portal answered | what each one drew |
