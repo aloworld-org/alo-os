@@ -102,6 +102,8 @@ mod a_new_window_is_placed;
 mod a_person_pins_and_unpins;
 #[cfg(test)]
 mod a_picture_hashed;
+#[cfg(test)]
+mod the_desktops_pictures_pinned;
 mod a_press_in_the_menu;
 mod a_press_on_a_setup_sheet;
 mod a_press_on_alos_band;
