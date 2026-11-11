@@ -97,7 +97,8 @@ fn drawn(window: Rectangle<i32, Logical>) -> Rectangle<i32, Logical> {
 /// A desk with one window, the person having started `org.example.Codium`,
 /// whose first frame is small: it is placed, and a second window is put just
 /// to the right of where it landed — the neighbour it will grow over.
-fn a_small_first_frame_beside_a_neighbour() -> (Fixture, Application, WlSurface, WlSurface, [Application; 2]) {
+fn a_small_first_frame_beside_a_neighbour()
+-> (Fixture, Application, WlSurface, WlSurface, [Application; 2]) {
     let f = Fixture::keyboard();
     let (editor_app, editor) = mapped(&f, "org.example.Editor", (400, 300));
     assert_eq!(placed(&f), 1, "the control: the editor was placed");
@@ -111,7 +112,11 @@ fn a_small_first_frame_beside_a_neighbour() -> (Fixture, Application, WlSurface,
     });
     assert!(not_started.is_empty(), "the control: the start was sent");
     let (codium, theirs) = mapped(&f, "org.example.Codium", (457, 157));
-    assert_eq!(placed(&f), 1, "the control: the small first frame was placed");
+    assert_eq!(
+        placed(&f),
+        1,
+        "the control: the small first frame was placed"
+    );
     let first = where_it_is(&f, &theirs);
     let (neighbour_app, neighbour) = mapped(&f, "org.example.Neighbour", (200, 200));
     moved_to(
@@ -144,7 +149,11 @@ fn a_window_that_grows_over_another_is_placed_again_covering_nothing() {
         );
     }
     // **Once**: a later frame at the same size moves nothing.
-    assert_eq!(placed(&f), 0, "a window was placed again with nothing changed");
+    assert_eq!(
+        placed(&f),
+        0,
+        "a window was placed again with nothing changed"
+    );
 }
 
 /// **The refusal: a window the person moved is never moved by alo**, however

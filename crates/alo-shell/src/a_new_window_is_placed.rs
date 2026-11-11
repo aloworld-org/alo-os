@@ -225,6 +225,12 @@ pub(crate) fn the_size_it_wants(surface: &WlSurface) -> Option<Size<i32, Logical
     (wanted.w > 0 && wanted.h > 0).then_some(wanted)
 }
 
+/// Every other window on a Place, and the one a new window opens beside.
+pub(crate) type TheOthersAndTheActive = (
+    Vec<Rectangle<i32, Logical>>,
+    Option<Rectangle<i32, Logical>>,
+);
+
 impl Server {
     /// Place every window that has an extent and has never been placed, and
     /// place again any window alo placed that has since grown over another
@@ -412,10 +418,7 @@ impl Server {
     pub(crate) fn the_windows_a_new_one_opens_among(
         &self,
         surface: &WlSurface,
-    ) -> (
-        Vec<Rectangle<i32, Logical>>,
-        Option<Rectangle<i32, Logical>>,
-    ) {
+    ) -> TheOthersAndTheActive {
         let place = crate::canvas_place::the_place_of(surface);
         let applications: Vec<Rectangle<i32, Logical>> = self
             .mapped_surfaces()

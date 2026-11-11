@@ -611,7 +611,7 @@ fn a_remembered_place_another_window_now_stands_on_is_not_given_out() {
     }
     let _notes = mapped_as(&f, "org.alo.Notes");
     let notes = f
-        .backend(move |s| s.mapped_surfaces().find(|it| *it != terminal).cloned())
+        .backend(move |s| s.mapped_surfaces().find(|it| **it != terminal).cloned())
         .expect("two frames are mapped");
     let (took, waiting) = put_back(&f, &notes, WhereTheyLeftIt::from(left));
     assert!(
@@ -621,5 +621,8 @@ fn a_remembered_place_another_window_now_stands_on_is_not_given_out() {
     // **Spent**: asked again, it is still not put back — so it cannot jump
     // there later, when the other window has gone.
     let (took_again, _) = put_back(&f, &notes, waiting);
-    assert!(!took_again, "a refused place was given out on a later frame");
+    assert!(
+        !took_again,
+        "a refused place was given out on a later frame"
+    );
 }

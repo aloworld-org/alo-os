@@ -313,8 +313,12 @@ impl crate::Server {
     ) -> bool {
         let now = crate::where_a_window_is(frame).size;
         let size = smithay::utils::Size::<i32, smithay::utils::Logical>::from((
-            i32::try_from(left_at.width()).unwrap_or(i32::MAX).max(now.w),
-            i32::try_from(left_at.height()).unwrap_or(i32::MAX).max(now.h),
+            i32::try_from(left_at.width())
+                .unwrap_or(i32::MAX)
+                .max(now.w),
+            i32::try_from(left_at.height())
+                .unwrap_or(i32::MAX)
+                .max(now.h),
         ));
         let strip = crate::a_window_and_its_strip::ItsStrip::at(
             self.the_display_scale_edges_are_measured_at(),
