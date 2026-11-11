@@ -283,6 +283,19 @@ The page's line under its heading, *Two things alo can do in your terminal*,
 reads *What alo can do in your terminal* for the same reason. **Departures, and
 recorded here for the next person to take to the design.**
 
+## Built and not drawn: where alo works in an application
+
+*The owner's answer A of 2026-11-10 (ADR 0143 Q6), decided after the frames
+were drawn.* **Folders alo can use** ends with a section **In applications**:
+two choices, *alo works in its own copy of an application* (tagged *Default*,
+chosen as a machine arrives) and *alo may work in your own window*, with the
+*What it risks* box under the second in ADR 0143's words. The design is silent,
+so it is built from the Running code page's pieces (`550:874`) — a choice per
+answer and the risk box drawn whichever is chosen. It is on this page because
+ADR 0143 Q10 puts letting alo use an application beside *Give alo a folder*,
+and this is a question about what alo reaches once it is let in. **A departure,
+recorded here for the next person to take to the design.**
+
 ## What is drawn and not built
 
 The design draws choices this computer does not have yet. **They are drawn as

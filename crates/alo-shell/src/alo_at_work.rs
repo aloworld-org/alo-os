@@ -21,7 +21,16 @@
 //!   because counting the person's window would be watching them;
 //! - an application that cannot open a copy of its own is refused —
 //!   `no-copy-of-its-own`, the owner's answer A — and the turn says which
-//!   setting lets alo work in the person's window instead.
+//!   setting lets alo work in the person's window instead, in
+//!   `alo_capability::words::NO_COPY_OF_ITS_OWN`.
+//!
+//! **Which setting it is, is the person's, read from their own file at each
+//! ask** (`alo_capability::AloInApplications`, chosen in Settings → Folders
+//! alo can use) and handed to
+//! [`taken_in`](crate::alo_at_work::WorkingInApplications::taken_in) — never
+//! the word alo sent. At the default, alo asking for the person's window is
+//! answered `not-chosen`. Turned up, the person's window is allowed, and an
+//! application with no copy of its own is worked in there rather than refused.
 //!
 //! When alo says `done` it is answered with what the copy sent; when it hangs
 //! up the line comes off; and after [`THE_LONGEST`](crate::alo_at_work::THE_LONGEST) the desktop ends it,
@@ -44,6 +53,7 @@ use std::os::unix::net::UnixStream;
 use std::time::{Duration, Instant, SystemTime};
 
 use alo_acting::{ToWorkIn, Where, Worked, Working, counting::DONE};
+use alo_capability::AloInApplications;
 use alo_egress::{AloAtWork, HowItIsShown, Indicator, WhileAloWorks};
 
 use crate::counting_during_their_commands::{CountingForCommands, THE_MOST_GROUPS};
@@ -197,11 +207,13 @@ impl WorkingInApplications {
     /// Take work the door was asked for, and answer whether alo may begin.
     ///
     /// `called` is what a person calls the application, or [`None`] when it is
-    /// not installed.
+    /// not installed. `chosen` is where the person lets alo work, read from
+    /// their settings for this ask.
     pub fn taken_in(
         &mut self,
         asked: AskedToWork,
         called: Option<&str>,
+        chosen: AloInApplications,
         counts: &mut CountingForCommands,
         indicator: &mut Indicator,
         now: (Instant, SystemTime),
@@ -235,11 +247,23 @@ impl WorkingInApplications {
             line: None,
         };
         let answer = match asked.place() {
+            // **The person's window only where the person chose it**: the word
+            // alo sent is a request, and the setting is the answer.
+            Where::InTheirWindow if !chosen.may_work_in_their_window() => {
+                say(&mut work.talking, Working::NotChosen.written());
+                return;
+            }
             Where::InTheirWindow => {
                 put_up(&mut work, HowItIsShown::TheirWindow, indicator, now);
                 Working::Showing
             }
             Where::InAlosCopy => match self.copies.started(&work.application) {
+                // **Turned up, an application with no copy of its own is worked
+                // in where the person is**, shown and never counted.
+                Err(NoCopy::OfItsOwn) if chosen.may_work_in_their_window() => {
+                    put_up(&mut work, HowItIsShown::TheirWindow, indicator, now);
+                    Working::Showing
+                }
                 Err(NoCopy::OfItsOwn) => {
                     say(&mut work.talking, Working::NoCopyOfItsOwn.written());
                     return;

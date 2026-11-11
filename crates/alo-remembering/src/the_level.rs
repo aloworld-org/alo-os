@@ -82,7 +82,7 @@
 //! a file from a later alo OS is still refused as *not for me* rather than as a
 //! complaint about a key that alo OS defines.
 
-use alo_capability::{AloInTheTerminal, HowCodeRuns};
+use alo_capability::{AloInApplications, AloInTheTerminal, HowCodeRuns};
 use serde::{Deserialize, Serialize};
 
 /// Which shape of this file this alo OS writes and reads.
@@ -146,6 +146,16 @@ pub enum NotTheLevel {
         /// What it said.
         said: String,
     },
+    /// `in-applications` says a word that is neither of its two.
+    ///
+    /// Refused whole, for [`Self::NoSuchLevel`]'s reason.
+    #[error(
+        "`{said}` is not an answer for applications: the two are `{IN_ALOS_COPY}` and `{IN_THEIR_WINDOW}`"
+    )]
+    NotAnApplicationsAnswer {
+        /// What it said.
+        said: String,
+    },
     /// The level could not be written down.
     #[error("the level a person chose could not be written down: {why}")]
     NotWrittenDown {
@@ -172,6 +182,9 @@ struct Written {
     /// words.
     #[serde(rename = "in-the-terminal", skip_serializing_if = "Option::is_none")]
     in_the_terminal: Option<String>,
+    /// Where alo works in an application (ADR 0143 Q6), in one of two words.
+    #[serde(rename = "in-applications", skip_serializing_if = "Option::is_none")]
+    in_applications: Option<String>,
 }
 
 /// Only the format, read first and leniently, so that a file from a later alo
@@ -195,6 +208,9 @@ pub struct WhatTheFileSays {
     pub chose: Option<HowCodeRuns>,
     /// The terminal's answer, when one was given.
     pub in_the_terminal: Option<AloInTheTerminal>,
+    /// Where alo works in an application, when the person said (ADR 0143
+    /// Q6). Absent is alo's own copy, as a machine arrives.
+    pub in_applications: Option<AloInApplications>,
 }
 
 /// What this text says.
@@ -218,7 +234,10 @@ pub fn read(text: &str) -> Result<WhatTheFileSays, NotTheLevel> {
         });
     }
     let written: Written = toml::from_str(text).map_err(shape)?;
-    if written.chose.is_none() && written.in_the_terminal.is_none() {
+    if written.chose.is_none()
+        && written.in_the_terminal.is_none()
+        && written.in_applications.is_none()
+    {
         return Err(NotTheLevel::SaysNothing);
     }
     Ok(WhatTheFileSays {
@@ -228,7 +247,41 @@ pub fn read(text: &str) -> Result<WhatTheFileSays, NotTheLevel> {
             .as_deref()
             .map(the_terminal_answer_called)
             .transpose()?,
+        in_applications: written
+            .in_applications
+            .as_deref()
+            .map(the_applications_answer_called)
+            .transpose()?,
     })
+}
+
+/// The word `in-applications` writes for alo's own copy, the default.
+pub const IN_ALOS_COPY: &str = "in-alos-copy";
+
+/// The word `in-applications` writes for the person's own window.
+pub const IN_THEIR_WINDOW: &str = "in-their-window";
+
+/// Where alo works in an application, as this word names it.
+///
+/// # Errors
+///
+/// [`NotTheLevel::NotAnApplicationsAnswer`] for anything but the two.
+fn the_applications_answer_called(said: &str) -> Result<AloInApplications, NotTheLevel> {
+    match said {
+        IN_ALOS_COPY => Ok(AloInApplications::InItsOwnCopy),
+        IN_THEIR_WINDOW => Ok(AloInApplications::InTheirWindow),
+        _ => Err(NotTheLevel::NotAnApplicationsAnswer {
+            said: said.to_owned(),
+        }),
+    }
+}
+
+/// The word this file writes for where alo works in an application.
+const fn the_applications_word_for(answer: AloInApplications) -> &'static str {
+    match answer {
+        AloInApplications::InItsOwnCopy => IN_ALOS_COPY,
+        AloInApplications::InTheirWindow => IN_THEIR_WINDOW,
+    }
 }
 
 /// The terminal's answer this word names.
@@ -297,6 +350,9 @@ pub fn written(says: WhatTheFileSays) -> Result<String, NotTheLevel> {
         in_the_terminal: says
             .in_the_terminal
             .map(|answer| the_terminal_word_for(answer).to_owned()),
+        in_applications: says
+            .in_applications
+            .map(|answer| the_applications_word_for(answer).to_owned()),
     };
     toml::to_string(&it).map_err(|why| NotTheLevel::NotWrittenDown {
         why: why.to_string(),
@@ -317,6 +373,7 @@ impl NotTheLevel {
             Self::SaysNothing => crate::words::LEVEL_SAYS_NOTHING,
             Self::NoSuchLevel { .. } => crate::words::LEVEL_NO_SUCH_LEVEL,
             Self::NotATerminalAnswer { .. } => crate::words::LEVEL_NOT_A_TERMINAL_ANSWER,
+            Self::NotAnApplicationsAnswer { .. } => crate::words::LEVEL_NOT_AN_APPLICATIONS_ANSWER,
             Self::NotWrittenDown { .. } => crate::words::LEVEL_NOT_WRITTEN_DOWN,
         }
     }
@@ -333,9 +390,9 @@ impl NotTheLevel {
     #[must_use]
     pub fn filling_beyond_the_path(&self) -> Option<(&'static str, String)> {
         match self {
-            Self::NoSuchLevel { said } | Self::NotATerminalAnswer { said } => {
-                Some(("said", said.clone()))
-            }
+            Self::NoSuchLevel { said }
+            | Self::NotATerminalAnswer { said }
+            | Self::NotAnApplicationsAnswer { said } => Some(("said", said.clone())),
             Self::NotTheShape { .. }
             | Self::AnotherFormat { .. }
             | Self::SaysNothing

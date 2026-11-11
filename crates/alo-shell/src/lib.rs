@@ -129,6 +129,7 @@ mod a_window_raised;
 mod a_window_travels_aside;
 /// The window a person offered alo, and the window each task works in.
 pub mod alo_in_a_window;
+mod alo_in_applications_in_settings;
 mod alo_in_the_terminal_in_settings;
 /// The teal edge and the band with Stop on a window alo is working in.
 pub mod alos_band_in_a_window;

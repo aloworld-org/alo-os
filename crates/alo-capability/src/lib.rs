@@ -174,6 +174,9 @@ pub mod a_command_waiting;
 pub mod a_terminal_for_the_agent;
 pub mod agent;
 pub mod allowing;
+/// Where alo works in an application: its own copy, or the person's window
+/// (ADR 0143 Q6).
+pub mod alo_in_applications;
 pub mod alo_in_the_terminal;
 pub mod approval;
 pub mod approvals;
@@ -214,6 +217,7 @@ pub use a_command_waiting::{ApprovedCommand, WaitingCommand};
 pub use a_terminal_for_the_agent::ATerminalForTheAgent;
 pub use agent::Agent;
 pub use allowing::NotAllowed;
+pub use alo_in_applications::AloInApplications;
 pub use alo_in_the_terminal::AloInTheTerminal;
 pub use approval::Approved;
 pub use approvals::{AnswerError, Approvals, ProposalId, Waiting};

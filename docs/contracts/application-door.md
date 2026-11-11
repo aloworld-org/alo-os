@@ -327,9 +327,9 @@ Like a count, it holds its connection for as long as alo works:
 ```
 → work-in-alos-copy <application>        (the default setting)
 ← counting | cannot-count | no-copy-of-its-own | not-installed
-  | could-not-start | cannot-show
+  | could-not-start | cannot-show | showing (turned up, no copy)
 → work-in-their-window <application>     (the setting turned up)
-← showing | not-installed | cannot-show
+← showing | not-installed | cannot-show | not-chosen (at the default)
   … alo works …
 → done
 ← sent <bytes> | stopped <bytes> | uncounted
@@ -350,7 +350,19 @@ Like a count, it holds its connection for as long as alo works:
 - `no-copy-of-its-own` is **the owner's answer A**: the application cannot open
   a separate copy for alo — it is not on alo's reviewed list, or it is started
   only over the session bus — so alo may not work in it at this setting, and the
-  turn names the Settings choice that lets it use the person's own window.
+  turn names the Settings choice that lets it use the person's own window, in
+  `alo_capability::words::NO_COPY_OF_ITS_OWN`: *choose “alo may work in your
+  own window” in Settings → Folders alo can use*.
+- **Which setting it is, is the person's** (added 2026-11-10, additively):
+  `in-applications` in `/var/lib/alo/how-code-runs.toml`
+  (`how-code-runs-file.md`), chosen on Settings → Folders alo can use and read
+  by the desktop at each ask — never taken from the word alo sent. **At the
+  default** (`in-alos-copy`, or no answer, or a file that will not read),
+  `work-in-their-window` is answered `not-chosen` and nothing is started,
+  shown or counted. **Turned up** (`in-their-window`), `work-in-their-window`
+  is answered `showing`, and `work-in-alos-copy` still uses alo's copy where
+  the application has one and is answered `showing`, in the person's window,
+  where it has none.
 - `work-in-their-window` counts nothing at all. `showing`: the line *alo is
   working in your {application} window, which may be sending, and alo cannot
   count what* is up for the whole time.

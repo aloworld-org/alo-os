@@ -70,6 +70,7 @@ use alo_shortcuts::{Action, Chord, Key, Modifiers, Shortcuts};
 use alo_strings::Strings;
 
 use crate::a_folder_is_picked_in_settings::{Folders, PickingRow};
+use crate::alo_in_applications_in_settings::AloInApplicationsHere;
 use crate::alo_in_the_terminal_in_settings::AloInTheTerminalHere;
 use crate::how_code_runs_in_settings::HowCodeRunsHere;
 use crate::settings_answering::{AnsweringSection, SettingsAnswered, SettingsChoice};
@@ -114,6 +115,11 @@ pub enum SettingsSection {
     HowCodeRuns,
     /// What has been granted to what.
     Granted,
+    /// Where alo works in an application: its own copy, or the person's own
+    /// window (ADR 0143 Q6). On the page of what alo may reach, after the
+    /// grants, because it is a question about what alo reaches in an
+    /// application once it is let in.
+    InApplications,
     /// Text size and the pointer's size.
     Accessibility,
 }
@@ -289,6 +295,13 @@ pub enum SettingsRow {
     /// three ticked**, and `crate::how_code_runs_in_settings` holds why that is
     /// a state of its own rather than the sealed box.
     HowCodeRuns(alo_capability::HowCodeRuns),
+    /// Where alo works in an application: Enter chooses this answer.
+    ///
+    /// Two rows, alo's own copy first because it is how a machine arrives.
+    /// The refusal for an application with no copy of its own
+    /// (`alo_capability::words::NO_COPY_OF_ITS_OWN`) names the second by its
+    /// exact words, and `crate::alo_in_applications_in_settings` keeps it.
+    WhereAloWorks(alo_capability::AloInApplications),
 }
 
 impl SettingsRow {
@@ -320,6 +333,7 @@ impl SettingsRow {
                 SettingsSection::Answering
             }
             Self::HowCodeRuns(_) => SettingsSection::HowCodeRuns,
+            Self::WhereAloWorks(_) => SettingsSection::InApplications,
             Self::ShellIntegration | Self::APlaceToReturnTo | Self::ActWithoutAsking => {
                 SettingsSection::Terminal
             }
@@ -450,6 +464,9 @@ pub(crate) struct Open {
     /// Whether what the person asks alo for in the terminal runs without the
     /// OK, kept in the same file as how code runs.
     pub(crate) alo_in_the_terminal: AloInTheTerminalHere,
+    /// Where alo works in an application, kept in the same file as how code
+    /// runs.
+    pub(crate) alo_in_applications: AloInApplicationsHere,
     /// Whether the sealed box can run programs on this computer yet, read at
     /// opening from the machine's mounts. **It changes nothing the person
     /// chose**: the sealed box stays a choice, and the default; this is only
@@ -524,6 +541,7 @@ impl SettingsWindow {
             ),
             how_code_runs: HowCodeRunsHere::at_sign_in(places.how_code_runs()),
             alo_in_the_terminal: AloInTheTerminalHere::at_sign_in(places.how_code_runs()),
+            alo_in_applications: AloInApplicationsHere::at_sign_in(places.how_code_runs()),
             // Mounts that cannot be read are not said to be a machine where it
             // cannot run: the line is for what was read.
             the_sealed_box_runs_here: match std::fs::read_to_string(places.mounts()) {
@@ -1027,6 +1045,13 @@ impl Open {
         }
         rows.push(SettingsRow::SeeWhatAloDid);
         rows.extend(paired.into_iter().map(SettingsRow::Granted));
+        // **Last on the page, and always offered**: it needs nothing granted,
+        // and the refusal that points here must find it.
+        rows.extend(
+            alo_capability::AloInApplications::ALL
+                .into_iter()
+                .map(SettingsRow::WhereAloWorks),
+        );
         rows
     }
 
@@ -1495,6 +1520,11 @@ impl Open {
                 SettingsSection::HowCodeRuns,
                 self.how_code_runs.picked(*level),
             ),
+            // **Written before the tick moves**, for the level's reason.
+            SettingsRow::WhereAloWorks(answer) => SettingsDid::Kept(
+                SettingsSection::InApplications,
+                self.alo_in_applications.picked(*answer),
+            ),
         }
     }
 
@@ -1527,6 +1557,7 @@ impl Open {
             | SettingsSection::Granted
             | SettingsSection::Terminal
             | SettingsSection::HowCodeRuns
+            | SettingsSection::InApplications
             | SettingsSection::Accessibility
             | SettingsSection::TimeZone => {
                 return None;

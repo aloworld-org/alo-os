@@ -64,7 +64,7 @@
 
 use std::path::Path;
 
-use alo_capability::{AloInTheTerminal, HowCodeRuns};
+use alo_capability::{AloInApplications, AloInTheTerminal, HowCodeRuns};
 
 use crate::believing::{read_believed, replaced_whole};
 use crate::refusing::NotRemembered;
@@ -121,7 +121,8 @@ pub fn the_level_remembered(at: &Path) -> Result<Option<HowCodeRuns>, NotRemembe
     Ok(what_is_kept(at)?.and_then(|says| says.chose))
 }
 
-/// This level, written whole to this path, keeping the terminal's answer.
+/// This level, written whole to this path, keeping the terminal's answer and
+/// where alo works in applications.
 ///
 /// # Errors
 ///
@@ -131,15 +132,12 @@ pub fn the_level_remembered(at: &Path) -> Result<Option<HowCodeRuns>, NotRemembe
 pub fn the_level_kept(at: &Path, chose: HowCodeRuns) -> Result<(), NotRemembered> {
     // A file that would not read is written over, as it always was; see this
     // module's header for why that loses nothing the person could be shown.
-    let in_the_terminal = what_is_kept(at)
-        .ok()
-        .flatten()
-        .and_then(|says| says.in_the_terminal);
+    let before = what_is_kept(at).ok().flatten().unwrap_or_default();
     kept(
         at,
         WhatTheFileSays {
             chose: Some(chose),
-            in_the_terminal,
+            ..before
         },
     )
 }
@@ -163,7 +161,7 @@ pub fn alo_in_the_terminal_remembered(at: &Path) -> Result<AloInTheTerminal, Not
 }
 
 /// Whether alo in the terminal acts without the OK, written whole to this path,
-/// keeping the level.
+/// keeping the level and where alo works in applications.
 ///
 /// # Errors
 ///
@@ -171,12 +169,48 @@ pub fn alo_in_the_terminal_remembered(at: &Path) -> Result<AloInTheTerminal, Not
 /// would not read — **written over, it would lose a level the person chose** —
 /// and [`NotRemembered::NotWritten`] for a file that could not be written.
 pub fn alo_in_the_terminal_kept(at: &Path, answer: AloInTheTerminal) -> Result<(), NotRemembered> {
-    let chose = what_is_kept(at)?.and_then(|says| says.chose);
+    let before = what_is_kept(at)?.unwrap_or_default();
     kept(
         at,
         WhatTheFileSays {
-            chose,
             in_the_terminal: Some(answer),
+            ..before
+        },
+    )
+}
+
+/// Where alo works in an application, as kept at this path (ADR 0143 Q6).
+///
+/// **No file, and a file that says nothing about applications, are alo's own
+/// copy** — how a machine arrives, and the answer that watches nothing of the
+/// person's.
+///
+/// # Errors
+///
+/// Every refusal [`the_level_remembered`] makes, for the same file. **A reader
+/// that meets one must answer alo's own copy**: that is the only answer that
+/// cannot be a file somebody else wrote speaking for the person.
+pub fn alo_in_applications_remembered(at: &Path) -> Result<AloInApplications, NotRemembered> {
+    Ok(what_is_kept(at)?
+        .and_then(|says| says.in_applications)
+        .unwrap_or_default())
+}
+
+/// Where alo works in an application, written whole to this path, keeping the
+/// level and the terminal's answer.
+///
+/// # Errors
+///
+/// Every refusal [`the_level_remembered`] makes, when the file is there and
+/// would not read — **written over, it would lose a level the person chose** —
+/// and [`NotRemembered::NotWritten`] for a file that could not be written.
+pub fn alo_in_applications_kept(at: &Path, answer: AloInApplications) -> Result<(), NotRemembered> {
+    let before = what_is_kept(at)?.unwrap_or_default();
+    kept(
+        at,
+        WhatTheFileSays {
+            in_applications: Some(answer),
+            ..before
         },
     )
 }
@@ -407,5 +441,74 @@ mod tests {
             alo_in_the_terminal_remembered(&at).is_err(),
             "a file that would not read was read as an answer"
         );
+    }
+
+    /// **alo works in its own copy until the person chooses otherwise**: no
+    /// file, and a file that says only a level, both answer it.
+    #[test]
+    fn alo_in_applications_is_its_own_copy_until_chosen() {
+        let folder = a_folder_of_our_own("applications-default");
+        let at = folder.join("how-code-runs.toml");
+        assert_eq!(
+            alo_in_applications_remembered(&at).unwrap(),
+            AloInApplications::InItsOwnCopy
+        );
+        the_level_kept(&at, HowCodeRuns::AtFullTrust).unwrap();
+        assert_eq!(
+            alo_in_applications_remembered(&at).unwrap(),
+            AloInApplications::InItsOwnCopy
+        );
+    }
+
+    /// **Each of the three answers is kept when another is written** — the
+    /// level, the terminal and applications — each read back from the disk.
+    #[test]
+    fn every_answer_survives_the_others_being_written() {
+        let folder = a_folder_of_our_own("applications-kept");
+        let at = folder.join("how-code-runs.toml");
+        alo_in_applications_kept(&at, AloInApplications::InTheirWindow).unwrap();
+        assert_eq!(
+            alo_in_applications_remembered(&at).unwrap(),
+            AloInApplications::InTheirWindow
+        );
+        assert_eq!(
+            the_level_remembered(&at).unwrap(),
+            None,
+            "a level was invented"
+        );
+        the_level_kept(&at, HowCodeRuns::AskingEachTime).unwrap();
+        alo_in_the_terminal_kept(&at, AloInTheTerminal::ActsWithoutAsking).unwrap();
+        assert_eq!(
+            alo_in_applications_remembered(&at).unwrap(),
+            AloInApplications::InTheirWindow,
+            "writing the level or the terminal forgot where alo works"
+        );
+        alo_in_applications_kept(&at, AloInApplications::InItsOwnCopy).unwrap();
+        assert_eq!(
+            the_level_remembered(&at).unwrap(),
+            Some(HowCodeRuns::AskingEachTime)
+        );
+        assert_eq!(
+            alo_in_the_terminal_remembered(&at).unwrap(),
+            AloInTheTerminal::ActsWithoutAsking
+        );
+        assert_eq!(
+            alo_in_applications_remembered(&at).unwrap(),
+            AloInApplications::InItsOwnCopy
+        );
+    }
+
+    /// **A file another login could write is refused, even saying the
+    /// person's own window** — so an agent cannot turn this up for itself.
+    #[test]
+    fn a_file_others_could_write_is_refused_for_applications() {
+        let folder = a_folder_of_our_own("applications-untrusted");
+        let at = folder.join("how-code-runs.toml");
+        alo_in_applications_kept(&at, AloInApplications::InTheirWindow).unwrap();
+        std::fs::set_permissions(&at, std::fs::Permissions::from_mode(0o646)).unwrap();
+        assert!(matches!(
+            alo_in_applications_remembered(&at),
+            Err(NotRemembered::WritableByOthers { mode: 0o646, .. })
+        ));
     }
 }
