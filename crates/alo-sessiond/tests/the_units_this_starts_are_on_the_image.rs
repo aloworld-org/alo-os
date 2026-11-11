@@ -276,11 +276,15 @@ fn the_persons_terminal_may_use_sudo_and_the_agent_may_not() {
         "the desktop's unit sets NoNewPrivileges=, so `sudo` in the person's own terminal \
          is refused"
     );
+    // Taking capabilities *out* (`~`) leaves root able to become root; naming
+    // what is *kept* is how the empty line refused `sudo`. The one taken out
+    // is the next test's, and its measurement with `sudo` answering `root`
+    // is in the unit's own comment.
     assert_eq!(
         every(&desktop, "CapabilityBoundingSet"),
-        Vec::<String>::new(),
-        "the desktop's unit narrows the capability bounding set, so `sudo` in the person's \
-         own terminal cannot become root"
+        vec!["~CAP_WAKE_ALARM".to_owned()],
+        "the desktop's unit narrows the capability bounding set beyond the one capability \
+         `pam_systemd` hands it, so `sudo` in the person's own terminal is less than root"
     );
     for agents in ["alo-agentd.service", "alo-asking@.service"] {
         let at = the_images_units().join(agents);
@@ -290,6 +294,82 @@ fn the_persons_terminal_may_use_sudo_and_the_agent_may_not() {
             every(&unit, "NoNewPrivileges"),
             vec!["yes"],
             "{agents} no longer sets NoNewPrivileges=yes, so a command alo runs could use sudo"
+        );
+    }
+}
+
+/// The capability `pam_systemd` puts in the ambient set of a regular person's
+/// session on a seat when its stack names no other: systemd's
+/// `pick_default_capability_ambient_set`, read in v257's `pam_systemd.c`.
+const WHAT_PAM_SYSTEMD_HANDS_A_SEAT: &str = "CAP_WAKE_ALARM";
+
+/// **Whatever `pam_systemd` hands the desktop's session, the person's shell
+/// does not inherit, so `flatpak run` works in their terminal.**
+///
+/// An ambient capability is inherited by every program started from the
+/// process that holds it, and the person's shell is started from the desktop.
+/// Fedora's `bwrap` is not setuid and refuses to run holding any capability —
+/// *Unexpected capabilities but not setuid, old file caps config?* — so a
+/// capability in the desktop's ambient set is every `flatpak run` from the
+/// terminal failing. That happened on a booted machine on 2026-11-11, and the
+/// walk's journal recorded `_CAP_EFFECTIVE=800000000` for `alo-desktop`, which
+/// is `CAP_WAKE_ALARM` alone.
+///
+/// `AmbientCapabilities=` being empty does not prevent it — PAM opens the
+/// session after systemd has set it — and `pam_systemd`'s own
+/// `default-capability-ambient-set=` cannot say *none*: an empty value is
+/// read as unset and the default comes back (measured 2026-11-11). What
+/// stops it is the bounding set, because `pam_systemd` cannot raise a
+/// capability the bounding set has dropped. So: each capability the stack's
+/// `pam_systemd` would hand the session is taken out of the unit's bounding set.
+#[test]
+fn the_persons_terminal_inherits_no_capability_from_their_session() {
+    let pam = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../image/usr/lib/pam.d/alo-desktop");
+    let stack = std::fs::read_to_string(&pam)
+        .unwrap_or_else(|why| panic!("{} could not be read: {why}", pam.display()));
+    let arguments: Vec<&str> = stack
+        .lines()
+        .map(str::split_whitespace)
+        .find_map(|mut words| {
+            (words.next() == Some("session")
+                && words.next().is_some()
+                && words.next() == Some("pam_systemd.so"))
+            .then(|| words.collect())
+        })
+        .unwrap_or_else(|| panic!("{} runs no pam_systemd at all", pam.display()));
+    // A bounding set the stack narrows itself is a second road to the same
+    // answer, and this test reads only the first; one appearing must be read.
+    assert!(
+        !arguments.iter().any(|it| it.starts_with("default-capability-bounding-set=")),
+        "{} narrows the session's bounding set itself, which this test does not read: \
+         {arguments:?}",
+        pam.display()
+    );
+
+    let named: Vec<&str> = arguments
+        .iter()
+        .filter_map(|it| it.strip_prefix("default-capability-ambient-set="))
+        .flat_map(str::split_whitespace)
+        .collect();
+    let handed = if named.is_empty() {
+        vec![WHAT_PAM_SYSTEMD_HANDS_A_SEAT]
+    } else {
+        named
+    };
+
+    let desktop = the_desktops_unit();
+    let taken_out: Vec<String> = every(&desktop, "CapabilityBoundingSet")
+        .iter()
+        .filter_map(|it| it.strip_prefix('~'))
+        .flat_map(str::split_whitespace)
+        .map(str::to_owned)
+        .collect();
+    for capability in handed {
+        assert!(
+            taken_out.iter().any(|it| it == capability),
+            "pam_systemd hands the desktop's session {capability}, the desktop's unit does not \
+             take it out of the bounding set, so the person's shell inherits it and `bwrap` \
+             refuses every `flatpak run` from their terminal (taken out: {taken_out:?})"
         );
     }
 }

@@ -160,8 +160,8 @@ RuntimeDirectoryMode=0700
 # person spends the day in front of.
 AmbientCapabilities=
 
-# **And no `NoNewPrivileges=` or `CapabilityBoundingSet=` here, on purpose: the
-# person's terminal is a child of this process.** `alo-shell` draws the
+# **And no `NoNewPrivileges=` and no empty `CapabilityBoundingSet=` here, on
+# purpose: the person's terminal is a child of this process.** `alo-shell` draws the
 # terminal inside the desktop and starts the person's shell from it, so every
 # limit set on this unit is set on their shell and on everything they type into
 # it. Both lines were here until 2026-11-09, and a booted machine answered
@@ -177,13 +177,44 @@ AmbientCapabilities=
 # **CLAUDE.md, law 2: the law binds the agent, never the person: alo OS ships a
 # terminal, because a system that does not trust its owner with a shell is a
 # toy.** A limit on this unit is a limit on the owner's shell, so neither line
-# belongs here. The agent is not in this process: it runs in `alo-asking@` and
+# belongs here (the one capability taken out below is the exception, and why). The agent is not in this process: it runs in `alo-asking@` and
 # asks `alo-agentd`, and both of those keep `NoNewPrivileges=yes`, so nothing
 # alo runs can use `sudo` or any other setuid program. What alo runs as
 # administrator goes through `alo-running-as-administrator`, which asks for
 # the person's password every time (ADR 0150, *The person's terminal*).
 # `crates/alo-sessiond/tests/the_units_this_starts_are_on_the_image.rs` holds
 # both halves of that to each other.
+
+# **One capability is taken out, because `pam_systemd` hands it in.** The line
+# above saying this process is handed nothing was false on a booted machine:
+# `pam_systemd`, in this unit's own PAM stack, puts `CAP_WAKE_ALARM` in the
+# ambient set of a regular person's session on a seat (systemd's
+# `pick_default_capability_ambient_set`, *to implement alarm clock apps*). An
+# empty `AmbientCapabilities=` does not undo it, because PAM runs after. The
+# walk's journal recorded `_CAP_EFFECTIVE=800000000` for `alo-desktop`, which is
+# that one bit, and an ambient capability is inherited by every program started
+# from here: the person's shell, and then `bwrap`. Fedora's `bwrap` is not
+# setuid and refuses to start holding any capability — *Unexpected
+# capabilities but not setuid, old file caps config?* — so on 2026-11-11
+# `flatpak run` failed in the person's terminal while the same application
+# opened from the launcher, which starts it from the person's own manager.
+#
+# The empty bounding set this unit had until 2026-11-09 hid it: `pam_systemd`
+# cannot raise what the bounding set has dropped. This line drops the one
+# capability and nothing else. Measured in `localhost/alo-os:dev` on
+# 2026-11-11, `pam_systemd` choosing its default (the service name
+# `systemd-user` takes the road a seat takes; a container has no seat):
+#
+#   no bounding line           CapAmb=800000000  bwrap refused  sudo: root
+#   CapabilityBoundingSet=~CAP_WAKE_ALARM
+#                              CapAmb=0          bwrap ran      sudo: root
+#
+# **What it costs the person, said plainly:** a root shell reached with `sudo`
+# from this terminal holds every capability except setting alarms that wake a
+# suspended machine. `pam_systemd`'s own `default-capability-ambient-set=`
+# cannot say *none* — an empty value is read as unset and the default comes
+# back, measured the same day.
+CapabilityBoundingSet=~CAP_WAKE_ALARM
 
 ExecStart=/usr/bin/alo-desktop
 

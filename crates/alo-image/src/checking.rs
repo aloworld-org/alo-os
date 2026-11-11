@@ -1622,16 +1622,18 @@ mod tests {
             Some("%i"),
             "the desktop a person arrives at does not run as them"
         );
-        // **Given nothing, and not bounded either.** The person's shell is
-        // the desktop's child, so a bounding set here is a limit on the
-        // owner's terminal: an empty one refused `sudo` there (*unable to
+        // **Given nothing, and bounded by one capability only.** The person's
+        // shell is the desktop's child, so a bounding set here is a limit on
+        // the owner's terminal: an empty one refused `sudo` there (*unable to
         // change to root gid*), measured 2026-11-09 (ADR 0150, *The person's
-        // terminal*). The desktop still holds nothing, because it runs as the
-        // person and is handed no capability.
+        // terminal*). The one capability taken out is the one `pam_systemd`
+        // hands a seated session, which made Fedora's `bwrap` refuse every
+        // `flatpak run` from that terminal (2026-11-11). Anything more is a
+        // limit on the person's own `sudo`.
         assert!(
-            desktop.given().is_empty() && !desktop.says_how_far_it_is_bounded(),
-            "the desktop is given capabilities ({:?}) or bounded ({:?}), and a bound is a limit \
-             on the person's own terminal",
+            desktop.given().is_empty() && desktop.bounded_to() == vec!["~CAP_WAKE_ALARM"],
+            "the desktop is given capabilities ({:?}) or bounded other than by taking out \
+             CAP_WAKE_ALARM alone ({:?})",
             desktop.given(),
             desktop.bounded_to()
         );

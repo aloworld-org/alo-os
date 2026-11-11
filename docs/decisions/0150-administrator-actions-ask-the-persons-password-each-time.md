@@ -147,6 +147,22 @@ desktop's unit sets either line again, or if `alo-agentd.service` or
 the terminal on a booted machine is **not** checked by anything here; it is a
 step on the next boot walk.
 
+**One capability is taken out of the bounding set after all** (added
+2026-11-11, after a boot walk of `main` at `57b98c15`). The desktop was not
+handed nothing. `pam_systemd` raises `CAP_WAKE_ALARM` into the ambient set of a
+person's session on a seat, the person's shell inherited it, and Fedora's
+`bwrap` refuses to run holding any capability. So every `flatpak run` from the
+terminal failed, while the same application opened from the launcher. The
+empty bounding set had hidden this.
+`CapabilityBoundingSet=~CAP_WAKE_ALARM` takes out that one capability. `sudo`
+still answers `root`, measured in `localhost/alo-os:dev`. That root lacks only
+the capability to set alarms that wake a suspended machine. `sudo` still works,
+but the decision above said the desktop's unit sets neither line, and it now
+sets a narrower one. The reasoning is in
+`docs/quirks/pam-systemd-hands-a-seated-session-a-capability-and-bwrap-refuses-it.md`.
+`the_persons_terminal_inherits_no_capability_from_their_session` checks it on
+every build.
+
 ## Machines already in use
 
 Before the update, such a machine's system password is locked (`!*`, what
