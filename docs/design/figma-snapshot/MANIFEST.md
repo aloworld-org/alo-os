@@ -8,6 +8,16 @@ that prose was 55 top-level frames behind without anything saying so.
 **Approved by the owner on 2026-10-04**, with the size explicitly accepted: *an untraceable
 design change is the larger problem.*
 
+## Default apps, and Open with, 2026-11-12 — the same second file
+
+**`default-apps-XbSmsBYix0TrcQ0Qzaup64-25-2.xml` is frame `25:2`**, *08 / Settings
+· Default apps*, and **`open-with-XbSmsBYix0TrcQ0Qzaup64-25-52.xml` is frame
+`25:52`**, *09 / Open with…*, in `XbSmsBYix0TrcQ0Qzaup64`, which the owner
+approved with *"Approve both as drawn (Recommended)"* on 2026-11-12. Each read
+with `get_metadata` on the frame's own id and written unchanged. **Geometry and
+layer names only**; the figures taken off them are in
+[`../default-apps-and-open-with.md`](../default-apps-and-open-with.md).
+
 ## A running task in the put-aside panel, 2026-11-11 — the same second file
 
 **`running-task-XbSmsBYix0TrcQ0Qzaup64-23-2.xml` is frame `23:2`**, *07 / A

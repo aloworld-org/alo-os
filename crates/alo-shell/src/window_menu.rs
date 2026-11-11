@@ -148,7 +148,7 @@ impl WhatARowDoes {
             Self::Restore => alo_access::words::RESTORE,
             Self::FullScreen => alo_access::words::FULL_SCREEN,
             Self::ExitFullScreen => alo_access::words::EXIT_FULL_SCREEN,
-            Self::HelpWithThisWindow => alo_access::words::HELP_WITH_THIS_WINDOW,
+            Self::HelpWithThisWindow => alo_access::words::ASK_ABOUT_THIS_WINDOW,
         }
     }
 

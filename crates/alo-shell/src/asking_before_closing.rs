@@ -1,40 +1,68 @@
-//! **Closing a running task asks**: *Stop and close*, or *Cancel*
+//! **Closing a running task asks**: *Stop and close*, *Keep running*, or
+//! *Cancel*
 //! ([ADR 0139](../../../docs/decisions/0139-stop-reaches-alo-and-cancels-what-it-sent.md)).
 //!
 //! `docs/features.md` promises that closing the window of a task alo is still
-//! working on offers named choices and never kills it silently. Until a Stop
-//! reached the agent, the only honest one was *Cancel*, so a running task did
-//! not close at all (`crate::closing_a_task_window`). Now:
+//! working on offers three named choices and never kills it silently or leaves
+//! it running where nobody can find it. Now:
 //!
 //! - **Stop and close** is Stop, and the window closes **once alo has really
 //!   stopped** — never before, so a person never closes a window on work that
 //!   is still running.
+//! - **Keep running** leaves alo working and sends the window into the
+//!   right-hand panel **by the road Minimise takes**
+//!   (`crate::a_task_goes_aside`), so it is exactly where minimising puts it:
+//!   a square in the rail whose card says what alo is doing and offers Stop.
+//!   It stops nothing. A desktop with no panel keeps the window where it is
+//!   rather than putting it nowhere.
 //! - **Cancel** closes nothing and changes nothing.
-//! - **Keep running**, the third choice the features list names, waits for the
-//!   right-hand panel's place for a task, which is not built. It is not offered
-//!   rather than offered and broken.
 //!
 //! # A card in the conversation, until the design draws a sheet
 //!
 //! The design has not drawn where these choices sit, so they are asked as a
-//! card at the end of the conversation, in the approval card's shell with its
-//! two answers, and answered the same way: Tab moves between them, Enter
-//! chooses, Escape is *Cancel*. Nothing is preselected, so Enter alone does
-//! nothing. The ADR records the departure.
+//! card at the end of the conversation, in the approval card's shell, with
+//! *Keep running* between its two answers, and answered the same way: Tab
+//! moves forward through them, Shift+Tab back, Enter chooses, Escape is
+//! *Cancel*. Nothing is preselected, so Enter alone does nothing. The ADR
+//! records the departure.
 //!
 //! **Nothing here answers a change.** A change waiting when *Stop and close* is
-//! chosen lapses with the turn, as any Stop's does.
+//! chosen lapses with the turn, as any Stop's does; under *Keep running* it
+//! goes on waiting, and the task window brought back from the panel still
+//! shows it.
 
 use crate::approval_keys::ApprovalKey;
 use crate::the_tasks_a_person_opened::WhichTask;
 
-/// The two choices, in reading order.
+/// The three choices, in reading order.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum WhichChoice {
     /// Stop alo, and close the window once it has stopped.
     StopAndClose,
+    /// Leave alo working, and put the window in the right-hand panel.
+    KeepRunning,
     /// Close nothing.
     Cancel,
+}
+
+impl WhichChoice {
+    /// The choice after this one, going round.
+    const fn after(self) -> Self {
+        match self {
+            Self::StopAndClose => Self::KeepRunning,
+            Self::KeepRunning => Self::Cancel,
+            Self::Cancel => Self::StopAndClose,
+        }
+    }
+
+    /// The choice before this one, going round.
+    const fn before(self) -> Self {
+        match self {
+            Self::StopAndClose => Self::Cancel,
+            Self::KeepRunning => Self::StopAndClose,
+            Self::Cancel => Self::KeepRunning,
+        }
+    }
 }
 
 /// A running task whose window the person asked to close.
@@ -59,14 +87,24 @@ pub enum WhatTheKeyDid {
 
 impl ClosingAsked {
     /// One key, while the question is asked.
+    ///
+    /// From nothing selected, Tab lands on the first choice and Shift+Tab on
+    /// the last, the way a row of buttons is entered from either end.
     #[must_use]
     pub fn pressed(&mut self, key: ApprovalKey) -> WhatTheKeyDid {
         match key {
-            ApprovalKey::NextAnswer | ApprovalKey::PreviousAnswer => {
-                self.selected = Some(match self.selected {
-                    None | Some(WhichChoice::Cancel) => WhichChoice::StopAndClose,
-                    Some(WhichChoice::StopAndClose) => WhichChoice::Cancel,
-                });
+            ApprovalKey::NextAnswer => {
+                self.selected = Some(
+                    self.selected
+                        .map_or(WhichChoice::StopAndClose, WhichChoice::after),
+                );
+                WhatTheKeyDid::Moved
+            }
+            ApprovalKey::PreviousAnswer => {
+                self.selected = Some(
+                    self.selected
+                        .map_or(WhichChoice::Cancel, WhichChoice::before),
+                );
                 WhatTheKeyDid::Moved
             }
             ApprovalKey::Choose => self
@@ -111,6 +149,13 @@ impl crate::Server {
             }
             WhatTheKeyDid::Chose(WhichChoice::Cancel) => {
                 self.closing_asked = None;
+                true
+            }
+            // **Into the panel, still running**, by Minimise's own road: the
+            // window goes once a frame lends the panel, and nothing is stopped.
+            WhatTheKeyDid::Chose(WhichChoice::KeepRunning) => {
+                self.closing_asked = None;
+                self.this_task_is_asked_to_go_aside(which);
                 true
             }
             WhatTheKeyDid::Chose(WhichChoice::StopAndClose) => {

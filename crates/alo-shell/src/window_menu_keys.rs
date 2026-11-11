@@ -157,6 +157,17 @@ impl TheKeyboardInTheMenu {
         }
     }
 
+    /// With the keyboard **in the panel's field**, *alo · Ask about this
+    /// window…* — what a click on the field, or *Help with this window* asked
+    /// for by a host, puts it (`crate::the_window_panels_field`).
+    #[must_use]
+    pub const fn in_the_field(trigger: OnTheEdge) -> Self {
+        Self {
+            on: Some(WhatARowDoes::HelpWithThisWindow),
+            trigger,
+        }
+    }
+
     /// The row with the keyboard, for the painter and for a reader.
     #[must_use]
     pub const fn on(self) -> Option<WhatARowDoes> {

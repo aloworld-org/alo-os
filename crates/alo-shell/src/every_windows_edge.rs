@@ -126,6 +126,7 @@ pub(crate) fn every_windows_edge(
                             },
                         )
                     }),
+                    field: server.what_is_typed_in_the_window_field(surface),
                     showing: the_reason_to_show_a_tooltip(server, &edge, keyboard, scale),
                     alo: alo_here
                         .as_ref()
