@@ -463,3 +463,74 @@ fn nothing_clicked_brings_nothing_back() -> Result<(), Box<dyn std::error::Error
     );
     Ok(())
 }
+
+/// **A card stays while its window is aside**: reconciling a panel against what
+/// is hidden takes nothing out when nothing came back. Without this half, a
+/// reconciliation that emptied the panel every frame would pass the next test.
+#[test]
+fn a_card_stays_while_its_window_is_still_aside() -> Result<(), Box<dyn std::error::Error>> {
+    let f = Fixture::keyboard();
+    let _app = mapped(&f);
+    let root = f.root();
+
+    let (let_go, holding) = {
+        let root: WlSurface = root.clone();
+        f.backend(move |s| {
+            let mut panel = Panel::new();
+            let put = s.put_this_window_aside(
+                &mut panel,
+                &root,
+                somewhere(),
+                Zoom::LIFE_SIZE,
+                Privacy::Ordinary,
+            );
+            assert!(put.is_ok(), "the window could not be put aside");
+            let let_go = s.the_panel_lets_go_of_windows_no_longer_aside(Some(&mut panel));
+            (let_go, panel.holding())
+        })
+    };
+
+    assert_eq!(let_go, 0, "a card left the panel while its window was aside");
+    assert_eq!(holding, 1);
+    Ok(())
+}
+
+/// **A window brought back by another road leaves the panel** — the walk of
+/// 2026-11-11, where Files was on the screen and its card still in the panel.
+///
+/// Brought back here exactly as the Dock, its keyboard, the window chords and
+/// the alo Bar bring one back (`Server::go_to_this_application` restores with
+/// `set_window_minimized`), and not through `bring_this_window_back`, which is
+/// the one road that already emptied the panel.
+#[test]
+fn a_window_brought_back_by_another_road_leaves_the_panel()
+-> Result<(), Box<dyn std::error::Error>> {
+    let f = Fixture::keyboard();
+    let _app = mapped(&f);
+    let root = f.root();
+
+    let (let_go, holding, shown) = {
+        let root: WlSurface = root.clone();
+        f.backend(move |s| {
+            let mut panel = Panel::new();
+            let put = s.put_this_window_aside(
+                &mut panel,
+                &root,
+                somewhere(),
+                Zoom::LIFE_SIZE,
+                Privacy::Ordinary,
+            );
+            assert!(put.is_ok(), "the window could not be put aside");
+            let restored = s.set_window_minimized(&root, false);
+            assert!(matches!(restored, Ok(true)), "the window was not restored");
+            let let_go = s.the_panel_lets_go_of_windows_no_longer_aside(Some(&mut panel));
+            let shown = !s.minimized_surfaces().any(|it| it == &root);
+            (let_go, panel.holding(), shown)
+        })
+    };
+
+    assert!(shown, "the window did not come back");
+    assert_eq!(let_go, 1, "the card for a window back on the screen stayed");
+    assert_eq!(holding, 0);
+    Ok(())
+}

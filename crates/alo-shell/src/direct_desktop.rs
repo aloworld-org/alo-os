@@ -1333,6 +1333,10 @@ impl LoopInput for TheDesktopLane<'_> {
         // in. The reverse would bring back a window that was not in the panel yet and then
         // put it away, leaving it aside when they had asked for it back.
         server.bring_back_what_was_clicked(self.desktop.the_panel());
+        // **And a card whose window came back by any other road leaves**: the
+        // Dock, the alo Bar, a chord or the client itself restore without the
+        // panel (`crate::a_window_back_on_screen_leaves_the_panel`).
+        server.the_panel_lets_go_of_windows_no_longer_aside(self.desktop.the_panel());
         // **And what that same position means to the panel's reveal machine.** A separate
         // question from the peek: one asks which preview, this asks whether the edge or the
         // surface is being touched. Both read the one stored draw, so they cannot disagree

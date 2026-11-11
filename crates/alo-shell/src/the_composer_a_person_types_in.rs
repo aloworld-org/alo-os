@@ -263,11 +263,17 @@ impl crate::Server {
             && let Some(identifier) = self.what_the_bar_would_open()
             && let Ok(application) = alo_dock::AppId::named(&identifier)
         {
-            // **Pushed and not started here**, which is
-            // `Server::asked_to_start`'s whole reason: the bus starts an
-            // application and that is not fast, and sent from the input path it
-            // would hold every window on the machine still while one started.
-            self.asked_to_start.push(application);
+            // **Clicking an application, the same wherever its icon is**
+            // (`docs/features.md`, ADR 0103): an application with a window is
+            // gone to — restored first if it was minimised — and only one with
+            // nothing open starts. Until 2026-11-11 this pushed a start
+            // whatever was open: a boot walk that minimised Files and then
+            // chose it here asked Files to start again, and its card stayed in
+            // the panel. `go_to_this_application` is the one road the Dock,
+            // its keyboard and both window chords already take, and a start it
+            // decides on is still pushed rather than sent from the input path
+            // (`Server::asked_to_start`).
+            self.go_to_this_application(&application);
             // **The field empties and the keyboard leaves it**, which is what
             // asking alo does and for the same reason: a request still in the
             // field is one a person sends twice. `Clear` is the key that means
