@@ -154,6 +154,8 @@ mod access_nodes;
 mod access_roles;
 mod access_serving;
 mod active_session;
+/// What an application sends while alo works in it, on the indicator (ADR 0143 Q6).
+pub mod alo_at_work;
 mod approval_answers;
 mod approval_keys;
 mod approval_paint;

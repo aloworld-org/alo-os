@@ -16,7 +16,7 @@
 //!
 //! | the file says | what happens to the command |
 //! |---|---|
-//! | full access (`at-full-trust`) | it runs now, as the person, with no folder grants — after the snapshot, written down, and answered `done-without-asking` with the machine's own sentence for the person (`crate::saying_it_was_done_without_asking`); a `sudo` line asks the password instead, and is answered `did` |
+//! | full access (`at-full-trust`) | it runs now, as the person, with no folder grants — after the snapshot, written down, and answered `done-without-asking` with the machine's own sentence for the person — *done* only when it worked, and *it did not work* with why when it did not (`crate::saying_it_was_done_without_asking`); a `sudo` line asks the password instead, and is answered `did` |
 //! | *ask me each time* | it waits for the person's OK under the same numbers every change waits under; nothing runs |
 //! | the sealed box, **nothing chosen**, or **a file that will not read** | refused in the plain sentence, written down; nothing runs |
 //!
@@ -55,7 +55,7 @@ use alo_protocol::{Done, ToAPerson, ToAnAgent};
 use alo_strings::{Filling, Said, Strings};
 use alo_turn::{NotDone, Turning};
 
-use crate::saying_it_was_done_without_asking::done_without_asking;
+use crate::saying_it_was_done_without_asking::ran_without_asking;
 use crate::the_bracket_this_turn_takes::TheTurnsBracket;
 
 /// Where the person's level for running code is kept, and the folder a command
@@ -218,10 +218,11 @@ pub fn a_command_asked_for(
             ) {
                 // **Asked, for their password**, so not done without asking.
                 Ok(did) if as_administrator => ToAnAgent::did(did),
-                // **Done without asking**, and the person is told so in the
-                // machine's own words, as a verb's change is
+                // **Run without asking**, and the person is told so in the
+                // machine's own words, as a verb's change is — *done* when it
+                // worked, and what failed when it did not
                 // (`crate::saying_it_was_done_without_asking`).
-                Ok(did) => done_without_asking(
+                Ok(did) => ran_without_asking(
                     did,
                     command.sentence(strings),
                     bracket_kept(bracket.as_deref()),

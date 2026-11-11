@@ -1,5 +1,11 @@
 # Demo 2: alo working inside applications
 
+**Status: approved by the owner on 2026-11-10.** Asked *"Should I mark the
+Demo 2 plan approved and start its stage 1?"*, the owner answered *"Yes
+please"*. It is owned by the coordinator lane on this PC (`alo-os-shell`
+checkout), as the charter's row says, and stage 1 — a measurement on the booted
+qemu machine — comes first.
+
 **What it is for.** The public demo for developers, decided by the owner on
 2026-10-31: alo builds something simple **inside the open-source code editor
 alo OS ships**, and presses *Publish* to put it on GitHub Pages. alo must be able
@@ -28,17 +34,20 @@ once `CLAUDE.md` carries those words, which is the owner's edit (ADR 0143).
 keys, under the rule `docs/walks/a-day-on-alo-os.md` sets: *nothing is
 simulated*, and a walk that stops is a finding.
 
-## Why this has stages and not yet tasks
+## How it became a plan with tasks
 
-This plan is **proposed and not yet approved**, and nobody owns it yet. A plan
-with a `## Tasks` section must be named in `ROADMAP.md` and in
-`a-new-machine-becomes-a-lane.md`, and `ROADMAP.md` has one writer, the
-integration owner (`SHARED_MAIN.md`). So the stages below sit under their own
-heading on purpose. **When the owner approves**, three edits make it a plan with
-tasks, in one change: rename the heading to `## Tasks`, add the row to
-`ROADMAP.md` (the integration owner's), and add the owning machine's row to the
-charter. Until then the two reconciling tests do not count it, and that is the
-honest state rather than a way round them.
+Until 2026-11-10 this plan was **proposed and not yet approved**, and its stages
+sat under a heading of their own on purpose: a plan with a `## Tasks` section
+must be named in `ROADMAP.md` and in `a-new-machine-becomes-a-lane.md`, and
+`ROADMAP.md` has one writer, the integration owner (`SHARED_MAIN.md`). The
+owner's approval made it a plan with tasks in one change: the heading renamed
+to `## Tasks`, its row in `ROADMAP.md`'s phase 6 written by the integration
+owner, and the owning machine's row in the charter. The two reconciling tests
+count it from that change on.
+
+Each stage's **Status** was read again against `main` in the same change.
+Stage 3 moved, and its line says why. Stage 9 was already marked in progress
+(#1154, #1163). The rest are still not started.
 
 ## Sizes
 
@@ -46,7 +55,7 @@ honest state rather than a way round them.
 one lane with its gate. The owner answered ADR 0143's questions on 2026-10-31;
 what a stage still waits on is named in its own lines.
 
-## Proposed stages
+## Tasks
 
 ### 1. Measure the ground on the qemu machine
 
@@ -83,12 +92,19 @@ the bus launcher is installed and **answers**, not that a file exists.
 
 ### 3. A person can let alo use an application
 
-**Status:** not started. **Size:** M. **Waits on:** nothing for the default;
-`CLAUDE.md` carrying the owner's change (ADR 0143) for *every application*.
+**Status:** its top level is in, by another road; its default is not started.
+At **full access** (ADR 0149), alo opens, brings forward and closes any
+application the person's account can, with no grant (#1134), and a new machine
+offers full access already chosen at first sign-in (#1137). At *ask me each
+time* and the sealed box every application is still refused, because nothing
+yet lets a person grant one: the Settings list, the compositor's offer and the
+install-time grant are unbuilt. **Size:** M. **Waits on:** nothing for the
+default; for an *every application* setting below full access, if one is still
+wanted, `CLAUDE.md` carrying the owner's change (ADR 0143).
 
-**For the person:** today alo is offered opening and closing applications and
-every one is refused on a real machine, because nothing lets anybody grant it an
-application. After this, Settings lists the installed applications, and the
+**For the person:** today alo is offered opening and closing applications and,
+below full access, every one is refused on a real machine, because nothing lets
+anybody grant it an application. After this, Settings lists the installed applications, and the
 person lets alo use one, for an hour, a day, a month or until removed, and takes
 it back in one action; and when alo needs one it has not got, a surface the
 compositor draws — not alo — offers it. Also at install, and *every application
@@ -107,9 +123,10 @@ a terminal refused unless ADR 0111's choice is made; and every refusal recorded.
 
 **For the person:** alo can read what a granted application shows and press a
 named button in it — the first time it works inside an application at all.
-**Reuses:** `crates/alo-adapters`' fallback, unchanged; `alo-turn`'s executor
-pattern (`acting_on_an_application.rs`). **Test:** the twelve-verb test becomes
-fourteen and `agent-verbs.md` says *offered*; with no invocation the tree is
+**Reuses:** `crates/alo-adapters`' fallback, unchanged, whose walk and press
+the person's `alo-app` command already shares (#1118) — but no turn offers
+them; `alo-turn`'s executor pattern (`acting_on_an_application.rs`).
+**Test:** the twelve-verb test becomes fourteen and `agent-verbs.md` says *offered*; with no invocation the tree is
 never asked; a revoked grant stops the next press; on qemu, Firefox's window
 read and a button pressed.
 
@@ -187,9 +204,53 @@ when the turn ends.
 
 ### 9. What a driven application sends is on the indicator
 
-**Status:** not started. **Size:** L. **Waits on:** nothing further — the owner
-answered how it is shown. **Nothing that publishes is walked before this
-lands.**
+**Status:** in progress. **Built 2026-11-10, reached by nothing yet:** the
+desktop starts alo's own copy of Firefox, VSCodium or VS Code with a profile of
+its own, counts only that copy, and shows one of three lines; the person's own
+window is counted at neither setting; any other application is refused at the
+default (answer A); the door's words are in `application-door.md`. **Not yet:**
+a turn that asks the door (stage 4), the record entry that turn writes, the
+Settings choice answer A names, and any of it run on a machine. The owner
+answered both questions on 2026-11-10 (below). **Size:** L. **Nothing that
+publishes is walked before this lands.**
+
+*What was found.* Three things this stage needs do not exist, and none is in
+another stage. (1) **Nothing starts a window of alo's own.** The door's `open`
+starts an application if it is not running and shows it either way, so it is
+always the person's window; and VSCodium, Firefox and LibreOffice, by their own
+documentation, hand a second start to the copy already running unless started with a profile of their own,
+which a person's agent may not pass as an argument (law 2), so each needs a
+reviewed recipe. (2) **ADR 0148's count is of the whole application** — every
+unit with its identifier, the person's own window included. Used for a turn
+as it stands, it would count the person's own use, which ADR 0143 does not
+offer at any setting. It needs a count of the one unit alo started; which
+Flatpak scope belongs to that start is unmeasured, and stage 1's list does
+not yet ask it. (3) **Nothing in a
+turn drives an application yet** — the two accessibility verbs are stage 4 —
+so a count built now would have no caller.
+
+*The two questions, which change what a person can do.* **A.** At the default,
+alo works only in a window of its own. An application that cannot open a
+second, separate window — every one started over the session bus, most GNOME
+applications among them — could then not be used by alo at all until the person
+turns the setting up, and alo would say so and point to it. Is that the
+intended reading of *any installed application* at the default? **B.** alo's own
+window is a separate profile, so the person is signed in to nothing there:
+they would sign in to GitHub inside alo's editor window (stage 10), and features.md
+says alo posts *in the person's own browser*. Is signing in again in alo's
+window what was meant, or do publishing and posting run at the turned-up
+setting?
+
+*The owner's answers, 2026-11-10*, given in the question dialog and relayed by
+the coordinator. **A:** *"Refuse, point to the setting (Recommended)"* — at the
+default, alo refuses to work in an application that cannot open a separate
+window of its own, says plainly that it cannot work there safely at this
+setting, and names the Settings choice that lets it use the person's own
+window, where the indicator says *that* the application is sending and not how
+much. **B:** *"You sign in once in alo's copy (Recommended)"* — the first time
+alo needs a service such as GitHub, alo's own copy shows the sign-in page and the
+person signs in themselves; alo never sees the password; and it stays signed in
+until the person signs it out. Both are recorded in ADR 0143.
 
 **For the person:** when alo makes the editor or the browser send something, the
 indicator says so while it happens and the record says so afterwards — law 1,

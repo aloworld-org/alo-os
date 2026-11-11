@@ -173,6 +173,23 @@ pub trait TheDesktop {
         }
     }
 
+    /// **What an application sends while alo works in it**, once a frame: the
+    /// work asked for at the door since the last frame, and a look at all of
+    /// it (ADR 0143 Q6). `crate::alo_at_work` is what it answers with.
+    ///
+    /// **By default every ask is refused** — *cannot show* — for
+    /// [`Self::the_indicator`]'s reason: alo may not work where nothing it
+    /// causes to leave could be shown.
+    fn alo_at_work(
+        &mut self,
+        asked: Vec<crate::alo_at_work::AskedToWork>,
+        _now: std::time::Instant,
+    ) {
+        for one in asked {
+            one.refused();
+        }
+    }
+
     /// The panel this desktop keeps, for the one act that has to change it.
     ///
     /// **Lent mutably, and only here.** Every other seam in this trait hands the compositor
@@ -994,6 +1011,26 @@ struct TheDesktopLane<'a> {
     password_sheet: crate::the_password_sheet::ThePasswordSheet,
 }
 
+/// **Where this person's home and standard folders are, read now**, as the
+/// request is sent: the home the session handed Settings, and the record
+/// `alo-their-folders` wrote when the account was made. [`None`] for a
+/// session with no home, which sends the marker alone. The machine's layout,
+/// never what is in a folder (`alo_instructing::ThePersonsFolders`).
+fn the_persons_folders_to_send(server: &Server) -> Option<alo_instructing::ThePersonsFolders> {
+    let home = server.settings_places.as_ref()?.home()?;
+    let found = alo_their_folders::where_they_are(
+        home,
+        &alo_their_folders::OnThisDisk,
+        &std::path::Path::is_dir,
+    );
+    alo_instructing::ThePersonsFolders::of(
+        home,
+        found
+            .iter()
+            .map(|(folder, at)| (folder.xdg_name(), at.as_path())),
+    )
+}
+
 /// The folders this person has granted, for a request about to be sent.
 ///
 /// A free function rather than a method, because the two call sites are in a
@@ -1232,6 +1269,7 @@ impl LoopInput for TheDesktopLane<'_> {
                 crate::what_a_person_asked_goes_to_the_agent::WhoAsked::TheTerminal,
                 &request,
                 &the_folders_to_send(server),
+                the_persons_folders_to_send(server).as_ref(),
             );
         }
         server.meet_what_was_pressed_on_an_edge();
@@ -1259,6 +1297,10 @@ impl LoopInput for TheDesktopLane<'_> {
         let counts = self.door.asked_to_count();
         self.desktop
             .counted_during_their_commands(counts, std::time::Instant::now());
+        // **And everything alo was asked to work in** (ADR 0143 Q6), the same
+        // way and for the same reason.
+        let work = self.door.asked_to_work();
+        self.desktop.alo_at_work(work, std::time::Instant::now());
         for not_started in server.start_what_was_asked_for_now() {
             // **Said rather than dropped**, the same rule the edge's menu
             // follows two blocks up: a press that reached here and vanished is
@@ -1497,6 +1539,7 @@ impl LoopInput for TheDesktopLane<'_> {
                     &alo_instructing::TheConversationSoFar::nothing(),
                     Some(&asked.window),
                     &the_folders_to_send(server),
+                    the_persons_folders_to_send(server).as_ref(),
                 );
             }
         }
@@ -1516,6 +1559,7 @@ impl LoopInput for TheDesktopLane<'_> {
                     crate::what_a_person_asked_goes_to_the_agent::WhoAsked::ATaskWindow(which),
                     &request,
                     &the_folders_to_send(server),
+                    the_persons_folders_to_send(server).as_ref(),
                 );
             }
         }
@@ -1534,6 +1578,7 @@ impl LoopInput for TheDesktopLane<'_> {
                 &follow_up.earlier,
                 window.as_ref(),
                 &the_folders_to_send(server),
+                the_persons_folders_to_send(server).as_ref(),
             );
         }
         // **And a Stop the person pressed travels the road its request took**

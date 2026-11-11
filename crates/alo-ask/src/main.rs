@@ -193,7 +193,14 @@ fn the_agent_was_asked_at_a_terminal(
     strings: &Strings,
 ) -> ExitCode {
     let (reply, held) =
-        match alo_ask::at_the_agents_door::what_the_agent_says_holding_the_turn(at, typed) {
+        // **Where this person's folders are, read now** — as they press Enter,
+        // for this request only — so the model names their real home rather
+        // than guessing one (`alo_ask::the_persons_folders`).
+        match alo_ask::at_the_agents_door::what_the_agent_says_holding_the_turn(
+            at,
+            typed,
+            alo_ask::the_persons_folders::now().as_ref(),
+        ) {
             Ok(it) => it,
             // The same English, and no fallback, as the road beside this.
             Err(why) => {

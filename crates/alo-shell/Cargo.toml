@@ -115,6 +115,9 @@ alo-tasks = { path = "../alo-tasks" }
 # crate opens nothing and asks nothing; this one builds the value from a task
 # and writes it after the request.
 alo-instructing = { path = "../alo-instructing" }
+# Where a person's standard folders are, read back from the record their
+# account was made with, so a request tells the agent the folders really there.
+alo-their-folders = { path = "../alo-their-folders" }
 # The terminal's pty, its VT state machine and its keyboard conventions, behind
 # an interface of ours
 # ([ADR 0114](../../docs/decisions/0114-the-terminals-engine-is-pinned-and-its-face-is-bundled.md)).

@@ -6,7 +6,7 @@ use std::os::fd::AsFd as _;
 use std::os::unix::net::UnixStream;
 use std::time::Instant;
 
-use alo_instructing::{AnEarlierTurn, TheConversationSoFar, TheWindowOffered};
+use alo_instructing::{AnEarlierTurn, TheConversationSoFar, ThePersonsFolders, TheWindowOffered};
 
 use super::*;
 
@@ -49,7 +49,8 @@ fn a_follow_up_is_read_with_its_earlier_conversation() {
 #[test]
 fn a_first_request_carries_no_earlier_conversation_and_does_not_wait() {
     let started = Instant::now();
-    let (read, _shell) = sent_on_a_socket("list my invoices\nalo-earlier:\nalo-this-window:\n");
+    let (read, _shell) =
+        sent_on_a_socket("list my invoices\nalo-earlier:\nalo-this-window:\nalo-their-folders:\n");
     let read = read.unwrap();
     assert_eq!(read.request, "list my invoices");
     assert!(read.earlier.is_empty());
@@ -156,7 +157,7 @@ fn a_request_about_a_window_carries_it() {
     let window = TheWindowOffered::of("The next chapter", "org.gnome.TextEditor").unwrap();
     let started = Instant::now();
     let (read, _shell) = sent_on_a_socket(&format!(
-        "summarise this\nalo-earlier:\n{}\n",
+        "summarise this\nalo-earlier:\n{}\nalo-their-folders:\n",
         window.written()
     ));
     let read = read.unwrap();
@@ -200,4 +201,58 @@ fn a_fourth_line_that_is_not_a_window_is_refused() {
         let refused = read.unwrap_err();
         assert!(refused.contains("window"), "{refused}");
     }
+}
+
+/// **A request from a current shell says where the person's folders are**,
+/// read off the fifth line into what the model is told about folders — and is
+/// not kept waiting for it, because the shell sent it with the request.
+#[test]
+fn a_request_carries_where_the_persons_folders_are() {
+    let home = ThePersonsFolders::of(
+        Path::new("/var/home/alo"),
+        [("Documents", Path::new("/var/home/alo/Documents"))],
+    )
+    .unwrap();
+    let started = Instant::now();
+    let (read, _shell) = sent_on_a_socket(&format!(
+        "alo-may-reach:/var/home/alo/Documents\nmake a folder called demo in my Documents\n\
+         alo-earlier:\nalo-this-window:\n{}\n",
+        home.written()
+    ));
+    let read = read.unwrap();
+    assert!(
+        started.elapsed() < HOW_LONG_THE_THIRD_LINE_IS_WAITED_FOR,
+        "a current shell's folders waited for a line it had already sent"
+    );
+    assert_eq!(read.request, "make a folder called demo in my Documents");
+    assert_eq!(read.may_reach.home(), Some(&home));
+    assert_eq!(
+        read.may_reach.folders(),
+        ["/var/home/alo/Documents".to_owned()]
+    );
+    let told = read.may_reach.told();
+    assert!(told.contains("home folder is /var/home/alo"), "{told}");
+}
+
+/// **The marker alone is a shell that knows no home**, and a shell from before
+/// the fifth line is still answered, with no home said.
+#[test]
+fn no_home_is_said_by_the_marker_alone_or_by_a_shell_from_before() {
+    let (read, _shell) =
+        sent_on_a_socket("list my invoices\nalo-earlier:\nalo-this-window:\nalo-their-folders:\n");
+    assert_eq!(read.unwrap().may_reach.home(), None);
+    let (read, _shell) = sent_on_a_socket("list my invoices\nalo-earlier:\nalo-this-window:\n");
+    assert_eq!(read.unwrap().may_reach.home(), None);
+}
+
+/// **A fifth line that is not the person's folders is refused in words**, and
+/// nothing is driven.
+#[test]
+fn a_fifth_line_that_is_not_their_folders_is_refused() {
+    let (read, _shell) = sent_on_a_socket(
+        "list my invoices\nalo-earlier:\nalo-this-window:\n\
+         alo-their-folders:{\"home\":\"relative\",\"folders\":{}}\n",
+    );
+    let refused = read.unwrap_err();
+    assert!(refused.contains("folders"), "{refused}");
 }

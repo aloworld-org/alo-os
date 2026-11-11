@@ -234,5 +234,5 @@ pub use refusing::NotGranted;
 pub use sentence::{Sentence, SentenceError};
 pub use verb::{Effect, Requires, Verb, VerbError};
 pub use verbs::{Verbs, VerbsError};
-pub use what_a_command_did::{ItDidNotStart, WhatACommandDid};
+pub use what_a_command_did::{ItDidNotStart, ItDidNotWork, WhatACommandDid};
 pub use words::{EVERY_WORD, WordsError, capability_words, declare_into};

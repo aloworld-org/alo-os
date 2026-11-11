@@ -1095,6 +1095,13 @@ running code. It is built once `CLAUDE.md` carries those words (ADR 0143).*
   indicator will then show *that* the application is sending and cannot count
   what. Counting everything an application does, the person's own use included,
   is not offered at any setting — that would be watching the person.
+  **An application that cannot open a separate window for alo is refused at the
+  default**, and alo says plainly that it cannot work there safely at this
+  setting and names the Settings choice that lets it use the person's own
+  window. **alo's copy is signed in to nothing at first**: the first time alo
+  needs a service such as GitHub, its copy shows the sign-in page, the person
+  signs in themselves, alo never sees the password, and the copy stays signed in
+  until the person signs it out. *Owner, 2026-11-10 (ADR 0143).*
 - ★ **alo OS ships VSCodium, an open-source code editor, installed by default** — the
   owner, 2026-10-31, who chose it. It is the open-source build of the editor
   developers already know, MIT-licensed and verified on Flathub, chosen over

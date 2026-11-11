@@ -84,7 +84,10 @@ The ones the person's own service manager runs it in, under `app.slice`:
 - `app-alo-<identifier>@<n>.service` — what alo OS starts when a person presses
   an application (`alo_launching::the_unit_for`), with `-` written `\x2d`;
 - `app-flatpak-<identifier>-<n>.scope` — what Flatpak moves an application into
-  when it starts;
+  when it starts, **with `-` written `\x2d` there too**: Flatpak escapes the
+  identifier the way systemd does (its `systemd_unit_name_escape`). This line
+  said nothing about escaping until 2026-11-10, and the finder matched the
+  identifier unescaped, so an application with a `-` in its ID went uncounted;
 
 and every control group beneath those. They are read again on each look while a
 command runs, so an application that starts during the command is counted from
@@ -123,6 +126,22 @@ the moment its unit appears.
   named here**, `COUNTED`, which is not ADR 0029's map: ADR 0029 asks what the
   kernel writes down *about a turn*, and this map holds nothing about any turn.
   Any other third map beside a proposed ADR 0029 is still refused.
+
+## Amended 2026-11-10: the same count, of alo's own copy of an application
+
+ADR 0143's owner answers of 2026-10-31 (Q6) and 2026-11-10 put alo, by default,
+in **a copy of an application of its own**, counted apart from the person's
+windows. This record's map and program are unchanged, and nothing is counted
+that a person's command could not already have counted: the desktop holds
+`COUNTED` entries for **alo's copy's control groups only** — the scope it hands
+the copy's process to, `app-alocopy-<id>@<n>.scope`, and the Flatpak scope that
+process is moved into, read off the process itself — for as long as alo holds
+the door's `work-in-alos-copy` connection, and at most fifteen minutes on one
+connection. **The person's own windows are not counted while alo works**, and
+alo's copy is left out of a person's own count. At the setting turned up,
+`work-in-their-window` holds no entry at all. The wire is in
+`docs/contracts/application-door.md`; nothing asks for it until a turn drives
+an application.
 
 ## Alternatives the lane put beside it
 

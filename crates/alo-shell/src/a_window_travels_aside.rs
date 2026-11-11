@@ -26,8 +26,10 @@
 //! # Where it goes is asked every frame
 //!
 //! The card is where the panel lays it out **revealed**
-//! (`crate::where_a_travelling_window_lands`), because the panel is usually
-//! concealed while a window is minimised, and a concealed panel draws no cards.
+//! (`crate::where_a_travelling_window_lands`), because under full screen the
+//! panel is concealed until somebody reaches for it, and a concealed panel
+//! draws no cards. Outside full screen the panel is on the screen, so the
+//! outline ends on a card the person can see (since 2026-11-10).
 //! Asked each frame rather than once: a second window put aside mid-travel
 //! takes the top card and moves the first one down, and the first outline then
 //! ends on the card its window really has. **A window with no card does not

@@ -73,7 +73,11 @@ impl EntryKind {
             | Outcome::StoppedBySleep
             | Outcome::LetGoOutsideTheWindow
             | Outcome::LetGoTheDiskNeededTheRoom
-            | Outcome::LetGoThePersonAskedToForget => Self::Else,
+            | Outcome::LetGoThePersonAskedToForget
+            // **A command that ran and failed is neither of the other two**:
+            // nobody refused it, and it is not a change a file icon may claim
+            // was made. Its own line says it did not work.
+            | Outcome::ACommandDidNotWork => Self::Else,
         }
     }
 }

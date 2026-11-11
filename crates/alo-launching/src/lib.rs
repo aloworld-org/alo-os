@@ -42,6 +42,7 @@
 //! each decision is tested here without a session, which a test against a real
 //! manager could not do on a gate machine.
 
+pub mod alos_copy;
 pub mod how_it_starts;
 pub mod the_command;
 pub mod the_entry;
@@ -49,6 +50,7 @@ pub mod the_environment;
 pub mod the_unit;
 pub mod where_it_is;
 
+pub use alos_copy::{AlosCopy, WITH_A_COPY_OF_THEIR_OWN, alos_copy, the_unit_for_alos_copy};
 pub use how_it_starts::{HowItStarts, WhyItCannotStart, how_it_starts};
 pub use the_command::{Filling, WhyNotACommand, the_command_in};
 pub use the_entry::TheEntry;

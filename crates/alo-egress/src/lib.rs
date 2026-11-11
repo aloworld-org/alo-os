@@ -115,6 +115,7 @@
 
 #![doc(html_root_url = "https://github.com/aloworld-org/alo-os")]
 
+pub mod at_work;
 pub mod departing;
 pub mod destination;
 pub mod during;
@@ -128,12 +129,14 @@ pub mod reported;
 pub mod showing;
 pub mod telling;
 pub mod underway;
+pub mod while_alo_works;
 pub mod while_it_runs;
 pub mod words;
 
 #[cfg(test)]
 mod testing;
 
+pub use at_work::{AloAtWork, HowItIsShown};
 pub use departing::Departing;
 pub use destination::{Destination, DestinationError};
 pub use during::{DuringTheirCommand, NotAnApplicationsLine};
@@ -147,5 +150,6 @@ pub use reported::Reported;
 pub use showing::Showing;
 pub use telling::Telling;
 pub use underway::Underway;
+pub use while_alo_works::WhileAloWorks;
 pub use while_it_runs::WhileItRuns;
 pub use words::{Word, WordsError, declare_into, egress_words};

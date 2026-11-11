@@ -66,3 +66,41 @@ fn a_name_systemd_would_refuse_for_its_length_is_not_made() {
     assert_eq!(the_unit_for(&"-".repeat(70), 1), None);
     assert!(the_unit_for(&"a".repeat(200), 1).is_some());
 }
+
+/// **A Flatpak application with a `-` in its ID is found in its own scope.**
+///
+/// The name is the one Flatpak writes: `flatpak_run_in_transient_unit` escapes
+/// the ID with `systemd_unit_name_escape`, so LibreWolf's
+/// `io.gitlab.librewolf-community` runs in a scope whose `-` is `\x2d`. Before
+/// 2026-11-10 the finder matched the ID unescaped, and this answered false.
+#[test]
+fn a_flatpak_scope_is_matched_by_the_identifier_flatpak_escaped() {
+    let identifier = "io.gitlab.librewolf-community";
+    assert!(is_a_unit_of(
+        r"app-flatpak-io.gitlab.librewolf\x2dcommunity-2716289303.scope",
+        identifier
+    ));
+    // The unescaped spelling is not a name Flatpak writes.
+    assert!(!is_a_unit_of(
+        "app-flatpak-io.gitlab.librewolf-community-2716289303.scope",
+        identifier
+    ));
+    // And an application whose ID merely begins the same is not this one.
+    assert!(!is_a_unit_of(
+        r"app-flatpak-io.gitlab.librewolf\x2dcommunity\x2dbeta-1.scope",
+        identifier
+    ));
+}
+
+/// An ID with nothing to escape is matched as it always was.
+#[test]
+fn a_flatpak_scope_with_nothing_to_escape_is_still_found() {
+    assert!(is_a_unit_of(
+        "app-flatpak-org.mozilla.Thunderbird-4242.scope",
+        "org.mozilla.Thunderbird"
+    ));
+    assert!(!is_a_unit_of(
+        "app-flatpak-org.mozilla.Thunderbird-x.scope",
+        "org.mozilla.Thunderbird"
+    ));
+}

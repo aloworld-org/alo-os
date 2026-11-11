@@ -86,6 +86,10 @@ mod where_an_application_runs;
 #[cfg(target_os = "linux")]
 mod the_kernels_counter;
 
+/// alo's own copies of applications, counted apart from the person's (ADR 0143).
+#[cfg(target_os = "linux")]
+mod alos_copies;
+
 /// What this process does on the machine alo OS is for.
 #[cfg(target_os = "linux")]
 mod running {
@@ -205,6 +209,18 @@ mod running {
             );
         }
         desktop.the_machine_is_told_by(told, offers.as_told());
+        // **alo's own copies are started over a session bus of their own**,
+        // drawing on the display this desktop serves (ADR 0143 Q6).
+        match zbus::blocking::Connection::session() {
+            Ok(session) => desktop.alos_copies_start_by(crate::alos_copies::AlosCopies::on(
+                session.into_inner(),
+                &alo_shell::the_display_a_client_reaches(&said.runtime, THE_SOCKET),
+            )),
+            Err(why) => eprintln!(
+                "alo-desktop: no session bus, so alo cannot start a copy of its own of any \
+                 application and will say so when asked: {why}"
+            ),
+        }
 
         let started = std::time::Instant::now();
         let mut last = None;
@@ -394,6 +410,10 @@ mod running {
         /// **What applications send while a person's commands run**, counted
         /// and put on [`Self::indicator`] (ADR 0148).
         counting: alo_shell::counting_during_their_commands::CountingForCommands,
+        /// **What an application sends while alo works in it**, on
+        /// [`Self::indicator`] (ADR 0143 Q6). Nothing asks for this until a
+        /// turn drives an application (the Demo 2 plan's stage 4).
+        working: alo_shell::alo_at_work::WorkingInApplications,
         /// Where this machine's desktop entries are, for the name a person
         /// calls an application a command asked to count.
         entries: Vec<PathBuf>,
@@ -461,6 +481,22 @@ mod running {
         owed_a_reading: Option<alo_shell::WhatTheMachineOffersNow>,
     }
 
+    /// alo's copies before the session bus is reached: none can start, and
+    /// each ask is answered so.
+    struct NoWayToStartACopy;
+
+    impl alo_shell::alo_at_work::StartsAlosCopy for NoWayToStartACopy {
+        fn started(&mut self, _: &str) -> Result<(), alo_shell::alo_at_work::NoCopy> {
+            Err(alo_shell::alo_at_work::NoCopy::CouldNotStart)
+        }
+        fn groups_of(&mut self, _: &str) -> Vec<u64> {
+            Vec::new()
+        }
+        fn every_copys_groups(&mut self) -> std::collections::BTreeSet<u64> {
+            std::collections::BTreeSet::new()
+        }
+    }
+
     impl ThisPersonsDesktop {
         /// Where readings of the machine come from from now on, and the first.
         fn the_machine_is_told_by(
@@ -470,6 +506,11 @@ mod running {
         ) {
             self.told_about_the_machine = Some(told);
             self.owed_a_reading = Some(first);
+        }
+
+        /// How alo's own copies of applications are started from now on.
+        fn alos_copies_start_by(&mut self, copies: crate::alos_copies::AlosCopies) {
+            self.working = alo_shell::alo_at_work::WorkingInApplications::with(Box::new(copies));
         }
 
         /// Everything a desktop is, read once at the start.
@@ -685,6 +726,12 @@ mod running {
                     crate::the_kernels_counter::TheKernels::on_this_machine(),
                     Box::new(crate::where_an_application_runs::UnderTheAppSlice::for_this_person()),
                 ),
+                // **No copy can start until the session bus is reached**, so
+                // until `Self::alos_copies_start_by` is told one, alo's own
+                // copy is answered *could not start*.
+                working: alo_shell::alo_at_work::WorkingInApplications::with(Box::new(
+                    NoWayToStartACopy,
+                )),
                 entries: crate::what_this_machine_offers::WhereToLook::on_this_machine().entries,
                 indicating,
                 daemon,
@@ -1375,6 +1422,35 @@ mod running {
             }
             self.counting
                 .looked_at(&mut self.indicator, now, std::time::SystemTime::now());
+        }
+
+        /// **What an application sends while alo works in it** (ADR 0143 Q6):
+        /// each new ask is taken in under the name a person calls the
+        /// application, and all of alo's work is looked at, on this desktop's
+        /// own indicator, with the same counter a person's commands use.
+        fn alo_at_work(
+            &mut self,
+            asked: Vec<alo_shell::alo_at_work::AskedToWork>,
+            now: std::time::Instant,
+        ) {
+            let wall = std::time::SystemTime::now();
+            if !asked.is_empty() {
+                let installed = alo_installed::read(&self.entries);
+                for one in asked {
+                    let called = installed
+                        .knows(one.application())
+                        .map(|application| application.shown(&self.strings));
+                    self.working.taken_in(
+                        one,
+                        called.as_deref(),
+                        &mut self.counting,
+                        &mut self.indicator,
+                        (now, wall),
+                    );
+                }
+            }
+            self.working
+                .looked_at(&mut self.counting, &mut self.indicator, (now, wall));
         }
 
         /// The panel this desktop keeps, lent for the one act that changes it.

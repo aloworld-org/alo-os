@@ -5,7 +5,8 @@ Status: public surface. The socket and its first line are
 (2026-10-14); the folders line was added on 2026-10-24; the earlier
 conversation was added on 2026-10-28 by
 [ADR 0138](../decisions/0138-a-follow-up-is-sent-with-the-conversation-so-far.md);
-the window offered was added on 2026-11-10.
+the window offered was added on 2026-11-10, and where the person's folders are
+the same day.
 This document was written on 2026-10-28: until then the lines were described only
 in code, in two places that held each other to nothing.
 
@@ -21,7 +22,7 @@ the agent is `crates/alo-agent`'s `what_the_person_sent.rs`.
 
 ## What the shell writes
 
-Up to four lines, each ending in a newline, written at once:
+Up to five lines, each ending in a newline, written at once:
 
 | Line | When | Shape |
 |---|---|---|
@@ -29,10 +30,40 @@ Up to four lines, each ending in a newline, written at once:
 | 2 | always | **the request**, in the person's own words, on one line — a line break the person typed is written as a space |
 | 3 | always, from a shell that knows this line | `alo-earlier:` and the conversation so far, or nothing after the marker for a first request |
 | 4 | always, from a shell that knows this line | `alo-this-window:` and the window the person offered, or nothing after the marker for a request about no window |
+| 5 | always, from a shell that knows this line | `alo-their-folders:` and where the person's home and standard folders are, or nothing after the marker where the shell knows no home |
 
 The folders are **a hint for the model, never a capability**: every verb is
 still decided by `alo-agentd` against the grants it reads itself. So is the
 window.
+
+### Where the person's folders are
+
+*Added 2026-11-10, after a boot walk where the model named
+`/Users/username/Documents` on a machine whose home is `/var/home/alo`.*
+
+One JSON object on one line after the marker, holding exactly two fields:
+
+```text
+alo-their-folders:{"home":"/var/home/anna","folders":{"Documents":"/var/home/anna/Dokumente"}}
+```
+
+| Field | Means |
+|---|---|
+| `home` | The person's home folder, as their session names it: an absolute path |
+| `folders` | Each standard folder by what it is for (`Documents`, `Downloads`, `Pictures`) and where it is, under the name it really has — read from `~/.config/user-dirs.dirs`, the record `alo-their-folders` writes when the account is made. Only folders the record names and that exist are listed; at most 16 (`alo_instructing::THE_MOST_FOLDERS`) |
+
+**When.** Read on the person's side **at the moment they send the request**, for that
+request only. **It is the machine's layout and never what is in a folder.** Like the
+folders granted, it **allows nothing**: the model is told where things are, that it
+must not name another computer's layout, and that what it may reach is decided as for
+any other path (`alo_instructing::ThePersonsFolders::told`). It reaches a provider
+only inside the question.
+
+**Refused, in words, and nothing driven:** a fifth line that does not begin with
+`alo-their-folders:`, one that is not the JSON above or has any other field, a home
+or a folder that is not an absolute path, and a line over
+`alo_instructing::THE_LONGEST_FOLDERS_LINE` bytes. A shell that sends four lines is
+answered with no home said, after the fifth is waited for briefly.
 
 ### The window offered
 

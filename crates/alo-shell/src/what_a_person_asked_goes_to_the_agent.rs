@@ -47,7 +47,7 @@ use std::path::{Path, PathBuf};
 use std::sync::mpsc::{Receiver, Sender, TryRecvError, channel};
 use std::time::Duration;
 
-use alo_instructing::{TheConversationSoFar, TheWindowOffered};
+use alo_instructing::{TheConversationSoFar, ThePersonsFolders, TheWindowOffered};
 
 /// Where a person's words are handed to their agent.
 ///
@@ -181,8 +181,25 @@ impl TheAgentsDoor {
     /// the request so the model is not left guessing a path —
     /// `crate::what_the_agent_may_reach` holds why this side is the one that
     /// says so, and why naming a wrong one costs a round and nothing else.
-    pub fn ask(&self, who: WhoAsked, request: &str, may_reach: &[std::path::PathBuf]) {
-        self.ask_following(who, request, &TheConversationSoFar::nothing(), may_reach);
+    ///
+    /// `their_folders` is where this person's home and standard folders are,
+    /// read as they pressed Enter (`alo_instructing::ThePersonsFolders`), so
+    /// the model names their real home rather than guessing one. A hint, as
+    /// the folders granted are, and never a capability.
+    pub fn ask(
+        &self,
+        who: WhoAsked,
+        request: &str,
+        may_reach: &[std::path::PathBuf],
+        their_folders: Option<&ThePersonsFolders>,
+    ) {
+        self.ask_following(
+            who,
+            request,
+            &TheConversationSoFar::nothing(),
+            may_reach,
+            their_folders,
+        );
     }
 
     /// **Hand over a follow-up**, with the conversation so far: [`Self::ask`]
@@ -200,8 +217,9 @@ impl TheAgentsDoor {
         request: &str,
         earlier: &TheConversationSoFar,
         may_reach: &[std::path::PathBuf],
+        their_folders: Option<&ThePersonsFolders>,
     ) {
-        self.ask_about(who, request, earlier, None, may_reach);
+        self.ask_about(who, request, earlier, None, may_reach, their_folders);
     }
 
     /// **Hand over a request about a window the person offered** with *Help
@@ -219,17 +237,19 @@ impl TheAgentsDoor {
         earlier: &TheConversationSoFar,
         window: Option<&TheWindowOffered>,
         may_reach: &[std::path::PathBuf],
+        their_folders: Option<&ThePersonsFolders>,
     ) {
         let socket = self.socket.clone();
         let request = request.to_owned();
-        // **Both lines, always**: the conversation's marker and the window's,
-        // each alone when there is nothing after it, so a current agent never
-        // waits for a line that is not coming
+        // **Every line, always**: the conversation's marker, the window's and
+        // the person's folders', each alone when there is nothing after it, so
+        // a current agent never waits for a line that is not coming
         // (`docs/contracts/asking-socket.md`).
         let earlier = format!(
-            "{}\n{}",
+            "{}\n{}\n{}",
             earlier.written(),
-            TheWindowOffered::the_line_for(window)
+            TheWindowOffered::the_line_for(window),
+            ThePersonsFolders::the_line_for(their_folders)
         );
         let may_reach: Vec<std::path::PathBuf> = may_reach.to_vec();
         let posting = self.posting.clone();
