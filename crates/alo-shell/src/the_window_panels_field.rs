@@ -6,7 +6,7 @@
 //! (`docs/design/the-window-controls.md`, *How Help is asked next*). So the
 //! panel's alo row is a field, and reaching it — by the arrows, or a click —
 //! is what focuses it. This file is only the field: what is typed, the caret,
-//! and what one [`AFieldKey`] does to both. Whether the field has the keyboard,
+//! and what one [`AFieldKey`](crate::the_window_panels_field::AFieldKey) does to both. Whether the field has the keyboard,
 //! and what a sent request becomes, are `crate::a_key_reaches_the_window_field`'s
 //! and `crate::alo_in_a_window`'s.
 //!
