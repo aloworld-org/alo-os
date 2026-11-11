@@ -14,7 +14,7 @@ use smithay::utils::Size;
 
 use super::{Drawn, LOGICAL, every_scale, held, in_pixels};
 use crate::a_picture_hashed::Hashed;
-use crate::bar_raster::{TheBarOnTheDisplay, TheLaunchersWords, picture};
+use crate::bar_raster::{TheBarOnTheDisplay, TheBarOpens, TheLaunchersWords, picture};
 use crate::the_bar_finds::{AResult, WhatARowDoes};
 
 /// Four applications found.
@@ -57,6 +57,7 @@ fn the_bar_draws_the_pixels_it_drew_before() {
                 },
                 asks: None,
                 artwork: None,
+                opens: TheBarOpens::InTheMiddle,
             },
             look.palette().unwrap(),
             [0xFA, 0xF7, 0xF2],
