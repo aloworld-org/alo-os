@@ -336,6 +336,13 @@ impl ATask {
         self.stopping = Stopping::stopped(changed);
     }
 
+    /// **The Stop the person pressed could not be delivered**, so this machine
+    /// cannot confirm the work ended. The task says so rather than *stopped*
+    /// ([`Stopping::CouldNotBeConfirmed`]).
+    pub fn its_stop_could_not_be_confirmed(&mut self) {
+        self.stopping = self.stopping.clone().could_not_be_confirmed();
+    }
+
     /// Which word says what is happening in this task.
     ///
     /// **The model chooses the word and the shell says it.** Which of the five
@@ -360,6 +367,7 @@ impl ATask {
     pub fn what_is_happening(&self) -> alo_strings::Word {
         match self.stopping {
             Stopping::Asked => crate::words::STOPPING,
+            Stopping::CouldNotBeConfirmed => crate::words::STOP_NOT_CONFIRMED,
             Stopping::Stopped { .. } => crate::words::STOPPED,
             Stopping::NobodyAsked => {
                 if self.is_waiting_for_the_person() {

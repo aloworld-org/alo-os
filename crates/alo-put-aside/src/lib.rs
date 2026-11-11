@@ -40,6 +40,7 @@
 #![cfg_attr(not(test), forbid(unsafe_code))]
 
 pub mod a_place_groups_its_windows;
+pub mod a_task_put_aside;
 pub mod a_safe_name;
 pub mod alo_at_work;
 pub mod how_far_alo_has_got;
@@ -63,6 +64,7 @@ pub mod where_it_goes_back;
 pub mod whether_it_is_private;
 
 pub use a_safe_name::SafeName;
+pub use a_task_put_aside::{ATaskAside, Aside, TaskNumber};
 pub use alo_at_work::AtWork;
 pub use panel::{NotPutAside, Panel};
 pub use preview::Preview;

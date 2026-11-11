@@ -114,3 +114,37 @@ fn a_task_nobody_stopped_is_neither() {
     assert!(!running.is_waiting());
     assert_eq!(running.what_changed(), None);
 }
+
+/// **A Stop that could not be delivered is neither stopped nor quietly
+/// forgotten.** It says so, it is not an end, and it names no changes —
+/// because nothing can say the work is over.
+#[test]
+fn a_stop_that_could_not_be_delivered_is_not_called_stopped() {
+    let unconfirmed = Stopping::nobody_asked().asked().could_not_be_confirmed();
+
+    assert!(unconfirmed.is_unconfirmed());
+    assert!(!unconfirmed.has_stopped(), "an undelivered Stop was called stopped");
+    assert!(!unconfirmed.is_waiting());
+    assert_eq!(unconfirmed.what_changed(), None);
+}
+
+/// **Only an asked Stop can fail to be delivered.** Work nobody asked to stop,
+/// and work that has already ended, are left exactly as they were.
+#[test]
+fn only_an_asked_stop_can_go_unconfirmed() {
+    assert_eq!(
+        Stopping::nobody_asked().could_not_be_confirmed(),
+        Stopping::nobody_asked()
+    );
+    let ended = Stopping::stopped(two_changes());
+    assert_eq!(ended.clone().could_not_be_confirmed(), ended);
+}
+
+/// **Pressing Stop again after it could not be delivered asks again**, and the
+/// agent going afterwards still ends it.
+#[test]
+fn stop_can_be_pressed_again_after_it_went_unconfirmed() {
+    let unconfirmed = Stopping::nobody_asked().asked().could_not_be_confirmed();
+
+    assert!(unconfirmed.asked().is_waiting(), "the second press did nothing");
+}

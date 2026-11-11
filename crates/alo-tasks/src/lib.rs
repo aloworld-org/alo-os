@@ -20,12 +20,14 @@
 #![forbid(unsafe_code)]
 
 pub mod activity;
+pub mod card_words;
 pub mod answers_given;
 pub mod changed;
 pub mod conversation;
 pub mod conversation_layout;
 pub mod layout;
 pub mod measures;
+pub mod on_its_card;
 pub mod permissions;
 pub mod scrolling;
 pub mod stopping;
@@ -40,6 +42,7 @@ pub use changed::WhatChanged;
 pub use conversation::{TheConversation, Turn, WhoSaidIt};
 pub use conversation_layout::{APlacedBlock, TheBlocks, WhoseBlock};
 pub use layout::{ARow, TheControls, TheRows, TooSmall};
+pub use on_its_card::{HowFar, HowItStands, LastApproved, OnItsCard, TheCardsButton};
 pub use permissions::{Answered, ThePermissions};
 pub use scrolling::TheScroll;
 pub use stopping::Stopping;

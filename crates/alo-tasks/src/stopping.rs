@@ -48,6 +48,19 @@ pub enum Stopping {
         /// real answer and is said rather than left blank.
         changed: WhatChanged,
     },
+    /// A person pressed Stop and **this machine could not deliver it**, so it
+    /// cannot say whether the work has ended.
+    ///
+    /// `docs/features.md` names this state in so many words — *stop requested
+    /// with no confirmation when the machine cannot confirm* — and it is the
+    /// third honest answer beside the two above. Until 2026-11-10 a Stop the
+    /// shell could not hand to the agent was reported as *stopped*, which is
+    /// the one claim a Stop must never make while it might be false.
+    ///
+    /// **Not an end.** The work may still be running, so a window in this
+    /// state still asks before it closes, and if the agent does go after all
+    /// the task becomes [`Self::Stopped`] like any other.
+    CouldNotBeConfirmed,
 }
 
 impl Stopping {
@@ -70,6 +83,10 @@ impl Stopping {
     pub fn asked(self) -> Self {
         match self {
             Self::NobodyAsked | Self::Asked => Self::Asked,
+            // **Pressing Stop again after it could not be delivered asks
+            // again**: the person is the only one who can try once more, and a
+            // press that did nothing would be a control that lies.
+            Self::CouldNotBeConfirmed => Self::Asked,
             already @ Self::Stopped { .. } => already,
         }
     }
@@ -94,6 +111,24 @@ impl Stopping {
         matches!(self, Self::Asked)
     }
 
+    /// The Stop could not be delivered, so nothing can say it ended.
+    ///
+    /// Only a Stop that was asked can fail to be delivered; one nobody asked
+    /// for, or work already over, is left as it was.
+    #[must_use]
+    pub fn could_not_be_confirmed(self) -> Self {
+        match self {
+            Self::Asked => Self::CouldNotBeConfirmed,
+            other => other,
+        }
+    }
+
+    /// Whether a Stop was asked for and this machine cannot say it worked.
+    #[must_use]
+    pub const fn is_unconfirmed(&self) -> bool {
+        matches!(self, Self::CouldNotBeConfirmed)
+    }
+
     /// What was changed before the work ended, once it has.
     ///
     /// [`None`] while it has not. A caller that answered *nothing changed*
@@ -102,7 +137,7 @@ impl Stopping {
     #[must_use]
     pub const fn what_changed(&self) -> Option<&WhatChanged> {
         match self {
-            Self::NobodyAsked | Self::Asked => None,
+            Self::NobodyAsked | Self::Asked | Self::CouldNotBeConfirmed => None,
             Self::Stopped { changed } => Some(changed),
         }
     }

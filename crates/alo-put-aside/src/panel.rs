@@ -20,6 +20,7 @@
 use alo_canvas::{Place, Zoom};
 use alo_dock::window::{Window, WindowId};
 
+use crate::a_task_put_aside::{ATaskAside, Aside, TaskNumber};
 use crate::preview::Preview;
 use crate::showing::{Chosen, HowItShows};
 use crate::the_collapse_choice_per_place::TheCollapseChoice;
@@ -58,6 +59,15 @@ pub struct Panel {
     /// about the Place where they keep their reading.
     /// `crate::the_collapse_choice_per_place` carries why absent means expanded.
     chosen: TheCollapseChoice,
+    /// **Windows and tasks together, most recently put aside first** — the
+    /// owner's approved design `23:2`: *newest put aside at the top, windows and
+    /// tasks together, because the panel answers "what did I put aside"*.
+    ///
+    /// The windows' own order is [`Self::previews`]', and this agrees with it by
+    /// construction: every door that changes one changes the other, and a window
+    /// is only ever put first. Kept beside rather than instead of the previews so
+    /// that every reader of the windows alone reads them unchanged.
+    order: Vec<OneAside>,
 }
 
 impl Panel {
@@ -88,6 +98,7 @@ impl Panel {
         }
         self.previews
             .insert(0, Preview::of(window, zoom, place, privacy));
+        self.order.insert(0, OneAside::Window(window.id()));
         Ok(())
     }
 
@@ -105,6 +116,8 @@ impl Panel {
             .iter()
             .position(|preview| preview.window() == window)
             .ok_or(NotPutAside::ItIsNotThere)?;
+        self.order
+            .retain(|one| *one != OneAside::Window(window));
         Ok(self.previews.remove(at))
     }
 
@@ -191,7 +204,7 @@ impl Panel {
     /// What this panel shows **on this Place**.
     #[must_use]
     pub fn showing(&self, place: Place) -> HowItShows {
-        HowItShows::of(self.previews.len(), self.chosen.on(place))
+        HowItShows::of(self.holding_everything(), self.chosen.on(place))
     }
 
     /// How many Places the person has collapsed the panel on.
@@ -204,4 +217,86 @@ impl Panel {
     pub fn how_many_places_are_collapsed(&self) -> usize {
         self.chosen.how_many_are_collapsed()
     }
+
+    /// **Put a running task aside**, remembering the Place it was asked on.
+    ///
+    /// Nothing about the task's work is touched, and nothing here could touch
+    /// it: the panel holds a number and a Place. *Minimising keeps it running*
+    /// is true because the only thing that ends a task lives in another crate.
+    ///
+    /// # Errors
+    ///
+    /// [`NotPutAside::ItIsAlreadyThere`] if this task is in the panel already —
+    /// two cards for one task would be a card that cannot be got rid of.
+    pub fn put_a_task_aside(&mut self, task: TaskNumber, place: Place) -> Result<(), NotPutAside> {
+        if self.holds_the_task(task) {
+            return Err(NotPutAside::ItIsAlreadyThere);
+        }
+        self.order
+            .insert(0, OneAside::Task(ATaskAside::of(task, place)));
+        Ok(())
+    }
+
+    /// Take a task back out, and say which Place it goes back to.
+    ///
+    /// # Errors
+    ///
+    /// [`NotPutAside::ItIsNotThere`] if the panel does not hold it.
+    pub fn bring_a_task_back(&mut self, task: TaskNumber) -> Result<ATaskAside, NotPutAside> {
+        let at = self
+            .order
+            .iter()
+            .position(|one| matches!(one, OneAside::Task(aside) if aside.task() == task))
+            .ok_or(NotPutAside::ItIsNotThere)?;
+        match self.order.remove(at) {
+            OneAside::Task(aside) => Ok(aside),
+            OneAside::Window(_) => Err(NotPutAside::ItIsNotThere),
+        }
+    }
+
+    /// Whether this task is in the panel.
+    #[must_use]
+    pub fn holds_the_task(&self, task: TaskNumber) -> bool {
+        self.tasks().any(|aside| aside.task() == task)
+    }
+
+    /// The tasks in the panel, most recently put aside first.
+    pub fn tasks(&self) -> impl Iterator<Item = ATaskAside> + '_ {
+        self.order.iter().filter_map(|one| match one {
+            OneAside::Task(aside) => Some(*aside),
+            OneAside::Window(_) => None,
+        })
+    }
+
+    /// **Everything in the panel, windows and tasks together**, most recently
+    /// put aside first — the order the rail draws them in.
+    #[must_use]
+    pub fn everything(&self) -> Vec<Aside<'_>> {
+        self.order
+            .iter()
+            .filter_map(|one| match one {
+                OneAside::Task(aside) => Some(Aside::ATask(*aside)),
+                OneAside::Window(id) => self
+                    .previews
+                    .iter()
+                    .find(|preview| preview.window() == *id)
+                    .map(Aside::AWindow),
+            })
+            .collect()
+    }
+
+    /// How many windows **and tasks** are in the panel.
+    #[must_use]
+    pub fn holding_everything(&self) -> usize {
+        self.order.len()
+    }
+}
+
+/// One entry in the panel's order.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum OneAside {
+    /// A window, whose preview is in `Panel::previews`.
+    Window(WindowId),
+    /// A task.
+    Task(ATaskAside),
 }
