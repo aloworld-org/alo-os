@@ -137,7 +137,9 @@ fn an_application_with_its_own_header_gets_the_controls_it_lacks() {
     assert_eq!(edge.the_room_a_title_has(), 0);
     // The last one ends where the shell's Close ends: the trailing inset.
     assert_eq!(
-        edge.controls.last().map(|last| last.target.loc.x + last.target.size.w),
+        edge.controls
+            .last()
+            .map(|last| last.target.loc.x + last.target.size.w),
         Some(edge.region.loc.x + edge.region.size.w - THE_TRAILING_INSET)
     );
 }
