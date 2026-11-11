@@ -52,6 +52,11 @@ fn hashed(panel: &PanelPicture) -> u64 {
 /// against the tree this change was first branched from (`56abab9a`) and again
 /// against `main` at `a65c898e`, which gave the same two, and this test
 /// repeats the comparison on every build.
+///
+/// **Re-taken on 2026-11-11**, deliberately: the control and each card stopped
+/// being accent squares among the solids (`crate::panel_cards` draws them), so
+/// what the panel paints as solids is the rail alone. Taken from this test's
+/// own failure message on that tree, and nothing else in the picture moved.
 #[test]
 fn at_one_hundred_the_panel_draws_the_bytes_it_drew_before() {
     for (edge, before) in [
@@ -76,7 +81,7 @@ fn at_one_hundred_the_panel_draws_the_bytes_it_drew_before() {
 }
 
 /// The hash of the right-hand panel before this change. See the test above.
-const RIGHT_BEFORE: u64 = 0xf495_5c30_1e63_d754;
+const RIGHT_BEFORE: u64 = 0xa4c4_621e_5807_ce77;
 /// The hash of the left-hand panel before this change. See the test above.
 const LEFT_BEFORE: u64 = 0x6a51_474c_45fb_bde6;
 

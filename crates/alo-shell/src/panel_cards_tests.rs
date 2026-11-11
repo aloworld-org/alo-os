@@ -192,7 +192,7 @@ fn an_application_with_an_icon_is_marked_by_it() {
 #[test]
 fn two_windows_of_two_applications_are_two_different_cards() {
     let drawn = tiles(
-        &holding(&["org.kde.dolphin", "org.mozilla.firefox"]),
+        &holding(&["Docs", "Mail"]),
         WhichEdge::Right,
         &TheArtwork::none(),
     );
