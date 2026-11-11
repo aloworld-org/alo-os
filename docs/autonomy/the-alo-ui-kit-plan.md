@@ -184,7 +184,7 @@ sizes, taken from `main` and committed.
 
 ### 2. `alo-drawing`: alo's pixels and text, out of the shell
 
-**Status:** not started. **Size:** M. **Waits on:** task 1.
+**Status:** in progress since 2026-11-11, in steps that each keep task 1's hashes. **Step 1** (the branch `alo-drawing-holds-the-display-scale`): the crate exists, `display_scale.rs` is in it, and `crates/alo-drawing/tests/it_never_reaches_a_compositor.rs` refuses any Smithay, Wayland, calloop, xkbcommon, libseat or D-Bus crate anywhere in what it pulls in, read off `Cargo.lock`. **Step 2** (`alo-drawing-holds-the-pictures`): `Solid`, `Inked`, `Washed` and `painted_flat.rs` with an area of the crate's own; the shell converts at `crate::painted::on_the_frame`. **Still to move:** the text stack and bundled fonts, `settings_canvas.rs` and `settings_type.rs`. **Size:** M. **Waits on:** task 1.
 
 **For the person:** nothing visible yet; it is what makes an alo application
 draw exactly as the desktop does. **Moves:** `painted.rs`'s three picture
