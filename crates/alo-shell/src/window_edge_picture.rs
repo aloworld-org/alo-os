@@ -62,6 +62,9 @@ pub struct OverTheEdge<'a> {
         &'a crate::window_menu::WindowMenu,
         crate::window_menu_paint::PointingAtTheMenu,
     )>,
+    /// What is typed in that panel's field, *alo · Ask about this window…*,
+    /// once anything is (`crate::window_field_paint`).
+    pub field: Option<crate::window_field_paint::TheFieldAsTyped<'a>>,
     /// Why the whole title, or a control's name, is being shown.
     pub showing: Option<crate::window_edge_tooltip::Because>,
     /// alo, while it is at work in this window: the teal edge and the band
@@ -267,7 +270,14 @@ impl EdgePicture {
         let (on_top, on_top_inked) = over.menu.map_or_else(
             || (Vec::new(), Vec::new()),
             |(menu, pointing)| {
-                crate::window_menu_paint::the_panel_drawn(menu, pointing, fonts, scale, output)
+                crate::window_menu_paint::the_panel_drawn(
+                    menu,
+                    pointing,
+                    over.field,
+                    fonts,
+                    scale,
+                    output,
+                )
             },
         );
 

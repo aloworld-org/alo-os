@@ -190,12 +190,12 @@ fn help_opens_nothing_while_alo_may_not_be_asked_or_for_a_window_not_shown() {
     let (_runtime, mut server, _which) = a_task_about(&notes, "alo-help-refused");
     server.alo_may_be_asked(false);
     assert!(!server.help_with_this_window(&notes));
-    assert!(!server.composer().has_the_keyboard());
+    assert!(server.whose_window_field_has_the_keyboard().is_none());
     server.alo_may_be_asked(true);
     assert!(
         !server.help_with_this_window(&notes),
         "a window not on the screen was offered"
     );
-    assert!(server.the_window_offered_reads().is_none());
+    assert!(server.whose_window_field_has_the_keyboard().is_none());
     assert!(server.take_what_was_asked_about_a_window().is_empty());
 }

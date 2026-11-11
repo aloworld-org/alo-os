@@ -473,7 +473,7 @@ pub const EVERY_NAME_A_READER_SAYS: usize = 36;
 /// panel; `MAXIMISE`, `RESTORE`, `FULL_SCREEN`, `EXIT_FULL_SCREEN`, `LEFT` and
 /// `RIGHT`, its choices; and `LEFT_HALF_PREVIEW`, `RIGHT_HALF_PREVIEW` and
 /// `NO_ROOM_IN_HALF`, what a placement preview says. Fifteen since
-/// 2026-11-10: `HELP_WITH_THIS_WINDOW`, the panel's choice that asks alo, and
+/// 2026-11-10: `ASK_ABOUT_THIS_WINDOW`, the panel's field that asks alo, and
 /// `STOP`, the button on the band alo draws across a window it is working in
 /// (`alo_shell`'s `alo_in_a_window`). Nothing here says any of them.
 ///

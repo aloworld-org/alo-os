@@ -272,9 +272,11 @@ impl TheKeyboardOnTheEdge {
                 *self = Self::Nowhere;
                 WhatTheEdgeKeyDid::ARowRuns(WhatARowDoes::FullScreen)
             }
-            // **And Help with this window, which hands the keys to the
-            // composer** it opens: the person chose to type a request, so the
-            // keyboard is there rather than back on Window actions.
+            // **And Help with this window, whose field takes the keys**: the
+            // caller's `Server::help_with_this_window` puts the keyboard in
+            // the panel's field, so it is not left on Window actions. While
+            // alo may be asked, keys on that row reach the field before they
+            // reach this machine (`crate::a_key_reaches_the_window_field`).
             WhatTheKeyDid::ItRuns {
                 does: WhatARowDoes::HelpWithThisWindow,
                 ..

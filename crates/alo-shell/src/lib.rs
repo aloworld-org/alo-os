@@ -90,6 +90,7 @@ mod a_frame_per_display;
 pub mod a_key_fills_in_a_provider;
 pub mod a_key_reaches_a_task_window;
 mod a_key_reaches_a_windows_band;
+mod a_key_reaches_the_window_field;
 mod a_key_reaches_settings;
 mod a_key_reaches_the_bar;
 mod a_key_reaches_the_docks_surfaces;
@@ -137,6 +138,8 @@ mod a_window_raised;
 mod a_window_travels_aside;
 /// The window a person offered alo, and the window each task works in.
 pub mod alo_in_a_window;
+/// The words typed into a window panel's field, and the caret among them.
+pub mod the_window_panels_field;
 mod alo_in_applications_in_settings;
 mod alo_in_the_terminal_in_settings;
 /// The teal edge and the band with Stop on a window alo is working in.
@@ -755,6 +758,8 @@ mod window_edge_title;
 mod window_edge_tooltip;
 mod window_edge_who_draws;
 mod window_full_screen;
+/// The window panel's field, *alo · Ask about this window…*, drawn.
+pub mod window_field_paint;
 mod window_maximize;
 mod window_menu;
 mod window_menu_keys;

@@ -163,6 +163,12 @@ pub(crate) fn a_key_reaches_a_windows_band(
     else {
         return server.libinput_update(InputUpdate::Event(event), extent);
     };
+    // **In the panel's field, every key is the field's**, through the seat's
+    // layout, and none reaches the application
+    // (`crate::a_key_reaches_the_window_field`).
+    if server.whose_window_field_has_the_keyboard().is_some() {
+        return crate::a_key_reaches_the_window_field::a_key_reaches_the_window_field(server, &key);
+    }
     if key.state != KeyState::Pressed {
         return server.libinput_update(InputUpdate::Event(event), extent);
     }

@@ -77,9 +77,16 @@ pub fn what_a_reader_meets(
 
 /// One choice, named by what it does, and selectable — one of a few, and the
 /// one in hand is told as selected.
+///
+/// **The alo row is a field**, told as one, so a reader says it is somewhere
+/// to type rather than a button to press (`crate::the_window_panels_field`).
 fn a_row(does: WhatARowDoes) -> Control {
     Control {
-        role: Role::Button,
+        role: if does == WhatARowDoes::HelpWithThisWindow {
+            Role::Entry
+        } else {
+            Role::Button
+        },
         name: does.its_own_word(),
         state: State::OneOfAFew,
         setting: None,

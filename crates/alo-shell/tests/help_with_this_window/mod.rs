@@ -1,12 +1,15 @@
-//! **Help with this window**, on a real client's window: opening it names the
-//! window and asks nothing; sending reads the window at that moment; AI off,
-//! Escape and a window that has gone each ask nothing.
+//! **Asking about a window in its own panel**, on a real client's window:
+//! reaching the field asks nothing and opens no other window; Enter reads the
+//! window at that moment and asks once; AI off, Escape, an empty field and a
+//! window that has gone each ask nothing.
 //!
 //! The window is a real `xdg_toplevel` on its own connection, titled and
 //! named the way an editor names itself, so the title and identifier that
 //! would travel to alo are the ones the protocol carried — not a fixture's.
 //! What is not here is the agent: what crosses the socket is held by
 //! `what_a_person_asked_goes_to_the_agent`'s own tests and `alo-agent`'s.
+//! Keys are given as the field's own [`AFieldKey`]s, after the seat's layout;
+//! which symbol is which key is `a_key_reaches_the_window_field`'s unit tests.
 
 #![expect(
     clippy::panic,
@@ -14,7 +17,7 @@
 )]
 
 use super::support::{Application, Fixture};
-use alo_shell::composer_keys::ComposerKey;
+use alo_shell::the_window_panels_field::{AFieldKey, WhatTheFieldDid};
 use smithay::reexports::wayland_server::protocol::wl_surface::WlSurface;
 
 /// The windows on the screen, as the compositor holds them.
@@ -42,59 +45,59 @@ fn a_window(f: &Fixture, title: &str, app_id: &str) -> (Application, WlSurface) 
     }
 }
 
-/// Type `words` into the composer, then press `key`.
-fn type_and_press(f: &Fixture, words: &'static str, key: ComposerKey) {
+/// Type `words` into the field, then press `key`: what the last key did.
+fn type_and_press(f: &Fixture, words: &'static str, key: AFieldKey) -> WhatTheFieldDid {
     f.backend(move |s| {
         for letter in words.chars() {
-            drop(s.a_key_reached_the_composer(ComposerKey::Letter(letter)));
+            drop(s.a_key_reached_the_window_field(AFieldKey::Letter(letter)));
         }
-        drop(s.a_key_reached_the_composer(key));
-    });
+        s.a_key_reached_the_window_field(key)
+    })
 }
 
-/// **Opening it names the window and asks nothing**; sending asks once, about
-/// that window, as it read when the person pressed Enter — and opens no
-/// application, whatever the words match.
+/// The field reached on this window, with alo allowed to be asked.
+fn the_field_reached(f: &Fixture, root: &WlSurface) -> bool {
+    let root = root.clone();
+    f.backend(move |s| {
+        s.alo_may_be_asked(true);
+        s.help_with_this_window(&root)
+    })
+}
+
+/// **Reaching the field asks nothing and opens no other window**; Enter asks
+/// once, about that window as it read when the person pressed it — and starts
+/// no application, whatever the words match.
 #[test]
-fn opening_asks_nothing_and_sending_carries_the_window_read_then() {
+fn reaching_asks_nothing_and_enter_carries_the_window_read_then() {
     let f = Fixture::keyboard();
     let (mut notes, root) = a_window(&f, "The next chapter", "org.gnome.TextEditor");
-    let opened = {
-        let root = root.clone();
-        f.backend(move |s| {
-            s.alo_may_be_asked(true);
-            s.help_with_this_window(&root)
-        })
-    };
-    assert!(opened, "Help with this window opened nothing");
-    let (reads, keyboard, asked, about) = f.backend(|s| {
+    assert!(the_field_reached(&f, &root), "the field could not be reached");
+    let (whose, launcher, asked, about) = f.backend(|s| {
         (
-            s.the_window_offered_reads(),
+            s.whose_window_field_has_the_keyboard(),
             s.composer().has_the_keyboard(),
             s.take_what_was_asked_of_alo().len(),
             s.take_what_was_asked_about_a_window().len(),
         )
     });
-    assert!(
-        reads
-            .as_deref()
-            .is_some_and(|it| it.contains("The next chapter")),
-        "the window is not named: {reads:?}"
-    );
-    assert!(keyboard, "the person cannot type their request");
-    assert_eq!((asked, about), (0, 0), "opening it asked something");
+    assert_eq!(whose.as_ref(), Some(&root), "the field has not the keyboard");
+    assert!(!launcher, "the launcher opened: another window, not the panel");
+    assert_eq!((asked, about), (0, 0), "reaching the field asked something");
 
-    // **Read when sent, not when opened**: the title the person sees at Enter.
+    // **Read when sent, not when reached**: the title the person sees at Enter.
     notes
         .toplevel
         .set_title("The next chapter, revised".to_owned());
     notes.sync();
-    type_and_press(&f, "text editor", ComposerKey::Ask);
-    let (about, plain, starting) = f.backend(|s| {
+    let _ = type_and_press(&f, "text editor", AFieldKey::Send);
+    let (about, plain, starting, whose, typed) = f.backend(|s| {
+        let root = s.mapped_surfaces().next().cloned();
         (
             s.take_what_was_asked_about_a_window(),
             s.take_what_was_asked_of_alo(),
             s.how_many_are_waiting_to_start(),
+            s.whose_window_field_has_the_keyboard(),
+            root.and_then(|root| s.what_is_typed_in_the_window_field(&root).map(|it| it.typed.to_owned())),
         )
     });
     assert!(plain.is_empty(), "the request lost its window");
@@ -111,16 +114,28 @@ fn opening_asks_nothing_and_sending_carries_the_window_read_then() {
         }
         other => panic!("one Enter asked {} times", other.len()),
     }
+    assert!(whose.is_none(), "the field kept the keyboard after sending");
     assert!(
-        f.backend(|s| s.the_window_offered_reads()).is_none(),
-        "the offer outlived the request"
+        typed.is_none_or(|it| it.is_empty()),
+        "the request stayed in the field, to be sent twice"
     );
 }
 
-/// **AI set to *Not at all* offers nothing**, and switching it off while the
-/// composer is open for a window lets the offer go, asking nothing.
+/// **An empty field sends nothing**, and Enter on spaces sends nothing.
 #[test]
-fn with_ai_off_help_opens_nothing_and_an_open_offer_goes() {
+fn an_empty_field_sends_nothing() {
+    let f = Fixture::keyboard();
+    let (_notes, root) = a_window(&f, "The next chapter", "org.gnome.TextEditor");
+    assert!(the_field_reached(&f, &root));
+    assert_eq!(type_and_press(&f, "", AFieldKey::Send), WhatTheFieldDid::Nothing);
+    assert_eq!(type_and_press(&f, "   ", AFieldKey::Send), WhatTheFieldDid::Nothing);
+    assert!(f.backend(|s| s.take_what_was_asked_about_a_window()).is_empty());
+}
+
+/// **AI set to *Not at all* offers no field**, and switching it off while a
+/// person is typing lets the words go, asking nothing.
+#[test]
+fn with_ai_off_there_is_no_field_and_typing_asks_nothing() {
     let f = Fixture::keyboard();
     let (_notes, root) = a_window(&f, "The next chapter", "org.gnome.TextEditor");
     let refused = {
@@ -130,53 +145,77 @@ fn with_ai_off_help_opens_nothing_and_an_open_offer_goes() {
             s.help_with_this_window(&root)
         })
     };
-    assert!(!refused, "Help with this window opened with AI off");
+    assert!(!refused, "the field was reached with AI off");
 
-    let opened = {
-        let root = root.clone();
-        f.backend(move |s| {
-            s.alo_may_be_asked(true);
-            s.help_with_this_window(&root)
-        })
-    };
-    assert!(opened);
+    assert!(the_field_reached(&f, &root));
+    let _ = type_and_press(&f, "summ", AFieldKey::Nothing);
     f.backend(|s| s.alo_may_be_asked(false));
-    type_and_press(&f, "summarise", ComposerKey::Ask);
+    let did = type_and_press(&f, "arise", AFieldKey::Send);
     let about = f.backend(|s| s.take_what_was_asked_about_a_window());
+    assert_eq!(did, WhatTheFieldDid::Nothing);
     assert!(about.is_empty(), "a window went to alo with AI off");
 }
 
-/// **Escape lets the offer go and asks nothing.**
+/// **Escape clears the words, then closes the panel**, and asks nothing.
 #[test]
-fn escape_asks_nothing() {
+fn escape_clears_then_closes_and_asks_nothing() {
     let f = Fixture::keyboard();
     let (_notes, root) = a_window(&f, "The next chapter", "org.gnome.TextEditor");
-    f.backend(move |s| {
-        s.alo_may_be_asked(true);
-        let _ = s.help_with_this_window(&root);
-    });
-    type_and_press(&f, "summarise", ComposerKey::Clear);
-    let (about, plain, offered) = f.backend(|s| {
+    assert!(the_field_reached(&f, &root));
+    assert_eq!(
+        type_and_press(&f, "summarise", AFieldKey::Escape),
+        WhatTheFieldDid::ItChanged
+    );
+    let still = f.backend(|s| s.whose_window_field_has_the_keyboard());
+    assert!(still.is_some(), "the first Escape closed the panel");
+    assert_eq!(
+        type_and_press(&f, "", AFieldKey::Escape),
+        WhatTheFieldDid::CloseThePanel
+    );
+    let (about, plain, whose) = f.backend(|s| {
         (
             s.take_what_was_asked_about_a_window(),
             s.take_what_was_asked_of_alo(),
-            s.the_window_offered_reads(),
+            s.whose_window_field_has_the_keyboard(),
         )
     });
     assert!(about.is_empty() && plain.is_empty(), "Escape asked alo");
-    assert!(offered.is_none(), "the offer outlived Escape");
+    assert!(whose.is_none(), "the panel stayed open");
 }
 
-/// **A window that closes before Enter asks nothing**: the offer goes, the
-/// words stay in the field, and no request leaves without the window meant.
+/// **Up leaves the field and keeps the words**; Down comes back to them.
+#[test]
+fn up_leaves_the_field_and_keeps_the_words() {
+    let f = Fixture::keyboard();
+    let (_notes, root) = a_window(&f, "The next chapter", "org.gnome.TextEditor");
+    assert!(the_field_reached(&f, &root));
+    let _ = type_and_press(&f, "summarise", AFieldKey::Up);
+    let (whose, open) = f.backend(|s| {
+        (
+            s.whose_window_field_has_the_keyboard(),
+            s.a_windows_band_is_taking_the_keys(),
+        )
+    });
+    assert!(whose.is_none(), "Up did not leave the field");
+    assert!(open, "Up closed the panel");
+    let typed = {
+        let root = root.clone();
+        f.backend(move |s| {
+            s.what_is_typed_in_the_window_field(&root)
+                .map(|it| it.typed.to_owned())
+        })
+    };
+    assert_eq!(typed.as_deref(), Some("summarise"), "Up lost the words");
+}
+
+/// **A window that closes before Enter asks nothing**: no request leaves
+/// without the window it was about.
 #[test]
 fn a_window_that_closes_before_enter_asks_nothing() {
     let f = Fixture::keyboard();
     let (notes, root) = a_window(&f, "The next chapter", "org.gnome.TextEditor");
-    f.backend(move |s| {
-        s.alo_may_be_asked(true);
-        let _ = s.help_with_this_window(&root);
-    });
+    assert!(the_field_reached(&f, &root));
+    let _ = type_and_press(&f, "summarise", AFieldKey::Nothing);
     drop(notes);
     // Until the compositor has seen the client go.
     for _ in 0..200 {
@@ -185,18 +224,17 @@ fn a_window_that_closes_before_enter_asks_nothing() {
         }
         std::thread::sleep(std::time::Duration::from_millis(5));
     }
-    type_and_press(&f, "summarise", ComposerKey::Ask);
-    let (about, plain, typed) = f.backend(|s| {
+    let did = type_and_press(&f, "", AFieldKey::Send);
+    let (about, plain) = f.backend(|s| {
         (
             s.take_what_was_asked_about_a_window(),
             s.take_what_was_asked_of_alo(),
-            s.composer().typed().to_owned(),
         )
     });
+    assert_eq!(did, WhatTheFieldDid::Nothing);
     assert!(
         about.is_empty(),
         "a request went about a window that had gone"
     );
     assert!(plain.is_empty(), "the request left without its window");
-    assert_eq!(typed, "summarise", "the person's words were lost");
 }
