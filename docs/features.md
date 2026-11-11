@@ -1573,7 +1573,10 @@ drifts from the first, and then alo can do something the person cannot
   governs the put-aside surface.* `CLAUDE.md` binds building to this file, which is why the line is
   added before the drawing rather than after it*
 - **The canvas is where they left it** — arrange windows across several Places,
-  move their cameras, end the session, and a fresh start puts them back. **Place identity,
+  move their cameras, end the session, and a fresh start puts them back — **unless a window
+  opened since now stands on that spot**, when the returning window opens as a new one does,
+  beside it or in empty space, rather than on top of it (*the owner, 2026-11-12: "the windows
+  should never overlap, they should open in the near free space"*). **Place identity,
   frame identity and geometry, each window's presentation state and each Place's camera**
   all survive, and a window that was minimised, compacted or full screen comes back with its
   **normal geometry** intact rather than the shape it was last seen in. Frames stay reachable
