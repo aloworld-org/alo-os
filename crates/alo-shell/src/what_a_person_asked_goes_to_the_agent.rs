@@ -49,6 +49,8 @@ use std::time::Duration;
 
 use alo_instructing::{TheConversationSoFar, ThePersonsFolders, TheWindowOffered};
 
+use crate::what_the_agent_may_reach::WhatTheAgentMayReach;
+
 /// Where a person's words are handed to their agent.
 ///
 /// Part of ADR 0109's published arrangement, and the same path
@@ -177,8 +179,10 @@ impl TheAgentsDoor {
     /// is a machine where nothing is listening for a person's words, which is
     /// what a desktop with no daemon running looks like. It comes back as an
     /// answer saying so.
-    /// `may_reach` is the folders this person has granted. They travel with
-    /// the request so the model is not left guessing a path —
+    /// `may_reach` is the folders this person has granted, and whether they
+    /// chose full access. They travel with the request so the model is not
+    /// left guessing a path, nor told it may reach nothing where it may reach
+    /// everything their account can —
     /// `crate::what_the_agent_may_reach` holds why this side is the one that
     /// says so, and why naming a wrong one costs a round and nothing else.
     ///
@@ -190,7 +194,7 @@ impl TheAgentsDoor {
         &self,
         who: WhoAsked,
         request: &str,
-        may_reach: &[std::path::PathBuf],
+        may_reach: &WhatTheAgentMayReach,
         their_folders: Option<&ThePersonsFolders>,
     ) {
         self.ask_following(
@@ -216,7 +220,7 @@ impl TheAgentsDoor {
         who: WhoAsked,
         request: &str,
         earlier: &TheConversationSoFar,
-        may_reach: &[std::path::PathBuf],
+        may_reach: &WhatTheAgentMayReach,
         their_folders: Option<&ThePersonsFolders>,
     ) {
         self.ask_about(who, request, earlier, None, may_reach, their_folders);
@@ -236,22 +240,23 @@ impl TheAgentsDoor {
         request: &str,
         earlier: &TheConversationSoFar,
         window: Option<&TheWindowOffered>,
-        may_reach: &[std::path::PathBuf],
+        may_reach: &WhatTheAgentMayReach,
         their_folders: Option<&ThePersonsFolders>,
     ) {
         let socket = self.socket.clone();
         let request = request.to_owned();
-        // **Every line, always**: the conversation's marker, the window's and
-        // the person's folders', each alone when there is nothing after it, so
-        // a current agent never waits for a line that is not coming
-        // (`docs/contracts/asking-socket.md`).
+        // **Every line, always**: the conversation's marker, the window's, the
+        // person's folders' and full access's, each alone when there is nothing
+        // after it, so a current agent never waits for a line that is not
+        // coming (`docs/contracts/asking-socket.md`).
         let earlier = format!(
-            "{}\n{}\n{}",
+            "{}\n{}\n{}\n{}",
             earlier.written(),
             TheWindowOffered::the_line_for(window),
-            ThePersonsFolders::the_line_for(their_folders)
+            ThePersonsFolders::the_line_for(their_folders),
+            alo_instructing::at_full_access::the_line_for(may_reach.at_full_access)
         );
-        let may_reach: Vec<std::path::PathBuf> = may_reach.to_vec();
+        let may_reach: Vec<std::path::PathBuf> = may_reach.folders.clone();
         let posting = self.posting.clone();
         let running = self.running.clone();
         // A thread that cannot be started is reported the same way a socket
