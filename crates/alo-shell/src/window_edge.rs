@@ -105,9 +105,10 @@ pub enum Decorations {
     TheShellDraws,
     /// A task window, which is alo's own and carries its title inside it.
     ///
-    /// **Close and nothing else**, by the owner's decision of 2026-10-28: a
-    /// task window does not move, and minimising one waits for the right-hand
-    /// panel to hold a task. `crate::a_task_windows_edge` draws and presses it.
+    /// **Minimise and Close**: a task window does not move (the owner, 2026-10-28),
+    /// and minimising puts the task in the right-hand panel, still running, now
+    /// that the panel holds tasks (design `23:2`, approved 2026-11-11).
+    /// `crate::a_task_windows_edge` draws and presses it.
     ATaskWindow,
     /// One of alo's own windows that is an application in its own right — the
     /// terminal first (ADR 0145): **its title, and Close**. Nothing can put one

@@ -619,6 +619,7 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
     let nothing_offered = alo_dividing::Offer::Nothing;
     let desktop = || alo_shell::DesktopFrame {
         tasks: &[],
+        tasks_aside: alo_shell::TheTasksAside::NONE,
         // Nothing opened the market here, and a shut window and a display it is
         // not on are the same thing to a drawing.
         market: None,

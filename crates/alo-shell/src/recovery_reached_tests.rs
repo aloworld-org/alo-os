@@ -33,6 +33,7 @@ fn a_desktop_that_will_not_start<'a>(
 ) -> DesktopFrame<'a> {
     DesktopFrame {
         tasks: &[],
+        tasks_aside: crate::TheTasksAside::NONE,
         market: None,
         what_each_application_draws: &alo_dock::artwork::NOTHING,
         the_dock_has_open: &crate::what_the_dock_has_open::NOTHING,

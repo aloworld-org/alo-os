@@ -283,9 +283,10 @@ impl TheAgentsDoor {
 
     /// **Stop the request from `who`** (ADR 0139): shut this side's sending
     /// half, which the agent hears as the person stopping. Answers whether a
-    /// request was running to stop. *Stopped* arrives later, from
-    /// [`Self::whatever_came_back`], when the agent's side has closed.
-    pub fn stop(&self, who: WhoAsked) -> bool {
+    /// request was running and whether the Stop was handed over. *Stopped*
+    /// arrives later, from [`Self::whatever_came_back`], when the agent's side
+    /// has closed.
+    pub fn stop(&self, who: WhoAsked) -> crate::stopping_what_was_asked::TheStop {
         self.running.stop(who)
     }
 

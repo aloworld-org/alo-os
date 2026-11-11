@@ -397,6 +397,25 @@ is the specimen's width, not a window's.
   launcher, is not marked: the shell is told which window only when the person
   offers it.
 
+### How Help is asked next, ruled by the owner
+
+After #1156 the owner ruled how *Help with this window* should be asked, in
+these words:
+
+- **"I think the user should be able to type in here not to open another
+  window"** — the panel's row becomes a field, *alo · Ask about this window…*,
+  instead of opening the launcher.
+- **"Card under the panel, open as task if needed (Recommended)"** — the answer
+  comes back as a card under the panel, anchored to the window, and moves into a
+  task window only when it has to.
+- **"Build the panel's task place first"** — so a turn the person dismisses
+  mid-way has somewhere to go that is not nowhere. That place is the design
+  `23:2`, approved with **"Approve as drawn"** on 2026-11-11 and recorded in
+  [the windows put aside](the-windows-put-aside.md).
+
+**Not built yet**: the field and the answer card. The task's place in the panel
+(the third ruling) is stage 3a below.
+
 ## What is built
 
 *Updated with each stage as it lands.* Until a row here names a pull request,
@@ -411,4 +430,6 @@ that part is **not built**.
 | 1e | the full-screen top-edge reveal | not built |
 | 2 | Move to…, Undo placement | not built |
 | 3 | Help with this window, the working state and Stop: the panel's row while alo may be asked; the launcher opened for the window, naming it, asking nothing until sent; the window's title and identifier read at Enter and sent to alo as a hint (`docs/contracts/asking-socket.md`, line 4); the teal edge and the `11:173` band with alo's mark, the person's words and Stop on that window for the turn | #1156, on #1155 |
+| 3a | The panel's place for a running task (`23:2`): a task window's Minimise puts it in the right-hand panel, still running, as a 48 × 48 square whose card says which of six states it is in and offers Stop, Review or Open | #1172 |
+| 3b | Help asked in the panel's own field, and the answer card under it | not built |
 | 4 | Capture & export | not built |

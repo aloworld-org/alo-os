@@ -117,3 +117,24 @@ fn a_held_reply_goes_back_to_the_box_and_is_never_sent() {
     assert_eq!(task.the_draft(), "and the April one too");
     assert!(server.take_the_follow_ups().is_empty());
 }
+
+/// **A Stop that could not be handed to the agent is never called stopped**,
+/// and Stop stays on offer so the person can try again.
+#[test]
+fn a_stop_that_could_not_be_delivered_says_so_and_can_be_pressed_again() {
+    let (_runtime, mut server, which) = a_working_task();
+    assert!(server.the_person_stops_a_task(which));
+    let _ = server.take_the_stops();
+
+    server.its_stop_could_not_be_delivered(which);
+
+    assert_eq!(
+        happening(&server, which),
+        alo_tasks::words::STOP_NOT_CONFIRMED
+    );
+    assert!(
+        server.the_person_stops_a_task(which),
+        "Stop was withheld after it failed"
+    );
+    assert_eq!(server.take_the_stops().len(), 1);
+}

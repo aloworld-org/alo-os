@@ -1324,6 +1324,9 @@ impl LoopInput for TheDesktopLane<'_> {
         // (`crate::a_window_the_person_opened`).
         server.what_the_person_opened_comes_in_front();
         server.put_aside_what_was_asked_for(self.desktop.the_panel());
+        // **And a running task's window the person minimised**, by the same
+        // road (`crate::a_task_goes_aside`).
+        server.put_tasks_aside_that_were_asked(self.desktop.the_panel());
         // **And the other direction, met in the same place and for the same reason.** A click
         // on a preview was claimed where input happens, because whether the panel owns a click
         // is geometry; *which* preview it chose needs the live `Panel` for the identity check,
@@ -1596,8 +1599,16 @@ impl LoopInput for TheDesktopLane<'_> {
             match stop.held_turn {
                 Some(turn) => self.asking.stop_a_held_turn(who, turn),
                 None => {
-                    if !self.asking.stop(who) {
-                        server.it_really_stopped(stop.which);
+                    match self.asking.stop(who) {
+                        crate::stopping_what_was_asked::TheStop::NothingWasRunning => {
+                            server.it_really_stopped(stop.which);
+                        }
+                        crate::stopping_what_was_asked::TheStop::Sent => {}
+                        // **Never *stopped* for a Stop that did not arrive**: the
+                        // task says *Stop requested · not confirmed*.
+                        crate::stopping_what_was_asked::TheStop::CouldNotBeSent => {
+                            server.its_stop_could_not_be_delivered(stop.which);
+                        }
                     }
                 }
             }
@@ -1781,6 +1792,9 @@ impl LoopInput for TheDesktopLane<'_> {
                 .and_then(crate::SettingsPlaces::home),
         );
         let the_task_windows = the_tasks_words.as_displayed();
+        // **And every open task's card, said**, for the panel to draw the ones
+        // it holds (`crate::a_task_in_the_panel`).
+        let the_task_cards = crate::a_task_in_the_panel::the_cards(server.tasks(), self.strings);
         // **A copy of the market window for the frame, and only while it is
         // open.**
         //
@@ -1968,6 +1982,7 @@ impl LoopInput for TheDesktopLane<'_> {
                 the_docks_words: &the_docks_words,
                 what_each_application_draws: &what_each_application_draws,
                 tasks: &the_task_windows,
+                tasks_aside: crate::TheTasksAside::of(&the_task_cards, server.the_task_card_open),
                 market: the_market,
                 the_bar,
             },
@@ -2303,6 +2318,7 @@ impl LoopInput for TheDesktopLane<'_> {
                     // belong to a display is a change to what `TheTasks`
                     // stores, and it is written down rather than guessed at.
                     tasks: &[],
+                    tasks_aside: crate::TheTasksAside::NONE,
                     // **None on an extra display**, for the reason above and
                     // one more: there is exactly one of these windows per seat,
                     // so drawing it on every display would put a person's

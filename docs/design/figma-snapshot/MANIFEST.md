@@ -8,6 +8,15 @@ that prose was 55 top-level frames behind without anything saying so.
 **Approved by the owner on 2026-10-04**, with the size explicitly accepted: *an untraceable
 design change is the larger problem.*
 
+## A running task in the put-aside panel, 2026-11-11 — the same second file
+
+**`running-task-XbSmsBYix0TrcQ0Qzaup64-23-2.xml` is frame `23:2`**, *07 / A
+running task in the put-aside panel*, in `XbSmsBYix0TrcQ0Qzaup64`, which the
+owner approved with *"Approve as drawn"* on 2026-11-11. Read with `get_metadata`
+on the frame's own id and written unchanged. **Geometry and layer names only**;
+the colours, type and the figures taken off it are in
+[`../the-windows-put-aside.md`](../the-windows-put-aside.md).
+
 ## The window controls, 2026-11-09 — a second design file
 
 **`window-controls-XbSmsBYix0TrcQ0Qzaup64.xml` is from a different file**,

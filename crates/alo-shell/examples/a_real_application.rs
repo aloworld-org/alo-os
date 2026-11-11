@@ -321,6 +321,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                 &mut labels,
                 DesktopFrame {
                     tasks: &[],
+                    tasks_aside: alo_shell::TheTasksAside::NONE,
                     // **No market window here.** This example runs a real
                     // application against a real compositor; the market is the
                     // shell's own window and `desktop_check` is the fixture

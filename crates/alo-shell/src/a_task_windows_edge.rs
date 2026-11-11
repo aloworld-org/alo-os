@@ -150,6 +150,11 @@ impl Server {
                     let _ = self.the_person_closes_a_task(which);
                     return true;
                 }
+                // **Minimise: into the right-hand panel, still running.**
+                Some(UnderThePointer::Control(OnTheEdge::Minimise)) => {
+                    self.this_task_is_asked_to_go_aside(which);
+                    return true;
+                }
                 Some(
                     UnderThePointer::Control(_)
                     | UnderThePointer::Drag

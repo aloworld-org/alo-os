@@ -134,6 +134,16 @@ impl ThePanelAsDrawn {
         self.picture.reserved
     }
 
+    /// Each task's square as drawn, with which task it is.
+    pub(crate) fn task_squares(&self) -> &[(alo_put_aside::TaskNumber, Rectangle<i32, Physical>)] {
+        &self.picture.task_squares
+    }
+
+    /// The card a person opened from a task's square, as drawn.
+    pub(crate) const fn open_card(&self) -> Option<&crate::task_card_raster::TheOpenCard> {
+        self.picture.open_card.as_ref()
+    }
+
     /// **What was drawn at this point**, asked of the draw alone.
     ///
     /// The question a pointer road can answer, because it needs no `Panel`: a person pointing

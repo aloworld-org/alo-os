@@ -111,6 +111,12 @@ impl ATask {
         if matches!(self.stopping(), crate::Stopping::Asked) {
             return TheOneButton::Stopping;
         }
+        // **A Stop that could not be delivered leaves Stop on offer**, so the
+        // person can try again: Stop is never withheld (`docs/features.md`),
+        // and the work may still be running.
+        if self.stopping().is_unconfirmed() {
+            return TheOneButton::Stop;
+        }
         let it_stopped = matches!(self.stopping(), crate::Stopping::Stopped { .. });
         let working = self.activity().doing_now().is_some()
             || self.conversation().is_alos_turn()

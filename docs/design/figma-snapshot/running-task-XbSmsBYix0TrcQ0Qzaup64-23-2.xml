@@ -1,0 +1,128 @@
+<frame id="23:2" name="07 / A running task in the put-aside panel" x="80" y="4120" width="1280" height="1080">
+  <frame id="23:3" name="Frame" x="56" y="40" width="900" height="103">
+    <text id="23:4" name="alo OS / WINDOW ACTIONS / CONCEPT 07 — APPROVED BY THE OWNER 2026-11-11" x="0" y="0" width="424" height="15" />
+    <text id="23:5" name="A task you put aside keeps working." x="0" y="25" width="594" height="49" />
+    <text id="23:6" name="Minimise a task, or close the answer card while alo works: the task waits in the right-hand panel with what it is doing and Stop." x="0" y="84" width="900" height="19" />
+  </frame>
+  <text id="23:7" name="COLLAPSED RAIL · 48 × 48 TARGETS · ONE PER TASK" x="56" y="190" width="265" height="15" />
+  <frame id="23:8" name="Frame" x="56" y="220" width="374" height="74">
+    <frame id="23:9" name="Frame" x="0" y="0" width="48" height="74">
+      <frame id="23:10" name="Task square / Working" x="0" y="0" width="48" height="48">
+        <text id="23:11" name="alo" x="14" y="15" width="20" height="18" />
+      </frame>
+      <text id="23:12" name="Working" x="1" y="58" width="46" height="16" />
+    </frame>
+    <frame id="23:13" name="Frame" x="88" y="0" width="60" height="74">
+      <frame id="23:14" name="Task square / Needs you" x="6" y="0" width="48" height="48">
+        <text id="23:15" name="alo" x="14" y="15" width="20" height="18" />
+        <ellipse id="23:16" name="Ellipse" x="34" y="4" width="10" height="10" />
+      </frame>
+      <text id="23:17" name="Needs you" x="0" y="58" width="60" height="16" />
+    </frame>
+    <frame id="23:18" name="Frame" x="188" y="0" width="60" height="74">
+      <frame id="23:19" name="Task square / Stopping" x="6" y="0" width="48" height="48">
+        <text id="23:20" name="alo" x="14" y="15" width="20" height="18" />
+      </frame>
+      <text id="23:21" name="Stopping…" x="0" y="58" width="60" height="16" />
+    </frame>
+    <frame id="23:22" name="Frame" x="288" y="0" width="86" height="74">
+      <frame id="23:23" name="Task square / Stopped / done" x="19" y="0" width="48" height="48">
+        <text id="23:24" name="alo" x="14" y="15" width="20" height="18" />
+      </frame>
+      <text id="23:25" name="Stopped · Done" x="0" y="58" width="86" height="16" />
+    </frame>
+  </frame>
+  <text id="23:26" name="Never colour alone: each state also changes the word under focus/hover and the accessible name (&quot;alo task, working: Summarise the Q3 report&quot;). Pressing a square opens its card with Stop first — Stop is one press from the rail and one key (Delete) when the square has focus." x="640" y="220" width="560" height="48" />
+  <text id="23:27" name="EXPANDED PREVIEW LANE · 216 × 106 CARDS, 10 APART" x="56" y="340" width="282" height="15" />
+  <frame id="23:28" name="Frame" x="56" y="370" width="760" height="248">
+    <frame id="23:29" name="Task card / alo is working" x="0" y="0" width="216" height="106">
+      <rounded-rectangle id="23:30" name="Rectangle" x="0" y="0" width="3" height="106" />
+      <text id="23:31" name="alo" x="12" y="10" width="17" height="15" />
+      <text id="23:32" name="alo is working" x="36" y="10" width="160" height="16" />
+      <text id="23:33" name="Summarise the Q3 report" x="12" y="32" width="192" height="18" />
+      <text id="23:34" name="Reading report.pdf · step 2 of 5" x="12" y="54" width="124" height="16" />
+      <text id="23:35" name="Last approved: open report.pdf" x="12" y="78" width="124" height="16" />
+      <frame id="23:36" name="Button / Stop" x="140" y="66" width="64" height="30">
+        <text id="23:37" name="Stop" x="18" y="7" width="28" height="16" />
+      </frame>
+    </frame>
+    <frame id="23:38" name="Task card / Needs your OK" x="240" y="0" width="216" height="106">
+      <rounded-rectangle id="23:39" name="Rectangle" x="0" y="0" width="3" height="106" />
+      <text id="23:40" name="alo" x="12" y="10" width="17" height="15" />
+      <text id="23:41" name="Needs your OK" x="36" y="10" width="160" height="16" />
+      <text id="23:42" name="Tidy my Downloads" x="12" y="32" width="192" height="18" />
+      <text id="23:43" name="Wants to move 14 files" x="12" y="54" width="124" height="16" />
+      <text id="23:44" name="Last approved: list Downloads" x="12" y="78" width="124" height="16" />
+      <frame id="23:45" name="Button / Review" x="140" y="66" width="64" height="30">
+        <text id="23:46" name="Review" x="11.5" y="7" width="41" height="16" />
+      </frame>
+    </frame>
+    <frame id="23:47" name="Task card / Stopping…" x="480" y="0" width="216" height="106">
+      <rounded-rectangle id="23:48" name="Rectangle" x="0" y="0" width="3" height="106" />
+      <text id="23:49" name="alo" x="12" y="10" width="17" height="15" />
+      <text id="23:50" name="Stopping…" x="36" y="10" width="160" height="16" />
+      <text id="23:51" name="Summarise the Q3 report" x="12" y="32" width="192" height="18" />
+      <text id="23:52" name="Waiting for alo to confirm" x="12" y="54" width="192" height="16" />
+      <text id="23:53" name="Last approved: open report.pdf" x="12" y="78" width="192" height="16" />
+    </frame>
+    <frame id="23:54" name="Task card / Stopped · changes kept" x="0" y="142" width="216" height="106">
+      <rounded-rectangle id="23:55" name="Rectangle" x="0" y="0" width="3" height="106" />
+      <text id="23:56" name="alo" x="12" y="10" width="17" height="15" />
+      <text id="23:57" name="Stopped · changes kept" x="36" y="10" width="160" height="16" />
+      <text id="23:58" name="Tidy my Downloads" x="12" y="32" width="192" height="18" />
+      <text id="23:59" name="2 files moved before Stop" x="12" y="54" width="124" height="16" />
+      <text id="23:60" name="Undo is in History" x="12" y="78" width="124" height="16" />
+      <frame id="23:61" name="Button / Open" x="140" y="66" width="64" height="30">
+        <text id="23:62" name="Open" x="16.5" y="7" width="31" height="16" />
+      </frame>
+    </frame>
+    <frame id="23:63" name="Task card / Stop requested · not confirmed" x="240" y="142" width="216" height="106">
+      <rounded-rectangle id="23:64" name="Rectangle" x="0" y="0" width="3" height="106" />
+      <text id="23:65" name="alo" x="12" y="10" width="17" height="15" />
+      <text id="23:66" name="Stop requested · not confirmed" x="36" y="10" width="160" height="16" />
+      <text id="23:67" name="Rename the photos" x="12" y="32" width="192" height="18" />
+      <text id="23:68" name="This machine cannot confirm it stopped" x="12" y="54" width="124" height="16" />
+      <text id="23:69" name="Last approved: rename IMG_0012" x="12" y="78" width="124" height="16" />
+      <frame id="23:70" name="Button / Open" x="140" y="66" width="64" height="30">
+        <text id="23:71" name="Open" x="16.5" y="7" width="31" height="16" />
+      </frame>
+    </frame>
+    <frame id="23:72" name="Task card / Done" x="480" y="142" width="216" height="106">
+      <rounded-rectangle id="23:73" name="Rectangle" x="0" y="0" width="3" height="106" />
+      <text id="23:74" name="alo" x="12" y="10" width="17" height="15" />
+      <text id="23:75" name="Done" x="36" y="10" width="160" height="16" />
+      <text id="23:76" name="Summarise the Q3 report" x="12" y="32" width="192" height="18" />
+      <text id="23:77" name="Answer ready" x="12" y="54" width="124" height="16" />
+      <text id="23:78" name="Finished 14:32" x="12" y="78" width="124" height="16" />
+      <frame id="23:79" name="Button / Open" x="140" y="66" width="64" height="30">
+        <text id="23:80" name="Open" x="16.5" y="7" width="31" height="16" />
+      </frame>
+    </frame>
+  </frame>
+  <text id="23:81" name="Same 216 × 106 card as a put-aside window, with the window preview replaced by what alo is doing: • line 1 — alo&#39;s mark and the state, in words (teal only while alo is acting) • line 2 — the task in your own words, one line, ending in … • line 3 — how far it has got • line 4 — the last thing it did that you approved • Stop (navy, 64 × 30) while alo works; Review when it needs you; Open when stopped or done A 3-unit left edge carries the state colour, so the card reads the same in the narrow rail and the lane. Selecting the card (not its button) opens the task window. No preview picture: a task has no window to photograph." x="856" y="370" width="380" height="252" />
+  <text id="23:82" name="IN THE PANEL · A WINDOW AND A TASK SIDE BY SIDE, IN THE ORDER THEY WERE PUT ASIDE" x="56" y="700" width="460" height="15" />
+  <frame id="23:83" name="Put aside panel (expanded) / with a task" x="56" y="730" width="246" height="305">
+    <frame id="23:84" name="Frame" x="15" y="15" width="73" height="18">
+      <text id="23:85" name="Put aside" x="0" y="0" width="58" height="18" />
+      <text id="23:86" name="2" x="66" y="1.5" width="7" height="15" />
+    </frame>
+    <frame id="23:87" name="Window card / Home · Dolphin" x="15" y="43" width="216" height="106">
+      <rounded-rectangle id="23:88" name="Rectangle" x="12" y="10" width="192" height="46" />
+      <text id="23:89" name="Home" x="12" y="62" width="37" height="18" />
+      <text id="23:90" name="Dolphin" x="12" y="82" width="39" height="15" />
+    </frame>
+    <frame id="23:91" name="Task card / alo is working" x="15" y="159" width="216" height="106">
+      <rounded-rectangle id="23:92" name="Rectangle" x="0" y="0" width="3" height="106" />
+      <text id="23:93" name="alo" x="12" y="10" width="17" height="15" />
+      <text id="23:94" name="alo is working" x="36" y="10" width="160" height="16" />
+      <text id="23:95" name="Summarise the Q3 report" x="12" y="32" width="192" height="18" />
+      <text id="23:96" name="Reading report.pdf · step 2 of 5" x="12" y="54" width="124" height="16" />
+      <text id="23:97" name="Last approved: open report.pdf" x="12" y="78" width="124" height="16" />
+      <frame id="23:98" name="Button / Stop" x="140" y="66" width="64" height="30">
+        <text id="23:99" name="Stop" x="18" y="7" width="28" height="16" />
+      </frame>
+    </frame>
+    <text id="23:100" name="Click to return · hold to peek" x="15" y="275" width="141" height="15" />
+  </frame>
+  <text id="23:101" name="Order: newest put aside at the top, windows and tasks together, because the panel answers &quot;what did I put aside&quot;. A task belongs to the Place it was asked on and returns there. Keyboard: F6 reaches the panel; arrows move between cards; Enter opens; Delete on a working task = Stop (asks nothing, reports Stopping… then the result). Full screen: the panel hides with the Dock; a task that needs you raises a notification instead of revealing the panel." x="360" y="730" width="560" height="108" />
+</frame>

@@ -50,6 +50,7 @@ fn the_egress_indicator_sits_in_the_top_left_corner_clear_of_the_dock() {
                 let dock = Dock::shipped();
                 let frame = |egress| DesktopFrame {
                     tasks: &[],
+                    tasks_aside: crate::TheTasksAside::NONE,
                     market: None,
                     what_each_application_draws: &alo_dock::artwork::NOTHING,
                     the_dock_has_open: &crate::what_the_dock_has_open::NOTHING,
@@ -152,6 +153,7 @@ fn a_desktop_frame_whose_indicator_was_never_told_is_refused_whole() {
     let never_told = EgressStatus::on_an_output();
     let frame = DesktopFrame {
         tasks: &[],
+        tasks_aside: crate::TheTasksAside::NONE,
         market: None,
         what_each_application_draws: &alo_dock::artwork::NOTHING,
         the_dock_has_open: &crate::what_the_dock_has_open::NOTHING,
@@ -208,6 +210,7 @@ fn the_record_window_sits_in_the_desktop_frame() {
     );
     let desktop = DesktopFrame {
         tasks: &[],
+        tasks_aside: crate::TheTasksAside::NONE,
         market: None,
         what_each_application_draws: &alo_dock::artwork::NOTHING,
         the_dock_has_open: &crate::what_the_dock_has_open::NOTHING,
@@ -279,6 +282,7 @@ fn the_frame_carries_whether_the_panel_is_revealed() {
         frame_pictures(
             DesktopFrame {
                 tasks: &[],
+                tasks_aside: crate::TheTasksAside::NONE,
                 market: None,
                 what_each_application_draws: &alo_dock::artwork::NOTHING,
                 the_dock_has_open: &crate::what_the_dock_has_open::NOTHING,
@@ -382,6 +386,7 @@ fn the_frame_carries_the_market_a_person_opened() {
 
     let desktop = DesktopFrame {
         tasks: &[],
+        tasks_aside: crate::TheTasksAside::NONE,
         market: Some(crate::market_raster::AMarketOnTheDisplay {
             at,
             showing,
@@ -457,6 +462,7 @@ fn the_frame_carries_the_slot_the_keyboard_is_on() {
     let mut painted = |the_keyboard_is_on_the_bar| {
         let frame = DesktopFrame {
             tasks: &[],
+            tasks_aside: crate::TheTasksAside::NONE,
             market: None,
             what_each_application_draws: &alo_dock::artwork::NOTHING,
             the_dock_has_open: &crate::what_the_dock_has_open::NOTHING,
@@ -541,6 +547,7 @@ fn every_picture_a_frame_holds_reaches_the_layers_a_display_paints() {
     );
     let frame = DesktopFrame {
         tasks: &[],
+        tasks_aside: crate::TheTasksAside::NONE,
         market: None,
         what_each_application_draws: &alo_dock::artwork::NOTHING,
         the_dock_has_open: &crate::what_the_dock_has_open::NOTHING,
@@ -649,6 +656,7 @@ fn a_two_times_display_draws_its_dock_and_its_indicator_twice_the_size() {
     let mut at = |size: (i32, i32), display_scale: u16| {
         let frame = DesktopFrame {
             tasks: &[],
+            tasks_aside: crate::TheTasksAside::NONE,
             market: None,
             what_each_application_draws: &alo_dock::artwork::NOTHING,
             the_dock_has_open: &crate::what_the_dock_has_open::NOTHING,

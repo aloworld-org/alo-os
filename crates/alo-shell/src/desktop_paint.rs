@@ -108,6 +108,10 @@ impl DesktopPicture {
             // positional read agree: `Self::paint` takes one more exactly when
             // there is a Bar, in this position.
             .chain(self.the_bar.as_ref().map(|bar| &bar.panel))
+            // **The panel's tasks after the Bar and before the Dock's surface**,
+            // taken off by count in `Self::paint` for the tasks' own reason: the
+            // Dock drains whatever is left inside its `if let`.
+            .chain(self.panel.washed.iter())
             .chain(dock.and_then(|dock| dock.surface.as_ref()))
             .chain(dock.into_iter().flat_map(|dock| dock.panels.iter()))
     }
@@ -143,6 +147,11 @@ impl DesktopPicture {
         // **And one more exactly when there is a Bar**, in the order
         // `Self::washed` yielded.
         let the_bar = self.the_bar.as_ref().and_then(|_| washed.next());
+        // **And the panel's own rasters, by count**, in the order `Self::washed`
+        // yielded them: each task's square, then the card a person opened.
+        let the_panels: Vec<_> = (0..self.panel.washed.len())
+            .filter_map(|_| washed.next())
+            .collect();
         let dock_surface = washed.next();
 
         // The division first: its rules and the outline a drop would take sit
@@ -166,6 +175,9 @@ impl DesktopPicture {
         // their areas are kept apart rather than ordered. An empty panel has no
         // solids, so a person who has put nothing aside is painted nothing.
         crate::painted::paint(frame, &self.panel.solids, &self.panel.inked)?;
+        for (texture, area) in the_panels {
+            crate::painted::wash(frame, texture, *area)?;
+        }
         // **No task windows here.** They were painted here, above the Dock,
         // while they were in front, until they became windows on the canvas
         // (ADR 0145): a window on the canvas is under the Dock and every fixed

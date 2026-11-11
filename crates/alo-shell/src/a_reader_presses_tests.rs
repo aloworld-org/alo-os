@@ -122,6 +122,17 @@ fn heard(server: &Server) -> Vec<AWindowHeard> {
         .collect()
 }
 
+/// The word Minimise, as a person reading English hears it.
+fn minimise() -> String {
+    words()
+        .say(
+            &alo_access::words::MINIMISE.key(),
+            &alo_strings::Filling::nothing(),
+        )
+        .text()
+        .to_owned()
+}
+
 /// The word Close, as a person reading English hears it.
 fn close() -> String {
     words()
@@ -133,10 +144,10 @@ fn close() -> String {
         .to_owned()
 }
 
-/// **Every open task window is in the tree, named by its request, with Close
-/// under it** — and that Close presses that window and no other.
+/// **Every open task window is in the tree, named by its request, with Minimise
+/// and Close under it** — and each presses that window and no other.
 #[test]
-fn every_task_window_carries_its_own_close() {
+fn every_task_window_carries_its_own_minimise_and_close() {
     let (_runtime, mut server) = a_session();
     let first = a_task(&mut server, "tidy my invoices");
     let second = a_task(&mut server, "explain an invoice");
@@ -146,11 +157,17 @@ fn every_task_window_carries_its_own_close() {
         [
             (
                 "tidy my invoices".to_owned(),
-                vec![(close(), Some(Pressed::CloseTheTask(first)))]
+                vec![
+                    (minimise(), Some(Pressed::MinimiseTheTask(first))),
+                    (close(), Some(Pressed::CloseTheTask(first)))
+                ]
             ),
             (
                 "explain an invoice".to_owned(),
-                vec![(close(), Some(Pressed::CloseTheTask(second)))]
+                vec![
+                    (minimise(), Some(Pressed::MinimiseTheTask(second))),
+                    (close(), Some(Pressed::CloseTheTask(second)))
+                ]
             ),
         ]
     );

@@ -53,6 +53,9 @@ const CLICK: &str = "click";
 pub enum Pressed {
     /// Close on this task window's edge.
     CloseTheTask(WhichTask),
+    /// Minimise on this task window's edge: into the right-hand panel, still
+    /// running.
+    MinimiseTheTask(WhichTask),
     /// This control on the Dock, named by what the Dock holds there rather
     /// than by where it is, so a press reaches the application it was heard
     /// as and never whatever has since moved into its place.

@@ -569,6 +569,7 @@ impl<'a> TheDesk<'a> {
     ) -> alo_shell::DesktopFrame<'a> {
         alo_shell::DesktopFrame {
             tasks: &[],
+            tasks_aside: alo_shell::TheTasksAside::NONE,
             // **No market window on the walk.** This check drives a person's
             // whole way through the shell and the market is opened by a press
             // on their Dock, which the walk does not make. A window drawn here

@@ -65,6 +65,11 @@ pub struct DesktopFrame<'a> {
     /// the same reason: only the caller knows which display's windows these
     /// are.
     pub tasks: &'a [crate::task_raster::ATaskOnTheDisplay<'a>],
+    /// The running tasks a person put aside, said, and which card is open.
+    ///
+    /// [`crate::TheTasksAside::NONE`] on a machine with nothing put aside;
+    /// the panel decides which of these it shows.
+    pub tasks_aside: crate::TheTasksAside<'a>,
     /// The window of what a person can install, when it is open on this
     /// display.
     ///
@@ -571,6 +576,7 @@ pub(crate) fn frame_pictures(
             // invisible. Three tests passed either side of this line.
             market: desktop.market,
             tasks: desktop.tasks,
+            tasks_aside: desktop.tasks_aside,
         },
         &mut labels.fonts,
         size,

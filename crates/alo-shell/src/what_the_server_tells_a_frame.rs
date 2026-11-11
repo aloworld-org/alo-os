@@ -79,6 +79,8 @@ pub(crate) struct WhatTheLaneBuilt<'a> {
     /// `String`s somewhere. An empty slice is a machine nobody has asked
     /// anything, which is most machines most of the time.
     pub(crate) tasks: &'a [crate::task_raster::ATaskOnTheDisplay<'a>],
+    /// The running tasks a person put aside, said, and which card is open.
+    pub(crate) tasks_aside: crate::TheTasksAside<'a>,
     /// The window of what a person can install, when the seat has one open.
     ///
     /// **Borrowed from a bundle the lane keeps alive**, for `tasks`' reason:
@@ -115,11 +117,13 @@ pub(crate) fn what_only_the_server_knows<'a>(
         the_dock_has_open,
         the_docks_words,
         tasks,
+        tasks_aside,
         market,
         the_bar,
         what_each_application_draws,
     } = built;
     frame.tasks = tasks;
+    frame.tasks_aside = tasks_aside;
     // **Whether a person has the market open**, which a desktop's own state
     // cannot know for `the_dock_has_open`'s reason exactly: it is opened by a
     // press, and presses reach the `Server`.

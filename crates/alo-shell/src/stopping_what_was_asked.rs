@@ -28,6 +28,24 @@ use std::sync::{Arc, Mutex, PoisonError};
 
 use crate::what_a_person_asked_goes_to_the_agent::{WhatCameBack, WhoAsked};
 
+/// What became of a Stop this side tried to hand to the agent.
+///
+/// **Three answers, not a `bool`.** Until 2026-11-10 this answered `true` or
+/// `false`, and `false` meant both *nothing was running* and *the Stop could
+/// not be handed over* — so a Stop that never reached the agent was reported
+/// to the person as *stopped*, the one thing a Stop must never claim while it
+/// might be false.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TheStop {
+    /// Nothing was running, so the work had already ended.
+    NothingWasRunning,
+    /// Handed over: *stopped* follows once the agent has gone.
+    Sent,
+    /// Something was running and the Stop could not be handed over, so
+    /// nothing can confirm the work ended.
+    CouldNotBeSent,
+}
+
 /// One request still being read, and whether a Stop was sent on it.
 #[derive(Debug)]
 struct Running {
@@ -69,14 +87,18 @@ impl TheRequestsRunning {
     }
 
     /// **Stop the request from `who`**: shut this side's sending half. Answers
-    /// whether one was running to stop.
-    pub(crate) fn stop(&self, who: WhoAsked) -> bool {
+    /// whether one was running, and whether the Stop could be handed over.
+    pub(crate) fn stop(&self, who: WhoAsked) -> TheStop {
         let mut running = self.0.lock().unwrap_or_else(PoisonError::into_inner);
         let Some(one) = running.iter_mut().find(|one| one.who == who) else {
-            return false;
+            return TheStop::NothingWasRunning;
         };
         one.stopped = true;
-        one.connection.shutdown(std::net::Shutdown::Write).is_ok()
+        if one.connection.shutdown(std::net::Shutdown::Write).is_ok() {
+            TheStop::Sent
+        } else {
+            TheStop::CouldNotBeSent
+        }
     }
 }
 
@@ -120,7 +142,7 @@ mod tests {
         let who = WhoAsked::ATaskWindow(WhichTask::numbered(0));
         let (shell, mut agent) = UnixStream::pair().unwrap();
         running.began(who, &shell);
-        assert!(running.stop(who));
+        assert_eq!(running.stop(who), TheStop::Sent);
         assert_eq!(
             agent.read(&mut [0_u8; 1]).unwrap(),
             0,
@@ -136,7 +158,7 @@ mod tests {
     fn a_stop_for_nothing_running_stops_nothing() {
         let running = TheRequestsRunning::default();
         let who = WhoAsked::ATaskWindow(WhichTask::numbered(1));
-        assert!(!running.stop(who));
+        assert_eq!(running.stop(who), TheStop::NothingWasRunning);
         let (shell, _agent) = UnixStream::pair().unwrap();
         running.began(who, &shell);
         assert!(!running.ended(who));

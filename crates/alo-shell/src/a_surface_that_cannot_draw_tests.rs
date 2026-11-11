@@ -70,6 +70,7 @@ fn a_record_that_cannot_draw_leaves_the_rest_of_the_frame() {
     let pictures = crate::nested_desktop::frame_pictures(
         crate::DesktopFrame {
             tasks: &[],
+            tasks_aside: crate::TheTasksAside::NONE,
             market: None,
             what_each_application_draws: &alo_dock::artwork::NOTHING,
             the_dock_has_open: &crate::what_the_dock_has_open::NOTHING,

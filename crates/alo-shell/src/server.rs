@@ -589,6 +589,12 @@ pub struct Server {
     /// `asked_to_put_aside`: deciding *which* preview needs the live `Panel` for the identity
     /// check, and input has no desktop in scope.
     pub(crate) asked_to_bring_back: Vec<Point<i32, Physical>>,
+    /// **The running task whose card a person opened** from its square in the
+    /// right-hand panel, if any (`crate::a_task_card_is_pressed`).
+    pub(crate) the_task_card_open: Option<alo_put_aside::TaskNumber>,
+    /// Task windows a person pressed Minimise on, waiting for the frame that
+    /// lends the panel (`crate::a_task_goes_aside`).
+    pub(crate) tasks_asked_to_go_aside: Vec<crate::the_tasks_a_person_opened::WhichTask>,
     /// Buttons whose press the panel took, so their release is taken too.
     ///
     /// **A client must never see a release for a press it did not see.** The press is swallowed
@@ -951,6 +957,8 @@ impl Server {
             controls_fading: Vec::new(),
             keyboard_on_edges: Vec::new(),
             asked_to_bring_back: Vec::new(),
+            the_task_card_open: None,
+            tasks_asked_to_go_aside: Vec::new(),
             clicks_the_panel_took: std::collections::HashSet::new(),
             gestures: Default::default(),
             // Nobody has told this seat what a chord means, so it takes none.

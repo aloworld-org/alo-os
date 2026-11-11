@@ -111,8 +111,20 @@ pub const WHAT_THIS_TASK_REACHES: Word = Word::saying(
      to.",
 );
 
-/// Every word this crate can say.
-pub const EVERY_WORD: [Word; 8] = [
+/// A Stop was asked for and this machine could not deliver it.
+pub const STOP_NOT_CONFIRMED: Word = Word::saying(
+    "tasks.status.not-confirmed",
+    "Stop requested \u{b7} not confirmed",
+)
+.noting(
+    "The status when the person pressed Stop and this machine could not deliver it to alo, so \
+     it cannot say whether the work ended. **Never translate this as *stopped***: the work may \
+     still be running. Drawn in amber, on the task window and on its card in the panel.",
+);
+
+/// Every word this crate can say: the task window's, then its card's and
+/// square's in the right-hand panel (`crate::card_words`).
+pub const EVERY_WORD: [Word; 28] = [
     A_TASK,
     ALO_IS_WORKING,
     WAITING_FOR_YOUR_PERMISSION,
@@ -121,6 +133,26 @@ pub const EVERY_WORD: [Word; 8] = [
     COMPLETE,
     REPLY_TO_ALO,
     WHAT_THIS_TASK_REACHES,
+    STOP_NOT_CONFIRMED,
+    crate::card_words::NEEDS_YOUR_OK,
+    crate::card_words::STOPPED_CHANGES_KEPT,
+    crate::card_words::STOPPED_NOTHING_CHANGED,
+    crate::card_words::DONE,
+    crate::card_words::WAITING_FOR_ALO_TO_CONFIRM,
+    crate::card_words::CHANGES_KEPT_BEFORE_STOP,
+    crate::card_words::NOTHING_CHANGED_BEFORE_STOP,
+    crate::card_words::CANNOT_CONFIRM_IT_STOPPED,
+    crate::card_words::ANSWER_READY,
+    crate::card_words::LAST_APPROVED,
+    crate::card_words::NOTHING_APPROVED_YET,
+    crate::card_words::UNDO_IS_IN_HISTORY,
+    crate::card_words::STOP,
+    crate::card_words::REVIEW,
+    crate::card_words::OPEN,
+    crate::card_words::RAIL_WORKING,
+    crate::card_words::RAIL_NEEDS_YOU,
+    crate::card_words::RAIL_STOPPED,
+    crate::card_words::RAIL_NAME,
 ];
 
 /// Why this crate's words did not go into a vocabulary.

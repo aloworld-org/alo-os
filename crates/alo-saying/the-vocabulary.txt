@@ -1999,8 +1999,28 @@ starting.refused.would-not-be-told	This computer would not be told to start Wind
 starting.starts-at-alo-os	This computer starts alo OS when nobody chooses
 starting.starts-at-windows	This computer starts Windows when nobody chooses
 starting.windows-next	Windows will start the next time you switch this computer on. Nothing else changed: the time after that, it starts the way it always does
+tasks.card.answer-ready	Answer ready
+tasks.card.cannot-confirm	This machine cannot confirm it stopped
+tasks.card.changes-kept	Changes kept before Stop: {count}
+tasks.card.done	Done
+tasks.card.last-approved	Last approved: {what}
+tasks.card.needs-your-ok	Needs your OK
+tasks.card.nothing-approved	Nothing approved yet
+tasks.card.nothing-changed	Nothing was changed before Stop
+tasks.card.open	Open
+tasks.card.review	Review
+tasks.card.stop	Stop
+tasks.card.stopped-changes-kept	Stopped · changes kept
+tasks.card.stopped-nothing-changed	Stopped · nothing changed
+tasks.card.undo-in-history	Undo is in History
+tasks.card.waiting-to-confirm	Waiting for alo to confirm
 tasks.composer.invitation	Reply to alo or change the direction…
+tasks.rail.name	alo task, {state}: {task}
+tasks.rail.needs-you	Needs you
+tasks.rail.stopped	Stopped
+tasks.rail.working	Working
 tasks.status.complete	Complete
+tasks.status.not-confirmed	Stop requested · not confirmed
 tasks.status.stopped	Stopped
 tasks.status.stopping	Stopping…
 tasks.status.waiting	Waiting for your permission
