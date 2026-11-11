@@ -25,11 +25,12 @@
 
 use std::time::SystemTime;
 
-use alo_applications::NothingOpens;
+use alo_applications::{NotALink, NotAWebAddress, NothingOpens, NothingOpensLinks};
 use alo_capability::Applicant;
 use alo_strings::{Filling, Said, Strings};
 
 use crate::judging::Allowed;
+use crate::link_answered::LinkOpened;
 use crate::not_a_request::NotARequest;
 use crate::open_with::OpensWith;
 use crate::portal::Portal;
@@ -107,6 +108,13 @@ pub enum Outcome {
     /// [`Unanswered::NotOpened`] for the same application follows, and the
     /// response is `2`.
     Opened(OpensWith),
+    /// A link the person followed is handed to their default application.
+    ///
+    /// Kept before the desktop is asked to start it, so nothing is opened on a
+    /// request the record does not hold. If the desktop is then not there, or
+    /// cannot start it, an [`Unanswered::NoDesktop`] or
+    /// [`Unanswered::NotOpenedALink`] follows, and the response is `2`.
+    LinkOpened(LinkOpened),
     /// The application read the person's appearance settings.
     AppearanceRead(Allowed),
     /// The application was sent the appearance settings that changed.
@@ -119,6 +127,10 @@ pub enum Outcome {
     NotARequest(NotARequest),
     /// Nothing opens the file.
     NothingOpens(NothingOpens),
+    /// What an application asked to have opened as a link is not one.
+    NotALink(NotALink),
+    /// Nothing on this machine opens that kind of link.
+    NothingOpensLinks(NothingOpensLinks),
     /// It was allowed as far as it went, or never reached the grants, and could
     /// not be answered.
     Unanswered(Unanswered),
@@ -137,12 +149,15 @@ impl Outcome {
         match self {
             Self::SecretHandedOver(_)
             | Self::Opened(_)
+            | Self::LinkOpened(_)
             | Self::AppearanceRead(_)
             | Self::AppearanceSent(_)
             | Self::NetworkRead(_) => 0,
             Self::Refused(_)
             | Self::NotARequest(_)
             | Self::NothingOpens(_)
+            | Self::NotALink(_)
+            | Self::NothingOpensLinks(_)
             | Self::Unanswered(_) => 2,
         }
     }
@@ -167,6 +182,7 @@ impl Outcome {
                 &Filling::of("application", opens.allowed().application().as_str())
                     .and("opener", opens.opener().application().identifier()),
             ),
+            Self::LinkOpened(opened) => opened.said(strings),
             Self::AppearanceRead(allowed) => strings.say(
                 &words::APPEARANCE_READ.key(),
                 &Filling::of("application", allowed.application().as_str()),
@@ -182,7 +198,26 @@ impl Outcome {
             Self::Refused(refused) => refused.said(strings),
             Self::NotARequest(not) => not.said(strings),
             Self::NothingOpens(nothing) => nothing.said(strings),
+            Self::NotALink(not) => not_a_link_said(not, strings),
+            Self::NothingOpensLinks(nothing) => nothing.said(strings),
             Self::Unanswered(unanswered) => unanswered.said(strings),
+        }
+    }
+}
+
+/// What a refusal of a link says. The address is never repeated: it was
+/// written outside this machine. The scheme is, being short and checked.
+pub(crate) fn not_a_link_said(not: &NotALink, strings: &Strings) -> Said {
+    match not {
+        NotALink::NotOpenedHere { scheme } => strings.say(
+            &words::NOT_A_LINK_SCHEME.key(),
+            &Filling::of("scheme", scheme.as_str()),
+        ),
+        NotALink::Web(NotAWebAddress::CarriesAPassword) => {
+            strings.say(&words::LINK_CARRIES_A_PASSWORD.key(), &Filling::nothing())
+        }
+        NotALink::NoScheme | NotALink::Web(_) | NotALink::Mail(_) => {
+            strings.say(&words::NOT_A_LINK.key(), &Filling::nothing())
         }
     }
 }
@@ -216,8 +251,24 @@ pub enum Unanswered {
         /// Its identifier.
         opener: String,
     },
-    /// A web link or a folder, which nothing on this machine decides yet.
+    /// A web link or a folder, which nothing on this machine decided until
+    /// 2026-11-12. **Kept only by answers from before that day**, which are read
+    /// back as they were; a folder is now [`Self::FolderNotDecidedHere`].
     NotDecidedHere,
+    /// A folder, which nothing on this machine decides what opens yet.
+    FolderNotDecidedHere,
+    /// The desktop that starts applications was not there to start the one a
+    /// link opens in.
+    NoDesktop {
+        /// The application the link was handed to.
+        opener: String,
+    },
+    /// The desktop was asked and could not start the application a link
+    /// opens in.
+    NotOpenedALink {
+        /// The application the link was handed to.
+        opener: String,
+    },
     /// A setting this machine does not share with applications: another
     /// namespace than appearance, or a key it does not hold.
     NoSuchSetting,
@@ -244,6 +295,14 @@ impl Unanswered {
                 (words::NOT_OPENED, Filling::of("opener", opener.as_str()))
             }
             Self::NotDecidedHere => (words::NOT_DECIDED_HERE, Filling::nothing()),
+            Self::FolderNotDecidedHere => (words::FOLDER_NOT_DECIDED_HERE, Filling::nothing()),
+            Self::NoDesktop { opener } => {
+                (words::NO_DESKTOP, Filling::of("opener", opener.as_str()))
+            }
+            Self::NotOpenedALink { opener } => (
+                words::NOT_OPENED_A_LINK,
+                Filling::of("opener", opener.as_str()),
+            ),
             Self::NoSuchSetting => (words::NO_SUCH_SETTING, Filling::nothing()),
             Self::AppearanceUnread => (words::APPEARANCE_UNREAD, Filling::nothing()),
             Self::NetworkUnread => (words::NETWORK_UNREAD, Filling::nothing()),
@@ -282,6 +341,13 @@ mod tests {
                 opener: "org.gnome.Papers".to_owned(),
             },
             Unanswered::NotDecidedHere,
+            Unanswered::FolderNotDecidedHere,
+            Unanswered::NoDesktop {
+                opener: "org.mozilla.firefox".to_owned(),
+            },
+            Unanswered::NotOpenedALink {
+                opener: "org.mozilla.firefox".to_owned(),
+            },
             Unanswered::NoSuchSetting,
             Unanswered::AppearanceUnread,
             Unanswered::NetworkUnread,
@@ -319,6 +385,13 @@ mod tests {
             Unanswered::NotWritten,
             Unanswered::NotAFile,
             Unanswered::NotDecidedHere,
+            Unanswered::FolderNotDecidedHere,
+            Unanswered::NoDesktop {
+                opener: "org.mozilla.firefox".to_owned(),
+            },
+            Unanswered::NotOpenedALink {
+                opener: "org.mozilla.firefox".to_owned(),
+            },
             Unanswered::NoSuchSetting,
             Unanswered::AppearanceUnread,
             Unanswered::NetworkUnread,

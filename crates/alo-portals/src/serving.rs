@@ -8,7 +8,7 @@
 //! | Interface | Answered from |
 //! |---|---|
 //! | `org.freedesktop.portal.Secret` | the person's one keyring (`crate::secret_portal`) |
-//! | `org.freedesktop.portal.OpenURI` | *what opens what* (`crate::open_uri_portal`) |
+//! | `org.freedesktop.portal.OpenURI` | *what opens what*, and the desktop for a link (`crate::open_uri_portal`) |
 //! | `org.freedesktop.portal.Settings` | what the person set for how the machine looks (`crate::settings_portal`) |
 //! | `org.freedesktop.portal.NetworkMonitor` | how far this machine reaches (`crate::network_monitor_portal`) |
 //!
@@ -37,6 +37,7 @@ use std::thread::JoinHandle;
 use crate::keeping_secrets::KeepsSecrets;
 use crate::network_monitor_portal::NetworkMonitorPortal;
 use crate::open_uri_portal::OpenUriPortal;
+use crate::opening_links::{NoDesktopToAsk, OpensLinks};
 use crate::recording::Recording;
 use crate::sandboxed::Sandboxes;
 use crate::secret_portal::SecretPortal;
@@ -59,6 +60,8 @@ pub struct Backend {
     sandboxes: Sandboxes,
     /// Where every answer is written.
     record: Arc<dyn Recording>,
+    /// How the desktop is asked to start the application a link opens in.
+    links: Arc<dyn OpensLinks>,
 }
 
 impl Backend {
@@ -76,7 +79,20 @@ impl Backend {
             keyring,
             sandboxes,
             record,
+            links: Arc::new(NoDesktopToAsk),
         }
+    }
+
+    /// The same backend, asking the desktop through `links` to start the
+    /// application a link opens in.
+    ///
+    /// **A backend not given one answers every link with a refusal** naming
+    /// the desktop as not there (`crate::opening_links::NoDesktopToAsk`),
+    /// rather than claiming a link opened.
+    #[must_use]
+    pub fn opening_links_with(mut self, links: Arc<dyn OpensLinks>) -> Self {
+        self.links = links;
+        self
     }
 
     /// Serve the decided portals on the bus at `address`, until the returned
@@ -157,6 +173,11 @@ impl Backend {
     /// Where every answer is written.
     pub(crate) fn record(&self) -> &dyn Recording {
         self.record.as_ref()
+    }
+
+    /// How the desktop is asked to start what a link opens in.
+    pub(crate) fn links(&self) -> &dyn OpensLinks {
+        self.links.as_ref()
     }
 }
 

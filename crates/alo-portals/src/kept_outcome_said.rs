@@ -23,7 +23,8 @@ use alo_capability::words as capability;
 use alo_capability::{Ask, Reach};
 use alo_strings::{Filling, Said, Strings};
 
-use crate::kept_outcome::{KeptOutcome, NothingOpensAs, RefusedAs};
+use crate::kept_outcome::{KeptOutcome, NotALinkAs, NothingOpensAs, PassedOverAs, RefusedAs};
+use crate::link_answered::said_as_opened;
 use crate::portal::{Over, Portal};
 use crate::words;
 
@@ -47,12 +48,22 @@ impl KeptOutcome {
                 &words::OPENED_IN.key(),
                 &asked.and("opener", opener.as_str()),
             ),
+            Self::LinkOpened {
+                opener,
+                address,
+                asked_to_choose,
+                ..
+            } => said_as_opened(asked, address, opener, *asked_to_choose, strings),
             Self::AppearanceRead { .. } => strings.say(&words::APPEARANCE_READ.key(), &asked),
             Self::AppearanceSent { .. } => strings.say(&words::APPEARANCE_SENT.key(), &asked),
             Self::NetworkRead { .. } => strings.say(&words::NETWORK_READ.key(), &asked),
             Self::Refused { why } => refused(*why, asked, portal, strings),
             Self::NotARequest { why } => why.said(strings),
             Self::NothingOpens { why } => nothing_opens(why, strings),
+            Self::NotALink { why } => not_a_link(why, strings),
+            Self::NothingOpensLinks { link, passed_over } => {
+                nothing_opens_links(link, passed_over.as_ref(), strings)
+            }
             Self::Unanswered { why } => why.said(strings),
         }
     }
@@ -126,6 +137,51 @@ fn nothing_opens(why: &NothingOpensAs, strings: &Strings) -> Said {
         }
         NothingOpensAs::Unreadable => strings.say(&words::FILE_NOT_READ.key(), &Filling::nothing()),
     }
+}
+
+/// Why a link was not opened, from what the file kept of it.
+fn not_a_link(why: &NotALinkAs, strings: &Strings) -> Said {
+    match why {
+        NotALinkAs::NotOpenedHere { scheme } => strings.say(
+            &words::NOT_A_LINK_SCHEME.key(),
+            &Filling::of("scheme", scheme.as_str()),
+        ),
+        NotALinkAs::CarriesAPassword => {
+            strings.say(&words::LINK_CARRIES_A_PASSWORD.key(), &Filling::nothing())
+        }
+        NotALinkAs::NotALink => strings.say(&words::NOT_A_LINK.key(), &Filling::nothing()),
+    }
+}
+
+/// Why nothing opened a kind of link, in `alo-applications`' own words. A kind
+/// the file spells some other way is said as no browser — the file is this
+/// crate's, and writes only `web` and `mail`.
+fn nothing_opens_links(link: &str, passed: Option<&PassedOverAs>, strings: &Strings) -> Said {
+    use alo_applications::words as applications;
+    let mail = link == alo_applications::LinkKind::Mail.spelled();
+    let word = match (mail, passed) {
+        (false, None) => applications::NOTHING_OPENS_WEB_LINKS,
+        (true, None) => applications::NOTHING_OPENS_MAIL_LINKS,
+        (false, Some(PassedOverAs::NotInstalled(_))) => {
+            applications::NOTHING_OPENS_WEB_LINKS_CHOICE_GONE
+        }
+        (true, Some(PassedOverAs::NotInstalled(_))) => {
+            applications::NOTHING_OPENS_MAIL_LINKS_CHOICE_GONE
+        }
+        (false, Some(PassedOverAs::ATerminal(_))) => {
+            applications::NOTHING_OPENS_WEB_LINKS_CHOICE_A_TERMINAL
+        }
+        (true, Some(PassedOverAs::ATerminal(_))) => {
+            applications::NOTHING_OPENS_MAIL_LINKS_CHOICE_A_TERMINAL
+        }
+    };
+    let filling = match passed {
+        None => Filling::nothing(),
+        Some(PassedOverAs::NotInstalled(chosen) | PassedOverAs::ATerminal(chosen)) => {
+            Filling::of("chosen", chosen.as_str())
+        }
+    };
+    strings.say(&word.key(), &filling)
 }
 
 #[cfg(test)]

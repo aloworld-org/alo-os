@@ -17,16 +17,34 @@
 //! 5. says `0` only when the application opened it. When it did not, that is
 //!    recorded after the answer as [`Unanswered::NotOpened`], and is a `2`.
 //!
-//! **`OpenURI` and `OpenDirectory` are answered `2`**, recorded as
-//! [`Unanswered::NotDecidedHere`]. Nothing on this machine decides what opens a
-//! web link or a folder yet, and a backend that answered *opened* without
-//! opening would keep an application from asking again for something that never
-//! happened. They are methods of the same interface as `OpenFile`, so declining
-//! them by not registering is not possible without declining open-with too.
+//! **`OpenURI(s parent_window, s uri, a{sv} options)`** opens a link — `http`,
+//! `https` or `mailto` — in the person's default application for it, **with no
+//! grant**, by the owner's decision of 2026-11-12 (*"No — open in my default,
+//! but record it (Recommended)"*). The backend:
 //!
-//! `writable`, `ask` and `activation_token` are read by nothing: a file is
-//! handed to its opener as the person's file, nothing here asks anybody
-//! anything, and no window is raised by a backend with no windows.
+//! 1. names the asking application by its sandbox, as for every request;
+//! 2. reads what opens what, and asks `crate::link_answered` what opens the
+//!    link — refused, and recorded, when it is not a link or nothing opens it;
+//! 3. records the answer, [`Outcome::LinkOpened`], naming who asked, the
+//!    address and what opens it — and **only once the record has kept it** asks
+//!    the desktop to start that application with the link, exactly as a
+//!    person's press starts it (`crate::opening_links`);
+//! 4. says `0` only when the desktop took it. When it did not, that is
+//!    recorded after the answer as [`Unanswered::NoDesktop`] or
+//!    [`Unanswered::NotOpenedALink`], and is a `2`.
+//!
+//! **`ask` is read and not offered**: the chooser waits for the owner's design,
+//! so the default is used and the record says the application asked to choose.
+//!
+//! **`OpenDirectory` is answered `2`**, recorded as
+//! [`Unanswered::FolderNotDecidedHere`]: nothing on this machine decides what
+//! opens a folder yet, and a backend that answered *opened* without opening
+//! would keep an application from asking again for something that never
+//! happened.
+//!
+//! `writable` and `activation_token` are read by nothing: a file is handed to
+//! its opener as the person's file, and the desktop gives a new window the
+//! keyboard as it gives every window a person opened.
 
 use std::collections::HashMap;
 use std::fs::File;
@@ -38,10 +56,14 @@ use zbus::fdo;
 use zbus::message::Header;
 use zbus::zvariant::{OwnedFd, OwnedObjectPath, OwnedValue};
 
+use alo_capability::Applicant;
+
 use crate::answered::{Outcome, Unanswered};
 use crate::asked::{Asked, REFUSED};
+use crate::link_answered::{LinkNotOpened, link_answered};
 use crate::open_with::{NotOpened, OpensWith, answered};
 use crate::opening::opened_in;
+use crate::opening_links::LinkStarted;
 use crate::portal::Portal;
 use crate::serving::Backend;
 
@@ -56,17 +78,47 @@ pub(crate) struct OpenUriPortal {
 
 #[zbus::interface(name = "org.freedesktop.portal.OpenURI")]
 impl OpenUriPortal {
-    /// A web link, which nothing here decides what opens.
+    /// A link, opened in the person's default application for its kind.
     #[zbus(name = "OpenURI")]
     async fn open_uri(
         &self,
         #[zbus(header)] header: Header<'_>,
         #[zbus(connection)] connection: &zbus::Connection,
         _parent_window: &str,
-        _uri: &str,
+        uri: &str,
         options: HashMap<String, OwnedValue>,
     ) -> fdo::Result<OwnedObjectPath> {
-        self.not_decided_here(connection, &header, &options).await
+        let asked = Asked::on(
+            connection,
+            &header,
+            &options,
+            &self.backend,
+            Portal::OpenWith,
+        )
+        .await?;
+        let asked_to_choose = options
+            .get("ask")
+            .is_some_and(|ask| ask.downcast_ref::<bool>().unwrap_or(false));
+        let opened = match self.link(asked.application(), uri, asked_to_choose) {
+            Ok(opened) => opened,
+            Err(outcome) => return asked.answered(connection, &self.backend, *outcome).await,
+        };
+        let opener = opened.opener().application().identifier().to_owned();
+        let link = opened.link().clone();
+        let Ok(response) = asked.recorded(&self.backend, Outcome::LinkOpened(opened)) else {
+            return asked.responded(connection, REFUSED).await;
+        };
+        let after = match self.backend.links().opened(&opener, &link) {
+            LinkStarted::Asked => return asked.responded(connection, response).await,
+            LinkStarted::NoDesktop => Unanswered::NoDesktop { opener },
+            LinkStarted::NotInstalled | LinkStarted::CouldNotAsk => {
+                Unanswered::NotOpenedALink { opener }
+            }
+        };
+        // The answer was kept and the link not opened; what follows it says
+        // why, and the response is the refusal either way.
+        let _ = asked.recorded(&self.backend, Outcome::Unanswered(after));
+        asked.responded(connection, REFUSED).await
     }
 
     /// A file, opened in the application that opens its kind.
@@ -115,7 +167,21 @@ impl OpenUriPortal {
         _fd: OwnedFd,
         options: HashMap<String, OwnedValue>,
     ) -> fdo::Result<OwnedObjectPath> {
-        self.not_decided_here(connection, &header, &options).await
+        let asked = Asked::on(
+            connection,
+            &header,
+            &options,
+            &self.backend,
+            Portal::OpenWith,
+        )
+        .await?;
+        asked
+            .answered(
+                connection,
+                &self.backend,
+                Outcome::Unanswered(Unanswered::FolderNotDecidedHere),
+            )
+            .await
     }
 
     /// The version of this interface.
@@ -126,21 +192,35 @@ impl OpenUriPortal {
 }
 
 impl OpenUriPortal {
-    /// Answer a request nothing here decides, and record it with its asker.
-    async fn not_decided_here(
+    /// What opens the link `uri` for `application` — or the outcome it is
+    /// answered with instead. **No grant is read**: the owner's decision of
+    /// 2026-11-12, `crate::link_answered`'s header.
+    fn link(
         &self,
-        connection: &zbus::Connection,
-        header: &Header<'_>,
-        options: &HashMap<String, OwnedValue>,
-    ) -> fdo::Result<OwnedObjectPath> {
-        let asked = Asked::on(connection, header, options, &self.backend, Portal::OpenWith).await?;
-        asked
-            .answered(
-                connection,
-                &self.backend,
-                Outcome::Unanswered(Unanswered::NotDecidedHere),
-            )
-            .await
+        application: Option<&str>,
+        uri: &str,
+        asked_to_choose: bool,
+    ) -> Result<crate::LinkOpened, Box<Outcome>> {
+        let Some(application) = application else {
+            return Err(Box::new(Outcome::Unanswered(Unanswered::NotIdentified)));
+        };
+        let Some(applications) = self.backend.machine().applications() else {
+            return Err(Box::new(Outcome::Unanswered(
+                Unanswered::ApplicationsUnread,
+            )));
+        };
+        link_answered(
+            Applicant::named(application),
+            uri,
+            asked_to_choose,
+            &applications.what_opens(),
+        )
+        .map_err(|not| {
+            Box::new(match not {
+                LinkNotOpened::NotALink(not) => Outcome::NotALink(not),
+                LinkNotOpened::NothingOpensLinks(nothing) => Outcome::NothingOpensLinks(nothing),
+            })
+        })
     }
 
     /// What opens the file behind `fd` for `application`, and the path it is
