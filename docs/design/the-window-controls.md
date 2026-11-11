@@ -413,8 +413,22 @@ these words:
   `23:2`, approved with **"Approve as drawn"** on 2026-11-11 and recorded in
   [the windows put aside](the-windows-put-aside.md).
 
-**Not built yet**: the field and the answer card. The task's place in the panel
-(the third ruling) is stage 3a below.
+**The field is built** (stage 3b below). The row keeps `11:76`'s shape, ground
+and two words; **two things are not off a frame**, because the design has not
+drawn the field typed in: the prompt is drawn `text/muted` once the keyboard is
+in the field, so a prompt cannot be mistaken for typed words, and the caret is a
+navy line one unit wide and the words' line (18) tall. Words longer than the row
+show the stretch that keeps the caret in view. Keys: letters and Space type at
+the caret; Left, Right, Home and End move it; Backspace and Delete erase; Enter
+sends; Escape clears the words, then closes the panel; Up and Down leave the
+field for the choice above or below, keeping the words while the panel is open.
+A reader is told the row is an entry named *Ask about this window…*.
+
+**Not built yet: the answer card.** No frame draws it — its size, where it
+anchors, how the working line and Stop sit, how a long answer scrolls, or
+*Continue in a task window* — so until one does, or the owner rules it in words,
+the request still opens a task window, as it did from the launcher. The task's
+place in the panel (the third ruling) is stage 3a below.
 
 ## What is built
 
@@ -431,5 +445,6 @@ that part is **not built**.
 | 2 | Move to…, Undo placement | not built |
 | 3 | Help with this window, the working state and Stop: the panel's row while alo may be asked; the launcher opened for the window, naming it, asking nothing until sent; the window's title and identifier read at Enter and sent to alo as a hint (`docs/contracts/asking-socket.md`, line 4); the teal edge and the `11:173` band with alo's mark, the person's words and Stop on that window for the turn | #1156, on #1155 |
 | 3a | The panel's place for a running task (`23:2`): a task window's Minimise puts it in the right-hand panel, still running, as a 48 × 48 square whose card says which of six states it is in and offers Stop, Review or Open | #1172 |
-| 3b | Help asked in the panel's own field, and the answer card under it | not built |
+| 3b | Help asked in the panel's own field: typed in place, sent with the window read at Enter, no launcher | this change |
+| 3c | The answer card under the panel, its working line and Stop, Continue in a task window | not built: no frame draws it |
 | 4 | Capture & export | not built |

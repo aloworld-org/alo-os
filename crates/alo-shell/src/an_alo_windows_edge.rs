@@ -67,6 +67,7 @@ pub(crate) fn its_picture(
         &edge,
         OverTheEdge {
             menu: None,
+            field: None,
             showing: None,
             alo: None,
         },

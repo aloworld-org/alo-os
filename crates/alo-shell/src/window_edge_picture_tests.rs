@@ -214,6 +214,7 @@ fn a_pointed_at_control_shows_its_name() {
         &band(),
         OverTheEdge {
             menu: None,
+            field: None,
             showing: Some(crate::window_edge_tooltip::Because::APointerIsOnIt),
             alo: None,
         },
@@ -243,6 +244,7 @@ fn an_open_panel_is_drawn_above_every_window() {
             &edge,
             OverTheEdge {
                 menu: Some((menu, crate::window_menu_paint::PointingAtTheMenu::default())),
+                field: None,
                 showing: None,
                 alo: None,
             },
