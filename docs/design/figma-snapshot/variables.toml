@@ -303,6 +303,11 @@ seen_in = "253:17045, 364:25567"
 # here rather than only in a report because the next lane to need a font will
 # otherwise read the brief and use Inter.
 #
+# **Decided 2026-11-11.** The owner, answering a question dialog: *"Manrope
+# (Recommended)"*. Manrope is the final typeface for alo's interfaces; the brief's
+# *Inter throughout* is superseded. Inter stays bundled only as the fallback for
+# scripts Manrope has no glyphs for (`docs/design/the-canvas-in-numbers.md`).
+#
 # Measured from `8:2`; `Label/Medium` also appears in `8:8`.
 
 [unadopted.typography]

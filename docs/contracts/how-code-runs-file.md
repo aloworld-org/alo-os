@@ -186,6 +186,32 @@ in-the-terminal = "at-full-trust"
   leaves no change waiting and `alo-ask` neither reads this key nor approves
   anything. It is not switched off and not rewritten: at every other level it
   works exactly as above, and Settings keeps showing what the person chose.
+## And where alo works in an application
+
+*Added 2026-11-10, additively; `format` stays `1`.* ADR 0143 Q6 and the
+owner's answer A: by default alo works in a copy of an application of its own,
+and the person may let it work in their own window instead, told that the
+indicator can then say only *that* the application is sending. Kept here, beside
+the level, under the same three rules about who may have written it — so an
+agent cannot turn it up for itself.
+
+```toml
+format = 1
+in-applications = "in-their-window"
+```
+
+| Key | Meaning |
+|---|---|
+| `in-applications` | Optional. `in-alos-copy` is alo's own copy, `in-their-window` lets alo work in the person's own window. Any other word is refused, and the whole file with it. |
+
+- **Absent is alo's own copy**, which is how a machine arrives.
+- **A reader that cannot read the file answers alo's own copy**: the desktop's
+  door is the one reader (`application-door.md`, *work-in-*), and it reads the
+  file at each ask.
+- **Each writer keeps the others' keys.** A file holding only this key is a
+  person who chose it and nothing else, and reads as exactly that; a file
+  holding none of the three keys is still refused as saying nothing.
+
 ## What the three protections do not depend on
 
 ADR 0064 keeps three things on at every level — the record, the snapshot taken

@@ -81,7 +81,7 @@ use smithay::utils::{Physical, Point, Rectangle, Size};
 use crate::RenderError;
 use crate::desktop_look::DesktopLook;
 use crate::display_scale::DisplayScale;
-use crate::painted::{Solid, Washed};
+use crate::painted::{Inked, Solid, Washed};
 
 /// The largest display side, in pixels, the panel is laid out for. The same
 /// ceiling `crate::dock_raster` holds, and for the same reason: beyond it the
@@ -143,6 +143,10 @@ pub(crate) struct PanelPicture {
     pub(crate) slots: Vec<Rectangle<i32, Physical>>,
     /// Flat shapes, in painting order.
     pub(crate) solids: Vec<Solid>,
+    /// **What each card and the control show**, over the rail: filled in by
+    /// `crate::panel_cards::drawn`, which needs the application's artwork and
+    /// the fonts this file has no business holding. Empty as laid out here.
+    pub(crate) inked: Vec<Inked>,
     /// **One slot per task put aside**, with which task it is — in the same
     /// walk down the rail as [`Self::slots`], so windows and tasks sit in the
     /// order they were put aside (the approved design `23:2`). Nothing is
@@ -313,11 +317,10 @@ pub(crate) fn picture(
             Point::from((rail_x.saturating_add(margin), rail_y.saturating_add(margin))),
             Size::from((icon, icon)),
         );
+        // **No fill**: the design draws a chevron on the rail here, which
+        // `crate::panel_cards` inks. Until 2026-11-11 this was an accent
+        // square the size of a card, and one window put aside read as two.
         control = Some(its_own);
-        solids.push(Solid {
-            area: its_own,
-            colour: palette.accent,
-        });
         // **Windows and tasks in one walk**, newest put aside first, so each
         // lands in the slot its turn in the panel gives it.
         for (which, aside) in (0..holding).zip(panel.everything()) {
@@ -336,11 +339,10 @@ pub(crate) fn picture(
             );
             match aside {
                 Aside::AWindow(_) => {
+                    // What the card shows — the hit area and the application's
+                    // mark — is `crate::panel_cards`', painted over the rail as
+                    // `inked`.
                     slots.push(slot);
-                    solids.push(Solid {
-                        area: slot,
-                        colour: palette.accent,
-                    });
                 }
                 Aside::ATask(task) => task_squares.push((task.task(), slot)),
             }
@@ -354,6 +356,7 @@ pub(crate) fn picture(
         control,
         slots,
         solids,
+        inked: Vec::new(),
         task_squares,
         washed: Vec::new(),
         open_card: None,

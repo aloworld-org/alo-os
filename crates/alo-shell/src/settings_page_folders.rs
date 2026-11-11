@@ -14,11 +14,11 @@
 
 use std::time::SystemTime;
 
-use alo_capability::Reach;
+use alo_capability::{AloInApplications, Reach};
 use alo_changing::Row;
 use alo_strings::{Filling, Strings};
 
-use crate::settings_page::{ABlock, ANote, ARow, ASection, AnAction, TheKind, said};
+use crate::settings_page::{ABlock, ANote, ARisk, ARow, ASection, AnAction, TheKind, said};
 use crate::settings_type::as_a_name;
 use crate::settings_window::{Open, SettingsRow};
 use crate::the_settings_icons::ASettingsIcon;
@@ -156,5 +156,49 @@ pub(crate) fn the_blocks(open: &Open, strings: &Strings, now: SystemTime) -> Vec
             footnote: None,
         }));
     }
+    blocks.push(ABlock::Section(ASection {
+        heading: Some(said(strings, w::IN_APPLICATIONS)),
+        rows: where_alo_works(open, strings),
+        footnote: None,
+    }));
     blocks
+}
+
+/// **Where alo works in an application** — ADR 0143 Q6 and the owner's answer
+/// A of 2026-11-10: alo's own copy, as a machine arrives, or the person's own
+/// window, with what that costs.
+///
+/// **The design has no frame for it**: it was decided after `550:741` was
+/// drawn. So it is built from the Running code page's pieces (`550:874`) — a
+/// choice per answer, and the *What it risks* box under the one that costs
+/// something, drawn whichever is chosen so it is read before choosing.
+/// `docs/design/the-settings-window.md` records the departure.
+fn where_alo_works(open: &Open, strings: &Strings) -> Vec<ARow> {
+    let chosen = open.alo_in_applications.is();
+    AloInApplications::ALL
+        .into_iter()
+        .map(|answer| {
+            // **Not drawn as names**: each begins with *alo*, which is never
+            // written with a capital — and the refusal quotes the second
+            // exactly as it is said here.
+            let mut row = ARow::named(
+                Some(SettingsRow::WhereAloWorks(answer)),
+                TheKind::AChoice {
+                    chosen: chosen == answer,
+                },
+                said(strings, answer.the_word()),
+            );
+            if answer == AloInApplications::default() {
+                row.tag = Some(said(strings, w::DEFAULT));
+            }
+            row.lines.push(said(strings, answer.what_it_is()));
+            if let Some(cost) = answer.what_it_costs() {
+                row.risk = Some(ARisk {
+                    heading: said(strings, w::WHAT_IT_RISKS),
+                    words: said(strings, cost),
+                });
+            }
+            row
+        })
+        .collect()
 }

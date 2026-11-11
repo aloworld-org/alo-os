@@ -209,8 +209,10 @@ desktop starts alo's own copy of Firefox, VSCodium or VS Code with a profile of
 its own, counts only that copy, and shows one of three lines; the person's own
 window is counted at neither setting; any other application is refused at the
 default (answer A); the door's words are in `application-door.md`. **Not yet:**
-a turn that asks the door (stage 4), the record entry that turn writes, the
-Settings choice answer A names, and any of it run on a machine. The owner
+a turn that asks the door (stage 4), the record entry that turn writes, and any
+of it run on a machine. **The Settings choice answer A names was built
+2026-11-10**: *alo may work in your own window*, on Folders alo can use, read
+by the door at each ask. The owner
 answered both questions on 2026-11-10 (below). **Size:** L. **Nothing that
 publishes is walked before this lands.**
 

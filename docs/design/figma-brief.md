@@ -98,6 +98,8 @@ sits on. Three states: #146C43 finished or allowed, #8C5A0A needs attention with
 nothing broken, #B42318 failed or refused. Never a colour alone — a colour and a
 word, or neither. The dark ground is #1F2529. Type: Inter throughout, EB Garamond
 for occasional editorial headings.
+*(Superseded 2026-11-11: the typeface is Manrope — the owner, "Manrope
+(Recommended)". See `figma-snapshot/variables.toml`.)*
 
 Design light and dark as equals. Support 24 languages, so no layout may depend
 on a label fitting in English. Keyboard operation and visible focus states
@@ -274,7 +276,8 @@ audited and each given the role it actually had, which is the canvas in one plac
 and a white surface in another.
 
 Type: **Inter** for everything a person operates; **EB Garamond** for the few
-editorial moments, used sparingly. Tabular figures wherever sizes, times or
+editorial moments, used sparingly. *(Superseded 2026-11-11: the typeface is
+**Manrope** — the owner, "Manrope (Recommended)".)* Tabular figures wherever sizes, times or
 progress line up.
 
 ### Constraints that will bite

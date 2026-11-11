@@ -1031,16 +1031,17 @@ fn the_persons_folders_to_send(server: &Server) -> Option<alo_instructing::ThePe
     )
 }
 
-/// The folders this person has granted, for a request about to be sent.
+/// The folders this person has granted, and whether they chose full access,
+/// for a request about to be sent.
 ///
 /// A free function rather than a method, because the two call sites are in a
 /// trait implementation. `crate::what_the_agent_may_reach` holds why the
 /// person's own side is what names them.
-fn the_folders_to_send(server: &Server) -> Vec<std::path::PathBuf> {
+fn the_folders_to_send(server: &Server) -> crate::what_the_agent_may_reach::WhatTheAgentMayReach {
     server
         .settings_places
         .as_ref()
-        .map_or_else(Vec::new, |places| {
+        .map_or_else(Default::default, |places| {
             crate::what_the_agent_may_reach::what_the_agent_may_reach(
                 places,
                 std::time::SystemTime::now(),
@@ -1336,6 +1337,10 @@ impl LoopInput for TheDesktopLane<'_> {
         // in. The reverse would bring back a window that was not in the panel yet and then
         // put it away, leaving it aside when they had asked for it back.
         server.bring_back_what_was_clicked(self.desktop.the_panel());
+        // **And a card whose window came back by any other road leaves**: the
+        // Dock, the alo Bar, a chord or the client itself restore without the
+        // panel (`crate::a_window_back_on_screen_leaves_the_panel`).
+        server.the_panel_lets_go_of_windows_no_longer_aside(self.desktop.the_panel());
         // **And what that same position means to the panel's reveal machine.** A separate
         // question from the peek: one asks which preview, this asks whether the edge or the
         // surface is being touched. Both read the one stored draw, so they cannot disagree

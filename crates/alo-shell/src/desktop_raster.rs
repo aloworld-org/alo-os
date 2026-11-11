@@ -371,11 +371,12 @@ pub(crate) fn picture(
     // mirrors it to the left *together with the Dock and the top-control
     // exclusion regions* — so the one fact this needs is already here, in the
     // look, and deriving it is why nothing names an edge.
-    let panel = crate::panel_raster::picture(
+    let edge = crate::panel_raster::the_edge_for(look.reading());
+    let mut panel = crate::panel_raster::picture(
         put_aside,
         look,
         size,
-        crate::panel_raster::the_edge_for(look.reading()),
+        edge,
         // **Concealed only under full screen, and then until somebody reaches
         // for it** — the Dock's rule above, at the right edge. Outside full
         // screen the panel is always there, so a window put aside is a card a
@@ -389,6 +390,18 @@ pub(crate) fn picture(
         // rail beside it is the same size to the eye on a dense screen.
         crate::display_scale::DisplayScale::of_per_cent(display_scale),
     )?;
+    // **What each card shows, and the control above them**: the application's
+    // own icon or its letter on the design's hit area, and a chevron
+    // (`crate::panel_cards`). Drawn here because this is where the artwork
+    // and the fonts are.
+    panel.inked = crate::panel_cards::drawn(
+        put_aside,
+        &panel,
+        edge,
+        what_each_application_draws,
+        &palette,
+        fonts,
+    );
     // **And each running task put aside, drawn into its slot**, with the card
     // the person opened beside the rail (the approved design `23:2`).
     let panel = crate::task_card_raster::with_the_tasks(
@@ -400,7 +413,7 @@ pub(crate) fn picture(
             .on(crate::display_scale::DisplayScale::of_per_cent(
                 display_scale,
             )),
-        crate::panel_raster::the_edge_for(look.reading()),
+        edge,
     );
 
     // **After the panel, because the band's right edge is the panel's left one.**

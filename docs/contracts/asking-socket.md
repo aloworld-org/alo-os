@@ -6,7 +6,7 @@ Status: public surface. The socket and its first line are
 conversation was added on 2026-10-28 by
 [ADR 0138](../decisions/0138-a-follow-up-is-sent-with-the-conversation-so-far.md);
 the window offered was added on 2026-11-10, and where the person's folders are
-the same day.
+the same day; whether the person chose full access was added on 2026-11-11.
 This document was written on 2026-10-28: until then the lines were described only
 in code, in two places that held each other to nothing.
 
@@ -22,7 +22,7 @@ the agent is `crates/alo-agent`'s `what_the_person_sent.rs`.
 
 ## What the shell writes
 
-Up to five lines, each ending in a newline, written at once:
+Up to six lines, each ending in a newline, written at once:
 
 | Line | When | Shape |
 |---|---|---|
@@ -31,6 +31,7 @@ Up to five lines, each ending in a newline, written at once:
 | 3 | always, from a shell that knows this line | `alo-earlier:` and the conversation so far, or nothing after the marker for a first request |
 | 4 | always, from a shell that knows this line | `alo-this-window:` and the window the person offered, or nothing after the marker for a request about no window |
 | 5 | always, from a shell that knows this line | `alo-their-folders:` and where the person's home and standard folders are, or nothing after the marker where the shell knows no home |
+| 6 | always, from a shell that knows this line | `alo-full-access:` and `yes` when the person chose full access, or nothing after the marker at every other level |
 
 The folders are **a hint for the model, never a capability**: every verb is
 still decided by `alo-agentd` against the grants it reads itself. So is the
@@ -64,6 +65,34 @@ only inside the question.
 or a folder that is not an absolute path, and a line over
 `alo_instructing::THE_LONGEST_FOLDERS_LINE` bytes. A shell that sends four lines is
 answered with no home said, after the fifth is waited for briefly.
+
+### Whether the person chose full access
+
+*Added 2026-11-11, after a boot walk where a person at full access asked what
+folders were in the window they offered and was told nothing had been granted.*
+Full access has no folder grants
+([ADR 0149](../decisions/0149-full-access-is-everything-the-person-can-do.md)), so
+line 1 is never sent there, and a model shown no folders was told that every read
+would be refused.
+
+```text
+alo-full-access:yes
+```
+
+**When.** Read on the person's side from `/var/lib/alo/how-code-runs.toml`
+(`docs/contracts/how-code-runs-file.md`) **at the moment they send the request**,
+by the rule `alo-agentd` keeps: only an explicit full access is `yes`; not chosen
+and a file that will not read are the marker alone. The agent cannot read that
+file itself (`0700 alo alo`, ADR 0109), which is why the shell says it.
+
+**It allows nothing.** `alo-agentd` reads the level again at each read, proposal
+and approval. At `yes` the model is told it may reach what the person's account
+can open, and **no folder is named** (`alo_instructing::WhatItMayReach::told`).
+
+**Refused, in words, and nothing driven:** a sixth line that does not begin with
+`alo-full-access:`, or that has anything after the marker but `yes`. A shell
+that sends five lines is answered as below full access, after the sixth is waited
+for briefly.
 
 ### The window offered
 
@@ -143,6 +172,8 @@ stands. A shell never sends it on a timer, a focus change or a keystroke.
   shell from before both waits once. A shell from before line 4 is a request
   about no window. The window is told to the model after the conversation and
   before the request.
+- Lines 5 and 6 are waited for the same way, each only after the one before it
+  arrived. A shell from before line 6 is answered as below full access.
 - A conversation is put to the model **inside the question the turn asks the
   daemon**, between what the turn may reach and the request, marked as an
   earlier exchange that is not a request now. It reaches a provider only as that

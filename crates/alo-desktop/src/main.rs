@@ -1436,6 +1436,14 @@ mod running {
             let wall = std::time::SystemTime::now();
             if !asked.is_empty() {
                 let installed = alo_installed::read(&self.entries);
+                // **Where the person lets alo work, read from their own file
+                // for these asks** (Settings → Folders alo can use). A file
+                // that will not read is alo's own copy, the answer that
+                // watches nothing of theirs.
+                let chosen = alo_remembering::alo_in_applications_remembered(std::path::Path::new(
+                    alo_remembering::THE_LEVEL,
+                ))
+                .unwrap_or_default();
                 for one in asked {
                     let called = installed
                         .knows(one.application())
@@ -1443,6 +1451,7 @@ mod running {
                     self.working.taken_in(
                         one,
                         called.as_deref(),
+                        chosen,
                         &mut self.counting,
                         &mut self.indicator,
                         (now, wall),

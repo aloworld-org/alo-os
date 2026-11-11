@@ -129,6 +129,7 @@ mod a_task_window_scrolls;
 mod a_task_windows_edge;
 mod a_wheel_over_a_sheet;
 mod a_window_and_its_strip;
+mod a_window_back_on_screen_leaves_the_panel;
 /// Left and Right: one window on one half of its display's work area.
 mod a_window_on_one_side;
 mod a_window_onto_a_list;
@@ -136,6 +137,7 @@ mod a_window_raised;
 mod a_window_travels_aside;
 /// The window a person offered alo, and the window each task works in.
 pub mod alo_in_a_window;
+mod alo_in_applications_in_settings;
 mod alo_in_the_terminal_in_settings;
 /// The teal edge and the band with Stop on a window alo is working in.
 pub mod alos_band_in_a_window;
@@ -380,6 +382,7 @@ mod painted;
 mod painted_flat;
 mod painted_text;
 mod painted_text_wrapping;
+mod panel_cards;
 mod panel_raster;
 mod peeking_at_a_put_aside_window;
 mod pointer;

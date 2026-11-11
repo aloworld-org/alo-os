@@ -44,6 +44,7 @@ cost of guessing wrong is a release nobody decided.
 - **Settings, as one place** — network, display, sound, printers, storage, keyboard, accounts, privacy, updates. Not a scattering of dialogues a person has to know the name of
   - **Settings is a window with a side column of categories and a page beside it.** The categories are in two groups: **alo** — *alo and AI*, *Folders alo can use*, *Running code*, *Terminal* — and **This computer** — *Appearance*, *Region and time*, *Keyboard and shortcuts*, *Accessibility*. Section headings are in **sentence case**. **Selections and switches follow the person's accent colour**, which is never deep teal. **No choice that Settings offered before the redesign is dropped by it**: every row of the old one-list window has a place on a page, and a test enumerates them. Measured in [`design/the-settings-window.md`](design/the-settings-window.md). *Decided by the owner on 2026-10-31, approving the redesign on page `544:30910` of the design file; the designer confirmed that every existing row appears in it*
 - Accessibility: the AT-SPI tree the agent uses is the one a screen reader uses; EN 301 549 conformance is the same work, not extra work
+- **alo's own applications look and work exactly like the desktop they run on** — alo Mails first, then every application alo makes. They are built on **one shared alo UI kit**: the drawing, the text (Manrope), the palette, the controls, the keyboard road and the accessibility tree the desktop already uses, moved out of the shell into crates an application builds on, rather than a second toolkit that would drift from it. An application drawn with it opens an ordinary Wayland window with no X11, draws with no graphics card, scales per display, asks the pointer by name and leaves its window band to alo; a screen reader and alo's own reader find every control in it. **Applications other people make keep their own look**: this is about what alo builds, not a style alo imposes. **Moving the code out changes nothing the desktop draws.** *Decided by the owner on 2026-11-11, choosing "Build a shared alo UI kit (Recommended)" in a question dialog that asked which road alo's own applications take for their interface; the option said it was the most work up front and that alo Mails waits on the kit's first version. Recorded in [ADR 0002](decisions/0002-the-shell-is-native.md), and the work is [`the-alo-ui-kit-plan.md`](autonomy/the-alo-ui-kit-plan.md). Not built yet on that date*
 - Multi-user on one machine, with per-person grants and no shared agent memory
 
 **Making it yours**
@@ -1609,6 +1610,16 @@ Adopted by the owner on 2026-09-22 and not yet built. One rule runs through all
 of it, so a person can read at a glance what is real, what is proposed, and who
 is acting: **a ghost is proposed, solid is real, and deep teal is the agent** —
 deep teal always with its mark and its word, never by colour alone.
+
+**Three rulings of the owner, 2026-11-11, given as answers in a question dialog
+and quoted as chosen.** *"Deep teal everywhere (Recommended)"*: deep teal
+`#0F6B72` means *alo is acting* on every alo product and platform — alo OS, the
+workplace applications and alo's own browser alike, which retires terracotta
+for that role. *"Allowed: a logo is a mark"*: a brand mark or logo may use deep
+teal; **the reserved-teal rule covers interface states only** — what the
+machine is doing — and not alo's marks. *"Manrope (Recommended)"*: **Manrope is
+the final typeface for alo's interfaces**, which settles a question the owner
+had left open (`docs/design/figma-snapshot/variables.toml`).
 
 - ★ **Ghost previews** — before the agent changes anything, a translucent ghost of the result appears in place: the files with their new names, the draft, the edited design. Accepting makes it solid; declining fades it away
 - **The agent's presence** — a thin deep teal edge on the window the agent is working in, and its named cursor inside applications: *alo, for Disan*. Where the agent is, always, without a pop-up. *The edge is built (2026-11-10) for a window the person offered with* Help with this window*: while alo works on that request the window wears the teal edge and, across its foot, alo's mark, what it is doing in the person's own words and* **Stop** *(`11:146`), on no other window, gone when the turn ends; waiting on the person it is navy, as the task window is. **Not yet** for a window alo chooses itself while answering a request typed in the Bar — the shell does not learn which window that is until the agent says so as it goes — and not yet the named cursor ([the window controls](design/the-window-controls.md), stage 3; Demo 2 plan, stage 8)*

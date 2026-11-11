@@ -123,6 +123,8 @@ struct Machine {
     working: WorkingInApplications,
     indicator: Indicator,
     start: Instant,
+    /// Where the person lets alo work, as their settings say.
+    chosen: AloInApplications,
 }
 
 impl Machine {
@@ -147,6 +149,7 @@ impl Machine {
             copies,
             indicator: Indicator::default(),
             start: Instant::now(),
+            chosen: AloInApplications::InItsOwnCopy,
         }
     }
 
@@ -166,6 +169,7 @@ impl Machine {
         self.working.taken_in(
             AskedToWork::of(asked, door, Vec::new()),
             Some("Firefox"),
+            self.chosen,
             &mut self.counts,
             &mut self.indicator,
             at,
@@ -242,6 +246,7 @@ fn alos_copy_is_counted_and_shown_from_its_first_byte_and_the_persons_window_is_
 #[test]
 fn in_the_persons_window_the_line_is_up_the_whole_time_and_nothing_is_counted() {
     let mut machine = Machine::new(true);
+    machine.chosen = AloInApplications::InTheirWindow;
     let mut alo = machine.asked(FIREFOX, Where::InTheirWindow, 0);
     assert_eq!(next(&alo), "showing");
     assert_eq!(machine.lines(), [HowItIsShown::TheirWindow]);
@@ -271,6 +276,52 @@ fn an_application_with_no_copy_of_its_own_is_refused_at_the_default() {
     assert!(machine.lines().is_empty());
     assert_eq!(machine.working.how_many(), 0);
     assert!(machine.ever_begun().is_empty());
+}
+
+/// **At the default alo may not choose the person's window for itself**: the
+/// word it sent is answered `not-chosen`, and nothing is shown, started or
+/// counted — the setting is the person's, never the request's.
+#[test]
+fn the_persons_window_is_refused_until_the_person_chooses_it() {
+    let mut machine = Machine::new(true);
+    let alo = machine.asked(FIREFOX, Where::InTheirWindow, 0);
+    assert_eq!(next(&alo), "not-chosen");
+    assert!(machine.lines().is_empty());
+    assert_eq!(machine.working.how_many(), 0);
+    assert_eq!(machine.copies.borrow().starts, 0);
+    assert!(machine.ever_begun().is_empty());
+}
+
+/// **Turned up, an application with no copy of its own is worked in in the
+/// person's window**: the *may be sending* line is up the whole time, and
+/// nothing of theirs is counted.
+#[test]
+fn turned_up_an_application_with_no_copy_works_in_the_persons_window() {
+    let mut machine = Machine::new(true);
+    machine.chosen = AloInApplications::InTheirWindow;
+    let mut alo = machine.asked(TEXT_EDITOR, Where::InAlosCopy, 0);
+    assert_eq!(next(&alo), "showing");
+    assert_eq!(machine.lines(), [HowItIsShown::TheirWindow]);
+    machine.looked(1);
+    assert_eq!(machine.lines(), [HowItIsShown::TheirWindow]);
+    done(&mut alo);
+    machine.looked(3);
+    assert_eq!(next(&alo), "uncounted");
+    assert!(
+        machine.ever_begun().is_empty(),
+        "the person's window was counted"
+    );
+}
+
+/// **Turned up, an application that has a copy still uses it**: the person
+/// chose *may*, and the copy is the one whose sending can be counted.
+#[test]
+fn turned_up_an_application_with_a_copy_still_works_in_alos_copy() {
+    let mut machine = Machine::new(true);
+    machine.chosen = AloInApplications::InTheirWindow;
+    let alo = machine.asked(FIREFOX, Where::InAlosCopy, 0);
+    assert_eq!(next(&alo), "counting");
+    assert_eq!(machine.copies.borrow().starts, 1);
 }
 
 #[test]

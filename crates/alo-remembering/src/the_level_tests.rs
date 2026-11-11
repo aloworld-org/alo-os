@@ -10,6 +10,7 @@ fn every_level_goes_down_and_comes_back() {
         let text = written(WhatTheFileSays {
             chose: Some(chose),
             in_the_terminal: None,
+            in_applications: None,
         })
         .expect("a level writes");
         assert_eq!(
@@ -142,6 +143,7 @@ fn it_is_kept_in_words_a_person_can_read() {
     let text = written(WhatTheFileSays {
         chose: Some(HowCodeRuns::AskingEachTime),
         in_the_terminal: None,
+        in_applications: None,
     })
     .expect("it writes");
     assert!(
@@ -193,6 +195,7 @@ fn the_terminal_answer_goes_down_and_comes_back() {
             let says = WhatTheFileSays {
                 chose,
                 in_the_terminal: Some(answer),
+                in_applications: None,
             };
             let text = written(says).expect("it writes");
             assert_eq!(read(&text), Ok(says), "{says:?} did not survive {text:?}");
@@ -201,6 +204,7 @@ fn the_terminal_answer_goes_down_and_comes_back() {
     let on = written(WhatTheFileSays {
         chose: None,
         in_the_terminal: Some(AloInTheTerminal::ActsWithoutAsking),
+        in_applications: None,
     })
     .expect("it writes");
     assert!(
@@ -250,4 +254,40 @@ fn a_key_nobody_declared_is_refused() {
             format: THE_LEVEL_FORMAT + 1
         })
     );
+}
+
+/// **A word applications do not take is refused whole**, and the two they
+/// take are read and written as the contract spells them.
+#[test]
+fn where_alo_works_in_applications_reads_two_words_and_refuses_others() {
+    for (said, answer) in [
+        (
+            IN_ALOS_COPY,
+            alo_capability::AloInApplications::InItsOwnCopy,
+        ),
+        (
+            IN_THEIR_WINDOW,
+            alo_capability::AloInApplications::InTheirWindow,
+        ),
+    ] {
+        let text = format!("format = {THE_LEVEL_FORMAT}\nin-applications = \"{said}\"\n");
+        let says = read(&text).expect("it reads");
+        assert_eq!(says.in_applications, Some(answer));
+        assert_eq!(says.chose, None);
+        assert!(
+            written(says)
+                .expect("it writes")
+                .contains(&format!("in-applications = \"{said}\""))
+        );
+    }
+    for said in [AT_FULL_TRUST, "their-window", "yes"] {
+        let text = format!("format = {THE_LEVEL_FORMAT}\nin-applications = \"{said}\"\n");
+        assert_eq!(
+            read(&text),
+            Err(NotTheLevel::NotAnApplicationsAnswer {
+                said: said.to_owned()
+            }),
+            "{said:?} was read as an answer for applications"
+        );
+    }
 }

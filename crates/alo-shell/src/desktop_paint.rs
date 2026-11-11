@@ -174,7 +174,7 @@ impl DesktopPicture {
         // surfaces at two edges, neither drawn over the other, which is why
         // their areas are kept apart rather than ordered. An empty panel has no
         // solids, so a person who has put nothing aside is painted nothing.
-        crate::painted::paint(frame, &self.panel.solids, &[])?;
+        crate::painted::paint(frame, &self.panel.solids, &self.panel.inked)?;
         for (texture, area) in the_panels {
             crate::painted::wash(frame, texture, *area)?;
         }

@@ -419,6 +419,12 @@ capability.grant.not-a-full-path	grant a folder by its full path, so it means th
 capability.grant.not-for-an-agent	the camera, the microphone, the screen and the like are granted only to applications — an agent is offered what it needs at the moment you ask it
 capability.grant.nothing-named	choose the folder, file or application this grant is over
 capability.grant.the-whole-machine	there is no grant to the whole machine — pick the folder you actually mean
+capability.in-applications.in-its-own-copy	alo works in its own copy of an application
+capability.in-applications.in-its-own-copy-is	What alo's copy sends is counted and shown while it works. An application that cannot open a separate copy is refused
+capability.in-applications.in-your-window	alo may work in your own window
+capability.in-applications.in-your-window-is	Any application can be used. While alo works, the indicator says the application may be sending
+capability.in-applications.no-copy-of-its-own	alo cannot work in {application} safely at this setting, because it cannot open a separate copy of its own for alo. To let alo work in your own window instead, choose “alo may work in your own window” in Settings → Folders alo can use
+capability.in-applications.what-your-window-costs	alo will show that the application is sending, but cannot count what it sends, and works where your other tabs are
 capability.proposal.no-end	a question has to lapse — choose how long this one stands for
 capability.proposal.no-time	say how long the question stands — one that lapses at once cannot be answered
 capability.proposal.read-does-not-wait	{verb} answers a question rather than changing anything — run it in the turn instead of asking about it
@@ -1814,6 +1820,7 @@ remembering.level.a-link	{path} is a link to somewhere else, and this is read on
 remembering.level.from-a-newer-alo-os	{path} was written by a newer alo OS than this one, so this machine does not know how you want code run
 remembering.level.no-such-level	{path} says {said}, which is not one of the three levels, so this machine does not know how you want code run
 remembering.level.not-a-terminal-answer	{path} says {said} for the terminal, which is neither asking-each-time nor at-full-trust, so this machine does not know how you want code run, and alo in the terminal asks first
+remembering.level.not-an-applications-answer	{path} says {said} for applications, which is neither in-alos-copy nor in-their-window, so this machine does not know how you want code run, and alo works only in its own copy of an application
 remembering.level.not-read	{path} could not be read, so this machine does not know how you want code run
 remembering.level.not-the-shape	{path} is not the shape this file takes, so this machine does not know how you want code run
 remembering.level.not-written	{path} could not be written, so how code runs has not been changed
