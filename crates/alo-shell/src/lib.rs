@@ -382,7 +382,7 @@ mod output_metadata;
 mod output_retirement;
 mod overview_sheet;
 mod painted;
-mod painted_flat;
+use alo_drawing::painted_flat;
 mod painted_text;
 mod painted_text_wrapping;
 mod panel_cards;

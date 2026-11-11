@@ -309,7 +309,7 @@ pub(crate) fn picture(
     let mut control = None;
     if rail_height > 0 {
         solids.push(Solid {
-            area: rail,
+            area: crate::painted::drawn_at(rail),
             colour: palette.dock,
         });
         // The expansion control holds the first slot, at the rail's own padding.

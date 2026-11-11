@@ -249,9 +249,9 @@ pub(crate) fn with_alos_own(
             ink
         };
         for solid in [
-            Solid { area, colour: edge },
+            Solid { area: crate::painted::drawn_at(area), colour: edge },
             Solid {
-                area: Rectangle::new(
+                area: alo_drawing::area::Area::new(
                     (area.loc.x + measure.px(2), area.loc.y + measure.px(2)).into(),
                     (
                         (area.size.w - 2 * measure.px(2)).max(1),
@@ -264,7 +264,7 @@ pub(crate) fn with_alos_own(
         ] {
             if let Some(kept) = solid.area.intersection(whole) {
                 picture.solids.push(Solid {
-                    area: kept,
+                    area: crate::painted::drawn_at(kept),
                     colour: solid.colour,
                 });
             }

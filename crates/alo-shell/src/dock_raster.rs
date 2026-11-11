@@ -1081,7 +1081,7 @@ pub(crate) fn picture(
             ((long, thin), ((icon - long) / 2, (at.size.h - thin) / 2))
         };
         solids.push(Solid {
-            area: Rectangle::new(
+            area: alo_drawing::area::Area::new(
                 (at.loc.x + offset.0, at.loc.y + offset.1).into(),
                 size.into(),
             ),
@@ -1314,7 +1314,7 @@ pub(crate) fn picture(
             {
                 let side = scale.px(GLYPH);
                 inked.push(Inked {
-                    area: Rectangle::new(
+                    area: alo_drawing::area::Area::new(
                         (left + (its_width - side) / 2, top + (icon - side) / 2).into(),
                         (side, side).into(),
                     ),
@@ -1388,7 +1388,7 @@ pub(crate) fn picture(
             let wide = scale.px(alo_dock::measures::AN_OPEN_MARK_IS_WIDE);
             let tall = scale.px(alo_dock::measures::A_RUNNING_MARK_IS_TALL);
             solids.push(Solid {
-                area: Rectangle::new(
+                area: alo_drawing::area::Area::new(
                     (left + (icon - wide) / 2, top + icon - tall).into(),
                     (wide, tall).into(),
                 ),

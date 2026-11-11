@@ -407,12 +407,12 @@ fn draw_a_tooltip(
     let ink = alo_appearance::Role::TextPrimary.colour();
     let edging = alo_appearance::Role::BorderDefault.colour();
     solids.push(Solid {
-        area: into_pixels(shown.panel, scale),
+        area: crate::painted::drawn_at(into_pixels(shown.panel, scale)),
         colour: [edging.red(), edging.green(), edging.blue()],
     });
     if let Some(inside) = shrunk(shown.panel) {
         solids.push(Solid {
-            area: into_pixels(inside, scale),
+            area: crate::painted::drawn_at(into_pixels(inside, scale)),
             colour: [ground.red(), ground.green(), ground.blue()],
         });
     }

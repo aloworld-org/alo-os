@@ -37,11 +37,11 @@ fn a_screen(size: (i32, i32)) -> SignInPicture {
         size,
         surface: None,
         solids: vec![Solid {
-            area: Rectangle::from_size(size.into()),
+            area: alo_drawing::area::Area::from_size(size.into()),
             colour: [20, 30, 40],
         }],
         inked: vec![Inked {
-            area: Rectangle::new((2, 1).into(), (3, 2).into()),
+            area: alo_drawing::area::Area::new((2, 1).into(), (3, 2).into()),
             pixels: vec![[255, 255, 255]; 6],
         }],
         controls: Vec::new(),
@@ -257,7 +257,7 @@ fn a_mark_of_what_is_leaving(size: (i32, i32)) -> crate::egress_status_raster::E
         size,
         rows: Vec::new(),
         solids: vec![Solid {
-            area: Rectangle::new((6, 0).into(), (2, 1).into()),
+            area: alo_drawing::area::Area::new((6, 0).into(), (2, 1).into()),
             colour: [200, 100, 50],
         }],
         inked: Vec::new(),
@@ -286,7 +286,7 @@ fn what_is_leaving_is_drawn_above_the_screen_under_it() {
         sentence: (String::new(), Rectangle::new((0, 0).into(), (0, 0).into())),
         moments: Vec::new(),
         solids: vec![Solid {
-            area: Rectangle::from_size(size.into()),
+            area: alo_drawing::area::Area::from_size(size.into()),
             colour: [20, 30, 40],
         }],
         inked: Vec::new(),
@@ -367,7 +367,7 @@ fn a_frame_with_no_scene_but_a_layer_on_it_is_drawn() {
         size: (8, 4),
         rows: Vec::new(),
         solids: vec![Solid {
-            area: Rectangle::new((1, 1).into(), (2, 2).into()),
+            area: alo_drawing::area::Area::new((1, 1).into(), (2, 2).into()),
             colour: [10, 200, 10],
         }],
         inked: Vec::new(),
@@ -564,7 +564,7 @@ fn a_windows_shadow_never_lightens_the_ground_under_it() {
         size,
         surface: None,
         solids: vec![Solid {
-            area: Rectangle::from_size(size.into()),
+            area: alo_drawing::area::Area::from_size(size.into()),
             colour: [0xFA, 0xF7, 0xF2],
         }],
         inked: Vec::new(),

@@ -304,11 +304,11 @@ pub(crate) fn framed(
     palette: Palette,
 ) {
     solids.push(Solid {
-        area,
+        area: crate::painted::drawn_at(area),
         colour: palette.ink,
     });
     solids.push(Solid {
-        area: Rectangle::new(
+        area: alo_drawing::area::Area::new(
             (area.loc.x + edge, area.loc.y + edge).into(),
             (area.size.w - 2 * edge, area.size.h - 2 * edge).into(),
         ),

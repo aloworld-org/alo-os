@@ -177,11 +177,11 @@ impl Laid {
         let mark_area = Rectangle::new((mark_x, mark_y).into(), (side, side).into());
         let mut solids = vec![
             Solid {
-                area,
+                area: crate::painted::drawn_at(area),
                 colour: palette.ink,
             },
             Solid {
-                area: Rectangle::new(
+                area: alo_drawing::area::Area::new(
                     (left + edge, top + edge).into(),
                     (self.width - 2 * edge, area.size.h - 2 * edge).into(),
                 ),
@@ -193,7 +193,7 @@ impl Laid {
             .into_iter()
             .filter_map(|solid| {
                 solid.area.intersection(whole).map(|area| Solid {
-                    area,
+                    area: crate::painted::drawn_at(area),
                     colour: solid.colour,
                 })
             })
@@ -238,7 +238,7 @@ fn cut_across(inked: Inked, width: i32) -> Option<Inked> {
         .flat_map(|row| row.iter().skip(skip).take(keep).copied())
         .collect();
     Some(Inked {
-        area: Rectangle::new(
+        area: alo_drawing::area::Area::new(
             (from, inked.area.loc.y).into(),
             (to - from, inked.area.size.h).into(),
         ),

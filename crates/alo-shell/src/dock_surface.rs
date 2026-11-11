@@ -419,7 +419,7 @@ pub(crate) fn surface(of: ADocksSurface<'_>) -> Option<Washed> {
             }
         }
     }
-    Some(Washed { area, pixels })
+    Some(Washed { area: crate::painted::drawn_at(area), pixels })
 }
 
 /// Rasterise a plain rounded panel: a fill, a hairline and a shadow.

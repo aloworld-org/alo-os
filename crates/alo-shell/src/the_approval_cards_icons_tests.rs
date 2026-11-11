@@ -60,7 +60,7 @@ fn every_icon_reads_whole_and_is_recorded() {
 fn every_icon_is_inked_inside_its_box() {
     for icon in ACardsIcon::ALL {
         let mut panel = Washed {
-            area: Rectangle::new((0, 0).into(), (32, 32).into()),
+            area: alo_drawing::area::Area::new((0, 0).into(), (32, 32).into()),
             pixels: vec![255; 32 * 32 * 4],
         };
         ink_a_cards_icon(

@@ -512,7 +512,7 @@ pub(crate) fn a_mark(at: Rectangle<i32, Physical>, shape: &AShape, ink: [u8; 3])
         .into_iter()
         .flat_map(|covered| [ink[0], ink[1], ink[2], covered])
         .collect();
-    Some(Washed { area: at, pixels }.premultiplied())
+    Some(Washed { area: crate::painted::drawn_at(at), pixels }.premultiplied())
 }
 
 /// How far a point is outside a `w × h` rectangle at the origin with rounded

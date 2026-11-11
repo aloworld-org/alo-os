@@ -299,7 +299,7 @@ pub(crate) fn picture(
             }
             if !remarks.is_empty() {
                 drawn.solids.push(Solid {
-                    area: Rectangle::new((room.text_x, y).into(), (room.inner, 1).into()),
+                    area: alo_drawing::area::Area::new((room.text_x, y).into(), (room.inner, 1).into()),
                     colour: look.palette.ink,
                 });
                 y += 1 + room.gap;
@@ -341,7 +341,7 @@ pub(crate) fn picture(
                         (look.measure.px(4), row.area.size.h).into(),
                     );
                     drawn.solids.push(Solid {
-                        area: bar,
+                        area: crate::painted::drawn_at(bar),
                         colour: look.palette.accent,
                     });
                     drawn.selection = Some(bar);
@@ -373,7 +373,7 @@ pub(crate) fn picture(
                 );
                 framed(&mut drawn.solids, track, look.measure.px(1), look.palette);
                 drawn.solids.push(Solid {
-                    area: thumb,
+                    area: crate::painted::drawn_at(thumb),
                     colour: look.palette.ink,
                 });
                 drawn.rail = Some((track, thumb));
@@ -495,7 +495,7 @@ fn laid_out(
             };
             let area = Rectangle::new((x, y + dy).into(), (cell.width_of_box, cell.height).into());
             inked.push(Inked {
-                area,
+                area: crate::painted::drawn_at(area),
                 pixels: cell.pixels.clone(),
             });
             cells.push(CellDrawn {
@@ -544,11 +544,11 @@ fn framed(
     palette: DesktopPalette,
 ) {
     solids.push(Solid {
-        area,
+        area: crate::painted::drawn_at(area),
         colour: palette.ink,
     });
     solids.push(Solid {
-        area: Rectangle::new(
+        area: alo_drawing::area::Area::new(
             (area.loc.x + edge, area.loc.y + edge).into(),
             (area.size.w - 2 * edge, area.size.h - 2 * edge).into(),
         ),
@@ -564,7 +564,7 @@ fn mark(solids: &mut Vec<Solid>, area: Rectangle<i32, Physical>, open: bool, loo
     let middle = area.size.w / 2;
     let inset = thin * 2;
     solids.push(Solid {
-        area: Rectangle::new(
+        area: alo_drawing::area::Area::new(
             (area.loc.x + inset, area.loc.y + middle - thin / 2).into(),
             (area.size.w - 2 * inset, thin).into(),
         ),
@@ -572,7 +572,7 @@ fn mark(solids: &mut Vec<Solid>, area: Rectangle<i32, Physical>, open: bool, loo
     });
     if !open {
         solids.push(Solid {
-            area: Rectangle::new(
+            area: alo_drawing::area::Area::new(
                 (area.loc.x + middle - thin / 2, area.loc.y + inset).into(),
                 (thin, area.size.h - 2 * inset).into(),
             ),

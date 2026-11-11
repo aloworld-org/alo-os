@@ -12,6 +12,10 @@
 //! **Moved in steps, each one leaving the desktop's pictures unchanged**:
 //! `alo-shell`'s `the_desktops_pictures_pinned.rs` holds every surface it
 //! draws to the hashes taken before anything moved. So far this holds the
-//! display's scale; the shapes, rasters, text and bundled fonts follow.
+//! display's scale, where things go, and the shapes and rasters; text, the
+//! bundled fonts and the canvas follow.
 
+pub mod area;
 pub mod display_scale;
+pub mod painted;
+pub mod painted_flat;

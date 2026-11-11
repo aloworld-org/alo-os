@@ -131,7 +131,7 @@ fn stop_while_alo_is_working_and_send_otherwise() {
 /// A white raster `side` pixels square at the origin.
 fn white(side: i32) -> Washed {
     Washed {
-        area: Rectangle::new((0, 0).into(), (side, side).into()),
+        area: alo_drawing::area::Area::new((0, 0).into(), (side, side).into()),
         pixels: vec![255; usize::try_from(side * side * 4).unwrap_or(0)],
     }
 }

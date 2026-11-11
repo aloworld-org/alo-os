@@ -269,7 +269,7 @@ pub(crate) fn sign_in_surface(
             pixels.extend_from_slice(&[colour[0], colour[1], colour[2], 0xFF]);
         }
     }
-    Some(Washed { area, pixels })
+    Some(Washed { area: crate::painted::drawn_at(area), pixels })
 }
 
 /// How much of this pixel the power mark covers.

@@ -77,11 +77,11 @@ pub(crate) fn mark(x: i32, y: i32, side: i32, scheme: Scheme, contrast: Contrast
     let inner = side - 2 * edge;
     let mut solids = vec![
         Solid {
-            area: Rectangle::new((x, y).into(), (side, side).into()),
+            area: alo_drawing::area::Area::new((x, y).into(), (side, side).into()),
             colour: rgb(colours.edge),
         },
         Solid {
-            area: Rectangle::new((x + edge, y + edge).into(), (inner, inner).into()),
+            area: alo_drawing::area::Area::new((x + edge, y + edge).into(), (inner, inner).into()),
             colour: rgb(colours.fill),
         },
     ];
@@ -94,7 +94,7 @@ pub(crate) fn mark(x: i32, y: i32, side: i32, scheme: Scheme, contrast: Contrast
     for row in 0..head_rows {
         let wide = stem + (widest - stem) * (row + 1) / head_rows;
         solids.push(Solid {
-            area: Rectangle::new(
+            area: alo_drawing::area::Area::new(
                 (centre - wide / 2, top + head_top + row).into(),
                 (wide, 1).into(),
             ),
@@ -104,7 +104,7 @@ pub(crate) fn mark(x: i32, y: i32, side: i32, scheme: Scheme, contrast: Contrast
     let stem_top = top + head_top + head_rows;
     let stem_bottom = top + inner - inner / 6;
     solids.push(Solid {
-        area: Rectangle::new(
+        area: alo_drawing::area::Area::new(
             (centre - stem / 2, stem_top).into(),
             (stem, (stem_bottom - stem_top).max(1)).into(),
         ),

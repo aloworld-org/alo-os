@@ -205,7 +205,7 @@ fn one_control(
     }
     Some(
         Washed {
-            area: target,
+            area: crate::painted::drawn_at(target),
             pixels,
         }
         .premultiplied(),

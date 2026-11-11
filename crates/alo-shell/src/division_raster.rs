@@ -132,7 +132,7 @@ pub(crate) fn picture(
     let mut solids: Vec<Solid> = boundaries
         .iter()
         .map(|rule| Solid {
-            area: *rule,
+            area: crate::painted::drawn_at(*rule),
             colour: ink,
         })
         .collect();
@@ -205,19 +205,19 @@ fn edges_of(area: Rectangle<i32, Physical>, thick: i32, colour: [u8; 3]) -> Vec<
     let (x, y, w, h) = (area.loc.x, area.loc.y, area.size.w, area.size.h);
     vec![
         Solid {
-            area: Rectangle::new((x, y).into(), (w, thick).into()),
+            area: alo_drawing::area::Area::new((x, y).into(), (w, thick).into()),
             colour,
         },
         Solid {
-            area: Rectangle::new((x, y + h - thick).into(), (w, thick).into()),
+            area: alo_drawing::area::Area::new((x, y + h - thick).into(), (w, thick).into()),
             colour,
         },
         Solid {
-            area: Rectangle::new((x, y).into(), (thick, h).into()),
+            area: alo_drawing::area::Area::new((x, y).into(), (thick, h).into()),
             colour,
         },
         Solid {
-            area: Rectangle::new((x + w - thick, y).into(), (thick, h).into()),
+            area: alo_drawing::area::Area::new((x + w - thick, y).into(), (thick, h).into()),
             colour,
         },
     ]
