@@ -136,10 +136,9 @@ fn an_application_with_its_own_header_gets_the_controls_it_lacks() {
     assert_eq!(edge.title, None);
     assert_eq!(edge.the_room_a_title_has(), 0);
     // The last one ends where the shell's Close ends: the trailing inset.
-    let last = edge.controls.last().expect("two controls");
     assert_eq!(
-        last.target.loc.x + last.target.size.w,
-        edge.region.loc.x + edge.region.size.w - THE_TRAILING_INSET
+        edge.controls.last().map(|last| last.target.loc.x + last.target.size.w),
+        Some(edge.region.loc.x + edge.region.size.w - THE_TRAILING_INSET)
     );
 }
 
@@ -170,7 +169,10 @@ fn revealing_an_applications_added_controls_never_moves_its_window() {
                 specimen().loc.y,
                 "the band does not end where the window begins"
             );
-            assert!(!edge.region.overlaps(specimen()), "the band covers the window");
+            assert!(
+                !edge.region.overlaps(specimen()),
+                "the band covers the window"
+            );
         }
     }
 }

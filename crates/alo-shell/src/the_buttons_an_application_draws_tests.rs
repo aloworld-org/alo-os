@@ -26,8 +26,10 @@ const THE_SHELL_DRAWS_FOR: [&str; 2] = ["org.kde.ark", "org.kde.dolphin"];
 /// `shipped.toml` fails here until somebody measures it.
 #[test]
 fn every_shipped_application_is_measured_or_agrees_the_shell_draws() {
-    let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../alo-software/shipped.toml");
-    let shipped = std::fs::read_to_string(&path).unwrap_or_else(|error| panic!("{path:?}: {error}"));
+    let path =
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../alo-software/shipped.toml");
+    let shipped =
+        std::fs::read_to_string(&path).unwrap_or_else(|error| panic!("{path:?}: {error}"));
     let identifiers: Vec<&str> = shipped
         .lines()
         .filter_map(|line| line.trim().strip_prefix("identifier = \""))
@@ -35,7 +37,10 @@ fn every_shipped_application_is_measured_or_agrees_the_shell_draws() {
         .collect();
     // **The count before the contents**: a file this test could not read rows
     // from would otherwise pass by checking nothing.
-    assert!(identifiers.len() >= 7, "read only {identifiers:?} from {path:?}");
+    assert!(
+        identifiers.len() >= 7,
+        "read only {identifiers:?} from {path:?}"
+    );
     for identifier in identifiers {
         assert!(
             measured(identifier).is_some() || THE_SHELL_DRAWS_FOR.contains(&identifier),
@@ -43,4 +48,3 @@ fn every_shipped_application_is_measured_or_agrees_the_shell_draws() {
         );
     }
 }
-

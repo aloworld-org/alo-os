@@ -63,7 +63,11 @@ fn a_window_alo_cannot_know_is_assumed_to_show_both() {
 /// by the protocol's definition, and a near miss is a different application.
 #[test]
 fn a_row_is_matched_exactly_and_never_by_a_prefix() {
-    for near in ["org.mozilla.firefox.Devel", "org.mozilla", "ORG.MOZILLA.FIREFOX"] {
+    for near in [
+        "org.mozilla.firefox.Devel",
+        "org.mozilla",
+        "ORG.MOZILLA.FIREFOX",
+    ] {
         assert_eq!(
             who_draws_the_header(false, Some(near)),
             Decorations::TheApplicationDraws(ItsOwnButtons::NOT_KNOWN),

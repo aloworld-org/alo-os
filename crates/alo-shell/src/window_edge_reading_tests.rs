@@ -74,7 +74,10 @@ fn an_application_with_only_its_own_close_is_given_minimise_and_no_close() {
 /// shell's band draws them, so a window is never short of a way to close.
 #[test]
 fn an_application_with_neither_of_its_own_is_given_all_three() {
-    assert_eq!(given_to(false, false), the_controls_of(Decorations::TheShellDraws));
+    assert_eq!(
+        given_to(false, false),
+        the_controls_of(Decorations::TheShellDraws)
+    );
     assert_eq!(
         given_to(true, false),
         vec![OnTheEdge::WindowActions, OnTheEdge::Close]
@@ -99,7 +102,10 @@ fn an_application_alo_cannot_know_is_given_window_actions_only() {
 #[test]
 fn window_actions_is_added_whatever_the_application_draws() {
     for (minimise, close) in [(true, true), (true, false), (false, true), (false, false)] {
-        assert_eq!(given_to(minimise, close).first(), Some(&OnTheEdge::WindowActions));
+        assert_eq!(
+            given_to(minimise, close).first(),
+            Some(&OnTheEdge::WindowActions)
+        );
     }
     assert_eq!(
         the_controls_of(Decorations::TheShellDraws).first(),

@@ -43,6 +43,10 @@
 pub const THE_LAYOUT: &str = "appmenu:minimize,maximize,close";
 
 #[cfg(test)]
+#[expect(
+    clippy::expect_used,
+    reason = "in a test, a panic on an unexpected None is the failure being reported"
+)]
 mod tests {
     use super::*;
 
@@ -51,7 +55,9 @@ mod tests {
     /// left, every GTK row there would be wrong.
     #[test]
     fn the_layout_keeps_the_applications_own_minimise_and_close() {
-        let (_, trailing) = THE_LAYOUT.split_once(':').expect("a leading and a trailing side");
+        let (_, trailing) = THE_LAYOUT
+            .split_once(':')
+            .expect("a leading and a trailing side");
         let buttons: Vec<&str> = trailing.split(',').collect();
         assert_eq!(buttons, ["minimize", "maximize", "close"]);
     }

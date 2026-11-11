@@ -797,9 +797,10 @@ pub use window_activation::WindowActivationError;
 pub use window_close::WindowCloseError;
 pub use window_dividing::NotDivided;
 pub use window_edge::{
-    A_TARGET_IS, BETWEEN_TARGETS, Decorations, EdgeControl, ItsOwnButtons, OnTheEdge, THE_CONTROLS_SIT_AT,
-    THE_NARROWEST_EDGE_IS, THE_REGION_IS_TALL, THE_STRIP_IS_TALL, THE_STRIP_STARTS_AT,
-    THE_TITLE_STARTS_AT, THE_TRAILING_INSET, WindowEdge, edge_of, the_usable_output,
+    A_TARGET_IS, BETWEEN_TARGETS, Decorations, EdgeControl, ItsOwnButtons, OnTheEdge,
+    THE_CONTROLS_SIT_AT, THE_NARROWEST_EDGE_IS, THE_REGION_IS_TALL, THE_STRIP_IS_TALL,
+    THE_STRIP_STARTS_AT, THE_TITLE_STARTS_AT, THE_TRAILING_INSET, WindowEdge, edge_of,
+    the_usable_output,
 };
 /// What the external window edge is drawn out of: rectangles and roles.
 ///

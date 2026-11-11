@@ -71,5 +71,9 @@ pub(crate) fn measured(application: &str) -> Option<ItsOwnButtons> {
 }
 
 #[cfg(test)]
+#[expect(
+    clippy::panic,
+    reason = "in a test, a panic naming the unread file is the failure being reported"
+)]
 #[path = "the_buttons_an_application_draws_tests.rs"]
 mod tests;

@@ -71,7 +71,8 @@ pub const THE_INTERFACE_NAMESPACE: &str = "org.gnome.desktop.interface";
 pub const THE_WINDOW_NAMESPACE: &str = "org.gnome.desktop.wm.preferences";
 
 /// Every namespace any key is answered in.
-pub const THE_NAMESPACES: [&str; 3] = [THE_NAMESPACE, THE_INTERFACE_NAMESPACE, THE_WINDOW_NAMESPACE];
+pub const THE_NAMESPACES: [&str; 3] =
+    [THE_NAMESPACE, THE_INTERFACE_NAMESPACE, THE_WINDOW_NAMESPACE];
 
 /// One key that is answered.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]

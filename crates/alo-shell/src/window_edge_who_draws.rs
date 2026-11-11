@@ -48,7 +48,10 @@ use crate::window_edge::Decorations;
 /// that agreed gets the shell's whole band. One that never asked is told
 /// apart by its `app_id`, or is [`crate::ItsOwnButtons::NOT_KNOWN`].
 #[must_use]
-pub fn who_draws_the_header(agreed_the_shell_draws: bool, application: Option<&str>) -> Decorations {
+pub fn who_draws_the_header(
+    agreed_the_shell_draws: bool,
+    application: Option<&str>,
+) -> Decorations {
     match application.and_then(crate::the_buttons_an_application_draws::measured) {
         Some(its_own) => Decorations::TheApplicationDraws(its_own),
         None if agreed_the_shell_draws => Decorations::TheShellDraws,

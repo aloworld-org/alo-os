@@ -478,7 +478,9 @@ mod on_the_bus {
         // **The window buttons GTK is told to draw**: its own Minimise, Maximise
         // and Close, whatever the person's appearance, so the shell knows which
         // it shows (the owner, 2026-11-12).
-        let window = serving.read_all(&["org.gnome.desktop.wm.preferences"]).unwrap();
+        let window = serving
+            .read_all(&["org.gnome.desktop.wm.preferences"])
+            .unwrap();
         assert_eq!(window.len(), 1, "{window:?}");
         let buttons = window
             .get("org.gnome.desktop.wm.preferences")
@@ -637,7 +639,7 @@ mod on_the_bus {
 
         // Every refusal was recorded, and only the one granted read was not one.
         let everything = serving.record.everything();
-        assert_eq!(everything.len(), 5 * 5 + 1, "{everything:#?}");
+        assert_eq!(everything.len(), 5 * 6 + 1, "{everything:#?}");
         assert_eq!(
             everything
                 .iter()
