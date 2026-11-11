@@ -50,7 +50,9 @@ fn a_follow_up_is_read_with_its_earlier_conversation() {
 fn a_first_request_carries_no_earlier_conversation_and_does_not_wait() {
     let started = Instant::now();
     let (read, _shell) =
-        sent_on_a_socket("list my invoices\nalo-earlier:\nalo-this-window:\nalo-their-folders:\n");
+        sent_on_a_socket(
+            "list my invoices\nalo-earlier:\nalo-this-window:\nalo-their-folders:\nalo-full-access:\n",
+        );
     let read = read.unwrap();
     assert_eq!(read.request, "list my invoices");
     assert!(read.earlier.is_empty());
@@ -157,7 +159,7 @@ fn a_request_about_a_window_carries_it() {
     let window = TheWindowOffered::of("The next chapter", "org.gnome.TextEditor").unwrap();
     let started = Instant::now();
     let (read, _shell) = sent_on_a_socket(&format!(
-        "summarise this\nalo-earlier:\n{}\nalo-their-folders:\n",
+        "summarise this\nalo-earlier:\n{}\nalo-their-folders:\nalo-full-access:\n",
         window.written()
     ));
     let read = read.unwrap();
@@ -216,7 +218,7 @@ fn a_request_carries_where_the_persons_folders_are() {
     let started = Instant::now();
     let (read, _shell) = sent_on_a_socket(&format!(
         "alo-may-reach:/var/home/alo/Documents\nmake a folder called demo in my Documents\n\
-         alo-earlier:\nalo-this-window:\n{}\n",
+         alo-earlier:\nalo-this-window:\n{}\nalo-full-access:\n",
         home.written()
     ));
     let read = read.unwrap();
@@ -239,7 +241,9 @@ fn a_request_carries_where_the_persons_folders_are() {
 #[test]
 fn no_home_is_said_by_the_marker_alone_or_by_a_shell_from_before() {
     let (read, _shell) =
-        sent_on_a_socket("list my invoices\nalo-earlier:\nalo-this-window:\nalo-their-folders:\n");
+        sent_on_a_socket(
+            "list my invoices\nalo-earlier:\nalo-this-window:\nalo-their-folders:\nalo-full-access:\n",
+        );
     assert_eq!(read.unwrap().may_reach.home(), None);
     let (read, _shell) = sent_on_a_socket("list my invoices\nalo-earlier:\nalo-this-window:\n");
     assert_eq!(read.unwrap().may_reach.home(), None);
@@ -255,4 +259,54 @@ fn a_fifth_line_that_is_not_their_folders_is_refused() {
     );
     let refused = read.unwrap_err();
     assert!(refused.contains("folders"), "{refused}");
+}
+
+/// **At full access, with no folder granted, the model is told it may reach
+/// what the person's account can** — the walk of 2026-11-11, where the same
+/// request was told *every verb that reads a file will be refused*.
+#[test]
+fn full_access_is_read_off_the_sixth_line_and_told() {
+    let started = Instant::now();
+    let (read, _shell) = sent_on_a_socket(
+        "what folders are in this window\nalo-earlier:\nalo-this-window:\n\
+         alo-their-folders:\nalo-full-access:yes\n",
+    );
+    let read = read.unwrap();
+    assert!(
+        started.elapsed() < HOW_LONG_THE_THIRD_LINE_IS_WAITED_FOR,
+        "a current shell's sixth line waited for a line it had already sent"
+    );
+    assert_eq!(read.request, "what folders are in this window");
+    assert!(read.may_reach.is_at_full_access());
+    let told = read.may_reach.told();
+    assert!(told.contains("chose full access"), "{told}");
+    assert!(!told.contains("picking it in Settings"), "{told}");
+}
+
+/// **Below full access, and from a shell that sends no sixth line, nothing
+/// changes**: nothing granted is still told as nothing granted.
+#[test]
+fn below_full_access_or_unsaid_nothing_granted_is_still_nothing() {
+    for sent in [
+        "list my invoices\nalo-earlier:\nalo-this-window:\nalo-their-folders:\nalo-full-access:\n",
+        "list my invoices\nalo-earlier:\nalo-this-window:\nalo-their-folders:\n",
+    ] {
+        let (read, _shell) = sent_on_a_socket(sent);
+        let read = read.unwrap();
+        assert!(!read.may_reach.is_at_full_access(), "{sent}");
+        assert!(read.may_reach.told().contains("picking it in Settings"), "{sent}");
+    }
+}
+
+/// **A sixth line a shell does not write is refused in words**, and nothing
+/// is driven — never read as full access, and never as its absence.
+#[test]
+fn a_sixth_line_that_is_not_the_level_is_refused() {
+    for sixth in ["alo-full-access:true", "full access"] {
+        let (read, _shell) = sent_on_a_socket(&format!(
+            "list my invoices\nalo-earlier:\nalo-this-window:\nalo-their-folders:\n{sixth}\n"
+        ));
+        let refused = read.unwrap_err();
+        assert!(refused.contains("full access"), "{sixth}: {refused}");
+    }
 }

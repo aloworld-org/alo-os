@@ -20,6 +20,7 @@ use std::time::{Duration, Instant};
 use super::WhoAsked;
 use super::{TheAgentsDoor, WHERE_WORDS_GO, WhatCameBack};
 use crate::the_tasks_a_person_opened::WhichTask;
+use crate::what_the_agent_may_reach::WhatTheAgentMayReach;
 
 /// A socket of this test's own.
 ///
@@ -79,7 +80,7 @@ fn what_a_person_typed_goes_out_and_the_answer_comes_back() {
     door.ask(
         WhoAsked::ATaskWindow(WhichTask::numbered(0)),
         "how many invoices are unpaid?",
-        &[],
+        &WhatTheAgentMayReach::default(),
         None,
     );
 
@@ -112,7 +113,7 @@ fn a_waiting_change_keeps_the_sentence_a_person_approves() {
     door.ask(
         WhoAsked::ATaskWindow(WhichTask::numbered(3)),
         "rename the march invoice",
-        &[],
+        &WhatTheAgentMayReach::default(),
         None,
     );
     assert_eq!(heard.recv().unwrap(), "rename the march invoice\n");
@@ -143,7 +144,7 @@ fn a_machine_with_nothing_listening_says_so_and_keeps_going() {
     door.ask(
         WhoAsked::ATaskWindow(WhichTask::numbered(1)),
         "anything",
-        &[],
+        &WhatTheAgentMayReach::default(),
         None,
     );
 
@@ -169,7 +170,7 @@ fn an_agent_that_says_nothing_is_the_machines_fault() {
     door.ask(
         WhoAsked::ATaskWindow(WhichTask::numbered(2)),
         "anything",
-        &[],
+        &WhatTheAgentMayReach::default(),
         None,
     );
 
@@ -204,7 +205,7 @@ fn asking_comes_back_at_once_however_slow_the_agent_is() {
     door.ask(
         WhoAsked::ATaskWindow(WhichTask::numbered(0)),
         "anything",
-        &[],
+        &WhatTheAgentMayReach::default(),
         None,
     );
     let took = began.elapsed();
@@ -229,7 +230,7 @@ fn an_answer_is_handed_over_once() {
     door.ask(
         WhoAsked::ATaskWindow(WhichTask::numbered(0)),
         "anything",
-        &[],
+        &WhatTheAgentMayReach::default(),
         None,
     );
     let came = one_answer(&door);
@@ -299,7 +300,7 @@ fn a_follow_up_carries_the_conversation_after_the_request() {
         WhoAsked::ATaskWindow(WhichTask::numbered(0)),
         "and how big is\nthe biggest one?",
         &earlier,
-        &[PathBuf::from("/home/anna")],
+        &WhatTheAgentMayReach::these(vec![PathBuf::from("/home/anna")]),
         None,
     );
 
@@ -335,7 +336,7 @@ fn a_first_request_carries_the_marker_and_no_conversation() {
     door.ask(
         WhoAsked::ATaskWindow(WhichTask::numbered(0)),
         "how many invoices are unpaid?",
-        &[],
+        &WhatTheAgentMayReach::default(),
         None,
     );
 
@@ -364,7 +365,7 @@ fn a_request_carries_where_the_persons_folders_are() {
     door.ask(
         WhoAsked::ATaskWindow(WhichTask::numbered(0)),
         "make a folder called demo in my Documents",
-        &[],
+        &WhatTheAgentMayReach::default(),
         Some(&home),
     );
 
@@ -380,6 +381,40 @@ fn a_request_carries_where_the_persons_folders_are() {
     );
     let _ = one_answer(&door);
     let _ = std::fs::remove_dir_all(at.parent().unwrap());
+}
+
+/// **At full access the request says so, on the line after the person's
+/// folders** — the walk of 2026-11-11, where nothing granted was told to the
+/// model as nothing reachable. Below full access it is the marker alone.
+#[test]
+fn a_request_says_whether_the_person_chose_full_access() {
+    for (at_full_access, last) in [(true, "alo-full-access:yes"), (false, "alo-full-access:")] {
+        let at = a_socket(if at_full_access { "full-access" } else { "below-full-access" });
+        let heard = an_agent_reading(&at, 5, "Desktop, Documents and Downloads.\n");
+        let door = TheAgentsDoor::at(&at);
+
+        door.ask(
+            WhoAsked::ATaskWindow(WhichTask::numbered(0)),
+            "what folders are in this window",
+            &WhatTheAgentMayReach {
+                folders: Vec::new(),
+                at_full_access,
+            },
+            None,
+        );
+
+        let crossed = heard.recv().unwrap();
+        assert_eq!(
+            crossed,
+            format!(
+                "what folders are in this window\nalo-earlier:\nalo-this-window:\n\
+                 alo-their-folders:\n{last}\n"
+            ),
+            "no folders line is sent at full access, and the level is the last line"
+        );
+        let _ = one_answer(&door);
+        let _ = std::fs::remove_dir_all(at.parent().unwrap());
+    }
 }
 
 /// **A request about a window carries it on the fourth line**, after the
@@ -399,7 +434,7 @@ fn a_request_about_a_window_carries_it_after_the_conversation() {
         "summarise this",
         &TheConversationSoFar::nothing(),
         Some(&window),
-        &[],
+        &WhatTheAgentMayReach::default(),
         None,
     );
 

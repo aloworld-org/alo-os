@@ -1031,16 +1031,17 @@ fn the_persons_folders_to_send(server: &Server) -> Option<alo_instructing::ThePe
     )
 }
 
-/// The folders this person has granted, for a request about to be sent.
+/// The folders this person has granted, and whether they chose full access,
+/// for a request about to be sent.
 ///
 /// A free function rather than a method, because the two call sites are in a
 /// trait implementation. `crate::what_the_agent_may_reach` holds why the
 /// person's own side is what names them.
-fn the_folders_to_send(server: &Server) -> Vec<std::path::PathBuf> {
+fn the_folders_to_send(server: &Server) -> crate::what_the_agent_may_reach::WhatTheAgentMayReach {
     server
         .settings_places
         .as_ref()
-        .map_or_else(Vec::new, |places| {
+        .map_or_else(Default::default, |places| {
             crate::what_the_agent_may_reach::what_the_agent_may_reach(
                 places,
                 std::time::SystemTime::now(),

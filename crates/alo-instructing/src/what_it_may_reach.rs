@@ -37,6 +37,21 @@
 //! above were. Told plainly that it has nothing and that guessing is refused,
 //! it can say so in one round and give the person the sentence that actually
 //! helps: *a folder is granted by picking it*.
+//!
+//! # At full access there is nothing to grant, and that is a sentence too
+//!
+//! **Measured on a booted machine on 2026-11-11** (the walk of `57b98c15`). The
+//! person chose full access, asked *what folders are in this window* about
+//! Dolphin showing their home, and was told *nothing has been granted, a person
+//! grants a folder by picking it in Settings* — the sentence above, said where
+//! it was false. Full access reaches everything the person's account can, with
+//! no folder grants at all (ADR 0149), so the list was empty *because* the
+//! person had given more, and an empty list was read as having given nothing.
+//!
+//! So whether the person chose full access is told as well
+//! (`crate::at_full_access`), and where they did, the model is told it may
+//! name any path their account can open — **and no folder is named**: the
+//! sentence says what kind of reach it is, never what is on the disk.
 
 use std::path::Path;
 
@@ -55,6 +70,10 @@ pub struct WhatItMayReach {
     /// said (`crate::the_persons_folders`). Where things are, never what may
     /// be reached: it changes nothing above, and nothing here grants.
     home: Option<ThePersonsFolders>,
+    /// **Whether the person chose full access** (ADR 0149), as their shell
+    /// said (`crate::at_full_access`). A hint, as the folders are: the daemon
+    /// reads the level itself before anything is reached.
+    at_full_access: bool,
 }
 
 impl WhatItMayReach {
@@ -74,6 +93,7 @@ impl WhatItMayReach {
         Self {
             folders: None,
             home: None,
+            at_full_access: false,
         }
     }
 
@@ -83,6 +103,7 @@ impl WhatItMayReach {
         Self {
             folders: Some(Vec::new()),
             home: None,
+            at_full_access: false,
         }
     }
 
@@ -104,6 +125,7 @@ impl WhatItMayReach {
         Self {
             folders: Some(folders),
             home: None,
+            at_full_access: false,
         }
     }
 
@@ -115,6 +137,25 @@ impl WhatItMayReach {
     #[must_use]
     pub fn in_this_home(self, home: Option<ThePersonsFolders>) -> Self {
         Self { home, ..self }
+    }
+
+    /// **The same, at full access or not**, as the person's shell said.
+    ///
+    /// At full access what may be reached is told as everything the person's
+    /// account can open, whatever folders were also granted — a grant inside
+    /// full access adds nothing a model needs to know.
+    #[must_use]
+    pub fn at_full_access(self, at_full_access: bool) -> Self {
+        Self {
+            at_full_access,
+            ..self
+        }
+    }
+
+    /// Whether the person's shell said they chose full access.
+    #[must_use]
+    pub const fn is_at_full_access(&self) -> bool {
+        self.at_full_access
     }
 
     /// Where the person's own folders are, when their shell said.
@@ -157,6 +198,14 @@ impl WhatItMayReach {
     /// What a model is told about the folders granted, or nothing where nobody
     /// knew.
     fn what_may_be_reached(&self) -> String {
+        if self.at_full_access {
+            return "\n\nThe person chose full access: you may reach every file and folder their \
+                    own account can open on this computer, and no folder needs to be granted \
+                    first. Name the full path of what you need, in their home folder or wherever \
+                    else their account reaches. A file their account cannot open is refused, and \
+                    the machine says so."
+                .to_owned();
+        }
         let Some(folders) = &self.folders else {
             return String::new();
         };
@@ -219,6 +268,52 @@ mod tests {
         );
         assert!(WhatItMayReach::nothing().is_nothing());
         assert!(!WhatItMayReach::nothing().was_not_said());
+    }
+
+    /// **The case the walk of 2026-11-11 found.** At full access nothing is
+    /// granted folder by folder, and the model is told it may reach what the
+    /// person's account can — never that nothing was granted.
+    #[test]
+    fn full_access_with_nothing_granted_is_told_as_everything_the_account_can_open() {
+        let told = WhatItMayReach::nothing().at_full_access(true).told();
+        assert!(told.contains("chose full access"), "{told}");
+        assert!(told.contains("every file and folder"), "{told}");
+        for never in ["not been granted", "picking it in Settings", "will be refused whatever"] {
+            assert!(!told.contains(never), "{never} at full access: {told}");
+        }
+    }
+
+    /// **And at every other level nothing changes**: the sentence that sent the
+    /// person to Settings is still said where it is true.
+    #[test]
+    fn below_full_access_nothing_granted_is_still_nothing() {
+        let it = WhatItMayReach::nothing().at_full_access(false);
+        assert!(!it.is_at_full_access());
+        assert_eq!(it.told(), WhatItMayReach::nothing().told());
+        assert!(it.told().contains("picking it in Settings"));
+    }
+
+    /// **At full access no folder is named**, granted or not: the sentence says
+    /// what kind of reach it is and nothing about what is on the disk.
+    #[test]
+    fn full_access_names_no_folder() {
+        let told = WhatItMayReach::these([Path::new("/home/alo/Documents")])
+            .at_full_access(true)
+            .told();
+        assert!(!told.contains("/home/alo/Documents"), "{told}");
+        assert!(!told.contains("nothing else on this computer"), "{told}");
+    }
+
+    /// Where the person's home is, is still told at full access, before it.
+    #[test]
+    fn full_access_still_tells_where_the_home_is() {
+        let home = ThePersonsFolders::of(Path::new("/var/home/anna"), []);
+        let told = WhatItMayReach::nothing()
+            .in_this_home(home)
+            .at_full_access(true)
+            .told();
+        let at = told.find("/var/home/anna").expect("the home is told");
+        assert!(at < told.find("chose full access").expect("full access is told"));
     }
 
     /// The folder a person granted is named, in full.
