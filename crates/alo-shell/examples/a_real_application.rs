@@ -277,6 +277,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                                 },
                             )
                         }),
+                        field: None,
                         showing: None,
                         alo: None,
                     },

@@ -63,6 +63,11 @@ impl crate::Server {
             let _ = self.tasks_mut().brought_back(which);
             return false;
         }
+        // **And the keyboard leaves it**, as it leaves a closed window: a
+        // window in the panel that still took keys would swallow every one,
+        // which *Keep running* chosen by the keyboard would otherwise do
+        // every time.
+        self.the_keyboard_leaves_a_window_that_went(which);
         true
     }
 

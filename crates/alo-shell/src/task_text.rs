@@ -221,6 +221,19 @@ pub struct TheTwoAnswers<'a> {
     /// a tick under the rows, as its verb words them. Neither for the closing
     /// question, or for a verb that says nothing.
     pub does: (Option<&'a str>, Option<&'a str>),
+    /// A third answer drawn between the two: *Keep running*, on the closing
+    /// question (ADR 0139). [`None`] on an approval card, which has two.
+    pub between: Option<TheAnswerBetween<'a>>,
+}
+
+/// The answer drawn between the other two, and whether the keyboard is on it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct TheAnswerBetween<'a> {
+    /// Its label, in the language the person reads.
+    pub words: &'a str,
+    /// Whether it is the one selected; [`TheTwoAnswers::selected`] is then
+    /// [`None`], so exactly one answer or none is ever outlined.
+    pub selected: bool,
 }
 
 /// One row on an approval card naming something the change touches.

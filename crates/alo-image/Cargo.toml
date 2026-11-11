@@ -63,6 +63,9 @@ alo-appearance = { path = "../alo-appearance" }
 # And the cursor theme the compositor's own drawing is written into, under the
 # name and at the size that crate says.
 alo-cursors = { path = "../alo-cursors" }
+# And what applications are told so that they describe themselves, which the
+# image names as every person's default in its environment.d.
+alo-launching = { path = "../alo-launching" }
 # The shipped signature policy names a key path inside the image, so measuring it
 # here needs one copy with that path pointed at this checkout. Nothing this crate
 # ships writes a temporary file.

@@ -97,6 +97,7 @@ mod a_key_reaches_the_market;
 mod a_key_reaches_the_password_sheet;
 mod a_key_reaches_the_record;
 mod a_key_reaches_the_task_in_front;
+mod a_key_reaches_the_window_field;
 mod a_key_types_into_more_apps;
 mod a_new_window_is_placed;
 mod a_person_pins_and_unpins;
@@ -152,6 +153,8 @@ mod each_window_with_its_edge;
 mod ease_in_and_out;
 #[cfg(test)]
 mod the_desktops_pictures_pinned;
+/// The words typed into a window panel's field, and the caret among them.
+pub mod the_window_panels_field;
 pub use a_provider_is_added_in_settings::WhyNotSaved;
 mod a_reader_presses;
 pub use a_reader_presses::WhatAReaderPressCameTo;
@@ -178,6 +181,7 @@ mod approval_seat;
 mod approval_shown;
 #[cfg(test)]
 mod approval_testing;
+mod apps_describing_themselves;
 mod atomic_inventory;
 mod atomic_output;
 mod atomic_test;
@@ -755,6 +759,8 @@ mod window_edge_reading;
 mod window_edge_title;
 mod window_edge_tooltip;
 mod window_edge_who_draws;
+/// The window panel's field, *alo · Ask about this window…*, drawn.
+pub mod window_field_paint;
 mod window_full_screen;
 mod window_maximize;
 mod window_menu;

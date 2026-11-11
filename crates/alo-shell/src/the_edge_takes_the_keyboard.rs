@@ -189,6 +189,46 @@ impl crate::Server {
         }
     }
 
+    /// **The keyboard goes into this window's panel field**, opening the panel
+    /// if it is shut — one panel at a time, so every other band lets go.
+    pub(crate) fn the_keyboard_goes_to_the_window_field(&mut self, surface: &WlSurface) {
+        self.keyboard_on_edges.retain(|(it, _)| it == surface);
+        self.remember(
+            surface,
+            TheKeyboardOnTheEdge::InTheMenu(TheKeyboardInTheMenu::in_the_field(
+                OnTheEdge::WindowActions,
+            )),
+        );
+    }
+
+    /// **Whose panel field has the keyboard**, if one does: a panel open with
+    /// the keyboard on its alo row, while alo may be asked. The row is drawn
+    /// only then (`crate::window_menu`), so with AI off there is no field and
+    /// this is [`None`].
+    #[must_use]
+    pub fn whose_window_field_has_the_keyboard(&self) -> Option<WlSurface> {
+        if !self.alo_in_a_window.may_be_asked() {
+            return None;
+        }
+        self.keyboard_on_edges
+            .iter()
+            .find(|(_, where_it_is)| {
+                matches!(
+                    where_it_is,
+                    TheKeyboardOnTheEdge::InTheMenu(keyboard)
+                        if keyboard.on() == Some(WhatARowDoes::HelpWithThisWindow)
+                )
+            })
+            .map(|(surface, _)| surface.clone())
+    }
+
+    /// The panel closes and the keyboard leaves the band, with nothing left
+    /// focused on it: a request about the window was sent, and the task
+    /// window it opens is where the person reads on.
+    pub(crate) fn the_panel_closes_and_the_band_lets_go(&mut self, surface: &WlSurface) {
+        self.remember(surface, TheKeyboardOnTheEdge::Nowhere);
+    }
+
     /// Whether any window's panel is open, and whose.
     #[must_use]
     pub(crate) fn whose_panel_is_open(&self) -> Option<WlSurface> {

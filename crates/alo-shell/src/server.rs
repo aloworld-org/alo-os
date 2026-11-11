@@ -251,6 +251,10 @@ pub struct Server {
     pub(crate) pointers_look: crate::ThePointersLook,
     /// A change to the pointer the desktop has not told the session about yet.
     pub(crate) pointer_change_to_tell: Option<crate::ThePointersLook>,
+    /// The person's answer to *Apps describe themselves*, written in Settings
+    /// and not yet handed to the desktop
+    /// (`crate::apps_describing_themselves`).
+    pub(crate) describing_to_tell: Option<bool>,
     /// Where a new window goes when there is no room for it in view, as the
     /// person last said (`crate::the_choice_when_there_is_no_room`).
     pub(crate) when_there_is_no_room: alo_appearance::WhenThereIsNoRoom,
@@ -924,6 +928,7 @@ impl Server {
             window_controls: alo_appearance::WindowControls::default(),
             pointers_look: crate::ThePointersLook::default(),
             pointer_change_to_tell: None,
+            describing_to_tell: None,
             // Gliding to empty space, until the desktop says what this person
             // chose; and full motion, until it says they asked for less.
             when_there_is_no_room: alo_appearance::WhenThereIsNoRoom::default(),

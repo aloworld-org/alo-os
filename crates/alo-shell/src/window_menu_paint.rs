@@ -81,9 +81,6 @@ const A_PICTURES_CORNER: f32 = 10.0;
 const A_ROWS_CORNER: f32 = 7.0;
 /// *Help with this window*'s corner. `11:76`.
 const ALOS_ROWS_CORNER: f32 = 9.0;
-/// Where *alo* starts across that row, and where its label does. `11:77`,
-/// `11:78`; both are centred down the row's 52.
-const ALOS_ROWS_WORDS: (i32, i32) = (12, 51);
 /// The shadow: how far down, how soft, how strong. `11:51`'s effect.
 const THE_SHADOW: (f32, f32, f32) = (16.0, 40.0, 0.10);
 /// The outline inside a placement picture: where, and how big. `11:56`.
@@ -125,6 +122,7 @@ pub(crate) fn rgb(role: Role) -> [u8; 3] {
 pub(crate) fn the_panel_drawn(
     menu: &WindowMenu,
     pointing: PointingAtTheMenu,
+    field: Option<crate::window_field_paint::TheFieldAsTyped<'_>>,
     fonts: &mut FontSystem,
     scale: u32,
     output: (i32, i32),
@@ -262,9 +260,24 @@ pub(crate) fn the_panel_drawn(
             let across = px(row.row.loc.x) + (px(A_PICTURE_IS) - shaped.width).max(0) / 2;
             words.extend(shaped.placed(across, px(row.row.loc.y + A_LABEL_SITS_AT), output.1));
         } else if row.does == WhatARowDoes::HelpWithThisWindow {
-            words.extend(the_alo_rows_words(
-                fonts, row.row, label, held, scale, fraction, output,
-            ));
+            // **The field**, *alo · Ask about this window…*, with what the
+            // person typed and the caret while the keyboard is in it
+            // (`crate::window_field_paint`).
+            let (caret, typed_words) = crate::window_field_paint::the_field_drawn(
+                fonts,
+                crate::window_field_paint::TheFieldNow {
+                    row: row.row,
+                    prompt: label,
+                    typed: field,
+                    has_the_keyboard: pointing.focused == Some(row.does),
+                    held,
+                },
+                scale,
+                fraction,
+                output,
+            );
+            rasters.extend(caret);
+            words.extend(typed_words);
         } else {
             let ground = if held {
                 rgb(Role::BgCool)
@@ -289,48 +302,6 @@ pub(crate) fn the_panel_drawn(
         }
     }
     (rasters, words)
-}
-
-/// *Help with this window*'s words: **alo** in SemiBold 15, then the label in
-/// Regular 13, both navy and centred down the row — `11:76`, which draws the
-/// assistant's name where the other rows have a mark, and no teal: teal is for
-/// alo working, never an idle entry.
-fn the_alo_rows_words(
-    fonts: &mut FontSystem,
-    row: Rectangle<i32, Logical>,
-    label: &str,
-    held: bool,
-    scale: u32,
-    fraction: f64,
-    output: (i32, i32),
-) -> Vec<Inked> {
-    let px = |it: i32| scaled(it, scale);
-    let ground = if held {
-        rgb(Role::BgCool)
-    } else {
-        rgb(Role::BgCanvas)
-    };
-    let navy = rgb(Role::TextPrimary);
-    let mut words = Vec::new();
-    for (text, weight, (size, line), across) in [
-        // The assistant's name, which is never translated.
-        ("alo", Weight::SEMIBOLD, (15.0, 20.0), ALOS_ROWS_WORDS.0),
-        (label, Weight::NORMAL, (13.0, 18.0), ALOS_ROWS_WORDS.1),
-    ] {
-        let shaped = in_a_weight(
-            fonts,
-            text,
-            weight,
-            metrics(size, line, fraction),
-            px((row.size.w - across).max(1)),
-            ground,
-            navy,
-        )
-        .cropped_to_its_ink();
-        let down = px(row.loc.y) + (px(row.size.h) - shaped.height).max(0) / 2;
-        words.extend(shaped.placed(px(row.loc.x + across), down, output.1));
-    }
-    words
 }
 
 /// The weight a choice's label is drawn at: **Medium** under a placement

@@ -1078,6 +1078,7 @@ dependencies = [
  "alo-cursors",
  "alo-entering",
  "alo-keeping",
+ "alo-launching",
  "alo-models",
  "alo-sessiond",
  "serde",

@@ -156,9 +156,18 @@ impl AlosCopies {
                 &format!("{first} is not a program on this machine"),
             ));
         };
-        let Some(handed) = self.handed.clone() else {
+        let Some(mut handed) = self.handed.clone() else {
             return Err(said(application, "there is no display to hand it"));
         };
+        // **alo's copy is started with nothing else in its environment**, so
+        // whether it describes itself is handed whether or not the person
+        // answered: the image's default never reaches a process started here.
+        // Off, it does not describe itself, and alo cannot work inside it —
+        // which is what the switch says it costs.
+        let (describe, _) =
+            crate::telling_applications_to_describe_themselves::the_persons_answer();
+        handed.extend(alo_launching::what_a_start_is_handed(describe));
+        let gains = alo_launching::what_its_command_gains(application, describe);
         if let Err(why) = std::fs::DirBuilder::new()
             .recursive(true)
             .mode(0o700)
@@ -175,6 +184,7 @@ impl AlosCopies {
         let child = Command::new(program)
             .args(rest)
             .args(copy.arguments())
+            .args(gains)
             .env_clear()
             .envs(handed.iter().filter_map(|pair| pair.split_once('=')))
             .current_dir(&home)

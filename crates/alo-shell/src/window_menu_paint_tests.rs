@@ -34,6 +34,7 @@ fn the_body_is_drawn_first_and_holds_the_whole_panel() {
     let (rasters, _) = the_panel_drawn(
         &menu,
         PointingAtTheMenu::default(),
+        None,
         &mut fonts(),
         100,
         (4000, 3000),
@@ -57,6 +58,7 @@ fn the_heading_and_each_choice_are_written() {
     let (_, words) = the_panel_drawn(
         &menu,
         PointingAtTheMenu::default(),
+        None,
         &mut fonts(),
         100,
         (4000, 3000),
@@ -90,6 +92,7 @@ fn the_keyboard_s_choice_is_ringed_and_not_told_by_colour_alone() {
     let (plain, _) = the_panel_drawn(
         &menu,
         PointingAtTheMenu::default(),
+        None,
         &mut fonts(),
         100,
         (4000, 3000),
@@ -99,7 +102,7 @@ fn the_keyboard_s_choice_is_ringed_and_not_told_by_colour_alone() {
         focused: Some(WhatARowDoes::FullScreen),
         preview: None,
     };
-    let (ringed, _) = the_panel_drawn(&menu, focused, &mut fonts(), 100, (4000, 3000));
+    let (ringed, _) = the_panel_drawn(&menu, focused, None, &mut fonts(), 100, (4000, 3000));
     assert_eq!(ringed.len(), plain.len() + 1);
 }
 
@@ -125,6 +128,7 @@ fn a_preview_is_drawn_under_the_panel_with_its_words() {
                 says: alo_access::words::LEFT_HALF_PREVIEW,
             }),
         },
+        None,
         &mut fonts(),
         100,
         (4000, 3000),
@@ -138,6 +142,7 @@ fn a_preview_is_drawn_under_the_panel_with_its_words() {
     let (plain, _) = the_panel_drawn(
         &menu,
         PointingAtTheMenu::default(),
+        None,
         &mut fonts(),
         100,
         (4000, 3000),
