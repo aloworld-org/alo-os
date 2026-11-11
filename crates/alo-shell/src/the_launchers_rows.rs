@@ -317,7 +317,13 @@ fn an_applications_icon(
 }
 
 /// A key cap: a white well inside a one-unit line.
-pub(crate) fn a_key_cap(canvas: &mut Canvas, cap: Area, corner: i32, ground: [u8; 3], line: [u8; 3]) {
+pub(crate) fn a_key_cap(
+    canvas: &mut Canvas,
+    cap: Area,
+    corner: i32,
+    ground: [u8; 3],
+    line: [u8; 3],
+) {
     canvas.fill(cap, corner as f32, line, 1.0);
     canvas.fill(shrunk(cap, 1), (corner - 1).max(0) as f32, ground, 1.0);
 }

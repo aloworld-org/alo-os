@@ -50,7 +50,9 @@
 use smithay::utils::{Physical, Rectangle, Size};
 
 use crate::display_scale::DisplayScale;
-use crate::where_the_bar_opens::{A_TARGET_IS_TALL, BETWEEN_ROWS, THE_ASK_ROW_IS_TALL, WhatItHolds};
+use crate::where_the_bar_opens::{
+    A_TARGET_IS_TALL, BETWEEN_ROWS, THE_ASK_ROW_IS_TALL, WhatItHolds,
+};
 
 /// The most of the display's height the list takes before it scrolls: the
 /// centred launcher's three fifths.
@@ -126,7 +128,11 @@ pub(crate) fn where_the_matches_rise(
     )]
     let most = headroom.min((display.h as f32 * AT_MOST).round() as i32);
 
-    let typed_line = if carries_the_line { a_row + px(BETWEEN_ROWS) } else { 0 };
+    let typed_line = if carries_the_line {
+        a_row + px(BETWEEN_ROWS)
+    } else {
+        0
+    };
     let asking = if holds.asks {
         let above = if holds.found > 0 {
             px(BETWEEN_ROWS) * 2 + a_line
@@ -197,9 +203,7 @@ pub(crate) fn where_the_matches_rise(
             (which, at)
         })
         .collect();
-    let mut bottom = rows
-        .last()
-        .map_or(y, |(_, at)| at.loc.y + at.size.h);
+    let mut bottom = rows.last().map_or(y, |(_, at)| at.loc.y + at.size.h);
     let mut hairline = None;
     let ask = holds.asks.then(|| {
         if !rows.is_empty() {
@@ -210,7 +214,10 @@ pub(crate) fn where_the_matches_rise(
             bottom = line.loc.y + line.size.h + px(BETWEEN_ROWS);
             hairline = Some(line);
         }
-        Rectangle::new((left, bottom).into(), (inner, px(THE_ASK_ROW_IS_TALL)).into())
+        Rectangle::new(
+            (left, bottom).into(),
+            (inner, px(THE_ASK_ROW_IS_TALL)).into(),
+        )
     });
 
     Some(TheMatchesPlaces {

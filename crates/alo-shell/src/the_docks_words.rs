@@ -136,7 +136,10 @@ pub struct ThePickersWords {
 impl TheDocksWords {
     /// Add what is in the Dock's field, from the composer as it is now.
     #[must_use]
-    pub fn and_the_composer(mut self, composer: &crate::the_composer_a_person_types_in::TheComposer) -> Self {
+    pub fn and_the_composer(
+        mut self,
+        composer: &crate::the_composer_a_person_types_in::TheComposer,
+    ) -> Self {
         self.in_the_composer = TheComposerAsShown {
             typed: composer.typed().to_owned(),
             has_the_keyboard: composer.has_the_keyboard(),

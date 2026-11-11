@@ -98,14 +98,20 @@ fn the_raster_covers_the_list_and_stays_on_the_display_on_every_edge() {
     for edge in alo_dock::Edge::EVERY {
         let it = drawn(edge, &dolphin()).expect("drawn");
         let (panel, area) = (it.places.panel, it.panel.area);
-        assert!(area.loc.x <= panel.loc.x && area.loc.y <= panel.loc.y, "{edge:?}");
+        assert!(
+            area.loc.x <= panel.loc.x && area.loc.y <= panel.loc.y,
+            "{edge:?}"
+        );
         assert!(
             area.loc.x + area.size.w >= panel.loc.x + panel.size.w
                 && area.loc.y + area.size.h >= panel.loc.y + panel.size.h,
             "{edge:?}: the list is cut off"
         );
         assert!(area.loc.x >= 0 && area.loc.y >= 0, "{edge:?}");
-        assert!(area.loc.x + area.size.w <= 1440 && area.loc.y + area.size.h <= 960, "{edge:?}");
+        assert!(
+            area.loc.x + area.size.w <= 1440 && area.loc.y + area.size.h <= 960,
+            "{edge:?}"
+        );
     }
 }
 
@@ -122,7 +128,11 @@ fn the_first_row_is_the_one_tinted() {
         .expect("inside the raster");
     let pixel = &it.panel.pixels[at..at + 3];
     let white = [0xFF_u8, 0xFF, 0xFF];
-    assert_ne!(pixel, white.as_slice(), "the chosen row is not the panel's white");
+    assert_ne!(
+        pixel,
+        white.as_slice(),
+        "the chosen row is not the panel's white"
+    );
 }
 
 /// **A side Dock's list carries what is typed**, because its field has no

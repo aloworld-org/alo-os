@@ -593,8 +593,12 @@ pub use the_first_account::{ASecret, OnTheSheet, TheAccountSheet, TheAccountShow
 /// Closing alo's terminal: at once when idle, after a question when a command
 /// is running.
 mod closing_the_terminal;
+/// What a screen reader is told the Bar's matches are.
+mod the_bars_matches_as_read;
 mod the_closed_windows_notice;
 pub mod the_closed_windows_words;
+/// The end of a line of typing that fits in a field.
+mod the_end_that_fits;
 pub mod the_first_start;
 mod the_first_starts_icons;
 mod the_formats_are_told;
@@ -604,14 +608,8 @@ mod the_language_a_person_chose;
 pub mod the_language_set_up_in;
 pub mod the_languages_offered;
 mod the_launchers_icons;
-/// What a screen reader is told the Bar's matches are.
-mod the_bars_matches_as_read;
-/// Which face the alo Bar shows: the Dock's field, or the centred panel.
-mod which_face_the_bar_shows;
 /// The alo Bar's rows, drawn the same wherever the Bar is shown.
 mod the_launchers_rows;
-/// The end of a line of typing that fits in a field.
-mod the_end_that_fits;
 pub mod the_machines_keyboard;
 pub mod the_markets_words;
 mod the_panel_reveals;
@@ -699,10 +697,10 @@ mod what_the_dock_has_open;
 mod what_the_keyboard_said;
 mod what_the_seat_made_of_its_input;
 mod what_the_server_tells_a_frame;
-mod where_a_task_window_opens;
-mod where_a_window_opens;
 /// Where a list opened from the Dock may go.
 mod where_a_popover_is_kept;
+mod where_a_task_window_opens;
+mod where_a_window_opens;
 pub mod where_the_bar_opens;
 mod where_the_bars_matches_rise;
 mod where_the_dock_is;
@@ -710,6 +708,8 @@ mod where_the_market_opens;
 pub mod which_area_has_the_keyboard;
 mod which_card_the_seat_holds;
 mod which_display_a_window_is_on;
+/// Which face the alo Bar shows: the Dock's field, or the centred panel.
+mod which_face_the_bar_shows;
 pub mod which_preview_the_pointer_is_on;
 mod which_surface_claims_a_point;
 /// Which kind of window is in front: the one a person went to (2026-10-31).

@@ -483,7 +483,10 @@ fn the_bars_matches_hang_under_the_docks_field_with_the_chosen_one_selected() {
         .iter()
         .map(|at| {
             let row = &tree.nodes[*at];
-            (row.name.as_str(), carries(row.states, access_roles::SELECTED))
+            (
+                row.name.as_str(),
+                carries(row.states, access_roles::SELECTED),
+            )
         })
         .collect();
     assert_eq!(rows, vec![("Dolphin", true), ("Ask alo", false)]);

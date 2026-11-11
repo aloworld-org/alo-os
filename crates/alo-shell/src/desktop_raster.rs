@@ -554,20 +554,23 @@ pub(crate) fn picture(
             });
             (None, matches)
         }
-        other => (other.and_then(|open| {
-        crate::bar_raster::picture(
-            &open,
-            palette,
-            // **The canvas's own colour**, which the screen behind the
-            // launcher is dimmed toward (`561:308`).
-            {
-                let surface = look.surface();
-                [surface.red(), surface.green(), surface.blue()]
-            },
-            fonts,
-            crate::display_scale::DisplayScale::of_per_cent(display_scale),
-        )
-    }), None),
+        other => (
+            other.and_then(|open| {
+                crate::bar_raster::picture(
+                    &open,
+                    palette,
+                    // **The canvas's own colour**, which the screen behind the
+                    // launcher is dimmed toward (`561:308`).
+                    {
+                        let surface = look.surface();
+                        [surface.red(), surface.green(), surface.blue()]
+                    },
+                    fonts,
+                    crate::display_scale::DisplayScale::of_per_cent(display_scale),
+                )
+            }),
+            None,
+        ),
     };
 
     Ok(DesktopPicture {

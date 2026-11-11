@@ -50,7 +50,10 @@ fn typing(what: &str, asks: bool) -> (tempfile::TempDir, Server) {
 fn the_row_that_asks_is_read_in_its_own_words_and_is_selected() {
     let (_runtime, server) = typing("matches-read", true);
     let rows = server.the_bars_matches_as_read(&english());
-    assert_eq!(rows, vec![("Ask alo \u{201c}files\u{201d}".to_owned(), true)]);
+    assert_eq!(
+        rows,
+        vec![("Ask alo \u{201c}files\u{201d}".to_owned(), true)]
+    );
 }
 
 #[test]

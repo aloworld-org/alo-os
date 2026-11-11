@@ -52,7 +52,10 @@ fn super_space_and_super_a_land_in_the_docks_field() {
         let chord = shortcuts
             .chord_for(action)
             .expect("the release ships this chord");
-        assert!(server.a_chord_opens_the_bar(&shortcuts, chord), "{action:?}");
+        assert!(
+            server.a_chord_opens_the_bar(&shortcuts, chord),
+            "{action:?}"
+        );
         assert_eq!(
             server.which_face_the_bar_shows(),
             Some(TheBarOpens::AboveTheDocksField),

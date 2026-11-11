@@ -14,7 +14,10 @@ fn what_fits_is_shown_whole() {
 
 #[test]
 fn what_does_not_fit_loses_its_start_and_keeps_its_end() {
-    assert_eq!(the_end_that_fits("open the spreadsheet", 50, ten_each), "sheet");
+    assert_eq!(
+        the_end_that_fits("open the spreadsheet", 50, ten_each),
+        "sheet"
+    );
 }
 
 #[test]

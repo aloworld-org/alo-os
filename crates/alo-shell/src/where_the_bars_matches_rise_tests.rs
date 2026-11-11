@@ -57,7 +57,10 @@ fn above_a_bottom_dock_the_list_ends_its_gap_above_the_bar_where_the_field_start
     assert_eq!(at.panel.loc.x, dock.field.loc.x);
     assert_eq!(at.rows.len(), 2);
     assert!(at.ask.is_some() && at.hairline.is_some());
-    assert!(at.typed.is_none(), "the words are in the Dock's field itself");
+    assert!(
+        at.typed.is_none(),
+        "the words are in the Dock's field itself"
+    );
 }
 
 #[test]
@@ -163,10 +166,16 @@ fn on_a_small_display_the_list_stays_on_it_and_scrolls_to_the_row_chosen() {
             .expect("room for some rows");
         assert!(at.panel.loc.y >= 0 && at.panel.loc.x >= 0, "{w}x{h}");
         assert!(at.panel.loc.x + at.panel.size.w <= w, "{w}x{h}");
-        assert!(at.panel.loc.y + at.panel.size.h <= dock.band.loc.y, "{w}x{h}");
+        assert!(
+            at.panel.loc.y + at.panel.size.h <= dock.band.loc.y,
+            "{w}x{h}"
+        );
         assert!(at.rows.len() < 30, "{w}x{h}: it scrolls");
         assert_eq!(at.rows.last().map(|(which, _)| *which), Some(29), "{w}x{h}");
-        assert!(at.ask.is_some(), "{w}x{h}: the row that asks is never scrolled away");
+        assert!(
+            at.ask.is_some(),
+            "{w}x{h}: the row that asks is never scrolled away"
+        );
     }
 }
 
@@ -178,8 +187,14 @@ fn a_display_too_short_for_the_row_that_asks_draws_no_list() {
         edge: alo_dock::Edge::Bottom,
     };
     assert!(
-        where_the_matches_rise(Size::from((800, 106)), DisplayScale::ONE, TWO_AND_ASK, dock, None)
-            .is_none()
+        where_the_matches_rise(
+            Size::from((800, 106)),
+            DisplayScale::ONE,
+            TWO_AND_ASK,
+            dock,
+            None
+        )
+        .is_none()
     );
 }
 
