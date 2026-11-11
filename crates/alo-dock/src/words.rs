@@ -696,16 +696,6 @@ pub const A_NEW_TASK: Word = Word::saying("dock.bar.ask.new-task", "a new task")
      Lower case, a short noun phrase.",
 );
 
-/// The line under the launcher's field while a window was offered with *Help
-/// with this window*: which window the request will be about.
-pub const ABOUT_THIS_WINDOW: Word =
-    Word::saying("dock.bar.about-this-window", "About this window: {window}").noting(
-        "Under the box a person types a request to alo in, after they chose Help with this window \
-         on one of their windows. {window} is that window's title and its application's name, as \
-         its title band shows them, and is never translated. It says what the request will be \
-         about; nothing is asked until the person sends it.",
-    );
-
 /// The foot of the launcher: the arrow keys choose.
 pub const THE_KEYS_CHOOSE: Word = Word::saying("dock.bar.keys.choose", "choose").noting(
     "At the foot of the launcher, after drawings of the Up and Down keys: they choose a row. \
@@ -740,7 +730,7 @@ pub const ESC: Word = Word::saying("dock.bar.keys.esc", "Esc").noting(
 /// beside the other settings' words because this list's order is the order a
 /// translator meets them in, and a translator who has already done this file
 /// should find the new ones together rather than hunting a diff.
-pub const EVERY_WORD: [Word; 57] = [
+pub const EVERY_WORD: [Word; 56] = [
     AN_APPLICATION_ROW,
     APPLICATIONS_HERE,
     ONE_APPLICATION_HERE,
@@ -793,7 +783,6 @@ pub const EVERY_WORD: [Word; 57] = [
     OPEN_IT,
     ASK_ALO_ABOUT,
     A_NEW_TASK,
-    ABOUT_THIS_WINDOW,
     THE_KEYS_CHOOSE,
     THE_KEY_OPENS,
     THE_KEY_CLOSES,

@@ -13,6 +13,7 @@
 # One line per key: the key, a tab, then the English exactly as the crate declares it.
 
 access.an-application	an application
+access.ask-about-this-window	Ask about this window…
 access.ask-the-agent	ask the agent
 access.bounce-keys	ignore the same key pressed twice quickly
 access.close	Close
@@ -21,7 +22,6 @@ access.focus-always-visible	always show where the keyboard is
 access.full-screen	Full screen
 access.go-back-at-the-next-restart	go back the next time this machine starts
 access.go-back-now	go back now, restarting this machine
-access.help-with-this-window	Help with this window
 access.high-contrast	use strong colours that are easier to read
 access.larger-text	make all text larger
 access.left	Left
@@ -755,7 +755,6 @@ dock.announced.focused	focused
 dock.announced.open	{app}, {windows} open
 dock.announced.some-put-aside	{app}, {windows} open, {aside} minimised
 dock.announced.where	on the canvas, {across} across and {down} down
-dock.bar.about-this-window	About this window: {window}
 dock.bar.ask	Ask alo “{what}”
 dock.bar.ask.new-task	a new task
 dock.bar.found.applications	On this computer  ·  {how_many} applications

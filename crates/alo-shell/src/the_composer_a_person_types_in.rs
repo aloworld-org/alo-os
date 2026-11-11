@@ -217,13 +217,6 @@ impl crate::Server {
     /// thing, and sending it to a model instead would be answering a different
     /// question — and on a machine with no model, answering none.
     pub fn a_key_reached_the_composer(&mut self, key: ComposerKey) -> WhatTheComposerDid {
-        // **A request about a window asks alo and opens nothing else**: with a
-        // window offered there are no applications to choose between, so the
-        // arrows choose nothing and Enter asks — about that window, read now
-        // (`crate::alo_in_a_window`).
-        if self.alo_in_a_window.offered().is_some() && self.the_composer.has_the_keyboard() {
-            return self.a_key_about_the_window_offered(key);
-        }
         // **The field's own guard, repeated here deliberately.** This arm runs
         // *before* `TheComposer::pressed`, which is what refuses every key for
         // a field that does not have the keyboard — so without this an Enter
@@ -294,38 +287,6 @@ impl crate::Server {
             self.a_person_asked_alo(request);
         }
         what
-    }
-
-    /// One key while the composer is open for a window offered with *Help with
-    /// this window*.
-    ///
-    /// **Enter asks only when the window can still be named**: one that closed
-    /// as it was pressed lets the offer go and asks nothing, keeping the words
-    /// in the field, so the person sees the line under it change rather than a
-    /// request leave without the window they meant.
-    fn a_key_about_the_window_offered(&mut self, key: ComposerKey) -> WhatTheComposerDid {
-        match key {
-            ComposerKey::Up | ComposerKey::Down => WhatTheComposerDid::Nothing,
-            ComposerKey::Ask => {
-                if self.the_composer.is_empty() {
-                    return WhatTheComposerDid::Nothing;
-                }
-                let typed = self.the_composer.typed().to_owned();
-                if !self.a_person_asked_alo_about_the_window(&typed) {
-                    return WhatTheComposerDid::ItChanged;
-                }
-                // **The field empties and the keyboard leaves it**, as for any
-                // request: `Clear` is the key that means exactly that.
-                drop(self.the_composer.pressed(ComposerKey::Clear));
-                WhatTheComposerDid::TheyAsked(typed)
-            }
-            ComposerKey::Clear => {
-                let what = self.the_composer.pressed(ComposerKey::Clear);
-                self.alo_in_a_window.let_the_offer_go();
-                what
-            }
-            other => self.the_composer.pressed(other),
-        }
     }
 
     /// The composer, to read when drawing it.
