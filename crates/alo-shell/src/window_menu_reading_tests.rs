@@ -77,6 +77,7 @@ fn every_word_the_panel_says_is_listed() {
             "access.restore",
             "access.full-screen",
             "access.exit-full-screen",
+            "access.help-with-this-window",
             "access.left-half-preview",
             "access.right-half-preview",
             "access.no-room-in-half"

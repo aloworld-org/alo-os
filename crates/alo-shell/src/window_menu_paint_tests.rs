@@ -192,6 +192,7 @@ fn a_choices_label_is_drawn_in_manrope() {
         HowTheWindowIs {
             maximised: true,
             full_screen: true,
+            ..HowTheWindowIs::default()
         },
         Size::from((4000, 3000)),
     )

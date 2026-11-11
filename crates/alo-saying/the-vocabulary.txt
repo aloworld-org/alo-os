@@ -21,6 +21,7 @@ access.focus-always-visible	always show where the keyboard is
 access.full-screen	Full screen
 access.go-back-at-the-next-restart	go back the next time this machine starts
 access.go-back-now	go back now, restarting this machine
+access.help-with-this-window	Help with this window
 access.high-contrast	use strong colours that are easier to read
 access.larger-text	make all text larger
 access.left	Left
@@ -43,6 +44,7 @@ access.slow-keys	ignore a key unless it is held for a moment
 access.something-is-asked	the machine is asking you something
 access.something-is-leaving	something is leaving this machine
 access.sticky-keys	press keys one at a time instead of holding them together
+access.stop	Stop
 access.the-agent-is-working	the agent is working
 access.the-choices	what you can choose
 access.the-desktop	the desktop
@@ -747,6 +749,7 @@ dock.announced.focused	focused
 dock.announced.open	{app}, {windows} open
 dock.announced.some-put-aside	{app}, {windows} open, {aside} minimised
 dock.announced.where	on the canvas, {across} across and {down} down
+dock.bar.about-this-window	About this window: {window}
 dock.bar.ask	Ask alo “{what}”
 dock.bar.ask.new-task	a new task
 dock.bar.found.applications	On this computer  ·  {how_many} applications

@@ -76,6 +76,7 @@ fn the_choices_read_restore_and_exit_while_the_window_is_so() {
     let how = HowTheWindowIs {
         maximised: true,
         full_screen: true,
+        ..HowTheWindowIs::default()
     };
     let menu = the_menu_of(&notes(), how, roomy()).expect("a panel");
     let does: Vec<WhatARowDoes> = menu.rows.iter().map(|it| it.does).collect();
@@ -151,4 +152,50 @@ fn a_point_finds_the_choice_drawn_under_it() {
         Some(WhatARowDoes::FullScreen)
     );
     assert_eq!(menu.what_is_under(Point::from((845, 330))), None);
+}
+
+/// **Help with this window is there only while alo may be asked**: never
+/// while AI is set to *Not at all* or nothing is chosen to answer — and when
+/// it is, it follows Full screen by `11:75`'s and `11:76`'s distances.
+#[test]
+fn help_with_this_window_is_there_only_while_alo_may_be_asked() {
+    let without = the_menu_of(&notes(), HowTheWindowIs::default(), roomy()).expect("a panel");
+    assert!(
+        without
+            .rows
+            .iter()
+            .all(|it| it.does != WhatARowDoes::HelpWithThisWindow),
+        "alo was offered while it may not be asked"
+    );
+    assert_eq!(without.before_alo, None);
+    assert_eq!(without.panel.size.h, 172 + 40 + 20);
+
+    let how = HowTheWindowIs {
+        alo_may_help: true,
+        ..HowTheWindowIs::default()
+    };
+    let with = the_menu_of(&notes(), how, roomy()).expect("a panel");
+    let help = with.rows.last().expect("a choice");
+    assert_eq!(help.does, WhatARowDoes::HelpWithThisWindow);
+    assert_eq!(
+        with.before_alo,
+        Some(Rectangle::new(
+            Point::from((864, 322 + 223)),
+            Size::from((304, 1))
+        ))
+    );
+    assert_eq!(
+        help.row,
+        Rectangle::new(Point::from((864, 322 + 240)), Size::from((304, 52)))
+    );
+    assert_eq!(with.panel.size.h, 240 + 52 + 20);
+    assert!(
+        with.panel.size.h <= 360,
+        "the panel no longer fits the smallest display"
+    );
+    assert_eq!(
+        with.what_is_under(Point::from((900, 322 + 260)))
+            .map(|it| it.does),
+        Some(WhatARowDoes::HelpWithThisWindow)
+    );
 }

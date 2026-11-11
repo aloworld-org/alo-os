@@ -88,6 +88,7 @@ pub(crate) fn every_task_windows_edge(
                 OverTheEdge {
                     menu: None,
                     showing: None,
+                    alo: None,
                 },
                 // **No title and no body from the edge**: a task window carries
                 // its own title inside it and draws its own body. Its look is

@@ -68,6 +68,7 @@ pub(crate) fn its_picture(
         OverTheEdge {
             menu: None,
             showing: None,
+            alo: None,
         },
         // **No body from the edge**: each of these windows draws its own
         // panel, hairline and shadow.

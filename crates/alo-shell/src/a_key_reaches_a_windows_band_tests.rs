@@ -62,6 +62,7 @@ fn alt_f3_then_right_reaches_maximise_and_down_walks_on() {
         HowTheWindowIs {
             maximised: true,
             full_screen: false,
+            ..HowTheWindowIs::default()
         },
         room,
     );

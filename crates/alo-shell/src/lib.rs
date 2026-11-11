@@ -104,6 +104,7 @@ mod a_person_pins_and_unpins;
 mod a_picture_hashed;
 mod a_press_in_the_menu;
 mod a_press_on_a_setup_sheet;
+mod a_press_on_alos_band;
 mod a_press_on_an_edge;
 mod a_press_on_the_launcher;
 mod a_press_on_the_record;
@@ -125,7 +126,11 @@ mod a_window_on_one_side;
 mod a_window_onto_a_list;
 mod a_window_raised;
 mod a_window_travels_aside;
+/// The window a person offered alo, and the window each task works in.
+pub mod alo_in_a_window;
 mod alo_in_the_terminal_in_settings;
+/// The teal edge and the band with Stop on a window alo is working in.
+pub mod alos_band_in_a_window;
 /// alo's words read for the emphasis a model marks in Markdown.
 ///
 /// **Public because `task_text::WhatWasSaid` carries its marks**, as

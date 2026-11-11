@@ -138,6 +138,9 @@ impl crate::Server {
                 crate::window_mode::Mode::Maximized | crate::window_mode::Mode::InAShare(_)
             ),
             full_screen: mode == crate::window_mode::Mode::FillingTheScreen,
+            // **Help with this window is there only while alo may be asked**,
+            // and never while AI is set to *Not at all*.
+            alo_may_help: self.alo_in_a_window.may_be_asked(),
         }
     }
 
@@ -155,6 +158,7 @@ impl crate::Server {
                 .is_some_and(|side| self.put_this_window_on(surface, side).is_ok()),
             WhatARowDoes::FullScreen => self.set_window_full_screen(surface, true).is_ok(),
             WhatARowDoes::ExitFullScreen => self.set_window_full_screen(surface, false).is_ok(),
+            WhatARowDoes::HelpWithThisWindow => self.help_with_this_window(surface),
         };
         if !done {
             self.a_window_panel_choice_was_refused();

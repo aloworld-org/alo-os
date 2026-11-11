@@ -102,6 +102,7 @@ pub fn every_word_this_surface_says() -> Vec<Word> {
         WhatARowDoes::Restore,
         WhatARowDoes::FullScreen,
         WhatARowDoes::ExitFullScreen,
+        WhatARowDoes::HelpWithThisWindow,
     ] {
         words.push(does.its_own_word());
     }

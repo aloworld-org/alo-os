@@ -79,6 +79,11 @@ const THE_PANELS_CORNER: f32 = 16.0;
 const A_PICTURES_CORNER: f32 = 10.0;
 /// A row's corner. `11:68`.
 const A_ROWS_CORNER: f32 = 7.0;
+/// *Help with this window*'s corner. `11:76`.
+const ALOS_ROWS_CORNER: f32 = 9.0;
+/// Where *alo* starts across that row, and where its label does. `11:77`,
+/// `11:78`; both are centred down the row's 52.
+const ALOS_ROWS_WORDS: (i32, i32) = (12, 51);
 /// The shadow: how far down, how soft, how strong. `11:51`'s effect.
 const THE_SHADOW: (f32, f32, f32) = (16.0, 40.0, 0.10);
 /// The outline inside a placement picture: where, and how big. `11:56`.
@@ -110,7 +115,7 @@ fn the_full_screen_mark() -> Option<&'static AShape> {
 }
 
 /// A role as three bytes.
-fn rgb(role: Role) -> [u8; 3] {
+pub(crate) fn rgb(role: Role) -> [u8; 3] {
     let it = role.colour();
     [it.red(), it.green(), it.blue()]
 }
@@ -128,16 +133,27 @@ pub(crate) fn the_panel_drawn(
     let px = |it: i32| scaled(it, scale);
     let mut rasters = Vec::new();
     rasters.extend(the_body(in_pixels(menu.panel, scale), fraction));
-    rasters.extend(a_rounded_fill(
-        in_pixels(menu.divider, scale),
-        0.0,
-        rgb(Role::BorderDefault),
-    ));
+    for divider in std::iter::once(menu.divider).chain(menu.before_alo) {
+        rasters.extend(a_rounded_fill(
+            in_pixels(divider, scale),
+            0.0,
+            rgb(Role::BorderDefault),
+        ));
+    }
     let in_hand = pointing.in_hand();
     for row in &menu.rows {
         let area = in_pixels(row.row, scale);
         let held = in_hand == Some(row.does);
-        let ground = if row.does.is_a_picture() {
+        let alos = row.does == WhatARowDoes::HelpWithThisWindow;
+        let ground = if alos {
+            // **Teal never decorates an idle entry** (§7): the row is the
+            // panel's own quiet ground, as `11:76` draws it.
+            if held {
+                rgb(Role::BgCool)
+            } else {
+                rgb(Role::BgCanvas)
+            }
+        } else if row.does.is_a_picture() {
             if held {
                 rgb(Role::BgCool)
             } else {
@@ -148,7 +164,9 @@ pub(crate) fn the_panel_drawn(
         } else {
             rgb(Role::BgSurface)
         };
-        let corner = if row.does.is_a_picture() {
+        let corner = if alos {
+            ALOS_ROWS_CORNER
+        } else if row.does.is_a_picture() {
             A_PICTURES_CORNER
         } else {
             A_ROWS_CORNER
@@ -162,7 +180,10 @@ pub(crate) fn the_panel_drawn(
             rasters.extend(the_placement_picture(
                 row.row, row.does, held, scale, fraction,
             ));
-        } else if let Some(mark) = the_full_screen_mark() {
+        } else if !alos
+            // The word *alo* stands where the other rows have a mark.
+            && let Some(mark) = the_full_screen_mark()
+        {
             let at = Rectangle::new(
                 (row.row.loc.x + A_ROWS_MARK.0, row.row.loc.y + A_ROWS_MARK.1).into(),
                 (A_ROWS_MARK.2, A_ROWS_MARK.2).into(),
@@ -240,6 +261,10 @@ pub(crate) fn the_panel_drawn(
             .cropped_to_its_ink();
             let across = px(row.row.loc.x) + (px(A_PICTURE_IS) - shaped.width).max(0) / 2;
             words.extend(shaped.placed(across, px(row.row.loc.y + A_LABEL_SITS_AT), output.1));
+        } else if row.does == WhatARowDoes::HelpWithThisWindow {
+            words.extend(the_alo_rows_words(
+                fonts, row.row, label, held, scale, fraction, output,
+            ));
         } else {
             let ground = if held {
                 rgb(Role::BgCool)
@@ -266,6 +291,48 @@ pub(crate) fn the_panel_drawn(
     (rasters, words)
 }
 
+/// *Help with this window*'s words: **alo** in SemiBold 15, then the label in
+/// Regular 13, both navy and centred down the row — `11:76`, which draws the
+/// assistant's name where the other rows have a mark, and no teal: teal is for
+/// alo working, never an idle entry.
+fn the_alo_rows_words(
+    fonts: &mut FontSystem,
+    row: Rectangle<i32, Logical>,
+    label: &str,
+    held: bool,
+    scale: u32,
+    fraction: f64,
+    output: (i32, i32),
+) -> Vec<Inked> {
+    let px = |it: i32| scaled(it, scale);
+    let ground = if held {
+        rgb(Role::BgCool)
+    } else {
+        rgb(Role::BgCanvas)
+    };
+    let navy = rgb(Role::TextPrimary);
+    let mut words = Vec::new();
+    for (text, weight, (size, line), across) in [
+        // The assistant's name, which is never translated.
+        ("alo", Weight::SEMIBOLD, (15.0, 20.0), ALOS_ROWS_WORDS.0),
+        (label, Weight::NORMAL, (13.0, 18.0), ALOS_ROWS_WORDS.1),
+    ] {
+        let shaped = in_a_weight(
+            fonts,
+            text,
+            weight,
+            metrics(size, line, fraction),
+            px((row.size.w - across).max(1)),
+            ground,
+            navy,
+        )
+        .cropped_to_its_ink();
+        let down = px(row.loc.y) + (px(row.size.h) - shaped.height).max(0) / 2;
+        words.extend(shaped.placed(px(row.loc.x + across), down, output.1));
+    }
+    words
+}
+
 /// The weight a choice's label is drawn at: **Medium** under a placement
 /// picture and **Regular** on a row, as `11:56` and `11:68` give them.
 ///
@@ -286,7 +353,7 @@ pub(crate) const fn the_labels_weight(does: WhatARowDoes) -> Weight {
 }
 
 /// Text in alo's own face at another weight than its labels'.
-fn in_a_weight(
+pub(crate) fn in_a_weight(
     fonts: &mut FontSystem,
     text: &str,
     weight: Weight,
@@ -308,7 +375,7 @@ fn in_a_weight(
 }
 
 /// Type at a size and line height, at the display's scale.
-fn metrics(size: f32, line: f32, fraction: f64) -> Metrics {
+pub(crate) fn metrics(size: f32, line: f32, fraction: f64) -> Metrics {
     let fraction = as_f32(fraction);
     Metrics::new(size * fraction, line * fraction)
 }
@@ -393,7 +460,11 @@ fn the_placement_picture(
 }
 
 /// A filled rounded rectangle.
-fn a_rounded_fill(area: Rectangle<i32, Physical>, corner: f32, colour: [u8; 3]) -> Option<Washed> {
+pub(crate) fn a_rounded_fill(
+    area: Rectangle<i32, Physical>,
+    corner: f32,
+    colour: [u8; 3],
+) -> Option<Washed> {
     let (l, t) = (as_f32_i(area.loc.x), as_f32_i(area.loc.y));
     let (w, h) = (as_f32_i(area.size.w), as_f32_i(area.size.h));
     crate::a_window_raised::raster(area, |x, y| {
@@ -413,7 +484,7 @@ fn a_ring(area: Rectangle<i32, Physical>, corner: f32, fraction: f64) -> Option<
 }
 
 /// A line `width` wide just inside a rounded rectangle.
-fn a_ring_of(
+pub(crate) fn a_ring_of(
     area: Rectangle<i32, Physical>,
     corner: f32,
     width: f32,
@@ -429,7 +500,7 @@ fn a_ring_of(
 }
 
 /// A vector mark inked into its box.
-fn a_mark(at: Rectangle<i32, Physical>, shape: &AShape, ink: [u8; 3]) -> Option<Washed> {
+pub(crate) fn a_mark(at: Rectangle<i32, Physical>, shape: &AShape, ink: [u8; 3]) -> Option<Washed> {
     let (Ok(wide), Ok(tall)) = (u32::try_from(at.size.w), u32::try_from(at.size.h)) else {
         return None;
     };
@@ -455,12 +526,12 @@ fn away(px: f32, py: f32, w: f32, h: f32, corner: f32) -> f32 {
 }
 
 /// A length at the display's scale.
-fn scaled(length: i32, scale: u32) -> i32 {
+pub(crate) fn scaled(length: i32, scale: u32) -> i32 {
     i32::try_from(i64::from(length) * i64::from(scale.max(1)) / 100).unwrap_or(i32::MAX)
 }
 
 /// A logical rectangle in the display's pixels.
-fn in_pixels(of: Rectangle<i32, Logical>, scale: u32) -> Rectangle<i32, Physical> {
+pub(crate) fn in_pixels(of: Rectangle<i32, Logical>, scale: u32) -> Rectangle<i32, Physical> {
     Rectangle::new(
         (scaled(of.loc.x, scale), scaled(of.loc.y, scale)).into(),
         (scaled(of.size.w, scale), scaled(of.size.h, scale)).into(),
@@ -472,7 +543,7 @@ fn in_pixels(of: Rectangle<i32, Logical>, scale: u32) -> Rectangle<i32, Physical
     clippy::cast_possible_truncation,
     reason = "a display's scale and a few hundred units at it are well inside an f32"
 )]
-fn as_f32(it: f64) -> f32 {
+pub(crate) fn as_f32(it: f64) -> f32 {
     it as f32
 }
 

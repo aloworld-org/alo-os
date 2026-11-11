@@ -219,12 +219,18 @@ impl TheAgentsDoor {
         may_reach: &[std::path::PathBuf],
         their_folders: Option<&ThePersonsFolders>,
     ) {
-        self.ask_with(who, request, earlier, None, may_reach, their_folders);
+        self.ask_about(who, request, earlier, None, may_reach, their_folders);
     }
 
-    /// Hand a request over with what travels after it: the conversation so
-    /// far, and the window the person offered, or none.
-    fn ask_with(
+    /// **Hand over a request about a window the person offered** with *Help
+    /// with this window*: [`Self::ask_following`] with that window, read when
+    /// they sent it, on the line after the conversation
+    /// (`alo_instructing::TheWindowOffered`). [`None`] is a request about no
+    /// window.
+    ///
+    /// **A hint, never a permission**: it reaches the model inside the
+    /// question, and every verb is still decided by the daemon.
+    pub fn ask_about(
         &self,
         who: WhoAsked,
         request: &str,

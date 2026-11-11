@@ -350,6 +350,53 @@ is the specimen's width, not a window's.
   that minimises itself never travels; a window brought back mid-travel stops.
   `crate::a_window_travels_aside`, `crate::where_a_travelling_window_lands`.
 
+### Readings taken building stage 3, each for the owner to overrule
+
+- **The teal edge and alo's mark are drawn although `11:146` draws
+  neither.** The frame shows the band across the window's foot and its words;
+  `docs/features.md` promises *a thin deep teal edge on the window the agent is
+  working in*, and teal never comes without the mark and the word (ADR 0067).
+  So the edge goes round the whole card, 2 wide, at the card's corner of 16,
+  and the mark stands 16 in where `11:174`'s words began; the words move along
+  by the mark's 16 and a gap of 8.
+- **The plain-language description is the task's status and the person's own
+  words** — *alo is working · summarise this document* — not *alo is
+  summarising this document*. A sentence like the frame's would be a model's
+  summary of the request, which the shell does not have and would have to ask
+  for; the person's words are already theirs and cannot be wrong about what
+  they asked.
+- **Teal only while alo is acting.** While a change waits for the person's OK
+  the band is navy on the panel's quiet ground, with no edge, as the task
+  window draws *waiting* — alo is not acting. *Stopping…* stays teal, because
+  alo has not gone, and its Stop is greyed so it cannot be pressed twice.
+- **Stop's result is reported in the task window**, which says *stopped* only
+  once alo has gone and names what was changed before — kept, not undone (ADR
+  0139). The band goes at that moment, because the turn it marked has ended.
+- **The request opens in the launcher, named for the window.** Help with this
+  window opens the launcher with the keyboard in its field, its heading *Help
+  with this window* and the line under the field *About this window: The next
+  chapter · Notes*. It finds no applications — a request about a window asks
+  alo and opens nothing else — and offers to ask only once something is typed.
+  Escape, a click away, AI switched off or the window closing let the offer go.
+- **The window travels as its title and identifier, read when the person
+  presses Enter**, and so does a follow-up typed in that task's window; once
+  the window has gone a follow-up is about none. A window that closes before
+  Enter asks nothing and keeps the words in the field.
+- **Without *Move to…* the divider and Help keep `11:75`'s and `11:76`'s
+  distances** below Full screen — 11, then 17 — so the panel is 312 tall with
+  Help and 232 without.
+- **Hidden while alo may not be asked** — AI set to *Not at all*, *or* nothing
+  chosen to answer — because the panel reads the one answer the launcher's
+  *Ask alo* row reads, and a row that opened a request nothing could answer
+  would be a choice that does not work.
+- **Limits, named rather than hidden.** A window too small for the band (under
+  252 × 88) wears the edge only, and its Stop is the task window's. A
+  window in full screen has no band drawn and so wears neither. A screen reader
+  is told *alo is working* and given Stop in the task window, not yet on the
+  window itself. A window alo picks by itself, for a request typed in the
+  launcher, is not marked: the shell is told which window only when the person
+  offers it.
+
 ## What is built
 
 *Updated with each stage as it lands.* Until a row here names a pull request,
@@ -363,5 +410,5 @@ that part is **not built**.
 | 1d | Left and Right with the preview: this window alone on half its display's work area under its band, the `11:84` outline and its words drawn under the panel while either is in hand, the same words for a reader, *This window needs more room than half the screen* where its minimum does not fit | this change |
 | 1e | the full-screen top-edge reveal | not built |
 | 2 | Move to…, Undo placement | not built |
-| 3 | Help with this window, the working state and Stop | not built |
+| 3 | Help with this window, the working state and Stop: the panel's row while alo may be asked; the launcher opened for the window, naming it, asking nothing until sent; the window's title and identifier read at Enter and sent to alo as a hint (`docs/contracts/asking-socket.md`, line 4); the teal edge and the `11:173` band with alo's mark, the person's words and Stop on that window for the turn | #1156, on #1155 |
 | 4 | Capture & export | not built |
