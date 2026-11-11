@@ -197,7 +197,11 @@ What binds it:
 3. **It is GPL-3.0-or-later, like the rest of this repository.** alo Mails is
    AGPL-3.0; section 13 of each licence allows a work under one to be combined
    with a work under the other, so the kit can be linked into alo Mails as it
-   is.
+   is. **Other people may build GPL-compatible applications on it, and closed
+   ones may not**: asked on 2026-11-12, the owner chose *"alo's apps and
+   open-source apps (GPL) (Recommended)"*, and the kit lives in this
+   repository (*"Inside alo-os (Recommended)"*). The plan records all five
+   answers.
 4. **It is for what alo makes.** An application somebody else wrote keeps its
    own look, and nothing on this machine asks it to change (law 5).
 

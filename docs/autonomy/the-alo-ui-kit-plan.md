@@ -1,7 +1,8 @@
 # The alo UI kit: what alo's own applications are drawn with
 
 **Status: decided by the owner on 2026-11-11; the plan itself is new and its
-tasks are not started.** Asked which road alo's own applications take for their
+tasks are not started; the owner answered its five questions on 2026-11-12
+(see *The owner's answers* at the end).** Asked which road alo's own applications take for their
 interface, the owner chose *"Build a shared alo UI kit (Recommended)"*. The
 decision is recorded in
 [ADR 0002](../decisions/0002-the-shell-is-native.md)'s section of that date,
@@ -16,8 +17,11 @@ text, controls, keyboard road and accessibility, moved into crates an
 application builds on, so alo Mails looks and behaves exactly like the desktop
 around it. **The first usable version comes first**: everything here is ordered
 so that alo Mails can open a window, list mail, read a message and fill in an
-address and a subject as early as possible, and everything that is not needed
-for that waits. Writing a body over many lines is task 14, straight after.
+address and a subject, and write a body over many lines, as early as possible,
+and everything that is not needed for that waits. **What counts as usable is
+set by alo's webmail**, which the owner says is almost done (answers 4 and 5
+below): the native first version has to do what its core does, and that
+includes writing a message over many lines, so task 14 is part of it.
 
 **What the person gets from the whole plan:** alo's own applications that use
 the same typeface, colours, pointer, keyboard keys and screen-reader names as
@@ -127,7 +131,8 @@ take. **What it answers is not measured**, and task 7 measures it.
 
 ## The crates, and the licence
 
-Proposed, and put to the owner (see *Questions* below):
+Proposed, put to the owner, and **kept as proposed on 2026-11-12** (see *The
+owner's answers*):
 
 - **`alo-drawing`**: pixels and text. Shapes, rasters, the text stack and its
   bundled fonts, the display scale. **No Wayland, no Smithay, no D-Bus**, so
@@ -138,9 +143,12 @@ Proposed, and put to the owner (see *Questions* below):
   helpers. It depends on `alo-drawing`; the shell does not depend on it.
 
 Both are **GPL-3.0-or-later**, the workspace's licence. alo Mails is
-AGPL-3.0, and section 13 of each licence lets the two be combined. They live
-in this repository, beside the shell they come from, and `alo-workplace`
-depends on them by a pinned revision until the owner decides otherwise.
+AGPL-3.0, and section 13 of each licence lets the two be combined. **The kit is
+for alo's own applications and for open-source applications under the GPL**;
+an application that is not GPL-compatible cannot be built on it, and that is
+the owner's choice, not an oversight. They live in this repository, beside the
+shell they come from, and `alo-workplace` depends on them by a pinned
+revision.
 
 ## How the desktop is kept the same
 
@@ -157,8 +165,9 @@ plan.
 ## Sizes
 
 **S** is about a day, **M** two to four days, **L** one to two weeks, each for
-one lane with its gate. Tasks 1 to 13 are the first usable version; 14 onwards
-come after it.
+one lane with its gate. Tasks 1 to 14 are the first usable version; 15 and 16
+come after it. Task 14 keeps its number so that links to it still hold, and is
+done before task 13.
 
 ## Tasks
 
@@ -293,14 +302,17 @@ terminal pastes; a password field is never copied out.
 
 ### 11. A list of rows, scrolling, a split and a toolbar
 
-**Status:** not started. **Size:** M. **Waits on:** task 9, and the owner's
-answer on where Mail's own design is (see *Questions*).
+**Status:** not started. **Size:** M. **Waits on:** task 9.
 
 **For the person:** a folder list, a list of thousands of messages and the
 message itself, wrapped and selectable to copy, that scroll smoothly by wheel, touchpad and keyboard, with the selected row
 marked; a divider between the lists and the message that can be moved by
 pointer and by keyboard; a row of tools across the top. **Reuses:** the Bar's
-rows (56 tall, radius 12) and the Settings page's scroll under a clip.
+rows (56 tall, radius 12) and the Settings page's scroll under a clip. **Its
+layout follows the webmail** (see *Where alo Mails' design lives*): the folder
+list, the message list and the reading pane, where the split falls and what the
+toolbar holds are taken from its screens, measured and written down, not
+matched by eye.
 **Test:** only the visible rows are drawn, measured with ten thousand; Page
 Up, Page Down, Home and End; the divider moves by keyboard; the selected row
 is the one a reader is told is selected.
@@ -323,20 +335,22 @@ password.
 
 ### 13. The first version, in alo Mails' hands
 
-**Status:** not started. **Size:** S. **Waits on:** tasks 1 to 12.
+**Status:** not started. **Size:** S. **Waits on:** tasks 1 to 12, and 14.
 
 **For the person:** alo Mails can be built on the kit. **Delivers:** the
 kit's surface written as a contract in `docs/contracts/` (it is used from
 another repository, so it changes additively), its words in all 24 EU
 languages through `alo-strings`, and an example window in the crate with a
-folder list, a message list, a field and a button. **Test:** that example,
+folder list, a message list, a field, a body over many lines and a button. **Test:** that example,
 built as a Flatpak, run on the qemu image with no graphics card: it opens,
 takes the keyboard, scales, and Orca reads it — **a walk done by hand**, and
 the report says it will not run again by itself.
 
 ### 14. A message is written in more than one line
 
-**Status:** not started. **Size:** L. **Waits on:** task 13.
+**Status:** not started. **Size:** L. **Waits on:** tasks 10 and 11. **Part of
+the first usable version** since the owner's answer of 2026-11-12, and done
+before task 13.
 
 **For the person:** the body of a mail: wrapped plain text over many lines and
 pages, scrolled with the caret, with everything task 10 does.
@@ -362,13 +376,21 @@ applications cannot drift apart. **Test:** task 1's hashes unchanged.
 
 ## Roughly how long
 
-**The first usable version is tasks 1 to 13: five S and eight M — about four
-and a half to seven and a half weeks for one lane**, less with two once task 3 has landed, because
-tasks 4 to 12 mostly do not wait on each other. Tasks 14 to 16, one M and two L,
-are two and a half to five weeks more and off that path. It is not days. Task 7's measurement can
-move this either way, which is why it is early.
+**The first usable version is tasks 1 to 14: five S, eight M and one L — 26 to
+47 working days, about five to nine and a half weeks for one lane.** Before the
+owner's answers it was tasks 1 to 13 and four and a half to seven and a half
+weeks; the multi-line body is the week or two that was added. It is less with
+two lanes once task 3 has landed, because tasks 4 to 12 mostly do not wait on
+each other, and task 14 can run beside 12. Tasks 15 and 16, one M and one L, are
+one and a half to three weeks more and off that path. It is not days. Task 7's
+measurement can move this either way, which is why it is early. **None of this
+counts the mail itself**: connecting alo Mails to the server and to other
+people's accounts is `alo-workplace`'s work, not the kit's, and is not in
+these figures.
 
-## Questions for the owner
+## Questions for the owner, as they were asked
+
+Kept as asked on 2026-11-11, so the answers below can be read against them.
 
 1. **The crates' names**: `alo-drawing` and `alo-ui-kit`, or another pair?
 2. **Where the kit lives**: in this repository, as proposed, or a repository of
@@ -384,3 +406,69 @@ move this either way, which is why it is early.
 5. **The first version's scope**: is a short plain-text reply enough for the
    first usable version, as this plan assumes, with multi-line writing
    (task 14) straight after?
+
+## The owner's answers, 2026-11-12
+
+Given in a question dialog, quoted exactly. The dialog numbered them in its own
+order; each is matched here to the question above that it answers.
+
+1. **The crates' names** (question 1): not asked in the dialog. **The names stay
+   `alo-drawing` and `alo-ui-kit`.**
+2. **Where the kit lives** (question 2): *"Inside alo-os (Recommended)"*. It
+   lives in this repository, as proposed.
+3. **Who may build on it** (question 3): *"alo's apps and open-source apps
+   (GPL) (Recommended)"*. The kit stays **GPL-3.0-or-later**: alo's
+   applications and other people's GPL-compatible applications may be built on
+   it, and closed applications may not.
+4. **Mail's first version** (question 5): *"It's almost done with all the needed
+   features: https://github.com/aloworld-org/alomails check it out"*.
+5. **Mail's design** (question 4): *"It's done
+   https://github.com/aloworld-org/alomails"*.
+
+**What that repository is.** Read by the coordinator lane on 2026-11-12, and
+its top level and `web/` listed again by this lane the same day at commit
+`1f162359` (2026-09-07), once, by hand; nothing re-reads it. It is the
+alomails **server** — `products/mail` holds `alo-smtp`, `alo-imap`,
+`alo-jmap`, `alo-smtp-client` and `alo-submit`, and `platform` holds
+`alo-store`, `alo-identity`, `alo-auth-mail`, `alo-sieve`, `alo-ai` and
+`alo-pdf` — and a **finished webmail** in `web/`, written in TypeScript,
+that talks to the server over JMAP: mail, contacts, importing from an IMAP
+account, and signing up. Its mail screens are `web/src/mail`, and its own
+controls (toolbar, resize handle, menu, list table, fields) and colours are in
+`web/src/ds`.
+
+**What it changes in this plan.**
+
+- **What alo Mails does is already decided, by the webmail.** The native alo
+  Mails gets its mail from the same server over JMAP, and reaches accounts
+  elsewhere over IMAP (`alo-workplace`'s ADR 0062). So the native work is the
+  window, not the mail: the kit draws it, and `alo-workplace` connects it.
+- **The first usable version has to match the webmail's core**, and the
+  webmail writes a message over many lines. A short plain-text reply, which
+  question 5 proposed, is not enough. **Task 14 moved into the first version**,
+  and the estimate above grew from four and a half to seven and a half weeks
+  to about five to nine and a half.
+- **Task 11 no longer waits on the owner.**
+
+## Where alo Mails' design lives
+
+**A deliberate departure, written here because the constitution says the design
+is followed and this is where the next person looks.** There is **no Figma
+design for the native alo Mails**: the alo OS design file has a button, a field
+and rows, measured in `docs/design/`, and no split pane, toolbar or mail
+screen. **The reference for alo Mails is the webmail's screens and behaviour**
+in `https://github.com/aloworld-org/alomails`, under `web/src/mail` and
+`web/src/ds`. A lane taking figures from it records them in `docs/design/`
+with the commit it read, as for the design file, because a layout matched by
+eye is one nobody can check.
+
+**How the two are read together, and what is still the owner's.** This plan
+reads it this way: **the webmail decides what alo Mails shows and where** — the
+folder list, the message list, the reading pane, the toolbar and how each
+behaves — and **the kit decides how each thing is drawn**: Manrope, the
+desktop's palette and accent, its controls and its band, so that alo Mails
+still looks like the desktop around it, which is what the owner chose the kit
+for. Where the webmail's own look disagrees with the desktop's (its colours and
+typeface in `web/src/ds`), this plan takes the desktop's. **That reading has
+not been put to the owner yet**, and is to be before task 11 takes a figure
+from the webmail.
