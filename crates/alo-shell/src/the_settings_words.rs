@@ -357,8 +357,8 @@ pub const PAIRED_MACHINES: Word = Word::saying(
 );
 
 /// The heading over where alo works in an application (ADR 0143 Q6).
-pub const IN_APPLICATIONS: Word = Word::saying("settings.section.in-applications", "In applications")
-    .noting(
+pub const IN_APPLICATIONS: Word =
+    Word::saying("settings.section.in-applications", "In applications").noting(
         "A heading over two choices: whether alo, the assistant, works in its own separate copy of \
          an application or may work in the person's own window. Sentence case.",
     );

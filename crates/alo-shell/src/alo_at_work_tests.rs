@@ -307,7 +307,10 @@ fn turned_up_an_application_with_no_copy_works_in_the_persons_window() {
     done(&mut alo);
     machine.looked(3);
     assert_eq!(next(&alo), "uncounted");
-    assert!(machine.ever_begun().is_empty(), "the person's window was counted");
+    assert!(
+        machine.ever_begun().is_empty(),
+        "the person's window was counted"
+    );
 }
 
 /// **Turned up, an application that has a copy still uses it**: the person

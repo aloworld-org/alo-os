@@ -2486,7 +2486,12 @@ fn where_alo_works_is_offered_with_its_cost_and_the_refusal_names_it() {
     let strings = words();
     let door = CountingDoor::revoking();
     let mut window = machine.opened();
-    let page = the_page_at(&window, SettingsCategory::FoldersAloCanUse, &strings, noon());
+    let page = the_page_at(
+        &window,
+        SettingsCategory::FoldersAloCanUse,
+        &strings,
+        noon(),
+    );
     let rows: Vec<&ARow> = rows_drawn(&page)
         .into_iter()
         .filter(|row| matches!(row.row, Some(SettingsRow::WhereAloWorks(_))))
