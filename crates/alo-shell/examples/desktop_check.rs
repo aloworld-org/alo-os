@@ -396,6 +396,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                             DesktopFrame {
                                 what_each_application_draws: &alo_dock::artwork::NOTHING,
                                 tasks: &a_task_window,
+                                tasks_aside: alo_shell::TheTasksAside::NONE,
                                 market: Some(the_market_window),
                                 display_scale: 100,
                                 // **The keyboard is not on the bar in this
