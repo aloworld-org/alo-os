@@ -271,12 +271,7 @@ impl EdgePicture {
             || (Vec::new(), Vec::new()),
             |(menu, pointing)| {
                 crate::window_menu_paint::the_panel_drawn(
-                    menu,
-                    pointing,
-                    over.field,
-                    fonts,
-                    scale,
-                    output,
+                    menu, pointing, over.field, fonts, scale, output,
                 )
             },
         );

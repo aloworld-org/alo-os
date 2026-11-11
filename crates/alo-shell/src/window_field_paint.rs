@@ -146,10 +146,8 @@ pub(crate) fn the_field_drawn(
         words.extend(shaped.placed(across, centred(shaped.height), output.1));
     }
     if now.has_the_keyboard {
-        let caret = Rectangle::<i32, Logical>::new(
-            (0, 0).into(),
-            (THE_CARET_IS_WIDE, THE_LINE).into(),
-        );
+        let caret =
+            Rectangle::<i32, Logical>::new((0, 0).into(), (THE_CARET_IS_WIDE, THE_LINE).into());
         let mut at = in_pixels(caret, scale);
         at.loc = (across + caret_across, centred(line)).into();
         at.size.w = at.size.w.max(1);

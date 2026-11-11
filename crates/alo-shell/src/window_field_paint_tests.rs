@@ -55,7 +55,10 @@ fn the_caret_is_where_the_caret_is() {
         );
         drawn.first().expect("a caret").area.loc.x
     };
-    assert!(at(typed.len()) > at(0), "the caret did not move with the words");
+    assert!(
+        at(typed.len()) > at(0),
+        "the caret did not move with the words"
+    );
 }
 
 /// **A request longer than the row shows the stretch round the caret**: at

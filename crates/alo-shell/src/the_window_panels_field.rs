@@ -127,7 +127,11 @@ impl TheWindowField {
                 WhatTheFieldDid::ItChanged
             }
             AFieldKey::Erase => {
-                let Some(before) = self.boundaries().into_iter().rev().find(|at| *at < self.caret)
+                let Some(before) = self
+                    .boundaries()
+                    .into_iter()
+                    .rev()
+                    .find(|at| *at < self.caret)
                 else {
                     return WhatTheFieldDid::Nothing;
                 };
@@ -143,7 +147,11 @@ impl TheWindowField {
                 WhatTheFieldDid::ItChanged
             }
             AFieldKey::Left => {
-                let to = self.boundaries().into_iter().rev().find(|at| *at < self.caret);
+                let to = self
+                    .boundaries()
+                    .into_iter()
+                    .rev()
+                    .find(|at| *at < self.caret);
                 self.caret_to(to)
             }
             AFieldKey::Right => {

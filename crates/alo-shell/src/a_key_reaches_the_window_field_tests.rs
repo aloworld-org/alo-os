@@ -59,5 +59,8 @@ fn shift_enter_and_chords_type_nothing() {
     ] {
         assert_eq!(AFieldKey::of(Keysym::a, &held), AFieldKey::Nothing);
     }
-    assert_eq!(AFieldKey::of(Keysym::Tab, &nothing_held()), AFieldKey::Nothing);
+    assert_eq!(
+        AFieldKey::of(Keysym::Tab, &nothing_held()),
+        AFieldKey::Nothing
+    );
 }

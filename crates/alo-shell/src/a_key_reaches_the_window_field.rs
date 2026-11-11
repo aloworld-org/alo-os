@@ -51,7 +51,11 @@ impl AFieldKey {
             Keysym::Up | Keysym::KP_Up => return Self::Up,
             Keysym::Down | Keysym::KP_Down => return Self::Down,
             Keysym::Return | Keysym::KP_Enter => {
-                return if held.shift { Self::Nothing } else { Self::Send };
+                return if held.shift {
+                    Self::Nothing
+                } else {
+                    Self::Send
+                };
             }
             _ => {}
         }
@@ -100,7 +104,8 @@ impl Server {
             time,
             |_, held, symbol| {
                 FilterResult::Intercept(
-                    (state == KeyState::Pressed).then(|| AFieldKey::of(symbol.modified_sym(), held)),
+                    (state == KeyState::Pressed)
+                        .then(|| AFieldKey::of(symbol.modified_sym(), held)),
                 )
             },
         );
@@ -127,7 +132,9 @@ impl Server {
                     // not once the person sees why.
                     return WhatTheFieldDid::Nothing;
                 }
-                self.alo_in_a_window.the_field_to_type_in(&surface).emptied();
+                self.alo_in_a_window
+                    .the_field_to_type_in(&surface)
+                    .emptied();
                 self.the_panel_closes_and_the_band_lets_go(&surface);
             }
             WhatTheFieldDid::CloseThePanel => {

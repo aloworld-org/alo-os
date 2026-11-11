@@ -54,7 +54,10 @@ fn the_caret_stops_at_the_ends() {
         WhatTheFieldDid::ItChanged
     );
     assert_eq!(field.typed(), "b");
-    assert_eq!(TheWindowField::default().pressed(AFieldKey::EraseForwards), WhatTheFieldDid::Nothing);
+    assert_eq!(
+        TheWindowField::default().pressed(AFieldKey::EraseForwards),
+        WhatTheFieldDid::Nothing
+    );
 }
 
 /// **Enter sends what is typed, trimmed — and an empty field sends nothing.**
@@ -65,7 +68,10 @@ fn enter_sends_and_an_empty_field_sends_nothing() {
         TheWindowField::default().pressed(AFieldKey::Send),
         WhatTheFieldDid::Nothing
     );
-    assert_eq!(typed("   ").pressed(AFieldKey::Send), WhatTheFieldDid::Nothing);
+    assert_eq!(
+        typed("   ").pressed(AFieldKey::Send),
+        WhatTheFieldDid::Nothing
+    );
     let mut field = typed(" what is this? ");
     assert_eq!(
         field.pressed(AFieldKey::Send),

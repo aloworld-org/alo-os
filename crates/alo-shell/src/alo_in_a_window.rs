@@ -217,12 +217,12 @@ impl crate::Server {
         &self,
         surface: &WlSurface,
     ) -> Option<crate::window_field_paint::TheFieldAsTyped<'_>> {
-        self.alo_in_a_window
-            .the_field_of(surface)
-            .map(|field| crate::window_field_paint::TheFieldAsTyped {
+        self.alo_in_a_window.the_field_of(surface).map(|field| {
+            crate::window_field_paint::TheFieldAsTyped {
                 typed: field.typed(),
                 caret: field.caret(),
-            })
+            }
+        })
     }
 
     /// **The person sent a request about this window**: read the window now,

@@ -71,7 +71,10 @@ fn the_field_reached(f: &Fixture, root: &WlSurface) -> bool {
 fn reaching_asks_nothing_and_enter_carries_the_window_read_then() {
     let f = Fixture::keyboard();
     let (mut notes, root) = a_window(&f, "The next chapter", "org.gnome.TextEditor");
-    assert!(the_field_reached(&f, &root), "the field could not be reached");
+    assert!(
+        the_field_reached(&f, &root),
+        "the field could not be reached"
+    );
     let (whose, launcher, asked, about) = f.backend(|s| {
         (
             s.whose_window_field_has_the_keyboard(),
@@ -80,8 +83,15 @@ fn reaching_asks_nothing_and_enter_carries_the_window_read_then() {
             s.take_what_was_asked_about_a_window().len(),
         )
     });
-    assert_eq!(whose.as_ref(), Some(&root), "the field has not the keyboard");
-    assert!(!launcher, "the launcher opened: another window, not the panel");
+    assert_eq!(
+        whose.as_ref(),
+        Some(&root),
+        "the field has not the keyboard"
+    );
+    assert!(
+        !launcher,
+        "the launcher opened: another window, not the panel"
+    );
     assert_eq!((asked, about), (0, 0), "reaching the field asked something");
 
     // **Read when sent, not when reached**: the title the person sees at Enter.
@@ -97,7 +107,10 @@ fn reaching_asks_nothing_and_enter_carries_the_window_read_then() {
             s.take_what_was_asked_of_alo(),
             s.how_many_are_waiting_to_start(),
             s.whose_window_field_has_the_keyboard(),
-            root.and_then(|root| s.what_is_typed_in_the_window_field(&root).map(|it| it.typed.to_owned())),
+            root.and_then(|root| {
+                s.what_is_typed_in_the_window_field(&root)
+                    .map(|it| it.typed.to_owned())
+            }),
         )
     });
     assert!(plain.is_empty(), "the request lost its window");
@@ -127,9 +140,18 @@ fn an_empty_field_sends_nothing() {
     let f = Fixture::keyboard();
     let (_notes, root) = a_window(&f, "The next chapter", "org.gnome.TextEditor");
     assert!(the_field_reached(&f, &root));
-    assert_eq!(type_and_press(&f, "", AFieldKey::Send), WhatTheFieldDid::Nothing);
-    assert_eq!(type_and_press(&f, "   ", AFieldKey::Send), WhatTheFieldDid::Nothing);
-    assert!(f.backend(|s| s.take_what_was_asked_about_a_window()).is_empty());
+    assert_eq!(
+        type_and_press(&f, "", AFieldKey::Send),
+        WhatTheFieldDid::Nothing
+    );
+    assert_eq!(
+        type_and_press(&f, "   ", AFieldKey::Send),
+        WhatTheFieldDid::Nothing
+    );
+    assert!(
+        f.backend(|s| s.take_what_was_asked_about_a_window())
+            .is_empty()
+    );
 }
 
 /// **AI set to *Not at all* offers no field**, and switching it off while a
