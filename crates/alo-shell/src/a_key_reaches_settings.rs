@@ -300,10 +300,15 @@ fn the_press_is_carried_out(server: &mut Server, press: crate::SettingsPress, st
     // applications that draw their own once the desktop has told the session
     // (`crate::the_pointers_look`).
     // **Less motion is told to the seat at once**, so the next glide is a jump.
-    if let Some(SettingsDid::Kept(SettingsSection::Accessibility, SettingsKept::Written)) = did
-        && let Some(reduced) = server.settings.motion_is_reduced()
-    {
-        server.the_motion_is_reduced(reduced);
+    // **And whether applications describe themselves** is held for the
+    // desktop, which tells the session (`crate::apps_describing_themselves`).
+    if let Some(SettingsDid::Kept(SettingsSection::Accessibility, SettingsKept::Written)) = did {
+        if let Some(describe) = server.settings.apps_describe_themselves() {
+            server.apps_describing_themselves_is_now(describe);
+        }
+        if let Some(reduced) = server.settings.motion_is_reduced() {
+            server.the_motion_is_reduced(reduced);
+        }
         return;
     }
     if let Some(SettingsDid::Kept(SettingsSection::Appearance, SettingsKept::Written)) = did {

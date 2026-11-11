@@ -351,6 +351,9 @@ fn every_setting_the_machine_has_is_in_one_window() {
             SettingsRow::PointerShape(alo_appearance::PointerShape::Kite),
             // And the colour it ships in.
             SettingsRow::PointerColour(alo_appearance::PointerColour::Navy),
+            // **And applications describe themselves**: the one switch on as a
+            // machine comes, the owner's decision of 2026-11-11.
+            SettingsRow::AppsDescribeThemselves,
         ]
     );
 }
@@ -434,6 +437,9 @@ fn no_choice_the_old_window_offered_is_dropped() {
             .into_iter()
             .map(SettingsRow::WhereAloWorks),
     );
+    // **Whether applications describe themselves**, added 2026-11-11: on as a
+    // machine comes, so it is a row a person must always be able to reach.
+    before.push(SettingsRow::AppsDescribeThemselves);
     assert!(
         before.len() > 30,
         "the control: today's window had dozens of choices on this machine"
@@ -740,6 +746,82 @@ fn reduced_motion_turns_on_and_off_and_keeps_the_rest_of_the_file() {
     );
 }
 
+/// **Apps describe themselves until the person turns it off**, and each answer
+/// is kept in their `access.toml` where the desktop reads it at the next
+/// start, with the rest of the file kept as it was; the switch says what it
+/// costs and when a change arrives.
+#[test]
+fn apps_describe_themselves_is_on_and_turns_off_and_back() {
+    use alo_access::Setting;
+    let machine = a_persons_machine("apps-describe");
+    let at = machine.kept(alo_access::keeping::THE_FILE);
+    let mut before = alo_access::TurnedOn::nothing();
+    before.turn_on(Setting::ReducedMotion);
+    let folder = at.parent().unwrap().to_path_buf();
+    std::fs::create_dir_all(&folder).unwrap();
+    alo_access::keeping::keep(&folder, &before).unwrap();
+    let strings = words();
+    let door = CountingDoor::revoking();
+    let mut window = machine.opened();
+    assert_eq!(
+        window.apps_describe_themselves(),
+        Some(true),
+        "applications do not describe themselves as this computer comes"
+    );
+    assert!(
+        window
+            .rows(std::time::SystemTime::now())
+            .contains(&SettingsRow::AppsDescribeThemselves),
+        "the switch is not offered"
+    );
+    for expected in [false, true] {
+        assert_eq!(
+            chosen(
+                &mut window,
+                &SettingsRow::AppsDescribeThemselves,
+                &strings,
+                &door
+            ),
+            Some(SettingsDid::Kept(
+                SettingsSection::Accessibility,
+                SettingsKept::Written
+            ))
+        );
+        assert_eq!(window.apps_describe_themselves(), Some(expected));
+        let read_back = alo_access::keeping::read(&folder).unwrap();
+        assert_eq!(
+            read_back.apps_describe_themselves(),
+            expected,
+            "what the desktop reads at the next start"
+        );
+        assert!(read_back.chose_whether_apps_describe_themselves());
+        assert!(
+            read_back.has(Setting::ReducedMotion),
+            "the rest of the file was lost"
+        );
+    }
+    assert_eq!(door.knocks.get(), 0, "the switch knocked on the daemon");
+}
+
+/// **The switch says what it does, what it costs, and when a change arrives**
+/// — the owner's words of 2026-11-11, *with its cost in plain words*.
+#[test]
+fn apps_describe_themselves_says_its_cost() {
+    use crate::the_settings_words as w;
+    assert_eq!(
+        w::APPS_DESCRIBE_THEMSELVES.says(),
+        "Apps describe themselves to alo and screen readers"
+    );
+    let is = w::APPS_DESCRIBE_THEMSELVES_IS.says();
+    assert!(
+        is.contains("a little more memory and processor time"),
+        "{is}"
+    );
+    assert!(is.contains("Off,"), "turning it off is not said: {is}");
+    let later = w::APPS_DESCRIBE_THEMSELVES_LATER.says();
+    assert!(later.contains("already open"), "{later}");
+}
+
 /// **A broken `access.toml` is said and never written over** by the switch.
 #[test]
 fn a_broken_access_file_is_said_and_not_written_over() {
@@ -758,6 +840,12 @@ fn a_broken_access_file_is_said_and_not_written_over() {
             .rows(std::time::SystemTime::now())
             .contains(&SettingsRow::ReducedMotion),
         "the switch is offered over a file that did not read"
+    );
+    assert!(
+        !window
+            .rows(std::time::SystemTime::now())
+            .contains(&SettingsRow::AppsDescribeThemselves),
+        "the apps switch is offered over a file that did not read"
     );
     assert_eq!(
         std::fs::read_to_string(&at).unwrap(),

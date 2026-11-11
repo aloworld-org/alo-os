@@ -508,6 +508,16 @@ pub trait TheDesktop {
     /// tell.
     fn the_pointer_changed(&mut self, _look: crate::ThePointersLook) {}
 
+    /// **They turned over *Apps describe themselves*** in Settings, and
+    /// applications started from now on are to be told the answer
+    /// (`crate::apps_describing_themselves`).
+    ///
+    /// Called on the frame after Settings wrote the person's accessibility
+    /// settings, whichever switch it was, so a desktop tells the session only
+    /// when the answer differs from what it last told. Nothing by default: a
+    /// desktop that starts no applications has nobody to tell.
+    fn apps_describing_themselves_is(&mut self, _describe: bool) {}
+
     /// **This machine's own network addresses, read now** — asked once, each
     /// time a person opens the form that adds a provider, so Settings can warn
     /// them about a service at one of them as it does about loopback (owner's
@@ -1379,6 +1389,11 @@ impl LoopInput for TheDesktopLane<'_> {
         // desktop, which tells the person's session (`crate::the_pointers_look`).
         if let Some(look) = server.the_pointer_change_to_tell() {
             self.desktop.the_pointer_changed(look);
+        }
+        // **And whether applications describe themselves**, which the desktop
+        // tells the person's session (`crate::apps_describing_themselves`).
+        if let Some(describe) = server.the_describing_to_tell() {
+            self.desktop.apps_describing_themselves_is(describe);
         }
         // **A provider form that just opened learns where this machine is**,
         // once, from the desktop that may read it.
