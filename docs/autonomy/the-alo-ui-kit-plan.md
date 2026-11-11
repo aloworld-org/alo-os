@@ -58,8 +58,10 @@ kit's own is the whole of the change for:
   fonts, which is right for a Flatpak too. Its locale is fixed at `en-US`,
   which matters for which fallback face a script gets; the kit should take the
   person's language instead.
-- `crates/alo-shell/src/display_scale.rs`: one display's whole-per-cent scale
-  and the one road a logical measure takes to pixels, exact at 100.
+- `display_scale.rs` (in `alo-shell` when this was surveyed, and
+  `crates/alo-drawing/src/display_scale.rs` since task 2's first step): one
+  display's whole-per-cent scale and the one road a logical measure takes to
+  pixels, exact at 100.
 - `crates/alo-shell/src/settings_type.rs` (the design's type styles, scaled
   with the person's text size), `crates/alo-shell/src/settings_palette.rs` and
   `crates/alo-shell/src/settings_measures.rs` (the Settings window's colours
@@ -214,7 +216,7 @@ sizes, taken from `main` and committed.
 
 ### 2. `alo-drawing`: alo's pixels and text, out of the shell
 
-**Status:** not started. **Size:** M. **Waits on:** task 1.
+**Status:** in progress since 2026-11-11, in steps that each keep task 1's hashes. **Step 1** (the branch `alo-drawing-holds-the-display-scale`): the crate exists, `display_scale.rs` is in it, and `crates/alo-drawing/tests/it_never_reaches_a_compositor.rs` refuses any Smithay, Wayland, calloop, xkbcommon, libseat or D-Bus crate anywhere in what it pulls in, read off `Cargo.lock`. **Step 2** (`alo-drawing-holds-the-pictures`): `Solid`, `Inked`, `Washed` and `painted_flat.rs` with an area of the crate's own; the shell converts at `crate::painted::on_the_frame`. **Still to move:** the text stack and bundled fonts, `settings_canvas.rs` and `settings_type.rs`. **Size:** M. **Waits on:** task 1.
 
 **For the person:** nothing visible yet; it is what makes an alo application
 draw exactly as the desktop does. **Moves:** `painted.rs`'s three picture
