@@ -1,0 +1,39 @@
+<frame id="25:52" name="09 / Open with…" x="2800" y="4120" width="1280" height="900">
+  <frame id="25:53" name="Frame" x="56" y="40" width="1000" height="103">
+    <text id="25:54" name="alo OS / OPEN WITH / CONCEPT 09 — APPROVED BY THE OWNER 2026-11-12" x="0" y="0" width="390" height="15" />
+    <text id="25:55" name="Only when an app asks you to choose." x="0" y="25" width="634" height="49" />
+    <text id="25:56" name="Most links just open in your default. When an app says “let the person choose”, this small sheet asks which app — the desktop draws it, never the app." x="0" y="84" width="1000" height="19" />
+  </frame>
+  <frame id="25:57" name="Sheet / Open with" x="400" y="250" width="480" height="332">
+    <text id="25:58" name="Open with" x="25" y="23" width="107" height="30" />
+    <text id="25:59" name="Mail asked to open https://aloworld.eu/launch" x="25" y="67" width="432" height="22" />
+    <frame id="25:60" name="Frame" x="25" y="103" width="432" height="146">
+      <frame id="25:61" name="Frame" x="1" y="1" width="432" height="72">
+        <ellipse id="25:62" name="Ellipse" x="20" y="25" width="22" height="22" />
+        <ellipse id="25:63" name="Ellipse" x="26" y="31" width="10" height="10" />
+        <frame id="25:64" name="Frame" x="58" y="22" width="28" height="28">
+          <text id="25:65" name="F" x="10.5" y="5" width="7" height="18" />
+        </frame>
+        <text id="25:66" name="Firefox" x="102" y="14" width="46" height="22" />
+        <text id="25:67" name="Your default for web links" x="102" y="36" width="160" height="22" />
+      </frame>
+      <frame id="25:68" name="Frame" x="1" y="73" width="432" height="72">
+        <ellipse id="25:69" name="Ellipse" x="20" y="25" width="22" height="22" />
+        <frame id="25:70" name="Frame" x="58" y="22" width="28" height="28">
+          <text id="25:71" name="a" x="10" y="5" width="8" height="18" />
+        </frame>
+        <text id="25:72" name="alo Browser" x="102" y="14" width="78" height="22" />
+        <text id="25:73" name="Installed" x="102" y="36" width="56" height="22" />
+      </frame>
+    </frame>
+    <frame id="25:74" name="Frame" x="25" y="263" width="430" height="48">
+      <frame id="25:75" name="Frame" x="312" y="0" width="54" height="48">
+        <text id="25:76" name="Cancel" x="5" y="15" width="44" height="18" />
+      </frame>
+      <frame id="25:77" name="Frame" x="378" y="0" width="52" height="48">
+        <text id="25:78" name="Open" x="9" y="15" width="34" height="18" />
+      </frame>
+    </frame>
+  </frame>
+  <text id="25:79" name="Keyboard: arrows choose, Enter opens, Escape cancels (nothing opens). Focus starts on your default. Nothing here changes your default — that stays in Settings → Default apps. A cancelled or chosen link is written in your record either way." x="200" y="640" width="900" height="36" />
+</frame>
