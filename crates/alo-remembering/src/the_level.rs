@@ -392,9 +392,7 @@ impl NotTheLevel {
         match self {
             Self::NoSuchLevel { said }
             | Self::NotATerminalAnswer { said }
-            | Self::NotAnApplicationsAnswer { said } => {
-                Some(("said", said.clone()))
-            }
+            | Self::NotAnApplicationsAnswer { said } => Some(("said", said.clone())),
             Self::NotTheShape { .. }
             | Self::AnotherFormat { .. }
             | Self::SaysNothing

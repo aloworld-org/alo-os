@@ -26,7 +26,8 @@
 //!
 //! **Which setting it is, is the person's, read from their own file at each
 //! ask** (`alo_capability::AloInApplications`, chosen in Settings → Folders
-//! alo can use) and handed to [`WorkingInApplications::taken_in`] — never
+//! alo can use) and handed to
+//! [`taken_in`](crate::alo_at_work::WorkingInApplications::taken_in) — never
 //! the word alo sent. At the default, alo asking for the person's window is
 //! answered `not-chosen`. Turned up, the person's window is allowed, and an
 //! application with no copy of its own is worked in there rather than refused.

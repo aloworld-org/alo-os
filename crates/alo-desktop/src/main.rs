@@ -1440,9 +1440,9 @@ mod running {
                 // for these asks** (Settings → Folders alo can use). A file
                 // that will not read is alo's own copy, the answer that
                 // watches nothing of theirs.
-                let chosen = alo_remembering::alo_in_applications_remembered(
-                    std::path::Path::new(alo_remembering::THE_LEVEL),
-                )
+                let chosen = alo_remembering::alo_in_applications_remembered(std::path::Path::new(
+                    alo_remembering::THE_LEVEL,
+                ))
                 .unwrap_or_default();
                 for one in asked {
                     let called = installed

@@ -331,6 +331,9 @@ fn every_setting_the_machine_has_is_in_one_window() {
                 provider: PROVIDER.to_owned(),
                 model: "harbour-small".to_owned(),
             }),
+            // alo works in its own copy of an application, as a machine
+            // arrives (ADR 0143 Q6).
+            SettingsRow::WhereAloWorks(alo_capability::AloInApplications::InItsOwnCopy),
             SettingsRow::LightOrDark(LightOrDark::of(Appearance::shipped().following())),
             SettingsRow::Accent(Appearance::shipped().accent()),
             // A new window with no room glides to empty space, as it ships.
@@ -617,7 +620,14 @@ fn a_fresh_machine_can_answer_only_not_at_all_and_is_offered_the_way_in() {
         // whether or not anything is granted: the record answers *what
         // happened*, and a machine with nothing granted now may have done
         // things under a grant since taken back.
-        [SettingsRow::GrantAFolder, SettingsRow::SeeWhatAloDid],
+        // And where alo works in an application since 2026-11-10, which
+        // needs nothing granted either.
+        [
+            SettingsRow::GrantAFolder,
+            SettingsRow::SeeWhatAloDid,
+            SettingsRow::WhereAloWorks(alo_capability::AloInApplications::InItsOwnCopy),
+            SettingsRow::WhereAloWorks(alo_capability::AloInApplications::InTheirWindow),
+        ],
         "{:?}",
         granted.blocks
     );
@@ -2506,15 +2516,13 @@ fn where_alo_works_is_offered_with_its_cost_and_the_refusal_names_it() {
         ]
     );
 
-    // **The refusal points at this row, on this page, in their own words.**
-    let refusal = strings
-        .say(
-            &alo_capability::words::NO_COPY_OF_ITS_OWN.key(),
-            &Filling::of("application", "Text Editor"),
-        )
-        .into_text();
-    let page_name = SettingsCategory::FoldersAloCanUse.said(&strings);
-    let row_name = rows[1].title.clone();
+    // **The refusal points at this row, on this page, in their own words** —
+    // the English each is declared with, which is what a translator is told
+    // to keep the same.
+    let refusal = alo_capability::words::NO_COPY_OF_ITS_OWN.says();
+    let page_name = SettingsCategory::FoldersAloCanUse.word().says();
+    let row_name = AloInApplications::InTheirWindow.the_word().says();
+    assert_eq!(rows[1].title, row_name);
     assert!(
         refusal.contains(&format!("“{row_name}” in Settings → {page_name}")),
         "the refusal does not name the row and its page exactly: {refusal}"

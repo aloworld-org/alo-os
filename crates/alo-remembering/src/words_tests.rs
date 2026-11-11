@@ -103,7 +103,9 @@ fn every_sentence_says_what_follows_from_it() {
     }
     assert_eq!(
         (reading, writing),
-        (9, 2),
+        // Ten since 2026-11-10: `in-applications` saying a word it does not
+        // take is one more way the file did not read.
+        (10, 2),
         "the split moved; the module header says which sentences are which"
     );
 }

@@ -471,7 +471,11 @@ mod tests {
             alo_in_applications_remembered(&at).unwrap(),
             AloInApplications::InTheirWindow
         );
-        assert_eq!(the_level_remembered(&at).unwrap(), None, "a level was invented");
+        assert_eq!(
+            the_level_remembered(&at).unwrap(),
+            None,
+            "a level was invented"
+        );
         the_level_kept(&at, HowCodeRuns::AskingEachTime).unwrap();
         alo_in_the_terminal_kept(&at, AloInTheTerminal::ActsWithoutAsking).unwrap();
         assert_eq!(
