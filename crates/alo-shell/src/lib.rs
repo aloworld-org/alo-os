@@ -372,6 +372,7 @@ mod painted;
 mod painted_flat;
 mod painted_text;
 mod painted_text_wrapping;
+mod panel_cards;
 mod panel_raster;
 mod peeking_at_a_put_aside_window;
 mod pointer;
