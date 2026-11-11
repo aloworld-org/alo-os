@@ -47,6 +47,12 @@ ARG THE_RUNTIME_SHA256=cf95886728959aa09910bb34de5cca1cc5a8f68003b5597197d3f2c2d
 # reach nothing.
 ARG THE_CONVERTER=26.2.6
 ARG THE_CONVERTER_SHA256=9833c61bfbec0905c6da54f82ef56123818661c9fec99706d9afece3ad7e9988
+# **The build number the archive files it under.** The publisher's `stable/` address
+# drops a release once a newer one ships (26.2.6 answered 404 on 2026-11-12), and
+# keeps every release for good in its archive, named by the full build number. The
+# digest above is that archive file's own: `26.2.6.3`'s published SHA-256 is the
+# pinned one, byte for byte, so this is the same artefact from a place that stays.
+ARG THE_CONVERTER_BUILD=26.2.6.3
 # **No weights, and this is where they used to be named.**
 # [ADR 0095](../docs/decisions/0095-the-release-carries-no-model-and-a-person-brings-their-own.md)
 # — the release carries no model. A person brings weights they already have, or
@@ -176,6 +182,7 @@ FROM ${THE_BUILDER} AS converter
 
 ARG THE_CONVERTER
 ARG THE_CONVERTER_SHA256
+ARG THE_CONVERTER_BUILD
 
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update \
@@ -184,7 +191,7 @@ RUN apt-get update \
 
 RUN curl --proto '=https' --tlsv1.2 --silent --show-error --fail --location \
       --output /converter.tar.gz \
-      https://download.documentfoundation.org/libreoffice/stable/${THE_CONVERTER}/rpm/x86_64/LibreOffice_${THE_CONVERTER}_Linux_x86-64_rpm.tar.gz \
+      https://downloadarchive.documentfoundation.org/libreoffice/old/${THE_CONVERTER_BUILD}/rpm/x86_64/LibreOffice_${THE_CONVERTER_BUILD}_Linux_x86-64_rpm.tar.gz \
  && echo "${THE_CONVERTER_SHA256}  /converter.tar.gz" | sha256sum --check - \
  && mkdir /converter \
  && tar --extract --gzip --file /converter.tar.gz --directory /converter --strip-components 2 --wildcards '*/RPMS/*.rpm'
