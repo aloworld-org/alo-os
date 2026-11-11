@@ -301,7 +301,7 @@ pub(crate) fn a_sheet(
             height,
             fonts,
             text,
-            place,
+            crate::painted::drawn_at(place),
             measure.label_metrics(),
             colours.ground,
             colours.muted,
@@ -372,10 +372,10 @@ pub(crate) fn two_lines(
         height,
         fonts,
         lines.0,
-        Rectangle::new(
+        crate::painted::drawn_at(Rectangle::new(
             (card.loc.x + inside, card.loc.y + measure.px(16)).into(),
             (width, measure.px(25)).into(),
-        ),
+        )),
         measure.metrics(),
         colours.entry,
         colours.ink,
@@ -385,10 +385,10 @@ pub(crate) fn two_lines(
         height,
         fonts,
         lines.1,
-        Rectangle::new(
+        crate::painted::drawn_at(Rectangle::new(
             (card.loc.x + inside, card.loc.y + measure.px(45)).into(),
             (width, measure.px(22)).into(),
-        ),
+        )),
         measure.label_metrics(),
         colours.entry,
         colours.secondary,

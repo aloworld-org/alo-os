@@ -142,8 +142,8 @@ fn the_shells_own_fonts() -> FontSystem {
 /// The two proportional faces alone — a machine with no monospace face.
 fn fonts_without_the_mono_face() -> FontSystem {
     WindowControlLabels::from_fonts([
-        include_bytes!("../fonts/Manrope.ttf").to_vec(),
-        include_bytes!("../fonts/Inter.ttf").to_vec(),
+        alo_drawing::fonts::MANROPE.to_vec(),
+        alo_drawing::fonts::INTER.to_vec(),
     ])
     .expect("the two proportional faces load")
     .fonts

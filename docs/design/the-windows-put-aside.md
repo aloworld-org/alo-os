@@ -258,7 +258,7 @@ selecting the card elsewhere brings the task window back.
 **Departures, each written down here because it is one:**
 
 - **The mark is drawn at SemiBold**, not Bold: no Manrope Bold is bundled
-  (`crates/alo-shell/fonts/README.md`), and a weight no face has draws Inter.
+  (`crates/alo-drawing/fonts/README.md`), and a weight no face has draws Inter.
 - **Two words the frame does not have**: *Stopped · nothing changed* for a task
   stopped before it changed anything, where *changes kept* would be false; and
   *Nothing approved yet* for line 4 of a task with no approval.

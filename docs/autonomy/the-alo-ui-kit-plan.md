@@ -50,11 +50,12 @@ kit's own is the whole of the change for:
   circles, hairlines, artwork, words and a clip for a scrolled page, all
   anti-aliased by one rule. This is the rasteriser an application needs, and
   it is already software-only.
-- `crates/alo-shell/src/painted_text.rs` and
-  `crates/alo-shell/src/painted_text_wrapping.rs`: cosmic-text shaping and
+- `painted_text.rs` and `painted_text_wrapping.rs` (in `alo-shell` when
+  surveyed, `crates/alo-drawing/src/` since task 2's third step): cosmic-text shaping and
   inking, Manrope at the design's weights, Geist Mono for monospace.
   `crates/alo-shell/src/window_control_label.rs` builds the font database from
-  the bundled files in `crates/alo-shell/fonts/` and never reads the host's
+  the bundled files in `crates/alo-drawing/fonts/` (moved there from
+  `alo-shell` by task 2's third step) and never reads the host's
   fonts, which is right for a Flatpak too. Its locale is fixed at `en-US`,
   which matters for which fallback face a script gets; the kit should take the
   person's language instead.
@@ -186,7 +187,7 @@ sizes, taken from `main` and committed.
 
 ### 2. `alo-drawing`: alo's pixels and text, out of the shell
 
-**Status:** in progress since 2026-11-11, in steps that each keep task 1's hashes. **Step 1** (the branch `alo-drawing-holds-the-display-scale`): the crate exists, `display_scale.rs` is in it, and `crates/alo-drawing/tests/it_never_reaches_a_compositor.rs` refuses any Smithay, Wayland, calloop, xkbcommon, libseat or D-Bus crate anywhere in what it pulls in, read off `Cargo.lock`. **Step 2** (`alo-drawing-holds-the-pictures`): `Solid`, `Inked`, `Washed` and `painted_flat.rs` with an area of the crate's own; the shell converts at `crate::painted::on_the_frame`. **Still to move:** the text stack and bundled fonts, `settings_canvas.rs` and `settings_type.rs`. **Size:** M. **Waits on:** task 1.
+**Status:** in progress since 2026-11-11, in steps that each keep task 1's hashes. **Step 1** (the branch `alo-drawing-holds-the-display-scale`): the crate exists, `display_scale.rs` is in it, and `crates/alo-drawing/tests/it_never_reaches_a_compositor.rs` refuses any Smithay, Wayland, calloop, xkbcommon, libseat or D-Bus crate anywhere in what it pulls in, read off `Cargo.lock`. **Step 2** (#1190): `Solid`, `Inked`, `Washed` and `painted_flat.rs` with an area of the crate's own; the shell converts at `crate::painted::on_the_frame`. **Step 3** (`alo-drawing-holds-the-text`): the bundled fonts and the one font database made of them (`alo_drawing::fonts`), `painted_text.rs` and `painted_text_wrapping.rs`. **Still to move:** `settings_canvas.rs` and `settings_type.rs`, which wait on `desktop_look.rs`'s `Measure`. **Size:** M. **Waits on:** task 1.
 
 **For the person:** nothing visible yet; it is what makes an alo application
 draw exactly as the desktop does. **Moves:** `painted.rs`'s three picture

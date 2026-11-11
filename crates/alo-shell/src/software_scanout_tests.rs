@@ -424,10 +424,10 @@ fn both_windows_edges_reach_the_bytes_a_display_would_scan_out() {
         let mut fonts = cosmic_text::FontSystem::new();
         fonts
             .db_mut()
-            .load_font_data(include_bytes!("../fonts/Manrope.ttf").to_vec());
+            .load_font_data(alo_drawing::fonts::MANROPE.to_vec());
         fonts
             .db_mut()
-            .load_font_data(include_bytes!("../fonts/Inter.ttf").to_vec());
+            .load_font_data(alo_drawing::fonts::INTER.to_vec());
         fonts
     }
 
@@ -556,7 +556,7 @@ fn a_windows_shadow_never_lightens_the_ground_under_it() {
     let mut faces = cosmic_text::FontSystem::new();
     faces
         .db_mut()
-        .load_font_data(include_bytes!("../fonts/Inter.ttf").to_vec());
+        .load_font_data(alo_drawing::fonts::INTER.to_vec());
     let window = Rectangle::<i32, Logical>::new((100, 150).into(), (200, 120).into());
     // **The canvas cream under it**, as on the machine: on black a pixel of
     // navy is lighter however it is blended, so the ground has to be light.
