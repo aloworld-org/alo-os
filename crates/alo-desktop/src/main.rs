@@ -73,6 +73,9 @@ mod telling_the_session_where_alo_draws;
 mod telling_applications_about_the_pointer;
 
 #[cfg(target_os = "linux")]
+mod telling_applications_to_describe_themselves;
+
+#[cfg(target_os = "linux")]
 mod putting_back;
 
 #[cfg(target_os = "linux")]
@@ -345,6 +348,11 @@ mod running {
         /// `access.toml` once at sign-in. **A file that does not read is no**,
         /// which is how this computer comes, and the reason is said once.
         motion_is_reduced: bool,
+        /// Whether applications describe themselves, as the session was last
+        /// told — the person's answer read at sign-in, or the machine's default
+        /// where they gave none — so a change in Settings tells it only when it
+        /// is one.
+        apps_describe_themselves: bool,
         /// Where the dock is, and so where the status area is.
         dock: alo_dock::Dock,
         /// The windows this person has put aside, which the panel at the edge
@@ -668,6 +676,14 @@ mod running {
             // or a size they set themselves is not overwritten
             // (`crate::telling_applications_about_the_pointer`).
             crate::telling_applications_about_the_pointer::tell(pointers_look, they_chose);
+            // **Told at sign-in only if they answered in Settings**, so the
+            // image's default, or a variable they set themselves, stands
+            // otherwise (`crate::telling_applications_to_describe_themselves`).
+            let (apps_describe_themselves, they_answered) =
+                crate::telling_applications_to_describe_themselves::the_persons_answer();
+            if they_answered {
+                crate::telling_applications_to_describe_themselves::tell(apps_describe_themselves);
+            }
             Ok(Self {
                 layout_at,
                 shortcuts_at,
@@ -676,6 +692,7 @@ mod running {
                 pointers_look,
                 when_there_is_no_room,
                 motion_is_reduced,
+                apps_describe_themselves,
                 dock: alo_dock::Dock::shipped(),
                 put_aside: alo_put_aside::Panel::new(),
                 // Nothing has been asked to be put back.
@@ -794,6 +811,16 @@ mod running {
             );
             self.pointers_look = look;
             crate::telling_applications_about_the_pointer::tell(look, what);
+        }
+
+        /// **They turned over *Apps describe themselves***: applications
+        /// started from now on are told the new answer, and the session only
+        /// when it is a new one.
+        fn apps_describing_themselves_is(&mut self, describe: bool) {
+            if describe != self.apps_describe_themselves {
+                self.apps_describe_themselves = describe;
+                crate::telling_applications_to_describe_themselves::tell(describe);
+            }
         }
 
         /// Where this person's settings are kept, so a chord can open them.

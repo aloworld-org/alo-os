@@ -277,6 +277,11 @@ pub enum SettingsRow {
     /// computer comes; on, the view jumps where it would glide (the owner's
     /// yes of 2026-11-07, `alo_access::Setting::ReducedMotion`).
     ReducedMotion,
+    /// *Apps describe themselves to alo and screen readers*: one switch, and
+    /// Enter turns it over. **On as this computer comes**, the owner's
+    /// decision of 2026-11-11; off, applications started from then on do not
+    /// describe themselves (`alo_launching::describing_themselves`).
+    AppsDescribeThemselves,
     /// Where a new window goes when there is no room for it in view: Enter
     /// chooses it. Gliding to empty space ships; opening in front, offset,
     /// stays a choice — the owner, 2026-11-07
@@ -322,7 +327,8 @@ impl SettingsRow {
             | Self::PointerSize(_)
             | Self::PointerShape(_)
             | Self::PointerColour(_)
-            | Self::ReducedMotion => SettingsSection::Accessibility,
+            | Self::ReducedMotion
+            | Self::AppsDescribeThemselves => SettingsSection::Accessibility,
             Self::OpenThePicker(SettingsPicker::Region) => SettingsSection::Formats,
             Self::OpenThePicker(SettingsPicker::TimeZone) => SettingsSection::TimeZone,
             Self::Shortcut(_) => SettingsSection::Shortcuts,
@@ -681,6 +687,15 @@ impl SettingsWindow {
             .map(|open| open.access.drawn().has(alo_access::Setting::ReducedMotion))
     }
 
+    /// Whether applications describe themselves to alo and screen readers, as
+    /// Settings holds it.
+    #[must_use]
+    pub fn apps_describe_themselves(&self) -> Option<bool> {
+        self.open
+            .as_ref()
+            .map(|open| open.access.drawn().apps_describe_themselves())
+    }
+
     /// Which arrow the pointer is, as Settings holds it.
     #[must_use]
     pub fn pointer_shape(&self) -> Option<alo_appearance::PointerShape> {
@@ -970,6 +985,7 @@ impl Open {
                 // only where that file can be kept.
                 if self.access.at().is_some() && self.access.not_read().is_none() {
                     rows.push(SettingsRow::ReducedMotion);
+                    rows.push(SettingsRow::AppsDescribeThemselves);
                 }
                 rows
             }
@@ -1371,6 +1387,23 @@ impl Open {
                         } else {
                             turned_on.turn_on(alo_access::Setting::ReducedMotion);
                         }
+                        Ok(())
+                    },
+                    doors.strings,
+                );
+                SettingsDid::Kept(SettingsSection::Accessibility, kept)
+            }
+            // **The same switch shape, the other way round**: on as this
+            // computer comes. The desktop is handed the answer by
+            // `crate::a_key_reaches_settings`, and tells the session.
+            SettingsRow::AppsDescribeThemselves if self.access.not_read().is_some() => {
+                SettingsDid::Kept(SettingsSection::Accessibility, SettingsKept::Refused)
+            }
+            SettingsRow::AppsDescribeThemselves => {
+                let kept = self.access.changed(
+                    |turned_on| {
+                        let now = turned_on.apps_describe_themselves();
+                        turned_on.let_apps_describe_themselves(!now);
                         Ok(())
                     },
                     doors.strings,

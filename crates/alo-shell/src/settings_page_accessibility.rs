@@ -164,5 +164,34 @@ fn the_motion(open: &Open, strings: &Strings) -> Vec<ABlock> {
         rows: vec![row],
         footnote: None,
     }));
+    blocks.push(the_applications(open, strings));
     blocks
+}
+
+/// **Applications**: *Apps describe themselves to alo and screen readers*, the
+/// owner's decision of 2026-11-11 — on as this computer comes, with what it
+/// costs said under it, so a person can turn it off knowing what they give up.
+///
+/// Drawn only where *Motion* is, because it is kept in the same `access.toml`;
+/// a fourth section in the design's own switch row, as Motion is the third
+/// (`docs/design/the-settings-window.md`, question 10).
+fn the_applications(open: &Open, strings: &Strings) -> ABlock {
+    let is = if open.access.drawn().apps_describe_themselves() {
+        crate::settings_page::SwitchIs::On
+    } else {
+        crate::settings_page::SwitchIs::Off
+    };
+    let mut row = ARow::named(
+        Some(SettingsRow::AppsDescribeThemselves),
+        TheKind::ASwitch(is),
+        said(strings, w::APPS_DESCRIBE_THEMSELVES),
+    );
+    row.lines.push(said(strings, w::APPS_DESCRIBE_THEMSELVES_IS));
+    row.lines.push(said(strings, w::APPS_DESCRIBE_THEMSELVES_LATER));
+    row.at_its_end = Some(AnEnd::Words(crate::settings_page::switch_said(is, strings)));
+    ABlock::Section(ASection {
+        heading: Some(said(strings, w::APPLICATIONS)),
+        rows: vec![row],
+        footnote: None,
+    })
 }

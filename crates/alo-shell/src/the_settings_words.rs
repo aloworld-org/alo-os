@@ -651,6 +651,46 @@ pub const REDUCED_MOTION_IS: Word = Word::saying(
 )
 .noting("Under the switch Reduced motion. Says what changes on the screen while it is on.");
 
+/// Applications.
+pub const APPLICATIONS: Word = Word::saying("settings.access.applications", "Applications")
+    .noting(
+        "A heading on the accessibility page over the setting for how installed applications \
+         work with alo and with screen readers. Sentence case.",
+    );
+
+/// Apps describe themselves to alo and screen readers.
+pub const APPS_DESCRIBE_THEMSELVES: Word = Word::saying(
+    "settings.access.apps-describe-themselves",
+    "Apps describe themselves to alo and screen readers",
+)
+.noting(
+    "A switch, on as the computer comes. On, every installed application tells alo, the \
+     assistant, and any screen reader what is in its windows — its buttons, fields and text — so \
+     they can read it and work inside it. alo is the product's name and is not translated.",
+);
+
+/// What it does, and what it costs.
+pub const APPS_DESCRIBE_THEMSELVES_IS: Word = Word::saying(
+    "settings.access.apps-describe-themselves.is",
+    "On, alo and screen readers can see inside every app you open. It uses a little more memory \
+     and processor time. Off, apps are asked not to, so alo and screen readers may not see \
+     inside them.",
+)
+.noting(
+    "Under the switch Apps describe themselves to alo and screen readers. Says what it does, what \
+     it costs while on, and what turning it off costs, in plain words.",
+);
+
+/// When a change reaches an application.
+pub const APPS_DESCRIBE_THEMSELVES_LATER: Word = Word::saying(
+    "settings.access.apps-describe-themselves.later",
+    "A change reaches apps you open after it. An app already open keeps how it started until you \
+     close it and open it again.",
+)
+.noting(
+    "Under the same switch, a second line. Applications read this setting only when they start.",
+);
+
 /// The accessibility settings did not read.
 pub const ACCESS_NOT_READ: Word = Word::saying(
     "settings.access.not-read",
@@ -848,7 +888,7 @@ pub const AS_A_PERCENTAGE: Word = Word::saying("settings.access.percent", "{perc
 /// The length is written out so that adding a word above and forgetting it
 /// here does not compile — a word declared and left out of this list reaches a
 /// person as its own key.
-pub const THE_WINDOWS_WORDS: [Word; 114] = [
+pub const THE_WINDOWS_WORDS: [Word; 118] = [
     SETTINGS,
     EVERYTHING_IN_ONE_PLACE,
     THE_GROUP_ALO,
@@ -961,6 +1001,10 @@ pub const THE_WINDOWS_WORDS: [Word; 114] = [
     MOTION,
     REDUCED_MOTION,
     REDUCED_MOTION_IS,
+    APPLICATIONS,
+    APPS_DESCRIBE_THEMSELVES,
+    APPS_DESCRIBE_THEMSELVES_IS,
+    APPS_DESCRIBE_THEMSELVES_LATER,
     ACCESS_NOT_READ,
     ACCESS_NOT_WRITTEN,
 ];

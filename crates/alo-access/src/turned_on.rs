@@ -105,7 +105,51 @@ impl TurnedOn {
     pub fn ignore_the_same_key_for(&mut self, how_long: Duration) {
         self.ignored_after_the_same_key = Some(how_long);
     }
+
+    /// **Whether applications describe themselves to alo and to screen
+    /// readers** — on as a machine comes, by the owner's decision of
+    /// 2026-11-11, and off only where the person turned it off.
+    ///
+    /// Not a [`Setting`]: every one of those is off until somebody turns it on,
+    /// and [`TurnedOn::nothing`] is a machine with none of them. This one is
+    /// the other way round, so it is kept as which answer the person gave.
+    #[must_use]
+    pub fn apps_describe_themselves(&self) -> bool {
+        !self.on.contains(APPS_KEEP_TO_THEMSELVES)
+    }
+
+    /// Whether the person has answered at all, either way. A person who has
+    /// not is given the machine's default, and nothing they set themselves
+    /// outside Settings is overwritten for them.
+    #[must_use]
+    pub fn chose_whether_apps_describe_themselves(&self) -> bool {
+        self.on.contains(APPS_KEEP_TO_THEMSELVES) || self.on.contains(APPS_DESCRIBE_THEMSELVES)
+    }
+
+    /// The person's answer: `yes`, applications describe themselves.
+    pub fn let_apps_describe_themselves(&mut self, yes: bool) {
+        let (said, unsaid) = if yes {
+            (APPS_DESCRIBE_THEMSELVES, APPS_KEEP_TO_THEMSELVES)
+        } else {
+            (APPS_KEEP_TO_THEMSELVES, APPS_DESCRIBE_THEMSELVES)
+        };
+        self.on.remove(unsaid);
+        self.on.insert(said.to_owned());
+    }
 }
+
+/// The person said applications describe themselves.
+///
+/// **Kept as a word in `on` rather than as a field of its own**, because the
+/// file is read with `deny_unknown_fields`: a new field would make a machine
+/// rolled back to an earlier image refuse the whole file, and a person who
+/// needs the screen read aloud would sign in to a machine that does not read
+/// it. An earlier image reads a word it does not know as a setting it does not
+/// have, and keeps everything else.
+const APPS_DESCRIBE_THEMSELVES: &str = "apps-describe-themselves";
+
+/// The person said applications keep to themselves — the switch turned off.
+const APPS_KEEP_TO_THEMSELVES: &str = "apps-keep-to-themselves";
 
 /// What *a moment* is, where a person turned a key setting on and named no time.
 const A_MOMENT: Duration = Duration::from_millis(300);
@@ -247,6 +291,46 @@ mod tests {
         turned_on.turn_off(Setting::Magnifier);
         turned_on.turn_on(Setting::Magnifier);
         assert_eq!(turned_on.magnification().tenths(), 40);
+    }
+
+    /// **Applications describe themselves until the person says otherwise**,
+    /// and the answer is kept either way, apart from every [`Setting`].
+    #[test]
+    fn apps_describe_themselves_until_the_person_turns_it_off() {
+        let mut turned_on = TurnedOn::nothing();
+        assert!(turned_on.apps_describe_themselves(), "on as a machine comes");
+        assert!(!turned_on.chose_whether_apps_describe_themselves());
+
+        turned_on.let_apps_describe_themselves(false);
+        assert!(!turned_on.apps_describe_themselves());
+        assert!(turned_on.chose_whether_apps_describe_themselves());
+        assert_eq!(
+            turned_on.all_on().count(),
+            0,
+            "the answer is not one of the settings a person turns on"
+        );
+
+        turned_on.let_apps_describe_themselves(true);
+        assert!(turned_on.apps_describe_themselves());
+        assert!(
+            turned_on.chose_whether_apps_describe_themselves(),
+            "turned back on is still an answer"
+        );
+    }
+
+    /// **An earlier image reads the answer as a word it does not know** and
+    /// keeps the rest of the file, so a rolled-back machine still reads the
+    /// screen aloud for the person who turned that on.
+    #[test]
+    fn an_earlier_reader_keeps_the_rest_of_the_file() {
+        let mut turned_on = TurnedOn::nothing();
+        turned_on.turn_on(Setting::ScreenReader);
+        turned_on.let_apps_describe_themselves(false);
+        let written = toml::to_string(&turned_on).unwrap();
+        assert!(written.contains("apps-keep-to-themselves"), "{written}");
+        let read: TurnedOn = toml::from_str(&written).unwrap();
+        assert!(read.has(Setting::ScreenReader));
+        assert!(!read.apps_describe_themselves());
     }
 
     /// **A magnifier magnifies**, and there is no setting for one that does not.
