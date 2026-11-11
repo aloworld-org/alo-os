@@ -162,3 +162,44 @@ retiring terracotta for that role; *"Allowed: a logo is a mark"* — the browser
 logo may use teal, since the reservation covers interface states only; and
 *"Manrope (Recommended)"* — its interface is set in Manrope. All three are
 recorded in `docs/features.md`, *alo's visual language*.
+
+### alo's own applications are built on a shared alo UI kit, 2026-11-11
+
+**alo's own applications draw with the shell's own drawing.** Asked in a
+question dialog which road alo's own applications take for their interface —
+the first of them alo Mails, from `alo-workplace`, shipped as the Flatpak
+`com.alomails.Mails` under AGPL-3.0 — the owner chose *"Build a shared alo UI
+kit (Recommended)"*. The option, as it was put: take the drawing, the text
+(Manrope, through cosmic-text), the accessibility and the controls alo's
+desktop already uses out of the shell and into crates every alo application
+builds on; it looks exactly like the system; it is the most work up front; and
+alo Mails waits on the kit's first version.
+
+This is recorded here rather than in a new ADR because it is the consequence
+above coming due. *The UI runtime built for the shell is the same runtime
+`alo-engine` would need* said the shell's drawing was more than the shell's;
+this decision gives it its second user before the engine. It does not change
+the decision in one line: the shell stays native, and an application on it is
+still one program among others.
+
+What binds it:
+
+1. **The desktop keeps drawing exactly what it drew.** Every move out of
+   `alo-shell` is held to hashes of the pictures the shell drew before it, so
+   a person sees no difference while the kit is being made (law 3).
+2. **The kit meets the criteria `alo-workplace` set for its own interface**
+   (its ADR 0061, as relayed to this repository): Wayland only, no X11; drawn
+   in software with no graphics card
+   ([ADR 0104](0104-any-pc-that-works-is-done-and-no-gpu-is-required.md)); a
+   complete accessibility (AT-SPI) tree; portals for what a sandbox cannot
+   reach; per-display scaling of logical measures; pointer shapes asked for
+   by name.
+3. **It is GPL-3.0-or-later, like the rest of this repository.** alo Mails is
+   AGPL-3.0; section 13 of each licence allows a work under one to be combined
+   with a work under the other, so the kit can be linked into alo Mails as it
+   is.
+4. **It is for what alo makes.** An application somebody else wrote keeps its
+   own look, and nothing on this machine asks it to change (law 5).
+
+The work is `docs/autonomy/the-alo-ui-kit-plan.md`, and the promise is in
+`docs/features.md`, *The shell*. Not built on the day this was written.
