@@ -86,11 +86,17 @@ pub const FILE_CHOOSER: Word = Word::saying(
      the one the person picked; the application is not given the folder it is in.",
 );
 
-/// Open-with and default applications.
+/// Open-with and default applications: a file in what opens its kind, and a
+/// link in the person's default browser or mail application.
+///
+/// **A new key since 2026-11-12**, when this portal began opening links: the
+/// old sentence, `portals.portal.open-with`, said files only, and a correct
+/// translation of it is not a correct translation of this one (ADR 0068), so
+/// the old key retires rather than being reworded.
 pub const OPEN_WITH: Word = Word::saying(
-    "portals.portal.open-with",
+    "portals.portal.open-with-files-and-links",
     "Lets an application open a file you have granted it in the application that opens that kind \
-     of file",
+     of file, and open a link in your default browser or mail app",
 );
 
 /// Notifications.

@@ -1664,7 +1664,7 @@ portals.portal.inhibit	Lets an application keep the machine awake, for example d
 portals.portal.microphone	Lets an application use the microphone
 portals.portal.network-monitor	Lets an application know whether the machine is connected to a network, and never what is sent over it
 portals.portal.notifications	Lets an application send you notifications
-portals.portal.open-with	Lets an application open a file you have granted it in the application that opens that kind of file
+portals.portal.open-with-files-and-links	Lets an application open a file you have granted it in the application that opens that kind of file, and open a link in your default browser or mail app
 portals.portal.power-profile-monitor	Lets an application know the power profile, so it can use less power while you are saving it
 portals.portal.print	Lets an application print a document you have granted it
 portals.portal.screen-capture	Lets an application record or share the screen for as long as the grant lasts
