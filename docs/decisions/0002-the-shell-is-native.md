@@ -106,3 +106,44 @@ no line in `ROADMAP.md` and no entry in `docs/features.md` until an audit of
 these ADRs found it missing. It is now listed at v0.01, because the shell cannot
 draw an alo screen in alo's colours until it exists, and because the longer two
 sources of visual truth run in parallel the further apart they drift.
+
+### The default browser, 2026-11-11
+
+**alo's own browser becomes alo OS's default web browser.** The owner, in
+their words: *"Send a message to Mac-browser and tell him that that browser
+will also be the default browser for alo-os, give him instructions on how it
+should be built to be used on alo os"*. *That browser* is `alo-engine`, the
+repository `aloworld-org/alo-browser` described in the section above. This is
+recorded here rather than in a new ADR because it is the engine this ADR
+already describes, reaching one more surface.
+
+Two conditions bind it, set under the constitution when it was recorded:
+
+1. **Firefox stays the shipped default until alo's browser passes the bar
+   below, measured on an alo OS image** (law 3: done means the machine still
+   works). Until then nothing about the browser a person gets changes.
+2. **The person can always choose another default browser, and Firefox is
+   never removed from the image** (law 5). This sets a default; it takes no
+   choice away.
+
+**The bar.** Every item is measured on an alo OS image, and the report names
+the machine it was measured on:
+
+- it installs and starts on a clean alo OS image, with no graphics card, in
+  4 GB of memory;
+- it opens real sites, including signing in to GitHub and playing a video full
+  screen;
+- alo's window band, and Minimise, Maximise and Full screen, work on its
+  windows;
+- downloading and uploading a file go through the file portal;
+- the launcher finds it when a person types *browser*;
+- a link opened from another application opens in it;
+- `alo-app` and alo can open an address in it and read the page, through its
+  adapter and its accessibility (AT-SPI) tree;
+- the separate copy alo works in, with its own profile, starts apart from the
+  person's own, and what it sends is counted on the indicator (pull request
+  #1163);
+- at idle it sends nothing, measured at the network boundary.
+
+Until every line holds, alo's browser may be installed and chosen by a person
+like any other; it is not made the default.
