@@ -209,6 +209,23 @@ struct TheAnswersPlace {
     deny_is_wide: u32,
     /// The ground Deny's label is written on.
     deny_ground: [u8; 3],
+    /// The answer between the two, *Keep running*: its label, measured, when
+    /// the card has one (ADR 0139).
+    between_is: Option<u32>,
+    /// How far across from [`Self::left`] Deny starts: after Allow once, and
+    /// after the answer between when there is one.
+    deny_starts: u32,
+}
+
+/// How far across from the first answer's left edge the last one starts: past
+/// the first and a gap, and past the one between and a gap when there is one.
+const fn where_the_last_answer_starts(there_is_one_between: bool) -> u32 {
+    let past_the_first = m::ALLOW_ONCE_IS_WIDE + m::GAP;
+    if there_is_one_between {
+        past_the_first + m::KEEP_RUNNING_IS_WIDE + m::GAP
+    } else {
+        past_the_first
+    }
 }
 
 /// Rasterise the furniture of a task window of this size, at this corner, on a
@@ -589,6 +606,17 @@ pub(crate) fn furniture(
             m::ALLOW_ONCE_IS_WIDE,
         );
         let deny_is = width_of(answers.deny, deny_ground, palette.ink, deny_is_wide);
+        // **The answer between, Quiet like Deny** and on the same ground: of
+        // the three only *Stop and close* is Primary, as Allow once is.
+        let between_is = answers.between.map(|between| {
+            width_of(
+                between.words,
+                deny_ground,
+                palette.ink,
+                m::KEEP_RUNNING_IS_WIDE,
+            )
+        });
+        let deny_starts = where_the_last_answer_starts(between_is.is_some());
         where_the_answers_are = Some(TheAnswersPlace {
             left,
             row: down,
@@ -596,13 +624,15 @@ pub(crate) fn furniture(
             deny_is,
             deny_is_wide,
             deny_ground,
+            between_is,
+            deny_starts,
         });
         let (ax, ay) = inside(left, down);
         let allow = Rectangle::new(
             (ax, ay).into(),
             (px(m::ALLOW_ONCE_IS_WIDE), px(m::A_CONTROL_IS)).into(),
         );
-        let (dx, dy) = inside(left + m::ALLOW_ONCE_IS_WIDE + m::GAP, down);
+        let (dx, dy) = inside(left + deny_starts, down);
         let deny = Rectangle::new(
             (dx, dy).into(),
             (px(deny_is_wide), px(m::A_CONTROL_IS)).into(),
@@ -612,6 +642,17 @@ pub(crate) fn furniture(
             corner: m::A_CONTROLS_CORNER,
         });
         rings.push(deny);
+        if let Some(between) = answers.between {
+            let (bx, by) = inside(left + m::ALLOW_ONCE_IS_WIDE + m::GAP, down);
+            let ring = Rectangle::new(
+                (bx, by).into(),
+                (px(m::KEEP_RUNNING_IS_WIDE), px(m::A_CONTROL_IS)).into(),
+            );
+            rings.push(ring);
+            if between.selected {
+                outlines.push(crate::dock_raster::a_focus_ring(ring, scale));
+            }
+        }
         match answers.selected {
             Some(crate::a_change_waiting_reaches_the_person::WhichAnswer::AllowOnce) => {
                 outlines.push(crate::dock_raster::a_focus_ring(allow, scale));
@@ -1351,7 +1392,7 @@ pub(crate) fn furniture(
                     false,
                     None,
                 );
-                let deny_starts = place.left + m::ALLOW_ONCE_IS_WIDE + m::GAP;
+                let deny_starts = place.left + place.deny_starts;
                 write(
                     answers.deny,
                     &[],
@@ -1425,6 +1466,8 @@ pub(crate) fn furniture(
                 row,
                 allow_is,
                 deny_is,
+                between_is,
+                deny_starts,
                 ..
             }),
         ) = (one.answers, where_the_answers_are)
@@ -1445,7 +1488,25 @@ pub(crate) fn furniture(
                 false,
                 None,
             );
-            let deny_starts = left + m::ALLOW_ONCE_IS_WIDE + m::GAP;
+            // *Keep running*, between them and in reading order, on the
+            // card's ground as Cancel is.
+            if let (Some(between), Some(between_is)) = (answers.between, between_is) {
+                write(
+                    between.words,
+                    &[],
+                    AStyle::Label,
+                    palette.cool,
+                    palette.ink,
+                    left + m::ALLOW_ONCE_IS_WIDE
+                        + m::GAP
+                        + centred(m::KEEP_RUNNING_IS_WIDE, between_is),
+                    (row, m::A_CONTROL_IS),
+                    (between_is + 2).min(m::KEEP_RUNNING_IS_WIDE),
+                    false,
+                    None,
+                );
+            }
+            let deny_starts = left + deny_starts;
             write(
                 answers.deny,
                 &[],
@@ -1498,3 +1559,8 @@ mod scale_tests;
 #[cfg(test)]
 #[path = "task_raster_icons_tests.rs"]
 mod icons_tests;
+
+/// The question about closing a running task, with its three answers.
+#[cfg(test)]
+#[path = "task_raster_closing_tests.rs"]
+mod closing_tests;
