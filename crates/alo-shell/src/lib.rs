@@ -245,8 +245,9 @@ mod direct_sign_in;
 mod direct_target;
 mod display_lifecycle;
 mod display_resources;
-/// One display's scale, and the one road a logical measure takes to its pixels.
-mod display_scale;
+/// One display's scale, moved to `alo-drawing` (the UI kit plan, task 2) and
+/// named here so every `crate::display_scale` path in the shell still holds.
+use alo_drawing::display_scale;
 mod division_raster;
 /// The Dock's own surface: a rounded panel with a hairline and a shadow,
 /// rasterised with alpha because neither is a rectangle.
