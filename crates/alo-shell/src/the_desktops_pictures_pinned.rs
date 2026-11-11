@@ -29,21 +29,21 @@
 //! same at every setting and still match its table. So [`held`] also refuses a
 //! table with two equal hashes in it.
 
-#[path = "pinned_band.rs"]
+#[path = "pinned_band_tests.rs"]
 mod band;
-#[path = "pinned_bar.rs"]
+#[path = "pinned_bar_tests.rs"]
 mod bar;
-#[path = "pinned_egress_status.rs"]
+#[path = "pinned_egress_status_tests.rs"]
 mod egress_status;
-#[path = "pinned_lock.rs"]
+#[path = "pinned_lock_tests.rs"]
 mod lock;
-#[path = "pinned_record.rs"]
+#[path = "pinned_record_tests.rs"]
 mod record;
-#[path = "pinned_settings.rs"]
+#[path = "pinned_settings_tests.rs"]
 mod settings;
-#[path = "pinned_sign_in.rs"]
+#[path = "pinned_sign_in_tests.rs"]
 mod sign_in;
-#[path = "pinned_task_window.rs"]
+#[path = "pinned_task_window_tests.rs"]
 mod task_window;
 
 use alo_appearance::TextScale;
