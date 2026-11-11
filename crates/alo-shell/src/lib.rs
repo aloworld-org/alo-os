@@ -273,6 +273,9 @@ pub use where_a_travelling_window_lands::TheCards;
 /// What a press on the Dock does: the decision, with no act in it.
 mod a_press_on_the_dock;
 mod a_window_the_person_opened;
+/// The hand for `open-link`: an application started with a link the person
+/// followed, as a press starts it.
+mod a_link_is_opened;
 mod an_application_is_started;
 mod an_edge_in_its_displays_units;
 mod an_icon_is_drawn_on_its_badge;

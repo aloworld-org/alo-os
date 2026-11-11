@@ -23,6 +23,14 @@
 //! bus only. Who asked is still carried (`alo_shell::WhoAskedToStart`) and said
 //! on the journal line, so the two can be told apart afterwards.
 //!
+//! **And so does a link the person followed** (the owner, 2026-11-12): the
+//! open-with portal asks through the door's `open-link`, and the application
+//! is started the same way **with the link** — `Open` with it over the bus,
+//! or the entry's `%u` or `%U` filled with it — so a browser already running
+//! opens it in a new tab by its own single-instance handling. An entry whose
+//! command has nowhere to put a link is not started at all, rather than
+//! started without the link.
+//!
 //! # Every refusal is said
 //!
 //! Each press that starts nothing writes one line naming the application and
@@ -35,7 +43,7 @@ use std::os::unix::fs::PermissionsExt as _;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 
-use alo_launching::{HowItStarts, TheEntry, WhyItCannotStart};
+use alo_launching::{HowItStarts, TheEntry, WhyItCannotStart, WhyNotWithALink};
 use alo_shell::WhoAskedToStart;
 use zbus::zvariant::Value;
 
@@ -82,18 +90,25 @@ impl HowThisMachineStartsThings {
     /// decides. Who asked changes only the journal's words.
     #[must_use]
     pub fn started(&self, identifier: &str, who: WhoAskedToStart) -> bool {
+        let link = match &who {
+            WhoAskedToStart::ALinkTheyFollowed(link) => Some(link.as_str().to_owned()),
+            WhoAskedToStart::ThePerson | WhoAskedToStart::TheirAgent => None,
+        };
         eprintln!(
             "alo-desktop: {identifier} is asked to start, {}",
             match who {
                 WhoAskedToStart::ThePerson => "by the person's own press",
                 WhoAskedToStart::TheirAgent => "by alo, with the person's approval",
+                WhoAskedToStart::ALinkTheyFollowed(_) => {
+                    "with a link the person followed in an application"
+                }
             }
         );
-        self.as_its_entry_says(identifier)
+        self.as_its_entry_says(identifier, link.as_deref())
     }
 
-    /// The one road: the entry decides.
-    fn as_its_entry_says(&self, identifier: &str) -> bool {
+    /// The one road: the entry decides — with `link` in it, where there is one.
+    fn as_its_entry_says(&self, identifier: &str, link: Option<&str>) -> bool {
         let Some(location) = alo_launching::where_the_entry_is(identifier, &self.entries) else {
             return said(identifier, "no entry by that name is installed");
         };
@@ -107,9 +122,24 @@ impl HowThisMachineStartsThings {
                 &format!("its entry at {} could not be read", location.display()),
             );
         };
-        match alo_launching::how_it_starts(identifier, &entry, location.to_str()) {
+        let road = match link {
+            None => alo_launching::how_it_starts(identifier, &entry, location.to_str())
+                .map_err(|why| the_reason(&why)),
+            Some(link) => {
+                alo_launching::how_it_starts_with_a_link(identifier, &entry, location.to_str(), link)
+                    .map_err(|why| match why {
+                        WhyNotWithALink::CannotStart(why) => the_reason(&why),
+                        WhyNotWithALink::TakesNoLink => {
+                            "its entry's command has nowhere to put a link (no %u or %U), so it \
+                             was not started without the link"
+                                .to_owned()
+                        }
+                    })
+            }
+        };
+        match road {
             Ok(HowItStarts::OverTheBus { or_else }) => {
-                if self.over_the_bus(identifier) {
+                if self.over_the_bus(identifier, link) {
                     return true;
                 }
                 let Some(command) = or_else else {
@@ -127,13 +157,17 @@ impl HowThisMachineStartsThings {
             Ok(HowItStarts::FromItsCommand(command)) => {
                 self.started_from_its_command(identifier, &entry, &command)
             }
-            Err(why) => said(identifier, &the_reason(&why)),
+            Err(why) => said(identifier, &why),
         }
     }
 
-    /// `Activate` on the application's own bus name.
-    fn over_the_bus(&self, identifier: &str) -> bool {
-        zbus::block_on(alo_portals::activated(&self.connection, identifier))
+    /// `Activate` on the application's own bus name — or `Open` with the
+    /// link, where it was started for one.
+    fn over_the_bus(&self, identifier: &str, link: Option<&str>) -> bool {
+        match link {
+            None => zbus::block_on(alo_portals::activated(&self.connection, identifier)),
+            Some(link) => zbus::block_on(alo_portals::opened_at(&self.connection, identifier, link)),
+        }
     }
 
     /// A transient service in the person's own manager, running this command.

@@ -76,11 +76,75 @@ pub fn how_it_starts(
         icon: entry.icon.as_deref(),
         name: entry.name.as_deref(),
         location,
+        link: None,
     };
+    road_for(identifier, entry, &filling)
+}
+
+/// Why an application cannot be started with a link.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum WhyNotWithALink {
+    /// It cannot be started at all.
+    CannotStart(WhyItCannotStart),
+    /// Its `Exec` line takes no link — no `%u` or `%U` — so starting it would
+    /// open the application and not the link, which is not what was asked.
+    TakesNoLink,
+}
+
+/// Decide how this entry starts **with a link the person followed** — the
+/// same road as [`how_it_starts`], with `%u` and `%U` filled with `link`.
+///
+/// The bus road is the same: the desktop sends `Open` with the link rather
+/// than `Activate`, and the command carried as `or_else` has the link in it.
+///
+/// # Errors
+///
+/// [`WhyNotWithALink`]: everything [`how_it_starts`] refuses, and an entry
+/// whose command has nowhere to put a link.
+pub fn how_it_starts_with_a_link(
+    identifier: &str,
+    entry: &TheEntry,
+    location: Option<&str>,
+    link: &str,
+) -> Result<HowItStarts, WhyNotWithALink> {
+    let without = how_it_starts(identifier, entry, location).map_err(WhyNotWithALink::CannotStart)?;
+    let filling = Filling {
+        icon: entry.icon.as_deref(),
+        name: entry.name.as_deref(),
+        location,
+        link: Some(link),
+    };
+    let with = road_for(identifier, entry, &filling).map_err(WhyNotWithALink::CannotStart)?;
+    match (with, without) {
+        // Over the bus the link travels in `Open`. A command to fall back on
+        // that has nowhere to put the link is dropped, so a bus that cannot
+        // start the application never becomes the application opened without
+        // the link.
+        (
+            HowItStarts::OverTheBus { or_else: with_it },
+            HowItStarts::OverTheBus { or_else: without_it },
+        ) => Ok(HowItStarts::OverTheBus {
+            or_else: with_it.filter(|with_it| Some(with_it) != without_it.as_ref()),
+        }),
+        (HowItStarts::FromItsCommand(with_it), HowItStarts::FromItsCommand(without_it))
+            if with_it == without_it =>
+        {
+            Err(WhyNotWithALink::TakesNoLink)
+        }
+        (with, _) => Ok(with),
+    }
+}
+
+/// The road for an entry already found fit to start, with these field codes.
+fn road_for(
+    identifier: &str,
+    entry: &TheEntry,
+    filling: &Filling<'_>,
+) -> Result<HowItStarts, WhyItCannotStart> {
     let command = entry
         .exec
         .as_deref()
-        .map(|exec| the_command_in(exec, &filling));
+        .map(|exec| the_command_in(exec, filling));
     if entry.bus_activatable && is_a_bus_name(identifier) {
         return Ok(HowItStarts::OverTheBus {
             or_else: command.and_then(Result::ok),

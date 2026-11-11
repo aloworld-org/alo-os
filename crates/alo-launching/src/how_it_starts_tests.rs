@@ -143,3 +143,84 @@ fn a_bus_name_is_held_to_the_specifications_shape() {
         assert!(!is_a_bus_name(name), "{name}");
     }
 }
+
+/// **Firefox's own entry takes the link where its `%u` is**, between
+/// Flatpak's forwarding marks, as one argument.
+#[test]
+fn a_link_goes_where_the_entry_takes_one() {
+    let firefox = entry(
+        Some(
+            "/usr/bin/flatpak run --branch=stable --arch=x86_64 --command=firefox \
+             --file-forwarding org.mozilla.firefox @@u %u @@",
+        ),
+        false,
+    );
+    assert_eq!(
+        how_it_starts_with_a_link(
+            "org.mozilla.firefox",
+            &firefox,
+            None,
+            "https://example.com/invoice"
+        ),
+        Ok(HowItStarts::FromItsCommand(
+            [
+                "/usr/bin/flatpak",
+                "run",
+                "--branch=stable",
+                "--arch=x86_64",
+                "--command=firefox",
+                "--file-forwarding",
+                "org.mozilla.firefox",
+                "@@u",
+                "https://example.com/invoice",
+                "@@",
+            ]
+            .map(str::to_owned)
+            .to_vec()
+        ))
+    );
+    let list = entry(Some("thunderbird %U"), false);
+    assert_eq!(
+        how_it_starts_with_a_link("thunderbird", &list, None, "mailto:anna@example.com"),
+        Ok(HowItStarts::FromItsCommand(
+            ["thunderbird", "mailto:anna@example.com"]
+                .map(str::to_owned)
+                .to_vec()
+        ))
+    );
+}
+
+/// **An entry with nowhere to put a link is refused**, rather than started
+/// without it — and one that cannot start at all says why.
+#[test]
+fn an_entry_that_takes_no_link_is_refused() {
+    for exec in ["gimp", "gimp %f", "gimp %F"] {
+        assert_eq!(
+            how_it_starts_with_a_link("org.gimp.GIMP", &entry(Some(exec), false), None, "https://a.example/"),
+            Err(WhyNotWithALink::TakesNoLink),
+            "{exec}"
+        );
+    }
+    assert_eq!(
+        how_it_starts_with_a_link("org.example.None", &entry(None, false), None, "https://a.example/"),
+        Err(WhyNotWithALink::CannotStart(WhyItCannotStart::NothingToStartItWith))
+    );
+}
+
+/// **Over the bus the link travels in `Open`**, and a command to fall back on
+/// is kept only where it would carry the link too.
+#[test]
+fn over_the_bus_the_fallback_keeps_the_link_or_is_dropped() {
+    let carries = entry(Some("epiphany %u"), true);
+    assert_eq!(
+        how_it_starts_with_a_link("org.gnome.Epiphany", &carries, None, "https://a.example/"),
+        Ok(HowItStarts::OverTheBus {
+            or_else: Some(["epiphany", "https://a.example/"].map(str::to_owned).to_vec())
+        })
+    );
+    let does_not = entry(Some("geary"), true);
+    assert_eq!(
+        how_it_starts_with_a_link("org.gnome.Geary", &does_not, None, "mailto:a@example.com"),
+        Ok(HowItStarts::OverTheBus { or_else: None })
+    );
+}

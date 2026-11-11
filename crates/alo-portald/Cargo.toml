@@ -62,6 +62,11 @@ alo-applications = { path = "../alo-applications" }
 # The kinds a declaration is read into, named only where this crate checks one.
 alo-opening = { path = "../alo-opening" }
 
+# The desktop door's `open-link` act, written and its answer read by the
+# crate that defines the wire, so this crate spells neither (the owner,
+# 2026-11-12: a link a person follows is started by the desktop as a press is).
+alo-acting = { path = "../alo-acting" }
+
 
 [dev-dependencies]
 # A folder to write a settings file into, for the tests that tell a file which

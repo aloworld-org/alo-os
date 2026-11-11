@@ -51,7 +51,9 @@ pub mod the_unit;
 pub mod where_it_is;
 
 pub use alos_copy::{AlosCopy, WITH_A_COPY_OF_THEIR_OWN, alos_copy, the_unit_for_alos_copy};
-pub use how_it_starts::{HowItStarts, WhyItCannotStart, how_it_starts};
+pub use how_it_starts::{
+    HowItStarts, WhyItCannotStart, WhyNotWithALink, how_it_starts, how_it_starts_with_a_link,
+};
 pub use the_command::{Filling, WhyNotACommand, the_command_in};
 pub use the_entry::TheEntry;
 pub use the_environment::{what_an_application_is_handed, what_the_session_is_told};
