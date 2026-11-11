@@ -278,7 +278,11 @@ mod tests {
         let told = WhatItMayReach::nothing().at_full_access(true).told();
         assert!(told.contains("chose full access"), "{told}");
         assert!(told.contains("every file and folder"), "{told}");
-        for never in ["not been granted", "picking it in Settings", "will be refused whatever"] {
+        for never in [
+            "not been granted",
+            "picking it in Settings",
+            "will be refused whatever",
+        ] {
             assert!(!told.contains(never), "{never} at full access: {told}");
         }
     }
@@ -312,8 +316,10 @@ mod tests {
             .in_this_home(home)
             .at_full_access(true)
             .told();
-        let at = told.find("/var/home/anna").expect("the home is told");
-        assert!(at < told.find("chose full access").expect("full access is told"));
+        let home = told.find("/var/home/anna");
+        let full = told.find("chose full access");
+        assert!(home.is_some() && full.is_some(), "{told}");
+        assert!(home < full, "the home is told before full access: {told}");
     }
 
     /// The folder a person granted is named, in full.

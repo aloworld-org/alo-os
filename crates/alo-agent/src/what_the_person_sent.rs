@@ -126,9 +126,7 @@ pub fn read_what_the_person_sent(
     };
     Ok(WhatThePersonSent {
         request,
-        may_reach: may_reach
-            .in_this_home(home)
-            .at_full_access(at_full_access),
+        may_reach: may_reach.in_this_home(home).at_full_access(at_full_access),
         earlier,
         window,
         may_stop,
@@ -252,9 +250,7 @@ fn the_third_and_fourth(input: &mut dyn BufRead) -> Result<AfterTheRequest, Stri
         alo_instructing::THE_LONGEST_FULL_ACCESS_LINE,
         "whether the person chose full access",
     )? {
-        ALine::Read(line) => {
-            at_full_access::read_the_line(&line).map_err(|why| why.to_string())?
-        }
+        ALine::Read(line) => at_full_access::read_the_line(&line).map_err(|why| why.to_string())?,
         // **A shell from before the sixth line**: not said, so not full
         // access. The model is then told what it was told before this line
         // existed, which is what that shell's agent would have told it.

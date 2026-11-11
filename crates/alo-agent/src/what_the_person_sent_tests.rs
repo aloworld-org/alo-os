@@ -49,10 +49,9 @@ fn a_follow_up_is_read_with_its_earlier_conversation() {
 #[test]
 fn a_first_request_carries_no_earlier_conversation_and_does_not_wait() {
     let started = Instant::now();
-    let (read, _shell) =
-        sent_on_a_socket(
-            "list my invoices\nalo-earlier:\nalo-this-window:\nalo-their-folders:\nalo-full-access:\n",
-        );
+    let (read, _shell) = sent_on_a_socket(
+        "list my invoices\nalo-earlier:\nalo-this-window:\nalo-their-folders:\nalo-full-access:\n",
+    );
     let read = read.unwrap();
     assert_eq!(read.request, "list my invoices");
     assert!(read.earlier.is_empty());
@@ -240,10 +239,9 @@ fn a_request_carries_where_the_persons_folders_are() {
 /// the fifth line is still answered, with no home said.
 #[test]
 fn no_home_is_said_by_the_marker_alone_or_by_a_shell_from_before() {
-    let (read, _shell) =
-        sent_on_a_socket(
-            "list my invoices\nalo-earlier:\nalo-this-window:\nalo-their-folders:\nalo-full-access:\n",
-        );
+    let (read, _shell) = sent_on_a_socket(
+        "list my invoices\nalo-earlier:\nalo-this-window:\nalo-their-folders:\nalo-full-access:\n",
+    );
     assert_eq!(read.unwrap().may_reach.home(), None);
     let (read, _shell) = sent_on_a_socket("list my invoices\nalo-earlier:\nalo-this-window:\n");
     assert_eq!(read.unwrap().may_reach.home(), None);
@@ -294,7 +292,10 @@ fn below_full_access_or_unsaid_nothing_granted_is_still_nothing() {
         let (read, _shell) = sent_on_a_socket(sent);
         let read = read.unwrap();
         assert!(!read.may_reach.is_at_full_access(), "{sent}");
-        assert!(read.may_reach.told().contains("picking it in Settings"), "{sent}");
+        assert!(
+            read.may_reach.told().contains("picking it in Settings"),
+            "{sent}"
+        );
     }
 }
 

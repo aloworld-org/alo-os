@@ -248,7 +248,11 @@ mod tests {
         );
         kept(&at, &grants);
 
-        assert!(what_the_agent_may_reach(&places(&at, Some("alo")), noon()).folders.is_empty());
+        assert!(
+            what_the_agent_may_reach(&places(&at, Some("alo")), noon())
+                .folders
+                .is_empty()
+        );
     }
 
     /// **An expired grant is not sent**, because it is not held.
@@ -268,7 +272,11 @@ mod tests {
         kept(&at, &grants);
 
         let later = noon() + Duration::from_secs(3600);
-        assert!(what_the_agent_may_reach(&places(&at, Some("alo")), later).folders.is_empty());
+        assert!(
+            what_the_agent_may_reach(&places(&at, Some("alo")), later)
+                .folders
+                .is_empty()
+        );
     }
 
     /// A session that never said what the agent is called names no folder,
@@ -288,7 +296,11 @@ mod tests {
         );
         kept(&at, &grants);
 
-        assert!(what_the_agent_may_reach(&places(&at, None), noon()).folders.is_empty());
+        assert!(
+            what_the_agent_may_reach(&places(&at, None), noon())
+                .folders
+                .is_empty()
+        );
     }
 
     /// A grants file that is not there is a machine that has granted nothing,
@@ -296,6 +308,10 @@ mod tests {
     #[test]
     fn a_machine_with_no_grants_file_sends_nothing() {
         let at = Somewhere::new();
-        assert!(what_the_agent_may_reach(&places(&at, Some("alo")), noon()).folders.is_empty());
+        assert!(
+            what_the_agent_may_reach(&places(&at, Some("alo")), noon())
+                .folders
+                .is_empty()
+        );
     }
 }

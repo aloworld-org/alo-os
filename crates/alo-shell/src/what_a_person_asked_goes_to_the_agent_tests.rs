@@ -389,7 +389,11 @@ fn a_request_carries_where_the_persons_folders_are() {
 #[test]
 fn a_request_says_whether_the_person_chose_full_access() {
     for (at_full_access, last) in [(true, "alo-full-access:yes"), (false, "alo-full-access:")] {
-        let at = a_socket(if at_full_access { "full-access" } else { "below-full-access" });
+        let at = a_socket(if at_full_access {
+            "full-access"
+        } else {
+            "below-full-access"
+        });
         let heard = an_agent_reading(&at, 5, "Desktop, Documents and Downloads.\n");
         let door = TheAgentsDoor::at(&at);
 
