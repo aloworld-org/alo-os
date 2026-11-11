@@ -1,6 +1,5 @@
 //! Battery outline, charge fill and a non-colour charging mark.
 use crate::painted::Solid;
-use smithay::utils::Rectangle;
 /// Draw the supplied reading without measuring or inferring power state here.
 pub(crate) fn draw(
     battery: alo_locking::Battery,

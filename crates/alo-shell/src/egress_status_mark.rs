@@ -12,7 +12,6 @@
 use alo_appearance::{Colour, Scheme, Token};
 
 use crate::Contrast;
-use smithay::utils::Rectangle;
 
 use crate::painted::Solid;
 
