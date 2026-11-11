@@ -32,6 +32,15 @@ pub struct Room {
     pixels: u32,
 }
 
+/// A room as the logical measure it is, for a crate that draws and knows nothing
+/// of the Dock: `alo_drawing::DisplayScale::room` takes any logical measure that
+/// converts to a whole number of logical pixels.
+impl From<Room> for u32 {
+    fn from(room: Room) -> Self {
+        room.pixels
+    }
+}
+
 impl Room {
     /// This many logical pixels.
     #[must_use]
