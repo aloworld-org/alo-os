@@ -73,6 +73,7 @@ fn a_launcher(
                 from: "by openai, which has not said where it runs",
             }),
             artwork: None,
+            opens: TheBarOpens::InTheMiddle,
         },
         a_palette(),
         [0xFA, 0xF7, 0xF2],

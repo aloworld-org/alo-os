@@ -341,15 +341,16 @@ fn the_overflow_list(
         alo_dock::Edge::Left => (at.loc.x + at.size.w + gap, at.loc.y + at.size.h - tall),
         alo_dock::Edge::Right => (at.loc.x - gap - across, at.loc.y + at.size.h - tall),
     };
-    let (from, upto) = match clear_of {
-        None => (0, width),
-        Some(column) if column.loc.x <= 0 => (column.size.w + gap, width),
-        Some(column) => (0, column.loc.x - gap),
-    };
-    let left = origin.0.clamp(from, (upto - across).max(from));
-    let top = origin.1.clamp(0, (height - tall).max(0));
-
-    let area = Rectangle::new((left, top).into(), (across, tall).into());
+    // **The one rule both lists from the Dock keep** — this one and the
+    // matches that rise from the field (`crate::where_the_bars_matches_rise`).
+    let area = crate::where_a_popover_is_kept::kept_on_the_display(
+        origin,
+        (across, tall),
+        (width, height),
+        clear_of,
+        gap,
+    );
+    let (left, top) = (area.loc.x, area.loc.y);
     let inner = across - 2 * pad;
     // The rounded grounds on this panel: the search field, and the scroll
     // thumb when the list has one. Declared here because the field is drawn
@@ -920,6 +921,36 @@ pub(crate) fn a_slot_at(
     }
 }
 
+/// Where the slot holding `what` is on this Dock, in the display's pixels, or
+/// [`None`] when this Dock has no such slot.
+///
+/// **The composer's field is the one asked for today**, by the list that rises
+/// from it (`crate::where_the_bars_matches_rise`): the draw below and that list
+/// must agree on where the field is to the pixel, so both read it here.
+pub(crate) fn where_this_slot_is(
+    standing: &TheDocksPlaces,
+    what: &alo_dock::places::WhatIsHere,
+) -> Option<Rectangle<i32, Physical>> {
+    let scale = standing.scale;
+    let icon = scale.px(ICON);
+    let edge = standing.layout.edge();
+    standing
+        .places
+        .each()
+        .iter()
+        .find(|place| place.what() == what)
+        .map(|place| {
+            let along = scale.px(place.from_the_start());
+            let across = scale.px(place.across());
+            let (left, top) = a_slot_at(standing.band, edge, along, icon);
+            if edge.runs_across() {
+                Rectangle::new((left, top).into(), (across, icon).into())
+            } else {
+                Rectangle::new((left, top).into(), (icon, across).into())
+            }
+        })
+}
+
 /// Lay `dock` out on a display of `size` and rasterise it.
 ///
 /// # Every figure goes through the display's scale, together
@@ -1041,28 +1072,12 @@ pub(crate) fn picture(
     // Where the composer's field is, if this Dock has one, and the rule before
     // the commands — both in the surface's raster, because one is rounded and
     // the other is a hairline's worth of the same token.
-    let slot_of = |what: &alo_dock::places::WhatIsHere| {
-        places
-            .each()
-            .iter()
-            .find(|place| place.what() == what)
-            .map(|place| {
-                let along = scale.px(place.from_the_start());
-                let across = scale.px(place.across());
-                let (left, top) = a_slot_at(band, layout.edge(), along, icon);
-                let long = scale.px(alo_dock::measures::THE_COMMANDS_DIVIDER_IS_LONG);
-                if layout.edge().runs_across() {
-                    Rectangle::new((left, top).into(), (across, icon).into())
-                } else {
-                    // Down a side the slot's long axis is the bar's, so a field
-                    // 344 along is 344 **tall** — which is what the left Dock's
-                    // own `Open alo Bar` is not, and is the open question this
-                    // names rather than guesses at.
-                    let _ = long;
-                    Rectangle::new((left, top).into(), (icon, across).into())
-                }
-            })
-    };
+    // Down a side the slot's long axis is the bar's, so a field 344 along is
+    // 344 **tall** — which is what the left Dock's own `Open alo Bar` is not,
+    // and is the open question this names rather than guesses at. **One
+    // answer with the list that rises from the field**, which is why it is
+    // `where_this_slot_is` and not worked out here.
+    let slot_of = |what: &alo_dock::places::WhatIsHere| where_this_slot_is(&standing, what);
     let composer = slot_of(&alo_dock::places::WhatIsHere::TheComposer);
     let divider = slot_of(&alo_dock::places::WhatIsHere::TheDivider);
 
@@ -1414,21 +1429,62 @@ pub(crate) fn picture(
     // are not centred in a slot. Measured on both Dock families — the prompt at
     // the field's left behind its padding, the key at its right behind the same
     // — so each is placed from its own end rather than centred.
+    //
+    // **What the person typed takes the prompt's place, and the key's**, since
+    // the owner's decision of 2026-11-11 put typing in this field: the end of
+    // it that fits, so the letter just typed is always in view, and a caret
+    // after it while the keyboard is here. A side Dock's field is a 48-wide
+    // slot with no room for a line, so there the list that rises from it
+    // carries the words (`crate::where_the_bars_matches_rise`).
     if let Some(field) = composer {
         let pad = scale.px(alo_dock::measures::BESIDE_A_NAME_IN_A_LIST);
         let body = scale.px(alo_dock::measures::TEXT_AT_ORDINARY);
         let small = scale.px(alo_dock::measures::A_SMALL_LABEL_IS);
-        for (what, size, from_the_left) in [
-            (words.prompt.as_str(), body, true),
-            (words.key.as_str(), small, false),
-        ] {
+        let shown = &words.in_the_composer;
+        let along = layout.edge().runs_across();
+        let typing = along && !shown.typed.is_empty();
+        let room = field.size.w - 2 * pad;
+        let body_is = Metrics::new(body as f32, body as f32);
+        let typed = if typing {
+            crate::the_end_that_fits::the_end_that_fits(&shown.typed, room, |text| {
+                crate::painted_text::how_wide(fonts, text, body_is)
+            })
+        } else {
+            ""
+        };
+        if along && shown.has_the_keyboard {
+            let caret_is = scale.px(2).max(1);
+            let after = if typing {
+                crate::painted_text::how_wide(fonts, typed, body_is) + caret_is / 2
+            } else {
+                // Just before the prompt, which stays until a letter is typed.
+                -(caret_is + scale.px(2))
+            };
+            solids.push(Solid {
+                area: Rectangle::new(
+                    (
+                        (field.loc.x + pad + after).min(field.loc.x + field.size.w - pad),
+                        field.loc.y + (field.size.h - body - body / 3) / 2,
+                    )
+                        .into(),
+                    (caret_is, body + body / 3).into(),
+                ),
+                colour: palette.ink,
+            });
+        }
+        let (prompt, key) = if typing {
+            (typed, "")
+        } else {
+            (words.prompt.as_str(), words.key.as_str())
+        };
+        for (what, size, from_the_left) in [(prompt, body, true), (key, small, false)] {
             if what.is_empty() {
                 continue;
             }
             let shaped = crate::painted_text::centred(
                 fonts,
                 what,
-                field.size.w,
+                if typing { room } else { field.size.w },
                 Metrics::new(size as f32, size as f32),
                 palette.badge,
                 palette.ink,

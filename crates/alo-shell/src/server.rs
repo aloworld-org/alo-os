@@ -461,6 +461,11 @@ pub struct Server {
     /// comes after it (`crate::a_press_on_the_launcher`). [`None`] while it is
     /// shut, or on a display too small to hold it.
     pub(crate) the_launchers_places: Option<crate::where_the_bar_opens::TheBarsPlaces>,
+    /// Where the matches rising from the Dock's field were drawn on the last
+    /// frame, for the press after it. [`None`] while nothing is typed there,
+    /// and whenever the centred panel is the Bar's face instead.
+    pub(crate) the_bars_matches_places:
+        Option<crate::where_the_bars_matches_rise::TheMatchesPlaces>,
     /// What the Settings entry is called, in this person's language.
     ///
     /// **Kept because a search has to match what is drawn.** A native entry has
@@ -938,6 +943,7 @@ impl Server {
             which_area_has_the_keyboard: None,
             which_row_in_the_bar: None,
             the_launchers_places: None,
+            the_bars_matches_places: None,
             which_slot_on_the_bar: None,
             the_settings_entry_is_called: String::new(),
             the_applications_entry_is_called: String::new(),

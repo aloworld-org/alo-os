@@ -43,6 +43,13 @@ pub(crate) struct DesktopPicture {
     /// keyboard is in: a panel a person is typing into, covered by anything,
     /// is a panel they cannot read what they typed in.
     pub(crate) the_bar: Option<crate::bar_raster::BarPicture>,
+    /// The alo Bar's matches rising from the Dock's field, when somebody is
+    /// typing there — the owner's decision of 2026-11-11.
+    ///
+    /// **Beside [`Self::the_bar`] rather than in it**, because the two faces
+    /// are painted differently: the centred panel over a dimmed screen, this
+    /// over nothing, as the Dock's own popovers are.
+    pub(crate) the_bars_matches: Option<crate::bar_matches_raster::MatchesPicture>,
     /// The display size it was laid out for.
     pub(crate) size: (i32, i32),
     /// The dock, or nothing when a window needs the room it sits in and the
@@ -325,7 +332,17 @@ pub(crate) fn picture(
     // whole screen rather than needing part of it. A
     // dock drawn over a full-screen video would be the thing the edge reveal
     // exists to make unnecessary.
-    let showing = if filling_the_screen {
+    // **A person typing in the Dock's field sees the Dock**, over a window
+    // filling the screen and whatever the person chose about it giving way:
+    // the field is where their words are, and the matches rise from it. The
+    // owner's decision of 2026-11-11 put the keyboard there for Super+Space
+    // too, which is the road a person in a full-screen window takes.
+    let the_bar_rises = the_bar
+        .as_ref()
+        .is_some_and(|bar| bar.opens == crate::bar_raster::TheBarOpens::AboveTheDocksField);
+    let showing = if the_bar_rises {
+        Showing::Shown
+    } else if filling_the_screen {
         Showing::Hidden
     } else {
         dock.showing(crate::dock_room::the_room(dock_picture.band, windows))
@@ -505,7 +522,39 @@ pub(crate) fn picture(
     //
     // **At this display's scale**, the one the Dock above was drawn at, so a
     // dense screen draws the Bar twice the pixels rather than half the size.
-    let the_bar = the_bar.and_then(|open| {
+    let (the_bar, the_bars_matches) = match the_bar {
+        Some(open) if open.opens == crate::bar_raster::TheBarOpens::AboveTheDocksField => {
+            let scale = crate::display_scale::DisplayScale::of_per_cent(display_scale);
+            let matches = crate::dock_raster::where_this_slot_is(
+                &dock_picture.standing,
+                &alo_dock::places::WhatIsHere::TheComposer,
+            )
+            .and_then(|field| {
+                crate::bar_matches_raster::picture(
+                    &open,
+                    palette,
+                    crate::bar_matches_raster::WhereItRisesFrom {
+                        dock: crate::where_the_bars_matches_rise::TheFieldOnTheDock {
+                            field,
+                            band: dock_picture.band,
+                            edge: dock_picture.layout.edge(),
+                        },
+                        // **Clear of the panel's column**, the one *More apps*
+                        // keeps clear of, read the same way.
+                        clear_of: crate::panel_raster::the_column_it_reserves(
+                            look,
+                            size,
+                            crate::panel_raster::the_edge_for(look.reading()),
+                            scale,
+                        ),
+                    },
+                    fonts,
+                    scale,
+                )
+            });
+            (None, matches)
+        }
+        other => (other.and_then(|open| {
         crate::bar_raster::picture(
             &open,
             palette,
@@ -518,10 +567,12 @@ pub(crate) fn picture(
             fonts,
             crate::display_scale::DisplayScale::of_per_cent(display_scale),
         )
-    });
+    }), None),
+    };
 
     Ok(DesktopPicture {
         the_bar,
+        the_bars_matches,
         tasks,
         market,
         top_controls,

@@ -8,7 +8,7 @@
 
 use smithay::utils::{Physical, Rectangle, Size};
 
-use super::{BarPicture, TheBarOnTheDisplay, TheLaunchersWords, picture};
+use super::{BarPicture, TheBarOnTheDisplay, TheBarOpens, TheLaunchersWords, picture};
 use crate::display_scale::DisplayScale;
 use crate::the_bar_finds::{AResult, WhatARowDoes};
 
@@ -55,6 +55,7 @@ fn drawn(size: (i32, i32), scale: DisplayScale) -> BarPicture {
             },
             asks: None,
             artwork: None,
+            opens: TheBarOpens::InTheMiddle,
         },
         look.palette().unwrap(),
         [0xFA, 0xF7, 0xF2],

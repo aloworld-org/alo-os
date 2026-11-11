@@ -108,6 +108,9 @@ impl DesktopPicture {
             // positional read agree: `Self::paint` takes one more exactly when
             // there is a Bar, in this position.
             .chain(self.the_bar.as_ref().map(|bar| &bar.panel))
+            // **And the matches rising from the Dock's field after it**, for
+            // the same positional reason.
+            .chain(self.the_bars_matches.as_ref().map(|matches| &matches.panel))
             // **The panel's tasks after the Bar and before the Dock's surface**,
             // taken off by count in `Self::paint` for the tasks' own reason: the
             // Dock drains whatever is left inside its `if let`.
@@ -147,6 +150,7 @@ impl DesktopPicture {
         // **And one more exactly when there is a Bar**, in the order
         // `Self::washed` yielded.
         let the_bar = self.the_bar.as_ref().and_then(|_| washed.next());
+        let the_bars_matches = self.the_bars_matches.as_ref().and_then(|_| washed.next());
         // **And the panel's own rasters, by count**, in the order `Self::washed`
         // yielded them: each task's square, then the card a person opened.
         let the_panels: Vec<_> = (0..self.panel.washed.len())
@@ -233,6 +237,12 @@ impl DesktopPicture {
             if let Some((texture, area)) = the_bar {
                 crate::painted::wash(frame, texture, *area)?;
             }
+        }
+        // **The matches rising from the Dock's field**, over the Dock and over
+        // no veil: the list is non-modal, as the Dock's own popovers are, so
+        // nothing behind it is dimmed (the owner's decision of 2026-11-11).
+        if let Some((texture, area)) = the_bars_matches {
+            crate::painted::wash(frame, texture, *area)?;
         }
         for window in [&self.running, &self.filling] {
             if !window.is_empty() {

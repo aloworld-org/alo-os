@@ -324,6 +324,66 @@ impl ReadAloudTree {
         self
     }
 
+    /// The same tree, with the alo Bar's matches hanging under the Dock's
+    /// field: a list named as the Bar is headed, each row under it, the one the
+    /// keyboard is on told as **selected**.
+    ///
+    /// **The owner's decision of 2026-11-11** moved typing into the Dock's own
+    /// field, which a reader already meets as a text entry. So the matches that
+    /// rise from it hang under that entry, where somebody who cannot see the
+    /// list hears it open as they type and walks it with the same arrows.
+    /// `rows` empty is no list — the field is empty, or nothing is shown.
+    #[must_use]
+    pub fn with_the_bars_matches(mut self, strings: &Strings, rows: &[(String, bool)]) -> Self {
+        if rows.is_empty() {
+            return self;
+        }
+        let entry = access_roles::number_of(alo_access::Role::Entry);
+        let Some(field) = self
+            .surfaces
+            .iter()
+            .find_map(|(surface, at)| (*surface == Surface::Dock).then_some(*at))
+            .and_then(|dock| self.nodes.get(dock))
+            .and_then(|dock| {
+                dock.children
+                    .iter()
+                    .copied()
+                    .find(|at| self.nodes.get(*at).is_some_and(|node| node.role == entry))
+            })
+        else {
+            return self;
+        };
+        let list = self.push(
+            field,
+            Node {
+                path: String::new(),
+                role: access_roles::number_of(alo_access::Role::List),
+                name: said(strings, alo_dock::words::THE_LAUNCHERS_HEADING),
+                states: access_roles::words_of(alo_access::State::ReadOnly, None),
+                announced: false,
+                parent: field,
+                children: Vec::new(),
+                press: None,
+            },
+        );
+        for (name, selected) in rows {
+            self.push(
+                list,
+                Node {
+                    path: String::new(),
+                    role: access_roles::number_of(alo_access::Role::ListItem),
+                    name: name.clone(),
+                    states: access_roles::words_of(alo_access::State::OneOfAFew, Some(*selected)),
+                    announced: false,
+                    parent: list,
+                    children: Vec::new(),
+                    press: None,
+                },
+            );
+        }
+        self
+    }
+
     /// The same tree, with the task windows now open hanging under *the
     /// windows open* too, after the frames.
     ///

@@ -1466,7 +1466,10 @@ impl LoopInput for TheDesktopLane<'_> {
                     self.strings,
                     server.what_was_typed_into_more_apps(),
                     in_more_apps.len(),
-                );
+                )
+                // **And what is typed in the Dock's own field**, which shows it
+                // since the owner's decision of 2026-11-11.
+                .and_the_composer(server.composer());
         // **What somebody asked for becomes a task, here, once a frame — and
         // before the frame.** Asking the desktop needs it mutably and `now()`
         // borrows it immutably for as long as the frame lives, so this cannot
@@ -1840,18 +1843,23 @@ impl LoopInput for TheDesktopLane<'_> {
         // market's words**, for the same reason: the raster borrows these
         // strings and the frame outlives this block.
         //
-        // **Open means the composer has the keyboard and something is in it.**
-        // An empty field is the Dock's own prompt and no panel — a list that
+        // **Open means the composer has the keyboard.** Where it is shown is
+        // the owner's decision of 2026-11-11: clicking the Dock's field,
+        // Super+Space and Super+A all keep the keyboard **in the Dock's own
+        // field**, and the matches rise from it once something is typed — an
+        // empty field is the Dock's own prompt and no list, because a list that
         // appeared the moment somebody pressed the chord would flash every
         // application on the machine under their first keystroke.
         let typed_into_the_bar = server.composer().typed().to_owned();
-        // **Open for a window offered with *Help with this window* even before
-        // anything is typed**, so the window it will be about is named from the
-        // first moment — and then it finds no applications, because a request
-        // about a window asks alo and opens nothing else.
+        // **The centred panel stays for a window offered with *Help with this
+        // window***, open even before anything is typed so the window it will
+        // be about is named from the first moment — and then it finds no
+        // applications, because a request about a window asks alo and opens
+        // nothing else. Another change is moving that road into the window's
+        // own panel; until it lands the centred panel is its surface.
         let offered = server.the_window_offered_reads();
-        let bar_is_open = server.composer().has_the_keyboard()
-            && (!typed_into_the_bar.trim().is_empty() || offered.is_some());
+        let the_bar_opens = server.which_face_the_bar_shows();
+        let bar_is_open = the_bar_opens.is_some();
         let found = if bar_is_open && offered.is_none() {
             crate::the_bar_finds::what_the_bar_finds(
                 &typed_into_the_bar,
@@ -1964,6 +1972,7 @@ impl LoopInput for TheDesktopLane<'_> {
                 }
             }),
             artwork: Some(&what_each_draws),
+            opens: the_bar_opens.unwrap_or(crate::bar_raster::TheBarOpens::AboveTheDocksField),
         });
         // **An `Arc` of its own, lent to the frame.** The frame holds the
         // reference for as long as it lives and this lane uses the server
@@ -2194,6 +2203,15 @@ impl LoopInput for TheDesktopLane<'_> {
                 .the_bar
                 .as_ref()
                 .map(|bar| bar.places.clone()),
+        );
+        // **And where the matches rose to**, when they rose from the Dock's
+        // field instead (the owner's decision of 2026-11-11).
+        server.the_bars_matches_were_drawn(
+            pictures
+                .desktop
+                .the_bars_matches
+                .as_ref()
+                .map(|matches| matches.places.clone()),
         );
         // **Where the record window went, for the press after this frame**:
         // laid out where the display's scale is known, and nowhere else.

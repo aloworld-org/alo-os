@@ -119,3 +119,95 @@ fn enter_on_the_ask_row_asks_alo() {
         vec!["files".to_owned()]
     );
 }
+
+/// The keyboard in the Dock's field with "files" typed, and the matches drawn
+/// rising from a field on a bottom Dock of a 1440 × 960 display: no application
+/// found, the row that asks offered.
+fn typing_in_the_docks_field(what: &str) -> (tempfile::TempDir, Server) {
+    let (runtime, mut server) = open(what);
+    server.the_launcher_was_drawn(None);
+    let places = crate::where_the_bars_matches_rise::where_the_matches_rise(
+        Size::from((1440, 960)),
+        DisplayScale::ONE,
+        WhatItHolds {
+            found: 0,
+            asks: true,
+            chosen: None,
+        },
+        crate::where_the_bars_matches_rise::TheFieldOnTheDock {
+            field: smithay::utils::Rectangle::new((560, 886).into(), (344, 48).into()),
+            band: smithay::utils::Rectangle::new((300, 872).into(), (840, 76).into()),
+            edge: alo_dock::Edge::Bottom,
+        },
+        None,
+    );
+    assert!(places.is_some(), "the list rose");
+    server.the_bars_matches_were_drawn(places);
+    (runtime, server)
+}
+
+/// **A press on the row that asks, in the list above the field, asks alo** —
+/// the pointer and Enter do one thing to one row.
+#[test]
+fn a_press_on_the_risen_ask_row_asks_alo() {
+    let (_runtime, mut server) = typing_in_the_docks_field("matches-ask");
+    let ask = server
+        .the_bars_matches_places
+        .as_ref()
+        .and_then(|places| places.ask)
+        .expect("the row that asks");
+    assert!(server.a_press_on_the_launcher(Point::from((ask.loc.x + 20, ask.loc.y + 20))));
+    assert_eq!(
+        server.take_what_was_asked_of_alo(),
+        vec!["files".to_owned()]
+    );
+    assert!(!server.the_composer.has_the_keyboard());
+}
+
+/// **A press on the field is the field's**: not taken by the list, and the
+/// keyboard and what is typed stay.
+#[test]
+fn a_press_on_the_docks_field_keeps_the_typing() {
+    let (_runtime, mut server) = typing_in_the_docks_field("matches-field");
+    assert!(!server.a_press_on_the_launcher(Point::from((600, 900))));
+    assert!(server.the_composer.has_the_keyboard());
+    assert_eq!(server.the_composer.typed(), "files");
+}
+
+/// **A press anywhere else closes the list and goes on to what it landed on**
+/// — not taken, unlike the centred panel's dimmed screen — and the words stay
+/// in the field for when the person comes back.
+#[test]
+fn a_press_outside_the_risen_list_closes_it_and_is_not_taken() {
+    let (_runtime, mut server) = typing_in_the_docks_field("matches-outside");
+    assert!(!server.a_press_on_the_launcher(Point::from((100, 100))));
+    assert!(!server.the_composer.has_the_keyboard());
+    assert!(server.the_bars_matches_places.is_none());
+    assert_eq!(server.the_composer.typed(), "files");
+}
+
+/// **Between the rows, on the list itself, a press is taken and changes
+/// nothing**, so it never reaches the window behind the list.
+#[test]
+fn a_press_on_the_risen_list_away_from_a_row_is_taken() {
+    let (_runtime, mut server) = typing_in_the_docks_field("matches-panel");
+    let panel = server
+        .the_bars_matches_places
+        .as_ref()
+        .map(|places| places.panel)
+        .expect("drawn");
+    assert!(server.a_press_on_the_launcher(Point::from((panel.loc.x + 2, panel.loc.y + 2))));
+    assert!(server.the_composer.has_the_keyboard());
+}
+
+/// **With the keyboard in the field and nothing typed there is no list**, and
+/// a press elsewhere still gives the keyboard back.
+#[test]
+fn a_press_elsewhere_with_nothing_typed_gives_the_keyboard_back() {
+    let (_runtime, mut server) = open("matches-empty");
+    server.the_launcher_was_drawn(None);
+    drop(server.a_key_reached_the_composer(ComposerKey::Clear));
+    server.the_composer.it_took_the_keyboard();
+    assert!(!server.a_press_on_the_launcher(Point::from((700, 400))));
+    assert!(!server.the_composer.has_the_keyboard());
+}

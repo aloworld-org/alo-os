@@ -304,6 +304,8 @@ mod an_alo_windows_edge;
 mod an_application_verb_is_carried_out;
 /// Closing a running task asks: Stop and close, or Cancel (ADR 0139).
 mod asking_before_closing;
+/// The alo Bar's matches, rising from the Dock's field.
+mod bar_matches_raster;
 pub mod bar_raster;
 mod dock_room;
 mod dock_windows;
@@ -602,6 +604,14 @@ mod the_language_a_person_chose;
 pub mod the_language_set_up_in;
 pub mod the_languages_offered;
 mod the_launchers_icons;
+/// What a screen reader is told the Bar's matches are.
+mod the_bars_matches_as_read;
+/// Which face the alo Bar shows: the Dock's field, or the centred panel.
+mod which_face_the_bar_shows;
+/// The alo Bar's rows, drawn the same wherever the Bar is shown.
+mod the_launchers_rows;
+/// The end of a line of typing that fits in a field.
+mod the_end_that_fits;
 pub mod the_machines_keyboard;
 pub mod the_markets_words;
 mod the_panel_reveals;
@@ -691,7 +701,10 @@ mod what_the_seat_made_of_its_input;
 mod what_the_server_tells_a_frame;
 mod where_a_task_window_opens;
 mod where_a_window_opens;
+/// Where a list opened from the Dock may go.
+mod where_a_popover_is_kept;
 pub mod where_the_bar_opens;
+mod where_the_bars_matches_rise;
 mod where_the_dock_is;
 mod where_the_market_opens;
 pub mod which_area_has_the_keyboard;
