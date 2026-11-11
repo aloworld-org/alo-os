@@ -119,12 +119,12 @@ impl TerminalPicture {
         size: smithay::utils::Size<i32, Physical>,
     ) -> Result<(), crate::RenderError> {
         let output: Rectangle<i32, Physical> = Rectangle::from_size(size);
-        let inside = |area: Rectangle<i32, Physical>| output.contains_rect(area);
+        let inside = |area: alo_drawing::area::Area| output.contains_rect(crate::painted::on_the_frame(area));
         if self.size == (size.w, size.h)
-            && self.panel.iter().all(|panel| inside(panel.area))
-            && self.solids.iter().all(|solid| inside(solid.area))
-            && self.inked.iter().all(|ink| inside(ink.area))
-            && self.strip.iter().all(|ink| inside(ink.area))
+            && self.panel.iter().all(|panel| inside(crate::painted::on_the_frame(panel.area)))
+            && self.solids.iter().all(|solid| inside(crate::painted::on_the_frame(solid.area)))
+            && self.inked.iter().all(|ink| inside(crate::painted::on_the_frame(ink.area)))
+            && self.strip.iter().all(|ink| inside(crate::painted::on_the_frame(ink.area)))
         {
             return Ok(());
         }

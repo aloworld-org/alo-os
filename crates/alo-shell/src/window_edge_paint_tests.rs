@@ -103,7 +103,7 @@ fn minimise_and_close_have_no_square_at_rest() {
 #[test]
 fn each_control_is_drawn_into_its_whole_target_at_the_displays_scale() {
     let drawn = the_controls_drawn(&notes(), &at_rest(), 200);
-    let areas: Vec<Rectangle<i32, Physical>> = drawn.iter().map(|it| it.area).collect();
+    let areas: Vec<Rectangle<i32, Physical>> = drawn.iter().map(|it| crate::painted::on_the_frame(it.area)).collect();
     assert_eq!(
         areas,
         vec![

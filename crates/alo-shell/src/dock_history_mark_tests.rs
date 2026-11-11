@@ -73,7 +73,7 @@ fn ink_on(picture: &DockPicture, slot: Rectangle<i32, Physical>) -> Vec<Rectangl
     picture
         .inked
         .iter()
-        .map(|inked| inked.area)
+        .map(|inked| crate::painted::on_the_frame(inked.area))
         .filter(|area| {
             area.loc.x < slot.loc.x + slot.size.w
                 && slot.loc.x < area.loc.x + area.size.w

@@ -160,7 +160,7 @@ fn an_applications_edge_has_its_frame_behind_and_none_of_it_on_the_window() {
     let window = Rectangle::<i32, Physical>::new((40, 100).into(), (400, 200).into());
     for raster in picture.behind() {
         assert!(
-            raster.area.intersection(window).is_none(),
+            raster.area.intersection(crate::painted::drawn_at(window)).is_none(),
             "{:?} is on the window",
             raster.area
         );

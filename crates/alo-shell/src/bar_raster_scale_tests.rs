@@ -88,7 +88,7 @@ fn at_two_hundred_every_place_in_the_launcher_is_exactly_twice() {
     );
     assert_eq!(
         dense.panel.area,
-        doubled(sparse.panel.area),
+        crate::painted::drawn_at(doubled(crate::painted::on_the_frame(sparse.panel.area))),
         "the panel and its shadow"
     );
 }

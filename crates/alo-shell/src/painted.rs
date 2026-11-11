@@ -17,7 +17,7 @@ pub(crate) use alo_drawing::painted::{Inked, Solid, Washed};
 /// **The one seam**: where a picture `alo-drawing` laid out is handed to the
 /// compositor, its area becomes the compositor's rectangle. The two have the
 /// same fields and the same arithmetic (`alo_drawing::area`), so nothing moves.
-pub(crate) const fn on_the_frame(area: alo_drawing::area::Area) -> Rectangle<i32, Physical> {
+pub(crate) fn on_the_frame(area: alo_drawing::area::Area) -> Rectangle<i32, Physical> {
     Rectangle::new(
         smithay::utils::Point::new(area.loc.x, area.loc.y),
         smithay::utils::Size::new(area.size.w, area.size.h),

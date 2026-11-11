@@ -262,9 +262,9 @@ pub(crate) fn with_alos_own(
                 colour: ground,
             },
         ] {
-            if let Some(kept) = solid.area.intersection(whole) {
+            if let Some(kept) = solid.area.intersection(crate::painted::drawn_at(whole)) {
                 picture.solids.push(Solid {
-                    area: crate::painted::drawn_at(kept),
+                    area: kept,
                     colour: solid.colour,
                 });
             }

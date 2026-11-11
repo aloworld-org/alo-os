@@ -112,15 +112,15 @@ fn hashed(picture: &super::DockPicture) -> u64 {
         }
     };
     for washed in picture.surface.iter().chain(&picture.panels) {
-        area(washed.area, &mut eat);
+        area(crate::painted::on_the_frame(washed.area), &mut eat);
         eat(&washed.pixels);
     }
     for solid in &picture.solids {
-        area(solid.area, &mut eat);
+        area(crate::painted::on_the_frame(solid.area), &mut eat);
         eat(&solid.colour);
     }
     for inked in &picture.inked {
-        area(inked.area, &mut eat);
+        area(crate::painted::on_the_frame(inked.area), &mut eat);
         for pixel in &inked.pixels {
             eat(pixel);
         }
@@ -246,7 +246,7 @@ fn at_two_hundred_the_drawn_bar_is_twice_the_size() {
             panic!("{edge:?}: a Dock with no surface");
         };
         assert!(
-            is_doubled_along(edge, two.area, one.area),
+            is_doubled_along(edge, crate::painted::on_the_frame(two.area), crate::painted::on_the_frame(one.area)),
             "{edge:?}: the panel and its shadow, {:?} against {:?}",
             two.area,
             one.area
@@ -258,7 +258,7 @@ fn at_two_hundred_the_drawn_bar_is_twice_the_size() {
         assert_eq!(dense.solids.len(), sparse.solids.len(), "{edge:?}");
         for (two, one) in dense.solids.iter().zip(&sparse.solids) {
             assert!(
-                is_doubled_along(edge, two.area, one.area),
+                is_doubled_along(edge, crate::painted::on_the_frame(two.area), crate::painted::on_the_frame(one.area)),
                 "{edge:?}: the mark {:?} is not {:?} doubled",
                 two.area,
                 one.area
@@ -268,9 +268,9 @@ fn at_two_hundred_the_drawn_bar_is_twice_the_size() {
             let twice: Vec<_> = sparse
                 .solids
                 .iter()
-                .map(|solid| doubled(solid.area))
+                .map(|solid| doubled(crate::painted::on_the_frame(solid.area)))
                 .collect();
-            let now: Vec<_> = dense.solids.iter().map(|solid| solid.area).collect();
+            let now: Vec<_> = dense.solids.iter().map(|solid| crate::painted::on_the_frame(solid.area)).collect();
             assert_eq!(now, twice, "along the bottom every mark doubles exactly");
         }
         // Every letter is inked. Along the bottom each is inside the doubled
@@ -280,7 +280,7 @@ fn at_two_hundred_the_drawn_bar_is_twice_the_size() {
         assert_eq!(dense.inked.len(), sparse.inked.len(), "{edge:?}");
         for letter in dense.inked.iter().filter(|_| edge == Edge::Bottom) {
             assert!(
-                dense.band.contains_rect(letter.area),
+                dense.band.contains_rect(crate::painted::on_the_frame(letter.area)),
                 "{edge:?}: {:?} is outside {:?}",
                 letter.area,
                 dense.band

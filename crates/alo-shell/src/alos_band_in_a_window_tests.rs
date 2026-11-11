@@ -145,10 +145,10 @@ fn the_edge_goes_round_the_whole_card() {
         (4000, 3000),
     );
     let edge = rasters.first().expect("the edge").area;
-    assert_eq!(edge, in_pixels(card, 100));
+    assert_eq!(edge, crate::painted::drawn_at(in_pixels(card, 100)));
     for raster in &rasters {
         assert!(
-            in_pixels(card, 100).contains_rect(raster.area),
+            in_pixels(card, 100).contains_rect(crate::painted::on_the_frame(raster.area)),
             "{:?} is drawn outside the window",
             raster.area
         );

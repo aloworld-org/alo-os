@@ -357,7 +357,7 @@ fn deep_teal_never_arrives_alone() {
                 let words = drawn
                     .inked
                     .iter()
-                    .find(|inked| row.area.intersection(inked.area) == Some(inked.area))
+                    .find(|inked| row.area.intersection(crate::painted::on_the_frame(inked.area)) == Some(crate::painted::on_the_frame(inked.area)))
                     .unwrap();
                 assert!(words.pixels.contains(&palette.ink), "{look:?}: no ink");
             }
@@ -462,7 +462,7 @@ fn no_look_draws_a_lit_indicator_as_nothing() {
                     .map(|washed| washed.area)
                     .chain(drawn.inked.iter().map(|inked| inked.area))
                 {
-                    assert_eq!(area.intersection(output), Some(area), "{look:?}: {area:?}");
+                    assert_eq!(area.intersection(crate::painted::drawn_at(output)), Some(area), "{look:?}: {area:?}");
                 }
             }
         }

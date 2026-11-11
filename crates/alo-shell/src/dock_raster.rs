@@ -1673,7 +1673,7 @@ mod tests {
             for washed in &drawn.panels {
                 // The popover's own raster and not the Dock's: both are panels
                 // and only one of them holds a grid.
-                if !washed.area.overlaps(list) {
+                if !crate::painted::on_the_frame(washed.area).overlaps(list) {
                     continue;
                 }
                 for pixel in washed.pixels.chunks(4) {
@@ -1898,7 +1898,7 @@ mod tests {
             .expect("a Dock with a surface open");
             let list = drawn.overflow_list.expect("the surface is open").popover;
             let mut ink = 0;
-            for washed in drawn.panels.iter().filter(|it| it.area.overlaps(list)) {
+            for washed in drawn.panels.iter().filter(|it| crate::painted::on_the_frame(it.area).overlaps(list)) {
                 for pixel in washed.pixels.chunks(4) {
                     let Some([r, g, b, a]) = pixel.first_chunk::<4>() else {
                         continue;

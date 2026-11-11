@@ -181,7 +181,7 @@ fn everything_drawn_is_inside_the_output() {
             .chain(picture.inked.iter().map(|inked| inked.area))
         {
             assert_eq!(
-                area.intersection(output),
+                area.intersection(crate::painted::drawn_at(output)),
                 Some(area),
                 "{area:?} leaves the output"
             );
@@ -393,7 +393,7 @@ fn every_label_and_mark_is_drawn_and_not_merely_placed() {
                         (box_of.loc.x, box_of.loc.y).into(),
                         (box_of.size.w, box_of.size.h).into(),
                     );
-                ink.area.intersection(same).is_some()
+                ink.area.intersection(crate::painted::drawn_at(same)).is_some()
             })
             .map(dark)
             .sum();

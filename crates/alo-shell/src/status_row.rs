@@ -192,8 +192,8 @@ impl Laid {
         let kept = solids
             .into_iter()
             .filter_map(|solid| {
-                solid.area.intersection(whole).map(|area| Solid {
-                    area: crate::painted::drawn_at(area),
+                solid.area.intersection(crate::painted::drawn_at(whole)).map(|area| Solid {
+                    area,
                     colour: solid.colour,
                 })
             })

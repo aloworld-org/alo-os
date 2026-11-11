@@ -102,8 +102,8 @@ fn at_two_hundred_every_part_of_the_panel_is_exactly_twice() {
     for (two, one) in dense.slots.iter().zip(&sparse.slots) {
         assert_eq!(*two, doubled(*one), "a slot");
     }
-    let shapes: Vec<_> = sparse.solids.iter().map(|it| doubled(it.area)).collect();
-    let now: Vec<_> = dense.solids.iter().map(|it| it.area).collect();
+    let shapes: Vec<_> = sparse.solids.iter().map(|it| doubled(crate::painted::on_the_frame(it.area))).collect();
+    let now: Vec<_> = dense.solids.iter().map(|it| crate::painted::on_the_frame(it.area)).collect();
     assert_eq!(now, shapes, "every shape painted");
     // The control: twice the design's 64, so *twice* is twice the right thing.
     assert_eq!((sparse.rail.size.w, dense.rail.size.w), (64, 128));
