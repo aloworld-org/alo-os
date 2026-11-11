@@ -48,7 +48,9 @@ impl TaskNumber {
 /// A task in the panel: which one, and the Place it returns to.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ATaskAside {
+    /// Which task.
     task: TaskNumber,
+    /// The Place it was asked on.
     place: Place,
 }
 
