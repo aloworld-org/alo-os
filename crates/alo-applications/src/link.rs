@@ -148,7 +148,8 @@ fn scheme_of(address: &str) -> Option<String> {
     let mut letters = scheme.chars();
     let first = letters.next()?;
     let held = first.is_ascii_alphabetic()
-        && letters.all(|letter| letter.is_ascii_alphanumeric() || matches!(letter, '+' | '-' | '.'))
+        && letters
+            .all(|letter| letter.is_ascii_alphanumeric() || matches!(letter, '+' | '-' | '.'))
         && scheme.len() <= LONGEST_SCHEME;
     held.then(|| scheme.to_ascii_lowercase())
 }
@@ -196,7 +197,11 @@ mod tests {
             );
         }
         for given in ["", "example.com", "/home/anna/a.pdf", "1http://x", ":x"] {
-            assert_eq!(Link::checked(given).unwrap_err(), NotALink::NoScheme, "{given}");
+            assert_eq!(
+                Link::checked(given).unwrap_err(),
+                NotALink::NoScheme,
+                "{given}"
+            );
         }
         let long = format!("{}:x", "a".repeat(LONGEST_SCHEME + 1));
         assert_eq!(Link::checked(&long).unwrap_err(), NotALink::NoScheme);
@@ -219,10 +224,24 @@ mod tests {
     /// **Which scheme handlers declare which kind**, and the rest declare none.
     #[test]
     fn scheme_handlers_declare_their_kind() {
-        assert_eq!(LinkKind::declared_by("x-scheme-handler/http"), Some(LinkKind::Web));
-        assert_eq!(LinkKind::declared_by(" X-Scheme-Handler/HTTPS "), Some(LinkKind::Web));
-        assert_eq!(LinkKind::declared_by("x-scheme-handler/mailto"), Some(LinkKind::Mail));
-        for none in ["x-scheme-handler/ftp", "text/html", "x-scheme-handler/", "http"] {
+        assert_eq!(
+            LinkKind::declared_by("x-scheme-handler/http"),
+            Some(LinkKind::Web)
+        );
+        assert_eq!(
+            LinkKind::declared_by(" X-Scheme-Handler/HTTPS "),
+            Some(LinkKind::Web)
+        );
+        assert_eq!(
+            LinkKind::declared_by("x-scheme-handler/mailto"),
+            Some(LinkKind::Mail)
+        );
+        for none in [
+            "x-scheme-handler/ftp",
+            "text/html",
+            "x-scheme-handler/",
+            "http",
+        ] {
             assert_eq!(LinkKind::declared_by(none), None, "{none}");
         }
         for kind in LinkKind::EVERY {

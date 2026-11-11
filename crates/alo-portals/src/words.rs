@@ -587,7 +587,7 @@ pub const LINES_NOT_READ: Counted = Counted {
 pub const CLAUSES: [Word; 3] = [NOBODY_NAMED, WHAT_IT_ASKED_FOR, THAT_KIND_OF_FILE];
 
 /// Every string this crate can say, in the order this file declares them.
-pub const EVERY_WORD: [Word; 57] = [
+pub const EVERY_WORD: [Word; 56] = [
     FILE_CHOOSER,
     OPEN_WITH,
     NOTIFICATIONS,

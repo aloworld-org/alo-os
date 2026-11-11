@@ -61,7 +61,10 @@ impl TheMachine for AMachine {
         let librewolf = Application::identified(LIBREWOLF).unwrap();
         let thunderbird = Application::identified(THUNDERBIRD).unwrap();
         let mut declared = Declared::nothing();
-        declared.declares_media_types(&firefox, ["x-scheme-handler/http", "x-scheme-handler/https"]);
+        declared.declares_media_types(
+            &firefox,
+            ["x-scheme-handler/http", "x-scheme-handler/https"],
+        );
         declared.declares_media_types(&librewolf, ["x-scheme-handler/https"]);
         let mut installed = vec![firefox, librewolf, Application::identified(MAIL).unwrap()];
         if self.with_mail {
@@ -215,7 +218,13 @@ impl Serving {
         }
         let reply = self
             .client
-            .call_method(Some(DESKTOP), PORTALS, Some(OPEN_URI), "OpenURI", &("", uri, options))
+            .call_method(
+                Some(DESKTOP),
+                PORTALS,
+                Some(OPEN_URI),
+                "OpenURI",
+                &("", uri, options),
+            )
             .expect("OpenURI answers the call");
         let returned: OwnedObjectPath = reply.body().deserialize().unwrap();
         assert_eq!(returned.as_str(), handle);
@@ -259,10 +268,16 @@ fn untouched(with_mail: bool) -> AMachine {
 #[test]
 fn a_web_link_opens_in_the_default_with_nothing_granted_and_is_recorded() {
     let serving = Serving::started("web", untouched(true), Some(LinkStarted::Asked));
-    assert_eq!(serving.open_uri("https://example.com/invoice?n=7", "web", false), 0);
+    assert_eq!(
+        serving.open_uri("https://example.com/invoice?n=7", "web", false),
+        0
+    );
     assert_eq!(
         serving.asked_of_the_desktop(),
-        [(FIREFOX.to_owned(), "https://example.com/invoice?n=7".to_owned())]
+        [(
+            FIREFOX.to_owned(),
+            "https://example.com/invoice?n=7".to_owned()
+        )]
     );
     let everything = serving.everything();
     assert_eq!(everything.len(), 1, "one link, one line");
@@ -307,11 +322,17 @@ fn the_persons_chosen_browser_is_the_one_asked() {
 #[test]
 fn mailto_opens_in_the_mail_application_or_is_refused_naming_the_kind() {
     let with = Serving::started("mail", untouched(true), Some(LinkStarted::Asked));
-    assert_eq!(with.open_uri("mailto:anna@example.com?subject=Hi", "mail", false), 0);
+    assert_eq!(
+        with.open_uri("mailto:anna@example.com?subject=Hi", "mail", false),
+        0
+    );
     assert_eq!(with.asked_of_the_desktop().first().unwrap().0, THUNDERBIRD);
 
     let without = Serving::started("no-mail", untouched(false), Some(LinkStarted::Asked));
-    assert_eq!(without.open_uri("mailto:anna@example.com", "no_mail", false), 2);
+    assert_eq!(
+        without.open_uri("mailto:anna@example.com", "no_mail", false),
+        2
+    );
     assert!(without.asked_of_the_desktop().is_empty());
     match without.everything().first().unwrap().outcome() {
         Outcome::NothingOpensLinks(nothing) => assert_eq!(nothing.kind(), LinkKind::Mail),
@@ -328,7 +349,10 @@ fn with_no_desktop_the_link_is_refused_and_the_record_says_why() {
     assert_eq!(serving.open_uri("https://example.com/", "nobody", false), 2);
     let everything = serving.everything();
     assert_eq!(everything.len(), 2);
-    assert!(matches!(everything.first().unwrap().outcome(), Outcome::LinkOpened(_)));
+    assert!(matches!(
+        everything.first().unwrap().outcome(),
+        Outcome::LinkOpened(_)
+    ));
     assert_eq!(
         everything.get(1).unwrap().outcome(),
         &Outcome::Unanswered(Unanswered::NoDesktop {
@@ -337,7 +361,10 @@ fn with_no_desktop_the_link_is_refused_and_the_record_says_why() {
     );
 
     let refusing = Serving::started("could-not", untouched(true), Some(LinkStarted::CouldNotAsk));
-    assert_eq!(refusing.open_uri("https://example.com/", "could_not", false), 2);
+    assert_eq!(
+        refusing.open_uri("https://example.com/", "could_not", false),
+        2
+    );
     assert_eq!(
         refusing.everything().get(1).unwrap().outcome(),
         &Outcome::Unanswered(Unanswered::NotOpenedALink {
@@ -372,14 +399,23 @@ fn what_is_not_a_link_and_an_unnamed_caller_are_refused_and_recorded() {
     ] {
         assert_eq!(serving.open_uri(uri, token, false), 2, "{uri}");
         assert!(
-            matches!(serving.everything().last().unwrap().outcome(), Outcome::NotALink(_)),
+            matches!(
+                serving.everything().last().unwrap().outcome(),
+                Outcome::NotALink(_)
+            ),
             "{uri}"
         );
     }
     serving.become_(None);
-    assert_eq!(serving.open_uri("https://example.com/", "unnamed", false), 2);
+    assert_eq!(
+        serving.open_uri("https://example.com/", "unnamed", false),
+        2
+    );
     let last = serving.everything().pop().unwrap();
     assert_eq!(last.application(), None);
-    assert_eq!(last.outcome(), &Outcome::Unanswered(Unanswered::NotIdentified));
+    assert_eq!(
+        last.outcome(),
+        &Outcome::Unanswered(Unanswered::NotIdentified)
+    );
     assert!(serving.asked_of_the_desktop().is_empty());
 }

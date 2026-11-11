@@ -125,17 +125,20 @@ impl HowThisMachineStartsThings {
         let road = match link {
             None => alo_launching::how_it_starts(identifier, &entry, location.to_str())
                 .map_err(|why| the_reason(&why)),
-            Some(link) => {
-                alo_launching::how_it_starts_with_a_link(identifier, &entry, location.to_str(), link)
-                    .map_err(|why| match why {
-                        WhyNotWithALink::CannotStart(why) => the_reason(&why),
-                        WhyNotWithALink::TakesNoLink => {
-                            "its entry's command has nowhere to put a link (no %u or %U), so it \
+            Some(link) => alo_launching::how_it_starts_with_a_link(
+                identifier,
+                &entry,
+                location.to_str(),
+                link,
+            )
+            .map_err(|why| match why {
+                WhyNotWithALink::CannotStart(why) => the_reason(&why),
+                WhyNotWithALink::TakesNoLink => {
+                    "its entry's command has nowhere to put a link (no %u or %U), so it \
                              was not started without the link"
-                                .to_owned()
-                        }
-                    })
-            }
+                        .to_owned()
+                }
+            }),
         };
         match road {
             Ok(HowItStarts::OverTheBus { or_else }) => {
@@ -166,7 +169,9 @@ impl HowThisMachineStartsThings {
     fn over_the_bus(&self, identifier: &str, link: Option<&str>) -> bool {
         match link {
             None => zbus::block_on(alo_portals::activated(&self.connection, identifier)),
-            Some(link) => zbus::block_on(alo_portals::opened_at(&self.connection, identifier, link)),
+            Some(link) => {
+                zbus::block_on(alo_portals::opened_at(&self.connection, identifier, link))
+            }
         }
     }
 

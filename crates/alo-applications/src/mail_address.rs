@@ -113,10 +113,17 @@ mod tests {
             ("https://example.com/", NotAMailAddress::NotMailto),
             ("mail:anna@example.com", NotAMailAddress::NotMailto),
             ("", NotAMailAddress::NotMailto),
-            ("mailto:anna@example.com\nBcc: everyone", NotAMailAddress::NotOneLine),
+            (
+                "mailto:anna@example.com\nBcc: everyone",
+                NotAMailAddress::NotOneLine,
+            ),
             ("mailto:anna @example.com", NotAMailAddress::NotOneLine),
         ] {
-            assert_eq!(MailAddress::checked(given).unwrap_err(), refused, "{given:?}");
+            assert_eq!(
+                MailAddress::checked(given).unwrap_err(),
+                refused,
+                "{given:?}"
+            );
         }
         let long = format!("mailto:{}", "a".repeat(LONGEST));
         assert_eq!(

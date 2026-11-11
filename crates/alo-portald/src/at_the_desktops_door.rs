@@ -47,7 +47,11 @@ impl AtTheDesktopsDoor {
     /// The door for the person with this uid: `/run/alo/<uid>/shell.sock`.
     #[must_use]
     pub fn of(uid: u32) -> Self {
-        Self::at(Path::new("/run/alo").join(uid.to_string()).join(THE_DESKTOPS_SOCKET))
+        Self::at(
+            Path::new("/run/alo")
+                .join(uid.to_string())
+                .join(THE_DESKTOPS_SOCKET),
+        )
     }
 
     /// The door at this socket — for a test, which serves one of its own.
@@ -122,11 +126,12 @@ mod tests {
     use std::os::unix::net::UnixListener;
 
     /// A desktop of this test's own that hears one line and answers `word`.
-    fn a_desktop_answering(what: &str, word: &'static str) -> (PathBuf, std::thread::JoinHandle<String>) {
-        let folder = std::env::temp_dir().join(format!(
-            "alo-portald-door-{}-{what}",
-            std::process::id()
-        ));
+    fn a_desktop_answering(
+        what: &str,
+        word: &'static str,
+    ) -> (PathBuf, std::thread::JoinHandle<String>) {
+        let folder =
+            std::env::temp_dir().join(format!("alo-portald-door-{}-{what}", std::process::id()));
         let _ = std::fs::remove_dir_all(&folder);
         std::fs::create_dir_all(&folder).unwrap();
         let socket = folder.join(THE_DESKTOPS_SOCKET);
@@ -153,14 +158,22 @@ mod tests {
     fn the_desktop_is_asked_in_the_contracts_words() {
         for (what, word, started) in [
             ("acted", "acted\n", LinkStarted::Asked),
-            ("not-installed", "not-installed\n", LinkStarted::NotInstalled),
+            (
+                "not-installed",
+                "not-installed\n",
+                LinkStarted::NotInstalled,
+            ),
             ("could-not-ask", "could-not-ask\n", LinkStarted::CouldNotAsk),
             ("unknown", "opened-it-promise\n", LinkStarted::CouldNotAsk),
             ("silent", "", LinkStarted::CouldNotAsk),
         ] {
             let (socket, hearing) = a_desktop_answering(what, word);
             let door = AtTheDesktopsDoor::at(&socket);
-            assert_eq!(door.opened("org.mozilla.firefox", &a_link()), started, "{what}");
+            assert_eq!(
+                door.opened("org.mozilla.firefox", &a_link()),
+                started,
+                "{what}"
+            );
             assert_eq!(
                 hearing.join().unwrap(),
                 "open-link org.mozilla.firefox https://example.com/invoice"
@@ -175,7 +188,10 @@ mod tests {
             "alo-portald-no-desktop-{}/shell.sock",
             std::process::id()
         )));
-        assert_eq!(door.opened("org.mozilla.firefox", &a_link()), LinkStarted::NoDesktop);
+        assert_eq!(
+            door.opened("org.mozilla.firefox", &a_link()),
+            LinkStarted::NoDesktop
+        );
         assert_eq!(
             AtTheDesktopsDoor::of(1000).socket(),
             Path::new("/run/alo/1000/shell.sock")

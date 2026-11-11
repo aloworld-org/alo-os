@@ -107,7 +107,8 @@ pub fn how_it_starts_with_a_link(
     location: Option<&str>,
     link: &str,
 ) -> Result<HowItStarts, WhyNotWithALink> {
-    let without = how_it_starts(identifier, entry, location).map_err(WhyNotWithALink::CannotStart)?;
+    let without =
+        how_it_starts(identifier, entry, location).map_err(WhyNotWithALink::CannotStart)?;
     let filling = Filling {
         icon: entry.icon.as_deref(),
         name: entry.name.as_deref(),
@@ -122,7 +123,9 @@ pub fn how_it_starts_with_a_link(
         // the link.
         (
             HowItStarts::OverTheBus { or_else: with_it },
-            HowItStarts::OverTheBus { or_else: without_it },
+            HowItStarts::OverTheBus {
+                or_else: without_it,
+            },
         ) => Ok(HowItStarts::OverTheBus {
             or_else: with_it.filter(|with_it| Some(with_it) != without_it.as_ref()),
         }),

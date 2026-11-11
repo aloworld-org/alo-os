@@ -118,8 +118,7 @@ pub(crate) fn said_as_opened(
     };
     strings.say(
         &word.key(),
-        &asked.and("address", address)
-            .and("opener", opener),
+        &asked.and("address", address).and("opener", opener),
     )
 }
 
@@ -179,7 +178,8 @@ mod tests {
 
     fn a_machine_with_a_browser() -> (Installed, Declared) {
         let firefox = Application::identified(FIREFOX).unwrap();
-        let installed = Installed::holding([firefox.clone(), Application::identified(MAIL).unwrap()]);
+        let installed =
+            Installed::holding([firefox.clone(), Application::identified(MAIL).unwrap()]);
         let mut declared = Declared::nothing();
         declared.declares_media_types(&firefox, ["x-scheme-handler/https"]);
         (installed, declared)
@@ -246,8 +246,13 @@ mod tests {
         let chosen = Chosen::untouched();
         let what_opens = WhatOpensWhat::on(&installed, &declared, &chosen);
         assert_eq!(
-            link_answered(Applicant::named(MAIL), "file:///etc/shadow", false, &what_opens)
-                .unwrap_err(),
+            link_answered(
+                Applicant::named(MAIL),
+                "file:///etc/shadow",
+                false,
+                &what_opens
+            )
+            .unwrap_err(),
             LinkNotOpened::NotALink(NotALink::NotOpenedHere {
                 scheme: "file".to_owned()
             })

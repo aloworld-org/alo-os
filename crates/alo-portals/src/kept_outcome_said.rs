@@ -53,13 +53,7 @@ impl KeptOutcome {
                 address,
                 asked_to_choose,
                 ..
-            } => said_as_opened(
-                asked,
-                address,
-                opener,
-                *asked_to_choose,
-                strings,
-            ),
+            } => said_as_opened(asked, address, opener, *asked_to_choose, strings),
             Self::AppearanceRead { .. } => strings.say(&words::APPEARANCE_READ.key(), &asked),
             Self::AppearanceSent { .. } => strings.say(&words::APPEARANCE_SENT.key(), &asked),
             Self::NetworkRead { .. } => strings.say(&words::NETWORK_READ.key(), &asked),

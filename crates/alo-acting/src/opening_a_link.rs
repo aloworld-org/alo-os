@@ -155,7 +155,11 @@ mod tests {
     /// **Another act is not this one**, so the door reads it as the other.
     #[test]
     fn another_act_is_not_this_one() {
-        for line in ["open org.mozilla.firefox", "count org.mozilla.firefox", "front"] {
+        for line in [
+            "open org.mozilla.firefox",
+            "count org.mozilla.firefox",
+            "front",
+        ] {
             assert_eq!(ToOpenALink::read(line), None, "{line}");
         }
     }
@@ -171,7 +175,10 @@ mod tests {
                 "open-link org.mozilla.firefox https://a.example/ https://b.example/",
                 NotALinkToOpen::NotTwoWords,
             ),
-            ("open-link  https://a.example/", NotALinkToOpen::NotAnApplication),
+            (
+                "open-link  https://a.example/",
+                NotALinkToOpen::NotAnApplication,
+            ),
             (
                 "open-link org.mozilla.firefox file:///etc/shadow",
                 NotALinkToOpen::NotALink,

@@ -42,9 +42,7 @@ use std::time::{Duration, SystemTime};
 
 use alo_adapters::{Delivers, Driving, Message, NotDelivered, shipped_adapters};
 use alo_applications::Application;
-use alo_capability::{
-    Agent, Approvals, Given, Grant, Grantee, Proposal, Reach, Refused,
-};
+use alo_capability::{Agent, Approvals, Given, Grant, Grantee, Proposal, Reach, Refused};
 use alo_egress::Indicator;
 use alo_granted::Listing;
 use alo_proxy::{

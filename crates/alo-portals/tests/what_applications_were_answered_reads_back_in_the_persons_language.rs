@@ -93,8 +93,8 @@ mod the_file {
     use alo_capability::{Applicant, Facility, Grant, Grants, Reach};
     use alo_keeping::Keeping;
     use alo_portals::{
-        Answered, AnswersFile, KeptAnswer, KeptOutcome, NotALinkAs, NotARequest, NothingOpensAs, Outcome,
-        PassedOverAs, Portal, ReadBack, Recording, RefusedAs, Request, Unanswered,
+        Answered, AnswersFile, KeptAnswer, KeptOutcome, NotALinkAs, NotARequest, NothingOpensAs,
+        Outcome, PassedOverAs, Portal, ReadBack, Recording, RefusedAs, Request, Unanswered,
     };
     use alo_strings::{Key, Language, Said, Strings, Translation};
 

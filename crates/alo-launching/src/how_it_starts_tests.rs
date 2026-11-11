@@ -196,14 +196,26 @@ fn a_link_goes_where_the_entry_takes_one() {
 fn an_entry_that_takes_no_link_is_refused() {
     for exec in ["gimp", "gimp %f", "gimp %F"] {
         assert_eq!(
-            how_it_starts_with_a_link("org.gimp.GIMP", &entry(Some(exec), false), None, "https://a.example/"),
+            how_it_starts_with_a_link(
+                "org.gimp.GIMP",
+                &entry(Some(exec), false),
+                None,
+                "https://a.example/"
+            ),
             Err(WhyNotWithALink::TakesNoLink),
             "{exec}"
         );
     }
     assert_eq!(
-        how_it_starts_with_a_link("org.example.None", &entry(None, false), None, "https://a.example/"),
-        Err(WhyNotWithALink::CannotStart(WhyItCannotStart::NothingToStartItWith))
+        how_it_starts_with_a_link(
+            "org.example.None",
+            &entry(None, false),
+            None,
+            "https://a.example/"
+        ),
+        Err(WhyNotWithALink::CannotStart(
+            WhyItCannotStart::NothingToStartItWith
+        ))
     );
 }
 
@@ -215,7 +227,11 @@ fn over_the_bus_the_fallback_keeps_the_link_or_is_dropped() {
     assert_eq!(
         how_it_starts_with_a_link("org.gnome.Epiphany", &carries, None, "https://a.example/"),
         Ok(HowItStarts::OverTheBus {
-            or_else: Some(["epiphany", "https://a.example/"].map(str::to_owned).to_vec())
+            or_else: Some(
+                ["epiphany", "https://a.example/"]
+                    .map(str::to_owned)
+                    .to_vec()
+            )
         })
     );
     let does_not = entry(Some("geary"), true);

@@ -58,7 +58,11 @@ pub enum KeptOutcome {
         chosen: bool,
         /// Whether the application asked for the person to choose, which this
         /// machine does not offer yet.
-        #[serde(rename = "asked-to-choose", default, skip_serializing_if = "std::ops::Not::not")]
+        #[serde(
+            rename = "asked-to-choose",
+            default,
+            skip_serializing_if = "std::ops::Not::not"
+        )]
         asked_to_choose: bool,
     },
     /// The application read the appearance settings, allowed by these grants.

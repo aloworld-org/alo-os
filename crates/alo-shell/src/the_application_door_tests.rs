@@ -538,7 +538,11 @@ fn a_link_to_open_is_handed_on_and_answered() {
     let mut door = TheApplicationDoor::served(place.clone(), us()).unwrap();
     let mut hand = AHand::answering(Answer::Acted);
     let long = format!("https://example.com/{}", "a".repeat(1500));
-    for address in ["https://example.com/invoice", "mailto:anna@example.com", long.as_str()] {
+    for address in [
+        "https://example.com/invoice",
+        "mailto:anna@example.com",
+        long.as_str(),
+    ] {
         let mut portal = UnixStream::connect(place.socket()).unwrap();
         portal
             .write_all(format!("open-link org.mozilla.firefox {address}\n").as_bytes())

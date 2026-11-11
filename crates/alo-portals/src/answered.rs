@@ -296,7 +296,9 @@ impl Unanswered {
             }
             Self::NotDecidedHere => (words::NOT_DECIDED_HERE, Filling::nothing()),
             Self::FolderNotDecidedHere => (words::FOLDER_NOT_DECIDED_HERE, Filling::nothing()),
-            Self::NoDesktop { opener } => (words::NO_DESKTOP, Filling::of("opener", opener.as_str())),
+            Self::NoDesktop { opener } => {
+                (words::NO_DESKTOP, Filling::of("opener", opener.as_str()))
+            }
             Self::NotOpenedALink { opener } => (
                 words::NOT_OPENED_A_LINK,
                 Filling::of("opener", opener.as_str()),
