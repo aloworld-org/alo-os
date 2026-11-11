@@ -263,6 +263,7 @@ mod dock_tooltip;
 mod how_a_panel_is_raised;
 /// A full-screen window's band, out of sight until the top edge is reached.
 mod the_band_over_full_screen;
+mod the_buttons_an_application_draws;
 mod the_keyboard_on_the_docks_surfaces;
 mod the_password_sheet;
 mod the_password_sheet_drawn;
@@ -799,9 +800,10 @@ pub use window_activation::WindowActivationError;
 pub use window_close::WindowCloseError;
 pub use window_dividing::NotDivided;
 pub use window_edge::{
-    A_TARGET_IS, BETWEEN_TARGETS, Decorations, EdgeControl, OnTheEdge, THE_CONTROLS_SIT_AT,
-    THE_NARROWEST_EDGE_IS, THE_REGION_IS_TALL, THE_STRIP_IS_TALL, THE_STRIP_STARTS_AT,
-    THE_TITLE_STARTS_AT, THE_TRAILING_INSET, WindowEdge, edge_of, the_usable_output,
+    A_TARGET_IS, BETWEEN_TARGETS, Decorations, EdgeControl, ItsOwnButtons, OnTheEdge,
+    THE_CONTROLS_SIT_AT, THE_NARROWEST_EDGE_IS, THE_REGION_IS_TALL, THE_STRIP_IS_TALL,
+    THE_STRIP_STARTS_AT, THE_TITLE_STARTS_AT, THE_TRAILING_INSET, WindowEdge, edge_of,
+    the_usable_output,
 };
 /// What the external window edge is drawn out of: rectangles and roles.
 ///
@@ -839,10 +841,10 @@ pub use window_edge_tooltip::{
     A_LINE_IS_TALL, AROUND_THE_WORDS, AT_MOST_LINES, AT_MOST_WIDE, Because, ShowingTheTitle,
     Tooltip, the_name_of_a_control, tooltip_of,
 };
-/// **Who draws a frame's header**, in the one place both the drawing and the
-/// reading ask. Its body is what changes when the toplevel's decoration state
-/// is read per frame; see the file's header.
-pub use window_edge_who_draws::who_draws_a_frame;
+/// **Who draws a window's header**, in the one place both the drawing and the
+/// reading ask: from the decoration mode the application agreed, and for one
+/// that draws its own, the buttons it was measured to show.
+pub use window_edge_who_draws::who_draws_the_header;
 pub use window_full_screen::WindowFullScreenError;
 pub use window_maximize::WindowMaximizeError;
 /// **The window panel** Window actions opens: placement and full screen

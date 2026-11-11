@@ -88,11 +88,20 @@ pub fn the_controls_of(decorations: Decorations) -> Vec<OnTheEdge> {
             OnTheEdge::Minimise,
             OnTheEdge::Close,
         ],
-        // **Window actions and nothing else.** The owner's ruling of
-        // 2026-10-09, kept by the 2026-11-09 specification: an application
-        // with its own header keeps its own buttons, and a second Minimise or
-        // Close beside them is the duplicate set the ruling forbids.
-        Decorations::TheApplicationDraws => vec![OnTheEdge::WindowActions],
+        // **Window actions, and only what the application does not show.**
+        // The owner, 2026-11-12: *No need to add controls if the app has, we
+        // can only add the ones that are not there.* No application draws
+        // alo's panel, so Window actions is always added; Minimise and Close
+        // are added where the application has none of its own, and never a
+        // second one beside its own.
+        Decorations::TheApplicationDraws(its_own) => [
+            Some(OnTheEdge::WindowActions),
+            (!its_own.minimise).then_some(OnTheEdge::Minimise),
+            (!its_own.close).then_some(OnTheEdge::Close),
+        ]
+        .into_iter()
+        .flatten()
+        .collect(),
         // **Minimise and Close** on a task window: minimising puts the task in
         // the right-hand panel, still running (`crate::a_task_goes_aside`), the
         // owner's *minimise later with the right-hand panel* of 2026-10-28.

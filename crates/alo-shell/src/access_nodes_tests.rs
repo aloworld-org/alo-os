@@ -291,13 +291,16 @@ fn every_open_window_carries_the_controls_of_its_edge() {
         .with_the_frames_open(
             &strings,
             &[
-                FrameName::Given("Ledger for March".to_owned()),
-                FrameName::AnApplication,
+                (
+                    FrameName::Given("Ledger for March".to_owned()),
+                    crate::Decorations::TheShellDraws,
+                ),
+                (FrameName::AnApplication, crate::Decorations::TheShellDraws),
             ],
             &TurnedOn::nothing(),
         );
 
-    let expected: Vec<String> = what_a_reader_is_told(who_draws_a_frame())
+    let expected: Vec<String> = what_a_reader_is_told(crate::Decorations::TheShellDraws)
         .into_iter()
         .map(|control| said(&strings, control.name))
         .collect();
@@ -324,6 +327,54 @@ fn every_open_window_carries_the_controls_of_its_edge() {
     }
 }
 
+/// **Each window is told its own controls**: a window whose application
+/// draws only Close is told Window actions and Minimise, and the shell-drawn
+/// window beside it all three. The owner, 2026-11-12: alo adds only the
+/// controls an application does not show.
+#[test]
+fn each_window_is_told_the_controls_alo_adds_to_it() {
+    let strings = words();
+    let close_only = crate::Decorations::TheApplicationDraws(crate::ItsOwnButtons {
+        minimise: false,
+        close: true,
+    });
+    let tree = ReadAloudTree::of(&strings, &Surface::ALL, &TurnedOn::nothing())
+        .with_the_frames_open(
+            &strings,
+            &[
+                (FrameName::Given("A page".to_owned()), close_only),
+                (
+                    FrameName::Given("Ledger for March".to_owned()),
+                    crate::Decorations::TheShellDraws,
+                ),
+            ],
+            &TurnedOn::nothing(),
+        );
+    let list = tree.the_windows_open().expect("a list of windows");
+    let under: Vec<Vec<String>> = tree.nodes()[list]
+        .children
+        .iter()
+        .map(|window| {
+            tree.nodes()[*window]
+                .children
+                .iter()
+                .map(|child| tree.nodes()[*child].name.clone())
+                .collect()
+        })
+        .collect();
+    assert_eq!(
+        under,
+        vec![
+            vec!["Window actions".to_owned(), "Minimise".to_owned()],
+            vec![
+                "Window actions".to_owned(),
+                "Minimise".to_owned(),
+                "Close".to_owned()
+            ],
+        ]
+    );
+}
+
 /// **A window's controls are the ones its edge draws**, asked of the one
 /// function both sides ask.
 ///
@@ -336,17 +387,30 @@ fn what_a_reader_is_told_is_what_the_edge_lays_out() {
         smithay::utils::Point::from((40, 100)),
         smithay::utils::Size::from((600, 400)),
     );
-    let drawn: Vec<_> = crate::window_edge::edge_of(
-        window,
-        who_draws_a_frame(),
-        true,
-        smithay::utils::Size::from((1920, 1080)),
-    )
-    .controls
-    .into_iter()
-    .map(|control| control.does)
-    .collect();
-    assert_eq!(drawn, the_controls_of(who_draws_a_frame()));
+    for decorations in [
+        crate::Decorations::TheShellDraws,
+        crate::Decorations::TheApplicationDraws(crate::ItsOwnButtons::NOT_KNOWN),
+        crate::Decorations::TheApplicationDraws(crate::ItsOwnButtons {
+            minimise: false,
+            close: true,
+        }),
+        crate::Decorations::TheApplicationDraws(crate::ItsOwnButtons {
+            minimise: false,
+            close: false,
+        }),
+    ] {
+        let drawn: Vec<_> = crate::window_edge::edge_of(
+            window,
+            decorations,
+            true,
+            smithay::utils::Size::from((1920, 1080)),
+        )
+        .controls
+        .into_iter()
+        .map(|control| control.does)
+        .collect();
+        assert_eq!(drawn, the_controls_of(decorations), "{decorations:?}");
+    }
 }
 
 /// **An open panel is heard expanded, and its choices under it**, with the one
@@ -389,7 +453,10 @@ fn an_open_window_panel_is_heard_expanded_with_its_choices_under_it() {
     let tree = ReadAloudTree::of(&strings, &Surface::ALL, &TurnedOn::nothing())
         .with_the_frames_open(
             &strings,
-            &[FrameName::Given("Ledger for March".to_owned())],
+            &[(
+                FrameName::Given("Ledger for March".to_owned()),
+                crate::Decorations::TheShellDraws,
+            )],
             &TurnedOn::nothing(),
         )
         .with_a_windows_panel_open(&strings, 0, &met);
@@ -432,7 +499,10 @@ fn a_shut_panel_is_not_heard_at_all() {
     let tree = ReadAloudTree::of(&strings, &Surface::ALL, &TurnedOn::nothing())
         .with_the_frames_open(
             &strings,
-            &[FrameName::Given("Ledger for March".to_owned())],
+            &[(
+                FrameName::Given("Ledger for March".to_owned()),
+                crate::Decorations::TheShellDraws,
+            )],
             &TurnedOn::nothing(),
         );
     let list = tree.the_windows_open().expect("a list of windows");
