@@ -1,0 +1,63 @@
+<frame id="25:2" name="08 / Settings · Default apps" x="1440" y="4120" width="1280" height="900">
+  <frame id="25:3" name="Frame" x="56" y="40" width="1000" height="103">
+    <text id="25:4" name="alo OS / SETTINGS / CONCEPT 08 — APPROVED BY THE OWNER 2026-11-12" x="0" y="0" width="384" height="15" />
+    <text id="25:5" name="Which app opens what you open." x="0" y="25" width="554" height="49" />
+    <text id="25:6" name="A link, an email address or a file opens in the app you choose here. Links open without asking each time, and every one is written in your record." x="0" y="84" width="1000" height="19" />
+  </frame>
+  <frame id="25:7" name="Frame" x="80" y="200" width="1120" height="640">
+    <frame id="25:8" name="Frame" x="0" y="0" width="268" height="640">
+      <text id="25:9" name="Settings" x="28" y="28" width="90" height="30" />
+      <text id="25:10" name="alo" x="28" y="88" width="16" height="15" />
+      <text id="25:11" name="alo and AI" x="44" y="121" width="62" height="19" />
+      <text id="25:12" name="Folders alo can use" x="44" y="165" width="123" height="19" />
+      <text id="25:13" name="Running code" x="44" y="209" width="89" height="19" />
+      <text id="25:14" name="Terminal" x="44" y="253" width="55" height="19" />
+      <text id="25:15" name="This computer" x="28" y="296" width="76" height="15" />
+      <text id="25:16" name="Appearance" x="44" y="329" width="78" height="19" />
+      <rounded-rectangle id="25:17" name="Rectangle" x="16" y="364" width="236" height="40" />
+      <text id="25:18" name="Default apps" x="44" y="373" width="85" height="19" />
+      <text id="25:19" name="Region and time" x="44" y="417" width="105" height="19" />
+      <text id="25:20" name="Keyboard and shortcuts" x="44" y="461" width="155" height="19" />
+      <text id="25:21" name="Accessibility" x="44" y="505" width="82" height="19" />
+    </frame>
+    <frame id="25:22" name="Frame" x="316" y="36" width="720" height="443">
+      <text id="25:23" name="Default apps" x="0" y="0" width="169" height="36" />
+      <text id="25:24" name="Which app opens a link, an email address or a kind of file." x="0" y="44" width="720" height="25" />
+      <frame id="25:25" name="Frame" x="0" y="77" width="10" height="24" />
+      <text id="25:26" name="Web links" x="0" y="109" width="59" height="18" />
+      <frame id="25:27" name="Frame" x="0" y="135" width="720" height="146">
+        <frame id="25:28" name="Frame" x="1" y="1" width="720" height="72">
+          <ellipse id="25:29" name="Ellipse" x="20" y="25" width="22" height="22" />
+          <ellipse id="25:30" name="Ellipse" x="26" y="31" width="10" height="10" />
+          <frame id="25:31" name="Frame" x="58" y="22" width="28" height="28">
+            <text id="25:32" name="F" x="10.5" y="5" width="7" height="18" />
+          </frame>
+          <text id="25:33" name="Firefox" x="102" y="14" width="46" height="22" />
+          <text id="25:34" name="Opens web links now" x="102" y="36" width="134" height="22" />
+        </frame>
+        <frame id="25:35" name="Frame" x="1" y="73" width="720" height="72">
+          <ellipse id="25:36" name="Ellipse" x="20" y="25" width="22" height="22" />
+          <frame id="25:37" name="Frame" x="58" y="22" width="28" height="28">
+            <text id="25:38" name="a" x="10" y="5" width="8" height="18" />
+          </frame>
+          <text id="25:39" name="alo Browser" x="102" y="14" width="78" height="22" />
+          <text id="25:40" name="Installed" x="102" y="36" width="56" height="22" />
+        </frame>
+      </frame>
+      <frame id="25:41" name="Frame" x="0" y="289" width="10" height="16" />
+      <text id="25:42" name="Email addresses" x="0" y="313" width="101" height="18" />
+      <frame id="25:43" name="Frame" x="0" y="339" width="720" height="74">
+        <frame id="25:44" name="Frame" x="1" y="1" width="720" height="72">
+          <ellipse id="25:45" name="Ellipse" x="20" y="25" width="22" height="22" />
+          <ellipse id="25:46" name="Ellipse" x="26" y="31" width="10" height="10" />
+          <frame id="25:47" name="Frame" x="58" y="22" width="28" height="28">
+            <text id="25:48" name="M" x="8" y="5" width="12" height="18" />
+          </frame>
+          <text id="25:49" name="alo Mails" x="102" y="14" width="58" height="22" />
+          <text id="25:50" name="Opens a new message to the address" x="102" y="36" width="241" height="22" />
+        </frame>
+      </frame>
+      <text id="25:51" name="Every link an app opens is written in your record: which app asked, the address, and which app opened it." x="0" y="421" width="720" height="22" />
+    </frame>
+  </frame>
+</frame>
