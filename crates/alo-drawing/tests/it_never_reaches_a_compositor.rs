@@ -103,7 +103,10 @@ fn nothing_it_pulls_in_is_a_compositors() {
 #[test]
 fn the_same_walk_from_the_shell_finds_the_compositor() {
     let graph = the_graph(&the_lock());
-    assert!(graph.contains_key("alo-drawing"), "the lock names this crate");
+    assert!(
+        graph.contains_key("alo-drawing"),
+        "the lock names this crate"
+    );
     let seen = reached(&graph, "alo-shell");
     for expected in ["smithay", "wayland-server", "zbus"] {
         assert!(

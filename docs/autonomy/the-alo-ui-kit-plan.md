@@ -58,8 +58,10 @@ kit's own is the whole of the change for:
   fonts, which is right for a Flatpak too. Its locale is fixed at `en-US`,
   which matters for which fallback face a script gets; the kit should take the
   person's language instead.
-- `crates/alo-shell/src/display_scale.rs`: one display's whole-per-cent scale
-  and the one road a logical measure takes to pixels, exact at 100.
+- `display_scale.rs` (in `alo-shell` when this was surveyed, and
+  `crates/alo-drawing/src/display_scale.rs` since task 2's first step): one
+  display's whole-per-cent scale and the one road a logical measure takes to
+  pixels, exact at 100.
 - `crates/alo-shell/src/settings_type.rs` (the design's type styles, scaled
   with the person's text size), `crates/alo-shell/src/settings_palette.rs` and
   `crates/alo-shell/src/settings_measures.rs` (the Settings window's colours
