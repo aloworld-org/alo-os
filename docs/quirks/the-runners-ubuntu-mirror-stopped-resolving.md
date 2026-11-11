@@ -20,9 +20,22 @@
   print lines for both — and every one of their errors still read *resolving
   'azure.archive.ubuntu.com'*. Why is not known; what was measured is that the
   list's later entries did not rescue the run.
-- **Our response:** the step fetches first, on its own clock, and on failure
-  rewrites the sources to `http://archive.ubuntu.com/ubuntu/` and fetches again,
-  with a warning on the run and `apt path:` in the log saying which happened.
-  Same packages either way. The workflow comment above the step says why this
-  is not a cache.
+- **It was name lookup, not the mirror.** A first fix pointed apt at
+  `archive.ubuntu.com` and failed the same way (job 130588464166, 14:37 UTC:
+  `Ign:5 http://archive.ubuntu.com/ubuntu noble InRelease`, every 20 s). At
+  14:40 UTC from a lane's Windows machine, whose resolver is FortiGuard's
+  (96.45.45.45) and not Azure's: `archive.ubuntu.com`, `azure.archive.ubuntu.com`,
+  `security.ubuntu.com` and `canonical.com` all gave *DNS server failure*;
+  1.1.1.1, 8.8.8.8 and 9.9.9.9 answered (archive.ubuntu.com → 91.189.91.83
+  and eleven more); and `curl --resolve archive.ubuntu.com:80:91.189.91.83`
+  fetched `dists/noble/InRelease` with HTTP 200 in 0.53 s. Why some resolvers
+  fail for Canonical's names and others do not is not known.
+- **Our response:** the step fetches first, on its own clock. On failure it
+  rewrites the sources to `http://archive.ubuntu.com/ubuntu/`, pins any of
+  `archive.ubuntu.com` / `security.ubuntu.com` the runner cannot resolve to an
+  address from Cloudflare's or Google's resolver (asked over HTTPS by IP), and
+  fetches again. apt's signature check is unchanged, so the address is trusted
+  no further than any mirror. A warning on the run and `apt path:` in the log
+  say which happened. Same packages either way. The workflow comment above the
+  step says why this is not a cache.
 - **Date:** 2026-11-11.

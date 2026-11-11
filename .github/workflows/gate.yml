@@ -276,13 +276,25 @@ jobs:
       # (job 130579513235; `docs/quirks/the-runners-ubuntu-mirror-stopped-resolving.md`).
       # The runner's sources say `mirror+file:/etc/apt/apt-mirrors.txt`, which
       # lists `archive.ubuntu.com` after Azure's mirror, and that did not save
-      # it: every failure still named Azure's host. So the fetch runs first, on
-      # a clock of its own — a download can be killed safely, an unpack cannot —
-      # and if it does not finish, the sources are rewritten to Ubuntu's own
-      # archive and it is fetched once more. A run that takes that path says so
-      # as a warning on the run and in `apt path:` in this step's log, so it is
-      # not the silence a quiet retry would be. The rewrite stays for the rest
-      # of the job, which the LLVM and Windows steps below also fetch through.
+      # it: every failure still named Azure's host. **And the archive was not the
+      # fault either.** This change's first run rewrote the sources to
+      # `archive.ubuntu.com` and failed identically (job 130588464166); from a
+      # lane's machine at the same minute, two unrelated resolvers answered
+      # *DNS server failure* for `archive.ubuntu.com`, `security.ubuntu.com`
+      # and `canonical.com`, while Cloudflare, Google and Quad9 answered and the
+      # archive served `InRelease` with HTTP 200 at the address they gave.
+      #
+      # So the fetch runs first, on a clock of its own — a download can be
+      # killed safely, an unpack cannot — and if it does not finish, the
+      # sources are rewritten to Ubuntu's own archive, any of its names the
+      # runner's resolver cannot answer is pinned in `/etc/hosts` to an address
+      # from a public resolver, and it is fetched once more. **This trusts the
+      # address no further than apt does any mirror:** every list is checked
+      # against Ubuntu's signing key, so a wrong address fails the fetch rather
+      # than changing what is installed. A run that takes that path says so as a
+      # warning on the run and in `apt path:` in this step's log, so it is not
+      # the silence a quiet retry would be. Both changes stay for the rest of
+      # the job, which the LLVM and Windows steps below also fetch through.
       #
       # **The packages are the same either way**: one list, fetched, then
       # installed with `--no-download` from exactly what was fetched.
@@ -306,18 +318,29 @@ jobs:
           printf 'Acquire::Retries "3";\nAcquire::http::Timeout "15";\nAcquire::https::Timeout "15";\n' \
             | sudo tee /etc/apt/apt.conf.d/80-gate-network > /dev/null
           # Package lists, then package files, each on a clock; nothing unpacked.
-          # 60 + 90 s, then 90 + 150 s: 6.5 minutes at worst, leaving the
-          # unpack its time inside eight. The whole step took 30–48 s healthy.
+          # 60 + 90 s, then about 20 s of lookups and 60 + 120 s: under six
+          # minutes at worst, leaving the unpack its time inside eight. The
+          # whole step took 30–48 s on healthy runs.
           fetch() {
             sudo timeout "$1" apt-get update &&
               sudo timeout "$2" apt-get install --download-only \
                 --no-install-recommends --yes "${packages[@]}"
           }
+          # An address from a public resolver over HTTPS, asked by IP so that
+          # asking does not itself need the resolver that failed.
+          public_address() {
+            for doh in "https://1.1.1.1/dns-query" "https://8.8.8.8/resolve"; do
+              curl -fsS --max-time 5 -H 'accept: application/dns-json' \
+                "$doh?name=$1&type=A" 2> /dev/null \
+                | grep -oE '"data":"[0-9]+(\.[0-9]+){3}"' | head -1 \
+                | grep -oE '[0-9]+(\.[0-9]+){3}' && return 0
+            done
+            return 1
+          }
           path=mirror
           if ! fetch 60 90; then
             path="archive.ubuntu.com (fallback)"
-            echo "::warning title=Ubuntu mirror::the runner's mirror did not deliver in time; fetching from archive.ubuntu.com instead"
-            getent hosts azure.archive.ubuntu.com archive.ubuntu.com || true
+            echo "::warning title=Ubuntu mirror::the runner's Ubuntu mirror did not deliver in time; fetching from archive.ubuntu.com instead"
             for source in $(sudo grep -lrE 'apt-mirrors\.txt|azure\.archive' \
                 /etc/apt/sources.list /etc/apt/sources.list.d/ 2> /dev/null); do
               sudo sed -i -E \
@@ -325,7 +348,19 @@ jobs:
                 -e 's#azure\.archive\.ubuntu\.com#archive.ubuntu.com#g' "$source"
               echo "rewrote $source"
             done
-            fetch 90 150
+            # Only a name the runner's own resolver cannot answer is pinned.
+            for host in archive.ubuntu.com security.ubuntu.com; do
+              if timeout 5 getent ahostsv4 "$host" > /dev/null; then
+                echo "$host: the runner's resolver answers"
+              elif address=$(public_address "$host"); then
+                echo "$address $host" | sudo tee -a /etc/hosts > /dev/null
+                echo "$host: the runner's resolver did not answer; pinned $address from a public resolver"
+                path="archive.ubuntu.com (fallback, address from a public resolver)"
+              else
+                echo "$host: no resolver answered"
+              fi
+            done
+            fetch 60 120
           fi
           sudo apt-get install --no-download --no-install-recommends --yes "${packages[@]}"
           echo "apt path: $path"
