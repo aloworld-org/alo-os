@@ -2,8 +2,8 @@
 //! of the plan's acceptance, with each refusal beside what it refuses.
 //!
 //! `docs/autonomy/software-and-the-web-plan.md`, task 3: the browser task 2
-//! ships opens web addresses **from any application**, through the open-with
-//! portal's own decision and its own order; it is **a sandboxed application like
+//! ships opens web addresses **from any application** — since 2026-11-12 with no
+//! grant over it, through the open-with portal; it is **a sandboxed application like
 //! any other**, holding nothing a person did not give it; its **downloads go to
 //! the folder a person chose**; the **machine-wide proxy reaches it**; and
 //! **nothing alo OS ships sets its home page, search engine or telemetry** —
@@ -25,13 +25,13 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::time::{Duration, SystemTime};
 
-use alo_applications::Application;
-use alo_capability::{Agent, Applicant, Ask, Facility, Grant, Grants, Reach, is_a_persons_own};
+use alo_applications::{Application, Link, LinkKind};
+use alo_capability::{Agent, Applicant, Ask, Facility, Grant, Reach, is_a_persons_own};
 use alo_egress::Indicator;
 use alo_software::{
-    Because, Bound, Configuration, Configured, Enabled, Failed, NeverSet, NotConfigured, NotOpened,
-    Role, Setting, Shipped, SourceName, Tool, WhatOpensWebAddresses, browser_configuration,
-    install, installing, opened, remove,
+    Because, Bound, Configuration, Configured, Enabled, Failed, NeverSet, NotConfigured, Role,
+    Setting, Shipped, SourceName, Tool, WhatOpensWebAddresses, browser_configuration, install,
+    installing, remove,
 };
 
 // ---------------------------------------------------------------------------
@@ -161,122 +161,37 @@ fn installed_here(tool: &AMachineWithABrowser) -> alo_applications::Installed {
     )
 }
 
-/// A machine where `who` has been granted `what`, for an hour from noon.
-fn granting(who: &str, what: Reach) -> Grants {
-    let mut grants = Grants::default();
-    grants
-        .grant(Grant::checked_for(&Applicant::named(who).grantee(), what, noon(), hour()).unwrap());
-    grants
-}
-
 // ---------------------------------------------------------------------------
 // It opens web addresses, from any application.
 // ---------------------------------------------------------------------------
 
-/// **The browser a fresh machine ships opens web addresses from any
-/// application**, against the one grant a person made that application — and
-/// the answer is the same whichever application asked, because there is no list
-/// of applications privileged to open a link.
+/// **The browser a fresh machine ships is what opens web addresses**, and the
+/// answer needs nothing from the grants: since the owner's decision of
+/// 2026-11-12 (*"No — open in my default, but record it"*) a link the person
+/// followed opens in their default browser whichever application it was in,
+/// with no grant over the browser. Until that day this test held a grant per
+/// asking application; the open-with portal now answers the request itself, in
+/// `alo-portals`.
 #[test]
-fn the_browser_opens_web_addresses_from_any_application() {
+fn the_browser_a_fresh_machine_ships_opens_web_addresses() {
     let tool = AMachineWithABrowser::new();
     a_fresh_machine(&tool);
     let installed = installed_here(&tool);
     let shipped = Shipped::decided().unwrap();
-    let what_opens = WhatOpensWebAddresses::on(&installed, &shipped, None);
-    let browser = the_browser();
-
-    for asking in [
-        "org.gnome.Papers",
-        "org.gnome.TextEditor",
-        "org.kde.dolphin",
-        "org.example.SomethingThePersonInstalled",
-    ] {
-        let grants = granting(asking, Reach::Application(browser.identifier().to_owned()));
-        let opened = opened(
-            asking,
-            "https://example.com/a?b=c#d",
-            &what_opens,
-            &grants,
-            noon(),
-        )
+    let answer = WhatOpensWebAddresses::on(&installed, &shipped, None)
+        .what_opens_them()
         .unwrap();
-        assert_eq!(opened.from(), &Applicant::named(asking));
-        assert_eq!(opened.browser().application(), &browser);
-        assert_eq!(opened.browser().because(), &Because::ThisMachineShipsIt);
-        assert_eq!(opened.address().as_str(), "https://example.com/a?b=c#d");
-        assert_eq!(opened.address().host(), "example.com");
-        assert_eq!(
-            grants.active_at(noon()).next().unwrap().id,
-            opened.against(),
-            "the record would not name the grant it was allowed by"
-        );
-    }
+    assert_eq!(answer.application(), &the_browser());
+    assert_eq!(answer.because(), &Because::ThisMachineShipsIt);
 }
 
-/// **An application holding nothing is refused before this machine is read**,
-/// which is the open-with portal's own order: a request that is not judged first
-/// would tell an application which browser somebody has, and that is a
-/// fingerprint of who they are. **A grant over something else is not a grant
-/// over the browser.**
+/// **Only the open web, and an email address, are links.** A path on this
+/// machine, a document the asking application wrote itself, code, the
+/// browser's own settings, a password in an address and two lines are each
+/// refused by `alo_applications::Link`, the check the portal makes before
+/// anything else.
 #[test]
-fn an_application_granted_nothing_opens_no_web_address_and_learns_nothing() {
-    let tool = AMachineWithABrowser::new();
-    a_fresh_machine(&tool);
-    let here = installed_here(&tool);
-    let bare = alo_applications::Installed::nothing();
-    let shipped = Shipped::decided().unwrap();
-    let nothing = Grants::default();
-
-    for installed in [&here, &bare] {
-        let what_opens = WhatOpensWebAddresses::on(installed, &shipped, None);
-        assert_eq!(
-            opened(
-                "org.gnome.Papers",
-                "https://example.com/",
-                &what_opens,
-                &nothing,
-                noon()
-            )
-            .unwrap_err(),
-            NotOpened::NothingGranted {
-                from: Applicant::named("org.gnome.Papers")
-            },
-            "a machine with a browser and one without answered differently"
-        );
-    }
-
-    let what_opens = WhatOpensWebAddresses::on(&here, &shipped, None);
-    let elsewhere = granting("org.gnome.Papers", Reach::Facility(Facility::Camera));
-    assert!(matches!(
-        opened(
-            "org.gnome.Papers",
-            "https://example.com/",
-            &what_opens,
-            &elsewhere,
-            noon()
-        ),
-        Err(NotOpened::NotAllowed(_))
-    ));
-}
-
-/// **Only the open web is opened.** A path on this machine, a document the
-/// asking application wrote itself, code, and the browser's own settings are
-/// each refused — and refused before the grants are read, so nothing shapeless
-/// learns anything either.
-#[test]
-fn nothing_but_the_open_web_is_opened() {
-    let tool = AMachineWithABrowser::new();
-    a_fresh_machine(&tool);
-    let installed = installed_here(&tool);
-    let shipped = Shipped::decided().unwrap();
-    let what_opens = WhatOpensWebAddresses::on(&installed, &shipped, None);
-    let browser = the_browser();
-    let grants = granting(
-        "org.gnome.Papers",
-        Reach::Application(browser.identifier().to_owned()),
-    );
-
+fn nothing_but_the_open_web_and_an_email_address_is_a_link() {
     for address in [
         "file:///etc/shadow",
         "file:///home/anna/Taxes/2024.pdf",
@@ -287,14 +202,16 @@ fn nothing_but_the_open_web_is_opened() {
         "https://example.com/\nGET /",
         "",
     ] {
-        assert!(
-            matches!(
-                opened("org.gnome.Papers", address, &what_opens, &grants, noon()),
-                Err(NotOpened::NotAWebAddress(_))
-            ),
-            "{address:?} was opened"
-        );
+        assert!(Link::checked(address).is_err(), "{address:?} is a link");
     }
+    assert_eq!(
+        Link::checked("https://example.com/a?b=c#d").unwrap().kind(),
+        LinkKind::Web
+    );
+    assert_eq!(
+        Link::checked("mailto:anna@example.com").unwrap().kind(),
+        LinkKind::Mail
+    );
 }
 
 /// **A person may remove the browser, and then web addresses open in nothing** —

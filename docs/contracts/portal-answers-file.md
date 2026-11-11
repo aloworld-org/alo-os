@@ -134,13 +134,16 @@ first answer.
 |---|---|---|
 | `secret-handed-over` | The application was handed its own secret. | `against`: the grant handles it was allowed by. |
 | `opened` | The file was handed to the application that opens its kind. | `opener`: that application's identifier; `chosen`: `true` when it was the person's choice rather than a declaration; `against`: the grants over the file and over the opener. |
+| `link-opened` | A link the person followed was handed to their default application, with no grant asked (the owner, 2026-11-12). | `opener`: that application's identifier; `link`: `web` or `mail`; `address`: the link exactly as the application gave it; `chosen`: `true` when the application was the person's choice rather than the first declaring the kind; `asked-to-choose`: present and `true` when the application asked for the person to choose, which is not offered yet. |
 | `appearance-read` | The application read the appearance settings. | `against` |
 | `appearance-sent` | The application was sent appearance settings that changed. | `against` |
 | `network-read` | The application read whether this machine reaches anything, and whether the connection is metered. | `against` |
 | `refused` | The grants refused it. | `why`: `nothing-granted` (the application holds no grant at all), `never-granted` (nothing it holds has ever covered this), or `lapsed` (a grant covered it and has expired). |
 | `not-a-request` | What arrived was never a well-formed request. | `why`: `no-application`, `not-an-identifier`, `needs-a-path`, `not-over-a-path`, `not-a-full-path`, or `could-lead-elsewhere`. |
 | `nothing-opens` | Nothing on this machine opens the file. | `why`: `{"no-application":{}}`, or `{"no-application":{"chosen":ID}}` when the person's choice is not installed; `the-file` (a program, empty, damaged, password-protected or unrecognised); or `unreadable`. |
-| `unanswered` | It could not be answered with what it asked for, and neither the grants nor *what opens what* were the reason. | `why`: `not-identified`, `not-a-token`, `grants-unread`, `applications-unread`, `keyring-unavailable`, `not-written`, `not-a-file`, `not-decided-here`, `no-such-setting`, `appearance-unread`, `network-unread` (the network manager could not be asked how far this machine reaches), or `{"not-opened":{"opener":ID}}`. |
+| `not-a-link` | What an application asked to open as a link is not one this machine opens. **The address is not kept.** | `why`: `{"not-opened-here":{"scheme":S}}` naming the scheme, `carries-a-password`, or `not-a-link` (no scheme, two lines, too long, or a web or email address that does not hold). |
+| `nothing-opens-links` | No application on this machine opens that kind of link. | `link`: `web` or `mail`; `passed_over`, when the person's choice was passed over: `{"not-installed":ID}` or `{"a-terminal":ID}`. |
+| `unanswered` | It could not be answered with what it asked for, and neither the grants nor *what opens what* were the reason. | `why`: `not-identified`, `not-a-token`, `grants-unread`, `applications-unread`, `keyring-unavailable`, `not-written`, `not-a-file`, `not-decided-here` (a link or a folder, kept only before 2026-11-12), `folder-not-decided-here`, `no-such-setting`, `appearance-unread`, `network-unread` (the network manager could not be asked how far this machine reaches), `{"not-opened":{"opener":ID}}`, `{"no-desktop":{"opener":ID}}` (no desktop was there to start the application a link opens in), or `{"not-opened-a-link":{"opener":ID}}` (the desktop could not start it). |
 
 `against` holds the handles a person revokes grants by, as the grants file
 writes them (`docs/contracts/grants-file.md`).
@@ -160,6 +163,10 @@ other for one request:
 - `opened` followed by `unanswered` / `not-opened`, for the same application:
   the file was allowed and handed to its opener, which did not open it. The
   response was `2`.
+- `link-opened` followed by `unanswered` / `no-desktop` or
+  `not-opened-a-link`, for the same application: the link was handed to its
+  opener and the desktop was not there, or could not start it. The response was
+  `2`.
 
 ## An answer that is not kept is not sent
 

@@ -274,6 +274,9 @@ mod where_a_travelling_window_lands;
 mod where_the_docks_surface_is;
 pub use where_a_travelling_window_lands::TheCards;
 
+/// The hand for `open-link`: an application started with a link the person
+/// followed, as a press starts it.
+mod a_link_is_opened;
 /// Where the Dock is on one display: the band on its edge and the slots
 /// inside it, worked out once for the draw and for a press.
 /// What a press on the Dock does: the decision, with no act in it.

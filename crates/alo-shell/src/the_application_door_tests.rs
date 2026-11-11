@@ -51,6 +51,8 @@ struct AHand {
     asked_front: usize,
     /// What to answer `alo-tree`.
     tree: alo_acting::WhereAlosTreeIs,
+    /// Every link it was asked to start an application with, in order.
+    links: Vec<alo_acting::ToOpenALink>,
 }
 
 impl AHand {
@@ -61,6 +63,7 @@ impl AHand {
             in_front: alo_acting::InFront::None,
             asked_front: 0,
             tree: alo_acting::WhereAlosTreeIs::Nowhere,
+            links: Vec::new(),
         }
     }
 }
@@ -78,6 +81,11 @@ impl CarriesOutAnApplicationVerb for AHand {
 
     fn where_alos_tree_is(&self) -> alo_acting::WhereAlosTreeIs {
         self.tree.clone()
+    }
+
+    fn opening_a_link(&mut self, asked: &alo_acting::ToOpenALink) -> Answer {
+        self.links.push(asked.clone());
+        self.answering.clone()
     }
 }
 
@@ -519,4 +527,57 @@ fn alo_tree_is_answered_with_where_the_tree_is_or_none() {
         door.taken_away();
         let _ = std::fs::remove_dir_all(root);
     }
+}
+
+/// **A link the person followed crosses as one line and one word**, reaches
+/// the hand with its link, and is read whole when it is longer than any other
+/// act's line may be.
+#[test]
+fn a_link_to_open_is_handed_on_and_answered() {
+    let (root, place) = a_place("open-link");
+    let mut door = TheApplicationDoor::served(place.clone(), us()).unwrap();
+    let mut hand = AHand::answering(Answer::Acted);
+    let long = format!("https://example.com/{}", "a".repeat(1500));
+    for address in [
+        "https://example.com/invoice",
+        "mailto:anna@example.com",
+        long.as_str(),
+    ] {
+        let mut portal = UnixStream::connect(place.socket()).unwrap();
+        portal
+            .write_all(format!("open-link org.mozilla.firefox {address}\n").as_bytes())
+            .unwrap();
+        assert_eq!(door.answered(&mut hand), 1, "{address}");
+        assert_eq!(one_line(&mut portal).as_deref(), Some("acted"));
+        let asked = hand.links.last().unwrap();
+        assert_eq!(asked.application().identifier(), "org.mozilla.firefox");
+        assert_eq!(asked.link().as_str(), address);
+    }
+    assert!(hand.carried.is_empty(), "a link was carried as an act");
+    door.taken_away();
+    let _ = std::fs::remove_dir_all(root);
+}
+
+/// **A line meant as `open-link` that is not one is closed with nothing
+/// written**, and nothing reaches the hand — a file path, a second argument,
+/// or an option dressed as a link.
+#[test]
+fn a_line_that_is_not_a_link_to_open_is_closed_with_nothing() {
+    let (root, place) = a_place("not-a-link");
+    let mut door = TheApplicationDoor::served(place.clone(), us()).unwrap();
+    let mut hand = AHand::answering(Answer::Acted);
+    for line in [
+        "open-link org.mozilla.firefox file:///etc/shadow\n",
+        "open-link org.mozilla.firefox --profile=/tmp/x\n",
+        "open-link org.mozilla.firefox https://a.example/ https://b.example/\n",
+        "open-link org.mozilla.firefox\n",
+    ] {
+        let mut portal = UnixStream::connect(place.socket()).unwrap();
+        portal.write_all(line.as_bytes()).unwrap();
+        assert_eq!(door.answered(&mut hand), 0, "{line}");
+        assert_eq!(one_line(&mut portal), None, "{line}");
+    }
+    assert!(hand.links.is_empty(), "{:?}", hand.links);
+    door.taken_away();
+    let _ = std::fs::remove_dir_all(root);
 }
