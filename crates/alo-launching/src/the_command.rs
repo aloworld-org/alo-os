@@ -8,7 +8,10 @@
 //!    character is **enclosed in double quotes**, inside which `\"`, `` \` ``,
 //!    `\$` and `\\` stand for the character after the backslash;
 //! 3. **field codes** are replaced. A press opens no file, so `%f`, `%F`, `%u`
-//!    and `%U` become nothing; `%i` becomes `--icon` and the entry's icon,
+//!    and `%U` become nothing — except that a link the person followed
+//!    (`Filling::link`, since 2026-11-12) is what `%u` and `%U` become, as
+//!    one argument; `%f` and `%F` stay empty, because a link is not a file
+//!    on this machine; `%i` becomes `--icon` and the entry's icon,
 //!    `%c` its name and `%k` where the entry is; the deprecated `%d`, `%D`,
 //!    `%n`, `%N`, `%v` and `%m` are removed; `%%` is a percent sign.
 //!
@@ -37,6 +40,10 @@ pub struct Filling<'a> {
     pub name: Option<&'a str>,
     /// Where the entry file is, for `%k`.
     pub location: Option<&'a str>,
+    /// A link the person followed, for `%u` and `%U` — already checked to
+    /// be an `http`, `https` or `mailto` address on one line, so it is one
+    /// argument and can never be read as an option.
+    pub link: Option<&'a str>,
 }
 
 /// Why an `Exec` line is not a command this machine will run.
@@ -237,7 +244,12 @@ fn standing_alone(
                 command.push(icon.to_owned());
             }
         }
-        'F' | 'U' => {}
+        'U' => {
+            if let Some(link) = filling.link {
+                command.push(link.to_owned());
+            }
+        }
+        'F' => {}
         other => {
             let text = inside_an_argument(other, filling)?;
             if !text.is_empty() {
@@ -251,7 +263,8 @@ fn standing_alone(
 /// What a field code that stands for at most one string becomes.
 fn inside_an_argument<'a>(code: char, filling: &Filling<'a>) -> Result<&'a str, WhyNotACommand> {
     match code {
-        'f' | 'u' | 'd' | 'D' | 'n' | 'N' | 'v' | 'm' => Ok(""),
+        'u' => Ok(filling.link.unwrap_or("")),
+        'f' | 'd' | 'D' | 'n' | 'N' | 'v' | 'm' => Ok(""),
         'c' => Ok(filling.name.unwrap_or("")),
         'k' => Ok(filling.location.unwrap_or("")),
         other => Err(WhyNotACommand::UnknownFieldCode(other)),

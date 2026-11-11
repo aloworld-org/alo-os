@@ -217,3 +217,37 @@ reaches a secret filed under another identifier or the daemon's own provider
 keys. Revoking the grant ends the application's reach at its next request; the
 passwords it kept stay in the person's keyring, as a folder stays on the disk
 when a grant to it is revoked.
+
+## Amendment, 2026-11-12 — a link a person follows needs no grant
+
+**The owner's decision**, given in a question dialog and quoted as chosen:
+*"No — open in my default, but record it (Recommended)"*. The question was
+whether an application asking `org.freedesktop.portal.OpenURI` to open a link
+must hold a grant over the browser. The answer: an `http` or `https` link
+opens in the person's default browser and a `mailto:` link in their default
+mail application, **with no grant over either**, and every link opened is
+recorded — which application asked, which address, and which application
+opened it.
+
+So the table's row for this portal now reads, for links:
+
+| Portal | What a request is for | A `Reach` today |
+|---|---|---|
+| open-with and default applications — a file | the file, and the application to open it | `File`, `Application` |
+| open-with and default applications — a link | nothing a grant is over: the person's own act of following it | **none, by decision** |
+
+**What this withdraws, said plainly.** The order this repository had decided
+for a web link (`alo-software`'s `opening_the_web`, task 3 of the software and
+web plan) asked the grants *before* reading the machine, so that an
+application granted nothing could not learn whether this machine has a browser.
+That protection is withdrawn for links by the owner: an application asking to
+open one now learns whether something opened it (`0` or `2`). It still never
+learns *which* — `results` is empty — and the record shows the person every
+link opened and who asked. `opening_the_web` is retired in the change that
+records this, and its tests with it.
+
+**What is unchanged.** A file is still opened only with a grant over the file
+and over its opener. A link is still checked before anything else — `http`,
+`https` or `mailto`, one line, no password in a web address — and refused,
+recorded, otherwise; and a link is never handed to a terminal. The portal
+contract changes additively: `docs/contracts/portals.md` records it.

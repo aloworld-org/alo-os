@@ -390,6 +390,81 @@ pub const NOTHING_OPENS_CHOICE_NOT_INSTALLED: Word = Word::saying(
 );
 
 // ---------------------------------------------------------------------------
+// What opens a link — [`crate::NothingOpensLinks`]. Each names which kind of
+// link has no application, because *nothing opens it* alone leaves a person
+// guessing what to install.
+// ---------------------------------------------------------------------------
+
+/// What a translator has to know about a link nothing opened.
+const A_LINK: &str = "Said in the record of what applications asked, when an application asked to \
+                      open a link the person followed and nothing on this machine could open it. \
+                      The link itself is deliberately not repeated: it was written outside this \
+                      machine.";
+
+/// No web browser is installed.
+pub const NOTHING_OPENS_WEB_LINKS: Word = Word::saying(
+    "applications.links.no-web-browser",
+    "No web browser is installed on this machine, so the web link was not opened. Install one, \
+     and web links open in it",
+)
+.noting(A_LINK);
+
+/// No mail application is installed.
+pub const NOTHING_OPENS_MAIL_LINKS: Word = Word::saying(
+    "applications.links.no-mail-application",
+    "No email application is installed on this machine, so the email address was not opened. \
+     Install one, and email addresses open in it",
+)
+.noting(A_LINK);
+
+/// The person's default browser is gone, and no other is installed.
+pub const NOTHING_OPENS_WEB_LINKS_CHOICE_GONE: Word = Word::saying(
+    "applications.links.no-web-browser-choice-gone",
+    "{chosen}, which you chose as your web browser, is no longer installed, and no other web \
+     browser is, so the web link was not opened",
+)
+.noting(
+    "{chosen} is the identifier this machine knows an application by, like org.mozilla.firefox, \
+     and is never translated. The link itself is not repeated.",
+);
+
+/// The person's default mail application is gone, and no other is installed.
+pub const NOTHING_OPENS_MAIL_LINKS_CHOICE_GONE: Word = Word::saying(
+    "applications.links.no-mail-application-choice-gone",
+    "{chosen}, which you chose as your email application, is no longer installed, and no other \
+     email application is, so the email address was not opened",
+)
+.noting(
+    "{chosen} is the identifier this machine knows an application by, like \
+     org.mozilla.Thunderbird, and is never translated. The link itself is not repeated.",
+);
+
+/// The person's default browser is a terminal, and no browser is installed.
+pub const NOTHING_OPENS_WEB_LINKS_CHOICE_A_TERMINAL: Word = Word::saying(
+    "applications.links.no-web-browser-choice-a-terminal",
+    "{chosen}, which you chose as your web browser, is a terminal, and a link is never handed to a \
+     terminal. No web browser is installed, so the web link was not opened",
+)
+.noting(
+    "{chosen} is the identifier of a terminal application, like app.devsuite.Ptyxis, and is never \
+     translated. A link is written outside this machine, and whatever a terminal is handed may \
+     run, which is why it is never handed one.",
+);
+
+/// The person's default mail application is a terminal, and none is installed.
+pub const NOTHING_OPENS_MAIL_LINKS_CHOICE_A_TERMINAL: Word = Word::saying(
+    "applications.links.no-mail-application-choice-a-terminal",
+    "{chosen}, which you chose as your email application, is a terminal, and a link is never \
+     handed to a terminal. No email application is installed, so the email address was not \
+     opened",
+)
+.noting(
+    "{chosen} is the identifier of a terminal application, like app.devsuite.Ptyxis, and is never \
+     translated. A link is written outside this machine, and whatever a terminal is handed may \
+     run, which is why it is never handed one.",
+);
+
+// ---------------------------------------------------------------------------
 // The person's own file, `what-opens-what.toml` — [`crate::FileNotRead`] and
 // [`crate::FileNotWritten`]. Each names the file, and each says what opens a
 // file instead.
@@ -545,7 +620,7 @@ pub const CLOSE_APPLICATION_LEAVES: Word = Word::saying(
 /// it could not reach, what could not join the list, how one is shown, the four
 /// verbs, the arrangements one of them offers, what opens what, and what is said
 /// about the person's own file of those choices.
-pub const EVERY_WORD: [Word; 46] = [
+pub const EVERY_WORD: [Word; 52] = [
     NOT_INSTALLED,
     NO_WINDOW,
     IT_DID_NOT,
@@ -578,6 +653,12 @@ pub const EVERY_WORD: [Word; 46] = [
     OPENS_DECLARED_INSTEAD,
     NOTHING_OPENS,
     NOTHING_OPENS_CHOICE_NOT_INSTALLED,
+    NOTHING_OPENS_WEB_LINKS,
+    NOTHING_OPENS_MAIL_LINKS,
+    NOTHING_OPENS_WEB_LINKS_CHOICE_GONE,
+    NOTHING_OPENS_MAIL_LINKS_CHOICE_GONE,
+    NOTHING_OPENS_WEB_LINKS_CHOICE_A_TERMINAL,
+    NOTHING_OPENS_MAIL_LINKS_CHOICE_A_TERMINAL,
     KEPT_NOT_READ,
     KEPT_NOT_UNDERSTOOD,
     KEPT_NOT_UNDERSTOOD_AT,

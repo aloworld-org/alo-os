@@ -47,12 +47,17 @@
 use crate::Server;
 
 /// Who asked for an application to be started.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum WhoAskedToStart {
     /// The person, with their own press, Enter or chord.
     ThePerson,
     /// Their agent, through the compositor's application door (ADR 0108).
     TheirAgent,
+    /// The person, by following this link in an application: the open-with
+    /// portal asked through the door's `open-link` (the owner, 2026-11-12).
+    /// Started the way a press is, **with the link**, and its window comes in
+    /// front as a press's does.
+    ALinkTheyFollowed(alo_applications::Link),
 }
 
 /// Whatever can ask an application to start, given its identifier and who
@@ -89,8 +94,9 @@ impl Server {
     /// refusal is an answer — while an ask left on the list would be a start
     /// sent on every frame, which is a loop around a bus.
     ///
-    /// The person's asks are sent first and then the agent's, each in the order
-    /// they were made, and each with who made it.
+    /// The person's asks are sent first, then the agent's, then the links the
+    /// person followed, each in the order they were made, and each with who
+    /// made it — a link with the link itself.
     ///
     /// Returns the applications that could not be reached, for a caller to
     /// record. **Not a `Result`**: one ask failing says nothing about the next,
@@ -105,11 +111,15 @@ impl Server {
         let agents = std::mem::take(&mut self.its_agent_asked_to_start)
             .into_iter()
             .map(|it| (it, WhoAskedToStart::TheirAgent));
+        let links = std::mem::take(&mut self.asked_to_open_a_link)
+            .into_iter()
+            .map(|(it, link)| (it, WhoAskedToStart::ALinkTheyFollowed(link)));
         let mut not_started = Vec::new();
-        for (application, who) in persons.chain(agents) {
+        for (application, who) in persons.chain(agents).chain(links) {
+            let comes_in_front = !matches!(who, WhoAskedToStart::TheirAgent);
             if !ask(application.name(), who) {
                 not_started.push(application);
-            } else if who == WhoAskedToStart::ThePerson {
+            } else if comes_in_front {
                 // **Its first window comes in front** when it maps
                 // (`crate::a_window_the_person_opened`). The agent's does
                 // not: only a person's own road moves what is in front.
@@ -141,6 +151,11 @@ impl Server {
         let Some(ask) = self.asks_an_application_to_start.take() else {
             let mut everything = std::mem::take(&mut self.asked_to_start);
             everything.append(&mut self.its_agent_asked_to_start);
+            everything.extend(
+                std::mem::take(&mut self.asked_to_open_a_link)
+                    .into_iter()
+                    .map(|(it, _)| it),
+            );
             return everything;
         };
         let not_started = self.start_what_was_asked_for(&*ask);
@@ -155,7 +170,9 @@ impl Server {
     /// that.
     #[must_use]
     pub fn how_many_are_waiting_to_start(&self) -> usize {
-        self.asked_to_start.len() + self.its_agent_asked_to_start.len()
+        self.asked_to_start.len()
+            + self.its_agent_asked_to_start.len()
+            + self.asked_to_open_a_link.len()
     }
 }
 

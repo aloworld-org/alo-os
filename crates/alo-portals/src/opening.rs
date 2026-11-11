@@ -78,6 +78,34 @@ pub async fn activated(connection: &zbus::Connection, application: &str) -> bool
         .is_ok()
 }
 
+/// Ask `application` to open `uri` — a link a person followed — and whether
+/// it said it did.
+///
+/// The same `Open` as for a file, with the link as the one URI. **The desktop
+/// calls this, not this backend**: a link is started by the desktop exactly as a
+/// person's press is (`crate::opening_links`), and over the bus only where the
+/// application's entry asks for it. Nothing here builds a command; the URI is
+/// one element of the call's array, checked before it arrives.
+pub async fn opened_at(connection: &zbus::Connection, application: &str, uri: &str) -> bool {
+    let (Ok(name), Ok(object)) = (
+        WellKnownName::try_from(application),
+        ObjectPath::try_from(object_of(application)),
+    ) else {
+        return false;
+    };
+    let platform_data: HashMap<&str, Value<'_>> = HashMap::new();
+    connection
+        .call_method(
+            Some(name),
+            object,
+            Some(AN_APPLICATION),
+            "Open",
+            &(vec![uri], platform_data),
+        )
+        .await
+        .is_ok()
+}
+
 /// Ask `opener` to open the file at `path`, and whether it said it did.
 pub(crate) async fn opened_in(connection: &zbus::Connection, opener: &str, path: &Path) -> bool {
     let (Ok(name), Ok(object)) = (

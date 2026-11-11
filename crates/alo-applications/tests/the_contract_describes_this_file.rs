@@ -25,7 +25,7 @@ use std::path::{Path, PathBuf};
 
 use alo_applications::keeping::{self, FORMAT, THE_FILE};
 use alo_applications::spelled::spelled;
-use alo_applications::{Application, Chosen, FileNotRead, application_words};
+use alo_applications::{Application, Chosen, FileNotRead, LinkKind, application_words};
 use alo_opening::Kind;
 use alo_strings::Strings;
 
@@ -166,6 +166,10 @@ fn what_the_example_chose() -> Chosen {
     chosen.choose(
         Kind::PngImage,
         &Application::identified("org.gnome.Papers").unwrap(),
+    );
+    chosen.choose_for_links(
+        LinkKind::Web,
+        &Application::identified("org.mozilla.firefox").unwrap(),
     );
     chosen
 }

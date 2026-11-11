@@ -66,6 +66,11 @@ pub trait CarriesOutAnApplicationVerb {
     /// Where this shell's own tree is on the accessibility bus — the answer to
     /// `alo-tree`.
     fn where_alos_tree_is(&self) -> alo_acting::WhereAlosTreeIs;
+
+    /// Start this application with this link, as a person's press starts it —
+    /// the answer to `open-link`, which the open-with portal asks on the
+    /// person's behalf (the owner, 2026-11-12).
+    fn opening_a_link(&mut self, asked: &alo_acting::ToOpenALink) -> Answer;
 }
 
 /// How many callers may be part-way through a line at once.
@@ -271,6 +276,26 @@ impl TheApplicationDoor {
                         drop(caller.talking);
                         continue;
                     }
+                    // **A link the person followed** is one line in and one
+                    // word out, like an act, and longer than one may be.
+                    match alo_acting::ToOpenALink::read(&line) {
+                        Some(Ok(asked)) => {
+                            let answer = carrying_out.opening_a_link(&asked);
+                            if matches!(answer, Answer::Acted) {
+                                acted += 1;
+                            }
+                            let _ = caller.talking.write_all(answer.written().as_bytes());
+                            let _ = caller.talking.write_all(b"\n");
+                            let _ = caller.talking.flush();
+                            drop(caller.talking);
+                            continue;
+                        }
+                        Some(Err(_)) => {
+                            drop(caller.talking);
+                            continue;
+                        }
+                        None => {}
+                    }
                     // **And so does alo working in an application**, for the
                     // same reason.
                     match ToWorkIn::read(&line) {
@@ -364,10 +389,12 @@ enum HowFarAlong {
 impl Waiting {
     /// Take whatever bytes have arrived, and say how far along this caller is.
     ///
-    /// **Bounded by `Request::THE_MOST`**, so a caller cannot make the
-    /// compositor hold a line while it writes one — which is that constant's
-    /// own reason. A caller that has written more than a request may be is
-    /// finished with rather than truncated: a truncated line could be a
+    /// **Bounded by the longest line any act may be** — an `open-link`'s,
+    /// `alo_acting::opening_a_link::THE_MOST`, since 2026-11-12 — so a caller
+    /// cannot make the compositor hold a line while it writes one. Every
+    /// other act's own reader still refuses a line longer than
+    /// `Request::THE_MOST`. A caller that has written more than a line may be
+    /// is finished with rather than truncated: a truncated line could be a
     /// different, valid request.
     fn read_a_little(&mut self) -> HowFarAlong {
         let mut arrived = [0_u8; Request::THE_MOST];
@@ -380,7 +407,7 @@ impl Waiting {
                         return HowFarAlong::Finished;
                     };
                     self.heard.extend_from_slice(said);
-                    if self.heard.len() > Request::THE_MOST {
+                    if self.heard.len() > alo_acting::opening_a_link::THE_MOST {
                         return HowFarAlong::Finished;
                     }
                     if let Some(end) = self.heard.iter().position(|byte| *byte == b'\n') {

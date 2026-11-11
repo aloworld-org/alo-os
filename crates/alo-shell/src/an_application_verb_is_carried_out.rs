@@ -82,6 +82,10 @@ impl CarriesOutAnApplicationVerb for Server {
     fn where_alos_tree_is(&self) -> alo_acting::WhereAlosTreeIs {
         Self::where_alos_tree_is(self)
     }
+
+    fn opening_a_link(&mut self, asked: &alo_acting::ToOpenALink) -> Answer {
+        self.a_link_is_asked_for(asked)
+    }
 }
 
 impl Server {
