@@ -102,4 +102,11 @@ fn a_task_window_draws_the_pixels_it_drew_before() {
 }
 
 /// What a task window drew before. See `crate::the_desktops_pictures_pinned`.
-const BEFORE: [Drawn; 0] = [];
+const BEFORE: [Drawn; 6] = [
+    Drawn { scale: 100, text: 100, hash: 0xe109_587a_4b8c_7858 },
+    Drawn { scale: 100, text: 125, hash: 0xeed9_0760_a7b9_7eed },
+    Drawn { scale: 150, text: 100, hash: 0x3800_b84c_10d5_0178 },
+    Drawn { scale: 150, text: 125, hash: 0x19c2_ae70_b293_980f },
+    Drawn { scale: 200, text: 100, hash: 0x7b16_9fc0_1527_7d38 },
+    Drawn { scale: 200, text: 125, hash: 0xc640_4fdc_b598_5bb7 },
+];

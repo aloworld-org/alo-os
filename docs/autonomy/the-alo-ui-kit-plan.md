@@ -173,7 +173,7 @@ done before task 13.
 
 ### 1. The desktop's pictures are pinned before anything moves
 
-**Status:** not started. **Size:** S. **Waits on:** nothing.
+**Status:** done on 2026-11-11 (the branch `the-desktops-pictures-are-pinned`). Eight surfaces are held at 100, 150 and 200 % and at text sizes 100 and 125 % by `crates/alo-shell/src/the_desktops_pictures_pinned.rs`, which runs in the gate's test step on every change; the Bar and the window band take no text size and are held at the three scales only. The tables were taken once, from `main` at `4bf7722e`. **Size:** S. **Waits on:** nothing.
 
 **For the person:** nothing visible. It makes every later task safe: if moving
 code changes a pixel on the desktop, a test says so. **Reuses:**

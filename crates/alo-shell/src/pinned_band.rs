@@ -76,4 +76,8 @@ fn the_window_band_draws_the_pixels_it_drew_before() {
 }
 
 /// What the band drew before. See `crate::the_desktops_pictures_pinned`.
-const BEFORE: [Drawn; 0] = [];
+const BEFORE: [Drawn; 3] = [
+    Drawn { scale: 100, text: 100, hash: 0x57e3_6fb5_798c_2521 },
+    Drawn { scale: 150, text: 100, hash: 0x7371_bcb3_8115_b755 },
+    Drawn { scale: 200, text: 100, hash: 0xcc81_b324_b016_7af1 },
+];

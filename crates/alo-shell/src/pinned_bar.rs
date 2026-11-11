@@ -76,4 +76,8 @@ fn the_bar_draws_the_pixels_it_drew_before() {
 }
 
 /// What the Bar drew before. See `crate::the_desktops_pictures_pinned`.
-const BEFORE: [Drawn; 0] = [];
+const BEFORE: [Drawn; 3] = [
+    Drawn { scale: 100, text: 100, hash: 0x4551_f52e_5b51_f5dc },
+    Drawn { scale: 150, text: 100, hash: 0x35fd_0ef1_9c0e_f1bb },
+    Drawn { scale: 200, text: 100, hash: 0xd862_6021_d055_0a84 },
+];

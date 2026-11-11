@@ -64,4 +64,11 @@ fn the_egress_status_draws_the_pixels_it_drew_before() {
 
 /// What the egress status drew before. See
 /// `crate::the_desktops_pictures_pinned`.
-const BEFORE: [Drawn; 0] = [];
+const BEFORE: [Drawn; 6] = [
+    Drawn { scale: 100, text: 100, hash: 0xbae8_05dd_6a5b_a97a },
+    Drawn { scale: 100, text: 125, hash: 0xdd25_790b_aee5_948d },
+    Drawn { scale: 150, text: 100, hash: 0xcdf3_5d51_fddd_e36a },
+    Drawn { scale: 150, text: 125, hash: 0x7a7f_a132_c80c_3e03 },
+    Drawn { scale: 200, text: 100, hash: 0x1200_9c7c_7d98_0849 },
+    Drawn { scale: 200, text: 125, hash: 0xa8ba_8268_bf2a_887f },
+];
