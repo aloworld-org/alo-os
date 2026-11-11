@@ -64,10 +64,34 @@ fn the_lock_screen_draws_the_pixels_it_drew_before() {
 
 /// What the lock screen drew before. See `crate::the_desktops_pictures_pinned`.
 const BEFORE: [Drawn; 6] = [
-    Drawn { scale: 100, text: 100, hash: 0xf0de_5367_e430_f611 },
-    Drawn { scale: 100, text: 125, hash: 0x7476_d1c4_b0fe_be1f },
-    Drawn { scale: 150, text: 100, hash: 0xd320_88da_190c_2531 },
-    Drawn { scale: 150, text: 125, hash: 0xe709_cc98_aad1_d52a },
-    Drawn { scale: 200, text: 100, hash: 0xd1d9_1473_27b5_357f },
-    Drawn { scale: 200, text: 125, hash: 0x0b99_96f3_388f_b54e },
+    Drawn {
+        scale: 100,
+        text: 100,
+        hash: 0xf0de_5367_e430_f611,
+    },
+    Drawn {
+        scale: 100,
+        text: 125,
+        hash: 0x7476_d1c4_b0fe_be1f,
+    },
+    Drawn {
+        scale: 150,
+        text: 100,
+        hash: 0xd320_88da_190c_2531,
+    },
+    Drawn {
+        scale: 150,
+        text: 125,
+        hash: 0xe709_cc98_aad1_d52a,
+    },
+    Drawn {
+        scale: 200,
+        text: 100,
+        hash: 0xd1d9_1473_27b5_357f,
+    },
+    Drawn {
+        scale: 200,
+        text: 125,
+        hash: 0x0b99_96f3_388f_b54e,
+    },
 ];

@@ -78,10 +78,34 @@ fn the_sign_in_screen_draws_the_pixels_it_drew_before() {
 /// What the sign-in screen drew before. See
 /// `crate::the_desktops_pictures_pinned`.
 const BEFORE: [Drawn; 6] = [
-    Drawn { scale: 100, text: 100, hash: 0xdaf1_5848_5596_6952 },
-    Drawn { scale: 100, text: 125, hash: 0xe681_1e43_cf5e_403b },
-    Drawn { scale: 150, text: 100, hash: 0xaba6_3cbd_b911_8b67 },
-    Drawn { scale: 150, text: 125, hash: 0x3c79_5e07_31ac_54f3 },
-    Drawn { scale: 200, text: 100, hash: 0x8c40_ce3c_aef8_2028 },
-    Drawn { scale: 200, text: 125, hash: 0x0675_fbdd_813d_0854 },
+    Drawn {
+        scale: 100,
+        text: 100,
+        hash: 0xdaf1_5848_5596_6952,
+    },
+    Drawn {
+        scale: 100,
+        text: 125,
+        hash: 0xe681_1e43_cf5e_403b,
+    },
+    Drawn {
+        scale: 150,
+        text: 100,
+        hash: 0xaba6_3cbd_b911_8b67,
+    },
+    Drawn {
+        scale: 150,
+        text: 125,
+        hash: 0x3c79_5e07_31ac_54f3,
+    },
+    Drawn {
+        scale: 200,
+        text: 100,
+        hash: 0x8c40_ce3c_aef8_2028,
+    },
+    Drawn {
+        scale: 200,
+        text: 125,
+        hash: 0x0675_fbdd_813d_0854,
+    },
 ];

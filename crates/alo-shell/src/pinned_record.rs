@@ -49,10 +49,34 @@ fn the_record_draws_the_pixels_it_drew_before() {
 
 /// What the record drew before. See `crate::the_desktops_pictures_pinned`.
 const BEFORE: [Drawn; 6] = [
-    Drawn { scale: 100, text: 100, hash: 0xd1c8_bc39_44e7_bbf3 },
-    Drawn { scale: 100, text: 125, hash: 0x07ef_efd4_cc32_19e3 },
-    Drawn { scale: 150, text: 100, hash: 0xfec3_0d46_0ceb_5218 },
-    Drawn { scale: 150, text: 125, hash: 0x6482_998e_a259_f291 },
-    Drawn { scale: 200, text: 100, hash: 0xae71_6885_5e04_1f8b },
-    Drawn { scale: 200, text: 125, hash: 0xd915_5809_fb84_c2fd },
+    Drawn {
+        scale: 100,
+        text: 100,
+        hash: 0xd1c8_bc39_44e7_bbf3,
+    },
+    Drawn {
+        scale: 100,
+        text: 125,
+        hash: 0x07ef_efd4_cc32_19e3,
+    },
+    Drawn {
+        scale: 150,
+        text: 100,
+        hash: 0xfec3_0d46_0ceb_5218,
+    },
+    Drawn {
+        scale: 150,
+        text: 125,
+        hash: 0x6482_998e_a259_f291,
+    },
+    Drawn {
+        scale: 200,
+        text: 100,
+        hash: 0xae71_6885_5e04_1f8b,
+    },
+    Drawn {
+        scale: 200,
+        text: 125,
+        hash: 0xd915_5809_fb84_c2fd,
+    },
 ];

@@ -102,8 +102,6 @@ mod a_new_window_is_placed;
 mod a_person_pins_and_unpins;
 #[cfg(test)]
 mod a_picture_hashed;
-#[cfg(test)]
-mod the_desktops_pictures_pinned;
 mod a_press_in_the_menu;
 mod a_press_on_a_setup_sheet;
 mod a_press_on_alos_band;
@@ -152,6 +150,8 @@ pub mod alos_marked_words;
 pub mod closing_a_task_window;
 mod each_window_with_its_edge;
 mod ease_in_and_out;
+#[cfg(test)]
+mod the_desktops_pictures_pinned;
 pub use a_provider_is_added_in_settings::WhyNotSaved;
 mod a_reader_presses;
 pub use a_reader_presses::WhatAReaderPressCameTo;
