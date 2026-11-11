@@ -730,9 +730,18 @@ fn a_reader_finds_close_on_each_task_window_and_presses_it() {
     let reader = session.reader();
     let mut closes = Vec::new();
     for (window, under) in &found {
-        let [(at, facts)] = under.as_slice() else {
-            panic!("{window}: a reader found {under:?} under it, not one Close");
+        // **Minimise, then Close** — a task window goes into the right-hand
+        // panel, still running (design `23:2`).
+        let [(_, minimise), (at, facts)] = under.as_slice() else {
+            panic!("{window}: a reader found {under:?} under it, not Minimise and Close");
         };
+        assert_eq!(
+            minimise.name,
+            strings
+                .say(&alo_access::words::MINIMISE.key(), &Filling::nothing())
+                .text(),
+            "{window}: its first control is not called Minimise"
+        );
         assert_eq!(
             facts.name, close,
             "{window}: its control is not called Close"

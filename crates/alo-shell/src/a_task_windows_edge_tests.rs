@@ -97,18 +97,18 @@ fn press_close_at(server: &mut Server, which: WhichTask, scale: u16) -> bool {
         .expect("the press was handled")
 }
 
-/// **Close, and nothing else, at the design's 44 × 44 at the trailing end of a
+/// **Minimise and Close, and nothing else, at the design's 44 × 44 at the trailing end of a
 /// 54-tall band that sits on the window.**
 #[test]
-fn the_edge_carries_close_alone_at_the_designs_figures() {
+fn the_edge_carries_minimise_and_close_at_the_designs_figures() {
     let window = Rectangle::new((200, 124).into(), (1040, 800).into());
     let edge = the_edge_of_a_task_window(window, anywhere());
 
     let does: Vec<OnTheEdge> = edge.controls.iter().map(|control| control.does).collect();
     assert_eq!(
         does,
-        [OnTheEdge::Close],
-        "minimise, maximise or move was drawn"
+        [OnTheEdge::Minimise, OnTheEdge::Close],
+        "maximise or move was drawn, or Minimise was not"
     );
     assert_eq!(edge.region.size.h, 54);
     assert_eq!(
@@ -116,7 +116,7 @@ fn the_edge_carries_close_alone_at_the_designs_figures() {
         window.loc.y,
         "the edge does not meet the window"
     );
-    let close = edge.controls.first().expect("Close").target;
+    let close = edge.controls.last().expect("Close").target;
     assert_eq!(close.size, Size::from((44, 44)));
     assert!(
         close.loc.x + close.size.w <= window.loc.x + window.size.w
@@ -285,7 +285,7 @@ fn a_closed_windows_edge_is_gone() {
         .map(|(_, at)| *at)
         .expect("the window is open");
     let edge = the_edge_of_a_task_window(in_the_edges_units(window, 100), anywhere());
-    let close = edge.controls.first().expect("Close").target;
+    let close = edge.controls.last().expect("Close").target;
 
     press_close(&mut server, which);
     assert!(

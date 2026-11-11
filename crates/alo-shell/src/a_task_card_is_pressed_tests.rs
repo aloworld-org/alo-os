@@ -202,3 +202,24 @@ fn a_press_on_a_task_not_in_the_panel_does_nothing() {
     assert!(server.take_the_stops().is_empty());
     assert_eq!(server.the_task_card_open, None);
 }
+
+/// **Minimise is carried out when the panel is lent, once** — and a desktop
+/// with no panel leaves the window where it is rather than nowhere.
+#[test]
+fn a_minimise_is_carried_out_once_when_the_panel_is_lent() {
+    let (_runtime, mut server, which) = a_placed_working_task();
+
+    server.this_task_is_asked_to_go_aside(which);
+    assert_eq!(server.put_tasks_aside_that_were_asked(None), 0);
+    assert!(
+        !server.tasks().is_put_aside(which),
+        "a task went aside with no panel to hold it, so a person could not find it"
+    );
+
+    server.this_task_is_asked_to_go_aside(which);
+    server.this_task_is_asked_to_go_aside(which);
+    let mut panel = Panel::new();
+    assert_eq!(server.put_tasks_aside_that_were_asked(Some(&mut panel)), 1);
+    assert_eq!(panel.holding_everything(), 1, "two presses made two cards");
+    assert_eq!(server.put_tasks_aside_that_were_asked(Some(&mut panel)), 0);
+}

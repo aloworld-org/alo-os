@@ -343,8 +343,8 @@ impl ReadAloudTree {
     ///
     /// # Its controls are asked the same question as a frame's
     ///
-    /// `what_a_reader_is_told(Decorations::ATaskWindow)`, which is Close and
-    /// nothing else — the same answer `crate::a_task_windows_edge` draws from,
+    /// `what_a_reader_is_told(Decorations::ATaskWindow)`, which is Minimise and
+    /// Close — the same answer `crate::a_task_windows_edge` draws from,
     /// so what is heard and what is drawn cannot disagree. Each control that
     /// closes a window carries [`Pressed::CloseTheTask`], so a reader's press
     /// reaches the window it is under and no other.
@@ -383,8 +383,13 @@ impl ReadAloudTree {
                 },
             );
             for control in what_a_reader_is_told(Decorations::ATaskWindow) {
-                let press = (control.does == Some(alo_shortcuts::Action::CloseWindow))
-                    .then_some(Pressed::CloseTheTask(*which));
+                let press = match control.does {
+                    Some(alo_shortcuts::Action::CloseWindow) => Some(Pressed::CloseTheTask(*which)),
+                    Some(alo_shortcuts::Action::MinimiseWindow) => {
+                        Some(Pressed::MinimiseTheTask(*which))
+                    }
+                    _ => None,
+                };
                 let node = Node {
                     press,
                     ..of_control(strings, control, turned_on)

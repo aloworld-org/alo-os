@@ -4,7 +4,7 @@
 //!
 //! `alo_tasks::OnItsCard` decides *which* of six states a task is in and what
 //! each line is about; this file turns that into sentences with the person's
-//! [`Strings`], and `crate::task_card_raster` draws them. The lane builds these
+//! `alo_strings::Strings`, and `crate::task_card_raster` draws them. The lane builds these
 //! once a frame and the frame borrows them — the same shape the task windows'
 //! own words take (`crate::the_tasks_words`), for the same reason: the raster
 //! holds `&str`, and the strings have to live somewhere the lane keeps.

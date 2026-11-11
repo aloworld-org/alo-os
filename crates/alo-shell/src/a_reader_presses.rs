@@ -22,6 +22,9 @@ use crate::closing_a_task_window::WhatClosingCameTo;
 pub enum WhatAReaderPressCameTo {
     /// A task window's Close was pressed, and this is what closing it came to.
     ATaskWindow(WhatClosingCameTo),
+    /// A task window's Minimise was pressed: it goes into the right-hand
+    /// panel with the next frame, still running.
+    ATaskGoesAside,
     /// The Dock did what a click on that control does.
     TheDockDidIt,
     /// Nothing: no Dock drawn now holds that control, or a click on it does
@@ -35,6 +38,10 @@ impl Server {
         match pressed {
             Pressed::CloseTheTask(which) => {
                 WhatAReaderPressCameTo::ATaskWindow(self.the_person_closes_a_task(which))
+            }
+            Pressed::MinimiseTheTask(which) => {
+                self.this_task_is_asked_to_go_aside(which);
+                WhatAReaderPressCameTo::ATaskGoesAside
             }
             Pressed::OnTheDock(what) => self.a_reader_pressed_on_the_dock(&what),
         }
