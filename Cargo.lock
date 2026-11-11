@@ -869,6 +869,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "alo-drawing"
+version = "0.0.1"
+dependencies = [
+ "toml",
+]
+
+[[package]]
 name = "alo-drives"
 version = "0.0.1"
 dependencies = [
@@ -1825,6 +1832,7 @@ dependencies = [
  "alo-displays",
  "alo-dividing",
  "alo-dock",
+ "alo-drawing",
  "alo-egress",
  "alo-files",
  "alo-folded-light",
