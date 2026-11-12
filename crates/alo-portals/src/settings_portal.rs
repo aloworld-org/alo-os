@@ -260,7 +260,7 @@ pub(crate) fn written(value: Value) -> OnTheBus<'static> {
             let (red, green, blue) = Value::accent_color(colour);
             OnTheBus::Structure(Structure::from((red, green, blue)))
         }
-        Value::CursorTheme(name) => OnTheBus::Str(name.into()),
+        Value::CursorTheme(name) | Value::ButtonLayout(name) => OnTheBus::Str(name.into()),
         Value::CursorSize(pixels) => OnTheBus::I32(pixels),
     }
 }

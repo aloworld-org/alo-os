@@ -135,6 +135,7 @@ pub mod sandboxed;
 #[cfg(unix)]
 pub mod shortening;
 pub mod the_machine;
+pub mod the_window_buttons_gtk_is_told;
 #[cfg(unix)]
 pub mod where_the_answers_are;
 pub mod words;
@@ -173,7 +174,8 @@ pub use answers_file::{AnswersFile, ReadBack, WHERE_IT_USED_TO_BE};
 #[cfg(unix)]
 pub use answers_head::THE_ANSWERS_FORMAT;
 pub use appearance_settings::{
-    Setting, THE_INTERFACE_NAMESPACE, THE_NAMESPACE, THE_NAMESPACES, Value, Values,
+    Setting, THE_INTERFACE_NAMESPACE, THE_NAMESPACE, THE_NAMESPACES, THE_WINDOW_NAMESPACE, Value,
+    Values,
 };
 pub use handle::{NotAToken, THE_PORTALS_OBJECT, handle_for};
 #[cfg(target_os = "linux")]

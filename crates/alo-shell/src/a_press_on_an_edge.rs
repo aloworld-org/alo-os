@@ -130,7 +130,6 @@ impl crate::Server {
         let Some(at) = self.where_the_pointer_is_in_logical_pixels() else {
             return false;
         };
-        let decorations = crate::window_edge_who_draws::who_draws_a_frame();
         let mapped: Vec<WlSurface> = self.mapped_surfaces().cloned().collect();
         let scale = self.the_scale_an_edge_is_measured_at();
         let at = crate::an_edge_in_its_displays_units::a_point_in_the_edges_units(at, scale);
@@ -139,7 +138,7 @@ impl crate::Server {
             let window = self.the_window_a_band_hangs_from(&surface, scale);
             let edge = edge_of(
                 window,
-                decorations,
+                self.who_draws_the_header_of(&surface),
                 self.is_this_windows_edge_revealed(&surface),
                 self.the_room_an_edge_is_clamped_in(),
             );

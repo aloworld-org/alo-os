@@ -42,7 +42,7 @@ use alo_access::TurnedOn;
 use alo_access::{Control, Surface};
 use alo_adapters::{AccessibilityTree, AccessibleSession, Facts, NodeAt, Role};
 use alo_portals::Sandboxes;
-use alo_shell::{FrameName, ReadAloudBus, ReadAloudTree};
+use alo_shell::{Decorations, FrameName, ReadAloudBus, ReadAloudTree};
 use alo_strings::{Filling, Strings};
 
 /// How long anything here is waited for.
@@ -563,8 +563,11 @@ fn the_served_tree_follows_the_windows_that_open() {
     let opened = ReadAloudTree::of(&strings, &showing, &TurnedOn::nothing()).with_the_frames_open(
         &strings,
         &[
-            FrameName::Given("Ledger for March".to_owned()),
-            FrameName::AnApplication,
+            (
+                FrameName::Given("Ledger for March".to_owned()),
+                Decorations::TheShellDraws,
+            ),
+            (FrameName::AnApplication, Decorations::TheShellDraws),
         ],
         &TurnedOn::nothing(),
     );
@@ -582,7 +585,7 @@ fn the_served_tree_follows_the_windows_that_open() {
     // of 2026-10-09 that a reader reaches the edge *without first hovering*.
     // Read back off the bus rather than off the tree, because a tree that is
     // right and a bus nobody can hear is the exact gap this file exists for.
-    let wanted: Vec<String> = alo_shell::what_a_reader_is_told(alo_shell::who_draws_a_frame())
+    let wanted: Vec<String> = alo_shell::what_a_reader_is_told(Decorations::TheShellDraws)
         .into_iter()
         .map(|control| said(&strings, &control))
         .collect();
@@ -612,7 +615,10 @@ fn the_served_tree_follows_the_windows_that_open() {
     // And a window closing takes its path off rather than leaving it answering.
     let closed = ReadAloudTree::of(&strings, &showing, &TurnedOn::nothing()).with_the_frames_open(
         &strings,
-        &[FrameName::Given("Ledger for March".to_owned())],
+        &[(
+            FrameName::Given("Ledger for March".to_owned()),
+            Decorations::TheShellDraws,
+        )],
         &TurnedOn::nothing(),
     );
     bus.now_showing(&closed)

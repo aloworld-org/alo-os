@@ -285,3 +285,38 @@ own windows open only when the person opens them, so each asks every time. A
 task window's space includes **the edge above it**, which carries its Close.
 The record now counts among the windows a new one must not cover, as Settings
 and the terminal already did.
+
+---
+
+## Amended 2026-11-11 — a remembered place that is now taken, and a window that grows
+
+Two roads let a new window land on another after the glide was built, both
+found from one boot walk where VSCodium opened over alo's terminal
+(`docs/misreadings/a-window-in-the-wrong-place-was-put-back-not-placed.md`).
+
+**A remembered place another window now stands on is not given out.** Rule 2
+puts a window back where its application was left. The place was free when it
+was left; a window opened since — alo's terminal, which reopens on the same
+corner each session — may stand on it. Such a place is now spent and the window
+opens as a new one: rules 3 to 7, and with no room, the glide. It is asked at
+the larger of the remembered size and the window's first size on each side,
+because a first frame is often smaller than the one the application settles at.
+`Server::put_back_where_it_was`.
+
+**A window alo placed is placed again if it grows over another before anybody
+has touched it.** Rule 6 places a window at the application's own size, read
+from its first frame. VSCodium's first frame was 457 × 157 and it settled at
+1200 × 800, so a gap found for the first is no promise about the second. When a
+window alo placed changes size and now covers another window, it is placed
+again exactly as a new window of that size would be — beside, or the glide for
+one the person opened. A window that grows over nothing stays where it is.
+
+**Never a window the person placed:** a drag, a resize, a maximise, a restore
+or a press on the window ends it, so alo never moves a window from under
+somebody's hand. `crate::a_window_that_grows_is_placed_again`.
+
+**This lane's judgement, the owner's to change:** both make the existing
+promise true — *a new window never lands on top of another* — and add no
+setting. Spending a taken remembered place, rather than keeping it for when the
+other window closes, is chosen so a window never jumps across the desk later
+on its own.

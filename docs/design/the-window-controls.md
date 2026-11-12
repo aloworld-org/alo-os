@@ -190,9 +190,16 @@ expanded states, and a placement preview has a spoken equivalent. Icon-only
 controls have tooltips. Contrast holds in the active and inactive looks.
 
 **Client-drawn title bars** keep the repository's ruling of 2026-10-09: the
-application's own header stays, and alo's band adds **Window actions only** —
-no second Minimise or Close. Its limits are named per application rather than
-hidden.
+application's own header stays and nothing is shown twice. **Amended by the
+owner on 2026-11-12**: *"The window controls should be on all the installed apps"* and *"No need to add controls if the app has, we can only add the ones that are not there"*. So alo's band adds **Window actions, and
+whichever of Minimise and Close the application does not show**. Firefox shows
+only Close, so it gets Window actions and Minimise. The GNOME applications and
+VSCodium show both, so they get Window actions alone. An application alo cannot
+know about gets Window actions alone. How alo knows, without watching, is in
+[the external window edge](the-external-window-edge.md#the-owners-amendment-of-2026-11-12).
+Its limits are named per application in
+[the quirk](../quirks/an-application-that-draws-its-own-header-is-not-asked-which-buttons.md)
+rather than hidden.
 
 ## Measured, 2026-11-09
 
@@ -448,3 +455,4 @@ that part is **not built**.
 | 3b | Help asked in the panel's own field: typed in place, sent with the window read at Enter, no launcher | this change |
 | 3c | The answer card under the panel, its working line and Stop, Continue in a task window | not built: no frame draws it |
 | 4 | Capture & export | not built |
+| 5 | Every application's window offers the three; alo adds only the ones an application that draws its own header does not show (the owner, 2026-11-12) | #1189 |
