@@ -75,6 +75,11 @@ mod telling_applications_about_the_pointer;
 #[cfg(target_os = "linux")]
 mod telling_applications_to_describe_themselves;
 
+// Starting and stopping the screen reader when the person's switch says so
+// (ADR 0151).
+#[cfg(target_os = "linux")]
+mod starting_the_screen_reader;
+
 #[cfg(target_os = "linux")]
 mod putting_back;
 
@@ -353,6 +358,14 @@ mod running {
         /// where they gave none — so a change in Settings tells it only when it
         /// is one.
         apps_describe_themselves: bool,
+        /// Whether this person switched the screen reader on, read from their
+        /// `access.toml` once at sign-in and handed to the shell, which hands
+        /// it back on the first frame (ADR 0151).
+        screen_reader_is_on: bool,
+        /// The screen reader's switch as this desktop last acted on it, and
+        /// the one worker that starts and stops it
+        /// (`crate::starting_the_screen_reader`).
+        screen_reader: crate::starting_the_screen_reader::TheScreenReader,
         /// Where the dock is, and so where the status area is.
         dock: alo_dock::Dock,
         /// The windows this person has put aside, which the panel at the edge
@@ -670,6 +683,17 @@ mod running {
                 }
                 turned_on.has(alo_access::Setting::ReducedMotion)
             });
+            // **And whether they switched the screen reader on**, from the same
+            // file; a file that did not read is off, and was said just above.
+            let screen_reader_is_on = alo_choosing::where_the_folder_is(
+                std::env::var_os("XDG_CONFIG_HOME").as_deref(),
+                std::env::var_os("HOME").as_deref(),
+            )
+            .is_some_and(|folder| {
+                alo_access::keeping::at_sign_in(&folder)
+                    .0
+                    .has(alo_access::Setting::ScreenReader)
+            });
             let (pointers_look, they_chose) =
                 crate::telling_applications_about_the_pointer::as_they_left_it(&appearance);
             // **Told at sign-in only what they chose in Settings**, so a theme
@@ -693,6 +717,18 @@ mod running {
                 when_there_is_no_room,
                 motion_is_reduced,
                 apps_describe_themselves,
+                screen_reader_is_on,
+                // **Each ask reads the person's language again**, so a language
+                // changed in Settings reaches the reader the next time it
+                // starts.
+                screen_reader: crate::starting_the_screen_reader::TheScreenReader::acted_on_by(
+                    |on| {
+                        let language = the_languages_they_read()
+                            .first()
+                            .map(|language| language.tag().to_owned());
+                        crate::starting_the_screen_reader::on_this_machine(on, language)
+                    },
+                ),
                 dock: alo_dock::Dock::shipped(),
                 put_aside: alo_put_aside::Panel::new(),
                 // Nothing has been asked to be put back.
@@ -811,6 +847,26 @@ mod running {
             );
             self.pointers_look = look;
             crate::telling_applications_about_the_pointer::tell(look, what);
+        }
+
+        /// Whether this person switched the screen reader on, as read at
+        /// sign-in.
+        fn the_screen_reader_is_on(&self) -> bool {
+            self.screen_reader_is_on
+        }
+
+        /// **The screen reader is to run, or not**: asked of the one worker,
+        /// which starts or stops it in the person's session only when that is
+        /// a change (`crate::starting_the_screen_reader`).
+        fn the_screen_reader_is(&mut self, on: bool) {
+            self.screen_reader.is(on);
+        }
+
+        /// What the last start or stop came to, once it has.
+        fn what_the_screen_reader_answered(
+            &mut self,
+        ) -> Option<alo_shell::TheScreenReaderAnswered> {
+            self.screen_reader.answered()
         }
 
         /// **They turned over *Apps describe themselves***: applications

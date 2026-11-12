@@ -309,6 +309,12 @@ fn the_press_is_carried_out(server: &mut Server, press: crate::SettingsPress, st
         if let Some(reduced) = server.settings.motion_is_reduced() {
             server.the_motion_is_reduced(reduced);
         }
+        // **And whether the screen reader runs**, held for the desktop, which
+        // starts or stops it only when that is a change
+        // (`crate::the_screen_reader_switch`).
+        if let Some(on) = server.settings.screen_reader_is_on() {
+            server.the_screen_reader_is_now(on);
+        }
         return;
     }
     if let Some(SettingsDid::Kept(SettingsSection::Appearance, SettingsKept::Written)) = did {

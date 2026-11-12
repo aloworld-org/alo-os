@@ -276,6 +276,11 @@ pub enum SettingsRow {
     /// navy edge and black are the owner's yes of 2026-11-06
     /// (`alo_appearance::PointerColour`).
     PointerColour(alo_appearance::PointerColour),
+    /// *Screen reader*: one switch, and Enter turns it over. **Off as this
+    /// computer comes**; on, the desktop starts the screen reader in the
+    /// person's session and at each sign-in after (ADR 0151, the owner's *"Ship
+    /// Orca"* of 2026-11-12, `alo_access::Setting::ScreenReader`).
+    ScreenReader,
     /// *Reduced motion*: one switch, and Enter turns it over. Off as this
     /// computer comes; on, the view jumps where it would glide (the owner's
     /// yes of 2026-11-07, `alo_access::Setting::ReducedMotion`).
@@ -343,6 +348,7 @@ impl SettingsRow {
             | Self::PointerSize(_)
             | Self::PointerShape(_)
             | Self::PointerColour(_)
+            | Self::ScreenReader
             | Self::ReducedMotion
             | Self::AppsDescribeThemselves
             | Self::AloWorksFullyInsideApps => SettingsSection::Accessibility,
@@ -509,6 +515,10 @@ pub(crate) struct Open {
     /// with no section of its own to say it: something not on this computer
     /// yet. Gone when the page changes.
     pub(crate) told: Option<String>,
+    /// What the desktop last answered about the screen reader, where it did
+    /// not do what it was asked: said under the switch
+    /// (`crate::the_screen_reader_switch`).
+    pub(crate) the_screen_reader: Option<String>,
     /// Which row of the page has the focus, counted from its first.
     pub(crate) focus: usize,
     /// Whether Settings waits for a chord for the focused shortcut.
@@ -520,6 +530,9 @@ pub(crate) struct Open {
 pub struct SettingsWindow {
     /// The sections, while the window is open.
     open: Option<Open>,
+    /// What the desktop last answered about the screen reader, where it did
+    /// not do what it was asked — kept while the window is closed.
+    the_screen_reader: Option<String>,
 }
 
 impl SettingsWindow {
@@ -585,6 +598,7 @@ impl SettingsWindow {
             in_the_page: false,
             picker: None,
             told: None,
+            the_screen_reader: self.the_screen_reader.clone(),
             focus: 0,
             waiting_for_a_chord: false,
         });
@@ -715,6 +729,27 @@ impl SettingsWindow {
         self.open
             .as_ref()
             .map(|open| open.appearance.drawn().when_there_is_no_room())
+    }
+
+    /// Whether the person switched the screen reader on, as Settings holds it.
+    #[must_use]
+    pub fn screen_reader_is_on(&self) -> Option<bool> {
+        self.open
+            .as_ref()
+            .map(|open| open.access.drawn().has(alo_access::Setting::ScreenReader))
+    }
+
+    /// **What the desktop answered about the screen reader**, said under its
+    /// switch: [`None`] once it did what it was asked
+    /// (`crate::the_screen_reader_switch`).
+    ///
+    /// Kept while the window is closed, so a reader that could not start at
+    /// sign-in is said the first time the person opens Settings.
+    pub fn the_screen_reader_answered(&mut self, said: Option<String>) {
+        if let Some(open) = self.open.as_mut() {
+            open.the_screen_reader.clone_from(&said);
+        }
+        self.the_screen_reader = said;
     }
 
     /// Whether the person asked for less motion, as Settings holds it.
@@ -1012,6 +1047,13 @@ impl Open {
             // and so offered only where it was read.
             SettingsCategory::Accessibility => {
                 let mut rows = Vec::new();
+                // **The screen reader first**, because a person who needs it
+                // is the one who cannot look further down the page for it.
+                // Kept in `access.toml`, so offered only where that file can
+                // be kept.
+                if self.access.at().is_some() && self.access.not_read().is_none() {
+                    rows.push(SettingsRow::ScreenReader);
+                }
                 if self.appearance.at().is_some() {
                     rows.push(SettingsRow::TextSize);
                 }
@@ -1422,6 +1464,26 @@ impl Open {
                 SettingsDid::Kept(SettingsSection::Appearance, kept)
             }
             SettingsRow::TextSize => self.the_text_is(25, doors.strings),
+            // **The screen reader's switch, turned over**, kept in the person's
+            // `access.toml`; the desktop is told by
+            // `crate::a_key_reaches_settings` and starts or stops it.
+            SettingsRow::ScreenReader if self.access.not_read().is_some() => {
+                SettingsDid::Kept(SettingsSection::Accessibility, SettingsKept::Refused)
+            }
+            SettingsRow::ScreenReader => {
+                let kept = self.access.changed(
+                    |turned_on| {
+                        if turned_on.has(alo_access::Setting::ScreenReader) {
+                            turned_on.turn_off(alo_access::Setting::ScreenReader);
+                        } else {
+                            turned_on.turn_on(alo_access::Setting::ScreenReader);
+                        }
+                        Ok(())
+                    },
+                    doors.strings,
+                );
+                SettingsDid::Kept(SettingsSection::Accessibility, kept)
+            }
             // **One switch, turned over**, kept in the person's `access.toml`;
             // the seat is told by `crate::a_key_reaches_settings`, so the next
             // glide is a jump.

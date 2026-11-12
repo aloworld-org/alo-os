@@ -632,6 +632,64 @@ pub fn also_pressed(strings: &alo_strings::Strings, keys: &[String]) -> String {
         .into_text()
 }
 
+/// Reading aloud.
+pub const READING_ALOUD: Word = Word::saying("settings.access.reading-aloud", "Reading aloud")
+    .noting("A heading on the accessibility page over the screen reader's switch. Sentence case.");
+
+/// Screen reader.
+pub const SCREEN_READER: Word = Word::saying("settings.access.screen-reader", "Screen reader")
+    .noting(
+        "A switch, off as the computer comes. On, everything on the screen is read aloud for \
+         somebody who cannot see it. Use the name a screen reader has on other computers in this \
+         language, because that is what a blind person looks for.",
+    );
+
+/// What the screen reader does, and that its voice stays on the computer.
+pub const SCREEN_READER_IS: Word = Word::saying(
+    "settings.access.screen-reader.is",
+    "On, what is on the screen and where the keyboard is are read aloud, in the language you \
+     read, now and each time you sign in. The voice is made on this computer, and nothing it \
+     says is sent anywhere.",
+)
+.noting(
+    "Under the switch Screen reader. Says what it does, that it lasts until it is turned off, \
+     and that the speech is made on the computer itself rather than by an online service.",
+);
+
+/// The screen reader is not on this computer.
+pub const SCREEN_READER_NOT_HERE: Word = Word::saying(
+    "settings.access.screen-reader.not-here",
+    "The screen reader is not on this computer, so nothing is read aloud. The switch stays on, \
+     and the screen is read aloud once the screen reader is there.",
+)
+.noting(
+    "Shown under the switch Screen reader when it was turned on and the computer does not have \
+     the screen reader installed. A fault in how the computer was made, not something the \
+     person did.",
+);
+
+/// The screen reader did not start.
+pub const SCREEN_READER_DID_NOT_START: Word = Word::saying(
+    "settings.access.screen-reader.did-not-start",
+    "The screen reader did not start, so nothing is read aloud. The switch stays on, and it is \
+     tried again the next time you sign in, or when you turn the switch off and on.",
+)
+.noting(
+    "Shown under the switch Screen reader when it was turned on and the screen reader could not \
+     start or stopped at once.",
+);
+
+/// The screen reader did not stop.
+pub const SCREEN_READER_DID_NOT_STOP: Word = Word::saying(
+    "settings.access.screen-reader.did-not-stop",
+    "The screen reader did not stop, so the screen may still be read aloud. Turn the switch on \
+     and off again to try once more.",
+)
+.noting(
+    "Shown under the switch Screen reader when it was turned off and the screen reader could not \
+     be stopped.",
+);
+
 /// Motion.
 pub const MOTION: Word = Word::saying("settings.access.motion", "Motion").noting(
     "A heading on the accessibility page over the setting for movement on the screen. Sentence case.",
@@ -1002,7 +1060,7 @@ pub const THAT_APP_IS_GONE: Word = Word::saying(
 /// The length is written out so that adding a word above and forgetting it
 /// here does not compile — a word declared and left out of this list reaches a
 /// person as its own key.
-pub const THE_WINDOWS_WORDS: [Word; 131] = [
+pub const THE_WINDOWS_WORDS: [Word; 137] = [
     SETTINGS,
     EVERYTHING_IN_ONE_PLACE,
     THE_GROUP_ALO,
@@ -1112,6 +1170,12 @@ pub const THE_WINDOWS_WORDS: [Word; 131] = [
     BLACK,
     AS_A_PERCENTAGE,
     ALSO_PRESSED,
+    READING_ALOUD,
+    SCREEN_READER,
+    SCREEN_READER_IS,
+    SCREEN_READER_NOT_HERE,
+    SCREEN_READER_DID_NOT_START,
+    SCREEN_READER_DID_NOT_STOP,
     MOTION,
     REDUCED_MOTION,
     REDUCED_MOTION_IS,

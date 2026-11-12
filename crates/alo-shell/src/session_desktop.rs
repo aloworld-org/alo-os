@@ -144,6 +144,11 @@ pub fn stand_the_desktop_up(
     // (`crate::the_view_glides`).
     server.when_there_is_no_room_is(desktop.when_there_is_no_room());
     server.the_motion_is_reduced(desktop.the_motion_is_reduced());
+    // **And whether the screen reader runs**, held for the desktop's first
+    // frame, so a person who left it on is read to from the moment the display
+    // stands — not before it, when the reader would find nothing to connect to
+    // (`crate::the_screen_reader_switch`).
+    server.the_screen_reader_is_now(desktop.the_screen_reader_is_on());
     // **And the pointer they chose**, before the first frame draws it
     // (`crate::the_pointers_look`).
     server.the_pointer_is(desktop.the_pointers_look());

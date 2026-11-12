@@ -1,0 +1,43 @@
+# The screen read aloud, as the person switched it on in Settings ->
+# Accessibility (ADR 0151, the owner's "Ship Orca" of 2026-11-12).
+#
+# A user unit, run by the person's own manager and as the person: Orca is the
+# distribution's program, and PID 1 is not who starts a person's session
+# programs (crates/alo-image/tests/a_unit_starts_what_its_manager_may_execute.rs).
+#
+# No [Install]: nothing starts this but alo-desktop, at sign-in when the switch
+# is on and whenever the person turns it over
+# (crates/alo-desktop/src/starting_the_screen_reader.rs).
+[Unit]
+Description=alo OS screen reader: the screen read aloud, because the person switched it on
+Documentation=https://github.com/aloworld-org/alo-os/blob/main/docs/decisions/0151-alo-ships-a-screen-reader-and-its-voices-stay-on-the-machine.md
+After=dbus.socket pipewire-pulse.socket
+
+[Service]
+Type=exec
+
+# The language the person reads, written by the desktop before each start as
+# LC_ALL=<their language>. Orca takes the language it speaks in, and the words
+# it says about a control, from it. Optional: a machine that could not write it
+# speaks in the session's own language rather than not at all.
+EnvironmentFile=-%t/alo-screen-reader.env
+
+# --replace: a reader the person started by hand is taken over rather than
+# doubled, so two voices never talk over each other.
+ExecStart=/usr/bin/orca --replace
+
+# **Nothing it says leaves this computer.** Orca opens a link's address to say
+# how large the file behind it is (orca/speech_generator.py,
+# _generate_link_file_size), which is a request to whatever server the link
+# names. Orca is configured and never patched, so it is configured out: no
+# internet socket can be opened by Orca or anything it starts. Its voice, its
+# accessibility bus, its session bus and its sound are all local sockets. The
+# cost is that the size of a linked file is not said.
+RestrictAddressFamilies=AF_UNIX
+NoNewPrivileges=yes
+
+# A reader that falls over is a person who suddenly hears nothing, so it is
+# started again; systemd's own limit stops a reader that cannot start at all
+# from being retried for ever.
+Restart=on-failure
+RestartSec=2
