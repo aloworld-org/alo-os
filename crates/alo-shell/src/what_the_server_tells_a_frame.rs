@@ -92,7 +92,7 @@ pub(crate) struct WhatTheLaneBuilt<'a> {
     ///
     /// **Borrowed from a bundle the lane keeps alive**, for `market`'s reason:
     /// the rows hold strings that were said this frame.
-    pub(crate) the_bar: Option<crate::bar_raster::TheBarOnTheDisplay<'a>>,
+    pub(crate) the_bar: Option<crate::what_the_bar_shows::TheBarOnTheDisplay<'a>>,
     /// What each application draws on the Dock, lent by the lane.
     ///
     /// **Lent rather than read off the server inside**, because the frame holds
