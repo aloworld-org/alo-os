@@ -244,6 +244,7 @@ dependencies = [
  "alo-choosing",
  "alo-installed",
  "alo-keeping",
+ "alo-launching",
  "alo-portals",
  "alo-protocol",
  "alo-record",

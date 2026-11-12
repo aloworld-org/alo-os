@@ -609,7 +609,10 @@ fn a_press_refused_where_the_switch_would_not_help_does_not_name_it() {
     on.let_alo_work_fully_inside_apps(true);
     let mut not_described = alo_access::TurnedOn::nothing();
     not_described.let_apps_describe_themselves(false);
-    for (access, why) in [(on, "the switch is on"), (not_described, "describing is off")] {
+    for (access, why) in [
+        (on, "the switch is on"),
+        (not_described, "describing is off"),
+    ] {
         let known = Known::holding(&[CODIUM]);
         let mut machine = AMachine {
             tree: Some(vscodium_described_basically()),

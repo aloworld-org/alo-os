@@ -35,8 +35,8 @@ use std::time::{Duration, SystemTime};
 
 use alo_adapters::{
     ACTIVATE_CONTROL, AccessibilityTree, Activating, Adapter, Adapters, Contents, Facts, Limit,
-    NodeAt, NotLoaded, READ_WINDOW, ReadingWindows, Role, Running, States, TreeFault,
-    WorkingFully, fallback_verbs, load, shipped_adapters,
+    NodeAt, NotLoaded, READ_WINDOW, ReadingWindows, Role, Running, States, TreeFault, WorkingFully,
+    fallback_verbs, load, shipped_adapters,
 };
 use alo_applications::{Application, Installed};
 use alo_capability::{

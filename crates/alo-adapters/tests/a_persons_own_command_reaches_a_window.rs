@@ -426,10 +426,23 @@ fn every_refusal_is_the_agents_and_nothing_is_pressed() {
     let strings = in_english();
     assert_eq!(
         Unpressed::NotPressed(NotPressed::NoSuchControl)
-            .said(mail, Some("Inbox"), Pressable::Button, "Reply", WorkingFully::NothingMoreToTurnOn, &strings)
+            .said(
+                mail,
+                Some("Inbox"),
+                Pressable::Button,
+                "Reply",
+                WorkingFully::NothingMoreToTurnOn,
+                &strings
+            )
             .text(),
         NotPressed::NoSuchControl
-            .said_of(MAIL, Pressable::Button, "Reply", WorkingFully::NothingMoreToTurnOn, &strings)
+            .said_of(
+                MAIL,
+                Pressable::Button,
+                "Reply",
+                WorkingFully::NothingMoreToTurnOn,
+                &strings
+            )
             .text()
     );
 }
@@ -533,7 +546,11 @@ fn chromiums_complete_mode_is_pressed_and_its_do_default_is_not() {
 
     let tree = vscodium(&["check", "showContextMenu"]);
     assert!(press_by_hand(&tree, codium, None, Pressable::MenuItem, "File").is_ok());
-    assert_eq!(*tree.pressed.borrow(), 1, "select did not press the menu item");
+    assert_eq!(
+        *tree.pressed.borrow(),
+        1,
+        "select did not press the menu item"
+    );
 
     assert_eq!(
         press_by_hand(&tree, codium, None, Pressable::Tab, "Search (Ctrl+Shift+F)"),

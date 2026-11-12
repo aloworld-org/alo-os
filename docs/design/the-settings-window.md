@@ -439,3 +439,13 @@ Each was decided one way to build this, and is listed so it can be answered:
    lane's. It is **on** as a machine comes, the other way round from every
    other switch on the page, and is kept in the same `access.toml` as *Reduced
    motion*, so it is offered only where that file read.
+11. **"Let alo work fully inside apps like VSCodium" is a second switch under
+   *Applications***, below the first, in the same switch row, with two lines
+   under it: what it does and what it changes in those apps — *their editor
+   switches into screen reader mode: it behaves differently, and says Screen
+   Reader Optimized at the bottom of the window* — and the same line as the
+   first switch, that a change reaches the apps opened after it. The owner's
+   decision of 2026-11-12, *"Person's choice, off (Recommended)"*: it is
+   **off** as a machine comes. No frame draws it, so its words are this
+   lane's. It is kept in the same `access.toml`, as a word in its `on` list,
+   and offered only where that file read.

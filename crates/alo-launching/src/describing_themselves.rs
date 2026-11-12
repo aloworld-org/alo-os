@@ -194,7 +194,10 @@ pub fn what_its_command_gains(
     describe: bool,
     alo_works_fully: bool,
 ) -> &'static [&'static str] {
-    match (describe && is_drawn_by_chromium(identifier), alo_works_fully) {
+    match (
+        describe && is_drawn_by_chromium(identifier),
+        alo_works_fully,
+    ) {
         (false, _) => &[],
         (true, false) => &[THE_PAGE_TOO],
         (true, true) => &[THE_PAGE_FULLY],
