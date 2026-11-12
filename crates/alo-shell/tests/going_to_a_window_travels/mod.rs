@@ -110,6 +110,9 @@ fn going_to_a_window_in_sight_moves_nothing() {
     let went_to = f
         .backend(|s| s.switch_window(Direction::Forward))
         .expect("there is a window to go to");
-    assert_eq!(went_to, one, "the control: Alt+Tab went to the other window");
+    assert_eq!(
+        went_to, one,
+        "the control: Alt+Tab went to the other window"
+    );
     assert_eq!(the_view(&f), before, "the view moved to a window in sight");
 }

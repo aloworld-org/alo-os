@@ -107,7 +107,8 @@ pub(crate) fn the_size_that_fits(
 }
 
 /// Whether a window at `at`, `wanted` big, lies wholly in `room` with its
-/// strip and the gap.
+/// strip and the gap: what [`kept_inside`] answers, asked by its tests.
+#[cfg(test)]
 #[must_use]
 pub(crate) fn lies_wholly_in(
     at: Point<i32, Logical>,
@@ -214,5 +215,9 @@ impl crate::Server {
 }
 
 #[cfg(test)]
+#[expect(
+    clippy::expect_used,
+    reason = "in a test, a panic on an unexpected None is the failure being reported"
+)]
 #[path = "the_room_alo_places_a_window_in_tests.rs"]
 mod tests;
