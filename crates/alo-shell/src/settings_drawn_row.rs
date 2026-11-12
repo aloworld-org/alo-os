@@ -336,7 +336,12 @@ pub(crate) fn a_row(
         let ring = laying.px(m::A_CHOICE);
         let chosen = matches!(row.kind, TheKind::AChoice { chosen: true });
         a_choice(out, laying, (mark_at, centre_of_row, ring), chosen);
-        an_applications_mark(out, laying, (mark_at + ring + gap, centre_of_row), application);
+        an_applications_mark(
+            out,
+            laying,
+            (mark_at + ring + gap, centre_of_row),
+            application,
+        );
     }
     match (row.kind, row.lead) {
         _ if with_an_application => {}
