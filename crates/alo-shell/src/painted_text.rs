@@ -184,7 +184,7 @@ impl Shaped {
         let mut pixels = self.pixels;
         pixels.truncate(kept);
         Some(Inked {
-            area: smithay::utils::Rectangle::new((x, y).into(), (self.width_of_box, rows).into()),
+            area: alo_drawing::area::Area::new((x, y).into(), (self.width_of_box, rows).into()),
             pixels,
         })
     }
@@ -206,7 +206,7 @@ impl Shaped {
         let to = from + usize::try_from(rows * self.width_of_box).ok()?;
         let pixels = self.pixels.get(from..to)?.to_vec();
         Some(Inked {
-            area: smithay::utils::Rectangle::new(
+            area: alo_drawing::area::Area::new(
                 (x, y + skipped).into(),
                 (self.width_of_box, rows).into(),
             ),

@@ -9,7 +9,7 @@
 //! an application's buffer is. alo's terminal was the first; task windows are
 //! the second.
 
-use smithay::utils::Rectangle;
+use crate::area::Area;
 
 use crate::painted::{Inked, Solid, Washed};
 
@@ -17,7 +17,7 @@ use crate::painted::{Inked, Solid, Washed};
 /// so a card with rounded corners drawn on a window keeps the window under its
 /// corners. `top` is placed at its own area's corner, in `base`'s pixels, and
 /// what falls outside `base` is left out.
-pub(crate) fn laid_over(base: &mut Washed, top: &Washed) {
+pub fn laid_over(base: &mut Washed, top: &Washed) {
     let (Ok(base_w), Ok(base_h)) = (
         usize::try_from(base.area.size.w),
         usize::try_from(base.area.size.h),
@@ -86,7 +86,7 @@ pub(crate) fn laid_over(base: &mut Washed, top: &Washed) {
 /// validation refuses before this.
 ///
 /// [`None`] for a size with no area.
-pub(crate) fn flattened(
+pub fn flattened(
     size: (i32, i32),
     body: Option<&Washed>,
     solids: &[Solid],
@@ -142,7 +142,7 @@ pub(crate) fn flattened(
         }
     }
     Some(Washed {
-        area: Rectangle::from_size((width, height).into()),
+        area: Area::from_size((width, height).into()),
         pixels,
     })
 }

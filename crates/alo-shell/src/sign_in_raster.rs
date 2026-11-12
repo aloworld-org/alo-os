@@ -190,7 +190,7 @@ pub(crate) fn picture(
         size,
         surface: None,
         solids: vec![Solid {
-            area: Rectangle::from_size((width, height).into()),
+            area: alo_drawing::area::Area::from_size((width, height).into()),
             colour: palette.ground,
         }],
         inked: Vec::new(),
@@ -492,7 +492,7 @@ pub(crate) fn picture(
                     let gap_between = measure.px(8);
                     for i in 0..4 {
                         drawn.solids.push(Solid {
-                            area: Rectangle::new(
+                            area: alo_drawing::area::Area::new(
                                 (
                                     at.entry.loc.x + measure.px(21) + i * (dot + gap_between),
                                     at.entry.loc.y + (at.entry.size.h - dot) / 2,
@@ -614,7 +614,7 @@ pub(crate) fn picture(
                 let band_width = inside - measure.px(6);
                 if password_typed {
                     drawn.solids.push(Solid {
-                        area: Rectangle::new(
+                        area: alo_drawing::area::Area::new(
                             (
                                 left + measure.px(14),
                                 password_top + (line - measure.px(8)) / 2,
@@ -761,11 +761,11 @@ fn framed(
         measure.px(1)
     };
     solids.push(Solid {
-        area,
+        area: crate::painted::drawn_at(area),
         colour: palette.ink,
     });
     solids.push(Solid {
-        area: Rectangle::new(
+        area: alo_drawing::area::Area::new(
             (area.loc.x + edge, area.loc.y + edge).into(),
             (area.size.w - 2 * edge, area.size.h - 2 * edge).into(),
         ),
@@ -776,7 +776,7 @@ fn framed(
 /// The caret at the end of what is typed.
 fn caret(x: i32, top: i32, line: i32, measure: &Measure, palette: Palette) -> Solid {
     Solid {
-        area: Rectangle::new(
+        area: alo_drawing::area::Area::new(
             (x, top + measure.px(2)).into(),
             (measure.px(2), line - 2 * measure.px(4)).into(),
         ),

@@ -114,7 +114,10 @@ fn an_outline_is_four_sides_inside_the_rectangle() {
         .map(|palette| palette.accent)
         .ok();
     let drawn = cards.the_outlines(&[rect(100, 200, 800, 600)]);
-    let areas: Vec<_> = drawn.iter().map(|solid| solid.area).collect();
+    let areas: Vec<_> = drawn
+        .iter()
+        .map(|solid| crate::painted::on_the_frame(solid.area))
+        .collect();
     assert_eq!(
         areas,
         vec![
@@ -136,7 +139,9 @@ fn an_outline_is_thicker_on_a_dense_display() {
     let cards = cards(Direction::LeftToRight, (2880, 1920), 200);
     let drawn = cards.the_outlines(&[rect(0, 0, 400, 400)]);
     assert_eq!(
-        drawn.first().map(|solid| solid.area),
+        drawn
+            .first()
+            .map(|solid| crate::painted::on_the_frame(solid.area)),
         Some(rect(0, 0, 400, 4))
     );
 }
@@ -148,7 +153,10 @@ fn a_small_outline_is_filled_and_one_off_the_display_is_cut() {
     let cards = cards(Direction::LeftToRight, AS_DRAWN, 100);
     let small: Vec<Solid> = cards.the_outlines(&[rect(10, 10, 4, 3)]);
     assert_eq!(
-        small.iter().map(|solid| solid.area).collect::<Vec<_>>(),
+        small
+            .iter()
+            .map(|solid| crate::painted::on_the_frame(solid.area))
+            .collect::<Vec<_>>(),
         vec![rect(10, 10, 4, 3)]
     );
     let off = cards.the_outlines(&[rect(-50, -50, 100, 100)]);

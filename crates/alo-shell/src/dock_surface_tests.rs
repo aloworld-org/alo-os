@@ -560,7 +560,7 @@ fn the_dock_is_drawn_exactly_as_it_was_before_the_look() {
         })
         .expect("a panel with area rasterises");
         assert_eq!(
-            drawn.area,
+            crate::painted::on_the_frame(drawn.area),
             Rectangle::new((168, 368).into(), (664, 140).into()),
             "the {against:?} Dock's raster moved"
         );
@@ -587,7 +587,7 @@ fn the_dock_is_drawn_exactly_as_it_was_before_the_look() {
     })
     .expect("a panel");
     assert_eq!(
-        clipped.area,
+        crate::painted::on_the_frame(clipped.area),
         Rectangle::new((0, 0).into(), (340, 116).into()),
         "the clipped Dock's raster moved"
     );

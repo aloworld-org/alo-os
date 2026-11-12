@@ -261,7 +261,7 @@ fn the_terminal_is_a_window_that_can_be_told_from_the_desktop() {
 
     let body = drawn.panel.as_ref().expect("the window's body is drawn");
     assert!(
-        body.area.contains_rect(window),
+        body.area.contains_rect(crate::painted::drawn_at(window)),
         "the body's raster does not cover the whole window"
     );
     // The middle of the top edge, which is the hairline, and a row inside it,

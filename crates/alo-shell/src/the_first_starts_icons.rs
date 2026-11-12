@@ -130,7 +130,10 @@ impl AFirstStartIcon {
                 pixels.push(crate::sign_in_surface::mixed(ground, under, on_the_tile));
             }
         }
-        Some(Inked { area: at, pixels })
+        Some(Inked {
+            area: crate::painted::drawn_at(at),
+            pixels,
+        })
     }
 
     /// This icon in `at`, its square in the picture's pixels, in `ink` on
@@ -154,7 +157,10 @@ impl AFirstStartIcon {
             .into_iter()
             .map(|covered| crate::sign_in_surface::mixed(ground, ink, f64::from(covered) / 255.0))
             .collect();
-        Some(Inked { area: at, pixels })
+        Some(Inked {
+            area: crate::painted::drawn_at(at),
+            pixels,
+        })
     }
 }
 

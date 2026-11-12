@@ -216,7 +216,8 @@ fn the_body_is_kept_on_the_display() {
     let window = Rectangle::new((0, 0).into(), (400, 300).into());
     let body = a_body(window, (400, 300), 1.0);
     assert_eq!(
-        body.area, window,
+        body.area,
+        crate::painted::drawn_at(window),
         "the raster hangs off a display the window fills"
     );
 }

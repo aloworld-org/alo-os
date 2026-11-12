@@ -119,7 +119,7 @@ impl Canvas {
             .map(|channel| (channel * 255.0).round().clamp(0.0, 255.0) as u8)
             .collect();
         Washed {
-            area: self.area,
+            area: crate::painted::drawn_at(self.area),
             pixels,
         }
     }

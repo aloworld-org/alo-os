@@ -140,7 +140,7 @@ pub(crate) fn drawn(
 fn a_ground(area: Rectangle<i32, Physical>, ground: [u8; 3]) -> Inked {
     let count = usize::try_from(area.size.w.max(0) * area.size.h.max(0)).unwrap_or(0);
     Inked {
-        area,
+        area: crate::painted::drawn_at(area),
         pixels: vec![ground; count],
     }
 }

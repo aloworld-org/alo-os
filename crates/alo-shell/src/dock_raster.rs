@@ -1096,7 +1096,7 @@ pub(crate) fn picture(
             ((long, thin), ((icon - long) / 2, (at.size.h - thin) / 2))
         };
         solids.push(Solid {
-            area: Rectangle::new(
+            area: alo_drawing::area::Area::new(
                 (at.loc.x + offset.0, at.loc.y + offset.1).into(),
                 size.into(),
             ),
@@ -1329,7 +1329,7 @@ pub(crate) fn picture(
             {
                 let side = scale.px(GLYPH);
                 inked.push(Inked {
-                    area: Rectangle::new(
+                    area: alo_drawing::area::Area::new(
                         (left + (its_width - side) / 2, top + (icon - side) / 2).into(),
                         (side, side).into(),
                     ),
@@ -1403,7 +1403,7 @@ pub(crate) fn picture(
             let wide = scale.px(alo_dock::measures::AN_OPEN_MARK_IS_WIDE);
             let tall = scale.px(alo_dock::measures::A_RUNNING_MARK_IS_TALL);
             solids.push(Solid {
-                area: Rectangle::new(
+                area: alo_drawing::area::Area::new(
                     (left + (icon - wide) / 2, top + icon - tall).into(),
                     (wide, tall).into(),
                 ),
@@ -1461,7 +1461,7 @@ pub(crate) fn picture(
                 -(caret_is + scale.px(2))
             };
             solids.push(Solid {
-                area: Rectangle::new(
+                area: alo_drawing::area::Area::new(
                     (
                         (field.loc.x + pad + after).min(field.loc.x + field.size.w - pad),
                         field.loc.y + (field.size.h - body - body / 3) / 2,
@@ -1729,7 +1729,7 @@ mod tests {
             for washed in &drawn.panels {
                 // The popover's own raster and not the Dock's: both are panels
                 // and only one of them holds a grid.
-                if !washed.area.overlaps(list) {
+                if !crate::painted::on_the_frame(washed.area).overlaps(list) {
                     continue;
                 }
                 for pixel in washed.pixels.chunks(4) {
@@ -1954,7 +1954,11 @@ mod tests {
             .expect("a Dock with a surface open");
             let list = drawn.overflow_list.expect("the surface is open").popover;
             let mut ink = 0;
-            for washed in drawn.panels.iter().filter(|it| it.area.overlaps(list)) {
+            for washed in drawn
+                .panels
+                .iter()
+                .filter(|it| crate::painted::on_the_frame(it.area).overlaps(list))
+            {
                 for pixel in washed.pixels.chunks(4) {
                     let Some([r, g, b, a]) = pixel.first_chunk::<4>() else {
                         continue;

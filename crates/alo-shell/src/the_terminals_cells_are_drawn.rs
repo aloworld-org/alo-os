@@ -119,7 +119,9 @@ impl TerminalPicture {
         size: smithay::utils::Size<i32, Physical>,
     ) -> Result<(), crate::RenderError> {
         let output: Rectangle<i32, Physical> = Rectangle::from_size(size);
-        let inside = |area: Rectangle<i32, Physical>| output.contains_rect(area);
+        let inside = |area: alo_drawing::area::Area| {
+            output.contains_rect(crate::painted::on_the_frame(area))
+        };
         if self.size == (size.w, size.h)
             && self.panel.iter().all(|panel| inside(panel.area))
             && self.solids.iter().all(|solid| inside(solid.area))
@@ -725,7 +727,7 @@ fn a_run(
     // ground already has the transcript's, painted once behind everything.
     let behind = (run.looks.ground != alo_terminal::what_a_cell_looks_like::AColour::TheDefault)
         .then_some(Solid {
-            area: whole,
+            area: crate::painted::drawn_at(whole),
             colour: its_ground,
         });
 
@@ -870,7 +872,7 @@ fn a_benchmarks_row(
     let bar_at = across.saturating_add(label_wide).saturating_add(gutter);
     let bar_down = down.saturating_add((tall.saturating_sub(bar_tall)) / 2);
     let bar = (bar_wide > 0 && bar_tall > 0).then(|| Solid {
-        area: Rectangle::new((bar_at, bar_down).into(), (bar_wide, bar_tall).into()),
+        area: alo_drawing::area::Area::new((bar_at, bar_down).into(), (bar_wide, bar_tall).into()),
         colour: ink,
     });
 
@@ -1123,33 +1125,42 @@ fn the_cursor(
     let thin = (tall / 12).max(1);
     let shapes = match at.shape {
         alo_terminal::ACursorShape::Block => vec![Solid {
-            area: whole,
+            area: crate::painted::drawn_at(whole),
             colour: ink,
         }],
         alo_terminal::ACursorShape::Underline => vec![Solid {
-            area: Rectangle::new((across, down + tall - thin).into(), (wide, thin).into()),
+            area: alo_drawing::area::Area::new(
+                (across, down + tall - thin).into(),
+                (wide, thin).into(),
+            ),
             colour: ink,
         }],
         alo_terminal::ACursorShape::Beam => vec![Solid {
-            area: Rectangle::new((across, down).into(), (thin, tall).into()),
+            area: alo_drawing::area::Area::new((across, down).into(), (thin, tall).into()),
             colour: ink,
         }],
         // Four edges rather than a fill, which is what makes it hollow.
         alo_terminal::ACursorShape::HollowBlock => vec![
             Solid {
-                area: Rectangle::new((across, down).into(), (wide, thin).into()),
+                area: alo_drawing::area::Area::new((across, down).into(), (wide, thin).into()),
                 colour: ink,
             },
             Solid {
-                area: Rectangle::new((across, down + tall - thin).into(), (wide, thin).into()),
+                area: alo_drawing::area::Area::new(
+                    (across, down + tall - thin).into(),
+                    (wide, thin).into(),
+                ),
                 colour: ink,
             },
             Solid {
-                area: Rectangle::new((across, down).into(), (thin, tall).into()),
+                area: alo_drawing::area::Area::new((across, down).into(), (thin, tall).into()),
                 colour: ink,
             },
             Solid {
-                area: Rectangle::new((across + wide - thin, down).into(), (thin, tall).into()),
+                area: alo_drawing::area::Area::new(
+                    (across + wide - thin, down).into(),
+                    (thin, tall).into(),
+                ),
                 colour: ink,
             },
         ],
@@ -1682,7 +1693,7 @@ pub(crate) fn picture(
     // on it.
     let panel = crate::the_terminals_frame::the_body_in(window, size, scale, colours, look);
     let mut solids = vec![Solid {
-        area: transcript,
+        area: crate::painted::drawn_at(transcript),
         colour: ground,
     }];
     // **The strip across the top**, in `text/muted` like the note: the folder

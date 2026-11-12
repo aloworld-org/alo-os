@@ -131,7 +131,7 @@ fn the_selected_row_is_always_in_view_and_marked_in_the_accent() {
             .filter(|solid| solid.colour == accent)
             .collect();
         assert_eq!(in_accent.len(), 1);
-        assert_eq!(in_accent[0].area, bar);
+        assert_eq!(in_accent[0].area, crate::painted::drawn_at(bar));
     }
 }
 

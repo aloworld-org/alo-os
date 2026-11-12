@@ -181,7 +181,7 @@ fn the_field_holds(
         let y = field.loc.y + (field.size.h - mark) / 2;
         for which in 0..MARKS {
             solids.push(Solid {
-                area: Rectangle::new(
+                area: alo_drawing::area::Area::new(
                     (field.loc.x + inset + which * step, y).into(),
                     (mark, mark).into(),
                 ),
@@ -191,7 +191,7 @@ fn the_field_holds(
     } else {
         let tall = measure.px(20);
         solids.push(Solid {
-            area: Rectangle::new(
+            area: alo_drawing::area::Area::new(
                 (field.loc.x + inset, field.loc.y + (field.size.h - tall) / 2).into(),
                 (measure.px(2), tall).into(),
             ),

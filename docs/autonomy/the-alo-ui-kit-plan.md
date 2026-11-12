@@ -43,7 +43,7 @@ kit's own is the whole of the change for:
 
 - `crates/alo-shell/src/painted.rs`'s `Solid`, `Inked` and `Washed` (flat
   shapes, inked text and premultiplied RGBA rasters) and
-  `crates/alo-shell/src/painted_flat.rs` (laying one raster over another in
+  `painted_flat.rs`, now `crates/alo-drawing/src/painted_flat.rs` (laying one raster over another in
   memory). `painted.rs`'s `paint` writes into a Smithay `Frame` and is bound;
   it stays in the shell.
 - `crates/alo-shell/src/settings_canvas.rs`: a CPU canvas with rounded shapes,
