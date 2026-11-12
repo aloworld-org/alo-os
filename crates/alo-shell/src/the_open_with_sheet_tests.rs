@@ -7,7 +7,6 @@
     reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
 )]
 
-use std::io::Read as _;
 use std::os::unix::net::UnixStream;
 use std::time::{Duration, Instant};
 
@@ -53,7 +52,11 @@ fn enter_answers_the_one_chosen_and_focus_starts_on_the_default() {
     let mut sheet = TheOpenWithSheet::none();
     sheet.asked(vec![ask], true, now);
     assert!(sheet.is_up());
-    assert_eq!(sheet.shows().unwrap().focus, 0, "focus starts on the default");
+    assert_eq!(
+        sheet.shows().unwrap().focus,
+        0,
+        "focus starts on the default"
+    );
     sheet.pressed(SheetKey::Previous, now);
     assert_eq!(sheet.shows().unwrap().focus, 0, "stops at the first");
     for _ in 0..5 {

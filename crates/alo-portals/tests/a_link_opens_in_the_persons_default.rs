@@ -465,7 +465,10 @@ fn nothing_chosen_opens_nothing_and_says_why() {
             response,
             "{what}"
         );
-        assert!(serving.asked_of_the_desktop().is_empty(), "{what} opened something");
+        assert!(
+            serving.asked_of_the_desktop().is_empty(),
+            "{what} opened something"
+        );
         let everything = serving.everything();
         assert_eq!(everything.len(), 1, "{what}");
         assert_eq!(

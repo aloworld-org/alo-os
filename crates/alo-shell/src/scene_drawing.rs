@@ -256,23 +256,21 @@ where
     };
     // **The *Open with* sheet, uploaded with the rest**: one raster, rounded
     // with a shadow, as Settings is.
-    let open_with_washed: Option<(R::TextureId, Rectangle<i32, Physical>)> = match native
-        .open_with
-        .map(|sheet| &sheet.washed)
-    {
-        None => None,
-        Some(raster) => Some(
-            renderer
-                .import_memory(
-                    &raster.pixels,
-                    Fourcc::Abgr8888,
-                    (raster.area.size.w, raster.area.size.h).into(),
-                    false,
-                )
-                .map(|texture| (texture, raster.area))
-                .map_err(submission)?,
-        ),
-    };
+    let open_with_washed: Option<(R::TextureId, Rectangle<i32, Physical>)> =
+        match native.open_with.map(|sheet| &sheet.washed) {
+            None => None,
+            Some(raster) => Some(
+                renderer
+                    .import_memory(
+                        &raster.pixels,
+                        Fourcc::Abgr8888,
+                        (raster.area.size.w, raster.area.size.h).into(),
+                        false,
+                    )
+                    .map(|texture| (texture, raster.area))
+                    .map_err(submission)?,
+            ),
+        };
     // **Settings, uploaded with the rest** since the redesign of 2026-10-31
     // made it one raster: a rounded window with a shadow, and rings and
     // switches that are partial coverage.

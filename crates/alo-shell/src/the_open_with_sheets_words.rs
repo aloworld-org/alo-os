@@ -46,9 +46,8 @@ pub const YOUR_DEFAULT_FOR_EMAIL_ADDRESSES: Word = Word::saying(
 );
 
 /// Under any other application offered (`25:73`).
-pub const INSTALLED: Word = Word::saying("shell.open-with.installed", "Installed").noting(
-    "Under the name of another app on this computer that can open the link.",
-);
+pub const INSTALLED: Word = Word::saying("shell.open-with.installed", "Installed")
+    .noting("Under the name of another app on this computer that can open the link.");
 
 /// The quiet button (`25:75`).
 pub const CANCEL: Word = Word::saying("shell.open-with.cancel", "Cancel")

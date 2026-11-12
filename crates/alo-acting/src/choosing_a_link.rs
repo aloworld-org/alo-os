@@ -306,7 +306,10 @@ mod tests {
     fn what_is_not_this_act_is_refused() {
         for (line, refused) in [
             ("choose-link", NotALinkToChoose::NotEnoughWords),
-            ("choose-link org.gnome.Papers", NotALinkToChoose::NotEnoughWords),
+            (
+                "choose-link org.gnome.Papers",
+                NotALinkToChoose::NotEnoughWords,
+            ),
             (
                 "choose-link org.gnome.Papers https://a.example/",
                 NotALinkToChoose::NothingOffered,
@@ -330,8 +333,13 @@ mod tests {
         ] {
             assert_eq!(ToChooseALink::read(line), Some(Err(refused)), "{line}");
         }
-        let many: Vec<String> = (0..=THE_MOST_OFFERED).map(|n| format!("com.example.B{n}")).collect();
-        let line = format!("choose-link org.gnome.Papers https://a.example/ {}", many.join(" "));
+        let many: Vec<String> = (0..=THE_MOST_OFFERED)
+            .map(|n| format!("com.example.B{n}"))
+            .collect();
+        let line = format!(
+            "choose-link org.gnome.Papers https://a.example/ {}",
+            many.join(" ")
+        );
         assert_eq!(
             ToChooseALink::read(&line),
             Some(Err(NotALinkToChoose::TooMany))
@@ -357,9 +365,12 @@ mod tests {
         let offered: Vec<Application> = (0..THE_MOST_OFFERED)
             .map(|n| called(&format!("org.example.Browser{n:02}")))
             .collect();
-        let asked =
-            ToChooseALink::of(called("org.gnome.Papers"), Link::checked(&link).unwrap(), offered)
-                .unwrap();
+        let asked = ToChooseALink::of(
+            called("org.gnome.Papers"),
+            Link::checked(&link).unwrap(),
+            offered,
+        )
+        .unwrap();
         assert!(ToChooseALink::read(&asked.written()).unwrap().is_ok());
     }
 

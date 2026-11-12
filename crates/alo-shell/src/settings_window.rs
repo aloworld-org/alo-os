@@ -1596,8 +1596,7 @@ impl Open {
             // keeper: the next link any application opens goes to this one.
             SettingsRow::DefaultFor(kind, identifier) => SettingsDid::Kept(
                 SettingsSection::DefaultApps,
-                self.default_apps
-                    .choose(*kind, identifier, doors.strings),
+                self.default_apps.choose(*kind, identifier, doors.strings),
             ),
         }
     }
@@ -1613,7 +1612,9 @@ impl Open {
             SettingsSection::Shortcuts => self.shortcuts.put_back_as_shipped(strings),
             // **Put back as shipped is no choice at all**: every kind of file
             // and of link then opens in what the applications declare.
-            SettingsSection::DefaultApps => self.default_apps.kept_mut().put_back_as_shipped(strings),
+            SettingsSection::DefaultApps => {
+                self.default_apps.kept_mut().put_back_as_shipped(strings)
+            }
             // **Not offered for the terminal, and never will be.** The file
             // this section appends to is the person's own shell startup, not a
             // file of alo's: putting it back as alo ships it would throw away

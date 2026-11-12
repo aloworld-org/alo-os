@@ -18,8 +18,7 @@ use crate::the_open_with_sheet::{AskedToChoose, TheOpenWithSheet};
 
 fn words() -> Strings {
     let mut vocabulary = Vocabulary::empty();
-    crate::the_open_with_sheets_words::declare_the_open_with_sheets_words(&mut vocabulary)
-        .unwrap();
+    crate::the_open_with_sheets_words::declare_the_open_with_sheets_words(&mut vocabulary).unwrap();
     Strings::of(vocabulary)
 }
 
@@ -38,7 +37,11 @@ fn a_sheet() -> (UnixStream, TheOpenWithSheet) {
     )
     .unwrap();
     let mut sheet = TheOpenWithSheet::none();
-    sheet.asked(vec![AskedToChoose::of(asked, desktop)], true, Instant::now());
+    sheet.asked(
+        vec![AskedToChoose::of(asked, desktop)],
+        true,
+        Instant::now(),
+    );
     (portal, sheet)
 }
 
@@ -52,7 +55,11 @@ fn named(identifier: &str) -> (String, Option<alo_dock::artwork::APicture>) {
     (name.to_owned(), None)
 }
 
-fn drawn_at(sheet: &TheOpenWithSheet, size: (i32, i32), per_cent: u16) -> Result<OpenWithPicture, RenderError> {
+fn drawn_at(
+    sheet: &TheOpenWithSheet,
+    size: (i32, i32),
+    per_cent: u16,
+) -> Result<OpenWithPicture, RenderError> {
     let mut labels = WindowControlLabels::new().unwrap();
     drawn(
         sheet.shows().unwrap(),
@@ -82,7 +89,11 @@ fn the_sheet_says_what_the_frame_says_at_every_scale() {
             "Cancel",
             "Open",
         ] {
-            assert!(drawn.texts.iter().any(|it| it == said), "{said}: {:?}", drawn.texts);
+            assert!(
+                drawn.texts.iter().any(|it| it == said),
+                "{said}: {:?}",
+                drawn.texts
+            );
         }
         assert_eq!(drawn.rows.len(), 2);
         for row in &drawn.rows {

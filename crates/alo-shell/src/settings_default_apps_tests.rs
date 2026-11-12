@@ -40,19 +40,22 @@ fn a_machine_with_browsers() -> WhatCouldOpenLinks {
         Application::called(PTYXIS, "Terminal").unwrap(),
     ]);
     let mut declared = Declared::nothing();
-    declared.declares_media_types(&Application::identified(PTYXIS).unwrap(), [
-        "x-scheme-handler/http",
-    ]);
-    declared.declares_media_types(&Application::identified(FIREFOX).unwrap(), [
-        "x-scheme-handler/http",
-        "x-scheme-handler/https",
-    ]);
-    declared.declares_media_types(&Application::identified(LIBREWOLF).unwrap(), [
-        "x-scheme-handler/https",
-    ]);
-    declared.declares_media_types(&Application::identified(THUNDERBIRD).unwrap(), [
-        "x-scheme-handler/mailto",
-    ]);
+    declared.declares_media_types(
+        &Application::identified(PTYXIS).unwrap(),
+        ["x-scheme-handler/http"],
+    );
+    declared.declares_media_types(
+        &Application::identified(FIREFOX).unwrap(),
+        ["x-scheme-handler/http", "x-scheme-handler/https"],
+    );
+    declared.declares_media_types(
+        &Application::identified(LIBREWOLF).unwrap(),
+        ["x-scheme-handler/https"],
+    );
+    declared.declares_media_types(
+        &Application::identified(THUNDERBIRD).unwrap(),
+        ["x-scheme-handler/mailto"],
+    );
     let mut artwork = TheArtwork::none();
     artwork.draws(
         alo_dock::AppId::named(FIREFOX).unwrap(),
@@ -101,7 +104,9 @@ fn press(window: &mut SettingsWindow, pressed: SettingsKey) -> Option<SettingsDi
 
 /// The page as drawn: each section's heading, and each row's name, line and
 /// whether it is ringed.
-fn the_page(window: &SettingsWindow) -> Vec<(Option<String>, Vec<(String, String, bool)>, Option<String>)> {
+fn the_page(
+    window: &SettingsWindow,
+) -> Vec<(Option<String>, Vec<(String, String, bool)>, Option<String>)> {
     let page = crate::settings_page::the_page(
         window.open().unwrap(),
         SettingsCategory::DefaultApps,
@@ -123,7 +128,10 @@ fn the_page(window: &SettingsWindow) -> Vec<(Option<String>, Vec<(String, String
                     .into_iter()
                     .map(|row| {
                         let ringed = matches!(row.kind, TheKind::AChoice { chosen: true });
-                        assert!(row.application.is_some(), "a row with no application's mark");
+                        assert!(
+                            row.application.is_some(),
+                            "a row with no application's mark"
+                        );
                         (row.title, row.lines.join(" "), ringed)
                     })
                     .collect(),
@@ -217,12 +225,13 @@ fn choosing_a_browser_writes_what_alo_applications_writes_and_moves_the_ring() {
     let twin = tempfile::tempdir().unwrap();
     let theirs = twin.path().join(alo_applications::keeping::THE_FILE);
     let mut expected = before;
-    expected.choose_for_links(
-        LinkKind::Web,
-        &Application::identified(LIBREWOLF).unwrap(),
-    );
+    expected.choose_for_links(LinkKind::Web, &Application::identified(LIBREWOLF).unwrap());
     alo_applications::keeping::keep(&theirs, &expected).unwrap();
-    assert_eq!(bytes(&file), bytes(&theirs), "not what alo_applications writes");
+    assert_eq!(
+        bytes(&file),
+        bytes(&theirs),
+        "not what alo_applications writes"
+    );
     assert_eq!(alo_applications::keeping::read(&file).unwrap(), expected);
 
     let page = the_page(&window);
@@ -230,7 +239,11 @@ fn choosing_a_browser_writes_what_alo_applications_writes_and_moves_the_ring() {
         page[0].1,
         [
             ("Firefox".to_owned(), "Installed".to_owned(), false),
-            ("LibreWolf".to_owned(), "Opens web links now".to_owned(), true),
+            (
+                "LibreWolf".to_owned(),
+                "Opens web links now".to_owned(),
+                true
+            ),
         ]
     );
 }
@@ -241,7 +254,12 @@ fn choosing_a_browser_writes_what_alo_applications_writes_and_moves_the_ring() {
 fn a_kind_with_nothing_installed_says_so_instead_of_an_empty_card() {
     let machine = a_persons_machine("default-apps-none");
     let window = opened(&machine, WhatCouldOpenLinks::default());
-    assert!(window.rows(noon()).iter().all(|row| row.section() != SettingsSection::DefaultApps));
+    assert!(
+        window
+            .rows(noon())
+            .iter()
+            .all(|row| row.section() != SettingsSection::DefaultApps)
+    );
     assert_eq!(
         the_page(&window),
         [
@@ -303,7 +321,11 @@ fn an_application_that_left_is_refused_and_nothing_is_written() {
     let mut window = opened(&machine, a_machine_with_browsers());
     let open = window.open_mut().unwrap();
     let did = open.default_apps.choose(LinkKind::Web, LIBREWOLF, &words());
-    assert_eq!(did, crate::SettingsKept::Written, "the control: it was offered");
+    assert_eq!(
+        did,
+        crate::SettingsKept::Written,
+        "the control: it was offered"
+    );
     let written = bytes(&file);
     // LibreWolf is uninstalled while the page is open.
     let mut left = a_machine_with_browsers();
@@ -367,7 +389,12 @@ fn a_session_with_no_folder_offers_no_default() {
     let mut window = SettingsWindow::closed();
     window.opened_by_hand(&machine.with_no_folder(), noon());
     window.the_applications_are(a_machine_with_browsers());
-    assert!(window.rows(noon()).iter().all(|row| row.section() != SettingsSection::DefaultApps));
+    assert!(
+        window
+            .rows(noon())
+            .iter()
+            .all(|row| row.section() != SettingsSection::DefaultApps)
+    );
 }
 
 /// **Drawn as frame `25:28`: each row 72 tall at one scale and 144 at two**,
@@ -407,11 +434,17 @@ fn each_row_is_seventy_two_tall_at_every_scale_and_draws_its_picture() {
             assert_eq!(row.area.size.h, 72 * factor, "{row:?}");
         }
         assert!(
-            drawn.texts.iter().any(|text| text.text == "Opens web links now"),
+            drawn
+                .texts
+                .iter()
+                .any(|text| text.text == "Opens web links now"),
             "the line is not drawn"
         );
         // Thunderbird has no picture: its letter is drawn instead.
         assert!(drawn.texts.iter().any(|text| text.text == "T"));
-        assert!(!drawn.texts.iter().any(|text| text.text == "F"), "Firefox has its picture");
+        assert!(
+            !drawn.texts.iter().any(|text| text.text == "F"),
+            "Firefox has its picture"
+        );
     }
 }
