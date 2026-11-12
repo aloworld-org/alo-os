@@ -195,7 +195,7 @@ Static instance, **unmodified**, under the same SIL Open Font License 1.1 in
 revision as the Medium cut** — `a0a06a3d916dcf92fe96f12051a124f89056b36a`, path
 `fonts/GeistMono/ttf/GeistMono-Bold.ttf`.
 
-**Why a third Geist Mono file.** `painted_text::alos_own_mono_at` asks for
+**Why a third Geist Mono file.** `alo-shell`'s `the_terminals_face::alos_own_mono_at` asks for
 weight **700** when a program sets bold, and a family is honoured only at an
 exact weight match. With no 700 face the family was abandoned and bold cells
 were drawn in a **proportional** face — inside a grid where every cell must be

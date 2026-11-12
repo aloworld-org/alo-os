@@ -819,7 +819,7 @@ fn the_real_raster_recorded_the_way_the_draw_records_it_opens_the_market() -> Re
     let mut fonts = cosmic_text::FontSystem::new();
     fonts
         .db_mut()
-        .load_font_data(include_bytes!("../fonts/Manrope.ttf").to_vec());
+        .load_font_data(alo_drawing::fonts::MANROPE.to_vec());
 
     // The Dock a fresh machine fills for itself, not one pinned by hand.
     let _owed = server

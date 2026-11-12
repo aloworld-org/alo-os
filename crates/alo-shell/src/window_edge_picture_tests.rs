@@ -16,10 +16,10 @@ fn fonts() -> cosmic_text::FontSystem {
     let mut fonts = cosmic_text::FontSystem::new();
     fonts
         .db_mut()
-        .load_font_data(include_bytes!("../fonts/Manrope.ttf").to_vec());
+        .load_font_data(alo_drawing::fonts::MANROPE.to_vec());
     fonts
         .db_mut()
-        .load_font_data(include_bytes!("../fonts/Inter.ttf").to_vec());
+        .load_font_data(alo_drawing::fonts::INTER.to_vec());
     fonts
 }
 

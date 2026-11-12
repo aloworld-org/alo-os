@@ -887,7 +887,7 @@ fn a_press_where_each_letter_is_drawn_reaches_that_letters_entry() {
     let mut fonts = cosmic_text::FontSystem::new();
     fonts
         .db_mut()
-        .load_font_data(include_bytes!("../fonts/Manrope.ttf").to_vec());
+        .load_font_data(alo_drawing::fonts::MANROPE.to_vec());
 
     // The two entries a fresh machine has before anything is installed.
     let mut holding = alo_dock::Holding::nothing();

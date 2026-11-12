@@ -30,7 +30,7 @@ Three choices inside that, and why:
   style in a task window was drawn SemiBold until this change, because no
   Regular Manrope was bundled — and bold, the scale's SemiBold, would then have
   been indistinguishable from the words around it. `Manrope-Regular.ttf` is the
-  upstream project's own static cut; `crates/alo-shell/fonts/README.md` records
+  upstream project's own static cut; `crates/alo-drawing/fonts/README.md` records
   its revision and hash. This touches every message, a person's included, and
   the activity and approval lines (Body/Medium), and the destination (12 / 22
   Regular): all of them are Regular in the design.

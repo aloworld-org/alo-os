@@ -393,8 +393,8 @@ mod output_retirement;
 mod overview_sheet;
 mod painted;
 use alo_drawing::painted_flat;
-mod painted_text;
-mod painted_text_wrapping;
+use alo_drawing::painted_text;
+use alo_drawing::painted_text_wrapping;
 mod panel_cards;
 mod panel_raster;
 mod peeking_at_a_put_aside_window;
@@ -596,6 +596,7 @@ mod the_record_drawn_on_the_canvas;
 mod the_room_a_window_fills;
 /// Task windows opened into a full view find room as other windows do.
 mod the_task_windows_find_room;
+mod the_terminals_face;
 /// The view gliding, or jumping where less motion was asked for.
 mod the_view_glides;
 /// The view travelling to a window of alo's rather than the window moving.

@@ -469,8 +469,8 @@ mod the_bundled_monospace_face {
     /// change, for comparing against.
     fn the_fonts_before_geist_mono() -> FontSystem {
         WindowControlLabels::from_fonts([
-            include_bytes!("../fonts/Manrope.ttf").to_vec(),
-            include_bytes!("../fonts/Inter.ttf").to_vec(),
+            alo_drawing::fonts::MANROPE.to_vec(),
+            alo_drawing::fonts::INTER.to_vec(),
         ])
         .expect("the two proportional faces load")
         .fonts
@@ -485,9 +485,9 @@ mod the_bundled_monospace_face {
     /// makes the mechanism visible again, whatever we go on to ship.
     fn the_fonts_with_one_mono_weight() -> FontSystem {
         WindowControlLabels::from_fonts([
-            include_bytes!("../fonts/Manrope.ttf").to_vec(),
-            include_bytes!("../fonts/Inter.ttf").to_vec(),
-            include_bytes!("../fonts/GeistMono-Medium.ttf").to_vec(),
+            alo_drawing::fonts::MANROPE.to_vec(),
+            alo_drawing::fonts::INTER.to_vec(),
+            alo_drawing::fonts::GEIST_MONO_MEDIUM.to_vec(),
         ])
         .expect("one weight of the mono family loads")
         .fonts

@@ -872,7 +872,9 @@ dependencies = [
 name = "alo-drawing"
 version = "0.0.1"
 dependencies = [
+ "cosmic-text",
  "toml",
+ "unicode-segmentation",
 ]
 
 [[package]]

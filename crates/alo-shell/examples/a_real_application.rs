@@ -144,10 +144,10 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     let mut faces = cosmic_text::FontSystem::new();
     faces
         .db_mut()
-        .load_font_data(include_bytes!("../fonts/Manrope.ttf").to_vec());
+        .load_font_data(alo_drawing::fonts::MANROPE.to_vec());
     faces
         .db_mut()
-        .load_font_data(include_bytes!("../fonts/Inter.ttf").to_vec());
+        .load_font_data(alo_drawing::fonts::INTER.to_vec());
     let division = alo_dividing::Division::of(alo_dividing::Area::of(
         alo_dividing::area::Point::at(0, 0),
         alo_dividing::area::Size::of(1366, 768),

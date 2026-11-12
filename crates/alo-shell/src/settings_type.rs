@@ -94,7 +94,7 @@ impl TheType {
     /// How it is asked for.
     fn attrs<'a>(self) -> Attrs<'a> {
         match self {
-            Self::Mono => crate::painted_text::alos_own_mono().weight(self.weight()),
+            Self::Mono => crate::painted_text::alos_own_mono_face().weight(self.weight()),
             _ => Attrs::new()
                 .family(Family::Name(ALOS_OWN_FACE))
                 .weight(self.weight()),

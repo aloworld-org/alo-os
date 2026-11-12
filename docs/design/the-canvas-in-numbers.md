@@ -53,7 +53,7 @@ and which was recorded only in a Rust doc comment until 2026-10-20.
 
 | | |
 |---|---|
-| where they are | `crates/alo-shell/fonts/` — `Manrope.ttf`, `Manrope-SemiBold.ttf`, `GeistMono.ttf`, and `fonts/README.md` with the licence, the upstream revision and the hash |
+| where they are | `crates/alo-drawing/fonts/` — `Manrope.ttf`, `Manrope-SemiBold.ttf`, `GeistMono.ttf`, and `fonts/README.md` with the licence, the upstream revision and the hash |
 | how they are loaded | `include_bytes!`, into the binary. **Never `/usr/share/fonts`**, so what a surface draws in does not depend on what a base image happens to ship |
 | who asks for them | `alo_shell::painted_text::alos_own_text` — `Family::Name("Manrope")` with `Weight(600)`, in one place so a measurement and a drawing cannot disagree about the face they meant |
 | **why `Inter.ttf` is still there** | as the fallback, deliberately. A script Manrope has no glyphs for falls through to the rest of the font database; narrowing that would mean a person's language stops rendering. **The shell does not draw in Inter** — it asks for Manrope by name and keeps Inter behind it |

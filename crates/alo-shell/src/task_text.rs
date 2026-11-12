@@ -45,9 +45,7 @@ use cosmic_text::{Attrs, Family, FontSystem, Metrics, Weight};
 
 use crate::alos_marked_words::{AMark, HowItIsMarked};
 use crate::desktop_look::Measure;
-use crate::painted_text::{
-    ALOS_OWN_FACE, ALOS_OWN_WEIGHT, Shaped, alos_own_mono, sentence_in_runs,
-};
+use crate::painted_text::{ALOS_OWN_FACE, ALOS_OWN_WEIGHT, Shaped, sentence_in_runs};
 
 /// The design's Regular, which both body styles and the destination are
 /// drawn at. `fonts/Manrope-Regular.ttf` is the face that answers it exactly.
@@ -352,7 +350,7 @@ fn the_runs<'a>(write: ToWrite<'a>, measure: Measure) -> Vec<(&'a str, Attrs<'a>
                 HowItIsMarked::Heading => AStyle::Heading
                     .attrs()
                     .metrics(AStyle::Heading.metrics(measure)),
-                HowItIsMarked::Code => alos_own_mono(),
+                HowItIsMarked::Code => crate::the_terminals_face::alos_own_mono(),
             };
             Some((words, attrs))
         })
