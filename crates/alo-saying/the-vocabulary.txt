@@ -1645,9 +1645,15 @@ portals.answered.appearance-read	{application} read your appearance settings, su
 portals.answered.appearance-sent	{application} was told your appearance settings changed, such as from light to dark
 portals.answered.link-opened	{application} asked for {address} to be opened, and it was handed to {opener}
 portals.answered.link-opened-instead-of-asking	{application} asked for {address} to be opened and for you to choose what opens it. Choosing is not on this machine yet, so it was handed to your default, {opener}
+portals.answered.link-opened-on-the-sheet	{application} asked for {address} to be opened and for you to choose what opens it. You chose {opener}
 portals.answered.network-read	{application} read whether this machine is connected, and whether the connection is metered
 portals.answered.opened-in	{application} had a file it was granted handed to {opener} to open
 portals.answered.secret-handed-over	{application} was given its own secret from your keyring
+portals.link-not-chosen.cancelled	{application} asked for {address} to be opened and for you to choose what opens it. You cancelled, so nothing was opened
+portals.link-not-chosen.cannot-show	{application} asked for {address} to be opened and for you to choose what opens it. The choice could not be shown, so nothing was opened
+portals.link-not-chosen.could-not-ask	{application} asked for {address} to be opened and for you to choose what opens it. The desktop could not be asked, so nothing was opened
+portals.link-not-chosen.no-desktop	{application} asked for {address} to be opened and for you to choose what opens it. No desktop was running to ask you, so nothing was opened
+portals.link-not-chosen.unanswered	{application} asked for {address} to be opened and for you to choose what opens it. Nobody answered within five minutes, so nothing was opened
 portals.not-a-link.carries-a-password	That web link carries a name and a password inside it, so it was not opened. Open the site and sign in there instead
 portals.not-a-link.not-a-link	That is not a web link or an email address this machine can open, so nothing was opened
 portals.not-a-link.scheme	A {scheme}: link is not one this machine opens, so nothing was opened. Web links and email addresses are
