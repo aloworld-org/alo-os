@@ -31,7 +31,7 @@ use crate::answered::{Outcome, Unanswered};
 use crate::asked::{Asked, REFUSED};
 use crate::link_answered::LinkOpened;
 use crate::link_not_chosen::{LinkUnchosen, Unchosen};
-use crate::opening_links::{SheetAnswer, LinkStarted};
+use crate::opening_links::{LinkStarted, SheetAnswer};
 use crate::serving::Backend;
 
 /// Ask the person, and answer `asked` when they have: the handle now, the

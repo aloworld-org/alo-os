@@ -191,7 +191,7 @@ pub use link_not_chosen::{LinkUnchosen, Unchosen};
 pub use not_a_request::NotARequest;
 pub use not_recorded::NotRecorded;
 pub use open_with::{NotOpened, OpensWith};
-pub use opening_links::{SheetAnswer, LinkStarted, NoDesktopToAsk, OpensLinks};
+pub use opening_links::{LinkStarted, NoDesktopToAsk, OpensLinks, SheetAnswer};
 pub use portal::{Over, Portal};
 #[cfg(unix)]
 pub use read_back_said::ReadBackSaid;

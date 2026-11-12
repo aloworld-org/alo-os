@@ -36,7 +36,7 @@ use std::time::Duration;
 
 use alo_acting::{Answer, Chose, NotActed, ToChooseALink, ToOpenALink};
 use alo_applications::{Application, Link};
-use alo_portals::{SheetAnswer, LinkStarted, OpensLinks};
+use alo_portals::{LinkStarted, OpensLinks, SheetAnswer};
 
 /// The desktop's socket in a person's own directory.
 pub const THE_DESKTOPS_SOCKET: &str = "shell.sock";
