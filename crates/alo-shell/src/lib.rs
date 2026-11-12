@@ -76,6 +76,8 @@ pub mod a_change_waiting_reaches_the_person;
 /// answer that was already built.
 mod a_chord_asks_why_a_command_is_waiting;
 mod a_chord_closes_alos_own_window;
+/// The Minimise chord puts the one of alo's own windows with the keys aside.
+mod a_chord_puts_alos_own_window_aside;
 mod a_chord_moves_between_applications;
 mod a_chord_moves_the_keyboard_between_areas;
 mod a_chord_opens_a_terminal;
@@ -121,6 +123,9 @@ mod a_task_card_is_pressed;
 mod a_task_card_measures;
 /// A running task's window goes into the right-hand panel, and comes back.
 mod a_task_goes_aside;
+/// alo's own terminal, Settings and record go into the right-hand panel, and
+/// come back.
+mod alos_own_window_goes_aside;
 /// A running task's card in the right-hand panel, in words.
 pub mod a_task_in_the_panel;
 mod a_task_window_hands_on_a_chord;

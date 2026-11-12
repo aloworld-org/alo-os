@@ -37,6 +37,7 @@ fn in_order(panel: &Panel) -> Vec<String> {
         .map(|one| match one {
             Aside::AWindow(preview) => format!("window {}", preview.window().number()),
             Aside::ATask(task) => format!("task {}", task.task().at()),
+            Aside::AnAloWindow(aside) => format!("{:?}", aside.which()),
         })
         .collect()
 }

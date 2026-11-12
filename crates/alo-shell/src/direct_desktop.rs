@@ -1337,6 +1337,9 @@ impl LoopInput for TheDesktopLane<'_> {
         // **And a running task's window the person minimised**, by the same
         // road (`crate::a_task_goes_aside`).
         server.put_tasks_aside_that_were_asked(self.desktop.the_panel());
+        // **And alo's own terminal, Settings or record**, by the same road
+        // (`crate::alos_own_window_goes_aside`).
+        server.put_alos_windows_aside_that_were_asked(self.desktop.the_panel());
         // **And the other direction, met in the same place and for the same reason.** A click
         // on a preview was claimed where input happens, because whether the panel owns a click
         // is geometry; *which* preview it chose needs the live `Panel` for the identity check,
@@ -1351,6 +1354,9 @@ impl LoopInput for TheDesktopLane<'_> {
         // Dock, the alo Bar, a chord or the client itself restore without the
         // panel (`crate::a_window_back_on_screen_leaves_the_panel`).
         server.the_panel_lets_go_of_windows_no_longer_aside(self.desktop.the_panel());
+        // **And the same for alo's own windows**: one brought back by its
+        // chord, the Dock or Super+Tab, or closed while aside, leaves the panel.
+        server.the_panel_lets_go_of_alos_windows_back(self.desktop.the_panel());
         // **And what that same position means to the panel's reveal machine.** A separate
         // question from the peek: one asks which preview, this asks whether the edge or the
         // surface is being touched. Both read the one stored draw, so they cannot disagree

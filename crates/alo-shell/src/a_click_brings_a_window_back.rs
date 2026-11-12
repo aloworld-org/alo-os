@@ -161,7 +161,23 @@ impl crate::Server {
         // card's button (`crate::a_task_card_is_pressed`). A press that was a
         // task's is not also asked about as a window.
         let mut on_windows = Vec::new();
+        let mut brought_back = 0;
         for at in asked {
+            // **One of alo's own windows**, by its square: it comes back
+            // (`crate::alos_own_window_goes_aside`). Checked against the panel
+            // as it is now, as a window's preview is — a square drawn for a
+            // window that has since come back by another road brings nothing.
+            let on_alos = self
+                .panel_as_drawn
+                .as_ref()
+                .and_then(|drawn| drawn.alos_window_at(at))
+                .filter(|which| panel.holds_alos_window(*which));
+            if let Some(which) = on_alos {
+                if self.bring_alos_window_back(panel, which) {
+                    brought_back += 1;
+                }
+                continue;
+            }
             let on_a_task = self
                 .panel_as_drawn
                 .as_ref()
@@ -178,7 +194,6 @@ impl crate::Server {
             .filter_map(|at| self.which_window_was_clicked(panel, *at))
             .collect();
 
-        let mut brought_back = 0;
         for id in chosen {
             // Found and cloned before anything changes: finding borrows the server, and
             // bringing the window back needs it mutably.

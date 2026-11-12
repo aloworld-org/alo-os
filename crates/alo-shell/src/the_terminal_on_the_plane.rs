@@ -164,6 +164,11 @@ impl crate::Server {
     #[must_use]
     pub(crate) fn where_the_terminal_is_on_the_plane(&self) -> Option<Rectangle<i32, Logical>> {
         self.alos_own_terminal.as_ref()?;
+        // **Not while it is in the right-hand panel**
+        // (`crate::alos_own_window_goes_aside`).
+        if self.this_alo_window_is_aside(alo_put_aside::AlosOwnWindow::TheTerminal) {
+            return None;
+        }
         let (window, place) = self.the_terminal_on_the_plane?;
         (place == self.the_place_now()).then_some(window)
     }
@@ -311,6 +316,9 @@ impl crate::Server {
         scale: f64,
     ) -> Option<(Rectangle<i32, Logical>, Camera)> {
         self.alos_own_terminal.as_ref()?;
+        if self.this_alo_window_is_aside(alo_put_aside::AlosOwnWindow::TheTerminal) {
+            return None;
+        }
         let camera = self.the_camera_of_the_display(named);
         let window = match self.the_terminal_on_the_plane {
             Some((window, place)) => (place == self.the_place_now()).then_some(window)?,

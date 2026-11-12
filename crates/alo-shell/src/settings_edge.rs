@@ -114,6 +114,10 @@ impl crate::Server {
                 self.the_person_closes_settings();
                 true
             }
+            Some(OnItsEdge::Minimise) => {
+                self.this_alo_window_is_asked_to_go_aside(alo_put_aside::AlosOwnWindow::Settings);
+                true
+            }
             Some(OnItsEdge::TheRest) => {
                 self.the_composer.it_gave_the_keyboard_up();
                 self.the_person_went_to(AKindOfWindow::Settings);

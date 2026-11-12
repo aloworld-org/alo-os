@@ -81,4 +81,7 @@ pub enum Aside<'a> {
     AWindow(&'a crate::Preview),
     /// A task put aside.
     ATask(ATaskAside),
+    /// One of alo's own windows put aside — the terminal, Settings or the
+    /// record (`crate::one_of_alos_own_windows`).
+    AnAloWindow(crate::one_of_alos_own_windows::AnAloWindowAside),
 }

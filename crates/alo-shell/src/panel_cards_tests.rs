@@ -82,7 +82,7 @@ fn tiles(panel: &Panel, edge: WhichEdge, artwork: &TheArtwork) -> Vec<Inked> {
         &laid_out,
         edge,
         artwork,
-        &the_palette(),
+        (&the_palette(), crate::desktop_testing::no_words()),
         &mut fonts(),
     )
 }
@@ -227,4 +227,65 @@ fn the_control_points_away_from_its_edge() {
 #[test]
 fn an_empty_panel_draws_no_card() {
     assert!(tiles(&Panel::new(), WhichEdge::Right, &TheArtwork::none()).is_empty());
+}
+
+/// **One of alo's own windows put aside is a card like an application's**:
+/// the hit area, and the first letter of the word the Dock already uses for
+/// it, so the terminal and Settings put aside are two cards a person can tell
+/// apart.
+#[test]
+fn alos_own_windows_put_aside_are_cards_marked_by_their_letter() {
+    let palette = the_palette();
+    let mut panel = Panel::new();
+    for which in [
+        alo_put_aside::AlosOwnWindow::TheTerminal,
+        alo_put_aside::AlosOwnWindow::Settings,
+    ] {
+        panel
+            .put_alos_window_aside(which, alo_canvas::Place::FIRST)
+            .unwrap();
+    }
+    let laid_out = picture(
+        &panel,
+        a_look(),
+        AS_DRAWN,
+        WhichEdge::Right,
+        WhetherRevealed::Revealed,
+        DisplayScale::ONE,
+    )
+    .unwrap();
+    assert_eq!(laid_out.alo_squares.len(), 2);
+    assert!(
+        laid_out.slots.is_empty(),
+        "neither is an application's window"
+    );
+    let words = crate::the_docks_words::TheDocksWords {
+        terminal: "Terminal".to_owned(),
+        settings: "Settings".to_owned(),
+        ..crate::the_docks_words::TheDocksWords::default()
+    };
+    let drawn = drawn(
+        &panel,
+        &laid_out,
+        WhichEdge::Right,
+        &TheArtwork::none(),
+        (&palette, &words),
+        &mut fonts(),
+    );
+    assert_eq!(drawn.len(), 3, "the control and two cards");
+    let (first, second) = (drawn.get(1).unwrap(), drawn.get(2).unwrap());
+    for card in [first, second] {
+        assert!(
+            card.pixels.contains(&palette.badge),
+            "a card has its hit area"
+        );
+        assert!(
+            card.pixels.contains(&palette.badge_ink),
+            "and a letter on it"
+        );
+    }
+    assert_ne!(
+        first.pixels, second.pixels,
+        "T and S are two different marks"
+    );
 }
