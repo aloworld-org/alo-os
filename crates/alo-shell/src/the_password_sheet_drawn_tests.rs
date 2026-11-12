@@ -9,7 +9,7 @@ use alo_strings::{Strings, Vocabulary};
 
 use super::*;
 use crate::SignInKey;
-use crate::the_password_sheet::{PasswordAsked, ThePasswordSheet, ToTheSheet};
+use crate::the_password_sheet::{PasswordAsked, ThePasswordSheet, ToTheSheet, WhatItIsFor};
 
 /// One to one.
 const ONE: crate::display_scale::DisplayScale = crate::display_scale::DisplayScale::ONE;

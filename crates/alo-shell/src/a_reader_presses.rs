@@ -30,6 +30,10 @@ pub enum WhatAReaderPressCameTo {
     /// Nothing: no Dock drawn now holds that control, or a click on it does
     /// nothing either.
     NothingOnTheDock,
+    /// Nothing here: a press on the *Open with* sheet is the desktop's, which
+    /// holds that sheet and hands such a press to it before anything reaches
+    /// the server (`crate::the_open_with_sheet`).
+    NotTheServers,
 }
 
 impl Server {
@@ -44,6 +48,7 @@ impl Server {
                 WhatAReaderPressCameTo::ATaskGoesAside
             }
             Pressed::OnTheDock(what) => self.a_reader_pressed_on_the_dock(&what),
+            Pressed::OnTheOpenWithSheet { .. } => WhatAReaderPressCameTo::NotTheServers,
         }
     }
 

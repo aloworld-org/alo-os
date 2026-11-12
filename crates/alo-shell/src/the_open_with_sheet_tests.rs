@@ -155,3 +155,68 @@ fn a_press_on_a_row_moves_the_keyboard_to_it() {
     sheet.open_in(Some(1), now);
     assert_eq!(told(&mut portal), "chosen io.gitlab.librewolf-community\n");
 }
+
+/// **A screen reader's press takes the door a click takes**: a row moves the
+/// keyboard to it, and Open answers the one the keyboard is on.
+#[test]
+fn a_readers_press_takes_the_door_a_click_takes() {
+    let now = Instant::now();
+    let (mut portal, ask) = an_ask();
+    let mut sheet = TheOpenWithSheet::none();
+    sheet.asked(vec![ask], true, now);
+    let number = sheet.shows().unwrap().number;
+    assert!(sheet.a_reader_pressed(number, crate::OnTheOpenWithSheet::TheApplication(2), now));
+    assert_eq!(sheet.shows().unwrap().focus, 2);
+    assert!(sheet.a_reader_pressed(number, crate::OnTheOpenWithSheet::Open, now));
+    assert!(!sheet.is_up());
+    assert_eq!(told(&mut portal), "chosen org.chromium.Chromium\n");
+}
+
+/// **A reader's Cancel answers as Escape does**, and nothing opens.
+#[test]
+fn a_readers_cancel_answers_as_escape_does() {
+    let now = Instant::now();
+    let (mut by_escape, ask) = an_ask();
+    let mut sheet = TheOpenWithSheet::none();
+    sheet.asked(vec![ask], true, now);
+    sheet.pressed(SheetKey::Cancel, now);
+    let escaped = told(&mut by_escape);
+    let (mut by_a_reader, ask) = an_ask();
+    sheet.asked(vec![ask], true, now);
+    let number = sheet.shows().unwrap().number;
+    assert!(sheet.a_reader_pressed(number, crate::OnTheOpenWithSheet::Cancel, now));
+    assert!(!sheet.is_up());
+    assert_eq!(told(&mut by_a_reader), escaped);
+}
+
+/// **A press heard on one sheet never answers the next**, a row the sheet
+/// does not have moves nothing, and with no sheet up a press does nothing.
+#[test]
+fn a_readers_press_is_held_to_the_sheet_it_was_heard_on() {
+    let now = Instant::now();
+    let mut sheet = TheOpenWithSheet::none();
+    assert!(!sheet.a_reader_pressed(1, crate::OnTheOpenWithSheet::Open, now));
+    let (mut first, ask) = an_ask();
+    let (mut second, next) = an_ask();
+    sheet.asked(vec![ask, next], true, now);
+    let heard_on = sheet.shows().unwrap().number;
+    sheet.pressed(SheetKey::Open, now);
+    assert_eq!(told(&mut first), "chosen org.mozilla.firefox\n");
+    assert!(sheet.is_up(), "the second went up");
+    assert_ne!(sheet.shows().unwrap().number, heard_on);
+    assert!(
+        !sheet.a_reader_pressed(heard_on, crate::OnTheOpenWithSheet::Cancel, now),
+        "a press heard on the first sheet reached the second"
+    );
+    assert!(sheet.is_up(), "the second is still waiting for the person");
+    let number = sheet.shows().unwrap().number;
+    assert!(!sheet.a_reader_pressed(number, crate::OnTheOpenWithSheet::TheApplication(3), now));
+    assert_eq!(
+        sheet.shows().unwrap().focus,
+        0,
+        "a row past the offer moved nothing"
+    );
+    sheet.pressed(SheetKey::Last, now);
+    sheet.pressed(SheetKey::Open, now);
+    assert_eq!(told(&mut second), "chosen org.chromium.Chromium\n");
+}

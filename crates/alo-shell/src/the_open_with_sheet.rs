@@ -129,6 +129,10 @@ struct Shown {
     focus: usize,
     /// When it went up.
     since: Instant,
+    /// Which sheet this is, counted from the first to go up: what a screen
+    /// reader's press is held to, so a press heard on one sheet never answers
+    /// the next.
+    number: u64,
 }
 
 /// What the sheet shows, for drawing it.
@@ -142,6 +146,8 @@ pub(crate) struct SheetShows<'a> {
     pub(crate) offered: &'a [Application],
     /// Which one the keyboard is on.
     pub(crate) focus: usize,
+    /// Which sheet this is (`Shown::number`).
+    pub(crate) number: u64,
 }
 
 /// Every *Open with* sheet the desktop holds: the one up, and those waiting.
@@ -151,6 +157,8 @@ pub(crate) struct TheOpenWithSheet {
     shown: Option<Shown>,
     /// Those waiting behind it, oldest first.
     waiting: VecDeque<AskedToChoose>,
+    /// How many sheets have gone up.
+    went_up: u64,
 }
 
 impl TheOpenWithSheet {
@@ -171,6 +179,7 @@ impl TheOpenWithSheet {
             link: shown.asked.asked.link(),
             offered: shown.asked.asked.offered(),
             focus: shown.focus,
+            number: shown.number,
         })
     }
 
@@ -252,6 +261,39 @@ impl TheOpenWithSheet {
         self.the_next_goes_up(now);
     }
 
+    /// **A screen reader pressed `on`, on the sheet numbered `sheet`** — the
+    /// same door a click takes: an application's row moves the keyboard to
+    /// it, *Open* opens in the one the keyboard is on, *Cancel* cancels.
+    ///
+    /// **Held to the sheet it was heard on.** The tree a reader presses is a
+    /// moment old, and a press heard on a sheet that has since been answered
+    /// must not answer the next one — so a press for any other sheet, or for
+    /// a row the sheet does not have, does nothing and says so with `false`.
+    pub(crate) fn a_reader_pressed(
+        &mut self,
+        sheet: u64,
+        on: crate::OnTheOpenWithSheet,
+        now: Instant,
+    ) -> bool {
+        let Some(shown) = self.shown.as_ref() else {
+            return false;
+        };
+        if shown.number != sheet {
+            return false;
+        }
+        match on {
+            crate::OnTheOpenWithSheet::TheApplication(row) => {
+                if row >= shown.asked.asked.offered().len() {
+                    return false;
+                }
+                self.pointed_at(row);
+            }
+            crate::OnTheOpenWithSheet::Open => self.open_in(None, now),
+            crate::OnTheOpenWithSheet::Cancel => self.cancelled(now),
+        }
+        true
+    }
+
     /// The desktop could not draw the sheet on this display: its question is
     /// answered `cannot-show` rather than every key held with nothing on the
     /// screen, the password sheet's rule.
@@ -268,11 +310,13 @@ impl TheOpenWithSheet {
             return;
         }
         if let Some(asked) = self.waiting.pop_front() {
+            self.went_up = self.went_up.wrapping_add(1);
             // **Focus starts on the person's default**, the first offered.
             self.shown = Some(Shown {
                 asked,
                 focus: 0,
                 since: now,
+                number: self.went_up,
             });
         }
     }

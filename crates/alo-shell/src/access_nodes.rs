@@ -28,6 +28,7 @@ use alo_strings::{Filling, Strings};
 
 use crate::access_action::Pressed;
 use crate::access_roles::{self, APPLICATION, FILLER};
+use crate::access_sheet_in_front::ASheetInFront;
 use crate::frame_name::FrameName;
 use crate::the_dock_as_a_reader_meets_it::{ItsName, as_read};
 use crate::the_tasks_a_person_opened::WhichTask;
@@ -38,7 +39,7 @@ use crate::window_edge_reading::what_a_reader_is_told;
 pub(crate) const ROOT: &str = "/org/a11y/atspi/accessible/root";
 
 /// One thing in the tree, as a reader is told about it.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub(crate) struct Node {
     /// Where it is, on the bus.
     pub(crate) path: String,
@@ -46,6 +47,10 @@ pub(crate) struct Node {
     pub(crate) role: u32,
     /// What it is called, in the person's own language.
     pub(crate) name: String,
+    /// What a reader says after the name, where the surface draws a second
+    /// line under it — *Installed* under an application on the *Open with*
+    /// sheet. Empty everywhere else, so nothing is read twice.
+    pub(crate) description: String,
     /// The two words `GetState` answers with, low word first.
     pub(crate) states: [u32; 2],
     /// Whether a reader announces it the moment it changes.
@@ -65,6 +70,9 @@ pub struct ReadAloudTree {
     nodes: Vec<Node>,
     /// Which node each surface's own is.
     surfaces: Vec<(Surface, usize)>,
+    /// The sheet alo is asking the person something on, while one is up,
+    /// and where the keyboard is on it (`crate::access_sheet_in_front`).
+    in_front: Option<ASheetInFront>,
 }
 
 impl ReadAloudTree {
@@ -97,9 +105,11 @@ impl ReadAloudTree {
                 announced: false,
                 parent: 0,
                 children: Vec::new(),
+                description: String::new(),
                 press: None,
             }],
             surfaces: Vec::new(),
+            in_front: None,
         };
         for surface in Surface::ALL {
             let drawn = surface.read_aloud();
@@ -123,6 +133,7 @@ impl ReadAloudTree {
                             announced: false,
                             parent: 0,
                             children: Vec::new(),
+                            description: String::new(),
                             press: None,
                         },
                     ),
@@ -239,6 +250,7 @@ impl ReadAloudTree {
                     announced: false,
                     parent: list,
                     children: Vec::new(),
+                    description: String::new(),
                     press: None,
                 },
             );
@@ -302,6 +314,7 @@ impl ReadAloudTree {
                 announced: false,
                 parent: at,
                 children: Vec::new(),
+                description: String::new(),
                 press: None,
             },
         );
@@ -316,6 +329,7 @@ impl ReadAloudTree {
                     announced: false,
                     parent: panel,
                     children: Vec::new(),
+                    description: String::new(),
                     press: None,
                 },
             );
@@ -362,6 +376,7 @@ impl ReadAloudTree {
                 announced: false,
                 parent: field,
                 children: Vec::new(),
+                description: String::new(),
                 press: None,
             },
         );
@@ -376,6 +391,7 @@ impl ReadAloudTree {
                     announced: false,
                     parent: list,
                     children: Vec::new(),
+                    description: String::new(),
                     press: None,
                 },
             );
@@ -438,6 +454,7 @@ impl ReadAloudTree {
                     announced: false,
                     parent: list,
                     children: Vec::new(),
+                    description: String::new(),
                     press: None,
                 },
             );
@@ -527,6 +544,7 @@ impl ReadAloudTree {
                     announced: false,
                     parent: dock,
                     children: Vec::new(),
+                    description: String::new(),
                     press: slot.press,
                 },
             );
@@ -605,6 +623,9 @@ impl ReadAloudTree {
             .into_iter()
             .filter_map(|(surface, old)| moved(old).map(|new| (surface, new)))
             .collect();
+        // A sheet in front is renumbered with everything else, and one whose
+        // node went is no longer in front.
+        self.in_front = self.in_front.take().and_then(|sheet| sheet.moved(&moved));
         moved(at).unwrap_or(at)
     }
 
@@ -645,8 +666,20 @@ impl ReadAloudTree {
             .find(|at| self.nodes.get(*at).is_some_and(|node| node.role == list))
     }
 
+    /// The sheet in front, while one is up.
+    pub(crate) const fn in_front(&self) -> Option<&ASheetInFront> {
+        self.in_front.as_ref()
+    }
+
+    /// Say which sheet is in front and where the keyboard is on it. The last
+    /// sheet put on the tree is the one in front, which is the order the
+    /// desktop hands its keys out in (`crate::access_sheet_in_front`).
+    pub(crate) fn put_in_front(&mut self, sheet: ASheetInFront) {
+        self.in_front = Some(sheet);
+    }
+
     /// Put a node under `parent`, at the path its position gives it.
-    fn push(&mut self, parent: usize, node: Node) -> usize {
+    pub(crate) fn push(&mut self, parent: usize, node: Node) -> usize {
         let at = self.nodes.len();
         self.nodes.push(Node {
             path: format!("/org/a11y/atspi/accessible/{at}"),
@@ -676,6 +709,7 @@ fn of_control(strings: &Strings, control: Control, turned_on: &TurnedOn) -> Node
         announced: access_roles::is_announced(control.state),
         parent: 0,
         children: Vec::new(),
+        description: String::new(),
         press: None,
     }
 }

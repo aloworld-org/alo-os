@@ -31,7 +31,7 @@ use smithay::utils::Rectangle;
 use crate::approval_raster::{ApprovalPicture, Measure, Palette, framed, placed};
 use crate::painted::Solid;
 use crate::painted_text::sentence;
-use crate::the_password_sheet::{SheetShows, TheLineUnder, WhatItIsFor, WhyNotChecked};
+use crate::the_password_sheet::SheetShows;
 use crate::the_password_sheets_words as words;
 use crate::{RenderError, WindowControlLabels};
 
@@ -84,17 +84,9 @@ pub(crate) fn drawn(
             .text()
             .to_owned()
     };
-    let (heading, what) = match shows.what_for {
-        WhatItIsFor::ACommandAloWasAsked(command) => (say(words::ALO_ASKS_TO_RUN_THIS), command),
-        WhatItIsFor::SomethingElse(message) => (say(words::SOMETHING_ASKS), message),
-    };
-    let under = say(match shows.under {
-        TheLineUnder::HowToAnswer => words::HOW_TO_ANSWER,
-        TheLineUnder::Checking => words::CHECKING,
-        TheLineUnder::NotRight => words::NOT_RIGHT,
-        TheLineUnder::CannotBeChecked(WhyNotChecked::NotInStep) => words::NOT_IN_STEP,
-        TheLineUnder::CannotBeChecked(WhyNotChecked::NoChecker) => words::NO_CHECKER,
-    });
+    let (heading, what) = words::the_question(shows.what_for);
+    let heading = say(heading);
+    let under = say(words::the_line_under(shows.under));
     let fonts = &mut labels.fonts;
     let mut line = |text: &str| {
         sentence(
@@ -150,7 +142,7 @@ pub(crate) fn drawn(
     picture
         .inked
         .extend(placed(what_shaped, left + pad, what_area.loc.y));
-    picture.sentence = Some((what.clone(), what_area));
+    picture.sentence = Some((what.to_owned(), what_area));
 
     let field = Rectangle::new((left + pad, y).into(), (inner, field_height).into());
     framed(&mut picture.solids, field, measure.px(1), palette);

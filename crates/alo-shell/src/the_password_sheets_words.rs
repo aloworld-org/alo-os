@@ -85,6 +85,30 @@ pub const THE_PASSWORD_SHEETS_WORDS: [Word; 7] = [
     NO_CHECKER,
 ];
 
+/// **The heading over what the password is for, and the words under it** —
+/// asked by the drawing and by the screen reader's tree alike, so what is
+/// heard and what is drawn are one choice of sentence and cannot drift.
+pub(crate) fn the_question(what_for: &crate::the_password_sheet::WhatItIsFor) -> (Word, &str) {
+    use crate::the_password_sheet::WhatItIsFor;
+    match what_for {
+        WhatItIsFor::ACommandAloWasAsked(command) => (ALO_ASKS_TO_RUN_THIS, command),
+        WhatItIsFor::SomethingElse(message) => (SOMETHING_ASKS, message),
+    }
+}
+
+/// **The line under the question**, for what the sheet is saying now —
+/// asked by the drawing and by the screen reader's tree alike.
+pub(crate) const fn the_line_under(under: crate::the_password_sheet::TheLineUnder) -> Word {
+    use crate::the_password_sheet::{TheLineUnder, WhyNotChecked};
+    match under {
+        TheLineUnder::HowToAnswer => HOW_TO_ANSWER,
+        TheLineUnder::Checking => CHECKING,
+        TheLineUnder::NotRight => NOT_RIGHT,
+        TheLineUnder::CannotBeChecked(WhyNotChecked::NotInStep) => NOT_IN_STEP,
+        TheLineUnder::CannotBeChecked(WhyNotChecked::NoChecker) => NO_CHECKER,
+    }
+}
+
 /// Invalid declaration or collision while registering the sheet's wording.
 #[derive(Debug, thiserror::Error)]
 pub enum ThePasswordSheetsWordsError {

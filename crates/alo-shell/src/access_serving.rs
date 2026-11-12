@@ -19,9 +19,9 @@
 //! middle of compositing sixty times a second; asking it once at start-up would
 //! leave a reader holding a list of the windows that happened to be open then.
 //!
-//! So this holds the bus and the **names it last published**, and re-serves only
-//! when those change. A frame being dragged, focused, zoomed or redrawn changes
-//! nothing a reader is told, so it costs one comparison of a short list.
+//! So this holds the bus and the **tree it last published**, and re-serves only
+//! when that changes. A frame being dragged, focused, zoomed or redrawn changes
+//! nothing a reader is told, so it costs one comparison of a few hundred nodes.
 //!
 //! # A machine with no reader is not a failure
 //!
@@ -32,7 +32,7 @@
 //! refusal is returned, so a caller that wants to say *the reader could not be
 //! reached* has something to say it about.
 
-use crate::{ReadAloudBus, Server};
+use crate::{ReadAloudBus, ReadAloudTree, Server};
 use alo_access::{Surface, TurnedOn};
 use alo_strings::Strings;
 
@@ -47,12 +47,12 @@ pub struct TheReaderIsTold {
     /// surfaces, because a window that changes its title changes what a reader
     /// should hear just as much as one that opens.
     windows: Vec<String>,
-    /// Which surfaces were up when the tree was last built.
-    showing: Vec<Surface>,
-    /// What a reader could press on the tree last published, in reading
-    /// order — compared as well as the names, so a press always reaches the
-    /// window it was heard under.
-    pressable: Vec<crate::Pressed>,
+    /// The tree last published, whole — what the next is compared with, so a
+    /// press always reaches the thing it was heard on and a sheet's every
+    /// change reaches the reader.
+    published: ReadAloudTree,
+    /// Where the keyboard was last said to be on a sheet in front.
+    keyboard: Option<crate::access_events::WhereTheKeyboardWas>,
 }
 
 impl TheReaderIsTold {
@@ -81,47 +81,50 @@ impl TheReaderIsTold {
                 .into_iter()
                 .map(str::to_owned)
                 .collect(),
-            showing: showing.to_vec(),
-            pressable: tree.what_can_be_pressed(),
+            published: tree,
+            keyboard: None,
             bus,
         })
     }
 
-    /// Follow what is open now, and say whether anything was republished.
+    /// Follow what is on the screen now, and say whether anything was
+    /// republished.
     ///
-    /// Cheap to call every frame and meant to be: it builds the tree, compares
-    /// the window names and the surfaces up against what was last published, and
-    /// only touches the bus when they differ.
+    /// `tree` is the whole of it — `Server::read_aloud_with_the_frames_open`,
+    /// with whichever of alo's own sheets are up added by the desktop that
+    /// holds them (`with_the_password_sheet`, `with_the_open_with_sheet`).
+    ///
+    /// Cheap to call every frame and meant to be: it compares the tree against
+    /// what was last published, and only touches the bus when they differ.
+    /// **The whole tree is compared**, not only the window names: a sheet's
+    /// row moving under the arrows, or the password sheet saying the password
+    /// was not right, changes nothing in the list of windows and everything a
+    /// reader should hear.
+    ///
+    /// Then a reader is told what happened on a sheet in front
+    /// (`crate::access_events`): it came up, the keyboard moved, or what the
+    /// keyboard is on was renamed.
     ///
     /// # Errors
     /// [`crate::NotRead::NotServed`] when the new tree could not be put on the
     /// bus. The old paths are already off by then, so a caller that ignores this
     /// leaves a reader with less than it had rather than a mixture of two
-    /// moments — see [`ReadAloudBus::now_showing`].
-    pub fn following(
-        &mut self,
-        server: &Server,
-        strings: &Strings,
-        showing: &[Surface],
-        turned_on: &TurnedOn,
-    ) -> Result<bool, crate::NotRead> {
-        let tree = server.read_aloud_with_the_frames_open(strings, showing, turned_on);
-        let windows: Vec<String> = tree
+    /// moments — see [`ReadAloudBus::now_showing`]. [`crate::NotRead::NotTold`]
+    /// when the tree is on the bus and what happened could not be said.
+    pub(crate) fn following(&mut self, tree: &ReadAloudTree) -> Result<bool, crate::NotRead> {
+        if tree.nodes() == self.published.nodes() {
+            return Ok(false);
+        }
+        self.bus.now_showing(tree)?;
+        self.windows = tree
             .the_windows_open_as_read()
             .into_iter()
             .map(str::to_owned)
             .collect();
-        let pressable = tree.what_can_be_pressed();
-        if windows == self.windows
-            && showing == self.showing.as_slice()
-            && pressable == self.pressable
-        {
-            return Ok(false);
-        }
-        self.bus.now_showing(&tree)?;
-        self.windows = windows;
-        self.showing = showing.to_vec();
-        self.pressable = pressable;
+        self.published = tree.clone();
+        let (told, keyboard) = crate::access_events::what_happened(self.keyboard.as_ref(), tree);
+        self.keyboard = keyboard;
+        self.bus.told(&told)?;
         Ok(true)
     }
 
