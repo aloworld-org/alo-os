@@ -2676,9 +2676,12 @@ fn every_pointer_choice_is_reached_and_chosen_from_the_keyboard() {
     );
 
     // **The walk's own keys**: Accessibility in the side column, Tab into the
-    // page, Tab to the Pointer section.
+    // page — which lands on the screen reader's switch, first on the page
+    // since 2026-11-12 (ADR 0151) — Tab to Text, Tab to the Pointer section.
     press(&mut window, SettingsKey::Last);
     assert_eq!(window.category(), Some(SettingsCategory::Accessibility));
+    press(&mut window, SettingsKey::NextSection);
+    assert_eq!(window.focused(noon()), Some(SettingsRow::ScreenReader));
     press(&mut window, SettingsKey::NextSection);
     assert_eq!(window.focused(noon()), Some(SettingsRow::TextSize));
     press(&mut window, SettingsKey::NextSection);
