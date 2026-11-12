@@ -107,9 +107,7 @@ type ASectionDrawn = (Option<String>, Vec<(String, String, bool)>, Option<String
 
 /// The page as drawn: each section's heading, and each row's name, line and
 /// whether it is ringed.
-fn the_page(
-    window: &SettingsWindow,
-) -> Vec<ASectionDrawn> {
+fn the_page(window: &SettingsWindow) -> Vec<ASectionDrawn> {
     let page = crate::settings_page::the_page(
         window.open().unwrap(),
         SettingsCategory::DefaultApps,
@@ -323,7 +321,9 @@ fn an_application_that_left_is_refused_and_nothing_is_written() {
     let file = machine.kept(alo_applications::keeping::THE_FILE);
     let mut window = opened(&machine, a_machine_with_browsers());
     let open = window.open_mut().unwrap();
-    let did = open.default_apps.choose(LinkKind::Web, LIBREWOLF, &settings_words());
+    let did = open
+        .default_apps
+        .choose(LinkKind::Web, LIBREWOLF, &settings_words());
     assert_eq!(
         did,
         crate::SettingsKept::Written,
@@ -337,7 +337,9 @@ fn an_application_that_left_is_refused_and_nothing_is_written() {
         Application::called(THUNDERBIRD, "Thunderbird").unwrap(),
     ]);
     open.default_apps.the_machine_has(left);
-    let did = open.default_apps.choose(LinkKind::Web, LIBREWOLF, &settings_words());
+    let did = open
+        .default_apps
+        .choose(LinkKind::Web, LIBREWOLF, &settings_words());
     assert_eq!(did, crate::SettingsKept::Refused);
     assert_eq!(bytes(&file), written, "a refusal wrote the file");
     assert_eq!(
