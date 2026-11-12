@@ -15,7 +15,10 @@
 //! *focused* and `CHECKED` as *on*, so a surface whose answers arrived carrying
 //! any of the three would be telling somebody who cannot see the screen that a
 //! choice had been made for them. **Nothing this file describes carries any of
-//! them**, and the test reads that back off the bus rather than out of here.
+//! them of its own accord**, and the test reads that back off the bus rather
+//! than out of here. `CHECKED` reports a setting the person turned on, and
+//! `FOCUSED` the one control on a sheet that every key already goes to; both
+//! are what is so, not something chosen for anybody.
 //!
 //! # Announced when it changes is an attribute, not a state
 //!
@@ -94,10 +97,21 @@ const CHECKABLE: u32 = 41;
 /// `ATSPI_STATE_READ_ONLY`.
 const READ_ONLY: u32 = 43;
 
-/// `ATSPI_STATE_FOCUSED` — never sent by this crate, and named so that the
-/// test holding it to that has something to name.
-#[cfg(test)]
+/// `ATSPI_STATE_FOCUSED` — sent only for the one control the keyboard is
+/// really on, on a sheet alo is asking the person something on
+/// ([`with_the_keyboard`]).
+///
+/// *This was `#[cfg(test)]` under the words "never sent by this crate" until
+/// 2026-11-12, for ADR 0001's reason: a reader announces it, and nothing may
+/// arrive chosen. That reason is about this machine choosing, as `CHECKED`'s
+/// amendment of 2026-09-30 says; where every key already goes to one field,
+/// saying so is reporting where the keyboard is, and a reader told nothing
+/// has the keyboard says nothing at all when a sheet comes up.*
 pub(crate) const FOCUSED: u32 = 12;
+/// `ATSPI_STATE_ACTIVE` — the sheet in front, which every key goes to.
+const ACTIVE: u32 = 1;
+/// `ATSPI_STATE_MODAL` — and nothing behind it can be reached while it is up.
+const MODAL: u32 = 16;
 /// `ATSPI_STATE_IS_DEFAULT` — never sent by this crate.
 #[cfg(test)]
 pub(crate) const IS_DEFAULT: u32 = 39;
@@ -176,6 +190,28 @@ pub(crate) const fn words_of(state: State, set: Option<bool>) -> [u32; 2] {
 /// why it is not the same bit as `VISIBLE`.
 pub(crate) const fn off_the_screen(words: [u32; 2]) -> [u32; 2] {
     [words[0] & !(1 << SHOWING), words[1]]
+}
+
+/// The same states, for a sheet that is in front and holds every key until
+/// it is answered: `ACTIVE` and `MODAL`, which is how a reader knows the
+/// sheet is where it now is and that nothing behind it can be reached.
+pub(crate) const fn in_front(words: [u32; 2]) -> [u32; 2] {
+    [words[0] | (1 << ACTIVE) | (1 << MODAL), words[1]]
+}
+
+/// The same states, for the one control the keyboard is on: `FOCUSED`.
+///
+/// **Only ever asked by a sheet, for where its keys really go** — the
+/// password sheet's field, the *Open with* row the arrows are on. No surface
+/// `alo-access` describes is handed through this, which is what keeps the
+/// approval's two answers unfocused (ADR 0001); the tests hold both.
+pub(crate) const fn with_the_keyboard(words: [u32; 2]) -> [u32; 2] {
+    [words[0] | (1 << FOCUSED), words[1]]
+}
+
+/// Whether these states say the keyboard is on the thing.
+pub(crate) const fn has_the_keyboard(words: [u32; 2]) -> bool {
+    words[0] & (1 << FOCUSED) != 0
 }
 
 /// Whether these states say the thing is in front of the person, which is

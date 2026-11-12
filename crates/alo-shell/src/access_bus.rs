@@ -18,9 +18,14 @@
 //! each says is its name, in the person's language, and a name is not text a
 //! caret moves through.
 //!
-//! **Nothing is subscribed to and nothing is emitted.** A surface that changed
-//! while nobody was looking would be an event, and this crate has no event to
-//! send that the surfaces themselves do not already draw.
+//! **Nothing is subscribed to, and only alo's own sheets emit anything.** A
+//! reader speaks when it is told the keyboard moved, so a sheet the shell puts
+//! up and every key goes to — the password sheet, *Open with* — is said to
+//! come to the front, where the keyboard is on it, and when what that control
+//! is called changes ([`ReadAloudBus::told`], decided by
+//! `crate::access_events`). *Until 2026-11-12 nothing at all was emitted, on
+//! the reasoning that the surfaces draw everything they say; a reader cannot
+//! see a drawing, so a sheet came up in silence.*
 //!
 //! # Embedding is asking, not announcing
 //!
@@ -36,9 +41,10 @@ use std::sync::mpsc::{self, Receiver, Sender};
 
 use zbus::blocking::connection::Builder;
 use zbus::blocking::{Connection, ObjectServer};
-use zbus::zvariant::{ObjectPath, OwnedObjectPath};
+use zbus::zvariant::{ObjectPath, OwnedObjectPath, Value};
 
 use crate::access_action::{ACTION, Pressable, Pressed};
+use crate::access_events::AnEvent;
 use crate::access_nodes::{Node, ROOT, ReadAloudTree};
 use crate::access_roles::LIVE;
 
@@ -53,6 +59,12 @@ const SOCKET: &str = "org.a11y.atspi.Socket";
 
 /// The interface every thing in a tree answers.
 const ACCESSIBLE: &str = "org.a11y.atspi.Accessible";
+
+/// Where a window's events are said.
+const WINDOW_EVENTS: &str = "org.a11y.atspi.Event.Window";
+
+/// Where a thing's own events are said.
+const OBJECT_EVENTS: &str = "org.a11y.atspi.Event.Object";
 
 /// Why the tree is not on the bus.
 #[derive(Debug, thiserror::Error, PartialEq, Eq)]
@@ -70,6 +82,9 @@ pub enum NotRead {
     /// Nothing answered as the registry, so nothing was embedded.
     #[error("no registry answered")]
     NoRegistry,
+    /// What happened could not be said on the bus.
+    #[error("the accessibility bus was not told")]
+    NotTold,
 }
 
 /// **This machine's surfaces, answered on the accessibility bus.**
@@ -225,6 +240,55 @@ impl ReadAloudBus {
         self.put_on(tree)
     }
 
+    /// **Tell a reader what happened**, in at-spi2's own events: a sheet in
+    /// front is `Window:Activate`, the keyboard arriving is
+    /// `Object:StateChanged` *focused*, and a new name is
+    /// `Object:PropertyChange` *accessible-name* — the three a toolkit's bridge
+    /// sends for the same moments, in the `siiva{sv}` shape every reader takes.
+    ///
+    /// Sent after the tree they describe is on the bus
+    /// ([`Self::now_showing`]), so a reader asking about the node it was told
+    /// of finds it.
+    ///
+    /// # Errors
+    /// [`NotRead::NotTold`] when a path is not one, or the bus refused to send.
+    pub(crate) fn told(&self, events: &[AnEvent]) -> Result<(), NotRead> {
+        for event in events {
+            let (path, interface, member, kind, detail, said) = match event {
+                AnEvent::InFront { path, name } => {
+                    (path, WINDOW_EVENTS, "Activate", "", 0, name.as_str())
+                }
+                AnEvent::TheKeyboardIsHere { path } => {
+                    (path, OBJECT_EVENTS, "StateChanged", "focused", 1, "")
+                }
+                AnEvent::NowCalled { path, name } => (
+                    path,
+                    OBJECT_EVENTS,
+                    "PropertyChange",
+                    "accessible-name",
+                    0,
+                    name.as_str(),
+                ),
+            };
+            let path = ObjectPath::try_from(path.as_str()).map_err(|_| NotRead::NotTold)?;
+            let any = if said.is_empty() {
+                Value::from(0_i32)
+            } else {
+                Value::from(said)
+            };
+            self.connection
+                .emit_signal(
+                    None::<&str>,
+                    path,
+                    interface,
+                    member,
+                    &(kind, detail, 0_i32, any, HashMap::<&str, Value<'_>>::new()),
+                )
+                .map_err(|_| NotRead::NotTold)?;
+        }
+        Ok(())
+    }
+
     /// The name this machine's tree answers as.
     #[must_use]
     pub fn answers_as(&self) -> &str {
@@ -310,6 +374,10 @@ struct ReadAloud {
     role: u32,
     /// What it is called, in the person's language.
     name: String,
+    /// The line drawn under it, where there is one.
+    description: String,
+    /// Where it is among what its parent holds, `-1` for the shell itself.
+    index_in_parent: i32,
     /// The two words `GetState` answers with, low word first.
     states: Vec<u32>,
     /// What a reader is told besides the name — the `live` attribute, and on
@@ -359,9 +427,25 @@ impl ReadAloud {
                 surface.on_the_wire().to_owned(),
             );
         }
+        let index_in_parent = if node.path == ROOT {
+            -1
+        } else {
+            tree.nodes()
+                .get(node.parent)
+                .and_then(|parent| {
+                    parent
+                        .children
+                        .iter()
+                        .position(|child| tree.nodes().get(*child).is_some_and(|it| it.path == node.path))
+                })
+                .and_then(|at| i32::try_from(at).ok())
+                .unwrap_or(-1)
+        };
         Self {
             role: node.role,
             name: node.name.clone(),
+            description: node.description.clone(),
+            index_in_parent,
             states: node.states.to_vec(),
             attributes,
             children: node.children.iter().map(|child| at(*child)).collect(),
@@ -426,11 +510,19 @@ impl ReadAloud {
         self.name.clone()
     }
 
-    /// Nothing: a control's name is the whole of what it is called, and a
-    /// description repeating it would be read twice.
+    /// The line a surface draws under a control's name, where it draws one —
+    /// *Installed* under an application on the *Open with* sheet — and
+    /// nothing anywhere else: a description repeating the name would be read
+    /// twice.
     #[zbus(property)]
     fn description(&self) -> String {
-        String::new()
+        self.description.clone()
+    }
+
+    /// Where this is among what its parent holds, which is how a reader says
+    /// *2 of 3* on a list.
+    fn get_index_in_parent(&self) -> i32 {
+        self.index_in_parent
     }
 
     /// How many things are inside this.
@@ -445,3 +537,13 @@ impl ReadAloud {
         self.parent.clone()
     }
 }
+
+#[cfg(test)]
+#[expect(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    clippy::indexing_slicing,
+    reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
+)]
+#[path = "access_bus_tests.rs"]
+mod tests;

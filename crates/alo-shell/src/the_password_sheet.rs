@@ -158,6 +158,9 @@ pub(crate) struct SheetShows<'a> {
     pub(crate) typed_something: bool,
     /// The line under the question.
     pub(crate) under: TheLineUnder,
+    /// Which question this is, counted from the first: what a screen reader
+    /// is told a new question by (`crate::access_sheet_in_front`).
+    pub(crate) asked: u64,
 }
 
 /// **The sheet's state**: the questions waiting, the one field, what it says.
@@ -168,6 +171,8 @@ pub(crate) struct ThePasswordSheet {
     entry: SignInEntry,
     /// What the sheet says under the question.
     under: TheLineUnder,
+    /// How many times a question has come to the front.
+    asked: u64,
 }
 
 impl ThePasswordSheet {
@@ -177,6 +182,7 @@ impl ThePasswordSheet {
             waiting: VecDeque::new(),
             entry: SignInEntry::waiting_for_a_password(),
             under: TheLineUnder::HowToAnswer,
+            asked: 0,
         }
     }
 
@@ -191,6 +197,7 @@ impl ThePasswordSheet {
             what_for: &asked.what_for,
             typed_something: self.entry.has_password(),
             under: self.under,
+            asked: self.asked,
         })
     }
 
@@ -268,6 +275,7 @@ impl ThePasswordSheet {
     fn a_fresh_question(&mut self) {
         self.entry.forgotten();
         self.under = TheLineUnder::HowToAnswer;
+        self.asked = self.asked.wrapping_add(1);
     }
 
     /// Answer the question in front and take it down.

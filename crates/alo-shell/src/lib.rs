@@ -182,7 +182,9 @@ mod access_bus;
 mod access_contrast;
 mod access_magnifier;
 mod access_nodes;
+mod access_events;
 mod access_roles;
+mod access_sheet_in_front;
 mod access_serving;
 mod active_session;
 /// What an application sends while alo works in it, on the indicator (ADR 0143 Q6).
@@ -285,9 +287,11 @@ mod the_keyboard_on_the_docks_surfaces;
 /// The *Open with* sheet: an application asked for the person to choose what
 /// opens a link (frame `25:52`). Public for the one type the door hands it.
 pub mod the_open_with_sheet;
+mod the_open_with_sheet_as_read;
 mod the_open_with_sheet_drawn;
 mod the_open_with_sheets_words;
 mod the_password_sheet;
+mod the_password_sheet_as_read;
 mod the_password_sheet_drawn;
 mod the_password_sheets_words;
 mod the_pointer_drawn;
@@ -924,7 +928,7 @@ pub use window_size::WindowSizeError;
 pub use window_switch::{WindowSwitchDirection, WindowSwitchError};
 
 pub use a_frame_per_display::{DrawnPerDisplay, retire_each_display};
-pub use access_action::Pressed;
+pub use access_action::{OnTheOpenWithSheet, Pressed};
 pub use access_bus::{NotRead, ReadAloudBus};
 pub use access_contrast::Contrast;
 pub use access_magnifier::{NotMagnified, magnified, magnifying};

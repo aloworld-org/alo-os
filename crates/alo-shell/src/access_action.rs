@@ -42,9 +42,10 @@ const CLICK: &str = "click";
 
 /// **What a reader pressed**, as the shell acts on it.
 ///
-/// Two kinds of control on the tree can be pressed: a task window's Close, and
+/// Three kinds of control on the tree can be pressed: a task window's Close,
 /// each control on the Dock that a click does something on (both the owner's
-/// decisions of 2026-10-28). A window edge's controls on an application window
+/// decisions of 2026-10-28), and what a click lands on on the *Open with*
+/// sheet. A window edge's controls on an application window
 /// are announced and not yet pressable; see `crate::access_nodes`.
 ///
 /// **Not `Copy`**, because a Dock slot can hold an application, and an
@@ -60,6 +61,27 @@ pub enum Pressed {
     /// than by where it is, so a press reaches the application it was heard
     /// as and never whatever has since moved into its place.
     OnTheDock(WhatIsHere),
+    /// This control on the *Open with* sheet numbered `sheet`, which only
+    /// that sheet answers (`crate::the_open_with_sheet`).
+    OnTheOpenWithSheet {
+        /// The sheet it was heard on.
+        sheet: u64,
+        /// What on it.
+        on: OnTheOpenWithSheet,
+    },
+}
+
+/// **What a reader pressed on the *Open with* sheet** — what a click on it
+/// can land on, and nothing else.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum OnTheOpenWithSheet {
+    /// The application offered at this place in the list: the keyboard goes
+    /// to it, as a click on its row does.
+    TheApplication(usize),
+    /// *Open*: the link opens in the application the keyboard is on.
+    Open,
+    /// *Cancel*: nothing opens.
+    Cancel,
 }
 
 /// One pressable node, answering `org.a11y.atspi.Action`.

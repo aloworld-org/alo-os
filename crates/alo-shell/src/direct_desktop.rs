@@ -2201,12 +2201,7 @@ impl LoopInput for TheDesktopLane<'_> {
         let the_open_with_sheet = match self.open_with.shows() {
             Some(shows) => {
                 let names = |identifier: &str| {
-                    let name = server
-                        .what_each_is_called
-                        .get(identifier)
-                        .filter(|called| !called.trim().is_empty())
-                        .cloned()
-                        .unwrap_or_else(|| identifier.to_owned());
+                    let name = server.what_an_application_is_called(identifier);
                     let picture = alo_dock::AppId::named(identifier)
                         .ok()
                         .and_then(|app| server.what_each_application_draws.of(&app).cloned());
@@ -2942,14 +2937,34 @@ impl LoopInput for TheDesktopLane<'_> {
             // reader closed is gone from what the reader is told this frame.
             // Each goes through the same door a click on it does.
             for pressed in reader.pressed() {
-                let _ = server.a_reader_pressed(pressed);
+                match pressed {
+                    // **The *Open with* sheet is this desktop's**, so a press
+                    // on it is answered here, held to the sheet it was heard
+                    // on; everything else goes through the server's door.
+                    crate::Pressed::OnTheOpenWithSheet { sheet, on } => {
+                        let _ = self.open_with.a_reader_pressed(
+                            sheet,
+                            on,
+                            std::time::Instant::now(),
+                        );
+                    }
+                    other => {
+                        let _ = server.a_reader_pressed(other);
+                    }
+                }
             }
-            let _ = reader.following(
-                server,
-                self.strings,
-                &[alo_access::Surface::Desktop],
-                &alo_access::TurnedOn::nothing(),
-            );
+            // **And alo's own sheets, while one is up**, the password sheet
+            // last because it is the one every key goes to first.
+            let called = |identifier: &str| server.what_an_application_is_called(identifier);
+            let tree = server
+                .read_aloud_with_the_frames_open(
+                    self.strings,
+                    &[alo_access::Surface::Desktop],
+                    &alo_access::TurnedOn::nothing(),
+                )
+                .with_the_open_with_sheet(self.strings, self.open_with.shows(), &called)
+                .with_the_password_sheet(self.strings, self.password_sheet.shows());
+            let _ = reader.following(&tree);
         }
         // **And the screens are re-arranged when the set of displays changes.**
         //
