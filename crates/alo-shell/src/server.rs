@@ -615,6 +615,11 @@ pub struct Server {
     /// miniatures stay live at a bounded rate
     /// (`crate::put_aside_windows_draw_again`).
     pub(crate) put_aside_last_asked_to_draw: Option<std::time::Instant>,
+    /// **The pictures the renderer refused to draw**: which windows put aside
+    /// are shown by their application's mark instead of a miniature, and which
+    /// refusals the log has already been told of
+    /// (`crate::a_picture_the_renderer_refuses`).
+    pub(crate) refused_pictures: crate::a_picture_the_renderer_refuses::TheRefusedPictures,
     /// Buttons whose press the panel took, so their release is taken too.
     ///
     /// **A client must never see a release for a press it did not see.** The press is swallowed
@@ -987,6 +992,7 @@ impl Server {
             alos_windows_asked_to_go_aside: Vec::new(),
             alos_windows_aside: Vec::new(),
             put_aside_last_asked_to_draw: None,
+            refused_pictures: crate::a_picture_the_renderer_refuses::TheRefusedPictures::default(),
             clicks_the_panel_took: std::collections::HashSet::new(),
             gestures: Default::default(),
             // Nobody has told this seat what a chord means, so it takes none.

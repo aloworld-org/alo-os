@@ -483,6 +483,10 @@ impl DesktopPictures {
             // **Set by the caller that knows**: only the direct backend holds
             // the panel and the windows put aside in it.
             miniatures: &[],
+            miniatures_by_their_mark: &[],
+            // **Set by the caller that acts on a refusal**: the direct backend.
+            // Elsewhere each is said in the log.
+            refused: None,
             name_in_the_panel: &[],
             terminal: self.terminal.as_ref(),
             // **Set by the caller that knows** the display, as above.

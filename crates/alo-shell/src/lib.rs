@@ -108,6 +108,8 @@ mod a_new_window_is_placed;
 mod a_person_pins_and_unpins;
 #[cfg(test)]
 mod a_picture_hashed;
+/// A picture the renderer refuses ends nothing but that picture.
+mod a_picture_the_renderer_refuses;
 mod a_press_in_the_menu;
 mod a_press_on_a_setup_sheet;
 mod a_press_on_alos_band;

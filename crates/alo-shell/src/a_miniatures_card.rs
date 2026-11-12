@@ -182,14 +182,67 @@ fn a_letter_into(
     }
 }
 
+/// What a window's card carries: room for its live picture with the badge
+/// over the corner, or the application's mark on the blank card.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum WhatTheCardCarries {
+    /// The card the painter draws the window into, with the badge.
+    ThePicture,
+    /// The application's icon or letter on a blank card, and no badge.
+    TheApplicationsMark,
+}
+
 /// The square of an application's window put aside, laid out in `slot`, on
-/// the rail's ground.
+/// the rail's ground: a card for its picture, or for a private window its
+/// application's mark.
 pub(crate) fn a_windows_square(
     slot: Rectangle<i32, Physical>,
     preview: &Preview,
     what_each_application_draws: &TheArtwork,
     palette: &DesktopPalette,
     fonts: &mut FontSystem,
+) -> Inked {
+    let carries = if preview.privacy().is_private() {
+        WhatTheCardCarries::TheApplicationsMark
+    } else {
+        WhatTheCardCarries::ThePicture
+    };
+    a_square_carrying(
+        slot,
+        preview,
+        (what_each_application_draws, palette),
+        fonts,
+        carries,
+    )
+}
+
+/// **The square of a window whose picture the renderer refused**: the
+/// application's mark on a blank card, exactly as a private window's square
+/// is, so a picture that cannot be drawn shows what a picture that may not be
+/// drawn shows (`crate::a_picture_the_renderer_refuses`).
+pub(crate) fn a_windows_square_with_its_mark(
+    slot: Rectangle<i32, Physical>,
+    preview: &Preview,
+    what_each_application_draws: &TheArtwork,
+    palette: &DesktopPalette,
+    fonts: &mut FontSystem,
+) -> Inked {
+    a_square_carrying(
+        slot,
+        preview,
+        (what_each_application_draws, palette),
+        fonts,
+        WhatTheCardCarries::TheApplicationsMark,
+    )
+}
+
+/// The square laid out in `slot`, carrying what `carries` says.
+fn a_square_carrying(
+    slot: Rectangle<i32, Physical>,
+    preview: &Preview,
+    (what_each_application_draws, palette): (&TheArtwork, &DesktopPalette),
+    fonts: &mut FontSystem,
+    carries: WhatTheCardCarries,
 ) -> Inked {
     let mut tile = a_ground(slot, palette.dock);
     let parts = in_the_slot(slot);
@@ -219,10 +272,10 @@ pub(crate) fn a_windows_square(
         || alo_dock::window::the_first_letter_of(preview.headline().text()),
         alo_dock::AppId::first_letter,
     );
-    if preview.privacy().is_private() {
-        // **A private window: the application's mark on a blank card**, the
-        // size the rail draws an icon at, and no badge — there is no picture
-        // for one to sit over.
+    if carries == WhatTheCardCarries::TheApplicationsMark {
+        // **A private window, or one whose picture the renderer refused: the
+        // application's mark on a blank card**, the size the rail draws an
+        // icon at, and no badge — there is no picture for one to sit over.
         let mark = card.inset(border * 2.0);
         match icon {
             Some(icon) => an_icon_into(&mut tile, icon, mark),
