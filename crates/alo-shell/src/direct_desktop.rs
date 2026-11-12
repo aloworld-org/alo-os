@@ -2890,10 +2890,26 @@ impl LoopInput for TheDesktopLane<'_> {
             )
             .into_iter()
             .collect();
+        // **The squares whose miniature the renderer refused**, each its
+        // application's mark on a blank card, and **where this frame's
+        // refusals are noted**, acted on once it is drawn
+        // (`crate::a_picture_the_renderer_refuses`). A look with no palette
+        // has refused the frame already, in the desktop's own picture.
+        let miniatures_by_their_mark = match frame.look.palette() {
+            Ok(palette) => server.the_miniatures_drawn_by_their_mark(
+                frame.put_aside,
+                &palette,
+                &mut self.labels.fonts,
+            ),
+            Err(_) => Vec::new(),
+        };
+        let refused = crate::a_picture_the_renderer_refuses::WhatTheRendererRefused::default();
         let mut layered = Layered {
             target,
             layers: NativeLayers {
                 miniatures: &miniatures,
+                miniatures_by_their_mark: &miniatures_by_their_mark,
+                refused: Some(&refused),
                 name_in_the_panel: &name_in_the_panel,
                 settings: settings.as_ref(),
                 task_edges: &task_edges,
@@ -2932,6 +2948,7 @@ impl LoopInput for TheDesktopLane<'_> {
                         pointer_at: crate::display_scale::DisplayScale::of_per_cent(*its_scale),
                         pointer_look,
                         approval: its_sheet.as_ref(),
+                        refused: Some(&refused),
                         ..its_pictures.layers(its_edges)
                     },
                 },
@@ -2943,6 +2960,10 @@ impl LoopInput for TheDesktopLane<'_> {
             displays.push(display);
         }
         let became = server.render_each_display(&mut displays, time);
+        // **What the renderer refused, acted on before anything is raised**:
+        // said in the log once each, and a window put aside among them shown
+        // by its mark from the next frame on.
+        server.the_renderer_refused(&refused.taken());
         // **Raised only when nothing reached a screen.** With one display
         // *nothing drew* and *this display refused* are the same fact, and
         // raising is right. With two they are not: a machine whose second

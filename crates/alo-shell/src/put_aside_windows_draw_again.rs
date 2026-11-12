@@ -93,6 +93,12 @@ impl crate::Server {
             .previews()
             .iter()
             .filter(|preview| crate::a_window_in_miniature::it_may_be_drawn_small(preview))
+            // A window shown by its mark has no miniature to keep live.
+            .filter(|preview| {
+                !self
+                    .refused_pictures
+                    .is_drawn_by_its_mark(preview.window().number())
+            })
             .filter_map(|preview| self.the_put_aside_window_numbered(preview.window()))
             .collect();
         self.put_aside_last_asked_to_draw = Some(now);

@@ -198,6 +198,12 @@ impl crate::Server {
                 if !it_may_be_drawn_small(preview) {
                     return None;
                 }
+                // **Nor one whose miniature the renderer refused**: its square
+                // shows its application's mark instead
+                // (`crate::a_picture_the_renderer_refuses`).
+                if self.refused_pictures.is_drawn_by_its_mark(id.number()) {
+                    return None;
+                }
                 let surface = self.the_put_aside_window_numbered(id)?;
                 let geometry = crate::scene::geometry(&surface);
                 let parts = in_the_slot(slot);
