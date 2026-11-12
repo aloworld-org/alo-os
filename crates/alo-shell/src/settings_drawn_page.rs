@@ -35,6 +35,8 @@ pub(crate) enum Drawn {
     Words(i32, i32, Shaped),
     /// One of the window's icons, in its frame, in a colour.
     Icon(ASettingsIcon, Area, [u8; 3]),
+    /// An application's own picture, scaled into its box.
+    Picture(Area, alo_dock::artwork::APicture),
 }
 
 /// Everything a person can act on, where it is on the page.
@@ -243,6 +245,20 @@ fn a_section(out: &mut ThePageDrawn, laying: &mut Laying<'_>, top: i32, section:
         );
         y = text(out, left + beside, y, shaped, heading) + gap;
     }
+    // **A section with no rows has no card**: its footnote is the plain line
+    // that says why, straight under its heading (`docs/design/default-apps-and-open-with.md`).
+    if section.rows.is_empty() {
+        if let Some(footnote) = &section.footnote {
+            let shaped = laying.words(
+                footnote,
+                TheType::Body,
+                wide - 2 * beside,
+                (palette.surface, palette.muted),
+            );
+            y = text(out, left + beside, y, shaped, footnote);
+        }
+        return y;
+    }
     let line = laying.px(m::A_HAIRLINE);
     let card_top = y;
     // **The card is drawn after its rows are laid out**, because how tall it
@@ -292,7 +308,7 @@ pub(crate) fn moved_down(out: &mut ThePageDrawn, (drawn, texts): (usize, usize),
                 down(area);
             }
             Drawn::Words(_, y, _) => *y += by,
-            Drawn::Icon(_, area, _) => down(area),
+            Drawn::Icon(_, area, _) | Drawn::Picture(area, _) => down(area),
         }
     }
     for text in out.texts.iter_mut().skip(texts) {
@@ -348,6 +364,16 @@ pub(crate) fn painted(drawn: &[Drawn], canvas: &mut Canvas, top: i32, scale: f32
             }
             Drawn::Words(x, y, shaped) => canvas.words(*x, *y + top, shaped),
             Drawn::Icon(icon, area, colour) => icon.drawn(canvas, moved(area), *colour),
+            Drawn::Picture(area, picture) => {
+                let area = moved(area);
+                let (Ok(across), Ok(down)) =
+                    (u32::try_from(area.size.w), u32::try_from(area.size.h))
+                else {
+                    continue;
+                };
+                let scaled = picture.scaled_to(across, down);
+                canvas.picture(area.loc.x, area.loc.y, area.size.w, scaled.pixels());
+            }
         }
     }
 }

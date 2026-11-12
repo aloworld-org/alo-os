@@ -163,6 +163,43 @@ pub(crate) fn a_lead(
     ));
 }
 
+/// An application's mark on its row: `25:31`, 28 × 28 at radius 8 on the cool
+/// tile, its own picture over it — or, where the machine has none, the first
+/// letter of its name, as the frame draws *F* and the Dock draws its fallback.
+pub(crate) fn an_applications_mark(
+    out: &mut ThePageDrawn,
+    laying: &mut Laying<'_>,
+    (x, centre): (i32, i32),
+    mark: &crate::settings_page::AnApplicationsMark,
+) {
+    let palette = laying.palette;
+    let side = laying.px(m::AN_APPLICATIONS_PICTURE);
+    let tile = Rectangle::new((x, centre - side / 2).into(), (side, side).into());
+    out.drawn
+        .push(Drawn::Fill(tile, m::AN_APPLICATIONS_CORNER, palette.cool));
+    match &mark.picture {
+        Some(picture) => out.drawn.push(Drawn::Picture(tile, picture.clone())),
+        None => {
+            let shaped = laying
+                .words(
+                    &mark.letter,
+                    TheType::Name,
+                    side,
+                    (palette.cool, palette.secondary),
+                )
+                .cropped_to_its_ink();
+            let (wide, tall) = (shaped.width_of_box, shaped.height);
+            text(
+                out,
+                x + (side - wide) / 2,
+                centre - tall / 2,
+                shaped,
+                &mark.letter,
+            );
+        }
+    }
+}
+
 /// A tag beside a name: `550:951`, `bg/cool` at radius 6, 8 across and 2
 /// down inside, Label/Small in `text/secondary`.
 pub(crate) fn a_tag(

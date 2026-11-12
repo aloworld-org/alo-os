@@ -72,6 +72,7 @@ fn offering(roles: Discovery, installed: &[(&str, &str)]) -> WhatTheMachineOffer
                 is: Vec::new(),
             })
             .collect(),
+        what_they_open: alo_applications::Declared::nothing(),
     }
 }
 

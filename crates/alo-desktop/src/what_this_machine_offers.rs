@@ -103,6 +103,11 @@ pub struct Offered {
     /// tool**, so an application the image itself carries, LibreOffice in
     /// `/usr/share/applications`, is here beside the flatpaks.
     pub installed: Vec<AnApplicationHere>,
+    /// What each entry declares it opens, first declared first — what
+    /// Settings → Default apps offers, read by `alo_installed`'s own
+    /// `read_with_what_they_open`, the reading the portal backend answers a
+    /// link from, so the two cannot disagree about which browsers there are.
+    pub what_they_open: alo_applications::Declared,
     /// The entries that were there and could not be read, for the log.
     pub not_read: Vec<NotRead>,
 }
@@ -116,6 +121,7 @@ impl Offered {
             terminal: self.terminal.clone(),
             artwork: self.artwork.clone(),
             installed: self.installed.clone(),
+            what_they_open: self.what_they_open.clone(),
         }
     }
 }
@@ -265,6 +271,9 @@ pub fn what_is_offered(at: &WhereToLook, tool: &(impl Tool + ?Sized)) -> Offered
             }
         })
         .collect();
+    // **And a fifth, for what each declares it opens** — the browsers and mail
+    // applications Settings offers as a person's default.
+    let (_, what_they_open) = alo_installed::read_with_what_they_open(&at.entries);
     let (roles, terminal) = the_roles_and_the_terminal(tool, at.arrived.already());
     Offered {
         roles,
@@ -272,6 +281,7 @@ pub fn what_is_offered(at: &WhereToLook, tool: &(impl Tool + ?Sized)) -> Offered
         artwork,
         artwork_went,
         installed,
+        what_they_open,
         not_read,
     }
 }

@@ -57,6 +57,10 @@ pub struct WhatTheMachineOffersNow {
     pub artwork: TheArtwork,
     /// Every application a person could open, for the alo Bar to search.
     pub installed: Vec<AnApplicationHere>,
+    /// What each application's entry declares it opens, first declared first —
+    /// what Settings → Default apps offers a person to choose among, read from
+    /// the same entries the portal answers a link from.
+    pub what_they_open: alo_applications::Declared,
 }
 
 impl Server {
@@ -73,6 +77,7 @@ impl Server {
     ) {
         self.the_terminal = now.terminal;
         self.its_applications_draw(now.artwork);
+        self.what_they_open = now.what_they_open;
         self.what_this_machine_has = now
             .installed
             .iter()
@@ -103,6 +108,29 @@ impl Server {
         if let Some(owed) = self.its_dock_is_filled_from_what_they_kept(&kept, &now.roles) {
             desktop.keep_these_pins(&owed);
         }
+    }
+
+    /// **Settings is told what could open a link**, from what this seat was
+    /// last told: every application with the name its entry gives, what each
+    /// declares it opens, and what each draws. Called when Settings opens, so
+    /// Default apps lists what is installed at that moment.
+    pub(crate) fn settings_is_told_what_could_open_links(&mut self) {
+        let installed = alo_applications::Installed::holding(
+            self.what_this_machine_has.iter().filter_map(|identifier| {
+                match self.what_each_is_called.get(identifier) {
+                    Some(called) => alo_applications::Application::called(identifier, called)
+                        .or_else(|_| alo_applications::Application::identified(identifier))
+                        .ok(),
+                    None => alo_applications::Application::identified(identifier).ok(),
+                }
+            }),
+        );
+        let here = crate::settings_default_apps::WhatCouldOpenLinks {
+            installed,
+            declared: self.what_they_open.clone(),
+            artwork: std::sync::Arc::clone(&self.what_each_application_draws),
+        };
+        self.settings.the_applications_are(here);
     }
 }
 
