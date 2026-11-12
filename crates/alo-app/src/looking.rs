@@ -91,11 +91,7 @@ pub fn looked(
             } else {
                 (words::NOTHING_TO_READ, titled)
             };
-            machine.warned(
-                strings
-                    .say(&word.key(), &filling)
-                    .text(),
-            );
+            machine.warned(strings.say(&word.key(), &filling).text());
         }
     }
     for line in lines {

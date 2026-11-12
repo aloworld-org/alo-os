@@ -157,10 +157,7 @@ fn a_read_of_vscodium_that_finds_nothing_names_the_switch_that_would_help() {
             access,
             ..AMachine::default()
         };
-        assert_eq!(
-            known.running(&[CODIUM, "read"], &mut machine),
-            Ended::Done
-        );
+        assert_eq!(known.running(&[CODIUM, "read"], &mut machine), Ended::Done);
         assert!(machine.told.is_empty(), "{:?}", machine.told);
         let said = machine.warned.join("\n");
         assert!(said.contains("“README.md”"), "{said}");
@@ -174,7 +171,10 @@ fn a_read_of_vscodium_that_finds_nothing_names_the_switch_that_would_help() {
             !names_working_fully,
             "{said}"
         );
-        assert!(!said.contains('\n'), "the sentence is broken across lines: {said}");
+        assert!(
+            !said.contains('\n'),
+            "the sentence is broken across lines: {said}"
+        );
     }
 }
 
