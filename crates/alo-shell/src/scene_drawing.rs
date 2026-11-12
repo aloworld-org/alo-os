@@ -320,6 +320,31 @@ where
                 .map_err(submission)?,
         ),
     };
+    // **Each window put aside, imported for its miniature** before the frame
+    // opens, as every client is (`crate::a_window_in_miniature`). Kept apart
+    // from `drawing.surfaces` on purpose: those are the surfaces told they
+    // were shown and sent a frame, and a window drawn forty-four pixels wide
+    // in the panel is not shown — how often it is asked to draw is
+    // `crate::put_aside_windows_draw_again`'s.
+    let mut miniatures = Vec::with_capacity(native.miniatures.len());
+    for miniature in native.miniatures {
+        let Some(bounds) = miniature
+            .clip
+            .iter()
+            .copied()
+            .reduce(|one, other| one.merge(other))
+        else {
+            continue;
+        };
+        let imported = drawing::import_at(
+            renderer,
+            std::slice::from_ref(&miniature.surface),
+            bounds,
+            miniature.origin,
+            miniature.scale,
+        )?;
+        miniatures.push((imported.elements, miniature.scale, &miniature.clip));
+    }
     let mut frame = renderer
         .render(framebuffer, size, transform)
         .map_err(submission)?;
@@ -515,6 +540,14 @@ where
     if let Some(desktop) = native.desktop {
         desktop.paint(&mut frame, &washed)?;
     }
+    // **The windows put aside, small, on their cards in the panel** — over the
+    // card the desktop just painted and clipped round its badge, so the badge
+    // stays on top (`crate::a_window_in_miniature`).
+    for (elements, scale, clip) in &miniatures {
+        draw_render_elements(&mut frame, *scale, elements, clip).map_err(submission)?;
+    }
+    // **And the name of the one pointed at**, beside its square, over them.
+    crate::painted::paint(&mut frame, &[], native.name_in_the_panel)?;
     // **A window travelling to the put-aside panel**, as an outline above the
     // desktop it is heading into (`crate::a_window_travels_aside`).
     crate::painted::paint(&mut frame, native.travelling_aside, &[])?;

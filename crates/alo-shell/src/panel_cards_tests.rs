@@ -125,16 +125,21 @@ fn one_window_put_aside_is_one_card_under_a_control_that_is_not_a_card() {
     assert_ne!(control.pixels, card.pixels);
 }
 
-/// **The hit area is the design's 42 inside the 48, with rounded corners**:
-/// the slot's corner is the rail, its middle the hit area.
+/// **The hit area alo's own windows show is the design's 42 inside the 48,
+/// with rounded corners**: the slot's corner is the rail, its middle the hit
+/// area. An application's window shows its miniature's card instead
+/// (`crate::a_miniatures_card`, whose tests hold it).
 #[test]
 fn the_hit_area_is_inset_and_rounded_as_measured() {
     let palette = the_palette();
-    let drawn = tiles(
-        &holding(&["org.kde.dolphin"]),
-        WhichEdge::Right,
-        &TheArtwork::none(),
-    );
+    let mut panel = Panel::new();
+    panel
+        .put_alos_window_aside(
+            alo_put_aside::AlosOwnWindow::Settings,
+            alo_canvas::Place::FIRST,
+        )
+        .unwrap();
+    let drawn = tiles(&panel, WhichEdge::Right, &TheArtwork::none());
     let card = drawn.get(1).unwrap();
     assert_eq!(card.area.size.w, 48);
     // Inside the 3-pixel inset: the rail.
@@ -145,10 +150,10 @@ fn the_hit_area_is_inset_and_rounded_as_measured() {
     assert_eq!(pixel(card, 3, 3), palette.dock);
 }
 
-/// **An application with no artwork is marked by its letter**, in the badge's
-/// ink, near the middle of the card.
+/// **An application's window is its miniature's card with a badge**, not the
+/// hit area with a mark in the middle — the approved design `27:2`.
 #[test]
-fn an_application_with_no_icon_is_marked_by_its_letter() {
+fn an_applications_window_is_a_miniatures_card() {
     let palette = the_palette();
     let drawn = tiles(
         &holding(&["org.kde.dolphin"]),
@@ -156,18 +161,18 @@ fn an_application_with_no_icon_is_marked_by_its_letter() {
         &TheArtwork::none(),
     );
     let card = drawn.get(1).unwrap();
-    let inked = (14..34)
-        .flat_map(|y| (14..34).map(move |x| (x, y)))
+    assert_eq!(pixel(card, 24, 24), palette.ground, "the card's ground");
+    assert_eq!(pixel(card, 24, 8), palette.edge, "its hairline");
+    let in_the_badge = (30..48)
+        .flat_map(|y| (30..48).map(move |x| (x, y)))
         .filter(|&(x, y)| pixel(card, x, y) == palette.badge_ink)
         .count();
-    assert!(inked > 3, "a letter is drawn in the middle: {inked} pixels");
+    assert!(in_the_badge > 2, "the badge's letter: {in_the_badge} pixels");
 }
 
-/// **An application that draws its own icon is marked by it**, at the Dock's
-/// artwork size and centred — and no letter is put across it.
+/// **An application that draws its own icon is badged with it.**
 #[test]
-fn an_application_with_an_icon_is_marked_by_it() {
-    let palette = the_palette();
+fn an_application_with_an_icon_is_badged_with_it() {
     let red = [200_u8, 30, 40];
     let mut artwork = TheArtwork::none();
     artwork.draws(
@@ -176,15 +181,8 @@ fn an_application_with_an_icon_is_marked_by_it() {
     );
     let drawn = tiles(&holding(&["org.kde.dolphin"]), WhichEdge::Right, &artwork);
     let card = drawn.get(1).unwrap();
-    assert_eq!(pixel(card, 24, 24), red, "the icon is in the middle");
-    // `GLYPH` is 28, centred in 48: columns 10 to 37.
-    assert_eq!(pixel(card, 10, 24), red);
-    assert_eq!(pixel(card, 37, 24), red);
-    assert_eq!(pixel(card, 8, 24), palette.badge, "and no wider");
-    assert!(
-        !card.pixels.contains(&palette.badge_ink),
-        "no letter over it"
-    );
+    assert_eq!(pixel(card, 39, 39), red, "the icon is in the badge");
+    assert_ne!(pixel(card, 24, 24), red, "and not across the miniature");
 }
 
 /// **Two windows are two cards that can be told apart**: two applications'

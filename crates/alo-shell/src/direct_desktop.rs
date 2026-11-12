@@ -1357,6 +1357,12 @@ impl LoopInput for TheDesktopLane<'_> {
         // **And the same for alo's own windows**: one brought back by its
         // chord, the Dock or Super+Tab, or closed while aside, leaves the panel.
         server.the_panel_lets_go_of_alos_windows_back(self.desktop.the_panel());
+        // **And the windows put aside draw again, four times a second**, so
+        // their miniatures stay live (`crate::put_aside_windows_draw_again`).
+        let _ = server.the_put_aside_windows_draw_again(
+            self.desktop.the_panel().map(|panel| &*panel),
+            std::time::Instant::now(),
+        );
         // **And what that same position means to the panel's reveal machine.** A separate
         // question from the peek: one asks which preview, this asks whether the edge or the
         // surface is being touched. Both read the one stored draw, so they cannot disagree
@@ -2752,9 +2758,28 @@ impl LoopInput for TheDesktopLane<'_> {
             let at = server.the_travels_aside_move_on(std::time::Instant::now(), &cards);
             cards.the_outlines(&at)
         };
+        // **The windows put aside, small, in their squares**, from the panel as
+        // this frame laid it out (`crate::a_window_in_miniature`). Only on the
+        // display being worked on, where the panel was just laid out.
+        let miniatures = server.the_miniatures(frame.put_aside);
+        // **And the name of the one the pointer is on**, beside its square
+        // (`crate::the_name_of_a_window_aside`).
+        let name_in_the_panel: Vec<crate::painted::Inked> = server
+            .the_name_pointed_at_in_the_panel(
+                frame.put_aside,
+                (
+                    crate::panel_raster::the_edge_for(frame.look.reading()),
+                    size.w,
+                ),
+                &mut self.labels.fonts,
+            )
+            .into_iter()
+            .collect();
         let mut layered = Layered {
             target,
             layers: NativeLayers {
+                miniatures: &miniatures,
+                name_in_the_panel: &name_in_the_panel,
                 settings: settings.as_ref(),
                 task_edges: &task_edges,
                 terminal_edge: terminal_edge.as_slice(),

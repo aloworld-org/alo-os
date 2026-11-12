@@ -320,8 +320,39 @@ not as withdrawing the control.
    carry Minimise, and the Minimise chord reaches them; each waits as a square
    marked with its letter and comes back by its square or any road to it
    (`crates/alo-shell/src/alos_own_window_goes_aside.rs`). *Built 2026-11-11.*
-2. The miniature, the badge and the name on pointing or focus.
-3. The live refresh at a bounded rate, and the shrink.
+2. **An application's window is a live miniature with its badge**, and its
+   name shows while the pointer is on it. The window's own buffer is drawn
+   scaled into the card each frame (`crate::a_window_in_miniature`), clipped
+   round the badge; the card and the badge are
+   `crate::a_miniatures_card`; the name is
+   `crate::the_name_of_a_window_aside`. **Live at a bounded rate:** a window
+   put aside is asked to draw again **four times a second**
+   (`crate::put_aside_windows_draw_again`) rather than at the display's rate,
+   so a minimised window is asked to draw a fifteenth as often as a shown one
+   on a 60 Hz display. **A private window** — one the person marked, the only way this
+   machine knows a window is private (the owner's ruling of 2026-10-02) — is
+   its icon on a blank card, never drawn small and never asked to draw.
+   *Built 2026-11-11.*
+3. **The shrink** was already built: a window put aside travels to its square
+   as an outline along a straight path in 300 ms, eased, and at once under
+   Reduced motion (`crate::a_window_travels_aside`). **Not built:** restoring
+   does not yet travel back, and the travel draws an outline rather than the
+   window's own pixels shrinking.
+
+**Departures and gaps, written down here because each is one:**
+
+- **The badge is the application's own icon** inside the white border, or its
+  letter on the fallback badge ground; the frame's coloured tiles stand in for
+  icons, and the owner's ruling of 2026-10-11 refuses a colour taken from an
+  application.
+- **The badge's top-left corner** shows the card's ground, not the window,
+  where the badge's rounding leaves a sliver: the picture is clipped to the
+  rectangle round the badge, not to its curve.
+- **Not built:** the name on **keyboard** focus (nothing yet takes the keyboard
+  into the panel: F6 and the arrows are listed under *not built yet* above);
+  the expanded 216 × 136 lane (the expansion control still opens nothing);
+  and a miniature of **alo's own** windows, which still show their letter on
+  the hit area — their pictures are drawn only while they are on the canvas.
 
 ## Full screen and the keyboard
 

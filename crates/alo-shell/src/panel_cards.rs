@@ -26,15 +26,16 @@
 //! that node on 2026-11-11, because its fills are bound to no variable (an
 //! empty `get_variable_defs`, recorded in `docs/design/figma-snapshot/`).
 //!
-//! # The symbol is the Dock's application mark
+//! # An application's window is a live miniature now
 //!
-//! The design's *Symbol* is a placeholder glyph. ADR 0101 makes the Dock and
-//! this panel one component family and ADR 0103 three connected surfaces, so an
-//! application is marked here exactly as it is on the Dock: **its own icon at
-//! `alo_dock::measures::GLYPH`**, or, where it drew none, **its first letter at
-//! `AN_INITIAL_IS`** in the badge's ink. A window whose application nobody knows
-//! is marked by the first letter of its heading — which for a private window is
-//! its safe name, never its title (`alo_put_aside::Preview::headline`).
+//! Since the owner's approved design `27:2` (2026-11-12) an application's
+//! window put aside is a **miniature of the window itself with its
+//! application's badge**, drawn by `crate::a_miniatures_card` — the hit area
+//! below is what **alo's own windows** put aside still show, marked by their
+//! first letter at `AN_INITIAL_IS` in the badge's ink, as the Dock marks
+//! Settings. A window whose application nobody knows is badged by the first
+//! letter of its heading — which for a private window is its safe name, never
+//! its title (`alo_put_aside::Preview::headline`).
 //!
 //! # The ground is the recessed surface
 //!
@@ -51,7 +52,7 @@
 //! card grows with the rail and can never disagree with it.
 
 use alo_dock::artwork::TheArtwork;
-use alo_dock::measures::{AN_INITIAL_IS, GLYPH, ICON};
+use alo_dock::measures::{AN_INITIAL_IS, ICON};
 use alo_put_aside::the_region_the_panel_claims::WhichEdge;
 use alo_put_aside::{AlosOwnWindow, Panel};
 use cosmic_text::{FontSystem, Metrics};
@@ -128,36 +129,23 @@ pub(crate) fn drawn(
         );
         tiles.push(tile);
     }
+    // **An application's window put aside: the card its live miniature is
+    // drawn into, and its badge** — the approved design `27:2`
+    // (`crate::a_miniatures_card`).
     for (slot, preview) in picture.slots.iter().zip(panel.previews()) {
-        let mut tile = a_ground(*slot, palette.dock);
-        a_rounded_square_onto(&mut tile, palette.badge);
-        let side = slot.size.w;
-        let glyph = of_the_slot(side, GLYPH).round();
-        #[expect(
-            clippy::cast_possible_truncation,
-            reason = "a glyph inside a slot is a few dozen pixels"
-        )]
-        let glyph = glyph as i32;
-        match preview
-            .app()
-            .and_then(|app| what_each_application_draws.of(app))
-        {
-            Some(icon) => an_icon_onto(&mut tile, icon, glyph),
-            None => {
-                let letter = preview.app().map_or_else(
-                    || alo_dock::window::the_first_letter_of(preview.headline().text()),
-                    alo_dock::AppId::first_letter,
-                );
-                a_letter_onto(&mut tile, letter, palette, fonts);
-            }
-        }
-        tiles.push(tile);
+        tiles.push(crate::a_miniatures_card::a_windows_square(
+            *slot,
+            preview,
+            what_each_application_draws,
+            palette,
+            fonts,
+        ));
     }
     tiles
 }
 
 /// A tile over `area`, all of it `ground`.
-fn a_ground(area: Rectangle<i32, Physical>, ground: [u8; 3]) -> Inked {
+pub(crate) fn a_ground(area: Rectangle<i32, Physical>, ground: [u8; 3]) -> Inked {
     let count = usize::try_from(area.size.w.max(0) * area.size.h.max(0)).unwrap_or(0);
     Inked {
         area: crate::painted::drawn_at(area),
@@ -166,7 +154,7 @@ fn a_ground(area: Rectangle<i32, Physical>, ground: [u8; 3]) -> Inked {
 }
 
 /// `over` mixed onto `under` by `coverage`, nought to one.
-fn mixed(under: [u8; 3], over: [u8; 3], coverage: f32) -> [u8; 3] {
+pub(crate) fn mixed(under: [u8; 3], over: [u8; 3], coverage: f32) -> [u8; 3] {
     let coverage = coverage.clamp(0.0, 1.0);
     let one = |a: u8, b: u8| {
         let value = f32::from(a) + (f32::from(b) - f32::from(a)) * coverage;
@@ -188,7 +176,7 @@ fn mixed(under: [u8; 3], over: [u8; 3], coverage: f32) -> [u8; 3] {
 }
 
 /// The pixel at (`x`, `y`) in a tile, by its row and column.
-fn at(tile: &mut Inked, x: i32, y: i32) -> Option<&mut [u8; 3]> {
+pub(crate) fn at(tile: &mut Inked, x: i32, y: i32) -> Option<&mut [u8; 3]> {
     if x < 0 || y < 0 || x >= tile.area.size.w || y >= tile.area.size.h {
         return None;
     }
@@ -225,32 +213,6 @@ fn a_rounded_square_onto(tile: &mut Inked, colour: [u8; 3]) {
             if let Some(pixel) = at(tile, x, y) {
                 *pixel = mixed(*pixel, colour, coverage);
             }
-        }
-    }
-}
-
-/// An application's own icon, `glyph` square, centred, over what is there.
-fn an_icon_onto(tile: &mut Inked, icon: &alo_dock::artwork::APicture, glyph: i32) {
-    let Ok(side) = u32::try_from(glyph) else {
-        return;
-    };
-    if side == 0 {
-        return;
-    }
-    let scaled = icon.scaled_to(side, side);
-    let left = (tile.area.size.w - glyph) / 2;
-    let top = (tile.area.size.h - glyph) / 2;
-    for (index, &[red, green, blue, alpha]) in scaled.pixels().as_chunks::<4>().0.iter().enumerate()
-    {
-        let Ok(index) = i32::try_from(index) else {
-            return;
-        };
-        let (x, y) = (left + index % glyph, top + index / glyph);
-        if alpha == 0 {
-            continue;
-        }
-        if let Some(pixel) = at(tile, x, y) {
-            *pixel = mixed(*pixel, [red, green, blue], f32::from(alpha) / 255.0);
         }
     }
 }

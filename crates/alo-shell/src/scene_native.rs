@@ -90,6 +90,14 @@ pub(crate) struct NativeLayers<'a> {
     /// below everything that sits over the desktop. Never pressed: nothing in
     /// any hit test reads it.
     pub(crate) travelling_aside: &'a [crate::painted::Solid],
+    /// **Windows put aside, drawn small** into their squares in the right-hand
+    /// panel from their own buffers (`crate::a_window_in_miniature`). Over the
+    /// desktop's rail and under its badges' corners, which each is clipped
+    /// round. Never pressed, and never counted as a window shown.
+    pub(crate) miniatures: &'a [crate::a_window_in_miniature::AMiniature],
+    /// **The name of the window put aside under the pointer**, beside its
+    /// square (`crate::the_name_of_a_window_aside`). Over the miniatures.
+    pub(crate) name_in_the_panel: &'a [crate::painted::Inked],
     /// alo's own terminal, when one is open and was drawn.
     ///
     /// **A window rather than furniture**, which is why it is its own layer:
@@ -133,6 +141,8 @@ impl NativeLayers<'_> {
             notifications: None,
             capturing: None,
             travelling_aside: &[],
+            miniatures: &[],
+            name_in_the_panel: &[],
             terminal: None,
             pointer_at: crate::display_scale::DisplayScale::ONE,
             pointer_look: crate::ThePointersLook::SHIPPED,
