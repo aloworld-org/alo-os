@@ -106,6 +106,78 @@ fn list_show_controls_and_read_write_nothing() {
     assert!(machine.told.iter().any(|line| line == "Hello"));
 }
 
+/// **A read that finds nothing says so**, naming the window and the switch
+/// that is the likeliest reason, and prints no value a program could take for
+/// an empty document — found on the boot walk of 2026-11-12, where
+/// `alo-app codium read` printed nothing and ended as done.
+#[test]
+fn a_read_that_finds_nothing_says_so() {
+    let known = Known::holding(&[EDITOR]);
+    for piped in [false, true] {
+        let mut machine = AMachine {
+            tree: Some(ATree::default().with(":1.20", Some(EDITOR), "Welcome", &[], "")),
+            ..AMachine::default()
+        };
+        let line = &["texteditor", "read"][..];
+        let ended = if piped {
+            known.piped(line, &mut machine)
+        } else {
+            known.running(line, &mut machine)
+        };
+        assert_eq!(ended, Ended::Done, "piped = {piped}");
+        assert!(machine.told.is_empty(), "{:?}", machine.told);
+        assert!(
+            machine.warned.iter().any(|said| said.contains("“Welcome”")
+                && said.contains("Apps describe themselves")),
+            "piped = {piped}: {:?}",
+            machine.warned
+        );
+    }
+}
+
+/// **A read of VSCodium that finds nothing names *Let alo work fully inside
+/// apps like VSCodium* while it is off** — its document is readable only with
+/// it on — and the switch for describing themselves once it is on, or where
+/// describing itself is what was turned off. Nothing is printed on the output
+/// either way.
+#[test]
+fn a_read_of_vscodium_that_finds_nothing_names_the_switch_that_would_help() {
+    let known = Known::holding(&[CODIUM]);
+    let mut fully = alo_access::TurnedOn::nothing();
+    fully.let_alo_work_fully_inside_apps(true);
+    let mut not_described = alo_access::TurnedOn::nothing();
+    not_described.let_apps_describe_themselves(false);
+    for (access, names_working_fully) in [
+        (alo_access::TurnedOn::nothing(), true),
+        (fully, false),
+        (not_described, false),
+    ] {
+        let mut machine = AMachine {
+            tree: Some(ATree::default().with(":1.30", Some(CODIUM), "README.md", &[], "")),
+            access,
+            ..AMachine::default()
+        };
+        assert_eq!(known.running(&[CODIUM, "read"], &mut machine), Ended::Done);
+        assert!(machine.told.is_empty(), "{:?}", machine.told);
+        let said = machine.warned.join("\n");
+        assert!(said.contains("“README.md”"), "{said}");
+        assert_eq!(
+            said.contains("“Let alo work fully inside apps like VSCodium”"),
+            names_working_fully,
+            "{said}"
+        );
+        assert_eq!(
+            said.contains("Apps describe themselves"),
+            !names_working_fully,
+            "{said}"
+        );
+        assert!(
+            !said.contains('\n'),
+            "the sentence is broken across lines: {said}"
+        );
+    }
+}
+
 /// **On a pipe, a control is one line of values**, never translated.
 #[test]
 fn controls_on_a_pipe_are_one_value_per_line() {

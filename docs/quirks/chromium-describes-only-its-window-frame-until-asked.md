@@ -85,7 +85,21 @@ Two more things this showed:
   reads a flags file; VSCodium's reads `EDITOR_RUNTIME_ARGS`, which in its one
   run here showed no window and was not used.
 
-**Not yet seen on a booted alo machine.** The next boot walk is where VSCodium
+**A flags file is not a road, on a booted alo machine too.** On 2026-11-12 the
+coordinator wrote `--force-renderer-accessibility` into
+`~/.var/app/com.vscodium.codium/config/codium-flags.conf`, started VSCodium from
+the launcher, and `alo-app codium controls` still found no control (walk
+screenshots `w22-03` to `w22-05`). The Flathub wrapper reads no such file
+(`flathub-infra/ide-flatpak-wrapper`, `editor.sh`: only `EDITOR_RUNTIME_ARGS`),
+so the switch never reached the program. **And alo's walk is not the reason**:
+measured once the same day in the setting above, VSCodium's deepest named
+control under `=basic` is 33 levels down and it has 116 named things, inside
+the walk's bounds of 48 levels and 2,000 things (`alo_adapters::walking`);
+without the switch it has 11, the frame's, however long one waits. An
+assistive technology announcing itself is not a road either: Chromium does not
+read `ScreenReaderEnabled` (`atk_util_auralinux.cc`, read 2026-11-11).
+
+**Not yet seen on a booted alo machine with the desktop adding the switch.** The next boot walk is where VSCodium
 started from the Dock is read again with `alo-app codium controls`.
 
 ## Corrected 2026-11-12: `=complete` is a screen reader claim too
