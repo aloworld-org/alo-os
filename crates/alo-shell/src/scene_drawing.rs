@@ -136,7 +136,7 @@ where
                 drawing.elements.append(&mut tree.elements);
                 drawing.surfaces.append(&mut tree.surfaces);
             }
-            Err(why) => noted(native.refused, &surface, WhereItWasGoing::OnTheCanvas, &why),
+            Err(why) => noted(native.refused, &surface, WhereItWasGoing::OnTheCanvas, why)?,
         }
         crate::each_window_with_its_edge::a_surface_was_imported(
             &mut runs,
@@ -157,7 +157,7 @@ where
         ) {
             Ok(imported) => Some((surface, imported)),
             Err(why) => {
-                noted(native.refused, surface, WhereItWasGoing::AsThePointer, &why);
+                noted(native.refused, surface, WhereItWasGoing::AsThePointer, why)?;
                 None
             }
         }
@@ -385,8 +385,8 @@ where
                 native.refused,
                 &miniature.surface,
                 WhereItWasGoing::InTheMiniature,
-                &why,
-            ),
+                why,
+            )?,
         }
     }
     let mut frame = renderer
@@ -461,8 +461,8 @@ where
                             native.refused,
                             &run.window,
                             WhereItWasGoing::OnTheCanvas,
-                            &why,
-                        );
+                            submission(why),
+                        )?;
                     }
                     let its = crate::each_window_with_its_edge::the_edges_of(
                         Some(&run.window),
@@ -484,8 +484,14 @@ where
                 {
                     match drawing.surfaces.get(named) {
                         Some(surface) => {
-                            noted(native.refused, surface, WhereItWasGoing::OnTheCanvas, &why);
+                            noted(
+                                native.refused,
+                                surface,
+                                WhereItWasGoing::OnTheCanvas,
+                                submission(why),
+                            )?;
                         }
+                        None if native.refused.is_none() => return Err(submission(why)),
                         None => eprintln!(
                             "alo-shell: the renderer refused to draw a picture ({why}), and the \
                              rest of the desktop is drawn"
@@ -617,8 +623,8 @@ where
                 native.refused,
                 surface,
                 WhereItWasGoing::InTheMiniature,
-                &why,
-            );
+                submission(why),
+            )?;
         }
     }
     // **And each square whose miniature was refused**, its application's mark
@@ -680,15 +686,14 @@ where
         capturing.paint(&mut frame)?;
     }
     if let Some((surface, cursor_drawing)) = &cursor_drawing
-        && let Err(why) =
-            draw_render_elements(&mut frame, 1.0, &cursor_drawing.elements, &[damage])
+        && let Err(why) = draw_render_elements(&mut frame, 1.0, &cursor_drawing.elements, &[damage])
     {
         noted(
             native.refused,
             surface,
             WhereItWasGoing::AsThePointer,
-            &why,
-        );
+            submission(why),
+        )?;
     }
     // Drawn last so alo's pointer stays above every client tree and every layer
     // of the shell's own. It owns no Wayland identity or callbacks.

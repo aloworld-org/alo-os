@@ -103,8 +103,8 @@ pub(crate) struct NativeLayers<'a> {
     /// (`crate::a_picture_the_renderer_refuses`). Over the miniatures' cards.
     pub(crate) miniatures_by_their_mark: &'a [crate::painted::Inked],
     /// **Where the painter notes a picture the renderer refused**, so whoever
-    /// drew the frame can act on it after. [`None`] says each refusal in the
-    /// log instead; a refusal is never what ends a frame
+    /// drew the frame can act on it after. [`None`] raises each refusal, as
+    /// every refusal was raised before, for a lane with nobody to act on one
     /// (`crate::a_picture_the_renderer_refuses`).
     pub(crate) refused: Option<&'a crate::a_picture_the_renderer_refuses::WhatTheRendererRefused>,
     /// **The name of the window put aside under the pointer**, beside its

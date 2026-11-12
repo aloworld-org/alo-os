@@ -35,6 +35,11 @@
 //!   once. It is tried again the next time it is put aside;
 //! - **an application's pointer** is drawn without its picture.
 //!
+//! **On the desktop a person signs into**, which hands the painter somewhere
+//! to note them (`crate::direct_desktop`). The nested lane and the offscreen
+//! checks hand it nowhere, and there a refusal is raised as it always was —
+//! `the_nested_fixtures` holds that a truncated buffer is refused.
+//!
 //! The person is not shown a notice: nothing they had is lost or closed, and
 //! the card they see says which application the window is.
 
@@ -89,17 +94,26 @@ impl WhatTheRendererRefused {
     }
 }
 
-/// Note a refusal where something will act on it, and **say it in the log
-/// where nothing will**: never silent either way.
+/// Note a refusal where something will act on it — the desktop a person is
+/// working on — and **raise it where nothing will**, as every refusal was
+/// raised before: the nested lane and the offscreen checks are handed no
+/// collector, and a check that a bad buffer is refused still reads the
+/// refusal. Never silent either way.
+///
+/// # Errors
+/// `why`, where there is nothing to note it in.
 pub(crate) fn noted(
     refused: Option<&WhatTheRendererRefused>,
     surface: &WlSurface,
     going: WhereItWasGoing,
-    why: &dyn Display,
-) {
+    why: crate::RenderError,
+) -> Result<(), crate::RenderError> {
     match refused {
-        Some(refused) => refused.refused(surface, going, why),
-        None => eprintln!("{}", what_the_log_is_told(going, None, why)),
+        Some(refused) => {
+            refused.refused(surface, going, &why);
+            Ok(())
+        }
+        None => Err(why),
     }
 }
 

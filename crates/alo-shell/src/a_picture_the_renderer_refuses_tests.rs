@@ -87,11 +87,9 @@ fn where_its_miniature_goes(size: (i32, i32)) -> Rectangle<i32, Physical> {
     .expect("the panel laid out");
     let slot = *laid_out.slots.first().expect("a square for the window");
     let parts = crate::a_window_in_miniature::in_the_slot(slot);
-    let (picture, _) = crate::a_window_in_miniature::the_picture_in(
-        parts,
-        (f64::from(size.0), f64::from(size.1)),
-    )
-    .expect("a picture");
+    let (picture, _) =
+        crate::a_window_in_miniature::the_picture_in(parts, (f64::from(size.0), f64::from(size.1)))
+            .expect("a picture");
     picture
 }
 
@@ -197,15 +195,27 @@ fn a_refused_picture_is_noted_and_the_frame_goes_on() {
         Transform::Normal,
         1.0,
     ) {
+        let why = || crate::RenderError::Submission(why.to_string());
+        // **Where nothing will act on it, it is raised**, as before: the
+        // nested lane and the offscreen checks read the refusal.
+        assert!(
+            noted(None, &firefox, WhereItWasGoing::InTheMiniature, why()).is_err(),
+            "a refusal with nobody to note it in was swallowed"
+        );
         noted(
             Some(&refused),
             &firefox,
             WhereItWasGoing::InTheMiniature,
-            &why,
-        );
+            why(),
+        )
+        .expect("noted, not raised");
     }
-    crate::painted::wash(&mut frame, &square, Rectangle::new((8, 8).into(), (16, 16).into()))
-        .expect("a picture the renderer can draw is drawn after the refusal");
+    crate::painted::wash(
+        &mut frame,
+        &square,
+        Rectangle::new((8, 8).into(), (16, 16).into()),
+    )
+    .expect("a picture the renderer can draw is drawn after the refusal");
     let _ = frame.finish().expect("the frame is finished");
     let noted = refused.taken();
     assert_eq!(noted.len(), 1, "one refusal noted: {noted:?}");
@@ -230,14 +240,20 @@ fn the_log_is_told_of_a_refusal_once() {
     let (_display, made) = surfaces(2);
     let mut remembered = TheRefusedPictures::default();
     let first = remembered
-        .remembered(&a_refusal(&made[0], WhereItWasGoing::InTheMiniature), Some(7))
+        .remembered(
+            &a_refusal(&made[0], WhereItWasGoing::InTheMiniature),
+            Some(7),
+        )
         .expect("told the first time");
     assert!(first.contains("window 7"), "{first}");
     assert!(first.contains("not supported"), "{first}");
     assert!(first.contains("application's mark"), "{first}");
     for _ in 0..60 {
         assert_eq!(
-            remembered.remembered(&a_refusal(&made[0], WhereItWasGoing::InTheMiniature), Some(7)),
+            remembered.remembered(
+                &a_refusal(&made[0], WhereItWasGoing::InTheMiniature),
+                Some(7)
+            ),
             None,
             "a second frame's refusal is not told again"
         );
@@ -245,7 +261,10 @@ fn the_log_is_told_of_a_refusal_once() {
     let on_the_canvas = remembered
         .remembered(&a_refusal(&made[1], WhereItWasGoing::OnTheCanvas), Some(8))
         .expect("another window is told");
-    assert!(on_the_canvas.contains("rest of the desktop"), "{on_the_canvas}");
+    assert!(
+        on_the_canvas.contains("rest of the desktop"),
+        "{on_the_canvas}"
+    );
 }
 
 /// **A window put aside whose miniature was refused is drawn by its mark**;
@@ -254,10 +273,16 @@ fn the_log_is_told_of_a_refusal_once() {
 fn a_refused_miniature_is_drawn_by_its_mark_and_nothing_else_is() {
     let (_display, made) = surfaces(2);
     let mut remembered = TheRefusedPictures::default();
-    let _ = remembered.remembered(&a_refusal(&made[0], WhereItWasGoing::InTheMiniature), Some(7));
+    let _ = remembered.remembered(
+        &a_refusal(&made[0], WhereItWasGoing::InTheMiniature),
+        Some(7),
+    );
     let _ = remembered.remembered(&a_refusal(&made[1], WhereItWasGoing::OnTheCanvas), Some(8));
     assert!(remembered.is_drawn_by_its_mark(7));
-    assert!(!remembered.is_drawn_by_its_mark(8), "refused on the canvas only");
+    assert!(
+        !remembered.is_drawn_by_its_mark(8),
+        "refused on the canvas only"
+    );
     assert!(!remembered.is_drawn_by_its_mark(9), "never refused");
     // **A surface with no window number is told, and drawn by nothing.**
     let mut unnumbered = TheRefusedPictures::default();
@@ -278,9 +303,15 @@ fn a_window_brought_back_is_forgotten() {
     let refusal = a_refusal(&made[0], WhereItWasGoing::InTheMiniature);
     let _ = remembered.remembered(&refusal, Some(7));
     remembered.forget_all_but(&[7]);
-    assert!(remembered.is_drawn_by_its_mark(7), "still aside: remembered");
+    assert!(
+        remembered.is_drawn_by_its_mark(7),
+        "still aside: remembered"
+    );
     remembered.forget_all_but(&[]);
-    assert!(!remembered.is_drawn_by_its_mark(7), "brought back: forgotten");
+    assert!(
+        !remembered.is_drawn_by_its_mark(7),
+        "brought back: forgotten"
+    );
     assert!(
         remembered.remembered(&refusal, Some(7)).is_some(),
         "refused again after being put aside again: told again"
@@ -346,18 +377,22 @@ fn the_square_by_its_mark_is_what_a_private_window_shows() {
         &palette,
         &mut fonts,
     );
-    assert_eq!(by_its_mark.pixels, private.pixels, "a private window's square");
+    assert_eq!(
+        by_its_mark.pixels, private.pixels,
+        "a private window's square"
+    );
     assert_ne!(
         by_its_mark.pixels, ordinary.pixels,
         "not the card a miniature is drawn into"
     );
 }
 
-/// **No client picture in the painter can end the frame.** Every import of a
-/// client's tree and every draw of a client's elements in
-/// `crate::scene_drawing` is answered by noting a refusal, never by `?`: the
-/// shape of the fault of 2026-11-12, held to the source because the road that
-/// reaches it needs a real application's buffer.
+/// **No client picture in the painter ends the frame on its own say.** Every
+/// import of a client's tree and every draw of a client's elements in
+/// `crate::scene_drawing` goes through `noted`, which raises only where nobody
+/// will act on the refusal — never `map_err(submission)?` straight out of the
+/// frame, the shape of the fault of 2026-11-12. Held to the source because the
+/// road that reaches it needs a real application's buffer.
 #[test]
 fn the_painter_raises_no_client_picture() {
     let source = include_str!("scene_drawing.rs");
@@ -372,7 +407,7 @@ fn the_painter_raises_no_client_picture() {
         let after = code.get(at..).expect("in the source");
         let statement = after.split_once(';').map_or(after, |(first, _)| first);
         assert!(
-            !statement.contains(")?") && !statement.contains("map_err(submission)"),
+            statement.contains("noted(") && !statement.contains("map_err(submission)"),
             "a client draw that raises: {statement}"
         );
     }
@@ -386,6 +421,9 @@ fn the_painter_raises_no_client_picture() {
             "an import of a client's tree that is not matched: {line}"
         );
     }
-    assert_eq!(draws, 4, "the windows, the rest, the miniatures and the pointer");
+    assert_eq!(
+        draws, 4,
+        "the windows, the rest, the miniatures and the pointer"
+    );
     assert_eq!(imports, 3, "the canvas, the pointer and the miniatures");
 }

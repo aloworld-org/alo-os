@@ -485,7 +485,7 @@ impl DesktopPictures {
             miniatures: &[],
             miniatures_by_their_mark: &[],
             // **Set by the caller that acts on a refusal**: the direct backend.
-            // Elsewhere each is said in the log.
+            // Elsewhere each refusal is raised, as it always was.
             refused: None,
             name_in_the_panel: &[],
             terminal: self.terminal.as_ref(),
