@@ -25,8 +25,8 @@
 //! and whatever is handed to one may run. A link is written outside this
 //! machine — by a web page, by whoever sent the message it was in — so a
 //! terminal is passed over even where the person chose it, and the reason
-//! says so. This is the reasoning `alo-software`'s `browsing` already applies
-//! to its own answer, carried to the one that is now used.
+//! says so. This is the reasoning `alo-software`'s `browsing` applied to its
+//! own answer until that answer was retired, carried to the one that is used.
 //!
 //! # It launches nothing
 //!

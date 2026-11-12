@@ -1987,12 +1987,6 @@ software.verb.install-application.source	the place to install it from, by the na
 software.verb.what-can-be-installed.kind-of-work	the kind of work to look under, or everything
 software.verb.what-can-be-installed.purpose	see what can be installed on this machine, and what kind of work each one is for
 software.verb.what-can-be-installed.sentence	see what can be installed under {kind_of_work}
-software.web.nothing-opens	No application on this machine opens web addresses, so nothing was opened. Install a web browser, and it opens them
-software.web.nothing-opens.choice-gone	{chosen}, which you chose to open web addresses, is not installed, and nothing else on this machine opens them. Install it again, or install another web browser
-software.web.opens.chosen	{application} opens web addresses, because you chose it
-software.web.opens.instead	{application} opens web addresses, because {chosen}, which you chose, is not installed. Install it again, or choose another
-software.web.opens.instead-of-a-persons-own	{application} opens web addresses. {chosen}, which you chose, is yours alone, and a web address written by somebody else is never handed to it
-software.web.opens.shipped	{application} opens web addresses. It came with this machine, and you can choose another or remove it
 sound.muted	Muted — nothing is heard from it
 sound.not-muted	On
 sound.pinned	Always use this one when it is here

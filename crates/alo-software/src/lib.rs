@@ -111,16 +111,21 @@
 //! # The web browser, and what it may take from the machine
 //!
 //! The browser [`Shipped`] names for [`Role::WebBrowser`] is an application like
-//! any other on this machine, and this crate adds two things around it and
-//! nothing else. *Until 2026-11-12 it also held what a web address is and an
-//! application's request to open one, judged against a grant over the browser;
-//! the owner withdrew that grant, and the address moved to `alo_applications`
-//! where the open-with portal reads it.*
+//! any other on this machine, and this crate adds one thing around it and
+//! nothing else: the configuration alo OS ships with it ([`browser_settings`],
+//! [`browser_configuration`]) — three settings, held to being three. *Until
+//! 2026-11-12 it also held what a web address is and an application's request
+//! to open one, judged against a grant over the browser; the owner withdrew that
+//! grant, and the address moved to `alo_applications` where the open-with
+//! portal reads it.*
 //!
-//! | | |
-//! |---|---|
-//! | [`browsing`] | Which application opens web addresses: the person's choice, or the one this machine ships, and never a guess |
-//! | [`browser_settings`], [`browser_configuration`] | The configuration alo OS ships with the browser — three settings, held to being three |
+//! **Which application opens a web link is not answered here.** It is
+//! `alo_applications::WhatOpensWhat::what_opens_links`: the person's choice
+//! under `[links]` in `what-opens-what.toml`, or the first installed
+//! application whose desktop entry declares `x-scheme-handler/http` or
+//! `…/https`. *Until this crate's `WhatOpensWebAddresses` was retired it held a
+//! second answer — the person's choice, then the browser this machine ships —
+//! which nothing on a running machine read, so the two could only disagree.*
 //!
 //! **It has no grants of its own.** It arrives through [`installing`](mod@installing)
 //! like everything else, which takes nothing that could make one, so it reaches
@@ -143,7 +148,6 @@ pub mod asked;
 pub mod bound;
 pub mod browser_configuration;
 pub mod browser_settings;
-pub mod browsing;
 pub mod catalogue;
 pub mod category;
 pub mod enabled;
@@ -173,7 +177,6 @@ mod testing;
 pub use bound::{Bound, SetBy};
 pub use browser_configuration::{Configuration, NotConfigured};
 pub use browser_settings::{NeverSet, Setting};
-pub use browsing::{Because, NothingOpensThem, TheBrowser, WhatOpensWebAddresses};
 pub use catalogue::{Catalogue, Listed, NotCatalogued};
 pub use category::Category;
 pub use enabled::Enabled;

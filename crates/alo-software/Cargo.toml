@@ -74,6 +74,13 @@ alo-adapters = { path = "../alo-adapters" }
 # and the walk from nothing to a working application is said through it — the
 # indicator's, the one list's and the agent's sentences beside this crate's own.
 alo-saying = { path = "../alo-saying" }
+# Which application opens a web link, asked the way a running machine asks it:
+# the desktop entries read by `alo-installed`, and the open-with portal's own
+# answer from `alo-portals`. The walks in `tests/` write entries declaring
+# `x-scheme-handler/http` into a temporary directory and read them back, so
+# what they say about the browser is what the portal would say.
+alo-installed = { path = "../alo-installed" }
+alo-portals = { path = "../alo-portals" }
 
 [lints]
 workspace = true
