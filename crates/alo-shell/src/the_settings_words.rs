@@ -586,12 +586,11 @@ pub const ALL_TIME_ZONES: Word = Word::saying("settings.zone.all", "All time zon
 
 /// The search at the top of the list of countries or of time zones, as a
 /// screen reader names it: the field draws a magnifying glass and no word.
-pub const SEARCH_THE_LIST: Word = Word::saying("settings.list.search", "Search")
-    .noting(
-        "What a screen reader calls the search field at the top of the list of countries and \
+pub const SEARCH_THE_LIST: Word = Word::saying("settings.list.search", "Search").noting(
+    "What a screen reader calls the search field at the top of the list of countries and \
          regions, or of time zones, that a person chooses from. The field shows only a magnifying \
          glass. One word.",
-    );
+);
 
 /// How many countries, regions or time zones match what was typed.
 ///

@@ -9,7 +9,9 @@ use alo_strings::Strings;
 
 use super::*;
 use crate::settings_pointed_at::PointedAt;
-use crate::settings_testing::{Machine, a_browser_and_a_mail_app, a_persons_machine, noon, settings_words};
+use crate::settings_testing::{
+    Machine, a_browser_and_a_mail_app, a_persons_machine, noon, settings_words,
+};
 
 /// Settings, opened on a machine with a browser and a mail application.
 fn opened(named: &str) -> (Machine, SettingsWindow) {
@@ -106,18 +108,34 @@ fn default_apps_is_heard_as_it_is_drawn() {
                 panic!("a Default apps row is not a choice: {row:?}");
             };
             let node = the(&under, Role::RadioButton, &row.title);
-            assert_eq!(access_roles::is_checked(node.states), chosen, "{}", row.title);
+            assert_eq!(
+                access_roles::is_checked(node.states),
+                chosen,
+                "{}",
+                row.title
+            );
             assert_eq!(node.description, row.lines.join("\n"));
-            assert_eq!(attribute(node, "posinset"), Some((place + 1).to_string().as_str()));
-            assert_eq!(attribute(node, "setsize"), Some(choices.to_string().as_str()));
+            assert_eq!(
+                attribute(node, "posinset"),
+                Some((place + 1).to_string().as_str())
+            );
+            assert_eq!(
+                attribute(node, "setsize"),
+                Some(choices.to_string().as_str())
+            );
             assert_eq!(
                 node.press,
-                Some(Pressed::InSettings(InSettings::ARow(row.row.clone().unwrap())))
+                Some(Pressed::InSettings(InSettings::ARow(
+                    row.row.clone().unwrap()
+                )))
             );
             rows_heard += 1;
         }
     }
-    assert_eq!(rows_heard, 2, "a browser and a mail application were offered");
+    assert_eq!(
+        rows_heard, 2,
+        "a browser and a mail application were offered"
+    );
     for heading in [w::WEB_LINKS, w::EMAIL_ADDRESSES] {
         let _ = the(&under, Role::Heading, &said(&strings, heading));
     }
@@ -133,12 +151,15 @@ fn every_page_is_heard_and_every_row_on_it_can_be_pressed() {
         on_the_page(&mut window, category);
         let tree = read(&strings, &window, false);
         let (_, under) = settings_of(&tree);
-        let page = crate::settings_page::the_page(window.open().unwrap(), category, &strings, noon());
+        let page =
+            crate::settings_page::the_page(window.open().unwrap(), category, &strings, noon());
         let _ = the(&under, Role::Heading, &page.heading);
         for row in page.rows() {
             let pressed = Pressed::InSettings(InSettings::ARow(row.clone()));
             assert!(
-                under.iter().any(|node| node.press.as_ref() == Some(&pressed)),
+                under
+                    .iter()
+                    .any(|node| node.press.as_ref() == Some(&pressed)),
                 "{category:?}: {row:?} is drawn and a reader cannot press it"
             );
         }
@@ -167,8 +188,14 @@ fn the_side_column_is_every_page_with_the_one_shown_selected() {
             category == SettingsCategory::DefaultApps,
             "{category:?}"
         );
-        assert_eq!(attribute(tab, "posinset"), Some((place + 1).to_string().as_str()));
-        assert_eq!(tab.press, Some(Pressed::InSettings(InSettings::APage(category))));
+        assert_eq!(
+            attribute(tab, "posinset"),
+            Some((place + 1).to_string().as_str())
+        );
+        assert_eq!(
+            tab.press,
+            Some(Pressed::InSettings(InSettings::APage(category)))
+        );
     }
 }
 
@@ -182,7 +209,11 @@ fn the_accessibility_page_says_which_way_its_switch_is_set() {
     let tree = read(&strings, &window, false);
     let (_, under) = settings_of(&tree);
     let switch = the(&under, Role::Switch, &said(&strings, w::REDUCED_MOTION));
-    assert_eq!(window.motion_is_reduced(), Some(false), "as this computer comes");
+    assert_eq!(
+        window.motion_is_reduced(),
+        Some(false),
+        "as this computer comes"
+    );
     assert!(!access_roles::is_checked(switch.states));
     assert_eq!(
         attribute(switch, alo_access::THE_OLD_NAME_ATTRIBUTE),
@@ -207,11 +238,18 @@ fn the_accessibility_page_says_which_way_its_switch_is_set() {
         },
         crate::settings_testing::doors(&strings, &door),
     );
-    assert_eq!(window.motion_is_reduced(), Some(true), "the press did not turn it on");
+    assert_eq!(
+        window.motion_is_reduced(),
+        Some(true),
+        "the press did not turn it on"
+    );
     let tree = read(&strings, &window, true);
     let (_, under) = settings_of(&tree);
     let switch = the(&under, Role::Switch, &said(&strings, w::REDUCED_MOTION));
-    assert!(access_roles::is_checked(switch.states), "an on switch is heard as off");
+    assert!(
+        access_roles::is_checked(switch.states),
+        "an on switch is heard as off"
+    );
     assert!(access_roles::has_the_keyboard(switch.states));
 }
 

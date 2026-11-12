@@ -172,7 +172,10 @@ fn the_keyboards_control_being_set_is_said() {
     let at = before.in_front().unwrap().keyboard;
     let mut set = before.clone();
     let node = set.node_mut(at).unwrap();
-    node.states = [node.states[0] | (1 << crate::access_roles::CHECKED), node.states[1]];
+    node.states = [
+        node.states[0] | (1 << crate::access_roles::CHECKED),
+        node.states[1],
+    ];
     let path = node.path.clone();
     let (told, keyboard) = what_happened(keyboard.as_ref(), &set);
     assert_eq!(
@@ -185,5 +188,11 @@ fn the_keyboards_control_being_set_is_said() {
     let (again, keyboard) = what_happened(keyboard.as_ref(), &set);
     assert!(again.is_empty(), "the same state was said twice");
     let (unset, _) = what_happened(keyboard.as_ref(), &before);
-    assert_eq!(unset, [AnEvent::NowChecked { path, checked: false }]);
+    assert_eq!(
+        unset,
+        [AnEvent::NowChecked {
+            path,
+            checked: false
+        }]
+    );
 }

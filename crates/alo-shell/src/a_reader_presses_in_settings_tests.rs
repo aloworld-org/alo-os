@@ -8,10 +8,10 @@ use std::os::unix::fs::PermissionsExt as _;
 use smithay::input::keyboard::XkbConfig;
 
 use super::*;
-use crate::settings_categories::SettingsCategory;
-use crate::settings_testing::{Machine, a_browser_and_a_mail_app, a_persons_machine};
 use crate::SettingsRow;
 use crate::access_action::Pressed;
+use crate::settings_categories::SettingsCategory;
+use crate::settings_testing::{Machine, a_browser_and_a_mail_app, a_persons_machine};
 
 /// A session with Settings open on it, in front.
 fn with_settings_open(named: &str) -> (tempfile::TempDir, Server, Machine) {
@@ -47,8 +47,14 @@ fn a_page_pressed_is_shown() {
         ))),
         WhatAReaderPressCameTo::SettingsDidIt
     );
-    assert_eq!(server.settings.category(), Some(SettingsCategory::DefaultApps));
-    assert!(server.a_click_waits_for_settings.is_none(), "a page is not a row to carry out");
+    assert_eq!(
+        server.settings.category(),
+        Some(SettingsCategory::DefaultApps)
+    );
+    assert!(
+        server.a_click_waits_for_settings.is_none(),
+        "a page is not a row to carry out"
+    );
 }
 
 /// **A row on the page shown has the keyboard moved to it and waits to be
@@ -69,7 +75,10 @@ fn a_row_on_the_page_shown_waits_to_be_carried_out() {
         server.a_reader_pressed(Pressed::InSettings(InSettings::ARow(row.clone()))),
         WhatAReaderPressCameTo::SettingsDidIt
     );
-    assert_eq!(server.settings.focused(std::time::SystemTime::now()), Some(row));
+    assert_eq!(
+        server.settings.focused(std::time::SystemTime::now()),
+        Some(row)
+    );
     assert!(server.a_click_waits_for_settings.is_some());
 }
 
@@ -81,10 +90,12 @@ fn a_row_not_on_the_page_shown_does_nothing() {
         SettingsCategory::Accessibility,
     )));
     assert_eq!(
-        server.a_reader_pressed(Pressed::InSettings(InSettings::ARow(SettingsRow::DefaultFor(
-            alo_applications::LinkKind::Web,
-            "org.mozilla.firefox".to_owned(),
-        )))),
+        server.a_reader_pressed(Pressed::InSettings(InSettings::ARow(
+            SettingsRow::DefaultFor(
+                alo_applications::LinkKind::Web,
+                "org.mozilla.firefox".to_owned(),
+            )
+        ))),
         WhatAReaderPressCameTo::NothingInSettings
     );
     assert!(server.a_click_waits_for_settings.is_none());

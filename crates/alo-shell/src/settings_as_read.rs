@@ -110,7 +110,11 @@ impl ReadAloudTree {
     /// Place being looked at, and the tree is left as it was: described, and
     /// not shown.
     #[must_use]
-    pub(crate) fn with_settings(mut self, strings: &Strings, shows: Option<SettingsShows<'_>>) -> Self {
+    pub(crate) fn with_settings(
+        mut self,
+        strings: &Strings,
+        shows: Option<SettingsShows<'_>>,
+    ) -> Self {
         let Some(shows) = shows else {
             return self;
         };
@@ -331,7 +335,11 @@ impl Reading<'_, '_> {
             TheKind::Plain => (Role::Label, State::ReadOnly, None),
         };
         let mut attributes = place.map_or_else(Vec::new, |(at, of)| its_place(at, of));
-        attributes.extend(row.row.as_ref().and_then(|it| it.its_old_name(self.strings)));
+        attributes.extend(
+            row.row
+                .as_ref()
+                .and_then(|it| it.its_old_name(self.strings)),
+        );
         let node = Node {
             role: access_roles::number_of(role),
             name: row.title.clone(),
@@ -523,7 +531,8 @@ fn what_is_drawn_with(row: &ARow) -> String {
     let mut said: Vec<String> = Vec::new();
     said.extend(row.tag.iter().cloned());
     said.extend(row.lines.iter().cloned());
-    let a_switch_that_says_which = matches!(row.kind, TheKind::ASwitch(SwitchIs::On | SwitchIs::Off));
+    let a_switch_that_says_which =
+        matches!(row.kind, TheKind::ASwitch(SwitchIs::On | SwitchIs::Off));
     match &row.at_its_end {
         Some(AnEnd::Words(words)) if !a_switch_that_says_which => said.push(words.clone()),
         Some(AnEnd::Words(_)) | None => {}

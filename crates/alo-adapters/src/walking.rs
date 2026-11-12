@@ -328,12 +328,12 @@ impl Walker<'_> {
                     Some(described.limited(Limit::NoName))
                 } else {
                     if let Some(kind) = Pressable::of(role) {
-                        let formerly = self
-                            .alos_own_attributes(at)?
-                            .into_iter()
-                            .find_map(|(key, value)| {
-                                (key == alo_access::THE_OLD_NAME_ATTRIBUTE).then_some(value)
-                            });
+                        let formerly =
+                            self.alos_own_attributes(at)?
+                                .into_iter()
+                                .find_map(|(key, value)| {
+                                    (key == alo_access::THE_OLD_NAME_ATTRIBUTE).then_some(value)
+                                });
                         self.pressable.push(Found {
                             kind,
                             name,

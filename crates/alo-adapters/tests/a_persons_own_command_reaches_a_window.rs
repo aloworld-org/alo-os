@@ -639,10 +639,7 @@ fn settings_with_old_names() -> ATree {
             vec![
                 thing(roles::FRAME, "Settings")
                     .marked(alo_access::THE_SURFACE_ATTRIBUTE, "settings")
-                    .marked(
-                        "alo-not-drawn-yet:screen-reader",
-                        "read the screen aloud",
-                    )
+                    .marked("alo-not-drawn-yet:screen-reader", "read the screen aloud")
                     .holding(vec![
                         thing(roles::SWITCH, "Reduced motion")
                             .marked(
@@ -682,8 +679,14 @@ fn an_old_name_on_alos_settings_reaches_its_control_and_nowhere_else() {
     )
     .unwrap();
     assert_eq!(by_its_old_name.now_called(), Some("Reduced motion"));
-    let by_its_name =
-        press_by_hand(&tree, alo, Some("settings"), Pressable::Switch, "Reduced motion").unwrap();
+    let by_its_name = press_by_hand(
+        &tree,
+        alo,
+        Some("settings"),
+        Pressable::Switch,
+        "Reduced motion",
+    )
+    .unwrap();
     assert_eq!(by_its_name.now_called(), None);
     assert_eq!(*tree.pressed.borrow(), 2);
 

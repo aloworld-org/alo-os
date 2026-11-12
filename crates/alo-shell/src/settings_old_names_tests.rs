@@ -15,13 +15,13 @@ use alo_adapters::accessibility_tree::{AccessibilityTree, Facts, NodeAt, Running
 use alo_adapters::{NotPressed, Pressable, Unpressed, Whose, press_by_hand, read_by_hand};
 
 use super::*;
+use crate::SettingsWindow;
 use crate::access_action::{InSettings, Pressed};
 use crate::access_nodes::ReadAloudTree;
 use crate::settings_as_read::SettingsShows;
 use crate::settings_categories::SettingsCategory;
 use crate::settings_pointed_at::PointedAt;
 use crate::settings_testing::{a_browser_and_a_mail_app, a_persons_machine, noon, settings_words};
-use crate::SettingsWindow;
 
 /// The name this tree answers as, as the bus would give it.
 const ANSWERS_AS: &str = ":1.42";
@@ -105,7 +105,11 @@ impl AccessibilityTree for OnTheTree {
     }
 
     fn attributes(&self, at: &NodeAt) -> Result<Vec<(String, String)>, TreeFault> {
-        Ok(self.tree.attributes_of(self.node(at)?).into_iter().collect())
+        Ok(self
+            .tree
+            .attributes_of(self.node(at)?)
+            .into_iter()
+            .collect())
     }
 }
 
@@ -141,7 +145,10 @@ fn on_accessibility(named: &str) -> (crate::settings_testing::Machine, SettingsW
     let machine = a_persons_machine(named);
     let mut window = machine.opened();
     window.the_applications_are(a_browser_and_a_mail_app());
-    let _ = window.pointed_at(&PointedAt::ACategory(SettingsCategory::Accessibility), noon());
+    let _ = window.pointed_at(
+        &PointedAt::ACategory(SettingsCategory::Accessibility),
+        noon(),
+    );
     (machine, window)
 }
 
@@ -153,7 +160,8 @@ fn the_old_name_of_a_drawn_row_reaches_it_and_says_its_new_name() {
     let (_machine, window) = on_accessibility("old-name-drawn");
     let reading = on(&window);
     let strings = settings_words();
-    let now_called = crate::settings_page::said(&strings, crate::the_settings_words::REDUCED_MOTION);
+    let now_called =
+        crate::settings_page::said(&strings, crate::the_settings_words::REDUCED_MOTION);
 
     let pressed = press_by_hand(
         &reading,
@@ -165,9 +173,19 @@ fn the_old_name_of_a_drawn_row_reaches_it_and_says_its_new_name() {
     .expect("the old name presses the switch");
     assert_eq!(pressed.now_called(), Some(now_called.as_str()));
 
-    let pressed = press_by_hand(&reading, ALO, Some("settings"), Pressable::Switch, &now_called)
-        .expect("the drawn name presses the switch");
-    assert_eq!(pressed.now_called(), None, "the drawn name was told it is old");
+    let pressed = press_by_hand(
+        &reading,
+        ALO,
+        Some("settings"),
+        Pressable::Switch,
+        &now_called,
+    )
+    .expect("the drawn name presses the switch");
+    assert_eq!(
+        pressed.now_called(),
+        None,
+        "the drawn name was told it is old"
+    );
 
     assert_eq!(
         *reading.pressed.borrow(),
@@ -187,16 +205,31 @@ fn a_setting_no_page_draws_yet_is_refused_and_nothing_is_pressed() {
             continue;
         }
         assert_eq!(
-            press_by_hand(&reading, ALO, Some("settings"), Pressable::Switch, &old_name(setting))
-                .unwrap_err(),
+            press_by_hand(
+                &reading,
+                ALO,
+                Some("settings"),
+                Pressable::Switch,
+                &old_name(setting)
+            )
+            .unwrap_err(),
             Unpressed::NotPressed(NotPressed::NotDrawnYet),
             "{setting:?}"
         );
     }
-    assert!(reading.pressed.borrow().is_empty(), "a refusal pressed something");
+    assert!(
+        reading.pressed.borrow().is_empty(),
+        "a refusal pressed something"
+    );
     assert_eq!(
-        press_by_hand(&reading, ALO, Some("settings"), Pressable::Switch, "no such setting")
-            .unwrap_err(),
+        press_by_hand(
+            &reading,
+            ALO,
+            Some("settings"),
+            Pressable::Switch,
+            "no such setting"
+        )
+        .unwrap_err(),
         Unpressed::NotPressed(NotPressed::NoSuchControl),
         "a name that was never one is not told it is an old setting"
     );
@@ -215,7 +248,10 @@ fn a_setting_is_on_its_row_or_listed_as_not_drawn_and_never_both() {
     let mut not_drawn = SettingsWindow::closed();
     let _ = not_drawn.opened_by_hand(&machine.with_no_folder(), noon());
     for window in [&mut drawn, &mut not_drawn] {
-        let _ = window.pointed_at(&PointedAt::ACategory(SettingsCategory::Accessibility), noon());
+        let _ = window.pointed_at(
+            &PointedAt::ACategory(SettingsCategory::Accessibility),
+            noon(),
+        );
     }
     for (window, reduced_motion_is_drawn) in [(&drawn, true), (&not_drawn, false)] {
         let open = window.open().unwrap();
@@ -231,7 +267,10 @@ fn a_setting_is_on_its_row_or_listed_as_not_drawn_and_never_both() {
             let on_settings = listed
                 .iter()
                 .any(|(key, _)| alo_access::not_drawn_yet(key) == Some(setting));
-            assert_ne!(on_a_row, on_settings, "{setting:?} is on both, or on neither");
+            assert_ne!(
+                on_a_row, on_settings,
+                "{setting:?} is on both, or on neither"
+            );
         }
         let reading = on(window);
         let answered = press_by_hand(
@@ -289,8 +328,14 @@ fn a_default_apps_row_is_pressed_as_a_radio_button() {
     let (_machine, mut window) = on_accessibility("old-name-radio");
     let _ = window.pointed_at(&PointedAt::ACategory(SettingsCategory::DefaultApps), noon());
     let reading = on(&window);
-    let pressed = press_by_hand(&reading, ALO, Some("settings"), Pressable::RadioButton, "Firefox")
-        .expect("Firefox is a choice on Default apps");
+    let pressed = press_by_hand(
+        &reading,
+        ALO,
+        Some("settings"),
+        Pressable::RadioButton,
+        "Firefox",
+    )
+    .expect("Firefox is a choice on Default apps");
     assert_eq!(pressed.now_called(), None);
     assert!(matches!(
         reading.pressed.borrow().as_slice(),
