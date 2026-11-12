@@ -68,6 +68,12 @@ pub trait Machine {
     /// [`NotDelivered`]: there is none to reach.
     fn bus(&mut self) -> Result<&dyn Delivers, NotDelivered>;
 
+    /// What this person has turned on in Settings → Accessibility, read now —
+    /// the machine as it comes ([`alo_access::TurnedOn::nothing`]) where the
+    /// file is missing or does not read, since neither is a person who turned
+    /// something on.
+    fn access(&mut self) -> alo_access::TurnedOn;
+
     /// Ask `alo-agentd` to keep a place to return to.
     fn a_place_to_return_to(&mut self, strings: &Strings) -> APlace;
 

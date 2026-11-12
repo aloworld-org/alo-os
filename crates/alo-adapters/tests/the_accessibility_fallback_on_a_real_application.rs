@@ -47,7 +47,7 @@ use std::time::{Duration, Instant, SystemTime};
 
 use alo_adapters::{
     ACTIVATE_CONTROL, AccessibilityTree, AccessibleSession, Activating, Adapters, Contents, Limit,
-    NodeAt, READ_WINDOW, ReadingWindows, Role, fallback_verbs,
+    NodeAt, READ_WINDOW, ReadingWindows, Role, WorkingFully, fallback_verbs,
 };
 use alo_applications::{Application, Installed};
 use alo_capability::{Approvals, Authorised, Call, Given, Grant, Grantee, Grants, Proposal, Reach};
@@ -770,7 +770,7 @@ fn a_real_control_is_pressed_by_its_kind_and_name() {
         &strings,
     )
     .unwrap()
-    .press(&tree, &strings)
+    .press(&tree, WorkingFully::NothingMoreToTurnOn, &strings)
     .unwrap();
     assert!(!pressed.unanswered());
     let heard = monitor.everything();
@@ -821,7 +821,7 @@ fn a_real_control_is_pressed_by_its_kind_and_name() {
             &strings,
         )
         .unwrap()
-        .press(&tree, &strings)
+        .press(&tree, WorkingFully::NothingMoreToTurnOn, &strings)
         .unwrap_err();
         assert_eq!(refused.said(&strings).text(), words);
         record.keep(Entry::refused(&refused, &agent(), &strings, at));

@@ -136,7 +136,37 @@ impl TurnedOn {
         self.on.remove(unsaid);
         self.on.insert(said.to_owned());
     }
+
+    /// **Whether alo works fully inside applications like VSCodium** — off as a
+    /// machine comes, by the owner's decision of 2026-11-12, and on only where
+    /// the person turned it on.
+    ///
+    /// On, an application drawn by Chromium is started with its page described
+    /// completely, which lets alo press its controls and read its document, and
+    /// which VSCodium answers by switching its editor into its screen reader
+    /// mode (`alo_launching::describing_themselves`). Off, alo still sees the
+    /// controls by name. Not a [`Setting`] either, so that an earlier image
+    /// reads it as a word it does not know, for the reason
+    /// [`TurnedOn::apps_describe_themselves`] is not one.
+    #[must_use]
+    pub fn alo_works_fully_inside_apps(&self) -> bool {
+        self.on.contains(ALO_WORKS_FULLY_INSIDE_APPS)
+    }
+
+    /// The person's answer: `yes`, alo works fully inside applications like
+    /// VSCodium.
+    pub fn let_alo_work_fully_inside_apps(&mut self, yes: bool) {
+        if yes {
+            self.on.insert(ALO_WORKS_FULLY_INSIDE_APPS.to_owned());
+        } else {
+            self.on.remove(ALO_WORKS_FULLY_INSIDE_APPS);
+        }
+    }
 }
+
+/// The person said alo works fully inside applications like VSCodium. Kept as
+/// a word in `on`, for the reason [`APPS_DESCRIBE_THEMSELVES`] is.
+const ALO_WORKS_FULLY_INSIDE_APPS: &str = "alo-works-fully-inside-apps";
 
 /// The person said applications describe themselves.
 ///
@@ -334,6 +364,40 @@ mod tests {
         let read: TurnedOn = toml::from_str(&written).unwrap();
         assert!(read.has(Setting::ScreenReader));
         assert!(!read.apps_describe_themselves());
+    }
+
+    /// **alo works fully inside applications only where the person turned it
+    /// on** — off as a machine comes — and the answer is kept apart from every
+    /// [`Setting`] and from whether applications describe themselves.
+    #[test]
+    fn alo_works_fully_inside_apps_only_when_turned_on() {
+        let mut turned_on = TurnedOn::nothing();
+        assert!(
+            !turned_on.alo_works_fully_inside_apps(),
+            "on as a machine comes"
+        );
+
+        turned_on.let_alo_work_fully_inside_apps(true);
+        assert!(turned_on.alo_works_fully_inside_apps());
+        assert_eq!(
+            turned_on.all_on().count(),
+            0,
+            "the answer is not one of the settings a person turns on"
+        );
+        assert!(
+            !turned_on.chose_whether_apps_describe_themselves(),
+            "it answered the other switch too"
+        );
+
+        let written = toml::to_string(&turned_on).unwrap();
+        assert!(written.contains("alo-works-fully-inside-apps"), "{written}");
+        let read: TurnedOn = toml::from_str(&written).unwrap();
+        assert!(read.alo_works_fully_inside_apps(), "not kept");
+
+        turned_on.let_alo_work_fully_inside_apps(false);
+        assert!(!turned_on.alo_works_fully_inside_apps());
+        turned_on.let_alo_work_fully_inside_apps(false);
+        assert!(!turned_on.alo_works_fully_inside_apps(), "off twice is off");
     }
 
     /// **A magnifier magnifies**, and there is no setting for one that does not.

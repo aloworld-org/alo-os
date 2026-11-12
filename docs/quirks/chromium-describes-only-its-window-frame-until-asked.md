@@ -87,3 +87,23 @@ Two more things this showed:
 
 **Not yet seen on a booted alo machine.** The next boot walk is where VSCodium
 started from the Dock is read again with `alo-app codium controls`.
+
+## Corrected 2026-11-12: `=complete` is a screen reader claim too
+
+**This entry said only the bare switch tells VSCodium a screen reader is
+running.** That is not so. Measured once by hand on 2026-11-12, run twice, the
+same build under the same kind of setup (not an alo machine):
+`--force-renderer-accessibility=complete` with VSCodium's default
+`editor.accessibilitySupport: auto` **also** switched VSCodium into *Screen
+Reader Optimized* mode, shown in its status bar, and it gave the whole page,
+not the 35 things the one run above recorded. What is true is narrower: of the
+three, **only `=basic` makes no screen reader claim**. The table above is left
+as it was measured; the `=complete` row of
+[`vscodium-is-pressed-and-read-only-when-described-completely.md`](vscodium-is-pressed-and-read-only-when-described-completely.md)
+is the measurement that replaces its last bullet.
+
+The same day showed what `=basic` costs: a page's controls offer only
+`doDefault`, which does nothing, so alo cannot press them. Since then the
+desktop hands `=complete` instead where the person turned on *Let alo work
+fully inside apps like VSCodium* (off as a machine comes), and `=basic`
+otherwise.

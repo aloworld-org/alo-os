@@ -690,6 +690,34 @@ pub const APPS_DESCRIBE_THEMSELVES_LATER: Word = Word::saying(
     "Under the same switch, a second line. Applications read this setting only when they start.",
 );
 
+/// Let alo work fully inside apps like VSCodium.
+pub const ALO_WORKS_FULLY_INSIDE_APPS: Word = Word::saying(
+    "settings.access.alo-works-fully-inside-apps",
+    "Let alo work fully inside apps like VSCodium",
+)
+.noting(
+    "A switch, off as the computer comes. On, alo, the assistant, can press buttons and read \
+     the document inside VSCodium, VS Code and Chromium, not only see them. alo and VSCodium \
+     are names and are not translated. Refusals that name this switch quote it, so they must \
+     use the same translation.",
+);
+
+/// What it does, and what it changes in those applications.
+pub const ALO_WORKS_FULLY_INSIDE_APPS_IS: Word = Word::saying(
+    "settings.access.alo-works-fully-inside-apps.is",
+    "On, alo can press buttons and read the document inside VSCodium, VS Code and Chromium. They \
+     are told as much as a screen reader would be, so VSCodium and VS Code switch their editor \
+     into screen reader mode: it behaves differently, and says Screen Reader Optimized at the \
+     bottom of the window. Off, alo can see what is in their windows but cannot press anything \
+     inside them.",
+)
+.noting(
+    "Under the switch Let alo work fully inside apps like VSCodium. Says what it does, what it \
+     changes in those apps while on, and what being off costs, in plain words. Screen Reader \
+     Optimized is the words VSCodium itself shows, in English unless the person's VSCodium is \
+     in another language.",
+);
+
 /// The accessibility settings did not read.
 pub const ACCESS_NOT_READ: Word = Word::saying(
     "settings.access.not-read",
@@ -974,7 +1002,7 @@ pub const THAT_APP_IS_GONE: Word = Word::saying(
 /// The length is written out so that adding a word above and forgetting it
 /// here does not compile — a word declared and left out of this list reaches a
 /// person as its own key.
-pub const THE_WINDOWS_WORDS: [Word; 129] = [
+pub const THE_WINDOWS_WORDS: [Word; 131] = [
     SETTINGS,
     EVERYTHING_IN_ONE_PLACE,
     THE_GROUP_ALO,
@@ -1091,6 +1119,8 @@ pub const THE_WINDOWS_WORDS: [Word; 129] = [
     APPS_DESCRIBE_THEMSELVES,
     APPS_DESCRIBE_THEMSELVES_IS,
     APPS_DESCRIBE_THEMSELVES_LATER,
+    ALO_WORKS_FULLY_INSIDE_APPS,
+    ALO_WORKS_FULLY_INSIDE_APPS_IS,
     ACCESS_NOT_READ,
     ACCESS_NOT_WRITTEN,
     DEFAULT_APPS,
