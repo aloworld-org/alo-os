@@ -894,7 +894,9 @@ pub const DEFAULT_APPS_IS: Word = Word::saying(
     "settings.category.default-apps.is",
     "Which app opens a link, an email address or a kind of file.",
 )
-.noting("Under the heading of the Default apps page. A short sentence saying what the page is for.");
+.noting(
+    "Under the heading of the Default apps page. A short sentence saying what the page is for.",
+);
 
 /// The section of browsers (`25:26`).
 pub const WEB_LINKS: Word = Word::saying("settings.default-apps.web-links", "Web links").noting(
@@ -910,10 +912,11 @@ pub const EMAIL_ADDRESSES: Word =
     );
 
 /// Under the browser that opens web links now (`25:34`).
-pub const OPENS_WEB_LINKS_NOW: Word =
-    Word::saying("settings.default-apps.opens-web-links-now", "Opens web links now").noting(
-        "Under the name of the browser that opens web links on this computer at the moment.",
-    );
+pub const OPENS_WEB_LINKS_NOW: Word = Word::saying(
+    "settings.default-apps.opens-web-links-now",
+    "Opens web links now",
+)
+.noting("Under the name of the browser that opens web links on this computer at the moment.");
 
 /// Under an installed application that is not the one chosen (`25:40`).
 pub const INSTALLED: Word = Word::saying("settings.default-apps.installed", "Installed").noting(

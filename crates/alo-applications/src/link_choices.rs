@@ -58,12 +58,12 @@ impl WhatOpensWhat<'_> {
     reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
 )]
 mod tests {
+    use crate::Application;
     use crate::chosen::Chosen;
     use crate::declared::Declared;
     use crate::installed::Installed;
     use crate::link::LinkKind;
     use crate::what_opens::WhatOpensWhat;
-    use crate::Application;
 
     fn called(identifier: &str) -> Application {
         Application::identified(identifier).unwrap()
