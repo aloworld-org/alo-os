@@ -123,8 +123,18 @@ fn a_private_window_is_a_blank_card_with_its_mark_and_no_badge() {
         AppId::named("org.kde.dolphin").unwrap(),
         APicture::of(2, 2, [red[0], red[1], red[2], 255].repeat(4)).unwrap(),
     );
-    let tile = a_windows_square(slot(), &a_preview(private()), &artwork, &palette, &mut fonts());
-    assert_eq!(pixel(&tile, 24, 24), red, "the icon in the middle of the card");
+    let tile = a_windows_square(
+        slot(),
+        &a_preview(private()),
+        &artwork,
+        &palette,
+        &mut fonts(),
+    );
+    assert_eq!(
+        pixel(&tile, 24, 24),
+        red,
+        "the icon in the middle of the card"
+    );
     // Where the badge would be, below the card: the rail, not a badge.
     assert_eq!(pixel(&tile, 44, 44), palette.dock, "no badge");
     assert_eq!(pixel(&tile, 24, 8), palette.edge, "the same card");

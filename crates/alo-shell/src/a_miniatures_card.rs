@@ -199,10 +199,7 @@ pub(crate) fn a_windows_square(
         reason = "a square in the panel is a few dozen pixels"
     )]
     let px = |logical: u32| of_the_slot(side, logical) as f32;
-    #[expect(
-        clippy::cast_precision_loss,
-        reason = "a border is a pixel or two"
-    )]
+    #[expect(clippy::cast_precision_loss, reason = "a border is a pixel or two")]
     let border = parts.border as f32;
     // **The card**: the hairline, then the window's ground inside it. The
     // picture is drawn over the ground by the painter; a private window's
