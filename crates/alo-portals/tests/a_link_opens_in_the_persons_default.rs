@@ -29,8 +29,8 @@ use alo_capability::{Applicant, Grants};
 use alo_keyring_fixture::AKeyringOfOurOwn;
 use alo_portals::{
     Allowed, Answered, Appearance, Applications, Backend, KeepsSecrets, Kept, KeptOutcome,
-    SheetAnswer, LinkStarted, Unchosen, NotKept, OpensLinks, Outcome, Request, Sandboxes, Served,
-    TheMachine, TimeOfDay, Unanswered,
+    LinkStarted, NotKept, OpensLinks, Outcome, Request, Sandboxes, Served, SheetAnswer, TheMachine,
+    TimeOfDay, Unanswered, Unchosen,
 };
 use zbus::blocking::{Connection, Proxy};
 use zbus::zvariant::{OwnedObjectPath, OwnedValue, Value};

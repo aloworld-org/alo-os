@@ -47,7 +47,7 @@ pub enum LinkStarted {
 pub enum SheetAnswer {
     /// The person chose this application. **Not yet checked against what was
     /// offered**: the portal holds it to the offer before believing it.
-    Chosen(String),
+    Picked(String),
     /// The person pressed *Cancel* or Escape.
     Cancelled,
     /// Nobody answered while the sheet was up.
