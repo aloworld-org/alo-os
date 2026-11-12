@@ -359,8 +359,10 @@ Where the specification differs from this contract, **this contract wins** and t
 specification is corrected; the specification says so itself. Two of its verbs,
 `find_on_page` and `fill_field`, take text a person must read whole, and are
 offered only once the *text, shown in full* argument kind exists. `save_as_pdf`
-is held until the browser can save into a folder this machine has already checked
-against the person's grant, or until the document portal carries the file.
+is held until the document portal carries the file (the browser's item 967): the
+browser will not take a folder named in a request, because its socket cannot tell
+alo OS from any other program the person runs, so a folder in a request is not a
+grant.
 
 **Not built on the day this was written.** Nothing in this workspace declares the
 browser's adapter or carries `api` out.
