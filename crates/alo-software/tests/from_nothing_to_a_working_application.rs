@@ -1,6 +1,11 @@
 //! The walk from nothing to a working application, as the sentences a person
-//! meets on the way — held to being exactly the table in
-//! `docs/autonomy/updates/every-sentence-and-the-walk-to-a-working-application.md`.
+//! meets on the way — held to being exactly [`THE_WALK`] and [`WHERE_IT_STOPS`].
+//! The tables were first recorded in
+//! `docs/autonomy/updates/every-sentence-and-the-walk-to-a-working-application.md`,
+//! a dated report whose copy is the walk as it stood that day: since then the
+//! grant over the browser was withdrawn (2026-11-12), and the link rows became
+//! the open-with portal's own sentences when `alo-software`'s
+//! `WhatOpensWebAddresses` was retired.
 //!
 //! `docs/autonomy/software-and-the-web-plan.md`, task 7: *one walk — set a
 //! proxy, install an application, open a web link in the browser, ask the agent
@@ -56,8 +61,8 @@ use alo_software::{
     Bound, Configured, Enabled, Failed, Role, Shipped, SourceName, Tool, Wanted, install,
     installing, remove,
 };
-use tempfile::TempDir;
 use alo_strings::{Language, Said, Strings, Translation};
+use tempfile::TempDir;
 
 // ---------------------------------------------------------------------------
 // The two tables.
@@ -385,9 +390,7 @@ struct AsThePortalReadsIt {
 impl AsThePortalReadsIt {
     /// What the open-with portal answers when the text editor asks for
     /// [`THE_LINK`] to be opened.
-    fn the_text_editor_follows_the_link(
-        &self,
-    ) -> Result<alo_portals::LinkOpened, LinkNotOpened> {
+    fn the_text_editor_follows_the_link(&self) -> Result<alo_portals::LinkOpened, LinkNotOpened> {
         link_answered(
             Applicant::named(THE_TEXT_EDITOR),
             THE_LINK,

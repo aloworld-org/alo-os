@@ -244,7 +244,10 @@ fn the_browser_a_fresh_machine_ships_opens_web_addresses() {
     let browser = the_browser();
 
     let machine = AsThePortalReadsIt::of(&tool, None);
-    let answer = machine.what_opens().what_opens_links(LinkKind::Web).unwrap();
+    let answer = machine
+        .what_opens()
+        .what_opens_links(LinkKind::Web)
+        .unwrap();
     assert_eq!(answer.application().identifier(), browser.identifier());
     assert_eq!(answer.because(), &LinkBecause::ItDeclaresIt);
 
