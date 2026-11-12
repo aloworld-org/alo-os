@@ -142,8 +142,8 @@ fn the_shells_own_fonts() -> FontSystem {
 /// The two proportional faces alone — a machine with no monospace face.
 fn fonts_without_the_mono_face() -> FontSystem {
     WindowControlLabels::from_fonts([
-        include_bytes!("../fonts/Manrope.ttf").to_vec(),
-        include_bytes!("../fonts/Inter.ttf").to_vec(),
+        alo_drawing::fonts::MANROPE.to_vec(),
+        alo_drawing::fonts::INTER.to_vec(),
     ])
     .expect("the two proportional faces load")
     .fonts
@@ -261,7 +261,7 @@ fn the_terminal_is_a_window_that_can_be_told_from_the_desktop() {
 
     let body = drawn.panel.as_ref().expect("the window's body is drawn");
     assert!(
-        body.area.contains_rect(window),
+        body.area.contains_rect(crate::painted::drawn_at(window)),
         "the body's raster does not cover the whole window"
     );
     // The middle of the top edge, which is the hairline, and a row inside it,
@@ -1185,7 +1185,7 @@ fn bold_is_drawn_in_the_terminals_own_face() {
     buffer.set_text(
         &mut fonts,
         "ok",
-        &crate::painted_text::alos_own_mono_at(bold),
+        &crate::the_terminals_face::alos_own_mono_at(bold),
         cosmic_text::Shaping::Advanced,
     );
     buffer.shape_until_scroll(&mut fonts, false);
@@ -1238,7 +1238,7 @@ fn a_bold_cell_is_the_same_width_as_an_ordinary_one() {
         buffer.set_text(
             &mut fonts,
             "iWl.8@m",
-            &crate::painted_text::alos_own_mono_at(look(bold)),
+            &crate::the_terminals_face::alos_own_mono_at(look(bold)),
             cosmic_text::Shaping::Advanced,
         );
         buffer.shape_until_scroll(&mut fonts, false);

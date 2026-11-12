@@ -22,7 +22,7 @@ fn fonts() -> FontSystem {
     let mut fonts = FontSystem::new();
     fonts
         .db_mut()
-        .load_font_data(include_bytes!("../fonts/Manrope.ttf").to_vec());
+        .load_font_data(alo_drawing::fonts::MANROPE.to_vec());
     fonts
 }
 
@@ -42,7 +42,7 @@ fn the_body_is_drawn_first_and_holds_the_whole_panel() {
     let body = rasters.first().expect("a body").area;
     let panel = in_pixels(menu.panel, 100);
     assert!(
-        body.contains_rect(panel),
+        body.contains_rect(crate::painted::drawn_at(panel)),
         "{body:?} does not hold {panel:?}"
     );
     assert!(
@@ -135,7 +135,7 @@ fn a_preview_is_drawn_under_the_panel_with_its_words() {
     );
     assert_eq!(
         rasters.first().expect("the outline").area,
-        in_pixels(outline, 100),
+        crate::painted::drawn_at(in_pixels(outline, 100)),
         "the outline is drawn first, so the panel stays readable over it"
     );
     assert_eq!(words.len(), 2 + menu.rows.len(), "the preview says where");

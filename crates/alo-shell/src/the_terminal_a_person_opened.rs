@@ -495,6 +495,7 @@ impl crate::Server {
         at: smithay::utils::Point<i32, smithay::utils::Physical>,
     ) -> bool {
         self.alos_own_terminal.is_some()
+            && !self.this_alo_window_is_aside(alo_put_aside::AlosOwnWindow::TheTerminal)
             && self
                 .where_the_terminal_is
                 .is_some_and(|window| window.contains(at))

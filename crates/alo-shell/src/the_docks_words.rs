@@ -81,6 +81,11 @@ pub struct TheDocksWords {
     pub settings: String,
     /// What the Applications entry on the Dock is called.
     pub applications: String,
+    /// What alo's terminal is called: the word its square in the right-hand
+    /// panel is marked with while it is put aside, as Settings' square is
+    /// marked from [`Self::settings`] and the record's from [`Self::history`]
+    /// (`crate::panel_cards`).
+    pub terminal: String,
     /// What the control at the end of the Dock is called: the name its
     /// tooltip shows and a screen reader speaks, since it draws only a mark.
     pub show_more_apps: String,
@@ -203,6 +208,7 @@ impl TheDocksWords {
             history: say(&alo_dock::words::HISTORY),
             settings: say(&alo_dock::words::SETTINGS_ON_THE_DOCK),
             applications: say(&alo_dock::words::APPLICATIONS_ON_THE_DOCK),
+            terminal: say(&alo_terminal::words::TERMINAL),
             show_more_apps: say(&alo_dock::words::SHOW_MORE_OPEN_APPS),
             // Said by the caller, which is the only place that holds both the
             // text and whether anything matched it.

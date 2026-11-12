@@ -32,14 +32,33 @@ use crate::by_their_hand::pressed;
 use crate::fallback_reach::reached;
 use crate::fallback_verbs::{ACTIVATE_CONTROL, KIND, NAME};
 use crate::fallback_words as words;
-use crate::not_pressed::TheControl;
+use crate::not_pressed::{TheControl, WorkingFully};
 use crate::pressable::Pressable;
 use crate::walking::Whose;
 
 /// The names of the actions that press a control, in the order they are
 /// looked for, matched without regard to case. Toolkits name the same act
 /// differently: GTK's buttons *click*, others *press*, *activate* or *toggle*.
-pub const PRESSING: [&str; 5] = ["click", "press", "activate", "toggle", "jump"];
+///
+/// **`check`, `uncheck` and `select` are Chromium's**, in its complete mode
+/// (`alo_launching::THE_PAGE_FULLY`): a toggle button such as VSCodium's
+/// *Toggle Panel* offers `check` while it is up and `uncheck` while it is
+/// down, never both, so pressing it is always the one it offers and always
+/// turns it over; a menu item offers `select`. Each was measured to change
+/// something, twice, by hand, on 2026-11-12 in VSCodium 1.143 — `check`
+/// opened the panel and `uncheck` closed it, `select` opened the File menu and
+/// then made a new file from it — and not on an alo machine
+/// (`docs/quirks/vscodium-is-pressed-and-read-only-when-described-completely.md`).
+/// They come last, so a control that also offers one of the others is pressed
+/// by that one.
+///
+/// **`doDefault` is never here.** In Chromium's basic mode it is all a page's
+/// controls offer, and it answers *done* while doing nothing, so alo would
+/// report a press that did not happen. `open` and `clickAncestor` were seen
+/// and not measured, so they are not here either.
+pub const PRESSING: [&str; 8] = [
+    "click", "press", "activate", "toggle", "jump", "check", "uncheck", "select",
+];
 
 /// An approved press of one control that has not happened yet.
 ///
@@ -116,9 +135,13 @@ impl Activating {
     /// [`Refused`] when nothing was pressed, in the words a person is told. An
     /// application that did not answer the press is **not** an error: it may
     /// have pressed it, and [`Pressed::unanswered`] says so.
+    ///
+    /// `fully` says whether a switch the person can turn on would give the
+    /// control a press, which the refusal then names ([`WorkingFully`]).
     pub fn press(
         self,
         tree: &dyn AccessibilityTree,
+        fully: WorkingFully,
         strings: &Strings,
     ) -> Result<Pressed, Refused> {
         // **The one press** a person's command takes too (`crate::by_their_hand`),
@@ -127,7 +150,7 @@ impl Activating {
         let unanswered = pressed(tree, whose, None, self.kind, &self.name).map_err(|why| {
             Refused::worded_elsewhere(
                 self.authorised.call().clone(),
-                why.said(whose, None, self.kind, &self.name, strings),
+                why.said(whose, None, self.kind, &self.name, fully, strings),
             )
         })?;
         Ok(Pressed {

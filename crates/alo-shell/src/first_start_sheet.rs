@@ -217,7 +217,7 @@ pub(crate) fn drawn(
         // **The caret where the keyboard is**, after what was typed.
         if focused == Some(which) {
             drawn.solids.push(Solid {
-                area: Rectangle::new(
+                area: alo_drawing::area::Area::new(
                     (
                         x + typed_wide + measure.px(1),
                         field.loc.y + (field.size.h - measure.px(20)) / 2,

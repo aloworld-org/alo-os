@@ -101,36 +101,17 @@ impl WindowControlLabels {
     /// `the_bundled_monospace_face::adding_the_monospace_face_changed_nothing_about_the_interfaces_text`
     /// in this file's own test module is what keeps it so.
     pub fn new() -> Result<Self, WindowControlLabelError> {
-        Self::from_fonts([
-            // **The variable files first**, because the first face's family
-            // becomes this database's sans-serif and that must stay Manrope.
-            include_bytes!("../fonts/Manrope.ttf").to_vec(),
-            include_bytes!("../fonts/Inter.ttf").to_vec(),
-            include_bytes!("../fonts/GeistMono.ttf").to_vec(),
-            // **And the static cuts the design actually asks for.** Not a
-            // nicety: without these, neither of alo's typefaces could be drawn
-            // at the weight its own design specifies.
-            include_bytes!("../fonts/Manrope-SemiBold.ttf").to_vec(),
-            // **And Regular, which `Body/Large` is.** Without it a task
-            // window's messages drew at SemiBold, and alo's bold — the
-            // design's SemiBold — could not be told from them.
-            include_bytes!("../fonts/Manrope-Regular.ttf").to_vec(),
-            // **And Medium, which the window panel's picture labels are.**
-            // Without it the only face at 500 was Geist Mono Medium, and
-            // *Left*, *Maximise* and *Right* were drawn in the terminal's
-            // monospace (`crate::window_menu_paint::the_labels_weight`).
-            include_bytes!("../fonts/Manrope-Medium.ttf").to_vec(),
-            include_bytes!("../fonts/GeistMono-Medium.ttf").to_vec(),
-            // **And the weight a bold cell asks for.** A program setting bold
-            // makes the terminal ask for Geist Mono at 700, and a family is
-            // honoured only at an exact weight match — so without this file
-            // the family was abandoned and bold output was drawn in a
-            // **proportional** face, inside a grid where every cell must be
-            // the same width. `ls` prints directories bold and `cargo test`
-            // prints its passes bold, so it was most of what a person reads.
-            // `bold_is_drawn_in_the_terminals_own_face` is the measurement.
-            include_bytes!("../fonts/GeistMono-Bold.ttf").to_vec(),
-        ])
+        // **The order and the reason for each face** are `alo_drawing::fonts::
+        // ALOS_OWN_FACES`'s: the variable files first, so the first face's family
+        // stays Manrope, then the static cuts the design asks for — SemiBold for
+        // `Label/Medium`, Regular for `Body/Large`, Medium for the window panel's
+        // labels, Geist Mono Medium and Bold for the terminal. `bold_is_drawn_in_
+        // the_terminals_own_face` is the measurement for the last.
+        Self::from_fonts(
+            alo_drawing::fonts::ALOS_OWN_FACES
+                .iter()
+                .map(|face| face.to_vec()),
+        )
     }
 
     /// Supply an explicit primary font followed by fallback fonts. Every entry
@@ -139,23 +120,9 @@ impl WindowControlLabels {
     pub fn from_fonts(
         fonts: impl IntoIterator<Item = Vec<u8>>,
     ) -> Result<Self, WindowControlLabelError> {
-        let mut db = cosmic_text::fontdb::Database::new();
-        for data in fonts {
-            let before = db.faces().count();
-            db.load_font_data(data);
-            if db.faces().count() == before {
-                return Err(WindowControlLabelError::Font);
-            }
-        }
-        let family = db
-            .faces()
-            .next()
-            .and_then(|face| face.families.first())
-            .map(|(name, _)| name.clone())
-            .ok_or(WindowControlLabelError::Font)?;
-        db.set_sans_serif_family(family);
         Ok(Self {
-            fonts: FontSystem::new_with_locale_and_db("en-US".into(), db),
+            fonts: alo_drawing::fonts::a_font_system(fonts)
+                .map_err(|_| WindowControlLabelError::Font)?,
         })
     }
 

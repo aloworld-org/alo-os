@@ -172,6 +172,23 @@ impl ATree {
     }
 }
 
+impl ATree {
+    /// Every button offering only these actions instead of `click`.
+    #[must_use]
+    pub fn offering(mut self, actions: &[&str]) -> Self {
+        for (at, offered) in &mut self.actions {
+            if self
+                .facts
+                .get(at)
+                .is_some_and(|facts| facts.role == roles::PUSH_BUTTON)
+            {
+                *offered = actions.iter().map(|action| (*action).to_owned()).collect();
+            }
+        }
+        self
+    }
+}
+
 /// One thing's facts: showing, usable and named.
 fn facts(role: u32, name: &str, children: Vec<NodeAt>) -> Facts {
     Facts {
@@ -246,6 +263,8 @@ pub struct AMachine {
     pub told: Vec<String>,
     /// What was said on the error output.
     pub warned: Vec<String>,
+    /// What the person turned on in Settings → Accessibility.
+    pub access: alo_access::TurnedOn,
 }
 
 impl Default for AMachine {
@@ -264,6 +283,7 @@ impl Default for AMachine {
             pipe: VecDeque::new(),
             told: Vec::new(),
             warned: Vec::new(),
+            access: alo_access::TurnedOn::nothing(),
         }
     }
 }
@@ -286,6 +306,10 @@ impl Machine for AMachine {
 
     fn bus(&mut self) -> Result<&dyn Delivers, NotDelivered> {
         Ok(&self.bus)
+    }
+
+    fn access(&mut self) -> alo_access::TurnedOn {
+        self.access.clone()
     }
 
     fn a_place_to_return_to(&mut self, _: &Strings) -> APlace {

@@ -27,6 +27,37 @@ pub enum NotPressed {
     DidNotPress,
 }
 
+/// **Whether a switch the person can turn on would let this control be
+/// pressed** — what the sentence for [`NotPressed::CannotBePressed`] says.
+///
+/// An application drawn by Chromium, started while *Let alo work fully inside
+/// apps like VSCodium* is off, describes its page in a mode whose controls
+/// offer no press that works (`alo_launching::describing_themselves`). Telling
+/// the person only *it cannot be pressed* would hide a choice they have, so the
+/// sentence names the switch. The caller decides which this is, because it is
+/// the caller that knows the application and reads the person's settings.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum WorkingFully {
+    /// Nothing the person can turn on would offer more: the switch is on, or
+    /// the application is not one it reaches.
+    NothingMoreToTurnOn,
+    /// The switch is off, and the application is one it reaches.
+    CouldBeTurnedOn,
+}
+
+impl WorkingFully {
+    /// Which this is, for an application that is or is not one the switch
+    /// reaches, where the person has or has not turned it on.
+    #[must_use]
+    pub const fn for_one(reached_by_the_switch: bool, turned_on: bool) -> Self {
+        if reached_by_the_switch && !turned_on {
+            Self::CouldBeTurnedOn
+        } else {
+            Self::NothingMoreToTurnOn
+        }
+    }
+}
+
 /// The control a person approved pressing, for the words about it.
 #[derive(Debug, Clone, Copy)]
 pub(crate) struct TheControl<'a> {
@@ -51,15 +82,25 @@ impl TheControl<'_> {
 }
 
 impl NotPressed {
-    /// What a person is told.
-    pub(crate) fn said(self, control: TheControl<'_>, strings: &Strings) -> Said {
-        let word = match self {
-            Self::NoSuchControl => words::NO_SUCH_CONTROL,
-            Self::MoreThanOne => words::MORE_THAN_ONE,
-            Self::TooMuchToBeSure => words::TOO_MUCH_TO_BE_SURE,
-            Self::CannotBeUsedNow => words::CANNOT_BE_USED_NOW,
-            Self::CannotBePressed => words::CANNOT_BE_PRESSED,
-            Self::DidNotPress => words::DID_NOT_PRESS,
+    /// What a person is told — naming *Let alo work fully inside apps like
+    /// VSCodium* where the control offers no press and that switch would give
+    /// it one.
+    pub(crate) fn said(
+        self,
+        control: TheControl<'_>,
+        fully: WorkingFully,
+        strings: &Strings,
+    ) -> Said {
+        let word = match (self, fully) {
+            (Self::NoSuchControl, _) => words::NO_SUCH_CONTROL,
+            (Self::MoreThanOne, _) => words::MORE_THAN_ONE,
+            (Self::TooMuchToBeSure, _) => words::TOO_MUCH_TO_BE_SURE,
+            (Self::CannotBeUsedNow, _) => words::CANNOT_BE_USED_NOW,
+            (Self::CannotBePressed, WorkingFully::NothingMoreToTurnOn) => words::CANNOT_BE_PRESSED,
+            (Self::CannotBePressed, WorkingFully::CouldBeTurnedOn) => {
+                words::CANNOT_BE_PRESSED_UNTIL_ALO_WORKS_FULLY
+            }
+            (Self::DidNotPress, _) => words::DID_NOT_PRESS,
         };
         strings.say(&word.key(), &control.filling(strings))
     }
@@ -72,6 +113,7 @@ impl NotPressed {
         application: &str,
         kind: Pressable,
         name: &str,
+        fully: WorkingFully,
         strings: &Strings,
     ) -> Said {
         self.said(
@@ -80,6 +122,7 @@ impl NotPressed {
                 kind,
                 name,
             },
+            fully,
             strings,
         )
     }

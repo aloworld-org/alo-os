@@ -225,7 +225,7 @@ fn the_agents_dot(
 ) -> Vec<Solid> {
     let side = measure.px(4);
     vec![Solid {
-        area: Rectangle::new(
+        area: alo_drawing::area::Area::new(
             (at.loc.x + at.size.w - side, at.loc.y - side / 2).into(),
             (side, side).into(),
         ),

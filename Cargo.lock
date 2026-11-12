@@ -244,6 +244,7 @@ dependencies = [
  "alo-choosing",
  "alo-installed",
  "alo-keeping",
+ "alo-launching",
  "alo-portals",
  "alo-protocol",
  "alo-record",
@@ -872,7 +873,9 @@ dependencies = [
 name = "alo-drawing"
 version = "0.0.1"
 dependencies = [
+ "cosmic-text",
  "toml",
+ "unicode-segmentation",
 ]
 
 [[package]]

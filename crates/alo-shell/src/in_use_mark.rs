@@ -77,13 +77,13 @@ pub(crate) fn mark(
     colours: MarkColours,
 ) -> Vec<Solid> {
     let mut solids = vec![Solid {
-        area,
+        area: crate::painted::drawn_at(area),
         colour: colours.edge,
     }];
     let inset = (area.size.w / 8).max(1);
     let inner = shrink(area, inset);
     solids.push(Solid {
-        area: inner,
+        area: crate::painted::drawn_at(inner),
         colour: colours.fill,
     });
     match which {
@@ -107,11 +107,11 @@ fn screen(inside: Rectangle<i32, Physical>, colours: MarkColours, solids: &mut V
         ((inside.size.w - step).max(1), (inside.size.h / 2).max(1)).into(),
     );
     solids.push(Solid {
-        area: panel,
+        area: crate::painted::drawn_at(panel),
         colour: colours.cut,
     });
     solids.push(Solid {
-        area: Rectangle::new(
+        area: alo_drawing::area::Area::new(
             (inside.loc.x + 2 * step, panel.loc.y + panel.size.h).into(),
             ((inside.size.w - 4 * step).max(1), step).into(),
         ),
@@ -132,7 +132,7 @@ fn lens(inside: Rectangle<i32, Physical>, colours: MarkColours, solids: &mut Vec
         let half = chord(radius, row);
         for (y, height) in [(centre.1 - row - 1, 1), (centre.1 + row, 1)] {
             solids.push(Solid {
-                area: Rectangle::new(
+                area: alo_drawing::area::Area::new(
                     (centre.0 - half, y).into(),
                     ((half * 2).max(1), height).into(),
                 ),
@@ -160,11 +160,11 @@ fn microphone(inside: Rectangle<i32, Physical>, colours: MarkColours, solids: &m
         (step, (inside.size.h - 3 * step).max(1)).into(),
     );
     solids.push(Solid {
-        area: body,
+        area: crate::painted::drawn_at(body),
         colour: colours.cut,
     });
     solids.push(Solid {
-        area: Rectangle::new(
+        area: alo_drawing::area::Area::new(
             (inside.loc.x + step, body.loc.y + body.size.h).into(),
             ((3 * step).max(1), step.max(1)).into(),
         ),

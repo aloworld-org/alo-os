@@ -92,7 +92,7 @@ fn a_raster_is_made_once_for_its_key() {
     let make = || {
         made.fetch_add(1, Ordering::SeqCst);
         vec![Washed {
-            area: Rectangle::from_size((2, 1).into()),
+            area: alo_drawing::area::Area::from_size((2, 1).into()),
             pixels: vec![1, 2, 3, 4, 5, 6, 7, 8],
         }]
     };

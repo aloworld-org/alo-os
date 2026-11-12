@@ -13,9 +13,7 @@ use crate::painted_text::how_wide;
 
 /// The faces the shell draws with, and only those.
 fn fonts() -> cosmic_text::FontSystem {
-    crate::WindowControlLabels::new()
-        .expect("the bundled faces")
-        .fonts
+    crate::fonts::alos_own_fonts().expect("the bundled faces")
 }
 
 /// The tooltip's own size.

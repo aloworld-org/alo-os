@@ -53,7 +53,8 @@ pub mod where_it_is;
 
 pub use alos_copy::{AlosCopy, WITH_A_COPY_OF_THEIR_OWN, alos_copy, the_unit_for_alos_copy};
 pub use describing_themselves::{
-    DRAWN_BY_CHROMIUM, THE_PAGE_TOO, Told, what_a_start_is_handed, what_its_command_gains,
+    DRAWN_BY_CHROMIUM, THE_PAGE_FULLY, THE_PAGE_TOO, Told, is_drawn_by_chromium,
+    what_a_start_is_handed, what_its_command_gains,
 };
 pub use how_it_starts::{
     HowItStarts, WhyItCannotStart, WhyNotWithALink, how_it_starts, how_it_starts_with_a_link,

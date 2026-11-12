@@ -9,8 +9,7 @@ use cosmic_text::{
     Attrs, Buffer, Color, Family, FontSystem, Metrics, Shaping, SwashCache, Weight, Wrap,
 };
 
-use smithay::utils::Rectangle;
-
+use crate::area::Area;
 use crate::painted::Inked;
 
 /// What alo's own surfaces are drawn in.
@@ -28,14 +27,14 @@ use crate::painted::Inked;
 /// A script Manrope does not cover falls through to the rest of the font
 /// database, which is why Inter stays loaded. Narrowing that would mean a
 /// person's language stops rendering.
-pub(crate) const ALOS_OWN_FACE: &str = "Manrope";
+pub const ALOS_OWN_FACE: &str = "Manrope";
 
 /// The weight the design draws its labels at: `Label/Medium` is SemiBold.
-pub(crate) const ALOS_OWN_WEIGHT: Weight = Weight(600);
+pub const ALOS_OWN_WEIGHT: Weight = Weight(600);
 
 /// How alo asks for its own text, in one place so a measurement and a drawing
 /// cannot disagree about the face they meant.
-pub(crate) fn alos_own_text<'a>() -> Attrs<'a> {
+pub fn alos_own_text<'a>() -> Attrs<'a> {
     Attrs::new()
         .family(Family::Name(ALOS_OWN_FACE))
         .weight(ALOS_OWN_WEIGHT)
@@ -54,27 +53,24 @@ pub(crate) fn alos_own_text<'a>() -> Attrs<'a> {
 /// `docs/quirks.md` carries both. So the name is measured, and the guards in
 /// `window_control_label_tests.rs` shape characters through the real font
 /// system and name the family that drew each one.
-pub(crate) const ALOS_OWN_MONO: &str = "Geist Mono";
+pub const ALOS_OWN_MONO: &str = "Geist Mono";
 
-/// How alo asks for a terminal's text.
+/// alo's monospace face, at no weight of its own: **the family, and every
+/// substitution by a neighbour switched off.**
 ///
-/// **The weight comes from `alo_terminal::measures`**, not from a literal here,
-/// because it is the design's figure and a second copy of it is a second thing
-/// to keep in step. It is also load-bearing in a way a weight usually is not:
-/// at any other weight the family is thrown away entirely and the transcript is
-/// drawn in a proportional face. `fonts/GeistMono-Medium.ttf` is the static cut
-/// that makes this weight an exact match; before it was bundled, this ask drew
-/// **Inter**.
+/// Geist Mono joins and swaps characters by what stands beside them —
+/// ligatures and contextual alternates — and a run is shaped whole, so a
+/// terminal printed `-rw-r--r--` as `-IW-F-F-` on the twelfth Demo 1 walk. A
+/// cell holds exactly what the program wrote.
 ///
-/// **With every substitution by a neighbour switched off.** Geist Mono joins
-/// and swaps characters by what stands beside them — ligatures and contextual
-/// alternates — and a run is shaped whole, so a terminal printed `-rw-r--r--`
-/// as `-IW-F-F-` on the twelfth Demo 1 walk. A cell holds exactly what the
-/// program wrote; `each_letter_keeps_its_own_cell_tests.rs` holds it.
-pub(crate) fn alos_own_mono<'a>() -> Attrs<'a> {
+/// **The weight is the caller's**, because it is load-bearing: at a weight no
+/// bundled cut has, the family is thrown away and the text is drawn in a
+/// proportional face (`crate::fonts::ALOS_OWN_FACES`). The terminal's weight
+/// is `alo_terminal::measures::THE_WEIGHT`, and `alo-shell`'s
+/// `the_terminals_face.rs` adds it; this crate does not depend on the terminal.
+pub fn alos_own_mono_face<'a>() -> Attrs<'a> {
     Attrs::new()
         .family(Family::Name(ALOS_OWN_MONO))
-        .weight(Weight(alo_terminal::measures::THE_WEIGHT))
         .font_features(each_character_as_itself())
 }
 
@@ -90,54 +86,16 @@ fn each_character_as_itself() -> cosmic_text::FontFeatures {
     features
 }
 
-/// How alo asks for a terminal's text when a program has asked for bold or
-/// italic.
-///
-/// **Bold is a heavier face and not only a brighter colour.** A program asking
-/// for bold means both — `alo_terminal`'s palette brightens the colour and this
-/// asks for the weight — and a terminal doing one of the two is wrong in a way
-/// a person notices by comparison.
-///
-/// **Bold is 700 and not the design's 500**, because `Terminal/Command` is the
-/// ordinary weight and bold is heavier than ordinary. `GeistMono-Bold.ttf` is
-/// bundled for it, and `bold_is_drawn_in_the_terminals_own_face` reads the
-/// shaper's own `font_id` back to hold that it is used.
-///
-/// **This comment used to say a bold cell *resolves to the one weight that
-/// is*, and that was the fault rather than a description of it.** A family is
-/// honoured only among faces whose weight matches exactly, so a missed weight
-/// does not fall back within the family — it leaves the family. Bold cells
-/// were drawn in a **proportional** face, in a grid where every cell must be
-/// one width, for the day between bold being built and the cut being bundled.
-///
-/// The sentence mattered because of how it read: *resolves to the one weight
-/// that is* sounds like a cell a little too light, which is a thing to fix
-/// later. *Draws in another typeface and breaks the grid* is not. A note that
-/// understates what is wrong is worse than no note, because it is read as
-/// having been assessed.
-pub(crate) fn alos_own_mono_at<'a>(
-    looks: alo_terminal::what_a_cell_looks_like::HowItLooks,
-) -> Attrs<'a> {
-    let mut attrs = alos_own_mono();
-    if looks.bold {
-        attrs = attrs.weight(Weight(700));
-    }
-    if looks.italic {
-        attrs = attrs.style(cosmic_text::Style::Italic);
-    }
-    attrs
-}
-
 /// Text shaped and inked into its own box, not yet placed.
-pub(crate) struct Shaped {
+pub struct Shaped {
     /// The box's width.
-    pub(crate) width_of_box: i32,
+    pub width_of_box: i32,
     /// The ink's own width, for a caret after it.
-    pub(crate) width: i32,
+    pub width: i32,
     /// The box's height.
-    pub(crate) height: i32,
+    pub height: i32,
     /// Row-major pixels of the box.
-    pub(crate) pixels: Vec<[u8; 3]>,
+    pub pixels: Vec<[u8; 3]>,
 }
 
 impl Shaped {
@@ -157,7 +115,7 @@ impl Shaped {
     ///
     /// Rows are untouched; only columns past the ink are dropped.
     #[must_use]
-    pub(crate) fn cropped_to_its_ink(self) -> Self {
+    pub fn cropped_to_its_ink(self) -> Self {
         let keep = self.width.clamp(0, self.width_of_box);
         if keep == self.width_of_box || keep <= 0 || self.width_of_box <= 0 {
             return self;
@@ -175,7 +133,7 @@ impl Shaped {
     }
 
     /// The box at (`x`, `y`), cut at the bottom of an output `limit` high.
-    pub(crate) fn placed(self, x: i32, y: i32, limit: i32) -> Option<Inked> {
+    pub fn placed(self, x: i32, y: i32, limit: i32) -> Option<Inked> {
         let rows = self.height.min(limit - y);
         if rows <= 0 || self.width_of_box <= 0 {
             return None;
@@ -184,7 +142,7 @@ impl Shaped {
         let mut pixels = self.pixels;
         pixels.truncate(kept);
         Some(Inked {
-            area: smithay::utils::Rectangle::new((x, y).into(), (self.width_of_box, rows).into()),
+            area: Area::new((x, y).into(), (self.width_of_box, rows).into()),
             pixels,
         })
     }
@@ -196,7 +154,7 @@ impl Shaped {
     /// as well as run past its foot. Rows above `top` are dropped from the
     /// front of the box and the box moves down by as many, so what is drawn is
     /// exactly the part of the words inside the view.
-    pub(crate) fn placed_between(self, x: i32, y: i32, top: i32, bottom: i32) -> Option<Inked> {
+    pub fn placed_between(self, x: i32, y: i32, top: i32, bottom: i32) -> Option<Inked> {
         let skipped = (top - y).max(0);
         let rows = self.height.min(bottom - y) - skipped;
         if rows <= 0 || self.width_of_box <= 0 {
@@ -206,17 +164,14 @@ impl Shaped {
         let to = from + usize::try_from(rows * self.width_of_box).ok()?;
         let pixels = self.pixels.get(from..to)?.to_vec();
         Some(Inked {
-            area: smithay::utils::Rectangle::new(
-                (x, y + skipped).into(),
-                (self.width_of_box, rows).into(),
-            ),
+            area: Area::new((x, y + skipped).into(), (self.width_of_box, rows).into()),
             pixels,
         })
     }
 }
 
 /// A sentence, wrapped to `width`, in a box exactly as tall as its lines.
-pub(crate) fn sentence(
+pub fn sentence(
     fonts: &mut FontSystem,
     text: &str,
     width: i32,
@@ -237,7 +192,7 @@ pub(crate) fn sentence(
 /// makes its own line taller — cosmic-text takes a line's height from the
 /// tallest thing on it — so a heading inside a reply is measured as tall as it
 /// is drawn. With no runs at all this is an empty sentence in `default`.
-pub(crate) fn sentence_in_runs(
+pub fn sentence_in_runs(
     fonts: &mut FontSystem,
     runs: &[(&str, Attrs<'_>)],
     default: &Attrs<'_>,
@@ -300,19 +255,14 @@ fn measured_and_inked(
 /// Shaped with the same attributes and the same `Shaping::Advanced` as every
 /// other sentence on this machine, so a measurement and a drawing cannot
 /// disagree about the same string.
-pub(crate) fn how_wide(fonts: &mut FontSystem, text: &str, metrics: Metrics) -> i32 {
+pub fn how_wide(fonts: &mut FontSystem, text: &str, metrics: Metrics) -> i32 {
     how_wide_as(fonts, text, metrics, &alos_own_text())
 }
 
 /// How wide this text wants to be in the face and weight `attrs` asks for —
 /// [`how_wide`] for text that is not drawn in alo's own face at its own
 /// weight, such as where a file is, in the bundled mono.
-pub(crate) fn how_wide_as(
-    fonts: &mut FontSystem,
-    text: &str,
-    metrics: Metrics,
-    attrs: &Attrs<'_>,
-) -> i32 {
+pub fn how_wide_as(fonts: &mut FontSystem, text: &str, metrics: Metrics, attrs: &Attrs<'_>) -> i32 {
     let mut buffer = Buffer::new(fonts, metrics);
     // No wrapping and no width: the natural run, however long.
     buffer.set_wrap(fonts, Wrap::None);
@@ -346,7 +296,7 @@ pub(crate) fn how_wide_as(
 ///
 /// A single grapheme does not wrap, so the box is one line tall and the caller
 /// centres it down its own axis from [`Shaped::height`].
-pub(crate) fn centred(
+pub fn centred(
     fonts: &mut FontSystem,
     text: &str,
     width: i32,
@@ -446,7 +396,7 @@ fn trimmed_to_its_ink(shaped: Shaped, ground: [u8; 3]) -> Shaped {
 }
 
 /// Ink a shaped buffer into a box of `size`, moved `shift` pixels across.
-pub(crate) fn inked(
+pub fn inked(
     fonts: &mut FontSystem,
     buffer: &Buffer,
     size: (i32, i32),
@@ -499,7 +449,7 @@ pub(crate) fn inked(
 /// vector as an argument is what lets both roads write to it.
 ///
 /// **It lives here rather than beside one sheet.** It was private to
-/// `crate::first_start_sheet` until `crate::language_sheet` wanted the same
+/// `alo-shell`'s `first_start_sheet.rs` until its `language_sheet.rs` wanted the same
 /// thing; drawing a line of text in a box is this file's responsibility, and
 /// a second sheet reaching into the first for a utility would have made that
 /// file two things.
@@ -508,12 +458,12 @@ pub(crate) fn inked(
     reason = "every one is a different thing about one line, and bundling them into a struct \
               would name the struct after a call site"
 )]
-pub(crate) fn line(
-    into: &mut Vec<crate::painted::Inked>,
+pub fn line(
+    into: &mut Vec<Inked>,
     height: i32,
     fonts: &mut FontSystem,
     text: &str,
-    box_of: Rectangle<i32, smithay::utils::Physical>,
+    box_of: Area,
     metrics: Metrics,
     ground: [u8; 3],
     ink: [u8; 3],

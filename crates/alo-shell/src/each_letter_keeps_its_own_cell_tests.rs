@@ -34,7 +34,7 @@ fn shaped(fonts: &mut FontSystem, text: &str) -> Vec<(u16, f32)> {
     buffer.set_text(
         fonts,
         text,
-        &crate::painted_text::alos_own_mono(),
+        &crate::the_terminals_face::alos_own_mono(),
         Shaping::Advanced,
     );
     buffer.shape_until_scroll(fonts, false);

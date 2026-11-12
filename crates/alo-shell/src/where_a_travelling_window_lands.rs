@@ -143,7 +143,10 @@ impl TheCards {
             };
             for side in sides {
                 if let Some(area) = side.intersection(self.display) {
-                    solids.push(Solid { area, colour });
+                    solids.push(Solid {
+                        area: crate::painted::drawn_at(area),
+                        colour,
+                    });
                 }
             }
         }

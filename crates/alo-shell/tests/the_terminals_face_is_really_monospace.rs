@@ -53,7 +53,7 @@ use std::path::{Path, PathBuf};
 
 /// Where the bundled faces live, from this crate's own manifest directory.
 fn fonts() -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR")).join("fonts")
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("../alo-drawing/fonts")
 }
 
 /// The recorded hash, which `fonts/README.md` carries beside the revision it

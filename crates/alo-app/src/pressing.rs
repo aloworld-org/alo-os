@@ -7,7 +7,9 @@
 //! it, too much showing to be sure, greyed out, nothing to press it with, or no
 //! window at all. Nothing is found by position and nothing is guessed.
 
-use alo_adapters::{NotPressed, NotWalked, Pressable, TreeFault, Unpressed, press_by_hand};
+use alo_adapters::{
+    NotPressed, NotWalked, Pressable, TreeFault, Unpressed, WorkingFully, press_by_hand,
+};
 use alo_record::{Answered, Road};
 use alo_strings::{Filling, Strings};
 
@@ -90,11 +92,23 @@ pub fn pressed(
             said: strings.say(&words::PRESSED.key(), &filling),
         },
         Err(why) => {
+            // **Whether a switch the person can turn on would give it a
+            // press**: an application drawn by Chromium, started while *Let
+            // alo work fully inside apps like VSCodium* is off and applications
+            // describe themselves, describes its page in a mode whose controls
+            // offer no press that works. Asked only for a refusal.
+            let access = machine.access();
+            let fully = WorkingFully::for_one(
+                alo_launching::is_drawn_by_chromium(subject.identifier())
+                    && access.apps_describe_themselves(),
+                access.alo_works_fully_inside_apps(),
+            );
             let said = why.said(
                 subject.said_as(),
                 within,
                 asked.kind,
                 &asked.control,
+                fully,
                 strings,
             );
             match why {

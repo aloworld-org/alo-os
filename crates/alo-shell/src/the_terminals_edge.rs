@@ -10,14 +10,15 @@
 //! Maximise and Close on the trailing walk. A walk on a booted machine
 //! (`8263ddcb`, 2026-11-01) showed the terminal on the canvas with none of it.
 //!
-//! **Drawn:** the strip, the icon (`crate::the_terminals_icon`), the title, and
-//! Close, in the focused look while the terminal is the window the keys go to
-//! and the unfocused one otherwise (`crate::window_edge_look`).
+//! **Drawn:** the strip, the icon (`crate::the_terminals_icon`), the title,
+//! Minimise and Close, in the focused look while the terminal is the window the
+//! keys go to and the unfocused one otherwise (`crate::window_edge_look`).
+//! Minimise puts the terminal in the right-hand panel, still running
+//! (`crate::alos_own_window_goes_aside`, design `27:2`).
 //!
-//! **Not drawn, and why:** Minimise and Maximise. Nothing can minimise or
-//! maximise alo's terminal yet, and a control that reaches nothing looks live
-//! and is not — the rule the task windows' edge already keeps
-//! (`window_edge::Decorations::AlosOwnWindow`).
+//! **Not drawn, and why:** Maximise. Nothing can maximise alo's terminal yet,
+//! and a control that reaches nothing looks live and is not — the rule the
+//! task windows' edge already keeps (`window_edge::Decorations::AlosOwnWindow`).
 //!
 //! # The application edge, reused
 //!
@@ -59,6 +60,11 @@ impl Server {
     /// terminal is drawn now. [`None`] with no terminal drawn.
     fn the_terminals_edge(&self, room: Size<i32, Logical>, scale: u32) -> Option<WindowEdge> {
         self.alos_own_terminal.as_ref()?;
+        // **No edge on a terminal in the right-hand panel**, whatever the last
+        // frame drew (`crate::alos_own_window_goes_aside`).
+        if self.this_alo_window_is_aside(alo_put_aside::AlosOwnWindow::TheTerminal) {
+            return None;
+        }
         let window = self.where_the_terminal_is?;
         Some(edge_of(
             a_window_in_the_edges_units(window, scale),
@@ -147,6 +153,14 @@ impl Server {
             None => false,
             Some(UnderThePointer::Control(OnTheEdge::Close)) => {
                 let _ = self.the_person_closes_the_terminal();
+                true
+            }
+            // **Minimise: into the right-hand panel, still running**
+            // (`crate::alos_own_window_goes_aside`).
+            Some(UnderThePointer::Control(OnTheEdge::Minimise)) => {
+                self.this_alo_window_is_asked_to_go_aside(
+                    alo_put_aside::AlosOwnWindow::TheTerminal,
+                );
                 true
             }
             Some(

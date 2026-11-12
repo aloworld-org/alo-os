@@ -87,9 +87,11 @@ window's own edge `#738294`, ink `#fffcf8`, secondary `#cbd5e1`, muted
 - **The machine's sentence is drawn in the body's type**, Regular 14, where the
   frame sets a file change's line in Medium 12; one style for every line keeps
   a refusal's reason and a change's path equally plain.
-- **Minimise and maximise are not drawn**, where the strip in `560:177` has
-  them: the record window cannot be minimised or made larger yet, and a control
-  that does nothing is worse than none. **Close is drawn and works**, by
+- **Maximise is not drawn**, where the strip in `560:177` has it: the record
+  window cannot be made larger yet, and a control that does nothing is worse
+  than none. *Minimise was added on 2026-11-11 with design `27:2`: the record
+  goes into the right-hand panel and comes back where it was
+  (`docs/design/the-windows-put-aside.md`).* **Close is drawn and works**, by
   pointer and by Escape. A press anywhere else on the window is the window's
   and reaches nothing behind it.
 - ~~**The window does not move.**~~ *Superseded on 2026-11-01 by

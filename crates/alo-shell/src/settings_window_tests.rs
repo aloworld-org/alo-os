@@ -468,6 +468,9 @@ fn no_choice_the_old_window_offered_is_dropped() {
     // **Whether applications describe themselves**, added 2026-11-11: on as a
     // machine comes, so it is a row a person must always be able to reach.
     before.push(SettingsRow::AppsDescribeThemselves);
+    // **Whether alo works fully inside apps like VSCodium**, added 2026-11-12:
+    // off as a machine comes, and a choice the person must be able to reach.
+    before.push(SettingsRow::AloWorksFullyInsideApps);
     // **Every installed browser and mail application**, added 2026-11-12 with
     // the Default apps page.
     before.extend(open.default_apps.rows());
@@ -858,6 +861,86 @@ fn apps_describe_themselves_says_its_cost() {
     assert!(later.contains("already open"), "{later}");
 }
 
+/// **alo works fully inside apps like VSCodium only once the person turns it
+/// on** — off as this computer comes, the owner's decision of 2026-11-12 — and
+/// each answer is kept in their `access.toml`, where the desktop reads it at
+/// the next start, without touching the other switch or the rest of the file.
+#[test]
+fn alo_works_fully_inside_apps_is_off_and_turns_on_and_back() {
+    use alo_access::Setting;
+    let machine = a_persons_machine("alo-works-fully");
+    let at = machine.kept(alo_access::keeping::THE_FILE);
+    let mut before = alo_access::TurnedOn::nothing();
+    before.turn_on(Setting::ReducedMotion);
+    let folder = at.parent().unwrap().to_path_buf();
+    std::fs::create_dir_all(&folder).unwrap();
+    alo_access::keeping::keep(&folder, &before).unwrap();
+    let strings = words();
+    let door = CountingDoor::revoking();
+    let mut window = machine.opened();
+    assert_eq!(
+        window.alo_works_fully_inside_apps(),
+        Some(false),
+        "alo works fully inside apps as this computer comes"
+    );
+    assert!(
+        window
+            .rows(std::time::SystemTime::now())
+            .contains(&SettingsRow::AloWorksFullyInsideApps),
+        "the switch is not offered"
+    );
+    for expected in [true, false] {
+        assert_eq!(
+            chosen(
+                &mut window,
+                &SettingsRow::AloWorksFullyInsideApps,
+                &strings,
+                &door
+            ),
+            Some(SettingsDid::Kept(
+                SettingsSection::Accessibility,
+                SettingsKept::Written
+            ))
+        );
+        assert_eq!(window.alo_works_fully_inside_apps(), Some(expected));
+        let read_back = alo_access::keeping::read(&folder).unwrap();
+        assert_eq!(
+            read_back.alo_works_fully_inside_apps(),
+            expected,
+            "what the desktop reads at the next start"
+        );
+        assert!(
+            read_back.apps_describe_themselves(),
+            "it turned the other switch off"
+        );
+        assert!(
+            !read_back.chose_whether_apps_describe_themselves(),
+            "it answered the other switch for the person"
+        );
+        assert!(
+            read_back.has(Setting::ReducedMotion),
+            "the rest of the file was lost"
+        );
+    }
+    assert_eq!(door.knocks.get(), 0, "the switch knocked on the daemon");
+}
+
+/// **The switch says what it does and what it changes in those apps** — the
+/// owner's words of 2026-11-12, *its cost in plain words*: their editor goes
+/// into screen reader mode and behaves differently.
+#[test]
+fn alo_works_fully_inside_apps_says_its_cost() {
+    use crate::the_settings_words as w;
+    assert_eq!(
+        w::ALO_WORKS_FULLY_INSIDE_APPS.says(),
+        "Let alo work fully inside apps like VSCodium"
+    );
+    let is = w::ALO_WORKS_FULLY_INSIDE_APPS_IS.says();
+    assert!(is.contains("screen reader mode"), "{is}");
+    assert!(is.contains("behaves differently"), "{is}");
+    assert!(is.contains("Off,"), "being off is not said: {is}");
+}
+
 /// **A broken `access.toml` is said and never written over** by the switch.
 #[test]
 fn a_broken_access_file_is_said_and_not_written_over() {
@@ -882,6 +965,12 @@ fn a_broken_access_file_is_said_and_not_written_over() {
             .rows(std::time::SystemTime::now())
             .contains(&SettingsRow::AppsDescribeThemselves),
         "the apps switch is offered over a file that did not read"
+    );
+    assert!(
+        !window
+            .rows(std::time::SystemTime::now())
+            .contains(&SettingsRow::AloWorksFullyInsideApps),
+        "the working-fully switch is offered over a file that did not read"
     );
     assert_eq!(
         std::fs::read_to_string(&at).unwrap(),

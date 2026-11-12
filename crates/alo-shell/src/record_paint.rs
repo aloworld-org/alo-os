@@ -35,7 +35,7 @@ impl RecordPicture {
         let inside = self
             .washed
             .as_ref()
-            .is_none_or(|washed| room.contains_rect(washed.area));
+            .is_none_or(|washed| room.contains_rect(crate::painted::on_the_frame(washed.area)));
         if (self.is_on_the_canvas() || (size.w, size.h) == self.size) && inside {
             Ok(())
         } else {

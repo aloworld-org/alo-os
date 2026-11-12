@@ -206,7 +206,7 @@ pub(crate) fn picture(
             let text_top = box_top + (box_height - shaped.height) / 2;
             if is_selected {
                 solids.push(Solid {
-                    area: Rectangle::new(
+                    area: alo_drawing::area::Area::new(
                         (left + pad + inset, text_top + shaped.height).into(),
                         (inner - 2 * inset, measure.px(3)).into(),
                     ),

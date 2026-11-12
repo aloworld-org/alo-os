@@ -85,10 +85,10 @@ fn hashed(window: &TaskPicture) -> u64 {
             eat(&n.to_le_bytes());
         }
     };
-    area(window.panel.area, &mut eat);
+    area(crate::painted::on_the_frame(window.panel.area), &mut eat);
     eat(&window.panel.pixels);
     for one in &window.inked {
-        area(one.area, &mut eat);
+        area(crate::painted::on_the_frame(one.area), &mut eat);
         for pixel in &one.pixels {
             eat(pixel);
         }
@@ -131,7 +131,7 @@ fn at_two_hundred_the_drawn_window_is_twice_the_size() {
     assert_eq!(dense.at, doubled(sparse.at), "the window");
     assert_eq!(
         dense.panel.area,
-        doubled(sparse.panel.area),
+        crate::painted::drawn_at(doubled(crate::painted::on_the_frame(sparse.panel.area))),
         "the panel and its shadow"
     );
     assert_eq!(

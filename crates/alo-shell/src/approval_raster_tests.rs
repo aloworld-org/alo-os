@@ -84,7 +84,7 @@ fn the_text_drawn_is_byte_for_byte_the_text_the_turn_wrote() {
         let inked = picture
             .inked
             .iter()
-            .find(|inked| inked.area == area)
+            .find(|inked| inked.area == crate::painted::drawn_at(area))
             .expect("the sentence was not inked where it was laid out");
         assert_eq!(inked.area.size.h, alone.height, "the sentence was cut");
         assert_eq!(
@@ -204,8 +204,13 @@ fn nothing_is_preselected_and_selection_is_never_colour_alone() {
             picture
                 .solids
                 .iter()
-                .filter(|solid| area.contains_rect(solid.area))
-                .map(|solid| (solid.area.loc - area.loc, solid.area.size))
+                .filter(|solid| area.contains_rect(crate::painted::on_the_frame(solid.area)))
+                .map(|solid| {
+                    (
+                        crate::painted::on_the_frame(solid.area).loc - area.loc,
+                        crate::painted::on_the_frame(solid.area).size,
+                    )
+                })
                 .collect::<Vec<_>>()
         };
         let no = shapes_in(&fresh, fresh.answers[0].area);

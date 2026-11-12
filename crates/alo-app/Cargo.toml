@@ -21,6 +21,7 @@ alo-installed = { path = "../alo-installed" }
 # The declared abilities and the accessibility tree: one walk, one press and one
 # send, shared with alo's own road (`by_their_hand.rs`, `driving_by_hand.rs`).
 alo-adapters = { path = "../alo-adapters" }
+alo-launching = { path = "../alo-launching" }
 # alo OS's own surfaces, by the names `--in` takes.
 alo-access = { path = "../alo-access" }
 # The validation alo's own calls go through, and which applications are

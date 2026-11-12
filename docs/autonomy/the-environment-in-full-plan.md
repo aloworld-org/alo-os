@@ -34,7 +34,7 @@ wrong thing from, confidently.
 | | |
 |---|---|
 | the drawable surface | **in the kernel**, built in: `CONFIG_DRM_SIMPLEDRM=y`, `CONFIG_FB_EFI=y`, `CONFIG_DRM_FBDEV_EMULATION=y`, `CONFIG_DEVTMPFS_MOUNT=y`. Nothing to add to the initramfs (#868) |
-| the typeface | **in the binary**, not the file system: `include_bytes!` from `crates/alo-shell/fonts/`, Manrope SemiBold at `Weight(600)` (#869) |
+| the typeface | **in the binary**, not the file system: `include_bytes!` from `crates/alo-drawing/fonts/`, Manrope SemiBold at `Weight(600)` (#869) |
 | room in the area | **779 MiB spare** — 229 MiB staged of 1008 MiB |
 | how big a disk must be | `alo_image::can_hold_alo_os` (#866), one answer for both roads |
 | the wireless parts | aboard and verified in the shipped candidate's own initramfs (#847) |

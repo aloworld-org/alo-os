@@ -258,7 +258,7 @@ selecting the card elsewhere brings the task window back.
 **Departures, each written down here because it is one:**
 
 - **The mark is drawn at SemiBold**, not Bold: no Manrope Bold is bundled
-  (`crates/alo-shell/fonts/README.md`), and a weight no face has draws Inter.
+  (`crates/alo-drawing/fonts/README.md`), and a weight no face has draws Inter.
 - **Two words the frame does not have**: *Stopped · nothing changed* for a task
   stopped before it changed anything, where *changes kept* would be false; and
   *Nothing approved yet* for line 4 of a task with no approval.
@@ -275,6 +275,84 @@ under a square on focus or hover, F6 and the arrows into the panel, Delete on a
 focused square, the square's name reaching a screen reader, travelling to the
 task's Place when it is on another one, and a task that needs the person under
 full screen raising a notification.
+
+## Minimised windows, Mac-style — frame `27:2`, approved with live miniatures
+
+**The owner approved `10 / Minimised windows, Mac-style (approved 2026-11-12,
+live)` (`27:2` in `XbSmsBYix0TrcQ0Qzaup64`) and chose live miniatures over
+still pictures.** In the frame's own words: *a minimised window becomes a live
+miniature of itself — it keeps updating while it is put aside — with its app's
+icon in the corner. It stays in alo's right-hand panel. The name shows when you
+point at it or reach it with the keyboard.* Measured on 2026-11-11 with
+`get_metadata` and `get_design_context` on `27:2`, `27:8`, `27:39` and `27:44`.
+
+**The collapsed square** (`27:9`, `27:18`, `27:27`): 48 × 48, as the rail's
+slot already is.
+
+| part | node | measured |
+|---|---|---|
+| miniature | `27:10` | 44 × 32 at (2, 8), corner 4, 1 border `#E7EBEF`, shadow `0 4 12 rgba(15,41,66,0.14)` |
+| badge | `27:16` | 18 × 18 at (30, 30), corner ≈ 5, 1.5 white border, the app's colour, its letter 9 Bold white |
+| an alo task | `27:36` | the approved task square of `23:2`, unchanged |
+
+**The expanded lane** (`27:44`): a 216 × 136 miniature, corner 9, the same
+border and shadow, a 28 × 28 badge at (182, 102) with corner ≈ 8 and a 1.5 white
+border, and the name 8 under it, 12 SemiBold `#102A43`. Lanes 20 apart.
+
+**The name on pointing or focus** (`27:39`): a navy `#102A43` pill, corner 8,
+padding 10 × 6, the name 12 SemiBold white, 10 inward of the rail and centred on
+the square — *Home · Dolphin*, the window's title and its application.
+
+**Motion and privacy** (`27:77`): the window shrinks into its square along a
+straight path, about 300 ms, no wobble; **immediate under Reduced motion**;
+restoring reverses it. **Private content — a password field, a protected
+document — shows the app's icon on a blank card instead of a miniature.**
+
+**One departure, written down:** the frame's rail draws four squares from the
+top (8, 64, 120, 176) and no expansion control, in a rail 288 tall — the height
+`64 + 56 × 4` gives for four squares **under** the control. The control stays
+where the 2026-10-04 ruling put it; the frame is read as showing the squares,
+not as withdrawing the control.
+
+**Built in steps**, each leaving the machine working:
+
+1. **alo's own windows go into the panel** — the terminal, Settings and History
+   carry Minimise, and the Minimise chord reaches them; each waits as a square
+   marked with its letter and comes back by its square or any road to it
+   (`crates/alo-shell/src/alos_own_window_goes_aside.rs`). *Built 2026-11-11.*
+2. **An application's window is a live miniature with its badge**, and its
+   name shows while the pointer is on it. The window's own buffer is drawn
+   scaled into the card each frame (`crate::a_window_in_miniature`), clipped
+   round the badge; the card and the badge are
+   `crate::a_miniatures_card`; the name is
+   `crate::the_name_of_a_window_aside`. **Live at a bounded rate:** a window
+   put aside is asked to draw again **four times a second**
+   (`crate::put_aside_windows_draw_again`) rather than at the display's rate,
+   so a minimised window is asked to draw a fifteenth as often as a shown one
+   on a 60 Hz display. **A private window** — one the person marked, the only way this
+   machine knows a window is private (the owner's ruling of 2026-10-02) — is
+   its icon on a blank card, never drawn small and never asked to draw.
+   *Built 2026-11-11.*
+3. **The shrink** was already built: a window put aside travels to its square
+   as an outline along a straight path in 300 ms, eased, and at once under
+   Reduced motion (`crate::a_window_travels_aside`). **Not built:** restoring
+   does not yet travel back, and the travel draws an outline rather than the
+   window's own pixels shrinking.
+
+**Departures and gaps, written down here because each is one:**
+
+- **The badge is the application's own icon** inside the white border, or its
+  letter on the fallback badge ground; the frame's coloured tiles stand in for
+  icons, and the owner's ruling of 2026-10-11 refuses a colour taken from an
+  application.
+- **The badge's top-left corner** shows the card's ground, not the window,
+  where the badge's rounding leaves a sliver: the picture is clipped to the
+  rectangle round the badge, not to its curve.
+- **Not built:** the name on **keyboard** focus (nothing yet takes the keyboard
+  into the panel: F6 and the arrows are listed under *not built yet* above);
+  the expanded 216 × 136 lane (the expansion control still opens nothing);
+  and a miniature of **alo's own** windows, which still show their letter on
+  the hit area — their pictures are drawn only while they are on the canvas.
 
 ## Full screen and the keyboard
 

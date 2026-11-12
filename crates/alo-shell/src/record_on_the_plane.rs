@@ -42,6 +42,9 @@ impl crate::Server {
     /// yet is on this one.
     pub(crate) fn the_record_is_open_here(&self) -> bool {
         self.record.is_open()
+            // **Not while it is in the right-hand panel**
+            // (`crate::alos_own_window_goes_aside`).
+            && !self.this_alo_window_is_aside(alo_put_aside::AlosOwnWindow::TheRecord)
             && self
                 .the_record_on_the_plane
                 .is_none_or(|(_, place)| place == self.the_place_now())
@@ -51,7 +54,9 @@ impl crate::Server {
     /// looked at and has been placed.
     #[must_use]
     pub(crate) fn where_the_record_is_on_the_plane(&self) -> Option<Rectangle<i32, Logical>> {
-        if !self.record.is_open() {
+        if !self.record.is_open()
+            || self.this_alo_window_is_aside(alo_put_aside::AlosOwnWindow::TheRecord)
+        {
             return None;
         }
         let (at, place) = self.the_record_on_the_plane?;

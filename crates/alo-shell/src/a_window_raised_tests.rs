@@ -41,7 +41,9 @@ fn not_one_pixel_lands_on_the_window() {
             assert!(!bands.is_empty());
             for band in &bands {
                 assert!(
-                    band.area.intersection(dolphin()).is_none(),
+                    band.area
+                        .intersection(crate::painted::drawn_at(dolphin()))
+                        .is_none(),
                     "{look:?} at {scale}: {:?} is on the window",
                     band.area
                 );

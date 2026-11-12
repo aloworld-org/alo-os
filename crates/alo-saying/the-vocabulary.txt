@@ -76,6 +76,7 @@ adapters.fallback.activate-control.name	the name the control shows
 adapters.fallback.activate-control.purpose	press a button or another control in an application's window
 adapters.fallback.activate-control.sentence	press the {kind} named “{name}” in {application}
 adapters.fallback.cannot-be-pressed	The {kind} named “{name}” in {application} cannot be pressed from outside the application, so nothing was pressed
+adapters.fallback.cannot-be-pressed-until-alo-works-fully	The {kind} named “{name}” in {application} cannot be pressed from outside the application as it was started, so nothing was pressed. If you want alo to press it, turn on “Let alo work fully inside apps like VSCodium” in Settings → Accessibility → Applications, then close {application} and open it again
 adapters.fallback.cannot-be-used-now	The {kind} named “{name}” in {application} cannot be used right now, so it was not pressed
 adapters.fallback.did-not-answer-pressing	{application} did not answer in time, so whether the {kind} named “{name}” was pressed is not known
 adapters.fallback.did-not-answer-reading	{application} did not answer in time, so nothing was read or pressed in it

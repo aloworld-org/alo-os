@@ -17,7 +17,7 @@ fn a_surface(wide: i32, tall: i32, colour: [u8; 4]) -> Washed {
         pixels.extend_from_slice(&colour);
     }
     Washed {
-        area: Rectangle::new((0, 0).into(), (wide, tall).into()),
+        area: alo_drawing::area::Area::new((0, 0).into(), (wide, tall).into()),
         pixels,
     }
 }
@@ -171,7 +171,7 @@ fn the_surfaces_own_position_is_subtracted_rather_than_ignored() {
     // which on a bottom Dock is most of the way up the screen, and off the
     // buffer entirely, so nothing would be drawn at all.
     let mut surface = Washed {
-        area: Rectangle::new((100, 200).into(), (4, 4).into()),
+        area: alo_drawing::area::Area::new((100, 200).into(), (4, 4).into()),
         pixels: vec![0; 4 * 4 * 4],
     };
     let icon = a_picture(2, 2, [255, 255, 255, 255]);
@@ -209,7 +209,7 @@ fn several_applications_are_each_drawn_in_their_own_box() {
 #[test]
 fn a_surface_with_no_area_is_left_alone() {
     let mut surface = Washed {
-        area: Rectangle::new((0, 0).into(), (0, 0).into()),
+        area: alo_drawing::area::Area::new((0, 0).into(), (0, 0).into()),
         pixels: Vec::new(),
     };
     let icon = a_picture(2, 2, [255, 0, 0, 255]);

@@ -273,7 +273,8 @@ fn an_applications_name_is_drawn_outside_the_bar_on_every_edge() {
             shown.area
         );
         assert_eq!(
-            shown.panel.area, shown.area,
+            shown.panel.area,
+            crate::painted::drawn_at(shown.area),
             "{edge:?}: a tooltip has no shadow"
         );
         let one_line = i32::try_from(A_LINE_IS + 2 * ABOVE_AND_BELOW_THE_WORDS).expect("small");
