@@ -177,7 +177,7 @@ mod the_file {
                 chosen_on_the_sheet,
                 ..
             } => format!("link-opened/{asked_to_choose}/{chosen_on_the_sheet}"),
-            KeptOutcome::LinkNotChosen { why, .. } => format!(
+            KeptOutcome::LinkUnchosen { why, .. } => format!(
                 "link-not-chosen/{}",
                 serde_json::to_value(why).unwrap().as_str().unwrap()
             ),
@@ -284,13 +284,13 @@ mod the_file {
             });
         }
         for why in [
-            alo_portals::NotChosen::Cancelled,
-            alo_portals::NotChosen::Unanswered,
-            alo_portals::NotChosen::CannotShow,
-            alo_portals::NotChosen::NoDesktop,
-            alo_portals::NotChosen::CouldNotAsk,
+            alo_portals::Unchosen::Cancelled,
+            alo_portals::Unchosen::Unanswered,
+            alo_portals::Unchosen::CannotShow,
+            alo_portals::Unchosen::NoDesktop,
+            alo_portals::Unchosen::CouldNotAsk,
         ] {
-            every.push(KeptOutcome::LinkNotChosen {
+            every.push(KeptOutcome::LinkUnchosen {
                 link: "web".to_owned(),
                 address: "https://example.com/invoice".to_owned(),
                 why,

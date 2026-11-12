@@ -187,11 +187,11 @@ pub use kept_answer::KeptAnswer;
 pub use kept_answer_said::AnswerSaid;
 pub use kept_outcome::{KeptOutcome, NotALinkAs, NothingOpensAs, PassedOverAs, RefusedAs};
 pub use link_answered::{LinkNotOpened, LinkOpened, link_answered};
-pub use link_not_chosen::{LinkNotChosen, NotChosen};
+pub use link_not_chosen::{LinkUnchosen, Unchosen};
 pub use not_a_request::NotARequest;
 pub use not_recorded::NotRecorded;
 pub use open_with::{NotOpened, OpensWith};
-pub use opening_links::{LinkChosen, LinkStarted, NoDesktopToAsk, OpensLinks};
+pub use opening_links::{SheetAnswer, LinkStarted, NoDesktopToAsk, OpensLinks};
 pub use portal::{Over, Portal};
 #[cfg(unix)]
 pub use read_back_said::ReadBackSaid;

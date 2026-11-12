@@ -602,7 +602,7 @@ fn a_link_to_choose_for_is_handed_on_with_its_connection_held() {
     assert_eq!(asked.len(), 1);
     assert!(door.asked_to_choose().is_empty(), "handed over once");
     let mut sheet = crate::the_open_with_sheet::TheOpenWithSheet::none();
-    sheet.asked(asked.drain(..).collect(), true, std::time::Instant::now());
+    sheet.asked(std::mem::take(&mut asked), true, std::time::Instant::now());
     sheet.pressed(
         crate::the_open_with_sheet::SheetKey::Next,
         std::time::Instant::now(),

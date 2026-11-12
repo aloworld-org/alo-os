@@ -38,7 +38,7 @@
 //! and what opens the link is what the person chose
 //! ([`LinkOpened::chosen_on_the_sheet`]), held to what was offered
 //! ([`LinkOpened::offered`]). A link the person did not choose for is
-//! [`crate::LinkNotChosen`], and nothing opens.
+//! [`crate::LinkUnchosen`], and nothing opens.
 //!
 //! # It opens nothing
 //!

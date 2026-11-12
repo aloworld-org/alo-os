@@ -75,13 +75,14 @@ pub enum KeptOutcome {
     },
     /// An application asked for the person to choose what opens a link, and
     /// nothing was chosen.
-    LinkNotChosen {
+    #[serde(rename = "link-not-chosen")]
+    LinkUnchosen {
         /// Which kind: `web` or `mail`.
         link: String,
         /// The link, exactly as the application gave it.
         address: String,
         /// Why nothing was chosen.
-        why: crate::link_not_chosen::NotChosen,
+        why: crate::link_not_chosen::Unchosen,
     },
     /// The application read the appearance settings, allowed by these grants.
     AppearanceRead {
@@ -150,7 +151,7 @@ impl KeptOutcome {
             | Self::NothingOpens { .. }
             | Self::NotALink { .. }
             | Self::NothingOpensLinks { .. }
-            | Self::LinkNotChosen { .. }
+            | Self::LinkUnchosen { .. }
             | Self::Unanswered { .. } => true,
         }
     }
@@ -261,7 +262,7 @@ impl From<&Outcome> for KeptOutcome {
                 asked_to_choose: opened.asked_to_choose() && opened.on_the_sheet().is_none(),
                 chosen_on_the_sheet: opened.on_the_sheet().is_some(),
             },
-            Outcome::LinkNotChosen(not) => Self::LinkNotChosen {
+            Outcome::LinkUnchosen(not) => Self::LinkUnchosen {
                 link: spelled(not.link().kind()).to_owned(),
                 address: not.link().as_str().to_owned(),
                 why: not.why(),

@@ -29,7 +29,7 @@ use alo_capability::{Applicant, Grants};
 use alo_keyring_fixture::AKeyringOfOurOwn;
 use alo_portals::{
     Allowed, Answered, Appearance, Applications, Backend, KeepsSecrets, Kept, KeptOutcome,
-    LinkChosen, LinkStarted, NotChosen, NotKept, OpensLinks, Outcome, Request, Sandboxes, Served,
+    SheetAnswer, LinkStarted, Unchosen, NotKept, OpensLinks, Outcome, Request, Sandboxes, Served,
     TheMachine, TimeOfDay, Unanswered,
 };
 use zbus::blocking::{Connection, Proxy};
@@ -113,7 +113,7 @@ struct ADesktop {
     asked: Mutex<Vec<(String, String)>>,
     answering: LinkStarted,
     shown: Mutex<Vec<(String, String, Vec<String>)>>,
-    the_person: Mutex<LinkChosen>,
+    the_person: Mutex<SheetAnswer>,
 }
 
 impl OpensLinks for ADesktop {
@@ -125,7 +125,7 @@ impl OpensLinks for ADesktop {
         self.answering
     }
 
-    fn chosen(&self, asking: &str, link: &Link, offered: &[String]) -> LinkChosen {
+    fn chosen(&self, asking: &str, link: &Link, offered: &[String]) -> SheetAnswer {
         self.shown.lock().unwrap().push((
             asking.to_owned(),
             link.as_str().to_owned(),
@@ -167,7 +167,7 @@ impl Serving {
                 asked: Mutex::new(Vec::new()),
                 answering,
                 shown: Mutex::new(Vec::new()),
-                the_person: Mutex::new(LinkChosen::Cancelled),
+                the_person: Mutex::new(SheetAnswer::Cancelled),
             })
         });
         let backend = match &desktop {
@@ -390,7 +390,7 @@ fn with_no_desktop_the_link_is_refused_and_the_record_says_why() {
 
 impl Serving {
     /// From now on the person answers the sheet with `chose`.
-    fn the_person_answers(&self, chose: LinkChosen) {
+    fn the_person_answers(&self, chose: SheetAnswer) {
         if let Some(desktop) = &self.desktop {
             *desktop.the_person.lock().unwrap() = chose;
         }
@@ -411,7 +411,7 @@ impl Serving {
 #[test]
 fn asking_shows_the_sheet_and_opens_what_the_person_chose() {
     let serving = Serving::started("ask", untouched(true), Some(LinkStarted::Asked));
-    serving.the_person_answers(LinkChosen::Chosen(LIBREWOLF.to_owned()));
+    serving.the_person_answers(SheetAnswer::Picked(LIBREWOLF.to_owned()));
     assert_eq!(serving.open_uri("https://example.com/", "ask", true), 0);
     assert_eq!(
         serving.sheets_shown(),
@@ -446,16 +446,16 @@ fn asking_shows_the_sheet_and_opens_what_the_person_chose() {
 #[test]
 fn nothing_chosen_opens_nothing_and_says_why() {
     for (what, chose, response, why) in [
-        ("cancel", LinkChosen::Cancelled, 1, NotChosen::Cancelled),
-        ("nobody", LinkChosen::Unanswered, 2, NotChosen::Unanswered),
-        ("no-sheet", LinkChosen::CannotShow, 2, NotChosen::CannotShow),
-        ("gone", LinkChosen::NoDesktop, 2, NotChosen::NoDesktop),
-        ("broken", LinkChosen::CouldNotAsk, 2, NotChosen::CouldNotAsk),
+        ("cancel", SheetAnswer::Cancelled, 1, Unchosen::Cancelled),
+        ("nobody", SheetAnswer::Unanswered, 2, Unchosen::Unanswered),
+        ("no-sheet", SheetAnswer::CannotShow, 2, Unchosen::CannotShow),
+        ("gone", SheetAnswer::NoDesktop, 2, Unchosen::NoDesktop),
+        ("broken", SheetAnswer::CouldNotAsk, 2, Unchosen::CouldNotAsk),
         (
             "not-offered",
-            LinkChosen::Chosen(MAIL.to_owned()),
+            SheetAnswer::Picked(MAIL.to_owned()),
             2,
-            NotChosen::CouldNotAsk,
+            Unchosen::CouldNotAsk,
         ),
     ] {
         let serving = Serving::started(what, untouched(true), Some(LinkStarted::Asked));
@@ -473,7 +473,7 @@ fn nothing_chosen_opens_nothing_and_says_why() {
         assert_eq!(everything.len(), 1, "{what}");
         assert_eq!(
             KeptOutcome::from(everything.first().unwrap().outcome()),
-            KeptOutcome::LinkNotChosen {
+            KeptOutcome::LinkUnchosen {
                 link: "web".to_owned(),
                 address: "https://example.com/".to_owned(),
                 why,
@@ -489,7 +489,7 @@ fn asking_with_no_desktop_opens_nothing() {
     let serving = Serving::started("ask-nobody", untouched(true), None);
     assert_eq!(serving.open_uri("https://example.com/", "nobody", true), 2);
     match KeptOutcome::from(serving.everything().first().unwrap().outcome()) {
-        KeptOutcome::LinkNotChosen { why, .. } => assert_eq!(why, NotChosen::NoDesktop),
+        KeptOutcome::LinkUnchosen { why, .. } => assert_eq!(why, Unchosen::NoDesktop),
         other => panic!("{other:?}"),
     }
 }

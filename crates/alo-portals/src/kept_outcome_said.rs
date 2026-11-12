@@ -61,7 +61,7 @@ impl KeptOutcome {
                 (*asked_to_choose, *chosen_on_the_sheet),
                 strings,
             ),
-            Self::LinkNotChosen { address, why, .. } => {
+            Self::LinkUnchosen { address, why, .. } => {
                 crate::link_not_chosen::said_as_not_chosen(asked, address, *why, strings)
             }
             Self::AppearanceRead { .. } => strings.say(&words::APPEARANCE_READ.key(), &asked),

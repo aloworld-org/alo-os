@@ -23,7 +23,7 @@ use crate::words;
 /// Why nothing was chosen.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
-pub enum NotChosen {
+pub enum Unchosen {
     /// The person pressed *Cancel* or Escape.
     Cancelled,
     /// Nobody answered while the sheet was up, and the desktop took it down.
@@ -37,7 +37,7 @@ pub enum NotChosen {
     CouldNotAsk,
 }
 
-impl NotChosen {
+impl Unchosen {
     /// The response it is sent as: `1` for the person's own cancel, `2`
     /// otherwise.
     #[must_use]
@@ -62,20 +62,20 @@ impl NotChosen {
 
 /// A link nobody chose for, who asked, and why.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct LinkNotChosen {
+pub struct LinkUnchosen {
     /// The application that asked.
     from: Applicant,
     /// The link.
     link: Link,
     /// Why nothing was chosen.
-    why: NotChosen,
+    why: Unchosen,
 }
 
-impl LinkNotChosen {
+impl LinkUnchosen {
     /// `from` asked for the person to choose what opens `link`, and nothing
     /// was chosen, for `why`.
     #[must_use]
-    pub const fn of(from: Applicant, link: Link, why: NotChosen) -> Self {
+    pub const fn of(from: Applicant, link: Link, why: Unchosen) -> Self {
         Self { from, link, why }
     }
 
@@ -93,7 +93,7 @@ impl LinkNotChosen {
 
     /// Why nothing was chosen.
     #[must_use]
-    pub const fn why(&self) -> NotChosen {
+    pub const fn why(&self) -> Unchosen {
         self.why
     }
 
@@ -114,7 +114,7 @@ impl LinkNotChosen {
 pub(crate) fn said_as_not_chosen(
     asked: Filling,
     address: &str,
-    why: NotChosen,
+    why: Unchosen,
     strings: &Strings,
 ) -> Said {
     strings.say(&why.word().key(), &asked.and("address", address))
@@ -143,14 +143,14 @@ mod tests {
         let strings = in_english();
         let mut seen = Vec::new();
         for why in [
-            NotChosen::Cancelled,
-            NotChosen::Unanswered,
-            NotChosen::CannotShow,
-            NotChosen::NoDesktop,
-            NotChosen::CouldNotAsk,
+            Unchosen::Cancelled,
+            Unchosen::Unanswered,
+            Unchosen::CannotShow,
+            Unchosen::NoDesktop,
+            Unchosen::CouldNotAsk,
         ] {
-            assert_eq!(why.response(), u32::from(why != NotChosen::Cancelled) + 1);
-            let not = LinkNotChosen::of(
+            assert_eq!(why.response(), u32::from(why != Unchosen::Cancelled) + 1);
+            let not = LinkUnchosen::of(
                 Applicant::named("org.gnome.Papers"),
                 Link::checked("https://example.com/invoice").unwrap(),
                 why,
@@ -172,7 +172,7 @@ mod tests {
     #[test]
     fn the_reason_is_kept_by_its_spelling() {
         assert_eq!(
-            serde_json::to_string(&NotChosen::CannotShow).unwrap(),
+            serde_json::to_string(&Unchosen::CannotShow).unwrap(),
             r#""cannot-show""#
         );
     }
