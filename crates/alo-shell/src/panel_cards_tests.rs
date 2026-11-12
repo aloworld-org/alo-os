@@ -163,11 +163,13 @@ fn an_applications_window_is_a_miniatures_card() {
     let card = drawn.get(1).unwrap();
     assert_eq!(pixel(card, 24, 24), palette.ground, "the card's ground");
     assert_eq!(pixel(card, 24, 8), palette.edge, "its hairline");
-    let in_the_badge = (30..48)
-        .flat_map(|y| (30..48).map(move |x| (x, y)))
-        .filter(|&(x, y)| pixel(card, x, y) == palette.badge_ink)
+    // A 9-pixel letter is mostly edges: its ink is whatever in the badge's
+    // flat middle is not the badge's ground.
+    let in_the_badge = (34..44)
+        .flat_map(|y| (34..44).map(move |x| (x, y)))
+        .filter(|&(x, y)| pixel(card, x, y) != palette.badge)
         .count();
-    assert!(in_the_badge > 2, "the badge's letter: {in_the_badge} pixels");
+    assert!(in_the_badge > 4, "the badge's letter: {in_the_badge} pixels");
 }
 
 /// **An application that draws its own icon is badged with it.**

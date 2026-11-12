@@ -63,8 +63,8 @@ pub(crate) fn the_name_beside(
     if room <= 0 {
         return None;
     }
-    let words = crate::painted_text::sentence(fonts, name, room, metrics, fill, ink)
-        .cropped_to_its_ink();
+    let words =
+        crate::painted_text::sentence(fonts, name, room, metrics, fill, ink).cropped_to_its_ink();
     let (wide, tall) = (
         words.width_of_box + 2 * px(NAME_ACROSS),
         words.height + 2 * px(NAME_DOWN),

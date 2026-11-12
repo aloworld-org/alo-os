@@ -80,11 +80,13 @@ fn an_ordinary_window_is_a_card_with_a_badge() {
     assert_eq!(pixel(&tile, 20, 20), palette.ground, "the card's ground");
     // The badge (30..48): its fallback ground, and the letter on it.
     assert_eq!(pixel(&tile, 33, 33), palette.badge);
-    let letter = (30..48)
-        .flat_map(|y| (30..48).map(move |x| (x, y)))
-        .filter(|&(x, y)| pixel(&tile, x, y) == palette.badge_ink)
+    // A 9-pixel letter is mostly edges, so its ink is counted as anything
+    // inside the badge's flat middle that is not the badge's ground.
+    let letter = (34..44)
+        .flat_map(|y| (34..44).map(move |x| (x, y)))
+        .filter(|&(x, y)| pixel(&tile, x, y) != palette.badge)
         .count();
-    assert!(letter > 2, "the badge carries the letter: {letter}");
+    assert!(letter > 4, "the badge carries the letter: {letter}");
 }
 
 /// **An application with its own icon is badged with it**, inside the badge's

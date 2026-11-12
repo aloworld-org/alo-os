@@ -23,8 +23,14 @@ fn a_slot() -> Rectangle<i32, Physical> {
 /// 8 before the slot, and is centred down the square.
 #[test]
 fn on_a_right_hand_panel_the_name_is_to_its_left() {
-    let pill = the_name_beside(a_slot(), WhichEdge::Right, "Home · Dolphin", 1440, &mut fonts())
-        .expect("a name");
+    let pill = the_name_beside(
+        a_slot(),
+        WhichEdge::Right,
+        "Home · Dolphin",
+        1440,
+        &mut fonts(),
+    )
+    .expect("a name");
     assert_eq!(pill.area.loc.x + pill.area.size.w, 1360 - 8 - 10);
     let middle = pill.area.loc.y + pill.area.size.h / 2;
     assert!((middle - (160 + 24)).abs() <= 1, "centred on the square");
@@ -52,7 +58,5 @@ fn on_a_left_hand_panel_the_name_is_to_its_right() {
 fn nothing_to_say_draws_nothing() {
     assert!(the_name_beside(a_slot(), WhichEdge::Right, "  ", 1440, &mut fonts()).is_none());
     let at_the_edge = Rectangle::new((10, 160).into(), (48, 48).into());
-    assert!(
-        the_name_beside(at_the_edge, WhichEdge::Right, "Home", 1440, &mut fonts()).is_none()
-    );
+    assert!(the_name_beside(at_the_edge, WhichEdge::Right, "Home", 1440, &mut fonts()).is_none());
 }

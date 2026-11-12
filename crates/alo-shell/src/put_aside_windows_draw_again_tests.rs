@@ -34,9 +34,11 @@ fn with_no_panel_nobody_is_asked() {
     let runtime = tempfile::tempdir().expect("a runtime directory of this test's own");
     std::fs::set_permissions(runtime.path(), std::fs::Permissions::from_mode(0o700))
         .expect("a private runtime directory");
-    let mut server =
-        crate::Server::bind(runtime.path(), "draw-again-no-panel").expect("a display");
-    assert_eq!(server.the_put_aside_windows_draw_again(None, Instant::now()), 0);
+    let mut server = crate::Server::bind(runtime.path(), "draw-again-no-panel").expect("a display");
+    assert_eq!(
+        server.the_put_aside_windows_draw_again(None, Instant::now()),
+        0
+    );
     assert_eq!(
         server.the_put_aside_windows_draw_again(
             Some(&alo_put_aside::Panel::new()),

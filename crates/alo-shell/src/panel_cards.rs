@@ -220,6 +220,11 @@ fn a_rounded_square_onto(tile: &mut Inked, colour: [u8; 3]) {
 /// An application's first letter, at the Dock's initial size, centred on the
 /// hit area in the badge's ink.
 fn a_letter_onto(tile: &mut Inked, letter: &str, palette: &DesktopPalette, fonts: &mut FontSystem) {
+    // **No letter, no box**: an empty word would shape a box as wide as the
+    // slot and paint its ground over the rail outside the hit area.
+    if letter.trim().is_empty() {
+        return;
+    }
     let side = tile.area.size.w;
     #[expect(
         clippy::cast_possible_truncation,

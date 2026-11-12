@@ -48,10 +48,7 @@ fn on_the_designs_frame_the_parts_are_where_it_draws_them() {
 fn on_a_dense_display_every_part_doubles() {
     let parts = in_the_slot(a_slot(96));
     assert_eq!((parts.card.size.w, parts.card.size.h), (88, 64));
-    assert_eq!(
-        (parts.card.loc.x - 1360, parts.card.loc.y - 160),
-        (4, 16)
-    );
+    assert_eq!((parts.card.loc.x - 1360, parts.card.loc.y - 160), (4, 16));
     assert_eq!((parts.badge.size.w, parts.badge.size.h), (36, 36));
     assert_eq!(parts.border, 2);
 }
@@ -99,7 +96,10 @@ fn the_picture_is_clipped_round_the_badge_and_nowhere_else() {
     let under_the_badge = picture
         .intersection(parts.badge)
         .map_or(0, |overlap| overlap.size.w * overlap.size.h);
-    assert!(under_the_badge > 0, "the design puts the badge over the corner");
+    assert!(
+        under_the_badge > 0,
+        "the design puts the badge over the corner"
+    );
     assert_eq!(
         covered,
         picture.size.w * picture.size.h - under_the_badge,

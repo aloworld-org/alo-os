@@ -34,9 +34,13 @@ use crate::panel_cards::{a_ground, at, mixed};
 /// A rectangle inside a tile, in the tile's own pixels, as floats.
 #[derive(Debug, Clone, Copy)]
 struct Inside {
+    /// Its left edge, from the tile's.
     left: f32,
+    /// Its top edge, from the tile's.
     top: f32,
+    /// How wide it is.
     wide: f32,
+    /// How tall it is.
     tall: f32,
 }
 
@@ -147,7 +151,7 @@ fn a_letter_into(
         reason = "a badge is a few dozen pixels"
     )]
     let box_wide = inside.wide.round() as i32;
-    if box_wide <= 0 || size <= 0 {
+    if box_wide <= 0 || size <= 0 || letter.trim().is_empty() {
         return;
     }
     #[expect(

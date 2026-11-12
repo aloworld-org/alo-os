@@ -201,8 +201,7 @@ impl crate::Server {
                 let surface = self.the_put_aside_window_numbered(id)?;
                 let geometry = crate::scene::geometry(&surface);
                 let parts = in_the_slot(slot);
-                let (picture, scale) =
-                    the_picture_in(parts, (geometry.size.w, geometry.size.h))?;
+                let (picture, scale) = the_picture_in(parts, (geometry.size.w, geometry.size.h))?;
                 let origin = Point::from((
                     f64::from(picture.loc.x) - geometry.loc.x * scale,
                     f64::from(picture.loc.y) - geometry.loc.y * scale,

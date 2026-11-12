@@ -101,6 +101,8 @@ mod a_key_reaches_the_record;
 mod a_key_reaches_the_task_in_front;
 mod a_key_reaches_the_window_field;
 mod a_key_types_into_more_apps;
+/// The card and badge an application's window put aside shows in its square.
+mod a_miniatures_card;
 mod a_new_window_is_placed;
 mod a_person_pins_and_unpins;
 #[cfg(test)]
@@ -133,6 +135,8 @@ mod a_task_windows_edge;
 mod a_wheel_over_a_sheet;
 mod a_window_and_its_strip;
 mod a_window_back_on_screen_leaves_the_panel;
+/// A window put aside, drawn as a live miniature of itself.
+mod a_window_in_miniature;
 /// Left and Right: one window on one half of its display's work area.
 mod a_window_on_one_side;
 mod a_window_onto_a_list;
@@ -152,22 +156,18 @@ pub mod alos_marked_words;
 /// alo's own terminal, Settings and record go into the right-hand panel, and
 /// come back.
 mod alos_own_window_goes_aside;
-/// The card and badge an application's window put aside shows in its square.
-mod a_miniatures_card;
-/// A window put aside, drawn as a live miniature of itself.
-mod a_window_in_miniature;
-/// The logical measures of a window's miniature in the right-hand panel.
-mod miniature_measures;
-/// Windows put aside are asked to draw again at a bounded rate.
-mod put_aside_windows_draw_again;
-/// The name of a window put aside, beside its square while pointed at.
-mod the_name_of_a_window_aside;
 /// Closing a task window, and which ones may close.
 pub mod closing_a_task_window;
 mod each_window_with_its_edge;
 mod ease_in_and_out;
+/// The logical measures of a window's miniature in the right-hand panel.
+mod miniature_measures;
+/// Windows put aside are asked to draw again at a bounded rate.
+mod put_aside_windows_draw_again;
 #[cfg(test)]
 mod the_desktops_pictures_pinned;
+/// The name of a window put aside, beside its square while pointed at.
+mod the_name_of_a_window_aside;
 /// The words typed into a window panel's field, and the caret among them.
 pub mod the_window_panels_field;
 pub use a_provider_is_added_in_settings::WhyNotSaved;

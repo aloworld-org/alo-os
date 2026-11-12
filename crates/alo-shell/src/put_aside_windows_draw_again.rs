@@ -78,7 +78,11 @@ fn asked_to_draw(root: &WlSurface, time: u32) {
 impl crate::Server {
     /// **Ask every window put aside to draw again, if it is time.** Answers how
     /// many were asked — none on a frame between two asks.
-    pub fn the_put_aside_windows_draw_again(&mut self, panel: Option<&Panel>, now: Instant) -> usize {
+    pub fn the_put_aside_windows_draw_again(
+        &mut self,
+        panel: Option<&Panel>,
+        now: Instant,
+    ) -> usize {
         if !it_is_time(self.put_aside_last_asked_to_draw, now) {
             return 0;
         }
@@ -96,7 +100,8 @@ impl crate::Server {
         // all a frame callback carries.
         static FIRST: std::sync::OnceLock<Instant> = std::sync::OnceLock::new();
         let since = now.saturating_duration_since(*FIRST.get_or_init(|| now));
-        let time = u32::try_from(since.as_millis() % (u128::from(u32::MAX) + 1)).unwrap_or_default();
+        let time =
+            u32::try_from(since.as_millis() % (u128::from(u32::MAX) + 1)).unwrap_or_default();
         for root in &asked {
             asked_to_draw(root, time);
         }
