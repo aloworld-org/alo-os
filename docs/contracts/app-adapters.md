@@ -343,7 +343,8 @@ agreed with the alo-browser lane on 2026-11-12 is:
 
 - **alo-browser owns the specification and the wire.**
   `aloworld-org/alo-browser`, `docs/contracts/alo-os-adapter-spec.md` (version 1,
-  commit `81fbc84c`) names ten verbs with their purpose, effect, typed arguments,
+  commit `f1fcd8ac`, which carries the corrections below and `read_page`'s
+  `page_text`) names ten verbs with their purpose, effect, typed arguments,
   sentence, by-hand road and the exact JSON line each sends;
   `docs/contracts/agent-socket.md` there is the socket protocol. The browser
   depends on no crate of alo OS's.
