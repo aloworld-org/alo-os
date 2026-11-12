@@ -177,7 +177,7 @@ fn an_application_that_draws_its_own_title_gets_no_panel_from_alo() {
     let mut fonts = fonts();
     let edge = edge_of(
         window(),
-        Decorations::TheApplicationDraws,
+        Decorations::TheApplicationDraws(crate::window_edge::ItsOwnButtons::NOT_KNOWN),
         true,
         smithay::utils::Size::from((1920, 1080)),
     );

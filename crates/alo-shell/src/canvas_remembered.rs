@@ -101,7 +101,18 @@ impl crate::Server {
         let Some(was) = left.arrangement.where_it_was(on, &app_id) else {
             return false;
         };
-        let (at, _) = was.normal();
+        let (at, size) = was.normal();
+        // **Not over a window that is open there now** — it opens as a new
+        // window instead, beside the others or in empty space. The place was
+        // free when it was left; a window opened since may stand on it, and
+        // putting this one back would bury that one with nobody choosing it,
+        // which `docs/features.md`'s *a new window never lands on top of
+        // another* forbids. Spent rather than kept for later: kept, it would
+        // pull the window back across the desk the moment the other closed.
+        if self.a_remembered_place_is_taken(frame, at, size) {
+            left.claimed.push((on.number(), app_id));
+            return false;
+        }
         // **The same question a drag is held to, and until 2026-10-02 it was
         // not.** This called `as_far_as_a_frame_may_be_dragged`, which asks
         // `the_name_would_be_under` — *is the name entirely inside this one
@@ -284,5 +295,39 @@ impl crate::Server {
                 .and_then(|state| state.app_id.clone())
         })
         .filter(|app_id| !app_id.trim().is_empty())
+    }
+
+    /// **Whether a window put back at `at` would cover a window open there
+    /// now**, each with the title strip above it, as a new window's placing
+    /// counts them (`crate::a_window_and_its_strip`).
+    ///
+    /// Asked at the larger of the size the window was left at and the size it
+    /// has now, on each side: an application's first frame is often smaller
+    /// than the one it settles at, and a place free for the first is no
+    /// promise about the second.
+    fn a_remembered_place_is_taken(
+        &self,
+        frame: &WlSurface,
+        at: alo_canvas::At,
+        left_at: alo_canvas::Size,
+    ) -> bool {
+        let now = crate::where_a_window_is(frame).size;
+        let size = smithay::utils::Size::<i32, smithay::utils::Logical>::from((
+            i32::try_from(left_at.width())
+                .unwrap_or(i32::MAX)
+                .max(now.w),
+            i32::try_from(left_at.height())
+                .unwrap_or(i32::MAX)
+                .max(now.h),
+        ));
+        let strip = crate::a_window_and_its_strip::ItsStrip::at(
+            self.the_display_scale_edges_are_measured_at(),
+        );
+        let here = strip.round(Rectangle::new((at.x, at.y).into(), size));
+        let (open, _) = self.the_windows_a_new_one_opens_among(frame);
+        strip
+            .round_each(&open)
+            .iter()
+            .any(|other| other.overlaps(here))
     }
 }

@@ -575,3 +575,54 @@ fn a_canvas_survives_one_session_ending_and_another_beginning() {
         "the window came back somewhere other than where the last session left it"
     );
 }
+
+/// **A remembered place that a window open now stands on is not given out**:
+/// the window opens as a new one instead, and the place is spent.
+///
+/// What the walk machine showed: VSCodium was remembered at the corner where
+/// the last session had put it, the terminal was open on that corner again,
+/// and VSCodium was put back over it — a new window on top of another with
+/// nobody choosing it. Its first frame was small and its remembered size was
+/// not, so the place is asked at the larger of the two.
+#[test]
+fn a_remembered_place_another_window_now_stands_on_is_not_given_out() {
+    let f = fixture();
+    let mut left = Arrangement::fresh();
+    left.window_was(
+        alo_canvas::Place::FIRST,
+        "org.alo.Notes",
+        alo_arranging::AWindowWas::at(
+            (
+                alo_canvas::At::checked(420, 260).expect("a place on the plane"),
+                alo_canvas::Size::checked(800, 600).expect("a size a frame may be"),
+            ),
+            alo_arranging::HowItWasShowing::Ordinary,
+        ),
+    );
+    // Something open this session where the remembered window would reach at
+    // its remembered size, and well clear of its small first frame.
+    let _terminal = mapped_as(&f, "org.alo.Terminal");
+    let terminal = f
+        .backend(|s| s.mapped_surfaces().next().cloned())
+        .expect("a frame is mapped");
+    {
+        let terminal = terminal.clone();
+        assert!(f.backend(move |s| s.place_window(&terminal, (900, 500)).is_ok()));
+    }
+    let _notes = mapped_as(&f, "org.alo.Notes");
+    let notes = f
+        .backend(move |s| s.mapped_surfaces().find(|it| **it != terminal).cloned())
+        .expect("two frames are mapped");
+    let (took, waiting) = put_back(&f, &notes, WhereTheyLeftIt::from(left));
+    assert!(
+        !took,
+        "a window was put back over a window open where it was left"
+    );
+    // **Spent**: asked again, it is still not put back — so it cannot jump
+    // there later, when the other window has gone.
+    let (took_again, _) = put_back(&f, &notes, waiting);
+    assert!(
+        !took_again,
+        "a refused place was given out on a later frame"
+    );
+}

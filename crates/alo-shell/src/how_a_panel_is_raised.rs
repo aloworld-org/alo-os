@@ -26,7 +26,7 @@
 //! `crate::dock_raster`, so their corner and shadow ask for
 //! [`HowItIsRaised::at`] with the same scale and the whole panel moves together.
 //! **The alo Bar, the task window and the market do too**, since the same
-//! day, through `crate::where_the_bar_opens`, `crate::bar_raster`,
+//! day, through `crate::where_the_bars_matches_rise`, `crate::bar_matches_raster`,
 //! `crate::task_raster` and `crate::market_raster`. So every panel drawn
 //! through `crate::dock_surface` is laid out at its display's scale, and
 //! asks for [`HowItIsRaised::at`] with it.

@@ -6,6 +6,9 @@
 # launcher*), and committed as it answered. Each file's viewBox is the icon's
 # whole frame, so the artwork is drawn into that square and nothing else.
 #
+# Close, Up and Down were exported too, and removed on 2026-11-11 with the
+# centred launcher, the only surface that drew them.
+#
 # The alo mark is the path alone from the tile `561:340`; its ground — the
 # 32 × 32 `accent/soft` square at corner 8 — is drawn by the launcher, not by
 # this file, so a person's appearance can colour it.
@@ -17,12 +20,6 @@ file = "nDxyF5Ho9oC4RObjVzwBNJ"
 fetched = "2026-11-01"
 
 [[icon]]
-svg = "close.svg"
-names = "Close, at the heading's end"
-node = "561:313"
-frame = 16
-
-[[icon]]
 svg = "search.svg"
 names = "the field's search mark"
 node = "561:316"
@@ -32,18 +29,6 @@ frame = 20
 svg = "enter.svg"
 names = "Enter, on a key cap"
 node = "561:335"
-frame = 12
-
-[[icon]]
-svg = "up.svg"
-names = "Up, on a key cap"
-node = "561:354"
-frame = 12
-
-[[icon]]
-svg = "down.svg"
-names = "Down, on a key cap"
-node = "561:357"
 frame = 12
 
 [[icon]]

@@ -137,9 +137,11 @@ impl crate::Server {
         showing: &[alo_access::Surface],
         turned_on: &alo_access::TurnedOn,
     ) -> crate::ReadAloudTree {
-        let frames: Vec<FrameName> = self
+        // Each with who draws its header, asked of the one answer the band is
+        // drawn from, so a reader is told the controls that are drawn.
+        let frames: Vec<(FrameName, crate::Decorations)> = self
             .mapped_surfaces()
-            .map(|frame| self.the_name_of(frame))
+            .map(|frame| (self.the_name_of(frame), self.who_draws_the_header_of(frame)))
             .collect();
         // Each task window on the screen and its title, which is the
         // person's own request (`alo_tasks::ATask::in_the_panel`).
@@ -174,6 +176,9 @@ impl crate::Server {
         });
         let tree = crate::ReadAloudTree::of(strings, showing, turned_on)
             .with_the_docks_slots(strings, &self.the_docks_slots_as_drawn())
+            // **And the Bar's matches under the Dock's field**, while they
+            // rise from it (the owner's decision of 2026-11-11).
+            .with_the_bars_matches(strings, &self.the_bars_matches_as_read(strings))
             .with_the_frames_open(strings, &frames, turned_on);
         let tree = match open_panel {
             Some((frame, met)) => tree.with_a_windows_panel_open(strings, frame, &met),

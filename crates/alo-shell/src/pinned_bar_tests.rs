@@ -1,21 +1,31 @@
-//! The Bar open with four applications found and the keyboard on the second,
-//! held to the pixels it drew before the UI kit moved anything
-//! (`crate::the_desktops_pictures_pinned`).
+//! The Bar open in the Dock's field with four applications found and the
+//! keyboard on the second: the list rising from a bottom Dock's field, held to
+//! the pixels it draws (`crate::the_desktops_pictures_pinned`).
 //!
-//! **At three scales and one text size**: the Bar lays itself out at
-//! `TextScale::ordinary()` whatever the person chose (`crate::bar_raster`), so
-//! a second text size would draw the same picture.
+//! **Re-pointed on 2026-11-11.** This file held the centred launcher's picture
+//! until the owner's decision of that day put the typing in the Dock's own
+//! field; once *Help with this window* had moved into the window's own panel,
+//! nothing opened the centred launcher and it was removed. The surface that
+//! exists now is this list, so this is the picture held, and its table was
+//! taken from this test's own failure on that day.
+//!
+//! **At three scales and one text size**: the list lays itself out at
+//! `TextScale::ordinary()` whatever the person chose
+//! (`crate::bar_matches_raster`), so a second text size would draw the same
+//! picture.
 #![expect(
     clippy::unwrap_used,
     reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
 )]
 
-use smithay::utils::Size;
+use smithay::utils::{Rectangle, Size};
 
 use super::{Drawn, LOGICAL, every_scale, held, in_pixels};
 use crate::a_picture_hashed::Hashed;
-use crate::bar_raster::{TheBarOnTheDisplay, TheLaunchersWords, picture};
+use crate::bar_matches_raster::{WhereItRisesFrom, picture};
 use crate::the_bar_finds::{AResult, WhatARowDoes};
+use crate::what_the_bar_shows::{TheAskRow, TheBarOnTheDisplay, TheLaunchersWords};
+use crate::where_the_bars_matches_rise::TheFieldOnTheDock;
 
 /// Four applications found.
 fn found() -> Vec<AResult> {
@@ -30,6 +40,26 @@ fn found() -> Vec<AResult> {
         .collect()
 }
 
+/// A bottom Dock's band and field on a display of `w` × `h` at `per_cent`:
+/// the band 840 × 76 logical, 12 above the bottom edge and centred, the field
+/// 344 × 48 logical inside it.
+fn a_bottom_dock(w: i32, h: i32, per_cent: i32) -> TheFieldOnTheDock {
+    let px = |logical: i32| logical * per_cent / 100;
+    let band = Rectangle::new(
+        ((w - px(840)) / 2, h - px(88)).into(),
+        (px(840), px(76)).into(),
+    );
+    let field = Rectangle::new(
+        (band.loc.x + px(260), band.loc.y + px(14)).into(),
+        (px(344), px(48)).into(),
+    );
+    TheFieldOnTheDock {
+        field,
+        band,
+        edge: alo_dock::Edge::Bottom,
+    }
+}
+
 /// **The Bar draws the pixels it drew before**, at every scale.
 #[test]
 fn the_bar_draws_the_pixels_it_drew_before() {
@@ -40,35 +70,32 @@ fn the_bar_draws_the_pixels_it_drew_before() {
     );
     let now = every_scale(|display| {
         let mut fonts = crate::WindowControlLabels::new().unwrap().fonts;
+        let (w, h) = in_pixels(LOGICAL, display);
         let drawn = picture(
             &TheBarOnTheDisplay {
                 typed: "fil",
-                origin: "On this computer",
+                origin: "On this computer  \u{b7}  4 applications",
                 results: &results,
                 chosen: Some(1),
-                display: Size::from(in_pixels(LOGICAL, display)),
-                words: TheLaunchersWords {
-                    heading: "Find, open, or ask",
-                    open_it: "Open",
-                    choose: "choose",
-                    open: "open",
-                    close: "close",
-                    esc: "Esc",
-                },
-                asks: None,
+                display: Size::from((w, h)),
+                words: TheLaunchersWords { open_it: "Open" },
+                asks: Some(TheAskRow {
+                    asking: "Ask alo \u{201c}fil\u{201d}",
+                    what_it_is: "a new task",
+                    from: "on this computer",
+                }),
                 artwork: None,
             },
             look.palette().unwrap(),
-            [0xFA, 0xF7, 0xF2],
+            WhereItRisesFrom {
+                dock: a_bottom_dock(w, h, i32::from(display.per_cent())),
+                clear_of: None,
+            },
             &mut fonts,
             display,
         )
         .unwrap();
         let mut hash = Hashed::begun();
-        let (veil, colour, alpha) = drawn.veil;
-        hash.area(veil);
-        hash.raw(&colour);
-        hash.raw(&[alpha]);
         hash.washed(&drawn.panel);
         hash.done()
     });
@@ -80,16 +107,16 @@ const BEFORE: [Drawn; 3] = [
     Drawn {
         scale: 100,
         text: 100,
-        hash: 0x4551_f52e_5b51_f5dc,
+        hash: 0x90f2_3e47_a185_7928,
     },
     Drawn {
         scale: 150,
         text: 100,
-        hash: 0x35fd_0ef1_9c0e_f1bb,
+        hash: 0xd88f_70a6_5bb5_0be9,
     },
     Drawn {
         scale: 200,
         text: 100,
-        hash: 0xd862_6021_d055_0a84,
+        hash: 0x9804_b8e8_3c73_c892,
     },
 ];

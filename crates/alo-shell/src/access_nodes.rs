@@ -33,7 +33,6 @@ use crate::the_dock_as_a_reader_meets_it::{ItsName, as_read};
 use crate::the_tasks_a_person_opened::WhichTask;
 use crate::window_edge::Decorations;
 use crate::window_edge_reading::what_a_reader_is_told;
-use crate::window_edge_who_draws::who_draws_a_frame;
 
 /// Where every application's tree starts, as at-spi2 fixes it.
 pub(crate) const ROOT: &str = "/org/a11y/atspi/accessible/root";
@@ -219,13 +218,13 @@ impl ReadAloudTree {
     pub fn with_the_frames_open(
         mut self,
         strings: &Strings,
-        frames: &[FrameName],
+        frames: &[(FrameName, Decorations)],
         turned_on: &TurnedOn,
     ) -> Self {
         let Some(list) = self.the_windows_open() else {
             return self;
         };
-        for frame in frames {
+        for (frame, decorations) in frames {
             let name = frame.its_own_words().map_or_else(
                 || said(strings, alo_access::words::AN_APPLICATION),
                 str::to_owned,
@@ -247,11 +246,11 @@ impl ReadAloudTree {
             // Until now the list held names and nothing else: a reader was
             // told a window was open and never that anything could be done to
             // it. The controls are the ones `crate::window_edge` draws, asked
-            // of the same `who_draws_a_frame`, so what a person hears and what
+            // of the same `who_draws_the_header`, so what a person hears and what
             // is drawn cannot disagree - and they are here whether or not the
             // edge is revealed, because revealing is what a person sees and is
             // never what a person can reach.
-            for control in what_a_reader_is_told(who_draws_a_frame()) {
+            for control in what_a_reader_is_told(*decorations) {
                 let node = of_control(strings, control, turned_on);
                 self.push(frame, node);
             }
@@ -316,6 +315,66 @@ impl ReadAloudTree {
                     states: access_roles::words_of(control.state, Some(*selected)),
                     announced: false,
                     parent: panel,
+                    children: Vec::new(),
+                    press: None,
+                },
+            );
+        }
+        self
+    }
+
+    /// The same tree, with the alo Bar's matches hanging under the Dock's
+    /// field: a list named as the Bar is headed, each row under it, the one the
+    /// keyboard is on told as **selected**.
+    ///
+    /// **The owner's decision of 2026-11-11** moved typing into the Dock's own
+    /// field, which a reader already meets as a text entry. So the matches that
+    /// rise from it hang under that entry, where somebody who cannot see the
+    /// list hears it open as they type and walks it with the same arrows.
+    /// `rows` empty is no list — the field is empty, or nothing is shown.
+    #[must_use]
+    pub fn with_the_bars_matches(mut self, strings: &Strings, rows: &[(String, bool)]) -> Self {
+        if rows.is_empty() {
+            return self;
+        }
+        let entry = access_roles::number_of(alo_access::Role::Entry);
+        let Some(field) = self
+            .surfaces
+            .iter()
+            .find_map(|(surface, at)| (*surface == Surface::Dock).then_some(*at))
+            .and_then(|dock| self.nodes.get(dock))
+            .and_then(|dock| {
+                dock.children
+                    .iter()
+                    .copied()
+                    .find(|at| self.nodes.get(*at).is_some_and(|node| node.role == entry))
+            })
+        else {
+            return self;
+        };
+        let list = self.push(
+            field,
+            Node {
+                path: String::new(),
+                role: access_roles::number_of(alo_access::Role::List),
+                name: said(strings, alo_dock::words::THE_LAUNCHERS_HEADING),
+                states: access_roles::words_of(alo_access::State::ReadOnly, None),
+                announced: false,
+                parent: field,
+                children: Vec::new(),
+                press: None,
+            },
+        );
+        for (name, selected) in rows {
+            self.push(
+                list,
+                Node {
+                    path: String::new(),
+                    role: access_roles::number_of(alo_access::Role::ListItem),
+                    name: name.clone(),
+                    states: access_roles::words_of(alo_access::State::OneOfAFew, Some(*selected)),
+                    announced: false,
+                    parent: list,
                     children: Vec::new(),
                     press: None,
                 },

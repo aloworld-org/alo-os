@@ -116,7 +116,7 @@ impl crate::Server {
         let room = self.the_room_an_edge_is_clamped_in();
         let edge = crate::window_edge::edge_of(
             self.the_window_a_band_hangs_from(surface, scale),
-            crate::window_edge_who_draws::who_draws_a_frame(),
+            self.who_draws_the_header_of(surface),
             true,
             room,
         );

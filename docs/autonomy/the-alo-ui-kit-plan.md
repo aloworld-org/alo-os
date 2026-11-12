@@ -58,8 +58,10 @@ kit's own is the whole of the change for:
   fonts, which is right for a Flatpak too. Its locale is fixed at `en-US`,
   which matters for which fallback face a script gets; the kit should take the
   person's language instead.
-- `crates/alo-shell/src/display_scale.rs`: one display's whole-per-cent scale
-  and the one road a logical measure takes to pixels, exact at 100.
+- `display_scale.rs` (in `alo-shell` when this was surveyed, and
+  `crates/alo-drawing/src/display_scale.rs` since task 2's first step): one
+  display's whole-per-cent scale and the one road a logical measure takes to
+  pixels, exact at 100.
 - `crates/alo-shell/src/settings_type.rs` (the design's type styles, scaled
   with the person's text size), `crates/alo-shell/src/settings_palette.rs` and
   `crates/alo-shell/src/settings_measures.rs` (the Settings window's colours
@@ -150,6 +152,17 @@ the owner's choice, not an oversight. They live in this repository, beside the
 shell they come from, and `alo-workplace` depends on them by a pinned
 revision.
 
+**And one piece goes the other way.** alo Mails' adapter — its commands for
+alo and the terminal — is compiled into alo OS. The owner's ruling of
+2026-11-12, asked which licence it takes and where it lives: *"Keep AGPL,
+separate crate alo-os uses"*. The `alo-workplace` lane publishes it as its own
+crate under AGPL-3.0, declared as `docs/contracts/app-adapters.md` says
+(application `com.alomails.Mails`, mechanism `dbus`), alo OS pins a tagged
+release, and that part of alo OS carries AGPL terms. The contract's *Amended
+2026-11-12* names the three things the first pin has to answer. **It is not a
+task in this plan**: the kit draws alo Mails, the adapter lets alo act in it,
+and neither waits on the other.
+
 ## How the desktop is kept the same
 
 `crates/alo-shell/src/a_picture_hashed.rs` already hashes everything a
@@ -165,9 +178,28 @@ plan.
 ## Sizes
 
 **S** is about a day, **M** two to four days, **L** one to two weeks, each for
-one lane with its gate. Tasks 1 to 14 are the first usable version; 15 and 16
-come after it. Task 14 keeps its number so that links to it still hold, and is
-done before task 13.
+one lane with its gate. Tasks 1 to 15 are the first usable version; 16 comes
+after it. Tasks 14 and 15 keep their numbers so that links to them still hold,
+and are done before task 13. *Task 15 moved into the first version on
+2026-11-12*, because alo Mails asked for a menu among its first controls (see
+*Where alo Mails' design lives*).
+
+**The order alo Mails asked for its controls in**, and the task that builds
+each — the task numbers are not changed, and a task that builds an earlier
+control is done first where nothing it waits on stops it:
+
+| Asked | Control | Task |
+|---|---|---|
+| 1 | a list row with unread and flag state | 11 |
+| 2 | a folder tree | 11 |
+| 3 | a single-line text field with token chips, for recipients | 10 |
+| 4 | a multi-line text area, for the body | 14 |
+| 5 | a button | 9 |
+| 6 | a menu | 15 |
+| 7 | a split pane | 11 |
+
+A button comes fifth in what alo Mails asked for and still comes first in the
+building, because tasks 10, 11 and 15 draw on it.
 
 ## Tasks
 
@@ -184,7 +216,7 @@ sizes, taken from `main` and committed.
 
 ### 2. `alo-drawing`: alo's pixels and text, out of the shell
 
-**Status:** not started. **Size:** M. **Waits on:** task 1.
+**Status:** in progress since 2026-11-11, in steps that each keep task 1's hashes. **Step 1** (the branch `alo-drawing-holds-the-display-scale`): the crate exists, `display_scale.rs` is in it, and `crates/alo-drawing/tests/it_never_reaches_a_compositor.rs` refuses any Smithay, Wayland, calloop, xkbcommon, libseat or D-Bus crate anywhere in what it pulls in, read off `Cargo.lock`. **Step 2** (`alo-drawing-holds-the-pictures`): `Solid`, `Inked`, `Washed` and `painted_flat.rs` with an area of the crate's own; the shell converts at `crate::painted::on_the_frame`. **Still to move:** the text stack and bundled fonts, `settings_canvas.rs` and `settings_type.rs`. **Size:** M. **Waits on:** task 1.
 
 **For the person:** nothing visible yet; it is what makes an alo application
 draw exactly as the desktop does. **Moves:** `painted.rs`'s three picture
@@ -278,7 +310,9 @@ field's text and caret are readable; **a password field's text never is**.
 
 ### 9. Words, buttons and icons
 
-**Status:** not started. **Size:** S. **Waits on:** tasks 2 and 6.
+**Status:** not started. **Size:** S. **Waits on:** tasks 2 and 6. **alo
+Mails asked for a button fifth**; it is built before tasks 10, 11 and 15
+because they draw on it.
 
 **For the person:** labels and buttons in alo Mails are the desktop's: the
 Quiet button of `docs/design/the-settings-window.md` (48 tall, radius 12),
@@ -289,24 +323,36 @@ pressing it by pointer, Enter and Space each does one thing once.
 
 ### 10. A text field
 
-**Status:** not started. **Size:** M. **Waits on:** tasks 5 and 9.
+**Status:** not started. **Size:** M. **Waits on:** tasks 5 and 9. **alo
+Mails asked for this third, with token chips for recipients** — work the plan
+did not list before 2026-11-12.
 
 **For the person:** a field for an address or a subject that behaves like a
 field everywhere else: a caret that moves by letter and by word, selection by
 Shift and by dragging, copy, cut and paste with other applications, undo,
-never splitting a letter from its accent. Drawn as the Bar's field is in
+never splitting a letter from its accent. **In a recipients field, each
+finished address becomes a chip** that the caret steps over as one thing and
+Backspace removes whole, and a reader names each chip as an address, as
+`RecipientInput.tsx` behaves. Drawn as the Bar's field is in
 `docs/design/the-alo-bar-when-it-is-open.md`. **Reuses:** the composer's
 grapheme rules; the clipboard through `wl_data_device`. **Test:** editing in
 Latvian, Greek and emoji keeps whole graphemes; text copied from the
-terminal pastes; a password field is never copied out.
+terminal pastes; a password field is never copied out; a chip is passed by one
+arrow press, removed by one Backspace, and read to a reader as one address.
 
 ### 11. A list of rows, scrolling, a split and a toolbar
 
-**Status:** not started. **Size:** M. **Waits on:** task 9.
+**Status:** not started. **Size:** M. **Waits on:** task 9. **alo Mails
+asked for three of its seven controls here: a list row with unread and flag
+state first, a folder tree second, a split pane seventh.** The row's states
+and the tree's nesting are work the plan did not list before 2026-11-12.
 
 **For the person:** a folder list, a list of thousands of messages and the
 message itself, wrapped and selectable to copy, that scroll smoothly by wheel, touchpad and keyboard, with the selected row
-marked; a divider between the lists and the message that can be moved by
+marked. **A message row shows whether it is unread and whether it is flagged**,
+in a way a reader says as well as one that is seen, as `MessageList.tsx` does;
+**folders nest**, and a folder with folders inside opens and closes by pointer
+and by the arrow keys, as `FolderSidebar.tsx` does. A divider between the lists and the message that can be moved by
 pointer and by keyboard; a row of tools across the top. **Reuses:** the Bar's
 rows (56 tall, radius 12) and the Settings page's scroll under a clip. **Its
 layout follows the webmail** (see *Where alo Mails' design lives*): the folder
@@ -315,7 +361,9 @@ toolbar holds are taken from its screens, measured and written down, not
 matched by eye.
 **Test:** only the visible rows are drawn, measured with ten thousand; Page
 Up, Page Down, Home and End; the divider moves by keyboard; the selected row
-is the one a reader is told is selected.
+is the one a reader is told is selected; a reader is told a row is unread and
+flagged; a folder opens with Right and closes with Left, and its level is what
+a reader is told.
 
 ### 12. Portal helpers, and what alo OS still owes
 
@@ -335,13 +383,14 @@ password.
 
 ### 13. The first version, in alo Mails' hands
 
-**Status:** not started. **Size:** S. **Waits on:** tasks 1 to 12, and 14.
+**Status:** not started. **Size:** S. **Waits on:** tasks 1 to 12, 14 and 15.
 
 **For the person:** alo Mails can be built on the kit. **Delivers:** the
 kit's surface written as a contract in `docs/contracts/` (it is used from
 another repository, so it changes additively), its words in all 24 EU
 languages through `alo-strings`, and an example window in the crate with a
-folder list, a message list, a field, a body over many lines and a button. **Test:** that example,
+folder tree, a message list with unread and flagged rows, a recipients field
+with chips, a body over many lines, a button, a menu and a split. **Test:** that example,
 built as a Flatpak, run on the qemu image with no graphics card: it opens,
 takes the keyboard, scales, and Orca reads it — **a walk done by hand**, and
 the report says it will not run again by itself.
@@ -350,7 +399,9 @@ the report says it will not run again by itself.
 
 **Status:** not started. **Size:** L. **Waits on:** tasks 10 and 11. **Part of
 the first usable version** since the owner's answer of 2026-11-12, and done
-before task 13.
+before task 13. **alo Mails asked for a multi-line text area fourth.** Its
+reference is `RichTextEditor.tsx`; this task is the plain-text body, and
+formatting is not in it.
 
 **For the person:** the body of a mail: wrapped plain text over many lines and
 pages, scrolled with the caret, with everything task 10 does.
@@ -359,7 +410,10 @@ paragraph; the reader follows the caret.
 
 ### 15. Menus and pop-ups
 
-**Status:** not started. **Size:** M. **Waits on:** task 13.
+**Status:** not started. **Size:** M. **Waits on:** tasks 3, 6 and 9 — it
+waited on task 13 until 2026-11-12. **Part of the first usable version since
+then**, because alo Mails asked for a menu sixth (`SnoozeMenu.tsx` is one), and
+done before task 13.
 
 **For the person:** right-click menus and pop-ups that are alo's, placed by
 the compositor so they never fall off a small screen. **Reuses:** `alo-menus`;
@@ -376,13 +430,19 @@ applications cannot drift apart. **Test:** task 1's hashes unchanged.
 
 ## Roughly how long
 
-**The first usable version is tasks 1 to 14: five S, eight M and one L — 26 to
-47 working days, about five to nine and a half weeks for one lane.** Before the
+**The first usable version is tasks 1 to 15: five S, nine M and one L — 28 to
+51 working days, about five and a half to ten weeks for one lane.** Before the
 owner's answers it was tasks 1 to 13 and four and a half to seven and a half
-weeks; the multi-line body is the week or two that was added. It is less with
-two lanes once task 3 has landed, because tasks 4 to 12 mostly do not wait on
-each other, and task 14 can run beside 12. Tasks 15 and 16, one M and one L, are
-one and a half to three weeks more and off that path. It is not days. Task 7's
+weeks; the multi-line body is the week or two that was added. **On 2026-11-12
+alo Mails' list of first controls added more**: the menu (task 15, an M, two to
+four days) moved into the first version, which is the change in the figures
+above; and token chips (task 10), a row's unread and flag state and a nesting
+folder tree (task 11) were added inside tasks that keep their size. **Those
+three were not re-estimated by anything but reading**: if task 10 or 11 grows
+past an M, the lane building it says so then. It is less with two lanes once
+task 3 has landed, because tasks 4 to 12 and 15 mostly do not wait on each
+other, and task 14 can run beside 12. Task 16, an L, is one to two weeks more
+and off that path. It is not days. Task 7's
 measurement can move this either way, which is why it is early. **None of this
 counts the mail itself**: connecting alo Mails to the server and to other
 people's accounts is `alo-workplace`'s work, not the kit's, and is not in
@@ -475,3 +535,49 @@ where. When the webmail's look and alo OS's look disagree (fonts, colours,
 buttons), which wins?"*, the owner answered *"alo OS's look wins
 (Recommended)"*. So task 11 takes the webmail's layout and none of its look,
 and nothing in this reading is left open.
+
+**The files to read, named by the `alo-workplace` session on 2026-11-12.**
+Each path is under `web/src` in `aloworld-org/alomails`, and each was found
+there by this lane at commit `1f162359`, the repository's newest on the day
+this was written — listed once, by hand; nothing re-reads it.
+
+| File | What it is the reference for |
+|---|---|
+| `mail/MailModule.tsx` | the whole window: three panes, and a single pane on a phone |
+| `mail/components/FolderSidebar.tsx` | the folder tree |
+| `mail/components/MessageList.tsx` | the message list and its rows |
+| `mail/components/CategoryChips.tsx` | the category chips over the list |
+| `mail/components/FlagDueControl.tsx` | a flag with a due date |
+| `mail/components/SnoozeMenu.tsx` | snoozing a message, from a menu |
+| `mail/components/ReadingPane.tsx` | the reading pane |
+| `mail/components/ThreadMessage.tsx` | one message within a conversation |
+| `mail/components/SpamBanner.tsx` | the banner over a message taken for spam |
+| `mail/components/InvitationCard.tsx` | a meeting invitation in a message |
+| `mail/body.ts` | how a message's body is made safe to show, with remote content blocked |
+| `mail/components/ComposeModal.tsx` | writing a message |
+| `mail/components/RecipientInput.tsx` | the recipients field and its chips |
+| `mail/components/RichTextEditor.tsx` | the body being written |
+| `shell/SearchOverlay.tsx` | search |
+| `shell/SettingsModal.tsx` | alo Mails' settings |
+
+**The controls alo Mails asked for first, in its order**: a list row with
+unread and flag state; a folder tree; a single-line text field with token
+chips, for recipients; a multi-line text area, for the body; a button; a menu;
+a split pane. *Sizes* maps each to its task.
+
+**What the kit does not do, and what alo Mails brings.** alo Mails gets its
+mail from **one Rust crate, `products/mail/alo-mail-client`**, with JMAP and
+IMAP4rev2 with SMTP behind one trait, so the window never knows which kind of
+account it is showing. That crate is `alo-workplace`'s; it was not on the
+default branch of `alo-workplace` (`b84ba721`) or of `alomails` when this was
+written, so it is to be built. alo Mails ships as the Flatpak
+**`com.alomails.Mails`**, **AGPL-3.0-only**, with the network, Wayland, its own
+data and the portals, and nothing else; **an account's secrets go only through
+the Secret portal**, which is what task 12's Secret helper is for.
+
+**What it adds to this plan.** The rows' unread and flag state, the folder
+tree and the recipients' chips were not in tasks 10 and 11 and are now; the
+menu was after the first version and is now inside it. *Sizes* and *Roughly
+how long* say what that does to the figures. *This makes an existing promise
+true — alo Mails built on the kit, `docs/features.md`, The shell — because
+each is a control alo Mails' own screens already have, and adds none.*

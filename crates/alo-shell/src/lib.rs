@@ -250,8 +250,9 @@ mod direct_sign_in;
 mod direct_target;
 mod display_lifecycle;
 mod display_resources;
-/// One display's scale, and the one road a logical measure takes to its pixels.
-mod display_scale;
+/// One display's scale, moved to `alo-drawing` (the UI kit plan, task 2) and
+/// named here so every `crate::display_scale` path in the shell still holds.
+use alo_drawing::display_scale;
 mod division_raster;
 /// The Dock's own surface: a rounded panel with a hairline and a shadow,
 /// rasterised with alpha because neither is a rectangle.
@@ -264,6 +265,7 @@ mod dock_tooltip;
 mod how_a_panel_is_raised;
 /// A full-screen window's band, out of sight until the top edge is reached.
 mod the_band_over_full_screen;
+mod the_buttons_an_application_draws;
 mod the_keyboard_on_the_docks_surfaces;
 /// The *Open with* sheet: an application asked for the person to choose what
 /// opens a link (frame `25:52`). Public for the one type the door hands it.
@@ -287,6 +289,7 @@ mod a_link_is_opened;
 /// inside it, worked out once for the draw and for a press.
 /// What a press on the Dock does: the decision, with no act in it.
 mod a_press_on_the_dock;
+mod a_window_that_grows_is_placed_again;
 mod a_window_the_person_opened;
 mod an_application_is_started;
 mod an_edge_in_its_displays_units;
@@ -319,7 +322,8 @@ mod an_alo_windows_edge;
 mod an_application_verb_is_carried_out;
 /// Closing a running task asks: Stop and close, or Cancel (ADR 0139).
 mod asking_before_closing;
-pub mod bar_raster;
+/// The alo Bar's matches, rising from the Dock's field.
+mod bar_matches_raster;
 mod dock_room;
 mod dock_windows;
 mod drawing;
@@ -567,6 +571,8 @@ mod the_approval_card;
 /// The alo mark at the top of the approval card.
 mod the_approval_cards_icons;
 pub mod the_bar_finds;
+/// Whether the alo Bar is open: whether the Dock's field has the keyboard.
+mod the_bar_is_open;
 mod the_bars_pressable_slots;
 mod the_bars_seat;
 pub mod the_cards_words;
@@ -608,8 +614,12 @@ pub use the_first_account::{ASecret, OnTheSheet, TheAccountSheet, TheAccountShow
 /// Closing alo's terminal: at once when idle, after a question when a command
 /// is running.
 mod closing_the_terminal;
+/// What a screen reader is told the Bar's matches are.
+mod the_bars_matches_as_read;
 mod the_closed_windows_notice;
 pub mod the_closed_windows_words;
+/// The end of a line of typing that fits in a field.
+mod the_end_that_fits;
 pub mod the_first_start;
 mod the_first_starts_icons;
 mod the_formats_are_told;
@@ -619,6 +629,8 @@ mod the_language_a_person_chose;
 pub mod the_language_set_up_in;
 pub mod the_languages_offered;
 mod the_launchers_icons;
+/// The alo Bar's rows, drawn the same wherever the Bar is shown.
+mod the_launchers_rows;
 pub mod the_machines_keyboard;
 pub mod the_markets_words;
 mod the_panel_reveals;
@@ -699,6 +711,8 @@ mod what_an_application_act_asks_for_tests;
 /// What becomes of a reply sent from a task window's reply box.
 pub mod what_becomes_of_a_reply;
 pub mod what_the_agent_may_reach;
+/// What the alo Bar shows, as a frame hands it over.
+pub mod what_the_bar_shows;
 mod what_the_dock_has_open;
 /// One keypress, read as what a person typed: the compositor's half of the
 /// terminal's keyboard, where the keymap is. `alo_terminal` turns the answer
@@ -706,9 +720,11 @@ mod what_the_dock_has_open;
 mod what_the_keyboard_said;
 mod what_the_seat_made_of_its_input;
 mod what_the_server_tells_a_frame;
+/// Where a list opened from the Dock may go.
+mod where_a_popover_is_kept;
 mod where_a_task_window_opens;
 mod where_a_window_opens;
-pub mod where_the_bar_opens;
+mod where_the_bars_matches_rise;
 mod where_the_dock_is;
 mod where_the_market_opens;
 pub mod which_area_has_the_keyboard;
@@ -807,9 +823,10 @@ pub use window_activation::WindowActivationError;
 pub use window_close::WindowCloseError;
 pub use window_dividing::NotDivided;
 pub use window_edge::{
-    A_TARGET_IS, BETWEEN_TARGETS, Decorations, EdgeControl, OnTheEdge, THE_CONTROLS_SIT_AT,
-    THE_NARROWEST_EDGE_IS, THE_REGION_IS_TALL, THE_STRIP_IS_TALL, THE_STRIP_STARTS_AT,
-    THE_TITLE_STARTS_AT, THE_TRAILING_INSET, WindowEdge, edge_of, the_usable_output,
+    A_TARGET_IS, BETWEEN_TARGETS, Decorations, EdgeControl, ItsOwnButtons, OnTheEdge,
+    THE_CONTROLS_SIT_AT, THE_NARROWEST_EDGE_IS, THE_REGION_IS_TALL, THE_STRIP_IS_TALL,
+    THE_STRIP_STARTS_AT, THE_TITLE_STARTS_AT, THE_TRAILING_INSET, WindowEdge, edge_of,
+    the_usable_output,
 };
 /// What the external window edge is drawn out of: rectangles and roles.
 ///
@@ -847,10 +864,10 @@ pub use window_edge_tooltip::{
     A_LINE_IS_TALL, AROUND_THE_WORDS, AT_MOST_LINES, AT_MOST_WIDE, Because, ShowingTheTitle,
     Tooltip, the_name_of_a_control, tooltip_of,
 };
-/// **Who draws a frame's header**, in the one place both the drawing and the
-/// reading ask. Its body is what changes when the toplevel's decoration state
-/// is read per frame; see the file's header.
-pub use window_edge_who_draws::who_draws_a_frame;
+/// **Who draws a window's header**, in the one place both the drawing and the
+/// reading ask: from the decoration mode the application agreed, and for one
+/// that draws its own, the buttons it was measured to show.
+pub use window_edge_who_draws::who_draws_the_header;
 pub use window_full_screen::WindowFullScreenError;
 pub use window_maximize::WindowMaximizeError;
 /// **The window panel** Window actions opens: placement and full screen
