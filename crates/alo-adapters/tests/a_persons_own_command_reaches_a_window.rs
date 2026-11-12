@@ -16,7 +16,7 @@ use std::collections::BTreeMap;
 
 use alo_adapters::{
     AccessibilityTree, Contents, Facts, NodeAt, NotPressed, NotWalked, Pressable, Running, States,
-    TreeFault, Unpressed, Whose, press_by_hand, read_by_hand,
+    TreeFault, Unpressed, Whose, WorkingFully, press_by_hand, read_by_hand,
 };
 use alo_strings::{Strings, Vocabulary};
 
@@ -41,6 +41,12 @@ mod roles {
     pub const PUSH_BUTTON: u32 = 43;
     /// A switch.
     pub const SWITCH: u32 = 130;
+    /// A toggle button.
+    pub const TOGGLE_BUTTON: u32 = 62;
+    /// A menu item.
+    pub const MENU_ITEM: u32 = 35;
+    /// A tab.
+    pub const PAGE_TAB: u32 = 37;
     /// An application's root.
     pub const APPLICATION: u32 = 75;
 }
@@ -420,10 +426,10 @@ fn every_refusal_is_the_agents_and_nothing_is_pressed() {
     let strings = in_english();
     assert_eq!(
         Unpressed::NotPressed(NotPressed::NoSuchControl)
-            .said(mail, Some("Inbox"), Pressable::Button, "Reply", &strings)
+            .said(mail, Some("Inbox"), Pressable::Button, "Reply", WorkingFully::NothingMoreToTurnOn, &strings)
             .text(),
         NotPressed::NoSuchControl
-            .said_of(MAIL, Pressable::Button, "Reply", &strings)
+            .said_of(MAIL, Pressable::Button, "Reply", WorkingFully::NothingMoreToTurnOn, &strings)
             .text()
     );
 }
@@ -479,4 +485,126 @@ fn alos_own_surfaces_are_found_by_the_shells_name_and_by_surface() {
         NotWalked::NoWindow
     );
     assert_eq!(Whose::AlosOwn { answers_as: ALO }.named(), "alo");
+}
+
+/// The editor drawn by Chromium the tests reach.
+const CODIUM: &str = "com.vscodium.codium";
+
+/// **VSCodium's window as Chromium describes it**: in its complete mode a toggle
+/// button offers `check` or `uncheck` and a menu item `select`; in its basic
+/// mode a tab offers only `doDefault`, which answers *done* and does nothing.
+/// The actions are the ones measured on 2026-11-12
+/// (`docs/quirks/vscodium-is-pressed-and-read-only-when-described-completely.md`).
+fn vscodium(toggle: &'static [&'static str]) -> ATree {
+    ATree::default().with(
+        ":1.30",
+        Some(CODIUM),
+        vec![thing(roles::FRAME, "README.md - VSCodium").holding(vec![
+            thing(roles::TOGGLE_BUTTON, "Toggle Panel (Ctrl+J)").doing(toggle),
+            thing(roles::MENU_ITEM, "File").doing(&["select", "showContextMenu"]),
+            thing(roles::PAGE_TAB, "Search (Ctrl+Shift+F)")
+                .doing(&["doDefault", "showContextMenu"]),
+        ])],
+    )
+}
+
+/// **A toggle button is pressed by whichever of `check` and `uncheck` it
+/// offers, and a menu item by `select`** — each once — so a press always turns
+/// a toggle over. **`doDefault` is never a press**: a control offering only it
+/// is refused, and nothing is sent to it.
+#[test]
+fn chromiums_complete_mode_is_pressed_and_its_do_default_is_not() {
+    let codium = Whose::Application(CODIUM);
+    for toggle in [
+        &["check", "showContextMenu"][..],
+        &["uncheck", "showContextMenu"][..],
+    ] {
+        let tree = vscodium(toggle);
+        let pressed = press_by_hand(
+            &tree,
+            codium,
+            None,
+            Pressable::Button,
+            "Toggle Panel (Ctrl+J)",
+        );
+        assert!(pressed.is_ok(), "{toggle:?}: {pressed:?}");
+        assert_eq!(*tree.pressed.borrow(), 1, "{toggle:?}");
+    }
+
+    let tree = vscodium(&["check", "showContextMenu"]);
+    assert!(press_by_hand(&tree, codium, None, Pressable::MenuItem, "File").is_ok());
+    assert_eq!(*tree.pressed.borrow(), 1, "select did not press the menu item");
+
+    assert_eq!(
+        press_by_hand(&tree, codium, None, Pressable::Tab, "Search (Ctrl+Shift+F)"),
+        Err(Unpressed::NotPressed(NotPressed::CannotBePressed))
+    );
+    assert_eq!(
+        *tree.pressed.borrow(),
+        1,
+        "doDefault was sent, and would have reported a press that did not happen"
+    );
+    assert!(
+        !alo_adapters::PRESSING
+            .iter()
+            .any(|word| word.eq_ignore_ascii_case("doDefault")),
+        "doDefault is a press"
+    );
+}
+
+/// **Where turning on *Let alo work fully inside apps like VSCodium* would give
+/// the control a press, the refusal names that switch**; where it would not,
+/// the refusal is the plain one, and no other refusal changes either way.
+#[test]
+fn a_control_that_cannot_be_pressed_names_the_switch_only_where_it_would_help() {
+    let strings = in_english();
+    let said = |why: NotPressed, fully| {
+        why.said_of(CODIUM, Pressable::Tab, "Search", fully, &strings)
+            .text()
+            .to_owned()
+    };
+    let naming = said(NotPressed::CannotBePressed, WorkingFully::CouldBeTurnedOn);
+    assert!(
+        naming.contains("“Let alo work fully inside apps like VSCodium”"),
+        "{naming}"
+    );
+    assert!(
+        naming.contains("Settings → Accessibility → Applications"),
+        "{naming}"
+    );
+    assert!(naming.contains("nothing was pressed"), "{naming}");
+    assert!(naming.contains(CODIUM), "{naming}");
+
+    let plain = said(
+        NotPressed::CannotBePressed,
+        WorkingFully::NothingMoreToTurnOn,
+    );
+    assert!(!plain.contains("Let alo work fully"), "{plain}");
+    assert!(plain.contains("nothing was pressed"), "{plain}");
+
+    for other in [
+        NotPressed::NoSuchControl,
+        NotPressed::MoreThanOne,
+        NotPressed::TooMuchToBeSure,
+        NotPressed::CannotBeUsedNow,
+        NotPressed::DidNotPress,
+    ] {
+        assert_eq!(
+            said(other, WorkingFully::CouldBeTurnedOn),
+            said(other, WorkingFully::NothingMoreToTurnOn),
+            "{other:?} named a switch that would not help"
+        );
+    }
+
+    assert_eq!(
+        WorkingFully::for_one(true, false),
+        WorkingFully::CouldBeTurnedOn
+    );
+    for (reached, turned_on) in [(true, true), (false, false), (false, true)] {
+        assert_eq!(
+            WorkingFully::for_one(reached, turned_on),
+            WorkingFully::NothingMoreToTurnOn,
+            "reached = {reached}, turned on = {turned_on}"
+        );
+    }
 }

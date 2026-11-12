@@ -19,7 +19,7 @@ use alo_strings::{Said, Strings};
 
 use crate::accessibility_tree::{AccessibilityTree, TreeFault};
 use crate::activating::PRESSING;
-use crate::not_pressed::NotPressed;
+use crate::not_pressed::{NotPressed, WorkingFully};
 use crate::not_walked::NotWalked;
 use crate::pressable::Pressable;
 use crate::shown::Shown;
@@ -88,11 +88,12 @@ impl Unpressed {
         within: Option<&str>,
         kind: Pressable,
         name: &str,
+        fully: WorkingFully,
         strings: &Strings,
     ) -> Said {
         match self {
             Self::NotWalked(why) => why.said(whose.named(), within, strings),
-            Self::NotPressed(why) => why.said_of(whose.named(), kind, name, strings),
+            Self::NotPressed(why) => why.said_of(whose.named(), kind, name, fully, strings),
         }
     }
 }

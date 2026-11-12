@@ -36,7 +36,7 @@ use std::time::{Duration, SystemTime};
 use alo_adapters::{
     ACTIVATE_CONTROL, AccessibilityTree, Activating, Adapter, Adapters, Contents, Facts, Limit,
     NodeAt, NotLoaded, READ_WINDOW, ReadingWindows, Role, Running, States, TreeFault,
-    fallback_verbs, load, shipped_adapters,
+    WorkingFully, fallback_verbs, load, shipped_adapters,
 };
 use alo_applications::{Application, Installed};
 use alo_capability::{
@@ -627,7 +627,7 @@ fn a_password_fields_contents_are_never_asked_for() {
         &strings,
     )
     .unwrap()
-    .press(&tree, &strings)
+    .press(&tree, WorkingFully::NothingMoreToTurnOn, &strings)
     .unwrap();
     let password = tree.named(":1.7", "Password");
     assert!(!tree.asked().contains(&Asked::Text(password)));
@@ -750,7 +750,7 @@ fn one_approval_presses_the_control_it_names_once_and_is_recorded() {
         &strings,
     )
     .unwrap()
-    .press(&tree, &strings)
+    .press(&tree, WorkingFully::NothingMoreToTurnOn, &strings)
     .unwrap();
     assert!(!pressed.unanswered());
     assert!(pressed.said(&strings).is_none());
@@ -808,7 +808,7 @@ fn the_control_is_found_again_at_the_moment_it_is_pressed() {
         &strings,
     )
     .unwrap()
-    .press(&after, &strings)
+    .press(&after, WorkingFully::NothingMoreToTurnOn, &strings)
     .unwrap_err();
     assert_eq!(
         refused.said(&strings).text(),
@@ -837,7 +837,7 @@ fn nothing_is_guessed_when_the_control_is_not_the_only_one() {
             &strings,
         )
         .unwrap()
-        .press(tree, &strings)
+        .press(tree, WorkingFully::NothingMoreToTurnOn, &strings)
         .unwrap_err()
     };
     let tree = the_desktop();
@@ -1023,7 +1023,7 @@ fn every_refusal_is_recorded_and_nothing_is_pressed() {
             &strings,
         )
         .unwrap()
-        .press(tree, &strings)
+        .press(tree, WorkingFully::NothingMoreToTurnOn, &strings)
         .unwrap_err()
     };
     let cases: Vec<(ATree, &str, &str, &str)> = vec![
@@ -1121,7 +1121,7 @@ fn an_unanswered_press_is_recorded_as_run_and_said_as_not_known() {
         &strings,
     )
     .unwrap()
-    .press(&tree, &strings)
+    .press(&tree, WorkingFully::NothingMoreToTurnOn, &strings)
     .unwrap();
     assert!(pressed.unanswered());
     assert_eq!(

@@ -561,6 +561,87 @@ fn a_control_that_is_missing_or_doubled_is_not_pressed() {
     );
 }
 
+/// VSCodium, drawn by Chromium.
+const CODIUM: &str = "com.vscodium.codium";
+
+/// VSCodium's window as Chromium's basic mode describes it: its buttons offer
+/// only `doDefault`, which answers *done* and does nothing.
+fn vscodium_described_basically() -> ATree {
+    ATree::default()
+        .with(
+            ":1.30",
+            Some(CODIUM),
+            "README.md - VSCodium",
+            &["Search"],
+            "Hello",
+        )
+        .offering(&["doDefault", "showContextMenu"])
+}
+
+/// **A press VSCodium cannot be given names the switch that would give it one,
+/// while that switch is off** — and nothing is pressed either way.
+#[test]
+fn a_press_chromium_cannot_take_names_the_switch_while_it_is_off() {
+    let known = Known::holding(&[CODIUM]);
+    let mut machine = AMachine {
+        tree: Some(vscodium_described_basically()),
+        ..AMachine::default()
+    };
+    assert_eq!(
+        known.running(&[CODIUM, "press", "button", "Search"], &mut machine),
+        Ended::Refused
+    );
+    let said = machine.warned.join("\n");
+    assert!(
+        said.contains("“Let alo work fully inside apps like VSCodium”"),
+        "{said}"
+    );
+    assert!(said.contains("nothing was pressed"), "{said}");
+    assert_eq!(*machine.tree.as_ref().unwrap().pressed.borrow(), 0);
+}
+
+/// **With the switch on, or describing turned off, or another application, the
+/// sentence is the plain one**: naming a switch that would not help would send
+/// the person to Settings for nothing.
+#[test]
+fn a_press_refused_where_the_switch_would_not_help_does_not_name_it() {
+    let mut on = alo_access::TurnedOn::nothing();
+    on.let_alo_work_fully_inside_apps(true);
+    let mut not_described = alo_access::TurnedOn::nothing();
+    not_described.let_apps_describe_themselves(false);
+    for (access, why) in [(on, "the switch is on"), (not_described, "describing is off")] {
+        let known = Known::holding(&[CODIUM]);
+        let mut machine = AMachine {
+            tree: Some(vscodium_described_basically()),
+            access,
+            ..AMachine::default()
+        };
+        assert_eq!(
+            known.running(&[CODIUM, "press", "button", "Search"], &mut machine),
+            Ended::Refused,
+            "{why}"
+        );
+        let said = machine.warned.join("\n");
+        assert!(!said.contains("Let alo work fully"), "{why}: {said}");
+        assert!(said.contains("nothing was pressed"), "{why}: {said}");
+    }
+
+    let known = Known::holding(&[EDITOR]);
+    let mut machine = AMachine {
+        tree: Some(the_editors_window().offering(&["doDefault"])),
+        ..AMachine::default()
+    };
+    assert_eq!(
+        known.running(&["texteditor", "press", "button", "Save"], &mut machine),
+        Ended::Refused
+    );
+    let said = machine.warned.join("\n");
+    assert!(
+        !said.contains("Let alo work fully"),
+        "an application the switch does not reach: {said}"
+    );
+}
+
 // ---------------------------------------------------------------------------
 // front and alo.
 // ---------------------------------------------------------------------------

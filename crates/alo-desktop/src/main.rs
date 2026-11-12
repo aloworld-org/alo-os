@@ -679,9 +679,9 @@ mod running {
             // **Told at sign-in only if they answered in Settings**, so the
             // image's default, or a variable they set themselves, stands
             // otherwise (`crate::telling_applications_to_describe_themselves`).
-            let (apps_describe_themselves, they_answered) =
-                crate::telling_applications_to_describe_themselves::the_persons_answer();
-            if they_answered {
+            let answer = crate::telling_applications_to_describe_themselves::the_persons_answer();
+            let apps_describe_themselves = answer.describe;
+            if answer.chose {
                 crate::telling_applications_to_describe_themselves::tell(apps_describe_themselves);
             }
             Ok(Self {
