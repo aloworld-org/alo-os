@@ -205,6 +205,15 @@ impl crate::Server {
     ) -> Result<(), crate::WindowActivationError> {
         self.activate_window(surface)?;
         self.the_person_went_to(AKindOfWindow::Applications);
+        // **And the view travels to it where none of it is in sight** —
+        // `the-canvas-as-a-workspace.md` §11, *if the chosen window is
+        // elsewhere: travel to its Place and location*, which alo's own
+        // windows already did. Until 2026-11-12 an application's window was
+        // focused and raised where nobody could see it: Firefox's opening had
+        // glided the view away from Dolphin, and Super+Tab gave Dolphin the
+        // keyboard off the screen. A window any part of which is in sight is
+        // left where the person sees it (`Server::the_view_travels_to`).
+        let _travelled = self.the_view_travels_to(surface);
         Ok(())
     }
 

@@ -316,6 +316,8 @@ mod a_window_the_person_opened;
 mod an_application_is_started;
 mod an_edge_in_its_displays_units;
 mod an_icon_is_drawn_on_its_badge;
+/// The room a window alo places lands in: the view above the Dock.
+mod the_room_alo_places_a_window_in;
 mod what_each_application_draws;
 mod what_the_dock_is_filled_with;
 mod what_the_machine_offers_now;

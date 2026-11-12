@@ -320,3 +320,37 @@ promise true — *a new window never lands on top of another* — and add no
 setting. Spending a taken remembered place, rather than keeping it for when the
 other window closes, is chosen so a window never jumps across the desk later
 on its own.
+
+---
+
+## Amended 2026-11-12 — wholly on the screen, above the Dock, and found again
+
+From a boot walk on a 1 280 × 800 screen with Dolphin open. Firefox opened
+taller than the screen twice. The first time its bottom was under the Dock and
+off the edge, and Dolphin was out of sight. The second time only its tab strip
+showed, under the Dock. Super+Tab then gave Dolphin the keyboard while Dolphin
+stayed off the screen.
+
+**A window alo places lands wholly in the room the Dock leaves**, which is the
+view down to the Dock's top. If a window is too big for that room, alo asks it
+to be the size that fits, but never smaller than the application says it can
+be. That is rule 6's *constrained by the usable display area*, which had not
+been built. The window is placed at the size it really has until it settles,
+because an application may refuse the request. A window that fits is moved
+only as far as it must be to lie inside, with the 16 gap. **If a window alo
+placed grows partly out of the room, it is placed again**, just as a window
+that grows over another already was. A window wholly out of the view, which
+the person panned away from, is left where it is.
+`crate::the_room_alo_places_a_window_in`.
+
+**Going to an application's window travels to it when none of it is in
+sight.** That is §11 of `the-canvas-as-a-workspace.md`. The Dock, its window
+list, Super+Tab and Alt+Tab all go through
+`Server::the_person_goes_to_this_window`, which now takes the view there, as
+alo's own windows already did.
+
+**This lane's judgement, the owner's to change:** both changes make existing
+promises true and add no setting. The Dock is the only fixed control the room
+leaves out. The panel's column, the top controls and the indicator still only
+must not cover a new window's handle completely. A person may still put a
+window under the Dock or off the screen themselves.

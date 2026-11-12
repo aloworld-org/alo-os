@@ -114,13 +114,25 @@ impl crate::Server {
                 continue;
             }
             let (open, _) = self.the_windows_a_new_one_opens_among(&surface);
-            let here = frame.strip.round(crate::where_a_window_is(&surface));
+            let where_it_is = crate::where_a_window_is(&surface);
+            let here = frame.strip.round(where_it_is);
             let covers = frame
                 .strip
                 .round_each(&open)
                 .iter()
                 .any(|other| other.overlaps(here));
-            if covers {
+            // **Or has grown partly out of the room the Dock leaves** — under
+            // the Dock, or off the screen's edge — which Firefox did on
+            // 2026-11-12 (`crate::the_room_alo_places_a_window_in`). One wholly
+            // out of the view is one the person panned away from, and is left.
+            let partly_out = crate::the_room_alo_places_a_window_in::is_partly_out_of(
+                where_it_is.loc,
+                now,
+                frame.room,
+                frame.strip,
+            );
+            if covers || partly_out {
+                let _asked = self.ask_it_to_fit(&surface, now, frame.room, frame.strip);
                 let point = self.where_this_window_goes(&surface, now, was.theirs, frame);
                 crate::window_placement::set(&surface, Some(point));
                 moved += 1;
