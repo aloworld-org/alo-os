@@ -267,7 +267,7 @@ where
                         (raster.area.size.w, raster.area.size.h).into(),
                         false,
                     )
-                    .map(|texture| (texture, raster.area))
+                    .map(|texture| (texture, crate::painted::on_the_frame(raster.area)))
                     .map_err(submission)?,
             ),
         };
