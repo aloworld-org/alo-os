@@ -379,7 +379,18 @@ impl OverTheSessionBus {
 }
 
 impl TheManager for OverTheSessionBus {
+    /// **A reader that fell over before is forgiven first**: a unit that
+    /// failed too often in a row is refused by its manager until somebody
+    /// resets it, and turning the switch off and on is that somebody. A unit
+    /// that has not failed answers the reset with an error, which is nothing.
     fn start(&self, unit: &str) -> Result<(), String> {
+        let _ = self.bus.call_method(
+            Some(SYSTEMD),
+            THE_MANAGERS_PATH,
+            Some(MANAGER),
+            "ResetFailedUnit",
+            &(unit,),
+        );
         self.asked("StartUnit", unit)
     }
 
