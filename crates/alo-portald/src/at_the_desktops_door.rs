@@ -25,7 +25,7 @@
 //! `choose-link <asking> <link> <default> [<another> …]` and the desktop holds
 //! the connection while its *Open with* sheet is up. The desktop takes the
 //! sheet down after five minutes and answers `unanswered`; this waits
-//! [`THE_PERSONS_PATIENCE`] — a little longer — so a desktop that froze cannot
+//! `THE_PERSONS_PATIENCE` — a little longer — so a desktop that froze cannot
 //! hold an application's request for ever, and a silence is `could-not-ask`,
 //! never a choice.
 
