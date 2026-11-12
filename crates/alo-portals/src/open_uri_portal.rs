@@ -40,7 +40,7 @@
 //! (`crate::the_person_chooses_a_link`), the desktop is asked through its door's
 //! `choose-link` act. What the person chose is held to what was offered,
 //! recorded, and started as every link is; nothing chosen is recorded as
-//! [`Outcome::LinkNotChosen`], and **the default is never opened instead**.
+//! [`Outcome::LinkUnchosen`], and **the default is never opened instead**.
 //!
 //! **`OpenDirectory` is answered `2`**, recorded as
 //! [`Unanswered::FolderNotDecidedHere`]: nothing on this machine decides what

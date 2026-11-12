@@ -134,7 +134,7 @@ pub enum Outcome {
     /// The application asked for the person to choose what opens a link, and
     /// nothing was chosen: the person cancelled, nobody answered, or the sheet
     /// could not be shown.
-    LinkNotChosen(crate::link_not_chosen::LinkNotChosen),
+    LinkUnchosen(crate::link_not_chosen::LinkUnchosen),
     /// It was allowed as far as it went, or never reached the grants, and could
     /// not be answered.
     Unanswered(Unanswered),
@@ -152,7 +152,7 @@ impl Outcome {
     #[must_use]
     pub const fn response(&self) -> u32 {
         match self {
-            Self::LinkNotChosen(not) => not.why().response(),
+            Self::LinkUnchosen(not) => not.why().response(),
             Self::SecretHandedOver(_)
             | Self::Opened(_)
             | Self::LinkOpened(_)
@@ -206,7 +206,7 @@ impl Outcome {
             Self::NothingOpens(nothing) => nothing.said(strings),
             Self::NotALink(not) => not_a_link_said(not, strings),
             Self::NothingOpensLinks(nothing) => nothing.said(strings),
-            Self::LinkNotChosen(not) => not.said(strings),
+            Self::LinkUnchosen(not) => not.said(strings),
             Self::Unanswered(unanswered) => unanswered.said(strings),
         }
     }

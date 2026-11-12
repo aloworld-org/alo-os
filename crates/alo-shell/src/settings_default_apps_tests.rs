@@ -17,7 +17,7 @@ use alo_dock::artwork::{APicture, TheArtwork};
 use super::WhatCouldOpenLinks;
 use crate::settings_page::{ABlock, TheKind};
 use crate::settings_testing::{
-    CountingDoor, a_persons_machine, bytes, doors, light, noon, settings_words, words,
+    CountingDoor, a_persons_machine, bytes, doors, light, noon, settings_words,
 };
 use crate::{
     SettingsCategory, SettingsDid, SettingsKey, SettingsPress, SettingsRow, SettingsSection,
@@ -59,7 +59,7 @@ fn a_machine_with_browsers() -> WhatCouldOpenLinks {
     let mut artwork = TheArtwork::none();
     artwork.draws(
         alo_dock::AppId::named(FIREFOX).unwrap(),
-        APicture::of(2, 2, vec![230, 90, 20, 255].repeat(4)).unwrap(),
+        APicture::of(2, 2, [230, 90, 20, 255].repeat(4)).unwrap(),
     );
     WhatCouldOpenLinks {
         installed,
@@ -102,15 +102,18 @@ fn press(window: &mut SettingsWindow, pressed: SettingsKey) -> Option<SettingsDi
     window.pressed(key(pressed), doors(&strings, &door))
 }
 
+/// One section as drawn: its heading, its rows, its footnote.
+type ASectionDrawn = (Option<String>, Vec<(String, String, bool)>, Option<String>);
+
 /// The page as drawn: each section's heading, and each row's name, line and
 /// whether it is ringed.
 fn the_page(
     window: &SettingsWindow,
-) -> Vec<(Option<String>, Vec<(String, String, bool)>, Option<String>)> {
+) -> Vec<ASectionDrawn> {
     let page = crate::settings_page::the_page(
         window.open().unwrap(),
         SettingsCategory::DefaultApps,
-        &words(),
+        &settings_words(),
         noon(),
     );
     assert_eq!(page.heading, "Default apps");
@@ -320,7 +323,7 @@ fn an_application_that_left_is_refused_and_nothing_is_written() {
     let file = machine.kept(alo_applications::keeping::THE_FILE);
     let mut window = opened(&machine, a_machine_with_browsers());
     let open = window.open_mut().unwrap();
-    let did = open.default_apps.choose(LinkKind::Web, LIBREWOLF, &words());
+    let did = open.default_apps.choose(LinkKind::Web, LIBREWOLF, &settings_words());
     assert_eq!(
         did,
         crate::SettingsKept::Written,
@@ -334,7 +337,7 @@ fn an_application_that_left_is_refused_and_nothing_is_written() {
         Application::called(THUNDERBIRD, "Thunderbird").unwrap(),
     ]);
     open.default_apps.the_machine_has(left);
-    let did = open.default_apps.choose(LinkKind::Web, LIBREWOLF, &words());
+    let did = open.default_apps.choose(LinkKind::Web, LIBREWOLF, &settings_words());
     assert_eq!(did, crate::SettingsKept::Refused);
     assert_eq!(bytes(&file), written, "a refusal wrote the file");
     assert_eq!(
@@ -354,7 +357,7 @@ fn a_file_that_did_not_read_is_said_and_kept_until_put_back() {
     let page = crate::settings_page::the_page(
         window.open().unwrap(),
         SettingsCategory::DefaultApps,
-        &words(),
+        &settings_words(),
         noon(),
     );
     assert!(

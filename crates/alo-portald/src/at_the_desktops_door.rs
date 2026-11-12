@@ -36,7 +36,7 @@ use std::time::Duration;
 
 use alo_acting::{Answer, Chose, NotActed, ToChooseALink, ToOpenALink};
 use alo_applications::{Application, Link};
-use alo_portals::{LinkChosen, LinkStarted, OpensLinks};
+use alo_portals::{SheetAnswer, LinkStarted, OpensLinks};
 
 /// The desktop's socket in a person's own directory.
 pub const THE_DESKTOPS_SOCKET: &str = "shell.sock";
@@ -148,9 +148,9 @@ impl OpensLinks for AtTheDesktopsDoor {
         self.asked(&ToOpenALink::with(application, link.clone()).written())
     }
 
-    fn chosen(&self, asking: &str, link: &Link, offered: &[String]) -> LinkChosen {
+    fn chosen(&self, asking: &str, link: &Link, offered: &[String]) -> SheetAnswer {
         let Ok(asking) = Application::identified(asking) else {
-            return LinkChosen::CouldNotAsk;
+            return SheetAnswer::CouldNotAsk;
         };
         // **The default first, and at most as many as one sheet offers**: a
         // machine with more browsers than that offers its first sixteen.
@@ -160,21 +160,21 @@ impl OpensLinks for AtTheDesktopsDoor {
             .filter_map(|one| Application::identified(one).ok())
             .collect();
         let Ok(asked) = ToChooseALink::of(asking, link.clone(), offered) else {
-            return LinkChosen::CouldNotAsk;
+            return SheetAnswer::CouldNotAsk;
         };
         let heard = match self.said(&asked.written(), THE_PERSONS_PATIENCE) {
             Heard::This(heard) => heard,
-            Heard::NoDesktop => return LinkChosen::NoDesktop,
-            Heard::Nothing => return LinkChosen::CouldNotAsk,
+            Heard::NoDesktop => return SheetAnswer::NoDesktop,
+            Heard::Nothing => return SheetAnswer::CouldNotAsk,
         };
         match Chose::read(&heard, &asked) {
             Some(Chose::Chosen(application)) => {
-                LinkChosen::Chosen(application.identifier().to_owned())
+                SheetAnswer::Picked(application.identifier().to_owned())
             }
-            Some(Chose::Cancelled) => LinkChosen::Cancelled,
-            Some(Chose::Unanswered) => LinkChosen::Unanswered,
-            Some(Chose::CannotShow) => LinkChosen::CannotShow,
-            None => LinkChosen::CouldNotAsk,
+            Some(Chose::Cancelled) => SheetAnswer::Cancelled,
+            Some(Chose::Unanswered) => SheetAnswer::Unanswered,
+            Some(Chose::CannotShow) => SheetAnswer::CannotShow,
+            None => SheetAnswer::CouldNotAsk,
         }
     }
 }
@@ -257,17 +257,17 @@ mod tests {
             (
                 "chosen",
                 "chosen io.gitlab.librewolf-community\n",
-                LinkChosen::Chosen("io.gitlab.librewolf-community".to_owned()),
+                SheetAnswer::Picked("io.gitlab.librewolf-community".to_owned()),
             ),
-            ("cancelled", "cancelled\n", LinkChosen::Cancelled),
-            ("unanswered", "unanswered\n", LinkChosen::Unanswered),
-            ("cannot-show", "cannot-show\n", LinkChosen::CannotShow),
+            ("cancelled", "cancelled\n", SheetAnswer::Cancelled),
+            ("unanswered", "unanswered\n", SheetAnswer::Unanswered),
+            ("cannot-show", "cannot-show\n", SheetAnswer::CannotShow),
             (
                 "not-offered",
                 "chosen org.example.Evil\n",
-                LinkChosen::CouldNotAsk,
+                SheetAnswer::CouldNotAsk,
             ),
-            ("silent", "", LinkChosen::CouldNotAsk),
+            ("silent", "", SheetAnswer::CouldNotAsk),
         ] {
             let (socket, hearing) = a_desktop_answering(&format!("choose-{what}"), word);
             let door = AtTheDesktopsDoor::at(&socket);
@@ -288,7 +288,7 @@ mod tests {
         )));
         assert_eq!(
             nobody.chosen("org.gnome.Papers", &a_link(), &offered),
-            LinkChosen::NoDesktop
+            SheetAnswer::NoDesktop
         );
     }
 

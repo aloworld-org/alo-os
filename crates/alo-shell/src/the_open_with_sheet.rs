@@ -183,8 +183,8 @@ impl TheOpenWithSheet {
                 continue;
             }
             self.waiting.push_back(ask);
+            self.the_next_goes_up(now);
         }
-        self.the_next_goes_up(now);
     }
 
     /// Once a frame: a portal that hung up takes its sheet down, a sheet up
@@ -194,10 +194,10 @@ impl TheOpenWithSheet {
         if let Some(shown) = self.shown.as_mut() {
             if shown.asked.has_hung_up() {
                 self.shown = None;
-            } else if now.saturating_duration_since(shown.since) >= THE_LONGEST {
-                if let Some(shown) = self.shown.take() {
-                    shown.asked.answered(&Chose::Unanswered);
-                }
+            } else if now.saturating_duration_since(shown.since) >= THE_LONGEST
+                && let Some(shown) = self.shown.take()
+            {
+                shown.asked.answered(&Chose::Unanswered);
             }
         }
         self.the_next_goes_up(now);

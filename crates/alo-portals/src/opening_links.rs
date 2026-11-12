@@ -44,7 +44,7 @@ pub enum LinkStarted {
 /// What the person did with the *Open with* sheet, as the desktop answered —
 /// `docs/contracts/application-door.md`'s `choose-link` act.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum LinkChosen {
+pub enum SheetAnswer {
     /// The person chose this application. **Not yet checked against what was
     /// offered**: the portal holds it to the offer before believing it.
     Chosen(String),
@@ -70,7 +70,7 @@ pub trait OpensLinks: Send + Sync {
     /// — the person's default first — opens `link`, which `asking` asked to
     /// open. **Waits for the person**, so it is never called on the bus's own
     /// thread.
-    fn chosen(&self, asking: &str, link: &Link, offered: &[String]) -> LinkChosen;
+    fn chosen(&self, asking: &str, link: &Link, offered: &[String]) -> SheetAnswer;
 }
 
 /// A backend that was never told how to reach a desktop.
@@ -82,7 +82,7 @@ impl OpensLinks for NoDesktopToAsk {
         LinkStarted::NoDesktop
     }
 
-    fn chosen(&self, _: &str, _: &Link, _: &[String]) -> LinkChosen {
-        LinkChosen::NoDesktop
+    fn chosen(&self, _: &str, _: &Link, _: &[String]) -> SheetAnswer {
+        SheetAnswer::NoDesktop
     }
 }
