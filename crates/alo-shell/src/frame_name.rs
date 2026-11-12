@@ -176,6 +176,9 @@ impl crate::Server {
         });
         let tree = crate::ReadAloudTree::of(strings, showing, turned_on)
             .with_the_docks_slots(strings, &self.the_docks_slots_as_drawn())
+            // **And the Bar's matches under the Dock's field**, while they
+            // rise from it (the owner's decision of 2026-11-11).
+            .with_the_bars_matches(strings, &self.the_bars_matches_as_read(strings))
             .with_the_frames_open(strings, &frames, turned_on);
         let tree = match open_panel {
             Some((frame, met)) => tree.with_a_windows_panel_open(strings, frame, &met),

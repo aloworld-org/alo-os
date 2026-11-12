@@ -20,7 +20,7 @@
 //! and sees this fail has changed what a person sees.
 //!
 //! **Two surfaces take no text size**: the Bar lays itself out at
-//! `TextScale::ordinary()` whatever the person chose (`crate::bar_raster`), and
+//! `TextScale::ordinary()` whatever the person chose (`crate::bar_matches_raster`), and
 //! the window band has no text size among its inputs. Each is held at three
 //! scales and one text size, and its file says so.
 //!

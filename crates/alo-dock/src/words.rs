@@ -571,7 +571,20 @@ pub const HISTORY: Word = Word::saying("dock.history", "History").noting(
 ///
 /// `git log crates/alo-dock/src/words.rs` is where the sentences went; nothing
 /// is lost, and this file is not the place to keep a copy of them.
-pub const RETIRED: [&str; 2] = ["dock.labels.under", "dock.labels.gave-way"];
+///
+/// **The four keys of the centred launcher's foot left on 2026-11-11** —
+/// *choose*, *open*, *close* and the Escape key's cap — with the launcher itself,
+/// once nothing opened it: the owner's decision of that day put the typing in
+/// the Dock's own field, and *Help with this window* moved into the window's
+/// panel. The list rising from the field draws no row of keys.
+pub const RETIRED: [&str; 6] = [
+    "dock.labels.under",
+    "dock.labels.gave-way",
+    "dock.bar.keys.choose",
+    "dock.bar.keys.open",
+    "dock.bar.keys.close",
+    "dock.bar.keys.esc",
+];
 
 // ---------------------------------------------------------------------------
 // The alo Bar while somebody is finding something. The field's own prompt is
@@ -650,16 +663,19 @@ pub const NOTHING_CAN_ANSWER_A_QUESTION: Word = Word::saying(
 // ---------------------------------------------------------------------------
 // The launcher as the owner approved it on 2026-11-01 (`561:275`, *Find, open,
 // or ask · the launcher*): a heading, each row's kind beside its name, the
-// hint on the chosen row, the row that asks alo, and the keys along the foot.
+// hint on the chosen row and the row that asks alo. Since 2026-11-11 they are
+// shown in the list rising from the Dock's field, and the heading names that
+// list to a screen reader; the centred panel and the keys along its foot are
+// gone (see `RETIRED`).
 // ---------------------------------------------------------------------------
 
-/// The launcher's heading, over the field.
+/// The name of the list of matches, as a screen reader is told it.
 pub const THE_LAUNCHERS_HEADING: Word = Word::saying("dock.bar.heading", "Find, open, or ask")
     .noting(
-        "The heading of the panel that opens when somebody types in the Dock's field. The same \
-         three things as the field's own prompt, dock.composer.prompt — find something, open \
-         something, or ask alo — and without its ellipsis, because here it names the panel. Keep \
-         all three.",
+        "The name a screen reader gives the list of matches that rises from the Dock's field \
+         while somebody types in it. The same three things as the field's own prompt, \
+         dock.composer.prompt — find something, open something, or ask alo — and without its \
+         ellipsis, because here it names the list. Keep all three.",
     );
 
 /// What kind of thing an application row is, beside its name.
@@ -696,30 +712,6 @@ pub const A_NEW_TASK: Word = Word::saying("dock.bar.ask.new-task", "a new task")
      Lower case, a short noun phrase.",
 );
 
-/// The foot of the launcher: the arrow keys choose.
-pub const THE_KEYS_CHOOSE: Word = Word::saying("dock.bar.keys.choose", "choose").noting(
-    "At the foot of the launcher, after drawings of the Up and Down keys: they choose a row. \
-     One lower-case word.",
-);
-
-/// The foot of the launcher: Enter opens.
-pub const THE_KEY_OPENS: Word = Word::saying("dock.bar.keys.open", "open").noting(
-    "At the foot of the launcher, after a drawing of the Enter key: it opens the chosen row. \
-     One lower-case word.",
-);
-
-/// The foot of the launcher: Escape closes.
-pub const THE_KEY_CLOSES: Word = Word::saying("dock.bar.keys.close", "close").noting(
-    "At the foot of the launcher, after the Escape key's name: it closes the launcher. One \
-     lower-case word.",
-);
-
-/// The Escape key's name, on its key cap.
-pub const ESC: Word = Word::saying("dock.bar.keys.esc", "Esc").noting(
-    "The name printed on the Escape key, drawn on a small key cap. Use what keyboards sold in \
-     your language print on that key.",
-);
-
 /// Every string this crate can say, in the order a translator meets them: the
 /// two answers about whether it gives way, where the dock keeps its names, the
 /// two refusals, what is said about the person's own file, what a reader is
@@ -730,7 +722,7 @@ pub const ESC: Word = Word::saying("dock.bar.keys.esc", "Esc").noting(
 /// beside the other settings' words because this list's order is the order a
 /// translator meets them in, and a translator who has already done this file
 /// should find the new ones together rather than hunting a diff.
-pub const EVERY_WORD: [Word; 56] = [
+pub const EVERY_WORD: [Word; 52] = [
     AN_APPLICATION_ROW,
     APPLICATIONS_HERE,
     ONE_APPLICATION_HERE,
@@ -783,10 +775,6 @@ pub const EVERY_WORD: [Word; 56] = [
     OPEN_IT,
     ASK_ALO_ABOUT,
     A_NEW_TASK,
-    THE_KEYS_CHOOSE,
-    THE_KEY_OPENS,
-    THE_KEY_CLOSES,
-    ESC,
 ];
 
 /// Why this crate's own words could not be declared.

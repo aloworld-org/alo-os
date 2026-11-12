@@ -1,8 +1,23 @@
-//! A press while the launcher is open: on Close, on a row, on the panel, or on
-//! the dimmed screen around it — and which rows the keyboard walks.
+//! A press while the alo Bar is open: on a row of the matches risen from the
+//! Dock's field, on the field, or anywhere else — and which rows the keyboard
+//! walks.
+//!
+//! # One face, since 2026-11-11
+//!
+//! The owner's decision of that day keeps the keyboard **in the Dock's own
+//! field** for a click on it, Super+Space and Super+A, with the matches rising
+//! from it in a compact, non-modal list. A press on that list's row does what
+//! Enter does on it; a press on the field is the field's; and a press anywhere
+//! else **closes the list and goes on to what it landed on**, which is what
+//! every list opened from the Dock does (`Server::the_open_surface_takes_this_press`).
+//! What was typed stays in the field, as it does when a person clicks a window.
+//!
+//! The centred panel over a dimmed screen, where a press anywhere was the
+//! panel's own, is gone: its last road, *Help with this window*, moved into the
+//! window's own panel, and it was removed when nothing opened it any more.
 //!
 //! **Where everything is comes from the draw**, recorded by
-//! [`crate::Server::the_launcher_was_drawn`], because the launcher is laid out
+//! [`crate::Server::the_bars_matches_were_drawn`], because the list is laid out
 //! where the display's scale is known and nowhere else — the rule the Dock's
 //! slots already keep (`Server::the_docks_slots_were_drawn`).
 //!
@@ -10,17 +25,18 @@
 //!
 //! A press on a row chooses it and then does what Enter does, through
 //! `Server::a_key_reached_the_composer` — so a pointer and a key cannot come to
-//! do different things to one row. Close does what Escape does.
+//! do different things to one row.
 
 use smithay::utils::{Physical, Point};
 
 use crate::composer_keys::ComposerKey;
-use crate::where_the_bar_opens::TheBarsPlaces;
+use crate::where_the_bars_matches_rise::TheMatchesPlaces;
 
 impl crate::Server {
-    /// Where the launcher was drawn on the last frame, or that it was not.
-    pub(crate) fn the_launcher_was_drawn(&mut self, places: Option<TheBarsPlaces>) {
-        self.the_launchers_places = places;
+    /// Where the matches rising from the Dock's field were drawn on the last
+    /// frame, or that they were not.
+    pub(crate) fn the_bars_matches_were_drawn(&mut self, places: Option<TheMatchesPlaces>) {
+        self.the_bars_matches_places = places;
     }
 
     /// How many rows the keyboard walks: every application found, and the row
@@ -38,7 +54,7 @@ impl crate::Server {
 
     /// Whether the last draw offered the row that asks alo.
     pub(crate) fn the_launcher_offers_to_ask(&self) -> bool {
-        self.the_launchers_places
+        self.the_bars_matches_places
             .as_ref()
             .is_some_and(|places| places.ask.is_some())
     }
@@ -59,40 +75,59 @@ impl crate::Server {
                 )
     }
 
-    /// A press at `at`, in the display's pixels, while the launcher may be
-    /// open. Answers whether the launcher took it.
-    ///
-    /// **Every press while it is open is the launcher's**: the screen behind
-    /// is dimmed to say it is not there to be pressed, so a press on it closes
-    /// the launcher, as Escape does, and reaches nothing behind.
+    /// A press at `at`, in the display's pixels, while the keyboard may be in
+    /// the Dock's field, with or without the matches risen from it. Answers
+    /// whether the list took it.
     pub(crate) fn a_press_on_the_launcher(&mut self, at: Point<i32, Physical>) -> bool {
         if !self.the_composer.has_the_keyboard() {
             return false;
         }
-        let Some(places) = self.the_launchers_places.clone() else {
-            return false;
-        };
-        if places.close.contains(at) || !places.panel.contains(at) {
-            drop(self.a_key_reached_the_composer(ComposerKey::Clear));
-            self.the_launchers_places = None;
+        if let Some(places) = self.the_bars_matches_places.clone()
+            && places.panel.contains(at)
+        {
+            let row = places
+                .rows
+                .iter()
+                .find(|(_, row)| row.contains(at))
+                .map(|(which, _)| *which)
+                .or_else(|| {
+                    places
+                        .ask
+                        .filter(|ask| ask.contains(at))
+                        .map(|_| self.how_many_rows_the_launcher_has().saturating_sub(1))
+                });
+            if let Some(which) = row {
+                self.which_row_in_the_bar = Some(which);
+                drop(self.a_key_reached_the_composer(ComposerKey::Ask));
+            }
+            // **Taken either way**: the list lies over the canvas, so a press
+            // between its rows must not reach what is behind it.
             return true;
         }
-        let row = places
-            .rows
-            .iter()
-            .find(|(_, row)| row.contains(at))
-            .map(|(which, _)| *which)
-            .or_else(|| {
-                places
-                    .ask
-                    .filter(|ask| ask.contains(at))
-                    .map(|_| self.how_many_rows_the_launcher_has().saturating_sub(1))
-            });
-        if let Some(which) = row {
-            self.which_row_in_the_bar = Some(which);
-            drop(self.a_key_reached_the_composer(ComposerKey::Ask));
+        // **A press on the field is the field's**, which keeps the keyboard
+        // and what is typed (`WhatAPressOnTheDockDoes::TypeIntoTheComposer`).
+        if self.a_press_lands_on_the_docks_field(at) {
+            return false;
         }
-        true
+        // **Anywhere else closes the list and gives the keyboard back**, and the
+        // press goes on to whatever it landed on. What was typed stays, as it
+        // does when a person clicks a window: somebody who looked away and
+        // comes back is writing one request.
+        self.the_composer.it_gave_the_keyboard_up();
+        self.the_bars_matches_places = None;
+        self.which_row_in_the_bar = None;
+        false
+    }
+
+    /// Whether `at` is on the Dock's field, on any display.
+    fn a_press_lands_on_the_docks_field(&self, at: Point<i32, Physical>) -> bool {
+        self.the_bars_matches_places
+            .as_ref()
+            .is_some_and(|places| places.field.contains(at))
+            || self.dock_as_drawn.values().any(|dock| {
+                crate::a_press_on_the_dock::what_a_press_on_the_dock_does(dock, at)
+                    == crate::a_press_on_the_dock::WhatAPressOnTheDockDoes::TypeIntoTheComposer
+            })
     }
 }
 
