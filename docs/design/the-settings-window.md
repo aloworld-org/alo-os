@@ -451,3 +451,20 @@ Each was decided one way to build this, and is listed so it can be answered:
    **off** as a machine comes. No frame draws it, so its words are this
    lane's. It is kept in the same `access.toml`, as a word in its `on` list,
    and offered only where that file read.
+12. **"Screen reader" is the first section on the Accessibility page**, headed
+   *Reading aloud*, with one switch in the design's own switch row (`550:256`
+   off, `551:196` on) and the line *On, what is on the screen and where the
+   keyboard is are read aloud, in the language you read, now and each time you
+   sign in. The voice is made on this computer, and nothing it says is sent
+   anywhere.* The owner's *"Ship Orca"* of 2026-11-12
+   ([ADR 0151](../decisions/0151-alo-ships-a-screen-reader-and-its-voices-stay-on-the-machine.md)).
+   **First rather than after *Applications***, because the person who needs it
+   is the one who cannot look further down the page for it; `551:1038` draws
+   only Text and Pointer, so the place, the heading and the words are this
+   lane's. It is **off** as a machine comes and kept in the same `access.toml`
+   (`alo_access::Setting::ScreenReader`), so offered only where that file read.
+   **Where the reader could not do what the switch says**, one sentence says so
+   in the section's footnote — not on this computer, did not start, or did not
+   stop — and the switch stays as the person set it. The setup screens' own
+   screen-reader row (`375:30435`, `384:26446`) and its `Ctrl`+`Alt`+`S` are
+   not this window and are not built.

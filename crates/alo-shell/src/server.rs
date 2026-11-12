@@ -259,6 +259,10 @@ pub struct Server {
     /// and not yet handed to the desktop
     /// (`crate::apps_describing_themselves`).
     pub(crate) describing_to_tell: Option<bool>,
+    /// Whether the screen reader is to run, written in Settings or read at
+    /// sign-in and not yet handed to the desktop
+    /// (`crate::the_screen_reader_switch`).
+    pub(crate) screen_reader_to_tell: Option<bool>,
     /// Where a new window goes when there is no room for it in view, as the
     /// person last said (`crate::the_choice_when_there_is_no_room`).
     pub(crate) when_there_is_no_room: alo_appearance::WhenThereIsNoRoom,
@@ -949,6 +953,7 @@ impl Server {
             pointers_look: crate::ThePointersLook::default(),
             pointer_change_to_tell: None,
             describing_to_tell: None,
+            screen_reader_to_tell: None,
             // Gliding to empty space, until the desktop says what this person
             // chose; and full motion, until it says they asked for less.
             when_there_is_no_room: alo_appearance::WhenThereIsNoRoom::default(),
