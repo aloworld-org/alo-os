@@ -57,12 +57,47 @@ window:
 
 | window | what appears |
 |---|---|
-| the application draws its own header | **keep that header**, and add alo's external movement edge and window menu — **no duplicate window buttons** |
+| the application draws its own header | **keep that header**, and add alo's external movement edge and window menu — **no duplicate window buttons**. *Amended by the owner on 2026-11-12, below:* alo's band also adds **Minimise and Close where the application does not show its own** |
 | the shell supplies decorations | the external edge carries the title, the movement and the controls — **and `Canvas / Window title` is not also drawn inside** |
 | a borderless application | its content is preserved, and it gets the external movement edge and access to shell actions |
 
 An application with incomplete controls still reaches every shell action
 through the window menu and the keyboard.
+
+### The owner's amendment of 2026-11-12
+
+The owner's two sentences, in order: *"The window controls should be on all the installed apps"* and *"No need to add controls if the app has, we can only add the ones that are not there"*.
+
+So the first row changes and the duplicate rule stays. Every window offers
+**Window actions, Minimise and Close**, and alo draws **only the ones the
+application does not already show**. Its own buttons stay, and none of them is
+switched off. Window actions opens alo's panel, which no application draws, so
+alo always adds it. Minimise and Close are added only where the application has
+none of its own. **Nothing is shown twice.**
+
+**How alo knows, without watching.** It never reads an application's pixels or
+its accessibility tree (`CLAUDE.md`: *context is offered, never watched*). It
+reads only facts the application declared or that alo controls:
+
+- **the decoration mode the application agreed on `xdg_decoration`**: one that
+  agreed the shell draws its frame (Qt, KDE) gets the full band;
+- **the button layout alo serves to GTK** through its Settings portal,
+  `appmenu:minimize,maximize,close`, which is the layout GTK draws anyway when
+  it is not answered (`crates/alo-portals/src/the_window_buttons_gtk_is_told.rs`);
+- **a short reviewed table of what each shipped application was measured to
+  draw**, by the `app_id` it declares
+  (`crates/alo-shell/src/the_buttons_an_application_draws.rs`).
+
+Where none of these says, alo **cannot know**. It adds Window actions only and
+says so in
+[the quirk](../quirks/an-application-that-draws-its-own-header-is-not-asked-which-buttons.md),
+which names every application measured and what it showed.
+
+**Where the added controls sit** is unchanged from this note: on the band
+**above** the application's own header, at its trailing end and laid out as the
+shell's, with no title of alo's over the application's own. Revealing them never
+resizes or moves the application. That is the same band that carried Window
+actions alone, with more controls on it. No new placement was invented.
 
 ### The internal 48px band is superseded, and this is what that means
 

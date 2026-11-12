@@ -172,3 +172,18 @@ not taken here.* Under it sits a harder one that is nobody's in this repository:
 licence**, and the other eight entries have all four because Flathub publishes
 them. Nothing publishes `alo-mails`. Until something does, neither road can be
 taken whichever the owner picks.
+
+### alo Mails' adapter lives with alo Mails, and keeps its licence, 2026-11-12
+
+*What follows* says each application reaches a machine with a licence of its
+own. One part of alo Mails reaches alo OS **inside** it rather than beside it:
+its adapter, the commands alo and the terminal use to act in it, is compiled
+into alo OS. Asked which licence it takes and where it lives, the owner chose
+*"Keep AGPL, separate crate alo-os uses"*. So the `alo-workplace` lane publishes
+alo Mails' adapter as its own crate under **AGPL-3.0**, declared as
+`docs/contracts/app-adapters.md` says (an `alo_adapters::Adapter` constant,
+application `com.alomails.Mails`, mechanism `dbus`), and alo OS pins a tagged
+release of it. **That part of alo OS carries AGPL terms.** It keeps the
+separation this ADR made — alo Mails' code stays in alo Mails' repository —
+and it is the contract's *Amended 2026-11-12*, not a new road. Not built on the
+day this was written.

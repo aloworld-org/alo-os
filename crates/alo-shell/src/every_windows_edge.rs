@@ -71,7 +71,7 @@ pub(crate) fn every_windows_edge(
             let how_shown = server.how_shown_its_controls_are(surface, now);
             let edge = crate::window_edge::edge_of(
                 window,
-                crate::window_edge_who_draws::who_draws_a_frame(),
+                server.who_draws_the_header_of(surface),
                 how_shown > 0 || server.is_this_windows_edge_revealed(surface),
                 room,
             );

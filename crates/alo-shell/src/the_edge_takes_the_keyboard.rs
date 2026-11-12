@@ -125,7 +125,7 @@ impl crate::Server {
         let revealed = if edge.controls.is_empty() {
             Some(crate::window_edge::edge_of(
                 self.the_window_a_band_hangs_from(surface, self.the_scale_an_edge_is_measured_at()),
-                crate::window_edge_who_draws::who_draws_a_frame(),
+                self.who_draws_the_header_of(surface),
                 true,
                 self.the_room_an_edge_is_clamped_in(),
             ))

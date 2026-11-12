@@ -106,7 +106,6 @@ impl crate::Server {
         // pointing device would otherwise reveal whichever band contains
         // `(0, 0)`. The keyboard and the panel still count.
         let at = self.where_the_pointer_is_in_logical_pixels();
-        let decorations = crate::window_edge_who_draws::who_draws_a_frame();
         let room = self.the_room_an_edge_is_clamped_in();
         let scale = self.the_scale_an_edge_is_measured_at();
         let at = at
@@ -124,7 +123,7 @@ impl crate::Server {
                 .map_or_else(Revealing::covered, |(_, machine)| *machine);
             let edge = crate::window_edge::edge_of(
                 self.the_window_a_band_hangs_from(&surface, scale),
-                decorations,
+                self.who_draws_the_header_of(&surface),
                 was.is_revealed(),
                 room,
             );

@@ -137,9 +137,11 @@ impl crate::Server {
         showing: &[alo_access::Surface],
         turned_on: &alo_access::TurnedOn,
     ) -> crate::ReadAloudTree {
-        let frames: Vec<FrameName> = self
+        // Each with who draws its header, asked of the one answer the band is
+        // drawn from, so a reader is told the controls that are drawn.
+        let frames: Vec<(FrameName, crate::Decorations)> = self
             .mapped_surfaces()
-            .map(|frame| self.the_name_of(frame))
+            .map(|frame| (self.the_name_of(frame), self.who_draws_the_header_of(frame)))
             .collect();
         // Each task window on the screen and its title, which is the
         // person's own request (`alo_tasks::ATask::in_the_panel`).

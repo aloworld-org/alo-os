@@ -25,6 +25,13 @@
 //! | appearance | `accent-color` | `(ddd)` | [`Appearance::accent_at`], each channel from 0 to 1 |
 //! | interface | `cursor-theme` | `s` | [`Appearance::pointer_shape`] and [`Appearance::pointer_colour`], as the name of alo's cursor theme with that arrow in that colour |
 //! | interface | `cursor-size` | `i` | [`Appearance::pointer_size`], in logical pixels: 24, 36 or 48 |
+//! | window | `button-layout` | `s` | not the person's: [`crate::the_window_buttons_gtk_is_told::THE_LAYOUT`], always |
+//!
+//! **`button-layout`, in [`THE_WINDOW_NAMESPACE`], is the one key that is not
+//! the person's.** It tells a sandboxed GTK application which window buttons to
+//! draw in its own header, so alo knows which ones it shows and adds only the
+//! ones it does not (the owner, 2026-11-12). Why it is the value it is lives in
+//! that module.
 //!
 //! Both are resolved **at the moment of asking**, at the time of day the
 //! machine gives, so a person who turns dark at six is answered dark at six.
@@ -60,8 +67,12 @@ pub const THE_NAMESPACE: &str = "org.freedesktop.appearance";
 /// GNOME's namespace, of which only the pointer's two keys are answered.
 pub const THE_INTERFACE_NAMESPACE: &str = "org.gnome.desktop.interface";
 
+/// GNOME's window manager namespace, of which only `button-layout` is answered.
+pub const THE_WINDOW_NAMESPACE: &str = "org.gnome.desktop.wm.preferences";
+
 /// Every namespace any key is answered in.
-pub const THE_NAMESPACES: [&str; 2] = [THE_NAMESPACE, THE_INTERFACE_NAMESPACE];
+pub const THE_NAMESPACES: [&str; 3] =
+    [THE_NAMESPACE, THE_INTERFACE_NAMESPACE, THE_WINDOW_NAMESPACE];
 
 /// One key that is answered.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -74,16 +85,20 @@ pub enum Setting {
     CursorTheme,
     /// `cursor-size`, in [`THE_INTERFACE_NAMESPACE`]: the pointer's size.
     CursorSize,
+    /// `button-layout`, in [`THE_WINDOW_NAMESPACE`]: which window buttons a
+    /// GTK application draws in its own header.
+    ButtonLayout,
 }
 
 impl Setting {
     /// Every key answered: the appearance namespace's in the order the
-    /// specification lists them, then the pointer's.
-    pub const EVERY: [Self; 4] = [
+    /// specification lists them, then the pointer's, then the window buttons'.
+    pub const EVERY: [Self; 5] = [
         Self::ColorScheme,
         Self::AccentColor,
         Self::CursorTheme,
         Self::CursorSize,
+        Self::ButtonLayout,
     ];
 
     /// The namespace the key is in.
@@ -92,6 +107,7 @@ impl Setting {
         match self {
             Self::ColorScheme | Self::AccentColor => THE_NAMESPACE,
             Self::CursorTheme | Self::CursorSize => THE_INTERFACE_NAMESPACE,
+            Self::ButtonLayout => THE_WINDOW_NAMESPACE,
         }
     }
 
@@ -103,6 +119,7 @@ impl Setting {
             Self::AccentColor => "accent-color",
             Self::CursorTheme => "cursor-theme",
             Self::CursorSize => "cursor-size",
+            Self::ButtonLayout => "button-layout",
         }
     }
 
@@ -131,6 +148,9 @@ impl Setting {
                 ))
                 .unwrap_or(i32::MAX),
             ),
+            Self::ButtonLayout => {
+                Value::ButtonLayout(crate::the_window_buttons_gtk_is_told::THE_LAYOUT)
+            }
         }
     }
 }
@@ -146,6 +166,8 @@ pub enum Value {
     CursorTheme(&'static str),
     /// The pointer's size, in logical pixels.
     CursorSize(i32),
+    /// The window buttons a GTK application draws, as GNOME writes them.
+    ButtonLayout(&'static str),
 }
 
 impl Value {
@@ -345,7 +367,14 @@ mod tests {
             Setting::named(THE_INTERFACE_NAMESPACE, "cursor-size"),
             Some(Setting::CursorSize)
         );
+        assert_eq!(
+            Setting::named(THE_WINDOW_NAMESPACE, "button-layout"),
+            Some(Setting::ButtonLayout)
+        );
         for (namespace, key) in [
+            (THE_WINDOW_NAMESPACE, "theme"),
+            (THE_WINDOW_NAMESPACE, "action-double-click-titlebar"),
+            (THE_INTERFACE_NAMESPACE, "button-layout"),
             (THE_NAMESPACE, "contrast"),
             (THE_NAMESPACE, ""),
             (THE_NAMESPACE, "cursor-theme"),
@@ -377,6 +406,9 @@ mod tests {
             assert!(!reaches(THE_NAMESPACE, not), "{not}");
         }
         assert!(reaches(THE_INTERFACE_NAMESPACE, "org.gnome.*"));
+        // GTK asks for `org.gnome.*`, measured, and that reaches the window
+        // buttons' namespace too.
+        assert!(reaches(THE_WINDOW_NAMESPACE, "org.gnome.*"));
         assert!(!reaches(THE_INTERFACE_NAMESPACE, "org.freedesktop.*"));
         let asked = |patterns: &[&str]| {
             asked_of(
@@ -416,6 +448,10 @@ mod tests {
                 ),
                 (Setting::CursorTheme, Value::CursorTheme("alo")),
                 (Setting::CursorSize, Value::CursorSize(24)),
+                (
+                    Setting::ButtonLayout,
+                    Value::ButtonLayout("appmenu:minimize,maximize,close")
+                ),
             ]
         );
         // **The pointer the person chose**: the familiar arrow's theme, at
