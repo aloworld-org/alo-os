@@ -148,7 +148,12 @@ fn a_sheet_coming_up_is_heard_on_the_bus() {
     );
     assert_eq!(
         hearing.recv_timeout(wait).unwrap(),
-        (field_at.clone(), "StateChanged".to_owned(), "focused".to_owned(), 1)
+        (
+            field_at.clone(),
+            "StateChanged".to_owned(),
+            "focused".to_owned(),
+            1
+        )
     );
 
     let states: Vec<u32> = listening
@@ -180,5 +185,8 @@ fn a_sheet_coming_up_is_heard_on_the_bus() {
         .body()
         .deserialize()
         .unwrap();
-    assert_eq!(index, 1, "the field is second on the sheet, after the command");
+    assert_eq!(
+        index, 1,
+        "the field is second on the sheet, after the command"
+    );
 }

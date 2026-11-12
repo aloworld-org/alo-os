@@ -209,7 +209,9 @@ pub(crate) const fn with_the_keyboard(words: [u32; 2]) -> [u32; 2] {
     [words[0] | (1 << FOCUSED), words[1]]
 }
 
-/// Whether these states say the keyboard is on the thing.
+/// Whether these states say the keyboard is on the thing — what the tests
+/// hold every tree to.
+#[cfg(test)]
 pub(crate) const fn has_the_keyboard(words: [u32; 2]) -> bool {
     words[0] & (1 << FOCUSED) != 0
 }

@@ -122,8 +122,7 @@ impl TheReaderIsTold {
             .map(str::to_owned)
             .collect();
         self.published = tree.clone();
-        let (told, keyboard) =
-            crate::access_events::what_happened(self.keyboard.as_ref(), tree);
+        let (told, keyboard) = crate::access_events::what_happened(self.keyboard.as_ref(), tree);
         self.keyboard = keyboard;
         self.bus.told(&told)?;
         Ok(true)

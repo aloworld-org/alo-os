@@ -71,7 +71,12 @@ mod tests {
                 keyboard: 10,
             })
         );
-        assert_eq!(sheet.moved(&down_by_two).map(|it| it.the_keyboard_from_the_sheet()), Some(2));
+        assert_eq!(
+            sheet
+                .moved(&down_by_two)
+                .map(|it| it.the_keyboard_from_the_sheet()),
+            Some(2)
+        );
         let its_node_went = |old: usize| (old != 10).then_some(old);
         assert_eq!(sheet.moved(&its_node_went), None);
     }

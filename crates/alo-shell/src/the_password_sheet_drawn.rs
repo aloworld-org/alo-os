@@ -142,7 +142,7 @@ pub(crate) fn drawn(
     picture
         .inked
         .extend(placed(what_shaped, left + pad, what_area.loc.y));
-    picture.sentence = Some((what.clone(), what_area));
+    picture.sentence = Some((what.to_owned(), what_area));
 
     let field = Rectangle::new((left + pad, y).into(), (inner, field_height).into());
     framed(&mut picture.solids, field, measure.px(1), palette);

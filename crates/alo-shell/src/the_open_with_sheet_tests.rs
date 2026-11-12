@@ -211,7 +211,11 @@ fn a_readers_press_is_held_to_the_sheet_it_was_heard_on() {
     assert!(sheet.is_up(), "the second is still waiting for the person");
     let number = sheet.shows().unwrap().number;
     assert!(!sheet.a_reader_pressed(number, crate::OnTheOpenWithSheet::TheApplication(3), now));
-    assert_eq!(sheet.shows().unwrap().focus, 0, "a row past the offer moved nothing");
+    assert_eq!(
+        sheet.shows().unwrap().focus,
+        0,
+        "a row past the offer moved nothing"
+    );
     sheet.pressed(SheetKey::Last, now);
     sheet.pressed(SheetKey::Open, now);
     assert_eq!(told(&mut second), "chosen org.chromium.Chromium\n");

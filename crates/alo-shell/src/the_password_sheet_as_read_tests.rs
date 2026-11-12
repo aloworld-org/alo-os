@@ -50,7 +50,7 @@ fn a_sheet(what_for: WhatItIsFor, typed: &str) -> (ThePasswordSheet, Receiver<Fr
 
 /// The sheet's own node and what hangs under it.
 fn the_sheet(tree: &ReadAloudTree) -> (&Node, Vec<&Node>) {
-    let sheet = tree.in_front().expect("the sheet is in front");
+    let sheet = tree.in_front().unwrap();
     let node = &tree.nodes()[sheet.at];
     let under = node.children.iter().map(|at| &tree.nodes()[*at]).collect();
     (node, under)
@@ -76,9 +76,15 @@ fn the_sheet_is_read_as_it_is_drawn() {
     let (sheet, _answered) = a_sheet(WhatItIsFor::ACommandAloWasAsked(command.to_owned()), "");
     let tree = plain(&strings).with_the_password_sheet(&strings, sheet.shows());
     let (dialogue, under) = the_sheet(&tree);
-    assert_eq!(dialogue.role, access_roles::number_of(alo_access::Role::Dialogue));
+    assert_eq!(
+        dialogue.role,
+        access_roles::number_of(alo_access::Role::Dialogue)
+    );
     assert_eq!(dialogue.name, say(&strings, words::ALO_ASKS_TO_RUN_THIS));
-    assert_eq!(dialogue.parent, 0, "the sheet is the shell's own, not a window's");
+    assert_eq!(
+        dialogue.parent, 0,
+        "the sheet is the shell's own, not a window's"
+    );
     assert!(access_roles::is_showing(dialogue.states));
     let read: Vec<(u32, &str)> = under.iter().map(|it| (it.role, it.name.as_str())).collect();
     assert_eq!(
@@ -141,7 +147,8 @@ fn what_went_wrong_names_the_field() {
             words::NO_CHECKER,
         ),
     ] {
-        let (mut sheet, _answered) = a_sheet(WhatItIsFor::ACommandAloWasAsked("reboot".to_owned()), "x");
+        let (mut sheet, _answered) =
+            a_sheet(WhatItIsFor::ACommandAloWasAsked("reboot".to_owned()), "x");
         sheet.pressed(SignInKey::Enter);
         sheet.told(told);
         let tree = plain(&strings).with_the_password_sheet(&strings, sheet.shows());
@@ -163,10 +170,16 @@ fn nothing_about_the_password_crosses() {
     let with = plain(&strings).with_the_password_sheet(&strings, typed.shows());
     let without = plain(&strings).with_the_password_sheet(&strings, empty.shows());
     assert_eq!(with.nodes(), without.nodes());
-    assert!(with.nodes().iter().all(|node| !node.name.contains("hunter2")
-        && !node.description.contains("hunter2")));
+    assert!(
+        with.nodes()
+            .iter()
+            .all(|node| !node.name.contains("hunter2") && !node.description.contains("hunter2"))
+    );
     let (_, under) = the_sheet(&with);
-    assert_ne!(under[1].role, access_roles::number_of(alo_access::Role::Entry));
+    assert_ne!(
+        under[1].role,
+        access_roles::number_of(alo_access::Role::Entry)
+    );
     assert!(under.iter().all(|node| node.press.is_none()));
 }
 
@@ -199,7 +212,11 @@ fn each_question_is_its_own() {
         what_for: WhatItIsFor::ACommandAloWasAsked("reboot".to_owned()),
         answer,
     }));
-    assert_eq!(sheet.shows().unwrap().asked, first, "the one waiting is not in front yet");
+    assert_eq!(
+        sheet.shows().unwrap().asked,
+        first,
+        "the one waiting is not in front yet"
+    );
     sheet.told(ToTheSheet::Over {
         cookie: "c1".to_owned(),
     });

@@ -69,7 +69,10 @@ fn a_sheet_coming_up_is_said_once() {
         ]
     );
     let (again, _) = what_happened(keyboard.as_ref(), &tree(&strings, &sheet));
-    assert!(again.is_empty(), "the same sheet redrawn was announced again");
+    assert!(
+        again.is_empty(),
+        "the same sheet redrawn was announced again"
+    );
 }
 
 /// **The password not being right renames the field**, and that is all that
@@ -151,5 +154,8 @@ fn a_sheet_renumbered_says_where_the_keyboard_is_again() {
         )
         .with_the_password_sheet(&strings, sheet.shows());
     let (told, _) = what_happened(keyboard.as_ref(), &moved);
-    assert!(matches!(told.as_slice(), [AnEvent::TheKeyboardIsHere { .. }]));
+    assert!(matches!(
+        told.as_slice(),
+        [AnEvent::TheKeyboardIsHere { .. }]
+    ));
 }

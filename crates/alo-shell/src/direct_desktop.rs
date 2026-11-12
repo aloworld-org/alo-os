@@ -2942,11 +2942,9 @@ impl LoopInput for TheDesktopLane<'_> {
                     // on it is answered here, held to the sheet it was heard
                     // on; everything else goes through the server's door.
                     crate::Pressed::OnTheOpenWithSheet { sheet, on } => {
-                        let _ = self.open_with.a_reader_pressed(
-                            sheet,
-                            on,
-                            std::time::Instant::now(),
-                        );
+                        let _ =
+                            self.open_with
+                                .a_reader_pressed(sheet, on, std::time::Instant::now());
                     }
                     other => {
                         let _ = server.a_reader_pressed(other);

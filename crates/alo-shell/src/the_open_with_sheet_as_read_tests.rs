@@ -16,8 +16,7 @@ use crate::the_open_with_sheet::{AskedToChoose, SheetKey, TheOpenWithSheet};
 /// The machine's words, the sheet's among them.
 fn words() -> Strings {
     let mut vocabulary = alo_saying::everything_this_machine_can_say().unwrap();
-    crate::the_open_with_sheets_words::declare_the_open_with_sheets_words(&mut vocabulary)
-        .unwrap();
+    crate::the_open_with_sheets_words::declare_the_open_with_sheets_words(&mut vocabulary).unwrap();
     Strings::of(vocabulary)
 }
 
@@ -51,7 +50,11 @@ fn a_sheet(link: &str) -> (TheOpenWithSheet, UnixStream) {
     )
     .unwrap();
     let mut sheet = TheOpenWithSheet::none();
-    sheet.asked(vec![AskedToChoose::of(asked, desktop)], true, Instant::now());
+    sheet.asked(
+        vec![AskedToChoose::of(asked, desktop)],
+        true,
+        Instant::now(),
+    );
     (sheet, portal)
 }
 
@@ -81,7 +84,10 @@ fn the_sheet_is_read_as_it_is_drawn() {
     let tree = read(&strings, &sheet);
     let in_front = tree.in_front().unwrap();
     let dialogue = &tree.nodes()[in_front.at];
-    assert_eq!(dialogue.role, access_roles::number_of(alo_access::Role::Dialogue));
+    assert_eq!(
+        dialogue.role,
+        access_roles::number_of(alo_access::Role::Dialogue)
+    );
     assert_eq!(dialogue.name, say(&strings, words::OPEN_WITH));
     assert_eq!(dialogue.parent, 0);
     let parts = under(&tree, in_front.at);
@@ -145,7 +151,10 @@ fn the_default_for_an_email_address_is_said_so() {
 fn the_keyboard_is_on_the_row_the_arrows_are_on() {
     let strings = words();
     let (mut sheet, _portal) = a_sheet("https://example.com/invoice");
-    for (expected, then) in [("Firefox", SheetKey::Next), ("io.gitlab.librewolf-community", SheetKey::Last)] {
+    for (expected, then) in [
+        ("Firefox", SheetKey::Next),
+        ("io.gitlab.librewolf-community", SheetKey::Last),
+    ] {
         let tree = read(&strings, &sheet);
         let focused: Vec<&str> = tree
             .nodes()
@@ -159,8 +168,14 @@ fn the_keyboard_is_on_the_row_the_arrows_are_on() {
             .iter()
             .filter(|node| node.states[0] & (1 << access_roles::SELECTED) != 0)
             .count();
-        assert_eq!(selected, 1, "one row is selected, the one with the keyboard");
-        assert_eq!(tree.nodes()[tree.in_front().unwrap().keyboard].name, expected);
+        assert_eq!(
+            selected, 1,
+            "one row is selected, the one with the keyboard"
+        );
+        assert_eq!(
+            tree.nodes()[tree.in_front().unwrap().keyboard].name,
+            expected
+        );
         sheet.pressed(then, Instant::now());
     }
 }
@@ -201,6 +216,8 @@ fn what_can_be_pressed_is_what_a_click_lands_on() {
 fn with_no_sheet_the_tree_is_as_it_was() {
     let strings = words();
     let plain = ReadAloudTree::of(&strings, &[Surface::Desktop], &TurnedOn::nothing());
-    let tree = plain.clone().with_the_open_with_sheet(&strings, None, &called);
+    let tree = plain
+        .clone()
+        .with_the_open_with_sheet(&strings, None, &called);
     assert_eq!(tree, plain);
 }

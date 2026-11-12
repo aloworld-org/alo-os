@@ -88,9 +88,7 @@ pub const THE_PASSWORD_SHEETS_WORDS: [Word; 7] = [
 /// **The heading over what the password is for, and the words under it** —
 /// asked by the drawing and by the screen reader's tree alike, so what is
 /// heard and what is drawn are one choice of sentence and cannot drift.
-pub(crate) fn the_question(
-    what_for: &crate::the_password_sheet::WhatItIsFor,
-) -> (Word, &str) {
+pub(crate) fn the_question(what_for: &crate::the_password_sheet::WhatItIsFor) -> (Word, &str) {
     use crate::the_password_sheet::WhatItIsFor;
     match what_for {
         WhatItIsFor::ACommandAloWasAsked(command) => (ALO_ASKS_TO_RUN_THIS, command),

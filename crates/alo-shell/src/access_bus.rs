@@ -433,10 +433,11 @@ impl ReadAloud {
             tree.nodes()
                 .get(node.parent)
                 .and_then(|parent| {
-                    parent
-                        .children
-                        .iter()
-                        .position(|child| tree.nodes().get(*child).is_some_and(|it| it.path == node.path))
+                    parent.children.iter().position(|child| {
+                        tree.nodes()
+                            .get(*child)
+                            .is_some_and(|it| it.path == node.path)
+                    })
                 })
                 .and_then(|at| i32::try_from(at).ok())
                 .unwrap_or(-1)
