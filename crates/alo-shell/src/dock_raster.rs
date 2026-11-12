@@ -1461,7 +1461,7 @@ pub(crate) fn picture(
                 -(caret_is + scale.px(2))
             };
             solids.push(Solid {
-                area: Rectangle::new(
+                area: alo_drawing::area::Area::new(
                     (
                         (field.loc.x + pad + after).min(field.loc.x + field.size.w - pad),
                         field.loc.y + (field.size.h - body - body / 3) / 2,
