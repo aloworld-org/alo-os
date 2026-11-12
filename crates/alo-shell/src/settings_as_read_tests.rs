@@ -182,10 +182,8 @@ fn the_accessibility_page_says_which_way_its_switch_is_set() {
     let tree = read(&strings, &window, false);
     let (_, under) = settings_of(&tree);
     let switch = the(&under, Role::Switch, &said(&strings, w::REDUCED_MOTION));
-    assert_eq!(
-        access_roles::is_checked(switch.states),
-        window.motion_is_reduced() == Some(true)
-    );
+    assert_eq!(window.motion_is_reduced(), Some(false), "as this computer comes");
+    assert!(!access_roles::is_checked(switch.states));
     assert_eq!(
         attribute(switch, alo_access::THE_OLD_NAME_ATTRIBUTE),
         Some(said(&strings, alo_access::words::REDUCED_MOTION).as_str())
@@ -196,6 +194,25 @@ fn the_accessibility_page_says_which_way_its_switch_is_set() {
         "the text size is heard without its size: {:?}",
         slider.description
     );
+
+    // **Turned on by the person's own press, it is told as on** — the value
+    // read from the file the page draws it from, not one handed in.
+    let _ = window.pointed_at(&PointedAt::ARow(SettingsRow::ReducedMotion), noon());
+    let door = crate::settings_testing::CountingDoor::revoking();
+    let _ = window.pressed(
+        crate::SettingsPress {
+            key: crate::SettingsKey::Choose,
+            chord: None,
+            filling: crate::a_key_fills_in_a_provider::FillingInKey::Nothing,
+        },
+        crate::settings_testing::doors(&strings, &door),
+    );
+    assert_eq!(window.motion_is_reduced(), Some(true), "the press did not turn it on");
+    let tree = read(&strings, &window, true);
+    let (_, under) = settings_of(&tree);
+    let switch = the(&under, Role::Switch, &said(&strings, w::REDUCED_MOTION));
+    assert!(access_roles::is_checked(switch.states), "an on switch is heard as off");
+    assert!(access_roles::has_the_keyboard(switch.states));
 }
 
 /// **Settings is on the screen while it is open, and off it while it is
