@@ -4,7 +4,7 @@
 //!
 //! The portal asks through the door's `choose-link` act and holds the
 //! connection (`docs/contracts/application-door.md`); the door hands the
-//! connection here ([`AskedToChoose`]) and this answers it when the person has.
+//! connection here (`AskedToChoose`) and this answers it when the person has.
 //!
 //! # Behaviour, from the frame's own note (`25:79`)
 //!
@@ -16,9 +16,9 @@
 //!
 //! # One at a time, and never for ever
 //!
-//! One sheet is up; up to [`AS_MANY_AS_WAIT`] more wait behind it, each with
+//! One sheet is up; up to `AS_MANY_AS_WAIT` more wait behind it, each with
 //! its connection held, and one more than that is answered `cannot-show`. A
-//! sheet nobody answers in [`THE_LONGEST`] is taken down and answered
+//! sheet nobody answers in `THE_LONGEST` is taken down and answered
 //! `unanswered` — not `cancelled`, because nobody said no. A portal that hangs
 //! up takes its sheet down with nothing answered.
 //!
@@ -188,7 +188,7 @@ impl TheOpenWithSheet {
     }
 
     /// Once a frame: a portal that hung up takes its sheet down, a sheet up
-    /// for [`THE_LONGEST`] is answered `unanswered`, and the next goes up.
+    /// for `THE_LONGEST` is answered `unanswered`, and the next goes up.
     pub(crate) fn waited(&mut self, now: Instant) {
         self.waiting.retain_mut(|ask| !ask.has_hung_up());
         if let Some(shown) = self.shown.as_mut() {
