@@ -50,12 +50,11 @@ pub(crate) fn the_person_chooses(
         .spawn(
             async move {
                 let deciding = backend.clone();
-                let (asked, response) =
-                    blocking::unblock(move || {
-                        let response = chosen_and_opened(&deciding, &asked, &opened);
-                        (asked, response)
-                    })
-                    .await;
+                let (asked, response) = blocking::unblock(move || {
+                    let response = chosen_and_opened(&deciding, &asked, &opened);
+                    (asked, response)
+                })
+                .await;
                 // Whatever the bus says when the response cannot be sent, the
                 // answer is already in the record.
                 let _ = asked.responded(&bus, response).await;
@@ -107,4 +106,3 @@ pub(crate) fn chosen_and_opened(backend: &Backend, asked: &Asked, opened: &LinkO
     let _ = asked.recorded(backend, Outcome::Unanswered(after));
     REFUSED
 }
-

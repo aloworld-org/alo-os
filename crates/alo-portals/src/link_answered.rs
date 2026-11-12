@@ -112,9 +112,10 @@ impl LinkOpened {
     /// person chose on the sheet, or the default.
     #[must_use]
     pub fn opens_in(&self) -> &str {
-        self.on_the_sheet
-            .as_ref()
-            .map_or_else(|| self.opener.application().identifier(), Application::identifier)
+        self.on_the_sheet.as_ref().map_or_else(
+            || self.opener.application().identifier(),
+            Application::identifier,
+        )
     }
 
     /// The person chose `identifier` on the sheet — or [`None`] when it is not
@@ -293,7 +294,10 @@ mod tests {
         .unwrap();
         assert_eq!(
             opened.offered(),
-            [FIREFOX.to_owned(), "io.gitlab.librewolf-community".to_owned()]
+            [
+                FIREFOX.to_owned(),
+                "io.gitlab.librewolf-community".to_owned()
+            ]
         );
         assert!(opened.chosen_on_the_sheet("org.example.Evil").is_none());
         assert!(opened.chosen_on_the_sheet(MAIL).is_none(), "not offered");
@@ -304,7 +308,10 @@ mod tests {
         let said = picked.said(&in_english());
         assert!(!said.is_a_bug(), "{said}");
         assert!(said.text().contains("You chose"), "{said}");
-        assert!(said.text().contains("io.gitlab.librewolf-community"), "{said}");
+        assert!(
+            said.text().contains("io.gitlab.librewolf-community"),
+            "{said}"
+        );
         // Without `ask`, nothing is offered.
         let plain = link_answered(
             Applicant::named(MAIL),

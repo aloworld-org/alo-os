@@ -151,9 +151,9 @@ mod network_monitor_portal;
 #[cfg(target_os = "linux")]
 mod open_uri_portal;
 #[cfg(target_os = "linux")]
-mod the_person_chooses_a_link;
-#[cfg(target_os = "linux")]
 mod opening;
+#[cfg(target_os = "linux")]
+mod the_person_chooses_a_link;
 // **Gated with its module**, which it was not until 2026-10-19. The module is
 // Linux-only and this re-export was not, so `alo-portals` did not compile for
 // Windows at all from #635 until now — and the only build that targets Windows

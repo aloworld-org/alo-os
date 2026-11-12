@@ -472,6 +472,7 @@ impl DesktopPictures {
             record: self.record.as_ref(),
             settings: None,
             approval: self.approval.as_ref(),
+            open_with: None,
             status: Some(&self.status),
             in_use: Some(&self.in_use),
             notifications: Some(&self.notifications),

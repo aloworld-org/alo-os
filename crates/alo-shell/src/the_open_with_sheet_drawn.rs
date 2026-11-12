@@ -151,10 +151,20 @@ pub(crate) fn drawn(
         above: 0,
     };
     let mut y = inside;
-    let title_shaped = laying.words(&title, TheType::Title, column, (palette.surface, palette.ink));
+    let title_shaped = laying.words(
+        &title,
+        TheType::Title,
+        column,
+        (palette.surface, palette.ink),
+    );
     y = crate::settings_drawn_page::text(&mut out, inside, y, title_shaped, &title);
     y += px(UNDER_THE_TITLE);
-    let line_shaped = laying.words(&line, TheType::Body, column, (palette.surface, palette.secondary));
+    let line_shaped = laying.words(
+        &line,
+        TheType::Body,
+        column,
+        (palette.surface, palette.secondary),
+    );
     y = crate::settings_drawn_page::text(&mut out, inside, y, line_shaped, &line);
     y += px(ABOVE_THE_CARD);
     let hairline = px(m::A_HAIRLINE);
@@ -165,14 +175,20 @@ pub(crate) fn drawn(
     for (which, row) in rows.iter().enumerate() {
         if which > 0 {
             out.drawn.push(crate::settings_drawn_page::Drawn::Fill(
-                Rectangle::new((inside + hairline, y).into(), (column - 2 * hairline, hairline).into()),
+                Rectangle::new(
+                    (inside + hairline, y).into(),
+                    (column - 2 * hairline, hairline).into(),
+                ),
                 0,
                 palette.edge,
             ));
             y += hairline;
         }
         let bottom = crate::settings_drawn_row::a_row(&mut out, &mut laying, y, row, card_top);
-        row_areas.push(Rectangle::new((inside, y).into(), (column, bottom - y).into()));
+        row_areas.push(Rectangle::new(
+            (inside, y).into(),
+            (column, bottom - y).into(),
+        ));
         y = bottom;
     }
     y += hairline;
@@ -206,7 +222,8 @@ pub(crate) fn drawn(
     let left = (size.0 - wide) / 2;
     let top = (size.1 - tall) / 2;
     let sheet = Rectangle::new((left, top).into(), (wide, tall).into());
-    let raised = crate::how_a_panel_is_raised::HowItIsRaised::FLOATING.at(f64::from(measure.factor()));
+    let raised =
+        crate::how_a_panel_is_raised::HowItIsRaised::FLOATING.at(f64::from(measure.factor()));
     let reach = raised.reach();
     let screen: Area = Rectangle::new((0, 0).into(), size.into());
     let canvas_area = Rectangle::new(
@@ -239,12 +256,25 @@ pub(crate) fn drawn(
 
     // *Open*, navy, at the right; *Cancel*, quiet, before it.
     let label = |words: &str, ground: [u8; 3], ink: [u8; 3], fonts: &mut _| {
-        written(fonts, words, TheType::Label, column / 2, measure, (ground, ink)).cropped_to_its_ink()
+        written(
+            fonts,
+            words,
+            TheType::Label,
+            column / 2,
+            measure,
+            (ground, ink),
+        )
+        .cropped_to_its_ink()
     };
     let open_words = say(words::OPEN, &Filling::nothing());
     let cancel_words = say(words::CANCEL, &Filling::nothing());
     let open_label = label(&open_words, palette.ink, palette.surface, &mut labels.fonts);
-    let cancel_label = label(&cancel_words, palette.surface, palette.ink, &mut labels.fonts);
+    let cancel_label = label(
+        &cancel_words,
+        palette.surface,
+        palette.ink,
+        &mut labels.fonts,
+    );
     let beside = px(BESIDE_A_LABEL);
     let open_wide = open_label.width_of_box + 2 * beside;
     let cancel_wide = cancel_label.width_of_box + 2 * beside;
@@ -253,7 +283,11 @@ pub(crate) fn drawn(
         (open_wide, button_tall).into(),
     );
     let cancel = Rectangle::new(
-        (open.loc.x - px(BETWEEN_THE_BUTTONS) - cancel_wide, top + buttons_top).into(),
+        (
+            open.loc.x - px(BETWEEN_THE_BUTTONS) - cancel_wide,
+            top + buttons_top,
+        )
+            .into(),
         (cancel_wide, button_tall).into(),
     );
     let button_corner = px(m::A_CARDS_CORNER) as f32;
