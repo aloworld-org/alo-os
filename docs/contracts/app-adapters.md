@@ -332,3 +332,37 @@ answer, for either adapter, found while writing this and not decided here:
 - **Its licence is not checked by anything.** This repository has no
   dependency-licence check today, so the sentence above is a rule a reviewer
   holds, not a test.
+
+## Amended 2026-11-12, later the same day — alo Browser's adapter is written in alo OS
+
+*The paragraph above that begins **The second is alo Browser's adapter** is
+superseded, and left standing so the change can be read.* The owner wants alo
+Browser installable on other operating systems as well as being alo OS's
+default, so the browser must not depend on anything of alo OS's. The split
+agreed with the alo-browser lane on 2026-11-12 is:
+
+- **alo-browser owns the specification and the wire.**
+  `aloworld-org/alo-browser`, `docs/contracts/alo-os-adapter-spec.md` (version 1,
+  commit `81fbc84c`) names ten verbs with their purpose, effect, typed arguments,
+  sentence, by-hand road and the exact JSON line each sends;
+  `docs/contracts/agent-socket.md` there is the socket protocol. The browser
+  depends on no crate of alo OS's.
+- **alo OS writes the `alo_adapters::Adapter` constant** from that
+  specification, inside this workspace and under this repository's licence,
+  GPL-3.0-or-later. There is no MPL-2.0 crate to pin, so the first two of the
+  three questions above (where the pin goes, and its words) do not arise for it.
+- **alo OS builds mechanism `api`**, which speaks that socket. Until it does,
+  `api` stays refused when an adapter is loaded, and none of the browser's verbs
+  is offered to a person.
+
+Where the specification differs from this contract, **this contract wins** and the
+specification is corrected; the specification says so itself. Two of its verbs,
+`find_on_page` and `fill_field`, take text a person must read whole, and are
+offered only once the *text, shown in full* argument kind exists. `save_as_pdf`
+is held until the document portal carries the file (the browser's item 967): the
+browser will not take a folder named in a request, because its socket cannot tell
+alo OS from any other program the person runs, so a folder in a request is not a
+grant.
+
+**Not built on the day this was written.** Nothing in this workspace declares the
+browser's adapter or carries `api` out.
