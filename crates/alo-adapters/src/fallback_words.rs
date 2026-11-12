@@ -292,8 +292,8 @@ pub const CANNOT_BE_PRESSED_UNTIL_ALO_WORKS_FULLY: Word = Word::saying(
      close {application} and open it again",
 )
 .noting(
-    "Said instead of the plain cannot-be-pressed sentence for VSCodium, VS Code and Chromium \
-     while that switch is off. The quoted switch name must be the same translation as the \
+    "Said instead of the plain cannot-be-pressed sentence for VSCodium, VS Code and the browser \
+     built like them while that switch is off. The quoted switch name must be the same translation as the \
      switch itself (settings.access.alo-works-fully-inside-apps), and Settings, Accessibility \
      and Applications the same as that window's own words. {kind} is already translated; \
      {name} and {application} are not translated.",
