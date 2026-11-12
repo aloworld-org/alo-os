@@ -383,7 +383,7 @@ mod the_file {
         let outcomes = every_kept_outcome();
         let kinds: BTreeSet<String> = outcomes.iter().map(kind_of).collect();
         assert_eq!(kinds.len(), outcomes.len(), "each kind once");
-        assert_eq!(kinds.len(), 44);
+        assert_eq!(kinds.len(), 50);
 
         let mut lines = Vec::new();
         let mut second = 0;
