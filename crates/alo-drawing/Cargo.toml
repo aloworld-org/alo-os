@@ -13,6 +13,11 @@ repository.workspace = true
 # `tests/it_never_reaches_a_compositor.rs` holds that for every crate this one
 # pulls in, read off `Cargo.lock`, not only for the ones named here.
 [dependencies]
+# The shaper and rasteriser every letter alo draws goes through, pinned exactly
+# as `alo-shell` pins it, with the same features: no system font discovery.
+cosmic-text = { version = "=0.14.2", default-features = false, features = ["std", "swash"] }
+# Never splitting a letter from its accent when a line is wrapped.
+unicode-segmentation = { workspace = true }
 
 [dev-dependencies]
 # Reads `Cargo.lock` in `tests/it_never_reaches_a_compositor.rs`.

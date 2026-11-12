@@ -189,16 +189,21 @@ impl HowThisMachineStartsThings {
         // person's own answer (`crate::telling_applications_to_describe_themselves`):
         // handed only where they answered, so a variable they set themselves
         // is otherwise left as their manager has it.
-        let (describe, chose) =
-            crate::telling_applications_to_describe_themselves::the_persons_answer();
-        if chose {
-            handed.extend(alo_launching::what_a_start_is_handed(describe));
+        let answer = crate::telling_applications_to_describe_themselves::the_persons_answer();
+        if answer.chose {
+            handed.extend(alo_launching::what_a_start_is_handed(answer.describe));
         }
+        // **And how far its page is described**: completely only where the
+        // person let alo work fully inside applications like VSCodium.
         let mut command = command.to_vec();
         command.extend(
-            alo_launching::what_its_command_gains(identifier, describe)
-                .iter()
-                .map(|it| (*it).to_owned()),
+            alo_launching::what_its_command_gains(
+                identifier,
+                answer.describe,
+                answer.alo_works_fully,
+            )
+            .iter()
+            .map(|it| (*it).to_owned()),
         );
         let Some((first, _)) = command.split_first() else {
             return said(identifier, "its command names nothing");

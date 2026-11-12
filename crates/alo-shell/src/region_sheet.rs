@@ -118,7 +118,7 @@ pub(crate) fn drawn(
             height,
             fonts,
             text.text(),
-            place,
+            crate::painted::drawn_at(place),
             measure.label_metrics(),
             colours.ground,
             colours.muted,
@@ -161,10 +161,10 @@ pub(crate) fn drawn(
             height,
             fonts,
             &first,
-            Rectangle::new(
+            crate::painted::drawn_at(Rectangle::new(
                 (card.loc.x + inside, card.loc.y + measure.px(16)).into(),
                 (card.size.w - 2 * inside, measure.px(25)).into(),
-            ),
+            )),
             measure.metrics(),
             colours.entry,
             colours.ink,
@@ -175,10 +175,10 @@ pub(crate) fn drawn(
                 height,
                 fonts,
                 &second,
-                Rectangle::new(
+                crate::painted::drawn_at(Rectangle::new(
                     (card.loc.x + inside, card.loc.y + measure.px(45)).into(),
                     (card.size.w - 2 * inside, measure.px(22)).into(),
-                ),
+                )),
                 measure.label_metrics(),
                 colours.entry,
                 colours.secondary,
@@ -219,7 +219,7 @@ pub(crate) fn drawn(
         height,
         fonts,
         say_it(say::FOOTER).text(),
-        at.footer,
+        crate::painted::drawn_at(at.footer),
         measure.label_metrics(),
         colours.ground,
         colours.muted,

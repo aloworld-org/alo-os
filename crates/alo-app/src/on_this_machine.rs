@@ -91,6 +91,19 @@ impl Machine for OnThisMachine {
             .ok_or(NotDelivered::NotThere)
     }
 
+    fn access(&mut self) -> alo_access::TurnedOn {
+        // **The same file, read the same way, as the desktop reads it at each
+        // start** (`alo-desktop`'s `telling_applications_to_describe_themselves`),
+        // so what a refusal says and how the application was started agree.
+        alo_choosing::where_the_folder_is(
+            std::env::var_os(alo_choosing::CONFIG_HOME).as_deref(),
+            std::env::var_os(alo_choosing::HOME).as_deref(),
+        )
+        .map_or_else(alo_access::TurnedOn::nothing, |folder| {
+            alo_access::keeping::at_sign_in(&folder).0
+        })
+    }
+
     fn a_place_to_return_to(&mut self, strings: &Strings) -> APlace {
         a_place_kept_in(&self.doors, strings)
     }

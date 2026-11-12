@@ -4,7 +4,9 @@
 //! Each of those windows is drawn by alo and placed on the canvas by ADR 0145,
 //! and each wears the edge every application's window wears: its icon, its
 //! title and Close, in the focused look while the keys go to it and the
-//! unfocused one otherwise (`crate::window_edge_look`). The edge is laid out by
+//! unfocused one otherwise (`crate::window_edge_look`), and Minimise, which puts
+//! the window in the right-hand panel (`crate::alos_own_window_goes_aside`).
+//! The edge is laid out by
 //! `crate::window_edge::edge_of` with `Decorations::AlosOwnWindow`, painted by
 //! `crate::window_edge_picture::EdgePicture` and pressed through
 //! `crate::window_edge_pointing` — one edge, one set of measures — **from where
@@ -104,6 +106,7 @@ pub(crate) fn what_a_press_is_on(
     let edge = the_edge_over(window, room, scale);
     match what_is_under(&edge, a_point_in_the_edges_units(at, scale))? {
         UnderThePointer::Control(OnTheEdge::Close) => Some(OnItsEdge::Close),
+        UnderThePointer::Control(OnTheEdge::Minimise) => Some(OnItsEdge::Minimise),
         UnderThePointer::Control(_)
         | UnderThePointer::Drag
         | UnderThePointer::TheEdgeAndNothingOnIt => Some(OnItsEdge::TheRest),
@@ -115,6 +118,9 @@ pub(crate) fn what_a_press_is_on(
 pub(crate) enum OnItsEdge {
     /// Close.
     Close,
+    /// Minimise: the window goes into the right-hand panel
+    /// (`crate::alos_own_window_goes_aside`).
+    Minimise,
     /// Anywhere else on it, which brings the window in front.
     TheRest,
 }

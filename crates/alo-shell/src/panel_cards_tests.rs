@@ -29,7 +29,7 @@ fn fonts() -> cosmic_text::FontSystem {
     let mut fonts = cosmic_text::FontSystem::new();
     fonts
         .db_mut()
-        .load_font_data(include_bytes!("../fonts/Manrope.ttf").to_vec());
+        .load_font_data(alo_drawing::fonts::MANROPE.to_vec());
     fonts
 }
 
@@ -82,7 +82,7 @@ fn tiles(panel: &Panel, edge: WhichEdge, artwork: &TheArtwork) -> Vec<Inked> {
         &laid_out,
         edge,
         artwork,
-        &the_palette(),
+        (&the_palette(), crate::desktop_testing::no_words()),
         &mut fonts(),
     )
 }
@@ -125,16 +125,21 @@ fn one_window_put_aside_is_one_card_under_a_control_that_is_not_a_card() {
     assert_ne!(control.pixels, card.pixels);
 }
 
-/// **The hit area is the design's 42 inside the 48, with rounded corners**:
-/// the slot's corner is the rail, its middle the hit area.
+/// **The hit area alo's own windows show is the design's 42 inside the 48,
+/// with rounded corners**: the slot's corner is the rail, its middle the hit
+/// area. An application's window shows its miniature's card instead
+/// (`crate::a_miniatures_card`, whose tests hold it).
 #[test]
 fn the_hit_area_is_inset_and_rounded_as_measured() {
     let palette = the_palette();
-    let drawn = tiles(
-        &holding(&["org.kde.dolphin"]),
-        WhichEdge::Right,
-        &TheArtwork::none(),
-    );
+    let mut panel = Panel::new();
+    panel
+        .put_alos_window_aside(
+            alo_put_aside::AlosOwnWindow::Settings,
+            alo_canvas::Place::FIRST,
+        )
+        .unwrap();
+    let drawn = tiles(&panel, WhichEdge::Right, &TheArtwork::none());
     let card = drawn.get(1).unwrap();
     assert_eq!(card.area.size.w, 48);
     // Inside the 3-pixel inset: the rail.
@@ -145,10 +150,10 @@ fn the_hit_area_is_inset_and_rounded_as_measured() {
     assert_eq!(pixel(card, 3, 3), palette.dock);
 }
 
-/// **An application with no artwork is marked by its letter**, in the badge's
-/// ink, near the middle of the card.
+/// **An application's window is its miniature's card with a badge**, not the
+/// hit area with a mark in the middle — the approved design `27:2`.
 #[test]
-fn an_application_with_no_icon_is_marked_by_its_letter() {
+fn an_applications_window_is_a_miniatures_card() {
     let palette = the_palette();
     let drawn = tiles(
         &holding(&["org.kde.dolphin"]),
@@ -156,18 +161,23 @@ fn an_application_with_no_icon_is_marked_by_its_letter() {
         &TheArtwork::none(),
     );
     let card = drawn.get(1).unwrap();
-    let inked = (14..34)
-        .flat_map(|y| (14..34).map(move |x| (x, y)))
-        .filter(|&(x, y)| pixel(card, x, y) == palette.badge_ink)
+    assert_eq!(pixel(card, 24, 24), palette.ground, "the card's ground");
+    assert_eq!(pixel(card, 24, 8), palette.edge, "its hairline");
+    // A 9-pixel letter is mostly edges: its ink is whatever in the badge's
+    // flat middle is not the badge's ground.
+    let in_the_badge = (34..44)
+        .flat_map(|y| (34..44).map(move |x| (x, y)))
+        .filter(|&(x, y)| pixel(card, x, y) != palette.badge)
         .count();
-    assert!(inked > 3, "a letter is drawn in the middle: {inked} pixels");
+    assert!(
+        in_the_badge > 4,
+        "the badge's letter: {in_the_badge} pixels"
+    );
 }
 
-/// **An application that draws its own icon is marked by it**, at the Dock's
-/// artwork size and centred — and no letter is put across it.
+/// **An application that draws its own icon is badged with it.**
 #[test]
-fn an_application_with_an_icon_is_marked_by_it() {
-    let palette = the_palette();
+fn an_application_with_an_icon_is_badged_with_it() {
     let red = [200_u8, 30, 40];
     let mut artwork = TheArtwork::none();
     artwork.draws(
@@ -176,15 +186,8 @@ fn an_application_with_an_icon_is_marked_by_it() {
     );
     let drawn = tiles(&holding(&["org.kde.dolphin"]), WhichEdge::Right, &artwork);
     let card = drawn.get(1).unwrap();
-    assert_eq!(pixel(card, 24, 24), red, "the icon is in the middle");
-    // `GLYPH` is 28, centred in 48: columns 10 to 37.
-    assert_eq!(pixel(card, 10, 24), red);
-    assert_eq!(pixel(card, 37, 24), red);
-    assert_eq!(pixel(card, 8, 24), palette.badge, "and no wider");
-    assert!(
-        !card.pixels.contains(&palette.badge_ink),
-        "no letter over it"
-    );
+    assert_eq!(pixel(card, 39, 39), red, "the icon is in the badge");
+    assert_ne!(pixel(card, 24, 24), red, "and not across the miniature");
 }
 
 /// **Two windows are two cards that can be told apart**: two applications'
@@ -227,4 +230,65 @@ fn the_control_points_away_from_its_edge() {
 #[test]
 fn an_empty_panel_draws_no_card() {
     assert!(tiles(&Panel::new(), WhichEdge::Right, &TheArtwork::none()).is_empty());
+}
+
+/// **One of alo's own windows put aside is a card like an application's**:
+/// the hit area, and the first letter of the word the Dock already uses for
+/// it, so the terminal and Settings put aside are two cards a person can tell
+/// apart.
+#[test]
+fn alos_own_windows_put_aside_are_cards_marked_by_their_letter() {
+    let palette = the_palette();
+    let mut panel = Panel::new();
+    for which in [
+        alo_put_aside::AlosOwnWindow::TheTerminal,
+        alo_put_aside::AlosOwnWindow::Settings,
+    ] {
+        panel
+            .put_alos_window_aside(which, alo_canvas::Place::FIRST)
+            .unwrap();
+    }
+    let laid_out = picture(
+        &panel,
+        a_look(),
+        AS_DRAWN,
+        WhichEdge::Right,
+        WhetherRevealed::Revealed,
+        DisplayScale::ONE,
+    )
+    .unwrap();
+    assert_eq!(laid_out.alo_squares.len(), 2);
+    assert!(
+        laid_out.slots.is_empty(),
+        "neither is an application's window"
+    );
+    let words = crate::the_docks_words::TheDocksWords {
+        terminal: "Terminal".to_owned(),
+        settings: "Settings".to_owned(),
+        ..crate::the_docks_words::TheDocksWords::default()
+    };
+    let drawn = drawn(
+        &panel,
+        &laid_out,
+        WhichEdge::Right,
+        &TheArtwork::none(),
+        (&palette, &words),
+        &mut fonts(),
+    );
+    assert_eq!(drawn.len(), 3, "the control and two cards");
+    let (first, second) = (drawn.get(1).unwrap(), drawn.get(2).unwrap());
+    for card in [first, second] {
+        assert!(
+            card.pixels.contains(&palette.badge),
+            "a card has its hit area"
+        );
+        assert!(
+            card.pixels.contains(&palette.badge_ink),
+            "and a letter on it"
+        );
+    }
+    assert_ne!(
+        first.pixels, second.pixels,
+        "T and S are two different marks"
+    );
 }

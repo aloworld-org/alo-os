@@ -76,7 +76,7 @@ impl ScreenBackground {
         let area = Rectangle::<i32, Physical>::new((0, 0).into(), (width, height).into());
         Ok(Self {
             solids: vec![Solid {
-                area,
+                area: crate::painted::drawn_at(area),
                 colour: as_painted(warming.applied_to(chosen.colour())),
             }],
         })

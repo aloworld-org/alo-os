@@ -113,10 +113,11 @@ pub enum Decorations {
     /// `crate::a_task_windows_edge` draws and presses it.
     ATaskWindow,
     /// One of alo's own windows that is an application in its own right — the
-    /// terminal first (ADR 0145): **its title, and Close**. Nothing can put one
-    /// of alo's windows aside or open a panel for it yet, and a control that
-    /// reaches nothing looks live and is not. `crate::the_terminals_edge` draws
-    /// and presses it.
+    /// terminal first (ADR 0145): **its title, Minimise and Close**. Minimise
+    /// puts it in the right-hand panel (`crate::alos_own_window_goes_aside`);
+    /// nothing can maximise one yet, and a control that reaches nothing looks
+    /// live and is not. `crate::the_terminals_edge` and
+    /// `crate::an_alo_windows_edge` draw and press it.
     AlosOwnWindow,
 }
 

@@ -1,12 +1,12 @@
 //! A raster made premultiplied: what a renderer blends.
 
 use super::Washed;
-use smithay::utils::Rectangle;
+use crate::area::Area;
 
 /// A raster of these pixels, as many as the bytes hold.
 fn of(pixels: Vec<u8>) -> Washed {
     Washed {
-        area: Rectangle::from_size((1, 1).into()),
+        area: Area::from_size((1, 1).into()),
         pixels,
     }
 }

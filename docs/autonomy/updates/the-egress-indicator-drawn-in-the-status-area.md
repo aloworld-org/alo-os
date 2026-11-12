@@ -25,7 +25,7 @@ of it is drawn.
 | `crates/alo-shell/src/egress_status_testing.rs` | Real departures and the machine's vocabulary for the tests |
 | `crates/alo-shell/src/nested_egress_status.rs` | `EgressStatusFrame`, `Nested::submit_with_egress_status` |
 | `crates/alo-shell/src/painted.rs` | `Solid`, `Inked` and the run painter, moved out of the sign-in files to be shared |
-| `crates/alo-shell/src/painted_text.rs` | Sentence shaping and inking, moved out of `sign_in_raster.rs` to be shared |
+| `crates/alo-drawing/src/painted_text.rs` (in `alo-shell` when this was written; moved by the UI kit plan's task 2) | Sentence shaping and inking, moved out of `sign_in_raster.rs` to be shared |
 | `crates/alo-shell/tests/egress_status_source.rs` | The shape promises, read from the shipped source |
 | `crates/alo-shell/examples/egress_status_check.rs` | The WSLg measurement |
 | `docs/contracts/native-egress-indicator.md` | The new public surface |

@@ -82,8 +82,17 @@ fn a_start_is_handed_what_the_session_is_told() {
 #[test]
 fn only_chromium_gains_the_switch_and_only_on() {
     for identifier in DRAWN_BY_CHROMIUM {
-        assert_eq!(what_its_command_gains(identifier, true), [THE_PAGE_TOO]);
-        assert!(what_its_command_gains(identifier, false).is_empty());
+        assert!(is_drawn_by_chromium(identifier), "{identifier}");
+        assert_eq!(
+            what_its_command_gains(identifier, true, false),
+            [THE_PAGE_TOO]
+        );
+        for fully in [false, true] {
+            assert!(
+                what_its_command_gains(identifier, false, fully).is_empty(),
+                "describing turned off, and working fully = {fully}"
+            );
+        }
     }
     for not_chromium in [
         "org.mozilla.firefox",
@@ -92,11 +101,34 @@ fn only_chromium_gains_the_switch_and_only_on() {
         "org.kde.dolphin",
         "codium",
     ] {
-        assert!(
-            what_its_command_gains(not_chromium, true).is_empty(),
-            "{not_chromium}"
+        assert!(!is_drawn_by_chromium(not_chromium), "{not_chromium}");
+        for fully in [false, true] {
+            assert!(
+                what_its_command_gains(not_chromium, true, fully).is_empty(),
+                "{not_chromium}, working fully = {fully}"
+            );
+        }
+    }
+}
+
+/// **Where the person let alo work fully inside these applications, the page
+/// is described completely instead** — one switch, never both, so which mode
+/// Chromium obeys does not depend on the order it reads them in.
+#[test]
+fn working_fully_hands_the_complete_mode_instead() {
+    for identifier in DRAWN_BY_CHROMIUM {
+        assert_eq!(
+            what_its_command_gains(identifier, true, true),
+            [THE_PAGE_FULLY],
+            "{identifier}"
         );
     }
+    assert_eq!(THE_PAGE_FULLY, "--force-renderer-accessibility=complete");
+    let (switch, _) = THE_PAGE_TOO.split_once('=').unwrap_or((THE_PAGE_TOO, ""));
+    assert!(
+        THE_PAGE_FULLY.starts_with(&format!("{switch}=")),
+        "the two modes are not the same switch"
+    );
 }
 
 /// **The switch never claims a screen reader is running.** The bare switch

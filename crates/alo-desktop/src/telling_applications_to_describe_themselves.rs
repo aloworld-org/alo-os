@@ -25,26 +25,39 @@
 
 use std::collections::HashMap;
 
-/// The person's answer, read from their `access.toml` now: whether
-/// applications describe themselves, and whether the person said so
-/// themselves.
+/// The person's answers, read from their `access.toml` at one moment.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct TheirAnswer {
+    /// Whether applications describe themselves.
+    pub describe: bool,
+    /// Whether the person said so themselves, either way.
+    pub chose: bool,
+    /// Whether alo works fully inside applications like VSCodium — off as a
+    /// machine comes (the owner, 2026-11-12), and read at each start like the
+    /// rest, so a change reaches the next application started.
+    pub alo_works_fully: bool,
+}
+
+/// The person's answers, read from their `access.toml` now.
 ///
 /// **A file that does not read is the default** — applications describe
-/// themselves, and nobody chose — because a broken settings file is not a
-/// person who turned something off. Settings says why it did not read.
+/// themselves, nobody chose, and alo does not work fully inside them —
+/// because a broken settings file is not a person who turned something off,
+/// nor one who turned something on. Settings says why it did not read.
 #[must_use]
-pub fn the_persons_answer() -> (bool, bool) {
-    let Some(folder) = alo_choosing::where_the_folder_is(
+pub fn the_persons_answer() -> TheirAnswer {
+    let turned_on = alo_choosing::where_the_folder_is(
         std::env::var_os("XDG_CONFIG_HOME").as_deref(),
         std::env::var_os("HOME").as_deref(),
-    ) else {
-        return (true, false);
-    };
-    let (turned_on, _) = alo_access::keeping::at_sign_in(&folder);
-    (
-        turned_on.apps_describe_themselves(),
-        turned_on.chose_whether_apps_describe_themselves(),
     )
+    .map_or_else(alo_access::TurnedOn::nothing, |folder| {
+        alo_access::keeping::at_sign_in(&folder).0
+    });
+    TheirAnswer {
+        describe: turned_on.apps_describe_themselves(),
+        chose: turned_on.chose_whether_apps_describe_themselves(),
+        alo_works_fully: turned_on.alo_works_fully_inside_apps(),
+    }
 }
 
 /// Tell the person's manager and the session bus whether applications started

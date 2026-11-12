@@ -147,7 +147,7 @@ impl Answers {
             let text_top = y + (self.box_height - shaped.height) / 2;
             if is_selected {
                 drawn.solids.push(Solid {
-                    area: Rectangle::new(
+                    area: alo_drawing::area::Area::new(
                         (x + inset, text_top + shaped.height).into(),
                         (self.box_width - 2 * inset, measure.px(3)).into(),
                     ),

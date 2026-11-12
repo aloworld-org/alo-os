@@ -164,10 +164,13 @@ impl AlosCopies {
         // answered: the image's default never reaches a process started here.
         // Off, it does not describe itself, and alo cannot work inside it —
         // which is what the switch says it costs.
-        let (describe, _) =
-            crate::telling_applications_to_describe_themselves::the_persons_answer();
-        handed.extend(alo_launching::what_a_start_is_handed(describe));
-        let gains = alo_launching::what_its_command_gains(application, describe);
+        let answer = crate::telling_applications_to_describe_themselves::the_persons_answer();
+        handed.extend(alo_launching::what_a_start_is_handed(answer.describe));
+        let gains = alo_launching::what_its_command_gains(
+            application,
+            answer.describe,
+            answer.alo_works_fully,
+        );
         if let Err(why) = std::fs::DirBuilder::new()
             .recursive(true)
             .mode(0o700)

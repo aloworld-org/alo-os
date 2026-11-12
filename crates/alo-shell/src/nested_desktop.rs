@@ -480,6 +480,10 @@ impl DesktopPictures {
             // **Set by the caller that knows**: only the direct backend holds
             // the server whose windows travel.
             travelling_aside: &[],
+            // **Set by the caller that knows**: only the direct backend holds
+            // the panel and the windows put aside in it.
+            miniatures: &[],
+            name_in_the_panel: &[],
             terminal: self.terminal.as_ref(),
             // **Set by the caller that knows** the display, as above.
             pointer_at: crate::display_scale::DisplayScale::ONE,

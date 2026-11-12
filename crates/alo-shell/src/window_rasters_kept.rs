@@ -122,12 +122,12 @@ pub(crate) fn placed(kept: &[Washed], by: (i32, i32), output: (i32, i32)) -> Vec
         .filter_map(|made| {
             let moved = Rectangle::<i32, Physical>::new(
                 (made.area.loc.x + by.0, made.area.loc.y + by.1).into(),
-                made.area.size,
+                (made.area.size.w, made.area.size.h).into(),
             );
             let shown = moved.intersection(screen)?;
             if shown == moved {
                 return Some(Washed {
-                    area: moved,
+                    area: crate::painted::drawn_at(moved),
                     pixels: made.pixels.clone(),
                 });
             }
@@ -141,7 +141,7 @@ pub(crate) fn placed(kept: &[Washed], by: (i32, i32), output: (i32, i32)) -> Vec
                 pixels.extend_from_slice(made.pixels.get(start..start + across * 4)?);
             }
             Some(Washed {
-                area: shown,
+                area: crate::painted::drawn_at(shown),
                 pixels,
             })
         })

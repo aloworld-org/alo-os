@@ -285,6 +285,12 @@ pub enum SettingsRow {
     /// decision of 2026-11-11; off, applications started from then on do not
     /// describe themselves (`alo_launching::describing_themselves`).
     AppsDescribeThemselves,
+    /// *Let alo work fully inside apps like VSCodium*: one switch, and Enter
+    /// turns it over. **Off as this computer comes**, the owner's decision of
+    /// 2026-11-12, *person's choice, off*; on, an application drawn by Chromium
+    /// started from then on describes its page completely, so alo can press its
+    /// controls and read its document (`alo_launching::describing_themselves`).
+    AloWorksFullyInsideApps,
     /// Where a new window goes when there is no room for it in view: Enter
     /// chooses it. Gliding to empty space ships; opening in front, offset,
     /// stays a choice — the owner, 2026-11-07
@@ -338,7 +344,8 @@ impl SettingsRow {
             | Self::PointerShape(_)
             | Self::PointerColour(_)
             | Self::ReducedMotion
-            | Self::AppsDescribeThemselves => SettingsSection::Accessibility,
+            | Self::AppsDescribeThemselves
+            | Self::AloWorksFullyInsideApps => SettingsSection::Accessibility,
             Self::OpenThePicker(SettingsPicker::Region) => SettingsSection::Formats,
             Self::OpenThePicker(SettingsPicker::TimeZone) => SettingsSection::TimeZone,
             Self::Shortcut(_) => SettingsSection::Shortcuts,
@@ -727,6 +734,15 @@ impl SettingsWindow {
             .map(|open| open.access.drawn().apps_describe_themselves())
     }
 
+    /// Whether alo works fully inside applications like VSCodium, as Settings
+    /// holds it.
+    #[must_use]
+    pub fn alo_works_fully_inside_apps(&self) -> Option<bool> {
+        self.open
+            .as_ref()
+            .map(|open| open.access.drawn().alo_works_fully_inside_apps())
+    }
+
     /// Which arrow the pointer is, as Settings holds it.
     #[must_use]
     pub fn pointer_shape(&self) -> Option<alo_appearance::PointerShape> {
@@ -1020,6 +1036,7 @@ impl Open {
                 if self.access.at().is_some() && self.access.not_read().is_none() {
                     rows.push(SettingsRow::ReducedMotion);
                     rows.push(SettingsRow::AppsDescribeThemselves);
+                    rows.push(SettingsRow::AloWorksFullyInsideApps);
                 }
                 rows
             }
@@ -1438,6 +1455,24 @@ impl Open {
                     |turned_on| {
                         let now = turned_on.apps_describe_themselves();
                         turned_on.let_apps_describe_themselves(!now);
+                        Ok(())
+                    },
+                    doors.strings,
+                );
+                SettingsDid::Kept(SettingsSection::Accessibility, kept)
+            }
+            // **Off as this computer comes**, and nothing to tell the session:
+            // the desktop reads the answer again at each start it makes
+            // (`alo_launching::describing_themselves`), and alo reads it again
+            // when a press is refused, to name this switch.
+            SettingsRow::AloWorksFullyInsideApps if self.access.not_read().is_some() => {
+                SettingsDid::Kept(SettingsSection::Accessibility, SettingsKept::Refused)
+            }
+            SettingsRow::AloWorksFullyInsideApps => {
+                let kept = self.access.changed(
+                    |turned_on| {
+                        let now = turned_on.alo_works_fully_inside_apps();
+                        turned_on.let_alo_work_fully_inside_apps(!now);
                         Ok(())
                     },
                     doors.strings,

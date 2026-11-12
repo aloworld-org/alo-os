@@ -193,7 +193,30 @@ fn the_applications(open: &Open, strings: &Strings) -> ABlock {
     row.at_its_end = Some(AnEnd::Words(crate::settings_page::switch_said(is, strings)));
     ABlock::Section(ASection {
         heading: Some(said(strings, w::APPLICATIONS)),
-        rows: vec![row],
+        rows: vec![row, alo_works_fully(open, strings)],
         footnote: None,
     })
+}
+
+/// *Let alo work fully inside apps like VSCodium*, the owner's decision of
+/// 2026-11-12 — **off as this computer comes**, the second switch under
+/// *Applications*, with what it changes in those apps said under it, so a
+/// person turns it on knowing the editor will behave differently.
+fn alo_works_fully(open: &Open, strings: &Strings) -> ARow {
+    let is = if open.access.drawn().alo_works_fully_inside_apps() {
+        crate::settings_page::SwitchIs::On
+    } else {
+        crate::settings_page::SwitchIs::Off
+    };
+    let mut row = ARow::named(
+        Some(SettingsRow::AloWorksFullyInsideApps),
+        TheKind::ASwitch(is),
+        said(strings, w::ALO_WORKS_FULLY_INSIDE_APPS),
+    );
+    row.lines
+        .push(said(strings, w::ALO_WORKS_FULLY_INSIDE_APPS_IS));
+    row.lines
+        .push(said(strings, w::APPS_DESCRIBE_THEMSELVES_LATER));
+    row.at_its_end = Some(AnEnd::Words(crate::settings_page::switch_said(is, strings)));
+    row
 }

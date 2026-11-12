@@ -179,9 +179,10 @@ fn revealing_an_applications_added_controls_never_moves_its_window() {
     }
 }
 
-/// **A task window carries Minimise and Close; alo's own windows Close alone.**
+/// **A task window and alo's own windows carry Minimise and Close** — alo's
+/// own windows Close alone until they could be put aside (design `27:2`).
 #[test]
-fn a_task_window_carries_minimise_and_alos_own_windows_close_alone() {
+fn a_task_window_and_alos_own_windows_carry_minimise_and_close() {
     let does = |decorations| -> Vec<OnTheEdge> {
         edge_of(specimen(), decorations, true, roomy())
             .controls
@@ -193,7 +194,10 @@ fn a_task_window_carries_minimise_and_alos_own_windows_close_alone() {
         does(Decorations::ATaskWindow),
         vec![OnTheEdge::Minimise, OnTheEdge::Close]
     );
-    assert_eq!(does(Decorations::AlosOwnWindow), vec![OnTheEdge::Close]);
+    assert_eq!(
+        does(Decorations::AlosOwnWindow),
+        vec![OnTheEdge::Minimise, OnTheEdge::Close]
+    );
     assert_eq!(
         edge_of(specimen(), Decorations::ATaskWindow, true, roomy()).title,
         None

@@ -75,7 +75,7 @@
 
 use alo_dock::measures::{GAP, ICON, MARGIN};
 use alo_put_aside::the_region_the_panel_claims::WhichEdge;
-use alo_put_aside::{Aside, Panel, TaskNumber};
+use alo_put_aside::{AlosOwnWindow, Aside, Panel, TaskNumber};
 use smithay::utils::{Physical, Point, Rectangle, Size};
 
 use crate::RenderError;
@@ -152,6 +152,11 @@ pub(crate) struct PanelPicture {
     /// order they were put aside (the approved design `23:2`). Nothing is
     /// painted in them here: `crate::task_card_raster` draws each square.
     pub(crate) task_squares: Vec<(TaskNumber, Rectangle<i32, Physical>)>,
+    /// **One slot per one of alo's own windows put aside** — the terminal,
+    /// Settings or the record — with which one it is, in the same walk down
+    /// the rail (`crate::alos_own_window_goes_aside`). What each shows is
+    /// `crate::panel_cards`'.
+    pub(crate) alo_squares: Vec<(AlosOwnWindow, Rectangle<i32, Physical>)>,
     /// Rasters composited over the solids: the tasks' squares, then the
     /// open card, from `crate::task_card_raster`. Empty for a panel holding
     /// no task.
@@ -305,11 +310,12 @@ pub(crate) fn picture(
 
     let mut slots = Vec::new();
     let mut task_squares = Vec::new();
+    let mut alo_squares = Vec::new();
     let mut solids = Vec::new();
     let mut control = None;
     if rail_height > 0 {
         solids.push(Solid {
-            area: rail,
+            area: crate::painted::drawn_at(rail),
             colour: palette.dock,
         });
         // The expansion control holds the first slot, at the rail's own padding.
@@ -345,6 +351,7 @@ pub(crate) fn picture(
                     slots.push(slot);
                 }
                 Aside::ATask(task) => task_squares.push((task.task(), slot)),
+                Aside::AnAloWindow(aside) => alo_squares.push((aside.which(), slot)),
             }
         }
     }
@@ -358,6 +365,7 @@ pub(crate) fn picture(
         solids,
         inked: Vec::new(),
         task_squares,
+        alo_squares,
         washed: Vec::new(),
         open_card: None,
     })

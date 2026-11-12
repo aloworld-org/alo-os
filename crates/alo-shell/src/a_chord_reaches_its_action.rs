@@ -213,6 +213,12 @@ impl Server {
             self.shortcuts = Some(shortcuts);
             return names.map_or(WhatTheChordCameTo::NotBound, WhatTheChordCameTo::Carried);
         }
+        // **And Minimise window on alo's own window**, for the same reason:
+        // `crate::a_chord_puts_alos_own_window_aside`.
+        if self.a_chord_puts_alos_own_window_aside(&shortcuts, chord) {
+            self.shortcuts = Some(shortcuts);
+            return names.map_or(WhatTheChordCameTo::NotBound, WhatTheChordCameTo::Carried);
+        }
         // **A terminal, answered next and for the same reason: it borrows
         // nothing.** One push onto `Server::asked_to_start`, no window, no
         // places and no clock — so the layers below are never entered for it

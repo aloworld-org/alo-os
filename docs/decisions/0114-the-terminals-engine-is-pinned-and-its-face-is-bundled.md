@@ -3,7 +3,7 @@
 **Status:** **proposed, 2026-10-14**, by the Mac lane, on the owner's
 instruction to begin building the terminal. **One part needs the owner's word
 before any code**: bundling a monospace face, for the reason
-`crates/alo-shell/fonts/README.md` records about the last one.
+`crates/alo-drawing/fonts/README.md` records about the last one.
 
 ## What is actually missing, which is less than it looks
 
@@ -46,7 +46,7 @@ what is drawn, what is recorded, what is permitted.
 ## The face, and this is a blocker rather than a detail
 
 **There is no monospace face in this product.** Measured 2026-10-14 with a
-control: `crates/alo-shell/fonts/` holds `Manrope.ttf` and `Inter.ttf`, both
+control: `crates/alo-drawing/fonts/` holds `Manrope.ttf` and `Inter.ttf`, both
 proportional; **zero** files anywhere ask for a monospace family; the image
 installs no font package at all.
 

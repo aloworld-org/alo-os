@@ -81,7 +81,7 @@ fn fonts() -> cosmic_text::FontSystem {
     let mut fonts = cosmic_text::FontSystem::new();
     fonts
         .db_mut()
-        .load_font_data(include_bytes!("../fonts/Manrope.ttf").to_vec());
+        .load_font_data(alo_drawing::fonts::MANROPE.to_vec());
     fonts
 }
 
@@ -160,7 +160,10 @@ fn an_applications_edge_has_its_frame_behind_and_none_of_it_on_the_window() {
     let window = Rectangle::<i32, Physical>::new((40, 100).into(), (400, 200).into());
     for raster in picture.behind() {
         assert!(
-            raster.area.intersection(window).is_none(),
+            raster
+                .area
+                .intersection(crate::painted::drawn_at(window))
+                .is_none(),
             "{:?} is on the window",
             raster.area
         );

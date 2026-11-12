@@ -11,6 +11,25 @@ use smithay::utils::{Physical, Rectangle};
 
 use crate::painted::{Inked, Solid, Washed};
 
+/// Something with a place and a size: `alo-drawing`'s area, or the
+/// compositor's rectangle the shell still lays out in.
+pub(crate) trait Placed {
+    /// Left, top, width and height.
+    fn corner_and_size(self) -> [i32; 4];
+}
+
+impl Placed for Rectangle<i32, Physical> {
+    fn corner_and_size(self) -> [i32; 4] {
+        [self.loc.x, self.loc.y, self.size.w, self.size.h]
+    }
+}
+
+impl Placed for alo_drawing::area::Area {
+    fn corner_and_size(self) -> [i32; 4] {
+        [self.loc.x, self.loc.y, self.size.w, self.size.h]
+    }
+}
+
 /// A running hash a test feeds a picture into, part by part.
 pub(crate) struct Hashed {
     /// The hash so far.
@@ -39,9 +58,10 @@ impl Hashed {
         self.eat(bytes);
     }
 
-    /// Where something is and how large.
-    pub(crate) fn area(&mut self, at: Rectangle<i32, Physical>) {
-        for n in [at.loc.x, at.loc.y, at.size.w, at.size.h] {
+    /// Where something is and how large, in either the drawing's area or the
+    /// compositor's rectangle: the same four numbers, hashed the same way.
+    pub(crate) fn area(&mut self, at: impl Placed) {
+        for n in at.corner_and_size() {
             self.eat(&n.to_le_bytes());
         }
     }

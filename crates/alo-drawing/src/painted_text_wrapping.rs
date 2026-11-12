@@ -2,7 +2,7 @@
 //! lines** — and, where it did not all fit, the last line ending in an
 //! ellipsis.
 //!
-//! Lifted out of `crate::window_edge_tooltip` on 2026-10-29, when the Dock's
+//! Lifted out of `alo-shell`'s `window_edge_tooltip.rs` on 2026-10-29, when the Dock's
 //! names became the second tooltip to need it. Two tooltips wrapping a name by
 //! two rules would be two answers to one question.
 //!
@@ -29,7 +29,7 @@ const THERE_IS_MORE: char = '\u{2026}';
 
 /// `whole`, broken into at most `at_most` lines that each fit `room` pixels
 /// in `metrics`, and whether anything was left over.
-pub(crate) fn wrapped(
+pub fn wrapped(
     whole: &str,
     room: i32,
     fonts: &mut FontSystem,
@@ -95,7 +95,7 @@ pub(crate) fn wrapped(
 ///
 /// For the last line of a wrap that did not hold everything. Never longer than
 /// `room` unless the ellipsis alone is, which is a room nothing fits in.
-pub(crate) fn ending_in_an_ellipsis(
+pub fn ending_in_an_ellipsis(
     line: &str,
     room: i32,
     fonts: &mut FontSystem,

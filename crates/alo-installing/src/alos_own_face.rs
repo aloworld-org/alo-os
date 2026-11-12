@@ -16,7 +16,7 @@
 //! # Why this exact file, and why it is not copied
 //!
 //! `Manrope-SemiBold.ttf`, the static cut, reached across to
-//! `crates/alo-shell/fonts/` rather than duplicated here. **One file, so the
+//! `crates/alo-drawing/fonts/` rather than duplicated here. **One file, so the
 //! installer and the desktop cannot drift onto different cuts of the same
 //! typeface** — which is the same reason the renderer is shared, and the thing
 //! a second copy would quietly undo the first time somebody updated one of
@@ -50,7 +50,7 @@ use swash::{FontRef, GlyphId};
 ///
 /// Reached across to the crate that owns the product's typefaces. See this
 /// module's header for why it is not a second copy.
-const MANROPE_SEMIBOLD: &[u8] = include_bytes!("../../alo-shell/fonts/Manrope-SemiBold.ttf");
+const MANROPE_SEMIBOLD: &[u8] = include_bytes!("../../alo-drawing/fonts/Manrope-SemiBold.ttf");
 
 /// What alo's own surfaces are drawn in.
 #[derive(Clone, Copy)]

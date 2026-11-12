@@ -407,7 +407,7 @@ pub(crate) fn picture(
         &panel,
         edge,
         what_each_application_draws,
-        &palette,
+        (&palette, the_docks_words),
         fonts,
     );
     // **And each running task put aside, drawn into its slot**, with the card

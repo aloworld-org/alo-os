@@ -123,7 +123,7 @@ pub use loading::{Loaded, load};
 pub use mechanism::Mechanism;
 pub use message::{Argument, Message};
 pub use not_loaded::NotLoaded;
-pub use not_pressed::NotPressed;
+pub use not_pressed::{NotPressed, WorkingFully};
 pub use not_walked::NotWalked;
 pub use pressable::Pressable;
 pub use reading_windows::{ReadingWindows, WindowsRead};

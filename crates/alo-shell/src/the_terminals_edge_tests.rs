@@ -83,15 +83,16 @@ fn press_at(server: &mut Server, x: i32, y: i32) {
         .expect("the release was handled");
 }
 
-/// **The design's band, with Close alone**: the title in its place — no band
-/// carries an icon since 2026-11-09 — and of its controls only Close — minimise and maximise wait until
-/// something can do either to the terminal.
+/// **The design's band, with Minimise and Close**: the title in its place —
+/// no band carries an icon since 2026-11-09 — and Minimise, which puts the
+/// terminal in the right-hand panel (design `27:2`); maximise waits until
+/// something can do it to the terminal.
 #[test]
-fn the_edge_carries_the_title_and_close_alone() {
+fn the_edge_carries_the_title_minimise_and_close() {
     let (_runtime, server, _fonts) = a_terminal("alo-terminal-edge-parts");
     let edge = its_edge(&server);
     let controls: Vec<OnTheEdge> = edge.controls.iter().map(|control| control.does).collect();
-    assert_eq!(controls, vec![OnTheEdge::Close]);
+    assert_eq!(controls, vec![OnTheEdge::Minimise, OnTheEdge::Close]);
     assert!(edge.title.is_some(), "the title is not on the edge");
     let drawn = server.where_the_terminal_is.expect("the terminal is drawn");
     assert_eq!(

@@ -107,9 +107,11 @@ pub fn the_controls_of(decorations: Decorations) -> Vec<OnTheEdge> {
         // owner's *minimise later with the right-hand panel* of 2026-10-28.
         // It does not move, so there are no window actions.
         Decorations::ATaskWindow => vec![OnTheEdge::Minimise, OnTheEdge::Close],
-        // **Close only** on alo's own windows: they cannot yet be put aside or
-        // given a panel, and a control that reaches nothing would look live.
-        Decorations::AlosOwnWindow => vec![OnTheEdge::Close],
+        // **Minimise and Close** on alo's own windows: minimising puts one in
+        // the right-hand panel like any window (design `27:2`,
+        // `crate::alos_own_window_goes_aside`). They do not maximise yet, and a
+        // control that reaches nothing would look live.
+        Decorations::AlosOwnWindow => vec![OnTheEdge::Minimise, OnTheEdge::Close],
     }
 }
 

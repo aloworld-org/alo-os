@@ -282,6 +282,23 @@ pub const CANNOT_BE_PRESSED: Word = Word::saying(
      is already translated; {name} and {application} are not translated.",
 );
 
+/// The control offers no way to be pressed, in an application where turning on
+/// *Let alo work fully inside apps like VSCodium* would give it one.
+pub const CANNOT_BE_PRESSED_UNTIL_ALO_WORKS_FULLY: Word = Word::saying(
+    "adapters.fallback.cannot-be-pressed-until-alo-works-fully",
+    "The {kind} named “{name}” in {application} cannot be pressed from outside the application \
+     as it was started, so nothing was pressed. If you want alo to press it, turn on “Let alo \
+     work fully inside apps like VSCodium” in Settings → Accessibility → Applications, then \
+     close {application} and open it again",
+)
+.noting(
+    "Said instead of the plain cannot-be-pressed sentence for VSCodium, VS Code and the browser \
+     built like them while that switch is off. The quoted switch name must be the same translation as the \
+     switch itself (settings.access.alo-works-fully-inside-apps), and Settings, Accessibility \
+     and Applications the same as that window's own words. {kind} is already translated; \
+     {name} and {application} are not translated.",
+);
+
 /// The application said the control was not pressed.
 pub const DID_NOT_PRESS: Word = Word::saying(
     "adapters.fallback.did-not-press",
@@ -347,7 +364,7 @@ pub const NOT_ALL_READ: Word = Word::saying(
 .noting("Said beside what was read. {application} is its identifier and is not translated.");
 
 /// Every word the fallback declares.
-pub const EVERY_WORD: [Word; 35] = [
+pub const EVERY_WORD: [Word; 36] = [
     READ_PURPOSE,
     READ_APPLICATION,
     READ_SENTENCE,
@@ -377,6 +394,7 @@ pub const EVERY_WORD: [Word; 35] = [
     TOO_MUCH_TO_BE_SURE,
     CANNOT_BE_USED_NOW,
     CANNOT_BE_PRESSED,
+    CANNOT_BE_PRESSED_UNTIL_ALO_WORKS_FULLY,
     DID_NOT_PRESS,
     DID_NOT_ANSWER_PRESSING,
     LIMIT_NO_NAME,

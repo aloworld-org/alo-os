@@ -143,6 +143,10 @@ impl crate::Server {
     /// keyboard, because the task window is now behind. Going to a task
     /// window is `Server::this_task_took_the_keyboard`'s, which calls this.
     pub(crate) fn the_person_went_to(&mut self, kind: AKindOfWindow) {
+        // **Going to one of alo's windows that is in the panel brings it back
+        // first** — every road to it passes here
+        // (`crate::alos_own_window_goes_aside`).
+        let _ = self.a_window_of_this_kind_comes_back_from_aside(kind);
         self.which_is_in_front.comes_to_the_front(kind);
         // alo's own terminal has no surface to be focused, so the keyboard
         // changing hands to it is remembered here (`crate::who_had_the_keyboard`).
@@ -172,9 +176,11 @@ impl crate::Server {
             .into_iter()
             .find(|kind| match kind {
                 AKindOfWindow::TaskWindows => self.tasks().the_one_in_front().is_some(),
-                AKindOfWindow::TheTerminal => self
-                    .alos_own_terminal()
-                    .is_some_and(|terminal| !terminal.has_finished()),
+                AKindOfWindow::TheTerminal => {
+                    self.alos_own_terminal()
+                        .is_some_and(|terminal| !terminal.has_finished())
+                        && !self.this_alo_window_is_aside(alo_put_aside::AlosOwnWindow::TheTerminal)
+                }
                 // **Settings while it is open and on the Place being looked
                 // at** (ADR 0145): one on another Place is out of sight.
                 AKindOfWindow::Settings => self.settings_is_open_here(),

@@ -58,7 +58,7 @@ fn a_picture(size: (i32, i32), solids: Vec<Solid>, inked: Vec<Inked>) -> Termina
     TerminalPicture {
         size,
         panel: Some(Washed {
-            area: Rectangle::new((0, 0).into(), size.into()),
+            area: alo_drawing::area::Area::new((0, 0).into(), size.into()),
             pixels: vec![9; usize::try_from(size.0 * size.1 * 4).expect("a size")],
         }),
         solids,
@@ -74,11 +74,11 @@ fn the_parts_are_flattened_in_painting_order() {
     let picture = a_picture(
         (4, 2),
         vec![Solid {
-            area: Rectangle::new((1, 0).into(), (2, 2).into()),
+            area: alo_drawing::area::Area::new((1, 0).into(), (2, 2).into()),
             colour: [1, 2, 3],
         }],
         vec![Inked {
-            area: Rectangle::new((2, 1).into(), (2, 1).into()),
+            area: alo_drawing::area::Area::new((2, 1).into(), (2, 1).into()),
             pixels: vec![[7, 7, 7], [8, 8, 8]],
         }],
     );
@@ -103,7 +103,7 @@ fn a_part_outside_the_picture_is_refused() {
     let picture = a_picture(
         (4, 2),
         vec![Solid {
-            area: Rectangle::new((3, 0).into(), (2, 1).into()),
+            area: alo_drawing::area::Area::new((3, 0).into(), (2, 1).into()),
             colour: [1, 2, 3],
         }],
         Vec::new(),

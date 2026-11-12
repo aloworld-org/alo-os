@@ -16,10 +16,10 @@ fn fonts() -> cosmic_text::FontSystem {
     let mut fonts = cosmic_text::FontSystem::new();
     fonts
         .db_mut()
-        .load_font_data(include_bytes!("../fonts/Manrope.ttf").to_vec());
+        .load_font_data(alo_drawing::fonts::MANROPE.to_vec());
     fonts
         .db_mut()
-        .load_font_data(include_bytes!("../fonts/Inter.ttf").to_vec());
+        .load_font_data(alo_drawing::fonts::INTER.to_vec());
     fonts
 }
 
@@ -289,10 +289,9 @@ fn a_band_out_over_full_screen_has_its_own_ground_over_the_window() {
     assert_eq!(drawn.over().len(), 1 + 3, "the ground, then three controls");
     let ground = drawn.over().first().expect("the ground");
     assert!(
-        ground
-            .area
+        crate::painted::on_the_frame(ground.area)
             .contains(Point::from((edge.strip.loc.x + 1, edge.strip.loc.y + 1)))
-            && ground.area.contains(Point::from((
+            && crate::painted::on_the_frame(ground.area).contains(Point::from((
                 edge.strip.loc.x + edge.strip.size.w - 2,
                 edge.strip.loc.y + edge.strip.size.h - 2,
             ))),

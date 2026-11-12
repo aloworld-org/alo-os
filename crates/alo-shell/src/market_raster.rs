@@ -353,7 +353,12 @@ pub(crate) fn picture(
         // box placed. `painted_text::inked` is a different road -- it takes a
         // `Buffer` and shapes it itself, which `sentence` has already done.
         writing_out.push(Inked {
-            area: box_at(left_edge, top, shaped.width_of_box, shaped.height),
+            area: crate::painted::drawn_at(box_at(
+                left_edge,
+                top,
+                shaped.width_of_box,
+                shaped.height,
+            )),
             pixels: shaped.pixels,
         });
     }
