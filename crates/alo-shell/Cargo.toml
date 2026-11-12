@@ -217,6 +217,9 @@ unicode-segmentation = "1.13"
 # display's scale (ADR 0142). Its one dependency is the rasteriser cosmic-text
 # already draws every letter with, so it adds nothing to the supply chain.
 alo-vector-shapes = { path = "../alo-vector-shapes" }
+# alo's pixels and text, out of the shell so alo's applications draw the same
+# (the UI kit plan, task 2).
+alo-drawing = { path = "../alo-drawing" }
 # The pointer: every cursor shape from one vector source in the palette's colours,
 # drawn with the same rasteriser as the line above (ADR 0142).
 alo-cursors = { path = "../alo-cursors" }

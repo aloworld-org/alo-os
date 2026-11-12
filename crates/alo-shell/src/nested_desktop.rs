@@ -287,7 +287,7 @@ pub struct DesktopFrame<'a> {
     ///
     /// **Server state, like `market`** — what was typed and what it found are
     /// decided by presses, and presses reach the `Server`.
-    pub the_bar: Option<crate::bar_raster::TheBarOnTheDisplay<'a>>,
+    pub the_bar: Option<crate::what_the_bar_shows::TheBarOnTheDisplay<'a>>,
 }
 
 impl Nested {

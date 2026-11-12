@@ -213,7 +213,10 @@ fn with_no_dock_drawn_the_description_stays() {
 #[test]
 fn the_tree_still_holds_together_after_the_dock_is_filled() {
     let strings = words();
-    let frames = [crate::FrameName::Given("Letters".to_owned())];
+    let frames = [(
+        crate::FrameName::Given("Letters".to_owned()),
+        crate::Decorations::TheShellDraws,
+    )];
     let tree = ReadAloudTree::of(&strings, &Surface::ALL, &TurnedOn::nothing())
         .with_the_docks_slots(&strings, &slots(&on_the_edge(Edge::Bottom)))
         .with_the_frames_open(&strings, &frames, &TurnedOn::nothing());

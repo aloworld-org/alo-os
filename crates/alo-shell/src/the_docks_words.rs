@@ -91,6 +91,23 @@ pub struct TheDocksWords {
     /// there is a different bug from no list at all, and only one of them
     /// should be possible.
     pub picker: Option<ThePickersWords>,
+    /// What is typed in the Dock's own field, the composer, and whether it has
+    /// the keyboard.
+    ///
+    /// **The person's own text, for [`Self::typed`]'s reason.** Since the
+    /// owner's decision of 2026-11-11 a person types *into the Dock's field*
+    /// rather than into a panel in the middle of the screen, so the field
+    /// shows their words, and a caret while the keyboard is there.
+    pub in_the_composer: TheComposerAsShown,
+}
+
+/// What the Dock's field shows: what is typed, and whether there is a caret.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct TheComposerAsShown {
+    /// What has been typed and not yet asked for.
+    pub typed: String,
+    /// Whether the field has the keyboard, and so draws a caret.
+    pub has_the_keyboard: bool,
 }
 
 /// What one application's window list says, already said.
@@ -117,6 +134,19 @@ pub struct ThePickersWords {
 }
 
 impl TheDocksWords {
+    /// Add what is in the Dock's field, from the composer as it is now.
+    #[must_use]
+    pub fn and_the_composer(
+        mut self,
+        composer: &crate::the_composer_a_person_types_in::TheComposer,
+    ) -> Self {
+        self.in_the_composer = TheComposerAsShown {
+            typed: composer.typed().to_owned(),
+            has_the_keyboard: composer.has_the_keyboard(),
+        };
+        self
+    }
+
     /// Add what the person typed, and the sentence for a search that matched
     /// nothing.
     ///
@@ -178,6 +208,8 @@ impl TheDocksWords {
             // text and whether anything matched it.
             typed: None,
             nothing_matches: None,
+            // Added by the caller, which holds the composer.
+            in_the_composer: TheComposerAsShown::default(),
             picker: open.the_windows_of().map(|picker| {
                 let rows = picker.rows();
                 ThePickersWords {

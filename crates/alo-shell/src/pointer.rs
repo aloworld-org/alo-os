@@ -249,9 +249,10 @@ impl Server {
                 .map(|pointer| pointer.location)
         {
             let at = (location.x as i32, location.y as i32).into();
-            // **The launcher before everything**, while it is open: it lies
-            // over a dimmed screen, the Dock included, so a press anywhere is
-            // its own — on Close or the screen around it, it closes.
+            // **The Bar's matches before everything**, while the Dock's field has
+            // the keyboard: a press on the list is the list's, a press on the
+            // field is the field's, and any other press closes the list and goes
+            // on to what it landed on (`crate::a_press_on_the_launcher`).
             if self.a_press_on_the_launcher(at) {
                 self.a_press_landed_on_the_furniture();
                 return Ok(false);
@@ -453,6 +454,10 @@ impl Server {
             && let Some(window) = self.the_window_under(location)
         {
             self.the_composer.it_gave_the_keyboard_up();
+            // **A window somebody has pressed on is theirs to work in**, so it
+            // is never placed again because its application resized it
+            // (`crate::a_window_that_grows_is_placed_again`).
+            crate::a_window_that_grows_is_placed_again::it_is_settled(&window);
             // **And the applications come in front** of the terminal and any
             // task window (the owner, 2026-10-31), which lets go of a task
             // window's keyboard: the window a person clicks is the one they

@@ -190,11 +190,54 @@ type AlosOwnWindows = (
     Vec<Rectangle<i32, Logical>>,
 );
 
+/// What every window placed on one frame is placed against: the view, the
+/// fixed controls on the plane, the strip, the reading direction and the time.
+///
+/// Built once a frame by [`Server::place_every_window_that_just_opened`] and
+/// handed to each placing — the first, and `crate::a_window_that_grows_is_placed_again`'s.
+pub(crate) struct ThisFramesView {
+    /// What the person is looking at, on the plane, where any glide ends.
+    view: Rectangle<i32, Logical>,
+    /// The fixed controls, on the plane.
+    fixed: Vec<Rectangle<i32, Logical>>,
+    /// The title strip above every window at this display's scale.
+    pub(crate) strip: crate::a_window_and_its_strip::ItsStrip,
+    /// The person's reading direction.
+    reading: alo_strings::Direction,
+    /// When this frame is.
+    now: std::time::Instant,
+}
+
+/// **The size a window wants room for**, or [`None`] while it has no extent.
+///
+/// **Up, not rounded**, and this one stays mine: a window wanting 100.4 is
+/// given 101 of room, because rounding a *wanted* size down would let the
+/// placer call a gap big enough when the window overflows it by a fraction.
+/// `where_a_window_is` answers where an **existing** window is, which is a
+/// different question and rounds to nearest.
+///
+/// A window with no extent is not placed. It is the reason placing runs after
+/// the buffer arrives rather than at `new_toplevel`: choosing a position for
+/// something with no size is choosing a position for nothing, and rule 6 wants
+/// the application's own requested size.
+pub(crate) fn the_size_it_wants(surface: &WlSurface) -> Option<Size<i32, Logical>> {
+    let wanted = crate::scene::geometry(surface).size.to_i32_ceil();
+    (wanted.w > 0 && wanted.h > 0).then_some(wanted)
+}
+
+/// Every other window on a Place, and the one a new window opens beside.
+pub(crate) type TheOthersAndTheActive = (
+    Vec<Rectangle<i32, Logical>>,
+    Option<Rectangle<i32, Logical>>,
+);
+
 impl Server {
-    /// Place every window that has an extent and has never been placed.
+    /// Place every window that has an extent and has never been placed, and
+    /// place again any window alo placed that has since grown over another
+    /// (`crate::a_window_that_grows_is_placed_again`).
     ///
-    /// Returns how many were placed, which is zero on almost every frame and
-    /// is the number the demonstration and the tests read.
+    /// Returns how many were placed or placed again, which is zero on almost
+    /// every frame and is the number the demonstration and the tests read.
     ///
     /// # Why this is safe to call on every frame
     ///
@@ -203,7 +246,8 @@ impl Server {
     /// once, on the first frame after its buffer arrives, and a person who
     /// then drags it keeps where they put it — the contract's rule 1,
     /// *explicit placement wins*, enforced by the door rather than by this
-    /// function remembering anything.
+    /// function remembering anything. The one exception is a window that grows
+    /// over another before anybody has touched it, and it has its own file.
     ///
     /// An unmap calls `crate::window_placement::reset`, so a window that maps
     /// again is placed again. That is rule 2's business and not this
@@ -223,10 +267,48 @@ impl Server {
         viewport: Size<i32, Physical>,
         reading: alo_strings::Direction,
     ) -> usize {
+        let Some(frame) = self.this_frames_view(display, viewport, reading) else {
+            return 0;
+        };
+        // Front-to-back, so the first unplaced window is the one nearest the
+        // front, and so the order two windows opening together are placed in
+        // is the order they are stacked in.
+        let waiting: Vec<WlSurface> = self
+            .mapped_surfaces()
+            .filter(|surface| !crate::has_been_placed(surface))
+            .cloned()
+            .collect();
+        let mut placed = 0;
+        for surface in waiting {
+            let Some(wanted) = the_size_it_wants(&surface) else {
+                continue;
+            };
+            // **Rule 5 as a choice** (amended 2026-11-07): the person's own
+            // opening, with no room in view, glides to the nearest empty space
+            // where they kept the default. Asked whatever the choice, because a
+            // window is the person's once and the record of it is spent here.
+            let theirs = self.the_person_opened_this_one(&surface);
+            let point = self.where_this_window_goes(&surface, wanted, theirs, &frame);
+            if crate::place_unless_already_placed(&surface, point) {
+                crate::a_window_that_grows_is_placed_again::alo_placed_it(&surface, wanted, theirs);
+                placed += 1;
+            }
+        }
+        placed + self.place_again_every_window_that_grew(&frame)
+    }
+
+    /// This frame's view, controls and strip, or [`None`] where the camera
+    /// cannot be divided by.
+    fn this_frames_view(
+        &self,
+        display: &str,
+        viewport: Size<i32, Physical>,
+        reading: alo_strings::Direction,
+    ) -> Option<ThisFramesView> {
         let camera = self.the_camera_after_the_glide();
         let zoom = crate::scene::drawn_at(camera);
         if !zoom.is_finite() || zoom <= 0.0 {
-            return 0;
+            return None;
         }
         // **Every window with the title strip above it** — the new one and each
         // already open — at this display's scale, which on the plane is the
@@ -236,7 +318,6 @@ impl Server {
         let strip = crate::a_window_and_its_strip::ItsStrip::at(
             self.the_display_scale_edges_are_measured_at(),
         );
-        let now = std::time::Instant::now();
         let at = camera.at();
         // **The visible area, not the output.** The person can only reach what
         // the camera is showing, so a window placed outside it is a window
@@ -285,13 +366,65 @@ impl Server {
             .filter(|control| control.size.w > 0 && control.size.h > 0)
             .filter_map(|control| onto_the_plane(control, at, zoom))
             .collect();
-        // Front-to-back, so the first unplaced window is the one nearest the
-        // front, and so the order two windows opening together are placed in
-        // is the order they are stacked in.
-        let waiting: Vec<WlSurface> = self
+        Some(ThisFramesView {
+            view,
+            fixed,
+            strip,
+            reading,
+            now: std::time::Instant::now(),
+        })
+    }
+
+    /// **Where one window of `wanted` size goes** on this frame: rules 3 to 7,
+    /// and where there is no room and `theirs`, the person's choice.
+    pub(crate) fn where_this_window_goes(
+        &mut self,
+        surface: &WlSurface,
+        wanted: Size<i32, Logical>,
+        theirs: bool,
+        frame: &ThisFramesView,
+    ) -> Point<i32, Logical> {
+        let (open, active) = self.the_windows_a_new_one_opens_among(surface);
+        let point = frame.strip.where_a_window_opens(
+            frame.view,
+            &open,
+            active,
+            wanted,
+            frame.reading,
+            &frame.fixed,
+        );
+        if !theirs {
+            return point;
+        }
+        self.room_for_what_the_person_opened(
+            point,
+            &crate::room_in_a_full_view::AnOpening {
+                view: frame.view,
+                open: &open,
+                wanted,
+                fixed: &frame.fixed,
+                reading: frame.reading,
+                strip: frame.strip,
+            },
+            frame.now,
+        )
+    }
+
+    /// **Every other window on `surface`'s Place, on the plane, and the one a
+    /// new window opens beside** — read fresh each time, because the window
+    /// placed a moment ago is now somewhere and the next one has to see it.
+    ///
+    /// The windows alone; the caller adds the strip above each.
+    pub(crate) fn the_windows_a_new_one_opens_among(
+        &self,
+        surface: &WlSurface,
+    ) -> TheOthersAndTheActive {
+        let place = crate::canvas_place::the_place_of(surface);
+        let applications: Vec<Rectangle<i32, Logical>> = self
             .mapped_surfaces()
-            .filter(|surface| !crate::has_been_placed(surface))
-            .cloned()
+            .filter(|other| *other != surface)
+            .filter(|other| crate::canvas_place::the_place_of(other) == place)
+            .map(crate::where_a_window_is)
             .collect();
         // **alo's own windows**, on the plane and on the Place being shown,
         // each in the way only while its Place is the one a new window opens
@@ -303,34 +436,25 @@ impl Server {
             self.where_the_terminal_is_on_the_plane(),
             &tasks.iter().map(|(_, window)| *window).collect::<Vec<_>>(),
         );
-        let in_front = self.which_is_in_front().top_to_bottom();
         // **And Settings**, a window on the canvas since ADR 0145's third stage.
         let settings = self.where_settings_is_on_the_plane();
         // **And the record**, since the fourth.
         let the_record = self.where_the_record_is_on_the_plane();
-        let mut placed = 0;
-        for surface in waiting {
-            let place = crate::canvas_place::the_place_of(&surface);
-            // **Every window on the same Place, read fresh for each.** Fresh
-            // because the window placed on the last pass is now somewhere, and
-            // the next one has to see it.
-            let applications: Vec<Rectangle<i32, Logical>> = self
-                .mapped_surfaces()
-                .filter(|other| *other != &surface)
-                .filter(|other| crate::canvas_place::the_place_of(other) == place)
-                .map(crate::where_a_window_is)
-                .collect();
-            // **The frontmost other window, not the focused one.** Rule 8 has
-            // a person-initiated opening *activate* the new window, so by the
-            // time this runs the focus may already be the window being placed
-            // — and *beside the active window* would then mean *beside
-            // itself*. Front-to-back stacking answers what a person means by
-            // the window they were working in, and cannot name the new one.
-            //
-            // **And the frontmost of every kind, in the order the person put
-            // them** (`crate::which_window_is_in_front`): a person working in
-            // alo's terminal gets the new window beside the terminal.
-            let active = in_front.into_iter().find_map(|kind| match kind {
+        // **The frontmost other window, not the focused one.** Rule 8 has a
+        // person-initiated opening *activate* the new window, so by the time
+        // this runs the focus may already be the window being placed — and
+        // *beside the active window* would then mean *beside itself*.
+        // Front-to-back stacking answers what a person means by the window
+        // they were working in, and cannot name the new one.
+        //
+        // **And the frontmost of every kind, in the order the person put
+        // them** (`crate::which_window_is_in_front`): a person working in
+        // alo's terminal gets the new window beside the terminal.
+        let active = self
+            .which_is_in_front()
+            .top_to_bottom()
+            .into_iter()
+            .find_map(|kind| match kind {
                 crate::which_window_is_in_front::AKindOfWindow::TaskWindows => {
                     task_windows.first().copied()
                 }
@@ -341,56 +465,15 @@ impl Server {
                     applications.first().copied()
                 }
             });
-            let open: Vec<Rectangle<i32, Logical>> = applications
-                .iter()
-                .copied()
-                .chain(terminal)
-                .chain(settings)
-                .chain(the_record)
-                .chain(task_windows.iter().copied())
-                .collect();
-            // **Up, not rounded**, and this one stays mine: a window wanting
-            // 100.4 is given 101 of room, because rounding a *wanted* size
-            // down would let the placer call a gap big enough when the window
-            // overflows it by a fraction. `where_a_window_is` above answers
-            // where an **existing** window is, which is a different question
-            // and rounds to nearest.
-            let wanted = crate::scene::geometry(&surface).size.to_i32_ceil();
-            // A window with no extent is not placed. It is the reason this
-            // runs after the buffer arrives rather than at `new_toplevel`:
-            // choosing a position for something with no size is choosing a
-            // position for nothing, and rule 6 wants the application's own
-            // requested size.
-            if wanted.w <= 0 || wanted.h <= 0 {
-                continue;
-            }
-            let point = strip.where_a_window_opens(view, &open, active, wanted, reading, &fixed);
-            // **Rule 5 as a choice** (amended 2026-11-07): the person's own
-            // opening, with no room in view, glides to the nearest empty space
-            // where they kept the default. Asked whatever the choice, because a
-            // window is the person's once and the record of it is spent here.
-            let theirs = self.the_person_opened_this_one(&surface);
-            let point = if theirs {
-                self.room_for_what_the_person_opened(
-                    point,
-                    &crate::room_in_a_full_view::AnOpening {
-                        view,
-                        open: &open,
-                        wanted,
-                        fixed: &fixed,
-                        reading,
-                        strip,
-                    },
-                    now,
-                )
-            } else {
-                point
-            };
-            if crate::place_unless_already_placed(&surface, point) {
-                placed += 1;
-            }
-        }
-        placed
+        let open = applications
+            .iter()
+            .copied()
+            .chain(terminal)
+            .chain(settings)
+            .chain(the_record)
+            .chain(task_windows)
+            .collect();
+        (open, active)
     }
 }
 

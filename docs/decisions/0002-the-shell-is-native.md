@@ -204,6 +204,14 @@ What binds it:
    answers.
 4. **It is for what alo makes.** An application somebody else wrote keeps its
    own look, and nothing on this machine asks it to change (law 5).
+5. **Licence runs the other way too, 2026-11-12.** The kit goes from this
+   repository into alo Mails; alo Mails' adapter — its commands for alo and the
+   terminal — comes from `alo-workplace` into alo OS. Asked which licence that
+   adapter takes and where it lives, the owner chose *"Keep AGPL, separate
+   crate alo-os uses"*: it is published by the `alo-workplace` lane as its own
+   crate under AGPL-3.0, alo OS pins a tagged release, and **that part of alo OS
+   carries AGPL terms**. The contract is `docs/contracts/app-adapters.md`,
+   *Amended 2026-11-12*. Not built on the day this was written.
 
 The work is `docs/autonomy/the-alo-ui-kit-plan.md`, and the promise is in
 `docs/features.md`, *The shell*. Not built on the day this was written.

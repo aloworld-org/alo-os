@@ -1,0 +1,22 @@
+[package]
+name = "alo-drawing"
+version = "0.0.1"
+description = "alo OS's pixels and text, drawn in memory with no compositor: what the shell and alo's own applications draw with."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+# **No Wayland, no Smithay, no D-Bus**, so the shell and every alo application
+# can depend on this and a test can draw with it on any machine
+# (`docs/autonomy/the-alo-ui-kit-plan.md`, task 2).
+# `tests/it_never_reaches_a_compositor.rs` holds that for every crate this one
+# pulls in, read off `Cargo.lock`, not only for the ones named here.
+[dependencies]
+
+[dev-dependencies]
+# Reads `Cargo.lock` in `tests/it_never_reaches_a_compositor.rs`.
+toml = { workspace = true }
+
+[lints]
+workspace = true
