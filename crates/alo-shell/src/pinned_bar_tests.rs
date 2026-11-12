@@ -117,6 +117,6 @@ const BEFORE: [Drawn; 3] = [
     Drawn {
         scale: 200,
         text: 100,
-        hash: 0x0000_0000_0000_0003,
+        hash: 0x9804_b8e8_3c73_c892,
     },
 ];
