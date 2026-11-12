@@ -428,8 +428,8 @@ fn a_press_on_the_screen_reader_switch_reaches_the_desktop() {
             "the desktop is not told the switch"
         );
         let access = machine.kept(alo_access::keeping::THE_FILE);
-        let kept = alo_access::keeping::read(access.parent().expect("a folder"))
-            .expect("the file reads");
+        let kept =
+            alo_access::keeping::read(access.parent().expect("a folder")).expect("the file reads");
         assert_eq!(kept.has(alo_access::Setting::ScreenReader), expected);
         a_frame(&mut server);
     }

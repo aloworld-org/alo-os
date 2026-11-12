@@ -773,7 +773,11 @@ fn the_screen_reader_turns_on_and_off_and_says_what_went_wrong() {
         );
         assert_eq!(window.screen_reader_is_on(), Some(expected));
         let read_back = alo_access::keeping::read(&folder).unwrap();
-        assert_eq!(read_back.has(Setting::ScreenReader), expected, "what sign-in reads");
+        assert_eq!(
+            read_back.has(Setting::ScreenReader),
+            expected,
+            "what sign-in reads"
+        );
         assert!(
             read_back.has(Setting::ReducedMotion),
             "the rest of the file was lost"
@@ -782,7 +786,11 @@ fn the_screen_reader_turns_on_and_off_and_says_what_went_wrong() {
     // **A reader that did what it was asked clears the sentence.**
     window.the_screen_reader_answered(crate::TheScreenReaderAnswered::Stopped.said(&strings));
     assert_eq!(window.open().unwrap().the_screen_reader, None);
-    assert_eq!(door.knocks.get(), 0, "a screen reader switch knocked on the daemon");
+    assert_eq!(
+        door.knocks.get(),
+        0,
+        "a screen reader switch knocked on the daemon"
+    );
 }
 
 /// **What the desktop answered is kept while Settings is closed**, and is on

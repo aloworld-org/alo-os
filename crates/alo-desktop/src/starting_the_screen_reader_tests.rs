@@ -65,7 +65,9 @@ impl TheManager for AScriptedManager {
         } else {
             states.front().copied()
         };
-        state.map(str::to_owned).ok_or_else(|| "no answer".to_owned())
+        state
+            .map(str::to_owned)
+            .ok_or_else(|| "no answer".to_owned())
     }
 }
 
@@ -211,7 +213,10 @@ fn a_reader_that_will_not_stop_did_not_stop() {
 #[test]
 fn only_a_language_reaches_the_readers_environment() {
     assert_eq!(the_language_line("de").as_deref(), Some("LC_ALL=de\n"));
-    assert_eq!(the_language_line("pt-PT").as_deref(), Some("LC_ALL=pt_PT\n"));
+    assert_eq!(
+        the_language_line("pt-PT").as_deref(),
+        Some("LC_ALL=pt_PT\n")
+    );
     assert_eq!(the_language_line("ga").as_deref(), Some("LC_ALL=ga\n"));
     for not_a_language in [
         "",
@@ -223,7 +228,11 @@ fn only_a_language_reaches_the_readers_environment() {
         "1a",
         "de_",
     ] {
-        assert_eq!(the_language_line(not_a_language), None, "{not_a_language:?}");
+        assert_eq!(
+            the_language_line(not_a_language),
+            None,
+            "{not_a_language:?}"
+        );
     }
 }
 
@@ -236,7 +245,9 @@ fn the_language_is_written_where_the_unit_reads_it() {
     };
     the_language_is(Some(folder.path()), Some("el"));
     assert_eq!(
-        std::fs::read_to_string(folder.path().join(THE_LANGUAGE_FILE)).ok().as_deref(),
+        std::fs::read_to_string(folder.path().join(THE_LANGUAGE_FILE))
+            .ok()
+            .as_deref(),
         Some("LC_ALL=el\n")
     );
     the_language_is(None, Some("el"));

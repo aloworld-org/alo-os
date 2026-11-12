@@ -166,8 +166,10 @@ fn neither_the_reader_nor_its_speech_can_reach_a_network() {
             "{path} can open an internet socket, so what the reader fetches could leave"
         );
         assert!(
-            !lines.iter().any(|line| line.starts_with("RestrictAddressFamilies=")
-                && *line != "RestrictAddressFamilies=AF_UNIX"),
+            !lines
+                .iter()
+                .any(|line| line.starts_with("RestrictAddressFamilies=")
+                    && *line != "RestrictAddressFamilies=AF_UNIX"),
             "{path} widens what it may reach"
         );
     }

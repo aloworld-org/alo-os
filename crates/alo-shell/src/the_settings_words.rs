@@ -634,9 +634,7 @@ pub fn also_pressed(strings: &alo_strings::Strings, keys: &[String]) -> String {
 
 /// Reading aloud.
 pub const READING_ALOUD: Word = Word::saying("settings.access.reading-aloud", "Reading aloud")
-    .noting(
-        "A heading on the accessibility page over the screen reader's switch. Sentence case.",
-    );
+    .noting("A heading on the accessibility page over the screen reader's switch. Sentence case.");
 
 /// Screen reader.
 pub const SCREEN_READER: Word = Word::saying("settings.access.screen-reader", "Screen reader")

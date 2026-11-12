@@ -192,9 +192,7 @@ pub fn stopped(manager: &impl TheManager, wait: &dyn Fn()) -> TheScreenReaderAns
             return TheScreenReaderAnswered::Stopped;
         }
     }
-    eprintln!(
-        "alo-desktop: {THE_UNIT} was asked to stop and was still running two seconds later"
-    );
+    eprintln!("alo-desktop: {THE_UNIT} was asked to stop and was still running two seconds later");
     TheScreenReaderAnswered::DidNotStop
 }
 
@@ -275,7 +273,9 @@ impl TheScreenReader {
     ///
     /// **A machine that cannot start a thread answers every ask** — *did not
     /// start* or *did not stop* — rather than taking the ask and doing nothing.
-    pub fn acted_on_by(mut act: impl FnMut(bool) -> TheScreenReaderAnswered + Send + 'static) -> Self {
+    pub fn acted_on_by(
+        mut act: impl FnMut(bool) -> TheScreenReaderAnswered + Send + 'static,
+    ) -> Self {
         let (to_the_worker, asks) = mpsc::channel::<bool>();
         let (answer, answers) = mpsc::channel();
         let worker = std::thread::Builder::new()
@@ -331,7 +331,9 @@ impl TheScreenReader {
 
     /// The next answer, where one has come: asked once a frame.
     pub fn answered(&mut self) -> Option<TheScreenReaderAnswered> {
-        self.unanswered.take().or_else(|| self.answers.try_recv().ok())
+        self.unanswered
+            .take()
+            .or_else(|| self.answers.try_recv().ok())
     }
 }
 
