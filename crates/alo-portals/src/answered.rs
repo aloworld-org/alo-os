@@ -131,6 +131,10 @@ pub enum Outcome {
     NotALink(NotALink),
     /// Nothing on this machine opens that kind of link.
     NothingOpensLinks(NothingOpensLinks),
+    /// The application asked for the person to choose what opens a link, and
+    /// nothing was chosen: the person cancelled, nobody answered, or the sheet
+    /// could not be shown.
+    LinkUnchosen(crate::link_not_chosen::LinkUnchosen),
     /// It was allowed as far as it went, or never reached the grants, and could
     /// not be answered.
     Unanswered(Unanswered),
@@ -138,15 +142,17 @@ pub enum Outcome {
 
 impl Outcome {
     /// The response code the portal specification gives this answer: `0` for
-    /// one that did what was asked, and `2` — *the interaction was ended in
-    /// some other way* — for every other.
+    /// one that did what was asked, `1` — *cancelled by the user* — only when
+    /// the person cancelled the *Open with* sheet, and `2` — *the interaction
+    /// was ended in some other way* — for every other.
     ///
-    /// `1`, *cancelled by the user*, is never sent: nothing here puts a
-    /// question to a person, so no person cancelled anything, and saying so
-    /// would tell an application a person refused it when the grants did.
+    /// **`1` is sent for nothing else**: a refusal by the grants is not a
+    /// person's no, and saying so would tell an application a person refused
+    /// it when the grants did.
     #[must_use]
     pub const fn response(&self) -> u32 {
         match self {
+            Self::LinkUnchosen(not) => not.why().response(),
             Self::SecretHandedOver(_)
             | Self::Opened(_)
             | Self::LinkOpened(_)
@@ -200,6 +206,7 @@ impl Outcome {
             Self::NothingOpens(nothing) => nothing.said(strings),
             Self::NotALink(not) => not_a_link_said(not, strings),
             Self::NothingOpensLinks(nothing) => nothing.said(strings),
+            Self::LinkUnchosen(not) => not.said(strings),
             Self::Unanswered(unanswered) => unanswered.said(strings),
         }
     }

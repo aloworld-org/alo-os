@@ -62,6 +62,9 @@ serde_json = { workspace = true }
 # a file handed over the bus is a Unix descriptor.
 [target.'cfg(target_os = "linux")'.dependencies]
 zbus = { version = "5.19", default-features = false, features = ["async-io", "blocking-api"] }
+# Waiting on the person off the bus's own thread, while the *Open with* sheet
+# is up (`the_person_chooses_a_link`). Already in the tree beneath zbus.
+blocking = "1.7"
 
 [target.'cfg(unix)'.dependencies]
 # The process behind a request, held by a descriptor (`pidfd_open`) rather than

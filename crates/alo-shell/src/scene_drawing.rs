@@ -254,6 +254,23 @@ where
                 .map_err(submission)?,
         ),
     };
+    // **The *Open with* sheet, uploaded with the rest**: one raster, rounded
+    // with a shadow, as Settings is.
+    let open_with_washed: Option<(R::TextureId, Rectangle<i32, Physical>)> =
+        match native.open_with.map(|sheet| &sheet.washed) {
+            None => None,
+            Some(raster) => Some(
+                renderer
+                    .import_memory(
+                        &raster.pixels,
+                        Fourcc::Abgr8888,
+                        (raster.area.size.w, raster.area.size.h).into(),
+                        false,
+                    )
+                    .map(|texture| (texture, crate::painted::on_the_frame(raster.area)))
+                    .map_err(submission)?,
+            ),
+        };
     // **Settings, uploaded with the rest** since the redesign of 2026-10-31
     // made it one raster: a rounded window with a shadow, and rings and
     // switches that are partial coverage.
@@ -575,6 +592,10 @@ where
     // covers what is leaving.
     if let Some(approval) = native.approval.filter(|approval| !approval.is_empty()) {
         approval.paint(&mut frame)?;
+    }
+    // **The *Open with* sheet**, in the question's place and for its reason.
+    if let Some((texture, area)) = &open_with_washed {
+        crate::painted::wash(&mut frame, texture, *area)?;
     }
     // Above every client and control, below the cursor: nothing a client maps
     // covers a line of what is leaving this machine.

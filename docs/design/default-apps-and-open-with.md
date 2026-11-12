@@ -107,8 +107,23 @@ say, each a judgement written down here rather than left in a diff:
   in a plain line under its heading. Where the email section has no card, the
   record's footnote stands beneath it on its own.
 
-**09 is not built yet.** Until it is, `ask` uses the default and the record
-says the application asked to choose (`docs/contracts/portals.md`, `OpenURI`).
+**09 is built** (`crates/alo-shell/src/the_open_with_sheet.rs`, drawn by
+`the_open_with_sheet_drawn.rs`; the portal's half is
+`crates/alo-portals/src/the_person_chooses_a_link.rs`, over the door's
+`choose-link` act, `docs/contracts/application-door.md`). What it does that the
+frame does not say:
+
+- **A press of the pointer works as the keys do**: on a row it chooses it, on
+  *Open* it opens, on *Cancel* it cancels, and anywhere else it does nothing —
+  a click meant for the sheet never lands on a window behind it.
+- **One sheet at a time**; up to four more wait behind it. A sheet nobody
+  answers in five minutes comes down and the portal answers the application
+  `2`, recorded as unanswered — never as cancelled, and never by opening the
+  default instead.
+- **For an email address** the default's line says *Your default for email
+  addresses*, the frame's web-link line carried to the other kind.
+- *Cancel* is drawn quiet (its label, no fill) and *Open* navy, each as wide
+  as its label and right-aligned, at the frame's 48.
 
 **Figures every screen size has to derive, not copy** (`CLAUDE.md`, *nothing is
 built to one screen size*): the 72 row, the 22 ring, the 28 icon and the 480

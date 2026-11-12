@@ -18,15 +18,25 @@
 //! | anything else, nothing, or a timeout | `CouldNotAsk` |
 //!
 //! **An unknown answer is never read as success**, the door's own rule.
+//!
+//! # And the person choosing — `choose-link`
+//!
+//! When an application asks for the person to choose, the line is
+//! `choose-link <asking> <link> <default> [<another> …]` and the desktop holds
+//! the connection while its *Open with* sheet is up. The desktop takes the
+//! sheet down after five minutes and answers `unanswered`; this waits
+//! `THE_PERSONS_PATIENCE` — a little longer — so a desktop that froze cannot
+//! hold an application's request for ever, and a silence is `could-not-ask`,
+//! never a choice.
 
 use std::io::{BufRead as _, BufReader, Write as _};
 use std::os::unix::net::UnixStream;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 
-use alo_acting::{Answer, NotActed, ToOpenALink};
+use alo_acting::{Answer, Chose, NotActed, ToChooseALink, ToOpenALink};
 use alo_applications::{Application, Link};
-use alo_portals::{LinkStarted, OpensLinks};
+use alo_portals::{LinkStarted, OpensLinks, SheetAnswer};
 
 /// The desktop's socket in a person's own directory.
 pub const THE_DESKTOPS_SOCKET: &str = "shell.sock";
@@ -35,6 +45,10 @@ pub const THE_DESKTOPS_SOCKET: &str = "shell.sock";
 /// same breath as reading, so this is generous; it is a bound so a desktop
 /// that has frozen cannot hold an application's request for ever.
 const PATIENCE: Duration = Duration::from_secs(5);
+
+/// How long the person has to answer the *Open with* sheet, as this side
+/// counts it: the desktop's five minutes and half a minute more.
+const THE_PERSONS_PATIENCE: Duration = Duration::from_secs(5 * 60 + 30);
 
 /// The desktop's door on this machine.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -68,8 +82,8 @@ impl AtTheDesktopsDoor {
         &self.socket
     }
 
-    /// Say the line and read the one word back.
-    fn asked(&self, line: &str) -> LinkStarted {
+    /// Say the line and read one line back, waiting `patience` for it.
+    fn said(&self, line: &str, patience: Duration) -> Heard {
         let mut talking = match UnixStream::connect(&self.socket) {
             Ok(talking) => talking,
             Err(why)
@@ -78,26 +92,36 @@ impl AtTheDesktopsDoor {
                     std::io::ErrorKind::NotFound | std::io::ErrorKind::ConnectionRefused
                 ) =>
             {
-                return LinkStarted::NoDesktop;
+                return Heard::NoDesktop;
             }
-            Err(_) => return LinkStarted::CouldNotAsk,
+            Err(_) => return Heard::Nothing,
         };
-        if talking.set_read_timeout(Some(PATIENCE)).is_err()
+        if talking.set_read_timeout(Some(patience)).is_err()
             || talking.set_write_timeout(Some(PATIENCE)).is_err()
         {
-            return LinkStarted::CouldNotAsk;
+            return Heard::Nothing;
         }
         if talking
             .write_all(format!("{line}\n").as_bytes())
             .and_then(|()| talking.flush())
             .is_err()
         {
-            return LinkStarted::CouldNotAsk;
+            return Heard::Nothing;
         }
         let mut heard = String::new();
         if BufReader::new(&talking).read_line(&mut heard).is_err() {
-            return LinkStarted::CouldNotAsk;
+            return Heard::Nothing;
         }
+        Heard::This(heard)
+    }
+
+    /// Say the line and read the one word back.
+    fn asked(&self, line: &str) -> LinkStarted {
+        let heard = match self.said(line, PATIENCE) {
+            Heard::This(heard) => heard,
+            Heard::NoDesktop => return LinkStarted::NoDesktop,
+            Heard::Nothing => return LinkStarted::CouldNotAsk,
+        };
         match Answer::read(heard.trim_end_matches(['\r', '\n'])) {
             Some(Answer::Acted) => LinkStarted::Asked,
             Some(Answer::NotActed(NotActed::NotInstalled)) => LinkStarted::NotInstalled,
@@ -106,12 +130,52 @@ impl AtTheDesktopsDoor {
     }
 }
 
+/// What came back from the desktop.
+enum Heard {
+    /// One line, with its newline.
+    This(String),
+    /// No socket, or nobody listening at it.
+    NoDesktop,
+    /// It could not be asked, or said nothing in time.
+    Nothing,
+}
+
 impl OpensLinks for AtTheDesktopsDoor {
     fn opened(&self, application: &str, link: &Link) -> LinkStarted {
         let Ok(application) = Application::identified(application) else {
             return LinkStarted::CouldNotAsk;
         };
         self.asked(&ToOpenALink::with(application, link.clone()).written())
+    }
+
+    fn chosen(&self, asking: &str, link: &Link, offered: &[String]) -> SheetAnswer {
+        let Ok(asking) = Application::identified(asking) else {
+            return SheetAnswer::CouldNotAsk;
+        };
+        // **The default first, and at most as many as one sheet offers**: a
+        // machine with more browsers than that offers its first sixteen.
+        let offered: Vec<Application> = offered
+            .iter()
+            .take(alo_acting::choosing_a_link::THE_MOST_OFFERED)
+            .filter_map(|one| Application::identified(one).ok())
+            .collect();
+        let Ok(asked) = ToChooseALink::of(asking, link.clone(), offered) else {
+            return SheetAnswer::CouldNotAsk;
+        };
+        let heard = match self.said(&asked.written(), THE_PERSONS_PATIENCE) {
+            Heard::This(heard) => heard,
+            Heard::NoDesktop => return SheetAnswer::NoDesktop,
+            Heard::Nothing => return SheetAnswer::CouldNotAsk,
+        };
+        match Chose::read(&heard, &asked) {
+            Some(Chose::Chosen(application)) => {
+                SheetAnswer::Picked(application.identifier().to_owned())
+            }
+            Some(Chose::Cancelled) => SheetAnswer::Cancelled,
+            Some(Chose::Unanswered) => SheetAnswer::Unanswered,
+            Some(Chose::CannotShow) => SheetAnswer::CannotShow,
+            None => SheetAnswer::CouldNotAsk,
+        }
     }
 }
 
@@ -179,6 +243,53 @@ mod tests {
                 "open-link org.mozilla.firefox https://example.com/invoice"
             );
         }
+    }
+
+    /// **The person's choice is asked in the contract's words, and only an
+    /// answer naming what was offered is a choice.**
+    #[test]
+    fn the_person_is_asked_to_choose_in_the_contracts_words() {
+        let offered = [
+            "org.mozilla.firefox".to_owned(),
+            "io.gitlab.librewolf-community".to_owned(),
+        ];
+        for (what, word, chose) in [
+            (
+                "chosen",
+                "chosen io.gitlab.librewolf-community\n",
+                SheetAnswer::Picked("io.gitlab.librewolf-community".to_owned()),
+            ),
+            ("cancelled", "cancelled\n", SheetAnswer::Cancelled),
+            ("unanswered", "unanswered\n", SheetAnswer::Unanswered),
+            ("cannot-show", "cannot-show\n", SheetAnswer::CannotShow),
+            (
+                "not-offered",
+                "chosen org.example.Evil\n",
+                SheetAnswer::CouldNotAsk,
+            ),
+            ("silent", "", SheetAnswer::CouldNotAsk),
+        ] {
+            let (socket, hearing) = a_desktop_answering(&format!("choose-{what}"), word);
+            let door = AtTheDesktopsDoor::at(&socket);
+            assert_eq!(
+                door.chosen("org.gnome.Papers", &a_link(), &offered),
+                chose,
+                "{what}"
+            );
+            assert_eq!(
+                hearing.join().unwrap(),
+                "choose-link org.gnome.Papers https://example.com/invoice org.mozilla.firefox \
+                 io.gitlab.librewolf-community"
+            );
+        }
+        let nobody = AtTheDesktopsDoor::at(std::env::temp_dir().join(format!(
+            "alo-portald-no-desktop-to-choose-{}/shell.sock",
+            std::process::id()
+        )));
+        assert_eq!(
+            nobody.chosen("org.gnome.Papers", &a_link(), &offered),
+            SheetAnswer::NoDesktop
+        );
     }
 
     /// **No desktop is said as no desktop**, not as a failure to ask one.

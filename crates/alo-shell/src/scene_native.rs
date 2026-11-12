@@ -72,6 +72,9 @@ pub(crate) struct NativeLayers<'a> {
     pub(crate) settings: Option<&'a crate::settings_raster::SettingsPicture>,
     /// The approval surface, when the frame carries one.
     pub(crate) approval: Option<&'a crate::approval_raster::ApprovalPicture>,
+    /// The *Open with* sheet, while a portal waits on the person — above every
+    /// window and below the egress indicator, as the question is.
+    pub(crate) open_with: Option<&'a crate::the_open_with_sheet_drawn::OpenWithPicture>,
     /// The egress indicator, when the frame carries a status area.
     pub(crate) status: Option<&'a crate::egress_status_raster::EgressStatusPicture>,
     /// What on this machine is watching or listening, beside the egress
@@ -136,6 +139,7 @@ impl NativeLayers<'_> {
             record: None,
             settings: None,
             approval: None,
+            open_with: None,
             status: None,
             in_use: None,
             notifications: None,

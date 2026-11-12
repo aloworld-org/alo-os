@@ -33,8 +33,14 @@
 //!    recorded after the answer as [`Unanswered::NoDesktop`] or
 //!    [`Unanswered::NotOpenedALink`], and is a `2`.
 //!
-//! **`ask` is read and not offered**: the chooser waits for the owner's design,
-//! so the default is used and the record says the application asked to choose.
+//! **`ask` shows the person the *Open with* sheet** (the owner's approval of
+//! 2026-11-12, frame `25:52`). The handle is returned at once — the person may
+//! take a minute, and the specification's shape for a dialogue is a handle now
+//! and a `Response` later — and, off the bus's own thread
+//! (`crate::the_person_chooses_a_link`), the desktop is asked through its door's
+//! `choose-link` act. What the person chose is held to what was offered,
+//! recorded, and started as every link is; nothing chosen is recorded as
+//! [`Outcome::LinkUnchosen`], and **the default is never opened instead**.
 //!
 //! **`OpenDirectory` is answered `2`**, recorded as
 //! [`Unanswered::FolderNotDecidedHere`]: nothing on this machine decides what
@@ -103,6 +109,14 @@ impl OpenUriPortal {
             Ok(opened) => opened,
             Err(outcome) => return asked.answered(connection, &self.backend, *outcome).await,
         };
+        if opened.asked_to_choose() {
+            return Ok(crate::the_person_chooses_a_link::the_person_chooses(
+                connection,
+                &self.backend,
+                asked,
+                opened,
+            ));
+        }
         let opener = opened.opener().application().identifier().to_owned();
         let link = opened.link().clone();
         let Ok(response) = asked.recorded(&self.backend, Outcome::LinkOpened(opened)) else {

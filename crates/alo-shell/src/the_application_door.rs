@@ -117,6 +117,9 @@ pub struct TheApplicationDoor {
     /// alo asking to work in an application, for the desktop to take (ADR
     /// 0143 Q6).
     working: Vec<AskedToWork>,
+    /// The portal asking the person to choose what opens a link, for the
+    /// desktop's *Open with* sheet to take (`choose-link`, 2026-11-12).
+    choosing: Vec<crate::the_open_with_sheet::AskedToChoose>,
 }
 
 impl TheApplicationDoor {
@@ -136,6 +139,7 @@ impl TheApplicationDoor {
             waiting: Vec::new(),
             counting: Vec::new(),
             working: Vec::new(),
+            choosing: Vec::new(),
         })
     }
 
@@ -157,6 +161,7 @@ impl TheApplicationDoor {
             waiting: Vec::new(),
             counting: Vec::new(),
             working: Vec::new(),
+            choosing: Vec::new(),
         }
     }
 
@@ -196,6 +201,13 @@ impl TheApplicationDoor {
     /// desktop, which holds the copies, the counter and the indicator.
     pub fn asked_to_work(&mut self) -> Vec<AskedToWork> {
         std::mem::take(&mut self.working)
+    }
+
+    /// Every time the portal has asked the person to choose what opens a link
+    /// since the last time this was asked, handed over with its connection —
+    /// answered by the desktop's *Open with* sheet when the person has.
+    pub fn asked_to_choose(&mut self) -> Vec<crate::the_open_with_sheet::AskedToChoose> {
+        std::mem::take(&mut self.choosing)
     }
 
     /// Take the door away. The socket goes; the daemon's directory stays.
@@ -275,6 +287,23 @@ impl TheApplicationDoor {
                         let _ = caller.talking.flush();
                         drop(caller.talking);
                         continue;
+                    }
+                    // **The person choosing what opens a link** holds its
+                    // connection while the sheet is up, so it is handed on.
+                    match alo_acting::ToChooseALink::read(&line) {
+                        Some(Ok(asked)) => {
+                            self.choosing
+                                .push(crate::the_open_with_sheet::AskedToChoose::of(
+                                    asked,
+                                    caller.talking,
+                                ));
+                            continue;
+                        }
+                        Some(Err(_)) => {
+                            drop(caller.talking);
+                            continue;
+                        }
+                        None => {}
                     }
                     // **A link the person followed** is one line in and one
                     // word out, like an act, and longer than one may be.
@@ -389,8 +418,8 @@ enum HowFarAlong {
 impl Waiting {
     /// Take whatever bytes have arrived, and say how far along this caller is.
     ///
-    /// **Bounded by the longest line any act may be** — an `open-link`'s,
-    /// `alo_acting::opening_a_link::THE_MOST`, since 2026-11-12 — so a caller
+    /// **Bounded by the longest line any act may be** — a `choose-link`'s,
+    /// `alo_acting::choosing_a_link::THE_MOST`, since 2026-11-12 — so a caller
     /// cannot make the compositor hold a line while it writes one. Every
     /// other act's own reader still refuses a line longer than
     /// `Request::THE_MOST`. A caller that has written more than a line may be
@@ -407,7 +436,7 @@ impl Waiting {
                         return HowFarAlong::Finished;
                     };
                     self.heard.extend_from_slice(said);
-                    if self.heard.len() > alo_acting::opening_a_link::THE_MOST {
+                    if self.heard.len() > alo_acting::choosing_a_link::THE_MOST {
                         return HowFarAlong::Finished;
                     }
                     if let Some(end) = self.heard.iter().position(|byte| *byte == b'\n') {

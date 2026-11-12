@@ -41,10 +41,36 @@ pub enum LinkStarted {
     CouldNotAsk,
 }
 
+/// What the person did with the *Open with* sheet, as the desktop answered —
+/// `docs/contracts/application-door.md`'s `choose-link` act.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum SheetAnswer {
+    /// The person chose this application. **Not yet checked against what was
+    /// offered**: the portal holds it to the offer before believing it.
+    Picked(String),
+    /// The person pressed *Cancel* or Escape.
+    Cancelled,
+    /// Nobody answered while the sheet was up.
+    Unanswered,
+    /// The desktop could not show the sheet now.
+    CannotShow,
+    /// No desktop is there to ask.
+    NoDesktop,
+    /// The desktop was reached and could not be asked, or answered something
+    /// that is not an answer.
+    CouldNotAsk,
+}
+
 /// Whatever asks the desktop to start an application with a link.
 pub trait OpensLinks: Send + Sync {
     /// Ask the desktop to start `application` with `link`.
     fn opened(&self, application: &str, link: &Link) -> LinkStarted;
+
+    /// Ask the person, on the desktop's *Open with* sheet, which of `offered`
+    /// — the person's default first — opens `link`, which `asking` asked to
+    /// open. **Waits for the person**, so it is never called on the bus's own
+    /// thread.
+    fn chosen(&self, asking: &str, link: &Link, offered: &[String]) -> SheetAnswer;
 }
 
 /// A backend that was never told how to reach a desktop.
@@ -54,5 +80,9 @@ pub struct NoDesktopToAsk;
 impl OpensLinks for NoDesktopToAsk {
     fn opened(&self, _: &str, _: &Link) -> LinkStarted {
         LinkStarted::NoDesktop
+    }
+
+    fn chosen(&self, _: &str, _: &Link, _: &[String]) -> SheetAnswer {
+        SheetAnswer::NoDesktop
     }
 }

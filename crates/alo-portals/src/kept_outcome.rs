@@ -56,14 +56,33 @@ pub enum KeptOutcome {
         address: String,
         /// Whether that was the person's choice, rather than a declaration.
         chosen: bool,
-        /// Whether the application asked for the person to choose, which this
-        /// machine does not offer yet.
+        /// Whether the application asked for the person to choose and was
+        /// given the default without a sheet — kept only before the sheet was
+        /// built.
         #[serde(
             rename = "asked-to-choose",
             default,
             skip_serializing_if = "std::ops::Not::not"
         )]
         asked_to_choose: bool,
+        /// Whether the person chose this application on the *Open with* sheet.
+        #[serde(
+            rename = "chosen-on-the-sheet",
+            default,
+            skip_serializing_if = "std::ops::Not::not"
+        )]
+        chosen_on_the_sheet: bool,
+    },
+    /// An application asked for the person to choose what opens a link, and
+    /// nothing was chosen.
+    #[serde(rename = "link-not-chosen")]
+    LinkUnchosen {
+        /// Which kind: `web` or `mail`.
+        link: String,
+        /// The link, exactly as the application gave it.
+        address: String,
+        /// Why nothing was chosen.
+        why: crate::link_not_chosen::Unchosen,
     },
     /// The application read the appearance settings, allowed by these grants.
     AppearanceRead {
@@ -132,6 +151,7 @@ impl KeptOutcome {
             | Self::NothingOpens { .. }
             | Self::NotALink { .. }
             | Self::NothingOpensLinks { .. }
+            | Self::LinkUnchosen { .. }
             | Self::Unanswered { .. } => true,
         }
     }
@@ -232,11 +252,20 @@ impl From<&Outcome> for KeptOutcome {
                 against: opens.allowed().against().to_vec(),
             },
             Outcome::LinkOpened(opened) => Self::LinkOpened {
-                opener: opened.opener().application().identifier().to_owned(),
+                opener: opened.opens_in().to_owned(),
                 link: spelled(opened.link().kind()).to_owned(),
                 address: opened.link().as_str().to_owned(),
-                chosen: opened.opener().was_chosen(),
-                asked_to_choose: opened.asked_to_choose(),
+                chosen: opened.opener().was_chosen() && opened.on_the_sheet().is_none(),
+                // **Only a default used without a sheet** is *asked to
+                // choose*: since 2026-11-12 an application that asks is shown
+                // the sheet, and its answer is one of the two below.
+                asked_to_choose: opened.asked_to_choose() && opened.on_the_sheet().is_none(),
+                chosen_on_the_sheet: opened.on_the_sheet().is_some(),
+            },
+            Outcome::LinkUnchosen(not) => Self::LinkUnchosen {
+                link: spelled(not.link().kind()).to_owned(),
+                address: not.link().as_str().to_owned(),
+                why: not.why(),
             },
             Outcome::AppearanceRead(allowed) => Self::AppearanceRead {
                 against: allowed.against().to_vec(),

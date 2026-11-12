@@ -304,6 +304,75 @@ pub const LINK_OPENED_INSTEAD_OF_ASKING: Word = Word::saying(
      is designed, the person's default is used and this line says so.",
 );
 
+/// A link the person chose an application for on the *Open with* sheet.
+pub const LINK_OPENED_ON_THE_SHEET: Word = Word::saying(
+    "portals.answered.link-opened-on-the-sheet",
+    "{application} asked for {address} to be opened and for you to choose what opens it. You \
+     chose {opener}",
+)
+.noting(
+    "{application} and {opener} are identifiers of applications and are never translated. \
+     {address} is the link exactly as the application gave it and is never translated. The \
+     person was shown a list of their apps that open this kind of link and picked one.",
+);
+
+/// The person cancelled the *Open with* sheet.
+pub const LINK_NOT_CHOSEN_CANCELLED: Word = Word::saying(
+    "portals.link-not-chosen.cancelled",
+    "{application} asked for {address} to be opened and for you to choose what opens it. You \
+     cancelled, so nothing was opened",
+)
+.noting(
+    "{application} is an application's identifier and {address} the link exactly as given; \
+     neither is translated. The person pressed Cancel or Escape on the list of apps.",
+);
+
+/// Nobody answered the *Open with* sheet.
+pub const LINK_NOT_CHOSEN_UNANSWERED: Word = Word::saying(
+    "portals.link-not-chosen.unanswered",
+    "{application} asked for {address} to be opened and for you to choose what opens it. \
+     Nobody answered within five minutes, so nothing was opened",
+)
+.noting(
+    "{application} is an application's identifier and {address} the link exactly as given; \
+     neither is translated. The list of apps was shown and nobody chose one, so it was taken \
+     down.",
+);
+
+/// The desktop could not show the *Open with* sheet.
+pub const LINK_NOT_CHOSEN_CANNOT_SHOW: Word = Word::saying(
+    "portals.link-not-chosen.cannot-show",
+    "{application} asked for {address} to be opened and for you to choose what opens it. The \
+     choice could not be shown, so nothing was opened",
+)
+.noting(
+    "{application} is an application's identifier and {address} the link exactly as given; \
+     neither is translated. The desktop could not show the list of apps at that moment — no \
+     one was signed in at it, or too many such questions were already waiting.",
+);
+
+/// No desktop was there to show the *Open with* sheet.
+pub const LINK_NOT_CHOSEN_NO_DESKTOP: Word = Word::saying(
+    "portals.link-not-chosen.no-desktop",
+    "{application} asked for {address} to be opened and for you to choose what opens it. No \
+     desktop was running to ask you, so nothing was opened",
+)
+.noting(
+    "{application} is an application's identifier and {address} the link exactly as given; \
+     neither is translated.",
+);
+
+/// The desktop could not be asked.
+pub const LINK_NOT_CHOSEN_COULD_NOT_ASK: Word = Word::saying(
+    "portals.link-not-chosen.could-not-ask",
+    "{application} asked for {address} to be opened and for you to choose what opens it. The \
+     desktop could not be asked, so nothing was opened",
+)
+.noting(
+    "{application} is an application's identifier and {address} the link exactly as given; \
+     neither is translated. Something went wrong between the system and the desktop.",
+);
+
 /// What arrived names a scheme this machine does not open.
 pub const NOT_A_LINK_SCHEME: Word = Word::saying(
     "portals.not-a-link.scheme",
@@ -587,7 +656,7 @@ pub const LINES_NOT_READ: Counted = Counted {
 pub const CLAUSES: [Word; 3] = [NOBODY_NAMED, WHAT_IT_ASKED_FOR, THAT_KIND_OF_FILE];
 
 /// Every string this crate can say, in the order this file declares them.
-pub const EVERY_WORD: [Word; 56] = [
+pub const EVERY_WORD: [Word; 62] = [
     FILE_CHOOSER,
     OPEN_WITH,
     NOTIFICATIONS,
@@ -615,6 +684,12 @@ pub const EVERY_WORD: [Word; 56] = [
     OPENED_IN,
     LINK_OPENED,
     LINK_OPENED_INSTEAD_OF_ASKING,
+    LINK_OPENED_ON_THE_SHEET,
+    LINK_NOT_CHOSEN_CANCELLED,
+    LINK_NOT_CHOSEN_UNANSWERED,
+    LINK_NOT_CHOSEN_CANNOT_SHOW,
+    LINK_NOT_CHOSEN_NO_DESKTOP,
+    LINK_NOT_CHOSEN_COULD_NOT_ASK,
     NOT_A_LINK_SCHEME,
     NOT_A_LINK,
     LINK_CARRIES_A_PASSWORD,
