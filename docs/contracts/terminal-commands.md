@@ -713,7 +713,7 @@ pointer*, *use strong colours that are easier to read*, *make all text larger*,
 them together*, *ignore a key unless it is held for a moment*, *ignore the same
 key pressed twice quickly* and *always show where the keyboard is* (in the
 person's own language). On a running machine that list was never on the screen,
-so no command reached it; and only one of the nine switches is drawn on any
+so no command reached it; and only two of the nine switches are drawn on any
 Settings page.
 
 **From 2026-11-12, Settings is described by the page it is showing** — the one
@@ -732,11 +732,12 @@ links. `tab` and `radio_button` were already kinds `press` takes.
 | *settings* (the window) | Settings' own window, named *Settings* as its side column is headed; `--in settings` is unchanged |
 | *what can be changed* (the list) | the side column's list of pages, under the same name |
 | *stop things sliding and fading* (a switch) | the **Reduced motion** switch on Accessibility. `press switch "stop things sliding and fading" --in settings` presses it, and the command says on the error output what it is called now and that the old name will stop working in a later release |
-| each of the other eight switches | nothing, because no page draws them yet. The command is refused with a sentence saying that setting is not on any page of Settings on this computer yet, and nothing is pressed (exit as any other refusal) |
+| *read the screen aloud* (a switch) | the **Screen reader** switch on Accessibility, with the same notice on the error output |
+| each of the other seven switches | nothing, because no page draws them yet. The command is refused with a sentence saying that setting is not on any page of Settings on this computer yet, and nothing is pressed (exit as any other refusal) |
 
 **Keyed on the setting, not on the words.** The shell marks the row that *is* a
 setting with that setting's old name, and lists on Settings' own node each
-setting no page draws. When a page draws a row for one of the eight, its old
+setting no page draws. When a page draws a row for one of the seven, its old
 name reaches that row with the notice above, with no change to this contract.
 
 **Deprecation.** The old names are announced as deprecated on this date. Under

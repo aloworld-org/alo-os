@@ -66,6 +66,9 @@ alo-cursors = { path = "../alo-cursors" }
 # And what applications are told so that they describe themselves, which the
 # image names as every person's default in its environment.d.
 alo-launching = { path = "../alo-launching" }
+# The languages the screen reader's voice must speak, from the table that says
+# which have a voice (ADR 0151), so the recipe's loop cannot drift from it.
+alo-access = { path = "../alo-access" }
 # The shipped signature policy names a key path inside the image, so measuring it
 # here needs one copy with that path pointed at this checkout. Nothing this crate
 # ships writes a temporary file.

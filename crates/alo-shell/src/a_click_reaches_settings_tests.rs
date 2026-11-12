@@ -385,3 +385,52 @@ fn a_press_on_a_pointer_choice_chooses_it_and_not_the_row_with_the_keyboard() {
         "zoomed out to half, Larger was {half} wide against {life}"
     );
 }
+
+/// **A press on the *Screen reader* switch turns it over, keeps it, and hands
+/// it to the desktop** (ADR 0151) — on, then off, each written to the person's
+/// `access.toml` and each held for the desktop's next frame, which is what
+/// starts and stops the reader. Nothing is held before the switch is pressed.
+#[test]
+fn a_press_on_the_screen_reader_switch_reaches_the_desktop() {
+    let (_runtime, mut server, machine) = with_settings_open("click-screen-reader");
+    a_frame(&mut server);
+    let page = server
+        .settings_as_drawn
+        .as_ref()
+        .and_then(|drawn| drawn.where_the_category_is(SettingsCategory::Accessibility))
+        .expect("drawn");
+    press_at(&mut server, middle(page));
+    a_frame(&mut server);
+    assert_eq!(
+        server.the_screen_reader_to_tell(),
+        None,
+        "the control: opening the page asks the desktop nothing"
+    );
+    assert_eq!(
+        server.the_settings_window().screen_reader_is_on(),
+        Some(false),
+        "the screen reader is not off as this computer comes"
+    );
+    for expected in [true, false] {
+        let switch = server
+            .settings_as_drawn
+            .as_ref()
+            .and_then(|drawn| drawn.where_the_row_is(&SettingsRow::ScreenReader))
+            .expect("the screen reader's switch is first on the page, in view");
+        press_at(&mut server, middle(switch));
+        assert_eq!(
+            server.the_settings_window().screen_reader_is_on(),
+            Some(expected)
+        );
+        assert_eq!(
+            server.the_screen_reader_to_tell(),
+            Some(expected),
+            "the desktop is not told the switch"
+        );
+        let access = machine.kept(alo_access::keeping::THE_FILE);
+        let kept =
+            alo_access::keeping::read(access.parent().expect("a folder")).expect("the file reads");
+        assert_eq!(kept.has(alo_access::Setting::ScreenReader), expected);
+        a_frame(&mut server);
+    }
+}

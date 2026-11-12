@@ -29,6 +29,7 @@ impl SettingsRow {
     pub(crate) const fn the_setting(&self) -> Option<Setting> {
         match self {
             Self::ReducedMotion => Some(Setting::ReducedMotion),
+            Self::ScreenReader => Some(Setting::ScreenReader),
             Self::Answer(_)
             | Self::Accent(_)
             | Self::WrittenAs(_)

@@ -471,6 +471,9 @@ fn no_choice_the_old_window_offered_is_dropped() {
     // **Whether alo works fully inside apps like VSCodium**, added 2026-11-12:
     // off as a machine comes, and a choice the person must be able to reach.
     before.push(SettingsRow::AloWorksFullyInsideApps);
+    // **Whether the screen reader runs**, added 2026-11-12 (ADR 0151): off as a
+    // machine comes, and the one switch a person who needs it must reach.
+    before.push(SettingsRow::ScreenReader);
     // **Every installed browser and mail application**, added 2026-11-12 with
     // the Default apps page.
     before.extend(open.default_apps.rows());
@@ -732,6 +735,78 @@ fn appearance_changes_nothing_its_crate_would_not() {
     );
 }
 
+/// **The screen reader turns on and off and is kept in the person's
+/// `access.toml`**, off as this computer comes, with the rest of the file kept
+/// as it was — and what the desktop answered is said under the switch, kept
+/// while Settings is closed and gone once the reader does what it was asked
+/// (ADR 0151).
+#[test]
+fn the_screen_reader_turns_on_and_off_and_says_what_went_wrong() {
+    use alo_access::Setting;
+    let machine = a_persons_machine("screen-reader");
+    let at = machine.kept(alo_access::keeping::THE_FILE);
+    let mut before = alo_access::TurnedOn::nothing();
+    before.turn_on(Setting::ReducedMotion);
+    let folder = at.parent().unwrap().to_path_buf();
+    std::fs::create_dir_all(&folder).unwrap();
+    alo_access::keeping::keep(&folder, &before).unwrap();
+    let strings = words();
+    let door = CountingDoor::revoking();
+    let mut window = machine.opened();
+    // **A start that failed, said while the page is open.**
+    let sentence = crate::TheScreenReaderAnswered::DidNotStart.said(&strings);
+    assert!(sentence.is_some(), "the control: a failure says something");
+    window.the_screen_reader_answered(sentence.clone());
+    assert_eq!(window.open().unwrap().the_screen_reader, sentence);
+    assert_eq!(
+        window.screen_reader_is_on(),
+        Some(false),
+        "the screen reader is not off as this computer comes"
+    );
+    for expected in [true, false] {
+        assert_eq!(
+            chosen(&mut window, &SettingsRow::ScreenReader, &strings, &door),
+            Some(SettingsDid::Kept(
+                SettingsSection::Accessibility,
+                SettingsKept::Written
+            ))
+        );
+        assert_eq!(window.screen_reader_is_on(), Some(expected));
+        let read_back = alo_access::keeping::read(&folder).unwrap();
+        assert_eq!(
+            read_back.has(Setting::ScreenReader),
+            expected,
+            "what sign-in reads"
+        );
+        assert!(
+            read_back.has(Setting::ReducedMotion),
+            "the rest of the file was lost"
+        );
+    }
+    // **A reader that did what it was asked clears the sentence.**
+    window.the_screen_reader_answered(crate::TheScreenReaderAnswered::Stopped.said(&strings));
+    assert_eq!(window.open().unwrap().the_screen_reader, None);
+    assert_eq!(
+        door.knocks.get(),
+        0,
+        "a screen reader switch knocked on the daemon"
+    );
+}
+
+/// **What the desktop answered is kept while Settings is closed**, and is on
+/// the page when it opens.
+#[test]
+fn a_failure_while_settings_was_closed_is_said_when_it_opens() {
+    let machine = a_persons_machine("screen-reader-closed");
+    let strings = words();
+    let mut window = SettingsWindow::closed();
+    let sentence = crate::TheScreenReaderAnswered::NotOnThisComputer.said(&strings);
+    assert!(sentence.is_some(), "the control: a failure says something");
+    window.the_screen_reader_answered(sentence.clone());
+    let _ = window.opened_by_hand(&machine.places, noon());
+    assert_eq!(window.open().unwrap().the_screen_reader, sentence);
+}
+
 /// **Reduced motion turns on and off and is kept in the person's
 /// `access.toml`**, off as this computer comes, and whatever else the file
 /// holds is kept as it was.
@@ -971,6 +1046,12 @@ fn a_broken_access_file_is_said_and_not_written_over() {
             .rows(std::time::SystemTime::now())
             .contains(&SettingsRow::AloWorksFullyInsideApps),
         "the working-fully switch is offered over a file that did not read"
+    );
+    assert!(
+        !window
+            .rows(std::time::SystemTime::now())
+            .contains(&SettingsRow::ScreenReader),
+        "the screen reader's switch is offered over a file that did not read"
     );
     assert_eq!(
         std::fs::read_to_string(&at).unwrap(),
@@ -2595,9 +2676,12 @@ fn every_pointer_choice_is_reached_and_chosen_from_the_keyboard() {
     );
 
     // **The walk's own keys**: Accessibility in the side column, Tab into the
-    // page, Tab to the Pointer section.
+    // page — which lands on the screen reader's switch, first on the page
+    // since 2026-11-12 (ADR 0151) — Tab to Text, Tab to the Pointer section.
     press(&mut window, SettingsKey::Last);
     assert_eq!(window.category(), Some(SettingsCategory::Accessibility));
+    press(&mut window, SettingsKey::NextSection);
+    assert_eq!(window.focused(noon()), Some(SettingsRow::ScreenReader));
     press(&mut window, SettingsKey::NextSection);
     assert_eq!(window.focused(noon()), Some(SettingsRow::TextSize));
     press(&mut window, SettingsKey::NextSection);

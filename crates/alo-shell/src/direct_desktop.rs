@@ -79,6 +79,16 @@ pub trait TheDesktop {
         false
     }
 
+    /// Whether this person switched the screen reader on, as their
+    /// accessibility settings say (ADR 0151).
+    ///
+    /// Asked once, when the desktop stands up, and handed back on the first
+    /// frame through [`Self::the_screen_reader_is`]. **Off by default**, which
+    /// is a person who has not been asked rather than one who said no.
+    fn the_screen_reader_is_on(&self) -> bool {
+        false
+    }
+
     /// What this seat has made of a person's input, offered every frame.
     ///
     /// **Offered rather than printed**, because this crate is a compositor and
@@ -517,6 +527,23 @@ pub trait TheDesktop {
     /// when the answer differs from what it last told. Nothing by default: a
     /// desktop that starts no applications has nobody to tell.
     fn apps_describing_themselves_is(&mut self, _describe: bool) {}
+
+    /// **The screen reader is to run, or not** — at the first frame with what
+    /// the person's file says, and whenever they turn the switch over
+    /// (`crate::the_screen_reader_switch`).
+    ///
+    /// Called on the frame after Settings wrote the person's accessibility
+    /// settings, whichever switch it was, so a desktop starts or stops it only
+    /// when that is a change. It must not wait for the answer: that is given
+    /// later, through [`Self::what_the_screen_reader_answered`]. Nothing by
+    /// default: a desktop that starts no programs has no reader to start.
+    fn the_screen_reader_is(&mut self, _on: bool) {}
+
+    /// **What the screen reader's start or stop came to**, once it has: asked
+    /// every frame, and [`None`] while nothing new has been answered.
+    fn what_the_screen_reader_answered(&mut self) -> Option<crate::TheScreenReaderAnswered> {
+        None
+    }
 
     /// **This machine's own network addresses, read now** — asked once, each
     /// time a person opens the form that adds a provider, so Settings can warn
@@ -1435,6 +1462,17 @@ impl LoopInput for TheDesktopLane<'_> {
         // tells the person's session (`crate::apps_describing_themselves`).
         if let Some(describe) = server.the_describing_to_tell() {
             self.desktop.apps_describing_themselves_is(describe);
+        }
+        // **And whether the screen reader runs**, which the desktop starts or
+        // stops in the person's session; what that came to is said under the
+        // switch, once it has come to something (`crate::the_screen_reader_switch`).
+        if let Some(on) = server.the_screen_reader_to_tell() {
+            self.desktop.the_screen_reader_is(on);
+        }
+        if let Some(answered) = self.desktop.what_the_screen_reader_answered() {
+            server
+                .settings
+                .the_screen_reader_answered(answered.said(self.strings));
         }
         // **A provider form that just opened learns where this machine is**,
         // once, from the desktop that may read it.

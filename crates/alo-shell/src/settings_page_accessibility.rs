@@ -24,6 +24,7 @@ use crate::the_settings_words as w;
 /// The page's blocks.
 pub(crate) fn the_blocks(open: &Open, strings: &Strings) -> Vec<ABlock> {
     let mut blocks: Vec<ABlock> = open.told.iter().cloned().map(ABlock::Said).collect();
+    blocks.extend(the_screen_reader(open, strings));
     let appearance = &open.appearance;
     if let Some(why) = appearance.not_read() {
         blocks.push(ABlock::Said(AppearanceKept::not_read_said(why, strings)));
@@ -126,6 +127,41 @@ pub(crate) fn the_blocks(open: &Open, strings: &Strings) -> Vec<ABlock> {
     }));
     blocks.extend(the_motion(open, strings));
     blocks
+}
+
+/// **Reading aloud**: the *Screen reader* switch — ADR 0151, the owner's
+/// *"Ship Orca"* of 2026-11-12.
+///
+/// **First on the page**, because the person who needs it is the one who cannot
+/// look further down for it. Not drawn in `551:1038`, so it is a section in the
+/// design's own switch row (`550:256`, `551:196`), as *Motion* is —
+/// `docs/design/the-settings-window.md`, question 12. Kept in the person's
+/// `access.toml`, so offered only where that file can be kept (*Motion* says why
+/// where it did not read), and off as this computer comes. **Where the desktop
+/// could not do what the switch says**, that is said under it, and the switch
+/// stays as the person set it (`crate::the_screen_reader_switch`).
+fn the_screen_reader(open: &Open, strings: &Strings) -> Option<ABlock> {
+    let access = &open.access;
+    if access.at().is_none() || access.not_read().is_some() {
+        return None;
+    }
+    let is = if access.drawn().has(alo_access::Setting::ScreenReader) {
+        crate::settings_page::SwitchIs::On
+    } else {
+        crate::settings_page::SwitchIs::Off
+    };
+    let mut row = ARow::named(
+        Some(SettingsRow::ScreenReader),
+        TheKind::ASwitch(is),
+        said(strings, w::SCREEN_READER),
+    );
+    row.lines.push(said(strings, w::SCREEN_READER_IS));
+    row.at_its_end = Some(AnEnd::Words(crate::settings_page::switch_said(is, strings)));
+    Some(ABlock::Section(ASection {
+        heading: Some(said(strings, w::READING_ALOUD)),
+        rows: vec![row],
+        footnote: open.the_screen_reader.clone(),
+    }))
 }
 
 /// **Motion**: the *Reduced motion* switch, the owner's yes of 2026-11-07.

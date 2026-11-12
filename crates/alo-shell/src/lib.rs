@@ -298,6 +298,7 @@ mod the_password_sheet_drawn;
 mod the_password_sheets_words;
 mod the_pointer_drawn;
 mod the_pointers_look;
+mod the_screen_reader_switch;
 pub mod what_is_on_the_clipboard;
 mod where_a_travelling_window_lands;
 mod where_the_docks_surface_is;
@@ -1022,6 +1023,7 @@ pub use scene_scanout::ActiveScene;
 pub use screens::{ScreenPlace, Screens, TheRoom};
 pub use the_markets_words::TheMarketsWords;
 pub use the_pointers_look::ThePointersLook;
+pub use the_screen_reader_switch::TheScreenReaderAnswered;
 pub use their_formats::{TheDay, TheirFormats, WhereTheRegionCameFrom};
 
 // **The types a desktop needs to answer `their_displays`, re-exported so that

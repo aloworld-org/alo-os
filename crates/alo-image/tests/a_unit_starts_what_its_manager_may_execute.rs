@@ -19,8 +19,8 @@
 //!
 //! Our own binaries live under `/usr/libexec` and carry a generic label PID 1
 //! may execute — `alo-portald` is one, same shape, and works. A unit naming a
-//! **distribution's** binary is the case to look at, and the keyring is the
-//! only one today.
+//! **distribution's** binary is the case to look at: the keyring, and since
+//! 2026-11-12 the screen reader (ADR 0151).
 //!
 //! **This does not read SELinux policy**, and could not: the labels exist on a
 //! booted machine, not in this repository. What it does is far narrower and
@@ -40,8 +40,13 @@ use alo_image::THE_IMAGE;
 
 /// Units that name a binary this distribution packages, and must therefore be
 /// started by the person's own manager rather than by PID 1.
-const THE_DISTRIBUTIONS_OWN: [(&str, &str); 1] =
-    [("alo-keyring.service", "/usr/bin/gnome-keyring-daemon")];
+///
+/// The screen reader is the second (ADR 0151): Orca is the distribution's own
+/// program, started for the person by their own manager.
+const THE_DISTRIBUTIONS_OWN: [(&str, &str); 2] = [
+    ("alo-keyring.service", "/usr/bin/gnome-keyring-daemon"),
+    ("alo-screen-reader.service", "/usr/bin/orca"),
+];
 
 /// **A unit naming a packaged binary is a user unit**, because PID 1 may not
 /// execute what the distribution labels for a session.

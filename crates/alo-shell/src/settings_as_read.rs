@@ -2,7 +2,7 @@
 //!
 //! The owner's decision of 2026-11-12, *"1. Live, keep names"*. Until then a
 //! reader was told Settings by a fixed list — the window, *what can be
-//! changed*, and nine switches of which eight are drawn on no page — so a
+//! changed*, and nine switches of which seven are drawn on no page — so a
 //! person on Settings → Default apps heard nothing of that page.
 //!
 //! Now the description **is the page**: [`crate::settings_page::the_page`], the

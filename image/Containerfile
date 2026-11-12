@@ -994,6 +994,58 @@ RUN dnf install --assumeyes --setopt=install_weak_deps=False \
     done \
  && echo "every decoder, encoder and media-server element the decision names registers"
 
+# **A screen reader, and the voice it speaks with** —
+# [ADR 0151](../docs/decisions/0151-alo-ships-a-screen-reader-and-its-voices-stay-on-the-machine.md),
+# the owner's *"Ship Orca"* of 2026-11-12. Three pinned upstream engines,
+# configured and never patched: Orca reads the accessibility tree, Speech
+# Dispatcher carries what it says, and eSpeak NG makes the sound, offline.
+# Started only by the person's own session when their *Screen reader* switch is
+# on (`/usr/lib/systemd/user/alo-screen-reader.service`).
+#
+# **`python3-dbus` is named because Orca does not start without it**, measured
+# 2026-11-12 in this base: it is a weak dependency, and `orca --version` ended in
+# *No module named 'dbus'*. **`at-spi2-core` is named** because it is the bus
+# Orca reads and the shell serves on, and until now it was here only because
+# something else needed it. **`pipewire-pulseaudio` is named** because Speech
+# Dispatcher as built here has no PipeWire output and speaks to PulseAudio by
+# default, and this image had no PulseAudio server — which also meant no
+# Flatpak application could make a sound.
+#
+# **Each claim is checked by the thing itself, not by a file being there**:
+# Orca starts and is 48 or later (its keyboard is `Atspi.Device`'s); eSpeak NG
+# speaks a word in each of the 24 official languages to a file; exactly one
+# speech module is loaded and it is eSpeak NG, so no voice that fetches speech
+# from a server can ship (`mary-generic` and `mimic3-generic` would); Speech
+# Dispatcher listens on a local socket, not the network; its eSpeak NG module
+# resolves its libraries; the accessibility bus can be started by the session
+# bus; and every person's manager listens for PulseAudio. 83 MB installed, measured
+# against this recipe's own package list (ADR 0151 §8).
+RUN dnf install --assumeyes --setopt=install_weak_deps=False \
+      orca python3-dbus espeak-ng speech-dispatcher speech-dispatcher-espeak-ng \
+      at-spi2-core pipewire-pulseaudio \
+ && dnf clean all \
+ && least=48 \
+ && have="$(orca --version 2>/dev/null | sed -n 's/^Orca version \([0-9][0-9]*\)\..*/\1/p')" \
+ && test -n "${have}" \
+ && test "${have}" -ge "${least}" \
+ && echo "Orca ${have} starts, at or above ${least}" \
+ && for language in bg hr cs da nl en et fi fr de el hu ga it lv lt mt pl pt ro sk sl es sv; do \
+      espeak-ng -v "${language}" -w /tmp/alo-said.wav "alo" 2> /dev/null \
+        && test -s /tmp/alo-said.wav \
+        || { echo "the voice cannot speak ${language}" >&2; exit 1; }; \
+      rm -f /tmp/alo-said.wav; \
+    done \
+ && test "$(grep -cE '^[[:space:]]*AddModule' /etc/speech-dispatcher/speechd.conf)" = 1 \
+ && grep -qE '^[[:space:]]*AddModule[[:space:]]+"espeak-ng"' /etc/speech-dispatcher/speechd.conf \
+ && ! grep -qE '^[[:space:]]*CommunicationMethod[[:space:]]+"?inet_socket' /etc/speech-dispatcher/speechd.conf \
+ && if ldd /usr/lib64/speech-dispatcher-modules/sd_espeak-ng | grep -q 'not found'; then \
+      echo "the voice's speech module cannot start: unresolved libraries" >&2; exit 1; \
+    fi \
+ && test -x /usr/libexec/at-spi-bus-launcher \
+ && grep -q 'SystemdService=at-spi-dbus-bus.service' /usr/share/dbus-1/services/org.a11y.Bus.service \
+ && test "$(systemctl --global is-enabled pipewire-pulse.socket)" = enabled \
+ && echo "a screen reader that starts, a voice in all 24 languages, one local speech module, and somewhere for the sound to go"
+
 
 # **What a developer finds when they open the terminal.** The audience for the
 # first release is developers (owner, 2026-10-14), and the terminal alo OS
@@ -1356,6 +1408,8 @@ RUN chmod 0755 /usr/libexec/alo-boundaryd /usr/libexec/alo-sessiond \
                /usr/lib/systemd/system/alo-portald.service \
                /usr/lib/systemd/user/alo-keyring.service \
                /usr/lib/systemd/user/alo-their-folders.service \
+               /usr/lib/systemd/user/alo-screen-reader.service \
+               /usr/lib/systemd/user/speech-dispatcher.service.d/50-alo-speech-stays-on-this-computer.conf \
                /usr/lib/systemd/system/alo-shipping.service \
                /usr/lib/pam.d/alo-compositor \
                /usr/lib/pam.d/alo-desktop \

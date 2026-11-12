@@ -194,14 +194,40 @@ fn the_old_name_of_a_drawn_row_reaches_it_and_says_its_new_name() {
     );
 }
 
+
+/// **The screen reader's switch keeps its old name too**: *read the screen
+/// aloud* presses the Screen reader switch the 2026-11-12 row draws, told what
+/// it is called now — the row reached its old name by saying which setting it
+/// is, and nothing else changed.
+#[test]
+fn the_old_name_of_the_screen_reader_reaches_its_switch() {
+    let (_machine, window) = on_accessibility("old-name-screen-reader");
+    let reading = on(&window);
+    let now_called =
+        crate::settings_page::said(&settings_words(), crate::the_settings_words::SCREEN_READER);
+    let pressed = press_by_hand(
+        &reading,
+        ALO,
+        Some("settings"),
+        Pressable::Switch,
+        &old_name(Setting::ScreenReader),
+    )
+    .expect("the old name presses the switch");
+    assert_eq!(pressed.now_called(), Some(now_called.as_str()));
+    assert_eq!(
+        *reading.pressed.borrow(),
+        vec![Pressed::InSettings(InSettings::ARow(SettingsRow::ScreenReader))],
+        "one press, and only on Screen reader"
+    );
+}
 /// **A setting no page draws yet is refused by its own sentence**, and nothing
-/// is pressed — for each of the eight, by the name it had.
+/// is pressed — for each of the seven, by the name it had.
 #[test]
 fn a_setting_no_page_draws_yet_is_refused_and_nothing_is_pressed() {
     let (_machine, window) = on_accessibility("old-name-not-drawn");
     let reading = on(&window);
     for setting in Setting::ALL {
-        if setting == Setting::ReducedMotion {
+        if matches!(setting, Setting::ReducedMotion | Setting::ScreenReader) {
             continue;
         }
         assert_eq!(
