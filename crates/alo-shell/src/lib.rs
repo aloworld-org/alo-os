@@ -179,6 +179,7 @@ mod a_scale_held_to_what_draws;
 /// Typing into a task window's reply box.
 mod a_screen_arrives_or_leaves;
 mod access_action;
+mod access_attributes;
 mod access_bus;
 mod access_contrast;
 mod access_events;

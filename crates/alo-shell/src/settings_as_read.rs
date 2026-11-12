@@ -54,6 +54,7 @@ use alo_strings::Strings;
 
 use crate::access_action::{InSettings, Pressed};
 use crate::access_nodes::{Node, ReadAloudTree};
+use crate::access_attributes::its_place;
 use crate::access_roles;
 use crate::access_sheet_in_front::{ASheetInFront, TheSheet};
 use crate::settings_categories::SettingsCategory;
@@ -100,9 +101,9 @@ impl crate::Server {
 }
 
 /// The heading level of the page's own heading.
-const THE_PAGES_LEVEL: &str = "1";
+const THE_PAGES_LEVEL: u8 = 1;
 /// A section's heading level.
-const A_SECTIONS_LEVEL: &str = "2";
+const A_SECTIONS_LEVEL: u8 = 2;
 
 impl ReadAloudTree {
     /// The same tree, with Settings' description given way to Settings as it
@@ -271,14 +272,14 @@ impl Reading<'_, '_> {
     }
 
     /// A heading, at `level`.
-    fn a_heading(&mut self, parent: usize, words: &str, level: &str) {
+    fn a_heading(&mut self, parent: usize, words: &str, level: u8) {
         self.push(
             parent,
             Node {
                 role: access_roles::number_of(Role::Heading),
                 name: words.to_owned(),
                 states: access_roles::words_of(State::ReadOnly, None),
-                attributes: vec![("level".to_owned(), level.to_owned())],
+                attributes: vec![crate::access_attributes::a_heading_at(level)],
                 ..Node::default()
             },
         );
@@ -485,14 +486,6 @@ impl Reading<'_, '_> {
     }
 }
 
-/// A choice's place among its set, as a reader says it: *2 of 3*.
-fn its_place(at: usize, of: usize) -> Vec<(String, String)> {
-    vec![
-        ("posinset".to_owned(), (at + 1).to_string()),
-        ("setsize".to_owned(), of.to_string()),
-    ]
-}
-
 /// Each row's place among the choices beside it, where it is one: the
 /// choices of a section in one run, the smaller choices under one of them in
 /// a run of their own.
@@ -536,7 +529,7 @@ fn what_is_drawn_with(row: &ARow) -> String {
     match &row.at_its_end {
         Some(AnEnd::Words(words)) if !a_switch_that_says_which => said.push(words.clone()),
         Some(AnEnd::Words(_)) | None => {}
-        Some(AnEnd::Keys(keys)) => said.push(keys.join(" + ")),
+        Some(AnEnd::Keys(keys)) => said.push(crate::access_attributes::keys_together(keys)),
         Some(AnEnd::AlwaysOn(words) | AnEnd::Picker(words)) => said.push(words.clone()),
     }
     if let Some(note) = &row.note {
@@ -547,7 +540,7 @@ fn what_is_drawn_with(row: &ARow) -> String {
         said.push(risk.words.clone());
     }
     said.retain(|line| !line.trim().is_empty());
-    said.join("\n")
+    crate::access_attributes::told_together(&said)
 }
 
 #[cfg(test)]
