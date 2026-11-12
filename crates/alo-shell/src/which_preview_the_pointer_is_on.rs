@@ -139,6 +139,17 @@ impl ThePanelAsDrawn {
         &self.picture.task_squares
     }
 
+    /// Each application window's slot as drawn, with which window it was drawn
+    /// for — what `crate::a_window_in_miniature` draws each miniature into.
+    pub(crate) fn the_windows_slots(
+        &self,
+    ) -> impl Iterator<Item = (WindowId, Rectangle<i32, Physical>)> + '_ {
+        self.windows
+            .iter()
+            .copied()
+            .zip(self.picture.slots.iter().copied())
+    }
+
     /// **Which of alo's own windows was drawn at `at`**, if one was: the
     /// terminal, Settings or the record, by its square in the rail.
     pub(crate) fn alos_window_at(
