@@ -112,21 +112,20 @@ mod tests {
             TheScreenReaderAnswered::DidNotStart,
             TheScreenReaderAnswered::DidNotStop,
         ];
-        let said: Vec<String> = failures
-            .iter()
-            .map(|answer| answer.said(&strings).unwrap_or_default())
-            .collect();
-        for (answer, sentence) in failures.iter().zip(&said) {
+        let [not_here, did_not_start, did_not_stop] =
+            failures.map(|answer| answer.said(&strings).unwrap_or_default());
+        let said = [&not_here, &did_not_start, &did_not_stop];
+        for (answer, sentence) in failures.iter().zip(said) {
             assert!(!sentence.is_empty(), "{answer:?} says nothing");
             let lower = sentence.to_lowercase();
             for never in ["orca", "espeak", "speech-dispatcher", "at-spi", "systemd"] {
                 assert!(!lower.contains(never), "{answer:?} names {never}");
             }
         }
-        assert_ne!(said[0], said[1]);
-        assert_ne!(said[1], said[2]);
+        assert_ne!(not_here, did_not_start);
+        assert_ne!(did_not_start, did_not_stop);
         // **A reader that did not start is one the person is told is still
         // switched on**, so they know it will be tried again.
-        assert!(said[1].contains("switch stays on"));
+        assert!(did_not_start.contains("switch stays on"));
     }
 }
