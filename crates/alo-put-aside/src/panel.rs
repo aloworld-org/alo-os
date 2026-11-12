@@ -21,6 +21,7 @@ use alo_canvas::{Place, Zoom};
 use alo_dock::window::{Window, WindowId};
 
 use crate::a_task_put_aside::{ATaskAside, Aside, TaskNumber};
+use crate::one_of_alos_own_windows::{AlosOwnWindow, AnAloWindowAside};
 use crate::preview::Preview;
 use crate::showing::{Chosen, HowItShows};
 use crate::the_collapse_choice_per_place::TheCollapseChoice;
@@ -249,7 +250,7 @@ impl Panel {
             .ok_or(NotPutAside::ItIsNotThere)?;
         match self.order.remove(at) {
             OneAside::Task(aside) => Ok(aside),
-            OneAside::Window(_) => Err(NotPutAside::ItIsNotThere),
+            OneAside::Window(_) | OneAside::AlosOwn(_) => Err(NotPutAside::ItIsNotThere),
         }
     }
 
@@ -263,7 +264,67 @@ impl Panel {
     pub fn tasks(&self) -> impl Iterator<Item = ATaskAside> + '_ {
         self.order.iter().filter_map(|one| match one {
             OneAside::Task(aside) => Some(*aside),
-            OneAside::Window(_) => None,
+            OneAside::Window(_) | OneAside::AlosOwn(_) => None,
+        })
+    }
+
+    /// **Put one of alo's own windows aside**, remembering the Place it was
+    /// on — the terminal, Settings or the record
+    /// (`crate::one_of_alos_own_windows`).
+    ///
+    /// The panel holds which one and where; whatever the window is doing —
+    /// a command running in the terminal, a form half filled in Settings — is
+    /// the window's, and nothing here can reach it.
+    ///
+    /// # Errors
+    ///
+    /// [`NotPutAside::ItIsAlreadyThere`] if it is in the panel already: there
+    /// is one of each, so a second square would be a square for nothing.
+    pub fn put_alos_window_aside(
+        &mut self,
+        which: AlosOwnWindow,
+        place: Place,
+    ) -> Result<(), NotPutAside> {
+        if self.holds_alos_window(which) {
+            return Err(NotPutAside::ItIsAlreadyThere);
+        }
+        self.order
+            .insert(0, OneAside::AlosOwn(AnAloWindowAside::of(which, place)));
+        Ok(())
+    }
+
+    /// Take one of alo's own windows back out, and say which Place it goes
+    /// back to.
+    ///
+    /// # Errors
+    ///
+    /// [`NotPutAside::ItIsNotThere`] if the panel does not hold it.
+    pub fn bring_alos_window_back(
+        &mut self,
+        which: AlosOwnWindow,
+    ) -> Result<AnAloWindowAside, NotPutAside> {
+        let at = self
+            .order
+            .iter()
+            .position(|one| matches!(one, OneAside::AlosOwn(aside) if aside.which() == which))
+            .ok_or(NotPutAside::ItIsNotThere)?;
+        match self.order.remove(at) {
+            OneAside::AlosOwn(aside) => Ok(aside),
+            OneAside::Window(_) | OneAside::Task(_) => Err(NotPutAside::ItIsNotThere),
+        }
+    }
+
+    /// Whether this one of alo's windows is in the panel.
+    #[must_use]
+    pub fn holds_alos_window(&self, which: AlosOwnWindow) -> bool {
+        self.alos_windows().any(|aside| aside.which() == which)
+    }
+
+    /// alo's own windows in the panel, most recently put aside first.
+    pub fn alos_windows(&self) -> impl Iterator<Item = AnAloWindowAside> + '_ {
+        self.order.iter().filter_map(|one| match one {
+            OneAside::AlosOwn(aside) => Some(*aside),
+            OneAside::Window(_) | OneAside::Task(_) => None,
         })
     }
 
@@ -275,6 +336,7 @@ impl Panel {
             .iter()
             .filter_map(|one| match one {
                 OneAside::Task(aside) => Some(Aside::ATask(*aside)),
+                OneAside::AlosOwn(aside) => Some(Aside::AnAloWindow(*aside)),
                 OneAside::Window(id) => self
                     .previews
                     .iter()
@@ -298,4 +360,6 @@ enum OneAside {
     Window(WindowId),
     /// A task.
     Task(ATaskAside),
+    /// One of alo's own windows.
+    AlosOwn(AnAloWindowAside),
 }

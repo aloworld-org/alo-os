@@ -81,6 +81,8 @@ mod a_chord_moves_the_keyboard_between_areas;
 mod a_chord_opens_a_terminal;
 mod a_chord_opens_the_bar;
 mod a_chord_opens_the_record;
+/// The Minimise chord puts the one of alo's own windows with the keys aside.
+mod a_chord_puts_alos_own_window_aside;
 mod a_chord_reaches_its_action;
 mod a_chord_sends_the_keyboard_to_a_window;
 mod a_click_brings_a_window_back;
@@ -147,6 +149,9 @@ pub mod alos_band_in_a_window;
 /// **Public because `task_text::WhatWasSaid` carries its marks**, as
 /// `task_text` is public for `task_raster`'s reason.
 pub mod alos_marked_words;
+/// alo's own terminal, Settings and record go into the right-hand panel, and
+/// come back.
+mod alos_own_window_goes_aside;
 /// Closing a task window, and which ones may close.
 pub mod closing_a_task_window;
 mod each_window_with_its_edge;

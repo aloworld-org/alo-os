@@ -796,10 +796,10 @@ edge do (`crates/alo-shell/src/the_terminals_edge.rs`):
   follow the same two looks (`border/strong` and `Elevation/Floating` focused;
   `border/default` and `Elevation/Quiet` not).
 
-**Not built, and why:** Minimise and Maximise. Nothing can minimise or maximise
-the terminal yet, and a control that reaches nothing looks live and is not —
-the rule the task window's Close-only edge keeps. They arrive with something to
-do. **Readings, recorded so they can be disagreed with:** the edge is always
+**Not built, and why:** Maximise. Nothing can maximise the terminal yet, and a
+control that reaches nothing looks live and is not. *Minimise was built on
+2026-11-11 with design `27:2`: it puts the terminal in the right-hand panel with
+its shell still running (`docs/design/the-windows-put-aside.md`).* **Readings, recorded so they can be disagreed with:** the edge is always
 shown, even where a person chose *show the title only when I point at it*,
 because it carries the only Close this window has; and the terminal's edge is
 drawn on the display the loop holds, as task windows' are, not on a second one.

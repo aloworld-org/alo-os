@@ -604,6 +604,13 @@ pub struct Server {
     /// Task windows a person pressed Minimise on, waiting for the frame that
     /// lends the panel (`crate::a_task_goes_aside`).
     pub(crate) tasks_asked_to_go_aside: Vec<crate::the_tasks_a_person_opened::WhichTask>,
+    /// alo's own windows a person pressed Minimise on, waiting for the frame
+    /// that lends the panel (`crate::alos_own_window_goes_aside`).
+    pub(crate) alos_windows_asked_to_go_aside: Vec<alo_put_aside::AlosOwnWindow>,
+    /// alo's own windows that are in the panel now: not drawn, not pressed,
+    /// not typed into, and still open
+    /// (`crate::alos_own_window_goes_aside`).
+    pub(crate) alos_windows_aside: Vec<alo_put_aside::AlosOwnWindow>,
     /// Buttons whose press the panel took, so their release is taken too.
     ///
     /// **A client must never see a release for a press it did not see.** The press is swallowed
@@ -973,6 +980,8 @@ impl Server {
             asked_to_bring_back: Vec::new(),
             the_task_card_open: None,
             tasks_asked_to_go_aside: Vec::new(),
+            alos_windows_asked_to_go_aside: Vec::new(),
+            alos_windows_aside: Vec::new(),
             clicks_the_panel_took: std::collections::HashSet::new(),
             gestures: Default::default(),
             // Nobody has told this seat what a chord means, so it takes none.

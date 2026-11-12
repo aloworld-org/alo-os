@@ -52,8 +52,8 @@
 
 use alo_dock::artwork::TheArtwork;
 use alo_dock::measures::{AN_INITIAL_IS, GLYPH, ICON};
-use alo_put_aside::Panel;
 use alo_put_aside::the_region_the_panel_claims::WhichEdge;
+use alo_put_aside::{AlosOwnWindow, Panel};
 use cosmic_text::{FontSystem, Metrics};
 use smithay::utils::{Physical, Rectangle};
 
@@ -101,12 +101,32 @@ pub(crate) fn drawn(
     picture: &PanelPicture,
     edge: WhichEdge,
     what_each_application_draws: &TheArtwork,
-    palette: &DesktopPalette,
+    (palette, words): (&DesktopPalette, &crate::the_docks_words::TheDocksWords),
     fonts: &mut FontSystem,
 ) -> Vec<Inked> {
     let mut tiles = Vec::new();
     if let Some(control) = picture.control {
         tiles.push(the_control(control, edge, palette));
+    }
+    // **alo's own windows put aside**: the terminal, Settings and the record,
+    // on the same hit area, marked by the first letter of the word the Dock
+    // already uses for each — the rule an application with no icon of its own
+    // gets, and the one the Dock's Settings entry is drawn by.
+    for (which, slot) in &picture.alo_squares {
+        let mut tile = a_ground(*slot, palette.dock);
+        a_rounded_square_onto(&mut tile, palette.badge);
+        let called = match which {
+            AlosOwnWindow::TheTerminal => &words.terminal,
+            AlosOwnWindow::Settings => &words.settings,
+            AlosOwnWindow::TheRecord => &words.history,
+        };
+        a_letter_onto(
+            &mut tile,
+            alo_dock::window::the_first_letter_of(called),
+            palette,
+            fonts,
+        );
+        tiles.push(tile);
     }
     for (slot, preview) in picture.slots.iter().zip(panel.previews()) {
         let mut tile = a_ground(*slot, palette.dock);
