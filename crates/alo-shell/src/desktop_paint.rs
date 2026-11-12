@@ -104,13 +104,13 @@ impl DesktopPicture {
             // `Self::paint` takes the tasks off by count and then takes one
             // more exactly when there is a market.
             .chain(self.market.as_ref().map(|market| &market.panel))
-            // **The alo Bar after the market**, so both ends of this
+            // **The alo Bar's matches after the market**, so both ends of this
             // positional read agree: `Self::paint` takes one more exactly when
-            // there is a Bar, in this position.
-            .chain(self.the_bar.as_ref().map(|bar| &bar.panel))
-            // **The panel's tasks after the Bar and before the Dock's surface**,
-            // taken off by count in `Self::paint` for the tasks' own reason: the
-            // Dock drains whatever is left inside its `if let`.
+            // the list has risen, in this position.
+            .chain(self.the_bars_matches.as_ref().map(|matches| &matches.panel))
+            // **The panel's tasks after the Bar's matches and before the Dock's
+            // surface**, taken off by count in `Self::paint` for the tasks' own
+            // reason: the Dock drains whatever is left inside its `if let`.
             .chain(self.panel.washed.iter())
             .chain(dock.and_then(|dock| dock.surface.as_ref()))
             .chain(dock.into_iter().flat_map(|dock| dock.panels.iter()))
@@ -144,9 +144,9 @@ impl DesktopPicture {
         // **One more exactly when there is a market**, which is what
         // `Self::washed` yielded in this position.
         let market = self.market.as_ref().and_then(|_| washed.next());
-        // **And one more exactly when there is a Bar**, in the order
-        // `Self::washed` yielded.
-        let the_bar = self.the_bar.as_ref().and_then(|_| washed.next());
+        // **And one more exactly when the Bar's matches have risen**, in the
+        // order `Self::washed` yielded.
+        let the_bars_matches = self.the_bars_matches.as_ref().and_then(|_| washed.next());
         // **And the panel's own rasters, by count**, in the order `Self::washed`
         // yielded them: each task's square, then the card a person opened.
         let the_panels: Vec<_> = (0..self.panel.washed.len())
@@ -214,25 +214,19 @@ impl DesktopPicture {
             }
             crate::painted::paint(frame, &[], &picture.inked)?;
         }
-        // **The alo Bar, above everything the Dock drew.** It is the surface a
-        // person is typing into, so anything over it would hide the words they
-        // are reading back — and it opens over the canvas by the design's own
-        // frame rather than inside the Dock.
+        // **The alo Bar's matches, above everything the Dock drew.** They rise
+        // from the field a person is typing into, so anything over them would
+        // hide what they are choosing between.
         //
-        // **This is the field `every_picture_the_desktop_carries_is_painted`
-        // caught on the day it was added**, which is the same fault that file
-        // was written for: a picture laid out, rastered, carried on every
-        // frame, and read by nothing here. The market cost a release that way.
+        // **This is the kind of field `every_picture_the_desktop_carries_is_painted`
+        // exists for**: a picture laid out, rastered, carried on every frame,
+        // and read by nothing here. The market cost a release that way.
         //
-        // **Over a dimmed screen** since 2026-11-01 (`561:308`): the canvas
-        // colour at 45 % over everything drawn so far, the Dock included, and
-        // the panel over that. Everything on the panel is in its raster.
-        if let Some(picture) = self.the_bar.as_ref() {
-            let (area, colour, per_cent) = picture.veil;
-            crate::painted::veil(frame, area, colour, f32::from(per_cent) / 100.0)?;
-            if let Some((texture, area)) = the_bar {
-                crate::painted::wash(frame, texture, *area)?;
-            }
+        // **Over no veil**: the list is non-modal, as the Dock's own popovers
+        // are, so nothing behind it is dimmed (the owner's decision of
+        // 2026-11-11). The centred launcher's dimmed screen went with it.
+        if let Some((texture, area)) = the_bars_matches {
+            crate::painted::wash(frame, texture, *area)?;
         }
         for window in [&self.running, &self.filling] {
             if !window.is_empty() {

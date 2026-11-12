@@ -4,7 +4,7 @@
 //! `09 · Find, open, or ask` (`78:1671`): a panel over the canvas with a
 //! heading, the field, a line saying where the results came from, and rows of
 //! `Name · where it is`. This file is the half that decides what those rows
-//! are; `crate::bar_raster` draws them and `crate::a_key_reaches_the_bar`
+//! are; `crate::bar_matches_raster` draws them and `crate::a_key_reaches_the_bar`
 //! carries one out.
 //!
 //! # Applications first, and the rows say which kind each is

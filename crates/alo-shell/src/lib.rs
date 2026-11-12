@@ -316,7 +316,8 @@ mod an_alo_windows_edge;
 mod an_application_verb_is_carried_out;
 /// Closing a running task asks: Stop and close, or Cancel (ADR 0139).
 mod asking_before_closing;
-pub mod bar_raster;
+/// The alo Bar's matches, rising from the Dock's field.
+mod bar_matches_raster;
 mod dock_room;
 mod dock_windows;
 mod drawing;
@@ -562,6 +563,8 @@ mod the_approval_card;
 /// The alo mark at the top of the approval card.
 mod the_approval_cards_icons;
 pub mod the_bar_finds;
+/// Whether the alo Bar is open: whether the Dock's field has the keyboard.
+mod the_bar_is_open;
 mod the_bars_pressable_slots;
 mod the_bars_seat;
 pub mod the_cards_words;
@@ -603,8 +606,12 @@ pub use the_first_account::{ASecret, OnTheSheet, TheAccountSheet, TheAccountShow
 /// Closing alo's terminal: at once when idle, after a question when a command
 /// is running.
 mod closing_the_terminal;
+/// What a screen reader is told the Bar's matches are.
+mod the_bars_matches_as_read;
 mod the_closed_windows_notice;
 pub mod the_closed_windows_words;
+/// The end of a line of typing that fits in a field.
+mod the_end_that_fits;
 pub mod the_first_start;
 mod the_first_starts_icons;
 mod the_formats_are_told;
@@ -614,6 +621,8 @@ mod the_language_a_person_chose;
 pub mod the_language_set_up_in;
 pub mod the_languages_offered;
 mod the_launchers_icons;
+/// The alo Bar's rows, drawn the same wherever the Bar is shown.
+mod the_launchers_rows;
 pub mod the_machines_keyboard;
 pub mod the_markets_words;
 mod the_panel_reveals;
@@ -694,6 +703,8 @@ mod what_an_application_act_asks_for_tests;
 /// What becomes of a reply sent from a task window's reply box.
 pub mod what_becomes_of_a_reply;
 pub mod what_the_agent_may_reach;
+/// What the alo Bar shows, as a frame hands it over.
+pub mod what_the_bar_shows;
 mod what_the_dock_has_open;
 /// One keypress, read as what a person typed: the compositor's half of the
 /// terminal's keyboard, where the keymap is. `alo_terminal` turns the answer
@@ -701,9 +712,11 @@ mod what_the_dock_has_open;
 mod what_the_keyboard_said;
 mod what_the_seat_made_of_its_input;
 mod what_the_server_tells_a_frame;
+/// Where a list opened from the Dock may go.
+mod where_a_popover_is_kept;
 mod where_a_task_window_opens;
 mod where_a_window_opens;
-pub mod where_the_bar_opens;
+mod where_the_bars_matches_rise;
 mod where_the_dock_is;
 mod where_the_market_opens;
 pub mod which_area_has_the_keyboard;

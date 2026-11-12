@@ -37,12 +37,12 @@ use crate::{DesktopLook, FillingShows, FillingWindow, RenderError, RunningShows,
 /// The desktop for one display, ready to paint.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct DesktopPicture {
-    /// The alo Bar's panel, when somebody has it open.
+    /// The alo Bar's matches rising from the Dock's field, when somebody is
+    /// typing there — the owner's decision of 2026-11-11.
     ///
     /// **Drawn above everything but the task windows**, because it is what the
-    /// keyboard is in: a panel a person is typing into, covered by anything,
-    /// is a panel they cannot read what they typed in.
-    pub(crate) the_bar: Option<crate::bar_raster::BarPicture>,
+    /// keyboard is in, and over nothing dimmed, as the Dock's own popovers are.
+    pub(crate) the_bars_matches: Option<crate::bar_matches_raster::MatchesPicture>,
     /// The display size it was laid out for.
     pub(crate) size: (i32, i32),
     /// The dock, or nothing when a window needs the room it sits in and the
@@ -205,7 +205,7 @@ pub(crate) struct Shown<'a> {
     pub(crate) the_docks_name_is_for: Option<usize>,
     /// The alo Bar's panel, from
     /// [`crate::nested_desktop::DesktopFrame::the_bar`].
-    pub(crate) the_bar: Option<crate::bar_raster::TheBarOnTheDisplay<'a>>,
+    pub(crate) the_bar: Option<crate::what_the_bar_shows::TheBarOnTheDisplay<'a>>,
 }
 
 /// What the running window shows, as a panel.
@@ -325,7 +325,15 @@ pub(crate) fn picture(
     // whole screen rather than needing part of it. A
     // dock drawn over a full-screen video would be the thing the edge reveal
     // exists to make unnecessary.
-    let showing = if filling_the_screen {
+    // **A person typing in the Dock's field sees the Dock**, over a window
+    // filling the screen and whatever the person chose about it giving way:
+    // the field is where their words are, and the matches rise from it. The
+    // owner's decision of 2026-11-11 put the keyboard there for Super+Space
+    // too, which is the road a person in a full-screen window takes.
+    let the_bar_rises = the_bar.is_some();
+    let showing = if the_bar_rises {
+        Showing::Shown
+    } else if filling_the_screen {
         Showing::Hidden
     } else {
         dock.showing(crate::dock_room::the_room(dock_picture.band, windows))
@@ -505,23 +513,39 @@ pub(crate) fn picture(
     //
     // **At this display's scale**, the one the Dock above was drawn at, so a
     // dense screen draws the Bar twice the pixels rather than half the size.
-    let the_bar = the_bar.and_then(|open| {
-        crate::bar_raster::picture(
-            &open,
-            palette,
-            // **The canvas's own colour**, which the screen behind the
-            // launcher is dimmed toward (`561:308`).
-            {
-                let surface = look.surface();
-                [surface.red(), surface.green(), surface.blue()]
-            },
-            fonts,
-            crate::display_scale::DisplayScale::of_per_cent(display_scale),
+    let the_bars_matches = the_bar.and_then(|open| {
+        let scale = crate::display_scale::DisplayScale::of_per_cent(display_scale);
+        crate::dock_raster::where_this_slot_is(
+            &dock_picture.standing,
+            &alo_dock::places::WhatIsHere::TheComposer,
         )
+        .and_then(|field| {
+            crate::bar_matches_raster::picture(
+                &open,
+                palette,
+                crate::bar_matches_raster::WhereItRisesFrom {
+                    dock: crate::where_the_bars_matches_rise::TheFieldOnTheDock {
+                        field,
+                        band: dock_picture.band,
+                        edge: dock_picture.layout.edge(),
+                    },
+                    // **Clear of the panel's column**, the one *More apps*
+                    // keeps clear of, read the same way.
+                    clear_of: crate::panel_raster::the_column_it_reserves(
+                        look,
+                        size,
+                        crate::panel_raster::the_edge_for(look.reading()),
+                        scale,
+                    ),
+                },
+                fonts,
+                scale,
+            )
+        })
     });
 
     Ok(DesktopPicture {
-        the_bar,
+        the_bars_matches,
         tasks,
         market,
         top_controls,
