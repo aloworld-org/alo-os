@@ -1,9 +1,9 @@
 //! The keepers Settings calls, each exactly as its own crate offers it.
 //!
 //! `alo_appearance::keeping`, `alo_dock::keeping`, `alo_shortcuts::keeping`,
-//! `alo_formats::keeping` and `alo_access::keeping` have one shape and five sets
-//! of types. This names that shape once, so `crate::settings_kept` walks all
-//! five the same road, and
+//! `alo_formats::keeping`, `alo_access::keeping` and `alo_applications::keeping`
+//! have one shape and six sets of types. This names that shape once, so
+//! `crate::settings_kept` walks all six the same road, and
 //! holds nothing of its own: every function body is one call into the crate
 //! that owns the file.
 
@@ -206,6 +206,49 @@ impl Keeper for ShortcutsKept {
 
     fn put_back_as_shipped(at: &Path) -> Result<(), Self::NotWritten> {
         alo_shortcuts::keeping::put_back_as_shipped(at)
+    }
+
+    fn did_not_read(refused: &Self::NotWritten) -> Option<Self::NotRead> {
+        refused.did_not_read()
+    }
+
+    fn not_read_said(why: &Self::NotRead, strings: &Strings) -> String {
+        why.said(strings).into_text()
+    }
+
+    fn not_written_said(why: &Self::NotWritten, strings: &Strings) -> String {
+        why.said(strings).into_text()
+    }
+}
+
+/// What opens what for this person — their default browser and mail
+/// application among it: `alo_applications::keeping`, `what-opens-what.toml`.
+///
+/// **The whole file is read and written back**, so a choice of what opens a
+/// kind of file, made some other way, is kept as it was when a person changes
+/// their default browser here.
+#[derive(Debug)]
+pub(crate) struct LinksKept;
+
+impl Keeper for LinksKept {
+    type Drawn = alo_applications::Chosen;
+    type NotRead = alo_applications::FileNotRead;
+    type NotWritten = alo_applications::FileNotWritten;
+
+    fn shipped() -> alo_applications::Chosen {
+        alo_applications::Chosen::untouched()
+    }
+
+    fn at_sign_in(at: &Path) -> (alo_applications::Chosen, Option<Self::NotRead>) {
+        alo_applications::keeping::at_sign_in(at)
+    }
+
+    fn keep(at: &Path, drawn: &alo_applications::Chosen) -> Result<(), Self::NotWritten> {
+        alo_applications::keeping::keep(at, drawn)
+    }
+
+    fn put_back_as_shipped(at: &Path) -> Result<(), Self::NotWritten> {
+        alo_applications::keeping::put_back_as_shipped(at)
     }
 
     fn did_not_read(refused: &Self::NotWritten) -> Option<Self::NotRead> {

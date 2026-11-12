@@ -1,6 +1,10 @@
-//! The eight categories down the side of Settings, in the two groups the
+//! The nine categories down the side of Settings, in the two groups the
 //! owner's redesign of 2026-10-31 draws them in, and which category each
 //! section of rows belongs to.
+//!
+//! **Default apps is the ninth**, between Appearance and Region and time, as
+//! the owner approved it on 2026-11-12 (frame `25:2`,
+//! `docs/design/default-apps-and-open-with.md`).
 //!
 //! `docs/features.md`, the owner's decision of 2026-10-31: *Settings is a
 //! window with a sidebar of categories — alo: alo and AI, Folders alo can use,
@@ -52,6 +56,8 @@ pub enum SettingsCategory {
     Terminal,
     /// The accent and the Dock.
     Appearance,
+    /// Which application opens a web link, and which an email address.
+    DefaultApps,
     /// How dates and times are written, and the time zone.
     RegionAndTime,
     /// The shortcuts.
@@ -61,13 +67,14 @@ pub enum SettingsCategory {
 }
 
 impl SettingsCategory {
-    /// All eight, in the order the side column draws them.
-    pub const ALL: [Self; 8] = [
+    /// All nine, in the order the side column draws them.
+    pub const ALL: [Self; 9] = [
         Self::AloAndAi,
         Self::FoldersAloCanUse,
         Self::RunningCode,
         Self::Terminal,
         Self::Appearance,
+        Self::DefaultApps,
         Self::RegionAndTime,
         Self::KeyboardAndShortcuts,
         Self::Accessibility,
@@ -82,6 +89,7 @@ impl SettingsCategory {
             SettingsSection::HowCodeRuns => Self::RunningCode,
             SettingsSection::Terminal => Self::Terminal,
             SettingsSection::Appearance | SettingsSection::Dock => Self::Appearance,
+            SettingsSection::DefaultApps => Self::DefaultApps,
             SettingsSection::Formats | SettingsSection::TimeZone => Self::RegionAndTime,
             SettingsSection::Shortcuts => Self::KeyboardAndShortcuts,
             SettingsSection::Accessibility => Self::Accessibility,
@@ -95,6 +103,7 @@ impl SettingsCategory {
                 SettingsGroup::Alo
             }
             Self::Appearance
+            | Self::DefaultApps
             | Self::RegionAndTime
             | Self::KeyboardAndShortcuts
             | Self::Accessibility => SettingsGroup::ThisComputer,
@@ -110,6 +119,7 @@ impl SettingsCategory {
             Self::RunningCode => w::RUNNING_CODE,
             Self::Terminal => w::TERMINAL,
             Self::Appearance => w::APPEARANCE,
+            Self::DefaultApps => w::DEFAULT_APPS,
             Self::RegionAndTime => w::REGION_AND_TIME,
             Self::KeyboardAndShortcuts => w::KEYBOARD_AND_SHORTCUTS,
             Self::Accessibility => w::ACCESSIBILITY,
@@ -125,6 +135,7 @@ impl SettingsCategory {
             Self::RunningCode => w::RUNNING_CODE_IS,
             Self::Terminal => w::TERMINAL_IS,
             Self::Appearance => w::APPEARANCE_IS,
+            Self::DefaultApps => w::DEFAULT_APPS_IS,
             Self::RegionAndTime => w::REGION_AND_TIME_IS,
             Self::KeyboardAndShortcuts => w::KEYBOARD_AND_SHORTCUTS_IS,
             Self::Accessibility => w::ACCESSIBILITY_IS,
@@ -140,6 +151,11 @@ impl SettingsCategory {
             Self::RunningCode => I::Code,
             Self::Terminal => I::Terminal,
             Self::Appearance => I::Contrast,
+            // **Borrowed, and said so**: frame `25:2` draws its side column
+            // with no icons at all, so the design names none for this
+            // category. A file's sign is the nearest of the window's own to
+            // *what opens what* (`docs/design/default-apps-and-open-with.md`).
+            Self::DefaultApps => I::File,
             Self::RegionAndTime => I::Globe,
             Self::KeyboardAndShortcuts => I::Keyboard,
             Self::Accessibility => I::Access,
@@ -181,7 +197,7 @@ mod tests {
     use super::*;
 
     /// **Every section is on a page**, and the pages are in the order the
-    /// design draws them: four about alo, then four about this computer.
+    /// design draws them: four about alo, then five about this computer.
     #[test]
     fn every_section_has_a_page_in_the_order_drawn() {
         let groups: Vec<SettingsGroup> =
@@ -197,11 +213,13 @@ mod tests {
                 SettingsGroup::ThisComputer,
                 SettingsGroup::ThisComputer,
                 SettingsGroup::ThisComputer,
+                SettingsGroup::ThisComputer,
             ]
         );
         for section in [
             SettingsSection::Answering,
             SettingsSection::Appearance,
+            SettingsSection::DefaultApps,
             SettingsSection::Formats,
             SettingsSection::TimeZone,
             SettingsSection::Dock,
@@ -230,6 +248,16 @@ mod tests {
         assert_eq!(
             SettingsCategory::Terminal.next(),
             SettingsCategory::Appearance
+        );
+        // **Default apps is between Appearance and Region and time**, the
+        // order frame `25:8` draws.
+        assert_eq!(
+            SettingsCategory::Appearance.next(),
+            SettingsCategory::DefaultApps
+        );
+        assert_eq!(
+            SettingsCategory::DefaultApps.next(),
+            SettingsCategory::RegionAndTime
         );
     }
 }

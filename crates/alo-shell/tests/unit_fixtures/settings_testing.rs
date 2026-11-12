@@ -127,6 +127,23 @@ impl Machine {
     }
 }
 
+/// A browser and a mail application, each declaring its kind of link — what
+/// Settings → Default apps is told a machine has, so its rows are in the
+/// tests that enumerate every row.
+pub(crate) fn a_browser_and_a_mail_app() -> crate::settings_default_apps::WhatCouldOpenLinks {
+    use alo_applications::Application;
+    let firefox = Application::called("org.mozilla.firefox", "Firefox").unwrap();
+    let thunderbird = Application::called("org.mozilla.Thunderbird", "Thunderbird").unwrap();
+    let mut declared = alo_applications::Declared::nothing();
+    declared.declares_media_types(&firefox, ["x-scheme-handler/https"]);
+    declared.declares_media_types(&thunderbird, ["x-scheme-handler/mailto"]);
+    crate::settings_default_apps::WhatCouldOpenLinks {
+        installed: alo_applications::Installed::holding([firefox, thunderbird]),
+        declared,
+        artwork: std::sync::Arc::new(alo_dock::artwork::TheArtwork::none()),
+    }
+}
+
 /// A person's machine as the module header describes it.
 pub(crate) fn a_persons_machine(what: &str) -> Machine {
     let held = tempfile::Builder::new()

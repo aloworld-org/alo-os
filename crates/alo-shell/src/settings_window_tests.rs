@@ -196,7 +196,8 @@ fn copied(at: &Path, into: &Path) -> PathBuf {
 #[test]
 fn every_setting_the_machine_has_is_in_one_window() {
     let machine = a_persons_machine("one-window");
-    let window = machine.opened();
+    let mut window = machine.opened();
+    window.the_applications_are(crate::settings_testing::a_browser_and_a_mail_app());
     let rows = window.rows(noon());
 
     let answers: Vec<&SettingsRow> = rows
@@ -274,6 +275,21 @@ fn every_setting_the_machine_has_is_in_one_window() {
     };
     assert_eq!(in_section(SettingsSection::Appearance), accents);
     assert_eq!(in_section(SettingsSection::Dock), edges);
+    // **The browser, then the mail application**, each an installed handler
+    // of its kind of link (frame `25:2`).
+    assert_eq!(
+        in_section(SettingsSection::DefaultApps),
+        [
+            SettingsRow::DefaultFor(
+                alo_applications::LinkKind::Web,
+                "org.mozilla.firefox".to_owned()
+            ),
+            SettingsRow::DefaultFor(
+                alo_applications::LinkKind::Mail,
+                "org.mozilla.Thunderbird".to_owned()
+            ),
+        ]
+    );
     assert_eq!(in_section(SettingsSection::Shortcuts), actions);
     let (grant, pairing) = the_two_rows(&window);
     assert!(matches!(grant, SettingsRow::Granted(Row::Grant(_))));
@@ -340,6 +356,17 @@ fn every_setting_the_machine_has_is_in_one_window() {
             SettingsRow::WhenThereIsNoRoom(alo_appearance::WhenThereIsNoRoom::GlideToEmptySpace),
             SettingsRow::Edge(Dock::shipped().edge()),
             SettingsRow::Hiding(Dock::shipped().hiding()),
+            // **What opens each kind of link now**, ringed though the person
+            // has chosen nothing: the only installed handler of each is what
+            // a link opens in, and the ring says so rather than nothing.
+            SettingsRow::DefaultFor(
+                alo_applications::LinkKind::Web,
+                "org.mozilla.firefox".to_owned()
+            ),
+            SettingsRow::DefaultFor(
+                alo_applications::LinkKind::Mail,
+                "org.mozilla.Thunderbird".to_owned()
+            ),
             // **The region and the time zone are not marked on a page**: each
             // is chosen in its list, and the list opens on what the file says
             // — for nobody having chosen a region, the language's own way.
@@ -381,6 +408,7 @@ fn no_choice_the_old_window_offered_is_dropped() {
     let strings = words();
     let door = CountingDoor::revoking();
     let mut window = machine.opened();
+    window.the_applications_are(crate::settings_testing::a_browser_and_a_mail_app());
     let open = window.open().unwrap();
     let pairings = open.pairings();
     let mut before: Vec<SettingsRow> = Vec::new();
@@ -440,6 +468,14 @@ fn no_choice_the_old_window_offered_is_dropped() {
     // **Whether applications describe themselves**, added 2026-11-11: on as a
     // machine comes, so it is a row a person must always be able to reach.
     before.push(SettingsRow::AppsDescribeThemselves);
+    // **Every installed browser and mail application**, added 2026-11-12 with
+    // the Default apps page.
+    before.extend(open.default_apps.rows());
+    assert_eq!(
+        open.default_apps.rows().len(),
+        2,
+        "the control: the machine has a browser and a mail application"
+    );
     assert!(
         before.len() > 30,
         "the control: today's window had dozens of choices on this machine"
@@ -1723,13 +1759,13 @@ fn moving_between_pages_rows_and_sections_changes_nothing() {
     assert!(!window.is_in_the_page());
     assert_eq!(window.focused(noon()), None);
     let mut pages = Vec::new();
-    for _ in 0..9 {
+    for _ in 0..10 {
         pages.push(window.category().unwrap());
         press(&mut window, SettingsKey::Next);
     }
-    assert_eq!(pages[..8], SettingsCategory::ALL);
+    assert_eq!(pages[..9], SettingsCategory::ALL);
     assert_eq!(
-        pages[8],
+        pages[9],
         SettingsCategory::Accessibility,
         "it stays on the last"
     );

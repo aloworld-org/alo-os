@@ -16,7 +16,8 @@
 use smithay::utils::Rectangle;
 
 use crate::settings_drawn_controls::{
-    ASegmented, AnEndShaped, a_choice, a_lead, a_risk, a_switch, a_tag, the_swatches,
+    ASegmented, AnEndShaped, a_choice, a_lead, a_risk, a_switch, a_tag, an_applications_mark,
+    the_swatches,
 };
 use crate::settings_drawn_page::{ATargetDrawn, Drawn, Laying, ThePageDrawn, moved_down, text};
 use crate::settings_measures as m;
@@ -38,6 +39,9 @@ pub(crate) fn a_row(
         row.kind,
         TheKind::ANestedChoice { .. } | TheKind::AnAddingRow
     );
+    // **A row choosing an application** is frame `25:28`: its ring, the
+    // application's picture, then its name and line, centred in 72.
+    let with_an_application = row.application.is_some();
     let (before, beside, above, gap) = if nested {
         (
             laying.px(m::A_NESTED_ROW_IN),
@@ -49,7 +53,11 @@ pub(crate) fn a_row(
         (
             laying.px(m::BESIDE_A_ROW),
             laying.px(m::BESIDE_A_ROW),
-            laying.px(m::ABOVE_A_ROW),
+            laying.px(if with_an_application {
+                m::ABOVE_AN_APPLICATIONS_NAME
+            } else {
+                m::ABOVE_A_ROW
+            }),
             laying.px(m::INSIDE_A_ROW),
         )
     };
@@ -65,6 +73,12 @@ pub(crate) fn a_row(
             laying.px(m::A_NESTED_CHOICE)
         }
         _ => 0,
+    };
+    // The ring, the gap and the picture, as `25:29` and `25:31` sit.
+    let mark = if with_an_application {
+        mark + gap + laying.px(m::AN_APPLICATIONS_PICTURE)
+    } else {
+        mark
     };
     let x = if mark > 0 {
         mark_at + mark + gap
@@ -193,6 +207,12 @@ pub(crate) fn a_row(
             tag,
         );
     }
+    // `25:34` sits straight under `25:33`, with nothing between.
+    let under_the_title = if with_an_application {
+        0
+    } else {
+        laying.px(m::UNDER_A_ROWS_TITLE)
+    };
     for line_words in &row.lines {
         let shaped = laying.words(
             line_words,
@@ -200,13 +220,7 @@ pub(crate) fn a_row(
             words_wide,
             (palette.surface, palette.muted),
         );
-        y = text(
-            out,
-            x,
-            y + laying.px(m::UNDER_A_ROWS_TITLE),
-            shaped,
-            line_words,
-        );
+        y = text(out, x, y + under_the_title, shaped, line_words);
     }
     if let Some(note) = &row.note {
         let icon = laying.px(m::A_NOTES_ICON) + laying.px(m::AFTER_A_NOTES_ICON);
@@ -275,6 +289,8 @@ pub(crate) fn a_row(
     }
     let least = laying.px(if matches!(row.kind, TheKind::AnAddingRow) {
         m::AN_OPENING_ROW_AT_LEAST
+    } else if with_an_application {
+        m::A_ROW_WITH_AN_APPLICATION
     } else {
         m::A_ROW_AT_LEAST
     });
@@ -287,14 +303,15 @@ pub(crate) fn a_row(
         .max(top + 2 * above + segmented_tall.max(button_tall));
     // **A row that is not a choice is centred in its height**, which the
     // frames draw `items-center`; a choice keeps its words at the top.
-    let centred = !matches!(
-        row.kind,
-        TheKind::AChoice { .. }
-            | TheKind::ANestedChoice { .. }
-            | TheKind::ASwitch(_)
-            | TheKind::ASwatches
-            | TheKind::ASlider(_)
-    );
+    let centred = with_an_application
+        || !matches!(
+            row.kind,
+            TheKind::AChoice { .. }
+                | TheKind::ANestedChoice { .. }
+                | TheKind::ASwitch(_)
+                | TheKind::ASwatches
+                | TheKind::ASlider(_)
+        );
     let lower = if centred {
         ((bottom - top) - (y - top) - above) / 2
     } else {
@@ -315,7 +332,19 @@ pub(crate) fn a_row(
     };
 
     // The start.
+    if let Some(application) = &row.application {
+        let ring = laying.px(m::A_CHOICE);
+        let chosen = matches!(row.kind, TheKind::AChoice { chosen: true });
+        a_choice(out, laying, (mark_at, centre_of_row, ring), chosen);
+        an_applications_mark(
+            out,
+            laying,
+            (mark_at + ring + gap, centre_of_row),
+            application,
+        );
+    }
     match (row.kind, row.lead) {
+        _ if with_an_application => {}
         (_, Some(icon)) => a_lead(out, laying, (mark_at, centre_of_row), icon),
         (TheKind::AChoice { chosen } | TheKind::ANestedChoice { chosen }, None) => {
             a_choice(out, laying, (mark_at, centre_of_title, mark), chosen);
