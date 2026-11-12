@@ -196,8 +196,10 @@ type AlosOwnWindows = (
 /// Built once a frame by [`Server::place_every_window_that_just_opened`] and
 /// handed to each placing — the first, and `crate::a_window_that_grows_is_placed_again`'s.
 pub(crate) struct ThisFramesView {
-    /// What the person is looking at, on the plane, where any glide ends.
-    view: Rectangle<i32, Logical>,
+    /// **What the person is looking at, less the Dock**, on the plane, where
+    /// any glide ends: the room a window alo places lands wholly inside
+    /// (`crate::the_room_alo_places_a_window_in`).
+    pub(crate) room: Rectangle<i32, Logical>,
     /// The fixed controls, on the plane.
     fixed: Vec<Rectangle<i32, Logical>>,
     /// The title strip above every window at this display's scale.
@@ -283,6 +285,11 @@ impl Server {
             let Some(wanted) = the_size_it_wants(&surface) else {
                 continue;
             };
+            // **Too big for the room: asked to fit** (rule 6), and placed at the
+            // size it has until it does — an application may refuse, and one
+            // that settles is placed again by the growth rule
+            // (`crate::the_room_alo_places_a_window_in`).
+            let _asked = self.ask_it_to_fit(&surface, wanted, frame.room, frame.strip);
             // **Rule 5 as a choice** (amended 2026-11-07): the person's own
             // opening, with no room in view, glides to the nearest empty space
             // where they kept the default. Asked whatever the choice, because a
@@ -325,12 +332,15 @@ impl Server {
         // view*. Zoomed out, this is larger than the display; zoomed in, it is
         // smaller.
         //
-        // **Not reduced by the fixed controls.** The contract's §2 has them
-        // floating over the workspace: a window may sit partly under the Dock,
-        // and what it may not do is have its handle completely covered, which
-        // is the `fixed` list's own test. Subtracting them here would forbid
-        // what the contract allows, shrink every Place by the Dock's thickness
-        // for no rule's sake, and leave nothing for that list to catch.
+        // **Reduced by the Dock, and by nothing else.** This said the view was
+        // not reduced by any fixed control, because the contract's §2 has them
+        // floating over the workspace and a person may put a window partly
+        // under the Dock. They still may. But a window **alo** places is
+        // placed in rule 6's *usable display area*, and on 2026-11-12 Firefox
+        // was placed with its bottom under the Dock and off the screen
+        // (`crate::the_room_alo_places_a_window_in`). The panel's column, the
+        // top controls and the egress indicator stay in `fixed`, which asks
+        // only that the new window's handle is not completely under one.
         let view = Rectangle::new(
             Point::<i32, Logical>::from((at.x, at.y)),
             Size::<f64, Logical>::from((
@@ -366,8 +376,15 @@ impl Server {
             .filter(|control| control.size.w > 0 && control.size.h > 0)
             .filter_map(|control| onto_the_plane(control, at, zoom))
             .collect();
+        let dock = self
+            .fixed_controls
+            .get(display)
+            .and_then(crate::canvas_fixed_controls::FixedControls::labelled)
+            .and_then(|drawn| drawn.dock_band)
+            .filter(|band| band.size.w > 0 && band.size.h > 0)
+            .and_then(|band| onto_the_plane(band, at, zoom));
         Some(ThisFramesView {
-            view,
+            room: crate::the_room_alo_places_a_window_in::the_room_the_dock_leaves(view, dock),
             fixed,
             strip,
             reading,
@@ -385,13 +402,22 @@ impl Server {
         frame: &ThisFramesView,
     ) -> Point<i32, Logical> {
         let (open, active) = self.the_windows_a_new_one_opens_among(surface);
-        let point = frame.strip.where_a_window_opens(
-            frame.view,
+        let first = frame.strip.where_a_window_opens(
+            frame.room,
             &open,
             active,
             wanted,
             frame.reading,
             &frame.fixed,
+        );
+        // **Wholly inside the room the Dock leaves**, moved the least it must
+        // be — or, too big for it, with its strip at the room's corner
+        // (`crate::the_room_alo_places_a_window_in`).
+        let point = crate::the_room_alo_places_a_window_in::kept_inside(
+            first,
+            wanted,
+            frame.room,
+            frame.strip,
         );
         if !theirs {
             return point;
@@ -399,7 +425,7 @@ impl Server {
         self.room_for_what_the_person_opened(
             point,
             &crate::room_in_a_full_view::AnOpening {
-                view: frame.view,
+                view: frame.room,
                 open: &open,
                 wanted,
                 fixed: &frame.fixed,
