@@ -29,12 +29,7 @@ pub(crate) enum ALaunchersIcon {
 
 impl ALaunchersIcon {
     /// Every icon, in the order the record lists them.
-    pub(crate) const ALL: [Self; 4] = [
-        Self::Search,
-        Self::Enter,
-        Self::Cloud,
-        Self::Alo,
-    ];
+    pub(crate) const ALL: [Self; 4] = [Self::Search, Self::Enter, Self::Cloud, Self::Alo];
 
     /// The file, as the design exported it.
     const fn svg(self) -> &'static str {

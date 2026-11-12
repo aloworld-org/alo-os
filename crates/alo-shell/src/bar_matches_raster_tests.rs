@@ -9,8 +9,8 @@
 //! list's first line.
 
 use super::*;
-use crate::what_the_bar_shows::{TheAskRow, TheLaunchersWords};
 use crate::the_bar_finds::{AResult, WhatARowDoes};
+use crate::what_the_bar_shows::{TheAskRow, TheLaunchersWords};
 use smithay::utils::Size;
 
 fn a_palette() -> crate::desktop_look::DesktopPalette {
