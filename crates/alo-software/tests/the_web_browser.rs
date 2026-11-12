@@ -25,14 +25,17 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::time::{Duration, SystemTime};
 
-use alo_applications::{Application, Link, LinkKind};
+use alo_applications::{
+    Application, Chosen, Declared, Installed, Link, LinkBecause, LinkKind, PassedOver,
+    WhatOpensWhat, keeping,
+};
 use alo_capability::{Agent, Applicant, Ask, Facility, Grant, Reach, is_a_persons_own};
 use alo_egress::Indicator;
 use alo_software::{
-    Because, Bound, Configuration, Configured, Enabled, Failed, NeverSet, NotConfigured, Role,
-    Setting, Shipped, SourceName, Tool, WhatOpensWebAddresses, browser_configuration, install,
-    installing, remove,
+    Bound, Configuration, Configured, Enabled, Failed, NeverSet, NotConfigured, Role, Setting,
+    Shipped, SourceName, Tool, browser_configuration, install, installing, remove,
 };
+use tempfile::TempDir;
 
 // ---------------------------------------------------------------------------
 // The machine these tests look at.
@@ -151,38 +154,104 @@ fn a_fresh_machine(tool: &AMachineWithABrowser) {
     assert!(indicator.is_quiet());
 }
 
-/// What this machine has installed, as `alo-applications` keeps it.
-fn installed_here(tool: &AMachineWithABrowser) -> alo_applications::Installed {
-    alo_applications::Installed::holding(
-        tool.installed()
-            .unwrap()
-            .iter()
-            .map(|identifier| Application::identified(identifier).unwrap()),
-    )
+/// What a desktop entry for this application lists under `MimeType`, on the
+/// machine these tests stand in for.
+///
+/// **The browser declares web links, as Firefox's own entry does**, and that
+/// declaration — not its being the one this machine ships — is what makes it
+/// the answer. **The terminal is written as declaring them too**, which no
+/// terminal this machine ships does: it is there so that *a link is never
+/// handed to a terminal* is tested against a terminal that asks for links,
+/// rather than one that merely never came up.
+fn what_its_entry_declares(identifier: &str) -> &'static str {
+    let shipped = Shipped::decided().unwrap();
+    if identifier == shipped.the(Role::WebBrowser).application().identifier() {
+        "text/html;x-scheme-handler/http;x-scheme-handler/https;"
+    } else if identifier == shipped.the(Role::Terminal).application().identifier() {
+        "x-scheme-handler/http;x-scheme-handler/https;"
+    } else {
+        ""
+    }
+}
+
+/// This machine as the open-with portal reads it: a desktop entry for every
+/// application the tool has installed, read back by `alo-installed`, and the
+/// person's own `what-opens-what.toml`, holding `[links] web = …` when they
+/// chose a browser.
+struct AsThePortalReadsIt {
+    /// Where the entries and the file are; removed when this is dropped.
+    _folder: TempDir,
+    installed: Installed,
+    declared: Declared,
+    chosen: Chosen,
+}
+
+impl AsThePortalReadsIt {
+    fn of(tool: &AMachineWithABrowser, chose_for_the_web: Option<&str>) -> Self {
+        let folder = tempfile::tempdir().unwrap();
+        let entries = folder.path().join("applications");
+        fs::create_dir(&entries).unwrap();
+        for identifier in tool.installed().unwrap() {
+            // An application that declares nothing has no `MimeType` line,
+            // which is how most entries are written.
+            let declares = match what_its_entry_declares(&identifier) {
+                "" => String::new(),
+                listed => format!("MimeType={listed}\n"),
+            };
+            fs::write(
+                entries.join(format!("{identifier}.desktop")),
+                format!("[Desktop Entry]\nType=Application\nName={identifier}\n{declares}"),
+            )
+            .unwrap();
+        }
+        let (installed, declared) = alo_installed::read_with_what_they_open(&[entries]);
+        let file = folder.path().join(keeping::THE_FILE);
+        if let Some(web) = chose_for_the_web {
+            fs::write(&file, format!("format = 1\n\n[links]\nweb = \"{web}\"\n")).unwrap();
+        }
+        let chosen = keeping::read(&file).unwrap();
+        Self {
+            _folder: folder,
+            installed,
+            declared,
+            chosen,
+        }
+    }
+
+    fn what_opens(&self) -> WhatOpensWhat<'_> {
+        WhatOpensWhat::on(&self.installed, &self.declared, &self.chosen)
+    }
 }
 
 // ---------------------------------------------------------------------------
 // It opens web addresses, from any application.
 // ---------------------------------------------------------------------------
 
-/// **The browser a fresh machine ships is what opens web addresses**, and the
-/// answer needs nothing from the grants: since the owner's decision of
-/// 2026-11-12 (*"No — open in my default, but record it"*) a link the person
-/// followed opens in their default browser whichever application it was in,
-/// with no grant over the browser. Until that day this test held a grant per
-/// asking application; the open-with portal now answers the request itself, in
-/// `alo-portals`.
+/// **The browser a fresh machine ships is what opens web links**, because its
+/// desktop entry declares them and the person chose nothing — the answer the
+/// open-with portal gives (`alo_applications::WhatOpensWhat::what_opens_links`).
+/// It needs nothing from the grants: since the owner's decision of 2026-11-12
+/// (*"No — open in my default, but record it"*) a link the person followed
+/// opens in their default browser whichever application it was in, with no
+/// grant over the browser.
+///
+/// **And the person's `[links]` choice wins over it** — here the browser itself,
+/// chosen by name, which is the row Settings → Default apps writes.
 #[test]
 fn the_browser_a_fresh_machine_ships_opens_web_addresses() {
     let tool = AMachineWithABrowser::new();
     a_fresh_machine(&tool);
-    let installed = installed_here(&tool);
-    let shipped = Shipped::decided().unwrap();
-    let answer = WhatOpensWebAddresses::on(&installed, &shipped, None)
-        .what_opens_them()
-        .unwrap();
-    assert_eq!(answer.application(), &the_browser());
-    assert_eq!(answer.because(), &Because::ThisMachineShipsIt);
+    let browser = the_browser();
+
+    let machine = AsThePortalReadsIt::of(&tool, None);
+    let answer = machine.what_opens().what_opens_links(LinkKind::Web).unwrap();
+    assert_eq!(answer.application().identifier(), browser.identifier());
+    assert_eq!(answer.because(), &LinkBecause::ItDeclaresIt);
+
+    let chosen = AsThePortalReadsIt::of(&tool, Some(browser.identifier()));
+    let answer = chosen.what_opens().what_opens_links(LinkKind::Web).unwrap();
+    assert_eq!(answer.application().identifier(), browser.identifier());
+    assert_eq!(answer.because(), &LinkBecause::ThePersonChoseIt);
 }
 
 /// **Only the open web, and an email address, are links.** A path on this
@@ -214,9 +283,10 @@ fn nothing_but_the_open_web_and_an_email_address_is_a_link() {
     );
 }
 
-/// **A person may remove the browser, and then web addresses open in nothing** —
-/// not in the terminal a fresh machine also ships, and not in anything else that
-/// happens to be installed.
+/// **A person may remove the browser, and then web links open in nothing** —
+/// not in the terminal a fresh machine also ships, even though its entry here
+/// declares web links and even where the person chose it under `[links]`, and
+/// not in anything installed that does not declare them.
 #[test]
 fn a_machine_whose_browser_was_removed_opens_web_addresses_in_nothing() {
     let tool = AMachineWithABrowser::new();
@@ -225,16 +295,34 @@ fn a_machine_whose_browser_was_removed_opens_web_addresses_in_nothing() {
     let browser = the_browser();
     remove(browser.clone(), &tool, &mut machine, noon()).unwrap();
 
-    let installed = installed_here(&tool);
     let shipped = Shipped::decided().unwrap();
     let terminal = shipped.the(Role::Terminal).application().identifier();
-    assert!(installed.knows(terminal).is_some());
     assert!(is_a_persons_own(terminal));
 
-    for chosen in [None, Some(terminal)] {
-        let what_opens = WhatOpensWebAddresses::on(&installed, &shipped, chosen);
-        assert!(what_opens.what_opens_them().is_err(), "{chosen:?}");
-    }
+    let nobody_chose = AsThePortalReadsIt::of(&tool, None);
+    assert!(nobody_chose.installed.knows(terminal).is_some());
+    assert!(
+        nobody_chose
+            .declared
+            .declaring_links(LinkKind::Web)
+            .any(|declaring| declaring == terminal),
+        "the terminal's entry was meant to declare web links, so its refusal is tested"
+    );
+    let nothing = nobody_chose
+        .what_opens()
+        .what_opens_links(LinkKind::Web)
+        .unwrap_err();
+    assert_eq!(nothing.passed_over(), None);
+
+    let chose_the_terminal = AsThePortalReadsIt::of(&tool, Some(terminal));
+    let nothing = chose_the_terminal
+        .what_opens()
+        .what_opens_links(LinkKind::Web)
+        .unwrap_err();
+    assert_eq!(
+        nothing.passed_over(),
+        Some(&PassedOver::ATerminal(terminal.to_owned()))
+    );
 
     // With the browser back, the terminal is still never the answer.
     let enabled = Enabled::read(&tool, Bound::Nobodys).unwrap();
@@ -245,14 +333,12 @@ fn a_machine_whose_browser_was_removed_opens_web_addresses_in_nothing() {
     install(&underway, &enabled, wanted, &tool).unwrap();
     indicator.ended_on_its_own(underway);
 
-    let installed = installed_here(&tool);
-    let answer = WhatOpensWebAddresses::on(&installed, &shipped, Some(terminal))
-        .what_opens_them()
-        .unwrap();
-    assert_eq!(answer.application(), &browser);
+    let back = AsThePortalReadsIt::of(&tool, Some(terminal));
+    let answer = back.what_opens().what_opens_links(LinkKind::Web).unwrap();
+    assert_eq!(answer.application().identifier(), browser.identifier());
     assert_eq!(
         answer.because(),
-        &Because::ThisMachineShipsItAndTheChoiceIsAPersonsOwn {
+        &LinkBecause::ItDeclaresItAndTheChoiceIsATerminal {
             chosen: terminal.to_owned()
         }
     );

@@ -1,19 +1,15 @@
 //! Every string this crate can say, and the English beside each one.
 //!
-//! Five groups: what became of an installation, an update or a removal; why one
-//! was refused; the update a person is offered; the one verb an agent
-//! proposes an installation through; and what opens a web address, or why one was
-//! not opened. Every refusal says **what did not happen
+//! Four groups: what became of an installation, an update or a removal; why one
+//! was refused; the update a person is offered; and the one verb an agent
+//! proposes an installation through. Every refusal says **what did not happen
 //! and what a person does about it**, because *nothing was installed* on its
 //! own leaves somebody holding a question.
 //!
-//! # A web address is never read back to a person
-//!
-//! Not one sentence in the web group has a gap for the address. An address
-//! arrives from any application and is written by whoever wrote the page it came
-//! from, so a sentence that quotes it is a sentence somebody outside this machine
-//! helped compose — and the reason it was refused is a fact about the address,
-//! which a person can act on, rather than the address itself, which they cannot.
+//! *A fifth group, what opens a web address, was retired with
+//! `WhatOpensWebAddresses`: which application opens a web link is said by
+//! `alo_applications` and the open-with portal, from the person's `[links]`
+//! choice and what the desktop entries declare.*
 //!
 //! # Nothing a person reads names the machinery
 //!
@@ -36,9 +32,6 @@ pub const APPLICATION: &str = "application";
 
 /// The gap holding the name of a place applications come from.
 pub const SOURCE: &str = "source";
-
-/// The gap holding the identifier of the application a person chose.
-pub const CHOSEN: &str = "chosen";
 
 /// The gap holding the kind of work a person is looking under.
 ///
@@ -345,81 +338,6 @@ pub const VERB_SENTENCE: Word = Word::saying(
      allowed nothing.",
 );
 
-// ---------------------------------------------------------------------------
-// What opens a web address, and why one was not opened.
-// ---------------------------------------------------------------------------
-
-/// The person chose this application to open web addresses.
-pub const OPENS_THE_WEB_CHOSEN: Word = Word::saying(
-    "software.web.opens.chosen",
-    "{application} opens web addresses, because you chose it",
-)
-.noting(
-    "Says which application a web link will open in, when the person has chosen one themselves. \
-     {application} is the application's identifier, like org.mozilla.firefox, and is not \
-     translated.",
-);
-
-/// This machine ships this application for the web, and the person chose none.
-pub const OPENS_THE_WEB_SHIPPED: Word = Word::saying(
-    "software.web.opens.shipped",
-    "{application} opens web addresses. It came with this machine, and you can choose another or \
-     remove it",
-)
-.noting(
-    "Says which application a web link will open in, when the person has not chosen one and so the \
-     application the machine came with answers. The second sentence matters: nothing about it is \
-     fixed. {application} is the application's identifier and is not translated.",
-);
-
-/// The person's choice is not installed, so the shipped application answers.
-pub const OPENS_THE_WEB_INSTEAD: Word = Word::saying(
-    "software.web.opens.instead",
-    "{application} opens web addresses, because {chosen}, which you chose, is not installed. \
-     Install it again, or choose another",
-)
-.noting(
-    "Says which application a web link will open in, when the one the person chose is no longer on \
-     the machine. It says so plainly rather than quietly using something else. {application} and \
-     {chosen} are both identifiers and are not translated.",
-);
-
-/// The person's choice is their own application, which is handed no web address.
-pub const OPENS_THE_WEB_INSTEAD_OF_A_PERSONS_OWN: Word = Word::saying(
-    "software.web.opens.instead-of-a-persons-own",
-    "{application} opens web addresses. {chosen}, which you chose, is yours alone, and a web \
-     address written by somebody else is never handed to it",
-)
-.noting(
-    "Says which application a web link will open in, when the person chose an application that is \
-     theirs alone — a terminal — for it. A web address arrives from whatever page or message \
-     carried it, so it is not handed to an application where whatever arrives runs. {application} \
-     and {chosen} are identifiers and are not translated.",
-);
-
-/// No application on this machine opens web addresses.
-pub const NOTHING_OPENS_THE_WEB: Word = Word::saying(
-    "software.web.nothing-opens",
-    "No application on this machine opens web addresses, so nothing was opened. Install a web \
-     browser, and it opens them",
-)
-.noting(
-    "Said when a web link could not be opened because the machine has no web browser on it — the \
-     person removed the one it came with, which they are allowed to do. Nothing is broken.",
-);
-
-/// The person's choice is gone, and nothing else opens web addresses.
-pub const NOTHING_OPENS_THE_WEB_CHOICE_GONE: Word = Word::saying(
-    "software.web.nothing-opens.choice-gone",
-    "{chosen}, which you chose to open web addresses, is not installed, and nothing else on this \
-     machine opens them. Install it again, or install another web browser",
-)
-.noting(
-    "Said when a web link could not be opened because the application the person chose for web \
-     addresses is gone and the machine has no other web browser. {chosen} is the identifier they \
-     chose and is not translated.",
-);
-
 /// Every word that names something, read inside another sentence.
 pub const THE_NAMES: [Word; 5] = [
     VERB_PURPOSE,
@@ -430,7 +348,7 @@ pub const THE_NAMES: [Word; 5] = [
 ];
 
 /// Every word that is a line or a sentence of its own.
-pub const THE_SENTENCES: [Word; 40] = [
+pub const THE_SENTENCES: [Word; 34] = [
     READ_SENTENCE,
     INSTALLED,
     INSTALLED_UNSANDBOXED,
@@ -451,12 +369,6 @@ pub const THE_SENTENCES: [Word; 40] = [
     VERB_SENTENCE,
     VERB_CHANGES,
     VERB_LEAVES,
-    OPENS_THE_WEB_CHOSEN,
-    OPENS_THE_WEB_SHIPPED,
-    OPENS_THE_WEB_INSTEAD,
-    OPENS_THE_WEB_INSTEAD_OF_A_PERSONS_OWN,
-    NOTHING_OPENS_THE_WEB,
-    NOTHING_OPENS_THE_WEB_CHOICE_GONE,
     THE_APPLICATIONS,
     EACH_ARRIVES_WITH_NOTHING,
     INSTALL_IT,
@@ -475,7 +387,7 @@ pub const THE_SENTENCES: [Word; 40] = [
 
 /// Every refusal, so that a test can hold each of them to saying what did not
 /// happen **and** what a person does about it.
-pub const THE_REFUSALS: [Word; 13] = [
+pub const THE_REFUSALS: [Word; 11] = [
     NOT_ENABLED,
     OUTSIDE_THE_BOUND_BY_AN_ADMINISTRATOR,
     OUTSIDE_THE_BOUND_BY_THIS_PERSON,
@@ -487,8 +399,6 @@ pub const THE_REFUSALS: [Word; 13] = [
     STILL_OPEN,
     NOWHERE_TO_REACH,
     DID_NOT_ANSWER,
-    NOTHING_OPENS_THE_WEB,
-    NOTHING_OPENS_THE_WEB_CHOICE_GONE,
 ];
 
 // ---------------------------------------------------------------------------
@@ -629,7 +539,7 @@ pub const VERB_LEAVES: Word = Word::saying(
 );
 
 /// Every string this crate can say.
-pub const EVERY_WORD: [Word; 45] = [
+pub const EVERY_WORD: [Word; 39] = [
     VERB_PURPOSE,
     VERB_APPLICATION,
     VERB_SOURCE,
@@ -655,12 +565,6 @@ pub const EVERY_WORD: [Word; 45] = [
     VERB_SENTENCE,
     VERB_CHANGES,
     VERB_LEAVES,
-    OPENS_THE_WEB_CHOSEN,
-    OPENS_THE_WEB_SHIPPED,
-    OPENS_THE_WEB_INSTEAD,
-    OPENS_THE_WEB_INSTEAD_OF_A_PERSONS_OWN,
-    NOTHING_OPENS_THE_WEB,
-    NOTHING_OPENS_THE_WEB_CHOICE_GONE,
     THE_APPLICATIONS,
     EACH_ARRIVES_WITH_NOTHING,
     INSTALL_IT,
@@ -752,25 +656,6 @@ mod tests {
         assert!(refusals.is_subset(&sentences));
     }
 
-    /// **No sentence about the web has a gap for the address**, because an
-    /// address is written outside this machine and a sentence that quotes one is
-    /// a sentence whoever wrote it helped compose.
-    #[test]
-    fn no_sentence_about_the_web_reads_an_address_back() {
-        for word in EVERY_WORD {
-            if !word.named().starts_with("software.web.") {
-                continue;
-            }
-            for gap in word.phrase().unwrap().source().gaps() {
-                assert!(
-                    [APPLICATION, CHOSEN].contains(&gap.as_str()),
-                    "{} has a gap called {gap}",
-                    word.named()
-                );
-            }
-        }
-    }
-
     /// The list declares, and a key already taken is not replaced.
     #[test]
     fn the_list_declares_and_nothing_is_replaced() {
@@ -789,7 +674,7 @@ mod tests {
             assert!(word.note().is_some(), "{}", word.named());
             for gap in word.phrase().unwrap().source().gaps() {
                 assert!(
-                    [APPLICATION, SOURCE, CHOSEN, KIND_OF_WORK].contains(&gap.as_str()),
+                    [APPLICATION, SOURCE, KIND_OF_WORK].contains(&gap.as_str()),
                     "{} has a gap called {gap}",
                     word.named()
                 );

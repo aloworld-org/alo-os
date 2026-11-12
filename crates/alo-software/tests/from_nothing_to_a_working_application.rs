@@ -41,18 +41,22 @@ use std::path::PathBuf;
 use std::time::{Duration, SystemTime};
 
 use alo_adapters::{Delivers, Driving, Message, NotDelivered, shipped_adapters};
-use alo_applications::Application;
-use alo_capability::{Agent, Approvals, Given, Grant, Grantee, Proposal, Reach, Refused};
+use alo_applications::{Application, Chosen, Declared, Installed, WhatOpensWhat, keeping};
+use alo_capability::{
+    Agent, Applicant, Approvals, Given, Grant, Grantee, Proposal, Reach, Refused,
+};
 use alo_egress::Indicator;
 use alo_granted::Listing;
+use alo_portals::{LinkNotOpened, link_answered};
 use alo_proxy::{
     ConfigurationAddress, Kept, NotEvaluated, ProxyAddress, Reaching, Road, Scheme, SpokenTo,
     TheEvaluator, TheProxy, the_way,
 };
 use alo_software::{
-    Bound, Configured, Enabled, Failed, Role, Shipped, SourceName, Tool, Wanted,
-    WhatOpensWebAddresses, install, installing, remove,
+    Bound, Configured, Enabled, Failed, Role, Shipped, SourceName, Tool, Wanted, install,
+    installing, remove,
 };
+use tempfile::TempDir;
 use alo_strings::{Language, Said, Strings, Translation};
 
 // ---------------------------------------------------------------------------
@@ -94,9 +98,9 @@ const THE_WALK: &[(&str, &str, &str)] = &[
     ),
     (
         "Open a web link",
-        "software.web.opens.shipped",
-        "org.mozilla.firefox opens web addresses. It came with this machine, and you can choose \
-         another or remove it",
+        "portals.answered.link-opened",
+        "org.gnome.TextEditor asked for https://example.com/march to be opened, and it was \
+         handed to org.mozilla.firefox",
     ),
     (
         "Ask the agent to use the text editor",
@@ -163,9 +167,9 @@ const WHERE_IT_STOPS: &[(&str, &str, &str)] = &[
     ),
     (
         "Open a web link",
-        "software.web.nothing-opens",
-        "No application on this machine opens web addresses, so nothing was opened. Install a \
-         web browser, and it opens them",
+        "applications.links.no-web-browser",
+        "No web browser is installed on this machine, so the web link was not opened. Install \
+         one, and web links open in it",
     ),
     (
         "Ask the agent to use the text editor",
@@ -328,7 +332,73 @@ impl AMachine {
                 .map(|identifier| Application::identified(identifier).unwrap()),
         )
     }
+
+    /// This machine as the open-with portal reads it: a desktop entry for
+    /// every installed application — the browser's declaring web links, as
+    /// Firefox's own does, and the text editor's declaring plain text — read
+    /// back by `alo-installed`, and the person's `what-opens-what.toml`, which
+    /// they have not written.
+    fn as_the_portal_reads_it(&self) -> AsThePortalReadsIt {
+        let browser = Shipped::decided()
+            .unwrap()
+            .the(Role::WebBrowser)
+            .application()
+            .identifier()
+            .to_owned();
+        let folder = tempfile::tempdir().unwrap();
+        let entries = folder.path().join("applications");
+        std::fs::create_dir(&entries).unwrap();
+        for identifier in self.installed.borrow().iter() {
+            let declares = if *identifier == browser {
+                "text/html;x-scheme-handler/http;x-scheme-handler/https;"
+            } else {
+                "text/plain;"
+            };
+            std::fs::write(
+                entries.join(format!("{identifier}.desktop")),
+                format!(
+                    "[Desktop Entry]\nType=Application\nName={identifier}\nMimeType={declares}\n"
+                ),
+            )
+            .unwrap();
+        }
+        let (installed, declared) = alo_installed::read_with_what_they_open(&[entries]);
+        let chosen = keeping::read(&folder.path().join(keeping::THE_FILE)).unwrap();
+        AsThePortalReadsIt {
+            _folder: folder,
+            installed,
+            declared,
+            chosen,
+        }
+    }
 }
+
+/// What [`AMachine::as_the_portal_reads_it`] read.
+struct AsThePortalReadsIt {
+    /// Where the entries are; removed when this is dropped.
+    _folder: TempDir,
+    installed: Installed,
+    declared: Declared,
+    chosen: Chosen,
+}
+
+impl AsThePortalReadsIt {
+    /// What the open-with portal answers when the text editor asks for
+    /// [`THE_LINK`] to be opened.
+    fn the_text_editor_follows_the_link(
+        &self,
+    ) -> Result<alo_portals::LinkOpened, LinkNotOpened> {
+        link_answered(
+            Applicant::named(THE_TEXT_EDITOR),
+            THE_LINK,
+            false,
+            &WhatOpensWhat::on(&self.installed, &self.declared, &self.chosen),
+        )
+    }
+}
+
+/// The web link the person follows in the text editor.
+const THE_LINK: &str = "https://example.com/march";
 
 impl Tool for AMachine {
     fn sources(&self) -> Result<Vec<Configured>, Failed> {
@@ -493,14 +563,17 @@ fn the_walk_from_nothing_to_a_working_application_is_the_table() {
     // 3. Open a web link in the browser, from the text editor. **Nothing is
     //    granted and nothing has to be**: the owner's decision of 2026-11-12
     //    (*"No — open in my default, but record it"*) opens a link the person
-    //    followed in their default browser with no grant over it, and what the
-    //    walk meets is the sentence saying which browser that is.
-    let installed_here = tool.installed_here();
-    let what_opens = WhatOpensWebAddresses::on(&installed_here, &shipped, None);
+    //    followed in their default browser with no grant over it. The browser
+    //    is the default because its desktop entry declares web links and the
+    //    person chose nothing under `[links]`; what the walk meets is the
+    //    portal's own sentence naming who asked, the link and what opened it.
     let browser = shipped.the(Role::WebBrowser).application().identifier();
-    let the_browser = what_opens.what_opens_them().unwrap();
-    assert_eq!(the_browser.application().identifier(), browser);
-    met.said("Open a web link", &the_browser.said(&strings));
+    let opened = tool
+        .as_the_portal_reads_it()
+        .the_text_editor_follows_the_link()
+        .unwrap();
+    assert_eq!(opened.opener().application().identifier(), browser);
+    met.said("Open a web link", &opened.said(&strings));
 
     // 4. Ask the agent to use the reference adapter: the person lets it use the
     //    text editor and the notes folder, it proposes one sentence, the person
@@ -659,9 +732,12 @@ fn where_the_walk_stops_is_the_table_and_nothing_past_it_happens() {
         &Application::identified(THE_TEXT_EDITOR).unwrap(),
     )
     .unwrap();
-    let installed_here = tool.installed_here();
-    let what_opens = WhatOpensWebAddresses::on(&installed_here, &shipped, None);
-    let nothing = what_opens.what_opens_them().unwrap_err();
+    let Err(LinkNotOpened::NothingOpensLinks(nothing)) = tool
+        .as_the_portal_reads_it()
+        .the_text_editor_follows_the_link()
+    else {
+        panic!("a link opened on a machine whose only browser was removed");
+    };
     met.said("Open a web link", &nothing.said(&strings));
 
     // 4. The person approved opening the document, and removed the text editor
