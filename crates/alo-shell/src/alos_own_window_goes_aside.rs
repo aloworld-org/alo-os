@@ -49,16 +49,6 @@ use alo_put_aside::{AlosOwnWindow, Panel};
 
 use crate::which_window_is_in_front::AKindOfWindow;
 
-/// The kind of window in front that `which` is.
-#[must_use]
-pub(crate) const fn its_kind(which: AlosOwnWindow) -> AKindOfWindow {
-    match which {
-        AlosOwnWindow::TheTerminal => AKindOfWindow::TheTerminal,
-        AlosOwnWindow::Settings => AKindOfWindow::Settings,
-        AlosOwnWindow::TheRecord => AKindOfWindow::TheRecord,
-    }
-}
-
 /// Which of alo's own windows a kind is, where it is one.
 #[must_use]
 pub(crate) const fn which_of_alos(kind: AKindOfWindow) -> Option<AlosOwnWindow> {
@@ -128,7 +118,11 @@ impl crate::Server {
 
     /// **Put one of alo's windows into the panel**, still open. Answers whether
     /// it went: a window that is not open, or is aside already, cannot.
-    pub(crate) fn put_alos_window_aside(&mut self, panel: &mut Panel, which: AlosOwnWindow) -> bool {
+    pub(crate) fn put_alos_window_aside(
+        &mut self,
+        panel: &mut Panel,
+        which: AlosOwnWindow,
+    ) -> bool {
         if !self.alos_window_is_open(which) || self.this_alo_window_is_aside(which) {
             return false;
         }
@@ -151,7 +145,11 @@ impl crate::Server {
     /// **Bring one of alo's windows back from the panel**: it leaves the panel,
     /// comes in front with the keys, and the view travels to it where it is out
     /// of sight. Answers whether it was aside.
-    pub(crate) fn bring_alos_window_back(&mut self, panel: &mut Panel, which: AlosOwnWindow) -> bool {
+    pub(crate) fn bring_alos_window_back(
+        &mut self,
+        panel: &mut Panel,
+        which: AlosOwnWindow,
+    ) -> bool {
         let was_aside = self.this_alo_window_is_aside(which);
         // Taken out of the panel whatever the server thought, so a square can
         // never outlive the window it stood for.
@@ -177,7 +175,10 @@ impl crate::Server {
     ///
     /// The server's own list only: the panel lets go of the square on the next
     /// frame, in [`Self::the_panel_lets_go_of_alos_windows_back`].
-    pub(crate) fn a_window_of_this_kind_comes_back_from_aside(&mut self, kind: AKindOfWindow) -> bool {
+    pub(crate) fn a_window_of_this_kind_comes_back_from_aside(
+        &mut self,
+        kind: AKindOfWindow,
+    ) -> bool {
         let Some(which) = which_of_alos(kind) else {
             return false;
         };
@@ -212,7 +213,8 @@ impl crate::Server {
         let squares: Vec<AlosOwnWindow> = panel.alos_windows().map(|it| it.which()).collect();
         let mut let_go = 0;
         for which in squares {
-            if !self.this_alo_window_is_aside(which) && panel.bring_alos_window_back(which).is_ok() {
+            if !self.this_alo_window_is_aside(which) && panel.bring_alos_window_back(which).is_ok()
+            {
                 let_go += 1;
             }
         }

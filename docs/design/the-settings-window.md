@@ -261,8 +261,10 @@ Settings is a window on the canvas like an application's.
   form that is open; nothing is written by closing it. *Readings, for the owner
   to overrule:* **the edge has no icon** — the design draws none for Settings,
   and the grip's mark stands in its place as for an application whose icon this
-  machine does not know — and **no Minimise or Maximise**, which nothing can do
-  to Settings yet.
+  machine does not know — and **no Maximise**, which nothing can do to Settings
+  yet. *Minimise was added on 2026-11-11 with design `27:2`: Settings goes into
+  the right-hand panel, keeping what was typed in it
+  (`docs/design/the-windows-put-aside.md`).*
 
 ## Built and not drawn: letting alo act without asking
 

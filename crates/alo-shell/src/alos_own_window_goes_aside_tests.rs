@@ -50,7 +50,10 @@ fn with_settings(what: &str) -> (tempfile::TempDir, Server) {
 /// Settings asked aside and the frame that lends the panel run.
 fn settings_aside(server: &mut Server, panel: &mut Panel) {
     server.this_alo_window_is_asked_to_go_aside(AlosOwnWindow::Settings);
-    assert_eq!(server.put_alos_windows_aside_that_were_asked(Some(panel)), 1);
+    assert_eq!(
+        server.put_alos_windows_aside_that_were_asked(Some(panel)),
+        1
+    );
 }
 
 /// **Minimised, Settings leaves the canvas and the keys, and stays open.**

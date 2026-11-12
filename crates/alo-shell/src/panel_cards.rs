@@ -52,8 +52,8 @@
 
 use alo_dock::artwork::TheArtwork;
 use alo_dock::measures::{AN_INITIAL_IS, GLYPH, ICON};
-use alo_put_aside::{AlosOwnWindow, Panel};
 use alo_put_aside::the_region_the_panel_claims::WhichEdge;
+use alo_put_aside::{AlosOwnWindow, Panel};
 use cosmic_text::{FontSystem, Metrics};
 use smithay::utils::{Physical, Rectangle};
 

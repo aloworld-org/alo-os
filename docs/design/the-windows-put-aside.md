@@ -276,6 +276,53 @@ focused square, the square's name reaching a screen reader, travelling to the
 task's Place when it is on another one, and a task that needs the person under
 full screen raising a notification.
 
+## Minimised windows, Mac-style — frame `27:2`, approved with live miniatures
+
+**The owner approved `10 / Minimised windows, Mac-style (approved 2026-11-12,
+live)` (`27:2` in `XbSmsBYix0TrcQ0Qzaup64`) and chose live miniatures over
+still pictures.** In the frame's own words: *a minimised window becomes a live
+miniature of itself — it keeps updating while it is put aside — with its app's
+icon in the corner. It stays in alo's right-hand panel. The name shows when you
+point at it or reach it with the keyboard.* Measured on 2026-11-11 with
+`get_metadata` and `get_design_context` on `27:2`, `27:8`, `27:39` and `27:44`.
+
+**The collapsed square** (`27:9`, `27:18`, `27:27`): 48 × 48, as the rail's
+slot already is.
+
+| part | node | measured |
+|---|---|---|
+| miniature | `27:10` | 44 × 32 at (2, 8), corner 4, 1 border `#E7EBEF`, shadow `0 4 12 rgba(15,41,66,0.14)` |
+| badge | `27:16` | 18 × 18 at (30, 30), corner ≈ 5, 1.5 white border, the app's colour, its letter 9 Bold white |
+| an alo task | `27:36` | the approved task square of `23:2`, unchanged |
+
+**The expanded lane** (`27:44`): a 216 × 136 miniature, corner 9, the same
+border and shadow, a 28 × 28 badge at (182, 102) with corner ≈ 8 and a 1.5 white
+border, and the name 8 under it, 12 SemiBold `#102A43`. Lanes 20 apart.
+
+**The name on pointing or focus** (`27:39`): a navy `#102A43` pill, corner 8,
+padding 10 × 6, the name 12 SemiBold white, 10 inward of the rail and centred on
+the square — *Home · Dolphin*, the window's title and its application.
+
+**Motion and privacy** (`27:77`): the window shrinks into its square along a
+straight path, about 300 ms, no wobble; **immediate under Reduced motion**;
+restoring reverses it. **Private content — a password field, a protected
+document — shows the app's icon on a blank card instead of a miniature.**
+
+**One departure, written down:** the frame's rail draws four squares from the
+top (8, 64, 120, 176) and no expansion control, in a rail 288 tall — the height
+`64 + 56 × 4` gives for four squares **under** the control. The control stays
+where the 2026-10-04 ruling put it; the frame is read as showing the squares,
+not as withdrawing the control.
+
+**Built in steps**, each leaving the machine working:
+
+1. **alo's own windows go into the panel** — the terminal, Settings and History
+   carry Minimise, and the Minimise chord reaches them; each waits as a square
+   marked with its letter and comes back by its square or any road to it
+   (`crates/alo-shell/src/alos_own_window_goes_aside.rs`). *Built 2026-11-11.*
+2. The miniature, the badge and the name on pointing or focus.
+3. The live refresh at a bounded rate, and the shrink.
+
 ## Full screen and the keyboard
 
 The approved edge-reveal behaviour stands, with a **continuous pointer path**
