@@ -67,6 +67,33 @@ pub fn looked(
         (Look::Controls, Telling::Values) => controls_as_values(&shown),
         (Look::Read, _) => text_of(&shown),
     };
+    // **A read that finds nothing says so**, window by window, on the warning
+    // side so a program reading the values still reads none — never a silent
+    // success that looks like an empty document.
+    if look == Look::Read && lines.is_empty() {
+        // **Which switch is the likeliest reason.** VSCodium's document is
+        // readable only in its screen reader mode, which alo turns on for it
+        // only where the person let alo work fully inside apps like it
+        // (`docs/quirks/vscodium-is-pressed-and-read-only-when-described-completely.md`);
+        // for any other app, the likeliest reason is that it is not describing
+        // itself at all.
+        let access = machine.access();
+        let until_it_works_fully = alo_launching::is_drawn_by_chromium(subject.identifier())
+            && access.apps_describe_themselves()
+            && !access.alo_works_fully_inside_apps();
+        for window in shown.windows() {
+            let titled = Filling::of(words::WINDOW, window.title().to_owned());
+            let (word, filling) = if until_it_works_fully {
+                (
+                    words::NOTHING_TO_READ_UNTIL_ALO_WORKS_FULLY,
+                    titled.and(words::APPLICATION, subject.called.clone()),
+                )
+            } else {
+                (words::NOTHING_TO_READ, titled)
+            };
+            machine.warned(strings.say(&word.key(), &filling).text());
+        }
+    }
     for line in lines {
         machine.told(&line);
     }

@@ -185,6 +185,8 @@ app.press.unanswered	Asked {application} to press the {kind} “{control}”, an
 app.reach.reserved	reach this application as {identifier}, because {short} is a word alo-app keeps for itself
 app.reach.shared	reach this application as {identifier}, because another installed application is also called {short}
 app.reach.short	type {short}
+app.read.none	The window “{window}” shows no text that can be read. An app shows none when it is not describing itself: “Apps describe themselves to alo and screen readers” is in Settings → Accessibility → Applications.
+app.read.none-until-alo-works-fully	The window “{window}” shows no text that can be read. If you want alo to read the document in {application}, turn on “Let alo work fully inside apps like VSCodium” in Settings → Accessibility → Applications, then close {application} and open it again.
 app.road.declared	Abilities of its own, declared by an adapter alo OS ships and reviewed:
 app.road.discovered.not-asked	What it publishes about itself on the session bus was not asked: alo-app does not look there yet
 app.road.no-declared	No adapter declares abilities of its own for it
