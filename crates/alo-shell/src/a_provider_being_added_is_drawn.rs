@@ -158,7 +158,7 @@ fn shown(typed: &str, field: WhichField, which: WhichField) -> String {
 }
 
 /// What a field is called, in this person's language.
-fn label(field: WhichField, strings: &Strings) -> String {
+pub(crate) fn label(field: WhichField, strings: &Strings) -> String {
     let word = match field {
         WhichField::Name => &crate::the_providers_words::ITS_NAME,
         WhichField::Address => &crate::the_providers_words::ITS_ADDRESS,

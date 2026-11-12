@@ -309,6 +309,17 @@ pub const DID_NOT_PRESS: Word = Word::saying(
      already translated; {name} and {application} are not translated.",
 );
 
+/// The control was named by a setting no page of Settings draws yet.
+pub const NOT_DRAWN_YET: Word = Word::saying(
+    "adapters.fallback.not-drawn-yet",
+    "“{name}” is not on any page of Settings on this computer yet, so nothing was pressed",
+)
+.noting(
+    "Said when a person presses, by its name, an accessibility setting that alo OS has a name \
+     for and that no page of Settings shows yet. Settings must be the same translation as the \
+     window's own name. {name} is what the person typed and is not translated.",
+);
+
 /// The application did not answer when the control was pressed.
 pub const DID_NOT_ANSWER_PRESSING: Word = Word::saying(
     "adapters.fallback.did-not-answer-pressing",
@@ -364,7 +375,7 @@ pub const NOT_ALL_READ: Word = Word::saying(
 .noting("Said beside what was read. {application} is its identifier and is not translated.");
 
 /// Every word the fallback declares.
-pub const EVERY_WORD: [Word; 36] = [
+pub const EVERY_WORD: [Word; 37] = [
     READ_PURPOSE,
     READ_APPLICATION,
     READ_SENTENCE,
@@ -396,6 +407,7 @@ pub const EVERY_WORD: [Word; 36] = [
     CANNOT_BE_PRESSED,
     CANNOT_BE_PRESSED_UNTIL_ALO_WORKS_FULLY,
     DID_NOT_PRESS,
+    NOT_DRAWN_YET,
     DID_NOT_ANSWER_PRESSING,
     LIMIT_NO_NAME,
     LIMIT_NOT_DESCRIBED,

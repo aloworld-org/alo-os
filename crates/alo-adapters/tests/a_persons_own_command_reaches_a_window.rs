@@ -605,6 +605,7 @@ fn a_control_that_cannot_be_pressed_names_the_switch_only_where_it_would_help() 
         NotPressed::TooMuchToBeSure,
         NotPressed::CannotBeUsedNow,
         NotPressed::DidNotPress,
+        NotPressed::NotDrawnYet,
     ] {
         assert_eq!(
             said(other, WorkingFully::CouldBeTurnedOn),
@@ -624,4 +625,101 @@ fn a_control_that_cannot_be_pressed_names_the_switch_only_where_it_would_help() 
             "reached = {reached}, turned on = {turned_on}"
         );
     }
+}
+
+/// alo's Settings as the shell publishes it from 2026-11-12: a drawn switch
+/// marked with the name it had, a setting no page draws listed on the window —
+/// and an application whose own switch carries the same mark, which no command
+/// may read as alo's.
+fn settings_with_old_names() -> ATree {
+    ATree::default()
+        .with(
+            ALO,
+            None,
+            vec![
+                thing(roles::FRAME, "Settings")
+                    .marked(alo_access::THE_SURFACE_ATTRIBUTE, "settings")
+                    .marked(
+                        "alo-not-drawn-yet:screen-reader",
+                        "read the screen aloud",
+                    )
+                    .holding(vec![
+                        thing(roles::SWITCH, "Reduced motion")
+                            .marked(
+                                alo_access::THE_OLD_NAME_ATTRIBUTE,
+                                "stop things sliding and fading",
+                            )
+                            .doing(&["click"]),
+                    ]),
+            ],
+        )
+        .with(
+            ":1.7",
+            Some(MAIL),
+            vec![thing(roles::FRAME, "Inbox").holding(vec![
+                thing(roles::SWITCH, "Threads")
+                    .marked(alo_access::THE_OLD_NAME_ATTRIBUTE, "Conversations")
+                    .doing(&["click"]),
+            ])],
+        )
+}
+
+/// **An old name on alo's Settings reaches the control it named, and says what
+/// it is called now**; the drawn name reaches it with nothing said; a setting
+/// no page draws is refused by its own sentence; and an application's tree is
+/// never read for old names, whatever it marks.
+#[test]
+fn an_old_name_on_alos_settings_reaches_its_control_and_nowhere_else() {
+    let tree = settings_with_old_names();
+    let alo = Whose::AlosOwn { answers_as: ALO };
+
+    let by_its_old_name = press_by_hand(
+        &tree,
+        alo,
+        Some("settings"),
+        Pressable::Switch,
+        "stop things sliding and fading",
+    )
+    .unwrap();
+    assert_eq!(by_its_old_name.now_called(), Some("Reduced motion"));
+    let by_its_name =
+        press_by_hand(&tree, alo, Some("settings"), Pressable::Switch, "Reduced motion").unwrap();
+    assert_eq!(by_its_name.now_called(), None);
+    assert_eq!(*tree.pressed.borrow(), 2);
+
+    assert_eq!(
+        press_by_hand(
+            &tree,
+            alo,
+            Some("settings"),
+            Pressable::Switch,
+            "read the screen aloud"
+        ),
+        Err(Unpressed::NotPressed(NotPressed::NotDrawnYet))
+    );
+    assert_eq!(
+        press_by_hand(
+            &tree,
+            Whose::Application(MAIL),
+            None,
+            Pressable::Switch,
+            "Conversations"
+        ),
+        Err(Unpressed::NotPressed(NotPressed::NoSuchControl)),
+        "an application's own mark was read as an old name"
+    );
+    assert_eq!(*tree.pressed.borrow(), 2, "a refusal pressed something");
+
+    let strings = in_english();
+    let said = NotPressed::NotDrawnYet
+        .said_of(
+            "alo",
+            Pressable::Switch,
+            "read the screen aloud",
+            WorkingFully::NothingMoreToTurnOn,
+            &strings,
+        )
+        .into_text();
+    assert!(said.contains("read the screen aloud"), "{said}");
+    assert!(said.contains("nothing was pressed"), "{said}");
 }

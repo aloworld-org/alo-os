@@ -53,6 +53,10 @@ pub(crate) struct Found {
     pub(crate) at: NodeAt,
     /// Whether a person could use it now.
     pub(crate) usable: bool,
+    /// The name it had before, on alo's own tree, where the shell says it had
+    /// one ([`alo_access::THE_OLD_NAME_ATTRIBUTE`]). Never read from an
+    /// application's tree: only alo's own names are promised to keep working.
+    pub(crate) formerly: Option<String>,
 }
 
 /// What one walk found.
@@ -62,6 +66,9 @@ pub(crate) struct Walked {
     pub(crate) shown: Shown,
     /// Every named control that can be pressed.
     pub(crate) pressable: Vec<Found>,
+    /// The names of the settings no page of Settings draws yet, as the windows
+    /// walked say them — empty on every tree but alo's own.
+    pub(crate) not_drawn_yet: Vec<String>,
 }
 
 /// Whose windows a walk reads.
@@ -122,6 +129,7 @@ pub(crate) fn walk(
         read: 0,
         not_all_read: false,
         pressable: Vec::new(),
+        alos_own: matches!(whose, Whose::AlosOwn { .. }),
     };
     let mut showing = Vec::new();
     for root in roots {
@@ -159,7 +167,9 @@ pub(crate) fn walk(
         showing = matching;
     }
     let mut windows = Vec::new();
+    let mut not_drawn_yet = Vec::new();
     for (window, facts) in showing {
+        not_drawn_yet.extend(walker.not_drawn_yet_on(&window)?);
         let mut seen = Vec::new();
         walker.inside(&window, &facts, 0, &mut seen)?;
         windows.push(ShownWindow::titled(facts.name, seen));
@@ -167,6 +177,7 @@ pub(crate) fn walk(
     Ok(Walked {
         shown: Shown::of(whose.named().to_owned(), windows, walker.not_all_read),
         pressable: walker.pressable,
+        not_drawn_yet,
     })
 }
 
@@ -180,6 +191,9 @@ struct Walker<'t> {
     not_all_read: bool,
     /// The named controls found so far.
     pressable: Vec<Found>,
+    /// Whether this is alo's own tree, the one tree whose old names are
+    /// promised to keep working (`alo_access::old_names`).
+    alos_own: bool,
 }
 
 impl Walker<'_> {
@@ -203,6 +217,29 @@ impl Walker<'_> {
                 Err(fault) => Err(NotWalked::Tree(fault)),
             },
         }
+    }
+
+    /// The attributes of one thing on alo's own tree, or none on any other —
+    /// and none for a thing that vanished while being read.
+    fn alos_own_attributes(&self, at: &NodeAt) -> Result<Vec<(String, String)>, NotWalked> {
+        if !self.alos_own {
+            return Ok(Vec::new());
+        }
+        match self.tree.attributes(at) {
+            Ok(attributes) => Ok(attributes),
+            Err(TreeFault::Vanished) => Ok(Vec::new()),
+            Err(fault) => Err(NotWalked::Tree(fault)),
+        }
+    }
+
+    /// The names a window says belong to settings no page draws yet.
+    fn not_drawn_yet_on(&self, window: &NodeAt) -> Result<Vec<String>, NotWalked> {
+        Ok(self
+            .alos_own_attributes(window)?
+            .into_iter()
+            .filter(|(key, _)| alo_access::not_drawn_yet(key).is_some())
+            .map(|(_, name)| name)
+            .collect())
     }
 
     /// The facts about one thing, or [`None`] when it vanished while being
@@ -291,11 +328,18 @@ impl Walker<'_> {
                     Some(described.limited(Limit::NoName))
                 } else {
                     if let Some(kind) = Pressable::of(role) {
+                        let formerly = self
+                            .alos_own_attributes(at)?
+                            .into_iter()
+                            .find_map(|(key, value)| {
+                                (key == alo_access::THE_OLD_NAME_ATTRIBUTE).then_some(value)
+                            });
                         self.pressable.push(Found {
                             kind,
                             name,
                             at: at.clone(),
                             usable: states.usable(),
+                            formerly,
                         });
                     }
                     Some(described)

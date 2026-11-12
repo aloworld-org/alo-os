@@ -51,23 +51,47 @@ pub fn press_by_hand(
     kind: Pressable,
     name: &str,
 ) -> Result<PressedByHand, Unpressed> {
-    pressed(tree, whose, within, kind, name).map(|unanswered| PressedByHand { unanswered })
+    pressed(tree, whose, within, kind, name).map(|reached| PressedByHand {
+        unanswered: reached.unanswered,
+        now_called: reached.now_called,
+    })
 }
 
 /// A control a person's command pressed.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PressedByHand {
     /// Whether the application did not answer in time — the press was sent and
     /// whether it happened is not known (`terminal-commands.md`, exit 75).
     unanswered: bool,
+    /// What the control is called now, where the person named it by the name
+    /// it had before (`alo_access::old_names`) — which the command says will
+    /// change.
+    now_called: Option<String>,
 }
 
 impl PressedByHand {
     /// Whether the press was sent and the application did not answer.
     #[must_use]
-    pub const fn unanswered(self) -> bool {
+    pub const fn unanswered(&self) -> bool {
         self.unanswered
     }
+
+    /// What the control is called now, where it was pressed by the name it had
+    /// before on alo OS's own surfaces; [`None`] where it was pressed by the
+    /// name it shows.
+    #[must_use]
+    pub fn now_called(&self) -> Option<&str> {
+        self.now_called.as_deref()
+    }
+}
+
+/// What the one press reached.
+#[derive(Debug)]
+pub(crate) struct Reached {
+    /// Whether the application did not answer in time.
+    pub(crate) unanswered: bool,
+    /// What the control is called now, where it was found by its old name.
+    pub(crate) now_called: Option<String>,
 }
 
 /// Why nothing was pressed.
@@ -101,24 +125,56 @@ impl Unpressed {
 /// **The one press**, for the agent's road and a person's alike: walk, find
 /// exactly one usable control of that kind and name, and do its press action.
 ///
-/// Answers whether the application did not answer in time.
+/// Answers whether the application did not answer in time, and what the
+/// control is called now where it was found by the name it had before.
+///
+/// # The name it had before
+///
+/// **Only on alo OS's own surfaces, and only where no control shows the name
+/// typed.** The shell marks the row that is an accessibility setting with the
+/// name the fixed list gave it (`alo_access::old_names`), so `press switch
+/// "stop things sliding and fading" --in settings` still reaches *Reduced
+/// motion*; a name a control shows always wins over an old one. A setting no
+/// page draws yet is refused by its own sentence rather than as *no such
+/// control*, because the person named something real that is not there.
 pub(crate) fn pressed(
     tree: &dyn AccessibilityTree,
     whose: Whose<'_>,
     within: Option<&str>,
     kind: Pressable,
     name: &str,
-) -> Result<bool, Unpressed> {
+) -> Result<Reached, Unpressed> {
     let not_pressed = Unpressed::NotPressed;
-    let Walked { shown, pressable } = walk(tree, whose, within).map_err(Unpressed::NotWalked)?;
-    let mut matching = pressable
+    let Walked {
+        shown,
+        pressable,
+        not_drawn_yet,
+    } = walk(tree, whose, within).map_err(Unpressed::NotWalked)?;
+    let (by_its_name, by_its_old_name): (Vec<Found>, Vec<Found>) = pressable
         .into_iter()
-        .filter(|found| found.kind == kind && found.name == name);
+        .filter(|found| found.kind == kind)
+        .filter(|found| found.name == name || found.formerly.as_deref() == Some(name))
+        .partition(|found| found.name == name);
+    let renamed = by_its_name.is_empty();
+    let mut matching = if renamed {
+        by_its_old_name
+    } else {
+        by_its_name
+    }
+    .into_iter();
     let found: Found = match (matching.next(), matching.next(), shown.not_all_read()) {
         (_, Some(_), _) => return Err(not_pressed(NotPressed::MoreThanOne)),
         (_, None, true) => return Err(not_pressed(NotPressed::TooMuchToBeSure)),
+        (None, None, false) if not_drawn_yet.iter().any(|named| named == name) => {
+            return Err(not_pressed(NotPressed::NotDrawnYet));
+        }
         (None, None, false) => return Err(not_pressed(NotPressed::NoSuchControl)),
         (Some(found), None, false) => found,
+    };
+    let now_called = renamed.then(|| found.name.clone());
+    let reached = |unanswered| Reached {
+        unanswered,
+        now_called: now_called.clone(),
     };
     if !found.usable {
         return Err(not_pressed(NotPressed::CannotBeUsedNow));
@@ -136,9 +192,9 @@ pub(crate) fn pressed(
         return Err(not_pressed(NotPressed::CannotBePressed));
     };
     match tree.act(&found.at, action) {
-        Ok(true) => Ok(false),
+        Ok(true) => Ok(reached(false)),
         Ok(false) => Err(not_pressed(NotPressed::DidNotPress)),
-        Err(TreeFault::DidNotAnswer) => Ok(true),
+        Err(TreeFault::DidNotAnswer) => Ok(reached(true)),
         Err(TreeFault::Vanished) => Err(not_pressed(NotPressed::NoSuchControl)),
         Err(fault @ TreeFault::NotThere) => Err(Unpressed::NotWalked(NotWalked::Tree(fault))),
     }

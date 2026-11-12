@@ -147,7 +147,7 @@ impl Activating {
         // **The one press** a person's command takes too (`crate::by_their_hand`),
         // so what alo is refused and what a person is refused are one list.
         let whose = Whose::Application(&self.application);
-        let unanswered = pressed(tree, whose, None, self.kind, &self.name).map_err(|why| {
+        let reached = pressed(tree, whose, None, self.kind, &self.name).map_err(|why| {
             Refused::worded_elsewhere(
                 self.authorised.call().clone(),
                 why.said(whose, None, self.kind, &self.name, fully, strings),
@@ -158,7 +158,7 @@ impl Activating {
             application: self.application,
             kind: self.kind,
             name: self.name,
-            unanswered,
+            unanswered: reached.unanswered,
         })
     }
 }

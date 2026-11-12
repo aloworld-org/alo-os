@@ -42,6 +42,9 @@ pub const KIND: &str = "kind";
 /// The gap holding a control's name.
 pub const CONTROL: &str = "control";
 
+/// The gap holding what a control is called now.
+pub const NOW: &str = "now";
+
 /// The gap holding a list, already joined.
 pub const LIST: &str = "list";
 
@@ -312,6 +315,20 @@ pub const PRESS_UNANSWERED: Word = Word::saying(
 .noting(
     "Not a failure: the press was sent and may have happened. It is written down as having \
      run.",
+);
+
+/// A control on alo OS's own surfaces was pressed by the name it had before:
+/// said on the error output beside what was pressed, as the contract's
+/// deprecation rule asks (`docs/contracts/terminal-commands.md`).
+pub const NOW_CALLED: Word = Word::saying(
+    "app.press.now-called",
+    "“{control}” is now called “{now}” in {application}. The old name still works for now and \
+     will stop working in a later release, so use “{now}”",
+)
+.noting(
+    "Said after a person pressed a control on alo OS's own Settings by the name it had before it \
+     was renamed. {control} is the old name and {now} the new one, both as the person's own \
+     language shows them; {application} is alo.",
 );
 
 /// A declared ability was carried out.
@@ -738,7 +755,7 @@ pub const CANNOT_BE_UNDONE_ONCE_SENT: Word = Word::saying(
 .noting("The contract's own words, said beside an ability that sends, or may send, something off the machine.");
 
 /// Every word of this crate's own.
-pub const EVERY_WORD: [Word; 85] = [
+pub const EVERY_WORD: [Word; 86] = [
     NOTHING_ASKED,
     NOTHING_TO_DO,
     LEFT_OVER,
@@ -765,6 +782,7 @@ pub const EVERY_WORD: [Word; 85] = [
     UNREADABLE_VALUE,
     PRESSED,
     PRESS_UNANSWERED,
+    NOW_CALLED,
     DECLARED_DONE,
     DECLARED_UNANSWERED,
     NO_SUCH_ABILITY,

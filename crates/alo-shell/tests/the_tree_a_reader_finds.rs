@@ -326,6 +326,10 @@ fn every_surface_is_read_back_as_alo_access_decided_it() {
                 alo_access::Role::Entry => Role::TextField,
                 alo_access::Role::PasswordEntry => Role::PasswordField,
                 alo_access::Role::Switch => Role::Switch,
+                alo_access::Role::RadioButton => Role::RadioButton,
+                alo_access::Role::Tab => Role::Tab,
+                alo_access::Role::Heading => Role::Label,
+                alo_access::Role::Slider => Role::Part,
                 // A list, a line of a list and a strip of state are laid out
                 // rather than read or pressed, and the agent's reader calls
                 // every one of those a part it walks through.

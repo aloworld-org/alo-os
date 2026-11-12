@@ -42,10 +42,11 @@ const CLICK: &str = "click";
 
 /// **What a reader pressed**, as the shell acts on it.
 ///
-/// Three kinds of control on the tree can be pressed: a task window's Close,
+/// Four kinds of control on the tree can be pressed: a task window's Close,
 /// each control on the Dock that a click does something on (both the owner's
-/// decisions of 2026-10-28), and what a click lands on on the *Open with*
-/// sheet. A window edge's controls on an application window
+/// decisions of 2026-10-28), what a click lands on on the *Open with* sheet,
+/// and what a click lands on on Settings. A window edge's controls on an
+/// application window
 /// are announced and not yet pressable; see `crate::access_nodes`.
 ///
 /// **Not `Copy`**, because a Dock slot can hold an application, and an
@@ -69,6 +70,20 @@ pub enum Pressed {
         /// What on it.
         on: OnTheOpenWithSheet,
     },
+    /// This on Settings, named by what it is rather than where it is drawn,
+    /// and carried out as a click on it is (`crate::a_reader_presses_in_settings`).
+    InSettings(InSettings),
+}
+
+/// **What a reader pressed on Settings** — what a click on it can land on.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum InSettings {
+    /// A page in the side column.
+    APage(crate::SettingsCategory),
+    /// A row on the page, or one of its side-by-side choices, or its button.
+    ARow(crate::SettingsRow),
+    /// An entry of the list a row opened.
+    AnEntry(crate::SettingsRow),
 }
 
 /// **What a reader pressed on the *Open with* sheet** — what a click on it

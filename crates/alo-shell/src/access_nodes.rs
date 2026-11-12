@@ -61,6 +61,13 @@ pub(crate) struct Node {
     pub(crate) children: Vec<usize>,
     /// What pressing it asks the shell to do, where a reader can press it.
     pub(crate) press: Option<Pressed>,
+    /// What a reader and a command are told besides the name, as key and
+    /// value: a choice's place among its set (`posinset`, `setsize`), a
+    /// heading's `level`, and the name a Settings row had before
+    /// ([`alo_access::THE_OLD_NAME_ATTRIBUTE`]). Empty everywhere else; the
+    /// `live` and surface attributes are added where the node is served
+    /// ([`ReadAloudTree::attributes_of`]).
+    pub(crate) attributes: Vec<(String, String)>,
 }
 
 /// **The whole of what a screen reader is told about this machine.**
@@ -107,6 +114,7 @@ impl ReadAloudTree {
                 children: Vec::new(),
                 description: String::new(),
                 press: None,
+                attributes: Vec::new(),
             }],
             surfaces: Vec::new(),
             in_front: None,
@@ -135,6 +143,7 @@ impl ReadAloudTree {
                             children: Vec::new(),
                             description: String::new(),
                             press: None,
+                            attributes: Vec::new(),
                         },
                     ),
                     drawn.as_slice(),
@@ -252,6 +261,7 @@ impl ReadAloudTree {
                     children: Vec::new(),
                     description: String::new(),
                     press: None,
+                    attributes: Vec::new(),
                 },
             );
             // **What can be done to this window, under the window itself.**
@@ -316,6 +326,7 @@ impl ReadAloudTree {
                 children: Vec::new(),
                 description: String::new(),
                 press: None,
+                attributes: Vec::new(),
             },
         );
         for (control, selected) in &met.rows {
@@ -331,6 +342,7 @@ impl ReadAloudTree {
                     children: Vec::new(),
                     description: String::new(),
                     press: None,
+                    attributes: Vec::new(),
                 },
             );
         }
@@ -378,6 +390,7 @@ impl ReadAloudTree {
                 children: Vec::new(),
                 description: String::new(),
                 press: None,
+                attributes: Vec::new(),
             },
         );
         for (name, selected) in rows {
@@ -393,6 +406,7 @@ impl ReadAloudTree {
                     children: Vec::new(),
                     description: String::new(),
                     press: None,
+                    attributes: Vec::new(),
                 },
             );
         }
@@ -456,6 +470,7 @@ impl ReadAloudTree {
                     children: Vec::new(),
                     description: String::new(),
                     press: None,
+                    attributes: Vec::new(),
                 },
             );
             for control in what_a_reader_is_told(Decorations::ATaskWindow) {
@@ -546,6 +561,7 @@ impl ReadAloudTree {
                     children: Vec::new(),
                     description: String::new(),
                     press: slot.press,
+                    attributes: Vec::new(),
                 },
             );
         }
@@ -674,8 +690,58 @@ impl ReadAloudTree {
     /// Say which sheet is in front and where the keyboard is on it. The last
     /// sheet put on the tree is the one in front, which is the order the
     /// desktop hands its keys out in (`crate::access_sheet_in_front`).
+    ///
+    /// **What was in front before gives up the keys**: Settings under a
+    /// password sheet keeps its page, and is no longer told as active or as
+    /// having the keyboard, so a reader never hears two places the keys go.
     pub(crate) fn put_in_front(&mut self, sheet: ASheetInFront) {
+        if let Some(before) = self.in_front.take() {
+            for at in [before.at, before.keyboard] {
+                if let Some(node) = self.nodes.get_mut(at) {
+                    node.states = access_roles::no_longer_in_front(node.states);
+                }
+            }
+        }
         self.in_front = Some(sheet);
+    }
+
+    /// The node a surface is described by.
+    pub(crate) fn the_surfaces_node(&self, which: Surface) -> Option<usize> {
+        self.surfaces
+            .iter()
+            .find_map(|(surface, at)| (*surface == which).then_some(*at))
+    }
+
+    /// One node, to be changed by the file that builds what it describes.
+    pub(crate) fn node_mut(&mut self, at: usize) -> Option<&mut Node> {
+        self.nodes.get_mut(at)
+    }
+
+    /// Take away everything under `at`, and say where `at` now is — for a
+    /// surface whose description gives way to what is drawn on it.
+    pub(crate) fn emptied(&mut self, at: usize) -> usize {
+        self.take_away_what_hangs_under(at)
+    }
+
+    /// **Everything a reader and a command are told about a node besides its
+    /// name**: `live` where it is announced, the surface's typed name on a
+    /// surface's own node, and whatever the node itself carries.
+    pub(crate) fn attributes_of(&self, node: &Node) -> std::collections::HashMap<String, String> {
+        let mut attributes: std::collections::HashMap<String, String> =
+            node.attributes.iter().cloned().collect();
+        if node.announced {
+            attributes.insert(
+                access_roles::LIVE.0.to_owned(),
+                access_roles::LIVE.1.to_owned(),
+            );
+        }
+        if let Some(surface) = self.surface_at(&node.path) {
+            attributes.insert(
+                alo_access::THE_SURFACE_ATTRIBUTE.to_owned(),
+                surface.on_the_wire().to_owned(),
+            );
+        }
+        attributes
     }
 
     /// Put a node under `parent`, at the path its position gives it.
@@ -711,6 +777,7 @@ fn of_control(strings: &Strings, control: Control, turned_on: &TurnedOn) -> Node
         children: Vec::new(),
         description: String::new(),
         press: None,
+        attributes: Vec::new(),
     }
 }
 

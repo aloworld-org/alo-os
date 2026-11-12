@@ -185,5 +185,11 @@ impl crate::Server {
             None => tree,
         };
         tree.with_the_task_windows_open(strings, &tasks, turned_on)
+            // **And Settings as it is drawn**, while it is open here — before
+            // any of alo's own sheets, which the desktop adds over it.
+            .with_settings(
+                strings,
+                self.settings_as_a_reader_meets_it(std::time::SystemTime::now()),
+            )
     }
 }
