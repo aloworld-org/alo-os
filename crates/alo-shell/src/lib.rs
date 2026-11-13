@@ -189,6 +189,8 @@ mod access_events;
 mod access_magnifier;
 /// The keyboard layouts a text alo types is typed through (ADR 0153).
 mod a_layout_for_a_text;
+/// A text alo asked to type, read off the application door whole (ADR 0153).
+pub mod a_text_at_the_door;
 mod access_nodes;
 mod access_roles;
 mod access_serving;

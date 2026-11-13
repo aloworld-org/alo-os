@@ -51,6 +51,16 @@ pub trait MayTypeInto {
     fn may_type_into(&mut self, application: &str, pid: u32) -> bool;
 }
 
+/// The desktop answering [`MayTypeInto`], from what it holds of alo's copies
+/// and the person's setting (`crate::TheDesktop::may_type_into`).
+pub(crate) struct TheDesktopAnswers<'d>(pub(crate) &'d mut dyn crate::TheDesktop);
+
+impl MayTypeInto for TheDesktopAnswers<'_> {
+    fn may_type_into(&mut self, application: &str, pid: u32) -> bool {
+        self.0.may_type_into(application, pid)
+    }
+}
+
 /// One layout, compiled, with what is pressed through it.
 struct Ready {
     /// The layout, as a file a client is handed.

@@ -1545,6 +1545,19 @@ mod running {
                 .looked_at(&mut self.counting, &mut self.indicator, (now, wall));
         }
 
+        /// Whether alo may type into the window of `application` whose
+        /// process is `pid` (ADR 0153): **alo's own copy** at the person's
+        /// default, read from their file for this ask as `alo_at_work` reads
+        /// it; their own window too only where they chose that.
+        fn may_type_into(&mut self, application: &str, pid: u32) -> bool {
+            let chosen = alo_remembering::alo_in_applications_remembered(std::path::Path::new(
+                alo_remembering::THE_LEVEL,
+            ))
+            .unwrap_or_default();
+            chosen == alo_capability::AloInApplications::InTheirWindow
+                || self.working.runs_as_alos_copy(application, pid)
+        }
+
         /// The panel this desktop keeps, lent for the one act that changes it.
         ///
         /// **`Some`, because this desktop has a panel** — the field above. The trait defaults

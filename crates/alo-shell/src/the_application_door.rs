@@ -39,6 +39,7 @@ use std::os::unix::net::{UnixListener, UnixStream};
 
 use alo_acting::{Answer, Request, ToCount, ToWorkIn};
 
+use crate::a_text_at_the_door::{AskedToType, ReadingText, SoFar};
 use crate::alo_at_work::AskedToWork;
 use crate::counting_during_their_commands::AskedToCount;
 
@@ -120,6 +121,10 @@ pub struct TheApplicationDoor {
     /// The portal asking the person to choose what opens a link, for the
     /// desktop's *Open with* sheet to take (`choose-link`, 2026-11-12).
     choosing: Vec<crate::the_open_with_sheet::AskedToChoose>,
+    /// Texts alo asked to type, part-way read (ADR 0153).
+    reading: Vec<ReadingText>,
+    /// Typing asked for and read whole, for the compositor to carry out.
+    typing: Vec<AskedToType>,
 }
 
 impl TheApplicationDoor {
@@ -140,6 +145,8 @@ impl TheApplicationDoor {
             counting: Vec::new(),
             working: Vec::new(),
             choosing: Vec::new(),
+            reading: Vec::new(),
+            typing: Vec::new(),
         })
     }
 
@@ -162,6 +169,8 @@ impl TheApplicationDoor {
             counting: Vec::new(),
             working: Vec::new(),
             choosing: Vec::new(),
+            reading: Vec::new(),
+            typing: Vec::new(),
         }
     }
 
@@ -183,7 +192,31 @@ impl TheApplicationDoor {
     /// counts. **Never waits**: see this file's own documentation.
     pub fn answered(&mut self, carrying_out: &mut dyn CarriesOutAnApplicationVerb) -> usize {
         self.let_them_in();
-        self.hear_them_out(carrying_out)
+        let acted = self.hear_them_out(carrying_out);
+        self.go_on_reading();
+        acted
+    }
+
+    /// Every typing alo asked for since the last time this was asked, read
+    /// whole, for the compositor to carry out and answer (ADR 0153).
+    pub fn asked_to_type(&mut self) -> Vec<AskedToType> {
+        std::mem::take(&mut self.typing)
+    }
+
+    /// Read on through every text part-way read, never waiting.
+    fn go_on_reading(&mut self) {
+        for reading in std::mem::take(&mut self.reading) {
+            self.so_far(reading.looked_at());
+        }
+    }
+
+    /// Keep a text that is still arriving, and hand on one that is whole.
+    fn so_far(&mut self, so_far: SoFar) {
+        match so_far {
+            SoFar::Arriving(reading) => self.reading.push(reading),
+            SoFar::Whole(asked) => self.typing.push(asked),
+            SoFar::Dropped => {}
+        }
     }
 
     /// Every caller who has asked to count what an application sends since the
@@ -317,6 +350,21 @@ impl TheApplicationDoor {
                             let _ = caller.talking.write_all(b"\n");
                             let _ = caller.talking.flush();
                             drop(caller.talking);
+                            continue;
+                        }
+                        Some(Err(_)) => {
+                            drop(caller.talking);
+                            continue;
+                        }
+                        None => {}
+                    }
+                    // **A text alo asked to type** follows its line, as many
+                    // bytes as the line says, read on across frames (ADR 0153).
+                    match alo_acting::ToType::read(&line) {
+                        Some(Ok(asked)) => {
+                            let after = what_followed(&caller.heard);
+                            let begun = ReadingText::begun(asked, caller.talking, after);
+                            self.so_far(begun);
                             continue;
                         }
                         Some(Err(_)) => {
