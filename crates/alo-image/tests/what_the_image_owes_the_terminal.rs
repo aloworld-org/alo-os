@@ -47,7 +47,7 @@ use std::path::Path;
 /// Changing the base means the measurement in this file's header is about
 /// another image. Re-run the command there against the new one and put its
 /// digest here.
-const THE_BASE_THAT_WAS_MEASURED: &str = "quay.io/fedora/fedora-bootc:44@sha256:ea70c130d55794252b081c606603c6d4405561f28ae642a83fe43b1872f82663";
+const THE_BASE_THAT_WAS_MEASURED: &str = "quay.io/fedora/fedora-bootc:44@sha256:5a3472162ba7781a01d249b9a56bc5a9b9fa01c08edae1f73c77dfa1e504e868";
 
 /// What the recipe calls the base.
 const THE_ARGUMENT: &str = "ARG THE_BASE=";
