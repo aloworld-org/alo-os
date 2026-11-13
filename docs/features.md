@@ -1167,7 +1167,10 @@ running code. It is built once `CLAUDE.md` carries those words (ADR 0143).*
   there — anybody can read it, and Put back can't recall it`. At full access it
   is done without asking and the line afterwards says it is on the internet and
   Put back can't recall it; at *ask me each time* it waits for one approval of
-  that sentence, and one approval publishes it once; at the sealed box it is
+  that sentence, and one approval publishes it once, with no folder grant
+  needed (*"Approval alone is enough"*, the owner, 2026-11-13); what it sends
+  is on the indicator and counted in the record as for every command alo runs;
+  at the sealed box it is
   refused, saying that publishing runs programs the sealed box cannot and where
   to choose another level. Nothing in the folder is changed, a push is never
   forced, an empty folder or an address GitHub could not give is refused before

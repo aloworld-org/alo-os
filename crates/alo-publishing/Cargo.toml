@@ -13,9 +13,9 @@ repository.workspace = true
 # never this crate.
 alo-capability = { path = "../alo-capability" }
 
-# Publishing sends a folder to GitHub, so it is an `alo_egress::Leaving` and
-# nothing here is run without the `Departing` that proves the line is on the
-# indicator.
+# Publishing sends a folder to GitHub, so it is an `alo_egress::Leaving` for
+# the rule about what may leave to judge before anything runs. Its bytes are
+# counted on the indicator the way every command alo runs is, by the turn.
 alo-egress = { path = "../alo-egress" }
 
 # Everything a person reads here.

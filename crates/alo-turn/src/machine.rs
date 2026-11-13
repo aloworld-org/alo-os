@@ -426,14 +426,15 @@ impl<'a> Machine<'a> {
         Some((tool, self.bound.clone(), self.indicator))
     }
 
-    /// What publishing runs on, and the indicator, at once — for
-    /// [`Machine::installing_and_showing`]'s reason. `pub(crate)`, and the only
-    /// caller is `publishing_a_folder.rs`.
-    pub(crate) fn publishing_and_showing(
+    /// What publishing runs on, what counts a command alo runs, and the
+    /// indicator, at once — for [`Machine::installing_and_showing`]'s reason.
+    /// `pub(crate)`, and the only caller is `publishing_a_folder.rs`, which
+    /// runs its command counted as every command alo runs is.
+    pub(crate) fn publishing_and_counting(
         &mut self,
-    ) -> Option<(&WhatPublishingNeeds<'a>, &mut Indicator)> {
+    ) -> Option<(&WhatPublishingNeeds<'a>, &mut dyn Bounding, &mut Indicator)> {
         let publishing = self.publishing.as_ref()?;
-        Some((publishing, self.indicator))
+        Some((publishing, &mut *self.bounding, &mut *self.indicator))
     }
 
     /// A machine that can carry out the six file verbs and a publication, and

@@ -6,23 +6,29 @@
 //! that nobody is there to answer, for at most two minutes. A publication is a
 //! command on that road whose line the machine wrote rather than a model, so
 //! this crate asks for something that runs a line and nothing more. The daemon
-//! hands in `alo_running::run_as_the_person`; a test hands in the same function
-//! with a stand-in for `gh`.
+//! hands in `alo_running::run_as_the_person_around`; a test hands in the same
+//! function with a stand-in for `gh`.
+//!
+//! **What it sends is counted the way every command alo runs is** (ADR 0148,
+//! as amended 2026-11-13: *"Yes, count alo's commands"*): the caller's
+//! [`AroundACommand`] starts the command inside a control group of its own and
+//! looks at the kernel's count while it runs, so the egress indicator shows it
+//! sending and the record keeps how many bytes left. There is no second road
+//! for a publication's bytes.
 
-use alo_capability::{ACommand, ItDidNotStart, WhatACommandDid};
-use alo_egress::Departing;
+use alo_capability::{ACommand, AroundACommand, ItDidNotStart, WhatACommandDid};
 
 /// Runs one command as the person.
 pub trait Runs {
-    /// Run `line` once, as the person.
-    ///
-    /// **It takes the [`Departing`]**, which only the indicator makes and only
-    /// once the line saying what is leaving is up: a publication cannot be run
-    /// by anything that has not first shown the person it is happening.
+    /// Run `line` once, as the person, started and watched by `around`.
     ///
     /// # Errors
     /// [`ItDidNotStart`] when the shell could not be started.
-    fn run(&self, line: &ACommand, leaving: &Departing) -> Result<WhatACommandDid, ItDidNotStart>;
+    fn run(
+        &self,
+        line: &ACommand,
+        around: &mut dyn AroundACommand,
+    ) -> Result<WhatACommandDid, ItDidNotStart>;
 }
 
 /// The programs a publication is carried out with, and the GitHub it reaches.

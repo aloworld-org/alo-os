@@ -310,8 +310,10 @@ impl alo_publishing::Runs for APublisher {
     fn run(
         &self,
         line: &alo_capability::ACommand,
-        _leaving: &alo_egress::Departing,
+        around: &mut dyn alo_capability::AroundACommand,
     ) -> Result<alo_capability::WhatACommandDid, alo_capability::ItDidNotStart> {
+        // Looked at once, as a real run is while it runs; nothing is started.
+        around.looking();
         self.ran.lock().unwrap().push(line.text().to_owned());
         Ok(alo_capability::WhatACommandDid::of(
             self.answers.0,

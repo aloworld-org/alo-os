@@ -1,5 +1,5 @@
 //! **A folder published through real `git`, on the road a machine runs it on**
-//! — `alo_running::run_as_the_person`, `/bin/sh -c`, nobody there to answer —
+//! — `alo_running::run_as_the_person_around`, `/bin/sh -c`, nobody there to answer —
 //! to a repository on this disk, with a stand-in for GitHub's `gh` that answers
 //! the four questions the line asks it.
 //!
@@ -25,21 +25,40 @@ use std::fs;
 use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
 use std::process::Command;
-use std::time::{Duration, SystemTime};
 
-use alo_capability::{ACommand, Grantee, ItDidNotStart, WhatACommandDid};
-use alo_egress::{Departing, EgressPolicy, Indicator};
-use alo_publishing::{
-    Account, NotPublished, Publication, Published, Runs, Through, publish, the_departure,
-};
+use alo_capability::{ACommand, AroundACommand, ItDidNotStart, NothingAround, WhatACommandDid};
+use alo_publishing::{Account, NotPublished, Publication, Published, Runs, Through, publish};
 use alo_strings::{Strings, Vocabulary};
+
+/// What a turn puts around a command, counting how often it started one — a
+/// stand-in for the control group that counts it, which needs a kernel.
+#[derive(Default)]
+struct Watching {
+    started: usize,
+}
+
+impl AroundACommand for Watching {
+    fn starting(
+        &mut self,
+        start: &mut dyn FnMut() -> std::io::Result<std::process::Child>,
+    ) -> std::io::Result<std::process::Child> {
+        self.started += 1;
+        NothingAround.starting(start)
+    }
+
+    fn looking(&mut self) {}
+}
 
 /// The road a machine runs a publication on.
 struct AsThePerson;
 
 impl Runs for AsThePerson {
-    fn run(&self, line: &ACommand, _leaving: &Departing) -> Result<WhatACommandDid, ItDidNotStart> {
-        alo_running::run_as_the_person(line, Path::new("/"))
+    fn run(
+        &self,
+        line: &ACommand,
+        around: &mut dyn AroundACommand,
+    ) -> Result<WhatACommandDid, ItDidNotStart> {
+        alo_running::run_as_the_person_around(line, Path::new("/"), around)
     }
 }
 
@@ -110,25 +129,21 @@ impl Here {
 
     fn publishing(&self) -> Result<Published, NotPublished> {
         let strings = in_english();
-        let mut indicator = Indicator::default();
-        let now = SystemTime::UNIX_EPOCH + Duration::from_secs(1_800_000_000);
-        let leaving = the_departure(&Grantee::named("@alo")).unwrap();
-        let departing = indicator
-            .beginning(&EgressPolicy::Anywhere, leaving, now)
-            .expect("nothing forbids it here");
-        assert!(
-            !indicator.is_quiet(),
-            "it ran with nothing on the indicator"
-        );
         let publication = Publication::of(&self.folder, Account::named("anna").unwrap());
+        let mut watching = Watching::default();
         let done = publish(
-            &departing,
             &publication,
             &self.through(),
             &AsThePerson,
+            &mut watching,
             &strings,
         );
-        indicator.ended(departing);
+        // **Started through what counts it**, so on a machine the command is
+        // born inside the control group the indicator's count is read from.
+        assert_eq!(
+            watching.started, 1,
+            "the command was not started through what counts it"
+        );
         done
     }
 

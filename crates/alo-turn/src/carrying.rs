@@ -113,7 +113,7 @@ pub(crate) fn carrying_out(
         return (entry, installed.map(WhatAVerbDid::from));
     }
     if authorised.verb() == alo_publishing::PUBLISH_TO_GITHUB_PAGES {
-        let (entry, published) = publishing_a_folder(machine, authorised, grants, now);
+        let (entry, published) = publishing_a_folder(machine, authorised, now);
         return (entry, published.map(WhatAVerbDid::from));
     }
     // **The read, routed by name like the rest.** It is asked before the

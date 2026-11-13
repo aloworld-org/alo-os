@@ -4,10 +4,12 @@
 //! The owner's decision of 2026-11-13: *"From the terminal" means the person
 //! asks alo and alo runs git on its own command road — not typing into the
 //! person's terminal window.* So a publication runs exactly where a command
-//! alo runs does: `alo_running::run_as_the_person`, `/bin/sh -c`, as the
-//! person, in their home, told nobody is there to answer
-//! (`alo_running::nobody_is_there_to_answer`), for at most two minutes. The
-//! line is `alo_publishing::the_line`'s, never a model's.
+//! alo runs does: `alo_running::run_as_the_person_around`, `/bin/sh -c`, as
+//! the person, in their home, told nobody is there to answer
+//! (`alo_running::nobody_is_there_to_answer`), for at most two minutes, and
+//! started inside the control group the turn counts it in (ADR 0148, as
+//! amended 2026-11-13). The line is `alo_publishing::the_line`'s, never a
+//! model's.
 //!
 //! **What the level decides is not decided here.** At full access a
 //! publication is carried out without asking, at *ask me each time* after the
@@ -18,8 +20,7 @@
 use std::path::{Path, PathBuf};
 use std::sync::LazyLock;
 
-use alo_capability::{ACommand, ItDidNotStart, WhatACommandDid};
-use alo_egress::Departing;
+use alo_capability::{ACommand, AroundACommand, ItDidNotStart, WhatACommandDid};
 use alo_publishing::Runs;
 
 /// [`AsThePerson::on_this_machine`], made once for the life of the service —
@@ -61,7 +62,11 @@ impl AsThePerson {
 }
 
 impl Runs for AsThePerson {
-    fn run(&self, line: &ACommand, _leaving: &Departing) -> Result<WhatACommandDid, ItDidNotStart> {
-        alo_running::run_as_the_person(line, &self.home)
+    fn run(
+        &self,
+        line: &ACommand,
+        around: &mut dyn AroundACommand,
+    ) -> Result<WhatACommandDid, ItDidNotStart> {
+        alo_running::run_as_the_person_around(line, &self.home, around)
     }
 }

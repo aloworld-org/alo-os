@@ -19,8 +19,8 @@ use crate::a_change_at_full_access::Changed;
 use crate::machine::{Machine, WhatPublishingNeeds};
 use crate::refusing::NotDone;
 use crate::testing::{
-    APublisher, NothingIsBounded, a_folder_of_our_own, as_given, files, granting, hour, in_english,
-    noon, offering,
+    APublisher, NothingIsBounded, a_folder_of_our_own, as_given, files, hour, in_english, noon,
+    offering,
 };
 use crate::turning::Turning;
 
@@ -150,7 +150,9 @@ fn at_full_access_it_is_published_once_and_no_snapshot_is_taken() {
 
 /// **At *ask me each time* nothing runs before the OK; one OK runs it exactly
 /// once; the same number again runs nothing** — and the sentence the person
-/// is asked carries the warning (ADR 0110 §2, ADR 0143 Q5).
+/// is asked carries the warning (ADR 0110 §2, ADR 0143 Q5). **No folder grant
+/// is asked for**: the grants here are empty, and the one approval is the
+/// whole permission (the owner, 2026-11-13: *"Approval alone is enough"*).
 #[test]
 fn asking_each_time_one_ok_is_one_publication_and_the_sentence_carries_the_warning() {
     let folder = a_site("asking");
@@ -163,7 +165,7 @@ fn asking_each_time_one_ok_is_one_publication_and_the_sentence_carries_the_warni
         EgressPolicy::Anywhere,
         &mut record,
         |turning| {
-            let grants = granting(&[&folder]);
+            let grants = Grants::default();
             let changed = turning.changing(
                 alo_publishing::PUBLISH_TO_GITHUB_PAGES,
                 &publishing(&folder, "anna"),
@@ -211,11 +213,13 @@ fn asking_each_time_one_ok_is_one_publication_and_the_sentence_carries_the_warni
     );
 }
 
-/// **The refusal path: a folder nobody granted is refused before anybody is
-/// asked**, written down, and nothing runs.
+/// **The refusal path: a folder that is not there is refused before anybody
+/// is asked** — with no grant to stop it, the check that it is a folder with
+/// something in it is what does — written down, and nothing runs.
 #[test]
-fn a_folder_nobody_granted_is_refused_and_written_down() {
-    let folder = a_site("not-granted");
+fn a_folder_that_is_not_there_is_refused_and_written_down() {
+    let folder = a_site("not-there");
+    let gone = folder.join("not-there");
     let publisher = APublisher::that_publishes();
     let mut record = Record::default();
     let changed = on_a_machine(
@@ -226,7 +230,7 @@ fn a_folder_nobody_granted_is_refused_and_written_down() {
         |turning| {
             turning.changing(
                 alo_publishing::PUBLISH_TO_GITHUB_PAGES,
-                &publishing(&folder, "anna"),
+                &publishing(&gone, "anna"),
                 &Grants::default(),
                 hour(),
                 &mut |_| None,
@@ -258,7 +262,7 @@ fn an_account_github_would_not_give_is_refused_before_anybody_is_asked() {
             turning.changing(
                 alo_publishing::PUBLISH_TO_GITHUB_PAGES,
                 &publishing(&folder, "anna smith"),
-                &granting(&[&folder]),
+                &Grants::default(),
                 hour(),
                 &mut |_| None,
                 noon(),
@@ -382,7 +386,7 @@ fn a_level_that_cannot_publish_runs_nothing_now_or_at_the_ok() {
             );
             assert_eq!(refused, NotDone::NotAtThisLevel(said.clone()));
 
-            let grants = granting(&[&folder]);
+            let grants = Grants::default();
             let changed = turning.changing(
                 alo_publishing::PUBLISH_TO_GITHUB_PAGES,
                 &publishing(&folder, "anna"),

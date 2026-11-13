@@ -360,25 +360,30 @@ the indicator line (`alo-turn`), and the level, the sealed box's refusal and the
 line afterwards (`alo-agentd`); the desktop's card and the terminal say
 *Published … Put back can't recall it*, never *Done*.
 
-**Reuses:** the command road (ADR 0149); the indicator's agent line; the grants
-and `alo_files::Touching`; the record.
+**No folder grant** (the owner, 2026-11-13: *"Approval alone is enough"*): at
+*ask me each time* one approval of the sentence is the whole permission, as for
+any command.
+
+**Reuses:** the command road (ADR 0149) and its count of what alo's commands
+send (ADR 0148 as amended 2026-11-13, #1212): the indicator's *git, a command
+alo is running, is sending* and the record's `sent_bytes`; the record.
 **Test, each running on every build:** a folder published through real `git` to
-a repository on disk, with a stand-in for `gh` — one publication is one version,
-nothing written into the folder, a folder that is itself a repository published
-without its `.git`, the same folder twice sends nothing new, a changed folder
-goes on top of the last version, nobody signed in and the wrong account publish
-nothing and make no repository
+a repository on disk, with a stand-in for `gh`, started through what counts it
+— one publication is one version, nothing written into the folder, a folder
+that is itself a repository published without its `.git`, the same folder
+twice sends nothing new, a changed folder goes on top of the last version,
+nobody signed in and the wrong account publish nothing and make no repository
 (`crates/alo-publishing/tests/a_folder_published_through_real_git.rs`); at full
 access one run and no snapshot, at *ask me each time* nothing before the OK and
-one OK one run, a folder nobody granted, an account GitHub would not give, a
-rule that says nothing may leave and the sealed box — now and at an OK — each
-run nothing and are written down (`crates/alo-turn/src/publishing_a_folder_tests.rs`).
+one OK one run with no grant, a folder that is not there, an account GitHub
+would not give, a rule that says nothing may leave and the sealed box — now
+and at an OK — each run nothing and are written down
+(`crates/alo-turn/src/publishing_a_folder_tests.rs`); a paired machine's
+publication refused by name (`crates/alo-turn/src/arriving.rs`).
 **Not checked by any test here, and needing a booted machine:** that `gh`
 signs in and keeps its token in the keyring; that github.com takes the push;
-that GitHub Pages serves the address; and that what `git` sends is counted —
-that is ADR 0148's counter for alo's own commands, separate work, and **the
-walk depends on it** for *what leaves is shown* to be true by bytes as well as
-by the line.
+that GitHub Pages serves the address; and that the kernel's count of the
+command's control group really reads the bytes `git` pushed.
 
 ### 13. The Demo 2 walk
 

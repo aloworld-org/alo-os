@@ -1,5 +1,5 @@
-//! **The verb: `publish_to_github_pages`** — a change, over a granted folder,
-//! whose sentence the machine writes.
+//! **The verb: `publish_to_github_pages`** — a change whose sentence the
+//! machine writes, allowed by one approval of that sentence.
 //!
 //! The owner's decision of 2026-11-13: *a typed action "publish a folder to
 //! GitHub Pages" whose sentence the machine writes (destination +
@@ -10,10 +10,15 @@
 //!
 //! # What it reaches
 //!
-//! **The folder, under a grant** — it is read whole and sent to the internet,
-//! so it is held to the grants exactly as reading it would be; at full access
-//! the grants reach everything the account can (ADR 0149). **And GitHub**,
-//! under the line on the indicator (`crate::publishing::the_departure`).
+//! **The folder, with no grant over it** — the owner, 2026-11-13, asked
+//! whether *ask me each time* should also need a folder grant: *"Approval
+//! alone is enough."* So, as for any command at that level, one approval of
+//! the sentence naming the folder and the address is the whole permission, and
+//! the command runs as the person, bounded by their account's own permissions;
+//! at full access it needs no approval (ADR 0149). The sealed box, a rule that
+//! says nothing may leave, a paired machine, an empty folder and an address
+//! GitHub could not give are still refused. **And GitHub**, counted on the
+//! indicator as every command alo runs is (ADR 0148, as amended 2026-11-13).
 //!
 //! # It is not an `exec`
 //!
@@ -74,7 +79,12 @@ fn publish_to_github_pages() -> Result<Verb, VerbError> {
             Arg::taking(words::FOLDER, words::THE_FOLDER, Takes::Path),
             Arg::taking(words::ACCOUNT, words::THE_ACCOUNT, Takes::name(THE_LONGEST)),
         ],
-        Requires::Grants(vec![words::FOLDER.to_owned()]),
+        Requires::nothing_because(
+            "the person approves this one publication by the sentence naming the folder and the \
+             address, as they approve any command at that level, and at full access their own \
+             account's permissions are the boundary (the owner, 2026-11-13: approval alone is \
+             enough)",
+        ),
         words::SENTENCE,
     )?
     .changing(words::CHANGES, Some(words::LEAVES))
@@ -192,17 +202,19 @@ mod tests {
             .unwrap()
     }
 
-    /// **One change, over a granted folder, that says what it changes and
-    /// leaves alone.**
+    /// **One change, needing no folder grant — one approval of the sentence
+    /// is enough** (the owner, 2026-11-13: *"Approval alone is enough"*) —
+    /// that says what it changes and leaves alone.
     #[test]
-    fn it_is_one_change_over_a_granted_folder() {
+    fn it_is_one_change_that_the_approval_alone_allows() {
         let verbs = publishing_verbs().unwrap();
         assert_eq!(verbs.len(), 1);
         let verb = verbs.of(PUBLISH_TO_GITHUB_PAGES).unwrap();
         assert_eq!(verb.effect(), Effect::Change);
-        assert_eq!(
-            verb.requires(),
-            &Requires::Grants(vec!["folder".to_owned()])
+        assert!(
+            matches!(verb.requires(), Requires::Nothing { reason } if reason.contains("approves")),
+            "{:?}",
+            verb.requires()
         );
         assert!(verb.what_it_changes().is_some() && verb.what_it_leaves().is_some());
     }

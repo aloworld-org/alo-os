@@ -1046,10 +1046,11 @@ the owner: *"We can add it but we need no shortcuts."*). Declared in
 |---|---|---|---|
 | `publish_to_github_pages` | change | `folder` (path), `account` (name, at most 39) | publish the folder {folder} to the internet as your GitHub Pages site {account}.github.io, in place of what is there — anybody can read it, and Put back can't recall it |
 
-**It requires a grant over `folder`**, because the folder is read whole and sent
-to the internet; at full access the grants reach everything the account can
-(ADR 0149). A link inside a granted folder that leads out of it is refused as
-for every file verb (`alo_files::Touching`).
+**It requires no grant: one approval of its sentence is the whole
+permission**, as for any command at *ask me each time* — the owner, 2026-11-13,
+asked whether a folder grant should be needed as well: *"Approval alone is
+enough."* The command runs as the person, so the account's own permissions are
+what bounds it; at full access it needs no approval either (ADR 0149).
 
 **What the model names is two things; everything else is the machine's.** The
 sentence above, the command that runs and the line afterwards are written by
@@ -1087,11 +1088,15 @@ to is taken before it, and its record entry names none.
 name, as the record's question is refused, because it sends this person's folder
 under their own GitHub sign-in.
 
-**What leaves is shown.** The line *{agent} is sending something to
-github.com*, naming the turn's agent, is on the indicator from before the command starts until it ends, under the
-rule the description sets for every egress here; a rule that says nothing may
-leave refuses it with nothing sent. What `git` and `gh` themselves send is not
-counted by bytes — ADR 0148's counter for commands alo runs is separate work.
+**What leaves is shown, and counted, as for every command alo runs** (ADR 0148,
+as amended 2026-11-13). The command starts inside a control group of its own;
+the indicator reads *git, a command alo is running, is sending* from the first
+byte the kernel counts until it ends — or, on a machine that cannot count,
+*alo is running git, and this machine cannot count what it sends* for the whole
+run — and the record's entry keeps how many bytes left (`sent_bytes`). Before
+anything runs, the rule the description sets for every egress here is asked
+about *sending something to github.com*; a rule that says nothing may leave
+refuses it with nothing sent.
 
 **Every run and every refusal is written down**, the reason beside a
 publication that did not happen. The reasons are each their own: not signed in

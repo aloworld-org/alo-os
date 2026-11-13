@@ -992,4 +992,53 @@ mod tests {
         second.ending(&mut grants);
         assert!(record.is_empty());
     }
+
+    /// **The refusal path: a publication never arrives across a pairing.** It
+    /// would send this person's folder to the internet under their own GitHub
+    /// sign-in, so it is turned away by name before a call is built — written
+    /// down, and nothing runs.
+    #[test]
+    fn a_publication_from_a_paired_machine_is_refused_and_written_down() {
+        let strings = in_english();
+        let publisher = crate::testing::APublisher::that_publishes();
+        let mut indicator = Indicator::default();
+        let mut record = Record::default();
+        let mut bounding = NothingIsBounded;
+        let mut machine = Machine::carrying_out_file_and_publishing_verbs(
+            &strings,
+            &OnThisMachine,
+            crate::testing::publishing_through(&publisher),
+            &mut bounding,
+            &mut indicator,
+            &mut record,
+        )
+        .unwrap();
+        let origin = origin();
+        let mut grants = Grants::default().at_full_access_for(&files());
+        let mut arriving =
+            Arriving::beginning(&origin, hour(), noon(), &mut grants, &mut machine).unwrap();
+        let refused = arriving.proposing(
+            alo_publishing::PUBLISH_TO_GITHUB_PAGES,
+            &[
+                ("folder", Given::text("/home/anna/site")),
+                ("account", Given::text("anna")),
+            ],
+            &Pairings::none(),
+            &grants,
+            hour(),
+            noon(),
+        );
+        assert!(
+            matches!(
+                refused,
+                Err(NotDone::TurnedAway(
+                    alo_capability::CallError::NoSuchVerb { .. }
+                ))
+            ),
+            "{refused:?}"
+        );
+        arriving.ending(&mut grants);
+        assert_eq!(publisher.runs(), 0, "a paired machine published a folder");
+        assert_eq!(record.len(), 1, "the refusal was not written down");
+    }
 }

@@ -315,9 +315,11 @@ one command runs on this same road. It answers
 — at full access inside `done-without-asking`, and after an OK inside
 `did-and-cannot-be-undone` **whatever the snapshot kept**, because nothing on
 this computer changed and what went to the internet is not this computer's to
-put back. A client never offers Put back beside it. While its command runs the
-indicator shows the turn's agent *sending something to github.com*; the bytes
-`git` sends are subject to the paragraph above.
+put back. A client never offers Put back beside it. Its command is counted as
+every command alo runs is: started in a control group of its own, shown as
+*git, a command alo is running, is sending* while it sends, and its entry keeps
+`sent_bytes`. It needs no folder grant — one approval of its sentence is the
+whole permission at *ask me each time* (the owner, 2026-11-13).
 
 ## What a person sends
 
