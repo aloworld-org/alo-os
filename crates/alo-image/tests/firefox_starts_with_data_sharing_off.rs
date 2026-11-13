@@ -39,7 +39,10 @@ const SWITCHED_OFF: [(&str, &str); 4] = [
         "send technical and interaction data",
     ),
     ("datareporting.usage.uploadEnabled", "daily usage ping"),
-    ("app.shield.optoutstudies.enabled", "install and run studies"),
+    (
+        "app.shield.optoutstudies.enabled",
+        "install and run studies",
+    ),
     (
         "browser.crashReports.unsubmittedCheck.autoSubmit2",
         "backlogged crash reports",
