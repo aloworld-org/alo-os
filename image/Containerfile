@@ -609,10 +609,18 @@ COPY --from=built /alo-os/target/${THE_TARGET}/release/alo-portald /usr/libexec/
 # round trip under systemd, written up in
 # `docs/misreadings/a-service-that-starts-and-serves-nothing.md`. These lines
 # are the floor, not the proof.
+#
+# **Asked as a person, not as root**, because that is how the machine runs it
+# (`alo-keyring.service` is a user unit). gnome-keyring 50, on Fedora 44
+# (ADR 0152), refuses to start as root in the build — *error dropping process
+# capabilities - -5, aborting* — where 48 answered; as an unprivileged login it
+# answers `--version`, measured 2026-11-13 on the pinned base, with and without
+# `no_new_privs`.
 RUN dnf install --assumeyes --setopt=install_weak_deps=False \
       gnome-keyring \
  && dnf clean all \
- && /usr/bin/gnome-keyring-daemon --version | grep -q 'gnome-keyring-daemon' \
+ && setpriv --reuid=65534 --regid=65534 --clear-groups \
+      /usr/bin/gnome-keyring-daemon --version | grep -q 'gnome-keyring-daemon' \
  && grep -rqs 'org.freedesktop.secrets' /usr/share/dbus-1/services/ \
  && echo "a keyring: a Secret Service daemon that runs, and a bus name it can be reached by"
 
@@ -1577,7 +1585,8 @@ RUN chmod 0755 /usr/libexec/alo-boundaryd /usr/libexec/alo-sessiond \
  # says so, and makes nothing. Running it any other way would furnish the
  # build container's own home folder.
  && env -u HOME /usr/libexec/alo-their-folders 2>&1 | grep -q 'HOME is not set' \
- && /usr/bin/gnome-keyring-daemon --version | grep -q 'gnome-keyring-daemon' \
+ && setpriv --reuid=65534 --regid=65534 --clear-groups \
+      /usr/bin/gnome-keyring-daemon --version | grep -q 'gnome-keyring-daemon' \
  && echo "the keyring is enabled in every person's own manager, and the daemon it names runs" \
  && bootc container lint
 
