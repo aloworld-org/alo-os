@@ -236,6 +236,22 @@ at the moment the request arrives. Nothing on the wire can name the level.
 - **One line, at most 4,096 bytes, and not empty** — anything else is refused
   before the level is read, because what a person approves is the sentence and
   a sentence with a line break in it reads as two.
+- **A command is told nobody is there to answer it** (added 2026-11-13,
+  additively): it starts with `GIT_TERMINAL_PROMPT=0`, `GCM_INTERACTIVE=never`,
+  `GH_PROMPT_DISABLED=1`, `GH_NO_UPDATE_NOTIFIER=1` and
+  `SSH_ASKPASS_REQUIRE=never`, each only where the service's own environment
+  does not already set it (`alo_running::nobody_is_there_to_answer`). So `git`,
+  `gh` and `ssh` stop at once instead of waiting two minutes on a question
+  nobody can see, and `gh` does not go to github.com on its own to look for a
+  newer `gh`. `GIT_SSH_COMMAND` is deliberately not set, because it would
+  replace an `ssh` command the person configured for `git`.
+- **A command that failed because nobody is signed in to GitHub says so**
+  (added 2026-11-13): where what it wrote is `git`'s, `ssh`'s or `gh`'s own
+  line for that, *It did not work:* is followed by *you are not signed in to
+  GitHub. To sign in, type gh auth login --web in your terminal …*, which also
+  says the sign-in lets alo act on every repository the account can at full
+  access (`alo_capability::ItDidNotWork::of_what_it_said`). The status is
+  still carried and recorded as before.
 - **A waiting command is answered exactly as a change is**: `approve` and
   `decline` on the person's door, by number; it appears in `waiting`; one
   approval runs it once; a second approval of the number, or one after it

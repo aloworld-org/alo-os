@@ -247,8 +247,30 @@ fn everything_this_machine_says() -> alo_strings::Vocabulary {
     // as a missing key.
     alo_software::words::declare_into(&mut vocabulary).unwrap();
     alo_applications::words::declare_into(&mut vocabulary).unwrap();
+    // The accessibility fallback's, so a read or a press refused reads as its
+    // sentence rather than as a missing key.
+    alo_adapters::words::declare_into(&mut vocabulary).unwrap();
     crate::words::declare_into(&mut vocabulary).unwrap();
     vocabulary
+}
+
+/// **Windows nothing in a test opens**: every opening answers that there is no
+/// tree here. For tests that build a machine offering the application acts and
+/// never read or press — a tree they did not ask for would be a fixture
+/// quietly answering a question nobody meant to ask.
+#[derive(Debug)]
+pub(crate) struct NoTreeHere;
+
+impl crate::TheWindowsOnTheScreen for NoTreeHere {
+    fn opening(
+        &mut self,
+    ) -> Result<Box<dyn alo_adapters::AccessibilityTree>, alo_adapters::TreeFault> {
+        Err(alo_adapters::TreeFault::NotThere)
+    }
+
+    fn working_fully(&self, _: &str) -> alo_adapters::WorkingFully {
+        alo_adapters::WorkingFully::NothingMoreToTurnOn
+    }
 }
 
 /// A provider somebody added, at this address.

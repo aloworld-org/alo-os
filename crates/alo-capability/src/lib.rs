@@ -193,6 +193,8 @@ pub mod grant;
 pub mod grantee;
 pub mod grants;
 pub mod how_code_runs;
+/// Whether a command failed because nobody is signed in to GitHub.
+pub mod not_signed_in_to_github;
 pub mod offered;
 pub mod path;
 pub mod persons_own;

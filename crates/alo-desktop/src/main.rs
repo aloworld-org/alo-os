@@ -235,6 +235,7 @@ mod running {
         match alo_shell::stand_the_desktop_up(
             ADisplayToStandOn {
                 display: &said.display,
+                seat: alo_shell::DirectSession::new,
                 runtime: &said.runtime,
                 socket: THE_SOCKET,
                 layout: said.keyboard.layout(),

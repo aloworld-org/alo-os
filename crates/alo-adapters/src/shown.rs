@@ -162,6 +162,24 @@ impl Seen {
     pub fn limit(&self) -> Option<Limit> {
         self.limit
     }
+
+    /// **The text it shows, as a reader reads it**: what it holds, or for
+    /// words, a field or a document holding nothing beyond its name, that name.
+    /// Never a password field's, which holds [`Contents::Withheld`].
+    ///
+    /// One answer for a person's `read` and for alo's, so the two agree on
+    /// what a window that *shows no text* is.
+    #[must_use]
+    pub fn text_to_read(&self) -> Option<&str> {
+        match &self.contents {
+            Contents::Text(text) => Some(text),
+            Contents::Withheld => None,
+            Contents::Nothing if self.role.text_is_read() && !self.name.is_empty() => {
+                Some(&self.name)
+            }
+            Contents::Nothing => None,
+        }
+    }
 }
 
 /// One window, and what it shows.
@@ -230,6 +248,12 @@ impl Shown {
     /// Every thing every window shows, in reading order.
     pub fn everything(&self) -> impl Iterator<Item = &Seen> {
         self.windows.iter().flat_map(|window| window.seen.iter())
+    }
+
+    /// Whether any window shows any text a reader reads ([`Seen::text_to_read`]).
+    #[must_use]
+    pub fn shows_any_text(&self) -> bool {
+        self.everything().any(|seen| seen.text_to_read().is_some())
     }
 
     /// Whether it showed more than is read at once, so the rest was not read.

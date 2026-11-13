@@ -347,6 +347,57 @@ fn at_full_access_a_command_that_fails_is_not_answered_done() {
     );
 }
 
+/// **A push nobody had signed in for is told as that, with how to sign in** —
+/// never as a bare exit status — and the record still keeps the status.
+///
+/// The command prints what `git` prints when it has an `https` remote on
+/// GitHub and nobody to type a name, which is what alo's own runs now get
+/// (`alo_running::nobody_is_there_to_answer`); nothing here reaches a network.
+#[test]
+fn at_full_access_a_push_nobody_signed_in_for_says_how_to_sign_in() {
+    let elsewhere = Elsewhere::with_the_level("not-signed-in", Some(HowCodeRuns::AtFullTrust));
+    let line = a_message(
+        r#"{"run":{"command":"echo 'fatal: could not read Username for https://github.com: terminal prompts disabled' >&2; exit 128"}}"#,
+    );
+    let mut record = Record::default();
+    let mut bracket = a_bracket();
+    on_a_turn(
+        "not-signed-in",
+        &mut record,
+        |turning, grants, strings, _| {
+            let said = the_agent_asked(
+                &line,
+                turning,
+                grants,
+                strings,
+                &elsewhere.here(),
+                &mut bracket,
+            );
+            let told = match &said {
+                ToAnAgent::DoneWithoutAsking { said, .. } => said.text().to_owned(),
+                _ => String::new(),
+            };
+            assert!(
+                told.contains("It did not work: you are not signed in to GitHub.")
+                    && told.contains("gh auth login --web"),
+                "a push nobody signed in for was not told as that: {said:?}"
+            );
+            assert!(!told.contains("exit status"), "{told:?}");
+        },
+    );
+    let written = what_was_written(&record);
+    assert!(
+        matches!(
+            written.as_slice(),
+            [Happened::RanACommand {
+                returned: Some(128),
+                ..
+            }]
+        ),
+        "{written:?}"
+    );
+}
+
 /// **At *ask me each time* nothing runs before the OK; one OK runs it exactly
 /// once; the same number again is refused** — on the person's own door, with
 /// the command in the list of what waits.
