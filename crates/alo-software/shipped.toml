@@ -94,3 +94,16 @@ identifier = "app.devsuite.Ptyxis"
 source = "flathub"
 version = "50.1"
 licence = "GPL-3.0-or-later"
+
+# The editor alo builds in (ADR 0143; the owner's choice of 2026-10-31, and "install
+# upstream now; alo's own modifiable VSCodium later", 2026-11-11). Upstream, with no
+# extension added by alo. Its version is Flathub's own answer on 2026-11-12, not
+# 2026-09-15's like the seven above. Its own published permissions reach every file in
+# the home and let it start programs outside its sandbox, and `alo-app list` says so,
+# read from the package on the machine (`alo_installed::what_they_may_reach`).
+[[application]]
+role = "code-editor"
+identifier = "com.vscodium.codium"
+source = "flathub"
+version = "1.143.17232"
+licence = "MIT"

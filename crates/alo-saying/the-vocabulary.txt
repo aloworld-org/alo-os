@@ -174,6 +174,7 @@ app.kind.count	{said}: a whole number
 app.kind.name	{said}: one name
 app.kind.path	{said}: a path; one that does not begin with / is taken from the folder you are in
 app.list.line	{name} — {said}. {list}
+app.list.line-reaching	{name} — {said}. {list}. {said_too}
 app.naming.not-installed	No installed application is called {typed}. alo-app list shows what is installed
 app.naming.shared-short-name	More than one installed application is called {typed}: {list}. Name the one you mean by its identifier
 app.offers.abilities	It can be opened, focused and closed, its controls pressed where its windows describe them, and asked for these abilities of its own: {list}
@@ -187,6 +188,11 @@ app.press.unanswered	Asked {application} to press the {kind} “{control}”, an
 app.reach.reserved	reach this application as {identifier}, because {short} is a word alo-app keeps for itself
 app.reach.shared	reach this application as {identifier}, because another installed application is also called {short}
 app.reach.short	type {short}
+app.reaches.home-change	It can read and change every file in your home without asking you
+app.reaches.home-change-and-programs	It can read and change every file in your home, and start other programs that reach everything your account can, without asking you
+app.reaches.home-read	It can read every file in your home without asking you
+app.reaches.home-read-and-programs	It can read every file in your home, and start other programs that reach everything your account can, without asking you
+app.reaches.programs	It can start other programs that reach everything your account can, without asking you
 app.read.none	The window “{window}” shows no text that can be read. An app shows none when it is not describing itself: “Apps describe themselves to alo and screen readers” is in Settings → Accessibility → Applications.
 app.read.none-until-alo-works-fully	The window “{window}” shows no text that can be read. If you want alo to read the document in {application}, turn on “Let alo work fully inside apps like VSCodium” in Settings → Accessibility → Applications, then close {application} and open it again.
 app.road.declared	Abilities of its own, declared by an adapter alo OS ships and reviewed:

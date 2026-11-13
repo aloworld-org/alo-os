@@ -194,7 +194,7 @@ impl Pinned {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Shipped {
     /// In [`Role::EVERY`]'s order, one each.
-    every: [Pinned; 7],
+    every: [Pinned; 8],
 }
 
 impl Shipped {
@@ -219,7 +219,7 @@ impl Shipped {
                 format: written.format,
             });
         }
-        let mut filled: [Option<Pinned>; 7] = Default::default();
+        let mut filled: [Option<Pinned>; 8] = Default::default();
         for entry in written.application {
             let pinned = checked(entry)?;
             if filled
@@ -253,7 +253,7 @@ impl Shipped {
 
     /// Every application, in [`Role::EVERY`]'s order.
     #[must_use]
-    pub const fn every(&self) -> &[Pinned; 7] {
+    pub const fn every(&self) -> &[Pinned; 8] {
         &self.every
     }
 
@@ -268,6 +268,7 @@ impl Shipped {
             images,
             documents,
             terminal,
+            code,
         ] = &self.every;
         match role {
             Role::WebBrowser => browser,
@@ -277,6 +278,7 @@ impl Shipped {
             Role::ImageViewer => images,
             Role::DocumentViewer => documents,
             Role::Terminal => terminal,
+            Role::CodeEditor => code,
         }
     }
 }

@@ -158,8 +158,9 @@ fn installing_everything(tool: &AFreshMachine, enabled: &Enabled, indicator: &mu
 // ---------------------------------------------------------------------------
 
 /// **A decided list — a web browser, a file manager with trash and what opens
-/// its archives, a text editor, an image viewer, a document viewer and a
-/// terminal — each a pinned upstream application named by its source
+/// its archives, a text editor, an image viewer, a document viewer, a
+/// terminal and a code editor (VSCodium, ADR 0143) — each a pinned upstream
+/// application named by its source
 /// identifier and version**, under its licence, from the place a fresh machine
 /// installs from; and the file the installer plan reads is the list this crate
 /// holds, byte for byte.
@@ -199,7 +200,18 @@ fn the_decided_list_names_each_role_as_a_pinned_upstream_application() {
             "50.1",
             "GPL-3.0-or-later",
         ),
+        (
+            Role::CodeEditor,
+            "com.vscodium.codium",
+            "1.143.17232",
+            "MIT",
+        ),
     ];
+    assert_eq!(
+        decided.len(),
+        Role::EVERY.len(),
+        "a role the list names no application for"
+    );
     assert_eq!(shipped.every().len(), decided.len());
     for (role, identifier, version, licence) in decided {
         let pinned = shipped.the(role);

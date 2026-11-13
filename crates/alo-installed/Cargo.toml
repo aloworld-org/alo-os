@@ -1,7 +1,7 @@
 [package]
 name = "alo-installed"
 version = "0.0.1"
-description = "What applications this machine has, read from its desktop entries."
+description = "What applications this machine has, read from its desktop entries, and what each flatpak package lets it reach."
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
