@@ -252,7 +252,11 @@ impl ThePasswordSheet {
                 }
             }
             // One field: nothing to move to, and no list.
-            SignInKey::OtherField | SignInKey::Earlier | SignInKey::Later | SignInKey::Nothing => {}
+            SignInKey::OtherField
+            | SignInKey::FieldBefore
+            | SignInKey::Earlier
+            | SignInKey::Later
+            | SignInKey::Nothing => {}
         }
     }
 

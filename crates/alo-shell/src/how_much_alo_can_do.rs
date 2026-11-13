@@ -147,7 +147,7 @@ impl HowMuchAloCanDo {
                 };
                 Went::Stayed
             }
-            SignInKey::Earlier => {
+            SignInKey::Earlier | SignInKey::FieldBefore => {
                 self.ring = match self.ring {
                     TheRingIs::OnAChoice(0) => TheRingIs::OnContinue,
                     TheRingIs::OnAChoice(it) => TheRingIs::OnAChoice(it - 1),
