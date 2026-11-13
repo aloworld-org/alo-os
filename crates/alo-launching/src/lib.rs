@@ -49,6 +49,7 @@ pub mod the_command;
 pub mod the_entry;
 pub mod the_environment;
 pub mod the_unit;
+pub mod typed_as_it_is;
 pub mod where_it_is;
 
 pub use alos_copy::{AlosCopy, WITH_A_COPY_OF_THEIR_OWN, alos_copy, the_unit_for_alos_copy};
@@ -63,4 +64,5 @@ pub use the_command::{Filling, WhyNotACommand, the_command_in};
 pub use the_entry::TheEntry;
 pub use the_environment::{what_an_application_is_handed, what_the_session_is_told};
 pub use the_unit::{is_a_unit_of, the_unit_for};
+pub use typed_as_it_is::{TYPED_AS_IT_IS, WITH_AN_EDITOR_THAT_REWRITES, its_settings_file};
 pub use where_it_is::{the_program, where_the_entry_is};
