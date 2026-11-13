@@ -838,7 +838,13 @@ RUN dnf install --assumeyes --setopt=install_weak_deps=False \
 # that no paper has come out of anything. The image carries `cups-libs` and no
 # daemon. That gap is tracked honestly, and a line here would fail the build
 # for something nobody is hiding. When CUPS ships, it gets a line.
-RUN dnf install --assumeyes --setopt=install_weak_deps=False upower \
+#
+# **`bluez` is named because Fedora 44's base no longer carries it** (ADR 0152).
+# Fedora 42's base shipped `bluez-5.84`, so Bluetooth was here without this file
+# asking for it; on 44 the check below stopped the build at *an ordinary
+# computer is missing /usr/libexec/bluetooth/bluetoothd* (2026-11-13). A
+# capability this block holds is a capability it installs by name.
+RUN dnf install --assumeyes --setopt=install_weak_deps=False upower bluez \
  && dnf clean all \
  && for daemon in /usr/libexec/upowerd \
                   /usr/libexec/bluetooth/bluetoothd \
