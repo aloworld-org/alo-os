@@ -90,7 +90,7 @@ fn what_worked_says_nothing() {
             code: "4F2A-9C1D".to_owned(),
             page: "https://github.com/login/device".to_owned(),
         },
-        GitHubAnswered::SignedIn("anna".to_owned()),
+        GitHubAnswered::SignInWorked("anna".to_owned()),
         GitHubAnswered::SignedOut,
     ] {
         assert_eq!(answer.said(&strings), None, "{answer:?}");

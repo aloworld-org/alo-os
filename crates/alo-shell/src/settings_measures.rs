@@ -238,6 +238,7 @@ pub(crate) const fn between_blocks_on(category: crate::SettingsCategory) -> u32 
         | C::RunningCode
         | C::Terminal
         | C::RegionAndTime
-        | C::Accessibility => 36,
+        | C::Accessibility
+        | C::Accounts => 36,
     }
 }

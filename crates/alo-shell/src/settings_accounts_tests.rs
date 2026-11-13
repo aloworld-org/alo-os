@@ -154,7 +154,10 @@ fn a_press_asks_the_desktop_and_does_nothing_itself() {
         press(&mut window, SettingsKey::Choose),
         Some(SettingsDid::AskedGitHub(AskingGitHub::SignIn))
     );
-    answered(&mut window, &GitHubAnswered::SignedIn("anna".to_owned()));
+    answered(
+        &mut window,
+        &GitHubAnswered::SignInWorked("anna".to_owned()),
+    );
     let (line, _, said) = as_drawn(&window);
     assert_eq!(line, "Signed in as anna");
     assert!(said.is_empty());

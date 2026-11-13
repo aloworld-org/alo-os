@@ -501,10 +501,10 @@ mod server_desk;
 mod session_desktop;
 mod session_device;
 mod session_input;
-/// Left and Right along a row of choices in Settings.
-mod settings_along_a_row;
 /// Settings → Accounts: who is signed in to GitHub, as the desktop said.
 mod settings_accounts;
+/// Left and Right along a row of choices in Settings.
+mod settings_along_a_row;
 mod settings_answering;
 /// Settings as a frame drew it, for the press after the frame.
 mod settings_as_drawn;
@@ -972,6 +972,7 @@ pub use capture_flatten::{NotFlattened, burnt_in};
 // drawable by this crate and by nobody else, including the fixture whose whole
 // job is to draw a frame with them on it. What is exported is what a caller must
 // hand in; every picture the tools become stays private.
+pub use asking_github::{AskingGitHub, GitHubAnswered, WhyGitHubDidNotWork};
 pub use canvas_command::CanvasCommandError;
 pub use canvas_fixed_controls::{FixedControlsDrawn, Recovery};
 pub use canvas_never_lost::{
@@ -1041,7 +1042,6 @@ pub use screens::{ScreenPlace, Screens, TheRoom};
 pub use the_markets_words::TheMarketsWords;
 pub use the_pointers_look::ThePointersLook;
 pub use the_screen_reader_switch::TheScreenReaderAnswered;
-pub use asking_github::{AskingGitHub, GitHubAnswered, WhyGitHubDidNotWork};
 pub use their_formats::{TheDay, TheirFormats, WhereTheRegionCameFrom};
 
 // **The types a desktop needs to answer `their_displays`, re-exported so that

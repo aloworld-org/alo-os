@@ -48,7 +48,7 @@ pub enum GitHubAnswered {
         page: String,
     },
     /// The sign-in finished, as this login.
-    SignedIn(String),
+    SignInWorked(String),
     /// Signed out.
     SignedOut,
     /// What was asked did not happen.
