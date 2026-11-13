@@ -47,7 +47,9 @@ pub enum TheScreenReaderAnswered {
     /// It was asked to start, and the reader or its unit is not on this
     /// computer — a fault in how the machine was made.
     NotOnThisComputer,
-    /// It was asked to start, and did not, or fell over at once.
+    /// It was asked to start, and did not, or fell over at once — or it
+    /// started and fell over later, while the switch was still on, which the
+    /// desktop says whenever it happens.
     DidNotStart,
     /// It was asked to stop, and is still running.
     DidNotStop,

@@ -66,6 +66,8 @@ use crate::bounding::Doing;
 use crate::installing_an_application::installing_an_application;
 use crate::looking_at_the_catalogue::looking_at_the_catalogue;
 use crate::machine::Machine;
+use crate::pressing_a_control::pressing_a_control;
+use crate::reading_an_applications_windows::reading_an_applications_windows;
 use crate::refusing::NotDone;
 use crate::what_a_verb_did::WhatAVerbDid;
 
@@ -133,6 +135,19 @@ pub(crate) fn carrying_out(
     // offers these, so a call for it is never authorised and never arrives —
     // and `acting_on_an_application` refuses it by name anyway, because a list
     // and an executor are two edits and somebody will one day make only one.
+    // **The accessibility fallback's two, routed by name like the rest**, and
+    // before the boundary for the reason the record's question is: ADR 0013's
+    // boundary is built from resolved paths, and neither verb opens a path —
+    // what they reach is the person's accessibility tree, opened for the one
+    // act and dropped with it.
+    if authorised.verb() == alo_adapters::READ_WINDOW {
+        let (entry, read) = reading_an_applications_windows(machine, authorised, grants);
+        return (entry, read.map(WhatAVerbDid::from));
+    }
+    if authorised.verb() == alo_adapters::ACTIVATE_CONTROL {
+        let (entry, pressed) = pressing_a_control(machine, authorised, grants);
+        return (entry, pressed.map(WhatAVerbDid::from));
+    }
     if THE_APPLICATION_ACTS.contains(&authorised.verb()) {
         let (entry, reached) = acting_on_an_application(machine, authorised, grants);
         return (entry, reached.map(WhatAVerbDid::from));

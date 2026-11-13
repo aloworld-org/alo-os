@@ -61,8 +61,9 @@
 //!
 //! An adapter declaring the `api` or `accessibility` mechanism is refused when
 //! loaded: the fallback is not an adapter, and a verb the machine cannot carry
-//! out is never offered. No turn offers adapter or fallback verbs yet: that is
-//! `alo-agentd`'s wiring, as for printing and installing.
+//! out is never offered. **A turn offers the fallback's two verbs since
+//! 2026-11-12** (`alo_turn::Machine`), and no adapter's own verbs yet: those
+//! are carried out over the session bus, and nothing in a turn reaches it.
 
 #![doc(html_root_url = "https://github.com/aloworld-org/alo-os")]
 
@@ -74,6 +75,7 @@ pub mod adapter;
 pub mod adapter_arg;
 pub mod adapter_verb;
 pub mod adapters;
+pub mod alos_own_tree;
 pub mod becoming_code;
 pub mod bus_names;
 pub mod by_their_hand;
@@ -91,6 +93,7 @@ pub mod message;
 pub mod not_loaded;
 pub mod not_pressed;
 pub mod not_walked;
+pub mod nothing_to_read;
 pub mod pressable;
 pub mod reading_windows;
 pub mod role;
@@ -125,6 +128,7 @@ pub use message::{Argument, Message};
 pub use not_loaded::NotLoaded;
 pub use not_pressed::{NotPressed, WorkingFully};
 pub use not_walked::NotWalked;
+pub use nothing_to_read::nothing_to_read;
 pub use pressable::Pressable;
 pub use reading_windows::{ReadingWindows, WindowsRead};
 pub use role::Role;

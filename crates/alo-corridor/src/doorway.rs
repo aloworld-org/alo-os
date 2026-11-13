@@ -540,6 +540,19 @@ fn as_the_asking_machine_sees_it(did: &alo_turn::WhatAVerbDid) -> Option<alo_pro
         // function's own doc comment, and `alo_turn::Arriving::reading`, which
         // refuses this verb by name.
         alo_turn::WhatAVerbDid::WhatTouchedAFile(_) => return None,
+        // **Unreachable for the same reason, and nothing crosses**:
+        // `alo_turn::Arriving::reading` refuses a read of this person's
+        // windows across a pairing by name, and there is no shape here for
+        // carrying their screen to another machine.
+        alo_turn::WhatAVerbDid::WhatTheWindowsShowed(_) => return None,
+        // A press is a change this machine's person approved here, so it
+        // crosses back as what was pressed — never as what the window showed.
+        alo_turn::WhatAVerbDid::AControlWasPressed(pressed) => alo_protocol::Done::of_a_press(
+            pressed.application(),
+            pressed.kind(),
+            pressed.name(),
+            pressed.unanswered(),
+        ),
     })
 }
 

@@ -506,7 +506,7 @@ fn a_list_missing_what_the_installer_finishes_with_is_caught() {
 ///   service is. Without it the bus denies NetworkManager's call to the
 ///   supplicant, and the error names NetworkManager rather than this file;
 /// - **the supplicant is at `/usr/bin`**, which is the rpm's own path.
-///   `/usr/sbin/wpa_supplicant` resolves too, because Fedora 42 merged the two,
+///   `/usr/sbin/wpa_supplicant` resolves too, because Fedora merged the two (42, and 44 still: `/usr/sbin` is a link to `bin`),
 ///   and is not the one named;
 /// - **the firmware is the file and not the link.** See
 ///   [`THE_LINK_THAT_IS_NOT_THE_FIRMWARE`].

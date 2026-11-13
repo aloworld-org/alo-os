@@ -55,6 +55,15 @@ fn as_a_client_sees_it(did: &alo_turn::WhatAVerbDid) -> Done {
         // The fifth family, 2026-10-18, naming this copy along with the real
         // ones exactly as the third and fourth did.
         alo_turn::WhatAVerbDid::WhatTouchedAFile(found) => Done::of_a_record_read(found, noon()),
+        alo_turn::WhatAVerbDid::WhatTheWindowsShowed(read) => {
+            Done::of_a_window_read(read.shown(), read.told())
+        }
+        alo_turn::WhatAVerbDid::AControlWasPressed(pressed) => Done::of_a_press(
+            pressed.application(),
+            pressed.kind(),
+            pressed.name(),
+            pressed.unanswered(),
+        ),
     }
 }
 

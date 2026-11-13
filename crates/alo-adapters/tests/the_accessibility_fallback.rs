@@ -723,6 +723,56 @@ fn what_cannot_be_read_is_said_in_words() {
 // Pressing.
 // ---------------------------------------------------------------------------
 
+/// **What the approval card says a press changes and leaves alone is what a
+/// press does** (the owner's decision of 2026-11-01): *presses that one control
+/// once, by its own action* — one act, on the named control, by an action the
+/// control offers — and *nothing is typed, no other control is pressed, and
+/// nothing is found by where it is on the screen* — no text was asked of any
+/// field, no other control was acted on, and the tree has no question about
+/// position to ask.
+#[test]
+fn a_press_does_what_its_card_says_and_nothing_it_says_it_leaves() {
+    let strings = in_english();
+    let verbs = fallback_verbs().unwrap();
+    let press = verbs.of(ACTIVATE_CONTROL).unwrap();
+    assert_eq!(
+        press.what_it_changes().map(|word| word.says()),
+        Some("Presses that one control once, by its own action, as a person pressing it would.")
+    );
+    assert_eq!(
+        press.what_it_leaves().map(|word| word.says()),
+        Some(
+            "Nothing is typed, no other control is pressed, and nothing is found by where it is \
+             on the screen."
+        )
+    );
+
+    let tree = the_desktop();
+    let grants = granting(&[MAIL]);
+    let authorised = approved(&pressing(MAIL, "button", "Sign in"), &grants);
+    Activating::of(
+        authorised,
+        &shipped_adapters().unwrap(),
+        &grants,
+        &installed(),
+        &strings,
+    )
+    .unwrap()
+    .press(&tree, WorkingFully::NothingMoreToTurnOn, &strings)
+    .unwrap();
+
+    let sign_in = tree.named(":1.7", "Sign in");
+    let acts: Vec<Asked> = tree
+        .asked()
+        .into_iter()
+        .filter(|asked| matches!(asked, Asked::Act(..)))
+        .collect();
+    // One act, on the named control and no other. **Nothing typed and nothing
+    // by position** need no assertion of their own: `AccessibilityTree` has no
+    // question that types or asks where a thing is, so no press can.
+    assert_eq!(acts, [Asked::Act(sign_in, 0)], "one control, once");
+}
+
 /// **One approval presses the control it names, once, and is recorded** with
 /// its approval, its grant and the sentence the person approved.
 #[test]

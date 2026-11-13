@@ -374,8 +374,63 @@ pub const NOT_ALL_READ: Word = Word::saying(
 )
 .noting("Said beside what was read. {application} is its identifier and is not translated.");
 
+/// A window that shows no text, said rather than answering nothing.
+///
+/// **Under `alo-app`'s key**, because that crate published it first, for a
+/// person's own `read`; it moved here on 2026-11-12, when alo's read in a turn
+/// came to need the same sentence, and a published key is kept rather than
+/// retired.
+pub const NOTHING_TO_READ: Word = Word::saying(
+    "app.read.none",
+    "The window “{window}” shows no text that can be read. An app shows none when it is not \
+     describing itself: “Apps describe themselves to alo and screen readers” is in Settings → \
+     Accessibility → Applications.",
+)
+.noting(
+    "Said when a person, or alo for them, read an application's window and nothing in it could \
+     be read. {window} is the window's title. The quoted switch must be the same translation as \
+     the switch itself (settings.access.apps-describe-themselves), and Settings, Accessibility \
+     and Applications the same as that window's own words.",
+);
+
+/// A window of VSCodium, VS Code or Chromium that shows no text, while *Let alo
+/// work fully inside apps like VSCodium* is off — which is why it shows none.
+/// Under `alo-app`'s key, for [`NOTHING_TO_READ`]'s reason.
+pub const NOTHING_TO_READ_UNTIL_ALO_WORKS_FULLY: Word = Word::saying(
+    "app.read.none-until-alo-works-fully",
+    "The window “{window}” shows no text that can be read. If you want alo to read the document \
+     in {application}, turn on “Let alo work fully inside apps like VSCodium” in Settings → \
+     Accessibility → Applications, then close {application} and open it again.",
+)
+.noting(
+    "Said instead of app.read.none for VSCodium, VS Code and the browser built like them while \
+     that switch is off: \
+     their document is readable only with it on. {window} is the window's title and {application} \
+     the application's name, neither translated. The quoted switch must be the same translation \
+     as the switch itself (settings.access.alo-works-fully-inside-apps).",
+);
+
+/// What pressing a control changes, on the card a person answers.
+pub const PRESS_CHANGES: Word = Word::saying(
+    "adapters.fallback.activate-control.changes",
+    "Presses that one control once, by its own action, as a person pressing it would.",
+)
+.noting(
+    "Shown on the card a person answers before alo presses a control in an application, beside \
+     a tick. What the control then does is the application's, which is why the sentence names \
+     only the press. Held to it by a test.",
+);
+
+/// What pressing a control leaves alone.
+pub const PRESS_LEAVES: Word = Word::saying(
+    "adapters.fallback.activate-control.leaves",
+    "Nothing is typed, no other control is pressed, and nothing is found by where it is on the \
+     screen.",
+)
+.noting("Shown beside the sentence about what the press changes. Held to it by a test.");
+
 /// Every word the fallback declares.
-pub const EVERY_WORD: [Word; 37] = [
+pub const EVERY_WORD: [Word; 41] = [
     READ_PURPOSE,
     READ_APPLICATION,
     READ_SENTENCE,
@@ -413,4 +468,8 @@ pub const EVERY_WORD: [Word; 37] = [
     LIMIT_NOT_DESCRIBED,
     LIMIT_ANOTHER_PROGRAM,
     NOT_ALL_READ,
+    NOTHING_TO_READ,
+    NOTHING_TO_READ_UNTIL_ALO_WORKS_FULLY,
+    PRESS_CHANGES,
+    PRESS_LEAVES,
 ];
