@@ -26,6 +26,7 @@ mod dragging_a_frame;
 mod every_frame_answers_as_a_list;
 mod every_window_is_on_a_place;
 mod going_to_a_window_travels;
+mod grabbing_the_canvas_anywhere;
 mod help_with_this_window;
 mod input;
 mod interactive_resize;

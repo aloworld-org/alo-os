@@ -1,0 +1,7 @@
+<svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+<!-- Applications, variant A: three applications and a place for one more. Same grid, stroke and ink as 348:23618. -->
+<rect x="4.66667" y="4.66667" width="8.16667" height="8.16667" rx="1.75" stroke="#102A43" stroke-width="1.98333" stroke-linejoin="round"/>
+<rect x="15.1667" y="4.66667" width="8.16667" height="8.16667" rx="1.75" stroke="#102A43" stroke-width="1.98333" stroke-linejoin="round"/>
+<rect x="4.66667" y="15.1667" width="8.16667" height="8.16667" rx="1.75" stroke="#102A43" stroke-width="1.98333" stroke-linejoin="round"/>
+<path d="M19.25 15.1667V23.3333M15.1667 19.25H23.3333" stroke="#102A43" stroke-width="1.98333" stroke-linecap="round"/>
+</svg>

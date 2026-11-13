@@ -63,6 +63,7 @@ Settings → Keyboard and shortcuts says *Also ⊞ + =* under the action's name
 | Action | Mouse or trackpad | Keyboard |
 |---|---|---|
 | Pan in any direction | two-finger scroll, or Space + drag | arrows while the canvas is focused |
+| Grab the canvas from anywhere, over a window too | `⊞` + left-drag | — |
 | Pan faster | faster two-finger scroll | Shift + arrow |
 | Pan sideways with a mouse | Shift + wheel on empty canvas | ← / → while the canvas is focused |
 | Zoom toward the pointer | pinch, or Ctrl + wheel on empty canvas | `⊞` + Plus / Minus |
@@ -74,6 +75,43 @@ Settings → Keyboard and shortcuts says *Also ⊞ + =* under the action's name
 **Scrolling inside an application scrolls that application. Scrolling over empty
 canvas moves the canvas.** Space + drag deliberately takes panning even when the
 pointer is over a window.
+
+### `⊞` + drag grabs the canvas from anywhere — the owner, 2026-11-13
+
+Asked *"many canvas apps also let you grab from anywhere, even over a window, by
+holding a key such as Super while dragging. Would you like it?"*, the owner
+answered **"yes add it please"**. With several windows covering the screen there
+is no empty canvas to start a wheel or trackpad pan on.
+
+- **Holding `⊞`, a left press anywhere on the canvas takes hold of all of it** —
+  over an application, its band, its edge or empty canvas alike. Dragging pans
+  every window together, one for one with the hand in screen pixels, at every
+  zoom. Letting go of the button, or of `⊞`, ends it, and nothing glides on
+  afterwards, so there is nothing for reduced motion to change.
+- **The window under the pointer is told nothing** — not the press, not the
+  movement, not the release — and the keyboard stays where it was.
+- **The Dock, what it opened, the Bar's matches, the put-aside panel and the
+  egress indicator are not canvas**: a press on them is theirs, `⊞` or not.
+  Sheets take the whole seat before a press is routed. The top controls' room is
+  reserved and nothing is drawn in it yet, so a press there is on the window the
+  person can see, and it grabs.
+- **The view the press landed on is the one that pans**, to the end of the
+  stroke, even if the pointer crosses onto another display on the way.
+- **The pointer is an open hand while `⊞` is held** where a press would take
+  hold, **and a closed hand while it is held** — so the gesture announces itself
+  the moment the key goes down.
+- **It is not a row in Settings → Keyboard and shortcuts.** Every row there is an
+  action with a chord a person can change, and a chord is modifiers and a key;
+  a held key and a drag is not one, which is also why Space + drag and the arrows
+  are not listed there.
+- **Checked before it was built: `⊞` + drag was free.** Nothing in the shell, the
+  shipped shortcuts or the design gave it to moving or resizing a window, as some
+  desktops do; here a window moves by its band and resizes by its edges (above).
+  **`⊞` alone is the Bar's** in the table above and is not built yet; when it is,
+  a `⊞` that took hold of the canvas was not pressed alone and must not open the
+  Bar on its release.
+
+Built in `crates/alo-shell/src/canvas_grab_anywhere.rs`.
 
 ## Working with windows
 

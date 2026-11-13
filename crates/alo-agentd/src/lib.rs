@@ -350,6 +350,8 @@ pub mod the_bracket_this_turn_takes;
 /// access, everything the account can reach (ADR 0149).
 #[cfg(target_os = "linux")]
 pub mod the_grants_as_the_level_is_now;
+#[cfg(target_os = "linux")]
+pub mod the_persons_windows;
 #[cfg(all(test, target_os = "linux"))]
 mod the_proxy_on_the_road_a_question_takes;
 #[cfg(target_os = "linux")]

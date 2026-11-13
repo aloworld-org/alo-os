@@ -76,9 +76,20 @@ impl crate::Server {
     /// going somewhere is the person taking hold of the canvas, and a glide
     /// that carried on would fight them.
     pub(crate) fn set_the_camera(&mut self, camera: Camera) {
-        self.the_glide = None;
         let named = self.the_display_being_worked_on();
-        self.surfaces.cameras.insert(named, camera);
+        self.set_the_camera_of(&named, camera);
+    }
+
+    /// Look at the plane from here, on **this** display.
+    ///
+    /// For a gesture that named its display when it began —
+    /// `crate::canvas_grab_anywhere` keeps panning the view a person took hold
+    /// of even after the pointer wanders onto the next monitor. Every other
+    /// writer goes through [`Self::set_the_camera`], which comes here, so this
+    /// is still the one place a camera is written and a glide is ended.
+    pub(crate) fn set_the_camera_of(&mut self, named: &str, camera: Camera) {
+        self.the_glide = None;
+        self.surfaces.cameras.insert(named.to_owned(), camera);
     }
 
     /// The display the person is working on, by name.

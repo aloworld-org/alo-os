@@ -71,6 +71,7 @@
 //! turn would be a list that could not change under it. Nothing here reads a
 //! clock either, as everywhere else in this workspace.
 
+use alo_adapters::Adapters;
 use alo_applications::Installed;
 use alo_capability::Verbs;
 use alo_egress::Indicator;
@@ -85,6 +86,7 @@ use crate::kept::Kept;
 use crate::shortening::{Shortened, Shortening};
 use crate::the_door_the_compositor_serves::TheDoorTheCompositorServes;
 use crate::the_verbs_would_not_declare::TheVerbsWouldNotDeclare;
+use crate::the_windows_on_the_screen::TheWindowsOnTheScreen;
 
 /// The verbs, the words, the resolver, the boundary, the indicator and the
 /// record: one machine's, shared by every turn on it.
@@ -168,6 +170,16 @@ pub struct Machine<'a> {
     /// of an approved `open` names the road — see
     /// `crate::how_an_application_starts`. `None` exactly when the door is.
     knowing_how_it_starts: Option<&'a dyn SaysHowAnApplicationStarts>,
+    /// What opens the person's accessibility tree, for the two accessibility
+    /// verbs — **one tree per read or press, never held here**
+    /// (`crate::the_windows_on_the_screen`). `None` exactly when the door is,
+    /// because the two verbs arrive with the application acts or not at all.
+    windows: Option<&'a mut dyn TheWindowsOnTheScreen>,
+    /// The adapters alo OS ships, which the fallback is held to: an application
+    /// with an adapter of its own is reached through that adapter
+    /// (`alo_adapters::fallback_reach`). Empty on a machine that offers neither
+    /// accessibility verb, where nothing asks.
+    adapters: Adapters,
 }
 
 /// What a machine needs to carry out the installation verb.
@@ -209,6 +221,13 @@ pub struct WhatAnApplicationVerbNeeds<'a> {
     /// where nothing starts it and recorded with its road where something does
     /// (the owner's decision of 2026-10-31, ADR 0108).
     pub starting: &'a dyn SaysHowAnApplicationStarts,
+    /// What opens the person's accessibility tree, so alo can read what an
+    /// application's windows show and press one control in them (ADR 0143;
+    /// Demo 2, stage 4). Here rather than in a family of its own because the
+    /// two verbs reach the same granted, installed applications the three acts
+    /// do, and a machine that can act on an application's window but not see
+    /// into it is the gap this closes.
+    pub windows: &'a mut dyn TheWindowsOnTheScreen,
 }
 
 /// Every verb a whole machine offers, as one list.
@@ -234,15 +253,26 @@ pub struct WhatAnApplicationVerbNeeds<'a> {
 /// an agent told about a verb the machine does not have asks for it and is
 /// refused, in words, with the refusal written down.
 ///
+/// # The accessibility fallback's two, and not the adapters' own
+///
+/// Since 2026-11-12 the list ends with `accessible.read_window` and
+/// `accessible.activate_control` (`alo_adapters::fallback_verbs`), which this
+/// machine carries out through [`TheWindowsOnTheScreen`]. **An adapter's own
+/// verbs — `text_editor.open_document` — are not on it**: they are carried out
+/// over the application's own interface on the session bus, nothing here
+/// reaches that yet, and a verb on this list with nothing behind it is an
+/// approval that does nothing.
+///
 /// # Errors
 /// [`TheVerbsWouldNotDeclare`], naming the family that refused — including two
 /// families having declared one name, which is what this `Result` is really
-/// for. The ten as they are written cannot cause it.
+/// for. The fourteen as they are written cannot cause it.
 pub fn the_verbs_a_whole_machine_offers() -> Result<Verbs, TheVerbsWouldNotDeclare> {
     let mut verbs = file_verbs()?;
     alo_software::verbs::declare_into(&mut verbs)?;
     alo_applications::verbs::declare_the_three_with_a_road_into(&mut verbs)?;
     alo_record::declare_verbs_into(&mut verbs)?;
+    alo_adapters::fallback_verbs::declare_into(&mut verbs)?;
     Ok(verbs)
 }
 
@@ -275,6 +305,8 @@ impl<'a> Machine<'a> {
             installed: Installed::default(),
             reaching_the_compositor: None,
             knowing_how_it_starts: None,
+            windows: None,
+            adapters: Adapters::default(),
             bound: Bound::Nobodys,
             bounding,
             indicator,
@@ -333,6 +365,8 @@ impl<'a> Machine<'a> {
             installed: Installed::default(),
             reaching_the_compositor: None,
             knowing_how_it_starts: None,
+            windows: None,
+            adapters: Adapters::default(),
             bound,
             bounding,
             indicator,
@@ -358,8 +392,9 @@ impl<'a> Machine<'a> {
         Some((tool, self.bound.clone(), self.indicator))
     }
 
-    /// Every verb this machine can carry out: the six, the installation, and
-    /// the three application acts that have a road.
+    /// Every verb this machine can carry out: the six, the installation, the
+    /// three application acts that have a road, the record's question, and the
+    /// accessibility fallback's read and press.
     ///
     /// # Three of the four, and the fourth is not offered
     ///
@@ -399,6 +434,7 @@ impl<'a> Machine<'a> {
         // **The same list an agent is told about**, read from one place so the
         // two cannot drift in which families they include.
         let verbs = the_verbs_a_whole_machine_offers()?;
+        let adapters = alo_adapters::shipped_adapters()?;
         Ok(Self {
             verbs,
             strings,
@@ -407,6 +443,8 @@ impl<'a> Machine<'a> {
             installed: applications.installed,
             reaching_the_compositor: Some(applications.door),
             knowing_how_it_starts: Some(applications.starting),
+            windows: Some(applications.windows),
+            adapters,
             bound: software.bound,
             bounding,
             indicator,
@@ -443,6 +481,24 @@ impl<'a> Machine<'a> {
     /// `pub(crate)`, and the only caller is `acting_on_an_application.rs`.
     pub(crate) fn how_applications_start(&self) -> Option<&'a dyn SaysHowAnApplicationStarts> {
         self.knowing_how_it_starts
+    }
+
+    /// What opens the person's accessibility tree, on a machine that offers
+    /// the two accessibility verbs.
+    ///
+    /// `pub(crate)`, and the callers are `reading_an_applications_windows.rs`
+    /// and `pressing_a_control.rs`, each of which opens one tree for one act.
+    pub(crate) fn the_windows_on_the_screen(&mut self) -> Option<&mut dyn TheWindowsOnTheScreen> {
+        self.windows
+            .as_deref_mut()
+            .map(|windows| windows as &mut dyn TheWindowsOnTheScreen)
+    }
+
+    /// The adapters alo OS ships, which the accessibility fallback is held to.
+    ///
+    /// `pub(crate)`, for the same two callers.
+    pub(crate) const fn the_adapters(&self) -> &Adapters {
+        &self.adapters
     }
 
     /// What an agent may ask for on this machine.
@@ -746,7 +802,7 @@ mod tests {
     ///
     /// # Why the names and not a count
     ///
-    /// A count passes when one family replaces another. These are the twelve
+    /// A count passes when one family replaces another. These are the fourteen
     /// in `docs/contracts/agent-verbs.md`, which is the published list a third
     /// party builds an adapter against: *a closed list; if a capability is not
     /// written here, `alo-agentd` does not have it.* So this is the contract
@@ -759,10 +815,10 @@ mod tests {
     /// verb with nothing behind it is worse than the capability missing.
     #[test]
     fn every_verb_this_machine_offers_is_named_here_and_no_other() {
-        let offered = the_verbs_a_whole_machine_offers().expect("the twelve verbs declare");
+        let offered = the_verbs_a_whole_machine_offers().expect("the fourteen verbs declare");
         let told: Vec<&str> = offered.all().map(alo_capability::Verb::name).collect();
 
-        let the_twelve = [
+        let the_fourteen = [
             // `alo-files`' six.
             "list_folder",
             "read_file",
@@ -780,8 +836,12 @@ mod tests {
             "close_application",
             // `alo-record`'s one, added 2026-10-18.
             "what_touched_this_file",
+            // The accessibility fallback's two, added 2026-11-12: a read that
+            // answers inside the turn, and a press a person approves.
+            "accessible.read_window",
+            "accessible.activate_control",
         ];
-        for name in the_twelve {
+        for name in the_fourteen {
             assert!(
                 told.contains(&name),
                 "{name} is in docs/contracts/agent-verbs.md and this machine does not offer it, \
@@ -790,10 +850,10 @@ mod tests {
         }
         assert_eq!(
             told.len(),
-            the_twelve.len(),
+            the_fourteen.len(),
             "this machine offers {} verbs and {} are named here: {told:?}",
             told.len(),
-            the_twelve.len()
+            the_fourteen.len()
         );
         assert!(
             !told.contains(&"arrange_application"),

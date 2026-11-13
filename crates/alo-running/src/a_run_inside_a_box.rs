@@ -309,7 +309,10 @@ impl<'a, R: SomewhereToWrite> WhereCommandsRun<'a, R> {
         // box was joined is told apart from a command that ran and failed
         // (`crate::the_helpers_word`).
         let word = crate::the_helpers_word::a_word_of_its_own();
-        let started = Command::new(self.helper)
+        let mut starting = Command::new(self.helper);
+        // **Nobody is there to answer a question it asks**, inside the box as
+        // outside it (`crate::nobody_is_there_to_answer`).
+        let started = crate::nobody_is_there_to_answer::nobody_is_there_to_answer(&mut starting)
             .arg(self.boxes_live_in)
             .arg(the_box.at())
             .arg(what.program())

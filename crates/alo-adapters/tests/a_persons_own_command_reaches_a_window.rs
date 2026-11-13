@@ -261,10 +261,16 @@ fn the_desktop() -> ATree {
             None,
             vec![
                 thing(roles::FRAME, "Settings")
-                    .marked(alo_access::THE_SURFACE_ATTRIBUTE, "settings")
+                    .marked(
+                        alo_adapters::alos_own_tree::THE_SURFACE_ATTRIBUTE,
+                        "settings",
+                    )
                     .holding(vec![thing(roles::SWITCH, "Wi-Fi").doing(&["click"])]),
                 thing(roles::FRAME, "")
-                    .marked(alo_access::THE_SURFACE_ATTRIBUTE, "desktop")
+                    .marked(
+                        alo_adapters::alos_own_tree::THE_SURFACE_ATTRIBUTE,
+                        "desktop",
+                    )
                     .in_states(States::showing_and_usable().hidden()),
             ],
         )
@@ -273,7 +279,10 @@ fn the_desktop() -> ATree {
             None,
             vec![
                 thing(roles::FRAME, "settings")
-                    .marked(alo_access::THE_SURFACE_ATTRIBUTE, "settings")
+                    .marked(
+                        alo_adapters::alos_own_tree::THE_SURFACE_ATTRIBUTE,
+                        "settings",
+                    )
                     .holding(vec![thing(roles::SWITCH, "Wi-Fi").doing(&["click"])]),
             ],
         )
@@ -484,7 +493,10 @@ fn alos_own_surfaces_are_found_by_the_shells_name_and_by_surface() {
     let well_known = ATree::default().with(
         "org.alo.Shell",
         None,
-        vec![thing(roles::FRAME, "Settings").marked(alo_access::THE_SURFACE_ATTRIBUTE, "settings")],
+        vec![thing(roles::FRAME, "Settings").marked(
+            alo_adapters::alos_own_tree::THE_SURFACE_ATTRIBUTE,
+            "settings",
+        )],
     );
     assert_eq!(
         read_by_hand(
@@ -638,12 +650,15 @@ fn settings_with_old_names() -> ATree {
             None,
             vec![
                 thing(roles::FRAME, "Settings")
-                    .marked(alo_access::THE_SURFACE_ATTRIBUTE, "settings")
+                    .marked(
+                        alo_adapters::alos_own_tree::THE_SURFACE_ATTRIBUTE,
+                        "settings",
+                    )
                     .marked("alo-not-drawn-yet:screen-reader", "read the screen aloud")
                     .holding(vec![
                         thing(roles::SWITCH, "Reduced motion")
                             .marked(
-                                alo_access::THE_OLD_NAME_ATTRIBUTE,
+                                alo_adapters::alos_own_tree::THE_OLD_NAME_ATTRIBUTE,
                                 "stop things sliding and fading",
                             )
                             .doing(&["click"]),
@@ -655,7 +670,7 @@ fn settings_with_old_names() -> ATree {
             Some(MAIL),
             vec![thing(roles::FRAME, "Inbox").holding(vec![
                 thing(roles::SWITCH, "Threads")
-                    .marked(alo_access::THE_OLD_NAME_ATTRIBUTE, "Conversations")
+                    .marked(alo_adapters::alos_own_tree::THE_OLD_NAME_ATTRIBUTE, "Conversations")
                     .doing(&["click"]),
             ])],
         )

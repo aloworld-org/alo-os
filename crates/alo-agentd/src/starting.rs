@@ -152,6 +152,7 @@ use crate::serving::{Served, Serving};
 use crate::stopping::Waking;
 use crate::surface::AtThePersonsDoor;
 use crate::terms::Terms;
+use crate::the_persons_windows::ThePersonsWindows;
 use crate::the_road_out::TheRoadOut;
 use crate::wire::Wire;
 use crate::words::declare_into;
@@ -281,6 +282,11 @@ pub fn until_stopped(
     // is read from** — so an approved `open` is recorded with its road and an
     // entry with none is refused by name (ADR 0108, 2026-10-31).
     let starting = HowApplicationsStartHere::in_these(where_entries_are_here());
+    // **The person's windows, opened for one read or press at a time** — so a
+    // turn can read what an application shows and press a named control in it
+    // (Demo 2, stage 4). Nothing is opened here: the first tree is opened by
+    // the first read a person's request causes, and closed when it ends.
+    let mut the_persons_windows = ThePersonsWindows;
     let mut machine = what_this_machine_can_carry_out(
         strings,
         &installing_with,
@@ -288,6 +294,7 @@ pub fn until_stopped(
         ReachingApplications {
             door: &mut at_the_compositors_door,
             starting: &starting,
+            windows: &mut the_persons_windows,
         },
         bounding,
         &mut indicator,
@@ -390,6 +397,7 @@ fn what_this_machine_can_carry_out<'a>(
             installed: alo_installed::read(applications.starting.places()),
             door: applications.door,
             starting: applications.starting,
+            windows: applications.windows,
         },
         bounding,
         indicator,
@@ -407,6 +415,8 @@ struct ReachingApplications<'a> {
     door: &'a mut AtTheCompositorsDoor,
     /// How each application starts, and where the entries are.
     starting: &'a HowApplicationsStartHere,
+    /// The person's windows, for the accessibility fallback's read and press.
+    windows: &'a mut ThePersonsWindows,
 }
 
 /// Where this machine's desktop entries are, most specific first — the
@@ -521,6 +531,7 @@ mod tests {
         let mut at_the_compositors_door =
             AtTheCompositorsDoor::beside(std::path::Path::new("/run/alo/0"));
         let starting = HowApplicationsStartHere::in_these(Vec::new());
+        let mut windows = ThePersonsWindows;
         let mut indicator = alo_egress::Indicator::default();
         let mut record = Record::default();
         let mut bounding = crate::testing::NothingIsBounded;
@@ -531,6 +542,7 @@ mod tests {
             ReachingApplications {
                 door: &mut at_the_compositors_door,
                 starting: &starting,
+                windows: &mut windows,
             },
             &mut bounding,
             &mut indicator,
@@ -557,6 +569,8 @@ mod tests {
         assert_eq!(
             sorted,
             [
+                "accessible.activate_control",
+                "accessible.read_window",
                 "archive_folder",
                 "close_application",
                 "find_in_folder",

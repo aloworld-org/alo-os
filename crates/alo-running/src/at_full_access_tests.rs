@@ -189,3 +189,62 @@ fn a_command_the_caller_could_not_start_did_not_start() {
     );
     assert_eq!(watching.looks, 0);
 }
+
+/// **A command is told that nobody is there to answer it**: each of
+/// `crate::nobody_is_there_to_answer`'s variables reaches it, with the value
+/// that file sets — or the one this service was started with, which is kept.
+#[test]
+fn a_command_is_told_nobody_is_there_to_answer() {
+    let line = crate::nobody_is_there_to_answer::NOBODY_ANSWERS
+        .iter()
+        .map(|(variable, _)| format!("printf '%s=%s;' {variable} \"${variable}\""))
+        .collect::<Vec<_>>()
+        .join("; ");
+    let did = run_as_the_person(&ACommand::of(&line).unwrap(), Path::new("/")).unwrap();
+    assert_eq!(did.returned(), Some(0), "{did:?}");
+    for (variable, value) in crate::nobody_is_there_to_answer::NOBODY_ANSWERS {
+        let expected = std::env::var(variable).unwrap_or_else(|_| value.to_owned());
+        assert!(
+            did.said().contains(&format!("{variable}={expected};")),
+            "{variable} did not reach the command as {expected:?}: {:?}",
+            did.said()
+        );
+    }
+}
+
+/// **`git` asked for a password with nobody there stops at once and says why**,
+/// rather than waiting until the command is stopped for running too long.
+///
+/// `git credential fill` is the question `git push` asks of an `https` remote
+/// it has no sign-in for; nothing here reaches a network. A machine with no
+/// `git` fails this test rather than skipping it, because a check that passes
+/// where it cannot look is not a check.
+#[test]
+fn git_asked_for_a_password_stops_at_once_and_says_so() {
+    let began = Instant::now();
+    let did = run_as_the_person(
+        &ACommand::of(
+            "command -v git >/dev/null || exit 99; \
+             printf 'protocol=https\\nhost=alo.invalid\\n\\n' | \
+             git -c credential.helper= credential fill",
+        )
+        .unwrap(),
+        Path::new("/"),
+    )
+    .unwrap();
+    assert_ne!(did.returned(), Some(99), "git is not on this machine");
+    assert_ne!(did.returned(), Some(0), "{did:?}");
+    assert!(!did.took_too_long(), "{did:?}");
+    assert!(
+        began.elapsed() < Duration::from_secs(30),
+        "git waited {:?} for an answer nobody could give",
+        began.elapsed()
+    );
+    if std::env::var_os("GIT_TERMINAL_PROMPT").is_none() {
+        assert!(
+            did.said().contains("terminal prompts disabled"),
+            "git was not told nobody is there: {:?}",
+            did.said()
+        );
+    }
+}

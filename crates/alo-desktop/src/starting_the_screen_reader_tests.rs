@@ -69,6 +69,23 @@ impl TheManager for AScriptedManager {
             .map(str::to_owned)
             .ok_or_else(|| "no answer".to_owned())
     }
+
+    fn restarts(&self, unit: &str) -> Result<u32, String> {
+        assert_eq!(unit, THE_UNIT);
+        self.asked.borrow_mut().push("restarts");
+        Ok(0)
+    }
+}
+
+/// A watch that never sees a fall, for the tests of the start itself.
+struct NothingFalls;
+
+impl Watcher for NothingFalls {
+    fn began(&mut self) {}
+
+    fn looked(&mut self) -> Option<TheScreenReaderAnswered> {
+        None
+    }
 }
 
 /// No waiting in a test: the looks are what is being tested, not the clock.
@@ -262,14 +279,18 @@ fn the_language_is_written_where_the_unit_reads_it() {
 #[test]
 fn each_change_is_asked_once_and_answered_in_order() {
     let (asked, what_was_asked) = mpsc::channel();
-    let mut reader = TheScreenReader::acted_on_by(move |on| {
-        let _ = asked.send(on);
-        if on {
-            TheScreenReaderAnswered::Started
-        } else {
-            TheScreenReaderAnswered::Stopped
-        }
-    });
+    let mut reader = TheScreenReader::acted_on_by(
+        move |on| {
+            let _ = asked.send(on);
+            if on {
+                TheScreenReaderAnswered::Started
+            } else {
+                TheScreenReaderAnswered::Stopped
+            }
+        },
+        NothingFalls,
+        Duration::from_millis(1),
+    );
     reader.is(true);
     reader.is(true);
     reader.is(false);

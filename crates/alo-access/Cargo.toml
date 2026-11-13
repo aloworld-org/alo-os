@@ -17,6 +17,13 @@ alo-appearance = { path = "../alo-appearance" }
 # every action that has a chord must also have a Tab stop.
 alo-approving = { path = "../alo-approving" }
 alo-shortcuts = { path = "../alo-shortcuts" }
+# How the attributes a surface of alo's own tree carries are spelt — the
+# surface's typed name, a setting's old name, and the key for one no page draws
+# yet. The crate that reads them keeps the spelling; this one publishes it
+# through `tree` and `old_names` unchanged. Kept there, not here, because this
+# crate depends on `alo-approving` and so on `alo-turn`, and `alo-turn` offers
+# the reader's two verbs: the spelling here would be a cycle.
+alo-adapters = { path = "../alo-adapters" }
 # The sentences a person reads about each setting. Hardcoded English is a bug
 # (CLAUDE.md), and a setting nobody can find in their own language is the bug
 # this crate exists to prevent.
