@@ -700,55 +700,77 @@ fn the_overflow_list(
             (box_at.0 + (icon - glyph) / 2, box_at.1 + (icon - glyph) / 2).into(),
             (glyph, glyph).into(),
         );
-        // No artwork exists yet, so every application shows the initial the
-        // owner ruled: a circle with its first letter. `dock_surface` draws the
-        // circle with the Dock's own badges; this is the same shape in a list.
-        circles.push(art);
-        // **`AppId::first_letter`, which the Dock's own badges already use.**
-        // It takes the first *grapheme* and not the first `char`, which is the
-        // owner's ruling — an accented letter and a combined character are one
-        // thing a person sees and two or more `char`s. Taking `chars().next()`
-        // here would have split them, and it would have been a second way of
-        // answering a question this workspace had already answered.
-        //
-        // **A native entry's letter comes from its translated name**, which is
-        // the one Dock label that is translated at all: every other is an
-        // application's own name as its source reports it. `the_first_letter_of`
-        // is the same rule by the same function, rather than a second one here.
-        let shown_name = match application.app() {
-            Some(app) => app.name(),
-            None => words.settings.as_str(),
+        // **A native entry's name is its translated name**, which is the one
+        // Dock label that is translated at all: every other is an
+        // application's own name as its source reports it. Asked of the entry
+        // itself, so Applications is not named *Settings* here.
+        let shown_name = match (application.app(), application.native()) {
+            (Some(app), _) => app.name(),
+            (None, Some(alo_dock::ANativeAction::Applications)) => words.applications.as_str(),
+            (None, Some(alo_dock::ANativeAction::Settings) | None) => words.settings.as_str(),
         };
-        let initial = alo_dock::window::the_first_letter_of(shown_name);
-        // **Shaped into a box the size of the letter, not the size of the
-        // circle.** `painted_text` hands back an **opaque** box filled with the
-        // ground colour, and the Dock's own initials survive that because the
-        // ground is the badge's own — a badge-coloured box on a badge-coloured
-        // circle is invisible.
-        //
-        // It is invisible only while the box is inside the circle. Shaped to
-        // the circle's own 28 the box reaches the corners of a square the
-        // circle does not fill, and the badge is drawn as a **square**: which
-        // is what the first picture of this popover showed, with the Dock's
-        // round badges in the same frame for comparison.
-        //
-        // So the width is the initial's size, as it is for the Dock.
-        let initial_is = scale.px(alo_dock::measures::AN_INITIAL_IS);
-        let letter = crate::painted_text::centred(
-            fonts,
-            initial,
-            initial_is,
-            Metrics::new(initial_is as f32, glyph as f32),
-            palette.badge,
-            palette.badge_ink,
-        );
-        let (wide, high) = (letter.width_of_box, letter.height);
-        if let Some(drawn) = letter.placed(
-            art.loc.x + (glyph - wide) / 2,
-            art.loc.y + (glyph - high) / 2,
-            height,
-        ) {
-            inked.push(drawn);
+        // **Settings and Applications are their icons here too**, the owner's
+        // decision of 2026-11-13 (`crate::the_docks_own_icons`): the same
+        // drawing as on the bar, in the list's ink on its ground, and no
+        // circle — the circle is the mark of an application with no icon.
+        if let Some(action) = application.native() {
+            if art.loc.y >= 0 && art.loc.y + glyph <= height {
+                inked.push(Inked {
+                    area: alo_drawing::area::Area::new(
+                        (art.loc.x, art.loc.y).into(),
+                        (glyph, glyph).into(),
+                    ),
+                    pixels: crate::the_docks_own_icons::ADocksOwnIcon::of(action).drawn(
+                        glyph,
+                        palette.dock,
+                        palette.ink,
+                    ),
+                });
+            }
+        } else {
+            // No artwork exists yet, so every application shows the initial
+            // the owner ruled: a circle with its first letter. `dock_surface`
+            // draws the circle with the Dock's own badges; this is the same
+            // shape in a list.
+            circles.push(art);
+            // **`AppId::first_letter`, which the Dock's own badges already
+            // use.** It takes the first *grapheme* and not the first `char`,
+            // which is the owner's ruling — an accented letter and a combined
+            // character are one thing a person sees and two or more `char`s.
+            // Taking `chars().next()` here would have split them, and it would
+            // have been a second way of answering a question this workspace had
+            // already answered.
+            let initial = alo_dock::window::the_first_letter_of(shown_name);
+            // **Shaped into a box the size of the letter, not the size of the
+            // circle.** `painted_text` hands back an **opaque** box filled with
+            // the ground colour, and the Dock's own initials survive that
+            // because the ground is the badge's own — a badge-coloured box on a
+            // badge-coloured circle is invisible.
+            //
+            // It is invisible only while the box is inside the circle. Shaped
+            // to the circle's own 28 the box reaches the corners of a square
+            // the circle does not fill, and the badge is drawn as a **square**:
+            // which is what the first picture of this popover showed, with the
+            // Dock's round badges in the same frame for comparison.
+            //
+            // So the width is the initial's size, as it is for the Dock.
+            let initial_is = scale.px(alo_dock::measures::AN_INITIAL_IS);
+            let letter = crate::painted_text::centred(
+                fonts,
+                initial,
+                initial_is,
+                Metrics::new(initial_is as f32, glyph as f32),
+                palette.badge,
+                palette.badge_ink,
+            );
+            let (wide, high) = (letter.width_of_box, letter.height);
+            if let Some(drawn) = letter.placed(
+                art.loc.x + (glyph - wide) / 2,
+                art.loc.y + (glyph - high) / 2,
+                height,
+            ) {
+                inked.push(drawn);
+            }
         }
         // **A mark for an application that has a window**, the same two shapes
         // the bar draws: a short dot for running, a longer bar for the one
@@ -1284,28 +1306,30 @@ pub(crate) fn picture(
                 palette.badge,
                 palette.badge_ink,
             ),
-            // **A badge like an application's, from the translated name.** The
-            // owner's ruling keeps a native entry a thing on the person's Dock
-            // in a position they chose, so it is drawn as one — the same badge
-            // ground and the same initial rule, through
-            // `the_first_letter_of` rather than a second grapheme walk.
-            alo_dock::places::WhatIsHere::ANativeAction(alo_dock::ANativeAction::Settings) => (
-                alo_dock::window::the_first_letter_of(&words.settings),
-                initial,
-                palette.badge,
-                palette.badge_ink,
-            ),
-            // **The same badge as Settings', from the translated name**, and
-            // the arm is written out rather than folded in with it: the two
-            // actions read different words, and a match that took either and
-            // then chose the word inside would be the place a third action gets
-            // Settings' label by accident.
-            alo_dock::places::WhatIsHere::ANativeAction(alo_dock::ANativeAction::Applications) => (
-                alo_dock::window::the_first_letter_of(&words.applications),
-                initial,
-                palette.badge,
-                palette.badge_ink,
-            ),
+            // **Settings' cog and Applications' squares, not their first
+            // letters**: the owner's decision of 2026-11-13, carried by
+            // `crate::the_docks_own_icons`. Drawn as History's mark is below —
+            // centred in the slot at the artwork's size, in the Dock's ink on
+            // the Dock's ground, and with no badge circle, because a circle
+            // says *an application with no icon*. The translated name stays the
+            // tooltip and the spoken name. `ADocksOwnIcon::of` matches every
+            // action with no catch-all, so a third one is a compile error there
+            // rather than a slot drawn with another's icon.
+            alo_dock::places::WhatIsHere::ANativeAction(action) => {
+                let side = scale.px(GLYPH);
+                inked.push(Inked {
+                    area: alo_drawing::area::Area::new(
+                        (left + (its_width - side) / 2, top + (icon - side) / 2).into(),
+                        (side, side).into(),
+                    ),
+                    pixels: crate::the_docks_own_icons::ADocksOwnIcon::of(*action).drawn(
+                        side,
+                        palette.dock,
+                        palette.ink,
+                    ),
+                });
+                continue;
+            }
             alo_dock::places::WhatIsHere::TheOverflow => (
                 &*THE_OVERFLOWS_MARK.encode_utf8(&mut one_character),
                 utility,

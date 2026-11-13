@@ -446,6 +446,8 @@ capability.facility.sleep	keeping the machine awake
 capability.full-access.did-not-work	Tried without asking you first, because you chose full access in Settings → Running code: {sentence}. It did not work: {why}.
 capability.full-access.did-not-work-cannot-be-put-back	Tried without asking you first, because you chose full access in Settings → Running code: {sentence}. It did not work: {why}. If it changed anything, that can't be put back: a copy of your files from before it could not be kept.
 capability.full-access.done	Done without asking you first, because you chose full access in Settings → Running code: {sentence}.
+capability.full-access.done-and-not-counted	Done without asking you first, because you chose full access in Settings → Running code: {sentence}. Put back can return your files on this computer, but not anything the command sent off it — and this computer could not count whether it sent anything.
+capability.full-access.done-and-sent	Done without asking you first, because you chose full access in Settings → Running code: {sentence}. Put back can return your files on this computer, but the command sent something off this computer while it ran, and that can't be recalled.
 capability.full-access.done-cannot-be-put-back	Done without asking you first, because you chose full access in Settings → Running code: {sentence}. This one can't be put back: a copy of your files from before it could not be kept.
 capability.grant.a-persons-own	you have not allowed alo to open a terminal
 capability.grant.anonymous	say which agent this grant is for — a grant to nobody reaches nothing
@@ -483,6 +485,8 @@ capability.running.asking-each-time	after showing you the command and waiting fo
 capability.running.command-empty	Nothing ran: the command was empty.
 capability.running.command-not-one-line	Nothing ran: a command must be one line.
 capability.running.command-too-long	Nothing ran: the command was longer than {most} characters.
+capability.running.done-and-not-counted	Done. Put back can return your files on this computer, but not anything the command sent off it — and this computer could not count whether it sent anything.
+capability.running.done-and-sent	Done. Put back can return your files on this computer, but the command sent something off this computer while it ran, and that can't be recalled.
 capability.running.ended-with-a-status	the command ended with exit status {status}
 capability.running.full-trust	straight away, without asking
 capability.running.no-box	nothing ran, because this machine could not build the box it runs commands in
@@ -502,6 +506,8 @@ capability.terminal.did-not-work-cannot-be-put-back	It did not work: {why}. If i
 capability.terminal.done	Done.
 capability.terminal.done-cannot-be-put-back	Done. This one can't be put back: a copy of your files from before it could not be kept.
 capability.terminal.done-without-asking	Done without asking you first, as you chose in Settings → Terminal.
+capability.terminal.done-without-asking-and-not-counted	Done without asking you first, as you chose in Settings → Terminal. Put back can return your files on this computer, but not anything the command sent off it — and this computer could not count whether it sent anything.
+capability.terminal.done-without-asking-and-sent	Done without asking you first, as you chose in Settings → Terminal. Put back can return your files on this computer, but the command sent something off this computer while it ran, and that can't be recalled.
 capability.terminal.done-without-asking-cannot-be-put-back	Done without asking you first, as you chose in Settings → Terminal. This one can't be put back: a copy of your files from before it could not be kept.
 capability.terminal.no-longer-waiting	Not done: this change is no longer waiting, and nothing was changed. Ask again to have alo propose it again.
 capability.terminal.no-word-back	alo was told to go ahead, and the alo service did not say whether it did. See what alo did to find out.

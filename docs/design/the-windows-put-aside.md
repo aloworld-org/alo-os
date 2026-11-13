@@ -354,6 +354,23 @@ not as withdrawing the control.
   and a miniature of **alo's own** windows, which still show their letter on
   the hit area — their pictures are drawn only while they are on the canvas.
 
+## New windows open clear of the panel — the owner, 2026-11-13
+
+Asked whether a window alo places may open under this panel, the owner
+answered **"Windows open clear of it."** A new window — an application's, or
+Settings, the record or alo's terminal — is placed in the room left of the
+panel's **column** (right of it, read right to left), so the panel never covers
+it when it opens; one too wide for that room is asked to be narrower, never
+below its own minimum. **The column rather than the rail**, so the room is the
+same whether the panel is empty, concealed or holding windows: the panel owns
+its column in every state (the owner's ruling of 2026-09-30, *the right
+panel owns that area*, recorded in `crates/alo-shell/src/panel_raster.rs`), and a window placed
+under an empty panel would be covered the moment the person put one aside.
+That reading is this lane's and the owner's to change. **A person may still
+move a window under the panel themselves**, and nothing moves it back.
+`where-a-new-window-opens.md`, *Amended 2026-11-13*, holds the rule;
+`crates/alo-shell/src/the_room_alo_places_a_window_in.rs` builds it.
+
 ## Full screen and the keyboard
 
 The approved edge-reveal behaviour stands, with a **continuous pointer path**

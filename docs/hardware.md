@@ -296,6 +296,7 @@ of a kernel alo OS chose rather than one it borrowed.
 | Kernel | Built in | Started | Self-describing | Measured |
 |---|---|---|---|---|
 | `6.19.14-101.fc42.x86_64`, from `quay.io/fedora/fedora-bootc:42` | `CONFIG_BPF_LSM=y` | `bpf` is in `CONFIG_LSM` | `CONFIG_DEBUG_INFO_BTF=y` | 2026-09-04, from `/usr/lib/modules/<version>/config` in the built image |
+| `7.3.3-200.fc44.x86_64`, from `quay.io/fedora/fedora-bootc:44` at the digest ADR 0152 pins | `CONFIG_BPF_LSM=y` | `bpf` is in `CONFIG_LSM` (the same string as below) | `CONFIG_DEBUG_INFO_BTF=y` | 2026-11-13, from the same file in the base itself, once, by hand; no machine has booted it yet |
 
 ```
 CONFIG_BPF_LSM=y

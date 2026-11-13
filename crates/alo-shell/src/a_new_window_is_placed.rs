@@ -338,9 +338,11 @@ impl Server {
         // under the Dock. They still may. But a window **alo** places is
         // placed in rule 6's *usable display area*, and on 2026-11-12 Firefox
         // was placed with its bottom under the Dock and off the screen
-        // (`crate::the_room_alo_places_a_window_in`). The panel's column, the
-        // top controls and the egress indicator stay in `fixed`, which asks
-        // only that the new window's handle is not completely under one.
+        // (`crate::the_room_alo_places_a_window_in`). **And by the put-aside
+        // panel's column**, since the owner's *"Windows open clear of it"* of
+        // 2026-11-13. The top controls and the egress indicator stay in
+        // `fixed` only, which asks that the new window's handle is not
+        // completely under one.
         let view = Rectangle::new(
             Point::<i32, Logical>::from((at.x, at.y)),
             Size::<f64, Logical>::from((
@@ -376,15 +378,23 @@ impl Server {
             .filter(|control| control.size.w > 0 && control.size.h > 0)
             .filter_map(|control| onto_the_plane(control, at, zoom))
             .collect();
-        let dock = self
+        let drawn = self
             .fixed_controls
             .get(display)
-            .and_then(crate::canvas_fixed_controls::FixedControls::labelled)
-            .and_then(|drawn| drawn.dock_band)
-            .filter(|band| band.size.w > 0 && band.size.h > 0)
-            .and_then(|band| onto_the_plane(band, at, zoom));
+            .and_then(crate::canvas_fixed_controls::FixedControls::labelled);
+        let on_the_plane = |control: Option<Rectangle<i32, Physical>>| {
+            control
+                .filter(|control| control.size.w > 0 && control.size.h > 0)
+                .and_then(|control| onto_the_plane(control, at, zoom))
+        };
+        // **Above the Dock and clear of the put-aside panel's column**
+        // (`crate::the_room_alo_places_a_window_in`).
+        let dock = on_the_plane(drawn.and_then(|drawn| drawn.dock_band));
+        let panel = on_the_plane(drawn.map(|drawn| drawn.panel_reserved));
         Some(ThisFramesView {
-            room: crate::the_room_alo_places_a_window_in::the_room_the_dock_leaves(view, dock),
+            room: crate::the_room_alo_places_a_window_in::the_room_the_controls_leave(
+                view, dock, panel,
+            ),
             fixed,
             strip,
             reading,
