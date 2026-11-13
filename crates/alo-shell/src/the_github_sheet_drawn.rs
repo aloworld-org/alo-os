@@ -129,7 +129,7 @@ pub(crate) fn drawn(
 
     // **The title**: *Sign in to GitHub*, or who is signed in.
     let title = match shows.is {
-        TheSheetIs::SignedIn(login) => strings
+        TheSheetIs::SignedInAs(login) => strings
             .say(
                 &words::SIGNED_IN_TO_GITHUB_AS.key(),
                 &Filling::of("login", login.clone()),
@@ -150,7 +150,7 @@ pub(crate) fn drawn(
 
     match shows.is {
         // **Signed in**: a check in `status/positive`, and where to sign out.
-        TheSheetIs::SignedIn(_) => {
+        TheSheetIs::SignedInAs(_) => {
             let sign = px(THE_CHECK);
             let after = sign + px(AFTER_THE_CHECK);
             let line = said(words::SIGNED_IN_AND_WHERE_TO_SIGN_OUT);
@@ -229,7 +229,7 @@ pub(crate) fn drawn(
                 // **Waiting for the code**: *Checking…*, the word the Accounts
                 // page says while it waits too, and no *Copy* — there is
                 // nothing yet to copy.
-                TheSheetIs::WaitingForTheCode | TheSheetIs::SignedIn(_) => {
+                TheSheetIs::WaitingForTheCode | TheSheetIs::SignedInAs(_) => {
                     let checking = said(w::CHECKING);
                     let shaped = laying.words(
                         &checking,
@@ -267,7 +267,7 @@ pub(crate) fn drawn(
             OnTheGitHubSheet::OpenThePage => {
                 let page = match shows.is {
                     TheSheetIs::TheCodeIs { page, .. } => page.as_str(),
-                    TheSheetIs::WaitingForTheCode | TheSheetIs::SignedIn(_) => "",
+                    TheSheetIs::WaitingForTheCode | TheSheetIs::SignedInAs(_) => "",
                 };
                 (
                     strings

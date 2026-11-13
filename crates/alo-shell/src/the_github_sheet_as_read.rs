@@ -61,7 +61,7 @@ impl ReadAloudTree {
             ..Node::default()
         };
         let title = match shows.is {
-            TheSheetIs::SignedIn(login) => strings
+            TheSheetIs::SignedInAs(login) => strings
                 .say(
                     &words::SIGNED_IN_TO_GITHUB_AS.key(),
                     &Filling::of("login", login.clone()),
@@ -82,7 +82,7 @@ impl ReadAloudTree {
         );
         let mut keyboard = sheet;
         match shows.is {
-            TheSheetIs::SignedIn(_) => {
+            TheSheetIs::SignedInAs(_) => {
                 self.push(
                     sheet,
                     label(
@@ -101,7 +101,7 @@ impl ReadAloudTree {
                 );
                 let code = match shows.is {
                     TheSheetIs::TheCodeIs { code, .. } => code.clone(),
-                    TheSheetIs::WaitingForTheCode | TheSheetIs::SignedIn(_) => {
+                    TheSheetIs::WaitingForTheCode | TheSheetIs::SignedInAs(_) => {
                         said(strings, w::CHECKING)
                     }
                 };
@@ -154,7 +154,7 @@ impl ReadAloudTree {
             OnTheGitHubSheet::OpenThePage => {
                 let page = match shows.is {
                     TheSheetIs::TheCodeIs { page, .. } => page.as_str(),
-                    TheSheetIs::WaitingForTheCode | TheSheetIs::SignedIn(_) => "",
+                    TheSheetIs::WaitingForTheCode | TheSheetIs::SignedInAs(_) => "",
                 };
                 strings
                     .say(

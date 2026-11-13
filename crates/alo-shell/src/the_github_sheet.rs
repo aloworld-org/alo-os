@@ -75,7 +75,7 @@ pub(crate) enum TheSheetIs {
         page: String,
     },
     /// Signed in, as this login.
-    SignedIn(String),
+    SignedInAs(String),
 }
 
 impl TheSheetIs {
@@ -88,7 +88,7 @@ impl TheSheetIs {
                 OnTheGitHubSheet::Cancel,
                 OnTheGitHubSheet::OpenThePage,
             ],
-            Self::SignedIn(_) => &[OnTheGitHubSheet::Done],
+            Self::SignedInAs(_) => &[OnTheGitHubSheet::Done],
         }
     }
 
@@ -98,7 +98,7 @@ impl TheSheetIs {
         match self {
             Self::WaitingForTheCode => OnTheGitHubSheet::Cancel,
             Self::TheCodeIs { .. } => OnTheGitHubSheet::OpenThePage,
-            Self::SignedIn(_) => OnTheGitHubSheet::Done,
+            Self::SignedInAs(_) => OnTheGitHubSheet::Done,
         }
     }
 }
@@ -222,8 +222,8 @@ impl TheGitHubSheet {
                 shown.focus = shown.is.the_keyboard_starts_on();
                 true
             }
-            GitHubAnswered::SignedIn(login) if !matches!(shown.is, TheSheetIs::SignedIn(_)) => {
-                shown.is = TheSheetIs::SignedIn(login.clone());
+            GitHubAnswered::SignedIn(login) if !matches!(shown.is, TheSheetIs::SignedInAs(_)) => {
+                shown.is = TheSheetIs::SignedInAs(login.clone());
                 shown.focus = shown.is.the_keyboard_starts_on();
                 false
             }
@@ -232,7 +232,7 @@ impl TheGitHubSheet {
             GitHubAnswered::DidNotWork {
                 asked: AskingGitHub::SignIn | AskingGitHub::StopSigningIn,
                 ..
-            } if !matches!(shown.is, TheSheetIs::SignedIn(_)) => {
+            } if !matches!(shown.is, TheSheetIs::SignedInAs(_)) => {
                 self.shown = None;
                 false
             }
@@ -272,7 +272,7 @@ impl TheGitHubSheet {
                 self.press(focus)
             }
             GitHubSheetKey::Escape => {
-                let leaving = if matches!(shown.is, TheSheetIs::SignedIn(_)) {
+                let leaving = if matches!(shown.is, TheSheetIs::SignedInAs(_)) {
                     OnTheGitHubSheet::Done
                 } else {
                     OnTheGitHubSheet::Cancel
@@ -341,7 +341,7 @@ impl TheGitHubSheet {
     pub(crate) fn could_not_be_drawn(&mut self) -> Option<TheSheetAsks> {
         let shown = self.shown.take()?;
         match shown.is {
-            TheSheetIs::SignedIn(_) => None,
+            TheSheetIs::SignedInAs(_) => None,
             TheSheetIs::WaitingForTheCode | TheSheetIs::TheCodeIs { .. } => {
                 Some(TheSheetAsks::StopSigningIn)
             }

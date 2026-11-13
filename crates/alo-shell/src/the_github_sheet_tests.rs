@@ -173,7 +173,7 @@ fn signed_in_shows_the_login_and_done_closes() {
         assert_eq!(
             is(&sheet),
             Some((
-                TheSheetIs::SignedIn("anna".to_owned()),
+                TheSheetIs::SignedInAs("anna".to_owned()),
                 OnTheGitHubSheet::Done
             ))
         );

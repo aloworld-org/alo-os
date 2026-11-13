@@ -112,7 +112,7 @@ fn signed_in_then_done() {
     let _ = server.the_github_asks_to_tell();
     assert!(matches!(
         server.github_sheet.shows().map(|shows| shows.is.clone()),
-        Some(crate::the_github_sheet::TheSheetIs::SignedIn(login)) if login == "anna"
+        Some(crate::the_github_sheet::TheSheetIs::SignedInAs(login)) if login == "anna"
     ));
     server.the_github_sheet_pressed(OnTheGitHubSheet::Done);
     assert!(!server.github_sheet.is_up());
