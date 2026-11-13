@@ -96,6 +96,58 @@ fn going_to_a_window_out_of_sight_brings_the_view_to_it() {
     );
 }
 
+/// **And it arrives whole: its name band on the screen and its bottom above
+/// the Dock.** Seen on a booted machine on 2026-11-13: Super+Tab brought
+/// Dolphin into sight with its band off the top (`w26-37`), because the view
+/// stopped with the window's own corner at the screen's. The test above passed
+/// throughout: it asked only that some of the window was in sight.
+#[test]
+fn going_to_a_window_out_of_sight_shows_its_band_above_the_dock() {
+    const DOCK: i32 = 64;
+    let f = fixture();
+    f.backend(|s| {
+        s.the_fixed_controls_were_drawn(
+            "the-one-display",
+            alo_shell::FixedControlsDrawn {
+                dock_band: Some(Rectangle::new(
+                    (0, VIEWPORT.1 - DOCK).into(),
+                    (VIEWPORT.0, DOCK).into(),
+                )),
+                panel_reserved: Rectangle::default(),
+                what_is_leaving: None,
+                top_controls: None,
+            },
+            alo_appearance::TextScale::ordinary(),
+        );
+    });
+    let (_dolphin_app, dolphin) = a_window(&f);
+    let (_firefox_app, firefox) = a_window(&f);
+    put(&f, &dolphin, (260, 107));
+    put(&f, &firefox, (6000, 4000));
+    assert!(f.focus_surface(firefox.clone()).is_ok());
+    look_at(&f, (5990, 3990));
+    let went_to = f
+        .backend(|s| s.switch_window(Direction::Forward))
+        .expect("there is a window to go to");
+    assert_eq!(went_to, dolphin, "the control: Alt+Tab went to Dolphin");
+    let view = the_view(&f);
+    let window = where_it_is(&f, &dolphin);
+    let band_top = window.loc.y - alo_shell::THE_STRIP_IS_TALL;
+    assert!(
+        band_top >= view.loc.y,
+        "Dolphin's band is off the top: band at {band_top}, view from {}",
+        view.loc.y
+    );
+    assert!(
+        window.loc.y + window.size.h <= view.loc.y + VIEWPORT.1 - DOCK,
+        "Dolphin's bottom is under the Dock: {window:?} in {view:?}"
+    );
+    assert!(
+        window.loc.x >= view.loc.x,
+        "Dolphin's left edge is off the screen"
+    );
+}
+
 /// **The refusal: a window any part of which is in sight is gone to where the
 /// person sees it**, and the view does not move.
 #[test]
