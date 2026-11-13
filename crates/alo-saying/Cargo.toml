@@ -87,6 +87,7 @@ alo-portals = { path = "../alo-portals" }
 alo-printing = { path = "../alo-printing" }
 alo-protocol = { path = "../alo-protocol" }
 alo-proxy = { path = "../alo-proxy" }
+alo-publishing = { path = "../alo-publishing" }
 alo-record = { path = "../alo-record" }
 alo-recounting = { path = "../alo-recounting" }
 alo-remembering = { path = "../alo-remembering" }

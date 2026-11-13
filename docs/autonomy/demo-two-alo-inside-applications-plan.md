@@ -308,8 +308,10 @@ of it, as the portal's file road is.
 **Status:** not started. **Size:** S. **Waits on:** stages 4, 6 and 9.
 
 **For the person:** alo presses *Publish* in the editor — the owner's answer,
-2026-10-31 — after one approval whose sentence says plainly that publishing to
-the internet cannot be undone. Naming the repository after the person's own
+2026-10-31 — at *ask me each time* after one approval whose sentence says
+plainly that publishing to the internet cannot be undone, and at full access
+without asking, the line afterwards saying it went to the internet and Put back
+cannot recall it (the owner's decision of 2026-11-13; stage 12a). Naming the repository after the person's own
 GitHub site serves it with nothing more to switch on. **Reuses:** stage 4's press;
 ADR 0110 §2's wording on what undo cannot reach. **Test:** the sentence carries
 the destination and the warning; one approval, one press, recorded.
@@ -331,6 +333,57 @@ publishing interface is used (the owner: *"we do not need APIs for this"*).
 applications); stage 5's text; stage 6's typing; stage 4's press. **Test:** off by default; no post without the switch **and** an
 approval; revoked stops the next post; expired gone; a deletion its own
 approval; every post and refusal recorded; the departure on the indicator.
+
+### 12a. The second road: alo publishes a folder with git and gh itself
+
+**Status:** built, not walked (2026-11-13). **Size:** M. **Waits on:** nothing
+to build; the walk waits on a booted machine and on GitHub's own `gh` being on
+the image. **Beside stages 6 to 11, not instead of them**: the editor road stays.
+
+**For the person:** they ask alo — in the Dock, the Bar, or `alo …` in their
+terminal (ADR 0124) — to publish a folder to their GitHub Pages, and alo runs
+`git` and `gh` itself on its own command road (ADR 0149), never typing into
+their terminal window. The owner's decisions of 2026-11-13: at full access it
+does not ask first and the line afterwards says it went to the internet and Put
+back cannot recall it; at *ask me each time* the approval sentence carries that
+warning; the person signs in once themselves with `gh auth login --web`, told
+plainly what that sign-in can do and that alo can use it at full access; and it
+is one typed action whose sentence the machine writes, on the list a model is
+offered (`publish_to_github_pages`, `docs/contracts/agent-verbs.md`). The owner:
+*"We can add it but we need no shortcuts."*
+
+**What is built.** Every command alo runs is told nobody is there to answer, and
+a push with nobody signed in says how to sign in (`alo-running`,
+`alo-capability`). GitHub's own `gh` on the image, started at build. The verb,
+its sentence, the command and its reading (`alo-publishing`), its executor and
+the indicator line (`alo-turn`), and the level, the sealed box's refusal and the
+line afterwards (`alo-agentd`); the desktop's card and the terminal say
+*Published … Put back can't recall it*, never *Done*.
+
+**No folder grant** (the owner, 2026-11-13: *"Approval alone is enough"*): at
+*ask me each time* one approval of the sentence is the whole permission, as for
+any command.
+
+**Reuses:** the command road (ADR 0149) and its count of what alo's commands
+send (ADR 0148 as amended 2026-11-13, #1212): the indicator's *git, a command
+alo is running, is sending* and the record's `sent_bytes`; the record.
+**Test, each running on every build:** a folder published through real `git` to
+a repository on disk, with a stand-in for `gh`, started through what counts it
+— one publication is one version, nothing written into the folder, a folder
+that is itself a repository published without its `.git`, the same folder
+twice sends nothing new, a changed folder goes on top of the last version,
+nobody signed in and the wrong account publish nothing and make no repository
+(`crates/alo-publishing/tests/a_folder_published_through_real_git.rs`); at full
+access one run and no snapshot, at *ask me each time* nothing before the OK and
+one OK one run with no grant, a folder that is not there, an account GitHub
+would not give, a rule that says nothing may leave and the sealed box — now
+and at an OK — each run nothing and are written down
+(`crates/alo-turn/src/publishing_a_folder_tests.rs`); a paired machine's
+publication refused by name (`crates/alo-turn/src/arriving.rs`).
+**Not checked by any test here, and needing a booted machine:** that `gh`
+signs in and keeps its token in the keyring; that github.com takes the push;
+that GitHub Pages serves the address; and that the kernel's count of the
+command's control group really reads the bytes `git` pushed.
 
 ### 13. The Demo 2 walk
 

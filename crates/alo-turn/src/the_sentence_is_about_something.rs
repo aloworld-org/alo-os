@@ -79,6 +79,16 @@ pub(crate) fn the_sentence_is_about_something(
             return Err(Refused::worded_elsewhere(call.clone(), why.said(strings)));
         }
     }
+    // **And a publication names a folder and an address that can exist** —
+    // a folder with something in it, an account GitHub could give — so the
+    // address in the sentence the person approves is a real one
+    // (`alo_publishing::checked_before_asking`; every other verb passes).
+    if let Err(not_published) = alo_publishing::checked_before_asking(call) {
+        return Err(Refused::worded_elsewhere(
+            call.clone(),
+            not_published.said(strings),
+        ));
+    }
     Ok(())
 }
 

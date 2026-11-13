@@ -125,6 +125,7 @@ members = [
   "crates/alo-portald",
   "crates/alo-protocol",
   "crates/alo-proxy",
+  "crates/alo-publishing",
   "crates/alo-reconciling",
   "crates/alo-record",
   "crates/alo-recounting",

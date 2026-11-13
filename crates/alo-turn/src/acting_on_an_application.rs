@@ -429,6 +429,7 @@ mod tests {
     ) -> (T, Record) {
         let strings = in_english();
         let tool = NoTool;
+        let publisher = crate::testing::APublisher::that_publishes();
         let mut indicator = Indicator::default();
         let mut record = Record::default();
         let mut bounding = crate::testing::NothingIsBounded;
@@ -444,6 +445,7 @@ mod tests {
                 WhatASoftwareVerbNeeds {
                     tool: &tool,
                     bound: Bound::Nobodys,
+                    publishing: crate::testing::publishing_through(&publisher),
                 },
                 WhatAnApplicationVerbNeeds {
                     installed,
@@ -747,6 +749,7 @@ mod tests {
     fn a_machine_that_offers_the_three_does_not_offer_the_fourth() {
         let strings = in_english();
         let tool = NoTool;
+        let publisher = crate::testing::APublisher::that_publishes();
         let mut door = ADoor::answering(Answer::Acted);
         let mut indicator = Indicator::default();
         let mut record = Record::default();
@@ -758,6 +761,7 @@ mod tests {
             WhatASoftwareVerbNeeds {
                 tool: &tool,
                 bound: Bound::Nobodys,
+                publishing: crate::testing::publishing_through(&publisher),
             },
             WhatAnApplicationVerbNeeds {
                 installed: the_mail_client_is_here(),

@@ -152,6 +152,16 @@ pub enum NotDone {
     /// the shell would not, or the machine lost track of it. Written down as a
     /// command that was not run; the English is for the service log.
     ACommandDidNotStart(alo_capability::ItDidNotStart),
+    /// A folder was not published, in `alo-publishing`'s own words — which
+    /// step stopped it, and what a tool said where one did.
+    CouldNotPublish(alo_publishing::NotPublished),
+    /// The rule in force on this machine says nothing may leave this way,
+    /// so nothing was sent — in the rule's own words.
+    NotPermittedToLeave(alo_egress::NotPermitted),
+    /// A change this level of running code cannot make: publishing at the
+    /// sealed box, which runs programs the box cannot (ADR 0064). The sentence
+    /// says where to choose another level.
+    NotAtThisLevel(Said),
 }
 
 impl NotDone {
@@ -189,6 +199,9 @@ impl NotDone {
                 &alo_capability::words::NOTHING_RAN_WOULD_NOT_START.key(),
                 &Filling::nothing(),
             ),
+            Self::CouldNotPublish(why) => why.said(strings),
+            Self::NotPermittedToLeave(why) => why.said(strings),
+            Self::NotAtThisLevel(said) => said.clone(),
         }
     }
 
@@ -202,7 +215,12 @@ impl NotDone {
     pub fn was_refused(&self) -> bool {
         matches!(
             self,
-            Self::TurnedAway(_) | Self::NeverAsked(_) | Self::Refused(_) | Self::CouldNotInstall(_)
+            Self::TurnedAway(_)
+                | Self::NeverAsked(_)
+                | Self::Refused(_)
+                | Self::CouldNotInstall(_)
+                | Self::NotPermittedToLeave(_)
+                | Self::NotAtThisLevel(_)
         )
     }
 
@@ -329,7 +347,11 @@ mod tests {
                 | NotDone::Refused(_)
                 // A place an organisation does not permit is the capability
                 // model saying no, as much as a folder nobody granted is.
-                | NotDone::CouldNotInstall(_) => {
+                | NotDone::CouldNotInstall(_)
+                // So is a rule that says nothing may leave, and a level of
+                // running code that cannot publish.
+                | NotDone::NotPermittedToLeave(_)
+                | NotDone::NotAtThisLevel(_) => {
                     assert!(refused);
                 }
                 NotDone::NotRecorded(_) | NotDone::TurnClosed => assert!(over),
@@ -344,7 +366,10 @@ mod tests {
                 | NotDone::CouldNotLookAtTheCatalogue(_)
                 | NotDone::CouldNotAskTheRecord(_)
                 // A shell that would not start: the machine, not a rule.
-                | NotDone::ACommandDidNotStart(_) => {
+                | NotDone::ACommandDidNotStart(_)
+                // A publication that did not happen: not signed in, GitHub
+                // unreachable, an empty folder — the world, not a rule.
+                | NotDone::CouldNotPublish(_) => {
                     assert!(!refused && !over);
                 }
             }

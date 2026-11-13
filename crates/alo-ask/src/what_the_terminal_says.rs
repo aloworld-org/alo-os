@@ -57,6 +57,13 @@ pub fn what_the_terminal_says(
         // printed before the person answered, so only what came of it is left.
         WhatTheTerminalDid::TheySaidYes { answered } => {
             let (outcome, worked) = match answered {
+                // **A publication is never *Done.*** (2026-11-13): it is on
+                // the internet, and Put back can't recall it.
+                Some(Answered::It(done) | Answered::ItCannotBeUndone(done))
+                    if published(done, strings).is_some() =>
+                {
+                    (published(done, strings).unwrap_or_default(), true)
+                }
                 // **A command that ran and failed is not *Done*** (2026-11-10):
                 // what it ended with is said instead, and the request did not
                 // end as the person wanted.
@@ -109,6 +116,13 @@ pub fn what_the_terminal_says(
         // account of what changed.
         WhatTheTerminalDid::WentAhead { sentence, answered } => {
             let (outcome, worked) = match answered {
+                // A publication says where it went, and that Put back can't
+                // recall it, here as everywhere.
+                Some(Answered::It(done) | Answered::ItCannotBeUndone(done))
+                    if published(done, strings).is_some() =>
+                {
+                    (published(done, strings).unwrap_or_default(), true)
+                }
                 Some(Answered::It(done)) => match done.what_a_command_sent() {
                     Some(what) => (say(what.done_without_asking()), true),
                     None => (say(alo_capability::words::DONE_WITHOUT_ASKING), true),
@@ -133,6 +147,31 @@ pub fn what_the_terminal_says(
             }
         }
     }
+}
+
+/// **What the person reads after a folder was published**, or [`None`] for
+/// anything else: `alo_publishing`'s one line, never *Done.*
+fn published(done: &alo_protocol::Done, strings: &Strings) -> Option<String> {
+    let alo_protocol::Done::Published {
+        folder,
+        address,
+        nothing_new,
+    } = done
+    else {
+        return None;
+    };
+    Some(
+        alo_publishing::published_after_your_ok(
+            alo_publishing::WhatWasPublished {
+                folder,
+                address,
+                nothing_new: *nothing_new,
+            },
+            strings,
+        )
+        .text()
+        .to_owned(),
+    )
 }
 
 /// **What the person reads about a command they said yes to that did not
