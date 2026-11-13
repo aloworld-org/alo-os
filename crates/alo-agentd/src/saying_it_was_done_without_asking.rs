@@ -34,8 +34,29 @@ use alo_strings::{Filling, Said, Strings};
 /// **`did`, answered as done without asking**: `sentence` is what the person
 /// would have been asked about it, and `kept` whether a copy from before it was
 /// kept, which decides whether they are told it cannot be put back.
+///
+/// **A publication is told in its own line**, whatever was kept: it is on the
+/// internet, and Put back can't recall it (the owner's decision of 2026-11-13,
+/// `alo_publishing::what_the_person_is_told`) — never *Done*, which beside a
+/// change reads as one Put back can take back.
 #[must_use]
 pub fn done_without_asking(did: Done, sentence: Said, kept: bool, strings: &Strings) -> ToAnAgent {
+    if let Done::Published {
+        folder,
+        address,
+        nothing_new,
+    } = &did
+    {
+        let said = alo_publishing::published_without_asking(
+            alo_publishing::WhatWasPublished {
+                folder,
+                address,
+                nothing_new: *nothing_new,
+            },
+            strings,
+        );
+        return ToAnAgent::done_without_asking(did, &said);
+    }
     let word = if kept {
         DONE_AT_FULL_ACCESS
     } else {
