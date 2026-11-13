@@ -552,6 +552,25 @@ impl<'a, 'm> Arriving<'a, 'm> {
         }
     }
 
+    /// Write down what the person's desktop said happened at GitHub, while
+    /// this remote turn holds the machine.
+    ///
+    /// [`crate::Machine::a_github_sign_in_was_kept`] with a remote turn in
+    /// front of it, not stamped with this turn's origin: the person here did
+    /// it.
+    ///
+    /// # Errors
+    ///
+    /// [`alo_keeping::NotKept`] when the record could not be written, and the
+    /// turn is closed by it.
+    pub fn a_github_sign_in_was_kept(
+        &mut self,
+        what: alo_record::AtGitHub,
+        now: SystemTime,
+    ) -> Result<(), alo_keeping::NotKept> {
+        self.turning.keeping(Entry::at_github(what, now))
+    }
+
     /// The sentence for a pairing that has ended, if it has.
     ///
     /// `None` while the pairing stands, which is the ordinary answer and costs

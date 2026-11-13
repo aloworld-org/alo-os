@@ -196,6 +196,15 @@ pub enum ToAPerson {
         /// One line per thing leaving.
         lines: Vec<alo_egress::Reported>,
     },
+    /// What their desktop said happened at GitHub is written down in the
+    /// record — the answer to
+    /// [`FromAPerson::GitHubSignIn`](crate::FromAPerson).
+    ///
+    /// Added 2026-11-13, additively. There is no answer saying it was not
+    /// kept: a service that cannot write its record stops rather than answer
+    /// (`docs/contracts/daemon-protocol.md`, *What stops the service*), so a
+    /// desktop that hears nothing has heard that.
+    GitHubSignInKept,
 }
 
 impl ToAPerson {
@@ -569,6 +578,7 @@ impl ToAPerson {
                 model,
             }),
             Told::Leaving { lines } => Ok(Self::Leaving { lines }),
+            Told::GithubSignInKept {} => Ok(Self::GitHubSignInKept),
             // A change carried out without the OK is told to the agent that
             // asked for it, which tells the person in its reply (ADR 0149).
             Told::Proposed(_) | Told::DoneWithoutAsking { .. } => {
@@ -673,6 +683,7 @@ impl From<ToAPerson> for Told {
                 model,
             },
             ToAPerson::Leaving { lines } => Self::Leaving { lines },
+            ToAPerson::GitHubSignInKept => Self::GithubSignInKept {},
         }
     }
 }

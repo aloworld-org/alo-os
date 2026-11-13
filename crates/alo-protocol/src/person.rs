@@ -134,6 +134,7 @@
 
 use crate::asked::Asked;
 use crate::frame;
+use crate::github_sign_in::OnTheWire;
 use crate::refusing::NotUnderstood;
 
 /// One thing a person's shell sent.
@@ -259,6 +260,15 @@ pub enum FromAPerson {
     /// and every time it changes (ADR 0134). The connection it is asked on is
     /// given over to that and answers nothing else.
     WatchWhatLeaves,
+    /// What happened when the person signed in to GitHub or out of it from
+    /// their own desktop, for this service to keep in the record (the owner's
+    /// decision of 2026-11-13).
+    ///
+    /// What it carries was made by `alo-record`'s own constructors — a login
+    /// held to the shape of one, and gh's last line as a record's line — so
+    /// the daemon keeps it as it arrived. A login that is not one makes the
+    /// message unreadable, and nothing is kept.
+    GitHubSignIn(alo_record::AtGitHub),
 }
 
 impl FromAPerson {
@@ -296,6 +306,10 @@ impl FromAPerson {
             Asked::APlaceToReturnTo => Ok(Self::APlaceToReturnTo),
             Asked::PutBack { place, folders } => Ok(Self::PutBack { place, folders }),
             Asked::WatchWhatLeaves {} => Ok(Self::WatchWhatLeaves),
+            Asked::GithubSignIn(on_the_wire) => on_the_wire
+                .kept()
+                .map(Self::GitHubSignIn)
+                .ok_or(NotUnderstood::NotReadable),
             // A command is what an agent asks for where no verb fits (ADR
             // 0149), and a person's own command is typed at their own prompt —
             // so on this door it is refused like the agent's other three.
@@ -338,7 +352,8 @@ impl FromAPerson {
             | Self::TheirOwnQuestion { .. }
             | Self::APlaceToReturnTo
             | Self::PutBack { .. }
-            | Self::WatchWhatLeaves => None,
+            | Self::WatchWhatLeaves
+            | Self::GitHubSignIn(_) => None,
         }
     }
 
@@ -422,6 +437,7 @@ impl From<FromAPerson> for Asked {
             FromAPerson::APlaceToReturnTo => Self::APlaceToReturnTo,
             FromAPerson::PutBack { place, folders } => Self::PutBack { place, folders },
             FromAPerson::WatchWhatLeaves => Self::WatchWhatLeaves {},
+            FromAPerson::GitHubSignIn(what) => Self::GithubSignIn(OnTheWire::of(&what)),
         }
     }
 }

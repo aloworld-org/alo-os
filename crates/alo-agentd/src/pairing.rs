@@ -155,6 +155,7 @@ impl AboutAPairing {
             | FromAPerson::TheirOwnQuestion { .. }
             | FromAPerson::APlaceToReturnTo
             | FromAPerson::PutBack { .. }
+            | FromAPerson::GitHubSignIn(_)
             | FromAPerson::WatchWhatLeaves => None,
         }
     }

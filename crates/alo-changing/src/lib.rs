@@ -83,6 +83,7 @@
 //! | [`unpairing`] | The daemon's pairing door, and what it answers |
 //! | [`the_door`] | Both, as the one door [`Changing`] holds |
 //! | [`door`] | The real socket client, and its patience |
+//! | [`keeping_github_sign_ins`] | The desktop asks the daemon to keep a GitHub sign-in in the record |
 //! | [`refusing`] | The ways a change does not happen, in words |
 //! | [`words`] | Every string this crate can say, and the English beside each |
 
@@ -96,6 +97,8 @@ pub mod answering;
 pub mod changing;
 #[cfg(unix)]
 pub mod door;
+#[cfg(unix)]
+pub mod keeping_github_sign_ins;
 pub mod knocking;
 pub mod outcome;
 pub mod refusing;
@@ -108,6 +111,10 @@ pub mod unpairing;
 pub mod where_the_door_is;
 pub mod words;
 
+/// Re-exported because [`TheDaemonsDoor::keep_a_github_sign_in`] takes one:
+/// what happened at GitHub, as the record keeps it.
+#[cfg(unix)]
+pub use alo_protocol::{AtGitHub, WhyNotSignedIn};
 /// Re-exported because [`Answering::waiting`] hands these back: a caller
 /// that cannot name one cannot hold it in a signature or a test.
 ///
@@ -123,6 +130,8 @@ pub use answering::Answering;
 pub use changing::Changing;
 #[cfg(unix)]
 pub use door::TheDaemonsDoor;
+#[cfg(unix)]
+pub use keeping_github_sign_ins::GitHubSignInNotKept;
 pub use knocking::Knocking;
 pub use outcome::{Gone, Made};
 pub use refusing::NotChanged;

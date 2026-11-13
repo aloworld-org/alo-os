@@ -782,6 +782,25 @@ impl<'a, 'm> Turning<'a, 'm> {
         }
     }
 
+    /// Write down what the person's desktop said happened at GitHub, while
+    /// this turn holds the machine.
+    ///
+    /// [`crate::Machine::a_github_sign_in_was_kept`] for the rounds where a
+    /// local turn holds the machine: a person signs in whether or not their
+    /// agent is in a turn. The entry is the person's own — no agent.
+    ///
+    /// # Errors
+    ///
+    /// [`alo_keeping::NotKept`] when the record could not be written, and the
+    /// turn is closed by it.
+    pub fn a_github_sign_in_was_kept(
+        &mut self,
+        what: alo_record::AtGitHub,
+        now: SystemTime,
+    ) -> Result<(), alo_keeping::NotKept> {
+        self.keeping(Entry::at_github(what, now))
+    }
+
     /// Write down what became of this turn when the machine woke from a sleep
     /// that came in the middle of it: it carried on, or — when `stopped` is
     /// given — it was stopped, with the sentence the person was shown.

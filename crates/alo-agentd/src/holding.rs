@@ -266,6 +266,33 @@ impl<'a, 'm, 't> Holding<'a, 'm, 't> {
         }
     }
 
+    /// Write down what the person's desktop said happened when they signed in
+    /// to GitHub or out of it — through whatever holds the machine, as the
+    /// other entries of the person's own are.
+    ///
+    /// # Errors
+    ///
+    /// [`NotKept`] when the record could not be written; the service stops.
+    pub fn a_github_sign_in_was_kept(
+        &mut self,
+        what: alo_record::AtGitHub,
+        now: SystemTime,
+    ) -> Result<(), NotKept> {
+        match self {
+            Self::ATurn { turning, .. } => turning.a_github_sign_in_was_kept(what, now),
+            Self::Nobody(machine) => machine.a_github_sign_in_was_kept(what, now),
+            Self::TheNetwork { doorway, .. } => {
+                if let Some(arriving) = doorway.turn() {
+                    arriving.a_github_sign_in_was_kept(what, now)
+                } else if let Some(machine) = doorway.machine() {
+                    machine.a_github_sign_in_was_kept(what, now)
+                } else {
+                    Err(the_machine_was_lost())
+                }
+            }
+        }
+    }
+
     /// Write down that a pairing with another machine was kept.
     ///
     /// The person's own door confirms a pairing whether or not a turn — local

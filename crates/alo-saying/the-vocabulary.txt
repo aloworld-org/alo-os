@@ -1839,6 +1839,11 @@ recounting.outcome.asked-an-application	you asked an application to do something
 recounting.outcome.carried-on-after-sleep	the machine went to sleep while the agent was working on this, and the work carried on when it woke
 recounting.outcome.folders-not-put-back	you asked for these folders to be put back, and none of them were changed
 recounting.outcome.folders-put-back	you put these folders back as they were when this was kept
+recounting.outcome.github-sign-in-cancelled	you began to sign in to GitHub, and cancelled it
+recounting.outcome.github-sign-in-failed	you began to sign in to GitHub, and it did not finish because gh stopped with an error
+recounting.outcome.github-sign-in-without-a-code	you began to sign in to GitHub, and it did not finish because no sign-in code arrived
+recounting.outcome.github-sign-in-without-gh	you began to sign in to GitHub, and it did not finish because gh is not on this computer
+recounting.outcome.github-sign-out-failed	you asked to sign out of GitHub, and it did not work
 recounting.outcome.grants-not-read-again	what you have granted could not be read again, so this machine went on with the list it already had
 recounting.outcome.held-back	something would have left this machine and was not allowed to, so nothing left
 recounting.outcome.left	something left this machine
@@ -1861,6 +1866,8 @@ recounting.outcome.ran-a-command-as-administrator	the agent ran a command as adm
 recounting.outcome.ran-a-command-at-full-access	the agent ran a command without asking you first, because you chose full access, and it could reach everything your account can
 recounting.outcome.ran-a-command-you-said-yes-to	the agent ran a command after you said yes to it, and it could reach everything your account can
 recounting.outcome.rolled-back	this machine went back to the version of its system it ran before, as the person asked, after they restarted it
+recounting.outcome.signed-in-to-github	you signed in to GitHub
+recounting.outcome.signed-out-of-github	you signed out of GitHub
 recounting.outcome.stopped-by-sleep	the machine went to sleep while the agent was working on this, and the work was stopped when it woke
 recounting.outcome.the-grants-said-no	the agent asked to do this and it was refused at the moment it would have happened
 recounting.outcome.the-person-said-no	the agent asked to do this and the person at this machine said no

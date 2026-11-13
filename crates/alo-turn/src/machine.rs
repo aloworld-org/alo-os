@@ -711,6 +711,28 @@ impl<'a> Machine<'a> {
         }
     }
 
+    /// Write down what the person's desktop said happened when they signed in
+    /// to GitHub or out of it (`github-sign-in`, the owner's decision of
+    /// 2026-11-13).
+    ///
+    /// Called by the service that holds this machine, from the person's own
+    /// door. **Nothing a caller passes in can name an authority**, for
+    /// [`Machine::a_pairing_was_kept`]'s reason: what is passed is
+    /// `alo-record`'s own value, which has no field for an agent, and no agent
+    /// can send the request. See [`alo_record::Entry::at_github`].
+    ///
+    /// # Errors
+    ///
+    /// [`alo_keeping::NotKept`] when the record could not be written. A
+    /// service that meets this has stopped keeping evidence and stops.
+    pub fn a_github_sign_in_was_kept(
+        &mut self,
+        what: alo_record::AtGitHub,
+        now: std::time::SystemTime,
+    ) -> Result<(), alo_keeping::NotKept> {
+        self.kept.keep(Entry::at_github(what, now))
+    }
+
     /// Shorten this machine's record under the rule it is kept by.
     ///
     /// Public, because the caller is the service that holds the machine and

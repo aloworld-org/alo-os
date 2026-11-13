@@ -105,6 +105,7 @@ use alo_egress::{Destination, Errand, Why};
 use serde::{Deserialize, Serialize};
 
 use crate::asked_an_application::{Answered, Given, Road, SentDuring};
+use crate::at_github::AtGitHub;
 use crate::brokered::AtTheBroker;
 use crate::let_go::{Forgone, WhyLetGo};
 use crate::line::Line;
@@ -739,6 +740,22 @@ pub enum Happened {
         /// absent when it was refused before anything ran.
         sent: Option<SentDuring>,
     },
+    /// **The person signed in to GitHub, or out of it, from their own
+    /// desktop** — or tried, and what came of it ([`crate::at_github`] has the
+    /// rules). The owner's decision of 2026-11-13: every sign-in, sign-out and
+    /// failure is recorded.
+    ///
+    /// **No agent, and no field for one**: the person acted, through GitHub's
+    /// own command. **Not egress** as this machine counts it: nothing this
+    /// service or an agent caused left. A sign-in or sign-out that did not
+    /// work is among the refusals; one the person cancelled is not.
+    ///
+    /// Additive, and `format` stays `1`.
+    #[serde(rename = "at-github")]
+    AtGitHub {
+        /// Which of the things that can happen at GitHub it was.
+        what: AtGitHub,
+    },
 }
 
 impl Happened {
@@ -780,6 +797,7 @@ impl Happened {
             | Self::WorkspaceOpened { .. }
             | Self::LetGo { .. }
             | Self::AskedAnApplication { .. }
+            | Self::AtGitHub { .. }
             | Self::AnsweredForAnotherMachine { .. } => None,
         }
     }
@@ -814,6 +832,7 @@ impl Happened {
             | Self::WorkspaceOpened { .. }
             | Self::LetGo { .. }
             | Self::AskedAnApplication { .. }
+            | Self::AtGitHub { .. }
             | Self::NotBounded { .. }
             | Self::RanACommand { .. }
             | Self::ACommandWasNotRun { .. }
@@ -854,6 +873,7 @@ impl Happened {
             | Self::WorkspaceOpened { .. }
             | Self::LetGo { .. }
             | Self::AskedAnApplication { .. }
+            | Self::AtGitHub { .. }
             | Self::NotBounded { .. }
             | Self::RanACommand { .. }
             | Self::ACommandWasNotRun { .. }
@@ -923,7 +943,7 @@ impl Happened {
                     failed: Some(_),
                     ..
                 }
-        )
+        ) || matches!(self, Self::AtGitHub { what } if what.did_not_happen())
     }
 
     /// Whether a verb ran.
@@ -962,6 +982,7 @@ impl Happened {
             | Self::WorkspaceOpened { .. }
             | Self::LetGo { .. }
             | Self::AskedAnApplication { .. }
+            | Self::AtGitHub { .. }
             | Self::NotBounded { .. }
             | Self::RanACommand { .. }
             | Self::ACommandWasNotRun { .. }
@@ -987,6 +1008,9 @@ impl Happened {
                 answered: Answered::Refused { said },
                 ..
             } => Some(said),
+            // GitHub's own command's last line, where a sign-in or a sign-out
+            // failed and it printed one: the only words there are about why.
+            Self::AtGitHub { what } => what.what_gh_said(),
             // A refused question belongs here rather than with the entries that
             // answer `None`: it *was* refused, and this is where a reader looks
             // for the sentence saying so.
@@ -1046,6 +1070,7 @@ impl Happened {
             | Self::WorkspaceOpened { .. }
             | Self::LetGo { .. }
             | Self::AskedAnApplication { .. }
+            | Self::AtGitHub { .. }
             | Self::NotBounded { .. }
             | Self::RanACommand { .. }
             | Self::ACommandWasNotRun { .. }
@@ -1076,6 +1101,7 @@ impl Happened {
             | Self::WorkspaceOpened { .. }
             | Self::LetGo { .. }
             | Self::AskedAnApplication { .. }
+            | Self::AtGitHub { .. }
             | Self::NotBounded { .. }
             | Self::RanACommand { .. }
             | Self::ACommandWasNotRun { .. }
@@ -1125,6 +1151,7 @@ impl Happened {
             | Self::WorkspaceOpened { .. }
             | Self::LetGo { .. }
             | Self::AskedAnApplication { .. }
+            | Self::AtGitHub { .. }
             | Self::NotBounded { .. }
             | Self::RanACommand { .. }
             | Self::ACommandWasNotRun { .. } => None,
@@ -1160,6 +1187,7 @@ impl Happened {
             | Self::WorkspaceOpened { .. }
             | Self::LetGo { .. }
             | Self::AskedAnApplication { .. }
+            | Self::AtGitHub { .. }
             | Self::NotBounded { .. }
             | Self::RanACommand { .. }
             | Self::ACommandWasNotRun { .. }

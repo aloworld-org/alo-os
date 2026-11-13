@@ -32,6 +32,7 @@
 //! | [`Happened::SleptThrough`] | A turn was under way when the machine slept, and carried on or was stopped when it woke |
 //! | [`Happened::Undone`] | The person put back what an agent had changed, or asked to and it did not happen ([ADR 0045](../../../docs/decisions/0045-what-undoing-rewinds-to.md)) |
 //! | [`Happened::PutBack`] | The person put folders back as they were from a place this machine kept, through the record window or `alo-back` — or asked to, and none went back |
+//! | [`Happened::AtGitHub`] | The person signed in to GitHub or out of it from their own desktop, or tried and it did not finish ([`at_github`]) |
 //!
 //! # The two with nobody in them
 //!
@@ -134,6 +135,7 @@
 
 pub mod as_an_administrator;
 pub mod asked_an_application;
+pub mod at_github;
 pub mod brokered;
 pub mod departed;
 pub mod entry;
@@ -155,6 +157,7 @@ mod testing;
 
 pub use as_an_administrator::AsAnAdministrator;
 pub use asked_an_application::{Answered, Given, Road, SentDuring};
+pub use at_github::{AtGitHub, WhyNotSignedIn};
 pub use brokered::AtTheBroker;
 pub use entry::Entry;
 pub use explain::{Asking, Only};
