@@ -233,10 +233,28 @@ fn a_restore_of_a_window_out_of_sight_looks_at_it() {
             move |s| s.set_window_minimized(&surface, minimized).ok()
         });
     }
-    let camera = f.backend(|s| s.the_camera());
+    // **The window and its band on the screen**, rather than the view's corner
+    // at the window's. This asserted the corner until 2026-11-13, which is the
+    // rule that left a window's band — and its controls — off the top of the
+    // screen (`going_to_a_window_shows_it_whole`).
+    let at = f.backend(|s| s.the_camera()).at();
+    let window = f.backend({
+        let surface = surface.clone();
+        move |_| alo_shell::where_a_window_is(&surface)
+    });
     assert_eq!(
-        (camera.at().x, camera.at().y),
+        (window.loc.x, window.loc.y),
         far,
-        "the view did not go to the window the person could not see"
+        "the control: the window did not move"
+    );
+    assert!(
+        window.loc.y - alo_shell::THE_STRIP_IS_TALL >= at.y
+            && window.loc.y + window.size.h <= at.y + VIEWPORT.1
+            && window.loc.x >= at.x
+            && window.loc.x + window.size.w <= at.x + VIEWPORT.0,
+        "the view did not show the window the person could not see, band and \
+         all: view from ({}, {}), window {window:?}",
+        at.x,
+        at.y
     );
 }

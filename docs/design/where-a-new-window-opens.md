@@ -384,3 +384,23 @@ screen. `crates/alo-shell/src/the_room_alo_places_a_window_in.rs`.
   back: a window the person moved or resized is never placed again (law 5).
 - The top controls and the egress indicator still only must not cover a new
   window's handle completely.
+
+---
+
+## Amended 2026-11-13 — going to a window shows it whole
+
+From the next boot walk (`w26-37`): Super+Tab to Dolphin, out of sight, brought
+it into view with its name band off the top of the screen, and with the band its
+close and put-aside controls. The view had been stopped with the window's own
+corner at the screen's corner, and the band is drawn above the window.
+
+**The view now stops where the window and its band lie in the room the Dock
+leaves**, centred where they fit. A window too big for that room has its band
+16 inside the room's top and leading edge. When the view travels is unchanged:
+always to another Place, and on this one only when none of the window is in
+sight. The window is never moved. `crate::going_to_a_window_shows_it_whole`.
+
+**This lane's judgement, the owner's to change:** this makes §11's *travel to
+its location* true; it adds no setting. A window partly in sight is still left
+where it is, so going to one mostly under the Dock (`w26-38`) still moves
+nothing — that is the 2026-11-09 rule, and changing it is the owner's call.

@@ -112,6 +112,25 @@ fn tab_reaches_both_buttons_and_enter_presses_them() {
     assert_eq!(account.shown().on, OnTheSheet::WayBack);
 }
 
+/// **Shift+Tab goes back**, through the buttons and the fields the other way
+/// round. Found on a booted machine on 2026-11-13: on the password sheet, from
+/// *Save password*, one Shift+Tab went forward to *Back*.
+#[test]
+fn shift_tab_walks_the_sheet_the_other_way() {
+    let mut account = TheFirstAccount::arriving();
+    typed(&mut account, "anna");
+    account.pressed(SignInKey::Enter);
+    account.pressed(SignInKey::OtherField);
+    account.pressed(SignInKey::OtherField);
+    assert_eq!(account.shown().on, OnTheSheet::WayOn);
+    account.pressed(SignInKey::FieldBefore);
+    assert_eq!(account.shown().on, OnTheSheet::Field(1));
+    account.pressed(SignInKey::FieldBefore);
+    assert_eq!(account.shown().on, OnTheSheet::Field(0));
+    account.pressed(SignInKey::FieldBefore);
+    assert_eq!(account.shown().on, OnTheSheet::WayBack);
+}
+
 /// **A letter on a button types nothing**, and Escape on the secret's sheet
 /// clears the secrets and keeps the name.
 #[test]

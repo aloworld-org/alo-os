@@ -373,6 +373,7 @@ mod flip_gate;
 mod frame_edges;
 mod frame_handle;
 mod frame_name;
+mod going_to_a_window_shows_it_whole;
 mod how_code_runs_in_settings;
 pub mod how_long_a_grant_lasts;
 mod how_much_alo_can_do;

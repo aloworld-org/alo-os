@@ -135,18 +135,17 @@ fn tab_moves_forwards_and_back_on_every_surface_with_more_than_one_stop() {
         ApprovalKey::PreviousAnswer
     );
 
-    // Two fields, so forwards and backwards are one move: Tab from either
-    // arrives at the other, which is a cycle and not a trap.
-    for held in [alone(), shifted] {
-        assert_eq!(
-            SignInKey::of(Keysym::Tab, &held),
-            SignInKey::OtherField,
-            "{held:?}"
-        );
-    }
+    // **The sign-in family has its own back key.** This said, until
+    // 2026-11-13, that two fields make forwards and backwards one move — true
+    // of the sign-in screen, and false of the first account's sheet, which
+    // has two fields and two buttons. A walk on a booted machine found
+    // Shift+Tab on *Save password* going forward to *Back*; this test passed
+    // throughout, because it asserted the shared answer it should have caught.
+    assert_eq!(SignInKey::of(Keysym::Tab, &alone()), SignInKey::OtherField);
+    assert_eq!(SignInKey::of(Keysym::Tab, &shifted), SignInKey::FieldBefore);
     assert_eq!(
         SignInKey::of(Keysym::ISO_Left_Tab, &alone()),
-        SignInKey::OtherField
+        SignInKey::FieldBefore
     );
 
     assert_eq!(

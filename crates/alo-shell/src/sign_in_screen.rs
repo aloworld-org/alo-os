@@ -290,7 +290,7 @@ impl<K: Knocking> SignInScreen<K> {
         // it. A Tab that moved the waiting field to a name nobody can see
         // would put every key after it somewhere invisible -- which is the
         // fault this whole change is about, reachable one keystroke later.
-        if matches!(key, SignInKey::OtherField) && self.draws_one_field() {
+        if matches!(key, SignInKey::OtherField | SignInKey::FieldBefore) && self.draws_one_field() {
             return Signing::Still(Box::new(self));
         }
         if !self.entry.pressed(key) {
