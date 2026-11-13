@@ -160,6 +160,15 @@ impl TheKeyboardPicker {
         };
     }
 
+    /// Shift+Tab: the same three places the other way round.
+    pub(crate) fn ring_crosses_back(&mut self) {
+        self.ring = match self.ring {
+            TheRing::OnTheKeyboards => TheRing::OnTheWayOn,
+            TheRing::OnTheTest => TheRing::OnTheKeyboards,
+            TheRing::OnTheWayOn => TheRing::OnTheTest,
+        };
+    }
+
     /// Enter on a keyboard: it is chosen, and the ring goes to the test, so
     /// the next thing a person does is try it.
     pub(crate) fn choose(&mut self) {
@@ -226,6 +235,20 @@ mod tests {
             alo_keyboards::the_keyboards_offered(&alo_strings::Language::written("en").unwrap()),
             None,
         )
+    }
+
+    /// **Shift+Tab undoes Tab** from each of the three places.
+    #[test]
+    fn crossing_back_undoes_crossing() {
+        let mut picker = offered_in_english();
+        for _ in 0..3 {
+            let was = picker.ring();
+            picker.ring_crosses();
+            assert_ne!(picker.ring(), was);
+            picker.ring_crosses_back();
+            assert_eq!(picker.ring(), was);
+            picker.ring_crosses();
+        }
     }
 
     /// **An English reader can choose a German keyboard**, with the arrows.

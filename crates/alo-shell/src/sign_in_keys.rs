@@ -16,9 +16,20 @@ pub enum SignInKey {
     Letter(char),
     /// Take the last letter of the waiting field back.
     Erase,
-    /// Move to the other field. Tab and Shift+Tab both do, because there are
-    /// two fields.
+    /// Move to the next field or button. Tab.
+    ///
+    /// On a screen with two fields the next is the other one, which is where
+    /// the name comes from.
     OtherField,
+    /// Move to the field or button before. Shift+Tab.
+    ///
+    /// **Its own key since 2026-11-13**, when a walk on a booted machine found
+    /// Shift+Tab on the first account's password sheet going from *Save
+    /// password* forward to *Back*. This enum had one variant for both keys,
+    /// written when the sign-in screen had two fields and both directions were
+    /// the same place; a sheet with four stops then read it as *next*. On a
+    /// screen with two places it is still the other one.
+    FieldBefore,
     /// Enter: from the name, move to the password; from the password, sign in.
     Enter,
     /// **Take back everything typed**, in both fields, and wait at the name
@@ -52,7 +63,11 @@ impl SignInKey {
     pub fn of(symbol: Keysym, held: &ModifiersState) -> Self {
         match symbol {
             Keysym::BackSpace => return Self::Erase,
-            Keysym::Tab | Keysym::ISO_Left_Tab => return Self::OtherField,
+            // Shift+Tab arrives as `ISO_Left_Tab` on most layouts and as Tab
+            // with Shift held on the rest; both go back.
+            Keysym::ISO_Left_Tab => return Self::FieldBefore,
+            Keysym::Tab if held.shift => return Self::FieldBefore,
+            Keysym::Tab => return Self::OtherField,
             Keysym::Return | Keysym::KP_Enter => return Self::Enter,
             Keysym::Escape => return Self::Clear,
             Keysym::Up | Keysym::KP_Up => return Self::Earlier,
@@ -86,7 +101,7 @@ mod tests {
         assert_eq!(SignInKey::of(Keysym::Tab, &held), SignInKey::OtherField);
         assert_eq!(
             SignInKey::of(Keysym::ISO_Left_Tab, &held),
-            SignInKey::OtherField
+            SignInKey::FieldBefore
         );
         assert_eq!(SignInKey::of(Keysym::Return, &held), SignInKey::Enter);
         assert_eq!(SignInKey::of(Keysym::KP_Enter, &held), SignInKey::Enter);
@@ -151,6 +166,31 @@ mod tests {
         assert_eq!(
             alo_access::leaving(alo_access::tree::Surface::SignIn),
             alo_access::Leaving::ClearsWhatWasTyped
+        );
+    }
+}
+
+#[cfg(test)]
+mod shift_tab_goes_back {
+    use super::{Keysym, ModifiersState, SignInKey};
+
+    /// **Shift+Tab is not Tab**, however the layout spells it: as its own
+    /// symbol, or as Tab with Shift held. Found on a booted machine on
+    /// 2026-11-13, where both read as *next*.
+    #[test]
+    fn shift_tab_is_the_key_before_however_it_arrives() {
+        let shifted = ModifiersState {
+            shift: true,
+            ..ModifiersState::default()
+        };
+        assert_eq!(SignInKey::of(Keysym::Tab, &shifted), SignInKey::FieldBefore);
+        assert_eq!(
+            SignInKey::of(Keysym::ISO_Left_Tab, &shifted),
+            SignInKey::FieldBefore
+        );
+        assert_eq!(
+            SignInKey::of(Keysym::Tab, &ModifiersState::default()),
+            SignInKey::OtherField
         );
     }
 }
