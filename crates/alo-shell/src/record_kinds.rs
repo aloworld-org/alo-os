@@ -51,7 +51,10 @@ impl EntryKind {
             | Outcome::AskedAnApplication
             | Outcome::MachineChangeHandedOn
             | Outcome::PutBack
-            | Outcome::FoldersPutBack => Self::Changed,
+            | Outcome::FoldersPutBack
+            // The person's own act on their own machine, as putting back is.
+            | Outcome::SignedInToGitHub
+            | Outcome::SignedOutOfGitHub => Self::Changed,
             Outcome::Left | Outcome::LeftOnItsOwn => Self::Left,
             Outcome::NobodyWasAsked
             | Outcome::ThePersonSaidNo
@@ -64,7 +67,12 @@ impl EntryKind {
             | Outcome::HeldBack
             | Outcome::MachineChangeRefused
             | Outcome::NotPutBack
-            | Outcome::FoldersNotPutBack => Self::Refused,
+            | Outcome::FoldersNotPutBack
+            // Asked for and did not happen.
+            | Outcome::GitHubSignInWithoutGh
+            | Outcome::GitHubSignInFailed
+            | Outcome::GitHubSignInWithoutACode
+            | Outcome::GitHubSignOutFailed => Self::Refused,
             Outcome::AnsweredHere
             | Outcome::AnsweredForAnotherMachine
             | Outcome::GrantsNotReadAgain
@@ -77,6 +85,8 @@ impl EntryKind {
             | Outcome::LetGoOutsideTheWindow
             | Outcome::LetGoTheDiskNeededTheRoom
             | Outcome::LetGoThePersonAskedToForget
+            // The person changed their mind: nothing refused them.
+            | Outcome::GitHubSignInCancelled
             // **A command that ran and failed is neither of the other two**:
             // nobody refused it, and it is not a change a file icon may claim
             // was made. Its own line says it did not work.

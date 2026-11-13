@@ -437,6 +437,97 @@ pub const NOT_PUT_BACK: Word = Word::saying(
 );
 
 // ---------------------------------------------------------------------------
+// The person's own GitHub sign-ins — `alo_record::AtGitHub`.
+//
+// The desktop runs GitHub's own command-line program, `gh`, and the record
+// keeps what came of it: the owner's decision of 2026-11-13 that every
+// sign-in, sign-out and failure is recorded. The login GitHub knows them by
+// is shown beneath, as GitHub writes it.
+// ---------------------------------------------------------------------------
+
+/// The person signed in to GitHub from their desktop.
+pub const SIGNED_IN_TO_GITHUB: Word = Word::saying(
+    "recounting.outcome.signed-in-to-github",
+    "you signed in to GitHub",
+)
+.noting(
+    "Read at the head of one line of a record somebody is reading back. The person themselves \
+     signed in to their GitHub account from this computer. GitHub is the name of a service; do \
+     not translate it. The name GitHub knows them by is on the line beneath.",
+);
+
+/// The person signed out of GitHub from their desktop.
+pub const SIGNED_OUT_OF_GITHUB: Word = Word::saying(
+    "recounting.outcome.signed-out-of-github",
+    "you signed out of GitHub",
+)
+.noting(
+    "Read at the head of one line of a record somebody is reading back. The person themselves \
+     signed out of their GitHub account on this computer. GitHub is the name of a service; do \
+     not translate it. When it is known, the name GitHub knew them by is on the line beneath.",
+);
+
+/// A sign-in to GitHub did not finish, because `gh` is not on this computer.
+pub const GITHUB_SIGN_IN_WITHOUT_GH: Word = Word::saying(
+    "recounting.outcome.github-sign-in-without-gh",
+    "you began to sign in to GitHub, and it did not finish because gh is not on this computer",
+)
+.noting(
+    "Read at the head of one line of a record somebody is reading back. The person started \
+     signing in to GitHub, and nothing could be started because the program that does it is not \
+     installed. gh is the name of GitHub's own command-line program, always written in lower \
+     case; do not translate it. GitHub is the name of a service; do not translate it either.",
+);
+
+/// A sign-in to GitHub did not finish, because `gh` ended with an error.
+pub const GITHUB_SIGN_IN_FAILED: Word = Word::saying(
+    "recounting.outcome.github-sign-in-failed",
+    "you began to sign in to GitHub, and it did not finish because gh stopped with an error",
+)
+.noting(
+    "Read at the head of one line of a record somebody is reading back. The person started \
+     signing in to GitHub, and the program doing it stopped with an error. The last line that \
+     program printed, in its own words and usually in English, is on the line beneath. gh is the \
+     name of GitHub's own command-line program, always written in lower case; do not translate \
+     it. GitHub is the name of a service; do not translate it either.",
+);
+
+/// A sign-in to GitHub did not finish, because no one-time code arrived.
+pub const GITHUB_SIGN_IN_WITHOUT_A_CODE: Word = Word::saying(
+    "recounting.outcome.github-sign-in-without-a-code",
+    "you began to sign in to GitHub, and it did not finish because no sign-in code arrived",
+)
+.noting(
+    "Read at the head of one line of a record somebody is reading back. Signing in to GitHub \
+     shows the person a short one-time code to type on GitHub's own page; this time none was \
+     ever shown, so they could not finish. GitHub is the name of a service; do not translate it.",
+);
+
+/// The person cancelled a sign-in to GitHub.
+pub const GITHUB_SIGN_IN_CANCELLED: Word = Word::saying(
+    "recounting.outcome.github-sign-in-cancelled",
+    "you began to sign in to GitHub, and cancelled it",
+)
+.noting(
+    "Read at the head of one line of a record somebody is reading back. The person started \
+     signing in to GitHub and then chose to stop before it finished. Nothing went wrong; it is a \
+     plain statement, not a warning. GitHub is the name of a service; do not translate it.",
+);
+
+/// A sign-out of GitHub did not work.
+pub const GITHUB_SIGN_OUT_FAILED: Word = Word::saying(
+    "recounting.outcome.github-sign-out-failed",
+    "you asked to sign out of GitHub, and it did not work",
+)
+.noting(
+    "Read at the head of one line of a record somebody is reading back. The person asked to \
+     sign out of their GitHub account on this computer, and the program doing it stopped with an \
+     error, so they may still be signed in. When there was one, the last line that program \
+     printed, in its own words and usually in English, is on the line beneath. GitHub is the \
+     name of a service; do not translate it.",
+);
+
+// ---------------------------------------------------------------------------
 // Who said yes to what ran — [`crate::Approved`].
 //
 // Read beneath the machine's sentence about a change that ran, and only where
@@ -641,7 +732,7 @@ pub const AN_APPLICATION_WAS_NOT_ASKED: Word = Word::saying(
 );
 
 /// Every string this crate can say, in the order a translator meets them.
-pub const EVERY_WORD: [Word; 44] = [
+pub const EVERY_WORD: [Word; 51] = [
     RAN,
     NOBODY_WAS_ASKED,
     THE_PERSON_SAID_NO,
@@ -678,6 +769,13 @@ pub const EVERY_WORD: [Word; 44] = [
     LET_GO_OUTSIDE_THE_WINDOW,
     LET_GO_THE_DISK_NEEDED_THE_ROOM,
     LET_GO_THE_PERSON_ASKED_TO_FORGET,
+    SIGNED_IN_TO_GITHUB,
+    SIGNED_OUT_OF_GITHUB,
+    GITHUB_SIGN_IN_WITHOUT_GH,
+    GITHUB_SIGN_IN_FAILED,
+    GITHUB_SIGN_IN_WITHOUT_A_CODE,
+    GITHUB_SIGN_IN_CANCELLED,
+    GITHUB_SIGN_OUT_FAILED,
     THE_PERSON_SAID_YES,
     NOTHING_TO_TELL,
     ONLY_THE_MOST_RECENT,
@@ -693,7 +791,7 @@ pub const EVERY_WORD: [Word; 44] = [
 /// Named apart from the rest so the tests below can hold each group to the rule
 /// that is actually its own: a clause is read beside a sentence and does not end
 /// in a full stop, and a refusal says what to do next.
-pub const EVERY_OUTCOME: [Word; 36] = [
+pub const EVERY_OUTCOME: [Word; 43] = [
     RAN,
     NOBODY_WAS_ASKED,
     THE_PERSON_SAID_NO,
@@ -730,6 +828,13 @@ pub const EVERY_OUTCOME: [Word; 36] = [
     LET_GO_OUTSIDE_THE_WINDOW,
     LET_GO_THE_DISK_NEEDED_THE_ROOM,
     LET_GO_THE_PERSON_ASKED_TO_FORGET,
+    SIGNED_IN_TO_GITHUB,
+    SIGNED_OUT_OF_GITHUB,
+    GITHUB_SIGN_IN_WITHOUT_GH,
+    GITHUB_SIGN_IN_FAILED,
+    GITHUB_SIGN_IN_WITHOUT_A_CODE,
+    GITHUB_SIGN_IN_CANCELLED,
+    GITHUB_SIGN_OUT_FAILED,
 ];
 
 /// Who said yes to what ran, read beneath it rather than at its head.

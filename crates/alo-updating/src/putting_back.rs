@@ -103,7 +103,11 @@ pub fn what_was_done(entry: &Entry) -> WhatWasDone {
         | Happened::LeftOnItsOwn { .. }
         | Happened::LetGo { .. }
         | Happened::Undone { .. }
-        | Happened::PutBack { .. } => WhatWasDone::NotAnAgents,
+        | Happened::PutBack { .. }
+        // The person signing in to GitHub or out of it, through GitHub's own
+        // command: nobody's agent, and nothing of theirs this table could put
+        // back.
+        | Happened::AtGitHub { .. } => WhatWasDone::NotAnAgents,
         // **A person's own command asked an application** (`alo-app`). Nobody's
         // agent did it, so this table offers nothing; the place kept before it,
         // named in the entry's `kept_as`, is Put back's road, not this one.

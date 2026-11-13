@@ -254,6 +254,8 @@ pub mod interfaces_that_went;
 #[cfg(target_os = "linux")]
 pub mod joining;
 #[cfg(target_os = "linux")]
+pub mod keeping_github_sign_ins;
+#[cfg(target_os = "linux")]
 pub mod keeping_names;
 #[cfg(target_os = "linux")]
 pub mod keeping_pairings;
