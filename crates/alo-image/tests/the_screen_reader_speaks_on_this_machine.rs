@@ -7,7 +7,8 @@
 //! # What this proves, and what it cannot
 //!
 //! It proves **the recipe still asks for the reader and still checks it the way
-//! ADR 0151 says**: Orca started, a word spoken in each of the 24 languages, one
+//! ADR 0151 says**: Orca loaded, and started the way the session starts it and
+//! still running fifteen seconds later, a word spoken in each of the 24 languages, one
 //! speech module and it local, and the unit unable to open an internet socket.
 //! It cannot prove a machine speaks, or that nothing leaves it while the reader
 //! runs: the image build runs the checks this test holds it to, and a booted
@@ -83,19 +84,97 @@ fn the_recipe_installs_the_reader_its_voice_and_where_the_sound_goes() {
     }
 }
 
-/// **Orca is started, not stat-ed**, and the floor is checked: 48 is the first
-/// release whose keyboard is `Atspi.Device`'s.
+/// **Orca is loaded, not stat-ed**, and the floor is checked: 48 is the first
+/// release whose keyboard is `Atspi.Device`'s. That it *starts* is the next
+/// test's.
 #[test]
-fn orca_is_started_and_held_to_a_floor() {
+fn orca_is_loaded_and_held_to_a_floor() {
     let block = the_readers_block();
     assert!(
         block.contains("orca --version"),
-        "nothing runs Orca in the build, so a reader that dies at launch would ship"
+        "nothing runs Orca in the build, so a reader whose modules do not load would ship"
     );
     assert!(block.contains("least=48"), "the floor of Orca 48 is gone");
     assert!(
         !block.contains("test -x /usr/bin/orca"),
         "an executable bit stands in for Orca starting"
+    );
+}
+
+/// The recipe's block that starts the reader as the session does.
+fn the_starting_block() -> (String, usize) {
+    let recipe = read(&of_the_image("Containerfile"));
+    let at = recipe.find("--socket=alo-reader-check").unwrap_or_else(|| {
+        panic!("the recipe no longer starts the screen reader as a session does")
+    });
+    let block = recipe
+        .split("\nRUN ")
+        .find(|block| block.contains("--socket=alo-reader-check"))
+        .unwrap_or_else(|| panic!("the reader's start is not in a RUN of its own"));
+    (acted_on(block).join("\n"), at)
+}
+
+/// **Orca is started the way the session starts it, and has to stay up.**
+///
+/// `orca --version` answered on every build while Orca 48.9 fell over at every
+/// start on a booted machine (`docs/misreadings/orca-version-answered-is-not-orca-started.md`).
+/// So the build runs the unit's own command with the unit's own environment,
+/// under a Wayland compositor with no X display, a session bus and the
+/// accessibility bus — and fails unless the reader is still running fifteen
+/// seconds later with no traceback. And what it installed to do so is gone.
+#[test]
+fn orca_is_started_the_way_the_session_starts_it() {
+    let (block, at) = the_starting_block();
+    for (must, why) in [
+        (
+            "sed -n 's/^ExecStart=//p' \"${unit}\"",
+            "the check does not run the command the unit runs",
+        ),
+        (
+            "sed -n 's/^Environment=//p' \"${unit}\"",
+            "the check does not give the reader the environment the unit gives it",
+        ),
+        (
+            "unit=/usr/lib/systemd/user/alo-screen-reader.service",
+            "the check reads some other unit than the one Settings starts",
+        ),
+        (
+            "weston --backend=headless",
+            "the reader is not started under a Wayland compositor",
+        ),
+        (
+            "env -u DISPLAY",
+            "the reader is started with an X display alo's session does not have",
+        ),
+        (
+            "dbus-run-session --",
+            "the reader is started with no session bus, so it cannot reach the accessibility bus",
+        ),
+        ("sleep 15;", "the reader is not given time to fall over"),
+        (
+            "kill -0 \"${reader}\"",
+            "nothing asks whether the reader is still running",
+        ),
+        (
+            "Traceback|Fatal Python error",
+            "a reader that printed a traceback would pass",
+        ),
+        ("exit 1;", "a reader that fell over does not fail the build"),
+        (
+            "rpm -e ${added}",
+            "what the check installed is left in the image",
+        ),
+        ("! command -v weston", "the check's compositor ships"),
+    ] {
+        assert!(block.contains(must), "{why}");
+    }
+    let recipe = read(&of_the_image("Containerfile"));
+    let the_unit_arrives = recipe
+        .find("COPY image/usr/lib/systemd/user/ /usr/lib/systemd/user/")
+        .unwrap_or_else(|| panic!("the recipe no longer puts the user units in the image"));
+    assert!(
+        the_unit_arrives < at,
+        "the reader is started before its unit is in the image, so the check reads nothing"
     );
 }
 
