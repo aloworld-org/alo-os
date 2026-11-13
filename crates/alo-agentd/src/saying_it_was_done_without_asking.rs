@@ -66,6 +66,17 @@ pub fn ran_without_asking(did: Done, sentence: Said, kept: bool, strings: &Strin
         _ => None,
     };
     let Some(failed) = failed else {
+        // **Never plain *Done* beside a snapshot for a command that sent
+        // something off this computer** (ADR 0110 §2): the line says Put back
+        // returns the files here and cannot recall what left — or, where
+        // nothing counted, that it could not tell (`alo_capability::WhatItSent`).
+        if kept && let Some(what) = did.what_a_command_sent() {
+            let said = strings.say(
+                &what.done_at_full_access().key(),
+                &Filling::of("sentence", sentence.into_text()),
+            );
+            return ToAnAgent::done_without_asking(did, &said);
+        }
         return done_without_asking(did, sentence, kept, strings);
     };
     let word = if kept {
@@ -78,4 +89,58 @@ pub fn ran_without_asking(did: Done, sentence: Said, kept: bool, strings: &Strin
         &Filling::of("sentence", sentence.into_text()).and_said("why", &failed.said(strings)),
     );
     ToAnAgent::done_without_asking(did, &said)
+}
+
+#[cfg(test)]
+#[expect(
+    clippy::unwrap_used,
+    reason = "in a test, a panic on an unexpected Err is the failure being reported"
+)]
+mod tests {
+    use super::ran_without_asking;
+    use alo_capability::WhatACommandDid;
+    use alo_protocol::{Done, ToAnAgent};
+    use alo_strings::{Filling, Strings};
+
+    /// The line a command run at full access is answered with, given how
+    /// many bytes it was counted sending and whether a copy was kept.
+    fn told(sent: Option<u64>, kept: bool) -> String {
+        let strings = Strings::of(alo_capability::words::capability_words().unwrap());
+        let did = Done::of_a_command(
+            &WhatACommandDid::of(Some(0), String::new(), false, false).having_sent(sent),
+        );
+        let sentence = strings.say(
+            &alo_capability::words::RUN_A_COMMAND.key(),
+            &Filling::of("command", "git push"),
+        );
+        match ran_without_asking(did, sentence, kept, &strings) {
+            ToAnAgent::DoneWithoutAsking { said, .. } => said.text().to_owned(),
+            other => format!("{other:?}"),
+        }
+    }
+
+    /// **A push at full access, beside a kept copy, is never told as plain
+    /// *Done***: Put back returns the files here and cannot recall what left —
+    /// or, where nothing counted, the line says it could not tell. One counted
+    /// as sending nothing keeps the plain line, and one with no copy kept
+    /// already says it can't be put back (ADR 0110 §2).
+    #[test]
+    fn a_command_that_sent_something_at_full_access_is_not_told_as_wholly_undoable() {
+        let plain = "Done without asking you first, because you chose full access in Settings → \
+                     Running code: run this command: git push.";
+        assert_eq!(told(Some(0), true), plain);
+        let sent = told(Some(52_000), true);
+        assert!(
+            sent.starts_with("Done without asking you first")
+                && sent.contains("Put back can return your files on this computer")
+                && sent.contains("sent something off this computer while it ran"),
+            "{sent}"
+        );
+        assert!(
+            told(None, true).contains("could not count whether it sent anything"),
+            "{}",
+            told(None, true)
+        );
+        assert!(told(Some(52_000), false).contains("can't be put back"));
+    }
 }

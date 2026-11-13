@@ -1040,6 +1040,78 @@ pub const A_COMMAND_RAN_TOO_LONG: Word = Word::saying(
      than alo lets one command run.",
 );
 
+/// After a command run at full access that sent something off this computer
+/// (`crate::what_a_command_sent`, ADR 0110 §2).
+pub const DONE_AT_FULL_ACCESS_AND_IT_SENT: Word = Word::saying(
+    "capability.full-access.done-and-sent",
+    "Done without asking you first, because you chose full access in Settings → Running code: \
+     {sentence}. Put back can return your files on this computer, but the command sent \
+     something off this computer while it ran, and that can't be recalled.",
+)
+.noting(
+    "Shown under what alo did, for a command it ran without the person's OK, because the person \
+     chose full access, when the computer counted it sending data to the network or the \
+     internet. {sentence} is what was run. 'Put back' is the button that undoes what alo did on \
+     this computer; use the words your translation uses for it and for 'Settings → Running \
+     code'.",
+);
+
+/// The same, where nothing could count what the command sent.
+pub const DONE_AT_FULL_ACCESS_AND_NOT_COUNTED: Word = Word::saying(
+    "capability.full-access.done-and-not-counted",
+    "Done without asking you first, because you chose full access in Settings → Running code: \
+     {sentence}. Put back can return your files on this computer, but not anything the command \
+     sent off it — and this computer could not count whether it sent anything.",
+)
+.noting(
+    "Like the sentence above, when the computer could not count what the command sent, so it \
+     may or may not have sent anything.",
+);
+
+/// After a command the person said yes to that sent something off this
+/// computer.
+pub const DONE_AFTER_YOUR_OK_AND_IT_SENT: Word = Word::saying(
+    "capability.running.done-and-sent",
+    "Done. Put back can return your files on this computer, but the command sent something off \
+     this computer while it ran, and that can't be recalled.",
+)
+.noting(
+    "Shown after the person answered yes to a command alo proposed, when the computer counted \
+     it sending data to the network or the internet. 'Put back' is the button that undoes what \
+     alo did on this computer.",
+);
+
+/// The same, where nothing could count what the command sent.
+pub const DONE_AFTER_YOUR_OK_AND_NOT_COUNTED: Word = Word::saying(
+    "capability.running.done-and-not-counted",
+    "Done. Put back can return your files on this computer, but not anything the command sent \
+     off it — and this computer could not count whether it sent anything.",
+)
+.noting("Like the sentence above, when the computer could not count what the command sent.");
+
+/// After a command the terminal's own switch let run, that sent something off
+/// this computer.
+pub const DONE_WITHOUT_ASKING_AND_IT_SENT: Word = Word::saying(
+    "capability.terminal.done-without-asking-and-sent",
+    "Done without asking you first, as you chose in Settings → Terminal. Put back can return \
+     your files on this computer, but the command sent something off this computer while it \
+     ran, and that can't be recalled.",
+)
+.noting(
+    "Printed in the terminal after alo ran a command without asking, as the person chose for \
+     the terminal, when the computer counted it sending data off the computer. 'Settings → \
+     Terminal' and 'Put back' are named as the person sees them.",
+);
+
+/// The same, where nothing could count what the command sent.
+pub const DONE_WITHOUT_ASKING_AND_NOT_COUNTED: Word = Word::saying(
+    "capability.terminal.done-without-asking-and-not-counted",
+    "Done without asking you first, as you chose in Settings → Terminal. Put back can return \
+     your files on this computer, but not anything the command sent off it — and this computer \
+     could not count whether it sent anything.",
+)
+.noting("Like the sentence above, when the computer could not count what the command sent.");
+
 /// Why a command did not work: nobody is signed in to GitHub — and how to sign
 /// in, and what that sign-in lets anything running as the person do (the
 /// owner's decision of 2026-11-13: *say its broad access plainly, and say that
@@ -1256,7 +1328,7 @@ pub const TEXT_HOLDS_ANOTHER_ALPHABET: Word = Word::saying(
 );
 
 /// Every string this crate can say, in the order a translator meets them.
-pub const EVERY_WORD: [Word; 110] = [
+pub const EVERY_WORD: [Word; 116] = [
     ANONYMOUS,
     NO_APPLICATION_NAMED,
     NOTHING_NAMED,
@@ -1342,6 +1414,12 @@ pub const EVERY_WORD: [Word; 110] = [
     A_COMMAND_WAS_STOPPED,
     A_COMMAND_RAN_TOO_LONG,
     NOT_SIGNED_IN_TO_GITHUB,
+    DONE_AT_FULL_ACCESS_AND_IT_SENT,
+    DONE_AT_FULL_ACCESS_AND_NOT_COUNTED,
+    DONE_AFTER_YOUR_OK_AND_IT_SENT,
+    DONE_AFTER_YOUR_OK_AND_NOT_COUNTED,
+    DONE_WITHOUT_ASKING_AND_IT_SENT,
+    DONE_WITHOUT_ASKING_AND_NOT_COUNTED,
     RUN_THIS_COMMAND,
     DONE_AFTER_YOUR_OK,
     DONE_AFTER_YOUR_OK_AND_IT_CANNOT_BE_PUT_BACK,
