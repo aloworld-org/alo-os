@@ -308,6 +308,17 @@ at the moment the request arrives. Nothing on the wire can name the level.
   Law 1 is met for every command this service runs itself, and not yet for
   those two. This is said here so that nothing reads as though it were.
 
+**A folder published to GitHub Pages** (`publish_to_github_pages`,
+`docs/contracts/agent-verbs.md`, added 2026-11-13, additively) is a verb whose
+one command runs on this same road. It answers
+`{"published":{"folder":"…","address":"https://<account>.github.io/","nothing_new":false}}`
+— at full access inside `done-without-asking`, and after an OK inside
+`did-and-cannot-be-undone` **whatever the snapshot kept**, because nothing on
+this computer changed and what went to the internet is not this computer's to
+put back. A client never offers Put back beside it. While its command runs the
+indicator shows the turn's agent *sending something to github.com*; the bytes
+`git` sends are subject to the paragraph above.
+
 ## What a person sends
 
 ```json

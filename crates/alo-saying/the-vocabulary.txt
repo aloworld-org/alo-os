@@ -1815,6 +1815,36 @@ proxy.set-by.this-person	You set this
 proxy.the-proxy.automatic	This machine asks the network where each connection should go
 proxy.the-proxy.manual	This machine reaches the network through the proxy set here
 proxy.the-proxy.none	This machine reaches the network directly
+publishing.commit-message	Published from alo OS
+publishing.not-known	It is not known whether it was published: {why}. Look at your site to see.
+publishing.not.another-account	you are signed in to GitHub as {signed_in}, not {account}, so it would have gone to somebody else's site
+publishing.not.empty	the folder has nothing in it to publish
+publishing.not.ended-with	it ended with exit status {status}; it said: {said}
+publishing.not.here	alo could not publish from this computer, because something in alo itself went wrong
+publishing.not.name-cannot-be-carried	the folder's name has a line break in it, or is too long, for a command to carry
+publishing.not.no-answer	GitHub could not be reached, or would not say who is signed in; it said: {said}
+publishing.not.no-gh	GitHub's own command, gh, is not on this computer
+publishing.not.no-git	git, the program that sends it, is not on this computer
+publishing.not.no-repository	GitHub would not make the repository {account}.github.io; it said: {said}
+publishing.not.no-room	this computer could not make a place of its own to prepare it in
+publishing.not.not-a-folder	{folder} is not a folder
+publishing.not.not-an-account	{account} is not a name GitHub gives an account, which has only letters, numbers and single hyphens, at most 39 of them
+publishing.not.not-prepared	git could not prepare the files to send; it said: {said}
+publishing.not.not-started	alo could not start git on this computer
+publishing.not.published	Nothing was published: {why}.
+publishing.not.refused	GitHub refused it, which usually means the site was changed somewhere else while alo was publishing — asking again publishes on top of that change; it said: {said}
+publishing.not.stopped	something stopped it before it finished
+publishing.not.too-long	it ran longer than alo lets one thing run, and was stopped before it finished
+publishing.nothing-new	Nothing new was published: your GitHub Pages site at {address} already has exactly the files in {folder}.
+publishing.published-after-your-ok	Published: it is on the internet now, as your GitHub Pages site at {address}. Put back can't recall it.
+publishing.published-without-asking	Published without asking you first, because you chose full access in Settings → Running code: the folder {folder} is on the internet now, as your GitHub Pages site at {address}. Put back can't recall it.
+publishing.sealed-box	Nothing was published. Publishing runs git and GitHub's own command, gh, as you, and the sealed box can't run programs on this computer yet. Choose 'ask each time' in Settings → Running code to publish after you approve it, or 'full access' to let alo publish without asking.
+publishing.verb.account	the GitHub account whose site it goes to, by its name on GitHub
+publishing.verb.changes	Puts the files in the folder on the internet as your GitHub Pages site, in place of what was there, and makes the site's repository on GitHub first if you have none.
+publishing.verb.folder	the folder to publish, whole, by its full path
+publishing.verb.leaves	Nothing on this computer is changed, and the site's earlier versions stay in its history on GitHub.
+publishing.verb.purpose	publish a folder to the person's own GitHub Pages site, where anybody on the internet can read it
+publishing.verb.sentence	publish the folder {folder} to the internet as your GitHub Pages site {account}.github.io, in place of what is there — anybody can read it, and Put back can't recall it
 record.nothing-touched-it	Nothing in the record names {file}.
 record.only-what-alo-did	This is what alo did. Commands you ran yourself are not in it.
 record.verb.missing	{verb} was performed without {argument}, which it declares — this is a verb to write again, not a call to make again

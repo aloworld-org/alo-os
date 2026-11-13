@@ -255,6 +255,14 @@ impl AtTheDoor {
             // never across a pairing. [`Self::MachineCouldNot`] if it ever
             // were, for the arm above's reason.
             NotDone::ACommandDidNotStart(_) => Some(Self::MachineCouldNot),
+            // **Unreachable through this door as well**: publishing a folder is
+            // refused by name across a pairing (`alo_turn::Arriving::proposing`),
+            // and the sealed box's refusal of it is this machine's own door's.
+            // [`Self::MachineCouldNot`] if either ever were, for the arms
+            // above' reason: why is a fact about somebody else's machine.
+            NotDone::CouldNotPublish(_)
+            | NotDone::NotPermittedToLeave(_)
+            | NotDone::NotAtThisLevel(_) => Some(Self::MachineCouldNot),
             NotDone::NotRecorded(_) | NotDone::TurnClosed => None,
         }
     }

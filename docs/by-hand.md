@@ -258,6 +258,19 @@ application arrives granted nothing either way. A person needs no approval to
 install an application for themselves: the approval is what an agent needs,
 because it is the agent choosing what arrives on somebody's machine.
 
+### publish_to_github_pages
+
+**By hand:** a person publishes the folder themselves in their own terminal —
+`an operating system that does not trust its owner with a shell is a toy` —
+with the same two programs the verb runs: *gh auth login --web* once, then
+git to commit the folder and push it to their *account*.github.io
+repository. Nothing the verb does is out of their reach: it runs git and
+GitHub's own gh as them, on the same sign-in they made, and adds only the
+sentence they approve and the line that says it went to the internet. A person
+needs no approval to publish their own folder; the approval, at *ask me each
+time*, is what an agent needs, because it is the agent choosing what goes on
+the internet in their name.
+
 ### join_network
 
 **By hand:** a person picks the network in the network pane of `Settings, as one

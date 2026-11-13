@@ -250,6 +250,7 @@ fn everything_this_machine_says() -> alo_strings::Vocabulary {
     // The accessibility fallback's, so a read or a press refused reads as its
     // sentence rather than as a missing key.
     alo_adapters::words::declare_into(&mut vocabulary).unwrap();
+    alo_publishing::words::declare_into(&mut vocabulary).unwrap();
     crate::words::declare_into(&mut vocabulary).unwrap();
     vocabulary
 }
@@ -270,6 +271,64 @@ impl crate::TheWindowsOnTheScreen for NoTreeHere {
 
     fn working_fully(&self, _: &str) -> alo_adapters::WorkingFully {
         alo_adapters::WorkingFully::NothingMoreToTurnOn
+    }
+}
+
+/// **Something that runs a publication's command and never starts a program**:
+/// it counts each run, keeps the line it was handed, and answers what it was
+/// told to — so a test of the turn can show one approval is one run, and what
+/// a run's end becomes, without a `git` or a network.
+#[derive(Debug, Default)]
+pub(crate) struct APublisher {
+    /// What it answers each run with: status and what was said.
+    pub(crate) answers: (Option<i32>, String),
+    /// Every line it was handed.
+    pub(crate) ran: Mutex<Vec<String>>,
+}
+
+impl APublisher {
+    /// One that answers every run as published.
+    pub(crate) fn that_publishes() -> Self {
+        Self::answering(Some(0), "alo-made-the-repository\nalo-published\n")
+    }
+
+    /// One that answers every run with `status` and `said`.
+    pub(crate) fn answering(status: Option<i32>, said: &str) -> Self {
+        Self {
+            answers: (status, said.to_owned()),
+            ran: Mutex::new(Vec::new()),
+        }
+    }
+
+    /// How many times it ran.
+    pub(crate) fn runs(&self) -> usize {
+        self.ran.lock().unwrap().len()
+    }
+}
+
+impl alo_publishing::Runs for APublisher {
+    fn run(
+        &self,
+        line: &alo_capability::ACommand,
+        _leaving: &alo_egress::Departing,
+    ) -> Result<alo_capability::WhatACommandDid, alo_capability::ItDidNotStart> {
+        self.ran.lock().unwrap().push(line.text().to_owned());
+        Ok(alo_capability::WhatACommandDid::of(
+            self.answers.0,
+            self.answers.1.clone(),
+            false,
+            false,
+        ))
+    }
+}
+
+/// What a whole machine publishes with in a test that never publishes:
+/// `publisher`, under no rule.
+pub(crate) fn publishing_through(publisher: &APublisher) -> crate::WhatPublishingNeeds<'_> {
+    crate::WhatPublishingNeeds {
+        runs: publisher,
+        through: alo_publishing::Through::github(),
+        rule: EgressPolicy::Anywhere,
     }
 }
 

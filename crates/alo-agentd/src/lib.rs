@@ -291,6 +291,9 @@ pub mod pairing;
 pub mod permitted_places;
 #[cfg(target_os = "linux")]
 pub mod place;
+/// Whether the person's level of running code lets alo publish a folder.
+#[cfg(target_os = "linux")]
+pub mod publishing_at_this_level;
 #[cfg(target_os = "linux")]
 pub mod putting_back;
 #[cfg(target_os = "linux")]
@@ -308,6 +311,9 @@ pub mod responding;
 /// One command where no verb fits, decided by the person's level (ADR 0149).
 #[cfg(target_os = "linux")]
 pub mod running_a_command;
+/// The road a publication's command runs on: the command road (ADR 0149).
+#[cfg(target_os = "linux")]
+pub mod running_a_publication;
 /// A command written as `sudo ...`, run as administrator after the person's
 /// password, every time (ADR 0150).
 #[cfg(target_os = "linux")]

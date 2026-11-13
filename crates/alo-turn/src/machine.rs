@@ -74,7 +74,7 @@
 use alo_adapters::Adapters;
 use alo_applications::Installed;
 use alo_capability::Verbs;
-use alo_egress::Indicator;
+use alo_egress::{EgressPolicy, Indicator};
 use alo_files::{Resolving, file_verbs};
 use alo_record::Entry;
 use alo_software::{Bound, Tool};
@@ -180,6 +180,12 @@ pub struct Machine<'a> {
     /// (`alo_adapters::fallback_reach`). Empty on a machine that offers neither
     /// accessibility verb, where nothing asks.
     adapters: Adapters,
+    /// What publishing a folder runs on, on a machine that offers it.
+    ///
+    /// **`None` and `publish_to_github_pages` are absent together**, as with
+    /// the tool: only the whole machine's constructor takes it, and only that
+    /// constructor declares the verb.
+    publishing: Option<WhatPublishingNeeds<'a>>,
 }
 
 /// What a machine needs to carry out the installation verb.
@@ -199,6 +205,31 @@ pub struct WhatASoftwareVerbNeeds<'a> {
     pub tool: &'a dyn Tool,
     /// Whether an organisation said which places this machine may install from.
     pub bound: Bound,
+    /// What publishing a folder to GitHub Pages runs on, and the rule it
+    /// leaves under (added 2026-11-13, for Demo 2's second road).
+    ///
+    /// **Here and not a family of its own**, because both are the person's
+    /// software reaching outside this machine on one approval — a store's
+    /// application in, a folder out — and a fourth group would take the whole
+    /// machine's constructor past clippy's bound for no reader's benefit.
+    pub publishing: WhatPublishingNeeds<'a>,
+}
+
+/// What a machine needs to carry out `publish_to_github_pages`.
+///
+/// **The rule is held here, read once when the daemon starts**, for `bound`'s
+/// reason: it is `[questions]` in the description a root wrote, the same rule
+/// `alo-agentd` already holds every other egress to, and nothing changes it
+/// while a turn is open.
+pub struct WhatPublishingNeeds<'a> {
+    /// What runs the command, as the person: `alo_running::run_as_the_person`
+    /// on a machine.
+    pub runs: &'a dyn alo_publishing::Runs,
+    /// The programs and the GitHub it reaches: `gh` on the path and
+    /// github.com on a machine.
+    pub through: alo_publishing::Through,
+    /// What may leave this machine.
+    pub rule: EgressPolicy,
 }
 
 /// What a machine needs to carry out the three application acts.
@@ -266,13 +297,14 @@ pub struct WhatAnApplicationVerbNeeds<'a> {
 /// # Errors
 /// [`TheVerbsWouldNotDeclare`], naming the family that refused — including two
 /// families having declared one name, which is what this `Result` is really
-/// for. The fourteen as they are written cannot cause it.
+/// for. The fifteen as they are written cannot cause it.
 pub fn the_verbs_a_whole_machine_offers() -> Result<Verbs, TheVerbsWouldNotDeclare> {
     let mut verbs = file_verbs()?;
     alo_software::verbs::declare_into(&mut verbs)?;
     alo_applications::verbs::declare_the_three_with_a_road_into(&mut verbs)?;
     alo_record::declare_verbs_into(&mut verbs)?;
     alo_adapters::fallback_verbs::declare_into(&mut verbs)?;
+    alo_publishing::verbs::declare_into(&mut verbs)?;
     Ok(verbs)
 }
 
@@ -307,6 +339,7 @@ impl<'a> Machine<'a> {
             knowing_how_it_starts: None,
             windows: None,
             adapters: Adapters::default(),
+            publishing: None,
             bound: Bound::Nobodys,
             bounding,
             indicator,
@@ -367,6 +400,7 @@ impl<'a> Machine<'a> {
             knowing_how_it_starts: None,
             windows: None,
             adapters: Adapters::default(),
+            publishing: None,
             bound,
             bounding,
             indicator,
@@ -392,9 +426,55 @@ impl<'a> Machine<'a> {
         Some((tool, self.bound.clone(), self.indicator))
     }
 
+    /// What publishing runs on, and the indicator, at once — for
+    /// [`Machine::installing_and_showing`]'s reason. `pub(crate)`, and the only
+    /// caller is `publishing_a_folder.rs`.
+    pub(crate) fn publishing_and_showing(
+        &mut self,
+    ) -> Option<(&WhatPublishingNeeds<'a>, &mut Indicator)> {
+        let publishing = self.publishing.as_ref()?;
+        Some((publishing, self.indicator))
+    }
+
+    /// A machine that can carry out the six file verbs and a publication, and
+    /// offers exactly those — for a surface that publishes and installs
+    /// nothing, and for the tests of the publishing road, which need no
+    /// compositor and no rented tool to show what one approval does.
+    ///
+    /// # Errors
+    /// [`TheVerbsWouldNotDeclare`], naming the family that refused; the seven
+    /// as they are written cannot cause it.
+    pub fn carrying_out_file_and_publishing_verbs(
+        strings: &'a Strings,
+        resolving: &'a dyn Resolving,
+        publishing: WhatPublishingNeeds<'a>,
+        bounding: &'a mut dyn Bounding,
+        indicator: &'a mut Indicator,
+        kept: &'a mut dyn Shortening,
+    ) -> Result<Self, TheVerbsWouldNotDeclare> {
+        let mut verbs = file_verbs()?;
+        alo_publishing::verbs::declare_into(&mut verbs)?;
+        Ok(Self {
+            verbs,
+            strings,
+            resolving,
+            installing_with: None,
+            installed: Installed::default(),
+            reaching_the_compositor: None,
+            knowing_how_it_starts: None,
+            windows: None,
+            adapters: Adapters::default(),
+            publishing: Some(publishing),
+            bound: Bound::Nobodys,
+            bounding,
+            indicator,
+            kept,
+        })
+    }
+
     /// Every verb this machine can carry out: the six, the installation, the
-    /// three application acts that have a road, the record's question, and the
-    /// accessibility fallback's read and press.
+    /// three application acts that have a road, the record's question, the
+    /// accessibility fallback's read and press, and a publication.
     ///
     /// # Three of the four, and the fourth is not offered
     ///
@@ -445,6 +525,7 @@ impl<'a> Machine<'a> {
             knowing_how_it_starts: Some(applications.starting),
             windows: Some(applications.windows),
             adapters,
+            publishing: Some(software.publishing),
             bound: software.bound,
             bounding,
             indicator,
@@ -780,7 +861,7 @@ mod tests {
     ///
     /// # Why the names and not a count
     ///
-    /// A count passes when one family replaces another. These are the fourteen
+    /// A count passes when one family replaces another. These are the fifteen
     /// in `docs/contracts/agent-verbs.md`, which is the published list a third
     /// party builds an adapter against: *a closed list; if a capability is not
     /// written here, `alo-agentd` does not have it.* So this is the contract
@@ -793,10 +874,10 @@ mod tests {
     /// verb with nothing behind it is worse than the capability missing.
     #[test]
     fn every_verb_this_machine_offers_is_named_here_and_no_other() {
-        let offered = the_verbs_a_whole_machine_offers().expect("the fourteen verbs declare");
+        let offered = the_verbs_a_whole_machine_offers().expect("the fifteen verbs declare");
         let told: Vec<&str> = offered.all().map(alo_capability::Verb::name).collect();
 
-        let the_fourteen = [
+        let the_fifteen = [
             // `alo-files`' six.
             "list_folder",
             "read_file",
@@ -818,8 +899,10 @@ mod tests {
             // answers inside the turn, and a press a person approves.
             "accessible.read_window",
             "accessible.activate_control",
+            // `alo-publishing`'s one, added 2026-11-13: Demo 2's second road.
+            "publish_to_github_pages",
         ];
-        for name in the_fourteen {
+        for name in the_fifteen {
             assert!(
                 told.contains(&name),
                 "{name} is in docs/contracts/agent-verbs.md and this machine does not offer it, \
@@ -828,10 +911,10 @@ mod tests {
         }
         assert_eq!(
             told.len(),
-            the_fourteen.len(),
+            the_fifteen.len(),
             "this machine offers {} verbs and {} are named here: {told:?}",
             told.len(),
-            the_fourteen.len()
+            the_fifteen.len()
         );
         assert!(
             !told.contains(&"arrange_application"),

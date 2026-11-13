@@ -238,6 +238,13 @@ impl<'a, 'm> Arriving<'a, 'm> {
         now: SystemTime,
     ) -> Result<ProposalId, NotDone> {
         self.turning.still_open()?;
+        // **A publication never arrives across a pairing**, refused by name as
+        // the record's question is in `reading`: it sends this person's folder
+        // to the internet under their own GitHub sign-in, and a pairing
+        // permits `Models` and `Workspace` and neither is that.
+        if verb == alo_publishing::PUBLISH_TO_GITHUB_PAGES {
+            return Err(self.turning.not_for_another_machine(verb, now));
+        }
         let call = self.turning.calling(verb, given, now)?;
         if let Some(said) = self.pairing_ended(pairings, now) {
             let why = ProposalError::NotGrantedElsewhere(said);

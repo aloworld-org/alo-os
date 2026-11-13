@@ -1,0 +1,36 @@
+[package]
+name = "alo-publishing"
+version = "0.0.1"
+description = "Publishing a folder to the person's GitHub Pages site: the verb, the sentence they approve, and the git and gh commands alo runs as them."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+# The verb, the call it becomes, the authority an approval or full access
+# gives it, and the one-line command that is run — `alo-running` starts it,
+# never this crate.
+alo-capability = { path = "../alo-capability" }
+
+# Publishing sends a folder to GitHub, so it is an `alo_egress::Leaving` and
+# nothing here is run without the `Departing` that proves the line is on the
+# indicator.
+alo-egress = { path = "../alo-egress" }
+
+# Everything a person reads here.
+alo-strings = { path = "../alo-strings" }
+
+thiserror = { workspace = true }
+
+[dev-dependencies]
+# The real road a publication is run on, so the test of the line runs it the
+# way a machine does: `/bin/sh -c`, as the person, told nobody is there to
+# answer. Linux only, as that crate is.
+alo-running = { path = "../alo-running" }
+
+# A folder, a remote and a stand-in for `gh` of the test's own.
+tempfile = "3"
+
+[lints]
+workspace = true
