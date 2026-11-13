@@ -198,6 +198,8 @@ pub mod reach;
 pub mod refusing;
 pub mod sentence;
 pub mod the_sealed_box_here;
+pub mod the_whole_text;
+pub mod unseen;
 pub mod verb;
 pub mod verbs;
 /// What a command alo ran did.
@@ -207,6 +209,8 @@ pub mod what_a_command_did;
 pub mod without_the_ok;
 pub mod words;
 
+#[cfg(test)]
+mod a_text_argument_tests;
 #[cfg(test)]
 mod test_calls;
 #[cfg(test)]
@@ -236,7 +240,9 @@ pub use proposal::{Proposal, ProposalError};
 pub use reach::{Ask, Reach};
 pub use refusing::NotGranted;
 pub use sentence::{Sentence, SentenceError};
+pub use the_whole_text::{Ending, Piece, ShownLine, TheWholeText, Unseen};
+pub use unseen::WhyMarked;
 pub use verb::{Effect, Requires, Verb, VerbError};
 pub use verbs::{Verbs, VerbsError};
 pub use what_a_command_did::{ItDidNotStart, ItDidNotWork, WhatACommandDid};
-pub use words::{EVERY_WORD, WordsError, capability_words, declare_into};
+pub use words::{EVERY_COUNTED, EVERY_WORD, WordsError, capability_words, declare_into};

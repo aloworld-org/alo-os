@@ -126,6 +126,47 @@ Two consequences worth stating outright:
   operating system would allow it. The person approves the sentence, so a value
   able to rewrite what the sentence appears to say never becomes one.
 
+### Text — added 2026-11-13
+
+A sixth kind, by the owner's decision of 2026-11-13 recorded in
+[ADR 0001](../decisions/0001-the-capability-model.md)'s amendment of that date
+(*"There should be no input limits"*):
+
+| Kind | What it takes |
+|---|---|
+| **text** | Text a verb delivers — a page of code, a post. **Many lines, and no maximum length.** Kept exactly as it arrived: nothing is trimmed. |
+
+**Text is the one kind that is free text, and it is still never run.** No verb
+hands a text argument to an interpreter or a shell; the text is data that a
+verb delivers, and ADR 0001 §1 binds the verb that does the delivering. The
+paragraph above — *none of them is free text* — is true of the other five and
+is kept as it was written.
+
+**Text is not held to the rule in the bullet above**, and does not need to be,
+because it never appears inside the sentence. The sentence names it as *the
+text below*; the approval shows the **whole** text beneath the sentence, never
+cut and never summarised in its place, says how long it is in lines and
+characters, and lets the person scroll through all of it.
+
+**Characters a person could miss are marked, not refused**: control characters
+other than a newline and a tab, characters that change the direction of the
+text, invisible characters such as a zero-width space, unusual spaces, and a
+letter from another alphabet in the middle of a word (Latin, Greek and Cyrillic
+are told apart; other confusions are not detected, and this says so). Each mark
+is in the reader's language and names the character's code point, and the
+approval says how many there are.
+
+What a text argument refuses: an empty value (`capability.argument.empty`), a
+number where text was declared (`capability.argument.wanted-text`), and — at the
+wire, before any verb sees it — bytes that are not valid UTF-8. The record keeps
+the text whole.
+
+A text argument cannot be what a grant is over, as a name cannot.
+
+**Nothing offers it yet.** No verb on this machine declares a text argument;
+the first is stage 6 of `docs/autonomy/demo-two-alo-inside-applications-plan.md`
+(alo types into an application).
+
 ## `effect: read` — runs inside the turn
 
 Reads answer. They execute under the run's budget without a tap, exactly as in

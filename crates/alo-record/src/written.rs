@@ -48,6 +48,13 @@ pub enum Written {
     /// somebody happened to be reading at the time. What the person actually
     /// read is kept once, whole, as [`crate::What::sentence`].
     Choice(Line),
+    /// Text a verb delivered, **whole**: every line and every character, as
+    /// it was approved (ADR 0001, amended 2026-11-13).
+    ///
+    /// Not a [`Line`], because a line is cut short and flattened and the record
+    /// is evidence of what was delivered. What is *shown* of it in a one-line
+    /// listing goes through [`Line`] in [`Written::describe`], like a path.
+    Text(String),
 }
 
 impl Written {
@@ -61,6 +68,7 @@ impl Written {
         match self {
             Self::Path(path) => Line::of(&path.display().to_string()),
             Self::Application(id) | Self::Name(id) | Self::Choice(id) => id.clone(),
+            Self::Text(text) => Line::of(text),
             Self::Count(number) => Line::of(&number.to_string()),
         }
     }
@@ -73,7 +81,11 @@ impl Written {
     pub fn as_path(&self) -> Option<&Path> {
         match self {
             Self::Path(path) => Some(path),
-            Self::Application(_) | Self::Name(_) | Self::Count(_) | Self::Choice(_) => None,
+            Self::Application(_)
+            | Self::Name(_)
+            | Self::Count(_)
+            | Self::Choice(_)
+            | Self::Text(_) => None,
         }
     }
 }
@@ -88,6 +100,7 @@ impl From<&Value> for Written {
             Value::Name(name) => Self::Name(Line::of(name)),
             Value::Count(number) => Self::Count(*number),
             Value::Choice { chosen, .. } => Self::Choice(Line::of(chosen)),
+            Value::Text(text) => Self::Text(text.clone()),
         }
     }
 }
@@ -182,5 +195,25 @@ mod tests {
         let written = Written::Path(PathBuf::from("/home/anna/Invoices/march.pdf"));
         let text = serde_json::to_string(&written).unwrap_or_default();
         assert_eq!(serde_json::from_str::<Written>(&text).ok(), Some(written));
+    }
+
+    /// **The record keeps a text whole** — many lines, far past the length a
+    /// [`Line`] keeps, a hidden character and all — and reads it back
+    /// unchanged. Only what a one-line listing shows is cut.
+    #[test]
+    fn a_text_is_kept_whole() {
+        let given = format!("first\u{200B}\n{}", "a line of a page\n".repeat(2_000));
+        let arg = Arg::taking("text", A_PURPOSE, Takes::Text);
+        let written = validated(&arg, &Given::text(given.clone()))
+            .as_ref()
+            .map(Written::from);
+        assert_eq!(written, Some(Written::Text(given.clone())));
+        let kept = serde_json::to_string(&written).unwrap_or_default();
+        assert_eq!(
+            serde_json::from_str::<Option<Written>>(&kept).ok(),
+            Some(Some(Written::Text(given)))
+        );
+        let shown = written.as_ref().map(Written::describe);
+        assert!(shown.is_some_and(|line| line.as_str().chars().count() <= Line::LONGEST));
     }
 }

@@ -125,8 +125,8 @@ mod tests {
             + alo_protocol::EVERY_WORD.len()
             + alo_protocol::EVERY_WORD_ABOUT_THE_DOOR.len()
             + alo_capability::EVERY_WORD.len()
-            // And its one counted sentence, which goes in beside them.
-            + 1;
+            // And its counted sentences, which go in beside them.
+            + alo_capability::EVERY_COUNTED.len();
         assert_eq!(
             gathered.how_many(),
             each,

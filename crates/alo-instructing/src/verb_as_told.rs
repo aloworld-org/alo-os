@@ -47,6 +47,10 @@ fn takes(takes: &Takes) -> String {
         Takes::Application => "an installed application's identifier".to_owned(),
         Takes::Name { longest } => format!("one name, at most {longest} characters"),
         Takes::Count { least, most } => format!("a whole number from {least} to {most}"),
+        Takes::Text => {
+            "text, any number of lines and any length, delivered exactly as written and never run"
+                .to_owned()
+        }
         Takes::Choice(options) => {
             let names: Vec<&str> = options.iter().map(Offered::name).collect();
             format!("one of: {}", names.join(", "))

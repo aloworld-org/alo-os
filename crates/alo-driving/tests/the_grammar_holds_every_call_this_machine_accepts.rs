@@ -52,6 +52,7 @@ fn the_call(verbs: &Verbs, name: &str) -> String {
                 Takes::Application => "\"org.alo.Writer\"".to_owned(),
                 Takes::Name { .. } => "\"march.pdf\"".to_owned(),
                 Takes::Count { most, .. } => format!("{most}"),
+                Takes::Text => r#""line one\nline two""#.to_owned(),
                 Takes::Choice(options) => format!("\"{}\"", options.first().unwrap().name()),
             };
             format!("{{\"named\":\"{}\",\"is\":{is}}}", arg.name())
