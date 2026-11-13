@@ -1235,17 +1235,80 @@ RUN test -s /usr/share/polkit-1/rules.d/50-alo-time-zone.rules \
  && chpasswd --help >/dev/null \
  && rpm -q polkit systemd shadow-utils
 
-# **What this machine says it is.** The base's own file calls it Fedora Linux
-# 42, which a person who installed alo OS did not install, and carries
-# SUPPORT_END=2026-05-13 -- so systemd tells our customer, in red, on every
-# boot, that their OS is past its end-of-support date. That is a promise this
-# project never made. The Fedora Project also asks that a remix not carry its
-# marks, so this is compliance rather than taste.
+# **The screen reader is started the way the session starts it, and has to stay
+# up** (ADR 0151). The block that installs Orca asks it `--version`, which
+# proves its modules import and nothing more: Orca 48.9 answered it on every
+# build while it fell over at every start on a booted machine, because it asks
+# for a display, its settings and the keyboard only once it is started
+# (`docs/misreadings/orca-version-answered-is-not-orca-started.md`).
 #
-# **After the last dnf, deliberately.** Package resolution reads VERSION_ID and
-# PLATFORM_ID from this file; both are kept as Fedora's, and nothing installs
-# below this line in any case. ID_LIKE says what it is built on rather than
-# hiding it.
+# So this runs **the unit's own `ExecStart`, with the unit's own `Environment`**
+# — read from the unit, so the check cannot drift from what Settings starts —
+# under what a person's session gives it: a Wayland compositor and no X display,
+# a session bus, and the accessibility bus that bus starts on request. The
+# reader must still be running after fifteen seconds and must have printed no
+# traceback and no fatal error; otherwise its own words fail the build. It is
+# then ended with `KILL`, because a plain `kill` did not end it in three minutes
+# when this check was first built (2026-11-13).
+#
+# **Weston and `dbus-daemon` are here only for the check** — alo's compositor
+# needs a screen and its session bus needs systemd, and the build has neither —
+# and every package the check added is removed by name in this same step, so
+# nothing of it reaches the image. **It is here, after the units arrive and
+# before the machine's name is written**, because it runs `dnf` and nothing may
+# run `dnf` after `os-release` is replaced (below).
+RUN rpm -qa --qf '%{NAME}\n' | sort > /tmp/alo-before-the-reader-check \
+ && dnf install --assumeyes --setopt=install_weak_deps=False weston dbus-daemon \
+ && unit=/usr/lib/systemd/user/alo-screen-reader.service \
+ && reader="$(sed -n 's/^ExecStart=//p' "${unit}")" \
+ && environment="$(sed -n 's/^Environment=//p' "${unit}" | tr '\n' ' ')" \
+ && test -n "${reader}" \
+ && session="$(mktemp -d)" \
+ && chmod 0700 "${session}" \
+ && { XDG_RUNTIME_DIR="${session}" weston --backend=headless --socket=alo-reader-check \
+        > "${session}/compositor.log" 2>&1 & echo "$!" > "${session}/compositor.pid"; } \
+ && for look in $(seq 1 50); do test -S "${session}/alo-reader-check" && break; sleep 0.2; done \
+ && { test -S "${session}/alo-reader-check" \
+        || { echo "no compositor to check the screen reader under" >&2; cat "${session}/compositor.log" >&2; exit 1; }; } \
+ && env -u DISPLAY XDG_RUNTIME_DIR="${session}" HOME="${session}" WAYLAND_DISPLAY=alo-reader-check \
+        ALO_READER="${reader}" ALO_READERS_ENVIRONMENT="${environment}" \
+      dbus-run-session -- sh -c ' \
+        env ${ALO_READERS_ENVIRONMENT} ${ALO_READER} > "${XDG_RUNTIME_DIR}/reader.log" 2>&1 & \
+        reader=$!; \
+        sleep 15; \
+        if kill -0 "${reader}" 2> /dev/null; then up=yes; kill -KILL "${reader}"; else up=no; fi; \
+        wait "${reader}" 2> /dev/null; \
+        if [ "${up}" = yes ] && ! grep -qE "Traceback|Fatal Python error" "${XDG_RUNTIME_DIR}/reader.log"; then \
+          echo "the screen reader started as the session starts it, and was still running fifteen seconds later"; \
+        else \
+          echo "the screen reader does not stay up when the session starts it (running after 15 s: ${up}):" >&2; \
+          cat "${XDG_RUNTIME_DIR}/reader.log" >&2; \
+          exit 1; \
+        fi' \
+ && kill "$(cat "${session}/compositor.pid")" \
+ && rm -rf "${session}" \
+ && rpm -qa --qf '%{NAME}\n' | sort > /tmp/alo-after-the-reader-check \
+ && added="$(comm -13 /tmp/alo-before-the-reader-check /tmp/alo-after-the-reader-check)" \
+ && rm -f /tmp/alo-before-the-reader-check /tmp/alo-after-the-reader-check \
+ && test -n "${added}" \
+ && rpm -e ${added} \
+ && dnf clean all \
+ && ! command -v weston \
+ && ! command -v dbus-run-session \
+ && bootc container lint
+
+# **What this machine says it is.** The base's own file calls it Fedora Linux
+# 44 (42 until ADR 0152), which a person who installed alo OS did not install,
+# and carries a SUPPORT_END -- so systemd would tell our customer, in red, on
+# every boot after that date, that their OS is past its end-of-support date. On
+# Fedora 42 it did. That is a promise this project never made. The Fedora
+# Project also asks that a remix not carry its marks, so this is compliance
+# rather than taste.
+#
+# **After the last dnf, deliberately.** Package resolution reads VERSION_ID from
+# this file; it is kept as Fedora's (Fedora 44 states no PLATFORM_ID, so
+# neither does this), and nothing installs below this line in any case. ID_LIKE
+# says what it is built on rather than hiding it.
 COPY image/usr/lib/os-release /usr/lib/os-release
 
 # **Which build this is, appended rather than written into the file.** ADR 0097
@@ -1516,66 +1579,6 @@ RUN chmod 0755 /usr/libexec/alo-boundaryd /usr/libexec/alo-sessiond \
  && env -u HOME /usr/libexec/alo-their-folders 2>&1 | grep -q 'HOME is not set' \
  && /usr/bin/gnome-keyring-daemon --version | grep -q 'gnome-keyring-daemon' \
  && echo "the keyring is enabled in every person's own manager, and the daemon it names runs" \
- && bootc container lint
-
-# **The screen reader is started the way the session starts it, and has to stay
-# up** (ADR 0151). The block that installs Orca asks it `--version`, which
-# proves its modules import and nothing more: Orca 48.9 answered it on every
-# build while it fell over at every start on a booted machine, because it asks
-# for a display, its settings and the keyboard only once it is started
-# (`docs/misreadings/orca-version-answered-is-not-orca-started.md`).
-#
-# So this runs **the unit's own `ExecStart`, with the unit's own `Environment`**
-# — read from the unit, so the check cannot drift from what Settings starts —
-# under what a person's session gives it: a Wayland compositor and no X display,
-# a session bus, and the accessibility bus that bus starts on request. The
-# reader must still be running after fifteen seconds and must have printed no
-# traceback and no fatal error; otherwise its own words fail the build. It is
-# then ended with `KILL`, because a plain `kill` did not end it in three minutes
-# when this check was first built (2026-11-13).
-#
-# **Weston and `dbus-daemon` are here only for the check** — alo's compositor
-# needs a screen and its session bus needs systemd, and the build has neither —
-# and every package the check added is removed by name in this same step, so
-# nothing of it reaches the image.
-RUN rpm -qa --qf '%{NAME}\n' | sort > /tmp/alo-before-the-reader-check \
- && dnf install --assumeyes --setopt=install_weak_deps=False weston dbus-daemon \
- && unit=/usr/lib/systemd/user/alo-screen-reader.service \
- && reader="$(sed -n 's/^ExecStart=//p' "${unit}")" \
- && environment="$(sed -n 's/^Environment=//p' "${unit}" | tr '\n' ' ')" \
- && test -n "${reader}" \
- && session="$(mktemp -d)" \
- && chmod 0700 "${session}" \
- && { XDG_RUNTIME_DIR="${session}" weston --backend=headless --socket=alo-reader-check \
-        > "${session}/compositor.log" 2>&1 & echo "$!" > "${session}/compositor.pid"; } \
- && for look in $(seq 1 50); do test -S "${session}/alo-reader-check" && break; sleep 0.2; done \
- && { test -S "${session}/alo-reader-check" \
-        || { echo "no compositor to check the screen reader under" >&2; cat "${session}/compositor.log" >&2; exit 1; }; } \
- && env -u DISPLAY XDG_RUNTIME_DIR="${session}" HOME="${session}" WAYLAND_DISPLAY=alo-reader-check \
-        ALO_READER="${reader}" ALO_READERS_ENVIRONMENT="${environment}" \
-      dbus-run-session -- sh -c ' \
-        env ${ALO_READERS_ENVIRONMENT} ${ALO_READER} > "${XDG_RUNTIME_DIR}/reader.log" 2>&1 & \
-        reader=$!; \
-        sleep 15; \
-        if kill -0 "${reader}" 2> /dev/null; then up=yes; kill -KILL "${reader}"; else up=no; fi; \
-        wait "${reader}" 2> /dev/null; \
-        if [ "${up}" = yes ] && ! grep -qE "Traceback|Fatal Python error" "${XDG_RUNTIME_DIR}/reader.log"; then \
-          echo "the screen reader started as the session starts it, and was still running fifteen seconds later"; \
-        else \
-          echo "the screen reader does not stay up when the session starts it (running after 15 s: ${up}):" >&2; \
-          cat "${XDG_RUNTIME_DIR}/reader.log" >&2; \
-          exit 1; \
-        fi' \
- && kill "$(cat "${session}/compositor.pid")" \
- && rm -rf "${session}" \
- && rpm -qa --qf '%{NAME}\n' | sort > /tmp/alo-after-the-reader-check \
- && added="$(comm -13 /tmp/alo-before-the-reader-check /tmp/alo-after-the-reader-check)" \
- && rm -f /tmp/alo-before-the-reader-check /tmp/alo-after-the-reader-check \
- && test -n "${added}" \
- && rpm -e ${added} \
- && dnf clean all \
- && ! command -v weston \
- && ! command -v dbus-run-session \
  && bootc container lint
 
 # The logins, made here rather than only at boot — and then checked, which is
