@@ -516,6 +516,8 @@ mod settings_drawn_picker;
 mod settings_drawn_row;
 /// Settings' window edge: its title and Close.
 mod settings_edge;
+/// Settings sized for the room above the Dock and clear of the panel.
+mod settings_fits_the_room;
 mod settings_formats;
 mod settings_frame;
 mod settings_granted;
@@ -617,6 +619,9 @@ mod the_controls_fade;
 mod the_desk_is_reconciled;
 mod the_dock_as_a_reader_meets_it;
 mod the_docks_name_is_held;
+/// Settings and Applications on the Dock, as the line drawings the owner chose
+/// on 2026-11-13 rather than first letters.
+mod the_docks_own_icons;
 pub mod the_docks_words;
 mod the_door_on_the_desktop;
 mod the_edge_takes_the_keyboard;

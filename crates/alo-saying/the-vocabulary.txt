@@ -71,7 +71,9 @@ accounts.not-signed-in	that name and password do not sign anyone in on this mach
 accounts.not-this-machines-person	this machine is set up for a different account, so you were not signed in — its description and its accounts disagree, and whoever installed it has to put that right
 adapters.fallback.activate-control.application	the application the control is in
 adapters.fallback.activate-control.by-hand	Press the control in the application's window, with the pointer or from the keyboard
+adapters.fallback.activate-control.changes	Presses that one control once, by its own action, as a person pressing it would.
 adapters.fallback.activate-control.kind	what kind of control it is
+adapters.fallback.activate-control.leaves	Nothing is typed, no other control is pressed, and nothing is found by where it is on the screen.
 adapters.fallback.activate-control.name	the name the control shows
 adapters.fallback.activate-control.purpose	press a button or another control in an application's window
 adapters.fallback.activate-control.sentence	press the {kind} named “{name}” in {application}
@@ -425,6 +427,8 @@ capability.facility.sleep	keeping the machine awake
 capability.full-access.did-not-work	Tried without asking you first, because you chose full access in Settings → Running code: {sentence}. It did not work: {why}.
 capability.full-access.did-not-work-cannot-be-put-back	Tried without asking you first, because you chose full access in Settings → Running code: {sentence}. It did not work: {why}. If it changed anything, that can't be put back: a copy of your files from before it could not be kept.
 capability.full-access.done	Done without asking you first, because you chose full access in Settings → Running code: {sentence}.
+capability.full-access.done-and-not-counted	Done without asking you first, because you chose full access in Settings → Running code: {sentence}. Put back can return your files on this computer, but not anything the command sent off it — and this computer could not count whether it sent anything.
+capability.full-access.done-and-sent	Done without asking you first, because you chose full access in Settings → Running code: {sentence}. Put back can return your files on this computer, but the command sent something off this computer while it ran, and that can't be recalled.
 capability.full-access.done-cannot-be-put-back	Done without asking you first, because you chose full access in Settings → Running code: {sentence}. This one can't be put back: a copy of your files from before it could not be kept.
 capability.grant.a-persons-own	you have not allowed alo to open a terminal
 capability.grant.anonymous	say which agent this grant is for — a grant to nobody reaches nothing
@@ -462,10 +466,13 @@ capability.running.asking-each-time	after showing you the command and waiting fo
 capability.running.command-empty	Nothing ran: the command was empty.
 capability.running.command-not-one-line	Nothing ran: a command must be one line.
 capability.running.command-too-long	Nothing ran: the command was longer than {most} characters.
+capability.running.done-and-not-counted	Done. Put back can return your files on this computer, but not anything the command sent off it — and this computer could not count whether it sent anything.
+capability.running.done-and-sent	Done. Put back can return your files on this computer, but the command sent something off this computer while it ran, and that can't be recalled.
 capability.running.ended-with-a-status	the command ended with exit status {status}
 capability.running.full-trust	straight away, without asking
 capability.running.no-box	nothing ran, because this machine could not build the box it runs commands in
 capability.running.not-a-command	nothing ran, because what was asked for was not a command this machine could run
+capability.running.not-signed-in-to-github	you are not signed in to GitHub. To sign in, type gh auth login --web in your terminal and follow the steps GitHub shows you in your browser. That sign-in is kept on this computer, and it lets anything you run — and alo, at full access — read and change every repository your GitHub account can, and make new ones, until you type gh auth logout
 capability.running.not-that-way	nothing ran, because running a command this way is not what you chose
 capability.running.ran-too-long	the command ran longer than a command may, and was stopped
 capability.running.run-a-command	run this command: {command}
@@ -480,6 +487,8 @@ capability.terminal.did-not-work-cannot-be-put-back	It did not work: {why}. If i
 capability.terminal.done	Done.
 capability.terminal.done-cannot-be-put-back	Done. This one can't be put back: a copy of your files from before it could not be kept.
 capability.terminal.done-without-asking	Done without asking you first, as you chose in Settings → Terminal.
+capability.terminal.done-without-asking-and-not-counted	Done without asking you first, as you chose in Settings → Terminal. Put back can return your files on this computer, but not anything the command sent off it — and this computer could not count whether it sent anything.
+capability.terminal.done-without-asking-and-sent	Done without asking you first, as you chose in Settings → Terminal. Put back can return your files on this computer, but the command sent something off this computer while it ran, and that can't be recalled.
 capability.terminal.done-without-asking-cannot-be-put-back	Done without asking you first, as you chose in Settings → Terminal. This one can't be put back: a copy of your files from before it could not be kept.
 capability.terminal.no-longer-waiting	Not done: this change is no longer waiting, and nothing was changed. Ask again to have alo propose it again.
 capability.terminal.no-word-back	alo was told to go ahead, and the alo service did not say whether it did. See what alo did to find out.

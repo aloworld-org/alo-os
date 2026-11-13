@@ -432,6 +432,7 @@ mod tests {
         let mut indicator = Indicator::default();
         let mut record = Record::default();
         let mut bounding = crate::testing::NothingIsBounded;
+        let mut no_tree = crate::testing::NoTreeHere;
         let folder = crate::testing::a_folder_of_our_own("acting");
         let there = folder.join("a-note.txt");
         std::fs::write(&there, "anything").unwrap();
@@ -448,6 +449,7 @@ mod tests {
                     installed,
                     door,
                     starting,
+                    windows: &mut no_tree,
                 },
                 &mut bounding,
                 &mut indicator,
@@ -749,6 +751,7 @@ mod tests {
         let mut indicator = Indicator::default();
         let mut record = Record::default();
         let mut bounding = crate::testing::NothingIsBounded;
+        let mut no_tree = crate::testing::NoTreeHere;
         let machine = Machine::carrying_out_file_software_and_application_verbs(
             &strings,
             &OnThisMachine,
@@ -760,6 +763,7 @@ mod tests {
                 installed: the_mail_client_is_here(),
                 door: &mut door,
                 starting: &ItStarts(Ok(TheRoad::OverTheBus)),
+                windows: &mut no_tree,
             },
             &mut bounding,
             &mut indicator,

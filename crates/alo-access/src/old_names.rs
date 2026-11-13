@@ -27,10 +27,14 @@ use crate::setting::Setting;
 
 /// The attribute a node carries when it is the row of a setting whose old name
 /// differs from what is drawn — the old name, said in the person's language.
-pub const THE_OLD_NAME_ATTRIBUTE: &str = "alo-formerly";
+///
+/// Spelt in `alo_adapters::alos_own_tree`, beside the walk that reads it, and
+/// re-exported here unchanged — that file says why.
+pub use alo_adapters::alos_own_tree::THE_OLD_NAME_ATTRIBUTE;
 
-/// What every not-drawn-yet attribute's key begins with.
-const NOT_DRAWN_YET: &str = "alo-not-drawn-yet:";
+// What every not-drawn-yet attribute's key begins with, spelt where the walk
+// reads it.
+use alo_adapters::alos_own_tree::NOT_DRAWN_YET;
 
 /// **The key Settings' own node carries for a setting no page draws yet**, whose
 /// value is that setting's old name in the person's language.

@@ -23,6 +23,11 @@
 //! active and stayed active; a reader the unit has to start again inside that
 //! time is a reader that did not start. A stop is watched until it is gone.
 //!
+//! **And a reader that started is watched for as long as the switch is on**
+//! (`crate::watching_the_screen_reader`), because two seconds is a guess about
+//! the machine: on a booted alo machine on 2026-11-13 Orca was running for more
+//! than a minute before it fell over, every time, and the switch said nothing.
+//!
 //! # Off the drawing thread, and in order
 //!
 //! Watching takes two seconds, and a frame cannot. So every ask goes to **one**
@@ -89,6 +94,13 @@ pub trait TheManager {
     /// # Errors
     /// Why it could not be asked, for the journal.
     fn state(&self, unit: &str) -> Result<String, String>;
+
+    /// How many times the manager has started the unit again by itself since
+    /// it was last asked to start it: systemd's `NRestarts`.
+    ///
+    /// # Errors
+    /// Why it could not be asked, for the journal.
+    fn restarts(&self, unit: &str) -> Result<u32, String>;
 }
 
 /// **Start the reader**, and say what that came to.
@@ -253,6 +265,19 @@ pub fn the_language_is(runtime: Option<&Path>, tag: Option<&str>) {
     }
 }
 
+/// **What a reader is watched by once it has started**
+/// (`crate::watching_the_screen_reader`): told when it began, and asked every
+/// so often after that.
+pub trait Watcher: Send + 'static {
+    /// The reader was just started, and was running at every look of its
+    /// first two seconds.
+    fn began(&mut self);
+
+    /// Whether the reader has fallen over since it began: [`None`] while it
+    /// runs.
+    fn looked(&mut self) -> Option<TheScreenReaderAnswered>;
+}
+
 /// **The switch as the desktop holds it**, and the one worker that acts on it.
 #[derive(Debug)]
 pub struct TheScreenReader {
@@ -269,20 +294,53 @@ pub struct TheScreenReader {
 
 impl TheScreenReader {
     /// A switch whose asks `act` carries out, one at a time and in order, on a
-    /// thread of its own.
+    /// thread of its own — and **a reader `act` started is looked at by
+    /// `watcher` every `every` until the next ask**, so one that falls over a
+    /// minute later is answered *did not start* then, once.
     ///
     /// **A machine that cannot start a thread answers every ask** — *did not
     /// start* or *did not stop* — rather than taking the ask and doing nothing.
     pub fn acted_on_by(
         mut act: impl FnMut(bool) -> TheScreenReaderAnswered + Send + 'static,
+        mut watcher: impl Watcher,
+        every: Duration,
     ) -> Self {
         let (to_the_worker, asks) = mpsc::channel::<bool>();
         let (answer, answers) = mpsc::channel();
         let worker = std::thread::Builder::new()
             .name("the-screen-reader".to_owned())
             .spawn(move || {
-                for on in asks {
-                    if answer.send(act(on)).is_err() {
+                let mut watching = false;
+                loop {
+                    let ask = if watching {
+                        match asks.recv_timeout(every) {
+                            Ok(on) => Some(on),
+                            Err(mpsc::RecvTimeoutError::Timeout) => None,
+                            Err(mpsc::RecvTimeoutError::Disconnected) => return,
+                        }
+                    } else {
+                        match asks.recv() {
+                            Ok(on) => Some(on),
+                            Err(mpsc::RecvError) => return,
+                        }
+                    };
+                    let answered = if let Some(on) = ask {
+                        let came_to = act(on);
+                        watching = on && came_to == TheScreenReaderAnswered::Started;
+                        if watching {
+                            watcher.began();
+                        }
+                        Some(came_to)
+                    } else {
+                        let fell = watcher.looked();
+                        // **Said once**: a reader that fell over stays said
+                        // until the person turns the switch over again.
+                        watching = fell.is_none();
+                        fell
+                    };
+                    if let Some(came_to) = answered
+                        && answer.send(came_to).is_err()
+                    {
                         return;
                     }
                 }
@@ -400,10 +458,29 @@ impl TheManager for OverTheSessionBus {
         self.asked("StopUnit", unit)
     }
 
+    fn state(&self, unit: &str) -> Result<String, String> {
+        let state = self.property(unit, "org.freedesktop.systemd1.Unit", "ActiveState")?;
+        String::try_from(state).map_err(|why| why.to_string())
+    }
+
+    fn restarts(&self, unit: &str) -> Result<u32, String> {
+        let restarts = self.property(unit, "org.freedesktop.systemd1.Service", "NRestarts")?;
+        u32::try_from(restarts).map_err(|why| why.to_string())
+    }
+}
+
+impl OverTheSessionBus {
+    /// One property of `unit`, as its manager holds it now.
+    ///
     /// **`LoadUnit` rather than `GetUnit`**, because a unit nobody has started
     /// since the manager came up is not loaded, and `GetUnit` answers that with
     /// an error where the truth is *inactive*.
-    fn state(&self, unit: &str) -> Result<String, String> {
+    fn property(
+        &self,
+        unit: &str,
+        interface: &str,
+        name: &str,
+    ) -> Result<zbus::zvariant::OwnedValue, String> {
         let path: zbus::zvariant::OwnedObjectPath = self
             .bus
             .call_method(
@@ -417,20 +494,18 @@ impl TheManager for OverTheSessionBus {
             .body()
             .deserialize()
             .map_err(|why| why.to_string())?;
-        let state: zbus::zvariant::OwnedValue = self
-            .bus
+        self.bus
             .call_method(
                 Some(SYSTEMD),
                 path.as_str(),
                 Some("org.freedesktop.DBus.Properties"),
                 "Get",
-                &("org.freedesktop.systemd1.Unit", "ActiveState"),
+                &(interface, name),
             )
             .map_err(|why| why.to_string())?
             .body()
             .deserialize()
-            .map_err(|why| why.to_string())?;
-        String::try_from(state).map_err(|why| why.to_string())
+            .map_err(|why| why.to_string())
     }
 }
 

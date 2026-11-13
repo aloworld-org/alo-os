@@ -18,7 +18,10 @@
 //! `field` or `password_field`, and what is true of it is any of `greyed-out`,
 //! `on` and `off`.
 
-use alo_adapters::{Contents, Limit, NotWalked, Pressable, Role, Seen, Shown, read_by_hand};
+use alo_adapters::{
+    Contents, Limit, NotWalked, Pressable, Role, Seen, Shown, WorkingFully, nothing_to_read,
+    read_by_hand,
+};
 use alo_strings::{Filling, Said, Strings};
 
 use crate::acting::Telling;
@@ -78,20 +81,13 @@ pub fn looked(
         // for any other app, the likeliest reason is that it is not describing
         // itself at all.
         let access = machine.access();
-        let until_it_works_fully = alo_launching::is_drawn_by_chromium(subject.identifier())
-            && access.apps_describe_themselves()
-            && !access.alo_works_fully_inside_apps();
+        let fully = WorkingFully::for_one(
+            alo_launching::is_drawn_by_chromium(subject.identifier())
+                && access.apps_describe_themselves(),
+            access.alo_works_fully_inside_apps(),
+        );
         for window in shown.windows() {
-            let titled = Filling::of(words::WINDOW, window.title().to_owned());
-            let (word, filling) = if until_it_works_fully {
-                (
-                    words::NOTHING_TO_READ_UNTIL_ALO_WORKS_FULLY,
-                    titled.and(words::APPLICATION, subject.called.clone()),
-                )
-            } else {
-                (words::NOTHING_TO_READ, titled)
-            };
-            machine.warned(strings.say(&word.key(), &filling).text());
+            machine.warned(nothing_to_read(window.title(), &subject.called, fully, strings).text());
         }
     }
     for line in lines {
@@ -244,13 +240,6 @@ fn controls_as_values(shown: &Shown) -> Vec<String> {
 fn text_of(shown: &Shown) -> Vec<String> {
     shown
         .everything()
-        .filter_map(|seen| match seen.contents() {
-            Contents::Text(text) => Some(text.clone()),
-            Contents::Withheld => None,
-            Contents::Nothing if seen.role().text_is_read() && !seen.name().is_empty() => {
-                Some(seen.name().to_owned())
-            }
-            Contents::Nothing => None,
-        })
+        .filter_map(|seen| seen.text_to_read().map(ToOwned::to_owned))
         .collect()
 }

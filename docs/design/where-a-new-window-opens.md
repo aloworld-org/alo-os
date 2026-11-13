@@ -355,6 +355,36 @@ leaves out. The panel's column, the top controls and the indicator still only
 must not cover a new window's handle completely. A person may still put a
 window under the Dock or off the screen themselves.
 
+*The panel's half of that paragraph is superseded by the amendment below.*
+
+---
+
+## Amended 2026-11-13 — clear of the put-aside panel
+
+Asked whether a new window may open under the right-hand panel of windows
+put aside, the owner answered **"Windows open clear of it."** So the room a
+window alo places lands in is now the view **above the Dock and clear of the
+panel's column**: left of it, or right of it on a screen read right to left.
+This holds for applications' windows and for alo's own — Settings, the record
+and alo's terminal. A window too wide for what is left is asked to be
+narrower, **never narrower than the application says it can be**; one that
+cannot be narrow enough is placed at the room's start so its strip is on the
+screen. `crates/alo-shell/src/the_room_alo_places_a_window_in.rs`.
+
+- **The column, not the rail.** The panel owns its column whether it holds
+  anything and whether it is showing (`the-windows-put-aside.md`; the owner's
+  ruling of 2026-09-30 that *the right panel owns that area*), so the room
+  leaves it out even while the panel is empty or concealed. A window placed
+  under an empty panel would be covered the moment the person put one aside.
+  *This lane's reading, the owner's to change.*
+- **Asked, not assumed.** The column is the one the panel last drew, so a
+  denser display or a larger panel moves the room with it; no width is
+  written into the placement.
+- **The person may still move a window under the panel.** Nothing moves it
+  back: a window the person moved or resized is never placed again (law 5).
+- The top controls and the egress indicator still only must not cover a new
+  window's handle completely.
+
 ---
 
 ## Amended 2026-11-13 — going to a window shows it whole

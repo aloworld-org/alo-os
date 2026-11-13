@@ -92,6 +92,12 @@ alo-launching = { path = "../alo-launching" }
 # made it a real one. Only the types are used — no declaration is read here, and
 # which verbs this machine offers is `alo_turn::Machine`'s to say.
 alo-applications = { path = "../alo-applications" }
+# The person's accessibility tree, opened for one read or one press of the
+# accessibility fallback (`crate::the_persons_windows`), and which switch would
+# help an application — added 2026-11-12, when a turn first offered the two.
+# `alo-access` is the person's settings file as the desktop reads it.
+alo-adapters = { path = "../alo-adapters" }
+alo-access = { path = "../alo-access" }
 
 # What the process assembles a machine out of, which is queue item 21f and the
 # reason the first two moved up here out of the dev-dependencies below: a

@@ -62,7 +62,12 @@ pub fn what_the_terminal_says(
                 // end as the person wanted.
                 Some(Answered::It(done)) => match it_did_not_work(done, false, strings) {
                     Some(said) => (said, false),
-                    None => (say(alo_capability::words::DONE_AFTER_YOUR_OK), true),
+                    // **Never plain *Done* for a command that sent something
+                    // off this computer** (ADR 0110 §2).
+                    None => match done.what_a_command_sent() {
+                        Some(what) => (say(what.done_after_your_ok()), true),
+                        None => (say(alo_capability::words::DONE_AFTER_YOUR_OK), true),
+                    },
                 },
                 Some(Answered::ItCannotBeUndone(done)) => {
                     match it_did_not_work(done, true, strings) {
@@ -104,7 +109,10 @@ pub fn what_the_terminal_says(
         // account of what changed.
         WhatTheTerminalDid::WentAhead { sentence, answered } => {
             let (outcome, worked) = match answered {
-                Some(Answered::It(_)) => (say(alo_capability::words::DONE_WITHOUT_ASKING), true),
+                Some(Answered::It(done)) => match done.what_a_command_sent() {
+                    Some(what) => (say(what.done_without_asking()), true),
+                    None => (say(alo_capability::words::DONE_WITHOUT_ASKING), true),
+                },
                 Some(Answered::ItCannotBeUndone(_)) => (
                     say(alo_capability::words::DONE_WITHOUT_ASKING_AND_IT_CANNOT_BE_PUT_BACK),
                     true,
@@ -141,12 +149,13 @@ fn it_did_not_work(
     let alo_protocol::Done::RanACommand {
         returned,
         took_too_long,
+        said,
         ..
     } = done
     else {
         return None;
     };
-    let why = alo_capability::ItDidNotWork::of(*returned, *took_too_long)?;
+    let why = alo_capability::ItDidNotWork::of_what_it_said(*returned, *took_too_long, said)?;
     let word = if cannot_be_put_back {
         alo_capability::words::DID_NOT_WORK_AFTER_YOUR_OK_AND_IT_CANNOT_BE_PUT_BACK
     } else {
@@ -231,14 +240,55 @@ mod tests {
         assert!(said.worked);
     }
 
-    /// A command that ran, as the daemon answers it, ending with `returned`.
+    /// A command that ran, as the daemon answers it, ending with `returned`
+    /// and counted as sending nothing.
     fn a_command_that_ended_with(returned: Option<i32>) -> Box<Done> {
+        a_command_that_sent(returned, Some(0))
+    }
+
+    /// A command that ran, ending with `returned`, counted as sending `sent`
+    /// bytes — or not counted at all.
+    fn a_command_that_sent(returned: Option<i32>, sent: Option<u64>) -> Box<Done> {
         Box::new(Done::RanACommand {
             returned,
             said: "mkdir: cannot create directory: No such file or directory\n".to_owned(),
             cut_short: false,
             took_too_long: false,
+            sent_bytes: sent,
         })
+    }
+
+    /// **A command the person said yes to that sent something off this
+    /// computer is never plain *Done***: the line says Put back cannot recall
+    /// what it sent — and, where nothing counted, that it could not tell
+    /// (ADR 0110 §2). One that sent nothing is still *Done*.
+    #[test]
+    fn a_command_that_sent_something_is_not_told_as_wholly_undoable() {
+        for (sent, says) in [
+            (Some(2_048), "sent something off this computer while it ran"),
+            (None, "could not count whether it sent anything"),
+        ] {
+            for answered in [
+                WhatTheTerminalDid::TheySaidYes {
+                    answered: Some(Answered::It(a_command_that_sent(Some(0), sent))),
+                },
+                WhatTheTerminalDid::WentAhead {
+                    sentence: "run this command: git push".to_owned(),
+                    answered: Some(Answered::It(a_command_that_sent(Some(0), sent))),
+                },
+            ] {
+                let said = what_the_terminal_says(
+                    &a_change_is_waiting(3, RENAME),
+                    &answered,
+                    &in_english(),
+                );
+                let last = said.lines.last().cloned().unwrap_or_default();
+                assert!(last.starts_with("Done"), "{said:?}");
+                assert!(last.contains(says), "{said:?}");
+                assert!(last.contains("Put back can return your files"), "{said:?}");
+                assert!(said.worked);
+            }
+        }
     }
 
     /// **A command the person said yes to that failed is not *Done***: the
