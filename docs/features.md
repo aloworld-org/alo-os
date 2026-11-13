@@ -1075,6 +1075,15 @@ running code. It is built once `CLAUDE.md` carries those words (ADR 0143).*
   approved once — said as *alo will type text you have not read line by line*.
   alo reads an application's window only during a turn the person started, and
   keeps no copy of what it read. *Owner, 2026-10-31.*
+  **Typing is built at the default, since 2026-11-13** (ADR 0153, the owner's
+  *"Keys, in alo's own copy"*): `accessible.type_text` types one approved text
+  into one field, shown in full in the approval, then reads it back and saves
+  only if it is exactly what was approved — as key presses into alo's own copy
+  of VSCodium, whose automatic editing is off in that copy only, or through the
+  accessibility tree where an application takes text that way. Never into a
+  password field or a terminal. **Not built: *each block on its own* and
+  *everything alo types for one request*** — today one approval always types
+  one text. *Not yet seen on a booted machine.*
   **Any installed application** — the owner, the same day: *"for alo driving
   applications it should be able to drive any application installed."* **Only
   the ones the person has let it use**: by default the person lets alo use

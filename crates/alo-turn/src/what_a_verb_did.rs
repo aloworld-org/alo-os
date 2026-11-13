@@ -32,6 +32,7 @@ use alo_software::{Installed, WhatTheCatalogueHolds};
 use crate::acting_on_an_application::Reached;
 use crate::pressing_a_control::AControlPressed;
 use crate::reading_an_applications_windows::TheWindowsShowed;
+use crate::typing_into_an_application::ATextTyped;
 
 /// What a verb this machine carried out answered with.
 ///
@@ -76,6 +77,9 @@ pub enum WhatAVerbDid {
     /// One control in an application's window was pressed, or asked to be by
     /// an application that did not answer (`accessible.activate_control`).
     AControlWasPressed(AControlPressed),
+    /// A text was typed into one field of an application, and saved or not
+    /// (`accessible.type_text`, ADR 0153).
+    TextWasTyped(ATextTyped),
 }
 
 impl WhatAVerbDid {
@@ -93,7 +97,8 @@ impl WhatAVerbDid {
             | Self::WhatCanBeInstalled(_)
             | Self::WhatTouchedAFile(_)
             | Self::WhatTheWindowsShowed(_)
-            | Self::AControlWasPressed(_) => None,
+            | Self::AControlWasPressed(_)
+            | Self::TextWasTyped(_) => None,
         }
     }
 
@@ -107,7 +112,8 @@ impl WhatAVerbDid {
             | Self::WhatCanBeInstalled(_)
             | Self::WhatTouchedAFile(_)
             | Self::WhatTheWindowsShowed(_)
-            | Self::AControlWasPressed(_) => None,
+            | Self::AControlWasPressed(_)
+            | Self::TextWasTyped(_) => None,
         }
     }
 
@@ -121,7 +127,8 @@ impl WhatAVerbDid {
             | Self::AnApplicationWasReached(_)
             | Self::WhatTouchedAFile(_)
             | Self::WhatTheWindowsShowed(_)
-            | Self::AControlWasPressed(_) => None,
+            | Self::AControlWasPressed(_)
+            | Self::TextWasTyped(_) => None,
         }
     }
 
@@ -135,7 +142,8 @@ impl WhatAVerbDid {
             | Self::AnApplicationWasReached(_)
             | Self::WhatCanBeInstalled(_)
             | Self::WhatTheWindowsShowed(_)
-            | Self::AControlWasPressed(_) => None,
+            | Self::AControlWasPressed(_)
+            | Self::TextWasTyped(_) => None,
         }
     }
 
@@ -144,6 +152,15 @@ impl WhatAVerbDid {
     pub const fn the_windows_showed(&self) -> Option<&TheWindowsShowed> {
         match self {
             Self::WhatTheWindowsShowed(read) => Some(read),
+            _ => None,
+        }
+    }
+
+    /// The text typed, when one was.
+    #[must_use]
+    pub const fn typed(&self) -> Option<&ATextTyped> {
+        match self {
+            Self::TextWasTyped(typed) => Some(typed),
             _ => None,
         }
     }
@@ -167,7 +184,8 @@ impl WhatAVerbDid {
             | Self::WhatCanBeInstalled(_)
             | Self::WhatTouchedAFile(_)
             | Self::WhatTheWindowsShowed(_)
-            | Self::AControlWasPressed(_) => None,
+            | Self::AControlWasPressed(_)
+            | Self::TextWasTyped(_) => None,
         }
     }
 }
@@ -175,6 +193,12 @@ impl WhatAVerbDid {
 impl From<TheWindowsShowed> for WhatAVerbDid {
     fn from(read: TheWindowsShowed) -> Self {
         Self::WhatTheWindowsShowed(read)
+    }
+}
+
+impl From<ATextTyped> for WhatAVerbDid {
+    fn from(typed: ATextTyped) -> Self {
+        Self::TextWasTyped(typed)
     }
 }
 

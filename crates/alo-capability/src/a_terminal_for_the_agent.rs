@@ -47,6 +47,13 @@
 //! among them — so a verb that typed could not be declared without that
 //! refusal being removed first.
 //!
+//! **Since 2026-11-13 a third verb types** — `accessible.type_text` (ADR 0153),
+//! whose text is data delivered into a field and never run by anything on this
+//! machine — and **it refuses every terminal**: a node the tree describes as a
+//! terminal, and a web terminal such as VSCodium's
+//! (`alo_adapters::typing_text`), at every setting of this choice. So the
+//! sentence above still holds for a terminal: nothing lets alo type into one.
+//!
 //! **What an agent permitted to open a terminal can therefore do** is open one,
 //! read what is in its window, and press controls its window offers by name.
 //! Those are the ordinary powers over any granted application, and the person

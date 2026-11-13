@@ -194,6 +194,9 @@ mod the_sentence_is_about_something;
 pub mod the_verbs_would_not_declare;
 mod the_windows_on_the_screen;
 pub mod turning;
+mod typing_into_an_application;
+#[cfg(test)]
+mod typing_into_an_application_tests;
 pub mod unanswered;
 pub mod unbounded;
 pub mod went_wrong_asking;
@@ -229,6 +232,7 @@ pub use the_door_the_compositor_serves::{NotAtTheDoor, TheDoorTheCompositorServe
 pub use the_verbs_would_not_declare::TheVerbsWouldNotDeclare;
 pub use the_windows_on_the_screen::TheWindowsOnTheScreen;
 pub use turning::Turning;
+pub use typing_into_an_application::ATextTyped;
 pub use unanswered::NoAnswer;
 pub use unbounded::NoBoundary;
 pub use went_wrong_asking::WentWrongAsking;

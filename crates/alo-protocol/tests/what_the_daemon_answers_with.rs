@@ -64,6 +64,13 @@ fn as_a_client_sees_it(did: &alo_turn::WhatAVerbDid) -> Done {
             pressed.name(),
             pressed.unanswered(),
         ),
+        alo_turn::WhatAVerbDid::TextWasTyped(typed) => Done::of_a_typing(
+            typed.application(),
+            typed.name(),
+            typed.characters(),
+            typed.through_the_tree(),
+            typed.saved(),
+        ),
     }
 }
 

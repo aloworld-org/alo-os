@@ -63,5 +63,12 @@ pub(crate) fn as_a_client_sees_it(did: &WhatAVerbDid, now: SystemTime) -> Done {
             pressed.name(),
             pressed.unanswered(),
         ),
+        WhatAVerbDid::TextWasTyped(typed) => Done::of_a_typing(
+            typed.application(),
+            typed.name(),
+            typed.characters(),
+            typed.through_the_tree(),
+            typed.saved(),
+        ),
     }
 }

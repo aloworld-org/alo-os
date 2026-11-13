@@ -553,6 +553,13 @@ fn as_the_asking_machine_sees_it(did: &alo_turn::WhatAVerbDid) -> Option<alo_pro
             pressed.name(),
             pressed.unanswered(),
         ),
+        alo_turn::WhatAVerbDid::TextWasTyped(typed) => alo_protocol::Done::of_a_typing(
+            typed.application(),
+            typed.name(),
+            typed.characters(),
+            typed.through_the_tree(),
+            typed.saved(),
+        ),
     })
 }
 
