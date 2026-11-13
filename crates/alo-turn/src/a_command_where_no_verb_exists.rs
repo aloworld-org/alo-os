@@ -23,16 +23,23 @@
 //! - **what ran carries the place kept before it**, when the service kept one,
 //!   so Put back is asked from the run itself.
 //!
+//! - **what the command sends is on the egress indicator while it runs, and
+//!   in the record afterwards** (ADR 0148, as amended 2026-11-13): the machine
+//!   is asked for a count of the command's own control group
+//!   ([`crate::Bounding::a_command_counted`]), the run is handed what starts
+//!   it inside that group and looks at it as it runs
+//!   (`crate::while_alos_command_runs`), and the entry carries the bytes.
+//!
 //! # And it starts nothing
 //!
 //! The command is run by whatever the caller hands in — on a real machine
-//! `alo_running::run_as_the_person`, ADR 0117's one crate that starts a
+//! `alo_running::run_as_the_person_around`, ADR 0117's one crate that starts a
 //! program. A turn that started programs itself would be a second such place.
 
 use std::time::{Duration, SystemTime};
 
 use alo_capability::{
-    ACommand, ItDidNotStart, ProposalId, THE_SHELL, WaitingCommand, WhatACommandDid,
+    ACommand, AroundACommand, ItDidNotStart, ProposalId, THE_SHELL, WaitingCommand, WhatACommandDid,
 };
 use alo_record::Entry;
 use alo_strings::{Filling, Said};
@@ -40,10 +47,16 @@ use alo_strings::{Filling, Said};
 use crate::became::Became;
 use crate::refusing::NotDone;
 use crate::turning::Turning;
+use crate::while_alos_command_runs::WhileItRuns;
 
 /// What runs a command, handed in by the caller: on a real machine
-/// `alo_running::run_as_the_person`.
-pub type Running<'r> = dyn FnMut(&ACommand) -> Result<WhatACommandDid, ItDidNotStart> + 'r;
+/// `alo_running::run_as_the_person_around`.
+///
+/// It is handed what is around the run — where it starts, and a look at it
+/// while it runs — and must start the command through it, or the command is
+/// neither counted nor shown as the turn means it to be.
+pub type Running<'r> =
+    dyn FnMut(&ACommand, &mut dyn AroundACommand) -> Result<WhatACommandDid, ItDidNotStart> + 'r;
 
 impl Turning<'_, '_> {
     /// **Run a command now** — what full access means where no verb fits.
@@ -203,8 +216,22 @@ impl Turning<'_, '_> {
         at_full_access: AtFullAccess,
         now: SystemTime,
     ) -> Result<WhatACommandDid, NotDone> {
-        match run(command) {
+        // **Counted and shown while it runs, and both ended when it ends**,
+        // whatever it ended with (ADR 0148, as amended 2026-11-13).
+        let (result, sent) = {
+            let (bounding, indicator) = self.machine().bounding_and_indicator();
+            let mut around = WhileItRuns::begun(
+                bounding.a_command_counted(),
+                indicator,
+                command.program(),
+                now,
+            );
+            let result = run(command, &mut around);
+            (result, around.ended())
+        };
+        match result {
             Ok(did) => {
+                let did = did.having_sent(sent);
                 // **No grants and no box**: `allowed` is empty because nothing
                 // was granted, and the kernel was not holding it because at
                 // this level nothing alo runs is boxed (ADR 0149).
@@ -216,7 +243,8 @@ impl Turning<'_, '_> {
                     did.returned(),
                     false,
                     now,
-                );
+                )
+                .having_sent(sent);
                 let entry = at_full_access.stamped(entry);
                 let entry = match self.kept_as() {
                     Some(named) => entry.kept_as(named),
@@ -230,12 +258,12 @@ impl Turning<'_, '_> {
                     &alo_capability::words::NOTHING_RAN_WOULD_NOT_START.key(),
                     &Filling::nothing(),
                 );
-                let entry = at_full_access.stamped(Entry::a_command_was_not_run(
-                    self.grantee(),
-                    THE_SHELL,
-                    said.text(),
-                    now,
-                ));
+                // What the count came to is kept here too: a run the machine
+                // lost track of may have sent something before it did.
+                let entry = at_full_access.stamped(
+                    Entry::a_command_was_not_run(self.grantee(), THE_SHELL, said.text(), now)
+                        .having_sent(sent),
+                );
                 self.writing_down(entry)?;
                 Err(NotDone::ACommandDidNotStart(not_started))
             }

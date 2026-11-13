@@ -232,6 +232,8 @@ pub mod choosing_to_answer;
 #[cfg(target_os = "linux")]
 pub mod corridor;
 #[cfg(target_os = "linux")]
+pub mod counting_alos_commands;
+#[cfg(target_os = "linux")]
 pub mod described;
 #[cfg(target_os = "linux")]
 pub mod describing;

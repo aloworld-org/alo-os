@@ -84,14 +84,30 @@ fn on_a_turn<T>(
     record: &mut Record,
     doing: impl FnOnce(&mut Turning<'_, '_>, &mut alo_capability::Grants, &Strings, &Path) -> T,
 ) -> T {
+    on_a_watched_turn(
+        what,
+        record,
+        &mut NothingIsBounded,
+        Indicator::default(),
+        doing,
+    )
+}
+
+/// The same, on a machine whose boundary is `bounding` and whose indicator is
+/// `indicator` — for a test that watches what the indicator was told.
+fn on_a_watched_turn<T>(
+    what: &str,
+    record: &mut Record,
+    bounding: &mut dyn alo_turn::Bounding,
+    mut indicator: Indicator,
+    doing: impl FnOnce(&mut Turning<'_, '_>, &mut alo_capability::Grants, &Strings, &Path) -> T,
+) -> T {
     let strings = in_english();
     let (granted, _) = a_folder_with_an_invoice(what);
-    let mut indicator = Indicator::default();
-    let mut bounding = NothingIsBounded;
     let mut machine = Machine::carrying_out_file_verbs(
         &strings,
         &OnThisMachine,
-        &mut bounding,
+        bounding,
         &mut indicator,
         record,
     )
@@ -830,4 +846,195 @@ fn at_the_sealed_box_sudo_is_refused_and_nothing_is_asked() {
     let entries: Vec<_> = record.everything().collect();
     assert_eq!(entries.len(), 1);
     assert_eq!(entries.first().unwrap().asked_as_an_administrator(), None);
+}
+
+/// Every list the indicator told, as its sentences — what a desktop sent
+/// `watch-what-leaves` would have drawn, one list per change.
+#[derive(Debug, Clone, Default)]
+struct Watched(std::sync::Arc<std::sync::Mutex<Vec<Vec<String>>>>);
+
+impl alo_egress::Telling for Watched {
+    fn now_showing(&self, showing: &[alo_egress::Shown]) {
+        let strings = in_english();
+        if let Ok(mut lists) = self.0.lock() {
+            lists.push(
+                showing
+                    .iter()
+                    .map(|shown| shown.said(&strings).text().to_owned())
+                    .collect(),
+            );
+        }
+    }
+}
+
+impl Watched {
+    /// Every list told so far.
+    fn lists(&self) -> Vec<Vec<String>> {
+        self.0.lock().unwrap().clone()
+    }
+}
+
+/// A boundary that bounds nothing and counts every command alo runs as having
+/// sent `sends` bytes from its first look — the kernel's half stood in for, so
+/// the daemon's half can be watched end to end with a real command.
+struct EveryCommandSends {
+    /// What each count reads.
+    sends: u64,
+    /// How many counts were begun, and how many ended.
+    begun_and_ended: std::rc::Rc<std::cell::Cell<(u32, u32)>>,
+}
+
+/// One command's count, from [`EveryCommandSends`].
+struct ItSends {
+    /// What it reads.
+    sends: u64,
+    /// Where its ending is told.
+    begun_and_ended: std::rc::Rc<std::cell::Cell<(u32, u32)>>,
+}
+
+impl alo_turn::ACommandCounted for ItSends {
+    fn starting(
+        &mut self,
+        start: &mut dyn FnMut() -> std::io::Result<std::process::Child>,
+    ) -> std::io::Result<std::process::Child> {
+        start()
+    }
+
+    fn so_far(&self) -> Option<u64> {
+        Some(self.sends)
+    }
+
+    fn ended(self: Box<Self>) -> Option<u64> {
+        let (begun, ended) = self.begun_and_ended.get();
+        self.begun_and_ended.set((begun, ended + 1));
+        Some(self.sends)
+    }
+}
+
+impl alo_turn::Bounding for EveryCommandSends {
+    fn carrying_out(
+        &mut self,
+        reaching: &alo_files::Reaching,
+        doing: alo_turn::Doing<'_>,
+    ) -> Result<alo_turn::Done, alo_turn::NoBoundary> {
+        alo_turn::Bounding::carrying_out(&mut NothingIsBounded, reaching, doing)
+    }
+
+    fn a_command_counted(&mut self) -> Option<Box<dyn alo_turn::ACommandCounted + '_>> {
+        let (begun, ended) = self.begun_and_ended.get();
+        self.begun_and_ended.set((begun + 1, ended));
+        Some(Box::new(ItSends {
+            sends: self.sends,
+            begun_and_ended: std::rc::Rc::clone(&self.begun_and_ended),
+        }))
+    }
+}
+
+/// **A command alo runs is on the indicator, and the desktop is told, while it
+/// runs** — here on a machine that cannot count it, which is every machine
+/// these tests run on: the line says so for the whole run, comes off when it
+/// ends, and the record keeps no number, because none was counted.
+#[test]
+fn a_command_alo_runs_is_on_the_indicator_where_nothing_can_count_it() {
+    let elsewhere = Elsewhere::with_the_level("command-uncounted", Some(HowCodeRuns::AtFullTrust));
+    let mut record = Record::default();
+    let mut bracket = a_bracket();
+    let watched = Watched::default();
+    on_a_watched_turn(
+        "command-uncounted",
+        &mut record,
+        &mut NothingIsBounded,
+        Indicator::default().told_to(Box::new(watched.clone())),
+        |turning, grants, strings, _| {
+            let said = the_agent_asked(
+                &asking_to_run("true"),
+                turning,
+                grants,
+                strings,
+                &elsewhere.here(),
+                &mut bracket,
+            );
+            assert!(said.refusal().is_none(), "{said:?}");
+        },
+    );
+    assert_eq!(
+        watched.lists(),
+        [
+            vec!["alo is running true, and this machine cannot count what it sends".to_owned()],
+            Vec::new()
+        ],
+        "the desktop was not told of the command while it ran, or not told it ended"
+    );
+    let entries: Vec<_> = record.everything().collect();
+    assert_eq!(entries.len(), 1);
+    assert_eq!(entries.first().unwrap().sent_bytes(), None);
+}
+
+/// **A command that sends is shown and its bytes are in the record**, and its
+/// count is begun once and ended once; **a refusal is still written down and
+/// counts nothing** — at the sealed box, nothing is begun at all.
+#[test]
+fn a_command_that_sends_is_shown_and_counted_and_a_refusal_counts_nothing() {
+    for (level, line) in [
+        (
+            HowCodeRuns::AtFullTrust,
+            Some("true, a command alo is running, is sending"),
+        ),
+        (HowCodeRuns::InASealedBox, None),
+    ] {
+        let elsewhere = Elsewhere::with_the_level("command-counted", Some(level));
+        let mut record = Record::default();
+        let mut bracket = a_bracket();
+        let watched = Watched::default();
+        let begun_and_ended = std::rc::Rc::new(std::cell::Cell::new((0, 0)));
+        let mut bounding = EveryCommandSends {
+            sends: 4180,
+            begun_and_ended: std::rc::Rc::clone(&begun_and_ended),
+        };
+        on_a_watched_turn(
+            "command-counted",
+            &mut record,
+            &mut bounding,
+            Indicator::default().told_to(Box::new(watched.clone())),
+            |turning, grants, strings, _| {
+                let said = the_agent_asked(
+                    &asking_to_run("true"),
+                    turning,
+                    grants,
+                    strings,
+                    &elsewhere.here(),
+                    &mut bracket,
+                );
+                assert_eq!(said.refusal().is_some(), line.is_none(), "{said:?}");
+            },
+        );
+        let entries: Vec<_> = record.everything().collect();
+        assert_eq!(entries.len(), 1, "{level:?}: {entries:?}");
+        let entry = entries.first().unwrap();
+        match line {
+            Some(line) => {
+                assert_eq!(
+                    watched.lists(),
+                    [vec![line.to_owned()], Vec::new()],
+                    "{level:?}"
+                );
+                assert!(matches!(entry.happened(), Happened::RanACommand { .. }));
+                assert_eq!(entry.sent_bytes(), Some(4180));
+                assert_eq!(begun_and_ended.get(), (1, 1), "{level:?}");
+            }
+            None => {
+                assert!(
+                    watched.lists().is_empty(),
+                    "{level:?}: {:?}",
+                    watched.lists()
+                );
+                assert!(matches!(
+                    entry.happened(),
+                    Happened::ACommandWasNotRun { .. }
+                ));
+                assert_eq!(entry.sent_bytes(), None);
+                assert_eq!(begun_and_ended.get(), (0, 0), "{level:?}");
+            }
+        }
+    }
 }

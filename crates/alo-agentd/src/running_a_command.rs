@@ -32,7 +32,7 @@
 //! back, as a revoked grant is (`CLAUDE.md`: *a revoked grant takes effect
 //! immediately*).
 //!
-//! # What stays on, and what is not yet true
+//! # What stays on
 //!
 //! The record and the snapshot are kept for every run, as ADR 0064 and ADR 0149
 //! require: the snapshot is asked for before the command starts, through the
@@ -40,17 +40,26 @@
 //! and the person's answer says it cannot be undone), and the run or refusal is
 //! written down before anything is answered.
 //!
-//! **The egress indicator is not reached by a command.** What it sends leaves
-//! from its own process, and the only counter this repository has for a
-//! process's bytes is ADR 0148's, which counts an application's control group
-//! at the desktop's request. Nothing here pretends otherwise; the gap is named
-//! in `docs/contracts/daemon-protocol.md`, under `run`.
+//! **And the egress indicator, since 2026-11-13** (ADR 0148, as amended; the
+//! owner: *"Yes, count alo's commands"*). The command is run with
+//! `alo_running::run_as_the_person_around`, handed what the turn put around it:
+//! a control group of its own that the kernel counts
+//! (`crate::counting_alos_commands`), the command started inside it, and a look
+//! at the count on every look at the command. The desktop is told the line the
+//! moment a byte is counted, through `watch-what-leaves` as every line is; a
+//! command that sends nothing shows nothing; and the record's entry carries the
+//! bytes. On a machine that cannot count, the line says so for the whole run.
+//!
+//! **What is still not shown**: a command written as `sudo ...` runs in
+//! `alo-running-as-administrator`'s own service, which this service does not
+//! hold a control group in, so what it sends is not counted. Named in
+//! `docs/contracts/daemon-protocol.md`, under `run`.
 
 use std::path::{Path, PathBuf};
 use std::sync::LazyLock;
 use std::time::{Duration, SystemTime};
 
-use alo_capability::{ACommand, HowCodeRuns, ProposalId};
+use alo_capability::{ACommand, AroundACommand, HowCodeRuns, ProposalId};
 use alo_protocol::{Done, ToAPerson, ToAnAgent};
 use alo_strings::{Filling, Said, Strings};
 use alo_turn::{NotDone, Turning};
@@ -301,7 +310,9 @@ pub fn a_command_approved(
             Err(why) => ToAPerson::refused(&said_about(&why, strings)),
         };
     }
-    let mut run = |command: &ACommand| alo_running::run_as_the_person(command, &here.in_folder);
+    let mut run = |command: &ACommand, around: &mut dyn AroundACommand| {
+        alo_running::run_as_the_person_around(command, &here.in_folder, around)
+    };
     match turning.approving_a_command(number, &mut run, now) {
         Ok(did) => crate::answering::the_change_did(Done::of_a_command(&did), kept),
         Err(why) => ToAPerson::refused(&said_about(&why, strings)),
@@ -334,7 +345,9 @@ fn ran(
             Err(why) => Err(said_about(&why, strings)),
         };
     }
-    let mut run = |command: &ACommand| alo_running::run_as_the_person(command, &here.in_folder);
+    let mut run = |command: &ACommand, around: &mut dyn AroundACommand| {
+        alo_running::run_as_the_person_around(command, &here.in_folder, around)
+    };
     match turning.running_a_command(command, &mut run, now) {
         Ok(did) => Ok(Done::of_a_command(&did)),
         Err(why) => Err(said_about(&why, strings)),

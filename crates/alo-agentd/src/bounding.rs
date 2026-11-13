@@ -51,10 +51,10 @@
 //! had to match on.
 
 use alo_bounding::{
-    Boundary, Bounds, Departure, Departures, Family, NotBounded, Pinned, Turns, places_of,
+    Boundary, Bounds, Counter, Departure, Departures, Family, NotBounded, Pinned, Turns, places_of,
 };
 use alo_files::Reaching;
-use alo_turn::{Bounding, Doing, Done, NoBoundary};
+use alo_turn::{ACommandCounted, Bounding, Doing, Done, NoBoundary};
 
 /// The boundary this machine's kernel imposes, as this service can reach it.
 ///
@@ -73,6 +73,16 @@ pub struct ByTheKernel {
     /// How many turns have been carried out, which is where the next name
     /// comes from.
     named: u64,
+
+    /// The kernel's count of what a control group sends, opened from the pin
+    /// `alo-boundaryd` made beside the boundary — [`None`] on a machine where
+    /// it could not be, whose commands then run uncounted and say so
+    /// (ADR 0148, as amended 2026-11-13).
+    counter: Option<Counter>,
+
+    /// How many commands alo has run, which is where the next one's control
+    /// group is named from.
+    commands: u64,
 }
 
 impl ByTheKernel {
@@ -112,10 +122,25 @@ impl ByTheKernel {
     pub fn beneath(pinned: &Pinned) -> Result<Self, NotBounded> {
         let boundary = Boundary::opened(pinned)?;
         let turns = Turns::of_this_service()?;
+        // **Not a reason to stop.** A machine whose counter is not there still
+        // bounds every turn; what it cannot do is count a command alo runs,
+        // and each such command is shown as uncounted instead.
+        let counter = match Counter::opened(pinned.counted()) {
+            Ok(counter) => Some(counter),
+            Err(why) => {
+                eprintln!(
+                    "alo-agentd: what a command alo runs sends cannot be counted here, so every \
+                     such command is shown as uncounted while it runs: {why}"
+                );
+                None
+            }
+        };
         Ok(Self {
             turns,
             boundary,
             named: 0,
+            counter,
+            commands: 0,
         })
     }
 
@@ -200,6 +225,19 @@ impl Bounding for ByTheKernel {
         self.turns
             .doing(&mut self.boundary, &named, granted, || doing.done())
             .map_err(as_no_boundary)
+    }
+
+    /// A control group of its own for one command alo runs, counted by the
+    /// kernel (ADR 0148, as amended 2026-11-13) — `crate::counting_alos_commands`
+    /// has the steps, and [`None`] where the counter or any step is not there.
+    fn a_command_counted(&mut self) -> Option<Box<dyn ACommandCounted + '_>> {
+        let counter = self.counter.as_mut()?;
+        let counted = crate::counting_alos_commands::a_group_counted(
+            &self.turns,
+            counter,
+            &mut self.commands,
+        )?;
+        Some(Box::new(counted))
     }
 }
 

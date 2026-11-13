@@ -398,6 +398,7 @@
 
 #![cfg(target_os = "linux")]
 
+mod a_command_alo_runs;
 mod bounding;
 mod btf;
 mod cgroup;
@@ -416,6 +417,7 @@ mod waiting;
 #[cfg(test)]
 mod testing;
 
+pub use a_command_alo_runs::ACountedGroup;
 pub use alo_counting::{Counter, NotCounted};
 pub use bounding::Boundary;
 pub use btf::{Member, Types};

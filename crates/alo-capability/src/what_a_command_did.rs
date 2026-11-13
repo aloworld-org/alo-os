@@ -20,6 +20,14 @@ pub struct WhatACommandDid {
     cut_short: bool,
     /// Whether it was stopped because it ran longer than a command is let run.
     took_too_long: bool,
+    /// How many bytes it sent off this machine while it ran, as the kernel
+    /// counted them — [`None`] where nothing counted them (ADR 0148, as
+    /// amended 2026-11-13).
+    ///
+    /// Absent rather than zero where there was no count, because *it sent
+    /// nothing* and *nobody could tell* are two answers a person would act on
+    /// differently.
+    sent: Option<u64>,
 }
 
 impl WhatACommandDid {
@@ -31,7 +39,23 @@ impl WhatACommandDid {
             said,
             cut_short,
             took_too_long,
+            sent: None,
         }
+    }
+
+    /// This, with what the kernel counted it sending — [`None`] where nothing
+    /// could count it.
+    #[must_use]
+    pub const fn having_sent(mut self, sent: Option<u64>) -> Self {
+        self.sent = sent;
+        self
+    }
+
+    /// How many bytes it sent off this machine while it ran, or [`None`] where
+    /// nothing counted them.
+    #[must_use]
+    pub const fn sent(&self) -> Option<u64> {
+        self.sent
     }
 
     /// Its exit status, and [`None`] when a signal ended it.

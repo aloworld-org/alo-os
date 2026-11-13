@@ -181,6 +181,9 @@ pub mod alo_in_the_terminal;
 pub mod approval;
 pub mod approvals;
 pub mod arg;
+/// What happens around a command alo runs while it runs: where it starts, and
+/// a look at it now and then (ADR 0148, as amended 2026-11-13).
+pub mod around_a_command;
 pub mod authorised;
 pub mod call;
 pub mod facility;
@@ -222,6 +225,7 @@ pub use alo_in_the_terminal::AloInTheTerminal;
 pub use approval::Approved;
 pub use approvals::{AnswerError, Approvals, ProposalId, Waiting};
 pub use arg::{Arg, ArgError, Given, Takes, Value};
+pub use around_a_command::{AroundACommand, NothingAround};
 pub use authorised::{Authorised, NotAuthorised, Refused};
 pub use call::{Call, CallError, Permission};
 pub use facility::Facility;

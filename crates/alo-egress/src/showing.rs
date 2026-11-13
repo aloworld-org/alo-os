@@ -21,6 +21,7 @@ use alo_capability::Grantee;
 use alo_strings::{Said, Strings};
 use serde::Serialize;
 
+use crate::alos_command::AlosCommand;
 use crate::at_work::AloAtWork;
 use crate::destination::Destination;
 use crate::during::DuringTheirCommand;
@@ -44,6 +45,9 @@ pub enum Showing {
     TheirCommand(DuringTheirCommand),
     /// An application alo is working in (ADR 0143 Q6).
     AloAtWork(AloAtWork),
+    /// A command alo is running where no verb fits (ADR 0149), counted by the
+    /// kernel (ADR 0148, as amended 2026-11-13).
+    AlosCommand(AlosCommand),
 }
 
 impl Showing {
@@ -57,7 +61,7 @@ impl Showing {
         match self {
             Self::Agent(leaving) => Some(leaving.destination()),
             Self::Itself(errand) => Some(errand.destination()),
-            Self::TheirCommand(_) | Self::AloAtWork(_) => None,
+            Self::TheirCommand(_) | Self::AloAtWork(_) | Self::AlosCommand(_) => None,
         }
     }
 
@@ -70,7 +74,9 @@ impl Showing {
     pub fn agent(&self) -> Option<&Grantee> {
         match self {
             Self::Agent(leaving) => Some(leaving.agent()),
-            Self::Itself(_) | Self::TheirCommand(_) | Self::AloAtWork(_) => None,
+            Self::Itself(_) | Self::TheirCommand(_) | Self::AloAtWork(_) | Self::AlosCommand(_) => {
+                None
+            }
         }
     }
 
@@ -79,7 +85,9 @@ impl Showing {
     pub fn leaving(&self) -> Option<&Leaving> {
         match self {
             Self::Agent(leaving) => Some(leaving),
-            Self::Itself(_) | Self::TheirCommand(_) | Self::AloAtWork(_) => None,
+            Self::Itself(_) | Self::TheirCommand(_) | Self::AloAtWork(_) | Self::AlosCommand(_) => {
+                None
+            }
         }
     }
 
@@ -87,7 +95,9 @@ impl Showing {
     #[must_use]
     pub fn on_its_own(&self) -> Option<&OnItsOwn> {
         match self {
-            Self::Agent(_) | Self::TheirCommand(_) | Self::AloAtWork(_) => None,
+            Self::Agent(_) | Self::TheirCommand(_) | Self::AloAtWork(_) | Self::AlosCommand(_) => {
+                None
+            }
             Self::Itself(errand) => Some(errand),
         }
     }
@@ -97,7 +107,7 @@ impl Showing {
     pub fn during_their_command(&self) -> Option<&DuringTheirCommand> {
         match self {
             Self::TheirCommand(during) => Some(during),
-            Self::Agent(_) | Self::Itself(_) | Self::AloAtWork(_) => None,
+            Self::Agent(_) | Self::Itself(_) | Self::AloAtWork(_) | Self::AlosCommand(_) => None,
         }
     }
 
@@ -106,7 +116,16 @@ impl Showing {
     pub fn alo_at_work(&self) -> Option<&AloAtWork> {
         match self {
             Self::AloAtWork(at_work) => Some(at_work),
-            Self::Agent(_) | Self::Itself(_) | Self::TheirCommand(_) => None,
+            Self::Agent(_) | Self::Itself(_) | Self::TheirCommand(_) | Self::AlosCommand(_) => None,
+        }
+    }
+
+    /// The command alo is running this is, if it is one.
+    #[must_use]
+    pub fn alos_command(&self) -> Option<&AlosCommand> {
+        match self {
+            Self::AlosCommand(command) => Some(command),
+            Self::Agent(_) | Self::Itself(_) | Self::TheirCommand(_) | Self::AloAtWork(_) => None,
         }
     }
 
@@ -122,6 +141,7 @@ impl Showing {
             Self::Itself(errand) => errand.said(strings),
             Self::TheirCommand(during) => during.said(strings),
             Self::AloAtWork(at_work) => at_work.said(strings),
+            Self::AlosCommand(command) => command.said(strings),
         }
     }
 }
@@ -189,6 +209,22 @@ mod tests {
         assert_eq!(
             theirs.said(&in_english()).text(),
             "Thunderbird is sending, during your command"
+        );
+    }
+
+    /// **A command alo runs names no place and no agent**: the counter read how
+    /// much, and the person's level, not a grant, is what let it run.
+    #[test]
+    fn a_command_alo_runs_names_neither_a_place_nor_an_authority() {
+        let alos = Showing::AlosCommand(crate::AlosCommand::of("curl", crate::Counting::Counted));
+        assert_eq!(alos.destination(), None);
+        assert_eq!(alos.agent(), None);
+        assert!(alos.leaving().is_none() && alos.on_its_own().is_none());
+        assert!(alos.during_their_command().is_none() && alos.alo_at_work().is_none());
+        assert!(alos.alos_command().is_some());
+        assert_eq!(
+            alos.said(&in_english()).text(),
+            "curl, a command alo is running, is sending"
         );
     }
 

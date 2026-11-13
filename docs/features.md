@@ -1698,6 +1698,12 @@ promised.
   and Settings → Running code tags Full access *Default* (the owner's answers,
   quoted in `docs/design/the-first-start.md`). Not yet walked on a booted
   machine.
+  **The egress indicator reaches the commands alo runs, 2026-11-13** (ADR 0148,
+  amended; the owner: *"Yes, count alo's commands"*): while a command alo runs
+  is sending, the indicator says so, and the record keeps how many bytes it
+  sent; a command that sends nothing shows nothing. Bytes only, only for the
+  seconds the command runs, never the person's own programs. A command written
+  as `sudo …` is not counted yet. Not yet walked on a booted machine.
 
 
 *Recorded here rather than only in a commit, because `CLAUDE.md` says scope is
