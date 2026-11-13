@@ -182,12 +182,17 @@ mod looking_at_the_catalogue;
 pub mod machine;
 pub mod next_request;
 pub mod places;
+mod pressing_a_control;
+mod reading_an_applications_windows;
+#[cfg(test)]
+mod reading_and_pressing_tests;
 pub mod refusing;
 pub mod shortening;
 pub mod the_bracket_a_turn_takes;
 mod the_door_the_compositor_serves;
 mod the_sentence_is_about_something;
 pub mod the_verbs_would_not_declare;
+mod the_windows_on_the_screen;
 pub mod turning;
 pub mod unanswered;
 pub mod unbounded;
@@ -216,10 +221,13 @@ pub use machine::{
     Machine, WhatASoftwareVerbNeeds, WhatAnApplicationVerbNeeds, the_verbs_a_whole_machine_offers,
 };
 pub use places::Places;
+pub use pressing_a_control::AControlPressed;
+pub use reading_an_applications_windows::TheWindowsShowed;
 pub use refusing::NotDone;
 pub use shortening::{Shortened, Shortening};
 pub use the_door_the_compositor_serves::{NotAtTheDoor, TheDoorTheCompositorServes};
 pub use the_verbs_would_not_declare::TheVerbsWouldNotDeclare;
+pub use the_windows_on_the_screen::TheWindowsOnTheScreen;
 pub use turning::Turning;
 pub use unanswered::NoAnswer;
 pub use unbounded::NoBoundary;

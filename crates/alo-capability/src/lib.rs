@@ -193,6 +193,8 @@ pub mod grant;
 pub mod grantee;
 pub mod grants;
 pub mod how_code_runs;
+/// Whether a command failed because nobody is signed in to GitHub.
+pub mod not_signed_in_to_github;
 pub mod offered;
 pub mod path;
 pub mod persons_own;
@@ -207,6 +209,9 @@ pub mod verb;
 pub mod verbs;
 /// What a command alo ran did.
 pub mod what_a_command_did;
+/// Whether a command alo ran sent anything off this computer, for the line
+/// afterwards (ADR 0110 §2).
+pub mod what_a_command_sent;
 /// A change carried out without the OK, because the person chose full access
 /// (ADR 0149).
 pub mod without_the_ok;
@@ -249,4 +254,5 @@ pub use unseen::WhyMarked;
 pub use verb::{Effect, Requires, Verb, VerbError};
 pub use verbs::{Verbs, VerbsError};
 pub use what_a_command_did::{ItDidNotStart, ItDidNotWork, WhatACommandDid};
+pub use what_a_command_sent::WhatItSent;
 pub use words::{EVERY_COUNTED, EVERY_WORD, WordsError, capability_words, declare_into};

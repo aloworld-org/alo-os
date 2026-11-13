@@ -37,7 +37,11 @@ RestrictAddressFamilies=AF_UNIX
 NoNewPrivileges=yes
 
 # A reader that falls over is a person who suddenly hears nothing, so it is
-# started again; systemd's own limit stops a reader that cannot start at all
-# from being retried for ever.
+# started again. **systemd's own start limit does not stop one that cannot
+# start at all** when it falls over more slowly than five times in ten seconds,
+# which is how Orca 48.9 falls on this image (measured 2026-11-13,
+# docs/quirks/orca-on-wayland-needs-an-x-display-twice.md); the desktop says
+# *did not start* under the switch whenever it falls
+# (crates/alo-desktop/src/watching_the_screen_reader.rs).
 Restart=on-failure
 RestartSec=2

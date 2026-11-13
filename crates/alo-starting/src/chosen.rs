@@ -42,7 +42,8 @@ use crate::systems::{System, THE_WINDOWS_ENTRY};
 /// # What was measured, on the base this image is built from
 ///
 /// The base keeps no default here. `quay.io/fedora/fedora-bootc:42` at the
-/// pinned digest was installed to a disk by its own installer, and its
+/// digest then pinned (the base is Fedora 44 since ADR 0152, and this has not
+/// been measured on it) was installed to a disk by its own installer, and its
 /// `/boot/grub2/grubenv` came out a **regular file** — not the symlink onto
 /// the ESP that older Fedora layouts had — holding nothing at all, while the
 /// ESP had no environment block on it. So there was no file of the base's to

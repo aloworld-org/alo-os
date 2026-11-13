@@ -5,7 +5,8 @@
 use smithay::utils::{Logical, Point, Rectangle, Size};
 
 use super::{
-    is_partly_out_of, kept_inside, lies_wholly_in, the_room_the_dock_leaves, the_size_that_fits,
+    is_partly_out_of, kept_inside, lies_wholly_in, the_room_the_controls_leave,
+    the_room_the_dock_leaves, the_room_the_panel_leaves, the_size_that_fits,
 };
 use crate::a_window_and_its_strip::ItsStrip;
 
@@ -183,5 +184,90 @@ fn the_nearest_space_for_a_window_taller_than_the_view_left_it_off_the_screen() 
     assert!(
         its_room.contains_rect(Rectangle::new(found.window, strip().round_a_size(fits))),
         "offered the size that fits, it lands wholly in the room the view glides to"
+    );
+}
+
+/// The put-aside panel's column down the right of the walk's screen, the
+/// width `crate::panel_raster` reserves at 100 per cent.
+fn the_panel() -> Rectangle<i32, Logical> {
+    Rectangle::new((1168, 0).into(), (112, 800).into())
+}
+
+/// **The room ends where the panel's column begins** — the owner's *"Windows
+/// open clear of it"* of 2026-11-13 — and starts after it on a screen read
+/// right to left. A column of no width, or one off the view, takes nothing.
+#[test]
+fn the_room_is_clear_of_the_panel() {
+    assert_eq!(
+        the_room_the_controls_leave(the_view(), Some(the_dock()), Some(the_panel())),
+        Rectangle::new((0, 0).into(), (1168, 717).into())
+    );
+    let on_the_left = Rectangle::new((0, 0).into(), (112, 800).into());
+    assert_eq!(
+        the_room_the_panel_leaves(the_view(), Some(on_the_left)),
+        Rectangle::new((112, 0).into(), (1168, 800).into())
+    );
+    assert_eq!(
+        the_room_the_panel_leaves(the_view(), Some(Rectangle::default())),
+        the_view(),
+        "a column of no width takes nothing"
+    );
+    let elsewhere = Rectangle::new((9000, 0).into(), (112, 800).into());
+    assert_eq!(
+        the_room_the_panel_leaves(the_view(), Some(elsewhere)),
+        the_view(),
+        "a column off the view takes nothing"
+    );
+    // Panned: the view and the column on the plane move together.
+    let panned = Rectangle::new((3000, -400).into(), (1280, 800).into());
+    let its_panel = Rectangle::new((4168, -400).into(), (112, 800).into());
+    assert_eq!(
+        the_room_the_panel_leaves(panned, Some(its_panel)),
+        Rectangle::new((3000, -400).into(), (1168, 800).into())
+    );
+}
+
+/// **A window too wide for the room left of the panel is asked to be
+/// narrower** and then lies wholly clear of it; the control is the same window
+/// in the room the Dock alone leaves, which its 1 204 fitted.
+#[test]
+fn a_window_too_wide_for_the_room_left_of_the_panel_is_asked_to_shrink() {
+    let wide = Size::from((1204, 500));
+    let dock_only = the_room_the_dock_leaves(the_view(), Some(the_dock()));
+    assert_eq!(
+        the_size_that_fits(wide, dock_only, strip(), Size::from((0, 0))).w,
+        1204,
+        "the control: without the panel counted it fitted"
+    );
+    let room = the_room_the_controls_leave(the_view(), Some(the_dock()), Some(the_panel()));
+    let fits = the_size_that_fits(wide, room, strip(), Size::from((0, 0)));
+    assert_eq!(
+        fits,
+        Size::from((1168 - 32, 500)),
+        "the width that fits, the height kept"
+    );
+    let placed = kept_inside(Point::from((300, 100)), fits, room, strip());
+    assert!(
+        lies_wholly_in(placed, fits, room, strip()),
+        "at its offered size it lies wholly clear of the panel: {placed:?} {fits:?}"
+    );
+    assert!(placed.x + fits.w <= the_panel().loc.x);
+}
+
+/// **The refusal: never narrower than the application can be.** One that
+/// cannot be narrow enough keeps its least width, and its strip is put at the
+/// room's start so a person can still take hold of it — the panel covering
+/// part of it is the application's limit, not alo's choice.
+#[test]
+fn never_narrower_than_the_application_can_be() {
+    let room = the_room_the_controls_leave(the_view(), Some(the_dock()), Some(the_panel()));
+    let smallest = Size::from((1180, 0));
+    let fits = the_size_that_fits(Size::from((1204, 500)), room, strip(), smallest);
+    assert_eq!(fits.w, 1180, "never below the application's minimum");
+    let placed = kept_inside(Point::from((300, 100)), fits, room, strip());
+    let taken = strip().round(Rectangle::new(placed, fits));
+    assert_eq!(
+        taken.loc.x, 16,
+        "too wide for the room, it starts one gap in"
     );
 }

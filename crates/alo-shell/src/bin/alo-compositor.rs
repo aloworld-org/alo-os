@@ -93,6 +93,7 @@ mod running {
         };
         let machine = AMachineToStandOn {
             display: &said.display,
+            seat: alo_shell::DirectSession::new,
             accounts: Path::new(alo_accounts::THE_ACCOUNTS),
             person: said.person,
             door: TheOpenersDoor::on_this_machine(),

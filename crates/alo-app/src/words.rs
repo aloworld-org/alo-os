@@ -494,34 +494,12 @@ pub const NO_CONTROLS: Word = Word::saying(
 )
 .noting("Said under a window's heading.");
 
-/// A window that shows no text, said rather than printing nothing.
-pub const NOTHING_TO_READ: Word = Word::saying(
-    "app.read.none",
-    "The window “{window}” shows no text that can be read. An app shows none when it is not \
-     describing itself: “Apps describe themselves to alo and screen readers” is in Settings → \
-     Accessibility → Applications.",
-)
-.noting(
-    "Said when a person asked to read an application's window and nothing in it could be read. \
-     {window} is the window's title. The quoted switch must be the same translation as the \
-     switch itself (settings.access.apps-describe-themselves), and Settings, Accessibility and \
-     Applications the same as that window's own words.",
-);
-
-/// A window of VSCodium, VS Code or Chromium that shows no text, while *Let alo
-/// work fully inside apps like VSCodium* is off — which is why it shows none.
-pub const NOTHING_TO_READ_UNTIL_ALO_WORKS_FULLY: Word = Word::saying(
-    "app.read.none-until-alo-works-fully",
-    "The window “{window}” shows no text that can be read. If you want alo to read the document \
-     in {application}, turn on “Let alo work fully inside apps like VSCodium” in Settings → \
-     Accessibility → Applications, then close {application} and open it again.",
-)
-.noting(
-    "Said instead of app.read.none for VSCodium, VS Code and Chromium while that switch is off: \
-     their document is readable only with it on. {window} is the window's title and {application} \
-     the application's name, neither translated. The quoted switch must be the same translation \
-     as the switch itself (settings.access.alo-works-fully-inside-apps).",
-);
+// **A window that shows no text** is said by the accessibility fallback, under
+// the two keys this crate published (`app.read.none` and
+// `app.read.none-until-alo-works-fully`), since 2026-11-12, when alo's own read
+// in a turn came to need the same two sentences: one wording, whoever asked,
+// and a key kept rather than retired. `alo_adapters::nothing_to_read` chooses
+// between them.
 
 /// A text field, as a kind.
 pub const A_FIELD: Word =
@@ -813,7 +791,7 @@ pub const CANNOT_BE_UNDONE_ONCE_SENT: Word = Word::saying(
 .noting("The contract's own words, said beside an ability that sends, or may send, something off the machine.");
 
 /// Every word of this crate's own.
-pub const EVERY_WORD: [Word; 92] = [
+pub const EVERY_WORD: [Word; 90] = [
     NOTHING_ASKED,
     NOTHING_TO_DO,
     LEFT_OVER,
@@ -860,8 +838,6 @@ pub const EVERY_WORD: [Word; 92] = [
     A_CONTROL,
     A_CONTROL_WITH,
     NO_CONTROLS,
-    NOTHING_TO_READ,
-    NOTHING_TO_READ_UNTIL_ALO_WORKS_FULLY,
     A_FIELD,
     A_PASSWORD_FIELD,
     GREYED_OUT,

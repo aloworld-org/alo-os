@@ -60,6 +60,16 @@ use crate::{
 pub struct AMachineToStandOn<'a> {
     /// The display device, opened through libseat and never directly.
     pub display: &'a Path,
+    /// **How the login seat is asked for the display**: [`DirectSession::new`]
+    /// on a machine, and nothing else there.
+    ///
+    /// Handed in rather than called here because asking libseat is a reading
+    /// of whatever machine this process is on, and a test cannot say which
+    /// machine that is. A test that called libseat itself passed or failed on
+    /// the runner's seat: as root, libseat's embedded seatd gives a seat to
+    /// anybody, so a runner that also had a `/dev/dri/card0` stood the screen
+    /// up and the test meant to watch it refuse found nothing to watch.
+    pub seat: fn(std::path::PathBuf) -> Result<DirectSession, crate::SessionError>,
     /// Where this machine keeps its accounts.
     pub accounts: &'a Path,
     /// The uid `/etc/alo/agentd.toml` names as this machine's person.
@@ -228,7 +238,7 @@ pub fn stand_the_sign_in_screen_up(
     // **What every keyboard is called, read once**, so the keyboard sheet opens
     // no file while a person is choosing.
     .naming_keyboards_with(alo_keyboards::TheKeyboardNames::on_this_machine());
-    let mut session = DirectSession::new(machine.display.to_owned())?;
+    let mut session = (machine.seat)(machine.display.to_owned())?;
     let stood = session.sign_in(&mut server, screen, &mut labels, first_look(), &mut next)?;
     // The seat's own close is separate from everything the display reported,
     // and both are separate from whether somebody signed in.
