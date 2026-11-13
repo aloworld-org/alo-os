@@ -171,9 +171,10 @@ building the image**, which this change did not do.
   is none; both are fixed in Fedora 43's engines, and no configuration of the
   pinned Fedora 42 base starts Orca without an X server. The roads, and what was
   measured against each, are in
-  `docs/quirks/orca-on-wayland-needs-an-x-display-twice.md`; choosing one is the
-  owner's. Until then the switch says *did not start* when the reader falls, and
-  the image build stops at the check that starts Orca as the session does.
+  `docs/quirks/orca-on-wayland-needs-an-x-display-twice.md`. **The owner chose
+  the move to Fedora 43** the same day, with the check that starts Orca as the
+  session does landing in that change. Until then the switch says *did not
+  start* when the reader falls.
 
 - **The sign-in screen does not speak.** The shell serves no accessibility tree
   before sign-in, and the sign-in screen runs with no session bus, no

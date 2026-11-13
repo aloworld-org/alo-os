@@ -54,9 +54,10 @@ as a property of every fault on every machine.
 stays up.** For the reader: the unit's own `ExecStart` and `Environment`, with
 a Wayland compositor, a session bus and the accessibility bus, for long enough
 that the startup path has run — and fail the build if it is not still there.
-The recipe now does exactly that (`image/Containerfile`, the block after the
-reader's), and `crates/alo-image/tests/the_screen_reader_speaks_on_this_machine.rs`
-holds it to it.
+That check was built and measured on 2026-11-13 — it failed on the image as it
+was, with Orca's own `KeyError`, and passed on a reader that could stay up — and
+it lands with the move to Fedora 43, where the reader can pass it (the owner's
+decision of that day, so images keep building until then).
 
 **And a watch on something that can fall over later watches for as long as it
 matters**, not for a guess at how long falling over takes:

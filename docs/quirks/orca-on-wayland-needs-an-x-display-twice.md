@@ -74,11 +74,14 @@ Orca 49.7 needs Python 3.14, which is Fedora 43's.
 
 ## What alo OS does about it
 
-**Nothing that makes the reader start yet — that is a decision, and it is not
-this file's.** There is no configuration of the pinned base that starts Orca
-without an X server. The roads, each the owner's:
+There is no configuration of the Fedora 42 base that starts Orca without an X
+server. **The owner chose, on 2026-11-13, to move the base to Fedora 43** —
+*"the proper fix"*, Orca 49 and libatspi 2.58 with no X at all — and that the
+check which starts Orca as the session does lands in the same change as that
+move, so images keep building meanwhile. The roads that were weighed:
 
-- **Move the pinned base to Fedora 43**, where both engines are fixed upstream.
+- **Move the pinned base to Fedora 43**, where both engines are fixed upstream
+  — chosen.
 - **Give the reader a private X server** (Xvfb on a display only its unit
   names, plus `xkbcomp`): configuration only, measured to stay up, and an X
   server on a machine whose session is Wayland only.
@@ -90,10 +93,7 @@ without an X server. The roads, each the owner's:
 
 What **is** done: the desktop says *did not start* under the switch whenever the
 reader falls over, not only in its first two seconds
-(`crates/alo-desktop/src/watching_the_screen_reader.rs`); and the image recipe
-starts Orca the way the session starts it and fails the build when it does not
-stay up (`image/Containerfile`, held by
-`crates/alo-image/tests/the_screen_reader_speaks_on_this_machine.rs`). **So
-until one of the roads above is taken, an image built from this recipe stops at
-that check** — which is the truth about the reader, said at the one place that
-cannot be skipped.
+(`crates/alo-desktop/src/watching_the_screen_reader.rs`). The recipe's check
+that starts Orca as the session does, and fails the build when it does not stay
+up, comes with the Fedora 43 move. **Until that lands, images built from `main`
+ship a reader that does not start**, and the switch says so.
