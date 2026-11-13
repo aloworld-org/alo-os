@@ -88,7 +88,12 @@ mod not_read;
 pub use not_read::{NotRead, WhyNotRead};
 
 mod where_flatpak_exports;
-pub use where_flatpak_exports::{THE_MACHINES_INSTALLATION, with_what_flatpak_exports};
+pub use where_flatpak_exports::{
+    THE_MACHINES_INSTALLATION, the_persons_installation, with_what_flatpak_exports,
+};
+
+mod what_they_may_reach;
+pub use what_they_may_reach::{TheirHome, WhatItMayReach, WhatTheyMayReach, what_they_may_reach};
 
 /// The directories desktop entries live in, most specific first.
 ///

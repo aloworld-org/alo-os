@@ -173,6 +173,21 @@ fn what_is_installed(home: &Path) -> alo_applications::Installed {
     ))
 }
 
+/// What each installed application's package lets it reach, read from both
+/// flatpak installations — the person's and the machine's.
+fn what_they_may_reach(
+    home: &Path,
+    installed: &alo_applications::Installed,
+) -> alo_installed::WhatTheyMayReach {
+    let data_home = std::env::var_os("XDG_DATA_HOME");
+    let persons = alo_installed::the_persons_installation(Some(home), data_home.as_deref());
+    alo_installed::what_they_may_reach(
+        Path::new(alo_installed::THE_MACHINES_INSTALLATION),
+        persons.as_deref(),
+        installed.all().map(alo_applications::Application::identifier),
+    )
+}
+
 /// The process.
 pub fn main() -> ExitCode {
     let vocabulary = match what_it_can_say() {
@@ -247,9 +262,11 @@ pub fn main() -> ExitCode {
         record: None,
         pipe: std::io::stdin().lock().lines(),
     };
+    let reaching = what_they_may_reach(&home, &installed);
     let knowing = Knowing {
         strings: &strings,
         installed: &installed,
+        reaching: &reaching,
         adapters: &adapters,
         verbs: &verbs,
         standing_in: &standing_in,

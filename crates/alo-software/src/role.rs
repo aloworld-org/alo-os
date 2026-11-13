@@ -7,6 +7,11 @@
 //! through a second application from the same developer, and a role with two
 //! applications behind it would be a list that cannot say which one is missing.
 //!
+//! **The eighth is a code editor** (ADR 0143, the owner's choice of
+//! 2026-10-31): a role of its own rather than a second text editor, because the
+//! list refuses a role filled twice and a person looking for *the editor alo
+//! builds in* is not looking for the one that opens a note.
+//!
 //! A role is a closed list rather than a string, so [`crate::Shipped`] can
 //! refuse a list that lacks one and a caller can ask for *the terminal* without
 //! knowing today's identifier.
@@ -31,11 +36,13 @@ pub enum Role {
     DocumentViewer,
     /// A person's own shell — and never an agent's (ADR 0043).
     Terminal,
+    /// Code: a folder of it, opened as a project (ADR 0143).
+    CodeEditor,
 }
 
 impl Role {
     /// Every role, in the order the list is kept.
-    pub const EVERY: [Self; 7] = [
+    pub const EVERY: [Self; 8] = [
         Self::WebBrowser,
         Self::FileManager,
         Self::Archives,
@@ -43,6 +50,7 @@ impl Role {
         Self::ImageViewer,
         Self::DocumentViewer,
         Self::Terminal,
+        Self::CodeEditor,
     ];
 
     /// The role as the list names it.
@@ -56,6 +64,7 @@ impl Role {
             Self::ImageViewer => "image-viewer",
             Self::DocumentViewer => "document-viewer",
             Self::Terminal => "terminal",
+            Self::CodeEditor => "code-editor",
         }
     }
 
@@ -69,6 +78,7 @@ impl Role {
             Self::ImageViewer => 4,
             Self::DocumentViewer => 5,
             Self::Terminal => 6,
+            Self::CodeEditor => 7,
         }
     }
 }

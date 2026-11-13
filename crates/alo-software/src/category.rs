@@ -1,6 +1,6 @@
 //! What a person would make with an application they install.
 //!
-//! [`crate::Role`] is what a fresh machine's seven applications are *there to
+//! [`crate::Role`] is what a fresh machine's eight applications are *there to
 //! do*, so a caller can ask for *the terminal* without knowing today's
 //! identifier. A category is the other question: a person who has not installed
 //! anything is looking for the thing that does what they came to do, and they

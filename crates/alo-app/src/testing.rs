@@ -353,6 +353,8 @@ pub struct Known {
     pub strings: Strings,
     /// What is installed.
     pub installed: Installed,
+    /// What each package lets it reach: nothing read, unless a test says.
+    pub reaching: alo_installed::WhatTheyMayReach,
     /// The adapters.
     pub adapters: Adapters,
     /// Their verbs.
@@ -377,6 +379,7 @@ impl Known {
                     .iter()
                     .map(|identifier| Application::identified(identifier).unwrap()),
             ),
+            reaching: alo_installed::WhatTheyMayReach::nothing(),
             adapters: shipped_adapters().unwrap(),
             verbs: adapter_verbs().unwrap(),
             standing_in: Path::new("/home/anna/Notes").to_path_buf(),
@@ -389,6 +392,7 @@ impl Known {
         Knowing {
             strings: &self.strings,
             installed: &self.installed,
+            reaching: &self.reaching,
             adapters: &self.adapters,
             verbs: &self.verbs,
             standing_in: &self.standing_in,

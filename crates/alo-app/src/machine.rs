@@ -25,6 +25,9 @@ pub struct Knowing<'a> {
     pub strings: &'a Strings,
     /// What is installed now.
     pub installed: &'a Installed,
+    /// What each installed application's package lets it reach without
+    /// asking, read when the command started.
+    pub reaching: &'a alo_installed::WhatTheyMayReach,
     /// Every adapter alo OS ships.
     pub adapters: &'a Adapters,
     /// Their abilities, as the list alo's own calls are validated against.

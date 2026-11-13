@@ -105,7 +105,13 @@ pub fn shown(
             .map(|one| one.verb.name.to_owned())
             .collect(),
         Giving::Json => {
-            let mut one = one_as_json(application, knowing.installed, knowing.adapters, strings);
+            let mut one = one_as_json(
+                application,
+                knowing.installed,
+                knowing.adapters,
+                knowing.reaching,
+                strings,
+            );
             with(&mut one, "format", json!(1));
             with(
                 &mut one,
@@ -136,6 +142,11 @@ pub fn shown(
             ];
             if is_a_persons_own(identifier) {
                 lines.push(say(&words::A_TERMINAL));
+            }
+            if let Some(reaches) =
+                crate::listing::what_it_may_reach(knowing.reaching.of(identifier), strings)
+            {
+                lines.push(reaches.into_text());
             }
             lines.push(say(&words::ROAD_WINDOW));
             lines.push(say(match on_the_tree {
