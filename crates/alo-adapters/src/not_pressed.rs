@@ -25,6 +25,10 @@ pub enum NotPressed {
     CannotBePressed,
     /// The application answered that it did not press it.
     DidNotPress,
+    /// The name is an accessibility setting's, on alo OS's own Settings, and
+    /// no page of Settings draws that setting yet — so there is nothing it
+    /// could name (`alo_access::old_names`).
+    NotDrawnYet,
 }
 
 /// **Whether a switch the person can turn on would let this control be
@@ -101,6 +105,7 @@ impl NotPressed {
                 words::CANNOT_BE_PRESSED_UNTIL_ALO_WORKS_FULLY
             }
             (Self::DidNotPress, _) => words::DID_NOT_PRESS,
+            (Self::NotDrawnYet, _) => words::NOT_DRAWN_YET,
         };
         strings.say(&word.key(), &control.filling(strings))
     }

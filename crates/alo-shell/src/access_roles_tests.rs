@@ -19,7 +19,7 @@ const EVERY_STATE: [State; 4] = [
 ];
 
 /// Every role a control can have, as this file must answer for each of them.
-const EVERY_ROLE: [Role; 10] = [
+const EVERY_ROLE: [Role; 14] = [
     Role::Window,
     Role::Button,
     Role::Label,
@@ -30,6 +30,10 @@ const EVERY_ROLE: [Role; 10] = [
     Role::List,
     Role::ListItem,
     Role::Dialogue,
+    Role::RadioButton,
+    Role::Tab,
+    Role::Heading,
+    Role::Slider,
 ];
 
 /// **No two kinds of control are the same kind on the bus**, and none of them

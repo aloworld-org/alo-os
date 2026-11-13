@@ -1,7 +1,8 @@
 //! **Which of alo's own sheets is in front, and where the keyboard is on it.**
 //!
 //! The password sheet (ADR 0150) and the *Open with* sheet (frame `25:52`) are
-//! drawn by the desktop itself and hold every key while they are up. A screen
+//! drawn by the desktop itself and hold every key while they are up; Settings
+//! holds them while it is the window in front. A screen
 //! reader is told one of them came up, and where its keys now go, from what
 //! this records: the sheet, by a number that changes with each question, and
 //! the node the keyboard is on.
@@ -18,6 +19,10 @@ pub(crate) enum TheSheet {
     Password(u64),
     /// The *Open with* sheet, the one with this number.
     OpenWith(u64),
+    /// Settings, while it is the window in front and takes the keys
+    /// (`crate::settings_as_read`). It needs no number: it is one window, and
+    /// closing it takes it off the tree, so opening it again is heard as new.
+    Settings,
 }
 
 /// The sheet in front, and where its keys go.

@@ -344,10 +344,15 @@ the design draws them, and choosing one says in words that nothing changed**
    its line *It is 14:32 here now* is a clock this window does not draw.
 8. **The text size slider runs 75 to 300 per cent**, `alo_appearance`'s range,
    so 100 % sits near its start; the frame draws it a third of the way along.
-9. **A screen reader is told the window and its list of settings as before**;
-   the categories and each page's rows are not yet in the tree by name. That
-   tree is `alo_access::Surface::Settings` and is static; making it follow the
-   page is its own change.
+9. **A screen reader is told each page as it is drawn** (since 2026-11-12, the
+   owner's *"1. Live, keep names"*): the side column's pages as tabs, the
+   page's heading and its sections' at levels 1 and 2, every row by its drawn
+   name with its lines as description, which choice is chosen and its place
+   among its set, an open list's entries, and the provider form's fields —
+   from `crate::settings_page::the_page`, the list the drawing reads
+   (`crates/alo-shell/src/settings_as_read.rs`). *Until then the tree was
+   `alo_access::Surface::Settings`'s fixed list and static.* Not verified with
+   Orca.
 10. **In the form that adds a provider, the field with the keyboard is marked
     only by its caret.** The old window drew a filled square before it; the
     page draws a form's fields as plain rows, which have none, and no frame

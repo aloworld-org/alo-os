@@ -3009,7 +3009,15 @@ impl LoopInput for TheDesktopLane<'_> {
                         let _ = server.a_reader_pressed(other);
                     }
                 }
+                // **A press on a Settings row is carried out now**, as the
+                // lane carries out a click after each input event: a reader's
+                // press arrives with no input event behind it, and would
+                // otherwise wait for the next key anybody pressed.
+                crate::a_key_reaches_settings::a_click_is_carried_out(server, self.strings);
             }
+            // **Settings as it is drawn** is in the tree the server builds,
+            // while it is open here (`crate::settings_as_read`).
+            //
             // **And alo's own sheets, while one is up**, the password sheet
             // last because it is the one every key goes to first.
             let called = |identifier: &str| server.what_an_application_is_called(identifier);

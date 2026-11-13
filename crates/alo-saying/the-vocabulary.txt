@@ -98,6 +98,7 @@ adapters.fallback.no-such-control	{application} shows no {kind} named “{name}�
 adapters.fallback.no-such-window	{application} shows no window called {window}, so nothing was read or pressed
 adapters.fallback.no-window	{application} has no window on the screen, so there was nothing to read or press
 adapters.fallback.not-all-read	{application} shows more than can be read at once, so not all of it was read
+adapters.fallback.not-drawn-yet	“{name}” is not on any page of Settings on this computer yet, so nothing was pressed
 adapters.fallback.not-readable-here	What applications show could not be read on this machine just now, so nothing was read or pressed in {application}
 adapters.fallback.not-this-verb	{verb} is not reading or pressing something in an application's window, so nothing was done
 adapters.fallback.read-window.application	the application whose windows to read
@@ -181,6 +182,7 @@ app.offers.window	It can be opened, focused and closed, and its controls pressed
 app.place.unanswered	No place to return to was kept before this command, because alo-agentd did not answer. The command ran anyway
 app.press.done	Pressed the {kind} “{control}” in {application}
 app.press.no-such-kind	{typed} is not a kind of control alo-app can press. It presses: {list}
+app.press.now-called	“{control}” is now called “{now}” in {application}. The old name still works for now and will stop working in a later release, so use “{now}”
 app.press.unanswered	Asked {application} to press the {kind} “{control}”, and it did not answer, so whether it was pressed is not known
 app.reach.reserved	reach this application as {identifier}, because {short} is a word alo-app keeps for itself
 app.reach.shared	reach this application as {identifier}, because another installed application is also called {short}

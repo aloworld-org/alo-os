@@ -76,6 +76,27 @@ pub fn pressed(
     let filling = Filling::of(words::APPLICATION, subject.called.clone())
         .and_said(words::KIND, &kind)
         .and(words::CONTROL, asked.control.clone());
+    // **A control pressed by the name it had before is still pressed**, and the
+    // person is told on the error output what it is called now, so a script
+    // they wrote keeps working and they learn the name it will need
+    // (`alo_access::old_names`; the contract's *A deprecated spelling keeps
+    // working*).
+    if let Some(now) = answered
+        .as_ref()
+        .ok()
+        .and_then(alo_adapters::PressedByHand::now_called)
+    {
+        machine.warned(
+            strings
+                .say(
+                    &words::NOW_CALLED.key(),
+                    &Filling::of(words::APPLICATION, subject.called.clone())
+                        .and(words::CONTROL, asked.control.clone())
+                        .and(words::NOW, now.to_owned()),
+                )
+                .text(),
+        );
+    }
     match answered {
         Ok(pressed) if pressed.unanswered() => Outcome::Carried {
             road: Road::Tree,

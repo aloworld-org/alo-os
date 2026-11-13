@@ -584,6 +584,14 @@ pub const ALL_COUNTRIES: Word = Word::saying("settings.region.all", "All countri
 pub const ALL_TIME_ZONES: Word = Word::saying("settings.zone.all", "All time zones")
     .noting("A small heading over the full list of time zones a person chooses from.");
 
+/// The search at the top of the list of countries or of time zones, as a
+/// screen reader names it: the field draws a magnifying glass and no word.
+pub const SEARCH_THE_LIST: Word = Word::saying("settings.list.search", "Search").noting(
+    "What a screen reader calls the search field at the top of the list of countries and \
+         regions, or of time zones, that a person chooses from. The field shows only a magnifying \
+         glass. One word.",
+);
+
 /// How many countries, regions or time zones match what was typed.
 ///
 /// **Counted**, because how a language counts is that language's business:
@@ -1060,7 +1068,7 @@ pub const THAT_APP_IS_GONE: Word = Word::saying(
 /// The length is written out so that adding a word above and forgetting it
 /// here does not compile — a word declared and left out of this list reaches a
 /// person as its own key.
-pub const THE_WINDOWS_WORDS: [Word; 137] = [
+pub const THE_WINDOWS_WORDS: [Word; 138] = [
     SETTINGS,
     EVERYTHING_IN_ONE_PLACE,
     THE_GROUP_ALO,
@@ -1150,6 +1158,7 @@ pub const THE_WINDOWS_WORDS: [Word; 137] = [
     CHOOSE_A_COUNTRY,
     ALL_COUNTRIES,
     ALL_TIME_ZONES,
+    SEARCH_THE_LIST,
     LIGHT_AND_DARK,
     LIGHT_AND_DARK_IS,
     FOLLOW_THE_TIME_OF_DAY,

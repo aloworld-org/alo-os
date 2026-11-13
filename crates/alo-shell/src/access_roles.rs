@@ -67,6 +67,14 @@ pub(crate) const fn number_of(role: Role) -> u32 {
         Role::ListItem => 32,
         // DIALOG
         Role::Dialogue => 16,
+        // RADIO_BUTTON
+        Role::RadioButton => 44,
+        // PAGE_TAB
+        Role::Tab => 37,
+        // HEADING
+        Role::Heading => 83,
+        // SLIDER
+        Role::Slider => 51,
     }
 }
 
@@ -199,12 +207,35 @@ pub(crate) const fn in_front(words: [u32; 2]) -> [u32; 2] {
     [words[0] | (1 << ACTIVE) | (1 << MODAL), words[1]]
 }
 
+/// The same states, for a window that is in front and takes the keys but holds
+/// nothing behind it: `ACTIVE` and not `MODAL` — Settings, while it is the
+/// window in front (`crate::settings_as_read`).
+pub(crate) const fn the_window_in_front(words: [u32; 2]) -> [u32; 2] {
+    [words[0] | (1 << ACTIVE), words[1]]
+}
+
+/// The same states, for something that was in front and no longer is: a sheet
+/// came up over Settings, which keeps its page and gives up the keys.
+pub(crate) const fn no_longer_in_front(words: [u32; 2]) -> [u32; 2] {
+    [
+        words[0] & !((1 << ACTIVE) | (1 << MODAL) | (1 << FOCUSED)),
+        words[1],
+    ]
+}
+
+/// Whether these states say the thing is set or chosen: `CHECKED`.
+pub(crate) const fn is_checked(words: [u32; 2]) -> bool {
+    words[0] & (1 << CHECKED) != 0
+}
+
 /// The same states, for the one control the keyboard is on: `FOCUSED`.
 ///
-/// **Only ever asked by a sheet, for where its keys really go** — the
-/// password sheet's field, the *Open with* row the arrows are on. No surface
-/// `alo-access` describes is handed through this, which is what keeps the
-/// approval's two answers unfocused (ADR 0001); the tests hold both.
+/// **Only ever asked for where the keys really go** — the password sheet's
+/// field, the *Open with* row the arrows are on, and the row of Settings the
+/// keyboard is on while Settings is the window in front. That last is the
+/// person's own place, moved by their own keys, and not a choice made for
+/// them. The approval's two answers are never handed through this, which is
+/// what keeps them unfocused (ADR 0001); the tests hold both.
 pub(crate) const fn with_the_keyboard(words: [u32; 2]) -> [u32; 2] {
     [words[0] | (1 << FOCUSED), words[1]]
 }

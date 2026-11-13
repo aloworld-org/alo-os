@@ -127,10 +127,16 @@ pub const THE_CLAUSES: [Clause; 46] = [
         // setting rather than by one placeholder called *a setting* — a value
         // on that placeholder would have read as *"a setting, on"*, which names
         // nothing. The names were never missing; the tree was not using them.
+        //
+        // **Evidence moved 2026-11-12** from `access_roles_tests.rs`'s
+        // `a_setting_that_is_on_is_read_as_on`, which holds the bit and not a
+        // switch anybody can reach: Settings is now told as its pages are
+        // drawn, and this test holds the drawn Reduced motion switch to say
+        // which way the person's own file has it set.
         standing: met(
             "alo-shell",
-            "src/access_roles_tests.rs",
-            "a_setting_that_is_on_is_read_as_on",
+            "src/settings_as_read_tests.rs",
+            "the_accessibility_page_says_which_way_its_switch_is_set",
         ),
         checked: NotAgainstTheText,
     },

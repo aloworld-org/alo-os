@@ -53,6 +53,27 @@ pub enum Role {
     ListItem,
     /// A question that must be answered before anything else happens.
     Dialogue,
+    /// One of a few choices, of which one is chosen — a ring, filled when it
+    /// is.
+    ///
+    /// *Added 2026-11-12 for Settings' choice rows and the parts of a
+    /// segmented choice, so a reader hears which one is chosen and a person's
+    /// command can press one (`press radio_button`).*
+    RadioButton,
+    /// One of the pages a window shows one of at a time, chosen from a column
+    /// beside it.
+    ///
+    /// *Added 2026-11-12 for Settings' side column.*
+    Tab,
+    /// The words a page or a section is headed with, which a reader moves
+    /// between.
+    ///
+    /// *Added 2026-11-12 for a Settings page's heading and its sections'.*
+    Heading,
+    /// A size or an amount, chosen along a line.
+    ///
+    /// *Added 2026-11-12 for Settings' text size.*
+    Slider,
 }
 
 /// **Whether a control can be acted on, and whether it already carries a
@@ -129,28 +150,11 @@ impl Control {
         }
     }
 
-    /// The switch for one access setting, named by the setting itself.
-    ///
-    /// **The name comes from [`Setting::word`] rather than from here**, so a
-    /// setting added to [`Setting::ALL`] arrives in the tree already named and
-    /// there is no second list to keep in step. A tenth setting nobody teaches
-    /// this file about is a tenth control, not a missing one.
-    #[must_use]
-    pub fn for_setting(setting: Setting) -> Self {
-        Self {
-            role: Role::Switch,
-            name: setting.word(),
-            state: State::OnOrOff,
-            setting: Some(setting),
-            does: None,
-        }
-    }
-
     /// **The button for one action, named by the action itself.**
     ///
     /// The name comes from [`Action::word`] rather than from this crate's own
-    /// vocabulary, for the reason [`Control::for_setting`] gives one line up
-    /// and [ADR 0089](../../../docs/decisions/0089-what-a-control-is-called.md)
+    /// vocabulary, for the reason
+    /// [ADR 0089](../../../docs/decisions/0089-what-a-control-is-called.md)
     /// gives at length: a second list of names is a second thing to keep in
     /// step, and the two lists this crate had **disagreed about which controls
     /// exist** rather than merely about their wording.
@@ -403,20 +407,22 @@ impl Surface {
                     State::ReadOnly,
                 ),
             ],
-            // **Every setting by name, from the closed list itself.** This
-            // read one switch called *a setting* until 2026-09-30 — a
-            // placeholder standing for all nine, so a reader told its value
-            // would have announced *"a setting, on"* and named nothing. The
-            // names were already here, in `Setting::word`; only the tree was
-            // not using them.
-            Self::Settings => {
-                let mut read = vec![
-                    Control::of(Role::Window, words::SETTINGS, State::ReadOnly),
-                    Control::of(Role::List, words::WHAT_CAN_BE_CHANGED, State::CanBeUsed),
-                ];
-                read.extend(Setting::ALL.map(Control::for_setting));
-                read
-            }
+            // **The window and its list of pages, and no row.** What is on a
+            // page is read from the page as it is drawn, by the shell that
+            // draws it (`alo_shell`'s `settings_as_read`), because Settings
+            // has nine pages whose rows follow what is installed and what the
+            // person chose, and no list written here can say which.
+            //
+            // *Until 2026-11-12 this went on to list every `Setting` as a
+            // switch. Eight of the nine are drawn on no page, so a reader was
+            // told of switches nobody could see or change, and the rows that
+            // are drawn — Default apps, text size — were never told at all.
+            // Their old names still reach what they named
+            // (`crate::old_names`).*
+            Self::Settings => vec![
+                Control::of(Role::Window, words::SETTINGS, State::ReadOnly),
+                Control::of(Role::List, words::WHAT_CAN_BE_CHANGED, State::CanBeUsed),
+            ],
             // **The three buttons a window is drawn with, in the order they
             // are drawn in** — `alo_shell::WindowControls` lays them out at
             // x-offsets 0, 36 and 72, and this list is the same list in the
@@ -462,7 +468,12 @@ pub fn the_approval_in_reading_order() -> Vec<Control> {
 /// and never said is still a fault — but it is now one side of the tree rather
 /// than the whole of it, and
 /// [`EVERY_NAME_A_READER_SAYS_IN_ANOTHER_CRATES_WORDS`] is the other.
-pub const EVERY_NAME_A_READER_SAYS: usize = 36;
+///
+/// **Twenty-seven since 2026-11-12**, when the nine settings' switches left
+/// [`Surface::Settings`]: their words are now said by the shell, as the old
+/// names its live Settings page answers to, and are counted in
+/// [`EVERY_WORD_ANOTHER_CRATES_SURFACE_SAYS`].
+pub const EVERY_NAME_A_READER_SAYS: usize = 27;
 
 /// How many of this crate's words are said by **another crate's** surface.
 ///
@@ -476,6 +487,11 @@ pub const EVERY_NAME_A_READER_SAYS: usize = 36;
 /// 2026-11-10: `ASK_ABOUT_THIS_WINDOW`, the panel's field that asks alo, and
 /// `STOP`, the button on the band alo draws across a window it is working in
 /// (`alo_shell`'s `alo_in_a_window`). Nothing here says any of them.
+///
+/// **Twenty-four since 2026-11-12**: the nine settings' own words
+/// ([`Setting::word`]), which `alo_shell`'s live Settings page says as the old
+/// name of the row that is each setting, or as the name of a setting no page
+/// draws yet (`crate::old_names`).
 ///
 /// **A third count, because there is a third case.** The two above it cover a
 /// word of ours said by our own tree, and somebody else's word said by our
@@ -497,7 +513,7 @@ pub const EVERY_NAME_A_READER_SAYS: usize = 36;
 /// They are in this crate rather than in `alo-shell` for exactly that reason:
 /// `alo-saying`'s `EVERY_LIST` holds seventy crates and `alo-shell` is not one
 /// of them.
-pub const EVERY_WORD_ANOTHER_CRATES_SURFACE_SAYS: usize = 15;
+pub const EVERY_WORD_ANOTHER_CRATES_SURFACE_SAYS: usize = 24;
 
 /// How many names a reader says come from another crate's vocabulary.
 ///

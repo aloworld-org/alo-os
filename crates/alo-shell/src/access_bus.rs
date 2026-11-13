@@ -46,7 +46,6 @@ use zbus::zvariant::{ObjectPath, OwnedObjectPath, Value};
 use crate::access_action::{ACTION, Pressable, Pressed};
 use crate::access_events::AnEvent;
 use crate::access_nodes::{Node, ROOT, ReadAloudTree};
-use crate::access_roles::LIVE;
 
 /// What an application that is not embedded answers with instead of a child.
 const NOTHING: &str = "/org/a11y/atspi/null";
@@ -269,6 +268,14 @@ impl ReadAloudBus {
                     0,
                     name.as_str(),
                 ),
+                AnEvent::NowChecked { path, checked } => (
+                    path,
+                    OBJECT_EVENTS,
+                    "StateChanged",
+                    "checked",
+                    i32::from(*checked),
+                    "",
+                ),
             };
             let path = ObjectPath::try_from(path.as_str()).map_err(|_| NotRead::NotTold)?;
             let any = if said.is_empty() {
@@ -380,9 +387,10 @@ struct ReadAloud {
     index_in_parent: i32,
     /// The two words `GetState` answers with, low word first.
     states: Vec<u32>,
-    /// What a reader is told besides the name — the `live` attribute, and on
-    /// a surface's own node the surface's typed name
-    /// ([`alo_access::THE_SURFACE_ATTRIBUTE`]), and nothing else.
+    /// What a reader is told besides the name — the `live` attribute, on a
+    /// surface's own node the surface's typed name
+    /// ([`alo_access::THE_SURFACE_ATTRIBUTE`]), and what the node itself
+    /// carries ([`ReadAloudTree::attributes_of`]).
     attributes: HashMap<String, String>,
     /// What hangs under it, in reading order.
     children: Vec<(String, OwnedObjectPath)>,
@@ -417,16 +425,7 @@ impl ReadAloud {
                     .unwrap_or_else(nothing),
             )
         };
-        let mut attributes = HashMap::new();
-        if node.announced {
-            attributes.insert(LIVE.0.to_owned(), LIVE.1.to_owned());
-        }
-        if let Some(surface) = tree.surface_at(&node.path) {
-            attributes.insert(
-                alo_access::THE_SURFACE_ATTRIBUTE.to_owned(),
-                surface.on_the_wire().to_owned(),
-            );
-        }
+        let attributes = tree.attributes_of(node);
         let index_in_parent = if node.path == ROOT {
             -1
         } else {

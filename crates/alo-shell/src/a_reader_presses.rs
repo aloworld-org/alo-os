@@ -34,6 +34,12 @@ pub enum WhatAReaderPressCameTo {
     /// holds that sheet and hands such a press to it before anything reaches
     /// the server (`crate::the_open_with_sheet`).
     NotTheServers,
+    /// Settings did what a click on that does: the page was shown, or the
+    /// keyboard went to the row and it is carried out as Enter is.
+    SettingsDidIt,
+    /// Nothing: Settings is not open here, the page is the form a provider is
+    /// added in, or what was pressed is not on the page drawn now.
+    NothingInSettings,
 }
 
 impl Server {
@@ -49,6 +55,7 @@ impl Server {
             }
             Pressed::OnTheDock(what) => self.a_reader_pressed_on_the_dock(&what),
             Pressed::OnTheOpenWithSheet { .. } => WhatAReaderPressCameTo::NotTheServers,
+            Pressed::InSettings(what) => self.a_reader_pressed_in_settings(&what),
         }
     }
 

@@ -50,6 +50,24 @@ impl Setting {
         Self::FocusAlwaysVisible,
     ];
 
+    /// **The name this setting has on the wire**, never translated — the same
+    /// spelling it is kept under in the person's `access.toml`, which a test
+    /// holds it to.
+    #[must_use]
+    pub const fn on_the_wire(self) -> &'static str {
+        match self {
+            Self::ScreenReader => "screen-reader",
+            Self::Magnifier => "magnifier",
+            Self::HighContrast => "high-contrast",
+            Self::LargerText => "larger-text",
+            Self::ReducedMotion => "reduced-motion",
+            Self::StickyKeys => "sticky-keys",
+            Self::SlowKeys => "slow-keys",
+            Self::BounceKeys => "bounce-keys",
+            Self::FocusAlwaysVisible => "focus-always-visible",
+        }
+    }
+
     /// The sentence a person reads for this setting.
     #[must_use]
     pub fn word(self) -> Word {
@@ -113,4 +131,22 @@ pub enum WhatItChanges {
     NothingMovesThatNeedNot,
     /// Focus is drawn whether or not a key has been pressed.
     WhereTheKeyboardIsIsAlwaysDrawn,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// **The name on the wire is the name the person's file keeps it under**,
+    /// so a command and a file cannot spell one setting two ways.
+    #[test]
+    fn a_settings_wire_name_is_the_one_its_file_keeps() {
+        for setting in Setting::ALL {
+            assert_eq!(
+                toml::Value::try_from(setting).ok(),
+                Some(toml::Value::String(setting.on_the_wire().to_owned())),
+                "{setting:?}"
+            );
+        }
+    }
 }

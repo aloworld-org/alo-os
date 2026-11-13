@@ -159,3 +159,40 @@ fn a_sheet_renumbered_says_where_the_keyboard_is_again() {
         [AnEvent::TheKeyboardIsHere { .. }]
     ));
 }
+
+/// **The control with the keyboard being set is said**, once, and being unset
+/// again is said too — a switch pressed on Settings, as a reader hears it.
+#[test]
+fn the_keyboards_control_being_set_is_said() {
+    let strings = words();
+    let mut sheet = ThePasswordSheet::none();
+    let _answered = asked(&mut sheet, "c1");
+    let before = tree(&strings, &sheet);
+    let (_, keyboard) = what_happened(None, &before);
+    let at = before.in_front().unwrap().keyboard;
+    let mut set = before.clone();
+    let node = set.node_mut(at).unwrap();
+    node.states = [
+        node.states[0] | (1 << crate::access_roles::CHECKED),
+        node.states[1],
+    ];
+    let path = node.path.clone();
+    let (told, keyboard) = what_happened(keyboard.as_ref(), &set);
+    assert_eq!(
+        told,
+        [AnEvent::NowChecked {
+            path: path.clone(),
+            checked: true,
+        }]
+    );
+    let (again, keyboard) = what_happened(keyboard.as_ref(), &set);
+    assert!(again.is_empty(), "the same state was said twice");
+    let (unset, _) = what_happened(keyboard.as_ref(), &before);
+    assert_eq!(
+        unset,
+        [AnEvent::NowChecked {
+            path,
+            checked: false
+        }]
+    );
+}

@@ -175,11 +175,13 @@ mod the_name_of_a_window_aside;
 pub mod the_window_panels_field;
 pub use a_provider_is_added_in_settings::WhyNotSaved;
 mod a_reader_presses;
+mod a_reader_presses_in_settings;
 pub use a_reader_presses::WhatAReaderPressCameTo;
 mod a_scale_held_to_what_draws;
 /// Typing into a task window's reply box.
 mod a_screen_arrives_or_leaves;
 mod access_action;
+mod access_attributes;
 mod access_bus;
 mod access_contrast;
 mod access_events;
@@ -499,6 +501,7 @@ mod settings_along_a_row;
 mod settings_answering;
 /// Settings as a frame drew it, for the press after the frame.
 mod settings_as_drawn;
+mod settings_as_read;
 mod settings_canvas;
 mod settings_categories;
 mod settings_chord;
@@ -517,6 +520,7 @@ mod settings_keepers;
 mod settings_kept;
 mod settings_keys;
 mod settings_measures;
+mod settings_old_names;
 /// Settings as a window on the canvas: its size, its place and the view going
 /// to it (ADR 0145, stage 3).
 mod settings_on_the_plane;
@@ -933,7 +937,7 @@ pub use window_size::WindowSizeError;
 pub use window_switch::{WindowSwitchDirection, WindowSwitchError};
 
 pub use a_frame_per_display::{DrawnPerDisplay, retire_each_display};
-pub use access_action::{OnTheOpenWithSheet, Pressed};
+pub use access_action::{InSettings, OnTheOpenWithSheet, Pressed};
 pub use access_bus::{NotRead, ReadAloudBus};
 pub use access_contrast::Contrast;
 pub use access_magnifier::{NotMagnified, magnified, magnifying};
