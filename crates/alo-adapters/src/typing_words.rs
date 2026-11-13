@@ -41,11 +41,12 @@ pub const TYPE_THE_TEXT: Word = Word::saying(
 /// What a person approves. The text itself is shown whole beneath it.
 pub const TYPE_SENTENCE: Word = Word::saying(
     "adapters.fallback.type-text.sentence",
-    "type the text below into “{name}” in {application}, and save it",
+    "type {text} into “{name}” in {application}, and save it",
 )
 .noting(
     "The sentence a person approves before anything is typed; the whole text is shown beneath it. \
-     {name} and {application} are not translated.",
+     {text} is already translated and says “the text below”; {name} and {application} are not \
+     translated.",
 );
 
 /// How a person types without the agent.

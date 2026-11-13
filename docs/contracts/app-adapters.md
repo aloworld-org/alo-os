@@ -298,7 +298,7 @@ The fallback gains a third verb, **offered by a turn since 2026-11-13**
 
 | Verb | Effect | Takes | Sentence |
 |---|---|---|---|
-| `accessible.type_text` | change | `application`; `name`, the editable control's name, up to 200 characters; `text`, the text kind | *type the text below into “{name}” in {application}, and save it* |
+| `accessible.type_text` | change | `application`; `name`, the editable control's name, up to 200 characters; `text`, the text kind | *type {text} into “{name}” in {application}, and save it* |
 
 It requires a grant over the application, as the other two do. What anyone
 building on it can rely on:

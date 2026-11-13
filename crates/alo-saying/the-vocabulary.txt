@@ -124,7 +124,7 @@ adapters.fallback.type-text.not-in-front	“{name}” in {application} does not 
 adapters.fallback.type-text.password-field	“{name}” in {application} is a password field, and alo never types into one, so nothing was typed
 adapters.fallback.type-text.purpose	type a text into a field or a document in an application's window, and save it
 adapters.fallback.type-text.read-back-differs	What “{name}” in {application} shows now is not exactly the text you approved, so it was not saved. Look at the window, and undo with Ctrl+Z if you want it gone
-adapters.fallback.type-text.sentence	type the text below into “{name}” in {application}, and save it
+adapters.fallback.type-text.sentence	type {text} into “{name}” in {application}, and save it
 adapters.fallback.type-text.terminal	“{name}” in {application} is a terminal, and typing there runs commands, which alo does only where you have let your agent use a terminal, so nothing was typed
 adapters.fallback.type-text.text	the text to type, shown to you in full before anything is typed
 adapters.not-carried-out.did-not-answer	{application} did not answer in time, so whether it did what was approved is not known
