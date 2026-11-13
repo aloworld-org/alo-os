@@ -67,6 +67,15 @@ fn as_a_client_sees_it(did: &alo_turn::WhatAVerbDid) -> Done {
         alo_turn::WhatAVerbDid::WhatTouchedAFile(found) => {
             Done::of_a_record_read(found, std::time::SystemTime::UNIX_EPOCH)
         }
+        alo_turn::WhatAVerbDid::WhatTheWindowsShowed(read) => {
+            Done::of_a_window_read(read.shown(), read.told())
+        }
+        alo_turn::WhatAVerbDid::AControlWasPressed(pressed) => Done::of_a_press(
+            pressed.application(),
+            pressed.kind(),
+            pressed.name(),
+            pressed.unanswered(),
+        ),
     }
 }
 

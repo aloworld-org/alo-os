@@ -158,7 +158,7 @@ pub use advertised::{Advertised, HostedWorkspace};
 pub use agent::FromAnAgent;
 pub use answered::Answered;
 pub use argument::Argument;
-pub use done::{CanBeInstalled, Done};
+pub use done::{AWindowShowed, CanBeInstalled, Done, OneThingShown};
 pub use frame::{FORMAT, LONGEST, LONGEST_ANSWER};
 pub use pairing::{
     AfterConfirming, AfterNaming, AfterRevoking, Confirmed, Paired, Permitted, SideOf,

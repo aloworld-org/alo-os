@@ -54,7 +54,7 @@ pub(crate) struct Found {
     /// Whether a person could use it now.
     pub(crate) usable: bool,
     /// The name it had before, on alo's own tree, where the shell says it had
-    /// one ([`alo_access::THE_OLD_NAME_ATTRIBUTE`]). Never read from an
+    /// one ([`crate::alos_own_tree::THE_OLD_NAME_ATTRIBUTE`]). Never read from an
     /// application's tree: only alo's own names are promised to keep working.
     pub(crate) formerly: Option<String>,
 }
@@ -211,7 +211,7 @@ impl Walker<'_> {
             Whose::Application(_) => Ok(facts.name == named),
             Whose::AlosOwn { .. } => match self.tree.attributes(window) {
                 Ok(attributes) => Ok(attributes.iter().any(|(key, value)| {
-                    key == alo_access::THE_SURFACE_ATTRIBUTE && value == named
+                    key == crate::alos_own_tree::THE_SURFACE_ATTRIBUTE && value == named
                 })),
                 Err(TreeFault::Vanished) => Ok(false),
                 Err(fault) => Err(NotWalked::Tree(fault)),
@@ -237,7 +237,7 @@ impl Walker<'_> {
         Ok(self
             .alos_own_attributes(window)?
             .into_iter()
-            .filter(|(key, _)| alo_access::not_drawn_yet(key).is_some())
+            .filter(|(key, _)| crate::alos_own_tree::the_setting_not_drawn_yet(key).is_some())
             .map(|(_, name)| name)
             .collect())
     }
@@ -332,7 +332,8 @@ impl Walker<'_> {
                             self.alos_own_attributes(at)?
                                 .into_iter()
                                 .find_map(|(key, value)| {
-                                    (key == alo_access::THE_OLD_NAME_ATTRIBUTE).then_some(value)
+                                    (key == crate::alos_own_tree::THE_OLD_NAME_ATTRIBUTE)
+                                        .then_some(value)
                                 });
                         self.pressable.push(Found {
                             kind,

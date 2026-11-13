@@ -191,7 +191,10 @@ impl Control {
 /// The attribute the shell's published tree carries on each surface's own node,
 /// whose value is [`Surface::on_the_wire`] — how a person's command finds the
 /// surface they named, on the one tree a screen reader reads too.
-pub const THE_SURFACE_ATTRIBUTE: &str = "alo-surface";
+///
+/// Spelt in `alo_adapters::alos_own_tree`, beside the walk that reads it, and
+/// re-exported here unchanged — that file says why.
+pub use alo_adapters::alos_own_tree::THE_SURFACE_ATTRIBUTE;
 
 /// **Every surface this machine draws**, as the shell's own frames name them.
 ///

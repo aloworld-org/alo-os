@@ -158,12 +158,22 @@ mod tests {
             .collect()
     }
 
-    /// Every key is a key, in this crate's area, and names one string.
+    /// The two keys `alo-app` published before the sentences moved here, and
+    /// kept rather than retired (`fallback_words::NOTHING_TO_READ`). Named one
+    /// by one, so a key in another area cannot arrive unnoticed.
+    const KEPT_FROM_ALO_APP: [&str; 2] = ["app.read.none", "app.read.none-until-alo-works-fully"];
+
+    /// Every key is a key, in this crate's area — or one of the two it kept
+    /// from `alo-app` — and names one string.
     #[test]
     fn every_key_is_one_of_this_crates_and_names_one_string() {
         for word in everything() {
             assert_eq!(alo_strings::Key::named(word.named()), Ok(word.key()));
-            assert_eq!(word.key().area(), "adapters", "{}", word.named());
+            if KEPT_FROM_ALO_APP.contains(&word.named()) {
+                assert_eq!(word.key().area(), "app", "{}", word.named());
+            } else {
+                assert_eq!(word.key().area(), "adapters", "{}", word.named());
+            }
         }
         let named: BTreeSet<&str> = everything().iter().map(|word| word.named()).collect();
         assert_eq!(named.len(), everything().len());
