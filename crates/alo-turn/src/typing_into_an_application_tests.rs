@@ -229,6 +229,7 @@ struct Ran {
 fn typing_once(field: TheField, whose: Typed, rewriting: fn(&str) -> String, approve: bool) -> Ran {
     let strings = in_english();
     let tool = NoTool;
+    let publisher = crate::testing::APublisher::that_publishes();
     let asked = Rc::new(RefCell::new(Vec::new()));
     let mut door = ADoor {
         whose,
@@ -251,6 +252,7 @@ fn typing_once(field: TheField, whose: Typed, rewriting: fn(&str) -> String, app
             WhatASoftwareVerbNeeds {
                 tool: &tool,
                 bound: Bound::Nobodys,
+                publishing: crate::testing::publishing_through(&publisher),
             },
             WhatAnApplicationVerbNeeds {
                 installed: Installed::holding([Application::identified(EDITOR).unwrap()]),
