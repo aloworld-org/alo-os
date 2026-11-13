@@ -659,6 +659,19 @@ pub(crate) fn everything_that_can_come_back() -> Vec<NotDone> {
         NotDone::ACommandDidNotStart(alo_capability::ItDidNotStart::because(
             "/bin/sh would not start",
         )),
+        // A publication nobody had signed in for, in `alo-publishing`'s words;
+        // and a rule that says nothing may leave, in `alo-egress`'s. Not
+        // `NotAtThisLevel`: it carries the sentence the daemon wrote.
+        NotDone::CouldNotPublish(alo_publishing::NotPublished::NotSignedIn),
+        NotDone::NotPermittedToLeave(
+            EgressPolicy::NothingLeaves
+                .refusal(&Leaving::because(
+                    &files(),
+                    alo_egress::Why::Sending,
+                    alo_egress::Destination::at("github.com").unwrap(),
+                ))
+                .unwrap(),
+        ),
     ]
 }
 

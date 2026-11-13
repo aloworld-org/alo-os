@@ -209,7 +209,11 @@ mod tests {
     #[test]
     fn a_folder_with_a_line_break_in_its_name_is_refused_before_anything_runs() {
         assert_eq!(
-            the_line(&anna("/home/anna/site\nreboot"), &Through::on_github_com(), "m"),
+            the_line(
+                &anna("/home/anna/site\nreboot"),
+                &Through::on_github_com(),
+                "m"
+            ),
             Err(NotPublished::TheNameCannotBeCarried)
         );
         let long = format!("/home/anna/{}", "a".repeat(5000));

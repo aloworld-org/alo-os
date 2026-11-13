@@ -347,7 +347,11 @@ mod tests {
                 | NotDone::Refused(_)
                 // A place an organisation does not permit is the capability
                 // model saying no, as much as a folder nobody granted is.
-                | NotDone::CouldNotInstall(_) => {
+                | NotDone::CouldNotInstall(_)
+                // So is a rule that says nothing may leave, and a level of
+                // running code that cannot publish.
+                | NotDone::NotPermittedToLeave(_)
+                | NotDone::NotAtThisLevel(_) => {
                     assert!(refused);
                 }
                 NotDone::NotRecorded(_) | NotDone::TurnClosed => assert!(over),
@@ -362,7 +366,10 @@ mod tests {
                 | NotDone::CouldNotLookAtTheCatalogue(_)
                 | NotDone::CouldNotAskTheRecord(_)
                 // A shell that would not start: the machine, not a rule.
-                | NotDone::ACommandDidNotStart(_) => {
+                | NotDone::ACommandDidNotStart(_)
+                // A publication that did not happen: not signed in, GitHub
+                // unreachable, an empty folder — the world, not a rule.
+                | NotDone::CouldNotPublish(_) => {
                     assert!(!refused && !over);
                 }
             }
