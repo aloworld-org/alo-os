@@ -392,8 +392,9 @@ impl<'a> Machine<'a> {
         Some((tool, self.bound.clone(), self.indicator))
     }
 
-    /// Every verb this machine can carry out: the six, the installation, and
-    /// the three application acts that have a road.
+    /// Every verb this machine can carry out: the six, the installation, the
+    /// three application acts that have a road, the record's question, and the
+    /// accessibility fallback's read and press.
     ///
     /// # Three of the four, and the fourth is not offered
     ///

@@ -2,19 +2,20 @@
 //! guarantee as a test, against a tree that counts every time it is opened and
 //! every press it is asked for.
 //!
-//! - with no invocation the tree is never opened, and a turn that asks only
-//!   about files never opens it either;
+//! - with no invocation the tree is never opened;
 //! - a read answers inside the turn, opens the tree once, is written down, and
 //!   never carries a password field's contents;
 //! - a press waits for one approval, and one approval presses once;
 //! - a grant revoked between the approval and the press stops it before any
 //!   tree is opened;
 //! - every read, every press and every refusal leaves exactly one entry;
-//! - nothing is pressed in a terminal, even at full access;
+//! - a terminal the person has not allowed their agent is neither read nor
+//!   pressed, even at full access;
 //! - where a switch the person can turn on would help, the refusal names it.
 
 #![expect(
     clippy::unwrap_used,
+    clippy::expect_used,
     clippy::panic,
     reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
 )]
@@ -45,7 +46,7 @@ use crate::the_windows_on_the_screen::TheWindowsOnTheScreen;
 /// The application every test reads and presses in.
 const MAIL: &str = "org.example.Mail";
 
-/// A terminal, which alo never presses in.
+/// A terminal, which alo reaches only where the person allowed it (ADR 0111).
 const TERMINAL: &str = "app.devsuite.Ptyxis";
 
 /// What is typed into the mail application's password field.

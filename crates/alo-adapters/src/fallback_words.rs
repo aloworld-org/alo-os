@@ -403,7 +403,8 @@ pub const NOTHING_TO_READ_UNTIL_ALO_WORKS_FULLY: Word = Word::saying(
      Accessibility → Applications, then close {application} and open it again.",
 )
 .noting(
-    "Said instead of app.read.none for VSCodium, VS Code and Chromium while that switch is off: \
+    "Said instead of app.read.none for VSCodium, VS Code and the browser built like them while \
+     that switch is off: \
      their document is readable only with it on. {window} is the window's title and {application} \
      the application's name, neither translated. The quoted switch must be the same translation \
      as the switch itself (settings.access.alo-works-fully-inside-apps).",
