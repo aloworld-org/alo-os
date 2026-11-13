@@ -98,6 +98,15 @@ pub(crate) struct NativeLayers<'a> {
     /// desktop's rail and under its badges' corners, which each is clipped
     /// round. Never pressed, and never counted as a window shown.
     pub(crate) miniatures: &'a [crate::a_window_in_miniature::AMiniature],
+    /// **The squares of windows put aside whose miniature the renderer
+    /// refused**, each its application's mark on a blank card
+    /// (`crate::a_picture_the_renderer_refuses`). Over the miniatures' cards.
+    pub(crate) miniatures_by_their_mark: &'a [crate::painted::Inked],
+    /// **Where the painter notes a picture the renderer refused**, so whoever
+    /// drew the frame can act on it after. [`None`] raises each refusal, as
+    /// every refusal was raised before, for a lane with nobody to act on one
+    /// (`crate::a_picture_the_renderer_refuses`).
+    pub(crate) refused: Option<&'a crate::a_picture_the_renderer_refuses::WhatTheRendererRefused>,
     /// **The name of the window put aside under the pointer**, beside its
     /// square (`crate::the_name_of_a_window_aside`). Over the miniatures.
     pub(crate) name_in_the_panel: &'a [crate::painted::Inked],
@@ -146,6 +155,8 @@ impl NativeLayers<'_> {
             capturing: None,
             travelling_aside: &[],
             miniatures: &[],
+            miniatures_by_their_mark: &[],
+            refused: None,
             name_in_the_panel: &[],
             terminal: None,
             pointer_at: crate::display_scale::DisplayScale::ONE,

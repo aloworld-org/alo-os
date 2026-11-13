@@ -537,7 +537,13 @@ impl crate::Server {
     /// - **nothing open** — launch, which needs something that can start an
     ///   application. Nothing in this workspace can.
     ///
-    /// **The canvas does not travel.** `WhatAClickDoes::travels` says when it
+    /// **Since 2026-11-12 the compositor travels instead**: going to the window
+    /// goes through `Server::the_person_goes_to_this_window`, which takes the
+    /// view to it from the compositor's own frames on the plane, Place and all,
+    /// where none of it is in sight. What follows is why the Dock's own answer
+    /// is still not used.
+    ///
+    /// **The Dock's answer does not travel.** `WhatAClickDoes::travels` says when it
     /// should and this ignores it, deliberately: `the_windows_the_dock_sees`
     /// gives every window a one-by-one patch at the origin, and
     /// `what_a_press_on_an_icon_does` hands over a one-by-one view to match, so

@@ -8,6 +8,7 @@
 //! tested, for a day. The work is the same work; only the renderer differs,
 //! so only the renderer is a parameter.
 
+use crate::a_picture_the_renderer_refuses::{WhereItWasGoing, noted};
 use crate::{RenderError, drawing};
 use smithay::{
     backend::allocator::Fourcc,
@@ -119,16 +120,24 @@ where
     // **Which window each run of elements is**, so each window is painted
     // with its own edge: `crate::each_window_with_its_edge`.
     let mut runs = Vec::new();
+    // **A window whose buffer the renderer will not take is that window's
+    // problem**: it is left out and noted, and every other window is drawn
+    // (`crate::a_picture_the_renderer_refuses`). Until 2026-11-12 the `?` here
+    // and on every client draw below ended the display over one window.
     for (surface, location) in crate::scene::trees(roots, popups, camera) {
-        let mut tree = drawing::import_at(
+        match drawing::import_at(
             renderer,
             std::slice::from_ref(&surface),
             damage,
             location.to_physical(1.0),
             zoom,
-        )?;
-        drawing.elements.append(&mut tree.elements);
-        drawing.surfaces.append(&mut tree.surfaces);
+        ) {
+            Ok(mut tree) => {
+                drawing.elements.append(&mut tree.elements);
+                drawing.surfaces.append(&mut tree.surfaces);
+            }
+            Err(why) => noted(native.refused, &surface, WhereItWasGoing::OnTheCanvas, why)?,
+        }
         crate::each_window_with_its_edge::a_surface_was_imported(
             &mut runs,
             roots,
@@ -137,7 +146,7 @@ where
         );
     }
     let cursor_drawing = if let crate::Cursor::Surface { surface, location } = cursor {
-        Some(drawing::import_at(
+        match drawing::import_at(
             renderer,
             std::slice::from_ref(surface),
             damage,
@@ -145,7 +154,13 @@ where
             // The pointer is the person's and not the plane's: it does not grow
             // when they zoom in, any more than their hand does.
             1.0,
-        )?)
+        ) {
+            Ok(imported) => Some((surface, imported)),
+            Err(why) => {
+                noted(native.refused, surface, WhereItWasGoing::AsThePointer, why)?;
+                None
+            }
+        }
     } else {
         None
     };
@@ -353,14 +368,26 @@ where
         else {
             continue;
         };
-        let imported = drawing::import_at(
+        match drawing::import_at(
             renderer,
             std::slice::from_ref(&miniature.surface),
             bounds,
             miniature.origin,
             miniature.scale,
-        )?;
-        miniatures.push((imported.elements, miniature.scale, &miniature.clip));
+        ) {
+            Ok(imported) => miniatures.push((
+                &miniature.surface,
+                imported.elements,
+                miniature.scale,
+                &miniature.clip,
+            )),
+            Err(why) => noted(
+                native.refused,
+                &miniature.surface,
+                WhereItWasGoing::InTheMiniature,
+                why,
+            )?,
+        }
     }
     let mut frame = renderer
         .render(framebuffer, size, transform)
@@ -426,9 +453,16 @@ where
                     for (_, textures) in its {
                         crate::each_window_with_its_edge::wash_all(&mut frame, &textures.behind)?;
                     }
-                    if let Some(elements) = drawing.elements.get(run.elements.clone()) {
-                        draw_render_elements(&mut frame, zoom, elements, &[damage])
-                            .map_err(submission)?;
+                    if let Some(elements) = drawing.elements.get(run.elements.clone())
+                        && let Err(why) =
+                            draw_render_elements(&mut frame, zoom, elements, &[damage])
+                    {
+                        noted(
+                            native.refused,
+                            &run.window,
+                            WhereItWasGoing::OnTheCanvas,
+                            submission(why),
+                        )?;
                     }
                     let its = crate::each_window_with_its_edge::the_edges_of(
                         Some(&run.window),
@@ -443,8 +477,26 @@ where
                 // **Anything imported after the last window**, which the
                 // walk above cannot name: drawn as every element was before.
                 let named = runs.last().map_or(0, |run| run.elements.end);
-                if let Some(rest) = drawing.elements.get(named..) {
-                    draw_render_elements(&mut frame, zoom, rest, &[damage]).map_err(submission)?;
+                // Each surface's elements are beside it in `drawing.surfaces`,
+                // so a refusal here is noted against the first of them.
+                if let Some(rest) = drawing.elements.get(named..)
+                    && let Err(why) = draw_render_elements(&mut frame, zoom, rest, &[damage])
+                {
+                    match drawing.surfaces.get(named) {
+                        Some(surface) => {
+                            noted(
+                                native.refused,
+                                surface,
+                                WhereItWasGoing::OnTheCanvas,
+                                submission(why),
+                            )?;
+                        }
+                        None if native.refused.is_none() => return Err(submission(why)),
+                        None => eprintln!(
+                            "alo-shell: the renderer refused to draw a picture ({why}), and the \
+                             rest of the desktop is drawn"
+                        ),
+                    }
                 }
                 if let Some(controls) = native.scene {
                     controls.paint(&mut frame, scene_washed.as_ref())?;
@@ -560,9 +612,24 @@ where
     // **The windows put aside, small, on their cards in the panel** — over the
     // card the desktop just painted and clipped round its badge, so the badge
     // stays on top (`crate::a_window_in_miniature`).
-    for (elements, scale, clip) in &miniatures {
-        draw_render_elements(&mut frame, *scale, elements, clip).map_err(submission)?;
+    //
+    // **A miniature the renderer refuses is noted, not raised**: the server
+    // shows that window's square by its application's mark from the next
+    // frame on (`crate::a_picture_the_renderer_refuses`). This `?` is what
+    // ended the desktop when Firefox was put aside on 2026-11-12.
+    for (surface, elements, scale, clip) in &miniatures {
+        if let Err(why) = draw_render_elements(&mut frame, *scale, elements, clip) {
+            noted(
+                native.refused,
+                surface,
+                WhereItWasGoing::InTheMiniature,
+                submission(why),
+            )?;
+        }
     }
+    // **And each square whose miniature was refused**, its application's mark
+    // on a blank card, over the card the desktop painted for its picture.
+    crate::painted::paint(&mut frame, &[], native.miniatures_by_their_mark)?;
     // **And the name of the one pointed at**, beside its square, over them.
     crate::painted::paint(&mut frame, &[], native.name_in_the_panel)?;
     // **A window travelling to the put-aside panel**, as an outline above the
@@ -618,9 +685,15 @@ where
     if let Some(capturing) = native.capturing.filter(|tools| !tools.is_empty()) {
         capturing.paint(&mut frame)?;
     }
-    if let Some(cursor_drawing) = &cursor_drawing {
-        draw_render_elements(&mut frame, 1.0, &cursor_drawing.elements, &[damage])
-            .map_err(submission)?;
+    if let Some((surface, cursor_drawing)) = &cursor_drawing
+        && let Err(why) = draw_render_elements(&mut frame, 1.0, &cursor_drawing.elements, &[damage])
+    {
+        noted(
+            native.refused,
+            surface,
+            WhereItWasGoing::AsThePointer,
+            submission(why),
+        )?;
     }
     // Drawn last so alo's pointer stays above every client tree and every layer
     // of the shell's own. It owns no Wayland identity or callbacks.
@@ -628,7 +701,7 @@ where
         crate::painted::wash(&mut frame, texture, *area)?;
     }
     let _sync = frame.finish().map_err(submission)?;
-    if let Some(mut cursor_drawing) = cursor_drawing {
+    if let Some((_, mut cursor_drawing)) = cursor_drawing {
         cursor_drawing.surfaces.append(&mut drawing.surfaces);
         drawing.surfaces = cursor_drawing.surfaces;
     }
