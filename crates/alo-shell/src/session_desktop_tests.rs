@@ -16,12 +16,18 @@ impl TheDesktop for NoDesktop {
     }
 }
 
+/// A login seat that has nothing to lend, handed in so the answer is the
+/// test's and not the runner's (`crate::booting`'s test says what that cost).
+fn no_seat(_display: std::path::PathBuf) -> Result<DirectSession, crate::SessionError> {
+    Err(crate::SessionError::NoSeat)
+}
+
 /// **A session with no display to stand on says so about the display.**
 ///
 /// The socket binds and the keymap builds before the display is asked for, so
-/// what a gate machine reaches is the failure further down the order — which is
-/// the check that the order is what this file claims. It is a refusal rather
-/// than a panic: a desktop that aborted would leave a person's session being
+/// what this reaches is the refusal further down the order — which is the
+/// check that the order is what this file claims. It is a refusal rather than a
+/// panic: a desktop that aborted would leave a person's session being
 /// restarted forever by their own manager.
 #[test]
 fn a_session_with_no_seat_refuses_by_naming_the_seat() {
@@ -31,6 +37,7 @@ fn a_session_with_no_seat_refuses_by_naming_the_seat() {
     let refused = stand_the_desktop_up(
         ADisplayToStandOn {
             display: Path::new("/dev/dri/card0"),
+            seat: no_seat,
             runtime: runtime.path(),
             socket: "a-desktop-with-no-seat",
             layout: "gb",
@@ -59,7 +66,7 @@ fn a_session_with_no_seat_refuses_by_naming_the_seat() {
     .unwrap();
 
     assert!(
-        matches!(refused, WouldNotStand::Seat(_)),
+        matches!(refused, WouldNotStand::Seat(crate::SessionError::NoSeat)),
         "a session with no seat refused for another reason: {refused}"
     );
     assert!(

@@ -30,13 +30,24 @@ fn this_machine_can_say_what_a_refused_password_is() {
     );
 }
 
+/// A login seat that has nothing to lend, which is what this file's test is
+/// about — handed in, so the answer is the test's and not the runner's.
+fn no_seat(_display: std::path::PathBuf) -> Result<DirectSession, crate::SessionError> {
+    Err(crate::SessionError::NoSeat)
+}
+
 /// **A machine with no login seat says so about the seat.**
 ///
 /// The socket binds and the keymap builds before the display is asked for, so
-/// the failure a gate machine gets here is the one further down the order —
-/// which is the check that the order is what this file claims it is. The
-/// refusal names the seat, and it is a refusal rather than a panic: a
-/// compositor that aborted would leave a supervisor restarting it forever.
+/// the refusal this gets is the one further down the order — which is the
+/// check that the order is what this file claims it is. The refusal names the
+/// seat, and it is a refusal rather than a panic: a compositor that aborted
+/// would leave a supervisor restarting it forever.
+///
+/// **The seat is handed in, not asked of the machine.** Until 2026-11-13 this
+/// test asked libseat, and so passed or failed on whichever runner it landed
+/// on: the gates run as root, libseat's embedded seatd lends root a seat, and a
+/// runner with a `/dev/dri/card0` then stood the screen up and returned `Ok`.
 #[test]
 fn a_machine_with_no_seat_refuses_by_naming_the_seat() {
     let runtime = tempfile::tempdir().unwrap();
@@ -47,6 +58,7 @@ fn a_machine_with_no_seat_refuses_by_naming_the_seat() {
     let refused = stand_the_sign_in_screen_up(
         AMachineToStandOn {
             display: Path::new("/dev/dri/card0"),
+            seat: no_seat,
             accounts: &runtime.path().join("accounts"),
             person: 1000,
             door: alo_greeting::TheOpenersDoor::at(&runtime.path().join("sign-in.sock")),
@@ -62,7 +74,7 @@ fn a_machine_with_no_seat_refuses_by_naming_the_seat() {
     .unwrap();
 
     assert!(
-        matches!(refused, WouldNotStand::Seat(_)),
+        matches!(refused, WouldNotStand::Seat(crate::SessionError::NoSeat)),
         "a machine with no seat refused for another reason: {refused}"
     );
     assert!(
