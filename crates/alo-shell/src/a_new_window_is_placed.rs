@@ -120,7 +120,7 @@ use smithay::utils::{Logical, Physical, Point, Rectangle, Size};
 /// Empty rectangles are the caller's to filter, not this function's: an empty
 /// panel column is *covers nothing* rather than a control at a position, and
 /// `crate::canvas_fixed_controls` says so where the field is declared.
-fn onto_the_plane(
+pub(crate) fn onto_the_plane(
     control: Rectangle<i32, Physical>,
     at: alo_canvas::At,
     zoom: f64,
