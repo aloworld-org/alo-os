@@ -13,7 +13,7 @@
 //!
 //! # What a catalogue has to be, and how that differs from the shipped list
 //!
-//! [`Shipped`] holds a **fixed shape**: seven roles, each filled exactly once,
+//! [`Shipped`] holds a **fixed shape**: eight roles, each filled exactly once,
 //! because a machine missing one of them is helpless in a way that can be
 //! named. A catalogue holds a **growing list**: a category may have two
 //! applications in it one day, and adding one is not a change of shape. So this

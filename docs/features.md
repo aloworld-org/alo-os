@@ -1116,6 +1116,11 @@ running code. It is built once `CLAUDE.md` carries those words (ADR 0143).*
   beside the browser and the terminal, not a second text editor. Its package can
   read every file in the person's home and start programs outside its sandbox,
   and the machine says so where a person looks at what is installed.
+  *Built 2026-11-12: the eighth role in `crates/alo-software/shipped.toml`, so the
+  first boot installs it; `alo-app list` and `show` say what any installed
+  application's own package lets it reach, read from the package on the machine,
+  so a sealed one says nothing of the kind. Not yet seen on a booted machine, and
+  no screen lists installed applications with this sentence yet.*
 - ★ **alo can post to a social account in the person's name — only when the person has switched that on.**
   Settings holds the choice, **off until the person turns it on**, and it says
   the risk in plain words before it can be turned on (proposed wording): *alo will be able to

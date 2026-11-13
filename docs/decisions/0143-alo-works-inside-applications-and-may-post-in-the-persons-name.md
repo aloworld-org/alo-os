@@ -102,6 +102,14 @@ the person **in full** in the approval, never handed to an interpreter by
 anything on this machine, and refused if it holds characters a person cannot
 see (the rule the sentence already keeps).
 
+**Decided 2026-11-13, and the proposal above is partly replaced.** The owner:
+*"There should be no input limits"* and *"We should make something
+user-friendly and no limits"*. ADR 0001's amendment of that date carries it:
+text has **no maximum length**, and characters a person cannot see are **marked
+in the approval rather than refused**. *Shown in full* and *never handed to an
+interpreter* stand as proposed. The paragraph above is kept as it was proposed,
+so the change can be read.
+
 ### 2. Nothing can put text into an application, and the fallback refuses typing by design
 
 The fallback has two verbs, read and press. `app-adapters.md` refuses an

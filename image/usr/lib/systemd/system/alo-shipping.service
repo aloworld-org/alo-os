@@ -95,6 +95,11 @@ NoNewPrivileges=yes
 # digits did not; a later attempt landed one of four. The account could not be
 # finished until this unit was done, and nothing on the screen said why.
 #
+# **The eighth, VSCodium, makes it longer** (ADR 0143). Flathub's own answer on
+# 2026-11-12, asked once by hand: 221 MB to download and 637 MB installed for the
+# editor, on `org.freedesktop.Sdk` 26.08, a runtime none of the other seven uses
+# and listed at 1.8 GB installed. Not measured on a machine.
+#
 # This unit set **no priority at all**, so flatpak's downloads and unpacking
 # competed with the compositor on equal terms. These three lines do not change
 # what is installed or how long it takes in total — they change **who waits**.

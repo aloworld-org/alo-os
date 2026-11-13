@@ -61,17 +61,13 @@ pub fn with_what_flatpak_exports(
     data_home: Option<&OsStr>,
     data_dirs: Option<&OsStr>,
 ) -> OsString {
-    let persons_data = match data_home.filter(|set| !set.is_empty()) {
-        Some(set) => Some(PathBuf::from(set)),
-        None => home.map(|home| home.join(".local").join("share")),
-    };
     let given = data_dirs.filter(|set| !set.is_empty()).map_or_else(
         || "/usr/local/share:/usr/share".to_owned(),
         |set| set.to_string_lossy().into_owned(),
     );
     let mut places: Vec<String> = Vec::new();
     let exported = [
-        persons_data.map(|data| data.join("flatpak").join("exports").join("share")),
+        the_persons_installation(home, data_home).map(|it| it.join("exports").join("share")),
         Some(machines.join("exports").join("share")),
     ];
     for place in exported.into_iter().flatten() {
@@ -88,6 +84,18 @@ pub fn with_what_flatpak_exports(
             .map(str::to_owned),
     );
     OsString::from(places.join(":"))
+}
+
+/// Where the person's own flatpak installation is: `flatpak` under
+/// `XDG_DATA_HOME`, or under `~/.local/share` where that is unset or empty.
+/// [`None`] where there is neither a home nor a data home to put it under.
+#[must_use]
+pub fn the_persons_installation(home: Option<&Path>, data_home: Option<&OsStr>) -> Option<PathBuf> {
+    let data = match data_home.filter(|set| !set.is_empty()) {
+        Some(set) => Some(PathBuf::from(set)),
+        None => home.map(|home| home.join(".local").join("share")),
+    };
+    data.map(|data| data.join("flatpak"))
 }
 
 /// Whether two spellings of a directory name the same one, ignoring a

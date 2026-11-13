@@ -68,6 +68,12 @@ pub fn grammar_for(verbs: &Verbs) -> String {
         grammar.push('\n');
     }
     grammar.push_str(VALUES);
+    if verbs
+        .all()
+        .any(|verb| verb.args().iter().any(|arg| *arg.takes() == Takes::Text))
+    {
+        grammar.push_str(TEXT_VALUES);
+    }
     grammar
 }
 
@@ -93,6 +99,7 @@ fn value(takes: &Takes) -> String {
         Takes::Path => "a-path".to_owned(),
         Takes::Application | Takes::Name { .. } => "a-string".to_owned(),
         Takes::Count { .. } => "a-number".to_owned(),
+        Takes::Text => "a-text".to_owned(),
         Takes::Choice(options) => {
             let named: Vec<String> = options
                 .iter()
@@ -113,6 +120,16 @@ const VALUES: &str = "a-string ::= \"\\\"\" char* \"\\\"\"\n\
                       a-path ::= \"\\\"/\" char* \"\\\"\"\n\
                       a-number ::= \"-\"? [0-9]+\n\
                       char ::= [^\"\\\\\\x7F\\x00-\\x1F]\n";
+
+/// What a text argument may be made of: a JSON string with its escapes, so a
+/// newline arrives as `\n` and any character as `\uXXXX` (ADR 0001, amended
+/// 2026-11-13). Written only into a grammar whose verbs take text, so the
+/// grammar — and its digest, which a grade records — is unchanged for every
+/// registry that has none, which today is all of them.
+const TEXT_VALUES: &str = r#"a-text ::= "\"" (char | escape)* "\""
+escape ::= "\\" (["\\/bfnrt] | "u" hex hex hex hex)
+hex ::= [0-9a-fA-F]
+"#;
 
 /// **The SHA-256 of a grammar's text**, in sixty-four lowercase hexadecimal
 /// characters — what a grade earned under it records beside itself, as a grade

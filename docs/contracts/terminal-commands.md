@@ -408,7 +408,13 @@ deprecation period, as `CLAUDE.md`'s *contracts outlive code* requires:
   gives back nothing, because no ability declares `gives` yet;
 - `--json` for `list` is `{"format":1,"applications":[…]}`, each with
   `identifier`, `name`, `typed_as`, `short_name` (`null` where it does not reach
-  it), `terminal` and `abilities`; for `show` it is the same object with
+  it), `terminal`, `abilities` and `reaches` — what its own package lets it
+  reach without asking, `{"home": "none"|"read"|"read-and-change",
+  "starts_programs_outside": true|false}`, read from the package and its
+  overrides on the machine, and `null` where no package was read, which is
+  *not known* and never *sealed* (added 2026-11-12, additively, ADR 0143 fact
+  4; the sentence form says the same in words and says nothing where there is
+  nothing to say); for `show` it is the same object with
   `"format":1` and `roads` — `window`, `tree` (`described`, `not-open` or
   `no-tree`), `declared` (each ability's `ability`, `purpose`, `effect`, `sends`
   and `arguments`), `discovered` (`not-asked`) and `screen` (`not-built`);

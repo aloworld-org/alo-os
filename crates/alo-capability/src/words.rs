@@ -1163,8 +1163,81 @@ pub const A_COMMAND_THAT_IS_NOT_ONE_LINE: Word = Word::saying(
      to the person on one line before it runs, so a second line is refused.",
 );
 
+// ---------------------------------------------------------------------------
+// A text argument, shown whole in the approval — [`crate::TheWholeText`].
+//
+// ADR 0001, amended 2026-11-13. Read by somebody about to approve a page of
+// code or a post, with the whole text in front of them.
+// ---------------------------------------------------------------------------
+
+/// What fills a sentence's gap where a verb delivers text.
+pub const THE_TEXT_BELOW: Word = Word::saying("capability.text.below", "the text below").noting(
+    "Fills a gap in the sentence a person approves, such as \"type {text} into {application}\". \
+     The text itself is shown in full underneath the sentence, so this points down to it.",
+);
+
+/// How long a text is, before the person starts reading it.
+pub const TEXT_HOW_LONG: Word = Word::saying("capability.text.how-long", "{lines}, {characters}")
+    .noting(
+        "Shown above a text the person is asked to approve. {lines} is the number of lines \
+         (\"12 lines\") and {characters} the number of characters (\"418 characters\"), each \
+         already counted in your language. Order and punctuation are yours to choose.",
+    );
+
+/// A control character inside a text.
+pub const TEXT_HOLDS_A_CONTROL: Word = Word::saying(
+    "capability.text.holds-a-control",
+    "control character {code}",
+)
+.noting(
+    "Marks, inside a text, a character that is not shown but changes how text behaves — an \
+         escape, a bell, a carriage return on its own. {code} is its Unicode code point, such as \
+         U+001B, and is never translated.",
+);
+
+/// A character that changes the direction of a text.
+pub const TEXT_HOLDS_A_DIRECTION: Word = Word::saying(
+    "capability.text.holds-a-direction",
+    "character that changes the direction of the text {code}",
+)
+.noting(
+    "Marks, inside a text, an invisible character that makes the text after it appear in a \
+     different order from the one it is in, so what a person reads is not what is delivered. \
+     {code} is its Unicode code point, such as U+202E, and is never translated.",
+);
+
+/// A character that draws nothing.
+pub const TEXT_HOLDS_AN_INVISIBLE: Word = Word::saying(
+    "capability.text.holds-an-invisible",
+    "invisible character {code}",
+)
+.noting(
+    "Marks, inside a text, a character that takes up no space and draws nothing, such as a \
+         zero-width space. {code} is its Unicode code point, such as U+200B, and is never \
+         translated.",
+);
+
+/// A space that is not an ordinary space.
+pub const TEXT_HOLDS_A_SPACE: Word =
+    Word::saying("capability.text.holds-a-space", "unusual space {code}").noting(
+        "Marks, inside a text, a space or line break that looks like an ordinary one and is \
+         not, such as a no-break space. {code} is its Unicode code point, such as U+00A0, and is \
+         never translated.",
+    );
+
+/// A letter from another alphabet in the middle of a word.
+pub const TEXT_HOLDS_ANOTHER_ALPHABET: Word = Word::saying(
+    "capability.text.holds-another-alphabet",
+    "“{letter}” from another alphabet {code}",
+)
+.noting(
+    "Marks, inside a word, a letter from a different alphabet that may look like a letter of \
+     the word's own — a Cyrillic а in a Latin word. {letter} is the letter itself and {code} its \
+     Unicode code point; neither is translated. Use your language's own quotation marks.",
+);
+
 /// Every string this crate can say, in the order a translator meets them.
-pub const EVERY_WORD: [Word; 102] = [
+pub const EVERY_WORD: [Word; 109] = [
     ANONYMOUS,
     NO_APPLICATION_NAMED,
     NOTHING_NAMED,
@@ -1267,7 +1340,48 @@ pub const EVERY_WORD: [Word; 102] = [
     NOTHING_RAN_NOT_AN_ADMINISTRATOR,
     NOTHING_RAN_NO_ANSWER_IN_TIME,
     NOTHING_RAN_AS_ADMINISTRATOR_COULD_NOT_ASK,
+    THE_TEXT_BELOW,
+    TEXT_HOW_LONG,
+    TEXT_HOLDS_A_CONTROL,
+    TEXT_HOLDS_A_DIRECTION,
+    TEXT_HOLDS_AN_INVISIBLE,
+    TEXT_HOLDS_A_SPACE,
+    TEXT_HOLDS_ANOTHER_ALPHABET,
 ];
+
+/// How many lines a text holds.
+pub const TEXT_LINES: Counted = Counted {
+    named: "capability.text.lines",
+    number: "lines",
+    one: "one line",
+    other: "{lines} lines",
+    note: "How many lines a text the person is asked to approve holds. Goes into \
+           capability.text.how-long beside the number of characters.",
+};
+
+/// How many characters a text holds.
+pub const TEXT_CHARACTERS: Counted = Counted {
+    named: "capability.text.characters",
+    number: "characters",
+    one: "one character",
+    other: "{characters} characters",
+    note: "How many characters a text the person is asked to approve holds. Goes into \
+           capability.text.how-long beside the number of lines.",
+};
+
+/// How many characters in a text are marked as easy to miss.
+pub const TEXT_UNSEEN: Counted = Counted {
+    named: "capability.text.unseen",
+    number: "unseen",
+    one: "One character in this text is easy to miss, and it is marked where it is.",
+    other: "{unseen} characters in this text are easy to miss, and each is marked where it is.",
+    note: "Shown above a text the person is asked to approve when it holds characters that are \
+           invisible or look like other characters. Nothing was removed or refused: each such \
+           character is marked inside the text, and this sentence says how many there are.",
+};
+
+/// Every countable string this crate can say, beside [`EVERY_WORD`].
+pub const EVERY_COUNTED: [Counted; 4] = [TOO_LONG, TEXT_LINES, TEXT_CHARACTERS, TEXT_UNSEEN];
 
 /// Why this crate's own list could not be declared.
 ///
@@ -1311,15 +1425,12 @@ pub fn declare_into(vocabulary: &mut Vocabulary) -> Result<(), WordsError> {
     for word in EVERY_WORD {
         vocabulary.says(word.phrase()?)?;
     }
-    vocabulary.counts(
-        Plural::counting(
-            TOO_LONG.key(),
-            TOO_LONG.number,
-            TOO_LONG.one,
-            TOO_LONG.other,
-        )?
-        .noting(TOO_LONG.note)?,
-    )?;
+    for counted in EVERY_COUNTED {
+        vocabulary.counts(
+            Plural::counting(counted.key(), counted.number, counted.one, counted.other)?
+                .noting(counted.note)?,
+        )?;
+    }
     Ok(())
 }
 
@@ -1348,7 +1459,9 @@ mod tests {
                 Key::named(word.named()).unwrap_err()
             );
         }
-        assert_eq!(Key::named(TOO_LONG.named), Ok(TOO_LONG.key()));
+        for counted in EVERY_COUNTED {
+            assert_eq!(Key::named(counted.named), Ok(counted.key()));
+        }
     }
 
     /// A key names one string. Two words sharing one would mean whichever was
@@ -1357,7 +1470,9 @@ mod tests {
     fn no_two_words_are_named_the_same() {
         let named: BTreeSet<&str> = EVERY_WORD.iter().map(|word| word.named()).collect();
         assert_eq!(named.len(), EVERY_WORD.len());
-        assert!(!named.contains(TOO_LONG.named));
+        let counted: BTreeSet<&str> = EVERY_COUNTED.iter().map(|counted| counted.named).collect();
+        assert_eq!(counted.len(), EVERY_COUNTED.len());
+        assert!(named.is_disjoint(&counted));
     }
 
     /// Every one of them is in the area a reader can sort by, which is what
@@ -1367,7 +1482,9 @@ mod tests {
         for word in EVERY_WORD {
             assert_eq!(word.key().area(), "capability", "{}", word.named());
         }
-        assert_eq!(TOO_LONG.key().area(), "capability");
+        for counted in EVERY_COUNTED {
+            assert_eq!(counted.key().area(), "capability", "{}", counted.named);
+        }
     }
 
     /// The list declares, and nothing about it is refused by the crate that
@@ -1375,8 +1492,11 @@ mod tests {
     #[test]
     fn the_whole_list_declares() {
         let vocabulary = capability_words().unwrap();
-        assert_eq!(vocabulary.how_many(), EVERY_WORD.len() + 1);
-        assert_eq!(vocabulary.counted().count(), 1);
+        assert_eq!(
+            vocabulary.how_many(),
+            EVERY_WORD.len() + EVERY_COUNTED.len()
+        );
+        assert_eq!(vocabulary.counted().count(), EVERY_COUNTED.len());
     }
 
     /// A vocabulary that already holds one of these keeps its own, and nothing
@@ -1424,9 +1544,18 @@ mod tests {
             LAPSED,
             HAS_AN_AGENT,
             HAS_NO_AGENT,
+            THE_TEXT_BELOW,
+            TEXT_HOW_LONG,
+            TEXT_HOLDS_A_CONTROL,
+            TEXT_HOLDS_A_DIRECTION,
+            TEXT_HOLDS_AN_INVISIBLE,
+            TEXT_HOLDS_A_SPACE,
+            TEXT_HOLDS_ANOTHER_ALPHABET,
         ] {
             assert!(word.note().is_some(), "{}", word.named());
         }
-        assert!(!TOO_LONG.note.is_empty());
+        for counted in EVERY_COUNTED {
+            assert!(!counted.note.is_empty(), "{}", counted.named);
+        }
     }
 }

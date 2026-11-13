@@ -156,6 +156,14 @@ impl Proposal {
         self.call.sentence(strings)
     }
 
+    /// Every text the person is being asked to approve, whole, beneath the
+    /// sentence — [`Call::texts`]. What they approve is the sentence **and**
+    /// these, because the sentence only points at them.
+    #[must_use]
+    pub fn texts(&self) -> Vec<(&str, crate::TheWholeText)> {
+        self.call.texts()
+    }
+
     /// The verb that would run.
     #[must_use]
     pub fn verb(&self) -> &str {

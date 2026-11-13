@@ -412,6 +412,33 @@ owner rather than given a softer sentence.
 panel rasteriser draws one shadow, the window's, and a second under one card is
 a change to that rasteriser rather than to this card.
 
+### A change that carries text — the design is silent, recorded 2026-11-13
+
+ADR 0001's amendment of 2026-11-13 lets a change carry **text** — a page of
+code, a post — with no maximum length, to be shown **whole** in the approval.
+**No frame in the file draws a card holding a block of text**; `549:193` draws
+a file row, not a page. So nothing below is measured, and nothing of it is
+drawn yet: the model is built (`alo_capability::TheWholeText`, reached through
+`Proposal::texts`), and the card does not draw it, because no verb declares a
+text argument until stage 6 of
+`docs/autonomy/demo-two-alo-inside-applications-plan.md`.
+
+What the model already decides, so the drawing cannot quietly decide otherwise:
+
+- the action stays **one line** and names the text as *the text below*;
+- above the text, **how long it is** — *12 lines, 418 characters* — and, when
+  something in it is easy to miss, one sentence saying how many such characters
+  there are;
+- the text itself, **every line**, in a block the person scrolls through,
+  never cut with an ellipsis and never replaced by a summary — the one place on
+  this card where *cut with an ellipsis* (the file row's rule) does not apply;
+- each character a person could miss drawn as a **visible mark in its place**,
+  saying in words what it is and its code point (*invisible character U+200B*).
+
+What the block looks like — its type style (System/Mono, as the file row's
+path, is the obvious reading), its height before it scrolls, and the mark's
+look — is for the owner or the design file to settle before stage 6 draws it.
+
 ### The action component both popovers and the card are built from
 
 `AskAloAction`, two styles, 48 high, radius `radius/md`, border

@@ -617,7 +617,7 @@ RUN dnf install --assumeyes --setopt=install_weak_deps=False \
 # come from. `alo_software::asked::THE_TOOL` is the absolute path
 # `/usr/bin/flatpak`: without it every install refuses for a missing program
 # rather than for anything true about the machine, and `shipped.toml` names
-# `flathub` as the source of all seven.
+# `flathub` as the source of all eight.
 #
 # `--if-not-exists` so a rebuild is not an error, and the remote is added
 # system-wide because the machine's applications are the machine's rather than
@@ -631,7 +631,7 @@ RUN dnf install --assumeyes --setopt=install_weak_deps=False flatpak \
 # The walker is in libexec with the others and for the same reason: systemd
 # runs it once at first boot and nobody runs it by hand. What it installs is
 # `crates/alo-software/shipped.toml`, compiled into it by `include_str!`, so
-# the recipe names none of the seven and cannot come to disagree with the list.
+# the recipe names none of the eight and cannot come to disagree with the list.
 COPY --from=built /alo-os/target/${THE_TARGET}/release/alo-shipping /usr/libexec/alo-shipping
 
 # The office engine, from the checked packages, installed by the base's own

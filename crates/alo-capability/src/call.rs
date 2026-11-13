@@ -42,6 +42,7 @@ use crate::grants::{GrantId, Grants};
 use crate::persons_own::is_a_persons_own;
 use crate::reach::Ask;
 use crate::refusing::NotGranted;
+use crate::the_whole_text::TheWholeText;
 use crate::verb::{Effect, Requires, Verb};
 use crate::words;
 
@@ -292,14 +293,38 @@ impl Call {
     pub fn filling(&self, strings: &Strings) -> Filling {
         let mut filling = Filling::nothing();
         for (argument, value) in &self.values {
-            filling = match value.words() {
-                Some(words) => {
+            filling = match (value.words(), value) {
+                (Some(words), _) => {
                     filling.and_said(argument.clone(), &strings.say(words, &Filling::nothing()))
                 }
-                None => filling.and(argument.clone(), value.describe()),
+                // A text is never written into the sentence: it is many lines,
+                // and the sentence is one. Its gap says *the text below*, and
+                // the approval shows the whole of it there — [`Call::texts`].
+                (None, Value::Text(_)) => filling.and_said(
+                    argument.clone(),
+                    &strings.say(&words::THE_TEXT_BELOW.key(), &Filling::nothing()),
+                ),
+                (None, _) => filling.and(argument.clone(), value.describe()),
             };
         }
         filling
+    }
+
+    /// **Every text this call delivers, whole**, under the argument that
+    /// carried it — what the approval shows beneath the sentence.
+    ///
+    /// Empty for a call with no text argument, which is every call on this
+    /// machine until a verb declares one. Nothing is cut and nothing is
+    /// summarised: each [`TheWholeText`] holds every line and every character,
+    /// with what a person could miss marked (ADR 0001, amended 2026-11-13).
+    #[must_use]
+    pub fn texts(&self) -> Vec<(&str, TheWholeText)> {
+        self.values
+            .iter()
+            .filter_map(|(argument, value)| {
+                value.the_whole_text().map(|text| (argument.as_str(), text))
+            })
+            .collect()
     }
 
     /// What has to be granted for this call to run.

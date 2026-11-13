@@ -51,6 +51,9 @@ pub const LIST: &str = "list";
 /// The gap holding a sentence said elsewhere.
 pub const SAID: &str = "said";
 
+/// The gap holding a second sentence said elsewhere.
+pub const SAID_TOO: &str = "said_too";
+
 /// The gap holding a word that was typed and not understood.
 pub const TYPED: &str = "typed";
 
@@ -557,6 +560,61 @@ pub const LIST_LINE: Word = Word::saying("app.list.line", "{name} — {said}. {l
      {list} what it offers; both are sentences of their own, already in the person's language.",
 );
 
+/// One application in the list, with what its package lets it reach.
+pub const LIST_LINE_REACHING: Word = Word::saying(
+    "app.list.line-reaching",
+    "{name} — {said}. {list}. {said_too}",
+)
+.noting(
+    "As app.list.line, with {said_too} saying what this application can reach without \
+         asking: a sentence of its own, already in the person's language.",
+);
+
+/// Its package lets it read the whole home.
+pub const REACHES_HOME_READ: Word = Word::saying(
+    "app.reaches.home-read",
+    "It can read every file in your home without asking you",
+)
+.noting(
+    "Said of an installed application whose own package lets it read every file in the \
+     person's home folder, rather than asking for each one. A plain fact the person may want \
+     before they open it, not a warning.",
+);
+
+/// Its package lets it read and change the whole home.
+pub const REACHES_HOME_CHANGE: Word = Word::saying(
+    "app.reaches.home-change",
+    "It can read and change every file in your home without asking you",
+)
+.noting("As app.reaches.home-read, for an application that may also change those files.");
+
+/// Its package lets it start programs that nothing confines.
+pub const REACHES_PROGRAMS: Word = Word::saying(
+    "app.reaches.programs",
+    "It can start other programs that reach everything your account can, without asking you",
+)
+.noting(
+    "Said of an installed application whose own package lets it start programs on this \
+     machine outside the confinement every application is installed in, so those programs can \
+     reach whatever the person's own account can.",
+);
+
+/// Both: the home read, and programs started.
+pub const REACHES_HOME_READ_AND_PROGRAMS: Word = Word::saying(
+    "app.reaches.home-read-and-programs",
+    "It can read every file in your home, and start other programs that reach everything your \
+     account can, without asking you",
+)
+.noting("app.reaches.home-read and app.reaches.programs, said of one application at once.");
+
+/// Both: the home read and changed, and programs started.
+pub const REACHES_HOME_CHANGE_AND_PROGRAMS: Word = Word::saying(
+    "app.reaches.home-change-and-programs",
+    "It can read and change every file in your home, and start other programs that reach \
+     everything your account can, without asking you",
+)
+.noting("app.reaches.home-change and app.reaches.programs, said of one application at once.");
+
 /// How to type an application: its short name.
 pub const TYPE_SHORT: Word = Word::saying("app.reach.short", "type {short}")
     .noting("{short} is the short name, like texteditor, and is not translated.");
@@ -733,7 +791,7 @@ pub const CANNOT_BE_UNDONE_ONCE_SENT: Word = Word::saying(
 .noting("The contract's own words, said beside an ability that sends, or may send, something off the machine.");
 
 /// Every word of this crate's own.
-pub const EVERY_WORD: [Word; 84] = [
+pub const EVERY_WORD: [Word; 90] = [
     NOTHING_ASKED,
     NOTHING_TO_DO,
     LEFT_OVER,
@@ -791,6 +849,12 @@ pub const EVERY_WORD: [Word; 84] = [
     NOT_DESCRIBED,
     ANOTHER_PROGRAMS,
     LIST_LINE,
+    LIST_LINE_REACHING,
+    REACHES_HOME_READ,
+    REACHES_HOME_CHANGE,
+    REACHES_PROGRAMS,
+    REACHES_HOME_READ_AND_PROGRAMS,
+    REACHES_HOME_CHANGE_AND_PROGRAMS,
     TYPE_SHORT,
     TYPE_IDENTIFIER_RESERVED,
     TYPE_IDENTIFIER_SHARED,

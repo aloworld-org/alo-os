@@ -26,6 +26,22 @@
 //! from these values, and a value carrying a newline or an escape code can make
 //! that sentence say something other than what will happen. A path a person
 //! cannot read in one line is not a path they can approve.
+//!
+//! # Text, since 2026-11-13
+//!
+//! **One kind is the exception to both paragraphs above, by the owner's
+//! decision** (ADR 0001, amended 2026-11-13: *"There should be no input
+//! limits"*). [`Takes::Text`] carries text a verb delivers — a page of code, a
+//! post — of any length and any number of lines, kept exactly as it arrived.
+//! It is the one shape a composition can arrive in, so what keeps law 2 true
+//! for it is the rule above: a verb never passes an argument to an interpreter,
+//! and `tests/text_never_reaches_a_process.rs` is the tripwire for it.
+//!
+//! It is not held to the one-line rule because it never goes into the
+//! sentence: the sentence names it as *the text below*, and the approval shows
+//! it whole beneath, with every character a person could miss marked where it
+//! is ([`crate::the_whole_text`]). Nothing in it is refused for being hard to
+//! see; marking it restricts nothing, and refusing it would be a wall.
 
 use std::path::PathBuf;
 
@@ -35,6 +51,7 @@ use serde::{Deserialize, Serialize};
 use crate::offered::Offered;
 use crate::path::steps_upwards;
 use crate::reach::Ask;
+use crate::the_whole_text::TheWholeText;
 use crate::words;
 
 /// What one argument takes.
@@ -70,6 +87,13 @@ pub enum Takes {
     /// reads — and never a bare string. See [`crate::offered`] for why those
     /// cannot be one thing.
     Choice(Vec<Offered>),
+    /// Text a verb delivers: many lines, **no maximum length**, kept exactly
+    /// as it arrived (ADR 0001, amended 2026-11-13).
+    ///
+    /// Never put into the sentence and never handed to an interpreter. The
+    /// sentence names it as *the text below*; the approval shows the whole of
+    /// it through [`crate::TheWholeText`].
+    Text,
 }
 
 impl Takes {
@@ -158,6 +182,9 @@ pub enum Value {
         /// up wherever somebody reads it (item 9g).
         words: Key,
     },
+    /// Text a verb delivers, exactly as it arrived — every line, every
+    /// character, nothing trimmed. The record keeps it whole.
+    Text(String),
 }
 
 impl Value {
@@ -178,12 +205,33 @@ impl Value {
     /// first and looks a chosen option up — because an option is the one kind
     /// of argument that is a string somebody translates rather than something
     /// off this machine.
+    ///
+    /// For text this is the whole text, many lines and all — which is why
+    /// [`Call::filling`](crate::Call::filling) never puts a text into a
+    /// sentence's gap, and the approval shows it through
+    /// [`Value::the_whole_text`] instead.
     #[must_use]
     pub fn describe(&self) -> String {
         match self {
             Self::Path(path) => path.display().to_string(),
-            Self::Application(id) | Self::Name(id) | Self::Choice { chosen: id, .. } => id.clone(),
+            Self::Application(id)
+            | Self::Name(id)
+            | Self::Choice { chosen: id, .. }
+            | Self::Text(id) => id.clone(),
             Self::Count(number) => number.to_string(),
+        }
+    }
+
+    /// The whole text, as the approval shows it, when this value is text.
+    #[must_use]
+    pub fn the_whole_text(&self) -> Option<TheWholeText> {
+        match self {
+            Self::Text(text) => Some(TheWholeText::of(text)),
+            Self::Path(_)
+            | Self::Application(_)
+            | Self::Name(_)
+            | Self::Count(_)
+            | Self::Choice { .. } => None,
         }
     }
 
@@ -198,7 +246,11 @@ impl Value {
     pub fn words(&self) -> Option<&Key> {
         match self {
             Self::Choice { words, .. } => Some(words),
-            Self::Path(_) | Self::Application(_) | Self::Name(_) | Self::Count(_) => None,
+            Self::Path(_)
+            | Self::Application(_)
+            | Self::Name(_)
+            | Self::Count(_)
+            | Self::Text(_) => None,
         }
     }
 
@@ -214,7 +266,7 @@ impl Value {
         match self {
             Self::Path(path) => Some(Ask::Path(path.clone())),
             Self::Application(id) => Some(Ask::Application(id.clone())),
-            Self::Name(_) | Self::Count(_) | Self::Choice { .. } => None,
+            Self::Name(_) | Self::Count(_) | Self::Choice { .. } | Self::Text(_) => None,
         }
     }
 }
@@ -450,6 +502,7 @@ impl Arg {
             (Takes::Application, Given::Text(text)) => self.as_application(text),
             (Takes::Name { longest }, Given::Text(text)) => self.as_name(text, *longest),
             (Takes::Choice(options), Given::Text(text)) => self.as_choice(text, options),
+            (Takes::Text, Given::Text(text)) => self.as_text(text),
             (Takes::Count { least, most }, Given::Number(number)) => {
                 self.as_count(*number, *least, *most)
             }
@@ -457,7 +510,11 @@ impl Arg {
                 argument: self.name.clone(),
             }),
             (
-                Takes::Path | Takes::Application | Takes::Name { .. } | Takes::Choice(_),
+                Takes::Path
+                | Takes::Application
+                | Takes::Name { .. }
+                | Takes::Choice(_)
+                | Takes::Text,
                 Given::Number(_),
             ) => Err(ArgError::WantedText {
                 argument: self.name.clone(),
@@ -529,6 +586,24 @@ impl Arg {
                 .collect::<Vec<_>>()
                 .join(", "),
         })
+    }
+
+    /// Text a verb delivers, which has to be something.
+    ///
+    /// **Not trimmed and not checked for what it holds.** Indentation is part
+    /// of a page of code and a trailing newline is part of a file, so the text
+    /// is kept exactly; and a character a person could miss is marked in the
+    /// approval rather than refused here (ADR 0001, amended 2026-11-13). The
+    /// one refusal is a text with nothing in it at all, which delivers
+    /// nothing. Whitespace alone is something — it is what a person would see
+    /// typed.
+    fn as_text(&self, text: &str) -> Result<Value, ArgError> {
+        if text.is_empty() {
+            return Err(ArgError::Empty {
+                argument: self.name.clone(),
+            });
+        }
+        Ok(Value::Text(text.to_owned()))
     }
 
     /// A number that has to be inside its range.
@@ -813,6 +888,13 @@ mod tests {
     ///
     /// The match is exhaustive on purpose: a new kind will not compile until
     /// somebody has read this.
+    ///
+    /// **Text is the one kind that takes it, and takes it as data.** Since the
+    /// owner's decision of 2026-11-13 a page of code is something an agent can
+    /// send, and a page of code can say `rm -rf`. What it comes out as is a
+    /// [`Value::Text`] — words a verb delivers — and never anything that runs;
+    /// that nothing hands one to a process is the workspace test
+    /// `tests/text_never_reaches_a_process.rs`.
     #[test]
     fn a_command_is_refused_by_every_kind_of_argument_there_is() {
         for takes in [
@@ -821,6 +903,7 @@ mod tests {
             Takes::name(255),
             Takes::count(1, 10),
             Takes::choice(into_two()),
+            Takes::Text,
         ] {
             let named = match &takes {
                 Takes::Path => "folder",
@@ -828,17 +911,22 @@ mod tests {
                 Takes::Name { .. } => "name",
                 Takes::Count { .. } => "most",
                 Takes::Choice(_) => "into",
+                Takes::Text => "text",
             };
+            let is_text = takes == Takes::Text;
             let arg = Arg::taking(named, WHATEVER, takes);
             for attempt in [
                 "rm -rf /home/anna",
                 "$(cat /etc/shadow)",
                 "python3 /tmp/x.py; reboot",
             ] {
-                assert!(
-                    arg.validate(&Given::text(attempt)).is_err(),
-                    "{named} accepted {attempt:?}"
-                );
+                let validated = arg.validate(&Given::text(attempt));
+                if is_text {
+                    assert_eq!(validated, Ok(Value::Text(attempt.to_owned())));
+                    assert!(validated.unwrap().as_ask().is_none());
+                } else {
+                    assert!(validated.is_err(), "{named} accepted {attempt:?}");
+                }
             }
         }
     }

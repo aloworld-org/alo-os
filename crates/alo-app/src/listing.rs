@@ -8,8 +8,19 @@
 //! ```json
 //! {"format":1,"applications":[{"identifier":"org.gnome.TextEditor",
 //!   "name":"Text Editor","typed_as":"texteditor","short_name":"texteditor",
-//!   "terminal":false,"abilities":["open_document","new_window"]}]}
+//!   "terminal":false,"abilities":["open_document","new_window"],
+//!   "reaches":{"home":"read-and-change","starts_programs_outside":false}}]}
 //! ```
+//!
+//! # What its package lets it reach
+//!
+//! Where an application's own package lets it reach every file in the home, or
+//! start programs outside its sandbox, its sentence says so (ADR 0143, fact 4)
+//! — read from the package on this machine by
+//! [`alo_installed::what_they_may_reach`], so a sealed package is never said
+//! to be open and an application nobody here wrote down is said the same way.
+//! `reaches` is `null` where no package was read, which is not *sealed*: an
+//! application the image carries outside any sandbox has no package to read.
 //!
 //! `typed_as` is what reaches it — its short name, or its identifier where the
 //! short name is reserved or shared.
@@ -17,6 +28,7 @@
 use alo_adapters::Adapters;
 use alo_applications::{Application, Installed};
 use alo_capability::is_a_persons_own;
+use alo_installed::{TheirHome, WhatItMayReach, WhatTheyMayReach};
 use alo_strings::{Filling, Said, Strings};
 use serde_json::json;
 
@@ -60,6 +72,22 @@ pub fn what_it_offers(application: &Application, adapters: &Adapters, strings: &
     }
 }
 
+/// What its package lets it reach without asking, in one sentence — [`None`]
+/// where there is nothing to say, which is also what an application with no
+/// package read is given.
+#[must_use]
+pub fn what_it_may_reach(it: Option<WhatItMayReach>, strings: &Strings) -> Option<Said> {
+    let it = it.filter(|it| it.is_worth_saying())?;
+    let word = match (it.home(), it.starts_programs_outside()) {
+        (TheirHome::NotAsAWhole, _) => &words::REACHES_PROGRAMS,
+        (TheirHome::Read, false) => &words::REACHES_HOME_READ,
+        (TheirHome::ReadAndChanged, false) => &words::REACHES_HOME_CHANGE,
+        (TheirHome::Read, true) => &words::REACHES_HOME_READ_AND_PROGRAMS,
+        (TheirHome::ReadAndChanged, true) => &words::REACHES_HOME_CHANGE_AND_PROGRAMS,
+    };
+    Some(strings.say(&word.key(), &Filling::nothing()))
+}
+
 /// Every installed application, sorted by identifier.
 fn sorted(installed: &Installed) -> Vec<&Application> {
     let mut all: Vec<&Application> = installed.all().collect();
@@ -72,6 +100,7 @@ fn sorted(installed: &Installed) -> Vec<&Application> {
 pub fn listed(
     installed: &Installed,
     adapters: &Adapters,
+    reaching: &WhatTheyMayReach,
     giving: Giving,
     strings: &Strings,
 ) -> Vec<String> {
@@ -85,23 +114,26 @@ pub fn listed(
             .iter()
             .map(|application| {
                 let reached = how_it_is_reached(application, installed);
-                strings
-                    .say(
-                        &words::LIST_LINE.key(),
-                        &Filling::of(words::NAME, application.shown(strings))
-                            .and_said(
-                                words::SAID,
-                                &reached.said(application.identifier(), strings),
-                            )
-                            .and_said(words::LIST, &what_it_offers(application, adapters, strings)),
+                let line = Filling::of(words::NAME, application.shown(strings))
+                    .and_said(
+                        words::SAID,
+                        &reached.said(application.identifier(), strings),
                     )
-                    .into_text()
+                    .and_said(words::LIST, &what_it_offers(application, adapters, strings));
+                match what_it_may_reach(reaching.of(application.identifier()), strings) {
+                    Some(reaches) => strings.say(
+                        &words::LIST_LINE_REACHING.key(),
+                        &line.and_said(words::SAID_TOO, &reaches),
+                    ),
+                    None => strings.say(&words::LIST_LINE.key(), &line),
+                }
+                .into_text()
             })
             .collect(),
         Giving::Json => {
             let applications: Vec<serde_json::Value> = all
                 .iter()
-                .map(|application| one_as_json(application, installed, adapters, strings))
+                .map(|application| one_as_json(application, installed, adapters, reaching, strings))
                 .collect();
             vec![json!({ "format": 1, "applications": applications }).to_string()]
         }
@@ -114,6 +146,7 @@ pub fn one_as_json(
     application: &Application,
     installed: &Installed,
     adapters: &Adapters,
+    reaching: &WhatTheyMayReach,
     strings: &Strings,
 ) -> serde_json::Value {
     let identifier = application.identifier();
@@ -129,6 +162,14 @@ pub fn one_as_json(
         },
         "terminal": is_a_persons_own(identifier),
         "abilities": its_abilities(application, adapters),
+        "reaches": reaching.of(identifier).map(|it| json!({
+            "home": match it.home() {
+                TheirHome::NotAsAWhole => "none",
+                TheirHome::Read => "read",
+                TheirHome::ReadAndChanged => "read-and-change",
+            },
+            "starts_programs_outside": it.starts_programs_outside(),
+        })),
     })
 }
 
@@ -165,7 +206,13 @@ mod tests {
     fn a_pipe_is_given_one_identifier_per_line() {
         let adapters = alo_adapters::shipped_adapters().unwrap();
         assert_eq!(
-            listed(&installed(), &adapters, Giving::Values, &strings()),
+            listed(
+                &installed(),
+                &adapters,
+                &WhatTheyMayReach::nothing(),
+                Giving::Values,
+                &strings()
+            ),
             [
                 "app.devsuite.Ptyxis",
                 "com.example.Front",
@@ -180,7 +227,13 @@ mod tests {
     #[test]
     fn each_sentence_says_how_to_reach_it_and_what_it_offers() {
         let adapters = alo_adapters::shipped_adapters().unwrap();
-        let lines = listed(&installed(), &adapters, Giving::Sentences, &strings());
+        let lines = listed(
+            &installed(),
+            &adapters,
+            &WhatTheyMayReach::nothing(),
+            Giving::Sentences,
+            &strings(),
+        );
         assert_eq!(lines.len(), 3);
         let front = lines
             .iter()
@@ -204,7 +257,13 @@ mod tests {
     #[test]
     fn json_carries_its_format() {
         let adapters = alo_adapters::shipped_adapters().unwrap();
-        let lines = listed(&installed(), &adapters, Giving::Json, &strings());
+        let lines = listed(
+            &installed(),
+            &adapters,
+            &WhatTheyMayReach::nothing(),
+            Giving::Json,
+            &strings(),
+        );
         let [line] = lines.as_slice() else {
             unreachable!("one line of JSON")
         };
@@ -223,5 +282,104 @@ mod tests {
             .unwrap();
         assert_eq!(front.get("short_name"), Some(&serde_json::Value::Null));
         assert_eq!(front.get("typed_as").unwrap(), "com.example.Front");
+    }
+
+    /// A flatpak installation of the test's own, holding these packages.
+    fn an_installation(named: &str, packages: &[(&str, &str)]) -> std::path::PathBuf {
+        let at =
+            std::env::temp_dir().join(format!("alo-app-listing-{}-{named}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&at);
+        for (identifier, metadata) in packages {
+            let active = at
+                .join("app")
+                .join(identifier)
+                .join("current")
+                .join("active");
+            std::fs::create_dir_all(&active).unwrap();
+            std::fs::write(active.join("metadata"), metadata).unwrap();
+        }
+        at
+    }
+
+    /// **Where a person looks at what is installed, VSCodium says what its
+    /// package reaches** (ADR 0143, fact 4) — read off the package, so the
+    /// sealed Firefox beside it says nothing of the kind, and an application
+    /// with no package read is `null` rather than sealed.
+    #[test]
+    fn an_application_reaching_the_whole_home_is_said_so_and_a_sealed_one_is_not() {
+        let installation = an_installation(
+            "reaching",
+            &[
+                (
+                    "com.vscodium.codium",
+                    "[Context]\nfilesystems=xdg-run/gnupg:ro;host;\n\n\
+                     [Session Bus Policy]\norg.freedesktop.Flatpak=talk\n",
+                ),
+                (
+                    "org.mozilla.firefox",
+                    "[Context]\nfilesystems=xdg-download;/run/udev:ro;\n",
+                ),
+            ],
+        );
+        let installed = Installed::holding(
+            [
+                "com.vscodium.codium",
+                "org.mozilla.firefox",
+                "org.libreoffice.LibreOffice",
+            ]
+            .map(|identifier| Application::identified(identifier).unwrap()),
+        );
+        let reaching = alo_installed::what_they_may_reach(
+            &installation,
+            None,
+            installed.all().map(Application::identifier),
+        );
+        let adapters = alo_adapters::shipped_adapters().unwrap();
+        let lines = listed(
+            &installed,
+            &adapters,
+            &reaching,
+            Giving::Sentences,
+            &strings(),
+        );
+        let line = |of: &str| lines.iter().find(|line| line.contains(of)).unwrap().clone();
+        assert!(
+            line("vscodium").contains(
+                "It can read and change every file in your home, and start other programs that \
+                 reach everything your account can, without asking you"
+            ),
+            "{lines:?}"
+        );
+        for quiet in ["firefox", "libreoffice"] {
+            assert!(!line(quiet).contains("without asking you"), "{lines:?}");
+        }
+
+        let json = listed(&installed, &adapters, &reaching, Giving::Json, &strings());
+        let read: serde_json::Value = serde_json::from_str(&json.concat()).unwrap();
+        let reaches = |of: &str| {
+            read.get("applications")
+                .unwrap()
+                .as_array()
+                .unwrap()
+                .iter()
+                .find(|one| one.get("identifier").is_some_and(|it| it == of))
+                .unwrap()
+                .get("reaches")
+                .unwrap()
+                .clone()
+        };
+        assert_eq!(
+            reaches("com.vscodium.codium"),
+            serde_json::json!({"home": "read-and-change", "starts_programs_outside": true})
+        );
+        assert_eq!(
+            reaches("org.mozilla.firefox"),
+            serde_json::json!({"home": "none", "starts_programs_outside": false})
+        );
+        assert_eq!(
+            reaches("org.libreoffice.LibreOffice"),
+            serde_json::Value::Null
+        );
+        let _ = std::fs::remove_dir_all(&installation);
     }
 }

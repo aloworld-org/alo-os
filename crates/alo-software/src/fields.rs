@@ -53,7 +53,7 @@ mod tests {
         }
         // A loop that found nothing passes every assertion inside it, so the
         // count is the measurement and the assertions are the check.
-        assert_eq!(seen, 15, "7 shipped and 8 catalogued");
+        assert_eq!(seen, 16, "8 shipped and 8 catalogued");
     }
 
     #[test]
@@ -68,7 +68,7 @@ mod tests {
                 }
             }
         }
-        assert_eq!(seen, 15, "7 shipped and 8 catalogued");
+        assert_eq!(seen, 16, "8 shipped and 8 catalogued");
     }
 
     /// **The refusals, which are what these are for.** A version with a letter

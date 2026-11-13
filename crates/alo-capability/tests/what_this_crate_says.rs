@@ -164,7 +164,10 @@ fn everything_this_crate_says_declares_beside_everybody_elses() {
         .unwrap();
     declare_into(&mut vocabulary).unwrap();
 
-    assert_eq!(vocabulary.how_many(), words::EVERY_WORD.len() + 2);
+    assert_eq!(
+        vocabulary.how_many(),
+        words::EVERY_WORD.len() + 1 + words::EVERY_COUNTED.len()
+    );
     for word in words::EVERY_WORD {
         assert!(vocabulary.phrase(&word.key()).is_some(), "{}", word.named());
     }
@@ -280,9 +283,13 @@ fn what_nobody_translated_is_english_and_says_so() {
     // And what is left to do is countable, which is what a release note needs.
     // The countable string counts as the forms *German* needs — two of them —
     // rather than as one row, because a language with three would not be two
-    // thirds done and the number a translator is given has to say so.
+    // thirds done and the number a translator is given has to say so. Each
+    // countable string this crate declares counts twice for that reason.
     let left = strings.missing_from(&german());
-    assert_eq!(left.len(), words::EVERY_WORD.len() - 1 + 2);
+    assert_eq!(
+        left.len(),
+        words::EVERY_WORD.len() - 1 + 2 * words::EVERY_COUNTED.len()
+    );
     assert!(left.contains(&words::GRANT_NO_TIME.key()));
     assert!(!left.contains(&words::THE_WHOLE_MACHINE.key()));
     assert!(left.contains(&words::TOO_LONG.key().for_form(alo_strings::Form::One)));

@@ -43,7 +43,13 @@ pub fn run(
     };
     match asked {
         Asked::List => {
-            for line in listed(knowing.installed, knowing.adapters, giving, strings) {
+            for line in listed(
+                knowing.installed,
+                knowing.adapters,
+                knowing.reaching,
+                giving,
+                strings,
+            ) {
                 machine.told(&line);
             }
             Ended::Done

@@ -87,7 +87,7 @@ fn an_application_the_machine_already_ships_is_refused() {
             identifier: "org.mozilla.firefox".to_owned()
         }
     );
-    // And every one of the seven, not just the one that was easy to reach.
+    // And every one of the eight, not just the one that was easy to reach.
     for role in Role::EVERY {
         let identifier = shipped.the(role).application().identifier();
         // The terminal is refused for being a person's own first, which is a
