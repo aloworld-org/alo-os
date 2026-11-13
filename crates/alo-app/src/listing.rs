@@ -206,7 +206,13 @@ mod tests {
     fn a_pipe_is_given_one_identifier_per_line() {
         let adapters = alo_adapters::shipped_adapters().unwrap();
         assert_eq!(
-            listed(&installed(), &adapters, &WhatTheyMayReach::nothing(), Giving::Values, &strings()),
+            listed(
+                &installed(),
+                &adapters,
+                &WhatTheyMayReach::nothing(),
+                Giving::Values,
+                &strings()
+            ),
             [
                 "app.devsuite.Ptyxis",
                 "com.example.Front",
@@ -221,7 +227,13 @@ mod tests {
     #[test]
     fn each_sentence_says_how_to_reach_it_and_what_it_offers() {
         let adapters = alo_adapters::shipped_adapters().unwrap();
-        let lines = listed(&installed(), &adapters, &WhatTheyMayReach::nothing(), Giving::Sentences, &strings());
+        let lines = listed(
+            &installed(),
+            &adapters,
+            &WhatTheyMayReach::nothing(),
+            Giving::Sentences,
+            &strings(),
+        );
         assert_eq!(lines.len(), 3);
         let front = lines
             .iter()
@@ -245,7 +257,13 @@ mod tests {
     #[test]
     fn json_carries_its_format() {
         let adapters = alo_adapters::shipped_adapters().unwrap();
-        let lines = listed(&installed(), &adapters, &WhatTheyMayReach::nothing(), Giving::Json, &strings());
+        let lines = listed(
+            &installed(),
+            &adapters,
+            &WhatTheyMayReach::nothing(),
+            Giving::Json,
+            &strings(),
+        );
         let [line] = lines.as_slice() else {
             unreachable!("one line of JSON")
         };
@@ -268,10 +286,8 @@ mod tests {
 
     /// A flatpak installation of the test's own, holding these packages.
     fn an_installation(named: &str, packages: &[(&str, &str)]) -> std::path::PathBuf {
-        let at = std::env::temp_dir().join(format!(
-            "alo-app-listing-{}-{named}",
-            std::process::id()
-        ));
+        let at =
+            std::env::temp_dir().join(format!("alo-app-listing-{}-{named}", std::process::id()));
         let _ = std::fs::remove_dir_all(&at);
         for (identifier, metadata) in packages {
             let active = at

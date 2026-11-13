@@ -184,7 +184,9 @@ fn what_they_may_reach(
     alo_installed::what_they_may_reach(
         Path::new(alo_installed::THE_MACHINES_INSTALLATION),
         persons.as_deref(),
-        installed.all().map(alo_applications::Application::identifier),
+        installed
+            .all()
+            .map(alo_applications::Application::identifier),
     )
 }
 

@@ -583,11 +583,14 @@ pub const LIST_LINE: Word = Word::saying("app.list.line", "{name} — {said}. {l
 );
 
 /// One application in the list, with what its package lets it reach.
-pub const LIST_LINE_REACHING: Word =
-    Word::saying("app.list.line-reaching", "{name} — {said}. {list}. {said_too}").noting(
-        "As app.list.line, with {said_too} saying what this application can reach without \
+pub const LIST_LINE_REACHING: Word = Word::saying(
+    "app.list.line-reaching",
+    "{name} — {said}. {list}. {said_too}",
+)
+.noting(
+    "As app.list.line, with {said_too} saying what this application can reach without \
          asking: a sentence of its own, already in the person's language.",
-    );
+);
 
 /// Its package lets it read the whole home.
 pub const REACHES_HOME_READ: Word = Word::saying(

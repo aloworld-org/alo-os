@@ -106,7 +106,11 @@ fn nothing_is_said_where_no_package_was_read() {
     let read = what_they_may_reach(
         &machines,
         None,
-        ["org.libreoffice.LibreOffice", "../app/com.vscodium.codium", ".."],
+        [
+            "org.libreoffice.LibreOffice",
+            "../app/com.vscodium.codium",
+            "..",
+        ],
     );
     assert_eq!(read, WhatTheyMayReach::nothing());
 }

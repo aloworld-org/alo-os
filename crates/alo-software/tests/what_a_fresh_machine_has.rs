@@ -207,7 +207,11 @@ fn the_decided_list_names_each_role_as_a_pinned_upstream_application() {
             "MIT",
         ),
     ];
-    assert_eq!(decided.len(), Role::EVERY.len(), "a role the list names no application for");
+    assert_eq!(
+        decided.len(),
+        Role::EVERY.len(),
+        "a role the list names no application for"
+    );
     assert_eq!(shipped.every().len(), decided.len());
     for (role, identifier, version, licence) in decided {
         let pinned = shipped.the(role);
