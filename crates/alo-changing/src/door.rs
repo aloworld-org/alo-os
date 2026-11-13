@@ -118,7 +118,10 @@ impl TheDaemonsDoor {
     }
 
     /// One line out and one line back.
-    fn asked(&self, request: &FromAPerson) -> Result<ToAPerson, Unheard> {
+    ///
+    /// Crate-wide so that a conversation in a file of its own —
+    /// `crate::keeping_github_sign_ins` — is the same shortest conversation.
+    pub(crate) fn asked(&self, request: &FromAPerson) -> Result<ToAPerson, Unheard> {
         let stream = UnixStream::connect(&self.socket).map_err(|_| Unheard::NobodyThere)?;
         stream
             .set_write_timeout(Some(PATIENCE))
@@ -169,7 +172,8 @@ impl TheDaemonsDoor {
             | ToAPerson::WorkspaceOpened(_)
             | ToAPerson::Advertised(_)
             | ToAPerson::Answered { .. }
-            | ToAPerson::Leaving { .. } => None,
+            | ToAPerson::Leaving { .. }
+            | ToAPerson::GitHubSignInKept => None,
         }
     }
 }
@@ -177,7 +181,7 @@ impl TheDaemonsDoor {
 /// The two ways a conversation fails to be one, told apart because for a
 /// pairing they mean different things: nobody there means nothing was asked;
 /// a door that was reached and never answered means nobody knows.
-enum Unheard {
+pub(crate) enum Unheard {
     /// The socket would not connect.
     NobodyThere,
     /// Connected, and no readable answer came back within the patience.

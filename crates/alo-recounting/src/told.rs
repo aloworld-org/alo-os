@@ -45,7 +45,7 @@
 use std::time::SystemTime;
 
 use alo_egress::Destination;
-use alo_record::{Entry, Happened, Line, Stopped, WhyLetGo};
+use alo_record::{AtGitHub, Entry, Happened, Line, Stopped, WhyLetGo, WhyNotSignedIn};
 use alo_strings::{Filling, Said, Strings};
 
 use crate::approved::Approved;
@@ -170,6 +170,21 @@ pub enum Outcome {
     /// acts on: the machine tidying up is something they are informed of, and
     /// this is the answer to something they asked for.
     LetGoThePersonAskedToForget,
+    /// The person signed in to GitHub from their desktop.
+    SignedInToGitHub,
+    /// The person signed out of GitHub from their desktop.
+    SignedOutOfGitHub,
+    /// A sign-in to GitHub did not finish, because `gh` is not on this
+    /// computer.
+    GitHubSignInWithoutGh,
+    /// A sign-in to GitHub did not finish, because `gh` ended with an error.
+    GitHubSignInFailed,
+    /// A sign-in to GitHub did not finish, because no one-time code arrived.
+    GitHubSignInWithoutACode,
+    /// The person cancelled a sign-in to GitHub.
+    GitHubSignInCancelled,
+    /// The person asked to sign out of GitHub, and it did not work.
+    GitHubSignOutFailed,
 }
 
 impl Outcome {
@@ -242,6 +257,17 @@ impl Outcome {
                 why: WhyLetGo::ThePersonAskedToForget,
                 ..
             } => Self::LetGoThePersonAskedToForget,
+            Happened::AtGitHub { what } => match what {
+                AtGitHub::SignedIn { .. } => Self::SignedInToGitHub,
+                AtGitHub::SignedOut { .. } => Self::SignedOutOfGitHub,
+                AtGitHub::DidNotSignIn { why } => match why {
+                    WhyNotSignedIn::GhIsNotHere => Self::GitHubSignInWithoutGh,
+                    WhyNotSignedIn::GhFailed { .. } => Self::GitHubSignInFailed,
+                    WhyNotSignedIn::NoCodeArrived => Self::GitHubSignInWithoutACode,
+                    WhyNotSignedIn::TheyCancelled => Self::GitHubSignInCancelled,
+                },
+                AtGitHub::DidNotSignOut { .. } => Self::GitHubSignOutFailed,
+            },
         }
     }
 
@@ -305,6 +331,13 @@ impl Outcome {
             Self::LetGoOutsideTheWindow => words::LET_GO_OUTSIDE_THE_WINDOW,
             Self::LetGoTheDiskNeededTheRoom => words::LET_GO_THE_DISK_NEEDED_THE_ROOM,
             Self::LetGoThePersonAskedToForget => words::LET_GO_THE_PERSON_ASKED_TO_FORGET,
+            Self::SignedInToGitHub => words::SIGNED_IN_TO_GITHUB,
+            Self::SignedOutOfGitHub => words::SIGNED_OUT_OF_GITHUB,
+            Self::GitHubSignInWithoutGh => words::GITHUB_SIGN_IN_WITHOUT_GH,
+            Self::GitHubSignInFailed => words::GITHUB_SIGN_IN_FAILED,
+            Self::GitHubSignInWithoutACode => words::GITHUB_SIGN_IN_WITHOUT_A_CODE,
+            Self::GitHubSignInCancelled => words::GITHUB_SIGN_IN_CANCELLED,
+            Self::GitHubSignOutFailed => words::GITHUB_SIGN_OUT_FAILED,
         }
     }
 
@@ -398,6 +431,9 @@ pub struct Told {
     kept_as: Option<Line>,
     /// For a putting back: the moment its place was kept, and its folders.
     put_back: Option<(SystemTime, Vec<Line>)>,
+    /// For a GitHub sign-in or sign-out: the login GitHub knows the person
+    /// by, where the entry names one.
+    github_login: Option<Line>,
     /// Every path what ran was given, as the record kept it.
     touched: Vec<std::path::PathBuf>,
 }
@@ -450,6 +486,10 @@ impl Told {
                     .is_some_and(|what| what.effect() == alo_capability::Effect::Change),
             kept_as: entry.kept_before_it().cloned(),
             put_back,
+            github_login: match happened {
+                Happened::AtGitHub { what } => what.login().cloned(),
+                _ => None,
+            },
             touched: entry
                 .what()
                 .filter(|_| happened.ran())
@@ -494,6 +534,18 @@ impl Told {
         self.put_back
             .as_ref()
             .map(|(taken, folders)| (*taken, folders.as_slice()))
+    }
+
+    /// For a GitHub sign-in or sign-out, the login GitHub knows the person by,
+    /// as GitHub writes it. [`None`] for everything else, and for a sign-out
+    /// the desktop could not name.
+    ///
+    /// A name and not a sentence, so it is shown beneath the clause as it is
+    /// rather than worded into it. Why a sign-in failed, where `gh` printed
+    /// something, is [`Told::because`].
+    #[must_use]
+    pub fn github_login(&self) -> Option<&Line> {
+        self.github_login.as_ref()
     }
 
     /// That the person at this machine was shown what ran and said yes to it.
@@ -639,6 +691,10 @@ impl Told {
         &self.against
     }
 }
+
+#[cfg(test)]
+#[path = "github_sign_ins_told_tests.rs"]
+mod github_sign_ins;
 
 #[cfg(test)]
 mod tests {

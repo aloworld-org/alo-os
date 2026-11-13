@@ -117,6 +117,12 @@ pub(crate) enum Told {
     /// whole answer, and a protocol with a field for a reason would be a
     /// protocol that asked for one.
     Declined {},
+    /// What the person's desktop said happened at GitHub is written down.
+    ///
+    /// Added 2026-11-13, additively. Carries nothing: the entry is the
+    /// desktop's own account, and the one thing it needs back is that it was
+    /// kept.
+    GithubSignInKept {},
     /// What is granted was read again, and this is how much of it there was.
     ///
     /// The answer to the person's knock. It carries a **count and no list**:

@@ -136,6 +136,7 @@ mod argument;
 mod asked;
 mod done;
 mod frame;
+mod github_sign_in;
 mod naming;
 mod pairing;
 mod person;
@@ -156,6 +157,9 @@ mod workspaces;
 
 pub use advertised::{Advertised, HostedWorkspace};
 pub use agent::FromAnAgent;
+/// What `github-sign-in` carries: `alo-record`'s own, so the desktop and the
+/// record hold one shape.
+pub use alo_record::{AtGitHub, WhyNotSignedIn};
 pub use answered::Answered;
 pub use argument::Argument;
 pub use done::{CanBeInstalled, Done};

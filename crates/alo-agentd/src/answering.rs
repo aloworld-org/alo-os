@@ -212,6 +212,12 @@ pub fn what_a_person_said(
         Ok(FromAPerson::PutBack { place, folders }) => {
             crate::putting_back::put_back(&place, &folders, holding, strings, now)
         }
+        // **What the person's desktop says happened at GitHub**, kept whether
+        // or not a turn holds the machine, through whatever holds it
+        // (`crate::keeping_github_sign_ins`).
+        Ok(FromAPerson::GitHubSignIn(what)) => {
+            crate::keeping_github_sign_ins::kept(what, holding, now)
+        }
         Ok(answered) => {
             // A pairing is neither the turn's nor the grants file's, and it
             // is answered whether or not a turn holds the machine: the
@@ -316,8 +322,9 @@ fn answered_to(
         // A place to return to is answered before this, for the same reason
         // the knock is: it is the person's own and not the turn's.
         | FromAPerson::APlaceToReturnTo
-        // Putting back too, for the same reason.
+        // Putting back too, for the same reason, and a GitHub sign-in.
         | FromAPerson::PutBack { .. }
+        | FromAPerson::GitHubSignIn(_)
         // Watching what leaves is answered by the serving loop, which gives
         // the connection over to it (`crate::watchers`).
         | FromAPerson::WatchWhatLeaves => {
