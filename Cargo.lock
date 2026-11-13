@@ -805,6 +805,7 @@ dependencies = [
  "jiff",
  "resvg",
  "rustix 1.1.4",
+ "serde_json",
  "tempfile",
  "zbus",
 ]
