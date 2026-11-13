@@ -218,6 +218,7 @@ mod canvas_command;
 mod canvas_dragged_into_a_place;
 mod canvas_fit_the_window_in_front;
 mod canvas_fixed_controls;
+mod canvas_grab_anywhere;
 mod canvas_never_lost;
 mod canvas_pan;
 mod canvas_pinch;
