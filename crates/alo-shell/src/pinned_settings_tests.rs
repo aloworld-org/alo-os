@@ -48,35 +48,39 @@ fn settings_draws_the_pixels_it_drew_before() {
 ///
 /// **Pinned again on 2026-11-12**: the side column gained *Default apps*
 /// between Appearance and Region and time, so every picture of it moved.
+///
+/// **And on 2026-11-13**: *Accounts* after Default apps, approved by the
+/// owner with the GitHub sign-in. Measured once by running this test on the
+/// documents lane's machine; it runs again on every gate.
 const BEFORE: [Drawn; 6] = [
     Drawn {
         scale: 100,
         text: 100,
-        hash: 0x7eb0_efaa_4acc_763c,
+        hash: 0x32d4_1cf0_537b_7e33,
     },
     Drawn {
         scale: 100,
         text: 125,
-        hash: 0x2589_973a_1c7e_ab97,
+        hash: 0xb445_33b4_62c9_fda9,
     },
     Drawn {
         scale: 150,
         text: 100,
-        hash: 0x3c6a_1c6e_2a81_acc4,
+        hash: 0x4a8f_ea7f_f4e1_810c,
     },
     Drawn {
         scale: 150,
         text: 125,
-        hash: 0x42e4_afbe_7081_c895,
+        hash: 0x7e3c_90e3_7e1a_c2bb,
     },
     Drawn {
         scale: 200,
         text: 100,
-        hash: 0xdd3c_b1c0_1b7c_691a,
+        hash: 0xe3ed_88a6_8cf6_fb27,
     },
     Drawn {
         scale: 200,
         text: 125,
-        hash: 0xe955_25cd_d89b_aac3,
+        hash: 0xd9e0_7754_5f6c_1646,
     },
 ];
