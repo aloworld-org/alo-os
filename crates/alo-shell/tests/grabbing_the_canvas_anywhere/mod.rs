@@ -34,9 +34,13 @@ fn looking_at(f: &Fixture) -> (i32, i32) {
     })
 }
 
-/// Hold `⊞`, press at `from`, and drag by `by`, leaving both held.
+/// Hold `⊞`, press where the pointer already is — `from` — and drag by `by`,
+/// leaving both held.
+///
+/// The pointer is not moved to `from` here: a movement before the press is an
+/// ordinary one the window under it is entitled to hear, and counting it would
+/// blame the gesture for it.
 fn take_hold_and_drag(f: &Fixture, from: (f64, f64), by: (f64, f64)) -> Result<(), InputError> {
-    f.backend(move |s| s.pointer_motion(from.0, from.1, 10))?;
     f.backend(|s| s.keyboard_key(SUPER, KeyState::Pressed, 11))?;
     let told = f.backend(|s| s.pointer_button(LEFT, ButtonState::Pressed, 12))?;
     assert!(
@@ -121,6 +125,7 @@ fn over_a_window_super_and_a_drag_pan_and_the_window_hears_nothing() -> Result<(
 #[test]
 fn over_empty_canvas_super_and_a_drag_pan_the_same() -> Result<(), InputError> {
     let (f, mut app) = a_desktop_with_an_application()?;
+    f.backend(|s| s.pointer_motion(400.0, 300.0, 9))?;
     app.sync();
     let buttons = app.events.pointer.buttons.len();
     let before = looking_at(&f);
