@@ -10,7 +10,7 @@
 //! ```text
 //! /sys/fs/bpf/alo            0750 root:<the agent's group>  made by the loader
 //!   ├─ bounds                0660 root:<the agent's group>  the daemon writes it
-//!   ├─ counted               0660 root:<the agent's group>  the desktop makes and ends counts in it
+//!   ├─ counted               0660 root:<the agent's group>  the desktop, and alo-agentd for alo's commands, make and end counts in it
 //!   ├─ counting              0600 root:root                 what an application sends, counted (ADR 0148)
 //!   ├─ fields                0600 root:root                 nobody else reads it
 //!   ├─ file_open             0600 root:root                 what a turn reads

@@ -107,6 +107,18 @@ pub struct Entry {
     /// `format` stays `1`.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     as_an_administrator: Option<crate::AsAnAdministrator>,
+    /// For a command alo ran where no verb fits: how many bytes it sent off
+    /// this machine while it ran, as the kernel counted them (ADR 0148, as
+    /// amended 2026-11-13) — `0` for a command counted and seen sending
+    /// nothing.
+    ///
+    /// Bytes and nothing else: never where, never what. Absent where nothing
+    /// counted it — every other entry, a machine whose counter could not be
+    /// begun, and every entry written before 2026-11-13 — so *it sent nothing*
+    /// and *nobody could tell* are never one value. Additive; `format` stays
+    /// `1`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    sent_bytes: Option<u64>,
 }
 
 impl Entry {
@@ -126,7 +138,28 @@ impl Entry {
             kept_as: None,
             at_full_access: false,
             as_an_administrator: None,
+            sent_bytes: None,
         }
+    }
+
+    /// This entry, with how many bytes the command it is about sent off this
+    /// machine while it ran, as the kernel counted them (ADR 0148, as amended
+    /// 2026-11-13) — or, for [`None`], with nothing said, because nothing
+    /// counted it.
+    ///
+    /// A stamp, for [`Entry::from_another_machine`]'s reason: it adds what was
+    /// counted and cannot change what happened.
+    #[must_use]
+    pub const fn having_sent(mut self, bytes: Option<u64>) -> Self {
+        self.sent_bytes = bytes;
+        self
+    }
+
+    /// How many bytes the command this entry is about sent off this machine,
+    /// when the kernel counted them.
+    #[must_use]
+    pub const fn sent_bytes(&self) -> Option<u64> {
+        self.sent_bytes
     }
 
     /// This entry, as decided while the person had chosen full access
@@ -1124,6 +1157,45 @@ mod tests {
         assert!(written.contains("\"ran-a-command\""), "{written}");
         let read = serde_json::from_str::<Entry>(&written).unwrap();
         assert_eq!(read, entry);
+    }
+
+    /// **What a command alo ran sent is kept as a number of bytes, and nothing
+    /// else** (ADR 0148, as amended 2026-11-13): `0` for a command counted
+    /// sending nothing, and **absent** — never `0` — where nothing counted it,
+    /// so an entry written before there was a count reads back as it was.
+    #[test]
+    fn what_a_command_sent_is_kept_as_bytes_and_absent_where_nothing_counted_it() {
+        let ran = || {
+            Entry::ran_a_command(
+                &Grantee::named("@files"),
+                "/bin/sh",
+                &["-c".to_owned(), "curl https://alo.example".to_owned()],
+                &[],
+                Some(0),
+                false,
+                noon(),
+            )
+        };
+        let uncounted = serde_json::to_string(&ran().having_sent(None)).unwrap();
+        assert!(!uncounted.contains("sent_bytes"), "{uncounted}");
+        assert_eq!(
+            serde_json::from_str::<Entry>(&uncounted)
+                .unwrap()
+                .sent_bytes(),
+            None
+        );
+
+        for bytes in [0, 4180] {
+            let entry = ran().having_sent(Some(bytes));
+            let written = serde_json::to_string(&entry).unwrap();
+            assert!(
+                written.contains(&format!("\"sent_bytes\":{bytes}")),
+                "{written}"
+            );
+            let read = serde_json::from_str::<Entry>(&written).unwrap();
+            assert_eq!(read.sent_bytes(), Some(bytes));
+            assert_eq!(read, entry);
+        }
     }
 
     /// **A command killed by a signal is recorded with no exit status**, because

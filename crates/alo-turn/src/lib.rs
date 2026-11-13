@@ -160,6 +160,7 @@
 
 pub mod a_change_at_full_access;
 pub mod a_command_as_administrator;
+pub mod a_command_counted;
 pub mod a_command_where_no_verb_exists;
 mod a_question_that_leaves_this_machine;
 mod acting_on_an_application;
@@ -194,12 +195,14 @@ pub mod went_wrong_asking;
 pub mod went_wrong_installing;
 pub mod went_wrong_looking;
 pub mod what_a_verb_did;
+mod while_alos_command_runs;
 pub mod words;
 
 #[cfg(test)]
 mod testing;
 
 pub use a_change_at_full_access::{Before, Changed};
+pub use a_command_counted::ACommandCounted;
 pub use acting_on_an_application::Reached;
 pub use answering_for::AnsweredFor;
 pub use answers::Answers;

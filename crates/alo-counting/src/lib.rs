@@ -9,6 +9,11 @@
 //! can make the kernel count a group nobody named, and nothing here reads
 //! anything but a number.
 //!
+//! **And, since 2026-11-13, `alo-agentd`** (ADR 0148, as amended; the owner:
+//! *"Yes, count alo's commands"*): it begins and ends a count on the control
+//! group it makes for each command alo runs, through this same type, for as
+//! long as that command runs.
+//!
 //! It needs **permission on a file** and no capability: `alo-boundaryd` pins the
 //! map `0660` to the agent's group, which the person's own login is in.
 //!

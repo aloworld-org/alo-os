@@ -7,7 +7,7 @@
 
 use std::cell::RefCell;
 
-use alo_capability::{ACommand, AnswerError, ItDidNotStart, WhatACommandDid};
+use alo_capability::{ACommand, AnswerError, AroundACommand, ItDidNotStart, WhatACommandDid};
 use alo_context::Context;
 use alo_egress::Indicator;
 use alo_files::OnThisMachine;
@@ -51,8 +51,8 @@ fn on_a_turn<T>(record: &mut Record, doing: impl FnOnce(&mut Turning<'_, '_>) ->
 /// A stand-in that runs nothing and remembers every command it was handed.
 fn counting(
     ran: &RefCell<Vec<String>>,
-) -> impl FnMut(&ACommand) -> Result<WhatACommandDid, ItDidNotStart> + '_ {
-    move |command| {
+) -> impl FnMut(&ACommand, &mut dyn AroundACommand) -> Result<WhatACommandDid, ItDidNotStart> + '_ {
+    move |command: &ACommand, _: &mut dyn AroundACommand| {
         ran.borrow_mut().push(command.text().to_owned());
         Ok(WhatACommandDid::of(
             Some(0),
@@ -133,7 +133,9 @@ fn a_command_that_did_not_start_is_written_down_as_not_run() {
         let refused = turning
             .running_a_command(
                 &making_a_folder(),
-                &mut |_: &ACommand| Err(ItDidNotStart::because("no shell")),
+                &mut |_: &ACommand, _: &mut dyn AroundACommand| {
+                    Err(ItDidNotStart::because("no shell"))
+                },
                 noon(),
             )
             .unwrap_err();

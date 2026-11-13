@@ -225,6 +225,18 @@ first means they authenticated. Never the password, and nothing about it but
 whether it was given. Absent on every other entry, so every entry written
 before it existed reads back byte for byte.
 
+**What a command alo ran sent** (added 2026-11-13, additive,
+[ADR 0148](../decisions/0148-the-kernel-counts-what-an-application-sends-during-a-persons-command.md)
+as amended) is `sent_bytes` on the entry — on the `ran-a-command` for a
+command alo ran where no verb fits, and on the `a-command-was-not-run` written
+when such a run was lost track of — the number of bytes the kernel counted the
+command's own control group sending off the machine while it ran, headers
+included. `0` is a command that was counted and sent nothing. **It is absent
+where nothing counted it** — a machine whose counter could not be begun, a
+command run as administrator, every other entry, and every entry written
+before it existed — so a reader must never read an absent `sent_bytes` as
+`0`. Never where it went, and never what it was.
+
 **A change carried out without the OK** (added 2026-11-08; no field changed) is
 a `ran` entry for a change with **no `from_approval`** and `at_full_access`
 `true`: at full access nobody is asked, so there is no approval to name, and

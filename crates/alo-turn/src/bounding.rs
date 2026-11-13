@@ -53,6 +53,7 @@ use alo_capability::{Grants, Refused};
 use alo_files::{Did, Reaching, Touching};
 use alo_strings::Strings;
 
+use crate::a_command_counted::ACommandCounted;
 use crate::unbounded::NoBoundary;
 
 /// What one execution came to.
@@ -189,6 +190,28 @@ pub trait Bounding {
         Err(NoBoundary::because(
             "this machine has no way to hold a network request to one interface".to_owned(),
         ))
+    }
+
+    /// A control group of its own for one command alo is about to run where no
+    /// verb fits, with the kernel's count of what it sends begun on it
+    /// ([ADR 0148](../../../docs/decisions/0148-the-kernel-counts-what-an-application-sends-during-a-persons-command.md),
+    /// as amended 2026-11-13) — or [`None`] on a machine that cannot count one.
+    ///
+    /// It is here, beside the boundary, because it is the same kind of thing
+    /// done to the same kernel by the same holder: a control group made under
+    /// this service's own, and an entry put into a map the boundary's loader
+    /// pinned. It bounds nothing — a command alo runs is not boxed (ADR 0149).
+    ///
+    /// # [`None`] is not a refusal, and that is the point
+    ///
+    /// Unlike the two doors above, a machine that cannot count still runs the
+    /// command, because the person chose a level that runs one and counting is
+    /// not what lets it run. What changes is the line on the indicator: it says,
+    /// for the whole run, that this machine cannot count what the command sends
+    /// (`crate::while_alos_command_runs`), so something leaving is never
+    /// unshown. The default is that answer.
+    fn a_command_counted(&mut self) -> Option<Box<dyn ACommandCounted + '_>> {
+        None
     }
 }
 

@@ -309,6 +309,29 @@ pub const ALO_IS_IN_YOUR_WINDOW: Word = Word::saying(
      already in the reader's language.",
 );
 
+/// A command alo is running, seen sending (ADR 0148, as amended 2026-11-13).
+pub const ALOS_COMMAND_IS_SENDING: Word = Word::saying(
+    "egress.alos-command.sending",
+    "{program}, a command alo is running, is sending",
+)
+.noting(
+    "Shown while a command alo runs on this computer is sending something off it, from the first \
+     byte the machine counts until the command ends. A command that sends nothing never shows \
+     this. No destination is named because none is read. {program} is the command's first word \
+     exactly as alo ran it, such as curl, and is never translated.",
+);
+
+/// A command alo is running, on a machine that cannot count what it sends.
+pub const ALOS_COMMAND_CANNOT_BE_COUNTED: Word = Word::saying(
+    "egress.alos-command.uncounted",
+    "alo is running {program}, and this machine cannot count what it sends",
+)
+.noting(
+    "Shown for the whole time a command alo runs is running, on a machine that cannot count what \
+     the command sends, so that something leaving is never unshown. {program} is the command's \
+     first word exactly as alo ran it, such as curl, and is never translated.",
+);
+
 /// The promise that goes with the list of reasons.
 pub const ALO_REACHES_NOTHING_ELSE: Word = Word::saying(
     "egress.itself.nothing-else",
@@ -420,7 +443,7 @@ pub const NOTHING_LEAVES: Word = Word::saying(
 ///
 /// The array is what a test reads down and what [`declare_into`] walks, so a
 /// word declared above and left out here is a string nothing can look up.
-pub const EVERY_WORD: [Word; 25] = [
+pub const EVERY_WORD: [Word; 27] = [
     A_PAIRED_MACHINE,
     A_PROVIDER,
     A_PROVIDER_SOMEWHERE,
@@ -439,6 +462,8 @@ pub const EVERY_WORD: [Word; 25] = [
     ALOS_COPY_IS_SENDING,
     ALOS_COPY_CANNOT_BE_COUNTED,
     ALO_IS_IN_YOUR_WINDOW,
+    ALOS_COMMAND_IS_SENDING,
+    ALOS_COMMAND_CANNOT_BE_COUNTED,
     OUTSIDE_THE_BUILDING,
     OUTSIDE_THE_REGION,
     NOTHING_MAY_LEAVE,
@@ -576,6 +601,8 @@ mod tests {
             ALOS_COPY_IS_SENDING,
             ALOS_COPY_CANNOT_BE_COUNTED,
             ALO_IS_IN_YOUR_WINDOW,
+            ALOS_COMMAND_IS_SENDING,
+            ALOS_COMMAND_CANNOT_BE_COUNTED,
             A_PAIRED_MACHINE,
             A_PROVIDER,
             A_PROVIDER_SOMEWHERE,

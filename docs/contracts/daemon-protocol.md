@@ -254,14 +254,32 @@ at the moment the request arrives. Nothing on the wire can name the level.
   output and standard error together, up to 64 KiB, and whether either bound
   was reached. A command is stopped after two minutes, because this service
   answers one thing at a time.
-- **The egress indicator does not show what a command sends.** It leaves from
-  the command's own process, and the only counter this repository has for a
-  process's bytes is ADR 0148's, which counts an application's control group
-  at the desktop's request. Making a command's traffic reach the indicator
-  needs a control group of its own for the command and a way for the daemon to
-  ask that it be counted — neither exists yet, and law 1 is not met for a
-  command until they do. This is said here so that nothing reads as though it
-  were.
+- **The egress indicator shows what a command sends** (since 2026-11-13,
+  additively, for [ADR 0148](../decisions/0148-the-kernel-counts-what-an-application-sends-during-a-persons-command.md)
+  as amended; the owner: *"Yes, count alo's commands"*). Each command runs in a
+  control group of its own, made under this service's and bounding nothing,
+  and the kernel counts what that group sends — bytes only, never where or
+  what — from before the command starts until it ends, including when it is
+  stopped after two minutes. While it is sending, `watch-what-leaves` is told
+  a line of a new kind, `alos-command`:
+  `{"alos-command":{"program":"curl","how":"counted"}}`, which reads *curl, a
+  command alo is running, is sending*. **A command that sends nothing puts
+  nothing on the indicator.** On a machine where the count cannot be begun —
+  no counter pinned, or the group could not be made — the line is
+  `"how":"uncounted"`, *alo is running curl, and this machine cannot count
+  what it sends*, for the whole run, so something leaving is never unshown. A
+  desktop that does not know the kind refuses the list as it refuses any
+  unknown line, and shows *cannot tell*. The record's entry for the run
+  carries `sent_bytes` (`record-file.md`). Only the command's own group is
+  counted: the person's own programs and the applications their commands
+  count are never named by it.
+- **What is still not shown**: a `sudo …` line runs in
+  `alo-running-as-administrator`'s own service, where this service holds no
+  control group, so what it sends is not counted and has no line yet; and
+  anything a command hands to another service to send for it, or leaves
+  running after it ends, is in another group or outside the seconds counted.
+  Law 1 is met for every command this service runs itself, and not yet for
+  those two. This is said here so that nothing reads as though it were.
 
 ## What a person sends
 

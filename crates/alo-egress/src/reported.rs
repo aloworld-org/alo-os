@@ -24,6 +24,7 @@ use alo_capability::Grantee;
 use alo_strings::{Said, Strings};
 use serde::{Deserialize, Serialize};
 
+use crate::alos_command::{Counting, said_of_alos_command};
 use crate::at_work::{HowItIsShown, said_of_alo_at_work};
 use crate::destination::Destination;
 use crate::during::said_of_their_command;
@@ -73,6 +74,15 @@ pub enum Reported {
         /// Which of the three lines.
         how: HowItIsShown,
     },
+    /// A command alo is running where no verb fits (ADR 0148, as amended
+    /// 2026-11-13). No destination and no agent, for
+    /// [`crate::AlosCommand`]'s reasons.
+    AlosCommand {
+        /// The command's first word, as the line names it.
+        program: String,
+        /// Which of the two lines.
+        how: Counting,
+    },
 }
 
 impl Reported {
@@ -99,6 +109,10 @@ impl Reported {
                 called: at_work.called().to_owned(),
                 how: at_work.how(),
             },
+            Showing::AlosCommand(command) => Self::AlosCommand {
+                program: command.program().to_owned(),
+                how: command.how(),
+            },
         }
     }
 
@@ -108,7 +122,7 @@ impl Reported {
     pub fn destination(&self) -> Option<&Destination> {
         match self {
             Self::Agent { destination, .. } | Self::Itself { destination, .. } => Some(destination),
-            Self::TheirCommand { .. } | Self::AloAtWork { .. } => None,
+            Self::TheirCommand { .. } | Self::AloAtWork { .. } | Self::AlosCommand { .. } => None,
         }
     }
 
@@ -128,6 +142,7 @@ impl Reported {
             } => said_of_an_errand(*errand, destination, strings),
             Self::TheirCommand { called, .. } => said_of_their_command(called, strings),
             Self::AloAtWork { called, how, .. } => said_of_alo_at_work(called, *how, strings),
+            Self::AlosCommand { program, how } => said_of_alos_command(program, *how, strings),
         }
     }
 }
@@ -212,6 +227,34 @@ mod tests {
             serde_json::from_str::<Reported>(&widened).is_err(),
             "{widened}"
         );
+    }
+
+    /// **A command alo runs crosses the wire whole, names no place, and says
+    /// what the indicator that showed it said** — counted or not.
+    #[test]
+    fn a_command_alo_runs_reads_back_and_says_what_its_line_said() {
+        let strings = in_english();
+        let mut indicator = Indicator::default();
+        for how in [Counting::Counted, Counting::Uncounted] {
+            let line =
+                indicator.beginning_alos_command(crate::AlosCommand::of("curl", how), noon());
+            let shown = indicator.showing().first().unwrap();
+            let reported = Reported::of(shown);
+            assert_eq!(reported.said(&strings).text(), shown.said(&strings).text());
+            assert_eq!(reported.destination(), None);
+            let written = serde_json::to_string(&reported).unwrap();
+            assert_eq!(
+                serde_json::from_str::<Reported>(&written).unwrap(),
+                reported
+            );
+            let widened = written.replacen("\"program\"", "\"host\":\"x\",\"program\"", 1);
+            assert!(
+                serde_json::from_str::<Reported>(&widened).is_err(),
+                "{widened}"
+            );
+            assert!(indicator.ended_alos_command(line));
+        }
+        assert!(indicator.is_quiet());
     }
 
     /// **It survives the wire whole**, and an unknown field is refused rather

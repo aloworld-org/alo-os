@@ -93,3 +93,99 @@ fn a_command_in_a_folder_that_is_not_there_did_not_start() {
     let refused = run_as_the_person(&ACommand::of("true").unwrap(), &folder).unwrap_err();
     assert!(refused.why().contains("would not start"), "{refused:?}");
 }
+
+/// What a caller saw of a run through [`AroundACommand`]: how many times it was
+/// asked to start one, how many looks it had, and whether a look came before
+/// the start.
+#[derive(Debug, Default)]
+struct Watching {
+    /// How many times it was asked to start the command.
+    started: u32,
+    /// How many looks it was given.
+    looks: u32,
+    /// Whether a look arrived before the command was started.
+    looked_before_it_started: bool,
+    /// Refuse to start it, to see what a refusal there comes to.
+    refusing: bool,
+}
+
+impl AroundACommand for Watching {
+    fn starting(
+        &mut self,
+        start: &mut dyn FnMut() -> std::io::Result<Child>,
+    ) -> std::io::Result<Child> {
+        self.started += 1;
+        if self.refusing {
+            return Err(std::io::Error::other("the control group would not take it"));
+        }
+        start()
+    }
+
+    fn looking(&mut self) {
+        if self.started == 0 {
+            self.looked_before_it_started = true;
+        }
+        self.looks += 1;
+    }
+}
+
+/// **A command is started once, through what the caller hands in, and looked
+/// at while it runs** — the two moments ADR 0148's amendment needs to count it
+/// and show it. Looks come only after the start.
+#[test]
+fn a_command_is_started_through_the_caller_and_looked_at_while_it_runs() {
+    let mut watching = Watching::default();
+    let did = run_as_the_person_around(
+        &ACommand::of("sleep 0.3; echo ended").unwrap(),
+        Path::new("/"),
+        &mut watching,
+    )
+    .unwrap();
+    assert_eq!(did.returned(), Some(0));
+    assert!(did.said().contains("ended"), "{did:?}");
+    assert_eq!(watching.started, 1, "it was not started exactly once");
+    assert!(
+        watching.looks >= 2,
+        "a command that ran for 300 ms was looked at {} times",
+        watching.looks
+    );
+    assert!(!watching.looked_before_it_started);
+}
+
+/// **A command stopped for running too long is looked at until it is stopped,
+/// and not after** — so a count read on those looks ends with it.
+#[test]
+fn a_command_stopped_for_running_too_long_is_looked_at_until_then() {
+    let mut watching = Watching::default();
+    let did = run_as_the_person_around_within(
+        &ACommand::of("sleep 30").unwrap(),
+        Path::new("/"),
+        Duration::from_millis(300),
+        &mut watching,
+    )
+    .unwrap();
+    assert!(did.took_too_long(), "{did:?}");
+    assert!(watching.looks >= 1, "it was never looked at");
+}
+
+/// **The refusal path: a command the caller could not start where it was to
+/// begin did not start**, and is never looked at.
+#[test]
+fn a_command_the_caller_could_not_start_did_not_start() {
+    let mut watching = Watching {
+        refusing: true,
+        ..Watching::default()
+    };
+    let refused = run_as_the_person_around(
+        &ACommand::of("true").unwrap(),
+        Path::new("/"),
+        &mut watching,
+    )
+    .unwrap_err();
+    assert!(refused.why().contains("would not start"), "{refused:?}");
+    assert!(
+        refused.why().contains("control group would not take it"),
+        "{refused:?}"
+    );
+    assert_eq!(watching.looks, 0);
+}

@@ -39,6 +39,7 @@ use std::time::SystemTime;
 use alo_strings::{Said, Strings};
 use serde::Serialize;
 
+use crate::alos_command::AlosCommand;
 use crate::at_work::AloAtWork;
 use crate::departing::Departing;
 use crate::during::DuringTheirCommand;
@@ -49,6 +50,7 @@ use crate::refusing::NotPermitted;
 use crate::showing::Showing;
 use crate::underway::Underway;
 use crate::while_alo_works::WhileAloWorks;
+use crate::while_alos_command_runs::WhileAlosCommandRuns;
 use crate::while_it_runs::WhileItRuns;
 
 /// Which line on the indicator an egress is.
@@ -349,6 +351,48 @@ impl Indicator {
     /// Takes the [`WhileAloWorks`], so one piece of work ends exactly one line.
     pub fn ended_alo_at_work(&mut self, while_alo_works: WhileAloWorks) -> bool {
         self.take_off(while_alo_works.shown())
+    }
+
+    /// Show that a command alo is running is sending — or, on a machine that
+    /// cannot count it, that it is running uncounted (ADR 0148, as amended
+    /// 2026-11-13) — and answer the one handle that takes the line off again.
+    ///
+    /// Nothing is decided here either: whether the command may run was the
+    /// person's level, read before it started. What this does is make sure
+    /// what it sends is **seen**.
+    ///
+    /// ```
+    /// use alo_egress::{AlosCommand, Counting, Indicator, egress_words};
+    /// use alo_strings::Strings;
+    /// use std::time::{Duration, SystemTime};
+    ///
+    /// # fn main() {
+    /// let now = SystemTime::UNIX_EPOCH + Duration::from_secs(1_760_000_000);
+    /// let strings = Strings::of(egress_words().expect("this crate's own words"));
+    /// let mut indicator = Indicator::default();
+    /// let line = indicator.beginning_alos_command(AlosCommand::of("curl", Counting::Counted), now);
+    /// assert_eq!(
+    ///     indicator.showing()[0].said(&strings).text(),
+    ///     "curl, a command alo is running, is sending",
+    /// );
+    /// assert!(indicator.ended_alos_command(line));
+    /// assert!(indicator.is_quiet());
+    /// # }
+    /// ```
+    pub fn beginning_alos_command(
+        &mut self,
+        command: AlosCommand,
+        now: SystemTime,
+    ) -> WhileAlosCommandRuns {
+        let id = self.line(now, Showing::AlosCommand(command.clone()));
+        WhileAlosCommandRuns::new(command, now, id)
+    }
+
+    /// Stop showing a command alo was running, because it has ended.
+    ///
+    /// Takes the [`WhileAlosCommandRuns`], so one command ends exactly one line.
+    pub fn ended_alos_command(&mut self, while_it_runs: WhileAlosCommandRuns) -> bool {
+        self.take_off(while_it_runs.shown())
     }
 
     /// Put one line on the list and answer which line it is.

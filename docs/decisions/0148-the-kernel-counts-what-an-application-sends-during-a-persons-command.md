@@ -143,6 +143,62 @@ alo's copy is left out of a person's own count. At the setting turned up,
 `docs/contracts/application-door.md`; nothing asks for it until a turn drives
 an application.
 
+## Amended 2026-11-13: the same count, of alo's own commands
+
+**What it changes for the person.** Where no ready-made action fits, alo runs
+a command (ADR 0149). Until this amendment, what such a command sent — a
+`curl`, a `git push`, a download — left the machine with nothing on the
+indicator, though `docs/features.md` and ADR 0149 say the indicator stays on
+at every level; the code and `docs/contracts/daemon-protocol.md` said so
+openly. Now, while alo's command is sending, the indicator says *curl, a
+command alo is running, is sending*, and the record keeps how many bytes it
+sent. A command that sends nothing shows nothing.
+
+**The question, as it was put, and the answer.** Whether this record's
+counter, so far scoped to what an application sends during the person's own
+command, may also count alo's own commands. The owner, 2026-11-13: **"Yes,
+count alo's commands"** — bytes only, no addresses, no contents, only for the
+seconds alo's command runs, and only alo's command, never the person's.
+
+**What changes, and what does not.** The map and the program are unchanged:
+`COUNTED` still holds at most 64 entries, the program still never makes one,
+and it still reads only a socket's control group, interface and length. What
+is added is **one more holder of entries**:
+
+- **`alo-agentd`**, which already holds a control-group subtree of its own
+  (ADR 0015, `Delegate=yes`) and is in the agent's group the pin is opened to
+  (`0660`), runs each command alo runs **in a control group of its own**, made
+  beside its turns and bounding nothing (`alo_bounding::Turns::a_group_for_a_command`).
+  The service's thread steps into that group, starts the command, and steps
+  back out (`Turns::from_inside`), so the command is counted from its first
+  instruction and nothing of the service is left inside.
+- **The entry is made before the command starts and taken away when it
+  ends** — by itself, by a signal, or stopped after the two minutes a command
+  is let run — and the group is taken away with it. Nothing alo's command
+  does after it ends is counted.
+- **The person's own programs are never named.** Only the group made for one
+  command is given to the counter; the person's session, their windows, and
+  the applications their own commands count are in other groups this never
+  touches.
+- **What the person sees**: the line, from the first byte counted until the
+  command ends; nothing for a command that sent nothing; and on a machine
+  where the count could not be begun, *alo is running {program}, and this
+  machine cannot count what it sends* for the whole run, so something leaving
+  is never unshown. The desktop is told through `watch-what-leaves`, as every
+  line `alo-agentd` shows is (ADR 0134).
+- **What is kept**: the total, as `sent_bytes` on the command's own record
+  entry (`docs/contracts/record-file.md`); absent where nothing counted it,
+  so *it sent nothing* and *nobody could tell* are never one value.
+
+**What it cannot see**, in section 5's spirit: anything the command hands to
+another service to send for it (the machine's resolver, a package manager's
+own daemon); anything it leaves running after it ends, which is not counted
+after the end and whose group is then left in place, uncounted, and said so on
+the service log; and **a command written as `sudo …`**, which runs in
+`alo-running-as-administrator`'s own service (ADR 0150), where this service
+holds no control group — it is not counted yet, and `daemon-protocol.md` says
+so under `run`.
+
 ## Alternatives the lane put beside it
 
 - **Watching the application's connections from outside**, with no kernel

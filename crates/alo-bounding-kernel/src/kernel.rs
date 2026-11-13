@@ -38,8 +38,9 @@
 //!
 //! The exception is [`COUNTED`]
 //! ([ADR 0148](../../../docs/decisions/0148-the-kernel-counts-what-an-application-sends-during-a-persons-command.md)):
-//! the `counting` program adds a packet's length to an entry **the desktop
-//! already made** for a control group a person's command asked about. It never
+//! the `counting` program adds a packet's length to an entry **somebody
+//! already made** — the desktop, for a control group a person's command asked
+//! about, or `alo-agentd`, for one command alo runs (amended 2026-11-13). It never
 //! makes an entry, so a control group nobody asked about leaves nothing behind.
 //!
 //! The two maps the hooks decide from are read here and written only by the

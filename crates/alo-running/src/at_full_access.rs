@@ -26,12 +26,14 @@
 //! - **The snapshot before each run** is taken by the caller before calling
 //!   this, because one taken from in here would be taken after the command had
 //!   started.
-//! - **The egress indicator** is not reached by anything here. What a command
-//!   sends leaves from its own process, and no counter in this repository
-//!   counts a process the service started — `docs/contracts/terminal-commands.md`
-//!   section 5 and ADR 0148 count an application's control group, asked for by
-//!   the desktop. That is said wherever this is reached from, rather than
-//!   pretended here.
+//! - **The egress indicator** is reached through what the caller hands in
+//!   ([`run_as_the_person_around`], since 2026-11-13, ADR 0148 as amended):
+//!   the command is started through [`AroundACommand::starting`](alo_capability::AroundACommand::starting), so a caller
+//!   that holds a control group for it has it born inside that group, and
+//!   [`AroundACommand::looking`](alo_capability::AroundACommand::looking) is called on every look while it runs, so the
+//!   count is read and the line put up while it is still sending. Nothing here
+//!   counts or shows anything itself; this file only gives the caller the two
+//!   moments it needs, and [`run_as_the_person`] hands in nothing.
 //!
 //! # Bounded twice
 //!
@@ -47,7 +49,9 @@ use std::path::Path;
 use std::process::{Child, Command, Stdio};
 use std::time::{Duration, Instant};
 
-use alo_capability::{ACommand, ItDidNotStart, THE_SHELL, WhatACommandDid};
+use alo_capability::{
+    ACommand, AroundACommand, ItDidNotStart, NothingAround, THE_SHELL, WhatACommandDid,
+};
 
 /// The longest a command alo runs is let run before it is stopped.
 pub const THE_LONGEST_A_COMMAND_RUNS: Duration = Duration::from_secs(120);
@@ -80,6 +84,36 @@ pub fn run_as_the_person_within(
     folder: &Path,
     within: Duration,
 ) -> Result<WhatACommandDid, ItDidNotStart> {
+    run_as_the_person_around_within(command, folder, within, &mut NothingAround)
+}
+
+/// [`run_as_the_person`], started through `around` and looked at through it
+/// while it runs — what a command alo runs in a turn is run with, so the
+/// kernel can count it and the indicator show it (ADR 0148, as amended
+/// 2026-11-13).
+///
+/// # Errors
+/// As [`run_as_the_person`], and also when `around` could not start it where
+/// it was to begin — then nothing ran.
+pub fn run_as_the_person_around(
+    command: &ACommand,
+    folder: &Path,
+    around: &mut dyn AroundACommand,
+) -> Result<WhatACommandDid, ItDidNotStart> {
+    run_as_the_person_around_within(command, folder, THE_LONGEST_A_COMMAND_RUNS, around)
+}
+
+/// [`run_as_the_person_around`], stopped after `within` rather than the usual
+/// bound.
+///
+/// # Errors
+/// As [`run_as_the_person_around`].
+pub fn run_as_the_person_around_within(
+    command: &ACommand,
+    folder: &Path,
+    within: Duration,
+    around: &mut dyn AroundACommand,
+) -> Result<WhatACommandDid, ItDidNotStart> {
     let (mut reading, writing) = std::io::pipe()
         .map_err(|why| ItDidNotStart::because(format!("no pipe for what it says: {why}")))?;
     let also_writing = writing
@@ -95,7 +129,10 @@ pub fn run_as_the_person_within(
         // **A group of its own**, so that stopping it for running too long
         // stops what it started as well, rather than only the shell.
         .process_group(0);
-    let started = starting.spawn();
+    // **Started from where the caller says it begins** — inside the control
+    // group alo counts it in, when there is one — so it is inside from its
+    // first instruction rather than moved in after it may have sent something.
+    let started = around.starting(&mut || starting.spawn());
     // The command now holds the writing ends; ours must go, or the end of
     // what it says would never arrive.
     drop(starting);
@@ -133,6 +170,9 @@ pub fn run_as_the_person_within(
                 return Err(ItDidNotStart::because(format!("lost track of it: {why}")));
             }
         }
+        // **A look at it while it is still running**, and only then: the count
+        // is read here and the indicator goes up the first time it moves.
+        around.looking();
         if began.elapsed() >= within {
             stop_it(&mut child);
             return Ok(WhatACommandDid::of(
