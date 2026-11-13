@@ -22,7 +22,7 @@
 # empty until somebody has watched it happen.
 
 # The versions, in one place, because every one of them is pinned on purpose.
-ARG THE_BASE=quay.io/fedora/fedora-bootc:42@sha256:077182b6ba853b3348d0bede602ac30b9e6568c6422bcf0654de5af96f19b9c3
+ARG THE_BASE=quay.io/fedora/fedora-bootc:44@sha256:ea70c130d55794252b081c606603c6d4405561f28ae642a83fe43b1872f82663
 ARG THE_BUILDER=docker.io/library/ubuntu:26.04@sha256:2260313b31c8c011cd2eebe728008efac1b3982be73eb71348ea2648d2c0e09b
 ARG THE_STABLE=1.97.0
 ARG THE_NIGHTLY=nightly-2026-06-01
@@ -81,9 +81,11 @@ ARG THE_CONVERTER_BUILD=26.2.6.3
 # a BPF programme on the way, which needs `bpf-linker` built against **the same
 # LLVM the compiler emits** — LLVM 22 for the nightly this repository pins, and
 # a mismatch is not a refusal but a segmentation fault inside an optimisation
-# pass (`docs/quirks.md`). Fedora 42 ships LLVM 20 and no 22 at all, so a
-# builder stage on the base would have to bring an LLVM of its own, which is a
-# second copy of the hardest configuration in this repository.
+# pass (`docs/quirks.md`). Fedora 42 shipped LLVM 20 and no 22 at all, so a
+# builder stage on the base would have had to bring an LLVM of its own, which is
+# a second copy of the hardest configuration in this repository. **Fedora 44,
+# the base since ADR 0152, ships LLVM 22** (`llvm-22.1.8-4.fc44`, 2026-11-13), so
+# that reason is gone; moving the builder is its own change and is not made here.
 #
 # What that costs is the two glibcs not matching, and the answer is to need
 # neither: the binaries are linked against musl, statically, so what is copied
@@ -493,7 +495,8 @@ COPY --from=built /alo-os/target/${THE_TARGET}/release/alo-their-folders /usr/li
 # them with, so Dolphin and every other program agree with alo OS about where a
 # German person's `Dokumente` is ([ADR 0137](../docs/decisions/0137-home-folder-names-come-from-xdg-user-dirs.md)).
 # Measured on 2026-10-28: the base has no `xdg-user-dirs`, keeps every
-# language's files (`%_install_langs` is `all`), and Fedora 42's 0.18 carries
+# language's files (`%_install_langs` is `all`), and Fedora 42's 0.18 — still
+# 0.18 on Fedora 44 (`xdg-user-dirs-0.18-11.fc43`, 2026-11-13) — carries
 # 22 of the 24 official EU languages — English is its source, and Maltese has
 # no catalogue, so a Maltese person's folders are its English names.
 #

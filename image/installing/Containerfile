@@ -40,11 +40,11 @@
 # are the operating system's own — `crates/alo-image` fails a build of this
 # repository where any of the four differs from `image/Containerfile`, because an
 # environment on another base would be installing with a tool nobody pinned.
-ARG THE_BASE=quay.io/fedora/fedora-bootc:42@sha256:077182b6ba853b3348d0bede602ac30b9e6568c6422bcf0654de5af96f19b9c3
+ARG THE_BASE=quay.io/fedora/fedora-bootc:44@sha256:ea70c130d55794252b081c606603c6d4405561f28ae642a83fe43b1872f82663
 ARG THE_BUILDER=docker.io/library/ubuntu:26.04@sha256:2260313b31c8c011cd2eebe728008efac1b3982be73eb71348ea2648d2c0e09b
 ARG THE_STABLE=1.97.0
 ARG THE_TARGET=x86_64-unknown-linux-musl
-# The checker for the owner's signature (ADR 0036). Fedora 42 does not package
+# The checker for the owner's signature (ADR 0036). Fedora does not package (42 did not, and 44 does not: `dnf repoquery cosign` is empty, 2026-11-13)
 # it, so it is upstream's own release artefact, pinned the way the model runtime
 # is: an exact version, and the digest of the one file that version published,
 # checked before anything runs it. The version is the one the owner verified
@@ -178,7 +178,7 @@ COPY image/installing/grub.cfg /environment/EFI/BOOT/grub.cfg
 #
 # - every `install_items` path is **inside the initramfs it just built**;
 # - a path that is a symlink counts when its target is aboard, because
-#   `/usr/sbin` is a link to `bin` on Fedora 42 and `dracut` stores the real
+#   `/usr/sbin` is a link to `bin` on Fedora (42, and 44: read 2026-11-13) and `dracut` stores the real
 #   name — the same trap as the firmware link, in the other direction;
 # - a **pattern** that matches nothing on the machine fails here rather than
 #   expanding to itself and quietly being absent. There is one pattern, and it
