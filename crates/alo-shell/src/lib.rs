@@ -277,8 +277,6 @@ mod display_resources;
 /// One display's scale, moved to `alo-drawing` (the UI kit plan, task 2) and
 /// named here so every `crate::display_scale` path in the shell still holds.
 use alo_drawing::display_scale;
-/// The sheet going up when a command alo ran needed a GitHub sign-in.
-mod a_github_sign_in_is_wanted;
 mod division_raster;
 /// The Dock's own surface: a rounded panel with a hairline and a shadow,
 /// rasterised with alpha because neither is a rectangle.
@@ -297,6 +295,8 @@ mod the_github_sheet;
 mod the_github_sheet_as_read;
 mod the_github_sheet_drawn;
 mod the_github_sheet_on_the_server;
+/// The sheet going up when a command alo ran needed a GitHub sign-in.
+mod the_github_sheet_rises_by_itself;
 mod the_github_sheets_words;
 mod the_keyboard_on_the_docks_surfaces;
 /// The *Open with* sheet: an application asked for the person to choose what

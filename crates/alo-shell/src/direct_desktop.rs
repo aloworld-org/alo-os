@@ -566,7 +566,7 @@ pub trait TheDesktop {
     /// **Whether a command alo ran needed a GitHub sign-in since this was last
     /// asked** — `alo-agentd` tells the desktop once per command that failed
     /// because nobody is signed in, and the shell then puts the sign-in sheet
-    /// up when no sheet is in the way (`crate::a_github_sign_in_is_wanted`).
+    /// up when no sheet is in the way (`crate::the_github_sheet_rises_by_itself`).
     ///
     /// Asked every frame. **`false` by default**, and then the sheet opens
     /// only from Settings → Accounts: a desktop that hears nothing from the
@@ -1537,7 +1537,7 @@ impl LoopInput for TheDesktopLane<'_> {
         // **And the sheet goes up when a command alo ran needed a GitHub
         // sign-in**, once, and never over the password sheet or *Open with*:
         // it waits behind either, as *Open with* waits behind itself
-        // (`crate::a_github_sign_in_is_wanted`).
+        // (`crate::the_github_sheet_rises_by_itself`).
         let heard_at = std::time::Instant::now();
         if self.desktop.a_command_needed_a_github_sign_in() {
             server.a_command_needed_a_github_sign_in(heard_at);

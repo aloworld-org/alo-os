@@ -105,7 +105,7 @@ buttons, 8 between them; corner 18 and the FLOATING shadow.
   (`the_desktops_told_github_needs_a_sign_in.rs`, the protocol's
   `watch-what-needs-a-github-sign-in`), the desktop hears it on a thread of its
   own (`hearing_that_github_needs_a_sign_in.rs`), and the shell puts the sheet
-  up by the road *Sign in* takes (`a_github_sign_in_is_wanted.rs`). See *When
+  up by the road *Sign in* takes (`the_github_sheet_rises_by_itself.rs`). See *When
   the sheet opens by itself*, below.
 - **Not built yet: the same for a publication.** `publish_to_github_pages`
   (`feat/publish-a-folder-to-github-pages`, unmerged on 2026-11-13) answers a

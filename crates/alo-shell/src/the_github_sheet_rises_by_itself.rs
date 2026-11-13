@@ -119,5 +119,5 @@ impl crate::Server {
 }
 
 #[cfg(test)]
-#[path = "a_github_sign_in_is_wanted_tests.rs"]
+#[path = "the_github_sheet_rises_by_itself_tests.rs"]
 mod tests;

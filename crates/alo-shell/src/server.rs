@@ -270,8 +270,8 @@ pub struct Server {
     /// has just worked (`crate::the_github_sheet`).
     pub(crate) github_sheet: crate::the_github_sheet::TheGitHubSheet,
     /// A sign-in a command alo ran needed, waiting to go up while another
-    /// sheet is (`crate::a_github_sign_in_is_wanted`).
-    pub(crate) github_sign_in_wanted: crate::a_github_sign_in_is_wanted::ASignInWanted,
+    /// sheet is (`crate::the_github_sheet_rises_by_itself`).
+    pub(crate) github_sign_in_wanted: crate::the_github_sheet_rises_by_itself::ASignInWanted,
     /// Where a new window goes when there is no room for it in view, as the
     /// person last said (`crate::the_choice_when_there_is_no_room`).
     pub(crate) when_there_is_no_room: alo_appearance::WhenThereIsNoRoom,
@@ -970,7 +970,8 @@ impl Server {
             screen_reader_to_tell: None,
             github_to_ask: Vec::new(),
             github_sheet: crate::the_github_sheet::TheGitHubSheet::default(),
-            github_sign_in_wanted: crate::a_github_sign_in_is_wanted::ASignInWanted::default(),
+            github_sign_in_wanted: crate::the_github_sheet_rises_by_itself::ASignInWanted::default(
+            ),
             // Gliding to empty space, until the desktop says what this person
             // chose; and full motion, until it says they asked for less.
             when_there_is_no_room: alo_appearance::WhenThereIsNoRoom::default(),

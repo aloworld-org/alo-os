@@ -13,7 +13,7 @@
 //! # What it never does
 //!
 //! - **It never opens the sheet itself.** The shell decides, once a frame,
-//!   whether a sheet may go up (`alo_shell`'s `a_github_sign_in_is_wanted`).
+//!   whether a sheet may go up (`alo_shell`'s `the_github_sheet_rises_by_itself`).
 //! - **It never retries the command.** Signing in is the person's; asking alo
 //!   again is the person's too. A command run again after a sign-in would be a
 //!   second run nobody approved.
