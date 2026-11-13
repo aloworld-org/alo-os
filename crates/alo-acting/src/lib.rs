@@ -66,6 +66,7 @@ pub mod counting;
 pub mod front;
 pub mod opening_a_link;
 pub mod request;
+pub mod typing_into;
 pub mod working_in;
 
 pub use acting::Acting;
@@ -76,4 +77,5 @@ pub use counting::{Begun, Counted, NotACount, ToCount};
 pub use front::{InFront, is_front};
 pub use opening_a_link::{NotALinkToOpen, OPEN_LINK, ToOpenALink};
 pub use request::{NotRead, Request};
+pub use typing_into::{NotToType, SAVE_IN, TYPE_INTO, ToType, Typed, the_first_untypable};
 pub use working_in::{NotToWorkIn, ToWorkIn, Where, Worked, Working};

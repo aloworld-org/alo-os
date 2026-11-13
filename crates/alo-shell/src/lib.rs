@@ -187,6 +187,8 @@ mod access_bus;
 mod access_contrast;
 mod access_events;
 mod access_magnifier;
+/// The keyboard layouts a text alo types is typed through (ADR 0153).
+mod a_layout_for_a_text;
 mod access_nodes;
 mod access_roles;
 mod access_serving;
@@ -596,6 +598,10 @@ pub mod task_text;
 /// Task windows on the canvas: where they meet a screen (ADR 0145).
 mod task_windows_on_the_plane;
 pub mod the_application_door;
+/// The names the person's keyboard layout was made from, to make it again (ADR 0153).
+mod the_layouts_names;
+/// Typing into the window in front, as key presses, to that one client (ADR 0153).
+pub mod typing_into_the_window_in_front;
 pub mod the_application_doors_place;
 /// The approval card's layout, measured off the approved frame.
 mod the_approval_card;

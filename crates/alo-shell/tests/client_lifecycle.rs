@@ -19,6 +19,7 @@ mod alt_f4_at_alos_own_window;
 mod cursor;
 mod cursor_shapes;
 mod direct_keyboard;
+mod typing_into_the_window_in_front;
 mod direct_pointer;
 mod direct_seat;
 mod dragged_into_another_place;
