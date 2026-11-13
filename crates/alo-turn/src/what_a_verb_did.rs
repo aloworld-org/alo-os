@@ -98,7 +98,8 @@ impl WhatAVerbDid {
             | Self::WhatCanBeInstalled(_)
             | Self::WhatTouchedAFile(_)
             | Self::WhatTheWindowsShowed(_)
-            | Self::AControlWasPressed(_) => None,
+            | Self::AControlWasPressed(_)
+            | Self::TextWasTyped(_) => None,
         }
     }
 
