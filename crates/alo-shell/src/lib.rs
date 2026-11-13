@@ -514,6 +514,8 @@ mod settings_drawn_picker;
 mod settings_drawn_row;
 /// Settings' window edge: its title and Close.
 mod settings_edge;
+/// Settings sized for the room above the Dock and clear of the panel.
+mod settings_fits_the_room;
 mod settings_formats;
 mod settings_frame;
 mod settings_granted;
