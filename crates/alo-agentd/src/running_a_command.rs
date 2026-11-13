@@ -144,9 +144,6 @@ impl CommandsHere {
         self.telling.is_some()
     }
 
-    /// **What a command did, as it goes on the wire — and the desktops told,
-    /// once, when it failed because nobody is signed in to GitHub.** Every
-    /// command this file runs is answered through here, so none is missed.
     /// **A change that was refused, looked at once**: a publication refused
     /// because nobody is signed in to GitHub tells the desktops, as a command
     /// that failed for it does. Every road a refused change is answered on at
@@ -157,6 +154,9 @@ impl CommandsHere {
         }
     }
 
+    /// **What a command did, as it goes on the wire — and the desktops told,
+    /// once, when it failed because nobody is signed in to GitHub.** Every
+    /// command this file runs is answered through here, so none is missed.
     fn answered(&self, did: &alo_capability::WhatACommandDid) -> Done {
         let done = Done::of_a_command(did);
         if let Some(desktops) = &self.telling {
