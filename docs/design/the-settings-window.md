@@ -61,6 +61,11 @@ holds it to both frames to the unit):
   as a scale;
 - the page's column is **at most 720**, narrower when the window is.
 
+**Since 2026-11-13 the rule is asked of the room above the Dock and clear of
+the put-aside panel, not of the whole screen** — the owner's *"Yes, fit above
+the Dock"*; see *On the canvas* below. The two design frames are what the rule
+gives a screen with neither.
+
 **A screen with no room for a 240 column is refused** rather than drawn
 cramped (`RenderError::SettingsScene`), which is the old window's rule for a
 frame too small to hold its focused row.
@@ -259,8 +264,8 @@ with:
 [ADR 0145](../decisions/0145-alos-own-windows-live-on-the-canvas.md), stage 3:
 Settings is a window on the canvas like an application's.
 
-- **Its size is still the rule above**, for the display it is on and the
-  person's text size — so a larger text size still makes it larger. **Its place
+- **Its size is still the rule above**, for the room it opens in on the
+  display it is on (below) and the person's text size — so a larger text size still makes it larger. **Its place
   is the canvas's**: the first frame after it opens puts it where a new window
   goes (`where-a-new-window-opens.md`) on the Place being looked at, and there
   it stays. It pans and zooms with the canvas; on another Place it is not drawn,
@@ -269,12 +274,35 @@ Settings is a window on the canvas like an application's.
   first) without moving it.
 - **It opens in the room the Dock leaves** (since 2026-11-13, with the record
   and alo's terminal), kept wholly inside it as an application's window is
-  (`crates/alo-shell/src/alos_own_windows_open_above_the_dock.rs`). **Where its
-  size is more than that room holds it is not made smaller**: on the 1280 × 800
-  frame the rule above gives 688 under a 54 band, more than fits above the
-  Dock, so it opens with its band at the top and its foot under the Dock.
-  Whether the size rule should count the Dock is the owner's decision, not
-  taken here.
+  (`crates/alo-shell/src/alos_own_windows_open_above_the_dock.rs`), and since
+  the same day clear of the put-aside panel's column — the owner: *"Windows
+  open clear of it"*.
+- **Its size is the rule above asked of that room, not of the screen** — the
+  owner, 2026-11-13, asked whether the size rule should count the Dock:
+  **"Yes, fit above the Dock."** The rule is unchanged — at most 1200 × 816,
+  never nearer the edge than 64 across and 56 down, through the text size and
+  the display's scale — but the edge it measures from is the room's: the
+  display above the Dock's top and left of the panel's column (right of it,
+  read right to left), less Settings' own 54 band, because the band is part of
+  the window a person sees. The Dock and the panel are taken as last reserved,
+  so the Dock giving way does not make Settings grow
+  (`when-the-dock-gives-way.md`). `crates/alo-shell/src/settings_fits_the_room.rs`.
+  - **On a small screen it is shorter, and its page scrolls**: on 1280 × 800
+    with the walk's Dock (its top at 717) and a 112 column the room is
+    1168 × 663, and Settings is 1040 × 551 where the design draws 1152 × 688.
+    The whole window, band included, is then above the Dock and clear of the
+    panel. *Measured once, by the tests in
+    `settings_fits_the_room_tests.rs`, which run on every gate.*
+  - **On a large screen nothing changes**: where the room holds 1200 × 816
+    with its margins, that is the size — 2560 × 1440 at 100 per cent gives it.
+  - **At 200 per cent it is the same window drawn sharper**, twice the pixels.
+  - **The page scrolls by the keyboard only.** It keeps the row the keyboard is
+    on in view (`settings_raster.rs`); a wheel over the page does not scroll
+    it, which nothing builds yet, so on a shorter window a pointer-only person
+    reaches the lower rows by the keyboard. Named here so a shorter window is
+    not read as fully reachable by pointer.
+  - *Superseded:* until this decision this bullet said Settings was **not**
+    made smaller and opened with its foot under the Dock on 1280 × 800.
 - **It is drawn among the windows**, under the Dock and every fixed control, in
   the order the person put the windows in. The egress indicator stays above
   everything at the top left.

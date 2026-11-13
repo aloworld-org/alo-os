@@ -75,7 +75,9 @@ fn the_recipe_installs_gh_from_the_pinned_base() {
         "`gh` is fetched from the network by this block, with no hash the recipe holds: {block}"
     );
     assert!(
-        the_recipe().contains("ARG THE_BASE=quay.io/fedora/fedora-bootc:42@sha256:"),
+        the_recipe().lines().any(|line| line
+            .strip_prefix("ARG THE_BASE=quay.io/fedora/fedora-bootc:")
+            .is_some_and(|pinned| pinned.contains("@sha256:"))),
         "the base is no longer pinned by digest, so the `gh` it resolves is not pinned either"
     );
 }

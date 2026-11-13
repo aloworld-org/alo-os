@@ -30,6 +30,8 @@ use alo_record::WhatTouchedIt;
 use alo_software::{Installed, WhatTheCatalogueHolds};
 
 use crate::acting_on_an_application::Reached;
+use crate::pressing_a_control::AControlPressed;
+use crate::reading_an_applications_windows::TheWindowsShowed;
 
 /// What a verb this machine carried out answered with.
 ///
@@ -64,6 +66,16 @@ pub enum WhatAVerbDid {
     /// nothing does — because an empty answer drawn as an empty list reads as
     /// a claim about the file that nobody made.
     WhatTouchedAFile(WhatTouchedIt),
+    /// What an application's windows showed, read through its accessibility
+    /// tree inside the turn (`accessible.read_window`).
+    ///
+    /// **The third read**, and the first whose subject is what is on the
+    /// person's screen now: it is answered to the turn that asked and written
+    /// down only as the act, never as what was seen.
+    WhatTheWindowsShowed(TheWindowsShowed),
+    /// One control in an application's window was pressed, or asked to be by
+    /// an application that did not answer (`accessible.activate_control`).
+    AControlWasPressed(AControlPressed),
 }
 
 impl WhatAVerbDid {
@@ -79,7 +91,9 @@ impl WhatAVerbDid {
             Self::AnApplicationInstalled(_)
             | Self::AnApplicationWasReached(_)
             | Self::WhatCanBeInstalled(_)
-            | Self::WhatTouchedAFile(_) => None,
+            | Self::WhatTouchedAFile(_)
+            | Self::WhatTheWindowsShowed(_)
+            | Self::AControlWasPressed(_) => None,
         }
     }
 
@@ -91,7 +105,9 @@ impl WhatAVerbDid {
             Self::ToFiles(_)
             | Self::AnApplicationWasReached(_)
             | Self::WhatCanBeInstalled(_)
-            | Self::WhatTouchedAFile(_) => None,
+            | Self::WhatTouchedAFile(_)
+            | Self::WhatTheWindowsShowed(_)
+            | Self::AControlWasPressed(_) => None,
         }
     }
 
@@ -103,7 +119,9 @@ impl WhatAVerbDid {
             Self::ToFiles(_)
             | Self::AnApplicationInstalled(_)
             | Self::AnApplicationWasReached(_)
-            | Self::WhatTouchedAFile(_) => None,
+            | Self::WhatTouchedAFile(_)
+            | Self::WhatTheWindowsShowed(_)
+            | Self::AControlWasPressed(_) => None,
         }
     }
 
@@ -115,7 +133,27 @@ impl WhatAVerbDid {
             Self::ToFiles(_)
             | Self::AnApplicationInstalled(_)
             | Self::AnApplicationWasReached(_)
-            | Self::WhatCanBeInstalled(_) => None,
+            | Self::WhatCanBeInstalled(_)
+            | Self::WhatTheWindowsShowed(_)
+            | Self::AControlWasPressed(_) => None,
+        }
+    }
+
+    /// What an application's windows showed, when they were read.
+    #[must_use]
+    pub const fn the_windows_showed(&self) -> Option<&TheWindowsShowed> {
+        match self {
+            Self::WhatTheWindowsShowed(read) => Some(read),
+            _ => None,
+        }
+    }
+
+    /// The control pressed, when one was.
+    #[must_use]
+    pub const fn pressed(&self) -> Option<&AControlPressed> {
+        match self {
+            Self::AControlWasPressed(pressed) => Some(pressed),
+            _ => None,
         }
     }
 
@@ -127,8 +165,22 @@ impl WhatAVerbDid {
             Self::ToFiles(_)
             | Self::AnApplicationInstalled(_)
             | Self::WhatCanBeInstalled(_)
-            | Self::WhatTouchedAFile(_) => None,
+            | Self::WhatTouchedAFile(_)
+            | Self::WhatTheWindowsShowed(_)
+            | Self::AControlWasPressed(_) => None,
         }
+    }
+}
+
+impl From<TheWindowsShowed> for WhatAVerbDid {
+    fn from(read: TheWindowsShowed) -> Self {
+        Self::WhatTheWindowsShowed(read)
+    }
+}
+
+impl From<AControlPressed> for WhatAVerbDid {
+    fn from(pressed: AControlPressed) -> Self {
+        Self::AControlWasPressed(pressed)
     }
 }
 

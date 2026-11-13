@@ -164,9 +164,14 @@ the record keeps it.
 
 ### 6. alo types into an application
 
-**Status:** not started. **Size:** L. **Waits on:** stage 1's measurement, which
-decides how alo types (engineering, not a setting); stage 5; and, for the top
-level of the setting, `CLAUDE.md` carrying the owner's change (ADR 0143).
+**Status:** blocked on a decision, 2026-11-13. How alo types was measured
+(`docs/autonomy/updates/how-alo-can-type-into-an-application.md`): VSCodium
+offers no screen-reader road for text, and keys the desktop delivers reach it
+but land exactly as approved only with its automatic editing off. Which of
+that report's three options is built waits on the coordinator and the owner.
+**Size:** L. **Waits on:** that decision; stage 5 (landed, #1208); and, for
+the top level of the setting, `CLAUDE.md` carrying the owner's change (ADR
+0143), which it now does.
 
 **For the person:** alo writes into the editor and saves, and they watch it
 happen. How much one approval covers is their setting: one file by default,

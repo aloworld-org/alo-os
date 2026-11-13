@@ -10,6 +10,7 @@
 //! | `rename_file`, `move_file`, `archive_folder` | `crates/alo-files/tests/what_each_change_says_it_does.rs` |
 //! | `open_application`, `focus_application`, `close_application` | `crates/alo-shell/tests/what_an_application_verb_says_it_does` |
 //! | `install_application` | `crates/alo-software/tests/installing_updating_and_removing.rs` |
+//! | `accessible.activate_control` | `crates/alo-adapters/tests/the_accessibility_fallback.rs` |
 //!
 //! This file is the other half: a change added to the list the daemon offers
 //! without its two sentences fails here, and a change added with them fails
@@ -21,7 +22,7 @@
 )]
 
 /// The change verbs the table above names.
-const HELD: [&str; 7] = [
+const HELD: [&str; 8] = [
     "rename_file",
     "move_file",
     "archive_folder",
@@ -29,6 +30,7 @@ const HELD: [&str; 7] = [
     "focus_application",
     "close_application",
     "install_application",
+    "accessible.activate_control",
 ];
 
 #[test]

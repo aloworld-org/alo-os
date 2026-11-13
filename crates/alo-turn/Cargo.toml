@@ -36,6 +36,13 @@ alo-software = { path = "../alo-software" }
 # crate needs the type to put one to the executor in a test, and the words so
 # that an installation's refusals read as sentences rather than missing keys.
 alo-applications = { path = "../alo-applications" }
+# The accessibility fallback's two verbs — reading what an application's
+# windows show, and pressing one control in them — and everything between an
+# authorised call and the tree: the reach, the walk, the one press and the
+# words. This crate adds the order, the record and the machine around them and
+# opens no tree of its own: `the_windows_on_the_screen` is the trait, and
+# `alo-agentd` holds the one that reaches the person's session.
+alo-adapters = { path = "../alo-adapters" }
 # The three acts, the request line and the one-word answers the compositor's
 # door speaks (ADR 0108). This crate holds the vocabulary and never the socket:
 # the path is `alo-agentd`'s, and `the_door_the_compositor_serves` is the trait

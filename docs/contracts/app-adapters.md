@@ -189,6 +189,19 @@ building on the fallback, can rely on:
 - **reading is bounded**: at most 2,000 things, 48 levels deep, and 4,000
   characters of any one text, with the answer saying when not everything was read.
 
+*Added 2026-11-12, additively, when a turn first offered both verbs.* A read
+answers the agent with `windows-showed`: each window's title and, in reading
+order, each thing by what it `is` (one of the seven kinds a press takes, or
+`field`, `password-field`, `text`, `document`, `image`, `window`, `drawn`), its
+`name`, what it `shows`, `greyed-out`, `on` and `cannot-be-read`; beside it
+`told`, sentences in the person's language — including, for a window that shows
+no text, which switch in Settings is the likeliest reason. A press answers with
+`pressed`: the application, the kind, the name, and whether the application did
+not answer. The approval card for a press says it *presses that one control
+once, by its own action*, and that *nothing is typed, no other control is
+pressed, and nothing is found by where it is on the screen*. A read of a
+person's windows never answers across a pairing.
+
 ## Rules for adapter authors
 
 1. **Be honest about `effect`.** Anything that modifies a document, a file or

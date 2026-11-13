@@ -497,6 +497,30 @@ real icons would draw nothing, which is the band a person sees now.
 whether a person may choose an icon themselves. Both are later and neither is
 promised.
 
+### Settings and Applications are drawings, not letters
+
+**The owner's decision of 2026-11-13.** The rule above is about applications
+with no artwork, and the Dock had been applying it to its own two entries as
+well, so Settings was an *S* and Applications an *A*. Asked, the owner said:
+
+> Design icons for both
+
+shown the design file's Settings artwork, three sliders (`348:23618`):
+
+> i think the gear icon can work best
+
+and shown two gears:
+
+> Gear 1: classic, grid OK
+
+So Settings is a classic eight-tooth cog — **a deliberate departure from the
+design file's sliders, by the owner's choice** — and Applications is three
+rounded squares and a plus, **new artwork approved that day**. Each is one line
+drawing in the Dock's ink with no badge circle, on the bar and in the list
+*Show all* opens; the name is still the tooltip and the spoken name, so nobody
+loses the word. The measurements, the files and what holds them are in
+`the-docks-visual-specification.md` under the same date.
+
 **Four of the six were already the code's numbers**, written by somebody who had
 not seen this list: `ICON = 48` was always the *clickable area*, with `GAP = 8`,
 `MARGIN = 8` and `Room::a_dock_of_icons()` asserting **64**. What was missing was

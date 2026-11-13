@@ -332,6 +332,7 @@ fn the_settings_files() -> Vec<(String, Vec<(usize, String)>)> {
             "settings_drawn_row.rs",
             "settings_drawn_side_column.rs",
             "settings_edge.rs",
+            "settings_fits_the_room.rs",
             "settings_formats.rs",
             "settings_frame.rs",
             "settings_granted.rs",

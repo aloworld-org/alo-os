@@ -65,6 +65,16 @@ impl Server {
         let default = Cursor::Arrow {
             location: pointer.location,
         };
+        // **The hand, before anybody else's cursor**, while `⊞` is held where a
+        // press would take hold of the canvas or while it is held — over an
+        // application too, because the press will not be the application's
+        // (`crate::canvas_grab_anywhere`).
+        if let Some(shape) = self.the_hand_for_holding_the_canvas() {
+            return Cursor::Named {
+                shape,
+                location: pointer.location,
+            };
+        }
         if pointer.handle.current_focus().is_none() {
             // Nothing of a client's is under the pointer, so the shell's own
             // bands may answer. A frame shows no furniture (ADR 0065), which

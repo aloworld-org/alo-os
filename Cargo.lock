@@ -70,6 +70,7 @@ dependencies = [
 name = "alo-access"
 version = "0.0.1"
 dependencies = [
+ "alo-adapters",
  "alo-appearance",
  "alo-approving",
  "alo-instructing",
@@ -108,7 +109,6 @@ dependencies = [
 name = "alo-adapters"
 version = "0.0.1"
 dependencies = [
- "alo-access",
  "alo-applications",
  "alo-capability",
  "alo-portals",
@@ -172,7 +172,9 @@ dependencies = [
 name = "alo-agentd"
 version = "0.0.1"
 dependencies = [
+ "alo-access",
  "alo-acting",
+ "alo-adapters",
  "alo-administrator",
  "alo-agent",
  "alo-answering",
@@ -1552,6 +1554,7 @@ dependencies = [
 name = "alo-protocol"
 version = "0.0.1"
 dependencies = [
+ "alo-adapters",
  "alo-applications",
  "alo-capability",
  "alo-context",
@@ -2058,6 +2061,7 @@ name = "alo-turn"
 version = "0.0.1"
 dependencies = [
  "alo-acting",
+ "alo-adapters",
  "alo-answering",
  "alo-applications",
  "alo-asking",
