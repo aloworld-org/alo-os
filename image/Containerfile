@@ -1082,6 +1082,28 @@ RUN dnf install --assumeyes --setopt=install_weak_deps=False \
  && pkg-config --version \
  && echo "a developer who opens the terminal can clone and build"
 
+# **GitHub's own command, `gh`, so a person can sign in to GitHub once and alo
+# can publish a folder to their GitHub Pages site** (Demo 2's second road,
+# owner 2026-11-13: *ship GitHub's own `gh` on the image; the person signs in
+# once themselves with a browser device code, kept in the keyring*).
+#
+# **From the base's own repository, as `git` is, and pinned the same way**: the
+# base image above is pinned by digest, so the package it resolves is the one
+# this recipe was measured with. Fedora builds `gh` from GitHub's published
+# source (github.com/cli/cli); nothing here patches it. An upstream release
+# tarball would need a sha256 this recipe holds itself, and the distro route
+# needs none because the digest already fixes it.
+#
+# **Started, not stat-ed**: `gh --version` loads the binary and makes it
+# answer, so a `gh` that cannot start fails the build here rather than on the
+# first person who tries to sign in. It reaches no network and reads no
+# sign-in. `crates/alo-image/tests/the_image_ships_githubs_own_command.rs`
+# holds the recipe to this block.
+RUN dnf install --assumeyes --setopt=install_weak_deps=False gh \
+ && dnf clean all \
+ && gh --version \
+ && echo "a person can sign in to GitHub and publish with GitHub's own command"
+
 # The model runtime (ADR 0006, pinned above; ADR 0025 is why it is aboard at
 # all): the binary and the libraries it loads, exactly as upstream lays them
 # out. How the runtime is spoken to stays `crates/alo-models/src/ollama.rs`'s
