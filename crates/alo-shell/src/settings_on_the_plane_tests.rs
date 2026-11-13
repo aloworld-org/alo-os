@@ -109,6 +109,59 @@ fn it_is_placed_once_and_counted() {
     assert_ne!(frame.id(), server.the_terminals_number);
 }
 
+/// **Placed above the Dock**, band and foot, as an application's window is.
+///
+/// Seen on a booted machine on 2026-11-13 (`w26-43`): Settings opened from the
+/// Dock reached down behind it, because it was placed against the whole view.
+/// The control is the same opening with no Dock drawn, which on this display
+/// puts its foot where the Dock is.
+#[test]
+fn it_is_placed_above_the_dock() {
+    const DISPLAY: (i32, i32) = (1600, 1000);
+    const DOCK_TOP: i32 = 920;
+    let strip = crate::a_window_and_its_strip::ItsStrip::at(100);
+    let placed_with = |named: &str, dock: bool| {
+        let (_directory, mut server) = with_settings_open(named);
+        server.surfaces.popups.output_size = Some(Size::from(DISPLAY));
+        if dock {
+            server.the_fixed_controls_were_drawn(
+                "the-one-display",
+                crate::FixedControlsDrawn {
+                    dock_band: Some(Rectangle::new(
+                        (400, DOCK_TOP).into(),
+                        (800, DISPLAY.1 - DOCK_TOP).into(),
+                    )),
+                    panel_reserved: Rectangle::default(),
+                    what_is_leaving: None,
+                    top_controls: None,
+                },
+                TextScale::ordinary(),
+            );
+        }
+        assert!(server.settings_is_placed((1200, 816), DISPLAY, Direction::LeftToRight));
+        let placed = server
+            .where_settings_is_on_the_plane()
+            .expect("placed on this Place");
+        let top = server.the_camera().at().y;
+        (strip.round(placed), placed, top)
+    };
+    let (_, without, top) = placed_with("settings-no-dock", false);
+    assert!(
+        without.loc.y + without.size.h > top + DOCK_TOP,
+        "the control: with no Dock counted, Settings' foot {without:?} is above where the \
+         Dock would be"
+    );
+    let (taken, placed, top) = placed_with("settings-above-the-dock", true);
+    assert!(
+        taken.loc.y >= top,
+        "Settings' band is off the top: {taken:?}"
+    );
+    assert!(
+        placed.loc.y + placed.size.h <= top + DOCK_TOP,
+        "Settings reaches behind the Dock: {placed:?}, the Dock's top at {DOCK_TOP}"
+    );
+}
+
 /// **On another Place it is out of the way**, and going to it takes the person
 /// to its Place, without moving it.
 #[test]

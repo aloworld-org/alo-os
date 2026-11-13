@@ -237,6 +237,14 @@ Settings is a window on the canvas like an application's.
   not pressed and takes no keys; *Show all* and Super+2 count it; the chord, the
   Dock and Super+Tab bring it in front and take the view to it (its Place
   first) without moving it.
+- **It opens in the room the Dock leaves** (since 2026-11-13, with the record
+  and alo's terminal), kept wholly inside it as an application's window is
+  (`crates/alo-shell/src/alos_own_windows_open_above_the_dock.rs`). **Where its
+  size is more than that room holds it is not made smaller**: on the 1280 × 800
+  frame the rule above gives 688 under a 54 band, more than fits above the
+  Dock, so it opens with its band at the top and its foot under the Dock.
+  Whether the size rule should count the Dock is the owner's decision, not
+  taken here.
 - **It is drawn among the windows**, under the Dock and every fixed control, in
   the order the person put the windows in. The egress indicator stays above
   everything at the top left.

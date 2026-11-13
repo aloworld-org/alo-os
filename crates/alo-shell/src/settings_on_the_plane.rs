@@ -161,6 +161,9 @@ impl crate::Server {
             )
                 .into(),
         );
+        // **Above the Dock**, as an application's window is
+        // (`crate::alos_own_windows_open_above_the_dock`).
+        let view = self.the_room_an_alo_window_opens_in(view);
         let place = self.the_place_now();
         let open: Vec<Rectangle<i32, Logical>> = self
             .mapped_surfaces()
@@ -168,13 +171,18 @@ impl crate::Server {
             .map(crate::where_a_window_is)
             .chain(self.where_the_terminal_is_on_the_plane())
             .collect();
-        let first = strip.where_a_window_opens(
-            view,
-            &open,
-            open.first().copied(),
+        let first = crate::the_room_alo_places_a_window_in::kept_inside(
+            strip.where_a_window_opens(
+                view,
+                &open,
+                open.first().copied(),
+                Size::from(window),
+                reading,
+                &[],
+            ),
             Size::from(window),
-            reading,
-            &[],
+            view,
+            strip,
         );
         // **The person opened it**: with no room the view may glide, the
         // owner's yes of 2026-11-07 (`crate::room_in_a_full_view`) —
