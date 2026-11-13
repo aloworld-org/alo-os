@@ -178,6 +178,10 @@ impl ToAnAgent {
             | Told::Declined {}
             // A GitHub sign-in is the person's, and so is being told it was kept.
             | Told::GithubSignInKept {}
+            // A command needing a sign-in is told to the person's desktop, and
+            // never to an agent, which would learn when another agent's failed.
+            | Told::WatchingWhatNeedsAGithubSignIn {}
+            | Told::AGithubSignInIsNeeded {}
             | Told::Granted { .. }
             | Told::Pairing(_)
             | Told::Confirmed { .. }

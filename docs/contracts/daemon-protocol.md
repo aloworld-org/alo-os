@@ -248,10 +248,14 @@ at the moment the request arrives. Nothing on the wire can name the level.
 - **A command that failed because nobody is signed in to GitHub says so**
   (added 2026-11-13): where what it wrote is `git`'s, `ssh`'s or `gh`'s own
   line for that, *It did not work:* is followed by *you are not signed in to
-  GitHub. To sign in, type gh auth login --web in your terminal …*, which also
-  says the sign-in lets alo act on every repository the account can at full
-  access (`alo_capability::ItDidNotWork::of_what_it_said`). The status is
-  still carried and recorded as before.
+  GitHub. Sign in from Settings → Accounts, or type gh auth login --web in
+  your terminal …, and then ask alo again: it does not try again by itself*,
+  which also says the sign-in lets alo act on every repository the account can
+  at full access (`alo_capability::ItDidNotWork::of_what_it_said`). The status
+  is still carried and recorded as before. **Each desktop watching
+  `watch-what-needs-a-github-sign-in` is also told, once** (below), so the
+  sign-in sheet goes up; **the command is never run again by itself**, because
+  that would be a second run nobody approved.
 - **A waiting command is answered exactly as a change is**: `approve` and
   `decline` on the person's door, by number; it appears in `waiting`; one
   approval runs it once; a second approval of the number, or one after it
@@ -789,6 +793,57 @@ before it leaves.
 - **A service started with nobody to tell** answers `refused`, in the words
   *this part of alo OS cannot show you what is leaving this machine* — never
   an empty list, which would read as nothing is leaving.
+
+### `watch-what-needs-a-github-sign-in` — the desktop is told when a command needs a GitHub sign-in
+
+```json
+{"watch-what-needs-a-github-sign-in":{}}
+```
+
+Added 2026-11-13, additively, for the owner's approval of the GitHub sign-in
+sheet, which *appears when alo can't publish because you're not signed in*
+(`docs/design/github-sign-in.md`). This service runs every command alo runs;
+the desktop draws the sheet. Until this request nothing carried one to the
+other.
+
+The answer is `watching-what-needs-a-github-sign-in`, and **the connection is
+then given over**, as `watch-what-leaves`' is: it is no longer the person's
+door, nothing sent on it is read, and each time a command alo ran on this
+machine **ended with a failure and said nobody is signed in to GitHub**
+(`alo_capability::ItDidNotWork::of_what_it_said`, the sentence's own test) it
+is written, once:
+
+```json
+{"watching-what-needs-a-github-sign-in":{}}
+{"a-github-sign-in-is-needed":{}}
+```
+
+- **It carries nothing** — not the command, not what it wrote, not which agent
+  asked — and a field in it makes it unreadable. The person read why in alo's
+  own answer; the desktop needs only to know a sign-in would help.
+- **Once per failure, and nothing else**: a command that worked, failed for
+  another reason, was stopped or ran too long is told to nobody. At full
+  access it is told when the command runs; at *ask me each time*, when the OK
+  runs it — never before.
+- **Only a command run for the person's own turns on this machine.** Every
+  road a paired machine reaches this one by runs commands as the sealed box,
+  which tells nobody, and nothing told across a pairing is told here: signing
+  in on this machine would not help a command run under another one's `gh`.
+- **The desktop decides whether the sheet goes up**, and never stacks it:
+  a knock while the sheet is up is let go; one while another sheet is up waits
+  behind it for at most five minutes, as *Open with* waits.
+- **Nothing is run again.** Signing in is the person's to do or dismiss, and
+  asking again is theirs too: a command run again after a sign-in would be a
+  second run nobody approved.
+- **A desktop that cannot take a line at once is dropped**, never waited for,
+  and at most four are told — `watch-what-leaves`' rules.
+- **A desktop watching what leaves is never told it**, and a desktop written
+  before it never asks — so no reader meets an answer it has no arm for.
+- **An agent sending this is refused**, and an agent is never told either
+  answer: an agent that could watch would learn when another agent's command
+  failed.
+- **A service started with nobody to tell** answers `refused`; the desktop
+  then opens the sheet from Settings → Accounts only.
 
 ## What comes back
 

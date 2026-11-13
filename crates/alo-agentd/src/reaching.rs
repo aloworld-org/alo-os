@@ -89,7 +89,10 @@ pub fn answered_to(
         | FromAPerson::APlaceToReturnTo
         | FromAPerson::PutBack { .. }
         | FromAPerson::GitHubSignIn(_)
-        | FromAPerson::WatchWhatLeaves => ToAPerson::refused(&rereading::what_to_say(strings)),
+        | FromAPerson::WatchWhatLeaves
+        | FromAPerson::WatchWhatNeedsAGitHubSignIn => {
+            ToAPerson::refused(&rereading::what_to_say(strings))
+        }
         FromAPerson::Approve { number } => match under(arriving, number, now) {
             Some(waiting) => {
                 let shared = network.locked();

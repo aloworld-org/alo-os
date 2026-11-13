@@ -346,6 +346,10 @@ pub mod surface;
 pub mod terms;
 #[cfg(target_os = "linux")]
 pub mod the_bracket_this_turn_takes;
+/// The desktops told when a command alo ran needs a GitHub sign-in, so the
+/// sign-in sheet can go up (the owner's approval of 2026-11-13).
+#[cfg(target_os = "linux")]
+pub mod the_desktops_told_github_needs_a_sign_in;
 /// The grants a door is asked against, as the person's level is now — at full
 /// access, everything the account can reach (ADR 0149).
 #[cfg(target_os = "linux")]
@@ -468,6 +472,8 @@ pub use stopping::{Stop, Waking};
 pub use surface::{AtThePersonsDoor, NobodyToShowItTo};
 #[cfg(target_os = "linux")]
 pub use terms::{NoNameYet, Terms};
+#[cfg(target_os = "linux")]
+pub use the_desktops_told_github_needs_a_sign_in::TheDesktopsToldGitHubNeedsASignIn;
 #[cfg(target_os = "linux")]
 pub use the_road_out::{NotTaken, TheRoadOut};
 #[cfg(target_os = "linux")]

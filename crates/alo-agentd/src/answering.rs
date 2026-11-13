@@ -326,8 +326,11 @@ fn answered_to(
         | FromAPerson::PutBack { .. }
         | FromAPerson::GitHubSignIn(_)
         // Watching what leaves is answered by the serving loop, which gives
-        // the connection over to it (`crate::watchers`).
-        | FromAPerson::WatchWhatLeaves => {
+        // the connection over to it (`crate::watchers`), and so is watching
+        // for a command that needs a GitHub sign-in
+        // (`crate::the_desktops_told_github_needs_a_sign_in`).
+        | FromAPerson::WatchWhatLeaves
+        | FromAPerson::WatchWhatNeedsAGitHubSignIn => {
             ToAPerson::refused(&rereading::what_to_say(strings))
         }
         FromAPerson::Approve { number } => match under(turning, number, now) {

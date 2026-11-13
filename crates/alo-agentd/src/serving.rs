@@ -162,6 +162,7 @@ use crate::side::Side;
 use crate::stopping::Waking;
 use crate::surface::NobodyToShowItTo;
 use crate::terms::Terms;
+use crate::the_desktops_told_github_needs_a_sign_in::TheDesktopsToldGitHubNeedsASignIn;
 use crate::unix::ready_and;
 use crate::wire::Wire;
 use crate::words::{
@@ -279,6 +280,10 @@ pub struct Serving<'a> {
     /// one, which answers `watch-what-leaves` in words rather than with a list
     /// that would read as *nothing is leaving*.
     watchers: Option<&'a crate::watchers::Watchers>,
+    /// The desktops told when a command alo ran needs a GitHub sign-in, when
+    /// this service tells anybody. [`None`] in a service started without them,
+    /// which answers `watch-what-needs-a-github-sign-in` with a refusal.
+    told_of_github: Option<&'a TheDesktopsToldGitHubNeedsASignIn>,
 }
 
 /// What a round of work found, once everything ready has been dealt with.
@@ -327,7 +332,19 @@ impl<'a> Serving<'a> {
             network,
             terms,
             watchers: None,
+            told_of_github: None,
         }
+    }
+
+    /// This service, telling these desktops each time a command alo runs
+    /// fails because nobody is signed in to GitHub.
+    #[must_use]
+    pub const fn telling_github_sign_ins_to(
+        mut self,
+        desktops: &'a TheDesktopsToldGitHubNeedsASignIn,
+    ) -> Self {
+        self.told_of_github = Some(desktops);
+        self
     }
 
     /// This service, telling these desktops what its indicator shows. They are
@@ -479,8 +496,14 @@ impl<'a> Serving<'a> {
             // whose turn is over.
             // **Where the person's level for running code is, and where a
             // command starts** (ADR 0149), for this turn. The level itself is
-            // read at the moment a command is asked for or approved.
-            let commands = crate::running_a_command::CommandsHere::on_this_machine();
+            // read at the moment a command is asked for or approved. **And the
+            // desktops told when one needs a GitHub sign-in**, on this road —
+            // the person's own turns — and on no other.
+            let commands = match self.told_of_github {
+                Some(desktops) => crate::running_a_command::CommandsHere::on_this_machine()
+                    .telling_github_sign_ins_to(desktops),
+                None => crate::running_a_command::CommandsHere::on_this_machine(),
+            };
             let mut over = Ok(false);
             while held.agent.is_some() {
                 // No timeout: a turn is not interrupted by the clock, and there
@@ -669,10 +692,29 @@ impl<'a> Serving<'a> {
             // still knock (ADR 0134).
             let mut given_over = false;
             let watchers = self.watchers;
+            // **And a desktop asking to be told when a command needs a GitHub
+            // sign-in**, the same way: answered, then given over
+            // (`crate::the_desktops_told_github_needs_a_sign_in`).
+            let mut given_over_to_github = false;
+            let told_of_github = self.told_of_github;
             let answered = held.person.as_mut().map(|line| {
                 one_message(
                     line,
                     |said| {
+                        if matches!(
+                            FromAPerson::read(said),
+                            Ok(FromAPerson::WatchWhatNeedsAGitHubSignIn)
+                        ) {
+                            return match told_of_github {
+                                Some(_) => {
+                                    given_over_to_github = true;
+                                    TheDesktopsToldGitHubNeedsASignIn::answered().written().ok()
+                                }
+                                None => ToAPerson::refused(&crate::rereading::what_to_say(strings))
+                                    .written()
+                                    .ok(),
+                            };
+                        }
                         if matches!(FromAPerson::read(said), Ok(FromAPerson::WatchWhatLeaves)) {
                             return match watchers {
                                 Some(watchers) => {
@@ -711,6 +753,12 @@ impl<'a> Serving<'a> {
                 && let (Some(line), Some(watchers)) = (held.person.take(), self.watchers)
             {
                 watchers.watching(line.given_over());
+            }
+            if given_over_to_github
+                && answered == Some(Message::Answered)
+                && let (Some(line), Some(desktops)) = (held.person.take(), self.told_of_github)
+            {
+                desktops.watching(line.given_over());
             }
             if answered == Some(Message::Answered) {
                 served.messages = served.messages.saturating_add(1);
@@ -1371,8 +1419,12 @@ mod tests {
             // person's door, held beside the pairings.
             naming: network.names(),
         };
+        // And the desktops told when a command needs a GitHub sign-in, as
+        // `crate::starting` builds them.
+        let told_of_github = TheDesktopsToldGitHubNeedsASignIn::none_yet();
         let served = Serving::of(&knocking, &waking, &wire, &network, terms)
             .telling(&watchers)
+            .telling_github_sign_ins_to(&told_of_github)
             .until_stopped(
                 &mut machine,
                 &mut WhatIsGranted::of(&mut grants, remembering),
@@ -1732,6 +1784,35 @@ mod tests {
                 assert!(
                     listed.contains(r#""leaving":{"lines":[]}"#),
                     "the desktop was not told the list as it stands: {listed}"
+                );
+
+                let mut settings = Talking::to(&told.at);
+                let answered = settings.asking(r#"{"waiting":{}}"#);
+                assert!(
+                    answered.contains("waiting") && !answered.contains("already answering"),
+                    "a watching desktop held the person's door: {answered}"
+                );
+                drop(desktop);
+                told.stop.stop();
+            },
+        );
+    }
+
+    /// **A desktop watching for a command that needs a GitHub sign-in is told
+    /// it is watching, and leaves the person's door free** — the same road as
+    /// watching what leaves, and given over to its own list, so it is told
+    /// nothing about what leaves.
+    #[test]
+    fn a_desktop_watching_for_a_github_sign_in_leaves_the_persons_door_free() {
+        while_it_runs(
+            "watching-for-github",
+            &[Some(Side::Person), Some(Side::Person)],
+            |told| {
+                let mut desktop = Talking::to(&told.at);
+                let watching = desktop.asking(r#"{"watch-what-needs-a-github-sign-in":{}}"#);
+                assert!(
+                    watching.contains(r#""watching-what-needs-a-github-sign-in":{}"#),
+                    "the desktop was not told it is watching: {watching}"
                 );
 
                 let mut settings = Talking::to(&told.at);

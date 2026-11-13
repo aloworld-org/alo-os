@@ -123,6 +123,20 @@ pub(crate) enum Told {
     /// desktop's own account, and the one thing it needs back is that it was
     /// kept.
     GithubSignInKept {},
+    /// The desktop that asked is now told each time a command needs a GitHub
+    /// sign-in — the answer to `watch-what-needs-a-github-sign-in`, before
+    /// anything has needed one.
+    ///
+    /// Added 2026-11-13, additively. Carries nothing.
+    WatchingWhatNeedsAGithubSignIn {},
+    /// A command alo ran on this machine failed because nobody is signed in to
+    /// GitHub — told once per such failure, to a desktop watching for it.
+    ///
+    /// Added 2026-11-13, additively. **Carries nothing**: not the command, not
+    /// what it said, not which agent asked. The desktop needs to know only
+    /// that a sign-in would help, and a field here would be a road for an
+    /// agent's words onto the person's screen.
+    AGithubSignInIsNeeded {},
     /// What is granted was read again, and this is how much of it there was.
     ///
     /// The answer to the person's knock. It carries a **count and no list**:

@@ -1045,18 +1045,21 @@ pub const A_COMMAND_RAN_TOO_LONG: Word = Word::saying(
 /// owner's decision of 2026-11-13: *say its broad access plainly, and say that
 /// at full access alo can read a stored sign-in*).
 pub const NOT_SIGNED_IN_TO_GITHUB: Word = Word::saying(
-    "capability.running.not-signed-in-to-github",
-    "you are not signed in to GitHub. To sign in, type gh auth login --web in your terminal and \
-     follow the steps GitHub shows you in your browser. That sign-in is kept on this computer, \
-     and it lets anything you run — and alo, at full access — read and change every repository \
-     your GitHub account can, and make new ones, until you type gh auth logout",
+    "capability.running.not-signed-in-to-github-ask-again",
+    "you are not signed in to GitHub. Sign in from Settings → Accounts, or type gh auth login \
+     --web in your terminal and follow the steps GitHub shows you in your browser, and then ask \
+     alo again: it does not try again by itself. That sign-in is kept on this computer, and it \
+     lets anything you run — and alo, at full access — read and change every repository your \
+     GitHub account can, and make new ones, until you type gh auth logout",
 )
 .noting(
     "Follows 'It did not work:' for a command that failed because the person has not signed in \
      to GitHub, the website where programmers keep their code. 'gh auth login --web' and 'gh auth \
-     logout' are commands typed exactly as written and are never translated. 'full access' is the \
-     setting in Settings → Running code; use the words your translation uses there. No full stop \
-     at the end: the sentence around it adds one.",
+     logout' are commands typed exactly as written and are never translated. 'Settings → \
+     Accounts' and 'full access' (a setting in Settings → Running code) are named as your \
+     translation names them there. 'ask alo again' matters: alo does not run the command a \
+     second time by itself, so the person has to ask. No full stop at the end: the sentence \
+     around it adds one.",
 );
 
 /// The question the terminal asks before a change alo proposed is carried out:

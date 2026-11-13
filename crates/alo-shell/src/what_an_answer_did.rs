@@ -19,7 +19,17 @@ use crate::the_cards_words::{
 };
 
 /// The line alo says once the daemon has answered, or failed to.
+///
+/// **A command that ran and did not work is never *Done.*** (2026-11-13, the
+/// rule the terminal has kept since 2026-11-10): it says *It did not work:*
+/// and why, as `alo_capability::ItDidNotWork` decides — and for a command
+/// that failed because nobody is signed in to GitHub, why says to sign in and
+/// then **ask alo again**, because alo does not run it a second time by
+/// itself.
 pub(crate) fn what_an_answer_did(answered: Option<&Answered>, strings: &Strings) -> String {
+    if let Some(said) = answered.and_then(|answered| it_did_not_work(answered, strings)) {
+        return said;
+    }
     let word = match answered {
         Some(Answered::Refused { told }) => return told.clone(),
         Some(Answered::It(_)) => IT_WAS_DONE,
@@ -34,6 +44,38 @@ pub(crate) fn what_an_answer_did(answered: Option<&Answered>, strings: &Strings)
         .say(&word.key(), &Filling::nothing())
         .text()
         .to_owned()
+}
+
+/// What the person reads about a command they allowed that ran and did not
+/// work, or [`None`] for anything else — a change, or a command that worked.
+///
+/// The terminal's own sentence (`alo-ask`'s `what_the_terminal_says`), so the
+/// card and the terminal cannot disagree about whether a run worked.
+fn it_did_not_work(answered: &Answered, strings: &Strings) -> Option<String> {
+    let alo_changing::Done::RanACommand {
+        returned,
+        took_too_long,
+        said,
+        ..
+    } = answered.did()?
+    else {
+        return None;
+    };
+    let why = alo_capability::ItDidNotWork::of_what_it_said(*returned, *took_too_long, said)?;
+    let word = if answered.cannot_be_undone() {
+        alo_capability::words::DID_NOT_WORK_AFTER_YOUR_OK_AND_IT_CANNOT_BE_PUT_BACK
+    } else {
+        alo_capability::words::DID_NOT_WORK_AFTER_YOUR_OK
+    };
+    Some(
+        strings
+            .say(
+                &word.key(),
+                &Filling::nothing().and_said("why", &why.said(strings)),
+            )
+            .text()
+            .to_owned(),
+    )
 }
 
 #[cfg(test)]
@@ -111,5 +153,71 @@ mod tests {
             &in_english(),
         );
         assert_eq!(said, told);
+    }
+
+    /// This surface's words and the machine's own about a command, untranslated.
+    fn with_what_a_command_says() -> Strings {
+        let mut vocabulary = Vocabulary::empty();
+        crate::the_cards_words::declare_the_cards_words(&mut vocabulary).unwrap();
+        alo_capability::words::declare_into(&mut vocabulary).unwrap();
+        Strings::of(vocabulary)
+    }
+
+    /// A command the person allowed, and what it ended with.
+    fn a_command(returned: Option<i32>, said: &str) -> Answered {
+        Answered::ItCannotBeUndone(Box::new(Done::RanACommand {
+            returned,
+            said: said.to_owned(),
+            cut_short: false,
+            took_too_long: false,
+        }))
+    }
+
+    /// **A command that failed because nobody is signed in to GitHub says so,
+    /// and says to ask alo again** — never *Done.*, because alo does not run it
+    /// a second time by itself.
+    #[test]
+    fn a_command_nobody_signed_in_for_says_to_sign_in_and_ask_again() {
+        let said = what_an_answer_did(
+            Some(&a_command(
+                Some(128),
+                "fatal: could not read Username for 'https://github.com': terminal prompts \
+                 disabled\n",
+            )),
+            &with_what_a_command_says(),
+        );
+        assert!(
+            said.starts_with("It did not work: you are not signed in to GitHub."),
+            "{said}"
+        );
+        for part in ["Settings → Accounts", "ask alo again", "does not try again"] {
+            assert!(said.contains(part), "{part:?} is not in {said:?}");
+        }
+        assert!(!said.starts_with("Done"), "{said}");
+    }
+
+    /// **Any other failure is said as what it ended with**, and a command that
+    /// worked is *Done.* as before.
+    #[test]
+    fn any_other_failure_says_what_it_ended_with_and_a_success_is_done() {
+        let strings = with_what_a_command_says();
+        let failed = what_an_answer_did(
+            Some(&a_command(Some(1), "mkdir: cannot create directory\n")),
+            &strings,
+        );
+        assert!(failed.starts_with("It did not work:"), "{failed}");
+        assert!(failed.contains("exit status 1"), "{failed}");
+        assert!(!failed.contains("GitHub"), "{failed}");
+
+        let worked = what_an_answer_did(
+            Some(&Answered::It(Box::new(Done::RanACommand {
+                returned: Some(0),
+                said: String::new(),
+                cut_short: false,
+                took_too_long: false,
+            }))),
+            &strings,
+        );
+        assert_eq!(worked, "Done.");
     }
 }

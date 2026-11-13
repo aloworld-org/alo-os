@@ -66,6 +66,7 @@ use alo_turn::{NotDone, Turning};
 
 use crate::saying_it_was_done_without_asking::ran_without_asking;
 use crate::the_bracket_this_turn_takes::TheTurnsBracket;
+use crate::the_desktops_told_github_needs_a_sign_in::TheDesktopsToldGitHubNeedsASignIn;
 
 /// Where the person's level for running code is kept, and the folder a command
 /// runs in.
@@ -78,6 +79,11 @@ pub struct CommandsHere {
     /// Where a command written as `sudo ...` is asked for as administrator
     /// (ADR 0150): `alo-running-as-administrator`'s socket on a machine.
     administrator_at: PathBuf,
+    /// The desktops told when a command failed because nobody is signed in to
+    /// GitHub, so the sign-in sheet can go up
+    /// (`crate::the_desktops_told_github_needs_a_sign_in`) — [`None`] on every
+    /// road that is not the person's own, which tells nobody.
+    telling: Option<TheDesktopsToldGitHubNeedsASignIn>,
 }
 
 /// A file nobody can have made, because nothing can create a folder under
@@ -116,7 +122,37 @@ impl CommandsHere {
             level_at: level_at.to_owned(),
             in_folder: in_folder.to_owned(),
             administrator_at: PathBuf::from(WHERE_NO_RUNNER_IS),
+            telling: None,
         }
+    }
+
+    /// These, telling `desktops` each time a command fails because nobody is
+    /// signed in to GitHub. Without this, nobody is told — which is what every
+    /// road but the person's own wants, and a paired machine's above all.
+    #[must_use]
+    pub fn telling_github_sign_ins_to(
+        mut self,
+        desktops: &TheDesktopsToldGitHubNeedsASignIn,
+    ) -> Self {
+        self.telling = Some(desktops.clone());
+        self
+    }
+
+    /// Whether anybody is told when a command needs a GitHub sign-in.
+    #[must_use]
+    pub const fn tells_anybody_about_github(&self) -> bool {
+        self.telling.is_some()
+    }
+
+    /// **What a command did, as it goes on the wire — and the desktops told,
+    /// once, when it failed because nobody is signed in to GitHub.** Every
+    /// command this file runs is answered through here, so none is missed.
+    fn answered(&self, did: &alo_capability::WhatACommandDid) -> Done {
+        let done = Done::of_a_command(did);
+        if let Some(desktops) = &self.telling {
+            desktops.told_of(&done);
+        }
+        done
     }
 
     /// These, with a command written as `sudo ...` asked for as administrator
@@ -305,7 +341,7 @@ pub fn a_command_approved(
             )
         };
         return match turning.approving_a_command_as_administrator(number, &mut run, now) {
-            Ok(Ok(did)) => crate::answering::the_change_did(Done::of_a_command(&did), kept),
+            Ok(Ok(did)) => crate::answering::the_change_did(here.answered(&did), kept),
             Ok(Err(said)) => ToAPerson::refused(&said),
             Err(why) => ToAPerson::refused(&said_about(&why, strings)),
         };
@@ -314,7 +350,7 @@ pub fn a_command_approved(
         alo_running::run_as_the_person_around(command, &here.in_folder, around)
     };
     match turning.approving_a_command(number, &mut run, now) {
-        Ok(did) => crate::answering::the_change_did(Done::of_a_command(&did), kept),
+        Ok(did) => crate::answering::the_change_did(here.answered(&did), kept),
         Err(why) => ToAPerson::refused(&said_about(&why, strings)),
     }
 }
@@ -340,7 +376,7 @@ fn ran(
             )
         };
         return match turning.running_as_administrator(command, &mut run, now) {
-            Ok(Ok(did)) => Ok(Done::of_a_command(&did)),
+            Ok(Ok(did)) => Ok(here.answered(&did)),
             Ok(Err(said)) => Err(said),
             Err(why) => Err(said_about(&why, strings)),
         };
@@ -349,7 +385,7 @@ fn ran(
         alo_running::run_as_the_person_around(command, &here.in_folder, around)
     };
     match turning.running_a_command(command, &mut run, now) {
-        Ok(did) => Ok(Done::of_a_command(&did)),
+        Ok(did) => Ok(here.answered(&did)),
         Err(why) => Err(said_about(&why, strings)),
     }
 }
