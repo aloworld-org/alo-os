@@ -12,16 +12,16 @@ use std::cell::RefCell;
 
 use alo_access::{Surface, TurnedOn};
 use alo_adapters::accessibility_tree::{AccessibilityTree, Facts, NodeAt, Running, TreeFault};
-use alo_adapters::{press_by_hand, read_by_hand, NotPressed, Pressable, Unpressed, Whose};
+use alo_adapters::{NotPressed, Pressable, Unpressed, Whose, press_by_hand, read_by_hand};
 
 use super::*;
+use crate::SettingsWindow;
 use crate::access_action::{InSettings, Pressed};
 use crate::access_nodes::ReadAloudTree;
 use crate::settings_as_read::SettingsShows;
 use crate::settings_categories::SettingsCategory;
 use crate::settings_pointed_at::PointedAt;
 use crate::settings_testing::{a_browser_and_a_mail_app, a_persons_machine, noon, settings_words};
-use crate::SettingsWindow;
 
 /// The name this tree answers as, as the bus would give it.
 const ANSWERS_AS: &str = ":1.42";
