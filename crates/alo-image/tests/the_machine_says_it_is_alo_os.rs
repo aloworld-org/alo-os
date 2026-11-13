@@ -44,7 +44,7 @@
 //!
 //! # What this does not check
 //!
-//! That the base really is Fedora 42, or that `dnf` is happy. Those are answered
+//! That the base really is Fedora 44, or that `dnf` is happy. Those are answered
 //! by the build. This answers *does the recipe say what we decided it says*.
 
 #![expect(
@@ -170,8 +170,8 @@ fn it_makes_no_support_promise() {
 
 /// **What the machine is built on is stated plainly**, rather than hidden.
 ///
-/// Engines are configured, never patched: this image *is* built on Fedora 42,
-/// package tooling reasons about `$releasever` and the platform identifier, and
+/// Engines are configured, never patched: this image *is* built on Fedora 44,
+/// package tooling reasons about `$releasever`, and
 /// removing these would be a decision somebody has to make on purpose.
 #[test]
 fn what_it_is_built_on_is_stated_plainly() {
@@ -213,8 +213,13 @@ fn what_it_is_built_on_is_stated_plainly() {
         "and appends it to os-release as IMAGE_VERSION, which is rule 7's row for it"
     );
 
-    assert_eq!(says(&stated, "VERSION_ID"), "42");
-    assert_eq!(says(&stated, "PLATFORM_ID"), "platform:f42");
+    assert_eq!(says(&stated, "VERSION_ID"), "44");
+    // Fedora 44's own file states no platform identifier (ADR 0152), so this
+    // one states none either rather than inventing one for it.
+    assert!(
+        !stated.iter().any(|(key, _)| key == "PLATFORM_ID"),
+        "{WHAT_IT_SAYS} states a PLATFORM_ID the Fedora 44 base does not"
+    );
 }
 
 /// **The release it says it is, is the release the recipe builds** — in all four

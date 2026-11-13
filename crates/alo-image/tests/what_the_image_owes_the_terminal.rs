@@ -13,12 +13,13 @@
 //!
 //! # What was measured, and what this test actually holds
 //!
-//! **Measured once, by hand, on 2026-10-17**: the pinned base was pulled and
-//! asked, and it carries `/usr/share/terminfo/x/xterm-256color` and
-//! `/usr/sbin/clear`.
+//! **Measured once, by hand, on 2026-10-17** on Fedora 42, and **again on
+//! 2026-11-13 on Fedora 44** when ADR 0152 moved the base: the pinned base was
+//! pulled and asked, and it carries `/usr/share/terminfo/x/xterm-256color`
+//! (4,074 bytes on 44) and `/usr/sbin/clear`.
 //!
 //! ```text
-//! podman run --rm quay.io/fedora/fedora-bootc:42@sha256:077182b6… \
+//! podman run --rm quay.io/fedora/fedora-bootc:44@sha256:ea70c130… \
 //!     ls /usr/share/terminfo/x/xterm-256color
 //! ```
 //!
@@ -46,7 +47,7 @@ use std::path::Path;
 /// Changing the base means the measurement in this file's header is about
 /// another image. Re-run the command there against the new one and put its
 /// digest here.
-const THE_BASE_THAT_WAS_MEASURED: &str = "quay.io/fedora/fedora-bootc:42@sha256:077182b6ba853b3348d0bede602ac30b9e6568c6422bcf0654de5af96f19b9c3";
+const THE_BASE_THAT_WAS_MEASURED: &str = "quay.io/fedora/fedora-bootc:44@sha256:ea70c130d55794252b081c606603c6d4405561f28ae642a83fe43b1872f82663";
 
 /// What the recipe calls the base.
 const THE_ARGUMENT: &str = "ARG THE_BASE=";
