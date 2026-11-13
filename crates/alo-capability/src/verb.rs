@@ -510,7 +510,11 @@ fn check_takes(arg: &Arg) -> Result<(), VerbError> {
         Takes::Name { longest } if *longest == 0 => Err(VerbError::NoLength {
             argument: arg.name().to_owned(),
         }),
-        Takes::Path | Takes::Application | Takes::Name { .. } | Takes::Count { .. } => Ok(()),
+        Takes::Path
+        | Takes::Application
+        | Takes::Name { .. }
+        | Takes::Count { .. }
+        | Takes::Text => Ok(()),
     }
 }
 

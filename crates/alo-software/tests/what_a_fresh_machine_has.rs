@@ -390,6 +390,7 @@ fn filling(verb: &Verb, application: &str) -> Vec<(String, Given)> {
                 Takes::Path => Given::text("/home/anna/Invoices/march.pdf"),
                 Takes::Name { .. } => Given::text("flathub"),
                 Takes::Count { least, .. } => Given::number(*least),
+                Takes::Text => Given::text("line one\nline two"),
                 Takes::Choice(offered) => {
                     Given::text(offered.first().map_or("", |option| option.name()))
                 }

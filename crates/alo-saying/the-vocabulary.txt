@@ -482,6 +482,19 @@ capability.terminal.run-this-command	Run this command? [y/N]
 capability.terminal.waits-for-a-terminal	Nothing was changed: alo asks for your OK before a change, and can only ask in a terminal. Type the same request at a terminal prompt to answer it.
 capability.terminal.what-acting-without-asking-costs	alo will send, change and delete what you ask for without showing you first
 capability.terminal.you-said-no	Not done: you said no, and nothing was changed.
+capability.text.below	the text below
+capability.text.characters#one	one character
+capability.text.characters#other	{characters} characters
+capability.text.holds-a-control	control character {code}
+capability.text.holds-a-direction	character that changes the direction of the text {code}
+capability.text.holds-a-space	unusual space {code}
+capability.text.holds-an-invisible	invisible character {code}
+capability.text.holds-another-alphabet	“{letter}” from another alphabet {code}
+capability.text.how-long	{lines}, {characters}
+capability.text.lines#one	one line
+capability.text.lines#other	{lines} lines
+capability.text.unseen#one	One character in this text is easy to miss, and it is marked where it is.
+capability.text.unseen#other	{unseen} characters in this text are easy to miss, and each is marked where it is.
 capturing.another-persons-window	That window belongs to somebody else signed in on this machine, so a picture of it cannot be taken. Take a picture of your own screen instead
 capturing.copied	A picture of your screen was copied, ready to paste
 capturing.mark.arrow	Arrow

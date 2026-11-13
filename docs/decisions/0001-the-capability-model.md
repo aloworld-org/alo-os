@@ -7,6 +7,8 @@ rest of this decision stands.
 **§4 amended by [ADR 0146](0146-a-person-may-switch-watching-on.md), 2026-11-06:**
 nothing watches unless the person switches it on, knowing what it costs. With
 every watcher off, §4 reads exactly as written.
+**Amended 2026-11-13 (below):** an argument can carry **text** — many lines, no
+maximum length, shown in full, never handed to an interpreter.
 **Date:** 2026-09-02
 **Context:** `alo-agentd`, the application adapters, `docs/contracts/`;
 carries forward the propose-then-approve and intent-layer decisions made in
@@ -234,3 +236,63 @@ sent. **alo uses it for an application only after the person switches it on for
 that application; alo never acts by position; a person's own typed commands use
 it at once** (ADR 0147 §2–§3). *Screenshot-and-click as the universal
 mechanism* stays rejected, below: it is the last road, never the first.
+
+---
+
+## Amended 2026-11-13 — an argument can carry text, with no limit, shown in full
+
+*Decided by the owner on 2026-11-13, for stage 5 of
+`docs/autonomy/demo-two-alo-inside-applications-plan.md`.* The owner's words:
+
+> There should be no input limits
+
+> We should make something user-friendly and no limits
+
+**The reading the owner was given, and which is built:** a new kind of
+argument, **text** — many lines, **no maximum length**.
+
+- **Invisible and confusable characters are not refused.** The approval marks
+  each one where it is, in plain words — *invisible character U+200B*, *a
+  character that changes the direction of the text* — and says how many there
+  are, so nothing hidden passes unseen. That is law 5 read the way it reads
+  itself: a protection that restricts nothing stays on; a wall goes.
+- **The person can see all of it in the approval.** It scrolls, it says how
+  long it is (lines and characters), and it is never cut and never summarised
+  in place of the text. The sentence itself stays one line and names the text
+  as *the text below*; the text is shown whole beneath it.
+- **Nothing on this machine hands the text to an interpreter or a shell.** This
+  is §1 and law 2, not an input limit: the text is data that a verb delivers —
+  typed into a field, saved, posted — and nothing runs it. What alo types into
+  a terminal is ADR 0111's choice and the person's alone, as before.
+- **The record keeps the text**, whole.
+
+What still refuses a text argument is what is not text at all: nothing (an
+empty value), a number where text was declared, and bytes that are not valid
+UTF-8, which never reach a verb because the wire refuses them first.
+
+**What this replaces.** [ADR 0143](0143-alo-works-inside-applications-and-may-post-in-the-persons-name.md)
+fact 1 proposed this kind **bounded in length** and **refused if it holds
+characters a person cannot see**. Both halves of that proposal are replaced by
+this decision: there is no bound, and such characters are marked rather than
+refused. Everything else fact 1 proposed — shown in full, never handed to an
+interpreter — stands. The other kinds (path, application, name, count, choice)
+keep every rule they had, including their refusal of control characters: a
+value that appears *inside* the one-line sentence still has to read as one
+line, and text does not appear inside it.
+
+### What this costs, written here because it is the part to argue with
+
+§1 rested partly on *there is no shape a composition could arrive in*. Text is
+that shape. What keeps §1 true is now the rule that no verb passes an argument
+to an interpreter — a rule about verb implementations, held by review, by
+`alo_capability::Verb::checked`'s tripwire on argument names, and by a
+workspace test that no source file naming the text value also starts a process
+(`crates/alo-capability/tests/text_never_reaches_a_process.rs`). That test is
+a tripwire too and says so: a verb that hands text to an editor which itself
+runs code is the risk ADR 0143 fact 3 names, and the answer there is that alo
+never types into a terminal, inside or outside an editor, unless ADR 0111's
+choice says so.
+
+A very long text is also a long thing to read. The approval cannot make a
+person read it; it can only make sure that everything is there to be read, that
+the length is said before they start, and that anything hidden is marked.
