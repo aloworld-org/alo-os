@@ -141,12 +141,13 @@ fn it_did_not_work(
     let alo_protocol::Done::RanACommand {
         returned,
         took_too_long,
+        said,
         ..
     } = done
     else {
         return None;
     };
-    let why = alo_capability::ItDidNotWork::of(*returned, *took_too_long)?;
+    let why = alo_capability::ItDidNotWork::of_what_it_said(*returned, *took_too_long, said)?;
     let word = if cannot_be_put_back {
         alo_capability::words::DID_NOT_WORK_AFTER_YOUR_OK_AND_IT_CANNOT_BE_PUT_BACK
     } else {

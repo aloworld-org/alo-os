@@ -1040,6 +1040,25 @@ pub const A_COMMAND_RAN_TOO_LONG: Word = Word::saying(
      than alo lets one command run.",
 );
 
+/// Why a command did not work: nobody is signed in to GitHub — and how to sign
+/// in, and what that sign-in lets anything running as the person do (the
+/// owner's decision of 2026-11-13: *say its broad access plainly, and say that
+/// at full access alo can read a stored sign-in*).
+pub const NOT_SIGNED_IN_TO_GITHUB: Word = Word::saying(
+    "capability.running.not-signed-in-to-github",
+    "you are not signed in to GitHub. To sign in, type gh auth login --web in your terminal and \
+     follow the steps GitHub shows you in your browser. That sign-in is kept on this computer, \
+     and it lets anything you run — and alo, at full access — read and change every repository \
+     your GitHub account can, and make new ones, until you type gh auth logout",
+)
+.noting(
+    "Follows 'It did not work:' for a command that failed because the person has not signed in \
+     to GitHub, the website where programmers keep their code. 'gh auth login --web' and 'gh auth \
+     logout' are commands typed exactly as written and are never translated. 'full access' is the \
+     setting in Settings → Running code; use the words your translation uses there. No full stop \
+     at the end: the sentence around it adds one.",
+);
+
 /// The question the terminal asks before a change alo proposed is carried out:
 /// ADR 0124's own words, drawn in `docs/design/the-terminal-window.md`.
 pub const RUN_THIS_COMMAND: Word = Word::saying(
@@ -1237,7 +1256,7 @@ pub const TEXT_HOLDS_ANOTHER_ALPHABET: Word = Word::saying(
 );
 
 /// Every string this crate can say, in the order a translator meets them.
-pub const EVERY_WORD: [Word; 109] = [
+pub const EVERY_WORD: [Word; 110] = [
     ANONYMOUS,
     NO_APPLICATION_NAMED,
     NOTHING_NAMED,
@@ -1322,6 +1341,7 @@ pub const EVERY_WORD: [Word; 109] = [
     A_COMMAND_ENDED_WITH_A_STATUS,
     A_COMMAND_WAS_STOPPED,
     A_COMMAND_RAN_TOO_LONG,
+    NOT_SIGNED_IN_TO_GITHUB,
     RUN_THIS_COMMAND,
     DONE_AFTER_YOUR_OK,
     DONE_AFTER_YOUR_OK_AND_IT_CANNOT_BE_PUT_BACK,
