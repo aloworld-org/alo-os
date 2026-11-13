@@ -22,6 +22,7 @@ fn a_run(returned: Option<i32>, said: &str, took_too_long: bool) -> Done {
         said: said.to_owned(),
         cut_short: false,
         took_too_long,
+        sent_bytes: Some(0),
     }
 }
 

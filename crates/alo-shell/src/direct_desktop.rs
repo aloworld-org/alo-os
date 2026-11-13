@@ -2863,9 +2863,13 @@ impl LoopInput for TheDesktopLane<'_> {
         // that room. A display with no room for it at all keeps the old road,
         // laid out on the display, where Settings that cannot be drawn is
         // closed rather than the desktop (#1087).
+        //
+        // **Sized for the room above the Dock and clear of the panel**, not
+        // the whole display — the owner's *"Yes, fit above the Dock"* of
+        // 2026-11-13 (`crate::settings_fits_the_room`).
         let display = crate::display_scale::DisplayScale::of_per_cent(frame.display_scale);
         let sizes = crate::settings_on_the_plane::how_big_settings_is(
-            (size.w, size.h),
+            server.the_room_settings_is_sized_for(&named, (size.w, size.h)),
             frame.look.scale(),
             display,
         );
