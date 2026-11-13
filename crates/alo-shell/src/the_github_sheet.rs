@@ -299,25 +299,23 @@ impl TheGitHubSheet {
         }
         let shown = self.shown.as_mut()?;
         shown.focus = on;
-        match (on, &shown.is) {
+        let asks = match (on, &shown.is) {
             (OnTheGitHubSheet::Copy, TheSheetIs::TheCodeIs { code, .. }) => {
                 Some(TheSheetAsks::Copy(code.clone()))
             }
             (OnTheGitHubSheet::OpenThePage, TheSheetIs::TheCodeIs { page, .. }) => {
                 Some(TheSheetAsks::OpenThePage(page.clone()))
             }
-            (OnTheGitHubSheet::Cancel, _) => {
-                self.shown = None;
-                Some(TheSheetAsks::StopSigningIn)
-            }
-            (OnTheGitHubSheet::Done, _) => {
-                self.shown = None;
-                None
-            }
-            // Never reached: `has` keeps every press to a button drawn for
-            // what the sheet shows.
+            (OnTheGitHubSheet::Cancel, _) => Some(TheSheetAsks::StopSigningIn),
+            // *Done* asks nothing; and the rest is never reached, because
+            // `has` keeps every press to a button drawn for what is shown.
             _ => None,
+        };
+        // **Cancel and Done close the sheet**; Copy and Open leave it up.
+        if matches!(on, OnTheGitHubSheet::Cancel | OnTheGitHubSheet::Done) {
+            self.shown = None;
         }
+        asks
     }
 
     /// **A screen reader pressed `on`, on the sheet numbered `sheet`** — the
