@@ -110,11 +110,11 @@ fn its_slot(picture: &DockPicture, action: ANativeAction) -> Rectangle<i32, Phys
     )
 }
 
+/// One box of ink, where it is and its pixels.
+type ABoxOfInk<'a> = (Rectangle<i32, Physical>, &'a [[u8; 3]]);
+
 /// Every box of ink on `picture` that touches `slot`, with its pixels.
-fn ink_on(
-    picture: &DockPicture,
-    slot: Rectangle<i32, Physical>,
-) -> Vec<(Rectangle<i32, Physical>, &[[u8; 3]])> {
+fn ink_on(picture: &DockPicture, slot: Rectangle<i32, Physical>) -> Vec<ABoxOfInk<'_>> {
     picture
         .inked
         .iter()
