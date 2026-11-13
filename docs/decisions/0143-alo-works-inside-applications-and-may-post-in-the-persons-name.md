@@ -471,6 +471,11 @@ style:
 plan measures typing through the accessibility tree, and the answer is decided
 on the measurement.
 
+**Answered 2026-11-13** by [ADR 0153](0153-alo-types-by-keys-in-its-own-copy-and-reads-the-text-back.md),
+on the measurement in `docs/autonomy/updates/how-alo-can-type-into-an-application.md`:
+the owner chose *"Keys, in alo's own copy"*, with the accessibility interface
+for applications that take text through it.
+
 ## The questions as they were put, 2026-10-30
 
 Each has options and a recommendation, and **each has now been answered** —

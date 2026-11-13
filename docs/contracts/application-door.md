@@ -522,6 +522,51 @@ compositor publishes the tree, so it is the one that can say which it is.
 - `none` — the shell publishes no tree: no accessibility bus answered when the
   session began.
 
+## alo typing in an application — `type-into` and `save-in`, added 2026-11-13 (ADR 0153)
+
+**What it gives a person:** alo writes an approved text into the application
+alo is working in, as key presses, and saves it once it has read the text back
+— the keyboard road of [ADR 0153](../decisions/0153-alo-types-by-keys-in-its-own-copy-and-reads-the-text-back.md).
+Additive: nothing above changes meaning.
+
+```
+→ type-into <application> <bytes>
+→ <exactly that many bytes: the text, UTF-8>
+← typed | not-in-front | not-alos-copy | no-keyboard | cannot-type <code point>
+→ save-in <application>
+← asked-to-save | not-in-front | not-alos-copy | no-keyboard
+```
+
+- **Only to the window that holds the keyboard.** Both are carried out only when
+  the window that has the keyboard now is a window of `<application>`;
+  otherwise `not-in-front`, and nothing is sent to anybody. The compositor
+  never moves the keyboard to carry them out.
+- **alo's own copy at the default.** At the default `in-applications` setting
+  (`how-code-runs-file.md`) that window must also be **alo's own copy** of the
+  application — its process in the copy's scope or the scope Flatpak moved it
+  into — or the answer is `not-alos-copy`. Turned up, the person's own window
+  is accepted too. As for `work-in-…`, the setting is read by the desktop at
+  each ask and never taken from the line.
+- **To that client alone.** The text goes to the keyboard of the client that
+  owns that window and no other: a layout of its own holding every character
+  of the text, then each key pressed and released, then the person's own layout
+  again, in one run on the compositor's thread, so no key of the person's lands
+  between them. A new line is Return and a tab is Tab. `save-in` is `Ctrl+S`
+  delivered the same way.
+- `cannot-type <code point>`: the text holds a character no key can carry — a
+  control character other than a new line or a tab — named as `U+…`. Nothing
+  is typed.
+- `no-keyboard`: this desktop has no keyboard on its seat to deliver through.
+- **The length is the caller's to say and this door's to believe.** The text
+  has no limit (ADR 0001's amendment of 2026-11-13); the bytes are read across
+  frames as they arrive, and a caller that stops sending is dropped as any
+  caller part-way through a line is. Bytes that are not UTF-8 are a caller with
+  a bug: the connection is closed with nothing written.
+- **This door decides nothing about permission**, as for every act: whether
+  alo may type, into which control, and whether the text was approved, were the
+  turn's to decide before the line was written. The door checks only where the
+  keyboard is, at the moment of delivering.
+
 ## What is not here
 
 **`arrange`.** `docs/features.md` promises four application verbs and this door

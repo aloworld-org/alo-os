@@ -164,14 +164,13 @@ the record keeps it.
 
 ### 6. alo types into an application
 
-**Status:** blocked on a decision, 2026-11-13. How alo types was measured
-(`docs/autonomy/updates/how-alo-can-type-into-an-application.md`): VSCodium
-offers no screen-reader road for text, and keys the desktop delivers reach it
-but land exactly as approved only with its automatic editing off. Which of
-that report's three options is built waits on the coordinator and the owner.
-**Size:** L. **Waits on:** that decision; stage 5 (landed, #1208); and, for
-the top level of the setting, `CLAUDE.md` carrying the owner's change (ADR
-0143), which it now does.
+**Status:** in progress, 2026-11-13. How alo types was measured
+(`docs/autonomy/updates/how-alo-can-type-into-an-application.md`) and decided by
+the owner (ADR 0153, *"Keys, in alo's own copy"*): key presses delivered to one
+window in alo's own copy, with VSCodium's automatic editing off in that copy
+only, the text read back before saving, and the accessibility interface where
+an application takes it. **Size:** L. **Waits on:** nothing for the default
+level; *each block* and *everything for one request* are not built.
 
 **For the person:** alo writes into the editor and saves, and they watch it
 happen. How much one approval covers is their setting: one file by default,

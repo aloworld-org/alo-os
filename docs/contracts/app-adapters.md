@@ -273,6 +273,48 @@ and *nothing is found or pressed by position* — are made above, each marked wi
 the date. They were made before any screen-road code, as the owner's answer 15
 required. **Nothing of the screen road is built.**
 
+## Amended 2026-11-13 — the fallback types text, by two roads
+
+*[ADR 0153](../decisions/0153-alo-types-by-keys-in-its-own-copy-and-reads-the-text-back.md),
+the owner's decision of 2026-11-13: "Keys, in alo's own copy". Additive: the two
+verbs above keep their meaning, and an adapter still cannot declare
+`synthetic`.*
+
+The fallback gains a third verb:
+
+| Verb | Effect | Takes | Sentence |
+|---|---|---|---|
+| `accessible.type_text` | change | `application`; `name`, the editable control's name, up to 200 characters; `text`, the text kind | *type the text below into “{name}” in {application}, and save it* |
+
+It requires a grant over the application, as the other two do. What anyone
+building on it can rely on:
+
+- **Two roads, chosen at the moment of acting from what the control offers.**
+  Where the control offers AT-SPI's `EditableText`, the text is inserted at its
+  caret through that interface. Where it does not — VSCodium and every Chromium
+  application — the compositor delivers it as key presses through the
+  application door's `type-into` (`application-door.md`), **to the one client
+  whose window holds the keyboard**, never as a virtual keyboard any program
+  could use. This is the only `synthetic` delivery on the machine, it carries
+  text and `Ctrl+S` only, and it is this machine's own: **it is not a mechanism
+  an adapter may declare**, and the refusal above stands.
+- **The tree is read again at the moment of typing.** The named control must be
+  showing, be the one control of that name and the one in its window with the
+  keyboard, and be editable. It is refused if it is **a password field**, and if
+  it is **a terminal** — a terminal application, or a node described as one
+  (VSCodium's is named *Terminal …* and is an `xterm-helper-textarea`) — unless
+  the person made ADR 0111's choice.
+- **At the default it is alo's own copy.** The window must be alo's copy of the
+  application (ADR 0143 Q6, the owner's answer A of 2026-11-10); the person's
+  own window only where they chose that in Settings.
+- **The text is read back before anything is saved.** If the control's text does
+  not contain the approved text exactly, nothing is saved and the person is told
+  what was found. A control whose text the tree does not show cannot be read
+  back, and nothing is saved either.
+- **One approval types once**: one call types one text into one control and
+  saves it. The record keeps the whole text, the application, the control and
+  the road, for a typing and for every refusal.
+
 ## Amended 2026-11-12 — an adapter may come from a crate alo OS pins, with its licence stated
 
 *The owner's ruling of 2026-11-12, given in a question dialog. Asked: "alo
