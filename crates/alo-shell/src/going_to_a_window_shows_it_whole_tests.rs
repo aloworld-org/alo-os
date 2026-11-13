@@ -1,3 +1,6 @@
+//! Where going to a window leaves the view, held to the walk of 2026-11-13: a
+//! 1 280 × 800 screen, the Dock's top at 717, and Dolphin 760 × 586.
+
 use super::*;
 
 /// The walk's screen: 1 280 × 800, the Dock's top at 717.
