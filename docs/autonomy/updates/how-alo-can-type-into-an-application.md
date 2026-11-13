@@ -88,7 +88,7 @@ function f(a) {
 
 | Application, settings | What the editor held afterwards | On disk after saving | Runs with a result |
 |---|---|---|---|
-| VSCodium, its own defaults | `unction f(a) {` / 8 spaces + `return …` / `}` / `<div>` / 4 spaces + `end` / **an extra `}`** | the same, saved by `Ctrl+S` | 1 (two more lost to the instrument) |
+| VSCodium, its own defaults | `unction f(a) {` / 8 spaces + `return …` / `}` / `<div>` / 4 spaces + `end` / **an extra `}`** | the same, saved by `Ctrl+S` | 1 of 4 started: two were lost to the instrument (`wtype` not yet installed; WSL restarting), and in one the file was empty after `Ctrl+S` and the editor was not read back, so what reached it is **not known** |
 | VSCodium, its automatic editing off (list below), saved by pressing *File → Save* through the tree | exactly the text | **byte for byte the text**; the title lost its `●` | 2 |
 | Text Editor, its defaults | `unction f(a) {`, then every later line indented by 4 | the same | 1 |
 
