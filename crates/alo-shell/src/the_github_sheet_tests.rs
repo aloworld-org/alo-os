@@ -169,7 +169,7 @@ fn escape_is_cancel() {
 fn signed_in_shows_the_login_and_done_closes() {
     for leaving in [GitHubSheetKey::Press, GitHubSheetKey::Escape] {
         let mut sheet = with_the_code();
-        assert!(!sheet.answered(&GitHubAnswered::SignedIn("anna".to_owned())));
+        assert!(!sheet.answered(&GitHubAnswered::SignInWorked("anna".to_owned())));
         assert_eq!(
             is(&sheet),
             Some((
@@ -291,7 +291,7 @@ fn a_sheet_that_cannot_be_drawn_stops_the_sign_in() {
     );
     assert!(!sheet.is_up());
     let mut signed_in = with_the_code();
-    assert!(!signed_in.answered(&GitHubAnswered::SignedIn("anna".to_owned())));
+    assert!(!signed_in.answered(&GitHubAnswered::SignInWorked("anna".to_owned())));
     assert_eq!(signed_in.could_not_be_drawn(), None);
     assert!(!signed_in.is_up());
     assert_eq!(TheGitHubSheet::default().could_not_be_drawn(), None);

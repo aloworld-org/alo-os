@@ -31,7 +31,7 @@ fn every_state() -> [TheGitHubSheet; 3] {
         page: "https://github.com/login/device".to_owned(),
     }));
     let mut signed_in = with_the_code.clone();
-    assert!(!signed_in.answered(&GitHubAnswered::SignedIn("anna".to_owned())));
+    assert!(!signed_in.answered(&GitHubAnswered::SignInWorked("anna".to_owned())));
     [waiting, with_the_code, signed_in]
 }
 

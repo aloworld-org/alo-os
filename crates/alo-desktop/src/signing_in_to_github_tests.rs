@@ -91,7 +91,7 @@ fn a_sign_in_hands_over_the_code_and_finishes_recorded() {
     );
     assert_eq!(
         the_next(&mut worker),
-        GitHubAnswered::SignedIn("anna".to_owned())
+        GitHubAnswered::SignInWorked("anna".to_owned())
     );
     assert_eq!(
         recorded(&kept),

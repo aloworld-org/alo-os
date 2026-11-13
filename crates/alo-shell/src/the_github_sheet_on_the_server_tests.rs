@@ -108,7 +108,7 @@ fn signed_in_then_done() {
     let (_directory, _machine, mut server) = a_server("github-sheet-done");
     server.a_github_sign_in_begins();
     server.github_answered(&the_code(), &strings);
-    server.github_answered(&GitHubAnswered::SignedIn("anna".to_owned()), &strings);
+    server.github_answered(&GitHubAnswered::SignInWorked("anna".to_owned()), &strings);
     let _ = server.the_github_asks_to_tell();
     assert!(matches!(
         server.github_sheet.shows().map(|shows| shows.is.clone()),

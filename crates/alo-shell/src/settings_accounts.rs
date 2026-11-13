@@ -77,7 +77,7 @@ impl TheGitHubSignIn {
                 self.is = GitHubHere::SignedInAs(login.clone());
             }
             GitHubAnswered::SignedInAs(None) => self.is = GitHubHere::Nobody,
-            GitHubAnswered::SignedIn(login) => {
+            GitHubAnswered::SignInWorked(login) => {
                 self.is = GitHubHere::SignedInAs(login.clone());
                 self.told.clear();
             }

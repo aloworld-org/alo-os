@@ -123,7 +123,7 @@ fn waiting_is_read_as_it_is_drawn() {
 fn signed_in_is_read_with_the_login() {
     let strings = words();
     let mut sheet = with_the_code();
-    assert!(!sheet.answered(&GitHubAnswered::SignedIn("anna".to_owned())));
+    assert!(!sheet.answered(&GitHubAnswered::SignInWorked("anna".to_owned())));
     let tree = read(&strings, &sheet);
     let in_front = tree.in_front().unwrap();
     assert_eq!(

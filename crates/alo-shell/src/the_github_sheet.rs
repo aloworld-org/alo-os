@@ -222,7 +222,9 @@ impl TheGitHubSheet {
                 shown.focus = shown.is.the_keyboard_starts_on();
                 true
             }
-            GitHubAnswered::SignedIn(login) if !matches!(shown.is, TheSheetIs::SignedInAs(_)) => {
+            GitHubAnswered::SignInWorked(login)
+                if !matches!(shown.is, TheSheetIs::SignedInAs(_)) =>
+            {
                 shown.is = TheSheetIs::SignedInAs(login.clone());
                 shown.focus = shown.is.the_keyboard_starts_on();
                 false

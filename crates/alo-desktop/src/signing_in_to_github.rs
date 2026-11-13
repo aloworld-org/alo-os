@@ -18,7 +18,7 @@
 //!
 //! gh is started with no input, no colour and no prompts, so it never sits
 //! waiting for an answer nobody can give. A sign-in that has printed no code
-//! after [`NO_CODE_WITHIN`] is ended and said as *no code arrived*.
+//! after `NO_CODE_WITHIN` is ended and said as *no code arrived*.
 //!
 //! # Every sign-in, sign-out and failure is recorded
 //!
@@ -330,7 +330,9 @@ impl Worker {
         if let Some(what) = AtGitHub::signed_in(&login) {
             (self.keep)(&what);
         }
-        self.answer.send(GitHubAnswered::SignedIn(login)).is_ok()
+        self.answer
+            .send(GitHubAnswered::SignInWorked(login))
+            .is_ok()
     }
 
     /// A sign-in that did not finish: recorded, and answered.
