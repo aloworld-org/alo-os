@@ -70,6 +70,14 @@ pub enum Pressed {
         /// What on it.
         on: OnTheOpenWithSheet,
     },
+    /// This button on the GitHub sign-in sheet numbered `sheet`, which only
+    /// that sheet answers (`crate::the_github_sheet`).
+    OnTheGitHubSheet {
+        /// The sheet it was heard on.
+        sheet: u64,
+        /// Which button.
+        on: crate::the_github_sheet::OnTheGitHubSheet,
+    },
     /// This on Settings, named by what it is rather than where it is drawn,
     /// and carried out as a click on it is (`crate::a_reader_presses_in_settings`).
     InSettings(InSettings),

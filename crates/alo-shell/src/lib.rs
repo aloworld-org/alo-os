@@ -96,6 +96,7 @@ mod a_key_reaches_settings;
 mod a_key_reaches_the_bar;
 mod a_key_reaches_the_docks_surfaces;
 mod a_key_reaches_the_market;
+mod a_key_reaches_the_github_sheet;
 mod a_key_reaches_the_open_with_sheet;
 mod a_key_reaches_the_password_sheet;
 mod a_key_reaches_the_record;
@@ -295,6 +296,14 @@ pub mod the_open_with_sheet;
 mod the_open_with_sheet_as_read;
 mod the_open_with_sheet_drawn;
 mod the_open_with_sheets_words;
+/// The GitHub sign-in sheet (`docs/design/github-sign-in.md`).
+mod the_github_sheet;
+mod the_github_sheet_as_read;
+mod the_github_sheet_drawn;
+mod the_github_sheet_on_the_server;
+mod the_github_sheets_words;
+/// alo putting words of its own on the clipboard.
+mod the_shell_copies;
 mod the_password_sheet;
 mod the_password_sheet_as_read;
 mod the_password_sheet_drawn;
@@ -951,6 +960,7 @@ pub use window_switch::{WindowSwitchDirection, WindowSwitchError};
 
 pub use a_frame_per_display::{DrawnPerDisplay, retire_each_display};
 pub use access_action::{InSettings, OnTheOpenWithSheet, Pressed};
+pub use the_github_sheet::OnTheGitHubSheet;
 pub use access_bus::{NotRead, ReadAloudBus};
 pub use access_contrast::Contrast;
 pub use access_magnifier::{NotMagnified, magnified, magnifying};

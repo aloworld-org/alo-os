@@ -9,8 +9,8 @@
 //!
 //! **One button, and what it is follows the answer**: *Sign in* where nobody
 //! is, *Sign out* where somebody is. A sign-in in progress is the sheet's
-//! (`crate::asking_github`); until a sheet is drawn for it, the code and the
-//! sentence asking the person to type it are said on this page.
+//! (`crate::the_github_sheet`), which shows the code; **what a sign-in came to
+//! when it did not work is said here**, as every other answer about GitHub is.
 
 use alo_strings::{Filling, Strings};
 
@@ -85,15 +85,11 @@ impl TheGitHubSignIn {
                 self.is = GitHubHere::Nobody;
                 self.told = vec![crate::settings_page::said(strings, w::SIGNED_OUT)];
             }
-            // **The page's address is said too**, so a person whose computer
-            // has no browser to open it in can still type it somewhere.
-            GitHubAnswered::TheCodeIs { code, page } => {
-                self.told = vec![
-                    crate::settings_page::said(strings, w::GITHUB_WILL_ASK_FOR_THIS_CODE),
-                    code.clone(),
-                    page.clone(),
-                ];
-            }
+            // **The code is the sheet's** (`crate::the_github_sheet`), which
+            // shows it, copies it, and names the page on its button — so a
+            // person whose computer has no browser to open it in can still
+            // read the address there. The page says nothing until it is over.
+            GitHubAnswered::TheCodeIs { .. } => self.told.clear(),
             GitHubAnswered::DidNotWork { asked, .. } => {
                 // **A reading that did not work offers *Sign in***, which is
                 // where the person finds out why: the same failure, said.

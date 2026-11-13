@@ -286,6 +286,22 @@ where
                     .map_err(submission)?,
             ),
         };
+    // **The GitHub sign-in sheet, uploaded the same way**: one raster.
+    let github_sheet_washed: Option<(R::TextureId, Rectangle<i32, Physical>)> =
+        match native.github_sheet {
+            None => None,
+            Some(raster) => Some(
+                renderer
+                    .import_memory(
+                        &raster.pixels,
+                        Fourcc::Abgr8888,
+                        (raster.area.size.w, raster.area.size.h).into(),
+                        false,
+                    )
+                    .map(|texture| (texture, crate::painted::on_the_frame(raster.area)))
+                    .map_err(submission)?,
+            ),
+        };
     // **Settings, uploaded with the rest** since the redesign of 2026-10-31
     // made it one raster: a rounded window with a shadow, and rings and
     // switches that are partial coverage.
@@ -659,6 +675,11 @@ where
     // covers what is leaving.
     if let Some(approval) = native.approval.filter(|approval| !approval.is_empty()) {
         approval.paint(&mut frame)?;
+    }
+    // **The GitHub sign-in sheet**, in the question's place, below the *Open
+    // with* sheet: a portal waiting on the person comes first.
+    if let Some((texture, area)) = &github_sheet_washed {
+        crate::painted::wash(&mut frame, texture, *area)?;
     }
     // **The *Open with* sheet**, in the question's place and for its reason.
     if let Some((texture, area)) = &open_with_washed {

@@ -86,10 +86,56 @@ buttons, 8 between them; corner 18 and the FLOATING shadow.
 
 - `crates/alo-shell`: the Accounts page (`settings_accounts.rs`,
   `settings_page_accounts.rs`), the ask and the answer between the shell and the
-  desktop (`asking_github.rs`). Until the sheet is drawn, a sign-in's code and
-  page are said on the Accounts page.
+  desktop (`asking_github.rs`).
+- `crates/alo-shell`: **the sheet** — what it shows and what a key or press on
+  it does (`the_github_sheet.rs`), drawn (`the_github_sheet_drawn.rs`), read to
+  a screen reader (`the_github_sheet_as_read.rs`), reached by keys and the
+  pointer (`a_key_reaches_the_github_sheet.rs`), what it asks carried out
+  (`the_github_sheet_on_the_server.rs`), its words
+  (`the_github_sheets_words.rs`), and *Copy* putting the code on the clipboard
+  (`the_shell_copies.rs`). It opens when the person presses *Sign in* on
+  Settings → Accounts. The code is no longer said on the Accounts page; the
+  sheet shows it.
 - `crates/alo-desktop`: running gh (`signing_in_to_github.rs`) and reading what
   it says (`what_gh_says.rs`), tested against a gh written down in the tests for
   every failure.
-- **The sheet itself is the next change**, and with it the sheet opening when a
-  publication or a command alo ran fails with *not signed in to GitHub*.
+- **Not built: the sheet opening when a publication or a command alo ran fails
+  with *not signed in to GitHub*.** On 2026-11-13 that failure is recognised only
+  on an unmerged branch (`feat/commands-never-wait-on-a-prompt`, which adds
+  `alo_capability::not_signed_in_to_github` and `ItDidNotWork::NotSignedInToGitHub`),
+  and even there it becomes a sentence in a command's result — nothing carries
+  it to the shell or the desktop as something a surface can act on. Opening the
+  sheet from it needs that fact to reach the shell, which is a change to what a
+  turn tells the shell, not to this sheet; it is left until that branch lands.
+
+## How the sheet behaves, where the pictures are silent
+
+- **Waiting for the code** — the moment between *Sign in* and gh printing a
+  code, which the proposal does not draw. The sheet is up at once, its card
+  says *Checking…* (the Accounts page's own word for waiting) and it offers
+  *Cancel* alone. *Copy* and *Open* appear with the code: before it there is
+  nothing to copy and no page to open, and a button that does nothing is a
+  button that lies — this page's own ruling about *Sign in* before the answer.
+- **The keyboard**: Tab and the arrows go through the buttons in the order
+  drawn and round again; Enter or Space presses the one ringed; Escape is
+  *Cancel*, or *Done* once signed in. The keyboard starts on the navy button.
+  Every key and press is the sheet's while it is up, so nothing reaches
+  Settings behind it — the *Open with* sheet's rule.
+- **The ring** around the button the keyboard is on is `text/primary`, a
+  hairline drawn 3 outside the button's edge, so it shows on the navy button
+  as well as on a quiet one.
+- ***Open github.com/login/device*** names the page gh printed, without
+  `https://`; the page opens by the road the code's own page took, only on
+  `https://github.com/`. A code that arrives after the person cancelled opens
+  nothing.
+- ***Copy*** makes alo the owner of the clipboard: any application can paste
+  the code, and alo's own fields paste it too.
+- **A sign-in that did not work takes the sheet down**, and why is said on
+  Settings → Accounts, where every other answer about GitHub is said. The
+  *Open with* sheet has no failure state either; the proposal draws none, so
+  none was invented.
+- **A display that cannot hold the sheet** stops the sign-in rather than hold
+  every key with nothing on the screen — the password sheet's rule.
+- **The quiet buttons have a `border/default` edge**, as the proposal draws
+  them. The *Open with* sheet's *Cancel* is drawn without one; that is the
+  older sheet's departure, not this one's.

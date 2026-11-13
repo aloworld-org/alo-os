@@ -54,6 +54,8 @@ fn only_a_page_on_github_is_opened() {
         "http://github.com/login/device",
         "https://example.org/https://github.com/",
     ] {
+        server.github_sheet = crate::the_github_sheet::TheGitHubSheet::default();
+        assert!(server.github_sheet.opened());
         server.github_answered(
             &GitHubAnswered::TheCodeIs {
                 code: "4F2A-9C1D".to_owned(),
@@ -63,6 +65,18 @@ fn only_a_page_on_github_is_opened() {
         );
         assert!(server.asked_to_open_a_link.is_empty(), "{elsewhere}");
     }
+    // **A code nobody is waiting for opens nothing**: the person cancelled,
+    // and the code arrived after.
+    server.github_sheet = crate::the_github_sheet::TheGitHubSheet::default();
+    server.github_answered(
+        &GitHubAnswered::TheCodeIs {
+            code: "4F2A-9C1D".to_owned(),
+            page: "https://github.com/login/device".to_owned(),
+        },
+        &strings,
+    );
+    assert!(server.asked_to_open_a_link.is_empty(), "nobody waited");
+    assert!(server.github_sheet.opened());
     server.github_answered(
         &GitHubAnswered::TheCodeIs {
             code: "4F2A-9C1D".to_owned(),
