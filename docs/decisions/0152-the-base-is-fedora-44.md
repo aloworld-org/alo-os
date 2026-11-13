@@ -95,6 +95,23 @@ The newest of each in each release's repositories, 2026-11-13:
 | glibc | 2.41 | 2.43 | |
 | LLVM | 20 | 22 | nothing yet: the builder stays on Ubuntu (below) |
 
+### What the image build found that the version table could not
+
+Each of these stopped a local build of the image on the Fedora 44 base, on
+2026-11-13, and each is fixed in the recipe where it was found:
+
+- **Orca's libraries** (above).
+- **The base no longer carries Bluetooth.** Fedora 42's base shipped `bluez`
+  and the recipe never asked for it; on 44 the check for an ordinary computer's
+  daemons stopped at *missing /usr/libexec/bluetooth/bluetoothd*. The recipe
+  names `bluez` now. Comparing the two bases' package lists, 44 also drops
+  `dmidecode`, `pigz`, `pcsc-lite` and `flashrom` — nothing here uses them —
+  and adds `kmscon`, installed and not enabled, so the text console is as it
+  was.
+- **gnome-keyring 50 refuses to start as root** in the build (*error dropping
+  process capabilities*), where 48 answered. The machine runs it as the person,
+  and as an unprivileged login it answers; the build now asks it that way.
+
 ## What the move risks
 
 - **Every measurement this repository made of Fedora 42 is a measurement of
