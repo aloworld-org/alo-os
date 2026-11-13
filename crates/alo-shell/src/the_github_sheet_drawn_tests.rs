@@ -175,7 +175,10 @@ fn nothing_is_off_the_sheet_at_any_display() {
                 assert!(cancel.loc.x + cancel.size.w <= open.loc.x);
                 assert_eq!(cancel.loc.y, open.loc.y);
             }
-            assert!(inside(drawn.washed.area, screen));
+            assert!(inside(
+                crate::painted::on_the_frame(drawn.washed.area),
+                screen
+            ));
         }
     }
 }
