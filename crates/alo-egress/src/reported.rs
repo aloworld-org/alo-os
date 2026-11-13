@@ -238,11 +238,9 @@ mod tests {
         for how in [Counting::Counted, Counting::Uncounted] {
             let line =
                 indicator.beginning_alos_command(crate::AlosCommand::of("curl", how), noon());
-            let reported = Reported::of(&indicator.showing()[0]);
-            assert_eq!(
-                reported.said(&strings).text(),
-                indicator.showing()[0].said(&strings).text()
-            );
+            let shown = indicator.showing().first().unwrap();
+            let reported = Reported::of(shown);
+            assert_eq!(reported.said(&strings).text(), shown.said(&strings).text());
             assert_eq!(reported.destination(), None);
             let written = serde_json::to_string(&reported).unwrap();
             assert_eq!(

@@ -28,9 +28,9 @@
 //!   started.
 //! - **The egress indicator** is reached through what the caller hands in
 //!   ([`run_as_the_person_around`], since 2026-11-13, ADR 0148 as amended):
-//!   the command is started through [`AroundACommand::starting`], so a caller
+//!   the command is started through [`AroundACommand::starting`](alo_capability::AroundACommand::starting), so a caller
 //!   that holds a control group for it has it born inside that group, and
-//!   [`AroundACommand::looking`] is called on every look while it runs, so the
+//!   [`AroundACommand::looking`](alo_capability::AroundACommand::looking) is called on every look while it runs, so the
 //!   count is read and the line put up while it is still sending. Nothing here
 //!   counts or shows anything itself; this file only gives the caller the two
 //!   moments it needs, and [`run_as_the_person`] hands in nothing.
