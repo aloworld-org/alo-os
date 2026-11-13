@@ -71,6 +71,12 @@ pub fn a_change_asked_for(
     now: SystemTime,
 ) -> ToAnAgent {
     let (here, mut bracket) = commands.into_parts();
+    // **A publication at the sealed box is refused before anybody is asked**,
+    // and written down (`crate::publishing_at_this_level`).
+    if let Some(said) = crate::publishing_at_this_level::not_at_this_level(verb, here, strings) {
+        let why = turning.a_change_this_level_cannot_make(verb, given, &said, now);
+        return crate::doing::not_done(&why, strings);
+    }
     let grants = the_grants_as_the_level_is_now(grants, here, turning.grantee());
     let changed = {
         // **The snapshot, before the change runs** (ADR 0045), asked for only
@@ -92,7 +98,12 @@ pub fn a_change_asked_for(
             done_without_asking(as_a_client_sees_it(&did, now), sentence, kept, strings)
         }
         Ok(Changed::Waiting(number)) => crate::doing::waiting_under(turning, number, strings, now),
-        Err(why) => crate::doing::not_done(&why, strings),
+        // **A publication nobody signed in for tells the desktop**, so the
+        // sign-in sheet rises (`crate::the_desktops_told_github_needs_a_sign_in`).
+        Err(why) => {
+            here.refused(&why);
+            crate::doing::not_done(&why, strings)
+        }
     }
 }
 

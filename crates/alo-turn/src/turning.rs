@@ -393,11 +393,15 @@ impl<'a, 'm> Turning<'a, 'm> {
         grants: &Grants,
         now: SystemTime,
     ) -> Result<WhatAVerbDid, NotDone> {
+        // **A change that changes nothing here carries no place either** — a
+        // publication — so the record never offers *Put back* beside a folder
+        // already on the internet (ADR 0110 §2), whatever a caller kept.
+        let changes_here = !alo_publishing::changes_nothing_on_this_computer(authorised.verb());
         let (entry, outcome) = self.inside_a_boundary(authorised, grants, now);
         // **What ran carries the place kept before it**; a refusal at the
         // boundary changed nothing and carries none.
         let entry = match &self.kept_as {
-            Some(named) if entry.happened().ran() => entry.kept_as(named),
+            Some(named) if entry.happened().ran() && changes_here => entry.kept_as(named),
             _ => entry,
         };
         let entry = self.as_the_level_was(entry, grants);

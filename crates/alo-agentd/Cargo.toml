@@ -144,6 +144,12 @@ alo-choosing = { path = "../alo-choosing" }
 # crate's, and nothing here edits it.
 alo-software = { path = "../alo-software" }
 
+# Publishing a folder to the person's GitHub Pages site: the command road it
+# runs on (`src/running_a_publication.rs`), the sealed box's refusal of it
+# (`src/publishing_at_this_level.rs`) and the line the person reads after it
+# was done without asking.
+alo-publishing = { path = "../alo-publishing" }
+
 # The machine's one proxy, as the description states it. `[proxy]` in
 # `/etc/alo/agentd.toml` is read into `alo_proxy::Kept` in
 # `src/machine_wide_proxy.rs`, and nothing else here reads that section; which
@@ -188,7 +194,8 @@ alo-remembering = { path = "../alo-remembering" }
 
 # The one crate that starts a program (ADR 0117): a command alo runs where no
 # verb fits, as the person, at full access or after their OK (ADR 0149).
-# `src/running_a_command.rs` is the only file that reaches it.
+# `src/running_a_command.rs` reaches it, and `src/running_a_publication.rs`
+# for the one command the machine writes itself, a publication's.
 alo-running = { path = "../alo-running" }
 
 # The port presence advertises, and the three wires on it. `alo-nearby` is

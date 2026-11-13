@@ -43,7 +43,7 @@ cost of guessing wrong is a release nobody decided.
 - Recovery and rollback screen — reachable when the workspace is not
 - **Settings, as one place** — network, display, sound, printers, storage, keyboard, accounts, privacy, updates. Not a scattering of dialogues a person has to know the name of
   - **Settings is a window with a side column of categories and a page beside it.** The categories are in two groups: **alo** — *alo and AI*, *Folders alo can use*, *Running code*, *Terminal* — and **This computer** — *Appearance*, *Region and time*, *Keyboard and shortcuts*, *Accessibility*. Section headings are in **sentence case**. **Selections and switches follow the person's accent colour**, which is never deep teal. **No choice that Settings offered before the redesign is dropped by it**: every row of the old one-list window has a place on a page, and a test enumerates them. Measured in [`design/the-settings-window.md`](design/the-settings-window.md). *Decided by the owner on 2026-10-31, approving the redesign on page `544:30910` of the design file; the designer confirmed that every existing row appears in it*
-  - **Settings → Accounts, and signing in to GitHub** — under *This computer*, after Default apps: GitHub, who is signed in, *Sign in* or *Sign out*, and *What it risks* in the owner's words: *"This sign-in lets GitHub's own command, gh, read and change every repository your GitHub account can, public and private, and create new ones. It is kept on this computer until you sign out. Anything you run can use it — and at full access, so can alo."* Signing in is GitHub's own `gh auth login --web`: alo shows the one-time code gh prints and opens GitHub's page in the person's default browser; it fills nothing in and there is never a password field. Sign out runs `gh auth logout`. Every sign-in, sign-out and failure is in the record. **The sign-in sheet** appears when a publication or a command alo ran fails with *not signed in to GitHub*, and from *Sign in*; it does not dim the desktop. Risen by itself, it waits for the person: it says what failed, with *Cancel* and *Sign in*, and nothing starts and no browser page opens until they press *Sign in* (*the owner, 2026-11-13: "Wait for my press"*). It goes up once per failure, never over another sheet (it waits behind one, at most five minutes, as *Open with* waits), and the person may dismiss it; alo never runs the command again by itself, and what the person reads says to sign in and then ask alo again. *Built for a command alo ran on 2026-11-13; a publication opens it once `publish_to_github_pages` lands.* *The owner, 2026-11-13, shown the pictures: "Approve both as drawn", "No dimming, like Open with", and Accounts "under This computer, after Default apps".* Recorded in [`design/github-sign-in.md`](design/github-sign-in.md)
+  - **Settings → Accounts, and signing in to GitHub** — under *This computer*, after Default apps: GitHub, who is signed in, *Sign in* or *Sign out*, and *What it risks* in the owner's words: *"This sign-in lets GitHub's own command, gh, read and change every repository your GitHub account can, public and private, and create new ones. It is kept on this computer until you sign out. Anything you run can use it — and at full access, so can alo."* Signing in is GitHub's own `gh auth login --web`: alo shows the one-time code gh prints and opens GitHub's page in the person's default browser; it fills nothing in and there is never a password field. Sign out runs `gh auth logout`. Every sign-in, sign-out and failure is in the record. **The sign-in sheet** appears when a publication or a command alo ran fails with *not signed in to GitHub*, and from *Sign in*; it does not dim the desktop. Risen by itself, it waits for the person: it says what failed, with *Cancel* and *Sign in*, and nothing starts and no browser page opens until they press *Sign in* (*the owner, 2026-11-13: "Wait for my press"*). It goes up once per failure, never over another sheet (it waits behind one, at most five minutes, as *Open with* waits), and the person may dismiss it; alo never runs the command again by itself, and what the person reads says to sign in and then ask alo again. *Built on 2026-11-13, for a command alo ran and for a publication (`publish_to_github_pages`).* *The owner, 2026-11-13, shown the pictures: "Approve both as drawn", "No dimming, like Open with", and Accounts "under This computer, after Default apps".* Recorded in [`design/github-sign-in.md`](design/github-sign-in.md)
   - **Where the side column's entries do not all fit, the column scrolls** — nothing in it is hidden or drawn smaller. A wheel over it moves it, and the keyboard brings the chosen entry into view; where everything fits, as at the design's 1440 × 960, it is drawn as before and the wheel pans the canvas. *The owner, 2026-11-13, asked with pictures what a tenth entry does to a 1280 × 800 screen: "The side column scrolls".* Recorded in [`design/the-settings-window.md`](design/the-settings-window.md)
 - Accessibility: the AT-SPI tree the agent uses is the one a screen reader uses; EN 301 549 conformance is the same work, not extra work
 - **alo's own applications look and work exactly like the desktop they run on** — alo Mails first, then every application alo makes. They are built on **one shared alo UI kit**: the drawing, the text (Manrope), the palette, the controls, the keyboard road and the accessibility tree the desktop already uses, moved out of the shell into crates an application builds on, rather than a second toolkit that would drift from it. An application drawn with it opens an ordinary Wayland window with no X11, draws with no graphics card, scales per display, asks the pointer by name and leaves its window band to alo; a screen reader and alo's own reader find every control in it. **Applications other people make keep their own look**: this is about what alo builds, not a style alo imposes. **Moving the code out changes nothing the desktop draws.** *Decided by the owner on 2026-11-11, choosing "Build a shared alo UI kit (Recommended)" in a question dialog that asked which road alo's own applications take for their interface; the option said it was the most work up front and that alo Mails waits on the kit's first version. Recorded in [ADR 0002](decisions/0002-the-shell-is-native.md), and the work is [`the-alo-ui-kit-plan.md`](autonomy/the-alo-ui-kit-plan.md). Not built yet on that date*
@@ -1147,8 +1147,12 @@ running code. It is built once `CLAUDE.md` carries those words (ADR 0143).*
   alo builds a small page inside the shipped editor, approving as the person's
   setting says; the person signs in to GitHub themselves — alo never types a
   password, and its reading of a window never includes a password field's
-  contents; and alo presses **Publish** in the editor after one approval whose
-  sentence says plainly that *publishing to the internet cannot be undone*. What
+  contents; and alo presses **Publish** in the editor — **at *ask me each time*
+  after one approval whose sentence says plainly that *publishing to the
+  internet cannot be undone*, and at full access without asking, the line
+  afterwards saying plainly that it went to the internet and Put back cannot
+  recall it** (the owner's decision of 2026-11-13, consistent with ADR 0149;
+  until then this read *after one approval* at every level). What
   the editor sends is on the indicator while it happens. **The demo posts
   nowhere social**: *"We may not do a demo with LinkedIn but we can do a demo
   with other applications. LinkedIn was just an example."* This is **Demo 2**,
@@ -1156,6 +1160,30 @@ running code. It is built once `CLAUDE.md` carries those words (ADR 0143).*
   2026-10-31. The stages are in
   [the Demo 2 plan](autonomy/demo-two-alo-inside-applications-plan.md).
   *Owner, 2026-10-31.*
+- **Demo 2's second road: the person asks alo to publish a folder to their GitHub Pages, and alo runs `git` and GitHub's own `gh` itself.**
+  The person asks in the Dock or the Bar, or types `alo …` in their terminal
+  (ADR 0124), and alo carries it out on its own command road (ADR 0149) — **never
+  by typing into the person's terminal window**. It is one action with a
+  sentence the machine writes, not the model: `publish the folder … to the
+  internet as your GitHub Pages site <account>.github.io, in place of what is
+  there — anybody can read it, and Put back can't recall it`. At full access it
+  is done without asking and the line afterwards says it is on the internet and
+  Put back can't recall it; at *ask me each time* it waits for one approval of
+  that sentence, and one approval publishes it once, with no folder grant
+  needed (*"Approval alone is enough"*, the owner, 2026-11-13); what it sends
+  is on the indicator and counted in the record as for every command alo runs;
+  at the sealed box it is
+  refused, saying that publishing runs programs the sealed box cannot and where
+  to choose another level. Nothing in the folder is changed, a push is never
+  forced, an empty folder or an address GitHub could not give is refused before
+  anybody is asked, and every publication and every refusal is in the record.
+  **The person signs in to GitHub once, themselves**, with GitHub's own `gh`
+  (`gh auth login --web`, a code shown in the terminal and entered at
+  github.com/login/device), kept on this computer; alo never asks for or reads a
+  password, and is told plainly that the sign-in lets anything the person runs —
+  alo too, at full access — read and change every repository the account can,
+  and make new ones. The editor road above stays beside it. *Owner, 2026-11-13:
+  "We can add it but we need no shortcuts."*
 
 ## The AI stack — model choice and deployment configurations
 

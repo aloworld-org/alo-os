@@ -67,6 +67,10 @@ alo-models = { path = "../alo-models" }
 # still stands and what the machine is called: which of this machine's grants
 # are asked is decided here, and nothing on the pairing decides it.
 alo-nearby = { path = "../alo-nearby" }
+# Publishing a folder to the person's GitHub Pages site: the verb, the checks
+# before the person is asked, and the command the machine writes. What runs it
+# is handed in (`WhatPublishingNeeds`), so nothing here starts a program.
+alo-publishing = { path = "../alo-publishing" }
 # The entry itself. A turn makes one for every execution and every refusal, and
 # hands nothing back until it is written.
 alo-record = { path = "../alo-record" }

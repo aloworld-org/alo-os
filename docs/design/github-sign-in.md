@@ -107,12 +107,12 @@ buttons, 8 between them; corner 18 and the FLOATING shadow.
   own (`hearing_that_github_needs_a_sign_in.rs`), and the shell puts the sheet
   up by the road *Sign in* takes (`the_github_sheet_rises_by_itself.rs`). See *When
   the sheet opens by itself*, below.
-- **Not built yet: the same for a publication.** `publish_to_github_pages`
-  (`feat/publish-a-folder-to-github-pages`, unmerged on 2026-11-13) answers a
-  publication nobody signed in for as a refusal, not as a command's answer, so
-  it does not pass the road above. Its refusal needs one call to
-  `TheDesktopsToldGitHubNeedsASignIn::a_sign_in_is_needed`, made where that
-  branch refuses — the day it lands.
+- **The same for a publication** (built 2026-11-13, once #1213 landed).
+  `publish_to_github_pages` answers a publication nobody signed in for as a
+  refusal (`NotDone::CouldNotPublish(NotPublished::NotSignedIn)`), not as a
+  command's answer, so both roads a change is refused on at the person's own
+  turns — after the OK and at full access — hand the refusal to
+  `CommandsHere::refused`, which tells the desktops once.
 
 ## When the sheet opens by itself
 

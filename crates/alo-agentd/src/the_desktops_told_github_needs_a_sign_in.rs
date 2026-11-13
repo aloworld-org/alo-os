@@ -111,6 +111,15 @@ impl TheDesktopsToldGitHubNeedsASignIn {
         }
     }
 
+    /// **What a refused change was, looked at once**: a publication refused
+    /// because nobody is signed in to GitHub tells every desktop watching,
+    /// once. Any other refusal is told to nobody.
+    pub fn told_of_a_refusal(&self, why: &alo_turn::NotDone) {
+        if a_refusal_needs_a_github_sign_in(why) {
+            self.a_sign_in_is_needed();
+        }
+    }
+
     /// Tell every desktop watching that a command needs a GitHub sign-in.
     ///
     /// Public for an errand whose failure is not a command's answer: a
@@ -144,6 +153,18 @@ pub fn needs_a_github_sign_in(done: &Done) -> bool {
         }
         _ => false,
     }
+}
+
+/// Whether this refusal is a publication refused because nobody is signed in
+/// to GitHub (`alo_publishing::NotPublished::NotSignedIn`) — which comes back
+/// as a refusal, not as a command's answer, so [`needs_a_github_sign_in`]
+/// never sees it.
+#[must_use]
+pub fn a_refusal_needs_a_github_sign_in(why: &alo_turn::NotDone) -> bool {
+    matches!(
+        why,
+        alo_turn::NotDone::CouldNotPublish(alo_publishing::NotPublished::NotSignedIn)
+    )
 }
 
 #[cfg(test)]

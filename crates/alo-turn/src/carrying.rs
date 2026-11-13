@@ -67,6 +67,7 @@ use crate::installing_an_application::installing_an_application;
 use crate::looking_at_the_catalogue::looking_at_the_catalogue;
 use crate::machine::Machine;
 use crate::pressing_a_control::pressing_a_control;
+use crate::publishing_a_folder::publishing_a_folder;
 use crate::reading_an_applications_windows::reading_an_applications_windows;
 use crate::refusing::NotDone;
 use crate::what_a_verb_did::WhatAVerbDid;
@@ -110,6 +111,10 @@ pub(crate) fn carrying_out(
     if authorised.verb() == alo_software::INSTALL_APPLICATION {
         let (entry, installed) = installing_an_application(machine, authorised, now);
         return (entry, installed.map(WhatAVerbDid::from));
+    }
+    if authorised.verb() == alo_publishing::PUBLISH_TO_GITHUB_PAGES {
+        let (entry, published) = publishing_a_folder(machine, authorised, now);
+        return (entry, published.map(WhatAVerbDid::from));
     }
     // **The read, routed by name like the rest.** It is asked before the
     // boundary is worked out rather than after, because there is nothing for a

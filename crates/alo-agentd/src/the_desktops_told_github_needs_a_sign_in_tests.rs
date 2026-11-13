@@ -8,7 +8,38 @@ use std::time::Duration;
 
 use alo_protocol::{Done, ToAPerson};
 
-use super::{AT_MOST, TheDesktopsToldGitHubNeedsASignIn, needs_a_github_sign_in};
+use alo_publishing::NotPublished;
+use alo_turn::NotDone;
+
+use super::{
+    AT_MOST, TheDesktopsToldGitHubNeedsASignIn, a_refusal_needs_a_github_sign_in,
+    needs_a_github_sign_in,
+};
+
+/// **A publication refused because nobody is signed in tells the desktop
+/// once** (#1213's refusal); a publication refused for any other reason, and
+/// any other refusal, tell it nothing.
+#[test]
+fn a_publication_nobody_signed_in_for_is_told_once() {
+    let watching = TheDesktopsToldGitHubNeedsASignIn::none_yet();
+    let mut desktop = a_desktop(&watching);
+    let others = [
+        NotDone::CouldNotPublish(NotPublished::NoGh),
+        NotDone::CouldNotPublish(NotPublished::NoGit),
+        NotDone::TurnClosed,
+    ];
+    for why in &others {
+        assert!(!a_refusal_needs_a_github_sign_in(why), "{why:?}");
+        watching.told_of_a_refusal(why);
+    }
+    let not_signed_in = NotDone::CouldNotPublish(NotPublished::NotSignedIn);
+    assert!(a_refusal_needs_a_github_sign_in(&not_signed_in));
+    watching.told_of_a_refusal(&not_signed_in);
+    assert_eq!(
+        everything_told(&mut desktop),
+        [ToAPerson::AGitHubSignInIsNeeded]
+    );
+}
 
 /// What `git` prints when it has an `https` remote on GitHub and nobody to
 /// type a name — what alo's own runs get.

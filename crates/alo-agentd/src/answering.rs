@@ -348,8 +348,27 @@ fn answered_to(
                 // that structural rather than remembered. What the bracket kept
                 // decides only which of two answers the person reads:
                 // `the_change_did`.
+                let verb = turning
+                    .proposed(waiting)
+                    .map(|change| change.proposal.verb().to_owned());
+                // **A publication approved after the person moved to the sealed
+                // box runs nothing** — the level is read again at the OK, as a
+                // command's is — and is written down as stopped at the moment.
+                if let Some(said) = verb.as_deref().and_then(|verb| {
+                    crate::publishing_at_this_level::not_at_this_level(verb, commands, strings)
+                }) {
+                    let why = turning.a_waiting_change_this_level_cannot_make(waiting, &said, now);
+                    return ToAPerson::refused(&why.said(strings));
+                }
+                // **And a change that changes nothing on this computer — a
+                // publication — takes no bracket**, so nothing offers *Put
+                // back* beside a folder already on the internet (ADR 0110 §2).
+                let changes_here = !verb
+                    .as_deref()
+                    .is_some_and(alo_publishing::changes_nothing_on_this_computer);
                 let said = turning
                     .proposed(waiting)
+                    .filter(|_| changes_here)
                     .map(|change| change.proposal.sentence(strings).into_text());
                 if let Some(said) = said {
                     bracket.before_a_change(&said);
@@ -357,10 +376,11 @@ fn answered_to(
                 // **And the turn is told the place's name**, so what runs is
                 // written down with it: the link *Put back* is asked from
                 // (`alo_record::Entry::kept_as`), not a guess by moment.
-                if let Some(named) = bracket
-                    .taken_at()
-                    .and_then(std::path::Path::file_name)
-                    .and_then(std::ffi::OsStr::to_str)
+                if changes_here
+                    && let Some(named) = bracket
+                        .taken_at()
+                        .and_then(std::path::Path::file_name)
+                        .and_then(std::ffi::OsStr::to_str)
                 {
                     turning.a_place_was_kept(named);
                 }
@@ -377,7 +397,13 @@ fn answered_to(
                         as_a_client_sees_it(&answer, now),
                         bracket.taken_at().is_some(),
                     ),
-                    Err(why) => ToAPerson::refused(&why.said(strings)),
+                    // **A publication nobody signed in for tells the desktop**,
+                    // so the sign-in sheet rises
+                    // (`crate::the_desktops_told_github_needs_a_sign_in`).
+                    Err(why) => {
+                        commands.refused(&why);
+                        ToAPerson::refused(&why.said(strings))
+                    }
                 }
             }
             // **A command waiting under the number** (ADR 0149): run once, if
@@ -420,8 +446,13 @@ fn answered_to(
 /// that failed, because what the person needs to know is identical. A bracket
 /// taken by an earlier approval in the same turn covers this change too, which
 /// is why the question is asked of the turn and not of this one call.
+///
+/// **And never *Put back* beside what it cannot recall**: a publication is
+/// answered as one that cannot be undone whatever was kept
+/// (`alo_protocol::Done::put_back_can_recall_it`, ADR 0110 §2), and each
+/// surface words it as on the internet in `alo_publishing`'s line.
 pub(crate) fn the_change_did(done: alo_protocol::Done, kept: bool) -> ToAPerson {
-    if kept {
+    if kept && done.put_back_can_recall_it() {
         ToAPerson::did(done)
     } else {
         ToAPerson::did_and_cannot_be_undone(done)

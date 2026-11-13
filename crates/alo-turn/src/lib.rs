@@ -159,6 +159,7 @@
 #![doc(html_root_url = "https://github.com/aloworld-org/alo-os")]
 
 pub mod a_change_at_full_access;
+mod a_change_this_level_cannot_make;
 pub mod a_command_as_administrator;
 pub mod a_command_counted;
 pub mod a_command_where_no_verb_exists;
@@ -183,6 +184,7 @@ pub mod machine;
 pub mod next_request;
 pub mod places;
 mod pressing_a_control;
+mod publishing_a_folder;
 mod reading_an_applications_windows;
 #[cfg(test)]
 mod reading_and_pressing_tests;
@@ -218,7 +220,8 @@ pub use crossing::Departed;
 pub use how_an_application_starts::{NoRoad, SaysHowAnApplicationStarts, TheRoad};
 pub use kept::Kept;
 pub use machine::{
-    Machine, WhatASoftwareVerbNeeds, WhatAnApplicationVerbNeeds, the_verbs_a_whole_machine_offers,
+    Machine, WhatASoftwareVerbNeeds, WhatAnApplicationVerbNeeds, WhatPublishingNeeds,
+    the_verbs_a_whole_machine_offers,
 };
 pub use places::Places;
 pub use pressing_a_control::AControlPressed;

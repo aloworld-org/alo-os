@@ -32,6 +32,27 @@ pub(crate) fn what_an_answer_did(answered: Option<&Answered>, strings: &Strings)
     if let Some(said) = answered.and_then(|answered| it_did_not_work(answered, strings)) {
         return said;
     }
+    // **A publication is never *Done.***: it is on the internet, and Put back
+    // can't recall it — the owner's decision of 2026-11-13, in
+    // `alo_publishing`'s one line so every surface says it alike.
+    if let Some(Answered::It(done) | Answered::ItCannotBeUndone(done)) = answered
+        && let alo_changing::Done::Published {
+            folder,
+            address,
+            nothing_new,
+        } = done.as_ref()
+    {
+        return alo_publishing::published_after_your_ok(
+            alo_publishing::WhatWasPublished {
+                folder,
+                address,
+                nothing_new: *nothing_new,
+            },
+            strings,
+        )
+        .text()
+        .to_owned();
+    }
     // **Since 2026-11-13: never plain *Done.* for a command that sent
     // something off this computer**, beside a copy Put back could return —
     // ADR 0110 §2, *it does not recall a push*. Where nothing counted what it
@@ -185,6 +206,35 @@ mod tests {
             uncounted.contains("could not count whether it sent anything"),
             "{uncounted}"
         );
+    }
+
+    /// **A publication is never *Done.***, kept or not: the person reads that
+    /// it is on the internet and Put back can't recall it (the owner's
+    /// decision of 2026-11-13).
+    #[test]
+    fn a_publication_says_it_is_on_the_internet_and_cannot_be_recalled() {
+        let mut vocabulary = Vocabulary::empty();
+        crate::the_cards_words::declare_the_cards_words(&mut vocabulary).unwrap();
+        alo_publishing::words::declare_into(&mut vocabulary).unwrap();
+        let strings = Strings::of(vocabulary);
+        let published = || {
+            Box::new(Done::Published {
+                folder: "/home/anna/site".to_owned(),
+                address: "https://anna.github.io/".to_owned(),
+                nothing_new: false,
+            })
+        };
+        for answered in [
+            Answered::It(published()),
+            Answered::ItCannotBeUndone(published()),
+        ] {
+            let said = what_an_answer_did(Some(&answered), &strings);
+            assert_eq!(
+                said,
+                "Published: it is on the internet now, as your GitHub Pages site at \
+                 https://anna.github.io/. Put back can't recall it."
+            );
+        }
     }
 
     /// **A refusal is the daemon's own words, unchanged** — the walk's own

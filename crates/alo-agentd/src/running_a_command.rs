@@ -147,6 +147,16 @@ impl CommandsHere {
     /// **What a command did, as it goes on the wire — and the desktops told,
     /// once, when it failed because nobody is signed in to GitHub.** Every
     /// command this file runs is answered through here, so none is missed.
+    /// **A change that was refused, looked at once**: a publication refused
+    /// because nobody is signed in to GitHub tells the desktops, as a command
+    /// that failed for it does. Every road a refused change is answered on at
+    /// the person's own turns comes through here.
+    pub(crate) fn refused(&self, why: &NotDone) {
+        if let Some(desktops) = &self.telling {
+            desktops.told_of_a_refusal(why);
+        }
+    }
+
     fn answered(&self, did: &alo_capability::WhatACommandDid) -> Done {
         let done = Done::of_a_command(did);
         if let Some(desktops) = &self.telling {
