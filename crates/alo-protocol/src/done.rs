@@ -189,6 +189,13 @@ pub enum Done {
         cut_short: bool,
         /// Whether it was stopped for running longer than a command is let run.
         took_too_long: bool,
+        /// How many bytes it sent off this computer, as the kernel counted
+        /// them (ADR 0148, as amended 2026-11-13) — absent where nothing
+        /// counted, never `0` for *unknown*. Added 2026-11-13, additively, so
+        /// a client can say what Put back cannot recall
+        /// (`alo_capability::WhatItSent`).
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        sent_bytes: Option<u64>,
     },
 }
 
@@ -341,6 +348,22 @@ impl Done {
             said: did.said().to_owned(),
             cut_short: did.cut_short(),
             took_too_long: did.took_too_long(),
+            sent_bytes: did.sent(),
+        }
+    }
+
+    /// **What a command sent off this computer, where it changes what a person
+    /// is told** — for a command that ran and ended well; [`None`] for every
+    /// other answer, and for a command counted as sending nothing.
+    ///
+    /// One reading for every surface, so the line at full access, on the
+    /// desktop's card and in the terminal cannot disagree about whether Put
+    /// back reaches all of what happened (ADR 0110 §2).
+    #[must_use]
+    pub fn what_a_command_sent(&self) -> Option<alo_capability::WhatItSent> {
+        match self {
+            Self::RanACommand { sent_bytes, .. } => alo_capability::WhatItSent::of(*sent_bytes),
+            _ => None,
         }
     }
 

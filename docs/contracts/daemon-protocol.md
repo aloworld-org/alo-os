@@ -252,6 +252,17 @@ at the moment the request arrives. Nothing on the wire can name the level.
   says the sign-in lets alo act on every repository the account can at full
   access (`alo_capability::ItDidNotWork::of_what_it_said`). The status is
   still carried and recorded as before.
+- **A command that sent something off this computer is never told as plain
+  *Done*** (added 2026-11-13, additively; ADR 0110 §2). `ran-a-command` carries
+  `sent_bytes`, the kernel's count of what it sent (absent where nothing
+  counted). Where a copy from before was kept — so the plain line would read as
+  wholly undoable — a run counted as sending more than nothing is told *Put back
+  can return your files on this computer, but the command sent something off
+  this computer while it ran, and that can't be recalled*, and one nothing
+  counted *… but not anything the command sent off it — and this computer could
+  not count whether it sent anything*: at full access, on the desktop's card
+  after an OK, and in the terminal (`alo_protocol::Done::what_a_command_sent`).
+  A run counted as sending nothing keeps *Done*.
 - **A waiting command is answered exactly as a change is**: `approve` and
   `decline` on the person's door, by number; it appears in `waiting`; one
   approval runs it once; a second approval of the number, or one after it
