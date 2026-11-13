@@ -67,8 +67,8 @@ use crate::installing_an_application::installing_an_application;
 use crate::looking_at_the_catalogue::looking_at_the_catalogue;
 use crate::machine::Machine;
 use crate::pressing_a_control::pressing_a_control;
-use crate::reading_an_applications_windows::reading_an_applications_windows;
 use crate::publishing_a_folder::publishing_a_folder;
+use crate::reading_an_applications_windows::reading_an_applications_windows;
 use crate::refusing::NotDone;
 use crate::what_a_verb_did::WhatAVerbDid;
 

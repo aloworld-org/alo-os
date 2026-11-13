@@ -184,10 +184,10 @@ pub mod machine;
 pub mod next_request;
 pub mod places;
 mod pressing_a_control;
+mod publishing_a_folder;
 mod reading_an_applications_windows;
 #[cfg(test)]
 mod reading_and_pressing_tests;
-mod publishing_a_folder;
 pub mod refusing;
 pub mod shortening;
 pub mod the_bracket_a_turn_takes;
