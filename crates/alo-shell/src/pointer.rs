@@ -578,11 +578,9 @@ impl Server {
             clippy::cast_possible_truncation,
             reason = "the pointer is clamped to the output, which is well inside i32"
         )]
-        let on_the_screen = self
-            .surfaces
-            .pointer
-            .as_ref()
-            .map(|pointer| Point::<i32, Physical>::from((pointer.location.x as i32, pointer.location.y as i32)));
+        let on_the_screen = self.surfaces.pointer.as_ref().map(|pointer| {
+            Point::<i32, Physical>::from((pointer.location.x as i32, pointer.location.y as i32))
+        });
         if let Some(on_the_screen) = on_the_screen
             && let Some(moved) = self.a_scroll_over_a_task_window(on_the_screen, &frame)
         {

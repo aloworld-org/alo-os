@@ -223,13 +223,15 @@ pub(crate) fn the_side_column(
         fonts,
         said(strings, crate::the_settings_words::YOURS_TO_CHANGE),
         TheType::SmallLabel,
-        (left + beside, (foot - footer_tall).max(y), wide - 2 * beside),
+        (
+            left + beside,
+            (foot - footer_tall).max(y),
+            wide - 2 * beside,
+        ),
         (palette.canvas, palette.muted),
     );
-    let content_ends = footer.y
-        + footer_tall
-        + px(m::BELOW_THE_FOOTER)
-        + px(m::INSIDE_THE_SIDE_COLUMN);
+    let content_ends =
+        footer.y + footer_tall + px(m::BELOW_THE_FOOTER) + px(m::INSIDE_THE_SIDE_COLUMN);
     words.push(footer);
 
     // **Then scrolled.**
@@ -273,7 +275,14 @@ pub(crate) fn the_side_column(
     }
     // **The keyboard's outline last**, so nothing in the column covers it.
     if let Some(item) = chosen_at.filter(|_| !open.in_the_page) {
-        crate::settings_raster::a_focus_ring(canvas, item, m::A_SMALL_CORNER, measure, palette, false);
+        crate::settings_raster::a_focus_ring(
+            canvas,
+            item,
+            m::A_SMALL_CORNER,
+            measure,
+            palette,
+            false,
+        );
         picture.focused = Some(item);
     }
     picture.side_column = Some(TheSideColumnDrawn {

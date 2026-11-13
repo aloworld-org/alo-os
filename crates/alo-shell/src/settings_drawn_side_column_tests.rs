@@ -14,7 +14,9 @@ use super::*;
 use crate::display_scale::DisplayScale;
 use crate::settings_raster::{SettingsLook, picture};
 use crate::settings_side_column_scrolls::TheSideColumnsScroll;
-use crate::settings_testing::{CountingDoor, a_persons_machine, doors, light, noon, settings_words};
+use crate::settings_testing::{
+    CountingDoor, a_persons_machine, doors, light, noon, settings_words,
+};
 use crate::{SettingsKey, SettingsPress, SettingsWindow};
 
 /// Settings as it stands on an output of `size`, at `display`.
@@ -107,14 +109,20 @@ fn where_it_does_not_fit_the_keyboard_scrolls_it_and_nothing_shrinks() {
         let look = at_text_size(150);
         let before = drawn(&window, size, look, display);
         let side = before.side_column.unwrap();
-        assert!(side.scrolls(), "{size:?}: the column was expected to run over");
+        assert!(
+            side.scrolls(),
+            "{size:?}: the column was expected to run over"
+        );
         assert_eq!(side.scrolled, 0);
         assert!(the_whole_of(&before, SettingsCategory::AloAndAi));
         press(&mut window, SettingsKey::Last);
         let after = drawn(&window, size, look, display);
         let side = after.side_column.unwrap();
         assert!(side.scrolled > 0, "{size:?}");
-        assert!(the_whole_of(&after, SettingsCategory::Accessibility), "{size:?}");
+        assert!(
+            the_whole_of(&after, SettingsCategory::Accessibility),
+            "{size:?}"
+        );
         let tall = after
             .categories
             .iter()
