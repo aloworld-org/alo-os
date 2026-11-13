@@ -263,6 +263,9 @@ pub struct Server {
     /// sign-in and not yet handed to the desktop
     /// (`crate::the_screen_reader_switch`).
     pub(crate) screen_reader_to_tell: Option<bool>,
+    /// What a person asked of GitHub in Settings and the desktop has not yet
+    /// taken, in order (`crate::asking_github`).
+    pub(crate) github_to_ask: Vec<crate::asking_github::AskingGitHub>,
     /// Where a new window goes when there is no room for it in view, as the
     /// person last said (`crate::the_choice_when_there_is_no_room`).
     pub(crate) when_there_is_no_room: alo_appearance::WhenThereIsNoRoom,
@@ -959,6 +962,7 @@ impl Server {
             pointer_change_to_tell: None,
             describing_to_tell: None,
             screen_reader_to_tell: None,
+            github_to_ask: Vec::new(),
             // Gliding to empty space, until the desktop says what this person
             // chose; and full motion, until it says they asked for less.
             when_there_is_no_room: alo_appearance::WhenThereIsNoRoom::default(),

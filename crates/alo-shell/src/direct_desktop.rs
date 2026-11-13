@@ -545,6 +545,24 @@ pub trait TheDesktop {
         None
     }
 
+    /// **Something is asked of GitHub's own command, `gh`** — who is signed
+    /// in, sign in, stop signing in, or sign out — from Settings → Accounts
+    /// (`crate::asking_github`).
+    ///
+    /// Called on the frame after the person asked, in the order they asked.
+    /// It must not wait: a sign-in waits minutes for the person to type a code
+    /// in their browser, and the answer is given later, through
+    /// [`Self::what_github_answered`]. **Nothing by default**, and then nothing
+    /// is ever answered: a desktop that runs no programs has no gh to ask, and
+    /// Settings says *Checking…* rather than inventing an answer.
+    fn github_is_asked(&mut self, _asked: crate::AskingGitHub) {}
+
+    /// **What an ask of GitHub came to**, once it has: asked every frame,
+    /// and [`None`] while nothing new has been answered.
+    fn what_github_answered(&mut self) -> Option<crate::GitHubAnswered> {
+        None
+    }
+
     /// **This machine's own network addresses, read now** — asked once, each
     /// time a person opens the form that adds a provider, so Settings can warn
     /// them about a service at one of them as it does about loopback (owner's
@@ -1473,6 +1491,19 @@ impl LoopInput for TheDesktopLane<'_> {
             server
                 .settings
                 .the_screen_reader_answered(answered.said(self.strings));
+        }
+        // **GitHub's own command is the desktop's to run** (`crate::asking_github`):
+        // Settings asks who is signed in once each time it opens, a person's
+        // *Sign in* and *Sign out* are handed on in order, and what each came
+        // to is told back to Settings.
+        if server.settings.who_is_signed_in_to_github_is_asked() {
+            server.github_is_asked(crate::AskingGitHub::WhoIsSignedIn);
+        }
+        for asked in server.the_github_asks_to_tell() {
+            self.desktop.github_is_asked(asked);
+        }
+        while let Some(answered) = self.desktop.what_github_answered() {
+            server.github_answered(&answered, self.strings);
         }
         // **A provider form that just opened learns where this machine is**,
         // once, from the desktop that may read it.

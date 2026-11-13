@@ -194,3 +194,16 @@ names = "Pointer size"
 node = "551:1131"
 frame = 20
 group = [3.333, 3.333, 14.167, 14.167]
+
+# Not from the design file: the owner approved it on 2026-11-13 with the GitHub
+# sign-in proposal (accounts-icon.svg beside the pictures he approved), drawn in
+# these icons' line style — a 20 frame, stroke 1.45833, round ends. The circle
+# is written as the four curves a circle is exported as, because
+# alo_vector_shapes draws paths only. Its box is the whole frame, so its group
+# is the frame.
+[[icon]]
+svg = "accounts.svg"
+names = "Accounts, in the side column"
+node = "proposal of 2026-11-13"
+frame = 20
+group = [0.0, 0.0, 20.0, 20.0]

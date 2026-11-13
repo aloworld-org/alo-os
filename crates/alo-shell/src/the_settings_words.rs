@@ -1063,12 +1063,147 @@ pub const THAT_APP_IS_GONE: Word = Word::saying(
      computer a moment before.",
 );
 
+/// The gap a GitHub login fills.
+pub const THE_LOGIN: &str = "login";
+
+/// Accounts, in the side column and as its page's heading (the owner's
+/// approval of 2026-11-13, `docs/design/github-sign-in.md`).
+pub const ACCOUNTS: Word = Word::saying("settings.category.accounts", "Accounts").noting(
+    "A category in Settings: the page listing the online services this computer is signed in to, \
+     such as GitHub. Sentence case.",
+);
+
+/// The sentence under the Accounts heading.
+pub const ACCOUNTS_IS: Word = Word::saying(
+    "settings.category.accounts.is",
+    "Services this computer is signed in to, and what each sign-in lets programs do.",
+)
+.noting("Under the heading of the Accounts page. A short sentence saying what the page is for.");
+
+/// The section of services.
+pub const SERVICES_YOU_SIGN_IN_TO: Word = Word::saying(
+    "settings.accounts.services",
+    "Services you sign in to",
+)
+.noting("A small heading over the list of online services on the Accounts page. Sentence case.");
+
+/// GitHub, by its name.
+pub const GITHUB: Word = Word::saying("settings.accounts.github", "GitHub").noting(
+    "The name of the service GitHub, where people keep code. A brand name: keep it as it is \
+     unless your language writes it in another script.",
+);
+
+/// Under GitHub while nobody is signed in.
+pub const NOT_SIGNED_IN: Word = Word::saying("settings.accounts.not-signed-in", "Not signed in")
+    .noting("Under the name of an online service on the Accounts page: nobody is signed in to it.");
+
+/// Under GitHub while somebody is signed in.
+pub const SIGNED_IN_AS: Word = Word::saying(
+    "settings.accounts.signed-in-as",
+    "Signed in as {login}",
+)
+.noting(
+    "Under the name GitHub on the Accounts page. {login} is the person's GitHub user name, \
+     written exactly as GitHub writes it.",
+);
+
+/// Under GitHub before the desktop has said who is signed in.
+pub const CHECKING: Word = Word::saying("settings.accounts.checking", "Checking…").noting(
+    "Under the name GitHub on the Accounts page, for the moment before the computer has found \
+     out whether anybody is signed in. One short word.",
+);
+
+/// The button that signs in.
+pub const SIGN_IN: Word = Word::saying("settings.accounts.sign-in", "Sign in")
+    .noting("A button beside an online service on the Accounts page. Two short words.");
+
+/// The button that signs out.
+pub const SIGN_OUT: Word = Word::saying("settings.accounts.sign-out", "Sign out")
+    .noting("A button beside an online service on the Accounts page. Two short words.");
+
+/// What a GitHub sign-in risks — the owner's words of 2026-11-13, as drawn.
+pub const GITHUB_RISKS: Word = Word::saying(
+    "settings.accounts.github.risks",
+    "This sign-in lets GitHub's own command, gh, read and change every repository your GitHub \
+     account can, public and private, and create new ones. It is kept on this computer until you \
+     sign out. Anything you run can use it — and at full access, so can alo.",
+)
+.noting(
+    "In the box headed 'What it risks', under GitHub. gh is the name of a program: keep it as it \
+     is. A repository is where a project's code is kept. 'Full access' is the name of a setting on \
+     the Running code page: use the same words as that page.",
+);
+
+/// gh is not on this computer.
+pub const GH_IS_NOT_HERE: Word = Word::saying(
+    "settings.accounts.gh-is-not-here",
+    "GitHub's own command, gh, is not on this computer, so nothing here can sign in to GitHub.",
+)
+.noting(
+    "Shown on the Accounts page when the program gh is missing. gh is the name of a program: keep \
+     it as it is.",
+);
+
+/// gh stopped with an error.
+pub const GH_FAILED: Word = Word::saying(
+    "settings.accounts.gh-failed",
+    "GitHub's own command, gh, stopped with an error, so nothing changed.",
+)
+.noting(
+    "Shown on the Accounts page when the program gh ended with an error. What gh itself said \
+     follows on the next line, in its own words.",
+);
+
+/// No code arrived from gh.
+pub const NO_CODE_ARRIVED: Word = Word::saying(
+    "settings.accounts.no-code-arrived",
+    "GitHub did not send a sign-in code, so nobody was signed in. Try again in a moment.",
+)
+.noting(
+    "Shown when signing in to GitHub was started but GitHub never gave the one-time code a person \
+     types in their browser.",
+);
+
+/// The person cancelled a sign-in.
+pub const SIGN_IN_CANCELLED: Word = Word::saying(
+    "settings.accounts.sign-in-cancelled",
+    "You cancelled signing in to GitHub. Nobody was signed in.",
+)
+.noting("Shown on the Accounts page after the person cancelled signing in to GitHub.");
+
+/// Signing out did not work.
+pub const SIGN_OUT_FAILED: Word = Word::saying(
+    "settings.accounts.sign-out-failed",
+    "Signing out of GitHub did not work, so this computer is still signed in.",
+)
+.noting(
+    "Shown on the Accounts page when signing out of GitHub failed. What the program gh said \
+     follows on the next line, in its own words.",
+);
+
+/// Signed out.
+pub const SIGNED_OUT: Word = Word::saying(
+    "settings.accounts.signed-out",
+    "Signed out of GitHub. Nothing on this computer can use that sign-in any more.",
+)
+.noting("Shown on the Accounts page just after the person signed out of GitHub.");
+
+/// A sign-in began: the sentence over the code (the sheet's, as drawn).
+pub const GITHUB_WILL_ASK_FOR_THIS_CODE: Word = Word::saying(
+    "settings.accounts.github-will-ask-for-this-code",
+    "GitHub will ask for this code. Enter it on the page that opens in your browser.",
+)
+.noting(
+    "Shown over a one-time code, such as 4F2A-9C1D, while the person signs in to GitHub: GitHub's \
+     page opens in their web browser and asks them to type the code there.",
+);
+
 /// Every word this window says of its own.
 ///
 /// The length is written out so that adding a word above and forgetting it
 /// here does not compile — a word declared and left out of this list reaches a
 /// person as its own key.
-pub const THE_WINDOWS_WORDS: [Word; 138] = [
+pub const THE_WINDOWS_WORDS: [Word; 155] = [
     SETTINGS,
     EVERYTHING_IN_ONE_PLACE,
     THE_GROUP_ALO,
@@ -1207,6 +1342,23 @@ pub const THE_WINDOWS_WORDS: [Word; 138] = [
     NO_APP_OPENS_EMAIL_ADDRESSES,
     EVERY_LINK_IS_RECORDED,
     THAT_APP_IS_GONE,
+    ACCOUNTS,
+    ACCOUNTS_IS,
+    SERVICES_YOU_SIGN_IN_TO,
+    GITHUB,
+    NOT_SIGNED_IN,
+    SIGNED_IN_AS,
+    CHECKING,
+    SIGN_IN,
+    SIGN_OUT,
+    GITHUB_RISKS,
+    GH_IS_NOT_HERE,
+    GH_FAILED,
+    NO_CODE_ARRIVED,
+    SIGN_IN_CANCELLED,
+    SIGN_OUT_FAILED,
+    SIGNED_OUT,
+    GITHUB_WILL_ASK_FOR_THIS_CODE,
 ];
 
 /// Why this window's words could not be declared.
@@ -1288,6 +1440,7 @@ mod tests {
             (YOU_ADDED_THIS, THE_MODEL),
             (YOU_ADDED_THIS_WITH_A_KEY, THE_MODEL),
             (IT_SAYS_IT_RUNS_IN, THE_REGION),
+            (SIGNED_IN_AS, THE_LOGIN),
         ] {
             assert!(
                 word.says().contains(&format!("{{{gap}}}")),

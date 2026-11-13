@@ -274,6 +274,12 @@ fn the_press_is_carried_out(server: &mut Server, press: crate::SettingsPress, st
         let _ = server.the_record_is_opened();
         return;
     }
+    // **And GitHub is asked here**: its own command is the desktop's to run,
+    // so the ask is held for the desktop's next frame (`crate::asking_github`).
+    if let Some(SettingsDid::AskedGitHub(asked)) = did {
+        server.github_is_asked(asked);
+        return;
+    }
     // **A region kept is told to the seat at once**, which passes it to the
     // desktop's clock on the next frame and writes the next record opened
     // the new way. `crate::the_formats_are_told` is the one copy.

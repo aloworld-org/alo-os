@@ -1,10 +1,15 @@
-//! The nine categories down the side of Settings, in the two groups the
+//! The ten categories down the side of Settings, in the two groups the
 //! owner's redesign of 2026-10-31 draws them in, and which category each
 //! section of rows belongs to.
 //!
 //! **Default apps is the ninth**, between Appearance and Region and time, as
 //! the owner approved it on 2026-11-12 (frame `25:2`,
 //! `docs/design/default-apps-and-open-with.md`).
+//!
+//! **Accounts is the tenth**, after Default apps, as the owner approved it on
+//! 2026-11-13 with the GitHub sign-in (`docs/design/github-sign-in.md`). Ten do
+//! not fit a 1280 × 800 screen, so the side column scrolls there
+//! (`crate::settings_side_column_scrolls`).
 //!
 //! `docs/features.md`, the owner's decision of 2026-10-31: *Settings is a
 //! window with a sidebar of categories — alo: alo and AI, Folders alo can use,
@@ -58,6 +63,8 @@ pub enum SettingsCategory {
     Appearance,
     /// Which application opens a web link, and which an email address.
     DefaultApps,
+    /// The services this computer is signed in to: GitHub.
+    Accounts,
     /// How dates and times are written, and the time zone.
     RegionAndTime,
     /// The shortcuts.
@@ -67,14 +74,15 @@ pub enum SettingsCategory {
 }
 
 impl SettingsCategory {
-    /// All nine, in the order the side column draws them.
-    pub const ALL: [Self; 9] = [
+    /// All ten, in the order the side column draws them.
+    pub const ALL: [Self; 10] = [
         Self::AloAndAi,
         Self::FoldersAloCanUse,
         Self::RunningCode,
         Self::Terminal,
         Self::Appearance,
         Self::DefaultApps,
+        Self::Accounts,
         Self::RegionAndTime,
         Self::KeyboardAndShortcuts,
         Self::Accessibility,
@@ -90,6 +98,7 @@ impl SettingsCategory {
             SettingsSection::Terminal => Self::Terminal,
             SettingsSection::Appearance | SettingsSection::Dock => Self::Appearance,
             SettingsSection::DefaultApps => Self::DefaultApps,
+            SettingsSection::Accounts => Self::Accounts,
             SettingsSection::Formats | SettingsSection::TimeZone => Self::RegionAndTime,
             SettingsSection::Shortcuts => Self::KeyboardAndShortcuts,
             SettingsSection::Accessibility => Self::Accessibility,
@@ -104,6 +113,7 @@ impl SettingsCategory {
             }
             Self::Appearance
             | Self::DefaultApps
+            | Self::Accounts
             | Self::RegionAndTime
             | Self::KeyboardAndShortcuts
             | Self::Accessibility => SettingsGroup::ThisComputer,
@@ -120,6 +130,7 @@ impl SettingsCategory {
             Self::Terminal => w::TERMINAL,
             Self::Appearance => w::APPEARANCE,
             Self::DefaultApps => w::DEFAULT_APPS,
+            Self::Accounts => w::ACCOUNTS,
             Self::RegionAndTime => w::REGION_AND_TIME,
             Self::KeyboardAndShortcuts => w::KEYBOARD_AND_SHORTCUTS,
             Self::Accessibility => w::ACCESSIBILITY,
@@ -136,6 +147,7 @@ impl SettingsCategory {
             Self::Terminal => w::TERMINAL_IS,
             Self::Appearance => w::APPEARANCE_IS,
             Self::DefaultApps => w::DEFAULT_APPS_IS,
+            Self::Accounts => w::ACCOUNTS_IS,
             Self::RegionAndTime => w::REGION_AND_TIME_IS,
             Self::KeyboardAndShortcuts => w::KEYBOARD_AND_SHORTCUTS_IS,
             Self::Accessibility => w::ACCESSIBILITY_IS,
@@ -156,6 +168,9 @@ impl SettingsCategory {
             // category. A file's sign is the nearest of the window's own to
             // *what opens what* (`docs/design/default-apps-and-open-with.md`).
             Self::DefaultApps => I::File,
+            // **A person**, drawn for the proposal the owner approved on
+            // 2026-11-13, in these icons' line style.
+            Self::Accounts => I::Accounts,
             Self::RegionAndTime => I::Globe,
             Self::KeyboardAndShortcuts => I::Keyboard,
             Self::Accessibility => I::Access,
@@ -197,7 +212,7 @@ mod tests {
     use super::*;
 
     /// **Every section is on a page**, and the pages are in the order the
-    /// design draws them: four about alo, then five about this computer.
+    /// design draws them: four about alo, then six about this computer.
     #[test]
     fn every_section_has_a_page_in_the_order_drawn() {
         let groups: Vec<SettingsGroup> =
@@ -214,12 +229,14 @@ mod tests {
                 SettingsGroup::ThisComputer,
                 SettingsGroup::ThisComputer,
                 SettingsGroup::ThisComputer,
+                SettingsGroup::ThisComputer,
             ]
         );
         for section in [
             SettingsSection::Answering,
             SettingsSection::Appearance,
             SettingsSection::DefaultApps,
+            SettingsSection::Accounts,
             SettingsSection::Formats,
             SettingsSection::TimeZone,
             SettingsSection::Dock,
@@ -255,8 +272,14 @@ mod tests {
             SettingsCategory::Appearance.next(),
             SettingsCategory::DefaultApps
         );
+        // **Accounts is after Default apps**, where the owner placed it on
+        // 2026-11-13.
         assert_eq!(
             SettingsCategory::DefaultApps.next(),
+            SettingsCategory::Accounts
+        );
+        assert_eq!(
+            SettingsCategory::Accounts.next(),
             SettingsCategory::RegionAndTime
         );
     }

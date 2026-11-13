@@ -348,6 +348,9 @@ mod an_alo_windows_edge;
 mod an_application_verb_is_carried_out;
 /// Closing a running task asks: Stop and close, or Cancel (ADR 0139).
 mod asking_before_closing;
+/// What the desktop is asked to do with GitHub's own command, and what it
+/// answered.
+mod asking_github;
 /// The alo Bar's matches, rising from the Dock's field.
 mod bar_matches_raster;
 mod dock_room;
@@ -499,6 +502,8 @@ mod session_device;
 mod session_input;
 /// Left and Right along a row of choices in Settings.
 mod settings_along_a_row;
+/// Settings → Accounts: who is signed in to GitHub, as the desktop said.
+mod settings_accounts;
 mod settings_answering;
 /// Settings as a frame drew it, for the press after the frame.
 mod settings_as_drawn;
@@ -529,6 +534,8 @@ mod settings_old_names;
 mod settings_on_the_plane;
 mod settings_page;
 mod settings_page_accessibility;
+/// The Accounts page.
+mod settings_page_accounts;
 mod settings_page_alo;
 mod settings_page_appearance;
 mod settings_page_default_apps;
@@ -1033,6 +1040,7 @@ pub use screens::{ScreenPlace, Screens, TheRoom};
 pub use the_markets_words::TheMarketsWords;
 pub use the_pointers_look::ThePointersLook;
 pub use the_screen_reader_switch::TheScreenReaderAnswered;
+pub use asking_github::{AskingGitHub, GitHubAnswered, WhyGitHubDidNotWork};
 pub use their_formats::{TheDay, TheirFormats, WhereTheRegionCameFrom};
 
 // **The types a desktop needs to answer `their_displays`, re-exported so that
