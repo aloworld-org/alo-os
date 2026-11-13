@@ -71,7 +71,9 @@ accounts.not-signed-in	that name and password do not sign anyone in on this mach
 accounts.not-this-machines-person	this machine is set up for a different account, so you were not signed in — its description and its accounts disagree, and whoever installed it has to put that right
 adapters.fallback.activate-control.application	the application the control is in
 adapters.fallback.activate-control.by-hand	Press the control in the application's window, with the pointer or from the keyboard
+adapters.fallback.activate-control.changes	Presses that one control once, by its own action, as a person pressing it would.
 adapters.fallback.activate-control.kind	what kind of control it is
+adapters.fallback.activate-control.leaves	Nothing is typed, no other control is pressed, and nothing is found by where it is on the screen.
 adapters.fallback.activate-control.name	the name the control shows
 adapters.fallback.activate-control.purpose	press a button or another control in an application's window
 adapters.fallback.activate-control.sentence	press the {kind} named “{name}” in {application}

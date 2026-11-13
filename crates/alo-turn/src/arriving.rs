@@ -198,7 +198,12 @@ impl<'a, 'm> Arriving<'a, 'm> {
         // this. Refused by name here, before a call is built, so no grant and
         // no boundary is consulted for a question that is not going to be
         // answered.
-        if verb == alo_record::what_touched_a_file::THE_VERB {
+        //
+        // **And what is on this person's screen never answers across one
+        // either**, for the same reason one step closer: a window's contents
+        // are the person's own as they work, and a pairing made to share a
+        // model is not one made to let another machine look at their screen.
+        if verb == alo_record::what_touched_a_file::THE_VERB || verb == alo_adapters::READ_WINDOW {
             return Err(self.turning.not_for_another_machine(verb, now));
         }
         let call = self.turning.calling(verb, given, now)?;

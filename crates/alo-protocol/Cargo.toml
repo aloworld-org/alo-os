@@ -38,6 +38,14 @@ alo-record = { path = "../alo-record" }
 # leaf already in this crate's graph through `alo-record`; a dev-dependency
 # until 2026-10-27.
 alo-egress = { path = "../alo-egress" }
+# What an application's windows showed, on the way back, for the accessibility
+# fallback's read — added 2026-11-12, when a turn first offered it. Here for
+# `alo-files`' reason: this crate turns what a verb did into what crosses the
+# wire. Not a leaf (on Linux it holds the session bus it reads a tree over),
+# and that is weighed: what crosses is made from its `Shown` alone, and a
+# constructor taking primitives instead would let a daemon answer a read with
+# windows nothing read.
+alo-adapters = { path = "../alo-adapters" }
 # Every refusal in this crate is read by somebody, so none of them is English.
 alo-strings = { path = "../alo-strings" }
 serde = { workspace = true }

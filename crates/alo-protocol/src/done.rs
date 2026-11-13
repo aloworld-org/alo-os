@@ -190,6 +190,80 @@ pub enum Done {
         /// Whether it was stopped for running longer than a command is let run.
         took_too_long: bool,
     },
+    /// What an application's windows showed, read through its accessibility
+    /// tree inside the turn (`accessible.read_window`).
+    ///
+    /// Added 2026-11-12, additively. **What a model reads to know what it can
+    /// press**: each control by the kind a press takes and the name it shows,
+    /// and each piece of text. A password field is here by its name, and never
+    /// with what it holds — `alo_adapters::Seen` cannot carry that, so neither
+    /// can this. It goes to a client on the machine whose screen it is and
+    /// nowhere else: `alo_turn::Arriving::reading` refuses the verb across a
+    /// pairing.
+    WindowsShowed {
+        /// The application whose windows they are.
+        application: String,
+        /// Each of its windows on the screen, in the order the tree lists them.
+        windows: Vec<AWindowShowed>,
+        /// Whether it showed more than is read at once, so not all of it was
+        /// read.
+        not_all_read: bool,
+        /// What alo is told beside it, in the person's language: that not all
+        /// of it was read, and for a read that found no text, which switch is
+        /// the likeliest reason. **Sentences rather than keys**, because their
+        /// reader is the model answering the person, which reads words.
+        told: Vec<String>,
+    },
+    /// One control was pressed, or asked to be by an application that did not
+    /// answer (`accessible.activate_control`).
+    ///
+    /// Added 2026-11-12, additively.
+    Pressed {
+        /// The application it is in.
+        application: String,
+        /// Its kind, as a press names it: `button`, `check_box`, …
+        kind: String,
+        /// Its name, as the application shows it.
+        name: String,
+        /// Whether the application did not answer, so whether it was pressed is
+        /// not known.
+        unanswered: bool,
+    },
+}
+
+/// One window an application showed, as it goes back to a client.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case", deny_unknown_fields)]
+pub struct AWindowShowed {
+    /// Its title.
+    pub title: String,
+    /// What it shows, in reading order.
+    pub things: Vec<OneThingShown>,
+}
+
+/// One thing a window showed, as it goes back to a client.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case", deny_unknown_fields)]
+pub struct OneThingShown {
+    /// What it is: one of the kinds a press takes (`button`, `check_box`,
+    /// `radio_button`, `switch`, `menu_item`, `tab`, `link`), or `field`,
+    /// `password-field`, `text`, `document`, `image`, `window` or `drawn`.
+    pub is: String,
+    /// Its name, as the application shows it — empty for a thing with none.
+    pub name: String,
+    /// The text it shows, where it shows any beyond its name. Never a password
+    /// field's.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub shows: Option<String>,
+    /// Whether it is greyed out, so a person could not use it now.
+    pub greyed_out: bool,
+    /// On or off, for a thing that is either.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub on: Option<bool>,
+    /// What could not be read about it, where something could not:
+    /// `no-name`, `not-described` or `shown-by-another-program`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub cannot_be_read: Option<String>,
 }
 
 /// One thing the record says was done to a file, as it goes back to a client.
@@ -373,6 +447,45 @@ impl Done {
         }
     }
 
+    /// What a read of an application's windows answered, as it goes on the
+    /// wire, with what alo was told beside it.
+    ///
+    /// **Takes the fallback's own `Shown`**, which only a walk of the tree
+    /// makes, so a daemon cannot answer a read with windows nothing read; and
+    /// a password field's contents cannot cross, because `Shown` never held
+    /// them.
+    #[must_use]
+    pub fn of_a_window_read(shown: &alo_adapters::Shown, told: &[String]) -> Self {
+        Self::WindowsShowed {
+            application: shown.application().to_owned(),
+            windows: shown
+                .windows()
+                .iter()
+                .map(|window| AWindowShowed {
+                    title: window.title().to_owned(),
+                    things: window.seen().iter().map(OneThingShown::of).collect(),
+                })
+                .collect(),
+            not_all_read: shown.not_all_read(),
+            told: told.to_vec(),
+        }
+    }
+
+    /// What a press answered, as it goes on the wire.
+    ///
+    /// Takes the four parts rather than a turn's type, for
+    /// [`Done::of_an_application_act`]'s reason: `alo-protocol` holds `alo-turn`
+    /// only as a dev-dependency.
+    #[must_use]
+    pub fn of_a_press(application: &str, kind: &str, name: &str, unanswered: bool) -> Self {
+        Self::Pressed {
+            application: application.to_owned(),
+            kind: kind.to_owned(),
+            name: name.to_owned(),
+            unanswered,
+        }
+    }
+
     /// What one of the six file verbs answered, as it goes on the wire.
     #[must_use]
     pub fn of_a_file_verb(answer: &Answer) -> Self {
@@ -495,6 +608,48 @@ impl Done {
                 took_too_long,
                 ..
             } => *cut_short || *took_too_long,
+            // **A read of windows says its bound**: more shown than is read at
+            // once.
+            Self::WindowsShowed { not_all_read, .. } => *not_all_read,
+            // **A press the application did not answer** may or may not have
+            // happened, and that is what a shell puts a caveat beside.
+            Self::Pressed { unanswered, .. } => *unanswered,
+        }
+    }
+}
+
+impl OneThingShown {
+    /// One thing the walk saw, as it crosses.
+    fn of(seen: &alo_adapters::Seen) -> Self {
+        use alo_adapters::{Contents, Limit, Pressable, Role};
+        let is = match (Pressable::of(seen.role()), seen.role()) {
+            (Some(kind), _) => kind.named(),
+            (None, Role::TextField) => "field",
+            (None, Role::PasswordField) => "password-field",
+            (None, Role::Document) => "document",
+            (None, Role::Image) => "image",
+            (None, Role::Window) => "window",
+            (None, Role::Canvas) => "drawn",
+            (None, _) => "text",
+        };
+        let shows = match seen.contents() {
+            Contents::Text(text) => Some(text.clone()),
+            Contents::Nothing | Contents::Withheld => None,
+        };
+        Self {
+            is: is.to_owned(),
+            name: seen.name().to_owned(),
+            shows,
+            greyed_out: !seen.is_usable(),
+            on: seen.is_on(),
+            cannot_be_read: seen.limit().map(|limit| {
+                match limit {
+                    Limit::NoName => "no-name",
+                    Limit::NotDescribed => "not-described",
+                    Limit::ShownByAnotherProgram => "shown-by-another-program",
+                }
+                .to_owned()
+            }),
         }
     }
 }
