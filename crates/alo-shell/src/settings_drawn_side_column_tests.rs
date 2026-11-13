@@ -155,11 +155,17 @@ fn ten_entries_scroll_at_1280_by_800_and_the_last_is_reached() {
         let mut window = machine.opened();
         let before = drawn(&window, size, light(), display);
         let side = before.side_column.unwrap();
-        assert!(side.scrolls(), "{size:?}: ten entries were expected to run over");
+        assert!(
+            side.scrolls(),
+            "{size:?}: ten entries were expected to run over"
+        );
         press(&mut window, SettingsKey::Last);
         let after = drawn(&window, size, light(), display);
         assert!(after.side_column.unwrap().scrolled > 0, "{size:?}");
-        assert!(the_whole_of(&after, SettingsCategory::Accessibility), "{size:?}");
+        assert!(
+            the_whole_of(&after, SettingsCategory::Accessibility),
+            "{size:?}"
+        );
     }
 }
 

@@ -1081,11 +1081,10 @@ pub const ACCOUNTS_IS: Word = Word::saying(
 .noting("Under the heading of the Accounts page. A short sentence saying what the page is for.");
 
 /// The section of services.
-pub const SERVICES_YOU_SIGN_IN_TO: Word = Word::saying(
-    "settings.accounts.services",
-    "Services you sign in to",
-)
-.noting("A small heading over the list of online services on the Accounts page. Sentence case.");
+pub const SERVICES_YOU_SIGN_IN_TO: Word =
+    Word::saying("settings.accounts.services", "Services you sign in to").noting(
+        "A small heading over the list of online services on the Accounts page. Sentence case.",
+    );
 
 /// GitHub, by its name.
 pub const GITHUB: Word = Word::saying("settings.accounts.github", "GitHub").noting(
@@ -1098,14 +1097,11 @@ pub const NOT_SIGNED_IN: Word = Word::saying("settings.accounts.not-signed-in", 
     .noting("Under the name of an online service on the Accounts page: nobody is signed in to it.");
 
 /// Under GitHub while somebody is signed in.
-pub const SIGNED_IN_AS: Word = Word::saying(
-    "settings.accounts.signed-in-as",
-    "Signed in as {login}",
-)
-.noting(
-    "Under the name GitHub on the Accounts page. {login} is the person's GitHub user name, \
+pub const SIGNED_IN_AS: Word =
+    Word::saying("settings.accounts.signed-in-as", "Signed in as {login}").noting(
+        "Under the name GitHub on the Accounts page. {login} is the person's GitHub user name, \
      written exactly as GitHub writes it.",
-);
+    );
 
 /// Under GitHub before the desktop has said who is signed in.
 pub const CHECKING: Word = Word::saying("settings.accounts.checking", "Checking…").noting(

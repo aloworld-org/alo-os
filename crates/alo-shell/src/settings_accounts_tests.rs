@@ -11,7 +11,9 @@
 use crate::asking_github::{AskingGitHub, GitHubAnswered, WhyGitHubDidNotWork};
 use crate::settings_page::{ABlock, APage};
 use crate::settings_testing::{CountingDoor, a_persons_machine, doors, noon, settings_words};
-use crate::{SettingsCategory, SettingsDid, SettingsKey, SettingsPress, SettingsRow, SettingsWindow};
+use crate::{
+    SettingsCategory, SettingsDid, SettingsKey, SettingsPress, SettingsRow, SettingsWindow,
+};
 
 /// Press `pressed` once, and say what it did.
 fn press(window: &mut SettingsWindow, pressed: SettingsKey) -> Option<SettingsDid> {
@@ -91,7 +93,10 @@ fn nothing_is_offered_until_the_desktop_says_who_is_signed_in() {
     // **Shut, it asks nothing and hears nothing.**
     let mut shut = SettingsWindow::closed();
     assert!(!shut.who_is_signed_in_to_github_is_asked());
-    answered(&mut shut, &GitHubAnswered::SignedInAs(Some("anna".to_owned())));
+    answered(
+        &mut shut,
+        &GitHubAnswered::SignedInAs(Some("anna".to_owned())),
+    );
     assert!(shut.open().is_none());
 }
 
@@ -160,7 +165,10 @@ fn a_press_asks_the_desktop_and_does_nothing_itself() {
     answered(&mut window, &GitHubAnswered::SignedOut);
     let (line, button, said) = as_drawn(&window);
     assert_eq!(line, "Not signed in");
-    assert_eq!(button.map(|(_, row)| row), Some(SettingsRow::SignInToGitHub));
+    assert_eq!(
+        button.map(|(_, row)| row),
+        Some(SettingsRow::SignInToGitHub)
+    );
     assert_eq!(
         said,
         ["Signed out of GitHub. Nothing on this computer can use that sign-in any more."]
@@ -186,11 +194,16 @@ fn every_way_it_did_not_work_is_said() {
     );
     let (line, button, said) = as_drawn(&window);
     assert_eq!(line, "Not signed in");
-    assert_eq!(button.map(|(_, row)| row), Some(SettingsRow::SignInToGitHub));
+    assert_eq!(
+        button.map(|(_, row)| row),
+        Some(SettingsRow::SignInToGitHub)
+    );
     assert_eq!(
         said,
-        ["GitHub's own command, gh, is not on this computer, so nothing here can sign in to \
-          GitHub."]
+        [
+            "GitHub's own command, gh, is not on this computer, so nothing here can sign in to \
+          GitHub."
+        ]
     );
     for (why, expected) in [
         (
@@ -206,7 +219,9 @@ fn every_way_it_did_not_work_is_said() {
         ),
         (
             WhyGitHubDidNotWork::NoCodeArrived,
-            vec!["GitHub did not send a sign-in code, so nobody was signed in. Try again in a moment."],
+            vec![
+                "GitHub did not send a sign-in code, so nobody was signed in. Try again in a moment.",
+            ],
         ),
         (
             WhyGitHubDidNotWork::Cancelled,
@@ -237,7 +252,10 @@ fn every_way_it_did_not_work_is_said() {
     );
     let (line, button, said) = as_drawn(&window);
     assert_eq!(line, "Signed in as anna");
-    assert_eq!(button.map(|(_, row)| row), Some(SettingsRow::SignOutOfGitHub));
+    assert_eq!(
+        button.map(|(_, row)| row),
+        Some(SettingsRow::SignOutOfGitHub)
+    );
     assert_eq!(
         said,
         [
