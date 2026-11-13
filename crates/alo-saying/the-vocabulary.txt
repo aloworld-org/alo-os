@@ -108,6 +108,25 @@ adapters.fallback.read-window.by-hand	Look at the application's window, or have 
 adapters.fallback.read-window.purpose	read what an application's windows show
 adapters.fallback.read-window.sentence	read what {application} shows in its windows
 adapters.fallback.too-much-to-be-sure	{application} shows more than can be read at once, so whether its {kind} named “{name}” is the only one is not known, and nothing was pressed
+adapters.fallback.type-text.application	the application to type into
+adapters.fallback.type-text.by-hand	Click in the application's window and type it yourself
+adapters.fallback.type-text.cannot-read-back	The text was typed into “{name}” in {application}, and the window does not show it in a way alo can read back, so it was not saved. Look at the window, and save it yourself if it is right
+adapters.fallback.type-text.cannot-type	The text holds a character no key can type ({character}), so nothing was typed
+adapters.fallback.type-text.changes	The text below is typed where the field's cursor is, read back, and saved only if it reads back exactly as you see it here.
+adapters.fallback.type-text.did-not-take	{application} did not take the text into “{name}”, so nothing was saved
+adapters.fallback.type-text.leaves	Nothing is typed into any other window, into a password field, or into a terminal, and no file is written behind the application's back.
+adapters.fallback.type-text.more-than-one	{application} shows more than one field named “{name}”, so alo did not guess which, and nothing was typed
+adapters.fallback.type-text.name	the name of the field or document, as the application shows it
+adapters.fallback.type-text.no-keyboard	This machine could not type into {application} just now, so nothing was typed
+adapters.fallback.type-text.no-such-field	{application} shows no field or document named “{name}” now, so nothing was typed
+adapters.fallback.type-text.not-alos-copy	That {application} window is yours, not alo's own copy, so nothing was typed. To let alo type in your own windows, choose “alo may work in your own window” in Settings → Folders alo can use
+adapters.fallback.type-text.not-in-front	“{name}” in {application} does not have the keyboard, so nothing was typed. alo types only where the keyboard is: bring the window forward and click in it first
+adapters.fallback.type-text.password-field	“{name}” in {application} is a password field, and alo never types into one, so nothing was typed
+adapters.fallback.type-text.purpose	type a text into a field or a document in an application's window, and save it
+adapters.fallback.type-text.read-back-differs	What “{name}” in {application} shows now is not exactly the text you approved, so it was not saved. Look at the window, and undo with Ctrl+Z if you want it gone
+adapters.fallback.type-text.sentence	type the text below into “{name}” in {application}, and save it
+adapters.fallback.type-text.terminal	“{name}” in {application} is a terminal, and typing there runs commands, which alo does only where you have let your agent use a terminal, so nothing was typed
+adapters.fallback.type-text.text	the text to type, shown to you in full before anything is typed
 adapters.not-carried-out.did-not-answer	{application} did not answer in time, so whether it did what was approved is not known
 adapters.not-carried-out.does-not-offer	{application} does not offer what was approved, so nothing was done in it. This release of it may not be one this machine knows how to ask
 adapters.not-carried-out.not-an-adapters-verb	{verb} is not something an application on this machine was asked to do, so nothing was sent
