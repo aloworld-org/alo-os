@@ -21,6 +21,9 @@ fn a_text_and_a_save_are_read_back_as_they_were_written() {
         ToType::Save {
             application: codium(),
         },
+        ToType::Check {
+            application: codium(),
+        },
     ] {
         assert_eq!(ToType::read(&asked.written()), Some(Ok(asked)));
     }
@@ -54,6 +57,8 @@ fn exactly_one_application_is_named() {
         "type-into",
         "save-in",
         "save-in com.vscodium.codium org.mozilla.firefox",
+        "may-type-into",
+        "may-type-into com.vscodium.codium 3",
     ] {
         assert_eq!(
             ToType::read(line),
@@ -74,6 +79,7 @@ fn every_answer_is_read_back_as_it_was_written() {
     for answer in [
         Typed::Typed,
         Typed::AskedToSave,
+        Typed::MayType,
         Typed::NotInFront,
         Typed::NotAlosCopy,
         Typed::NoKeyboard,

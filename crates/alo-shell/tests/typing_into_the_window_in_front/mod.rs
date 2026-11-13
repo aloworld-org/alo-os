@@ -217,3 +217,27 @@ fn saving_holds_control_around_one_key() {
     assert!(sent.iter().any(|mask| *mask != 0), "{sent:?}");
     assert_eq!(sent.last(), Some(&0));
 }
+
+#[test]
+fn asking_whether_it_may_makes_every_check_and_sends_nothing() {
+    let f = Fixture::keyboard();
+    let mut app = mapped(&f, EDITOR);
+    f.focus(Some(0)).expect("the window takes the keyboard");
+    app.sync();
+    let (keys, layouts) = (
+        app.events.keyboard.keys.len(),
+        app.events.keyboard.keymaps.len(),
+    );
+    let check = || ToType::Check {
+        application: Named::identified(EDITOR).expect("an identifier"),
+    };
+    assert_eq!(typed(&f, check(), "", true), Typed::MayType);
+    assert_eq!(typed(&f, check(), "", false), Typed::NotAlosCopy);
+    let elsewhere = ToType::Check {
+        application: Named::identified("org.example.Payroll").expect("an identifier"),
+    };
+    assert_eq!(typed(&f, elsewhere, "", true), Typed::NotInFront);
+    app.sync();
+    assert_eq!(app.events.keyboard.keys.len(), keys);
+    assert_eq!(app.events.keyboard.keymaps.len(), layouts);
+}

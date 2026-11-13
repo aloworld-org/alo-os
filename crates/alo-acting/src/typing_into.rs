@@ -28,6 +28,11 @@ pub const TYPE_INTO: &str = "type-into";
 /// The word that asks the window in front to save.
 pub const SAVE_IN: &str = "save-in";
 
+/// The word that asks whether the window in front may be typed into, and
+/// sends it nothing — for typing that goes through the accessibility tree
+/// rather than the keyboard, which must meet the same rule.
+pub const MAY_TYPE_INTO: &str = "may-type-into";
+
 /// alo asking the window in front to be typed into, or to save.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ToType {
@@ -43,6 +48,11 @@ pub enum ToType {
         /// The application whose window must have the keyboard.
         application: Application,
     },
+    /// Only ask whether the window in front may be typed into; send nothing.
+    Check {
+        /// The application whose window must have the keyboard.
+        application: Application,
+    },
 }
 
 impl ToType {
@@ -50,7 +60,9 @@ impl ToType {
     #[must_use]
     pub const fn application(&self) -> &Application {
         match self {
-            Self::Text { application, .. } | Self::Save { application } => application,
+            Self::Text { application, .. }
+            | Self::Save { application }
+            | Self::Check { application } => application,
         }
     }
 
@@ -62,6 +74,9 @@ impl ToType {
                 format!("{TYPE_INTO} {} {bytes}", application.identifier())
             }
             Self::Save { application } => format!("{SAVE_IN} {}", application.identifier()),
+            Self::Check { application } => {
+                format!("{MAY_TYPE_INTO} {}", application.identifier())
+            }
         }
     }
 
@@ -72,7 +87,7 @@ impl ToType {
         let line = line.trim_end_matches(['\r', '\n']);
         let mut words = line.split(' ');
         let first = words.next()?;
-        if first != TYPE_INTO && first != SAVE_IN {
+        if first != TYPE_INTO && first != SAVE_IN && first != MAY_TYPE_INTO {
             return None;
         }
         if line.len() > Request::THE_MOST {
@@ -84,10 +99,11 @@ impl ToType {
         let Ok(application) = Application::identified(named) else {
             return Some(Err(NotToType::NotOneApplication));
         };
-        if first == SAVE_IN {
-            return Some(match words.next() {
-                None => Ok(Self::Save { application }),
-                Some(_) => Err(NotToType::NotOneApplication),
+        if first == SAVE_IN || first == MAY_TYPE_INTO {
+            return Some(match (words.next(), first == SAVE_IN) {
+                (None, true) => Ok(Self::Save { application }),
+                (None, false) => Ok(Self::Check { application }),
+                (Some(_), _) => Err(NotToType::NotOneApplication),
             });
         }
         let (Some(bytes), None) = (words.next(), words.next()) else {
@@ -125,6 +141,8 @@ pub enum Typed {
     Typed,
     /// `Ctrl+S` was delivered to the window in front.
     AskedToSave,
+    /// The window in front may be typed into; nothing was sent.
+    MayType,
     /// The window that has the keyboard is not one of that application's, or
     /// no window has it. Nothing was sent.
     NotInFront,
@@ -144,6 +162,7 @@ impl Typed {
         match self {
             Self::Typed => "typed".to_owned(),
             Self::AskedToSave => "asked-to-save".to_owned(),
+            Self::MayType => "may".to_owned(),
             Self::NotInFront => "not-in-front".to_owned(),
             Self::NotAlosCopy => "not-alos-copy".to_owned(),
             Self::NoKeyboard => "no-keyboard".to_owned(),
@@ -160,6 +179,7 @@ impl Typed {
         Some(match line {
             "typed" => Self::Typed,
             "asked-to-save" => Self::AskedToSave,
+            "may" => Self::MayType,
             "not-in-front" => Self::NotInFront,
             "not-alos-copy" => Self::NotAlosCopy,
             "no-keyboard" => Self::NoKeyboard,

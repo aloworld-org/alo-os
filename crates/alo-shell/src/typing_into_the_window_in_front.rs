@@ -165,6 +165,7 @@ impl Server {
                 Err(character) => return Typed::CannotType(character),
             },
             ToType::Save { .. } => (vec![the_layout_that_saves()], Typed::AskedToSave),
+            ToType::Check { .. } => (Vec::new(), Typed::MayType),
         };
         let Some(keyboard) = self.surfaces.keyboard.as_ref() else {
             return Typed::NoKeyboard;
@@ -202,6 +203,11 @@ impl Server {
         };
         if !may.may_type_into(identifier, pid) {
             return Typed::NotAlosCopy;
+        }
+        // Asked only whether it may: every check above was made, and nothing
+        // is sent.
+        if matches!(asked, ToType::Check { .. }) {
+            return Typed::MayType;
         }
         let Some(ready) = ready(layouts) else {
             return Typed::NoKeyboard;

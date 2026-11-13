@@ -52,7 +52,7 @@ impl ReadingText {
     pub(crate) fn begun(asked: ToType, talking: UnixStream, already: Vec<u8>) -> SoFar {
         let bytes = match &asked {
             ToType::Text { bytes, .. } => *bytes,
-            ToType::Save { .. } => {
+            ToType::Save { .. } | ToType::Check { .. } => {
                 return if already.is_empty() {
                     SoFar::Whole(AskedToType {
                         asked,
