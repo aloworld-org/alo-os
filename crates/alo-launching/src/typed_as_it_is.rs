@@ -10,7 +10,7 @@
 //! matched to the byte, twice.
 //!
 //! **Only in alo's own copy.** The file named here is inside the profile
-//! [`crate::alos_copy`] gives alo's copy, and nothing in this crate names the
+//! [`crate::alos_copy()`] gives alo's copy, and nothing in this crate names the
 //! person's own profile. This crate decides the text; `alo-desktop` writes it,
 //! changing only these keys and keeping anything else in the file.
 
@@ -54,7 +54,7 @@ pub const TYPED_AS_IT_IS: [(&str, &str); 19] = [
 /// editor rewrites what is typed — or [`None`].
 ///
 /// It is inside the copy's own data folder, `--user-data-dir`, which is
-/// `<profile>/data` ([`crate::alos_copy`]); the editor reads its person-level
+/// `<profile>/data` ([`crate::alos_copy()`]); the editor reads its person-level
 /// settings from `User/settings.json` beneath it.
 #[must_use]
 pub fn its_settings_file(identifier: &str, copy: &AlosCopy) -> Option<PathBuf> {

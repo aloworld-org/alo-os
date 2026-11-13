@@ -30,8 +30,14 @@ fn every_value_alo_sets_reads_as_json() {
 fn a_copy_with_no_settings_is_given_every_one() {
     let written = read(&with_typing_left_alone(None).unwrap());
     assert_eq!(written.len(), alo_launching::TYPED_AS_IT_IS.len());
-    assert_eq!(written["editor.autoIndent"], Value::from("none"));
-    assert_eq!(written["editor.insertSpaces"], Value::from(false));
+    assert_eq!(
+        written.get("editor.autoIndent").cloned(),
+        Some(Value::from("none"))
+    );
+    assert_eq!(
+        written.get("editor.insertSpaces").cloned(),
+        Some(Value::from(false))
+    );
 }
 
 #[test]
@@ -39,10 +45,13 @@ fn what_the_person_set_in_alos_copy_is_kept_and_alos_own_are_put_back() {
     let theirs = r#"{"workbench.colorTheme": "Solarized Light", "editor.autoIndent": "full"}"#;
     let written = read(&with_typing_left_alone(Some(theirs)).unwrap());
     assert_eq!(
-        written["workbench.colorTheme"],
-        Value::from("Solarized Light")
+        written.get("workbench.colorTheme").cloned(),
+        Some(Value::from("Solarized Light"))
     );
-    assert_eq!(written["editor.autoIndent"], Value::from("none"));
+    assert_eq!(
+        written.get("editor.autoIndent").cloned(),
+        Some(Value::from("none"))
+    );
 }
 
 #[test]
