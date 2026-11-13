@@ -378,6 +378,10 @@ impl Server {
             },
         );
         self.shortcuts = shortcuts;
+        // **Letting go of `⊞` lets go of a held canvas**, mid-drag or not —
+        // `crate::canvas_grab_anywhere`. After the call above, which is what
+        // tells XKB the key went up.
+        self.the_canvas_is_let_go_unless_super_is_held(time);
         // **A chord the shell took goes no further.** The client was never told
         // about the press, so the matching release is already held back by the
         // `forwarded` set this function keeps — no second rule is needed for it.

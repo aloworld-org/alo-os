@@ -466,6 +466,7 @@ capability.running.ended-with-a-status	the command ended with exit status {statu
 capability.running.full-trust	straight away, without asking
 capability.running.no-box	nothing ran, because this machine could not build the box it runs commands in
 capability.running.not-a-command	nothing ran, because what was asked for was not a command this machine could run
+capability.running.not-signed-in-to-github	you are not signed in to GitHub. To sign in, type gh auth login --web in your terminal and follow the steps GitHub shows you in your browser. That sign-in is kept on this computer, and it lets anything you run — and alo, at full access — read and change every repository your GitHub account can, and make new ones, until you type gh auth logout
 capability.running.not-that-way	nothing ran, because running a command this way is not what you chose
 capability.running.ran-too-long	the command ran longer than a command may, and was stopped
 capability.running.run-a-command	run this command: {command}

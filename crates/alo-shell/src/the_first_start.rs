@@ -338,7 +338,7 @@ impl TheFirstStart {
                 self.ring = WhereTheRingIs::OnTheList;
                 self.on = self.on.saturating_add(1).min(Row::ALL.len() - 1);
             }
-            SignInKey::OtherField => {
+            SignInKey::OtherField | SignInKey::FieldBefore => {
                 self.ring = match self.ring {
                     WhereTheRingIs::OnTheList => WhereTheRingIs::OnTheWayOn,
                     WhereTheRingIs::OnTheWayOn => WhereTheRingIs::OnTheList,
@@ -382,7 +382,7 @@ impl TheFirstStart {
         match key {
             SignInKey::Earlier => offered.up(),
             SignInKey::Later => offered.down(),
-            SignInKey::OtherField => offered.ring_crosses(),
+            SignInKey::OtherField | SignInKey::FieldBefore => offered.ring_crosses(),
             SignInKey::Enter => match offered.ring() {
                 WhereTheRingIs::OnTheWayOn => {
                     offered.ring_to_the_list();
@@ -408,7 +408,7 @@ impl TheFirstStart {
         match key {
             SignInKey::Earlier => offered.up(),
             SignInKey::Later => offered.down(),
-            SignInKey::OtherField => offered.ring_crosses(),
+            SignInKey::OtherField | SignInKey::FieldBefore => offered.ring_crosses(),
             SignInKey::Enter => match offered.ring() {
                 WhereTheRingIs::OnTheWayOn => {
                     self.region = offered
@@ -451,7 +451,7 @@ impl TheFirstStart {
         match key {
             SignInKey::Earlier => picker.up(),
             SignInKey::Later => picker.down(),
-            SignInKey::OtherField => picker.ring_crosses(),
+            SignInKey::OtherField | SignInKey::FieldBefore => picker.ring_crosses(),
             SignInKey::Enter => match picker.ring() {
                 WhereTheRingIs::OnTheWayOn => {
                     if let Some(zone) = picker.chosen() {
@@ -474,6 +474,7 @@ impl TheFirstStart {
             SignInKey::Earlier => picker.up(),
             SignInKey::Later => picker.down(),
             SignInKey::OtherField => picker.ring_crosses(),
+            SignInKey::FieldBefore => picker.ring_crosses_back(),
             SignInKey::Enter => match picker.ring() {
                 TheRing::OnTheWayOn => {
                     self.keyboard = picker.chosen().cloned();

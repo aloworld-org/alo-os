@@ -1249,6 +1249,29 @@ RUN test -s /usr/share/polkit-1/rules.d/50-alo-time-zone.rules \
  && chpasswd --help >/dev/null \
  && rpm -q polkit systemd shadow-utils
 
+# **Firefox starts with sharing data with Mozilla switched off**, as defaults the
+# person can switch back on in Firefox's own Settings. The owner, 2026-11-13:
+# "Off by default". The files go in /usr, which every update replaces; the
+# tmpfiles.d line `alo-firefox-shares-nothing-at-first.conf` points the place
+# Flathub's Firefox looks for the machine's settings at them, because a Flatpak
+# cannot read /etc/firefox (docs/quirks/
+# flatpak-firefox-reads-system-settings-from-an-extension.md).
+#
+# **What the build checks, and what it cannot.** Firefox is not in the image —
+# it is installed at first boot — so nothing here can ask Firefox to read the
+# file. What it checks is that the file is there and that every line is a
+# comment, blank, or `pref("name", true|false);`: so no `lockPref`, which would
+# take the choice away, and nothing Firefox's parser would stop at. Whether
+# Firefox's welcome then shows the boxes unticked is a walk on a booted machine.
+COPY image/usr/share/alo/firefox/ /usr/share/alo/firefox/
+RUN prefs=/usr/share/alo/firefox/defaults/pref/alo-data-sharing-starts-off.js \
+ && test -s "$prefs" \
+ && ! grep -Ev '^$|^//|^pref\("[A-Za-z0-9._]+", (true|false)\);$' "$prefs" \
+ && test "$(grep -c '^pref(' "$prefs")" = 4 \
+ && grep -qx 'L /var/lib/flatpak/extension/org.mozilla.firefox.systemconfig/x86_64/stable - - - - /usr/share/alo/firefox' \
+      /usr/lib/tmpfiles.d/alo-firefox-shares-nothing-at-first.conf \
+ && echo "Firefox's data sharing starts off: four defaults, none locked, where Flathub's Firefox looks"
+
 # **The screen reader is started the way the session starts it, and has to stay
 # up** (ADR 0151). The block that installs Orca asks it `--version`, which
 # proves its modules import and nothing more: Orca 48.9 answered it on every
