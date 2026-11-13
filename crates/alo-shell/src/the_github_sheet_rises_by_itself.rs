@@ -5,9 +5,13 @@
 //!
 //! `alo-agentd` tells the desktop once per such failure; the desktop hands it
 //! here once a frame (`crate::direct_desktop::TheDesktop::a_command_needed_a_github_sign_in`).
-//! Going up is exactly what *Sign in* on Settings → Accounts does
-//! (`crate::the_github_sheet_on_the_server`): the sheet, and GitHub's own
-//! `gh auth login --web` asked for its code.
+//! **Going up starts nothing.** The owner, asked on 2026-11-13 whether the
+//! sheet that rises by itself should start `gh auth login --web` and open
+//! GitHub's page at once, answered *"Wait for my press"*: it opens saying what
+//! failed, with *Cancel* and a navy *Sign in*, and no gh runs and no browser
+//! page opens until the person presses *Sign in* — which then does exactly
+//! what *Sign in* on Settings → Accounts does
+//! (`crate::the_github_sheet_on_the_server`).
 //!
 //! # Never stacked, and never over another sheet
 //!
@@ -100,8 +104,9 @@ impl crate::Server {
     }
 
     /// **Once a frame: the sheet goes up for a sign-in that is waiting**, when
-    /// no other sheet is up — by the same road as *Sign in* on Settings →
-    /// Accounts, so it is the sheet the owner approved and nothing else.
+    /// no other sheet is up — saying what failed and offering *Sign in*, and
+    /// **asking gh nothing**: signing in begins only when the person presses
+    /// it (the owner, 2026-11-13: *"Wait for my press"*).
     pub(crate) fn a_wanted_github_sign_in_goes_up(
         &mut self,
         another_sheet_is_up: bool,
@@ -113,7 +118,7 @@ impl crate::Server {
             .this_frame(up, another_sheet_is_up, now)
             == ItGoesUp::Now
         {
-            self.a_github_sign_in_begins();
+            self.github_sheet.opened_for_a_command();
         }
     }
 }

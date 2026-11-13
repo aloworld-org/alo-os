@@ -98,20 +98,71 @@ fn a_server(named: &str) -> (tempfile::TempDir, crate::Server) {
     (directory, server)
 }
 
-/// **On the server, a command that needed a sign-in puts the approved sheet up
-/// and asks gh once** — exactly what *Sign in* does — and a second failure
-/// while it is up asks nothing more.
+/// What the sheet up on `server` shows, if one is.
+#[cfg(target_os = "linux")]
+fn showing(server: &crate::Server) -> Option<crate::the_github_sheet::TheSheetIs> {
+    server.github_sheet.shows().map(|shows| shows.is.clone())
+}
+
+/// **Nothing is started before the press** — the owner, 2026-11-13: *"Wait
+/// for my press"*. The sheet rises saying what failed, gh is asked nothing,
+/// and a second failure while it is up adds nothing. Only *Sign in* asks gh,
+/// once, and the sheet then waits for the code.
 #[cfg(target_os = "linux")]
 #[test]
-fn on_the_server_the_sheet_goes_up_and_gh_is_asked_once() {
-    let (_directory, mut server) = a_server("github-wanted-once");
+fn on_the_server_nothing_is_started_before_the_press() {
+    use crate::the_github_sheet::{OnTheGitHubSheet, TheSheetIs};
+    let (_directory, mut server) = a_server("github-wanted-press");
+    let now = Instant::now();
+    server.a_command_needed_a_github_sign_in(now);
+    server.a_wanted_github_sign_in_goes_up(false, now);
+    assert_eq!(showing(&server), Some(TheSheetIs::ACommandNeededIt));
+    assert!(
+        server.the_github_asks_to_tell().is_empty(),
+        "gh was asked before the person pressed anything"
+    );
+
+    server.a_command_needed_a_github_sign_in(now);
+    server.a_wanted_github_sign_in_goes_up(false, now);
+    assert!(server.the_github_asks_to_tell().is_empty());
+
+    server.the_github_sheet_pressed(OnTheGitHubSheet::SignIn);
+    assert_eq!(showing(&server), Some(TheSheetIs::WaitingForTheCode));
+    assert_eq!(server.the_github_asks_to_tell(), [AskingGitHub::SignIn]);
+}
+
+/// **Escape at the first state starts nothing**: the sheet comes down and gh
+/// is asked nothing — not even to stop, because nothing began, so nothing is
+/// written down as a sign-in the person cancelled. *Cancel* is the same.
+#[cfg(target_os = "linux")]
+#[test]
+fn on_the_server_escape_at_the_first_state_starts_nothing() {
+    use crate::the_github_sheet::{GitHubSheetKey, OnTheGitHubSheet};
+    let (_directory, mut server) = a_server("github-wanted-escape");
     let now = Instant::now();
     server.a_command_needed_a_github_sign_in(now);
     server.a_wanted_github_sign_in_goes_up(false, now);
     assert!(server.github_sheet.is_up());
+    server.the_github_sheet_key(GitHubSheetKey::Escape);
+    assert!(!server.github_sheet.is_up());
+    assert!(server.the_github_asks_to_tell().is_empty());
 
     server.a_command_needed_a_github_sign_in(now);
     server.a_wanted_github_sign_in_goes_up(false, now);
+    server.the_github_sheet_pressed(OnTheGitHubSheet::Cancel);
+    assert!(!server.github_sheet.is_up());
+    assert!(server.the_github_asks_to_tell().is_empty());
+}
+
+/// **From Settings → Accounts a press was made already**, so that road still
+/// starts at once, waiting for the code.
+#[cfg(target_os = "linux")]
+#[test]
+fn from_settings_it_still_starts_at_once() {
+    use crate::the_github_sheet::TheSheetIs;
+    let (_directory, mut server) = a_server("github-wanted-settings");
+    server.a_github_sign_in_begins();
+    assert_eq!(showing(&server), Some(TheSheetIs::WaitingForTheCode));
     assert_eq!(server.the_github_asks_to_tell(), [AskingGitHub::SignIn]);
 }
 
@@ -129,5 +180,5 @@ fn on_the_server_it_waits_behind_another_sheet() {
 
     server.a_wanted_github_sign_in_goes_up(false, now);
     assert!(server.github_sheet.is_up());
-    assert_eq!(server.the_github_asks_to_tell(), [AskingGitHub::SignIn]);
+    assert!(server.the_github_asks_to_tell().is_empty());
 }

@@ -120,9 +120,24 @@ Decided 2026-11-13 from the promise (*appears when alo can't publish because
 you're not signed in*) and from the *Open with* sheet's rule
 (`the_open_with_sheet.rs`: one up, others wait behind it, never for ever):
 
-- **It is the sheet as drawn, opened as *Sign in* opens it**: up at once
-  waiting for the code, and `gh auth login --web` asked for one, whose page
-  then opens in the person's browser. Nothing new is drawn for this road.
+- **It waits for the person's press.** Asked on 2026-11-13 whether the sheet
+  that rises by itself should start `gh auth login --web` and open GitHub's
+  page at once, or wait, the owner chose **"Wait for my press"**: *the sheet
+  opens and explains, with a "Sign in" button; nothing starts and no browser
+  page opens until the person presses it.* So it rises in a **first state of
+  its own**, drawn in the sheet's own parts (480 wide, 25 inside, the title
+  14 above the line, 14 above the risk and the buttons):
+  - the title *Sign in to GitHub*;
+  - *A command alo ran did not work because you are not signed in to GitHub.
+    Sign in, and then ask alo again: alo won't try again by itself.*;
+  - *What it risks*, the owner's words, as on every state;
+  - *Cancel* (Quiet) and a navy *Sign in*, the keyboard on *Sign in*.
+
+  ***Sign in* moves it to waiting for the code** and only then asks gh, and
+  from there it is the sheet as drawn. *Cancel* and Escape close it and ask
+  gh nothing — not even to stop — so nothing is written down as a sign-in
+  that was cancelled, because none began. **Sign in on Settings → Accounts is
+  a press already**, so that road still starts at once, waiting for the code.
 - **Once per failure, and never stacked.** A failure while the sheet is up is
   let go — it is already asking. Many failures before the next frame are one
   sheet.

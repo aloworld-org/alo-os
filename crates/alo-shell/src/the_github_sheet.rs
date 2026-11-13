@@ -4,6 +4,13 @@
 //!
 //! # What it shows, in turn
 //!
+//! 0. **A command needed it**, only when it rose by itself because a command
+//!    alo ran failed with nobody signed in (`crate::the_github_sheet_rises_by_itself`):
+//!    the title, what failed and that alo will not try again by itself, *What
+//!    it risks*, and *Cancel* and a navy *Sign in*. **Nothing has started**
+//!    — the owner, 2026-11-13: *"Wait for my press"*. *Sign in* moves it to
+//!    waiting for the code; *Cancel* and Escape close it and ask nothing.
+//!    *Sign in* on Settings → Accounts is a press already, so it starts at 1.
 //! 1. **Waiting for the code**, from the moment the person presses *Sign in*
 //!    until gh prints one: the sentence, the card saying *Checking…*, and
 //!    *Cancel* alone. Not drawn in the proposal; see the design record for
@@ -49,6 +56,8 @@ pub enum OnTheGitHubSheet {
     OpenThePage,
     /// *Done*: the sheet closes, signed in.
     Done,
+    /// *Sign in*, on the sheet that rose by itself: signing in begins.
+    SignIn,
 }
 
 /// What a press asks of the server.
@@ -60,11 +69,19 @@ pub(crate) enum TheSheetAsks {
     OpenThePage(String),
     /// Stop the sign-in that is waiting on the person.
     StopSigningIn,
+    /// Begin signing in: the person pressed *Sign in* on the sheet that rose
+    /// by itself, so `gh auth login --web` is asked for its code now.
+    SignIn,
 }
 
 /// Where the sign-in is, as the sheet shows it.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum TheSheetIs {
+    /// **It rose by itself**, because a command alo ran failed with nobody
+    /// signed in, and **nothing has started**: it says what failed and offers
+    /// *Sign in*. The owner, 2026-11-13: *"Wait for my press"* — no gh runs
+    /// and no browser page opens until the person presses it.
+    ACommandNeededIt,
     /// Signing in was asked and gh has not printed a code yet.
     WaitingForTheCode,
     /// gh printed this code, to be typed on this page.
@@ -82,6 +99,7 @@ impl TheSheetIs {
     /// The buttons drawn, in the order they are drawn and Tab goes through.
     pub(crate) const fn buttons(&self) -> &'static [OnTheGitHubSheet] {
         match self {
+            Self::ACommandNeededIt => &[OnTheGitHubSheet::Cancel, OnTheGitHubSheet::SignIn],
             Self::WaitingForTheCode => &[OnTheGitHubSheet::Cancel],
             Self::TheCodeIs { .. } => &[
                 OnTheGitHubSheet::Copy,
@@ -96,6 +114,7 @@ impl TheSheetIs {
     /// none.
     const fn the_keyboard_starts_on(&self) -> OnTheGitHubSheet {
         match self {
+            Self::ACommandNeededIt => OnTheGitHubSheet::SignIn,
             Self::WaitingForTheCode => OnTheGitHubSheet::Cancel,
             Self::TheCodeIs { .. } => OnTheGitHubSheet::OpenThePage,
             Self::SignedInAs(_) => OnTheGitHubSheet::Done,
@@ -190,11 +209,22 @@ impl TheGitHubSheet {
     /// **A sign-in begins**: the sheet goes up waiting for the code. `false`
     /// where one is up already, and nothing is asked twice.
     pub(crate) fn opened(&mut self) -> bool {
+        self.goes_up_as(TheSheetIs::WaitingForTheCode)
+    }
+
+    /// **It rises by itself**, because a command alo ran failed with nobody
+    /// signed in: up, saying so and offering *Sign in*, with **nothing
+    /// started**. `false` where a sheet is up already.
+    pub(crate) fn opened_for_a_command(&mut self) -> bool {
+        self.goes_up_as(TheSheetIs::ACommandNeededIt)
+    }
+
+    /// The sheet goes up showing `is`, unless one is up already.
+    fn goes_up_as(&mut self, is: TheSheetIs) -> bool {
         if self.shown.is_some() {
             return false;
         }
         self.went_up = self.went_up.wrapping_add(1);
-        let is = TheSheetIs::WaitingForTheCode;
         self.shown = Some(Shown {
             focus: is.the_keyboard_starts_on(),
             is,
@@ -231,10 +261,16 @@ impl TheGitHubSheet {
             }
             // **A sign-in that did not work takes the sheet down**; why is
             // said on the Accounts page.
+            // Not while it still asks: nothing of its own has started, so a
+            // failure arriving then is an older sign-in's.
             GitHubAnswered::DidNotWork {
                 asked: AskingGitHub::SignIn | AskingGitHub::StopSigningIn,
                 ..
-            } if !matches!(shown.is, TheSheetIs::SignedInAs(_)) => {
+            } if !matches!(
+                shown.is,
+                TheSheetIs::SignedInAs(_) | TheSheetIs::ACommandNeededIt
+            ) =>
+            {
                 self.shown = None;
                 false
             }
@@ -301,6 +337,13 @@ impl TheGitHubSheet {
         }
         let shown = self.shown.as_mut()?;
         shown.focus = on;
+        // ***Sign in* is the press the owner asked to wait for**: only now does
+        // signing in begin, and the sheet waits for the code.
+        if on == OnTheGitHubSheet::SignIn && shown.is == TheSheetIs::ACommandNeededIt {
+            shown.is = TheSheetIs::WaitingForTheCode;
+            shown.focus = shown.is.the_keyboard_starts_on();
+            return Some(TheSheetAsks::SignIn);
+        }
         let asks = match (on, &shown.is) {
             (OnTheGitHubSheet::Copy, TheSheetIs::TheCodeIs { code, .. }) => {
                 Some(TheSheetAsks::Copy(code.clone()))
@@ -308,6 +351,9 @@ impl TheGitHubSheet {
             (OnTheGitHubSheet::OpenThePage, TheSheetIs::TheCodeIs { page, .. }) => {
                 Some(TheSheetAsks::OpenThePage(page.clone()))
             }
+            // **Cancel before *Sign in* asks nothing**: nothing was started,
+            // so there is nothing to stop and nothing to write down.
+            (OnTheGitHubSheet::Cancel, TheSheetIs::ACommandNeededIt) => None,
             (OnTheGitHubSheet::Cancel, _) => Some(TheSheetAsks::StopSigningIn),
             // *Done* asks nothing; and the rest is never reached, because
             // `has` keeps every press to a button drawn for what is shown.
@@ -343,7 +389,8 @@ impl TheGitHubSheet {
     pub(crate) fn could_not_be_drawn(&mut self) -> Option<TheSheetAsks> {
         let shown = self.shown.take()?;
         match shown.is {
-            TheSheetIs::SignedInAs(_) => None,
+            // Nothing started, so nothing to stop.
+            TheSheetIs::SignedInAs(_) | TheSheetIs::ACommandNeededIt => None,
             TheSheetIs::WaitingForTheCode | TheSheetIs::TheCodeIs { .. } => {
                 Some(TheSheetAsks::StopSigningIn)
             }
