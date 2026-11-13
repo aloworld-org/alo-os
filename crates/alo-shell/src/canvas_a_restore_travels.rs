@@ -73,7 +73,14 @@ impl crate::Server {
         if !somewhere_else && self.is_in_sight(frame) {
             return false;
         }
-        self.look_at_the_canvas(frame.at()).is_some()
+        // **Where the window shows whole**, band and all, above the Dock
+        // (`crate::going_to_a_window_shows_it_whole`). Until 2026-11-13 this
+        // was the window's own corner, which put its band off the top of the
+        // screen. The corner is kept only where there is no screen to fit to.
+        let at = self
+            .where_the_view_shows_it_whole(frame)
+            .unwrap_or(frame.at());
+        self.look_at_the_canvas(at).is_some()
     }
 
     /// Whether any of this frame is on the screen through the camera now.

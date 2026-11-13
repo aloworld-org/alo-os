@@ -83,7 +83,8 @@ impl SignInEntry {
         match key {
             crate::SignInKey::Letter(letter) => self.typed(letter),
             crate::SignInKey::Erase => self.erased(),
-            crate::SignInKey::OtherField => self.other_field(),
+            // Two fields: the one before is the other one.
+            crate::SignInKey::OtherField | crate::SignInKey::FieldBefore => self.other_field(),
             crate::SignInKey::Enter if self.field == SignInField::Name => self.other_field(),
             crate::SignInKey::Enter => return true,
             // Escape clears what was typed (`alo_access::leaving`), which is

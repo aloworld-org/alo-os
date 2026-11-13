@@ -166,7 +166,7 @@ impl TheFirstAccount {
                 self.on = self.next();
                 Went::Stayed
             }
-            SignInKey::Earlier => {
+            SignInKey::Earlier | SignInKey::FieldBefore => {
                 self.on = self.before();
                 Went::Stayed
             }

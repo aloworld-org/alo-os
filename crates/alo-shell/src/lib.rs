@@ -159,6 +159,7 @@ pub mod alos_marked_words;
 /// alo's own terminal, Settings and record go into the right-hand panel, and
 /// come back.
 mod alos_own_window_goes_aside;
+mod alos_own_windows_open_above_the_dock;
 /// Closing a task window, and which ones may close.
 pub mod closing_a_task_window;
 mod each_window_with_its_edge;
@@ -217,6 +218,7 @@ mod canvas_command;
 mod canvas_dragged_into_a_place;
 mod canvas_fit_the_window_in_front;
 mod canvas_fixed_controls;
+mod canvas_grab_anywhere;
 mod canvas_never_lost;
 mod canvas_pan;
 mod canvas_pinch;
@@ -372,6 +374,7 @@ mod flip_gate;
 mod frame_edges;
 mod frame_handle;
 mod frame_name;
+mod going_to_a_window_shows_it_whole;
 mod how_code_runs_in_settings;
 pub mod how_long_a_grant_lasts;
 mod how_much_alo_can_do;

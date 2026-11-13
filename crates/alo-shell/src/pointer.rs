@@ -39,6 +39,10 @@ pub(crate) struct Pointer {
     /// whole units and a pointer arrives in `f64`, so what is left over waits for
     /// the next movement instead of being dropped.
     pub(crate) unspent_space: (f64, f64),
+    /// The canvas, while a person holds it with `⊞` and a press —
+    /// `crate::canvas_grab_anywhere`. Here rather than on the server so that
+    /// clearing the pointer lets go of it too.
+    pub(crate) canvas_held: Option<crate::canvas_grab_anywhere::TheCanvasHeld>,
     /// The zoom a pinch on the plane started from, while one is in progress.
     ///
     /// `GesturePinchUpdateEvent::scale` is measured against the moment the
@@ -98,6 +102,7 @@ impl Server {
                 unspent_scroll: (0.0, 0.0),
                 unspent_zoom: 0.0,
                 unspent_space: (0.0, 0.0),
+                canvas_held: None,
                 pinch_from: None,
                 popup_release: None,
             });
@@ -124,6 +129,16 @@ impl Server {
         // the same point in a frame's own units, which is what a frame, a drag and
         // a resize are told. Converted once, here, rather than at each reader.
         let location: Point<f64, Logical> = (x, y).into();
+        // **A canvas held by `⊞` and a press pans first of all**, wherever the
+        // press landed — `crate::canvas_grab_anywhere`. Before Space, because a
+        // held canvas is the more specific gesture: a button is down on it.
+        if self.pan_the_plane_by_a_held_canvas(location, time) {
+            if let Some(pointer) = self.surfaces.pointer.as_mut() {
+                pointer.location = location;
+                pointer.time = time;
+            }
+            return Ok(());
+        }
         // **Space and drag pans, before anything else is asked.** ADR 0065 names
         // it beside the wheel. It is taken here rather than after the hit test
         // because a drag that panned over empty canvas and scrolled a document
@@ -194,6 +209,14 @@ impl Server {
         }
         self.surfaces.prune_pointer_focus();
         self.surfaces.prune_window_move();
+        // **`⊞` and a press take hold of the canvas from anywhere**, a window
+        // included, and the window is told nothing — `crate::canvas_grab_anywhere`.
+        // Asked before every other gesture because it is the one a person
+        // chose by holding a key: a press on a window's band or edge with `⊞`
+        // down is a press on the canvas, not on the band.
+        if self.a_button_holds_the_canvas(button, state, time) {
+            return Ok(false);
+        }
         if self.surfaces.window_resize_button(button, state) {
             if !self.surfaces.resizing_pointer()
                 && let Some(location) = self.surfaces.pointer.as_ref().map(|p| p.location)
@@ -924,6 +947,7 @@ impl Surfaces {
         let time = pointer.time;
         let buttons = std::mem::take(&mut pointer.buttons);
         pointer.popup_release = None;
+        pointer.canvas_held = None;
         // Remove the pending recipient before releasing the implicit grab.
         handle.motion(
             self,
