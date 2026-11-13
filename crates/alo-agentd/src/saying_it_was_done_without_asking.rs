@@ -55,11 +55,14 @@ pub fn done_without_asking(did: Done, sentence: Said, kept: bool, strings: &Stri
 #[must_use]
 pub fn ran_without_asking(did: Done, sentence: Said, kept: bool, strings: &Strings) -> ToAnAgent {
     let failed = match &did {
+        // **With what it said**, so a push nobody had signed in for is told as
+        // *you are not signed in to GitHub* and how to sign in, not as a number.
         Done::RanACommand {
             returned,
             took_too_long,
+            said,
             ..
-        } => ItDidNotWork::of(*returned, *took_too_long),
+        } => ItDidNotWork::of_what_it_said(*returned, *took_too_long, said),
         _ => None,
     };
     let Some(failed) = failed else {

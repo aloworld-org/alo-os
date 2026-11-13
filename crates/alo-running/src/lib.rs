@@ -92,6 +92,8 @@ pub mod at_full_access;
 mod carrying_what_it_says;
 mod entering;
 mod failing;
+/// What a command is told before it starts: nobody is there to answer it.
+pub mod nobody_is_there_to_answer;
 mod somewhere_to_write;
 mod what_a_run_asks_for;
 mod what_a_try_may_reach;

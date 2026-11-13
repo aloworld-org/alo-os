@@ -101,6 +101,10 @@ pub enum ItDidNotWork {
     WasStopped,
     /// It ran longer than a command is let run, and was stopped.
     TookTooLong,
+    /// It ended with a failure, and what it said is that nobody is signed in
+    /// to GitHub (`crate::not_signed_in_to_github`) — so the person is told
+    /// that, and how to sign in, rather than a number.
+    NotSignedInToGitHub,
 }
 
 impl ItDidNotWork {
@@ -122,6 +126,21 @@ impl ItDidNotWork {
         }
     }
 
+    /// [`Self::of`], and — for a command that ended by itself with a failure —
+    /// [`Self::NotSignedInToGitHub`] where what it `said` is that nobody is
+    /// signed in to GitHub. **Whether it worked is still [`Self::of`]'s
+    /// answer**: what a command said never turns a failure into *done*, nor
+    /// *done* into a failure.
+    #[must_use]
+    pub fn of_what_it_said(returned: Option<i32>, took_too_long: bool, said: &str) -> Option<Self> {
+        match Self::of(returned, took_too_long)? {
+            Self::EndedWith(_) if crate::not_signed_in_to_github::not_signed_in_to_github(said) => {
+                Some(Self::NotSignedInToGitHub)
+            }
+            why => Some(why),
+        }
+    }
+
     /// Why, as the person reads it: one clause, to go after *it did not work:*.
     #[must_use]
     pub fn said(self, strings: &alo_strings::Strings) -> alo_strings::Said {
@@ -138,11 +157,19 @@ impl ItDidNotWork {
                 &crate::words::A_COMMAND_RAN_TOO_LONG.key(),
                 &alo_strings::Filling::nothing(),
             ),
+            Self::NotSignedInToGitHub => strings.say(
+                &crate::words::NOT_SIGNED_IN_TO_GITHUB.key(),
+                &alo_strings::Filling::nothing(),
+            ),
         }
     }
 }
 
 #[cfg(test)]
+#[expect(
+    clippy::unwrap_used,
+    reason = "in a test, a panic on an unexpected Err is the failure being reported"
+)]
 mod it_did_not_work {
     use super::ItDidNotWork;
 
@@ -171,6 +198,49 @@ mod it_did_not_work {
             ItDidNotWork::of(Some(0), true),
             Some(ItDidNotWork::TookTooLong)
         );
+    }
+
+    /// **What a command said names the reason and never decides whether it
+    /// worked**: *not signed in* is said only for a failure, and a run that
+    /// worked, was stopped or ran too long keeps its own answer whatever it
+    /// printed.
+    #[test]
+    fn not_signed_in_is_said_only_for_a_failure_that_says_so() {
+        let nobody = "fatal: could not read Username for 'https://github.com': terminal prompts \
+                      disabled";
+        assert_eq!(
+            ItDidNotWork::of_what_it_said(Some(128), false, nobody),
+            Some(ItDidNotWork::NotSignedInToGitHub)
+        );
+        assert_eq!(ItDidNotWork::of_what_it_said(Some(0), false, nobody), None);
+        assert_eq!(
+            ItDidNotWork::of_what_it_said(None, false, nobody),
+            Some(ItDidNotWork::WasStopped)
+        );
+        assert_eq!(
+            ItDidNotWork::of_what_it_said(Some(1), true, nobody),
+            Some(ItDidNotWork::TookTooLong)
+        );
+        assert_eq!(
+            ItDidNotWork::of_what_it_said(Some(1), false, "mkdir: cannot create directory"),
+            Some(ItDidNotWork::EndedWith(1))
+        );
+    }
+
+    /// **The person is told how to sign in, and what that sign-in can do** —
+    /// the command to type, and that alo can use it at full access.
+    #[test]
+    fn not_signed_in_says_how_to_sign_in_and_what_it_lets_alo_do() {
+        let strings = alo_strings::Strings::of(crate::words::capability_words().unwrap());
+        let said = ItDidNotWork::NotSignedInToGitHub.said(&strings);
+        for part in [
+            "gh auth login --web",
+            "full access",
+            "gh auth logout",
+            "every repository",
+        ] {
+            assert!(said.text().contains(part), "{part:?} is not in {said:?}");
+        }
     }
 }
 
