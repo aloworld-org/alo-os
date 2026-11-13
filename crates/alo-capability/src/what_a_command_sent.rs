@@ -116,7 +116,9 @@ mod tests {
                         .contains("Put back can return your files on this computer"),
                     "{said:?}"
                 );
-                assert!(said.text().contains("off this computer"), "{said:?}");
+                // Each says what Put back cannot reach: what the command sent
+                // off this computer, counted or not.
+                assert!(said.text().contains("the command sent"), "{said:?}");
             }
         }
     }
