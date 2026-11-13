@@ -1554,8 +1554,9 @@ mod running {
                 alo_remembering::THE_LEVEL,
             ))
             .unwrap_or_default();
-            chosen == alo_capability::AloInApplications::InTheirWindow
-                || self.working.runs_as_alos_copy(application, pid)
+            // Two answers, and the default is alo's own copy: anything else is
+            // the person's choice to let alo work in their own window.
+            chosen != Default::default() || self.working.runs_as_alos_copy(application, pid)
         }
 
         /// The panel this desktop keeps, lent for the one act that changes it.

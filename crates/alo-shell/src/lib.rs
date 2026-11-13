@@ -178,19 +178,19 @@ pub use a_provider_is_added_in_settings::WhyNotSaved;
 mod a_reader_presses;
 mod a_reader_presses_in_settings;
 pub use a_reader_presses::WhatAReaderPressCameTo;
+/// The keyboard layouts a text alo types is typed through (ADR 0153).
+mod a_layout_for_a_text;
 mod a_scale_held_to_what_draws;
 /// Typing into a task window's reply box.
 mod a_screen_arrives_or_leaves;
+/// A text alo asked to type, read off the application door whole (ADR 0153).
+pub mod a_text_at_the_door;
 mod access_action;
 mod access_attributes;
 mod access_bus;
 mod access_contrast;
 mod access_events;
 mod access_magnifier;
-/// The keyboard layouts a text alo types is typed through (ADR 0153).
-mod a_layout_for_a_text;
-/// A text alo asked to type, read off the application door whole (ADR 0153).
-pub mod a_text_at_the_door;
 mod access_nodes;
 mod access_roles;
 mod access_serving;
@@ -600,10 +600,6 @@ pub mod task_text;
 /// Task windows on the canvas: where they meet a screen (ADR 0145).
 mod task_windows_on_the_plane;
 pub mod the_application_door;
-/// The names the person's keyboard layout was made from, to make it again (ADR 0153).
-mod the_layouts_names;
-/// Typing into the window in front, as key presses, to that one client (ADR 0153).
-pub mod typing_into_the_window_in_front;
 pub mod the_application_doors_place;
 /// The approval card's layout, measured off the approved frame.
 mod the_approval_card;
@@ -631,6 +627,8 @@ mod the_edge_takes_the_keyboard;
 /// The egress indicator's two arrows, from the design file's SVG.
 mod the_egress_indicators_arrows;
 mod the_first_account;
+/// The names the person's keyboard layout was made from, to make it again (ADR 0153).
+mod the_layouts_names;
 /// The title and the application name a window's band shows.
 mod the_name_on_the_band;
 /// The nearest empty space on a Place for a window with no room in view.
@@ -650,6 +648,8 @@ mod the_view_travels_to_a_window;
 mod the_window_before_this_terminal;
 /// Every window on the Place being looked at, for a new one to be placed beside.
 mod the_windows_on_this_place;
+/// Typing into the window in front, as key presses, to that one client (ADR 0153).
+pub mod typing_into_the_window_in_front;
 pub use the_first_account::{ASecret, OnTheSheet, TheAccountSheet, TheAccountShown};
 /// Closing alo's terminal: at once when idle, after a question when a command
 /// is running.
