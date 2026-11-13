@@ -12,16 +12,16 @@ use std::cell::RefCell;
 
 use alo_access::{Surface, TurnedOn};
 use alo_adapters::accessibility_tree::{AccessibilityTree, Facts, NodeAt, Running, TreeFault};
-use alo_adapters::{NotPressed, Pressable, Unpressed, Whose, press_by_hand, read_by_hand};
+use alo_adapters::{press_by_hand, read_by_hand, NotPressed, Pressable, Unpressed, Whose};
 
 use super::*;
-use crate::SettingsWindow;
 use crate::access_action::{InSettings, Pressed};
 use crate::access_nodes::ReadAloudTree;
 use crate::settings_as_read::SettingsShows;
 use crate::settings_categories::SettingsCategory;
 use crate::settings_pointed_at::PointedAt;
 use crate::settings_testing::{a_browser_and_a_mail_app, a_persons_machine, noon, settings_words};
+use crate::SettingsWindow;
 
 /// The name this tree answers as, as the bus would give it.
 const ANSWERS_AS: &str = ":1.42";
@@ -194,7 +194,6 @@ fn the_old_name_of_a_drawn_row_reaches_it_and_says_its_new_name() {
     );
 }
 
-
 /// **The screen reader's switch keeps its old name too**: *read the screen
 /// aloud* presses the Screen reader switch the 2026-11-12 row draws, told what
 /// it is called now — the row reached its old name by saying which setting it
@@ -216,7 +215,9 @@ fn the_old_name_of_the_screen_reader_reaches_its_switch() {
     assert_eq!(pressed.now_called(), Some(now_called.as_str()));
     assert_eq!(
         *reading.pressed.borrow(),
-        vec![Pressed::InSettings(InSettings::ARow(SettingsRow::ScreenReader))],
+        vec![Pressed::InSettings(InSettings::ARow(
+            SettingsRow::ScreenReader
+        ))],
         "one press, and only on Screen reader"
     );
 }
