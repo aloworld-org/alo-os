@@ -1147,8 +1147,12 @@ running code. It is built once `CLAUDE.md` carries those words (ADR 0143).*
   alo builds a small page inside the shipped editor, approving as the person's
   setting says; the person signs in to GitHub themselves — alo never types a
   password, and its reading of a window never includes a password field's
-  contents; and alo presses **Publish** in the editor after one approval whose
-  sentence says plainly that *publishing to the internet cannot be undone*. What
+  contents; and alo presses **Publish** in the editor — **at *ask me each time*
+  after one approval whose sentence says plainly that *publishing to the
+  internet cannot be undone*, and at full access without asking, the line
+  afterwards saying plainly that it went to the internet and Put back cannot
+  recall it** (the owner's decision of 2026-11-13, consistent with ADR 0149;
+  until then this read *after one approval* at every level). What
   the editor sends is on the indicator while it happens. **The demo posts
   nowhere social**: *"We may not do a demo with LinkedIn but we can do a demo
   with other applications. LinkedIn was just an example."* This is **Demo 2**,
@@ -1156,6 +1160,30 @@ running code. It is built once `CLAUDE.md` carries those words (ADR 0143).*
   2026-10-31. The stages are in
   [the Demo 2 plan](autonomy/demo-two-alo-inside-applications-plan.md).
   *Owner, 2026-10-31.*
+- **Demo 2's second road: the person asks alo to publish a folder to their GitHub Pages, and alo runs `git` and GitHub's own `gh` itself.**
+  The person asks in the Dock or the Bar, or types `alo …` in their terminal
+  (ADR 0124), and alo carries it out on its own command road (ADR 0149) — **never
+  by typing into the person's terminal window**. It is one action with a
+  sentence the machine writes, not the model: `publish the folder … to the
+  internet as your GitHub Pages site <account>.github.io, in place of what is
+  there — anybody can read it, and Put back can't recall it`. At full access it
+  is done without asking and the line afterwards says it is on the internet and
+  Put back can't recall it; at *ask me each time* it waits for one approval of
+  that sentence, and one approval publishes it once, with no folder grant
+  needed (*"Approval alone is enough"*, the owner, 2026-11-13); what it sends
+  is on the indicator and counted in the record as for every command alo runs;
+  at the sealed box it is
+  refused, saying that publishing runs programs the sealed box cannot and where
+  to choose another level. Nothing in the folder is changed, a push is never
+  forced, an empty folder or an address GitHub could not give is refused before
+  anybody is asked, and every publication and every refusal is in the record.
+  **The person signs in to GitHub once, themselves**, with GitHub's own `gh`
+  (`gh auth login --web`, a code shown in the terminal and entered at
+  github.com/login/device), kept on this computer; alo never asks for or reads a
+  password, and is told plainly that the sign-in lets anything the person runs —
+  alo too, at full access — read and change every repository the account can,
+  and make new ones. The editor road above stays beside it. *Owner, 2026-11-13:
+  "We can add it but we need no shortcuts."*
 
 ## The AI stack — model choice and deployment configurations
 
