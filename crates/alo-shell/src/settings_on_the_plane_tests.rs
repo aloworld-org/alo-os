@@ -162,6 +162,66 @@ fn it_is_placed_above_the_dock() {
     );
 }
 
+/// **Sized for the room and placed in it, through the server**: on 1 280 × 800
+/// with the walk's Dock and the panel's column drawn, the size Settings' rule
+/// is asked of is the room above the Dock and left of the panel less its band,
+/// the Dock giving way does not change it, and the window that rule gives is
+/// placed with its band, its foot and its right edge all in that room — the
+/// owner's *"Yes, fit above the Dock"* and *"Windows open clear of it"* of
+/// 2026-11-13, the two ends of `crate::settings_fits_the_room` meeting.
+#[test]
+fn it_is_sized_for_the_room_and_placed_clear_of_the_dock_and_the_panel() {
+    const NAMED: &str = "the-one-display";
+    const DISPLAY: (i32, i32) = (1280, 800);
+    const DOCK_TOP: i32 = 717;
+    const PANEL_AT: i32 = 1168;
+    let (_directory, mut server) = with_settings_open("settings-sized-for-the-room");
+    server.surfaces.popups.output_size = Some(Size::from(DISPLAY));
+    let drawn = |dock: bool| crate::FixedControlsDrawn {
+        dock_band: dock.then(|| {
+            Rectangle::new(
+                (272, DOCK_TOP).into(),
+                (736, DISPLAY.1 - DOCK_TOP - 9).into(),
+            )
+        }),
+        panel_reserved: Rectangle::new(
+            (PANEL_AT, 0).into(),
+            (DISPLAY.0 - PANEL_AT, DISPLAY.1).into(),
+        ),
+        what_is_leaving: None,
+        top_controls: None,
+    };
+    server.the_fixed_controls_were_drawn(NAMED, drawn(true), TextScale::ordinary());
+    server.this_displays_room_was_seen(NAMED, DISPLAY);
+    let asked = server.the_room_settings_is_sized_for(NAMED, DISPLAY);
+    assert_eq!(asked, (PANEL_AT, DOCK_TOP - 54));
+    // **The Dock giving way does not make Settings grow**: the room keeps the
+    // Dock's band, as `docs/design/when-the-dock-gives-way.md` settles.
+    server.the_fixed_controls_were_drawn(NAMED, drawn(false), TextScale::ordinary());
+    server.this_displays_room_was_seen(NAMED, DISPLAY);
+    assert_eq!(server.the_room_settings_is_sized_for(NAMED, DISPLAY), asked);
+    server.the_fixed_controls_were_drawn(NAMED, drawn(true), TextScale::ordinary());
+    let sizes = how_big_settings_is(asked, TextScale::ordinary(), DisplayScale::ONE).expect("room");
+    assert!(server.settings_is_placed(sizes.window, DISPLAY, Direction::LeftToRight));
+    let placed = server
+        .where_settings_is_on_the_plane()
+        .expect("placed on this Place");
+    let camera = server.the_camera().at();
+    let taken = crate::a_window_and_its_strip::ItsStrip::at(100).round(placed);
+    assert!(
+        taken.loc.y >= camera.y,
+        "Settings' band is off the top: {taken:?}"
+    );
+    assert!(
+        taken.loc.y + taken.size.h <= camera.y + DOCK_TOP,
+        "Settings reaches behind the Dock: {taken:?}"
+    );
+    assert!(
+        taken.loc.x + taken.size.w <= camera.x + PANEL_AT,
+        "Settings opened under the panel: {taken:?}"
+    );
+}
+
 /// **On another Place it is out of the way**, and going to it takes the person
 /// to its Place, without moving it.
 #[test]
