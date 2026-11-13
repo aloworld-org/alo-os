@@ -68,6 +68,7 @@ impl SettingsWindow {
                     open.told = None;
                 }
                 open.category = *category;
+                open.side_column.a_category_was_chosen();
                 open.in_the_page = false;
                 open.focus = 0;
                 ThenChoose::No

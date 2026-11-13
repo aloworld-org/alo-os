@@ -292,6 +292,15 @@ impl crate::Server {
         &mut self,
         drawn: Option<crate::settings_as_drawn::SettingsAsDrawn>,
     ) {
+        // **Where the side column was drawn is where it is**, so the next
+        // choice brings a category into view from there
+        // (`crate::settings_side_column_scrolls`).
+        if let Some(side) = drawn
+            .as_ref()
+            .and_then(crate::settings_as_drawn::SettingsAsDrawn::the_side_column)
+        {
+            self.settings.the_side_column_was_drawn_at(side.scrolled);
+        }
         self.settings_as_drawn = drawn;
     }
 
