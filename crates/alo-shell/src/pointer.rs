@@ -574,21 +574,19 @@ impl Server {
         // **A scroll over a task window scrolls its conversation**, and never
         // reaches what is underneath — `crate::a_task_window_scrolls`. Asked
         // first because a task window is drawn over the terminal too.
-        if let Some(location) = self
+        #[expect(
+            clippy::cast_possible_truncation,
+            reason = "the pointer is clamped to the output, which is well inside i32"
+        )]
+        let on_the_screen = self
             .surfaces
             .pointer
             .as_ref()
-            .map(|pointer| pointer.location)
+            .map(|pointer| Point::<i32, Physical>::from((pointer.location.x as i32, pointer.location.y as i32)));
+        if let Some(on_the_screen) = on_the_screen
+            && let Some(moved) = self.a_scroll_over_a_task_window(on_the_screen, &frame)
         {
-            #[expect(
-                clippy::cast_possible_truncation,
-                reason = "the pointer is clamped to the output, which is well inside i32"
-            )]
-            let on_the_screen =
-                Point::<i32, Physical>::from((location.x as i32, location.y as i32));
-            if let Some(moved) = self.a_scroll_over_a_task_window(on_the_screen, &frame) {
-                return Ok(moved);
-            }
+            return Ok(moved);
         }
         if self.the_terminal_is_taking_the_keys() {
             let lines = the_lines_a_scroll_asks_for(&frame);
@@ -615,6 +613,15 @@ impl Server {
             // second copy of it would be a second answer to whether Ctrl is down.
             if self.ctrl_is_held() {
                 return Ok(self.zoom_the_plane_by_scroll(&frame));
+            }
+            // **Over Settings' side column, where it scrolls, the wheel is
+            // the column's** (the owner, 2026-11-13: *"The side column
+            // scrolls"*) — `crate::settings_side_column_scrolls`. Over one that
+            // fits, the canvas pans as before.
+            if let Some(on_the_screen) = on_the_screen
+                && let Some(moved) = self.a_scroll_over_settings(on_the_screen, &frame)
+            {
+                return Ok(moved);
             }
             // **Shift turns a mouse wheel sideways**, the design's *pan
             // sideways with a mouse* — `crate::canvas_shift_wheel`. Only here,

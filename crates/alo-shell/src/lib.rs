@@ -512,6 +512,8 @@ mod settings_drawn_controls;
 mod settings_drawn_page;
 mod settings_drawn_picker;
 mod settings_drawn_row;
+/// Settings' side column, drawn, and scrolled where it does not fit.
+mod settings_drawn_side_column;
 /// Settings' window edge: its title and Close.
 mod settings_edge;
 mod settings_formats;
@@ -545,6 +547,8 @@ mod settings_pointed_at;
 mod settings_raster;
 mod settings_seat;
 mod settings_shell_integration;
+/// Where Settings' side column is scrolled, and the wheel over it.
+mod settings_side_column_scrolls;
 #[cfg(test)]
 #[path = "../tests/unit_fixtures/settings_testing.rs"]
 mod settings_testing;
