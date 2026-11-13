@@ -105,7 +105,10 @@ pub fn declare_into(verbs: &mut Verbs) -> Result<(), NotLoaded> {
             ],
             Requires::grants_over([APPLICATION]),
             words::PRESS_SENTENCE,
-        ),
+        )
+        // **What it changes and leaves alone**, on the approval card — held to
+        // what a press does by `tests/the_accessibility_fallback.rs`.
+        .and_then(|verb| verb.changing(words::PRESS_CHANGES, Some(words::PRESS_LEAVES))),
     )?)?;
     Ok(())
 }

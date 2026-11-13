@@ -120,7 +120,9 @@ pub fn run_as_the_person_around_within(
         .try_clone()
         .map_err(|why| ItDidNotStart::because(format!("no second end of the pipe: {why}")))?;
     let mut starting = Command::new(THE_SHELL);
-    starting
+    // **Nobody is there to answer a question it asks**, so it is told so
+    // before it starts (`crate::nobody_is_there_to_answer`).
+    crate::nobody_is_there_to_answer::nobody_is_there_to_answer(&mut starting)
         .args(command.arguments())
         .current_dir(folder)
         .stdin(Stdio::null())

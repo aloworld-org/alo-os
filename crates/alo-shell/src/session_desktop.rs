@@ -36,6 +36,11 @@ use crate::{DirectFrame, DirectSession, Server, TheDesktop, WindowControlLabels,
 pub struct ADisplayToStandOn<'a> {
     /// The display device, opened through libseat and never directly.
     pub display: &'a Path,
+    /// **How the login seat is asked for the display**: [`DirectSession::new`]
+    /// on a machine, handed in for the reason
+    /// [`crate::AMachineToStandOn::seat`] is — a test cannot say which
+    /// machine's seat libseat would answer from.
+    pub seat: fn(std::path::PathBuf) -> Result<DirectSession, crate::SessionError>,
     /// The directory the Wayland socket is bound in.
     pub runtime: &'a Path,
     /// The name of the socket inside it, which is what a client connects to.
@@ -227,7 +232,7 @@ pub fn stand_the_desktop_up(
             )
             .into_text(),
     );
-    let mut session = DirectSession::new(display.display.to_owned())?;
+    let mut session = (display.seat)(display.display.to_owned())?;
     // **How much can alo do?, once, before the desktop** — for a person who has
     // not chosen a level for running code (ADR 0149, the owner's answer of
     // 2026-11-09: *right after first sign-in*). Everything it reads and writes

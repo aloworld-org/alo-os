@@ -49,4 +49,11 @@ pub enum TheVerbsWouldNotDeclare {
     /// the surface for *find a command by what it did* is a question to alo.
     #[error("the record verb could not be declared: {0}")]
     TheRecordVerb(#[from] alo_record::Declaring),
+    /// `alo-adapters`' accessibility fallback: reading what an application's
+    /// windows show, and pressing one control in them — or a name colliding
+    /// with one of the twelve.
+    ///
+    /// Added 2026-11-12, when a turn first offered them (Demo 2, stage 4).
+    #[error("the accessibility verbs could not be declared: {0}")]
+    TheAccessibilityVerbs(#[from] alo_adapters::NotLoaded),
 }

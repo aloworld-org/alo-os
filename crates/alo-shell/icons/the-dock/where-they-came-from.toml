@@ -1,0 +1,46 @@
+# Where the Dock's own two icons came from: Settings and Applications.
+#
+# Not from the design file. The owner chose both on 2026-11-13, from drawings
+# shown to them as pictures, in these words:
+#
+#   asked to replace the letters "S" and "A":  "Design icons for both"
+#   shown the design's own Settings artwork (sliders, `348:23618`):
+#                                              "i think the gear icon can work best"
+#   shown two gears:                           "Gear 1: classic, grid OK"
+#
+# Settings therefore departs from the design file's `Dock edges / Button /
+# Settings` (`348:23618`), which is three sliders, by the owner's choice; and
+# Applications is new artwork, approved that day, with no node in the file.
+# Both are drawn in the design's own grid for the Dock's buttons: a 28 square,
+# one stroke of 1.98333, round caps and joins, one colour.
+#
+# The files as approved are in `as-approved/`, byte for byte. The files drawn
+# are the same geometry written only as `<path>`, because `alo-vector-shapes`
+# reads paths and nothing else (ADR 0142), and with the comment taken out:
+#
+#   settings.svg      the cog's path is the approved path, character for
+#                     character; the centre hole, approved as
+#                     `<circle cx="14" cy="14" r="3.5">`, is two half-circle
+#                     arcs through (17.5, 14) and (10.5, 14).
+#   applications.svg  each approved `<rect>` (8.16667 square, `rx` 1.75) is the
+#                     same rounded square as four sides and four quarter-arcs;
+#                     the plus is the approved path, character for character.
+#
+# The colour in the files is the design's light `text/primary`, #102A43. What
+# is drawn is the Dock's own ink from the palette at the moment it is drawn, so
+# dark appearance and high contrast follow; never teal, which is alo acting.
+
+fetched = "2026-11-13"
+
+[[icon]]
+svg = "settings.svg"
+names = "Settings, on the Dock: an eight-tooth cog with a centre hole"
+approved = "as-approved/gear-1-classic.svg"
+departs_from = "348:23618"
+frame = 28
+
+[[icon]]
+svg = "applications.svg"
+names = "Applications, on the Dock: three rounded squares and a plus"
+approved = "as-approved/applications-a-line.svg"
+frame = 28

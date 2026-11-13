@@ -80,6 +80,10 @@ mod telling_applications_to_describe_themselves;
 #[cfg(target_os = "linux")]
 mod starting_the_screen_reader;
 
+// Watching a reader that started, for as long as the switch is on.
+#[cfg(target_os = "linux")]
+mod watching_the_screen_reader;
+
 #[cfg(target_os = "linux")]
 mod putting_back;
 
@@ -235,6 +239,7 @@ mod running {
         match alo_shell::stand_the_desktop_up(
             ADisplayToStandOn {
                 display: &said.display,
+                seat: alo_shell::DirectSession::new,
                 runtime: &said.runtime,
                 socket: THE_SOCKET,
                 layout: said.keyboard.layout(),
@@ -728,6 +733,11 @@ mod running {
                             .map(|language| language.tag().to_owned());
                         crate::starting_the_screen_reader::on_this_machine(on, language)
                     },
+                    // **And a reader that started is watched while the switch
+                    // is on**, so one that falls over a minute later is said
+                    // under the switch then (`crate::watching_the_screen_reader`).
+                    crate::watching_the_screen_reader::OnThisMachine::default(),
+                    crate::watching_the_screen_reader::BETWEEN_WATCHES,
                 ),
                 dock: alo_dock::Dock::shipped(),
                 put_aside: alo_put_aside::Panel::new(),

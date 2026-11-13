@@ -46,6 +46,20 @@
 //! A window the person moved, resized, maximised or pressed on is never placed
 //! again by any of this (`crate::a_window_that_grows_is_placed_again`).
 //!
+//! # And clear of the put-aside panel — the owner, 2026-11-13
+//!
+//! Asked whether a new window may open under the right-hand panel of windows
+//! put aside, the owner answered *"Windows open clear of it"*. So the room is
+//! also the view left of the panel's column (right of it, read right to left).
+//! **The column, not the rail**: the panel keeps its column whether it holds
+//! anything or is showing (`crate::panel_raster::the_column_it_reserves`), and
+//! a window placed under an empty panel would be covered the moment the person
+//! put one aside. It is the panel's extent as last drawn, asked rather than
+//! worked out here, so a denser display or a larger panel moves it with them.
+//! A window too wide for what is left is asked to be narrower, never below
+//! its minimum. **A person may still move a window under the panel
+//! themselves**; nothing here moves it back.
+//!
 //! **This makes an existing promise true rather than adding one**: rule 6's
 //! *constrained by the usable display area* and rule 5's *losing access to a
 //! window is not* permitted. It adds no setting. A person may still put a
@@ -77,6 +91,55 @@ pub(crate) fn the_room_the_dock_leaves(
         return view;
     }
     Rectangle::new(view.loc, Size::from((view.size.w, tall.min(view.size.h))))
+}
+
+/// **`room`, clear of the put-aside panel's column** where the column reaches
+/// into it. The column runs the display's whole height on the edge the panel
+/// belongs to, so it takes the side its middle is on — the right, or the left
+/// on a screen read right to left — as `crate::the_room_a_window_fills`'s work
+/// area does. A column that does not reach into the room, or one of no width,
+/// takes nothing.
+///
+/// **Asked, never assumed**: `panel` is the column as the panel last drew it
+/// (`crate::canvas_fixed_controls::FixedControlsDrawn::panel_reserved`), which
+/// it keeps whether it holds anything or not, and whether it is showing.
+#[must_use]
+pub(crate) fn the_room_the_panel_leaves(
+    room: Rectangle<i32, Logical>,
+    panel: Option<Rectangle<i32, Logical>>,
+) -> Rectangle<i32, Logical> {
+    let Some(panel) = panel.and_then(|panel| panel.intersection(room)) else {
+        return room;
+    };
+    if panel.size.w <= 0 || panel.size.h <= 0 {
+        return room;
+    }
+    let its_middle = panel.loc.x.saturating_add(panel.size.w / 2);
+    let the_rooms_middle = room.loc.x.saturating_add(room.size.w / 2);
+    if its_middle >= the_rooms_middle {
+        let wide = panel.loc.x.saturating_sub(room.loc.x).max(0);
+        Rectangle::new(room.loc, Size::from((wide, room.size.h)))
+    } else {
+        let from = panel.loc.x.saturating_add(panel.size.w);
+        let right = room.loc.x.saturating_add(room.size.w);
+        Rectangle::new(
+            Point::from((from, room.loc.y)),
+            Size::from((right.saturating_sub(from).max(0), room.size.h)),
+        )
+    }
+}
+
+/// **The room a window alo places lands in**: `view` above the Dock and clear
+/// of the put-aside panel's column — the two fixed controls the owner has said
+/// a new window opens clear of (2026-11-12 and 2026-11-13). Both are the
+/// controls as last drawn, on the plane.
+#[must_use]
+pub(crate) fn the_room_the_controls_leave(
+    view: Rectangle<i32, Logical>,
+    dock: Option<Rectangle<i32, Logical>>,
+    panel: Option<Rectangle<i32, Logical>>,
+) -> Rectangle<i32, Logical> {
+    the_room_the_panel_leaves(the_room_the_dock_leaves(view, dock), panel)
 }
 
 /// **The size a window of `wanted` is offered so that it, its strip and the
@@ -204,8 +267,9 @@ impl crate::Server {
             Ok(_) => Some(fits),
             Err(why) => {
                 eprintln!(
-                    "alo-shell: a window {}×{} does not fit the {}×{} the Dock leaves, and could \
-                     not be asked to be {}×{} ({why}), so it is placed at its own size",
+                    "alo-shell: a window {}×{} does not fit the {}×{} the Dock and the panel \
+                     leave, and could not be asked to be {}×{} ({why}), so it is placed at its \
+                     own size",
                     wanted.w, wanted.h, room.size.w, room.size.h, fits.w, fits.h
                 );
                 None

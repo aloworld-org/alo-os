@@ -20,6 +20,18 @@ use crate::the_cards_words::{
 
 /// The line alo says once the daemon has answered, or failed to.
 pub(crate) fn what_an_answer_did(answered: Option<&Answered>, strings: &Strings) -> String {
+    // **Since 2026-11-13: never plain *Done.* for a command that sent
+    // something off this computer**, beside a copy Put back could return —
+    // ADR 0110 §2, *it does not recall a push*. Where nothing counted what it
+    // sent, the line says so (`alo_capability::WhatItSent`).
+    if let Some(Answered::It(done)) = answered
+        && let Some(what) = done.what_a_command_sent()
+    {
+        return strings
+            .say(&what.done_after_your_ok().key(), &Filling::nothing())
+            .text()
+            .to_owned();
+    }
     let word = match answered {
         Some(Answered::Refused { told }) => return told.clone(),
         Some(Answered::It(_)) => IT_WAS_DONE,
@@ -97,6 +109,38 @@ mod tests {
         assert_ne!(not_kept, done);
         assert!(!not_kept.contains("may"), "{not_kept}");
         assert!(!not_kept.contains("might"), "{not_kept}");
+    }
+
+    /// **A command that sent something off this computer is never plain
+    /// *Done.***, and nor is one nothing counted; one counted as sending
+    /// nothing still is (ADR 0110 §2).
+    #[test]
+    fn a_command_that_sent_something_is_not_told_as_wholly_undoable() {
+        let mut vocabulary = Vocabulary::empty();
+        crate::the_cards_words::declare_the_cards_words(&mut vocabulary).unwrap();
+        alo_capability::words::declare_into(&mut vocabulary).unwrap();
+        let strings = Strings::of(vocabulary);
+        let ran = |sent: Option<u64>| {
+            Answered::It(Box::new(Done::RanACommand {
+                returned: Some(0),
+                said: String::new(),
+                cut_short: false,
+                took_too_long: false,
+                sent_bytes: sent,
+            }))
+        };
+        assert_eq!(what_an_answer_did(Some(&ran(Some(0))), &strings), "Done.");
+        let sent = what_an_answer_did(Some(&ran(Some(10_000))), &strings);
+        assert!(
+            sent.starts_with("Done. Put back can return your files on this computer")
+                && sent.contains("sent something off this computer"),
+            "{sent}"
+        );
+        let uncounted = what_an_answer_did(Some(&ran(None)), &strings);
+        assert!(
+            uncounted.contains("could not count whether it sent anything"),
+            "{uncounted}"
+        );
     }
 
     /// **A refusal is the daemon's own words, unchanged** — the walk's own

@@ -139,6 +139,18 @@ fn every_sentence_is_in_the_machines_vocabulary_with_a_note() {
                 .any(|area| key.starts_with(&format!("{area}.")))
         })
         .collect();
+    // **Under these areas, both ways.** The fallback also declares two keys
+    // under `app.`, kept from `alo-app` when the sentences moved
+    // (`alo_adapters::fallback_words::NOTHING_TO_READ`); the loop above holds
+    // that the machine collected them, and they are not this comparison's.
+    let named: BTreeSet<&str> = named
+        .into_iter()
+        .filter(|key| {
+            THE_AREAS
+                .iter()
+                .any(|area| key.starts_with(&format!("{area}.")))
+        })
+        .collect();
     assert_eq!(
         collected, named,
         "the machine says something under these crates' areas that no list declares, or the \

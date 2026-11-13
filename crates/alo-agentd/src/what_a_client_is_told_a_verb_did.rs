@@ -51,5 +51,17 @@ pub(crate) fn as_a_client_sees_it(did: &WhatAVerbDid, now: SystemTime) -> Done {
         // else — `alo_turn::Arriving::reading` refuses the verb across a
         // pairing, and `alo_corridor::doorway` answers nothing for this arm.
         WhatAVerbDid::WhatTouchedAFile(found) => Done::of_a_record_read(found, now),
+        // The accessibility fallback's two (2026-11-12): a read of what an
+        // application's windows show, answered inside the turn, and a press a
+        // person approved.
+        WhatAVerbDid::WhatTheWindowsShowed(read) => {
+            Done::of_a_window_read(read.shown(), read.told())
+        }
+        WhatAVerbDid::AControlWasPressed(pressed) => Done::of_a_press(
+            pressed.application(),
+            pressed.kind(),
+            pressed.name(),
+            pressed.unanswered(),
+        ),
     }
 }

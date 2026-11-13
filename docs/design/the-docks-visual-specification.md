@@ -134,6 +134,51 @@ assistive technology; tooltip on hover or keyboard focus.*
 repository draws today is a fallback the owner ruled for applications that have
 **no** artwork; it is not what an application with artwork shows.
 
+### Settings and Applications: the owner's two drawings, 2026-11-13
+
+Until this date the Dock drew its own two entries, Settings and Applications,
+as the first letters of their names — *S* and *A* on a grey badge — which is the
+fallback for an application with no artwork. The owner was asked, and answered
+with pictures in front of them:
+
+> Design icons for both
+
+Then, shown the design file's own Settings artwork (three sliders,
+`Dock edges / Button / Settings`, `348:23618`):
+
+> i think the gear icon can work best
+
+Then, shown two gears side by side:
+
+> Gear 1: classic, grid OK
+
+So:
+
+| entry | drawn as | against the design file |
+|---|---|---|
+| Settings | an eight-tooth cog with a centre hole (tips r 10.5, roots r 7.9, hole r 3.5) | **departs** from `348:23618`'s sliders, by the owner's choice |
+| Applications | three rounded squares and a plus (8.17 squares, corner 1.75) | **new artwork**, approved this day; the file has no node for it |
+
+Both are in the grid the design uses for these buttons — a 28 × 28 square, one
+stroke of `1.98333`, round caps and joins — and both are drawn the way History's
+mark is on a side Dock: in the Dock's ink (`text/primary`, `#102A43` in light),
+taken from the palette when the frame is drawn so dark appearance and high
+contrast follow, on the Dock's own ground, at `alo_dock::measures::GLYPH`
+through the display's scale, centred in the slot, and **with no badge circle**,
+because the circle is the mark of an application with no icon. **Never teal**:
+teal is alo acting, and these are furniture. The translated name stays the
+tooltip and the name a screen reader speaks. The same drawing replaces the
+letter in the list *Show all* opens.
+
+The files: `crates/alo-shell/icons/the-dock/` — `as-approved/` holds the two SVGs
+exactly as the owner approved them, and `settings.svg` / `applications.svg` are
+the same geometry written as paths only (a `<circle>` and three `<rect>`s
+rewritten as arcs), because `alo-vector-shapes` reads paths and nothing else.
+`where-they-came-from.toml` records which is which, and
+`crates/alo-shell/src/the_docks_own_icons_tests.rs` holds the drawn cog's
+outline and the plus to the approved paths character for character, on every
+build.
+
 ## What the compositor can draw today, measured
 
 `crates/alo-shell/src/painted.rs` is the whole of it: `Solid`, an

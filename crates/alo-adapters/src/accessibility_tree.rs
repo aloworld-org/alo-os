@@ -105,7 +105,7 @@ pub trait AccessibilityTree {
     /// answers — sorted by name.
     ///
     /// Read for one purpose: finding the surface of alo's own tree a person
-    /// named (`alo_access::THE_SURFACE_ATTRIBUTE`). **Answers nothing by
+    /// named (`crate::alos_own_tree::THE_SURFACE_ATTRIBUTE`). **Answers nothing by
     /// default**, which is what a tree that serves no attributes says; the bus
     /// asks the real one.
     ///
