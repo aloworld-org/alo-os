@@ -396,7 +396,7 @@ fn what_this_machine_can_carry_out<'a>(
             // under the same rule every other egress here is held to.
             publishing: alo_turn::WhatPublishingNeeds {
                 runs: crate::running_a_publication::here(),
-                through: alo_publishing::Through::github(),
+                through: alo_publishing::Through::on_github_com(),
                 rule: alo_egress::EgressPolicy::from(described.questions().policy()),
             },
         },

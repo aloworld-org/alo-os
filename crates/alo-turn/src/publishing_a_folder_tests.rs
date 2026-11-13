@@ -57,7 +57,7 @@ fn on_a_machine<T>(
             &OnThisMachine,
             WhatPublishingNeeds {
                 runs: publisher,
-                through: alo_publishing::Through::github(),
+                through: alo_publishing::Through::on_github_com(),
                 rule,
             },
             &mut bounding,

@@ -176,7 +176,7 @@ mod tests {
     fn the_line_names_what_it_publishes_and_never_forces() {
         let line = the_line(
             &anna("/home/anna/Anna's site"),
-            &Through::github(),
+            &Through::on_github_com(),
             "Published from alo OS",
         )
         .unwrap();
@@ -209,12 +209,12 @@ mod tests {
     #[test]
     fn a_folder_with_a_line_break_in_its_name_is_refused_before_anything_runs() {
         assert_eq!(
-            the_line(&anna("/home/anna/site\nreboot"), &Through::github(), "m"),
+            the_line(&anna("/home/anna/site\nreboot"), &Through::on_github_com(), "m"),
             Err(NotPublished::TheNameCannotBeCarried)
         );
         let long = format!("/home/anna/{}", "a".repeat(5000));
         assert_eq!(
-            the_line(&anna(&long), &Through::github(), "m"),
+            the_line(&anna(&long), &Through::on_github_com(), "m"),
             Err(NotPublished::TheNameCannotBeCarried)
         );
     }

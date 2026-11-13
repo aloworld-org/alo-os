@@ -327,7 +327,7 @@ impl alo_publishing::Runs for APublisher {
 pub(crate) fn publishing_through(publisher: &APublisher) -> crate::WhatPublishingNeeds<'_> {
     crate::WhatPublishingNeeds {
         runs: publisher,
-        through: alo_publishing::Through::github(),
+        through: alo_publishing::Through::on_github_com(),
         rule: EgressPolicy::Anywhere,
     }
 }

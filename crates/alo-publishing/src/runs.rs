@@ -43,7 +43,7 @@ pub const GITHUB: &str = "https://github.com";
 impl Through {
     /// `gh` on the path, and github.com — what every machine uses.
     #[must_use]
-    pub fn github() -> Self {
+    pub fn on_github_com() -> Self {
         Self::at(GH, GITHUB)
     }
 
