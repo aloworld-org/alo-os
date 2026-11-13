@@ -393,11 +393,15 @@ impl<'a, 'm> Turning<'a, 'm> {
         grants: &Grants,
         now: SystemTime,
     ) -> Result<WhatAVerbDid, NotDone> {
+        // **A change that changes nothing here carries no place either** — a
+        // publication — so the record never offers *Put back* beside a folder
+        // already on the internet (ADR 0110 §2), whatever a caller kept.
+        let changes_here = !alo_publishing::changes_nothing_on_this_computer(authorised.verb());
         let (entry, outcome) = self.inside_a_boundary(authorised, grants, now);
         // **What ran carries the place kept before it**; a refusal at the
         // boundary changed nothing and carries none.
         let entry = match &self.kept_as {
-            Some(named) if entry.happened().ran() => entry.kept_as(named),
+            Some(named) if entry.happened().ran() && changes_here => entry.kept_as(named),
             _ => entry,
         };
         let entry = self.as_the_level_was(entry, grants);
@@ -780,6 +784,25 @@ impl<'a, 'm> Turning<'a, 'm> {
             Some(entry) => self.keeping(entry),
             None => Ok(()),
         }
+    }
+
+    /// Write down what the person's desktop said happened at GitHub, while
+    /// this turn holds the machine.
+    ///
+    /// [`crate::Machine::a_github_sign_in_was_kept`] for the rounds where a
+    /// local turn holds the machine: a person signs in whether or not their
+    /// agent is in a turn. The entry is the person's own — no agent.
+    ///
+    /// # Errors
+    ///
+    /// [`alo_keeping::NotKept`] when the record could not be written, and the
+    /// turn is closed by it.
+    pub fn a_github_sign_in_was_kept(
+        &mut self,
+        what: alo_record::AtGitHub,
+        now: SystemTime,
+    ) -> Result<(), alo_keeping::NotKept> {
+        self.keeping(Entry::at_github(what, now))
     }
 
     /// Write down what became of this turn when the machine woke from a sleep

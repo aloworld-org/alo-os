@@ -26,6 +26,7 @@
 //! record or the authorisation, never this.
 
 use alo_files::Answer;
+use alo_publishing::Published;
 use alo_record::WhatTouchedIt;
 use alo_software::{Installed, WhatTheCatalogueHolds};
 
@@ -80,9 +81,27 @@ pub enum WhatAVerbDid {
     /// A text was typed into one field of an application, and saved or not
     /// (`accessible.type_text`, ADR 0153).
     TextWasTyped(ATextTyped),
+    /// A folder was published to the person's GitHub Pages site, or found to
+    /// be there already (added 2026-11-13).
+    AFolderWasPublished(Published),
 }
 
 impl WhatAVerbDid {
+    /// What was published, when a folder was.
+    #[must_use]
+    pub const fn published(&self) -> Option<&Published> {
+        match self {
+            Self::AFolderWasPublished(published) => Some(published),
+            Self::ToFiles(_)
+            | Self::AnApplicationInstalled(_)
+            | Self::AnApplicationWasReached(_)
+            | Self::WhatCanBeInstalled(_)
+            | Self::WhatTouchedAFile(_)
+            | Self::WhatTheWindowsShowed(_)
+            | Self::AControlWasPressed(_) => None,
+        }
+    }
+
     /// What a file verb answered, when it was one.
     ///
     /// For the callers that only ever ask file verbs — of which there are
@@ -98,7 +117,8 @@ impl WhatAVerbDid {
             | Self::WhatTouchedAFile(_)
             | Self::WhatTheWindowsShowed(_)
             | Self::AControlWasPressed(_)
-            | Self::TextWasTyped(_) => None,
+            | Self::TextWasTyped(_)
+            | Self::AFolderWasPublished(_) => None,
         }
     }
 
@@ -113,7 +133,8 @@ impl WhatAVerbDid {
             | Self::WhatTouchedAFile(_)
             | Self::WhatTheWindowsShowed(_)
             | Self::AControlWasPressed(_)
-            | Self::TextWasTyped(_) => None,
+            | Self::TextWasTyped(_)
+            | Self::AFolderWasPublished(_) => None,
         }
     }
 
@@ -128,7 +149,8 @@ impl WhatAVerbDid {
             | Self::WhatTouchedAFile(_)
             | Self::WhatTheWindowsShowed(_)
             | Self::AControlWasPressed(_)
-            | Self::TextWasTyped(_) => None,
+            | Self::TextWasTyped(_)
+            | Self::AFolderWasPublished(_) => None,
         }
     }
 
@@ -143,7 +165,8 @@ impl WhatAVerbDid {
             | Self::WhatCanBeInstalled(_)
             | Self::WhatTheWindowsShowed(_)
             | Self::AControlWasPressed(_)
-            | Self::TextWasTyped(_) => None,
+            | Self::TextWasTyped(_)
+            | Self::AFolderWasPublished(_) => None,
         }
     }
 
@@ -185,7 +208,8 @@ impl WhatAVerbDid {
             | Self::WhatTouchedAFile(_)
             | Self::WhatTheWindowsShowed(_)
             | Self::AControlWasPressed(_)
-            | Self::TextWasTyped(_) => None,
+            | Self::TextWasTyped(_)
+            | Self::AFolderWasPublished(_) => None,
         }
     }
 }
@@ -235,6 +259,12 @@ impl From<WhatTheCatalogueHolds> for WhatAVerbDid {
 impl From<WhatTouchedIt> for WhatAVerbDid {
     fn from(found: WhatTouchedIt) -> Self {
         Self::WhatTouchedAFile(found)
+    }
+}
+
+impl From<Published> for WhatAVerbDid {
+    fn from(published: Published) -> Self {
+        Self::AFolderWasPublished(published)
     }
 }
 

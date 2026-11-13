@@ -308,6 +308,19 @@ at the moment the request arrives. Nothing on the wire can name the level.
   Law 1 is met for every command this service runs itself, and not yet for
   those two. This is said here so that nothing reads as though it were.
 
+**A folder published to GitHub Pages** (`publish_to_github_pages`,
+`docs/contracts/agent-verbs.md`, added 2026-11-13, additively) is a verb whose
+one command runs on this same road. It answers
+`{"published":{"folder":"…","address":"https://<account>.github.io/","nothing_new":false}}`
+— at full access inside `done-without-asking`, and after an OK inside
+`did-and-cannot-be-undone` **whatever the snapshot kept**, because nothing on
+this computer changed and what went to the internet is not this computer's to
+put back. A client never offers Put back beside it. Its command is counted as
+every command alo runs is: started in a control group of its own, shown as
+*git, a command alo is running, is sending* while it sends, and its entry keeps
+`sent_bytes`. It needs no folder grant — one approval of its sentence is the
+whole permission at *ask me each time* (the owner, 2026-11-13).
+
 ## What a person sends
 
 ```json
@@ -666,6 +679,49 @@ there is not going to be one — an agent that could ask for this could choose
 which of a person's changes to reverse, which ADR 0045's second term names as
 forbidden. **Nothing names a moment**, as everywhere on this door: the service
 reads its own clock.
+
+### `github-sign-in` — the person's desktop says what happened at GitHub
+
+```json
+{"github-sign-in":{"signed-in":{"login":"anna"}}}
+{"github-sign-in":{"signed-out":{"login":"anna"}}}
+{"github-sign-in":{"signed-out":{}}}
+{"github-sign-in":{"did-not-sign-in":{"why":"gh-is-not-here"}}}
+{"github-sign-in":{"did-not-sign-in":{"why":{"gh-failed":{"said":"HTTP 502"}}}}}
+{"github-sign-in":{"did-not-sign-in":{"why":"no-code-arrived"}}}
+{"github-sign-in":{"did-not-sign-in":{"why":"they-cancelled"}}}
+{"github-sign-in":{"did-not-sign-out":{"said":"not logged in to any hosts"}}}
+```
+
+Added 2026-11-13, additively, for the owner's decision that *every GitHub
+sign-in, sign-out and failure is recorded*. The desktop runs GitHub's own
+command, `gh` (`gh auth login --web`, `gh auth logout --hostname github.com`),
+under the person's account, and sends what came of it here, because this
+service is the record's one writer. What it carries is the record's own shape
+(`docs/contracts/record-file.md`, `at-github`): which thing happened, the login
+GitHub knows the person by where there is one, and the last line `gh` printed
+where it failed and printed one.
+
+**It is kept as it arrived**, as one `at-github` entry naming no agent, and the
+answer is `github-sign-in-kept`, which carries nothing:
+
+```json
+{"github-sign-in-kept":{}}
+```
+
+There is no answer saying it was not kept: a service that cannot write its
+record stops (*What stops the service*), so a desktop that hears nothing has
+heard that.
+
+**A login that is not one is not a request** — letters, digits, hyphens and
+underscores, not beginning with a hyphen, at most 100 characters — and neither
+is a reason that is not one of the four, or a field nobody declared: a token,
+the one-time code, a moment. Each is refused as unreadable, like every
+unreadable line on this door, and **nothing is written**, because nothing
+happened that a record could truthfully say. **An agent sending this is
+refused**, in the same words as an agent trying to approve something: there is
+no verb that signs in, and an agent that could send this could write a sign-in
+nobody made into the person's record.
 
 ### `their-own-question` — a question the person asked themselves
 

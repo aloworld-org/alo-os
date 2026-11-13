@@ -254,6 +254,21 @@ pub enum Done {
         /// Whether it read back exactly and was saved.
         saved: bool,
     },
+    /// A folder was published to the person's GitHub Pages site
+    /// (`publish_to_github_pages`, added 2026-11-13, additively).
+    ///
+    /// **It is on the internet, and nothing on this computer can take it
+    /// back** — so a client never offers *Put back* beside it, and words it
+    /// with `alo_publishing::what_the_person_is_told` rather than as *Done*.
+    Published {
+        /// The folder, as a person reads its path.
+        folder: String,
+        /// Where anybody reads it: `https://<account>.github.io/`.
+        address: String,
+        /// Whether the site already held exactly these files, so nothing new
+        /// was sent.
+        nothing_new: bool,
+    },
 }
 
 /// One window an application showed, as it goes back to a client.
@@ -457,6 +472,30 @@ impl Done {
             Self::RanACommand { sent_bytes, .. } => alo_capability::WhatItSent::of(*sent_bytes),
             _ => None,
         }
+    }
+
+    /// A folder published to a GitHub Pages site, as it goes on the wire.
+    ///
+    /// Three plain values rather than `alo_publishing::Published`, so the wire
+    /// does not learn what a publication is — `alo-agentd` is the join.
+    #[must_use]
+    pub fn of_a_publication(folder: &str, address: &str, nothing_new: bool) -> Self {
+        Self::Published {
+            folder: folder.to_owned(),
+            address: address.to_owned(),
+            nothing_new,
+        }
+    }
+
+    /// Whether *Put back* can take back what this did on this computer at all.
+    ///
+    /// **False for a publication**, which changed nothing here and sent a
+    /// folder to the internet — ADR 0110 §2: *a snapshot rewinds this
+    /// machine's files. It does not recall a push.* True of every other answer,
+    /// where whether it can be put back is the snapshot's question.
+    #[must_use]
+    pub const fn put_back_can_recall_it(&self) -> bool {
+        !matches!(self, Self::Published { .. })
     }
 
     /// What the record answered about a file, as it goes on the wire.
@@ -677,6 +716,10 @@ impl Done {
             // **A typing that was not saved** is the one a shell puts a caveat
             // beside: the text is in the window and not on the disk.
             Self::Typed { saved, .. } => !*saved,
+            // **A publication leaves nothing out**: it names the folder and the
+            // address, and what it cannot take back is said in its own line
+            // ([`Done::put_back_can_recall_it`]), not as a caveat here.
+            Self::Published { .. } => false,
         }
     }
 }

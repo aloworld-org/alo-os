@@ -56,4 +56,10 @@ pub enum TheVerbsWouldNotDeclare {
     /// Added 2026-11-12, when a turn first offered them (Demo 2, stage 4).
     #[error("the accessibility verbs could not be declared: {0}")]
     TheAccessibilityVerbs(#[from] alo_adapters::NotLoaded),
+    /// `alo-publishing`'s one, or its name colliding with one of the twelve.
+    ///
+    /// Publishing a folder to GitHub Pages, added on 2026-11-13 for Demo 2's
+    /// second road.
+    #[error("the publishing verb could not be declared: {0}")]
+    ThePublishingVerb(#[from] alo_publishing::verbs::Declaring),
 }

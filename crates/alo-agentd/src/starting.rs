@@ -392,6 +392,13 @@ fn what_this_machine_can_carry_out<'a>(
         WhatASoftwareVerbNeeds {
             tool: installing_with,
             bound: described.applications().clone(),
+            // **Publishing a folder runs on the command road**, as the person,
+            // under the same rule every other egress here is held to.
+            publishing: alo_turn::WhatPublishingNeeds {
+                runs: crate::running_a_publication::here(),
+                through: alo_publishing::Through::on_github_com(),
+                rule: alo_egress::EgressPolicy::from(described.questions().policy()),
+            },
         },
         WhatAnApplicationVerbNeeds {
             installed: alo_installed::read(applications.starting.places()),
@@ -580,6 +587,7 @@ mod tests {
                 "list_folder",
                 "move_file",
                 "open_application",
+                "publish_to_github_pages",
                 "read_file",
                 "rename_file",
                 "what_can_be_installed",

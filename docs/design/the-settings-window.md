@@ -93,6 +93,36 @@ Padding 16, and 2 between every item.
 | Chosen category | the accent at **12 %** over `bg/canvas` (`rgba(58,90,168,0.12)` is Indigo's), icon in the accent | Body/Medium **SemiBold**, `text/primary` |
 | Footer | 12 across, 8 below, at the foot | Label/Small, `text/muted` |
 
+### Where the side column does not fit, it scrolls
+
+The design draws the column at 1440 × 960, where every entry fits with the
+footer at its foot. It does not say what happens on a shorter screen, and with a
+tenth entry the column needs about 46 more pixels than a 1280 × 800 window
+leaves it. **The owner, 2026-11-13: *"The side column scrolls"*** — asked with
+pictures, against hiding an entry or drawing the entries smaller. So:
+
+- **Nothing in it is hidden or made smaller.** Every entry keeps its 48, its
+  icon and its words at every screen size and text size.
+- **Where everything fits, it is drawn exactly as before**, footer at the foot.
+  Where it does not, the footer follows the last entry, because a footer pinned
+  at the foot would be drawn over an entry.
+- **A wheel over it moves it**, one notch an entry and the gap after it, and
+  never past either end. While it scrolls, the wheel is the column's and never
+  pans the canvas behind it, even at an end; over a column that fits, the wheel
+  pans the canvas as it always did.
+- **Up, Down, Home, End, *Go to* and a press bring the chosen entry whole into
+  view**, scrolling as little as they must, from wherever the wheel left it. A
+  wheel leaves it where it put it, even with the chosen entry out of view, so a
+  person reading down the list is not pulled back.
+- **An entry scrolled under the window's edge cannot be pressed there**: only
+  what is seen of it is a target. A screen reader is told every entry whatever
+  is scrolled, because it reads the list, not the picture.
+
+`crate::settings_drawn_side_column` and `crate::settings_side_column_scrolls`
+in `alo-shell`; held by their tests at 1280 × 800 and 1440 × 960, at one and at
+twice the density, and down the pointer road in
+`a_wheel_reaches_settings_tests.rs`.
+
 **Dark draws the chosen category at 22 %** — `rgba(138,160,230,0.22)` in
 `550:588`, Indigo's dark value — and that is recorded here for the change that
 builds dark.

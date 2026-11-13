@@ -1035,6 +1035,77 @@ own paragraph and left this sentence behind. `alo_turn::Machine`'s
 holds this contract to the code, and it reads the table above rather than this
 line, which is how the two came apart.
 
+## The publishing verb
+
+*Added 2026-11-13, additively, for Demo 2's second road* (`docs/features.md`;
+the owner: *"We can add it but we need no shortcuts."*). Declared in
+`alo-publishing`'s `src/verbs.rs` with a `pub fn declare_into`, carried out by
+`crates/alo-turn/src/publishing_a_folder.rs`, and offered by the daemon's turn.
+
+| Verb | Effect | Arguments | Sentence |
+|---|---|---|---|
+| `publish_to_github_pages` | change | `folder` (path), `account` (name, at most 39) | publish the folder {folder} to the internet as your GitHub Pages site {account}.github.io, in place of what is there — anybody can read it, and Put back can't recall it |
+
+**It requires no grant: one approval of its sentence is the whole
+permission**, as for any command at *ask me each time* — the owner, 2026-11-13,
+asked whether a folder grant should be needed as well: *"Approval alone is
+enough."* The command runs as the person, so the account's own permissions are
+what bounds it; at full access it needs no approval either (ADR 0149).
+
+**What the model names is two things; everything else is the machine's.** The
+sentence above, the command that runs and the line afterwards are written by
+`alo-publishing`, never by a model. `account` is checked by GitHub's own rule —
+letters, numbers and single hyphens, at most 39 — and `folder` must be a folder
+with something in it; either refused **before anybody is asked**, so the
+address a person approves is one that can exist.
+
+**What it does.** It runs one command on the command road (ADR 0149:
+`/bin/sh -c`, as the person, told nobody is there to answer, at most two
+minutes): `gh` says who is signed in, which must be `account`; the repository
+`<account>/<account>.github.io` is made, public, if there is none; the folder is
+committed **on top of** the site as it is, so the site's history is kept; one
+`git push`, **never forced**; and GitHub Pages is asked to serve it. The
+folder is the working tree and everything else lives in a temporary place of
+alo's own, so **nothing in the folder is written**, and git never sends a
+`.git`. Commits carry the account's name at GitHub's private address
+`<account>@users.noreply.github.com`.
+
+**At each level** (the person's own, read at the moment by the daemon):
+
+| Level | What happens | The answer |
+|---|---|---|
+| full access | published without asking, once | `done-without-asking` with `published`, told as *Published without asking you first, because you chose full access in Settings → Running code: the folder … is on the internet now, as your GitHub Pages site at …. Put back can't recall it.* |
+| *ask me each time* | waits for one approval of the sentence above, which carries the warning (ADR 0110 §2, ADR 0143 Q5); one approval publishes once | `proposed`, then on the OK `did-and-cannot-be-undone` with `published` |
+| the sealed box, nothing chosen, a file that will not read | refused before anybody is asked, and again at an OK given after the person moved there | `refused`: *Nothing was published. Publishing runs git and GitHub's own command, gh, as you, and the sealed box can't run programs on this computer yet. …* |
+
+**`published` on the wire** (`alo_protocol::Done::Published`) carries `folder`,
+`address` and `nothing_new`. **A client never offers Put back beside it** —
+`Done::put_back_can_recall_it` is false — and words it with
+`alo_publishing::what_the_person_is_told`, never as *Done*. No place to return
+to is taken before it, and its record entry names none.
+
+**It never crosses a pairing**: `alo_turn::Arriving::proposing` refuses it by
+name, as the record's question is refused, because it sends this person's folder
+under their own GitHub sign-in.
+
+**What leaves is shown, and counted, as for every command alo runs** (ADR 0148,
+as amended 2026-11-13). The command starts inside a control group of its own;
+the indicator reads *git, a command alo is running, is sending* from the first
+byte the kernel counts until it ends — or, on a machine that cannot count,
+*alo is running git, and this machine cannot count what it sends* for the whole
+run — and the record's entry keeps how many bytes left (`sent_bytes`). Before
+anything runs, the rule the description sets for every egress here is asked
+about *sending something to github.com*; a rule that says nothing may leave
+refuses it with nothing sent.
+
+**Every run and every refusal is written down**, the reason beside a
+publication that did not happen. The reasons are each their own: not signed in
+(with how to sign in: `gh auth login --web`), signed in as another account,
+GitHub not reached, the repository not made, the folder empty, git unable to
+prepare it, GitHub refusing the push because the site changed meanwhile, and —
+for a run stopped before it could tell — *it is not known whether it was
+published*.
+
 ## The verb classes
 
 | Class | What it covers | Where it runs |
@@ -1045,6 +1116,7 @@ line, which is how the two came apart.
 | **Printing** | Print a granted document on this machine's printer | `alo-agentd`, as the person; declared, not yet offered by a turn |
 | **Converting** | Convert a granted document into a PDF copy in a granted folder, saying what the copy could not carry | `alo-agentd`, as the person, through `alo-convertd`; declared, not yet offered by a turn |
 | **Software** | See what can be installed, and propose installing one of them from a place this machine installs from | `alo-agentd`, as the person |
+| **Publishing** | Publish a granted folder to the person's own GitHub Pages site, with `git` and GitHub's own `gh` | `alo-agentd`, as the person, on the command road (ADR 0149) |
 | **Context** | The focused window, the selection, the open document | Offered at invocation only |
 | **Adapters** | An installed application's own verbs — `text_editor.open_document`, named under their adapter | `alo-agentd`, as the person; declared and carried out by `alo-adapters`, not yet offered by a turn. See `app-adapters.md` |
 | **Accessibility fallback** | For a granted application with no adapter: read what its windows show (`accessible.read_window`, a read), press one control named by its kind and the name it shows (`accessible.activate_control`, a change), and — since 2026-11-13, ADR 0153 — type one approved text into one field named as the application shows it, and save it (`accessible.type_text`, a change taking the **text** kind; the approval shows the whole text; the text is read back and saved only if it matches; never a password field or a terminal; at the default only into alo's own copy of the application; one approval types one text, and the stricter and looser settings of ADR 0143 Q1 are not built). Never a password field's contents, never a position | `alo-agentd`, as the person; declared and carried out by `alo-adapters`, **offered by a turn since 2026-11-12**: the read answers inside the turn, the press waits for one approval. The tree is opened for one read or press and closed after it. A read never answers across a pairing. See `app-adapters.md` |

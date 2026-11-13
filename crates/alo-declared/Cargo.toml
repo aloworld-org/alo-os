@@ -36,6 +36,7 @@ alo-files = { path = "../alo-files" }
 alo-finding = { path = "../alo-finding" }
 alo-measuring = { path = "../alo-measuring" }
 alo-printing = { path = "../alo-printing" }
+alo-publishing = { path = "../alo-publishing" }
 # The record's one question, added 2026-10-18 when the owner chose the surface
 # for *find a command by what it did*.
 alo-record = { path = "../alo-record" }

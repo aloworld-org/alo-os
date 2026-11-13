@@ -71,6 +71,12 @@ fn as_a_client_sees_it(did: &alo_turn::WhatAVerbDid) -> Done {
             typed.through_the_tree(),
             typed.saved(),
         ),
+        // The seventh family, 2026-11-13: a folder published to GitHub Pages.
+        alo_turn::WhatAVerbDid::AFolderWasPublished(published) => Done::of_a_publication(
+            &published.folder().display().to_string(),
+            published.address(),
+            published.nothing_new(),
+        ),
     }
 }
 

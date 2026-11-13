@@ -70,5 +70,13 @@ pub(crate) fn as_a_client_sees_it(did: &WhatAVerbDid, now: SystemTime) -> Done {
             typed.through_the_tree(),
             typed.saved(),
         ),
+        // The seventh family: a folder sent to the person's GitHub Pages site
+        // (2026-11-13). The folder and the address cross as text, so the wire
+        // need not learn what a publication is.
+        WhatAVerbDid::AFolderWasPublished(published) => Done::of_a_publication(
+            &published.folder().display().to_string(),
+            published.address(),
+            published.nothing_new(),
+        ),
     }
 }

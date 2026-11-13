@@ -238,6 +238,13 @@ impl<'a, 'm> Arriving<'a, 'm> {
         now: SystemTime,
     ) -> Result<ProposalId, NotDone> {
         self.turning.still_open()?;
+        // **A publication never arrives across a pairing**, refused by name as
+        // the record's question is in `reading`: it sends this person's folder
+        // to the internet under their own GitHub sign-in, and a pairing
+        // permits `Models` and `Workspace` and neither is that.
+        if verb == alo_publishing::PUBLISH_TO_GITHUB_PAGES {
+            return Err(self.turning.not_for_another_machine(verb, now));
+        }
         let call = self.turning.calling(verb, given, now)?;
         if let Some(said) = self.pairing_ended(pairings, now) {
             let why = ProposalError::NotGrantedElsewhere(said);
@@ -550,6 +557,25 @@ impl<'a, 'm> Arriving<'a, 'm> {
             Some(entry) => self.turning.keeping(entry),
             None => Ok(()),
         }
+    }
+
+    /// Write down what the person's desktop said happened at GitHub, while
+    /// this remote turn holds the machine.
+    ///
+    /// [`crate::Machine::a_github_sign_in_was_kept`] with a remote turn in
+    /// front of it, not stamped with this turn's origin: the person here did
+    /// it.
+    ///
+    /// # Errors
+    ///
+    /// [`alo_keeping::NotKept`] when the record could not be written, and the
+    /// turn is closed by it.
+    pub fn a_github_sign_in_was_kept(
+        &mut self,
+        what: alo_record::AtGitHub,
+        now: SystemTime,
+    ) -> Result<(), alo_keeping::NotKept> {
+        self.turning.keeping(Entry::at_github(what, now))
     }
 
     /// The sentence for a pairing that has ended, if it has.
@@ -984,5 +1010,54 @@ mod tests {
         assert!(!second.is_closed());
         second.ending(&mut grants);
         assert!(record.is_empty());
+    }
+
+    /// **The refusal path: a publication never arrives across a pairing.** It
+    /// would send this person's folder to the internet under their own GitHub
+    /// sign-in, so it is turned away by name before a call is built — written
+    /// down, and nothing runs.
+    #[test]
+    fn a_publication_from_a_paired_machine_is_refused_and_written_down() {
+        let strings = in_english();
+        let publisher = crate::testing::APublisher::that_publishes();
+        let mut indicator = Indicator::default();
+        let mut record = Record::default();
+        let mut bounding = NothingIsBounded;
+        let mut machine = Machine::carrying_out_file_and_publishing_verbs(
+            &strings,
+            &OnThisMachine,
+            crate::testing::publishing_through(&publisher),
+            &mut bounding,
+            &mut indicator,
+            &mut record,
+        )
+        .unwrap();
+        let origin = origin();
+        let mut grants = Grants::default().at_full_access_for(&files());
+        let mut arriving =
+            Arriving::beginning(&origin, hour(), noon(), &mut grants, &mut machine).unwrap();
+        let refused = arriving.proposing(
+            alo_publishing::PUBLISH_TO_GITHUB_PAGES,
+            &[
+                ("folder", Given::text("/home/anna/site")),
+                ("account", Given::text("anna")),
+            ],
+            &Pairings::none(),
+            &grants,
+            hour(),
+            noon(),
+        );
+        assert!(
+            matches!(
+                refused,
+                Err(NotDone::TurnedAway(
+                    alo_capability::CallError::NoSuchVerb { .. }
+                ))
+            ),
+            "{refused:?}"
+        );
+        arriving.ending(&mut grants);
+        assert_eq!(publisher.runs(), 0, "a paired machine published a folder");
+        assert_eq!(record.len(), 1, "the refusal was not written down");
     }
 }

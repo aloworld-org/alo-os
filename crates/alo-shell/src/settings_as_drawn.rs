@@ -18,6 +18,7 @@ use smithay::utils::{Physical, Point, Rectangle};
 use crate::SettingsRow;
 use crate::settings_canvas::Area;
 use crate::settings_categories::SettingsCategory;
+use crate::settings_drawn_side_column::TheSideColumnDrawn;
 use crate::settings_pointed_at::PointedAt;
 use crate::settings_raster::SettingsPicture;
 
@@ -38,6 +39,8 @@ pub(crate) struct SettingsAsDrawn {
     list: Option<Area>,
     /// Every entry of that list in view.
     entries: Vec<(SettingsRow, Area)>,
+    /// The side column's view and how far it was scrolled.
+    side_column: Option<TheSideColumnDrawn>,
 }
 
 impl SettingsAsDrawn {
@@ -60,6 +63,7 @@ impl SettingsAsDrawn {
                 .collect(),
             list: picture.list,
             entries: picture.entries.clone(),
+            side_column: picture.side_column,
         })
     }
 
@@ -82,6 +86,23 @@ impl SettingsAsDrawn {
     pub(crate) fn is_under(&self, at: Point<i32, Physical>) -> bool {
         self.in_the_picture(at)
             .is_some_and(|point| self.panel.contains(point))
+    }
+
+    /// How far the side column was drawn scrolled.
+    pub(crate) const fn the_side_column(&self) -> Option<TheSideColumnDrawn> {
+        self.side_column
+    }
+
+    /// The side column, where `at` (a point on the display) is over it **and
+    /// it scrolls** — [`None`] over anything else, over a column that fits, and
+    /// while a picker's list is open over the window.
+    pub(crate) fn the_side_column_that_scrolls_under(
+        &self,
+        at: Point<i32, Physical>,
+    ) -> Option<TheSideColumnDrawn> {
+        let point = self.in_the_picture(at)?;
+        let side = self.side_column?;
+        (self.list.is_none() && side.scrolls() && side.view.contains(point)).then_some(side)
     }
 
     /// What a press at `at`, a point on the display, is on — or [`None`] off

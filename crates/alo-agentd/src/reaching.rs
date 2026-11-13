@@ -88,6 +88,7 @@ pub fn answered_to(
         | FromAPerson::TheirOwnQuestion { .. }
         | FromAPerson::APlaceToReturnTo
         | FromAPerson::PutBack { .. }
+        | FromAPerson::GitHubSignIn(_)
         | FromAPerson::WatchWhatLeaves => ToAPerson::refused(&rereading::what_to_say(strings)),
         FromAPerson::Approve { number } => match under(arriving, number, now) {
             Some(waiting) => {

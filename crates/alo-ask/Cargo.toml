@@ -61,6 +61,9 @@ rustix = { workspace = true, features = ["termios", "event"] }
 # marker an empty earlier conversation is written with is `alo-instructing`'s.
 alo-changing = { path = "../alo-changing" }
 alo-instructing = { path = "../alo-instructing" }
+# The one line the terminal prints after a folder was published to the
+# person's GitHub Pages site: on the internet, and Put back can't recall it.
+alo-publishing = { path = "../alo-publishing" }
 # Where this person's standard folders are, read back from the record the
 # account was made with, so the agent is told the folders really there.
 alo-their-folders = { path = "../alo-their-folders" }
