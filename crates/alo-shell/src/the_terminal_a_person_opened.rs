@@ -127,16 +127,27 @@ impl TheTerminal {
     /// a silent fallback*: a person whose terminal opens somewhere unexpected
     /// is owed a line somebody mending the machine can find.
     ///
+    /// `session` is the person's session environment
+    /// (`crate::the_persons_session`), which the shell starts with in place of
+    /// this process's: this process is the desktop, and its environment is not
+    /// the person's. Where the desktop's own names could not be kept out the
+    /// shell still starts, and the reason goes to the error stream for the same
+    /// reason as the home's.
+    ///
     /// # Errors
     /// Whatever stopped the pseudoterminal from opening or the shell from
     /// running.
     pub(crate) fn opened(
         size: HowBig,
         home: Option<&std::ffi::OsStr>,
+        session: &alo_terminal::TheSession,
     ) -> Result<Self, alo_terminal::NoShell> {
-        let shell = AShellOnAPseudoterminal::the_persons_own(size, home)?;
+        let shell = AShellOnAPseudoterminal::the_persons_own(size, home, session)?;
         if let alo_terminal::WhereItStarts::NotTheirHome(why) = shell.where_it_started() {
             eprintln!("alo-shell: alo's own terminal did not open at home: {why}");
+        }
+        if let Some(why) = shell.why_its_own_names_were_not_kept_out() {
+            eprintln!("alo-shell: alo's own terminal: {why}");
         }
         let mut terminal = Self {
             shell,
@@ -446,7 +457,16 @@ impl crate::Server {
         // **The session's own `$HOME`**, which is the person's: the compositor
         // runs in their session, and `crate::settings_places` reads the same
         // variable for the same person.
-        match TheTerminal::opened(size, std::env::var_os("HOME").as_deref()) {
+        // **The person's session, asked for now**: once, as the terminal opens,
+        // because a shell's environment is fixed when it starts.
+        let (session, said) = crate::the_persons_session::the_session_for_a_terminal(
+            crate::the_persons_session::what_their_manager_holds(),
+            self.socket_path(),
+        );
+        for line in said {
+            eprintln!("alo-shell: {line}");
+        }
+        match TheTerminal::opened(size, std::env::var_os("HOME").as_deref(), &session) {
             Ok(terminal) => {
                 self.alos_own_terminal = Some(terminal);
                 true

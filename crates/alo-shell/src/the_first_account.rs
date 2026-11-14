@@ -181,7 +181,7 @@ impl TheFirstAccount {
                 self.on = OnTheSheet::Field(0);
                 Went::Stayed
             }
-            SignInKey::Nothing => Went::Stayed,
+            SignInKey::Nothing | SignInKey::TheScreenReader => Went::Stayed,
         }
     }
 

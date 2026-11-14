@@ -304,7 +304,8 @@ WORKDIR /alo-os
 # whole point of building here.
 RUN cargo build --release --package alo-shell --package alo-desktop --package alo-cursors \
  && test -x target/release/alo-compositor \
- && test -x target/release/alo-desktop
+ && test -x target/release/alo-desktop \
+ && test -x target/release/alo-reading-the-sign-in-screen
 
 # **alo's cursor theme, drawn here from the vector source the compositor draws
 # from** (`crates/alo-cursors`), for applications that draw their own pointer
@@ -559,6 +560,9 @@ COPY --from=built /alo-os/target/${THE_TARGET}/release/alo-sessiond /usr/libexec
 # appeared — which its own source says is what its log is for.
 COPY --from=shell /alo-os/target/release/alo-compositor /usr/bin/alo-compositor
 COPY --from=shell /alo-os/target/release/alo-desktop /usr/bin/alo-desktop
+# The screens before sign-in, read aloud (ADR 0155): run as the sign-in login by
+# its own manager, never by a person, so it is in libexec rather than on the PATH.
+COPY --from=shell /alo-os/target/release/alo-reading-the-sign-in-screen /usr/libexec/alo-reading-the-sign-in-screen
 # The pointer for applications that bring their own cursor images: alo's theme,
 # written by `alo-cursor-theme` above, and named as the default below
 # (`image/usr/lib/environment.d/60-alo-cursor.conf`).
@@ -1551,6 +1555,7 @@ RUN chmod 0755 /usr/libexec/alo-boundaryd /usr/libexec/alo-sessiond \
                /usr/lib/systemd/user/alo-keyring.service \
                /usr/lib/systemd/user/alo-their-folders.service \
                /usr/lib/systemd/user/alo-screen-reader.service \
+               /usr/lib/systemd/user/alo-reading-the-sign-in-screen.service \
                /usr/lib/systemd/user/speech-dispatcher.service.d/50-alo-speech-stays-on-this-computer.conf \
                /usr/lib/systemd/system/alo-shipping.service \
                /usr/lib/pam.d/alo-compositor \
@@ -1604,12 +1609,23 @@ RUN chmod 0755 /usr/libexec/alo-boundaryd /usr/libexec/alo-sessiond \
  # person's home at all. Their own manager may, and does, at every sign-in.
  && systemctl --global enable alo-their-folders.service \
  \
+ # **The sign-in screen's reader, enabled in every manager and run in one**
+ # (ADR 0155): its unit says `ConditionUser=alo-greeter`, so only the sign-in
+ # login's manager — started at boot because that login lingers — runs it.
+ && systemctl --global enable alo-reading-the-sign-in-screen.service \
+ \
  # **The link is checked, not assumed.** `systemctl --global enable` on a unit
  # it cannot find exits 0 and writes nothing, so the proof that the enable did
  # something is the symlink it should have made — the same reason `--version`
  # is run beside it rather than `test -x`.
  && test -L /etc/systemd/user/default.target.wants/alo-keyring.service \
  && test -L /etc/systemd/user/default.target.wants/alo-their-folders.service \
+ && test -L /etc/systemd/user/default.target.wants/alo-reading-the-sign-in-screen.service \
+ # **Started, not stat-ed**: with no sign-in screen to reach in the build it
+ # says it is waiting for one and keeps knocking, so two seconds of it proves it
+ # links and runs, and `timeout` ends it.
+ && (timeout 2 /usr/libexec/alo-reading-the-sign-in-screen 2>&1 || true) \
+      | grep -q 'waiting for the sign-in screen' \
  \
  # **And the program is run, not stat-ed.** `test -x` on a binary stood in for
  # one *starting* three times in this repository and shipped a converter that
@@ -1666,4 +1682,7 @@ RUN systemd-sysusers \
  && test "$(id -u alo-convert)" = 60992 \
  && test "$(getent group alo-convert | cut -d: -f3)" = 60992 \
  && id -nG alo | tr ' ' '\n' | grep -qx alo-agent \
- && id -nG alo | tr ' ' '\n' | grep -qx wheel
+ && id -nG alo | tr ' ' '\n' | grep -qx wheel \
+ # **And the sign-in login can play sound**: in `audio`, which udev gives the
+ # sound devices, because it has no seat to lend it them (ADR 0155 §1).
+ && id -nG alo-greeter | tr ' ' '\n' | grep -qx audio

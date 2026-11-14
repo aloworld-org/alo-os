@@ -98,7 +98,7 @@ impl SignInEntry {
             // compiler tells whoever adds the next key that there is a second
             // screen to think about.
             crate::SignInKey::Earlier | crate::SignInKey::Later => {}
-            crate::SignInKey::Nothing => {}
+            crate::SignInKey::Nothing | crate::SignInKey::TheScreenReader => {}
         }
         false
     }

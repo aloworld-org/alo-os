@@ -324,6 +324,7 @@ mod the_screen_reader_switch;
 mod the_screens_before_sign_in_as_read;
 /// alo putting words of its own on the clipboard.
 mod the_shell_copies;
+mod the_spoken_hint;
 pub mod what_is_on_the_clipboard;
 mod where_a_travelling_window_lands;
 mod where_the_docks_surface_is;
@@ -341,6 +342,8 @@ mod a_window_the_person_opened;
 mod an_application_is_started;
 mod an_edge_in_its_displays_units;
 mod an_icon_is_drawn_on_its_badge;
+/// The applications alo is told about with a request, by name.
+mod the_applications_alo_is_told;
 /// The room a window alo places lands in: the view above the Dock.
 mod the_room_alo_places_a_window_in;
 mod what_each_application_draws;
@@ -709,9 +712,13 @@ pub mod the_markets_words;
 mod the_panel_reveals;
 /// The person pressed Stop in a task (ADR 0139).
 pub mod the_person_stops_a_task;
+/// The person's session environment, read from their systemd manager when
+/// alo's own terminal opens, so its shell starts with what their apps start with.
+mod the_persons_session;
 pub mod the_pickers_words;
 mod the_pointer_in_pixels;
 pub mod the_providers_words;
+mod the_reader_at_the_sign_in_screen_kept;
 /// The record window's ten icons, read from the design file's SVG and drawn
 /// at the display's scale.
 mod the_records_icons;
@@ -725,6 +732,8 @@ pub mod the_reply_boxs_words;
 mod the_session_holds_its_screens;
 mod the_settings_icons;
 pub mod the_settings_words;
+mod the_sign_in_screen_on_the_wire;
+mod the_sign_in_screens_reader;
 mod the_sign_in_screens_scale;
 /// The task windows a person opened by asking alo for something.
 pub mod the_tasks_a_person_opened;
@@ -1074,6 +1083,11 @@ pub use screens::{ScreenPlace, Screens, TheRoom};
 pub use the_markets_words::TheMarketsWords;
 pub use the_pointers_look::ThePointersLook;
 pub use the_screen_reader_switch::TheScreenReaderAnswered;
+pub use the_sign_in_screen_on_the_wire::{
+    FromTheReader, NotUnderstood, THE_LONGEST_LINE as THE_LONGEST_LINE_A_READER_IS_SENT,
+    ToTheReader,
+};
+pub use the_sign_in_screens_reader::{THE_READING_DOOR, THE_SIGN_IN_LOGIN};
 pub use their_formats::{TheDay, TheirFormats, WhereTheRegionCameFrom};
 
 // **The types a desktop needs to answer `their_displays`, re-exported so that

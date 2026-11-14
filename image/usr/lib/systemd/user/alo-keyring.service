@@ -62,6 +62,11 @@ After=dbus.socket
 # answer for the session — a change in `alo-portals`, named here so the next
 # reader finds the argument rather than the gap.
 
+# **A person's, never the sign-in login's** (ADR 0155): alo-greeter has a
+# manager of its own from boot, for the screen reader before sign-in, and it
+# keeps no keys.
+ConditionUser=!alo-greeter
+
 [Service]
 # **Not `--daemonize`.** The daemon's own default is to fork and print an
 # address for a shell to export, which under systemd is a service that exits

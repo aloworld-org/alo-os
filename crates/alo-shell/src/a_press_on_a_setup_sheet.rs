@@ -24,10 +24,11 @@
 //!
 //! # A press anywhere else is nothing
 //!
-//! The stage line, the heading, the footer and the ground answer [`None`], and
-//! [`SheetControl::Accessibility`] is recognised and does nothing, as it does
-//! on the sign-in screen (`crate::a_press_on_the_sign_in_screen`): the surface
-//! it opens does not exist yet.
+//! The stage line, the heading, the footer and the ground answer [`None`].
+//! [`OnASheet::Accessibility`] is recognised here and acted on by the sign-in
+//! screen's driver before any sheet sees it: it turns the screen reader over,
+//! as `Ctrl`+`Alt`+`S` does (ADR 0155 §3, `crate::direct_sign_in`). The sheet
+//! the design draws behind it (`375:30435`) is not built yet.
 
 use smithay::utils::{Physical, Rectangle};
 
