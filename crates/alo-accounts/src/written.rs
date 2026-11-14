@@ -13,17 +13,26 @@
 //! name = "alo"
 //! uid = 1000
 //! password = "$argon2id$v=19$m=19456,t=2,p=1$…"
+//! secret_kind = "pin"
 //! ```
 //!
 //! The `password` key holds a **hash** and refuses anything else — a
 //! password typed in raw is the likeliest hand-edit, and it is refused
 //! loudly rather than kept as an account nothing could ever sign in to.
+//!
+//! `secret_kind` says whether that hash is of a PIN or a password, and so
+//! which of the two the sign-in screen asks for (`crate::secret_kind`). It is
+//! written for every account and **may be absent**, since a store written
+//! before 2026-11-14 has none; absent reads as `"password"`. The format number
+//! stays 1, because a key that may be absent changes nothing an older store
+//! holds.
 
 use serde::{Deserialize, Serialize};
 
 use crate::account::Account;
 use crate::hashing::Hashed;
 use crate::refusing::NotKept;
+use crate::secret_kind::SecretKind;
 use crate::store::Accounts;
 
 /// Which shape of store this alo OS writes and reads.
@@ -50,6 +59,9 @@ struct KeptAccount {
     uid: u32,
     /// The argon2id hash of its password — never the password.
     password: String,
+    /// Whether that is a PIN or a password; a password where it is not said.
+    #[serde(default)]
+    secret_kind: SecretKind,
 }
 
 impl Accounts {
@@ -77,7 +89,10 @@ impl Accounts {
             let secret = Hashed::read(&one.password).ok_or(NotKept::NotAHash {
                 name: one.name.clone(),
             })?;
-            accounts.push(Account::read(&one.name, one.uid, secret).map_err(NotKept::from)?);
+            accounts.push(
+                Account::read(&one.name, one.uid, secret, one.secret_kind)
+                    .map_err(NotKept::from)?,
+            );
         }
         Self::holding(accounts)
     }
@@ -98,6 +113,7 @@ impl Accounts {
                     name: account.name().to_owned(),
                     uid: account.uid(),
                     password: account.secret().as_written().to_owned(),
+                    secret_kind: account.kind(),
                 })
                 .collect(),
         };
@@ -144,6 +160,56 @@ mod tests {
             Err(NotSignedIn::Refused),
             "a round trip loosened the password"
         );
+    }
+
+    /// **Which kind of secret an account signs in with survives a reboot** —
+    /// the fact the walks of 2026-11-12 to -14 found lost: a person who chose
+    /// *Use password only* was asked for a PIN on every later boot.
+    #[test]
+    fn the_kind_of_secret_is_written_down_and_read_back() {
+        for kind in [SecretKind::Pin, SecretKind::Password] {
+            let mut store = Accounts::none().unwrap();
+            store.created_with("ada", 1000, "4821", kind).unwrap();
+            let text = store.written().unwrap();
+            let read = Accounts::read(&text).unwrap();
+            assert_eq!(read.kind_of(1000), Some(kind), "{text}");
+            assert!(read.signs_in("ada", "4821").is_ok());
+        }
+    }
+
+    /// **A store written before the kind was kept still reads**, and its
+    /// account signs in with a password — never a PIN nobody said it had.
+    #[test]
+    fn a_store_that_does_not_say_reads_as_a_password() {
+        let mut store = Accounts::none().unwrap();
+        store
+            .created_with("ada", 1000, "correct horse battery staple", SecretKind::Pin)
+            .unwrap();
+        let without: String = store
+            .written()
+            .unwrap()
+            .lines()
+            .filter(|line| !line.starts_with("secret_kind"))
+            .map(|line| format!("{line}\n"))
+            .collect();
+        assert!(!without.contains("secret_kind"), "{without}");
+        let read = Accounts::read(&without).unwrap();
+        assert_eq!(read.kind_of(1000), Some(SecretKind::Password));
+        assert!(read.signs_in("ada", "correct horse battery staple").is_ok());
+    }
+
+    /// **A kind nobody declared is refused**, not read as either.
+    #[test]
+    fn a_kind_of_secret_nobody_declared_is_refused() {
+        let fingerprint = adas_machine_written_down().replace(
+            "secret_kind = \"password\"",
+            "secret_kind = \"fingerprint\"",
+        );
+        assert!(fingerprint.contains("fingerprint"), "{fingerprint}");
+        assert!(matches!(
+            Accounts::read(&fingerprint),
+            Err(NotKept::NotTheShape { .. })
+        ));
     }
 
     /// **An empty store round-trips too**, because first boot writes one

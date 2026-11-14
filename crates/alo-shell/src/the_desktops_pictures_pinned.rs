@@ -129,16 +129,26 @@ fn held(surface: &str, now: &[Drawn], before: &[Drawn]) {
             )
         })
         .collect();
+    // **The same table on one line, first.** The gate's summary keeps about
+    // three lines of a failure, so a six-row table arrived on 2026-11-14 as
+    // its first two rows and could not be re-taken from CI at all. One line
+    // survives the cut; the table under it stays ready to paste.
+    let one_line: Vec<String> = now
+        .iter()
+        .map(|it| format!("{}/{}=0x{:016x}", it.scale, it.text, it.hash))
+        .collect();
+    let one_line = one_line.join(" ");
     let mut different: Vec<u64> = now.iter().map(|it| it.hash).collect();
     different.sort_unstable();
     different.dedup();
     assert_eq!(
         different.len(),
         now.len(),
-        "two of {surface}'s pictures are the same, so a setting did not reach it:\n{table}"
+        "two of {surface}'s pictures are the same, so a setting did not reach it: \
+         {one_line}\n{table}"
     );
     assert_eq!(
         now, before,
-        "{surface} no longer draws the pixels it drew before; as drawn now:\n{table}"
+        "{surface} no longer draws the pixels it drew before; as drawn now: {one_line}\n{table}"
     );
 }

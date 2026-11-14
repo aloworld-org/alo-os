@@ -81,31 +81,31 @@ const BEFORE: [Drawn; 6] = [
     Drawn {
         scale: 100,
         text: 100,
-        hash: 0xdaf1_5848_5596_6952,
+        hash: 0xdaaf_c237_3d90_0b96,
     },
     Drawn {
         scale: 100,
         text: 125,
-        hash: 0xe681_1e43_cf5e_403b,
+        hash: 0xf63f_74ea_fd68_9c0a,
     },
     Drawn {
         scale: 150,
         text: 100,
-        hash: 0xaba6_3cbd_b911_8b67,
+        hash: 0x10f2_1a41_f9f7_4bdd,
     },
     Drawn {
         scale: 150,
         text: 125,
-        hash: 0x3c79_5e07_31ac_54f3,
+        hash: 0xf7e0_1ff3_0dcd_da01,
     },
     Drawn {
         scale: 200,
         text: 100,
-        hash: 0x8c40_ce3c_aef8_2028,
+        hash: 0x2b3d_ac1b_d81b_4783,
     },
     Drawn {
         scale: 200,
         text: 125,
-        hash: 0x0675_fbdd_813d_0854,
+        hash: 0x0464_4973_3157_9b65,
     },
 ];
