@@ -67,7 +67,9 @@ pub use how_it_starts::{
 pub use how_it_starts_with_a_file::{WhyNotWithAFile, how_it_starts_with_a_file};
 pub use the_command::{Filling, WhyNotACommand, the_command_in};
 pub use the_entry::TheEntry;
-pub use the_environment::{what_an_application_is_handed, what_the_session_is_told};
+pub use the_environment::{
+    alos_copy_starts_with, what_an_application_is_handed, what_the_session_is_told,
+};
 pub use the_unit::{is_a_unit_of, the_unit_for};
 pub use typed_as_it_is::{TYPED_AS_IT_IS, WITH_AN_EDITOR_THAT_REWRITES, its_settings_file};
 pub use where_it_is::{the_program, where_the_entry_is};
