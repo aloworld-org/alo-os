@@ -218,8 +218,8 @@ mod tests {
     fn another_base_is_caught() {
         let (environment, image) = the_recipes();
         let moved = environment.replace(
-            "fedora-bootc:44@sha256:ea70c1",
-            "fedora-bootc:43@sha256:ea70c1",
+            "fedora-bootc:44@sha256:5a3472",
+            "fedora-bootc:43@sha256:5a3472",
         );
         let read = TheEnvironment::read(&moved, &image);
         let differs = read.differs_from_the_image();
