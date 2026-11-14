@@ -76,7 +76,7 @@ fn the_recipe_installs_gh_from_the_pinned_base() {
     );
     assert!(
         the_recipe().lines().any(|line| line
-            .strip_prefix("ARG THE_BASE=quay.io/fedora/fedora-bootc:")
+            .strip_prefix("ARG THE_BASE=ghcr.io/aloworld-org/fedora-bootc")
             .is_some_and(|pinned| pinned.contains("@sha256:"))),
         "the base is no longer pinned by digest, so the `gh` it resolves is not pinned either"
     );

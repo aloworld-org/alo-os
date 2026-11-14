@@ -74,13 +74,34 @@ recipe naming a copy that does not exist is a recipe nobody can build. So:
 - **First**, the record, the workflow, the build workflows' step and the check.
   The check accepts a recipe naming **either** the recorded copy **or** the
   recorded original (`TheBases::original_of`), and says so where it does.
-- **Then a person runs the workflow** with the digest, and makes the new package
-  public once on its settings page — GitHub offers no way to do that from a
-  workflow.
+- **Then a person runs the workflow** with the digest. Where the new package is
+  not public, they make it public once on its settings page, which GitHub
+  offers no way to do from a workflow.
 - **Second**, the recipes and every test that holds their base move to the
   copy, and the allowance for the original is removed. Its pull-request check
   stays red until the copy exists, which is the point; the gate's own tests
   would pass either way, because they do not reach the network.
+
+### The first copy, 2026-11-13
+
+The coordinator ran *Copying a base* on `main` with
+`sha256:5a3472162ba7781a01d249b9a56bc5a9b9fa01c08edae1f73c77dfa1e504e868`
+(run 43566119644). It succeeded on its first run. **Every one of its own checks
+passed**: it read Fedora's original by that digest and hashed it, copied every
+platform, read the copy back and hashed it, and read it again without signing
+in. **The package was already public**, so nobody had to change its visibility.
+What the workflow's comment and this decision expected was a private package; on
+this organisation a new one came out public, and whether that holds for the next
+package was not measured.
+
+Then, once and by hand, the coordinator ran an anonymous
+`skopeo inspect --no-creds --raw` of
+`ghcr.io/aloworld-org/fedora-bootc@sha256:5a3472…`, and its bytes hash to exactly
+that digest. So alo's copy is Fedora's manifest list byte for byte, and anybody
+can pull it. That hand check is not repeated anywhere. What is repeated is the
+build workflows' first step and *The base can be pulled* on a pull request,
+which ask whether the base can be pulled (not whether it hashes right); the
+hash is checked again only when *Copying a base* runs again.
 
 ## What it does not do
 
