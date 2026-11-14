@@ -191,11 +191,11 @@ mod reading_and_pressing_tests;
 pub mod refusing;
 pub mod shortening;
 pub mod the_bracket_a_turn_takes;
+mod the_door_the_compositor_serves;
+mod the_sentence_is_about_something;
 pub mod the_shape_a_provider_is_held_to;
 #[cfg(test)]
 mod the_shape_a_provider_is_held_to_tests;
-mod the_door_the_compositor_serves;
-mod the_sentence_is_about_something;
 pub mod the_verbs_would_not_declare;
 mod the_windows_on_the_screen;
 pub mod turning;
