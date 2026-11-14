@@ -3,10 +3,12 @@
 //!
 //! The owner's decision of 2026-11-13: *a typed action "publish a folder to
 //! GitHub Pages" whose sentence the machine writes (destination +
-//! cannot-be-undone), running git/gh underneath.* So a model names two things —
-//! the folder and the GitHub account — and everything else is this crate's:
-//! the sentence the person approves, the command that runs, and what they are
-//! told afterwards.
+//! cannot-be-undone), running git/gh underneath.* So a model names one thing —
+//! the folder — and everything else is this crate's: the GitHub account, which
+//! `gh` says (`crate::whose_site`), the sentence the person approves, the
+//! command that runs, and what they are told afterwards. **Until 2026-11-13 a
+//! model named the account as well**, and on that day's walk it guessed one;
+//! a model that still sends it is answered as before, compared with `gh`'s.
 //!
 //! # What it reaches
 //!
@@ -69,8 +71,39 @@ pub fn declare_into(verbs: &mut Verbs) -> Result<(), Declaring> {
     Ok(())
 }
 
-/// The declaration.
+/// Why the verb needs no grant, said once for both its declarations.
+const NEEDS_NO_GRANT: &str = "the person approves this one publication by the sentence naming the \
+                              folder and the address, as they approve any command at that level, \
+                              and at full access their own account's permissions are the boundary \
+                              (the owner, 2026-11-13: approval alone is enough)";
+
+/// **The declaration a model is offered: the folder alone.**
+///
+/// The account is not the model's to give (`crate::whose_site`): on the walk
+/// of 2026-11-13 a model invented one and the publication was refused as
+/// somebody else's site. Its sentence is said only where a call is written
+/// down before anybody asked `gh` who is signed in — a level that refuses it
+/// — and is true there: it names no account because none was looked up.
 fn publish_to_github_pages() -> Result<Verb, VerbError> {
+    Verb::checked(
+        PUBLISH_TO_GITHUB_PAGES,
+        words::PURPOSE,
+        Effect::Change,
+        vec![Arg::taking(words::FOLDER, words::THE_FOLDER, Takes::Path)],
+        Requires::nothing_because(NEEDS_NO_GRANT),
+        words::OFFERED_SENTENCE,
+    )?
+    .changing(words::CHANGES, Some(words::LEAVES))
+}
+
+/// **The declaration the person is asked about: the folder, and the account
+/// `gh` is signed in as** — filled by the machine
+/// (`crate::whose_site::the_call_naming`), never offered to a model, so the
+/// sentence they approve names the address it goes to.
+///
+/// # Errors
+/// [`VerbError`], which the declaration as written cannot cause.
+pub fn the_question() -> Result<Verb, VerbError> {
     Verb::checked(
         PUBLISH_TO_GITHUB_PAGES,
         words::PURPOSE,
@@ -79,12 +112,7 @@ fn publish_to_github_pages() -> Result<Verb, VerbError> {
             Arg::taking(words::FOLDER, words::THE_FOLDER, Takes::Path),
             Arg::taking(words::ACCOUNT, words::THE_ACCOUNT, Takes::name(THE_LONGEST)),
         ],
-        Requires::nothing_because(
-            "the person approves this one publication by the sentence naming the folder and the \
-             address, as they approve any command at that level, and at full access their own \
-             account's permissions are the boundary (the owner, 2026-11-13: approval alone is \
-             enough)",
-        ),
+        Requires::nothing_because(NEEDS_NO_GRANT),
         words::SENTENCE,
     )?
     .changing(words::CHANGES, Some(words::LEAVES))
@@ -189,17 +217,38 @@ mod tests {
         Strings::of(crate::words::publishing_words().unwrap())
     }
 
+    /// The call a person is asked about, as `crate::whose_site` makes it.
     fn a_call(folder: &str, account: &str) -> Call {
-        publishing_verbs()
-            .unwrap()
-            .call(
-                PUBLISH_TO_GITHUB_PAGES,
-                &[
-                    (words::FOLDER, Given::text(folder)),
-                    (words::ACCOUNT, Given::text(account)),
-                ],
-            )
-            .unwrap()
+        Call::of(
+            &the_question().unwrap(),
+            &[
+                (words::FOLDER, Given::text(folder)),
+                (words::ACCOUNT, Given::text(account)),
+            ],
+        )
+        .unwrap()
+    }
+
+    /// **A model is offered the folder alone**, and an account it sends to
+    /// the offered declaration is not one of its arguments — the machine sets
+    /// it aside first (`crate::whose_site::what_the_model_must_give`).
+    #[test]
+    fn a_model_is_offered_the_folder_alone() {
+        let verbs = publishing_verbs().unwrap();
+        let offered = verbs.of(PUBLISH_TO_GITHUB_PAGES).unwrap();
+        let names: Vec<&str> = offered.args().iter().map(Arg::name).collect();
+        assert_eq!(names, [words::FOLDER]);
+        assert!(
+            verbs
+                .call(
+                    PUBLISH_TO_GITHUB_PAGES,
+                    &[(words::FOLDER, Given::text("/home/anna/site"))]
+                )
+                .is_ok()
+        );
+        let question = the_question().unwrap();
+        let names: Vec<&str> = question.args().iter().map(Arg::name).collect();
+        assert_eq!(names, [words::FOLDER, words::ACCOUNT]);
     }
 
     /// **One change, needing no folder grant — one approval of the sentence

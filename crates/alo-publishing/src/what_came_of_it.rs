@@ -96,7 +96,7 @@ fn failed_at(status: i32, publication: &Publication, said: &str) -> NotPublished
 
 /// The last few lines a tool printed, on one line and cut short — leaving out
 /// the run's own markers, which are not the tool's words.
-fn its_last_lines(said: &str) -> String {
+pub(crate) fn its_last_lines(said: &str) -> String {
     let lines: Vec<&str> = said
         .lines()
         .map(str::trim)

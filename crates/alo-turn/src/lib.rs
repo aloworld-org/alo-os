@@ -206,6 +206,7 @@ pub mod went_wrong_installing;
 pub mod went_wrong_looking;
 pub mod what_a_verb_did;
 mod while_alos_command_runs;
+mod whose_site_it_is;
 pub mod words;
 
 #[cfg(test)]

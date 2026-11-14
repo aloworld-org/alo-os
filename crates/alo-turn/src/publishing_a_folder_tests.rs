@@ -410,3 +410,175 @@ fn a_level_that_cannot_publish_runs_nothing_now_or_at_the_ok() {
     assert_eq!(publisher.runs(), 0, "a level that cannot publish published");
     assert_eq!(record.len(), 2, "both refusals were not written down");
 }
+
+/// What a model sends when it names the folder alone, as the verb now asks.
+fn the_folder_alone(folder: &Path) -> Vec<(&'static str, Given)> {
+    vec![("folder", as_given(folder))]
+}
+
+/// **No account given: the one `gh` is signed in as.** Found on the walk of
+/// 2026-11-13, where a model invented an account and the publication was
+/// refused as somebody else's site. Asked each time, the sentence names the
+/// signed-in account's address; at full access it is published there.
+#[test]
+fn with_no_account_given_it_goes_to_the_account_gh_is_signed_in_as() {
+    let folder = a_site("no-account-given");
+    let publisher = APublisher::that_publishes();
+    let mut record = Record::default();
+    on_a_machine(
+        &folder,
+        &publisher,
+        EgressPolicy::Anywhere,
+        &mut record,
+        |turning| {
+            let changed = turning.changing(
+                alo_publishing::PUBLISH_TO_GITHUB_PAGES,
+                &the_folder_alone(&folder),
+                &Grants::default(),
+                hour(),
+                &mut |_| None,
+                noon(),
+            );
+            let Ok(Changed::Waiting(number)) = &changed else {
+                panic!("it did not wait for the person: {changed:?}");
+            };
+            let sentence = turning
+                .proposed(*number)
+                .unwrap()
+                .proposal
+                .sentence(&in_english());
+            assert!(
+                sentence.text().contains("anna.github.io"),
+                "the sentence does not name the signed-in account's site: {sentence:?}"
+            );
+        },
+    );
+    let mut record = Record::default();
+    let changed = on_a_machine(
+        &folder,
+        &publisher,
+        EgressPolicy::Anywhere,
+        &mut record,
+        |turning| {
+            turning.changing(
+                alo_publishing::PUBLISH_TO_GITHUB_PAGES,
+                &the_folder_alone(&folder),
+                &Grants::default().at_full_access_for(&files()),
+                hour(),
+                &mut |_| None,
+                noon(),
+            )
+        },
+    );
+    let Ok(Changed::Done { did, .. }) = &changed else {
+        panic!("it was not published at full access: {changed:?}");
+    };
+    assert_eq!(
+        did.published().map(alo_publishing::Published::address),
+        Some("https://anna.github.io/")
+    );
+    assert_eq!(
+        publisher.asked_who(),
+        2,
+        "gh was not asked who is signed in"
+    );
+    assert_eq!(publisher.runs(), 1, "one publication was not one run");
+}
+
+/// **An account given that is the signed-in one, in any case, is published
+/// to** — a model that still sends it, as the verb asked until 2026-11-13, is
+/// answered as before.
+#[test]
+fn an_account_given_that_is_the_signed_in_one_is_published_to() {
+    let folder = a_site("same-account-given");
+    let publisher = APublisher::that_publishes();
+    let mut record = Record::default();
+    let changed = on_a_machine(
+        &folder,
+        &publisher,
+        EgressPolicy::Anywhere,
+        &mut record,
+        |turning| {
+            turning.changing(
+                alo_publishing::PUBLISH_TO_GITHUB_PAGES,
+                &publishing(&folder, "Anna"),
+                &Grants::default().at_full_access_for(&files()),
+                hour(),
+                &mut |_| None,
+                noon(),
+            )
+        },
+    );
+    assert!(matches!(changed, Ok(Changed::Done { .. })), "{changed:?}");
+    assert_eq!(publisher.runs(), 1);
+}
+
+/// **The refusal path: an account given that is somebody else is refused
+/// before anybody is asked**, naming both, written down — and nothing runs.
+#[test]
+fn an_account_given_that_is_somebody_else_is_refused_before_anybody_is_asked() {
+    let folder = a_site("another-account-given");
+    let publisher = APublisher::that_publishes();
+    let mut record = Record::default();
+    let changed = on_a_machine(
+        &folder,
+        &publisher,
+        EgressPolicy::Anywhere,
+        &mut record,
+        |turning| {
+            turning.changing(
+                alo_publishing::PUBLISH_TO_GITHUB_PAGES,
+                &publishing(&folder, "bob"),
+                &Grants::default(),
+                hour(),
+                &mut |_| None,
+                noon(),
+            )
+        },
+    );
+    assert!(
+        matches!(
+            &changed,
+            Err(NotDone::CouldNotPublish(NotPublished::SignedInAsAnother { signed_in, account }))
+                if signed_in == "anna" && account == "bob"
+        ),
+        "{changed:?}"
+    );
+    assert_eq!(publisher.runs(), 0, "somebody else's site was published to");
+    assert_eq!(record.len(), 1, "the refusal was not written down");
+}
+
+/// **The refusal path: nobody signed in is refused before anybody is asked,
+/// as nobody signed in** — the refusal that raises the sign-in sheet — and
+/// written down, with nothing run.
+#[test]
+fn nobody_signed_in_is_refused_before_anybody_is_asked() {
+    let folder = a_site("nobody-signed-in");
+    let publisher = APublisher::that_publishes().signed_in_as(None);
+    let mut record = Record::default();
+    let changed = on_a_machine(
+        &folder,
+        &publisher,
+        EgressPolicy::Anywhere,
+        &mut record,
+        |turning| {
+            turning.changing(
+                alo_publishing::PUBLISH_TO_GITHUB_PAGES,
+                &the_folder_alone(&folder),
+                &Grants::default(),
+                hour(),
+                &mut |_| None,
+                noon(),
+            )
+        },
+    );
+    assert!(
+        matches!(
+            changed,
+            Err(NotDone::CouldNotPublish(NotPublished::NotSignedIn))
+        ),
+        "{changed:?}"
+    );
+    assert_eq!(publisher.runs(), 0);
+    assert_eq!(record.len(), 1, "the refusal was not written down");
+}

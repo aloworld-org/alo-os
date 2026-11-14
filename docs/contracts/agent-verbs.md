@@ -1044,7 +1044,7 @@ the owner: *"We can add it but we need no shortcuts."*). Declared in
 
 | Verb | Effect | Arguments | Sentence |
 |---|---|---|---|
-| `publish_to_github_pages` | change | `folder` (path), `account` (name, at most 39) | publish the folder {folder} to the internet as your GitHub Pages site {account}.github.io, in place of what is there — anybody can read it, and Put back can't recall it |
+| `publish_to_github_pages` | change | `folder` (path); `account` (name, at most 39) is **no longer asked of a model** — see below | publish the folder {folder} to the internet as your GitHub Pages site {account}.github.io, in place of what is there — anybody can read it, and Put back can't recall it |
 
 **It requires no grant: one approval of its sentence is the whole
 permission**, as for any command at *ask me each time* — the owner, 2026-11-13,
@@ -1052,7 +1052,25 @@ asked whether a folder grant should be needed as well: *"Approval alone is
 enough."* The command runs as the person, so the account's own permissions are
 what bounds it; at full access it needs no approval either (ADR 0149).
 
-**What the model names is two things; everything else is the machine's.** The
+**Whose site it goes to is the machine's to say, not the model's** *(changed
+2026-11-13, additively).* A model is offered `folder` alone. Before the person
+is asked, the daemon asks `gh` who is signed in to github.com — `gh config get
+-h github.com user`, which sends nothing, and `gh api user --jq .login` only
+where that is empty, counted on the indicator as every command alo runs is —
+and the sentence above names that account. A model that still sends `account`,
+as this contract asked until that day, is answered as before: the same account
+(GitHub reads names without regard to case) is published to, and a different
+one is refused before anybody is asked, as *signed in to GitHub as …, not …*.
+Nobody signed in is refused as *not signed in*, which raises the sign-in sheet.
+The line still asks GitHub again at the moment it acts, so an account GitHub no
+longer agrees with publishes nothing. *Found on a booted machine on 2026-11-13:
+a model asked to publish to "my github pages" invented an account and was
+refused; it published only once the person typed their account's name.* A call
+written down before `gh` was asked — the sealed box refuses it that way — reads
+*publish the folder {folder} to the internet as the GitHub Pages site of the
+account you are signed in to GitHub with, …*.
+
+**What the model names is the folder; everything else is the machine's.** The
 sentence above, the command that runs and the line afterwards are written by
 `alo-publishing`, never by a model. `account` is checked by GitHub's own rule —
 letters, numbers and single hyphens, at most 39 — and `folder` must be a folder

@@ -1862,6 +1862,7 @@ publishing.verb.account	the GitHub account whose site it goes to, by its name on
 publishing.verb.changes	Puts the files in the folder on the internet as your GitHub Pages site, in place of what was there, and makes the site's repository on GitHub first if you have none.
 publishing.verb.folder	the folder to publish, whole, by its full path
 publishing.verb.leaves	Nothing on this computer is changed, and the site's earlier versions stay in its history on GitHub.
+publishing.verb.offered-sentence	publish the folder {folder} to the internet as the GitHub Pages site of the account you are signed in to GitHub with, in place of what is there — anybody can read it, and Put back can't recall it
 publishing.verb.purpose	publish a folder to the person's own GitHub Pages site, where anybody on the internet can read it
 publishing.verb.sentence	publish the folder {folder} to the internet as your GitHub Pages site {account}.github.io, in place of what is there — anybody can read it, and Put back can't recall it
 record.nothing-touched-it	Nothing in the record names {file}.
