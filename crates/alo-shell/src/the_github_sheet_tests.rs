@@ -317,3 +317,71 @@ fn keys_are_read_as_settings_reads_them() {
         assert_eq!(GitHubSheetKey::of(key), means, "{key:?}");
     }
 }
+
+/// **Risen by itself, it asks first and starts nothing** (the owner,
+/// 2026-11-13: *"Wait for my press"*): *Cancel* and a navy *Sign in*, the
+/// keyboard on *Sign in*; *Sign in* asks gh to sign in and moves to waiting
+/// for the code; and it never rises over a sheet already up.
+#[test]
+fn risen_by_itself_it_asks_first_and_sign_in_begins() {
+    let mut sheet = TheGitHubSheet::default();
+    assert!(sheet.opened_for_a_command());
+    assert_eq!(
+        is(&sheet),
+        Some((TheSheetIs::ACommandNeededIt, OnTheGitHubSheet::SignIn))
+    );
+    assert_eq!(
+        sheet.shows().map(|shows| shows.is.buttons()),
+        Some(&[OnTheGitHubSheet::Cancel, OnTheGitHubSheet::SignIn][..])
+    );
+    assert!(!sheet.opened_for_a_command(), "one sheet at a time");
+    assert!(!sheet.opened(), "one sheet at a time");
+
+    // A code nobody asked for yet is not taken.
+    assert!(!sheet.answered(&GitHubAnswered::TheCodeIs {
+        code: CODE.to_owned(),
+        page: PAGE.to_owned(),
+    }));
+    assert_eq!(
+        sheet.pressed(GitHubSheetKey::Press),
+        Some(TheSheetAsks::SignIn)
+    );
+    assert_eq!(
+        is(&sheet),
+        Some((TheSheetIs::WaitingForTheCode, OnTheGitHubSheet::Cancel))
+    );
+    // And *Sign in* is not drawn now, so a press of it does nothing.
+    assert_eq!(sheet.press(OnTheGitHubSheet::SignIn), None);
+    assert!(sheet.is_up());
+}
+
+/// **Escape, Cancel, or a display that cannot hold it, at the first state, ask
+/// nothing** — nothing began, so there is nothing to stop and nothing to write
+/// down as cancelled.
+#[test]
+fn at_the_first_state_leaving_asks_nothing() {
+    let leaving: [fn(&mut TheGitHubSheet) -> Option<TheSheetAsks>; 3] = [
+        |sheet| sheet.pressed(GitHubSheetKey::Escape),
+        |sheet| sheet.press(OnTheGitHubSheet::Cancel),
+        TheGitHubSheet::could_not_be_drawn,
+    ];
+    for leave in leaving {
+        let mut sheet = TheGitHubSheet::default();
+        assert!(sheet.opened_for_a_command());
+        assert_eq!(leave(&mut sheet), None);
+        assert!(!sheet.is_up());
+    }
+}
+
+/// **A failure from an older sign-in does not take the first state down**:
+/// nothing of its own is running to have failed.
+#[test]
+fn an_older_failure_leaves_the_first_state_up() {
+    let mut sheet = TheGitHubSheet::default();
+    assert!(sheet.opened_for_a_command());
+    assert!(!sheet.answered(&GitHubAnswered::DidNotWork {
+        asked: AskingGitHub::SignIn,
+        why: WhyGitHubDidNotWork::NoCodeArrived,
+    }));
+    assert!(sheet.is_up());
+}

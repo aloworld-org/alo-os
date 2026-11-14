@@ -573,6 +573,18 @@ pub trait TheDesktop {
         None
     }
 
+    /// **Whether a command alo ran needed a GitHub sign-in since this was last
+    /// asked** — `alo-agentd` tells the desktop once per command that failed
+    /// because nobody is signed in, and the shell then puts the sign-in sheet
+    /// up when no sheet is in the way (`crate::the_github_sheet_rises_by_itself`).
+    ///
+    /// Asked every frame. **`false` by default**, and then the sheet opens
+    /// only from Settings → Accounts: a desktop that hears nothing from the
+    /// service has nothing to act on.
+    fn a_command_needed_a_github_sign_in(&mut self) -> bool {
+        false
+    }
+
     /// **This machine's own network addresses, read now** — asked once, each
     /// time a person opens the form that adds a provider, so Settings can warn
     /// them about a service at one of them as it does about loopback (owner's
@@ -1539,6 +1551,19 @@ impl LoopInput for TheDesktopLane<'_> {
         }
         while let Some(answered) = self.desktop.what_github_answered() {
             server.github_answered(&answered, self.strings);
+        }
+        // **And the sheet goes up when a command alo ran needed a GitHub
+        // sign-in**, once, and never over the password sheet or *Open with*:
+        // it waits behind either, as *Open with* waits behind itself
+        // (`crate::the_github_sheet_rises_by_itself`).
+        let heard_at = std::time::Instant::now();
+        if self.desktop.a_command_needed_a_github_sign_in() {
+            server.a_command_needed_a_github_sign_in(heard_at);
+        }
+        let another_sheet_is_up = self.password_sheet.is_up() || self.open_with.is_up();
+        server.a_wanted_github_sign_in_goes_up(another_sheet_is_up, heard_at);
+        for asked in server.the_github_asks_to_tell() {
+            self.desktop.github_is_asked(asked);
         }
         // **A provider form that just opened learns where this machine is**,
         // once, from the desktop that may read it.

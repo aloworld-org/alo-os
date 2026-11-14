@@ -260,6 +260,11 @@ pub enum FromAPerson {
     /// and every time it changes (ADR 0134). The connection it is asked on is
     /// given over to that and answers nothing else.
     WatchWhatLeaves,
+    /// The desktop asks to be told each time a command alo ran on this machine
+    /// failed because nobody is signed in to GitHub, so it can put the sign-in
+    /// sheet up (the owner's approval of 2026-11-13). The connection it is
+    /// asked on is given over to that and answers nothing else.
+    WatchWhatNeedsAGitHubSignIn,
     /// What happened when the person signed in to GitHub or out of it from
     /// their own desktop, for this service to keep in the record (the owner's
     /// decision of 2026-11-13).
@@ -306,6 +311,7 @@ impl FromAPerson {
             Asked::APlaceToReturnTo => Ok(Self::APlaceToReturnTo),
             Asked::PutBack { place, folders } => Ok(Self::PutBack { place, folders }),
             Asked::WatchWhatLeaves {} => Ok(Self::WatchWhatLeaves),
+            Asked::WatchWhatNeedsAGithubSignIn {} => Ok(Self::WatchWhatNeedsAGitHubSignIn),
             Asked::GithubSignIn(on_the_wire) => on_the_wire
                 .kept()
                 .map(Self::GitHubSignIn)
@@ -353,6 +359,7 @@ impl FromAPerson {
             | Self::APlaceToReturnTo
             | Self::PutBack { .. }
             | Self::WatchWhatLeaves
+            | Self::WatchWhatNeedsAGitHubSignIn
             | Self::GitHubSignIn(_) => None,
         }
     }
@@ -437,6 +444,7 @@ impl From<FromAPerson> for Asked {
             FromAPerson::APlaceToReturnTo => Self::APlaceToReturnTo,
             FromAPerson::PutBack { place, folders } => Self::PutBack { place, folders },
             FromAPerson::WatchWhatLeaves => Self::WatchWhatLeaves {},
+            FromAPerson::WatchWhatNeedsAGitHubSignIn => Self::WatchWhatNeedsAGithubSignIn {},
             FromAPerson::GitHubSignIn(what) => Self::GithubSignIn(OnTheWire::of(&what)),
         }
     }

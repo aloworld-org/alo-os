@@ -135,9 +135,9 @@ pub(crate) fn drawn(
                 &Filling::of("login", login.clone()),
             )
             .into_text(),
-        TheSheetIs::WaitingForTheCode | TheSheetIs::TheCodeIs { .. } => {
-            said(words::SIGN_IN_TO_GITHUB)
-        }
+        TheSheetIs::ACommandNeededIt
+        | TheSheetIs::WaitingForTheCode
+        | TheSheetIs::TheCodeIs { .. } => said(words::SIGN_IN_TO_GITHUB),
     };
     let shaped = laying.words(
         &title,
@@ -171,6 +171,19 @@ pub(crate) fn drawn(
             ));
             y = text(&mut out, inside + after, y, shaped, &line);
             y += px(ABOVE_THE_CARD);
+        }
+        // **It rose by itself**: what failed and that alo will not try again,
+        // and no card — nothing has started, so there is no code to show.
+        TheSheetIs::ACommandNeededIt => {
+            let line = said(words::A_COMMAND_NEEDED_IT);
+            let shaped = laying.words(
+                &line,
+                TheType::Body,
+                column,
+                (palette.surface, palette.secondary),
+            );
+            y = text(&mut out, inside, y, shaped, &line);
+            y += px(ABOVE_THE_RISK_AND_THE_BUTTONS);
         }
         // **Signing in**: the sentence, and the code in its card.
         TheSheetIs::WaitingForTheCode | TheSheetIs::TheCodeIs { .. } => {
@@ -229,7 +242,9 @@ pub(crate) fn drawn(
                 // **Waiting for the code**: *Checking…*, the word the Accounts
                 // page says while it waits too, and no *Copy* — there is
                 // nothing yet to copy.
-                TheSheetIs::WaitingForTheCode | TheSheetIs::SignedInAs(_) => {
+                TheSheetIs::ACommandNeededIt
+                | TheSheetIs::WaitingForTheCode
+                | TheSheetIs::SignedInAs(_) => {
                     let checking = said(w::CHECKING);
                     let shaped = laying.words(
                         &checking,
@@ -264,10 +279,13 @@ pub(crate) fn drawn(
             OnTheGitHubSheet::Copy => continue,
             OnTheGitHubSheet::Cancel => (said(words::CANCEL), Ground::Quiet),
             OnTheGitHubSheet::Done => (said(words::DONE), Ground::Navy),
+            OnTheGitHubSheet::SignIn => (said(words::SIGN_IN), Ground::Navy),
             OnTheGitHubSheet::OpenThePage => {
                 let page = match shows.is {
                     TheSheetIs::TheCodeIs { page, .. } => page.as_str(),
-                    TheSheetIs::WaitingForTheCode | TheSheetIs::SignedInAs(_) => "",
+                    TheSheetIs::ACommandNeededIt
+                    | TheSheetIs::WaitingForTheCode
+                    | TheSheetIs::SignedInAs(_) => "",
                 };
                 (
                     strings

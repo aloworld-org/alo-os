@@ -160,6 +160,14 @@ pub(crate) enum Asked {
     /// that could watch what leaves could learn when another agent's turn
     /// reached the network, and the indicator is the person's.
     WatchWhatLeaves {},
+    /// The desktop asks to be told each time a command alo ran on this machine
+    /// failed because nobody is signed in to GitHub, so that it can put the
+    /// sign-in sheet up (the owner's approval of 2026-11-13).
+    ///
+    /// Added 2026-11-13, additively. **Carries nothing**, and is a person's
+    /// and never an agent's: an agent that could watch would learn when another
+    /// agent's command failed, and the sheet is the person's.
+    WatchWhatNeedsAGithubSignIn {},
     /// The person's desktop says what happened when they signed in to GitHub
     /// or out of it, so that this service — the record's one writer — keeps
     /// it (the owner's decision of 2026-11-13).
