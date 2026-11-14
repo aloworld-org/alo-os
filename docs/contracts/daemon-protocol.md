@@ -1074,6 +1074,21 @@ does not change: a message written before it reads back as a change touching
 nothing. It is information for the person and authorises nothing — what is
 approved is still the sentence and the number.
 
+A change in `proposed` or `waiting` that would put a text somewhere carries
+**`texts`**: each text its call carries, whole, by the argument it arrived in —
+`{"argument":"text","text":"…"}` for `accessible.type_text` — in the order
+the call names them (`alo_capability::Call::texts`). **All of it, exactly as it
+arrived**: nothing is cut, summarised or refused (ADR 0001, amended 2026-11-13),
+and which characters a person could miss is worked out from it by the side that
+shows it (`alo_capability::TheWholeText`), so nothing marked travels. **Added
+2026-11-14, additively**: absent, not empty, for a change that carries no text,
+and `format` does not change. What is approved is the sentence **and** these,
+because the sentence only points at them (*type the text below …*).
+
+```json
+{"proposed":{"number":8,"sentence":{"text":"type the text below into “hello.txt” in com.vscodium.codium, and save it","came_from":"the-source"},"lapses_in":300,"texts":[{"argument":"text","text":"Written by alo in VSCodium"}]}}
+```
+
 ```json
 {"waiting":{"changes":[{"number":7,"sentence":{"text":"…","came_from":"translation"},"lapses_in":300,"touches":[{"path":"/home/anna/Invoices/march.pdf"}]}]}}
 ```
