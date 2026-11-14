@@ -78,10 +78,16 @@ The secret, added by the owner on 2026-11-14:
 
 The key is typed over QMP and never written to the report, which says only
 how many characters were typed; GitHub masks it in the run's log; and the
-serial log that is uploaded has every occurrence of it replaced. **Its keys
-are unverified**: they are the walk by hand's of 2026-11-14, which opened
-Settings fresh, and whether they reach the same rows from where this walk
-leaves Settings has not been seen.
+serial log that is uploaded has every occurrence of it replaced.
+
+**Its keys were seen to work once, by hand, on 2026-11-14** (run 43635265001,
+main at `551a26c8`): the walk passed, 29 passed and 0 skipped, and its pictures
+show the *Add a provider* row, the form filled with `openai`, the address and
+164 dots for the key, and then *openai* added and chosen, *model gpt-4o-mini ·
+key kept in this computer's keyring*. The run's log shows the key as `***`,
+and no key-shaped string was in the log, the report or the serial log. The
+walk checks only that each screen changed; whether it changed to these screens
+is in the pictures, which a person reads. Every walk after a merge repeats it.
 
 ## What a pass proves, and what it does not
 
