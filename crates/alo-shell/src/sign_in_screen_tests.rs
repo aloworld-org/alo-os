@@ -839,3 +839,77 @@ fn the_overview_takes_a_region_and_a_keyboard_apart_from_the_language() {
         "the keyboard chose a language"
     );
 }
+
+/// **Continue on an untouched overview keeps the keyboard it named**, and the
+/// desktop then starts on it rather than on the unit file's.
+///
+/// Measured on a booted machine on 2026-11-13: the overview read *Keyboard ·
+/// English (US)*, the person pressed Continue, and the desktop came up on `gb`
+/// "because nobody has chosen one yet" — `~` typed `¬`. Two faults made it:
+/// Continue chose nothing, and the first-account sheets it lands on answered
+/// [`None`] for the keyboard, so the press the compositor asks after was the
+/// one that lost the answer. This walks the whole road: the screen, the file
+/// `crate::the_keyboard_a_person_chose` writes, and the reading
+/// `crate::the_machines_keyboard` gives the greeter and the desktop at the
+/// next start.
+#[test]
+fn continue_on_the_overview_keeps_the_keyboard_it_named_and_the_desktop_starts_on_it() {
+    use crate::the_keyboard_a_person_chose::{AboutTheKeyboard, TheKeyboardAPersonChose};
+    use crate::the_machines_keyboard::{WhoSaidSo, the_keyboard_this_machine_has};
+
+    let folder = std::env::temp_dir().join("alo-shell-continue-keeps-the-keyboard");
+    if folder.exists() {
+        std::fs::remove_dir_all(&folder).unwrap();
+    }
+    std::fs::create_dir_all(&folder).unwrap();
+    let at = folder.join(alo_keyboards::keeping::THE_FILE);
+    // What the unit files name, for a machine nobody has told.
+    let the_unit_files = Some("gb");
+
+    let (door, _heard) = a_door(Ok(Answered::Opened));
+    let mut screen = SignInScreen::of(
+        Ok(Greeting::of(Accounts::none().unwrap(), PERSON, door)),
+        the_machines_words(),
+    );
+    let SignInShows::FirstStart(first_start) = screen.shows() else {
+        panic!("a fresh machine did not open on the first-start overview");
+    };
+    let named = first_start.the_keyboard();
+    assert_eq!(named.name(), "us", "the overview names English (US)");
+    let mut chose = TheKeyboardAPersonChose::nothing_yet();
+
+    // **Before Continue, nothing is chosen and the documented default
+    // stands**: the unit file's layout, said to be the unit file's.
+    assert_eq!(screen.the_keyboard_chosen(), None);
+    assert_eq!(
+        chose.chose(screen.the_keyboard_chosen().as_ref(), &at),
+        AboutTheKeyboard::Unchanged
+    );
+    let before = the_keyboard_this_machine_has(&at, the_unit_files).unwrap();
+    assert_eq!(before.layout(), "gb");
+    assert_eq!(before.from(), &WhoSaidSo::TheUnitFile);
+
+    // Tab to Continue and press it, touching no row.
+    for key in [SignInKey::OtherField, SignInKey::Enter] {
+        screen = still(screen.pressed(key));
+        // The compositor asks after every press, as `direct_sign_in` does.
+        let _ = chose.chose(screen.the_keyboard_chosen().as_ref(), &at);
+    }
+    assert!(
+        matches!(screen.shows(), SignInShows::FirstAccount { .. }),
+        "Continue did not go on to the first account"
+    );
+    assert_eq!(
+        screen.the_keyboard_chosen(),
+        Some(named.clone()),
+        "the first-account sheet dropped the keyboard Continue chose"
+    );
+
+    let after = the_keyboard_this_machine_has(&at, the_unit_files).unwrap();
+    assert_eq!(
+        after.layout(),
+        named.name(),
+        "the desktop would start on the unit file's layout, not the one the person accepted"
+    );
+    assert_eq!(after.from(), &WhoSaidSo::ThisMachinesFile);
+}
