@@ -53,7 +53,7 @@ pub struct AScreenWithAPointer {
     /// The names of the pictures kept.
     pub kept: Vec<String>,
     /// The clock.
-    now: Duration,
+    pub now: Duration,
 }
 
 impl AScreenWithAPointer {

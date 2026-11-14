@@ -198,7 +198,7 @@ impl Reference {
         let size = usize::try_from(picture.size).unwrap_or(0);
         let mut fill = Vec::new();
         let mut rest = Vec::new();
-        for (at, pixel) in picture.pixels.chunks_exact(4).enumerate() {
+        for (at, pixel) in picture.pixels.as_chunks::<4>().0.iter().enumerate() {
             if let &[red, green, blue, 255] = pixel {
                 let solid = Solid {
                     x: at % size.max(1),

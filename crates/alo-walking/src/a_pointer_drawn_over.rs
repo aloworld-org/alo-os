@@ -27,10 +27,7 @@ pub fn drawn_over(frame: Frame, drawn: Drawn, (x, y): (usize, usize)) -> Frame {
     let hot_x = usize::try_from(picture.hotspot.0).unwrap_or(0);
     let hot_y = usize::try_from(picture.hotspot.1).unwrap_or(0);
     let mut frame = frame;
-    for (at, pixel) in picture.pixels.chunks_exact(4).enumerate() {
-        let &[red, green, blue, alpha] = pixel else {
-            continue;
-        };
+    for (at, &[red, green, blue, alpha]) in picture.pixels.as_chunks::<4>().0.iter().enumerate() {
         let (Some(px), Some(py)) = (
             (x + at % size).checked_sub(hot_x),
             (y + at / size).checked_sub(hot_y),
