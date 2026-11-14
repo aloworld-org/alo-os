@@ -84,6 +84,7 @@ use crate::bounding::Bounding;
 use crate::how_an_application_starts::SaysHowAnApplicationStarts;
 use crate::kept::Kept;
 use crate::shortening::{Shortened, Shortening};
+use crate::the_applications_here::TheApplicationsHere;
 use crate::the_door_the_compositor_serves::TheDoorTheCompositorServes;
 use crate::the_verbs_would_not_declare::TheVerbsWouldNotDeclare;
 use crate::the_windows_on_the_screen::TheWindowsOnTheScreen;
@@ -154,11 +155,13 @@ pub struct Machine<'a> {
     /// nothing can ask about is an honest empty list, and the three verbs and a
     /// real list arrive together or not at all.
     ///
-    /// Read once when the daemon starts, like `bound`. An application installed
-    /// a moment ago is not in it, and the answer to that is the compositor's
-    /// own — `alo_applications::Reaching`'s header says so: *nor can it close
-    /// the gap between an application being found and being reached*.
-    installed: Installed,
+    /// **Asked each time a verb needs it** on a running machine
+    /// (`crate::the_applications_here`). It said *read once when the daemon
+    /// starts* until 2026-11-14, and that meant an application that arrived
+    /// after the person signed in — the first eight on a fresh machine, or one
+    /// alo had just installed — was *not installed* to every verb until the
+    /// next sign-in.
+    installed: TheApplicationsHere<'a>,
     /// The compositor's door, on a machine where one is running.
     ///
     /// **`None` and the three verbs are absent together**, as with the tool.
@@ -238,8 +241,9 @@ pub struct WhatPublishingNeeds<'a> {
 /// door is `&mut`, because one line in and one line out on one socket is not
 /// a thing two turns may do at once.
 pub struct WhatAnApplicationVerbNeeds<'a> {
-    /// The applications this machine has, read once when the daemon starts.
-    pub installed: Installed,
+    /// The applications this machine has: on a running machine, what is asked
+    /// each time a verb needs them (`TheApplicationsHere::AskedEachTime`).
+    pub installed: TheApplicationsHere<'a>,
     /// The compositor's door.
     ///
     /// Not an [`Option`]: a caller with no compositor builds a machine that
@@ -335,7 +339,7 @@ impl<'a> Machine<'a> {
             strings,
             resolving,
             installing_with: None,
-            installed: Installed::default(),
+            installed: TheApplicationsHere::default(),
             reaching_the_compositor: None,
             knowing_how_it_starts: None,
             windows: None,
@@ -396,7 +400,7 @@ impl<'a> Machine<'a> {
             strings,
             resolving,
             installing_with: Some(installing_with),
-            installed: Installed::default(),
+            installed: TheApplicationsHere::default(),
             reaching_the_compositor: None,
             knowing_how_it_starts: None,
             windows: None,
@@ -461,7 +465,7 @@ impl<'a> Machine<'a> {
             strings,
             resolving,
             installing_with: None,
-            installed: Installed::default(),
+            installed: TheApplicationsHere::default(),
             reaching_the_compositor: None,
             knowing_how_it_starts: None,
             windows: None,
@@ -494,8 +498,8 @@ impl<'a> Machine<'a> {
     ///
     /// # What is taken, and why each one
     ///
-    /// `installed` is the applications this machine has, read once when the
-    /// daemon starts, which `alo_applications::Reaching` asks after the grants
+    /// `installed` is the applications this machine has, asked each time a
+    /// verb needs them, which `alo_applications::Reaching` asks after the grants
     /// and never before. `reaching_the_compositor` is the door — exclusive,
     /// because one line in and one line out on one socket is not a thing two
     /// turns may do at once.
@@ -535,13 +539,14 @@ impl<'a> Machine<'a> {
         })
     }
 
-    /// The applications this machine has.
+    /// The applications this machine has, **now**.
     ///
-    /// `pub(crate)`, and the only caller is `acting_on_an_application.rs`.
-    /// Empty on a machine that offers no application verb, which is what the
-    /// field says and is honest rather than absent: nothing can ask about it.
-    pub(crate) fn the_applications_installed(&self) -> &Installed {
-        &self.installed
+    /// `pub(crate)`, for the application verbs, for naming an application in a
+    /// call, and for refusing to install what is here. Empty on a machine that
+    /// offers no application verb, which is what the field says and is honest
+    /// rather than absent: nothing can ask about it.
+    pub(crate) fn the_applications_installed_now(&self) -> Installed {
+        self.installed.now()
     }
 
     /// The compositor's door, on a machine where one is running.

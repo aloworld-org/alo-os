@@ -28,7 +28,7 @@
 
 use std::time::SystemTime;
 
-use alo_capability::{Call, Given};
+use alo_capability::{Call, Given, Grants};
 use alo_publishing::NotPublished;
 use alo_record::Entry;
 
@@ -55,9 +55,12 @@ impl Turning<'_, '_> {
         &mut self,
         verb: &str,
         given: &[(&str, Given)],
+        grants: &Grants,
         now: SystemTime,
     ) -> Result<Call, NotDone> {
-        let offered = self.calling(verb, given, now)?;
+        // An application named by the name it shows is put in by its
+        // identifier first (`crate::naming_an_application`).
+        let offered = self.calling_by_name(verb, given, grants, now)?;
         if offered.verb() != alo_publishing::PUBLISH_TO_GITHUB_PAGES {
             return Ok(offered);
         }

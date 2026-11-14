@@ -115,40 +115,11 @@ impl Reached {
     }
 }
 
-/// The short name of an identifier: its last part, in lower case — **less a
-/// version number and the hyphen after it** where that part begins with one.
-///
-/// The second half is for identifiers that are not reverse-DNS.
-/// `libreoffice26.2-writer` has its last dot inside a version number, so its
-/// last part is `2-writer`; its short name is `writer`. It never changes a
-/// reverse-DNS identifier, because an element of one may not begin with a
-/// digit (the D-Bus naming rule application identifiers follow).
-#[must_use]
-pub fn short_name(identifier: &str) -> String {
-    let last = the_last_part(identifier);
-    match without_a_version(&last) {
-        Some(rest) => rest.to_owned(),
-        None => last,
-    }
-}
-
-/// The last part of an identifier, in lower case: the short name as it was
-/// read until 2026-11-08, which still reaches the application it reached.
-fn the_last_part(identifier: &str) -> String {
-    identifier
-        .rsplit('.')
-        .next()
-        .unwrap_or(identifier)
-        .to_lowercase()
-}
-
-/// `part` less the digits it begins with and the hyphen after them, when it
-/// begins that way and something is left.
-fn without_a_version(part: &str) -> Option<&str> {
-    let digits = part.bytes().take_while(u8::is_ascii_digit).count();
-    let rest = part.get(digits..)?.strip_prefix('-')?;
-    (digits > 0 && !rest.is_empty()).then_some(rest)
-}
+/// The short name of an identifier. `alo_applications::short_name` holds the
+/// rule, so the terminal and the agent's road answer *which application is
+/// `writer`* the same way on one machine.
+pub use alo_applications::short_name::short_name;
+use alo_applications::short_name::the_last_part;
 
 /// Whether this application answers to `short`: by its short name, or by the
 /// last part it answered to before (`2-writer`), which is kept so a name that

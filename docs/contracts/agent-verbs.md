@@ -104,7 +104,7 @@ A closed list, like the verbs themselves. An argument is one of:
 | Kind | What it takes |
 |---|---|
 | **path** | A full path, with no `..` in it. What a grant is usually over. |
-| **application** | An installed application, by its identifier. |
+| **application** | An application, by its identifier — or, for one this machine has, by a name it answers to, which is replaced by its identifier before anything is asked (see *A call may give a name*). |
 | **name** | One name — a file's, a folder's, or what is being searched for — of at most the length the verb declares. One name, never a path. |
 | **count** | A whole number inside a range the verb declares, both ends included. |
 | **choice** | One of a list of options the verb wrote down, matched exactly by name. Each option is a name a model sends and a word a person reads — see *an option is a name a model sends and a word a person reads*, below. |
@@ -527,6 +527,27 @@ identifier and never in place of it.
 A name that cannot be shown in one line is dropped and the application stays:
 nothing is ever acted on by name, so nothing is lost, and refusing the
 application would let whoever packaged it decide what this machine can reach.
+
+### A call may give a name, and the identifier is what goes into it
+
+*Added 2026-11-14, additively, after a walk on which a model asked to open
+VSCodium sent `vscodium` and was told nothing installed went by that name on a
+machine that had `com.vscodium.codium`.* An **application** argument may be
+given as the identifier, as the identifier in another case, as its short name
+(the last part in lower case, `codium`), or as the name its entry shows with the
+spaces left out (`VSCodium`). Before the call is made, the machine finds the
+**one** installed application that answers to it, at the first of those four
+steps that finds any (`alo_applications::Installed::answering_to`), and — **only
+where the grants permit that application** — puts its identifier into the call
+in place of what was given. From there on everything above holds unchanged: the
+identifier is what is granted, approved, shown in the sentence and recorded.
+
+A name two installed applications answer to at one step names neither, and is
+left as it was given; so is a name for an application the grants do not permit,
+which is then refused in the words that were sent — **exactly as a name for an
+application that is not installed is**, so the refusal still says nothing about
+what this machine has. That is the property the next section's order exists
+for, held by what the refusal says rather than by which list was read first.
 
 ### An application is checked for after the grants have answered, never before
 

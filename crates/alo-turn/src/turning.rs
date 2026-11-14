@@ -246,7 +246,7 @@ impl<'a, 'm> Turning<'a, 'm> {
         now: SystemTime,
     ) -> Result<WhatAVerbDid, NotDone> {
         self.still_open()?;
-        let call = self.calling(verb, given, now)?;
+        let call = self.calling_by_name(verb, given, grants, now)?;
         self.reading_call(call, grants, now)
     }
 
@@ -287,7 +287,7 @@ impl<'a, 'm> Turning<'a, 'm> {
         now: SystemTime,
     ) -> Result<ProposalId, NotDone> {
         self.still_open()?;
-        let call = self.calling_a_change(verb, given, now)?;
+        let call = self.calling_a_change(verb, given, grants, now)?;
         self.proposing_call(call, grants, standing, now)
     }
 

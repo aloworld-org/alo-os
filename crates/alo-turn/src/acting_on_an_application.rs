@@ -125,7 +125,7 @@ pub(crate) fn acting_on_an_application(
     let reaching = match Reaching::of(
         authorised,
         grants,
-        machine.the_applications_installed(),
+        &machine.the_applications_installed_now(),
         strings,
     ) {
         Ok(reaching) => reaching,
@@ -448,7 +448,7 @@ mod tests {
                     publishing: crate::testing::publishing_through(&publisher),
                 },
                 WhatAnApplicationVerbNeeds {
-                    installed,
+                    installed: installed.into(),
                     door,
                     starting,
                     windows: &mut no_tree,
@@ -721,6 +721,76 @@ mod tests {
         }
     }
 
+    /// **An application named by the name it goes by is reached by its
+    /// identifier** — the walk of 2026-11-14, where *open vscodium* was refused
+    /// on a machine that had `com.vscodium.codium`. The door is asked about
+    /// the identifier, so what the person approved names it exactly.
+    #[test]
+    fn a_name_the_application_goes_by_reaches_it_by_its_identifier() {
+        for said in ["geary", "Geary", "GEARY", "org.gnome.geary"] {
+            let mut door = ADoor::answering(Answer::Acted);
+            let tally = door.a_tally();
+            let installed =
+                Installed::holding([Application::called(THE_MAIL_CLIENT, "Geary").unwrap()]);
+            let (did, _) =
+                on_a_machine_with_a_door(&mut door, installed, true, |turning, grants| {
+                    let id = turning.proposing(
+                        "focus_application",
+                        &[("application", Given::text(said))],
+                        grants,
+                        hour(),
+                        noon(),
+                    )?;
+                    assert!(tally.borrow().is_empty(), "reached before the approval");
+                    turning.approving(id, grants, noon())
+                });
+            assert!(did.is_ok(), "{said}: {did:?}");
+            assert_eq!(
+                door.asked
+                    .borrow()
+                    .iter()
+                    .map(Request::written)
+                    .collect::<Vec<_>>(),
+                [format!("focus {THE_MAIL_CLIENT}")],
+                "{said}"
+            );
+        }
+    }
+
+    /// **A name is not a side channel either.** Ungranted, the name of an
+    /// application that is installed is refused exactly as the name of one
+    /// that is not, in the words the model sent — never the identifier the
+    /// name would have meant.
+    #[test]
+    fn an_ungranted_name_is_refused_the_same_whether_or_not_it_is_installed() {
+        let mut said = Vec::new();
+        for installed in [
+            Installed::holding([Application::called(THE_MAIL_CLIENT, "Geary").unwrap()]),
+            Installed::nothing(),
+        ] {
+            let mut door = ADoor::answering(Answer::Acted);
+            let (did, _) =
+                on_a_machine_with_a_door(&mut door, installed, false, |turning, grants| {
+                    turning.proposing(
+                        "focus_application",
+                        &[("application", Given::text("geary"))],
+                        grants,
+                        hour(),
+                        noon(),
+                    )
+                });
+            let Err(NotDone::NeverAsked(why)) = did else {
+                panic!("an ungranted name was put to somebody: {did:?}");
+            };
+            said.push(format!("{why:?}"));
+        }
+        let [here, not_here] = said.as_slice() else {
+            unreachable!("two arrangements, two refusals")
+        };
+        assert_eq!(here, not_here);
+        assert!(!here.contains(THE_MAIL_CLIENT), "{here}");
+    }
+
     /// **The fourth verb is not one of the three**, said as a test because a
     /// list and an executor are two edits and somebody will one day make only
     /// one of them.
@@ -764,7 +834,7 @@ mod tests {
                 publishing: crate::testing::publishing_through(&publisher),
             },
             WhatAnApplicationVerbNeeds {
-                installed: the_mail_client_is_here(),
+                installed: the_mail_client_is_here().into(),
                 door: &mut door,
                 starting: &ItStarts(Ok(TheRoad::OverTheBus)),
                 windows: &mut no_tree,

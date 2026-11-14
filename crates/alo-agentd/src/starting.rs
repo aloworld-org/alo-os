@@ -154,6 +154,7 @@ use crate::surface::AtThePersonsDoor;
 use crate::terms::Terms;
 use crate::the_persons_windows::ThePersonsWindows;
 use crate::the_road_out::TheRoadOut;
+use crate::what_is_installed_here::WhatIsInstalledHere;
 use crate::wire::Wire;
 use crate::words::declare_into;
 
@@ -282,6 +283,10 @@ pub fn until_stopped(
     // is read from** — so an approved `open` is recorded with its road and an
     // entry with none is refused by name (ADR 0108, 2026-10-31).
     let starting = HowApplicationsStartHere::in_these(where_entries_are_here());
+    // **And which applications are here, asked each time a verb needs them**
+    // from the same places, so one installed after the person signed in — the
+    // first eight on a fresh machine, or one alo installed — is reachable.
+    let installed = WhatIsInstalledHere::in_these(where_entries_are_here());
     // **The person's windows, opened for one read or press at a time** — so a
     // turn can read what an application shows and press a named control in it
     // (Demo 2, stage 4). Nothing is opened here: the first tree is opened by
@@ -294,6 +299,7 @@ pub fn until_stopped(
         ReachingApplications {
             door: &mut at_the_compositors_door,
             starting: &starting,
+            installed: &installed,
             windows: &mut the_persons_windows,
         },
         bounding,
@@ -407,7 +413,7 @@ fn what_this_machine_can_carry_out<'a>(
             },
         },
         WhatAnApplicationVerbNeeds {
-            installed: alo_installed::read(applications.starting.places()),
+            installed: alo_turn::TheApplicationsHere::AskedEachTime(applications.installed),
             door: applications.door,
             starting: applications.starting,
             windows: applications.windows,
@@ -428,6 +434,8 @@ struct ReachingApplications<'a> {
     door: &'a mut AtTheCompositorsDoor,
     /// How each application starts, and where the entries are.
     starting: &'a HowApplicationsStartHere,
+    /// Which applications are here, asked each time a verb needs them.
+    installed: &'a WhatIsInstalledHere,
     /// The person's windows, for the accessibility fallback's read and press.
     windows: &'a mut ThePersonsWindows,
 }
@@ -435,12 +443,11 @@ struct ReachingApplications<'a> {
 /// Where this machine's desktop entries are, most specific first — the
 /// installed list and how each starts are both read from these.
 ///
-/// **Read here and not watched**, which is the same rule as everything else a
-/// machine holds about itself: an application installed a moment ago is not in
-/// this list, and the answer to that is the compositor's own —
-/// `alo_applications::Reaching`'s header says it cannot close the gap between
-/// an application being found and being reached, and a second look would not
-/// either.
+/// **The places are read here, once; what is in them is read when a verb
+/// asks** (`crate::what_is_installed_here`). Until 2026-11-14 the list itself
+/// was read here too and kept, so an application installed after the person
+/// signed in — the first eight on a fresh machine — was *not installed* to
+/// every application verb until the next sign-in. Nothing watches a directory.
 ///
 /// It reads the environment rather than being told, because the desktop entry
 /// specification's answer *is* the environment: `$XDG_DATA_HOME` and
@@ -544,6 +551,7 @@ mod tests {
         let mut at_the_compositors_door =
             AtTheCompositorsDoor::beside(std::path::Path::new("/run/alo/0"));
         let starting = HowApplicationsStartHere::in_these(Vec::new());
+        let installed = WhatIsInstalledHere::in_these(Vec::new());
         let mut windows = ThePersonsWindows;
         let mut indicator = alo_egress::Indicator::default();
         let mut record = Record::default();
@@ -555,6 +563,7 @@ mod tests {
             ReachingApplications {
                 door: &mut at_the_compositors_door,
                 starting: &starting,
+                installed: &installed,
                 windows: &mut windows,
             },
             &mut bounding,

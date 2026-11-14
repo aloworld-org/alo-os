@@ -279,7 +279,8 @@ fn on_a_machine<T>(
                 installed: Installed::holding([
                     Application::identified(MAIL).unwrap(),
                     Application::identified(TERMINAL).unwrap(),
-                ]),
+                ])
+                .into(),
                 door: &mut door,
                 starting: &NothingStarts,
                 windows,
