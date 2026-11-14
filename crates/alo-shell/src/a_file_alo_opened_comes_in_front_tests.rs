@@ -70,3 +70,23 @@ fn a_name_that_is_not_an_application_is_not_waited_for() {
     server.alo_opened_a_file_in("", Instant::now());
     assert!(server.alo_opened_a_file_in.is_empty());
 }
+
+/// **A window is the application's by its identifier, or by its short name**,
+/// which is how an Electron program names a Wayland window — and by nothing
+/// looser.
+///
+/// What would have to be true for this to pass while broken: VSCodium naming
+/// its window something else again. Not measured on an alo machine; the walk
+/// is where `alo-shell: the window alo opened a file in … came in front` is
+/// seen or not.
+#[test]
+fn a_window_is_the_applications_by_its_identifier_or_its_short_name() {
+    use crate::typing_into_the_window_in_front::a_window_of;
+    let app = |named: &str| alo_dock::AppId::named(named).expect("a named application");
+    let codium = app("com.vscodium.codium");
+    assert!(a_window_of(Some(&codium), &codium));
+    assert!(a_window_of(Some(&app("codium")), &codium));
+    assert!(!a_window_of(Some(&app("org.gnome.TextEditor")), &codium));
+    assert!(!a_window_of(Some(&app("vscodium")), &codium));
+    assert!(!a_window_of(None, &codium));
+}

@@ -61,6 +61,24 @@ impl MayTypeInto for TheDesktopAnswers<'_> {
     }
 }
 
+/// **Whether a window that named itself `named` is a window of `app`**: by
+/// the identifier itself, or by its short name
+/// (`alo_applications::short_name::short_name`) — `codium` for
+/// `com.vscodium.codium`.
+///
+/// The second because an Electron application on Wayland names its window
+/// after its program rather than its Flatpak identifier (VS Code's is `code`),
+/// and VSCodium's program is `codium`. **Not measured on an alo machine**: it
+/// is read from how Electron names a Wayland window, and the walk is where it
+/// is seen. It widens nothing that matters: whether alo may type into the
+/// window is still asked of its **process** (`MayTypeInto`), which a name
+/// cannot answer.
+pub(crate) fn a_window_of(named: Option<&AppId>, app: &AppId) -> bool {
+    named.is_some_and(|named| {
+        named == app || named.name() == alo_applications::short_name::short_name(app.name())
+    })
+}
+
 /// One layout, compiled, with what is pressed through it.
 struct Ready {
     /// The layout, as a file a client is handed.
@@ -186,7 +204,7 @@ impl Server {
         let theirs = self
             .the_windows_the_dock_sees()
             .each_as_opened()
-            .any(|window| window.id() == id && window.app() == Some(&app));
+            .any(|window| window.id() == id && a_window_of(window.app(), &app));
         if !theirs {
             return Typed::NotInFront;
         }
