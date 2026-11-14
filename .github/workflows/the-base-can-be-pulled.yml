@@ -38,14 +38,14 @@ jobs:
         run: |
           status=0
           for recipe in image/Containerfile image/installing/Containerfile; do
-            base=$(sed -n 's/^ARG THE_BASE=//p' "$recipe")
+            base=$(sed -n 's/^ARG THE_BASE=//p' "$recipe" | sed 's/:[^/@]*@/@/')
             if [ -z "$base" ]; then
               echo "$recipe names no base" >&2
               status=1
             elif skopeo inspect --raw --no-creds "docker://$base" > /dev/null; then
               echo "$recipe is built on $base, and anybody can pull it."
             else
-              echo "$recipe is built on $base, and nobody can pull it. Where it is alo's copy, a person runs the Copying a base workflow with its digest and makes the package public; until then this change would leave main unable to build (ADR 0154)." >&2
+              echo "$recipe is built on $base, and the registry would not give it to somebody who has not signed in (its answer is above). Where it is alo's copy, a person runs the Copying a base workflow with its digest and makes the package public; until then this change would leave main unable to build (ADR 0154)." >&2
               status=1
             fi
           done
