@@ -94,6 +94,11 @@ impl TheBases {
                 });
             }
             seen.push(&base.digest);
+        }
+        // Only once every digest is known to be recorded once: a digest on two
+        // lines is also a digest on more than one line, and *twice* is the
+        // sentence that says what to do about it.
+        for base in &file.bases {
             if !base.is_on_one_line_of(text) {
                 return Err(NotABase::NotOnOneLine {
                     digest: base.digest.clone(),
