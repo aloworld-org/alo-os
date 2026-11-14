@@ -565,6 +565,11 @@ fn as_the_asking_machine_sees_it(did: &alo_turn::WhatAVerbDid) -> Option<alo_pro
         // person's folder to the internet under their own GitHub sign-in, and a
         // pairing permits neither.
         alo_turn::WhatAVerbDid::AFolderWasPublished(_) => return None,
+        // **Unreachable too, and nothing crosses**: `alo_turn::Arriving::proposing`
+        // refuses `open_file_in_application` by name (2026-11-14), because it
+        // puts this person's file in front of them, and a pairing permits that
+        // no more than it permits looking at their screen.
+        alo_turn::WhatAVerbDid::AFileWasOpened(_) => return None,
     })
 }
 

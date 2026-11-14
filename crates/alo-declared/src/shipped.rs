@@ -50,7 +50,7 @@ macro_rules! declare_crates {
 declare_crates! {
     "alo-adapters" => alo_adapters::verbs::declare_into,
     "alo-appearance" => alo_appearance::verbs::declare_into,
-    "alo-applications" => alo_applications::declare_into,
+    "alo-applications" => alo_applications::verbs::declare_every_verb_into,
     "alo-capturing" => alo_capturing::verbs::declare_into,
     "alo-changing-network" => alo_changing_network::verbs::declare_into,
     "alo-changing-printers" => alo_changing_printers::verbs::declare_into,

@@ -91,3 +91,31 @@ fn a_count_of_the_persons_windows_never_takes_in_alos_copy() {
     assert!(!unit.is_empty());
     assert!(!is_a_unit_of(&unit, "org.mozilla.firefox"), "{unit}");
 }
+
+/// **A file is handed to a copy already running over the same profile**, and
+/// nothing that would refuse the hand-over or open a second window is in it.
+#[test]
+fn a_running_copy_is_handed_a_file_over_its_own_profile() {
+    let firefox = alos_copy("org.mozilla.firefox", Path::new(HOME)).unwrap();
+    assert_eq!(
+        firefox.handing_over(),
+        [
+            "--profile",
+            "/home/disan/.var/app/org.mozilla.firefox/alos-copy"
+        ]
+    );
+    for editor in ["com.vscodium.codium", "com.visualstudio.code"] {
+        let copy = alos_copy(editor, Path::new(HOME)).unwrap();
+        let folder = format!("/home/disan/.var/app/{editor}/alos-copy");
+        assert_eq!(
+            copy.handing_over(),
+            [
+                "--user-data-dir".to_owned(),
+                format!("{folder}/data"),
+                "--extensions-dir".to_owned(),
+                format!("{folder}/extensions"),
+            ]
+        );
+        assert!(!copy.handing_over().contains(&"--new-window".to_owned()));
+    }
+}

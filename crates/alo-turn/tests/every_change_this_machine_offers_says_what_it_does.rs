@@ -13,6 +13,7 @@
 //! | `accessible.activate_control` | `crates/alo-adapters/tests/the_accessibility_fallback.rs` |
 //! | `accessible.type_text` | `crates/alo-adapters/tests/typing_into_a_field.rs` |
 //! | `publish_to_github_pages` | `crates/alo-publishing/tests/a_folder_published_through_real_git.rs` |
+//! | `open_file_in_application` | `crates/alo-turn/src/opening_a_file_in_an_application_tests.rs` |
 //!
 //! This file is the other half: a change added to the list the daemon offers
 //! without its two sentences fails here, and a change added with them fails
@@ -24,7 +25,7 @@
 )]
 
 /// The change verbs the table above names.
-const HELD: [&str; 10] = [
+const HELD: [&str; 11] = [
     "rename_file",
     "move_file",
     "archive_folder",
@@ -35,6 +36,7 @@ const HELD: [&str; 10] = [
     "accessible.activate_control",
     "accessible.type_text",
     "publish_to_github_pages",
+    "open_file_in_application",
 ];
 
 #[test]

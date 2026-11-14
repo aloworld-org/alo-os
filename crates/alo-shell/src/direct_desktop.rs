@@ -210,6 +210,20 @@ pub trait TheDesktop {
         false
     }
 
+    /// **The files alo was approved to open in an application**, once a frame
+    /// (`open_file_in_application`, 2026-11-14): each opened in alo's own copy
+    /// at the person's default, or in their own window where they chose that,
+    /// and answered with where (`crate::a_file_alo_opens`).
+    ///
+    /// **By default each is answered *could not start***, for
+    /// [`Self::alo_at_work`]'s reason: a desktop that holds no copies and no
+    /// way to start an application opens nothing, and says so.
+    fn alo_opens_files(&mut self, asked: Vec<crate::a_file_alo_opens::AskedToOpenAFile>) {
+        for one in asked {
+            one.answered(alo_acting::Opened::CouldNotStart);
+        }
+    }
+
     /// The panel this desktop keeps, for the one act that has to change it.
     ///
     /// **Lent mutably, and only here.** Every other seam in this trait hands the compositor
@@ -1418,6 +1432,12 @@ impl LoopInput for TheDesktopLane<'_> {
         // way and for the same reason.
         let work = self.door.asked_to_work();
         self.desktop.alo_at_work(work, std::time::Instant::now());
+        // **And every file alo was approved to open** (2026-11-14), handed to
+        // the desktop that holds alo's copies and reads the person's setting.
+        let opening = self.door.asked_to_open_files();
+        if !opening.is_empty() {
+            self.desktop.alo_opens_files(opening);
+        }
         // **And whatever alo was approved to type** (ADR 0153), into the window
         // in front only, answered in the same frame it was read whole.
         for one in self.door.asked_to_type() {

@@ -691,3 +691,51 @@ fn a_save_is_handed_on_and_a_bad_typing_line_is_closed() {
     drop(daemon);
     let _ = std::fs::remove_dir_all(root);
 }
+
+/// **A file alo was approved to open is handed on with its connection**,
+/// nothing is carried out as an act, and the daemon hears where it opened — a
+/// file name with a space in it as one path. A line meant as `open-file` that
+/// is not one is closed with nothing written and handed to nobody.
+#[test]
+fn a_file_to_open_is_handed_on_and_a_bad_line_is_closed() {
+    let (root, place) = a_place("open-file");
+    let mut door = TheApplicationDoor::served(place.clone(), us()).unwrap();
+    let mut hand = AHand::answering(Answer::Acted);
+
+    let mut daemon = UnixStream::connect(place.socket()).unwrap();
+    daemon
+        .write_all(b"open-file com.vscodium.codium /var/home/anna/My Notes/hello.txt\n")
+        .unwrap();
+    assert_eq!(door.answered(&mut hand), 0);
+    assert!(hand.carried.is_empty(), "a file was opened as an act");
+    let opening = door.asked_to_open_files();
+    assert!(door.asked_to_open_files().is_empty(), "handed over once");
+    let Some(one) = opening.into_iter().next() else {
+        panic!("one file to open");
+    };
+    assert_eq!(one.application(), "com.vscodium.codium");
+    assert_eq!(
+        one.file(),
+        std::path::Path::new("/var/home/anna/My Notes/hello.txt")
+    );
+    one.answered(alo_acting::Opened::InAlosCopy);
+    assert_eq!(
+        one_line(&mut daemon).as_deref(),
+        Some("opened-in-alos-copy")
+    );
+
+    for line in [
+        "open-file com.vscodium.codium hello.txt\n",
+        "open-file com.vscodium.codium --user-data-dir=/tmp\n",
+        "open-file /usr/bin/codium /var/home/anna/hello.txt\n",
+        "open-file com.vscodium.codium\n",
+    ] {
+        let mut wrong = UnixStream::connect(place.socket()).unwrap();
+        wrong.write_all(line.as_bytes()).unwrap();
+        assert_eq!(door.answered(&mut hand), 0, "{line}");
+        assert_eq!(one_line(&mut wrong), None, "{line}");
+        assert!(door.asked_to_open_files().is_empty(), "{line}");
+    }
+    door.taken_away();
+    let _ = std::fs::remove_dir_all(root);
+}

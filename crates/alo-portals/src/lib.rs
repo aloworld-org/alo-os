@@ -161,7 +161,7 @@ mod the_person_chooses_a_link;
 // is `installer-candidate.yml`, which runs on a manual dispatch. `main` was
 // green for every Linux gate in between.
 #[cfg(target_os = "linux")]
-pub use opening::{activated, opened_at};
+pub use opening::{activated, opened_at, opened_in};
 #[cfg(target_os = "linux")]
 mod secret_portal;
 #[cfg(target_os = "linux")]

@@ -302,11 +302,14 @@ pub struct WhatAnApplicationVerbNeeds<'a> {
 /// # Errors
 /// [`TheVerbsWouldNotDeclare`], naming the family that refused — including two
 /// families having declared one name, which is what this `Result` is really
-/// for. The sixteen as they are written cannot cause it.
+/// for. The seventeen as they are written cannot cause it.
 pub fn the_verbs_a_whole_machine_offers() -> Result<Verbs, TheVerbsWouldNotDeclare> {
     let mut verbs = file_verbs()?;
     alo_software::verbs::declare_into(&mut verbs)?;
     alo_applications::verbs::declare_the_three_with_a_road_into(&mut verbs)?;
+    // **And opening a file in an application** (the owner's "Yes, add it",
+    // 2026-11-14), carried out by `crate::opening_a_file_in_an_application`.
+    alo_applications::declare_opening_a_file_into(&mut verbs)?;
     alo_record::declare_verbs_into(&mut verbs)?;
     alo_adapters::fallback_verbs::declare_into(&mut verbs)?;
     alo_publishing::verbs::declare_into(&mut verbs)?;
@@ -890,7 +893,7 @@ mod tests {
     ///
     /// # Why the names and not a count
     ///
-    /// A count passes when one family replaces another. These are the sixteen
+    /// A count passes when one family replaces another. These are the seventeen
     /// in `docs/contracts/agent-verbs.md`, which is the published list a third
     /// party builds an adapter against: *a closed list; if a capability is not
     /// written here, `alo-agentd` does not have it.* So this is the contract
@@ -903,10 +906,10 @@ mod tests {
     /// verb with nothing behind it is worse than the capability missing.
     #[test]
     fn every_verb_this_machine_offers_is_named_here_and_no_other() {
-        let offered = the_verbs_a_whole_machine_offers().expect("the sixteen verbs declare");
+        let offered = the_verbs_a_whole_machine_offers().expect("the seventeen verbs declare");
         let told: Vec<&str> = offered.all().map(alo_capability::Verb::name).collect();
 
-        let the_sixteen = [
+        let the_seventeen = [
             // `alo-files`' six.
             "list_folder",
             "read_file",
@@ -922,6 +925,9 @@ mod tests {
             "open_application",
             "focus_application",
             "close_application",
+            // And opening a file in one, added 2026-11-14 (the owner's "Yes,
+            // add it"): a change over an application and a granted file.
+            "open_file_in_application",
             // `alo-record`'s one, added 2026-10-18.
             "what_touched_this_file",
             // The accessibility fallback's two, added 2026-11-12: a read that
@@ -934,7 +940,7 @@ mod tests {
             // `alo-publishing`'s one, added 2026-11-13: Demo 2's second road.
             "publish_to_github_pages",
         ];
-        for name in the_sixteen {
+        for name in the_seventeen {
             assert!(
                 told.contains(&name),
                 "{name} is in docs/contracts/agent-verbs.md and this machine does not offer it, \
@@ -943,10 +949,10 @@ mod tests {
         }
         assert_eq!(
             told.len(),
-            the_sixteen.len(),
+            the_seventeen.len(),
             "this machine offers {} verbs and {} are named here: {told:?}",
             told.len(),
-            the_sixteen.len()
+            the_seventeen.len()
         );
         assert!(
             !told.contains(&"arrange_application"),

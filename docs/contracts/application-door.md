@@ -573,6 +573,47 @@ Additive: nothing above changes meaning.
   turn's to decide before the line was written. The door checks only where the
   keyboard is, at the moment of delivering.
 
+## alo opening a file in an application — `open-file`, added 2026-11-14
+
+**What it gives a person:** *open hello.txt in VSCodium*, once they approved
+it, opens that file in VSCodium — in alo's own copy at the default, so what alo
+types into it next is typed there, or in their own window where they chose
+*alo may work in your own window*. The owner's decision, quoted as chosen:
+*"Yes, add it"*. `alo-agentd` writes it for an approved
+`open_file_in_application` (`agent-verbs.md`), after the grants, the installed
+list and the file's real place have all answered.
+
+```
+→ open-file <application> <path>
+← opened-in-alos-copy | opened-in-their-window | not-installed
+  | takes-no-file | no-copy-of-its-own | could-not-start
+```
+
+- **The path is everything after the identifier**, so a file name with a space
+  in it is one path. It is absolute — on this machine it begins with `/`, so it
+  is never read as an option — and holds no control character. The line is at
+  most **4096 bytes**, the most the door reads of any line. A line beginning
+  `open-file` that is not exactly an identifier and such a path is not a
+  request and is closed with nothing written.
+- **Where it opens is read by the desktop, never sent.** At the person's
+  default (`alo-in-applications` in `how-code-runs-file.md`) it opens in alo's
+  own copy: the copy is started with the file, or, already running, is handed
+  it by a start over the copy's own profile. An application with no copy of its
+  own is answered `no-copy-of-its-own`, and nothing is opened. Where the person
+  chose their own window, it is started the way their press starts it.
+- **What runs is the installed entry's own `Exec` line**, with the file where
+  its `%f`, `%F`, `%u` or `%U` stands — inside Flatpak's own
+  `--file-forwarding … @@ %F @@`, which is how the sandbox is handed that one
+  file — or `org.freedesktop.Application.Open` with its `file://` address over
+  the bus. **An entry with nowhere to put a file is answered `takes-no-file`**
+  and is not started without it.
+- **The answer is where, not only whether**, so the record says which: an
+  opening is a change that ran, and the person may want to know whose window it
+  is in.
+- **Unmeasured on a booted machine.** The arguments that hand a file to a
+  running copy are each application's own documentation, as alo's copy's
+  arguments are (`alo_launching::alos_copy`).
+
 ## What is not here
 
 **`arrange`.** `docs/features.md` promises four application verbs and this door

@@ -39,6 +39,7 @@ use std::os::unix::net::{UnixListener, UnixStream};
 
 use alo_acting::{Answer, Request, ToCount, ToWorkIn};
 
+use crate::a_file_alo_opens::AskedToOpenAFile;
 use crate::a_text_at_the_door::{AskedToType, ReadingText, SoFar};
 use crate::alo_at_work::AskedToWork;
 use crate::counting_during_their_commands::AskedToCount;
@@ -125,6 +126,9 @@ pub struct TheApplicationDoor {
     reading: Vec<ReadingText>,
     /// Typing asked for and read whole, for the compositor to carry out.
     typing: Vec<AskedToType>,
+    /// Files alo asked to open in an application, for the desktop to open
+    /// and answer (2026-11-14).
+    opening: Vec<AskedToOpenAFile>,
 }
 
 impl TheApplicationDoor {
@@ -147,6 +151,7 @@ impl TheApplicationDoor {
             choosing: Vec::new(),
             reading: Vec::new(),
             typing: Vec::new(),
+            opening: Vec::new(),
         })
     }
 
@@ -171,6 +176,7 @@ impl TheApplicationDoor {
             choosing: Vec::new(),
             reading: Vec::new(),
             typing: Vec::new(),
+            opening: Vec::new(),
         }
     }
 
@@ -234,6 +240,14 @@ impl TheApplicationDoor {
     /// desktop, which holds the copies, the counter and the indicator.
     pub fn asked_to_work(&mut self) -> Vec<AskedToWork> {
         std::mem::take(&mut self.working)
+    }
+
+    /// Every file alo has asked to open in an application since the last time
+    /// this was asked, handed over with its connection — answered by the
+    /// desktop, which holds alo's copies and reads where the person lets alo
+    /// work (`crate::a_file_alo_opens`).
+    pub fn asked_to_open_files(&mut self) -> Vec<AskedToOpenAFile> {
+        std::mem::take(&mut self.opening)
     }
 
     /// Every time the portal has asked the person to choose what opens a link
@@ -350,6 +364,21 @@ impl TheApplicationDoor {
                             let _ = caller.talking.write_all(b"\n");
                             let _ = caller.talking.flush();
                             drop(caller.talking);
+                            continue;
+                        }
+                        Some(Err(_)) => {
+                            drop(caller.talking);
+                            continue;
+                        }
+                        None => {}
+                    }
+                    // **A file alo was approved to open** is handed on with
+                    // its connection: where it opens is the desktop's to
+                    // decide and to answer (`crate::a_file_alo_opens`).
+                    match alo_acting::ToOpenAFile::read(&line) {
+                        Some(Ok(asked)) => {
+                            self.opening
+                                .push(AskedToOpenAFile::of(asked, caller.talking));
                             continue;
                         }
                         Some(Err(_)) => {

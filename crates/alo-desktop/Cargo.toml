@@ -93,6 +93,9 @@ alo-installed = { path = "../alo-installed" }
 # `Exec` line in a unit of its own. The decisions are that crate's; the bus calls
 # acting on them are `crate::starting_what_a_person_pressed`.
 alo-launching = { path = "../alo-launching" }
+# The words on the compositor's door for a file alo was approved to open, and
+# the answer that says where it opened (`alo_acting::Opened`).
+alo-acting = { path = "../alo-acting" }
 # **The kernel's counter of what an application sends during a person's
 # command** (ADR 0148), opened by the pin `alo-boundaryd` made at boot. This
 # desktop holds the indicator that shows it, so it is the one that counts; it

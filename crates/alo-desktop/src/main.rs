@@ -242,10 +242,21 @@ mod running {
         // **alo's own copies are started over a session bus of their own**,
         // drawing on the display this desktop serves (ADR 0143 Q6).
         match zbus::blocking::Connection::session() {
-            Ok(session) => desktop.alos_copies_start_by(crate::alos_copies::AlosCopies::on(
-                session.into_inner(),
-                &alo_shell::the_display_a_client_reaches(&said.runtime, THE_SOCKET),
-            )),
+            Ok(session) => {
+                let connection = session.into_inner();
+                let wayland = alo_shell::the_display_a_client_reaches(&said.runtime, THE_SOCKET);
+                // **And a file alo was approved to open in the person's own
+                // window** is started the way their press starts one, over
+                // the same bus (`open_file_in_application`, 2026-11-14).
+                desktop.files_alo_opens_in_their_window_start_by(
+                    crate::starting_what_a_person_pressed::HowThisMachineStartsThings::on(
+                        connection.clone(),
+                        &wayland,
+                    ),
+                );
+                desktop
+                    .alos_copies_start_by(crate::alos_copies::AlosCopies::on(connection, &wayland));
+            }
             Err(why) => eprintln!(
                 "alo-desktop: no session bus, so alo cannot start a copy of its own of any \
                  application and will say so when asked: {why}"
@@ -461,6 +472,12 @@ mod running {
         /// [`Self::indicator`] (ADR 0143 Q6). Nothing asks for this until a
         /// turn drives an application (the Demo 2 plan's stage 4).
         working: alo_shell::alo_at_work::WorkingInApplications,
+        /// **What starts a file alo was approved to open in the person's own
+        /// window**, where they chose that (`open_file_in_application`,
+        /// 2026-11-14). [`None`] until the session bus is reached, and then
+        /// such a file is answered *could not start*.
+        opening_in_their_window:
+            Option<crate::starting_what_a_person_pressed::HowThisMachineStartsThings>,
         /// Where this machine's desktop entries are, for the name a person
         /// calls an application a command asked to count.
         entries: Vec<PathBuf>,
@@ -565,6 +582,15 @@ mod running {
         /// How alo's own copies of applications are started from now on.
         fn alos_copies_start_by(&mut self, copies: crate::alos_copies::AlosCopies) {
             self.working = alo_shell::alo_at_work::WorkingInApplications::with(Box::new(copies));
+        }
+
+        /// How a file alo was approved to open is started in the person's own
+        /// window from now on, where they chose that.
+        fn files_alo_opens_in_their_window_start_by(
+            &mut self,
+            starting: crate::starting_what_a_person_pressed::HowThisMachineStartsThings,
+        ) {
+            self.opening_in_their_window = Some(starting);
         }
 
         /// Everything a desktop is, read once at the start.
@@ -855,6 +881,7 @@ mod running {
                 working: alo_shell::alo_at_work::WorkingInApplications::with(Box::new(
                     NoWayToStartACopy,
                 )),
+                opening_in_their_window: None,
                 entries: crate::what_this_machine_offers::WhereToLook::on_this_machine().entries,
                 indicating,
                 daemon,
@@ -1647,6 +1674,36 @@ mod running {
             // Two answers, and the default is alo's own copy: anything else is
             // the person's choice to let alo work in their own window.
             chosen != Default::default() || self.working.runs_as_alos_copy(application, pid)
+        }
+
+        /// **Each file alo was approved to open** (`open_file_in_application`,
+        /// 2026-11-14): in **alo's own copy** at the person's default, read
+        /// from their file for these asks as `alo_at_work` reads it; in their
+        /// own window, as their press would, only where they chose that. Each
+        /// is answered with where it opened, or why it did not.
+        fn alo_opens_files(&mut self, asked: Vec<alo_shell::a_file_alo_opens::AskedToOpenAFile>) {
+            let chosen = alo_remembering::alo_in_applications_remembered(std::path::Path::new(
+                alo_remembering::THE_LEVEL,
+            ))
+            .unwrap_or_default();
+            for one in asked {
+                let opened = if chosen.may_work_in_their_window() {
+                    self.opening_in_their_window
+                        .as_ref()
+                        .map_or(alo_acting::Opened::CouldNotStart, |starting| {
+                            starting.started_with_a_file(one.application(), one.file())
+                        })
+                } else {
+                    self.working
+                        .opened_in_alos_copy(one.application(), one.file())
+                };
+                eprintln!(
+                    "alo-desktop: alo was approved to open a file in {}, and it was answered {}",
+                    one.application(),
+                    opened.written()
+                );
+                one.answered(opened);
+            }
         }
 
         /// The panel this desktop keeps, lent for the one act that changes it.

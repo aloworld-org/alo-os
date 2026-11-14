@@ -403,8 +403,8 @@ impl Done {
     /// `reached.acting().on_the_wire()` and the application's identifier.
     ///
     /// Neither is put through this crate's `naming`, for
-    /// [`Done::of_an_installation`]'s reason: the act is one of three literals
-    /// this machine wrote, and the identifier is already held to its own shape
+    /// [`Done::of_an_installation`]'s reason: the act is one of four literals
+    /// this machine wrote (`open-file` since 2026-11-14), and the identifier is already held to its own shape
     /// by `alo_applications::Application`.
     #[must_use]
     pub fn of_an_application_act(act: &str, application: &str) -> Self {

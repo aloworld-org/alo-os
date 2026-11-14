@@ -1006,10 +1006,13 @@ arm for; none of the six changed, and nothing was renamed or removed.
 written against the six, or against the seven, reads it as a shape it has no arm
 for; nothing was renamed or removed.
 
-**`act` is one of exactly three words**: `open`, `focus` and `close`. They are
-the compositor door's own spellings
+**`act` is one of exactly four words**: `open`, `focus` and `close` — and,
+**added additively on 2026-11-14**, `open-file`, for `open_file_in_application`
+(a client written before it reads a word it has no sentence for, and nothing
+was renamed or removed). They are the compositor door's own spellings
 ([`application-door.md`](application-door.md)), so one vocabulary crosses two
-sockets rather than two that have to be kept in step. The fourth application
+sockets rather than two that have to be kept in step. For `open-file` the file
+and where it opened are in the record, not on this line. The fourth application
 verb, `arrange_application`, **cannot appear here**: nothing on this machine can
 carry it out, so it is not declared and never authorised — `docs/features.md`
 promises it and no machine offers it yet.
