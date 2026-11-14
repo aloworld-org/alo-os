@@ -64,6 +64,20 @@ could have said so.
   `quay.io/fedora/fedora-bootc:44@sha256:ea70c130d55794252b081c606603c6d4405561f28ae642a83fe43b1872f82663`,
   the tag's digest when this was written. Every test that holds the recipe's
   base moves with it.
+
+  **Amended 2026-11-13, the same day: that digest no longer exists.** The
+  first walk image built from `main` after this landed stopped at once:
+  `reading manifest sha256:ea70c130… in quay.io/fedora/fedora-bootc: manifest
+  unknown`. Fedora rebuilds `fedora-bootc:44` daily (the tag moved at
+  2026-11-13T10:07Z, version `44.20261113.0`) and Quay keeps no manifest the tag
+  no longer names, so a digest pin of a release Fedora still builds lasts about
+  a day. Fedora 42's pin never showed this because 42 is no longer rebuilt.
+  The pin is now `sha256:5a3472162ba7781a01d249b9a56bc5a9b9fa01c08edae1f73c77dfa1e504e868`
+  (`44.20261113.0`, checked pullable with `skopeo inspect` when it was set).
+  **This only moves the problem a day**: a pin that can vanish is not a pin.
+  Keeping a copy of the pinned base where alo controls it is the real fix, and
+  where that copy lives is the owner's decision; until then, every image build
+  from `main` depends on the digest still being on Quay.
 - `image/usr/lib/os-release` says `VERSION_ID=44` and states **no
   `PLATFORM_ID`**, because Fedora 44's own file has none. Repeating a field the
   base no longer states would be alo saying something about Fedora that Fedora

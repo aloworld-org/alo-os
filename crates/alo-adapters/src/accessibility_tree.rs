@@ -115,4 +115,40 @@ pub trait AccessibilityTree {
         let _ = at;
         Ok(Vec::new())
     }
+
+    /// Whether one thing takes text put into it through the tree — AT-SPI's
+    /// `EditableText` (ADR 0153). **No by default**, which is what Chromium
+    /// answers for every field it has; GTK answers yes.
+    ///
+    /// # Errors
+    /// [`TreeFault`].
+    fn takes_text(&self, at: &NodeAt) -> Result<bool, TreeFault> {
+        let _ = at;
+        Ok(false)
+    }
+
+    /// Where one thing's caret is, in characters from its start — or
+    /// [`None`] when it has none to say.
+    ///
+    /// # Errors
+    /// [`TreeFault`].
+    fn caret(&self, at: &NodeAt) -> Result<Option<usize>, TreeFault> {
+        let _ = at;
+        Ok(None)
+    }
+
+    /// Put `text` into one thing at `position`, in characters — `true` when
+    /// the application says it did. **The answer is not evidence the text
+    /// arrived** (`docs/quirks/chromium-offers-no-editable-text-and-firefox-ignores-it.md`):
+    /// a caller reads the text back.
+    ///
+    /// Never asked of a thing that does not [`AccessibilityTree::takes_text`];
+    /// **no by default**.
+    ///
+    /// # Errors
+    /// [`TreeFault`].
+    fn insert_text(&self, at: &NodeAt, position: usize, text: &str) -> Result<bool, TreeFault> {
+        let _ = (at, position, text);
+        Ok(false)
+    }
 }

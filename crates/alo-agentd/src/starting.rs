@@ -584,6 +584,7 @@ mod tests {
             [
                 "accessible.activate_control",
                 "accessible.read_window",
+                "accessible.type_text",
                 "archive_folder",
                 "close_application",
                 "find_in_folder",

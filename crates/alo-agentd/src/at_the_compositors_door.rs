@@ -155,6 +155,46 @@ impl TheDoorTheCompositorServes for AtTheCompositorsDoor {
             why: format!("the compositor answered {heard:?}, which this machine does not know"),
         })
     }
+
+    fn typing(
+        &mut self,
+        asked: &alo_acting::ToType,
+        text: &str,
+    ) -> Result<alo_acting::Typed, NotAtTheDoor> {
+        let mut talking = self.knocking()?;
+        // **The line, then exactly the bytes it promises** (ADR 0153): the
+        // text has no limit and holds new lines, so its length is said.
+        let mut said = format!(
+            "{}
+",
+            asked.written()
+        )
+        .into_bytes();
+        if matches!(asked, alo_acting::ToType::Text { .. }) {
+            said.extend_from_slice(text.as_bytes());
+        }
+        talking
+            .write_all(&said)
+            .and_then(|()| talking.flush())
+            .map_err(|why| NotAtTheDoor::NotAnswered {
+                why: why.to_string(),
+            })?;
+        let mut heard = String::new();
+        let read = BufReader::new(&talking)
+            .read_line(&mut heard)
+            .map_err(|why| NotAtTheDoor::NotAnswered {
+                why: why.to_string(),
+            })?;
+        if read == 0 {
+            return Err(NotAtTheDoor::NotAnswered {
+                why: "the compositor closed the connection without answering".to_owned(),
+            });
+        }
+        // As for an act: an unknown word is never read as typed.
+        alo_acting::Typed::read(&heard).ok_or_else(|| NotAtTheDoor::NotAnswered {
+            why: format!("the compositor answered {heard:?}, which this machine does not know"),
+        })
+    }
 }
 
 #[cfg(test)]

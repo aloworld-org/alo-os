@@ -67,7 +67,7 @@ use alo_updating::{
 };
 
 /// The base alo OS is built on, exactly as `image/Containerfile` pins it.
-const THE_BASE: &str = "quay.io/fedora/fedora-bootc:44@sha256:ea70c130d55794252b081c606603c6d4405561f28ae642a83fe43b1872f82663";
+const THE_BASE: &str = "quay.io/fedora/fedora-bootc:44@sha256:5a3472162ba7781a01d249b9a56bc5a9b9fa01c08edae1f73c77dfa1e504e868";
 
 /// The registry the second build is served from, on the host.
 const THE_REGISTRY: &str = "docker.io/library/registry@sha256:a3d8aaa63ed8681a604f1dea0aa03f100d5895b6a58ace528858a7b332415373";

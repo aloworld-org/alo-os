@@ -51,6 +51,9 @@ const TEXT: &str = "org.a11y.atspi.Text";
 /// The interface a thing that can be acted on answers.
 const ACTION: &str = "org.a11y.atspi.Action";
 
+/// The interface through which text is put into a thing (ADR 0153).
+const EDITABLE_TEXT: &str = "org.a11y.atspi.EditableText";
+
 /// The accessibility tree of one session, for one turn.
 #[derive(Debug)]
 pub struct AccessibleSession {
@@ -237,6 +240,31 @@ impl AccessibilityTree for AccessibleSession {
     fn act(&self, at: &NodeAt, action: usize) -> Result<bool, TreeFault> {
         let index = i32::try_from(action).map_err(|_| TreeFault::Vanished)?;
         self.ask(at, ACTION, "DoAction", &(index,))
+    }
+
+    fn takes_text(&self, at: &NodeAt) -> Result<bool, TreeFault> {
+        let interfaces: Vec<String> = self.ask(at, ACCESSIBLE, "GetInterfaces", &())?;
+        Ok(interfaces
+            .iter()
+            .any(|interface| interface == EDITABLE_TEXT))
+    }
+
+    fn caret(&self, at: &NodeAt) -> Result<Option<usize>, TreeFault> {
+        let caret: OwnedValue = self.ask(
+            at,
+            "org.freedesktop.DBus.Properties",
+            "Get",
+            &(TEXT, "CaretOffset"),
+        )?;
+        Ok(i32::try_from(caret)
+            .ok()
+            .and_then(|caret| usize::try_from(caret).ok()))
+    }
+
+    fn insert_text(&self, at: &NodeAt, position: usize, text: &str) -> Result<bool, TreeFault> {
+        let position = i32::try_from(position).map_err(|_| TreeFault::Vanished)?;
+        let length = i32::try_from(text.chars().count()).map_err(|_| TreeFault::Vanished)?;
+        self.ask(at, EDITABLE_TEXT, "InsertText", &(position, text, length))
     }
 
     fn attributes(&self, at: &NodeAt) -> Result<Vec<(String, String)>, TreeFault> {

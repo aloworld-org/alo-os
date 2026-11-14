@@ -121,6 +121,9 @@ pub(crate) struct Keyboard {
     pub(crate) forwarded: std::collections::HashSet<Keycode>,
     /// Latest delivered real key event; consumed by popup initiation, never synthesized.
     pub(crate) popup_key: Option<(Serial, WlSurface)>,
+    /// The names the person's layout was made from, so a client sent a layout
+    /// of alo's own for a moment is sent the person's back (ADR 0153).
+    pub(crate) names: crate::the_layouts_names::TheLayoutsNames,
 }
 
 impl Keyboard {
@@ -172,6 +175,7 @@ impl Server {
         let mut server = Self::bind(runtime, name)?;
         let display = server.display_handle();
         let mut seat = server.surfaces.seats.new_wl_seat(&display, "alo-seat");
+        let names = crate::the_layouts_names::TheLayoutsNames::of(&config);
         let handle = seat
             .add_keyboard(config, 600, 25)
             .map_err(|error| InputError::Keymap(error.to_string()))?;
@@ -181,6 +185,7 @@ impl Server {
             time: 0,
             popup_key: None,
             forwarded: std::collections::HashSet::new(),
+            names,
         });
         Ok(server)
     }
@@ -227,9 +232,14 @@ impl Server {
                 |_, _, _| smithay::input::keyboard::FilterResult::Intercept(()),
             );
         }
+        let names = crate::the_layouts_names::TheLayoutsNames::of(&config);
         handle
             .set_xkb_config(&mut self.surfaces, config)
-            .map_err(|error| InputError::Keymap(error.to_string()))
+            .map_err(|error| InputError::Keymap(error.to_string()))?;
+        if let Some(keyboard) = self.surfaces.keyboard.as_mut() {
+            keyboard.names = names;
+        }
+        Ok(())
     }
 
     /// Set focus from trusted shell policy, refusing foreign, dead or unmapped roots.

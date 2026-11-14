@@ -535,7 +535,13 @@ Additive: nothing above changes meaning.
 ← typed | not-in-front | not-alos-copy | no-keyboard | cannot-type <code point>
 → save-in <application>
 ← asked-to-save | not-in-front | not-alos-copy | no-keyboard
+→ may-type-into <application>
+← may | not-in-front | not-alos-copy | no-keyboard
 ```
+
+- `may-type-into` makes **every check below and sends nothing** — for typing
+  that goes through the accessibility tree rather than the keyboard, which is
+  held to the same rule about whose window it is. Added 2026-11-13, additively.
 
 - **Only to the window that holds the keyboard.** Both are carried out only when
   the window that has the keyboard now is a window of `<application>`;
