@@ -108,11 +108,14 @@ impl crate::Server {
         std::mem::take(&mut self.github_to_ask)
     }
 
-    /// What the desktop answered, told to Settings — and, for a sign-in that
-    /// began, GitHub's page opened in the person's default browser.
+    /// What the desktop answered, told to Settings and to the sign-in sheet
+    /// (`crate::the_github_sheet`) — and, for a code the sheet was waiting
+    /// for, GitHub's page opened in the person's default browser. **A code
+    /// that arrives after the person cancelled opens nothing.**
     pub(crate) fn github_answered(&mut self, answered: &GitHubAnswered, strings: &Strings) {
         self.settings.github_answered(answered, strings);
-        if let GitHubAnswered::TheCodeIs { page, .. } = answered {
+        let waited_for = self.github_sheet.answered(answered);
+        if waited_for && let GitHubAnswered::TheCodeIs { page, .. } = answered {
             self.githubs_page_is_opened(page);
         }
     }
@@ -127,7 +130,7 @@ impl crate::Server {
     /// output, and nothing that output says may send a person anywhere else.
     /// Where nothing opens web links the page says the code, and the person
     /// opens the page by hand.
-    fn githubs_page_is_opened(&mut self, page: &str) {
+    pub(crate) fn githubs_page_is_opened(&mut self, page: &str) {
         if !page.starts_with(THE_ONLY_PAGES_OPENED) {
             return;
         }

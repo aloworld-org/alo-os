@@ -34,6 +34,10 @@ pub enum WhatAReaderPressCameTo {
     /// holds that sheet and hands such a press to it before anything reaches
     /// the server (`crate::the_open_with_sheet`).
     NotTheServers,
+    /// The GitHub sign-in sheet did what a click on that button does.
+    TheGitHubSheetDidIt,
+    /// Nothing: that sheet is no longer up, or does not draw that button now.
+    NothingOnTheGitHubSheet,
     /// Settings did what a click on that does: the page was shown, or the
     /// keyboard went to the row and it is carried out as Enter is.
     SettingsDidIt,
@@ -55,6 +59,15 @@ impl Server {
             }
             Pressed::OnTheDock(what) => self.a_reader_pressed_on_the_dock(&what),
             Pressed::OnTheOpenWithSheet { .. } => WhatAReaderPressCameTo::NotTheServers,
+            // **The GitHub sign-in sheet is the server's**, so a press on it
+            // is answered here, held to the sheet it was heard on.
+            Pressed::OnTheGitHubSheet { sheet, on } => {
+                if self.a_reader_pressed_on_the_github_sheet(sheet, on) {
+                    WhatAReaderPressCameTo::TheGitHubSheetDidIt
+                } else {
+                    WhatAReaderPressCameTo::NothingOnTheGitHubSheet
+                }
+            }
             Pressed::InSettings(what) => self.a_reader_pressed_in_settings(&what),
         }
     }

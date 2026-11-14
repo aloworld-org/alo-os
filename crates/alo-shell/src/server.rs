@@ -266,6 +266,9 @@ pub struct Server {
     /// What a person asked of GitHub in Settings and the desktop has not yet
     /// taken, in order (`crate::asking_github`).
     pub(crate) github_to_ask: Vec<crate::asking_github::AskingGitHub>,
+    /// The GitHub sign-in sheet, up while a sign-in waits on the person or
+    /// has just worked (`crate::the_github_sheet`).
+    pub(crate) github_sheet: crate::the_github_sheet::TheGitHubSheet,
     /// Where a new window goes when there is no room for it in view, as the
     /// person last said (`crate::the_choice_when_there_is_no_room`).
     pub(crate) when_there_is_no_room: alo_appearance::WhenThereIsNoRoom,
@@ -963,6 +966,7 @@ impl Server {
             describing_to_tell: None,
             screen_reader_to_tell: None,
             github_to_ask: Vec::new(),
+            github_sheet: crate::the_github_sheet::TheGitHubSheet::default(),
             // Gliding to empty space, until the desktop says what this person
             // chose; and full motion, until it says they asked for less.
             when_there_is_no_room: alo_appearance::WhenThereIsNoRoom::default(),

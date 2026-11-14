@@ -95,6 +95,7 @@ mod a_key_reaches_a_windows_band;
 mod a_key_reaches_settings;
 mod a_key_reaches_the_bar;
 mod a_key_reaches_the_docks_surfaces;
+mod a_key_reaches_the_github_sheet;
 mod a_key_reaches_the_market;
 mod a_key_reaches_the_open_with_sheet;
 mod a_key_reaches_the_password_sheet;
@@ -293,6 +294,12 @@ mod how_a_panel_is_raised;
 /// A full-screen window's band, out of sight until the top edge is reached.
 mod the_band_over_full_screen;
 mod the_buttons_an_application_draws;
+/// The GitHub sign-in sheet (`docs/design/github-sign-in.md`).
+mod the_github_sheet;
+mod the_github_sheet_as_read;
+mod the_github_sheet_drawn;
+mod the_github_sheet_on_the_server;
+mod the_github_sheets_words;
 mod the_keyboard_on_the_docks_surfaces;
 /// The *Open with* sheet: an application asked for the person to choose what
 /// opens a link (frame `25:52`). Public for the one type the door hands it.
@@ -307,6 +314,8 @@ mod the_password_sheets_words;
 mod the_pointer_drawn;
 mod the_pointers_look;
 mod the_screen_reader_switch;
+/// alo putting words of its own on the clipboard.
+mod the_shell_copies;
 pub mod what_is_on_the_clipboard;
 mod where_a_travelling_window_lands;
 mod where_the_docks_surface_is;
@@ -981,6 +990,7 @@ pub use booting::{
     AMachineToStandOn, Stood, WouldNotStand, stand_the_sign_in_screen_up, what_this_machine_can_say,
 };
 pub use capture_flatten::{NotFlattened, burnt_in};
+pub use the_github_sheet::OnTheGitHubSheet;
 // `DesktopFrame::capturing` is a public field of this type, so without these a
 // caller outside this crate could only ever pass `None` — the capture tools were
 // drawable by this crate and by nobody else, including the fixture whose whole

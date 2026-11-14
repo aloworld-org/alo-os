@@ -268,14 +268,23 @@ fn every_way_it_did_not_work_is_said() {
     );
 }
 
-/// **A sign-in that began says the code** on the page, under the sheet's
-/// sentence, exactly as gh printed it.
+/// **A sign-in that began says nothing on the page**: the code is the
+/// sheet's (`crate::the_github_sheet`), and what the page said about the last
+/// thing asked goes.
 #[test]
-fn a_sign_in_that_began_says_the_code() {
+fn a_sign_in_that_began_leaves_the_code_to_the_sheet() {
     let machine = a_persons_machine("accounts-code");
     let mut window = machine.opened();
     to_accounts(&mut window);
     answered(&mut window, &GitHubAnswered::SignedInAs(None));
+    answered(
+        &mut window,
+        &GitHubAnswered::DidNotWork {
+            asked: AskingGitHub::SignIn,
+            why: WhyGitHubDidNotWork::Cancelled,
+        },
+    );
+    assert_eq!(as_drawn(&window).2.len(), 1, "the last cancel is said");
     answered(
         &mut window,
         &GitHubAnswered::TheCodeIs {
@@ -284,12 +293,5 @@ fn a_sign_in_that_began_says_the_code() {
         },
     );
     let (_, _, said) = as_drawn(&window);
-    assert_eq!(
-        said,
-        [
-            "GitHub will ask for this code. Enter it on the page that opens in your browser.",
-            "4F2A-9C1D",
-            "https://github.com/login/device",
-        ]
-    );
+    assert!(said.is_empty(), "{said:?}");
 }

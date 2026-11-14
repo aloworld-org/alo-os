@@ -343,6 +343,9 @@ pub fn what_this_machine_can_say() -> Result<Strings, WouldNotStand> {
     // **The *Open with* sheet** (frame `25:52`), for the note above.
     crate::the_open_with_sheets_words::declare_the_open_with_sheets_words(&mut vocabulary)
         .map_err(|why| WouldNotStand::Words(why.to_string()))?;
+    // **The GitHub sign-in sheet**, for the note above.
+    crate::the_github_sheets_words::declare_the_github_sheets_words(&mut vocabulary)
+        .map_err(|why| WouldNotStand::Words(why.to_string()))?;
     // **Every translation this machine has, put on the words**, so a language
     // chosen on the first-start sheet — and the one a person's desktop is
     // given from it — is spoken wherever a translation exists. Until
