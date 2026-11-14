@@ -45,6 +45,10 @@ fn every_message_arrives_as_it_was_sent() {
             language: None,
         },
         ToTheReader::SomebodyIsSigningIn,
+        ToTheReader::SayHowToHearIt {
+            language: Some("de".to_owned()),
+        },
+        ToTheReader::SayHowToHearIt { language: None },
     ] {
         assert_eq!(ToTheReader::read(&message.written()), Ok(message.clone()));
     }

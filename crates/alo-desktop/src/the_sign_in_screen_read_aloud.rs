@@ -52,6 +52,10 @@ pub trait TheVoice {
     fn is(&mut self, on: bool, language: Option<String>);
     /// The next thing starting or stopping came to, where one has come.
     fn answered(&mut self) -> Option<TheScreenReaderAnswered>;
+    /// **Say, once, how to hear the screen**, in `language` — with the voice
+    /// alone, the screen reader left off. A machine with nothing to play it
+    /// on says nothing, and that is said on the journal, not a failure.
+    fn says_how_to_hear_it(&mut self, language: Option<String>);
 }
 
 /// **The accessibility bus**, as the relay puts a screen on it.
@@ -75,6 +79,10 @@ pub struct TheRelay<V, B> {
     reading: bool,
     /// The language it was last asked to read in.
     language: Option<String>,
+    /// **Whether it has said how to hear the screen** — once for as long as
+    /// this relay runs, which is the whole boot, so a sign-in screen started
+    /// again does not say it twice.
+    said_how_to_hear_it: bool,
 }
 
 impl<V: TheVoice, B: TheBus> TheRelay<V, B> {
@@ -85,6 +93,7 @@ impl<V: TheVoice, B: TheBus> TheRelay<V, B> {
             bus,
             reading: false,
             language: None,
+            said_how_to_hear_it: false,
         }
     }
 
@@ -116,6 +125,14 @@ impl<V: TheVoice, B: TheBus> TheRelay<V, B> {
                 self.answers()
             }
             ToTheReader::SomebodyIsSigningIn => self.steps_aside(PATIENCE_AT_SIGN_IN),
+            // **Once a boot, and never over the reader.**
+            ToTheReader::SayHowToHearIt { language } => {
+                if !self.said_how_to_hear_it && !self.reading {
+                    self.said_how_to_hear_it = true;
+                    self.voice.says_how_to_hear_it(language);
+                }
+                Vec::new()
+            }
         }
     }
 
@@ -171,6 +188,50 @@ impl<V: TheVoice, B: TheBus> TheRelay<V, B> {
             self.reading = false;
         }
         let _ = self.answers();
+    }
+}
+
+/// The voice program: eSpeak NG, ADR 0151's, which speaks all 24 languages on
+/// this computer and nowhere else.
+pub const THE_VOICE: &str = "/usr/bin/espeak-ng";
+
+/// **The voice eSpeak NG speaks `language` in**: its own language, where the
+/// engine has one (`alo_access::voices`), and English where it has none or
+/// none was named — so a hint is always said in something.
+#[must_use]
+pub fn the_voice_for(language: Option<&str>) -> &'static str {
+    let primary = language
+        .and_then(|tag| tag.split(['-', '_']).next())
+        .map(str::to_ascii_lowercase);
+    alo_access::voices::A_VOICE_FOR_EACH
+        .iter()
+        .find(|(tag, voice)| Some(*tag) == primary.as_deref() && !voice.is_empty())
+        .map_or("en", |(tag, _)| *tag)
+}
+
+/// **Say `sentence` with `program` in `voice`, and wait until it is said.**
+///
+/// # Errors
+/// What went wrong, for the journal: the program is not there, or it said it
+/// could not speak — which is what a machine with no sound device answers.
+/// Neither is a failure of anything else: the sentence is simply not heard.
+pub fn said_by(program: &std::path::Path, voice: &str, sentence: &str) -> Result<(), String> {
+    let ran = std::process::Command::new(program)
+        .args(["-v", voice, "--", sentence])
+        .stdin(std::process::Stdio::null())
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::piped())
+        .output()
+        .map_err(|why| format!("{} could not be started: {why}", program.display()))?;
+    if ran.status.success() {
+        Ok(())
+    } else {
+        Err(format!(
+            "{} could not speak ({}): {}",
+            program.display(),
+            ran.status,
+            String::from_utf8_lossy(&ran.stderr).trim()
+        ))
     }
 }
 

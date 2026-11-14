@@ -130,6 +130,11 @@ alo-their-folders = { path = "../alo-their-folders" }
 # tested by writing down what somebody pressed; `crate::what_the_keyboard_said`
 # holds the layout reading, which can only happen here.
 alo-terminal = { path = "../alo-terminal" }
+# What the person's session is told about where alo draws, in the one spelling
+# the desktop hands a started application — so a program typed in alo's own
+# terminal finds the display too (`crate::the_terminal_a_person_opened`). It
+# depends on nothing.
+alo-launching = { path = "../alo-launching" }
 # The panel of windows a person put aside: what is in it and what each preview
 # says. It holds no geometry at all, deliberately, so the conversion from the
 # design's figures to this display's pixels happens once, here, in the crate

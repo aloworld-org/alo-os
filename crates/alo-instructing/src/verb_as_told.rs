@@ -44,7 +44,11 @@ pub fn as_told(verb: &Verb) -> String {
 fn takes(takes: &Takes) -> String {
     match takes {
         Takes::Path => "a full path".to_owned(),
-        Takes::Application => "an installed application's identifier".to_owned(),
+        Takes::Application => {
+            "an application's identifier, such as org.gnome.TextEditor; an application this \
+             machine has may also be named by its name with the spaces left out, such as VSCodium"
+                .to_owned()
+        }
         Takes::Name { longest } => format!("one name, at most {longest} characters"),
         Takes::Count { least, most } => format!("a whole number from {least} to {most}"),
         Takes::Text => {

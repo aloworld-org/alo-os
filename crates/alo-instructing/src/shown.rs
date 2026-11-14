@@ -161,7 +161,8 @@ mod tests {
             "{text}"
         );
         assert!(
-            text.contains("an installed application's identifier"),
+            text.contains("an application's identifier, such as org.gnome.TextEditor")
+                && text.contains("its name with the spaces left out"),
             "{text}"
         );
     }

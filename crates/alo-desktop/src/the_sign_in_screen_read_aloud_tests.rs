@@ -15,6 +15,8 @@ struct AVoice {
     will_answer: VecDeque<TheScreenReaderAnswered>,
     /// Whether it answers each ask at once, as a voice that works does.
     answers_at_once: bool,
+    /// Every time it was asked to say how to hear the screen, and in what.
+    hinted: Vec<Option<String>>,
 }
 
 impl TheVoice for AVoice {
@@ -32,6 +34,61 @@ impl TheVoice for AVoice {
     fn answered(&mut self) -> Option<TheScreenReaderAnswered> {
         self.will_answer.pop_front()
     }
+
+    fn says_how_to_hear_it(&mut self, language: Option<String>) {
+        self.hinted.push(language);
+    }
+}
+
+/// **How to hear the screen is said once a boot, in the language asked, and
+/// never over a reader that is reading** — however often it is asked.
+#[test]
+fn how_to_hear_the_screen_is_said_once_and_never_over_the_reader() {
+    let mut relay = a_relay();
+    let hint = |language: &str| ToTheReader::SayHowToHearIt {
+        language: Some(language.to_owned()),
+    };
+    assert!(relay.heard(hint("fr")).is_empty());
+    relay.heard(hint("fr"));
+    relay.heard(hint("de"));
+    assert_eq!(relay.voice.hinted, vec![Some("fr".to_owned())]);
+    assert!(
+        relay.voice.asked.is_empty(),
+        "the screen reader is not started to say it"
+    );
+
+    let mut reading = a_relay();
+    reading.heard(read_in("en"));
+    reading.heard(hint("en"));
+    assert!(reading.voice.hinted.is_empty(), "never over the reader");
+}
+
+/// **The voice is the screen's language where eSpeak NG has one**, and English
+/// where it has none or none was named.
+#[test]
+fn the_hint_is_said_in_the_screens_language_or_english() {
+    assert_eq!(the_voice_for(Some("de")), "de");
+    assert_eq!(the_voice_for(Some("pt-PT")), "pt");
+    assert_eq!(the_voice_for(Some("GA_ie")), "ga");
+    assert_eq!(the_voice_for(Some("xx")), "en");
+    assert_eq!(the_voice_for(None), "en");
+}
+
+/// **A voice that cannot speak is silence, not a crash**: a machine with no
+/// sound device is answered by the program failing, and a missing program by
+/// it not starting — both said, neither panicking.
+#[test]
+fn a_voice_that_cannot_speak_is_silence_and_said() {
+    assert!(said_by(std::path::Path::new("/bin/true"), "en", "-a sentence").is_ok());
+    assert!(said_by(std::path::Path::new("/bin/false"), "en", "a sentence").is_err());
+    assert!(
+        said_by(
+            std::path::Path::new("/nonexistent/espeak-ng"),
+            "en",
+            "a sentence"
+        )
+        .is_err()
+    );
 }
 
 /// A bus that keeps how many screens it was shown, or refuses every one.

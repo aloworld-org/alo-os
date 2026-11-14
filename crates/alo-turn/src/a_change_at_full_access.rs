@@ -88,7 +88,7 @@ impl Turning<'_, '_> {
         now: SystemTime,
     ) -> Result<Changed, NotDone> {
         self.still_open()?;
-        let call = self.calling_a_change(verb, given, now)?;
+        let call = self.calling_a_change(verb, given, grants, now)?;
         if !call.waits_for_approval() || !grants.has_full_access(self.grantee()) {
             return self
                 .proposing_call(call, grants, standing, now)

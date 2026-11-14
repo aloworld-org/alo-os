@@ -230,6 +230,25 @@ The second is a new promise — a spoken sentence while the reader is off — so
 is the owner's to make, and none of the three is built until it is answered.
 Until then the reader is off as a machine comes, which is what it already is.
 
+**Answered 2026-11-14 by the owner, relayed by the coordinator: *"Off, with
+one spoken hint"*.** On a new machine's first screen, after a short pause with
+no key pressed, the machine says once, in the first screen's language: *"Press
+Control, Alt and S to hear the screen read aloud."* As built
+(`crates/alo-shell/src/the_spoken_hint.rs`, the relay's `says_how_to_hear_it`):
+
+- the pause is **ten seconds**, a named constant (`THE_PAUSE`), with nothing
+  pressed — **a key or a click** cancels it for good;
+- **only on the first-start sheets**: a machine that already has an account
+  shows the sign-in screen and never says it;
+- **never while the reader is reading**, and **once a boot**: the relay that
+  says it runs for the whole boot and says it at most once, so a sign-in
+  screen started again does not repeat it;
+- it is said by **eSpeak NG alone**, as the sign-in login, in the voice for
+  the screen's language (English where eSpeak has none); **Orca is not
+  started** for it;
+- **a machine with nothing to play it on says nothing**: the voice program
+  fails, that is said on the journal, and nothing else changes.
+
 ## What this does not reach
 
 - **Text size and More options on the Accessibility sheet** (`375:30435`); a

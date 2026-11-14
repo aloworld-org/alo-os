@@ -127,14 +127,30 @@ impl TheTerminal {
     /// a silent fallback*: a person whose terminal opens somewhere unexpected
     /// is owed a line somebody mending the machine can find.
     ///
+    /// `display` is the socket this desktop listens on. The shell is told it as
+    /// the session is (`alo_launching::what_the_session_is_told`), because the
+    /// shell inherits this process's environment and this process *is* the
+    /// display — nothing else would ever tell it. A display that cannot be
+    /// spelled as a variable is said on the error stream, and the shell still
+    /// starts: a terminal with no graphical programs is still a terminal.
+    ///
     /// # Errors
     /// Whatever stopped the pseudoterminal from opening or the shell from
     /// running.
     pub(crate) fn opened(
         size: HowBig,
         home: Option<&std::ffi::OsStr>,
+        display: &std::path::Path,
     ) -> Result<Self, alo_terminal::NoShell> {
-        let shell = AShellOnAPseudoterminal::the_persons_own(size, home)?;
+        let session = alo_launching::what_the_session_is_told(display).unwrap_or_else(|| {
+            eprintln!(
+                "alo-shell: alo's own terminal cannot be told the display at {}, so a \
+                 graphical program started in it will find no display",
+                display.display()
+            );
+            Vec::new()
+        });
+        let shell = AShellOnAPseudoterminal::the_persons_own(size, home, &session)?;
         if let alo_terminal::WhereItStarts::NotTheirHome(why) = shell.where_it_started() {
             eprintln!("alo-shell: alo's own terminal did not open at home: {why}");
         }
@@ -446,7 +462,8 @@ impl crate::Server {
         // **The session's own `$HOME`**, which is the person's: the compositor
         // runs in their session, and `crate::settings_places` reads the same
         // variable for the same person.
-        match TheTerminal::opened(size, std::env::var_os("HOME").as_deref()) {
+        let display = self.socket_path().to_path_buf();
+        match TheTerminal::opened(size, std::env::var_os("HOME").as_deref(), &display) {
             Ok(terminal) => {
                 self.alos_own_terminal = Some(terminal);
                 true
