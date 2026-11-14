@@ -246,15 +246,18 @@ impl TheAgentsDoor {
         let socket = self.socket.clone();
         let request = request.to_owned();
         // **Every line, always**: the conversation's marker, the window's, the
-        // person's folders' and full access's, each alone when there is nothing
-        // after it, so a current agent never waits for a line that is not
-        // coming (`docs/contracts/asking-socket.md`).
+        // person's folders', full access's and the applications installed,
+        // each alone when there is nothing after it, so a current agent never
+        // waits for a line that is not coming (`docs/contracts/asking-socket.md`).
         let earlier = format!(
-            "{}\n{}\n{}\n{}",
+            "{}\n{}\n{}\n{}\n{}",
             earlier.written(),
             TheWindowOffered::the_line_for(window),
             ThePersonsFolders::the_line_for(their_folders),
-            alo_instructing::at_full_access::the_line_for(may_reach.at_full_access)
+            alo_instructing::at_full_access::the_line_for(may_reach.at_full_access),
+            alo_instructing::TheApplicationsInstalled::the_line_for(
+                may_reach.applications.as_ref()
+            )
         );
         let may_reach: Vec<std::path::PathBuf> = may_reach.folders.clone();
         let posting = self.posting.clone();

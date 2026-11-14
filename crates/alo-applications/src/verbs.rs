@@ -17,6 +17,16 @@
 //! likes. Adding a `list_applications` would quietly undo that, which is why
 //! this list has no way to look at anything.
 //!
+//! **The names of what is installed do reach a model, and not through here.**
+//! *The owner, 2026-11-14: "Yes, send app names."* The person's shell sends
+//! each installed application's name and identifier with the request, at the
+//! moment they press Enter and for that turn only
+//! (`alo_instructing::TheApplicationsInstalled`; ADR 0001 §4, amended
+//! 2026-11-14). That is context offered at invocation, which is what the
+//! paragraph above asks for — not a verb an agent calls whenever it likes, and
+//! not a reader running in the background — so this list still has no way to
+//! look at anything.
+//!
 //! **Focus is a change, and that is not pedantry.** Bringing a window to the
 //! front while somebody is typing sends the next keystrokes somewhere they did
 //! not choose, and a window that can put itself in front of the one being typed

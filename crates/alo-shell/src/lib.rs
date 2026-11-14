@@ -343,6 +343,8 @@ mod the_room_alo_places_a_window_in;
 mod what_each_application_draws;
 mod what_the_dock_is_filled_with;
 mod what_the_machine_offers_now;
+/// The applications alo is told about with a request, by name.
+mod the_applications_alo_is_told;
 pub use an_application_is_started::{
     AWayToStartApplications, AsksAnApplicationToStart, WhoAskedToStart,
 };
