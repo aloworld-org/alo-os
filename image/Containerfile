@@ -22,7 +22,12 @@
 # empty until somebody has watched it happen.
 
 # The versions, in one place, because every one of them is pinned on purpose.
-ARG THE_BASE=quay.io/fedora/fedora-bootc:44@sha256:5a3472162ba7781a01d249b9a56bc5a9b9fa01c08edae1f73c77dfa1e504e868
+#
+# The base is alo's own copy of Fedora's `fedora-bootc`, by Fedora's digest
+# (ADR 0154): Quay deleted the digest ADR 0152 pinned the day its tag moved,
+# and every build from Quay stopped on 2026-11-13. `image/bases.toml` says where the
+# copy came from, and `copying-a-base.yml` is the only thing that makes one.
+ARG THE_BASE=ghcr.io/aloworld-org/fedora-bootc@sha256:5a3472162ba7781a01d249b9a56bc5a9b9fa01c08edae1f73c77dfa1e504e868
 ARG THE_BUILDER=docker.io/library/ubuntu:26.04@sha256:2260313b31c8c011cd2eebe728008efac1b3982be73eb71348ea2648d2c0e09b
 ARG THE_STABLE=1.97.0
 ARG THE_NIGHTLY=nightly-2026-06-01

@@ -83,12 +83,10 @@ fn the_base_of(recipe: &str) -> String {
     base.clone()
 }
 
-/// Whether the record answers for this base.
-///
-/// alo's copy, by digest — or, **only until the recipes move to the copy**, the
-/// maker's original as the record names it (`TheBases::original_of`).
+/// Whether the record answers for this base: alo's copy, by digest, and
+/// nothing else — not the maker's original, which can vanish.
 fn is_recorded(bases: &TheBases, base: &str) -> bool {
-    bases.copied_as(base).is_some() || bases.original_of(base).is_some()
+    bases.copied_as(base).is_some()
 }
 
 /// Where a line first appears among what a workflow runs.
@@ -111,8 +109,10 @@ fn every_recipe_is_built_on_a_recorded_base() {
     }
 }
 
-/// **A base the record does not answer for is caught**: another digest, or the
-/// copy named by its tag, which somebody can move.
+/// **A base the record does not answer for is caught**: another digest, the
+/// copy named by its tag, which somebody can move, or the maker's original
+/// even at the recorded digest, which is what stopped every build on
+/// 2026-11-13.
 #[test]
 fn a_base_nobody_recorded_is_caught() {
     let bases = the_bases();
@@ -122,7 +122,8 @@ fn a_base_nobody_recorded_is_caught() {
     let moved = base.reference().replacen("sha256:", "sha256:0", 1);
     let by_tag = format!("{}:{}", base.copy(), base.tag());
     let unpinned = base.upstream().to_owned();
-    for wrong in [moved, by_tag, unpinned] {
+    let the_original = base.origin();
+    for wrong in [moved, by_tag, unpinned, the_original] {
         assert!(!is_recorded(&bases, &wrong), "{wrong} read as recorded");
     }
 }

@@ -89,7 +89,7 @@ mod tests {
         edited(
             &root,
             crate::installing::THE_ENVIRONMENT,
-            "ARG THE_BASE=quay.io/fedora/fedora-bootc:44@",
+            "ARG THE_BASE=ghcr.io/aloworld-org/fedora-bootc@",
             "ARG THE_BASE=quay.io/fedora/fedora-bootc:41@",
         );
         let wrong = wrong_with_the_environment(&root);

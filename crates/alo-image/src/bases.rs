@@ -117,18 +117,6 @@ impl TheBases {
     pub fn copied_as(&self, reference: &str) -> Option<&Base> {
         self.bases.iter().find(|base| base.reference() == reference)
     }
-
-    /// The base this reference is the maker's original of, where it is one.
-    ///
-    /// **The transition, and only that.** ADR 0154 is landed in two changes:
-    /// the record and the copying workflow first, then the recipes moved to the
-    /// copy once it exists. Between the two, the recipes still name the
-    /// original, and this is how the check knows it is the recorded one. The
-    /// second change removes it.
-    #[must_use]
-    pub fn original_of(&self, reference: &str) -> Option<&Base> {
-        self.bases.iter().find(|base| base.origin() == reference)
-    }
 }
 
 impl Base {
@@ -168,8 +156,9 @@ impl Base {
         format!("{}@{}", self.copy, self.digest)
     }
 
-    /// The maker's original, as a recipe named it before the copy: the origin
-    /// with its tag, by digest.
+    /// The maker's original, by digest: what the copy was made from, and what
+    /// a recipe named before ADR 0154. It is not the copy, and
+    /// [`TheBases::copied_as`] does not answer for it.
     #[must_use]
     pub fn origin(&self) -> String {
         format!("{}@{}", self.upstream, self.digest)
@@ -407,17 +396,15 @@ mod tests {
         ));
     }
 
-    /// **The copy answers only by digest, and the original only as the maker
-    /// named it.**
+    /// **The copy answers only by digest**, and the maker's original is not
+    /// the copy.
     #[test]
     fn a_reference_is_recognised_only_by_digest() {
         let bases = TheBases::read(&the_record()).unwrap();
         let base = bases.bases().first().unwrap();
         assert_eq!(bases.copied_as(&base.reference()), Some(base));
-        assert_eq!(bases.original_of(&base.origin()), Some(base));
         let by_tag = format!("{}:{}", base.copy(), base.tag());
         assert_eq!(bases.copied_as(&by_tag), None);
         assert_eq!(bases.copied_as(&base.origin()), None);
-        assert_eq!(bases.original_of(&base.reference()), None);
     }
 }
