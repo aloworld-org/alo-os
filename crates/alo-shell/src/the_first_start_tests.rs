@@ -301,7 +301,8 @@ fn escape_from_the_zone_sheet_sets_no_zone() {
 /// was the overview's answer and not one layout frozen at that moment.
 #[test]
 fn continue_chooses_the_keyboard_the_overview_names() {
-    let mut first_start = TheFirstStart::arriving(None);
+    // Ireland, whose one zone Continue sets without asking which.
+    let mut first_start = TheFirstStart::arriving(RegionCode::named("IE").ok());
     assert_eq!(first_start.the_keyboard_chosen(), None);
     assert_eq!(
         walked(&mut first_start, &[SignInKey::OtherField, SignInKey::Enter]),
@@ -331,8 +332,7 @@ fn continue_chooses_the_keyboard_the_overview_names() {
 /// **Continue accepts the language, the region and the region's one zone the
 /// overview names**, with no row touched — and a person who goes back,
 /// changes language and continues again has that language's region instead.
-/// A region with several zones names none on the overview, so Continue
-/// accepts none there.
+/// A region with several zones is asked about once (`continue_asks_once_…`).
 #[test]
 fn continue_accepts_the_language_region_and_zone_the_overview_names() {
     let mut first_start = TheFirstStart::arriving(RegionCode::named("AT").ok());
@@ -351,14 +351,20 @@ fn continue_accepts_the_language_region_and_zone_the_overview_names() {
     assert_eq!(first_start.the_zone_chosen(), Some("Europe/Vienna"));
 
     // Nothing on the machine's clock: English's usual region, the United
-    // States, has several zones and the overview names none.
+    // States, has several zones, so Continue asks once; leave it with Escape
+    // and continue.
     let mut first_start = TheFirstStart::arriving(None);
-    walked(&mut first_start, &[SignInKey::OtherField, SignInKey::Enter]);
+    assert_eq!(
+        walked(&mut first_start, &[SignInKey::OtherField, SignInKey::Enter]),
+        Went::Stayed
+    );
     assert_eq!(
         first_start.the_region_chosen().map(RegionCode::code),
         Some("US")
     );
-    assert_eq!(first_start.the_zone_chosen(), None, "a zone nobody saw");
+    walked(&mut first_start, &[SignInKey::Clear]);
+    assert_eq!(walked(&mut first_start, &[SignInKey::Enter]), Went::Onward);
+    assert_eq!(first_start.the_zone_chosen(), None, "a zone nobody chose");
 
     // Back at the overview, choose German and continue again.
     walked(
@@ -382,4 +388,107 @@ fn continue_accepts_the_language_region_and_zone_the_overview_names() {
         Some("DE")
     );
     assert_eq!(first_start.the_zone_chosen(), Some("Europe/Berlin"));
+}
+
+/// **Continue asks once which zone, where the region it accepts has several**
+/// — the owner, 2026-11-14: *"Ask once after Continue"*. The zone sheet of ADR
+/// 0140 opens with nothing chosen; a zone used there is the machine's, the
+/// region row names it, and the next Continue goes on without asking again.
+#[test]
+fn continue_asks_once_which_zone_where_the_region_has_several() {
+    let mut first_start = TheFirstStart::arriving(RegionCode::named("US").ok());
+    assert_eq!(
+        walked(&mut first_start, &[SignInKey::OtherField, SignInKey::Enter]),
+        Went::Stayed,
+        "Continue went on without asking which zone"
+    );
+    let Sheet::Zone(picker) = first_start.sheet() else {
+        panic!("Continue on the United States did not ask which zone");
+    };
+    assert_eq!(picker.chosen(), None, "a zone arrived chosen");
+    walked(
+        &mut first_start,
+        &[SignInKey::Later, SignInKey::Enter, SignInKey::Enter],
+    );
+    assert_eq!(first_start.sheet(), &Sheet::Overview);
+    let chosen = first_start.the_zone_chosen().unwrap().to_owned();
+    assert!(
+        chosen.starts_with("America/") || chosen.starts_with("Pacific/"),
+        "{chosen}"
+    );
+    assert!(first_start.the_zone_named().is_some());
+    assert_eq!(
+        walked(&mut first_start, &[SignInKey::Enter]),
+        Went::Onward,
+        "Continue asked twice"
+    );
+    assert_eq!(first_start.the_zone_chosen(), Some(chosen.as_str()));
+}
+
+/// **A region with one zone is not asked about**: Continue goes straight on
+/// and sets it.
+#[test]
+fn continue_does_not_ask_where_the_region_has_one_zone() {
+    let mut first_start = TheFirstStart::arriving(RegionCode::named("IE").ok());
+    assert_eq!(
+        walked(&mut first_start, &[SignInKey::OtherField, SignInKey::Enter]),
+        Went::Onward
+    );
+    assert_eq!(first_start.the_zone_chosen(), Some("Europe/Dublin"));
+}
+
+/// **The refusal path: Escape from the zone Continue asked about sets no
+/// zone, and the next Continue goes on** — never trapped, never asked twice.
+#[test]
+fn escape_from_the_zone_continue_asked_about_sets_none_and_continue_goes_on() {
+    let mut first_start = TheFirstStart::arriving(RegionCode::named("BR").ok());
+    walked(&mut first_start, &[SignInKey::OtherField, SignInKey::Enter]);
+    assert!(matches!(first_start.sheet(), Sheet::Zone(_)));
+    walked(&mut first_start, &[SignInKey::Clear]);
+    assert_eq!(first_start.sheet(), &Sheet::Overview);
+    assert_eq!(first_start.the_zone_chosen(), None);
+    assert_eq!(
+        walked(&mut first_start, &[SignInKey::Enter]),
+        Went::Onward,
+        "Continue asked again after Escape"
+    );
+    assert_eq!(first_start.the_zone_chosen(), None);
+    assert_eq!(
+        first_start.the_region_chosen().map(RegionCode::code),
+        Some("BR")
+    );
+}
+
+/// **A zone chosen on the region row is not asked about again**: the region
+/// was taken there and its zone with it, so Continue goes straight on — and so
+/// it does for a region taken whose zone sheet was left with Escape.
+#[test]
+fn a_zone_chosen_on_the_region_row_is_not_asked_again() {
+    for leave_the_zone_sheet in [false, true] {
+        let mut first_start = TheFirstStart::arriving(RegionCode::named("US").ok());
+        walked(
+            &mut first_start,
+            &[
+                SignInKey::Later,
+                SignInKey::Enter,
+                SignInKey::Enter,
+                SignInKey::Enter,
+            ],
+        );
+        assert!(matches!(first_start.sheet(), Sheet::Zone(_)));
+        let zone_sheet: &[SignInKey] = if leave_the_zone_sheet {
+            &[SignInKey::Clear]
+        } else {
+            &[SignInKey::Later, SignInKey::Enter, SignInKey::Enter]
+        };
+        walked(&mut first_start, zone_sheet);
+        assert_eq!(first_start.sheet(), &Sheet::Overview);
+        let before = first_start.the_zone_chosen().map(str::to_owned);
+        assert_eq!(
+            walked(&mut first_start, &[SignInKey::OtherField, SignInKey::Enter]),
+            Went::Onward,
+            "a region taken on its row was asked about again"
+        );
+        assert_eq!(first_start.the_zone_chosen().map(str::to_owned), before);
+    }
 }

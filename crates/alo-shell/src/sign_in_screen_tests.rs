@@ -12,6 +12,13 @@ use alo_sessiond::{Answered, Knock};
 use std::cell::RefCell;
 use std::rc::Rc;
 
+/// A machine whose clock says Ireland, whose one time zone Continue sets
+/// without asking which (the owner, 2026-11-14) — a clock that says nothing
+/// would be the United States, where Continue asks first.
+fn on_a_clock_in_ireland() -> Option<alo_formats::RegionCode> {
+    alo_formats::RegionCode::named("IE").ok()
+}
+
 /// The uid the machine description names, and the account made for it.
 const PERSON: u32 = 1000;
 /// The one account's name.
@@ -399,7 +406,8 @@ fn a_machine_with_nobody_on_it_is_offered_a_sheet_and_refused_without_a_store() 
     let mut screen = SignInScreen::of(
         Ok(Greeting::of(Accounts::none().unwrap(), PERSON, door)),
         the_machines_words(),
-    );
+    )
+    .where_the_machine_is(on_a_clock_in_ireland());
     // Past the first-start overview, then a name, a secret and submit — the
     // walk a person actually takes: Tab to *Continue*, and take it.
     for key in [SignInKey::OtherField, SignInKey::Enter] {
@@ -494,7 +502,8 @@ fn every_sentence_the_screen_can_show_is_collected_and_none_is_written_here() {
     let mut fresh = SignInScreen::of(
         Ok(Greeting::of(Accounts::none().unwrap(), PERSON, door)),
         the_machines_words(),
-    );
+    )
+    .where_the_machine_is(on_a_clock_in_ireland());
     for key in [
         // Past the first-start overview: Tab to *Continue*, and take it.
         SignInKey::OtherField,
@@ -629,7 +638,8 @@ fn at_the_first_account_sheet() -> SignInScreen<CountingDoor> {
     let mut screen = SignInScreen::of(
         Ok(Greeting::of(Accounts::none().unwrap(), PERSON, door)),
         the_machines_words(),
-    );
+    )
+    .where_the_machine_is(on_a_clock_in_ireland());
     for key in [SignInKey::OtherField, SignInKey::Enter] {
         screen = still(screen.pressed(key));
     }
@@ -870,7 +880,8 @@ fn continue_on_the_overview_keeps_the_keyboard_it_named_and_the_desktop_starts_o
     let mut screen = SignInScreen::of(
         Ok(Greeting::of(Accounts::none().unwrap(), PERSON, door)),
         the_machines_words(),
-    );
+    )
+    .where_the_machine_is(on_a_clock_in_ireland());
     let SignInShows::FirstStart(first_start) = screen.shows() else {
         panic!("a fresh machine did not open on the first-start overview");
     };

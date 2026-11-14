@@ -50,7 +50,11 @@ fn a_fresh_machine() -> (tempfile::TempDir, Option<Signing<ADoor>>) {
     alo_accounts::kept(&store, &Accounts::none().unwrap()).unwrap();
     let greeting = Greeting::at(&store, 1000, ADoor).unwrap();
     let words = crate::what_this_machine_can_say().unwrap();
-    let screen = SignInScreen::of(Ok(greeting), words);
+    // On a clock in Ireland, whose one time zone Continue sets without asking
+    // which (the owner, 2026-11-14): a machine whose clock says nothing would
+    // be in the United States, where Continue asks first.
+    let screen = SignInScreen::of(Ok(greeting), words)
+        .where_the_machine_is(alo_formats::RegionCode::named("IE").ok());
     (kept, Some(Signing::Still(Box::new(screen))))
 }
 
