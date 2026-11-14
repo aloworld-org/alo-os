@@ -122,11 +122,12 @@ jobs:
             exit 1
           fi
 
-      # A package GitHub creates is private until somebody makes it public, and
-      # there is no API to do that: it is one choice on the package's settings
-      # page, made once per package. Until it is made, nothing that pulls
-      # without signing in can build from the copy, so this fails rather than
-      # reporting a copy nobody can use.
+      # A package GitHub creates may be private, and there is no API to make it
+      # public: it is one choice on the package's settings page, made once per
+      # package. (The first copy, `fedora-bootc` on 2026-11-13, came out public
+      # by itself; whether the next one will was not measured.) While a copy is
+      # private, nothing that pulls without signing in can build from it, so
+      # this fails rather than reporting a copy nobody can use.
       - name: Read the copy back as anybody would
         run: |
           if ! skopeo inspect --raw --no-creds "docker://$COPY@$DIGEST" > /dev/null; then
