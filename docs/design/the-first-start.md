@@ -1663,6 +1663,13 @@ a sheet with one working row would be a different design rather than this one.
 Until the sheet is built, the button turns the reader over. The *Screen reader ·
 On* row and its sentence (`384:26446`) are therefore not drawn either.
 
+**A second addition the design does not draw**: when the reader could not
+start, or the computer has nothing to play it on, that sentence is drawn **one
+line above *Accessibility***, left-aligned with it, in the ink, at most a
+column (480) wide (`crates/alo-shell/src/the_readers_sentence_drawn.rs`). The
+design has no frame for a reader that fails; a failure shown nowhere would
+leave a sighted helper with nothing to go on.
+
 **The file's keyboard reactions demonstrate the interaction; they do not prove
 native screen-reader support.** Implement through the OS accessibility and
 shortcut systems and test with assistive technology.

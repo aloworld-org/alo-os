@@ -203,12 +203,17 @@ start is tried again the next time the screen comes up.
   first screen, the hand-over at sign-in, the machine's copy and the new
   account starting from it, and the image's login, linger, home, sound group
   and units.
-- **Not yet**: the sentences in §7 are said **on the journal only** — the
-  screen does not yet draw them beside the button, so a sighted helper sees
-  nothing when the reader fails; the *no sound device* case is not told apart
-  from *did not start*; turning the reader **off** is not said aloud before
-  the voice stops; a reader's own press (Orca's *activate*) does not reach the
-  screen; and the design's *Accessibility · Setup options* sheet is not built.
+- **Built next** (the change after the spoken hint): the sentences in §7 are
+  **drawn on the screen, one line above *Accessibility***, and told to a
+  reader that is running; **no sound device is told apart** — the relay looks
+  for a playback device before it starts Orca, and answers *nothing to play
+  it on* (`TheScreenReaderAnswered::NothingToPlayItOn`) instead of starting
+  it; and **turning the reader off is said aloud** — *Screen reader off*, by
+  eSpeak NG alone, in the language it was reading in — before Orca stops.
+- **Not yet**: a reader's own press (Orca's *activate*) does not reach the
+  screen; a person's desktop does not yet tell *no sound* apart from *did
+  not start*; and the design's *Accessibility · Setup options* sheet is not
+  built.
 
 ## The question for the owner
 
