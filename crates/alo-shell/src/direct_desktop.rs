@@ -200,6 +200,16 @@ pub trait TheDesktop {
         }
     }
 
+    /// **Whether the window of `application` whose process is `pid` may be
+    /// typed into** (ADR 0153): alo's own copy of it at the person's default
+    /// setting, and the person's own window only where they chose that.
+    ///
+    /// **No by default**, for [`Self::alo_at_work`]'s reason: a desktop that
+    /// does not hold alo's copies cannot tell one from the person's window.
+    fn may_type_into(&mut self, _application: &str, _pid: u32) -> bool {
+        false
+    }
+
     /// The panel this desktop keeps, for the one act that has to change it.
     ///
     /// **Lent mutably, and only here.** Every other seam in this trait hands the compositor
@@ -1379,6 +1389,14 @@ impl LoopInput for TheDesktopLane<'_> {
         // way and for the same reason.
         let work = self.door.asked_to_work();
         self.desktop.alo_at_work(work, std::time::Instant::now());
+        // **And whatever alo was approved to type** (ADR 0153), into the window
+        // in front only, answered in the same frame it was read whole.
+        for one in self.door.asked_to_type() {
+            let mut asking =
+                crate::typing_into_the_window_in_front::TheDesktopAnswers(&mut *self.desktop);
+            let typed = server.typed_into_the_window_in_front(one.asked(), one.text(), &mut asking);
+            one.answered(typed);
+        }
         // **And every link an application asked the person to choose for**,
         // shown one at a time on the *Open with* sheet; a sheet whose portal
         // hung up, or nobody answered in five minutes, comes down here.

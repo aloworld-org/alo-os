@@ -91,6 +91,15 @@ impl TheDoorOnTheDesktop {
             .unwrap_or_default()
     }
 
+    /// Typing alo was approved for since the last frame, read whole (ADR
+    /// 0153), or none while the door is not served.
+    pub(crate) fn asked_to_type(&mut self) -> Vec<crate::a_text_at_the_door::AskedToType> {
+        self.served
+            .as_mut()
+            .map(TheApplicationDoor::asked_to_type)
+            .unwrap_or_default()
+    }
+
     /// The portal's asks for the person to choose what opens a link since the
     /// last frame, or none while the door is not served.
     pub(crate) fn asked_to_choose(&mut self) -> Vec<crate::the_open_with_sheet::AskedToChoose> {

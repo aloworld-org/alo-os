@@ -14,8 +14,11 @@ pub struct KeyboardEvents {
     pub surfaces: Vec<u32>,
     /// Advertised seat capabilities.
     pub capabilities: Option<wl_seat::Capability>,
-    /// XKB keymap read from the received descriptor.
+    /// XKB keymap read from the received descriptor — every one received,
+    /// one after the other.
     pub keymap: String,
+    /// Each XKB keymap received, on its own, in wire order.
+    pub keymaps: Vec<String>,
     /// Advertised rate and delay.
     pub repeat: Option<(i32, i32)>,
     /// Enter count and held-key arrays.
@@ -72,10 +75,13 @@ impl Dispatch<wl_keyboard::WlKeyboard, ()> for Events {
                 size,
             } => {
                 use std::io::Read;
+                let mut this_one = String::new();
                 let result = std::fs::File::from(fd)
                     .take(u64::from(size))
-                    .read_to_string(&mut events.keymap);
+                    .read_to_string(&mut this_one);
                 assert!(result.is_ok());
+                events.keymap.push_str(&this_one);
+                events.keymaps.push(this_one);
             }
             wl_keyboard::Event::RepeatInfo { rate, delay } => events.repeat = Some((rate, delay)),
             wl_keyboard::Event::Enter { keys, surface, .. } => {
