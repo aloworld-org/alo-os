@@ -168,10 +168,10 @@ fn the_password_is_a_parameter_and_an_argument_and_nothing_else() {
         "keeper.keep(self.person, password);",
         // The two doors that take one from a surface.
         "pub fn signs_in(&self, name: &str, password: &str) -> Greeted {",
-        "pub fn makes_an_account(&mut self, name: &str, password: &str) -> Greeted {",
+        "pub fn makes_an_account(&mut self, name: &str, password: &str, kind: SecretKind) -> Greeted {",
         // Handed to the one authenticator, to verify and to make.
         "let who = match self.accounts.signs_in(name, password) {",
-        "if let Err(why) = self.accounts.created(name, person, password) {",
+        "if let Err(why) = self.accounts.created_with(name, person, password, kind) {",
         // And one door to the other, so there is one road to a knock.
         "self.signs_in(name, password)",
     ];
@@ -240,7 +240,7 @@ fn nothing_on_those_two_lines_keeps_or_prints_anything() {
                 // make an account, and from one door to the other.
                 if shape == "self."
                     && (line.contains("self.accounts.signs_in(")
-                        || line.contains("self.accounts.created(")
+                        || line.contains("self.accounts.created_with(")
                         || line.contains("self.signs_in(name, password)")
                         // ADR 0150: the described number, beside the password,
                         // handed to the keeper — a handing on, as above.

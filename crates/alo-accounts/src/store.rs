@@ -25,6 +25,7 @@
 use crate::account::Account;
 use crate::hashing::Hashed;
 use crate::refusing::{CannotHash, NotCreated, NotKept, NotSetAgain, NotSignedIn};
+use crate::secret_kind::SecretKind;
 use crate::session::SignedIn;
 
 /// Every account this machine has, and the decoy that keeps time.
@@ -79,6 +80,24 @@ impl Accounts {
     /// or number already taken here.
     pub fn created(&mut self, name: &str, uid: u32, password: &str) -> Result<(), NotCreated> {
         let account = Account::created(name, uid, password)?;
+        self.admitted(account)
+    }
+
+    /// Create an account whose secret is of this kind — a PIN or a password —
+    /// as [`Self::created`] does, so the sign-in screen can later ask for the
+    /// one the person chose.
+    ///
+    /// # Errors
+    ///
+    /// [`NotCreated`], as [`Self::created`].
+    pub fn created_with(
+        &mut self,
+        name: &str,
+        uid: u32,
+        secret: &str,
+        kind: SecretKind,
+    ) -> Result<(), NotCreated> {
+        let account = Account::created_with(name, uid, secret, kind)?;
         self.admitted(account)
     }
 
@@ -223,6 +242,22 @@ impl Accounts {
             .iter()
             .find(|one| one.uid() == uid)
             .map(Account::name)
+    }
+
+    /// Whether one account, by its number, signs in with a PIN or a password.
+    ///
+    /// Asked for the reason [`Self::name_of`] is, and by the same caller: the
+    /// sign-in screen asks the person it already greets for the kind of secret
+    /// they chose — *Enter your PIN* or *Enter your password* — and asking for
+    /// the wrong one is what three walks of a booted machine found. It widens
+    /// nothing for the reason `name_of` gives, and says nothing about the
+    /// secret but its kind.
+    #[must_use]
+    pub fn kind_of(&self, uid: u32) -> Option<SecretKind> {
+        self.everybody
+            .iter()
+            .find(|one| one.uid() == uid)
+            .map(Account::kind)
     }
 
     /// The accounts, for `written.rs` to write down.

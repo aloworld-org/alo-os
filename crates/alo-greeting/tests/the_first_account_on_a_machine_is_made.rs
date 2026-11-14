@@ -22,7 +22,7 @@
 
 use std::cell::RefCell;
 
-use alo_accounts::Accounts;
+use alo_accounts::{Accounts, SecretKind};
 use alo_greeting::{Greeted, Greeting, Knocking, NotAnswered, Standing};
 use alo_sessiond::{Answered, Knock};
 
@@ -98,7 +98,7 @@ fn the_first_account_is_made_and_the_person_is_signed_in() {
     let mut greeting = Greeting::at(&store, person, ADoor::willing()).unwrap();
     assert_eq!(greeting.standing(), Standing::MakeAnAccount);
 
-    let greeted = greeting.makes_an_account("ada", THEIRS);
+    let greeted = greeting.makes_an_account("ada", THEIRS, SecretKind::Password);
 
     assert_eq!(
         signed_in_as(&greeted),
@@ -119,7 +119,7 @@ fn the_account_is_still_there_after_a_restart() {
     let store = somewhere_to_keep("restart");
     let person = this_machines_person();
     let mut first = Greeting::at(&store, person, ADoor::willing()).unwrap();
-    let made = first.makes_an_account("ada", THEIRS);
+    let made = first.makes_an_account("ada", THEIRS, SecretKind::Password);
     assert_eq!(signed_in_as(&made), Some(person), "{made:?}");
 
     let next_boot = Greeting::at(&store, person, ADoor::willing()).unwrap();
@@ -137,15 +137,44 @@ fn the_account_is_still_there_after_a_restart() {
     );
 }
 
+/// **Whether the person chose a PIN or a password survives the restart too.**
+///
+/// Three walks of a booted machine (2026-11-12, -13, -14) pressed *Use
+/// password only* at the first start and were asked for a PIN on every boot
+/// after, because nothing kept which they chose. The greeting is what the
+/// sign-in screen asks, so it is asked here, after a restart, for each.
+#[test]
+fn the_kind_of_secret_chosen_survives_a_restart() {
+    for (kind, what) in [
+        (SecretKind::Password, "kind-password"),
+        (SecretKind::Pin, "kind-pin"),
+    ] {
+        let store = somewhere_to_keep(what);
+        let person = this_machines_person();
+        let mut first = Greeting::at(&store, person, ADoor::willing()).unwrap();
+        assert_eq!(first.whose_secret(), None, "nobody is here yet");
+        let made = first.makes_an_account("ada", THEIRS, kind);
+        assert_eq!(signed_in_as(&made), Some(person), "{made:?}");
+
+        let next_boot = Greeting::at(&store, person, ADoor::willing()).unwrap();
+        assert_eq!(next_boot.whose_secret(), Some(kind));
+        assert_eq!(
+            signed_in_as(&next_boot.signs_in("ada", THEIRS)),
+            Some(person),
+            "the {kind:?} did not sign in after a restart"
+        );
+    }
+}
+
 /// **A second account is refused**, by the door and not by the screen.
 #[test]
 fn a_machine_that_has_an_account_refuses_another() {
     let store = somewhere_to_keep("second");
     let person = this_machines_person();
     let mut greeting = Greeting::at(&store, person, ADoor::willing()).unwrap();
-    let _first = greeting.makes_an_account("ada", THEIRS);
+    let _first = greeting.makes_an_account("ada", THEIRS, SecretKind::Password);
 
-    let again = greeting.makes_an_account("bo", THEIRS);
+    let again = greeting.makes_an_account("bo", THEIRS, SecretKind::Password);
 
     assert_eq!(
         refused_with(&again),
@@ -164,7 +193,7 @@ fn a_greeting_with_no_store_refuses_rather_than_keeping_it_in_memory() {
     let person = this_machines_person();
     let mut greeting = Greeting::of(Accounts::none().unwrap(), person, ADoor::willing());
 
-    let greeted = greeting.makes_an_account("ada", THEIRS);
+    let greeted = greeting.makes_an_account("ada", THEIRS, SecretKind::Password);
 
     assert_eq!(
         refused_with(&greeted),
@@ -183,7 +212,7 @@ fn a_name_that_is_not_a_name_is_refused() {
     let store = somewhere_to_keep("badname");
     let mut greeting = Greeting::at(&store, this_machines_person(), ADoor::willing()).unwrap();
 
-    let greeted = greeting.makes_an_account("Ada Lovelace", THEIRS);
+    let greeted = greeting.makes_an_account("Ada Lovelace", THEIRS, SecretKind::Password);
 
     assert_eq!(
         refused_with(&greeted),
@@ -220,7 +249,7 @@ fn an_account_the_disk_refused_is_not_left_in_memory() {
     // Where the file belongs, a directory now stands.
     std::fs::create_dir_all(&store).unwrap();
 
-    let greeted = greeting.makes_an_account("ada", THEIRS);
+    let greeted = greeting.makes_an_account("ada", THEIRS, SecretKind::Password);
 
     assert_eq!(
         refused_with(&greeted),
@@ -246,7 +275,7 @@ fn an_account_with_no_password_is_refused() {
     let store = somewhere_to_keep("nopassword");
     let mut greeting = Greeting::at(&store, this_machines_person(), ADoor::willing()).unwrap();
 
-    let greeted = greeting.makes_an_account("ada", "");
+    let greeted = greeting.makes_an_account("ada", "", SecretKind::Password);
 
     assert_eq!(
         refused_with(&greeted),
@@ -282,7 +311,7 @@ fn a_refused_account_leaves_the_machine_with_none() {
     let person = this_machines_person();
     let mut greeting = Greeting::at(&store, person, ADoor::willing()).unwrap();
 
-    let _refused = greeting.makes_an_account("Ada Lovelace", THEIRS);
+    let _refused = greeting.makes_an_account("Ada Lovelace", THEIRS, SecretKind::Password);
 
     assert_eq!(greeting.standing(), Standing::MakeAnAccount);
     let next_boot = Greeting::at(&store, person, ADoor::willing()).unwrap();
@@ -302,7 +331,7 @@ fn making_an_account_moves_the_machine_from_make_to_sign_in() {
     let mut greeting = Greeting::at(&store, this_machines_person(), ADoor::willing()).unwrap();
     assert_eq!(greeting.standing(), Standing::MakeAnAccount);
 
-    let _made = greeting.makes_an_account("ada", THEIRS);
+    let _made = greeting.makes_an_account("ada", THEIRS, SecretKind::Password);
 
     assert_eq!(greeting.standing(), Standing::SignIn);
 }
