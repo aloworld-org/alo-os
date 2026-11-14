@@ -1,0 +1,24 @@
+[package]
+name = "alo-walking"
+version = "0.0.1"
+description = "Walks a booted alo OS machine in qemu, unattended: keys with explicit press and release over QMP, screenshots taken once the screen has changed and settled, the serial log read for the journal's own sentences, and a pass or fail for each check with its evidence."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish = false
+
+# A test instrument, never shipped: nothing in the image depends on this
+# package, and no crate that ships depends on it. `.github/workflows/walk.yml`
+# runs its binary on a runner with KVM.
+
+[[bin]]
+name = "alo-walk"
+path = "src/bin/alo-walk.rs"
+
+[dependencies]
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+
+[lints]
+workspace = true

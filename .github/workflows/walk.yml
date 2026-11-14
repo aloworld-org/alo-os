@@ -1,18 +1,43 @@
 # Walk a booted alo OS machine under KVM, unattended, and keep what it saw.
 #
-# **Stage 1 of the walk road: measure first.** This first version answers two
-# questions and nothing else: is `/dev/kvm` usable on a GitHub-hosted runner,
-# and how long do the image, the disk and the first boot take there. The walk
-# itself (`crates/alo-walking`) replaces the boot step once those are known.
+# The walks before this were done by hand on a lane machine with no KVM, where
+# qemu emulated the processor: about 75 minutes of first-boot installs, keys
+# arriving 30 to 100 seconds late, shifted keys garbled when sent quickly, and
+# screenshots that showed the screen before the key. A GitHub-hosted Linux
+# runner exposes `/dev/kvm`, so the same disk boots there at the processor's
+# own speed, and `crates/alo-walking` walks it: keys over QMP with explicit
+# press and release, a picture once the screen has changed and settled, the
+# serial log read for the journal's own sentences, and a pass or a fail for
+# each check with its evidence. `docs/walks/walks-on-github.md` says how to run
+# it and what it does and does not prove.
 #
-# The `push` trigger on this one branch is for the measurement only, because a
-# `workflow_dispatch` workflow cannot be started until it is on main. It is
-# removed before this lands.
+# **A walk image is not an image anybody installs.** CLAUDE.md's rule — *no
+# real image is built while any branch but main exists* — is about images a
+# person installs or that are called a candidate or a release. This one:
+#
+# - is built **from main**, whichever branch started the run, because a walk
+#   here is a walk of what main is;
+# - is **never pushed, signed or published** — no registry is logged in to,
+#   and the image is removed from the runner once the disk is written;
+# - leaves the runner only as **pictures, a report and the serial log**, kept
+#   for seven days. The disk itself is never uploaded.
+#
+# `crates/alo-walking/tests/the_walk_workflow_publishes_nothing.rs` holds this
+# file to each of those.
+#
+# The `push` trigger on this one branch exists only so the walk can run before
+# the workflow is on main — a `workflow_dispatch` workflow cannot be started
+# until it is — and is removed before this lands.
 
 name: Walk
 
 on:
   workflow_dispatch:
+    inputs:
+      with_the_provider:
+        description: "Also add an AI provider, typing its key from the ALO_WALK_PROVIDER_KEY secret (unverified steps)"
+        type: boolean
+        default: false
   push:
     branches: [walks-on-kvm]
 
@@ -26,8 +51,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # The image is always main's, whichever branch started this run: a walk
-      # image is a walk of main, never of a branch, and is never pushed.
+      # The image is always main's, whichever branch started this run.
       - uses: actions/checkout@v4
         with:
           ref: main
@@ -36,14 +60,17 @@ jobs:
       - name: Say which commit the image is built from
         working-directory: image-source
         run: |
-          echo "the walk image is built from main at $(git rev-parse HEAD)" | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "The walk image is built from main at \`$(git rev-parse HEAD)\`." | tee -a "$GITHUB_STEP_SUMMARY"
 
-      - name: Measure the disk before and after making room
+      - name: Build the walk harness
+        run: cargo build --release --locked -p alo-walking
+
+      - name: Make room on the runner's disk
         run: |
-          df -h / /mnt || true
+          df -h /
           sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
           sudo docker image prune --all --force > /dev/null || true
-          df -h / /mnt || true
+          df -h /
 
       # GitHub's own documented rule for KVM on its hosted Linux runners.
       - name: Give this job the processor's virtualisation
@@ -53,29 +80,25 @@ jobs:
           sudo udevadm trigger --name-match=kvm
           ls -l /dev/kvm
           if [ -r /dev/kvm ] && [ -w /dev/kvm ]; then
-            echo "KVM: /dev/kvm is readable and writable by the job" | tee -a "$GITHUB_STEP_SUMMARY"
+            echo "KVM: \`/dev/kvm\` is readable and writable by this job." | tee -a "$GITHUB_STEP_SUMMARY"
           else
-            echo "KVM: /dev/kvm is not usable by the job" | tee -a "$GITHUB_STEP_SUMMARY"
+            echo "KVM: \`/dev/kvm\` is not usable by this job, so nothing is walked." | tee -a "$GITHUB_STEP_SUMMARY"
             exit 1
           fi
-          nproc; free -g
 
       - name: Install the emulator and its firmware
         run: |
           sudo apt-get update -q
           sudo apt-get install -y -q qemu-system-x86 qemu-utils ovmf
           qemu-system-x86_64 --version
-          ls -l /usr/share/OVMF/
 
-      - name: Build the walk image
+      - name: Build the walk image from main
         working-directory: image-source
         run: |
           start=$(date +%s)
           sudo podman build -f image/Containerfile -t localhost/alo-os:walk . > "$RUNNER_TEMP/image-build.log" 2>&1 || { tail -40 "$RUNNER_TEMP/image-build.log"; exit 1; }
-          tail -5 "$RUNNER_TEMP/image-build.log"
-          echo "image built in $(( $(date +%s) - start )) s" | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "The image was built in $(( $(date +%s) - start )) s." | tee -a "$GITHUB_STEP_SUMMARY"
           sudo podman image prune -f > /dev/null
-          sudo podman images
           df -h /
 
       - name: Write the walk disk
@@ -91,50 +114,28 @@ jobs:
             bootc install to-disk --via-loopback --wipe \
               --filesystem btrfs /output/alo.raw
           sudo chown "$(id -u):$(id -g)" walk/alo.raw
-          echo "disk written in $(( $(date +%s) - start )) s, $(du -h walk/alo.raw | cut -f1) actual" | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "The disk was written in $(( $(date +%s) - start )) s, $(du -h walk/alo.raw | cut -f1) of it used." | tee -a "$GITHUB_STEP_SUMMARY"
           sudo podman rmi localhost/alo-os:walk > /dev/null || true
-          df -h /
-
-      - name: Boot it under KVM and time the first boot
-        run: |
           cp /usr/share/OVMF/OVMF_VARS_4M.fd walk/vars.fd
-          : > walk/serial.log
-          start=$(date +%s)
-          qemu-system-x86_64 \
-            -machine q35 -enable-kvm -cpu host -m 6144 -smp 4 \
-            -drive if=pflash,format=raw,readonly=on,file=/usr/share/OVMF/OVMF_CODE_4M.fd \
-            -drive if=pflash,format=raw,file=walk/vars.fd \
-            -drive file=walk/alo.raw,format=raw,if=virtio \
-            -device virtio-vga \
-            -netdev user,id=net0 -device virtio-net-pci,netdev=net0 \
-            -display none \
-            -serial file:walk/serial.log \
-            -qmp tcp:127.0.0.1:4444,server=on,wait=off \
-            -no-reboot > walk/qemu.log 2>&1 &
-          greeter=""; arrived=""
-          while [ $(( $(date +%s) - start )) -lt 3600 ]; do
-            sleep 10
-            t=$(( $(date +%s) - start ))
-            if [ -z "$greeter" ] && grep -aq "the sign-in screen is going up" walk/serial.log; then
-              greeter=$t; echo "sign-in screen after $t s" | tee -a "$GITHUB_STEP_SUMMARY"
-            fi
-            if [ -z "$arrived" ] && grep -aq "of this machine's applications arrived" walk/serial.log; then
-              arrived=$t; echo "applications after $t s: $(grep -a "of this machine's applications arrived" walk/serial.log | tail -1)" | tee -a "$GITHUB_STEP_SUMMARY"
-            fi
-            if [ -n "$greeter" ] && [ -n "$arrived" ]; then break; fi
-            if ! pgrep -f "qemu-system-x86_64 -machine q35" > /dev/null; then
-              echo "the machine stopped after $t s" | tee -a "$GITHUB_STEP_SUMMARY"; tail -5 walk/qemu.log; break
-            fi
-          done
-          grep -ac "" walk/serial.log
-          grep -aiE "kvm|lagging behind|too slow" walk/serial.log | head -10 || true
-          pkill -f "qemu-system-x86_64 -machine q35" || true
+
+      # The provider's key is typed only when a person ticks the box and the
+      # secret exists; otherwise the variable is empty and the walk skips that
+      # section and says so.
+      - name: Walk it
+        env:
+          ALO_WALK_PROVIDER_KEY: ${{ inputs.with_the_provider && secrets.ALO_WALK_PROVIDER_KEY || '' }}
+        run: |
+          target/release/alo-walk \
+            --disk walk/alo.raw \
+            --firmware /usr/share/OVMF/OVMF_CODE_4M.fd \
+            --variables walk/vars.fd \
+            --out the-walk \
+            --scratch walk
 
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: the-walk
-          path: |
-            walk/serial.log
-            walk/qemu.log
+          path: the-walk
           retention-days: 7
+          if-no-files-found: warn
