@@ -31,7 +31,12 @@ pub const FEWEST_CELLS: usize = 4;
 const SAME_COLOUR: u8 = 10;
 
 /// How far a pixel must move on some channel to have changed.
-const CHANGED: u8 = 24;
+///
+/// **Small, because a white window on the cream desktop differs by about ten**:
+/// at 24, the first walk run that reached Text Editor (43650359669) found the
+/// Dock's shift larger than the window and aimed the pointer at the Dock. The
+/// screen capture is exact, so a few levels is no noise.
+const CHANGED: u8 = 3;
 
 /// A place a walk can point at.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

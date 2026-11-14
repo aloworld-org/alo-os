@@ -74,39 +74,51 @@ fn every_shape_the_walk_names_has_solid_pixels_of_both_kinds() {
     }
 }
 
-/// Whether two cursors are drawn as the same pixels — a text cursor is the
-/// same whichever arrow the person chose, and only the arrows differ by it.
-fn same_picture(one: Drawn, two: Drawn) -> bool {
-    let drawn = |it: Drawn| {
-        alo_cursors::draw_in(
-            it.icon,
-            alo_cursors::Silhouette::from(it.look.shape),
-            it.look.colour,
-            it.pixels(),
-        )
-        .ok()
-    };
-    drawn(one).is_some() && drawn(one) == drawn(two)
+/// A cursor's pixels, to tell when two names are the same picture — a text
+/// cursor is the same whichever arrow the person chose, and only the arrows
+/// differ by it.
+fn picture_of(it: Drawn) -> Option<alo_cursors::Picture> {
+    alo_cursors::draw_in(
+        it.icon,
+        alo_cursors::Silhouette::from(it.look.shape),
+        it.look.colour,
+        it.pixels(),
+    )
+    .ok()
 }
 
 /// **Each is found exactly where it is drawn, and nothing else is found
 /// there** — not the other arrow, not another colour, not another size and
 /// not another shape; only the same pixels by another name, as a text cursor
-/// is under either arrow. This is what lets a check say *the familiar arrow, where
-/// the kite was expected* rather than only *something*.
+/// is under either arrow. This is what lets a check say *the familiar arrow,
+/// where the kite was expected* rather than only *something*.
+///
+/// Looked for within a few pixels of the place rather than over the whole
+/// picture, so the fifty-four by fifty-four of it stays a test that runs in
+/// seconds in a debug build.
 #[test]
 fn each_is_found_where_it_is_drawn_and_no_other_is() {
-    let references: Vec<Reference> = every_one()
+    let every: Vec<(Drawn, Option<alo_cursors::Picture>)> = every_one()
         .into_iter()
-        .filter_map(|drawn| Reference::of(drawn).ok())
+        .map(|drawn| (drawn, picture_of(drawn)))
         .collect();
-    assert_eq!(references.len(), every_one().len());
+    let references: Vec<(Reference, Option<&alo_cursors::Picture>)> = every
+        .iter()
+        .filter_map(|(drawn, picture)| Some((Reference::of(*drawn).ok()?, picture.as_ref())))
+        .collect();
+    assert_eq!(references.len(), every.len());
     let place = (40, 40);
-    for drawn in every_one() {
-        let screen = drawn_over(Frame::filled(96, 96, GREY), drawn, place);
-        for reference in &references {
-            let found = found_in(&screen, reference, None);
-            if same_picture(reference.drawn, drawn) {
+    let around = Some(Around {
+        x: place.0,
+        y: place.1,
+        reach: 8,
+    });
+    for (drawn, picture) in &every {
+        assert!(picture.is_some(), "{} is not drawn", drawn.said());
+        let screen = drawn_over(Frame::filled(96, 96, GREY), *drawn, place);
+        for (reference, its_picture) in &references {
+            let found = found_in(&screen, reference, around);
+            if *its_picture == picture.as_ref() {
                 assert_eq!(found, vec![place], "{} not found", drawn.said());
             } else {
                 assert!(

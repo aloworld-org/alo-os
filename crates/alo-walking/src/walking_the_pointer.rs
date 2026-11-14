@@ -39,7 +39,8 @@ use crate::the_pointer_seen::{Around, Drawn, Look, Reference, found_in};
 /// The display scales a first sighting tries, in per cent, most likely first.
 pub const SCALES: [u16; 8] = [100, 125, 150, 175, 200, 225, 250, 300];
 
-/// The shapes looked for everywhere when nothing says where the pointer is.
+/// The shapes a failed check looks for to say what is drawn instead: the
+/// arrow, the text cursor and the hand.
 const THE_THREE: [CursorIcon; 3] = [CursorIcon::Default, CursorIcon::Text, CursorIcon::Pointer];
 
 /// The move that shows whether the capture has the pointer in it, from a
@@ -333,25 +334,19 @@ impl Walking {
         None
     }
 
-    /// What is drawn where the expected pointer is not: any of alo's pointers
-    /// in any look, said with where — or that there is none.
+    /// What is drawn where the expected pointer is not: the arrow, the text
+    /// cursor or the hand in any look, near where the pointer was last or
+    /// anywhere, said with where — or that there is none.
     fn instead(&self, frame: &Frame) -> String {
-        let (icons, around): (&[CursorIcon], Option<(usize, usize)>) = match self.pointer.at {
-            Some(at) => (&EVERY_SHAPE[..], Some(at)),
-            None => (&THE_THREE[..], None),
-        };
-        let scales = self
-            .pointer
-            .scale
-            .map_or_else(|| vec![100, 200], |it| vec![it]);
+        let icons = &THE_THREE[..];
+        let around = self.pointer.at;
+        let scale = self.pointer.scale.unwrap_or(100);
         let mut seen = Vec::new();
         for look in Look::every() {
-            for &scale in &scales {
-                for reference in references(look, scale, icons) {
-                    let reach = around.map(|(x, y)| Around { x, y, reach: NEAR });
-                    for place in found_in(frame, &reference, reach) {
-                        seen.push(format!("{} at {place:?}", reference.drawn.said()));
-                    }
+            for reference in references(look, scale, icons) {
+                let reach = around.map(|(x, y)| Around { x, y, reach: NEAR });
+                for place in found_in(frame, &reference, reach) {
+                    seen.push(format!("{} at {place:?}", reference.drawn.said()));
                 }
             }
         }

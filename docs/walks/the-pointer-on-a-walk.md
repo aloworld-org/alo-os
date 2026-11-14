@@ -101,3 +101,22 @@ log shows the mouse bound as `VirtualPS/2 VMware VMMouse`, which takes
 absolute positions, and that fits; it was not taken apart further. The walk
 now places the pointer absolutely. Every pointer check after the first read NOT
 REACHED on that run, and nothing about the pointer's shape was measured.
+
+**Run 43650359669, 2026-11-14, image from main, once.** With the pointer placed
+absolutely, the first sixteen pointer steps ran:
+
+- **The capture shows the pointer**: a move of 24 by 16 pixels changed 500.
+- **On the desktop, alo's navy kite**, 24 pixels at 100 per cent, found at
+  (639, 399) and again at (644, 402) after a nudge.
+- **Over VSCodium, alo's navy text cursor**, over the editor
+  (`26-pointer-over-vscodium-the-pointer-is-still-alo-s.png`).
+- **Settings made the pointer large and white**: the picture kept shows it
+  (`31-…png`), and *Large* and *White* ticked.
+- **The check over Text Editor passed and measured the wrong thing.** Its
+  picture shows the pointer on the Dock, not on Text Editor's window: the
+  window is white on a cream desktop, which differs by about ten levels, and
+  the walk counted a pixel as changed only past 24, so the Dock's shift was the
+  largest change. **A pass that is not evidence**, written down here rather
+  than left in the report; the threshold is now 3.
+- The walk then stopped at *the pointer goes onto Settings* for the same
+  reason.
