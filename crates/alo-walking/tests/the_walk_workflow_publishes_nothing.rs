@@ -62,13 +62,16 @@ fn nothing_is_pushed_signed_or_published() {
     }
 }
 
-/// **The image is main's**: the checkout it is built from names `ref: main`,
-/// and it is built from that checkout.
+/// **The image is main's**: the checkout it is built from is the merged
+/// commit after a merge to main and `main` otherwise, and it is built from
+/// that checkout.
 #[test]
 fn the_image_is_built_from_main() {
     let lines = said();
     let checkout = lines.windows(3).any(|three| {
-        three.iter().any(|it| it == "ref: main")
+        three
+            .iter()
+            .any(|it| it == "ref: ${{ github.event_name == 'push' && github.sha || 'main' }}")
             && three.iter().any(|it| it == "path: image-source")
     });
     assert!(checkout, "no checkout of main into image-source");
@@ -112,10 +115,11 @@ fn only_the_walk_is_kept_and_only_for_seven_days() {
     );
 }
 
-/// **A person starts it**: `workflow_dispatch` is its only trigger, so it is
-/// never a run nobody asked for.
+/// **It runs after every merge to main, and when a person starts it** —
+/// nothing else: a push to any other branch, a pull request or a schedule
+/// would be a walk the owner did not decide on (2026-11-14).
 #[test]
-fn a_person_starts_it() {
+fn it_runs_after_every_merge_to_main_and_by_hand() {
     let lines = said();
     let Some(on) = lines.iter().position(|it| it == "on:") else {
         panic!("no triggers");
@@ -131,15 +135,43 @@ fn a_person_starts_it() {
         .collect();
     assert_eq!(
         triggers,
-        vec!["workflow_dispatch:", "inputs:", "with_the_provider:"],
-        "a trigger beside workflow_dispatch"
+        vec![
+            "push:",
+            "workflow_dispatch:",
+            "inputs:",
+            "with_the_provider:"
+        ],
+        "a trigger beside a merge to main and a person"
+    );
+    assert!(
+        lines.windows(2).any(|two| matches!(two, [push, branches]
+            if push == "push:" && branches == "branches: [main]")),
+        "the push trigger is not only main's"
     );
 }
 
-/// **A secret is reached only when a person asks for it**: every line that
-/// names a secret also names the box they tick.
+/// **Walks of main do not pile up**: one runs and only the newest waits, and
+/// the one running is never cancelled, so every walk that starts says how it
+/// ended.
 #[test]
-fn a_secret_is_reached_only_when_asked_for() {
+fn one_walk_runs_and_only_the_newest_waits() {
+    let lines = said();
+    assert!(
+        lines
+            .windows(3)
+            .any(|three| matches!(three, [concurrency, group, cancel]
+            if concurrency == "concurrency:"
+                && group == "group: walk-${{ github.ref }}"
+                && cancel == "cancel-in-progress: false")),
+        "no concurrency group that lets a running walk finish"
+    );
+}
+
+/// **A secret is reached only on a walk after a merge, or when a person asks
+/// for it**: every line that names a secret also names the merge and the box
+/// they tick.
+#[test]
+fn a_secret_is_reached_only_after_a_merge_or_when_asked_for() {
     let named: Vec<String> = said()
         .into_iter()
         .filter(|line| line.contains("secrets."))
@@ -150,8 +182,10 @@ fn a_secret_is_reached_only_when_asked_for() {
     );
     for line in named {
         assert!(
-            line.contains("inputs.with_the_provider && secrets.ALO_WALK_PROVIDER_KEY"),
-            "a secret reached without the box: {line}"
+            line.contains(
+                "(github.event_name == 'push' || inputs.with_the_provider) && secrets.ALO_WALK_PROVIDER_KEY"
+            ),
+            "a secret reached without a merge or the box: {line}"
         );
     }
 }

@@ -15,7 +15,13 @@ boots it and walks it with `crates/alo-walking`, with nobody at a keyboard.
 
 ## How to run it
 
-On GitHub: **Actions → Walk → Run workflow**, on `main`. It took 25 to 45
+**It runs by itself after every merge to `main`**, on the merged commit, and
+its result is a check on that commit: a walk that fails is a red mark on
+`main`. Walks take long, so they do not pile up: one runs, and only the
+newest merge waits behind it — a later merge replaces the one waiting, and the
+one running is never cancelled.
+
+To run one by hand: **Actions → Walk → Run workflow**, on `main`. It took 25 to 45
 minutes on the four runs below, most of it building the image. When it ends, the run's summary page has a table of every
 check, and the artifact **the-walk** has:
 
@@ -56,11 +62,12 @@ than being left out, so a short walk never reads as a walk that passed.
 ## The provider section, and the one secret it needs
 
 After the screen reader, the walk can add an AI provider in Settings, typing
-its key. That section is **off**: it runs only when the person starting the
-workflow ticks *Also add an AI provider*, **and** the repository has the
-secret. Without both it is skipped and the report says why.
+its key. It runs on **every walk after a merge**, and on a walk started by
+hand only when the person ticks *Also add an AI provider*; either way only when
+the repository has the secret. Without it the section is skipped and the
+report says why.
 
-To switch it on, the owner adds one repository secret:
+The secret, added by the owner on 2026-11-14:
 
 - **Name:** `ALO_WALK_PROVIDER_KEY`
 - **Value:** an OpenAI API key (the walk adds provider `openai`, address
@@ -95,10 +102,12 @@ anything that touches the machine* — stands, and nothing here satisfies it.
 What it replaces is the walk by hand in qemu on the lane machine, not a walk on
 a PC.
 
-**It does not run by itself.** Under CLAUDE.md's *say whether a measurement was
-performed once or runs forever*: the harness's own unit tests run on every gate
-(they need no qemu); **the walk runs only when a person starts it**. Whether it
-should run on every merge is the owner's call.
+**It runs after every merge to `main`, not before one.** Under CLAUDE.md's
+*say whether a measurement was performed once or runs forever*: the harness's
+own unit tests run on every gate (they need no qemu); **the walk runs on every
+merge to `main`** (the owner's decision of 2026-11-14) and whenever a person
+starts it. It is not part of the gate a change must pass to land, so a walk
+that fails says so on a commit already in `main`.
 
 ## Measured on the first runs
 
