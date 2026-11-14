@@ -199,11 +199,16 @@ impl Typing {
                 matches!(role, Role::TextField | Role::Document | Role::PasswordField)
                     || facts.role == TERMINAL;
             // **Named as approved**, or — where an application names its
-            // document nothing, as GNOME Text Editor does — an unnamed one in
-            // a window whose title holds the approved name. Which of several
-            // unnamed ones is never guessed: two are refused below.
+            // document nothing, as GNOME Text Editor does, or names it
+            // something other than the file, as a code editor may — an unnamed
+            // one, or the one with the keyboard, in a window whose title holds
+            // the approved name. A model asked to write in hello.txt names it
+            // hello.txt, which is what the window says (the walk of 2026-11-14
+            // saw one guess "Document" instead). Which of several is never
+            // guessed: two are refused below.
+            let in_its_window = !window.is_empty() && window.contains(&self.name);
             let named = facts.name == self.name
-                || (facts.name.is_empty() && !window.is_empty() && window.contains(&self.name));
+                || (in_its_window && (facts.name.is_empty() || holds(&facts.states, FOCUSED)));
             if a_place_for_text && named && holds(&facts.states, SHOWING) {
                 found.push((at.clone(), facts.role, facts.states.clone()));
             }
