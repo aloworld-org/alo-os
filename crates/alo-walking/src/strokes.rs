@@ -49,9 +49,9 @@ pub struct Stroke {
 #[must_use]
 pub fn of(chord: &Chord, pace: Pace) -> Vec<Stroke> {
     let mut strokes = Vec::new();
-    for modifier in chord.held() {
+    for &modifier in chord.held() {
         strokes.push(Stroke {
-            key: *modifier,
+            key: modifier,
             down: true,
             then: pace.hold,
         });
@@ -66,9 +66,9 @@ pub fn of(chord: &Chord, pace: Pace) -> Vec<Stroke> {
         down: false,
         then: pace.hold,
     });
-    for modifier in chord.held().iter().rev() {
+    for &modifier in chord.held().iter().rev() {
         strokes.push(Stroke {
-            key: *modifier,
+            key: modifier,
             down: false,
             then: pace.hold,
         });

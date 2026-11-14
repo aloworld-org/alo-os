@@ -105,8 +105,10 @@ impl Frame {
             return self.width.max(other.width) * self.height.max(other.height);
         }
         self.pixels
-            .chunks_exact(3)
-            .zip(other.pixels.chunks_exact(3))
+            .as_chunks::<3>()
+            .0
+            .iter()
+            .zip(other.pixels.as_chunks::<3>().0)
             .filter(|(one, two)| one != two)
             .count()
     }

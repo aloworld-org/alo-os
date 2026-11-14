@@ -141,8 +141,9 @@ fn plain(character: char) -> Option<Chord> {
     ];
     LETTERS_AND_DIGITS
         .iter()
-        .find(|it| it.chars().next() == Some(character))
-        .map(|it| Chord::key(*it))
+        .copied()
+        .find(|it| it.starts_with(character))
+        .map(Chord::key)
 }
 
 #[cfg(test)]

@@ -138,7 +138,7 @@ impl Walking {
                 during,
             } => self.expect_no_line(machine, check, phrases, *since, *during)?,
             Step::OnlyWith(variable) => {
-                if secret(*variable).is_none_or(|it| it.is_empty()) {
+                if secret(variable).is_none_or(|it| it.is_empty()) {
                     self.stopped = Some((
                         Verdict::Skipped,
                         format!("the rest of the walk needs {variable}, which is not set"),
