@@ -68,15 +68,27 @@ fn a_fresh_machine_after(keys: &[SignInKey]) -> (tempfile::TempDir, SignInScreen
 /// Every sheet a fresh machine shows before anybody is on it, by the keys that
 /// reach it: the overview, language, region and keyboard, the name with a
 /// letter typed and the PIN with a digit typed.
+///
+/// **Continue asks once which time zone** on a machine whose clock names no
+/// region, which is the United States (the owner, 2026-11-14), so the way to
+/// the name is Tab, Enter, Escape from the zone sheet, and Enter again.
 pub(super) fn every_sheet() -> [Vec<SignInKey>; 6] {
-    use SignInKey::{Enter, Later, Letter, OtherField};
+    use SignInKey::{Clear, Enter, Later, Letter, OtherField};
     [
         vec![],
         vec![Enter],
         vec![Later, Enter],
         vec![Later, Later, Enter],
-        vec![OtherField, Enter, Letter('a')],
-        vec![OtherField, Enter, Letter('a'), OtherField, Letter('1')],
+        vec![OtherField, Enter, Clear, Enter, Letter('a')],
+        vec![
+            OtherField,
+            Enter,
+            Clear,
+            Enter,
+            Letter('a'),
+            OtherField,
+            Letter('1'),
+        ],
     ]
 }
 
@@ -152,7 +164,7 @@ fn at_one_hundred_every_sheet_is_the_pixels_main_drew() {
 /// runs by hand. What runs on every build is that each draws.
 #[test]
 fn the_approved_frames_are_drawn() {
-    use SignInKey::{Enter, Letter, OtherField};
+    use SignInKey::{Clear, Enter, Letter, OtherField};
     for (keys, size, name) in [
         (
             vec![],
@@ -165,12 +177,20 @@ fn the_approved_frames_are_drawn() {
             "first-start-language-improved-1280x800-light.png",
         ),
         (
-            vec![OtherField, Enter, Letter('a')],
+            vec![OtherField, Enter, Clear, Enter, Letter('a')],
             (1440, 960),
             "first-start-your-name-improved-1440x960-light.png",
         ),
         (
-            vec![OtherField, Enter, Letter('a'), Enter, Letter('1')],
+            vec![
+                OtherField,
+                Enter,
+                Clear,
+                Enter,
+                Letter('a'),
+                Enter,
+                Letter('1'),
+            ],
             (1440, 960),
             "first-start-add-a-pin-improved-1440x960-light.png",
         ),

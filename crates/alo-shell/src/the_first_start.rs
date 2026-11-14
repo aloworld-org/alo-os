@@ -109,8 +109,19 @@ pub struct TheFirstStart {
     /// language still gets that language's keyboard, as the overview would
     /// then name it.
     continued: bool,
-    /// The time zone the region taken sets, by its database name, and what
-    /// it is called in the person's language.
+    /// **The region the overview named when *Continue* was pressed**, where
+    /// none was taken on the region sheet — worked out again at every press of
+    /// Continue, so a person who goes back and changes language and continues
+    /// again keeps the region the overview then names.
+    ///
+    /// Kept rather than worked out on asking, because the compositor is
+    /// handed it by reference after every key, and because *Continue* is the
+    /// moment a person accepted it: a region that moved with the language
+    /// after that, before they continued again, would be one nobody accepted.
+    accepted_region: Option<RegionCode>,
+    /// The time zone the region taken — or the region Continue accepted —
+    /// sets, by its database name, and what it is called in the person's
+    /// language.
     zone: Option<alo_formats::zones::NamedZone>,
     /// Whether the region taken has several zones, so the region row names
     /// the one chosen — worked out once, when the region is taken, rather
@@ -136,6 +147,7 @@ impl TheFirstStart {
             region: None,
             keyboard: None,
             continued: false,
+            accepted_region: None,
             zone: None,
             one_of_several: false,
             where_the_machine_is,
@@ -214,9 +226,14 @@ impl TheFirstStart {
     }
 
     /// **The language a person chose**, for the compositor to keep — on the
-    /// language sheet as soon as a row is chosen, so the screen speaks it.
+    /// language sheet as soon as a row is chosen, so the screen speaks it;
+    /// and once *Continue* is pressed, the one the overview names, which
+    /// Continue accepted.
     pub fn the_language_chosen(&self) -> Option<&'static str> {
-        self.languages.chosen().map(|it| it.tag)
+        self.languages
+            .chosen()
+            .map(|it| it.tag)
+            .or_else(|| self.continued.then(|| self.the_language()))
     }
 
     /// **The keyboard to type on now**: chosen, or the chosen language's, or
@@ -231,14 +248,50 @@ impl TheFirstStart {
         something_chosen.then(|| self.the_keyboard())
     }
 
-    /// **The region a person took** with *Use this region*.
+    /// **The region a person took** with *Use this region*, or — once
+    /// *Continue* is pressed with none taken — the one the overview named.
     pub fn the_region_chosen(&self) -> Option<&RegionCode> {
-        self.region.as_ref()
+        self.region.as_ref().or(self.accepted_region.as_ref())
     }
 
-    /// **The time zone the region taken sets**, by its database name.
+    /// **The time zone the region sets**, by its database name — the region
+    /// taken, or where none was taken the region Continue accepted: its one
+    /// zone, or the one chosen when Continue asked which.
     pub fn the_zone_chosen(&self) -> Option<&str> {
         self.zone.as_ref().map(|it| it.iana.as_str())
+    }
+
+    /// *Continue* accepts what the overview names: the flag the language and
+    /// keyboard follow, and — where no region was taken — the region it names
+    /// and that region's zone. **Answers whether it asked which zone**, which
+    /// it does once for a region it has not accepted before that has several
+    /// (the owner, 2026-11-14: *"Ask once after Continue"*): the zone sheet of
+    /// ADR 0140 opens, and the next Continue goes on whether a zone was used
+    /// or the sheet was left with Escape. A region taken on the region sheet
+    /// already asked, and is never asked about again here.
+    fn continue_accepts_what_the_overview_names(&mut self) -> bool {
+        self.continued = true;
+        if self.region.is_some() {
+            return false;
+        }
+        let shown = self.the_region();
+        if shown == self.accepted_region {
+            return false;
+        }
+        self.accepted_region = shown;
+        self.zone = None;
+        self.one_of_several = false;
+        let Some(region) = &self.accepted_region else {
+            return false;
+        };
+        let mut zones = alo_formats::zones::the_zones_in(region, self.the_language());
+        if zones.len() > 1 {
+            self.one_of_several = true;
+            self.sheet = Sheet::Zone(TheZonePicker::of(zones));
+            return true;
+        }
+        self.zone = zones.pop();
+        false
     }
 
     /// What the zone is called, for the region row — only where the region
@@ -360,7 +413,9 @@ impl TheFirstStart {
             }
             SignInKey::Enter => match self.ring {
                 WhereTheRingIs::OnTheWayOn => {
-                    self.continued = true;
+                    if self.continue_accepts_what_the_overview_names() {
+                        return Went::Stayed;
+                    }
                     return Went::Onward;
                 }
                 WhereTheRingIs::OnTheList => self.open(self.row()),
