@@ -147,7 +147,8 @@ pub fn the_first_walk() -> Walk {
 fn then_the_provider(walk: Walk) -> Walk {
     let look = Settling::UNDER_KVM;
     let tab = Chord::key("tab");
-    walk.only_with(THE_PROVIDER_KEY)
+    let walk = walk
+        .only_with(THE_PROVIDER_KEY)
         .press(Chord::key("esc"))
         .press(Chord::with("meta_l", "i"))
         .look("settings-again", look)
@@ -166,7 +167,9 @@ fn then_the_provider(walk: Walk) -> Walk {
         .type_text("gpt-4o-mini")
         .look("the-provider-form-filled", look)
         .press(Chord::key("ret"))
-        .look("the-provider-saved", look)
+        .look("the-provider-saved", look);
+    // With a provider, alo can be asked: Demo 2's second road, at full access.
+    crate::writing_in_vscodium::at_full_access(walk)
 }
 
 #[cfg(test)]

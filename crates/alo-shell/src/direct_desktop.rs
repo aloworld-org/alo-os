@@ -1448,6 +1448,12 @@ impl LoopInput for TheDesktopLane<'_> {
             let mut asking =
                 crate::typing_into_the_window_in_front::TheDesktopAnswers(&mut *self.desktop);
             let typed = server.typed_into_the_window_in_front(one.asked(), one.text(), &mut asking);
+            // Said on the log with how many bytes and never what they were
+            // (`alo_acting::said_on_the_log`), so a walk can see the act.
+            eprintln!(
+                "alo-shell: {}",
+                alo_acting::said_on_the_log::alo_typed(one.asked(), typed)
+            );
             one.answered(typed);
         }
         // **And every link an application asked the person to choose for**,
