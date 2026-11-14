@@ -70,9 +70,10 @@ remembers.
    That build **is a check and never publishes**: it is not pushed, signed,
    pinned or handed to anybody, exactly like a walk image, so it does not
    break the rule that *no real image is built while any branch but `main`
-   exists*. **This is decided and not built**: the workflow change is a
-   separate pull request another lane is making, and until it lands the image
-   is still built only from `main`.
+   exists*. It is built by `.github/workflows/image-check.yml` (#1259), on the
+   pull request and on the merge queue's own commit, and
+   `crates/alo-image/tests/the_image_check_publishes_nothing.rs` holds it to
+   publishing nothing.
 5. **One lane owns one feature from start to finish.** A feature is not split
    across lanes — the lane that writes its walk writes both sides of its seams
    and lands it. A seam with an owner on each side is a seam nobody owns.
@@ -92,9 +93,11 @@ forever*, honestly:
   one place the compiler holds it; where #1251's check lands, a verb's argument
   names are held to the verb. Nothing searches for a hand-copied name in
   general.
-- **Rule 4 will be a check** once its workflow lands, run on every pull
-  request. **Until then it is nothing**, and this ADR must not be read as
-  saying the image is already built on pull requests.
+- **Rule 4 is a check that runs on every pull request.** Its status, *the
+  image builds*, was read on 2026-11-14 among the checks branch protection
+  requires of `main`, beside `alo/gates-on-a-runner`, so a change whose image
+  does not build cannot land. Which checks are required is the owner's
+  setting, and stays so.
 - **Rule 5 is a discipline nothing checks.** It runs when a lane chooses to
   follow it.
 

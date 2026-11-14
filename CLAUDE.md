@@ -180,10 +180,10 @@ without them has not been finished, it has been abandoned.
   3. **One source for names** — app ids, verb and argument names are declared
      once and read everywhere; a hand-copied name is a bug.
   4. **The image is built on every pull request** — as a check that never
-     publishes. Decided, not yet built.
+     publishes (`image-check.yml`), and required before anything lands.
   5. **One lane owns one feature from start to finish.**
-  Only a walk run and, once built, rule 4 are checks; the rest is discipline
-  nothing enforces, and the ADR says which.
+  Rule 4 is a required check and a walk checks rule 1 when it runs; the
+  rest is discipline nothing enforces, and the ADR says which.
 
 **A check that stands in for the thing is not the thing**, and this repository
 has rediscovered that four times in four sets of clothes. It is written here
