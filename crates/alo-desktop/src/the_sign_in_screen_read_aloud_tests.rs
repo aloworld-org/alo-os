@@ -3,7 +3,6 @@
 //! answers, a bus that will not take the screen.
 
 use std::collections::VecDeque;
-use std::io::{BufRead as _, Write as _};
 
 use super::*;
 
@@ -75,10 +74,7 @@ fn read_in(language: &str) -> ToTheReader {
 
 /// An empty screen, which is all the bus here needs.
 fn a_screen() -> ToTheReader {
-    let line = "{\"screen\": {\"nodes\": [{\"role\": 75, \"name\": \"\", \"description\": \"\", \
-                \"states\": [0, 0], \"announced\": false, \"parent\": 0, \"attributes\": []}], \
-                \"in-front\": null}}";
-    ToTheReader::read(line).unwrap()
+    ToTheReader::read("screen\t-\t-\t-\t75,0,0,0,0,,,\n").unwrap()
 }
 
 /// **A screen is put on the bus as it arrives**, and a bus that will not take

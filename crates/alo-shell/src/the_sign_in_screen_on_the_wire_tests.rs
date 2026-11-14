@@ -63,18 +63,42 @@ fn every_message_arrives_as_it_was_sent() {
 /// **What is not a message is refused**, and says which way it was not.
 #[test]
 fn what_is_not_a_message_is_refused() {
-    assert_eq!(ToTheReader::read("not json"), Err(NotUnderstood::NotJson));
-    assert_eq!(ToTheReader::read("[1, 2]"), Err(NotUnderstood::NotAMessage));
+    for line in [
+        "",
+        "run\t/bin/sh",
+        "read\tmaybe\tde",
+        "read\ton",
+        "signing-in\tnow",
+        "signing-in\nread\ton\tde",
+    ] {
+        assert_eq!(
+            ToTheReader::read(line),
+            Err(NotUnderstood::NotAMessage),
+            "{line:?}"
+        );
+    }
     assert_eq!(
-        ToTheReader::read(r#"{"run": "/bin/sh"}"#),
+        FromTheReader::read("answered\texploded"),
         Err(NotUnderstood::NotAMessage)
     );
-    assert_eq!(
-        FromTheReader::read(r#"{"answered": "exploded"}"#),
-        Err(NotUnderstood::NotAMessage)
-    );
-    let too_long = format!("{{\"x\": \"{}\"}}", "a".repeat(THE_LONGEST_LINE));
+    let too_long = format!("read\ton\t{}", "a".repeat(THE_LONGEST_LINE));
     assert_eq!(ToTheReader::read(&too_long), Err(NotUnderstood::TooLong));
+}
+
+/// **A word holding the line's own separators arrives as it was**, and one
+/// that is not written as a word is refused.
+#[test]
+fn a_word_with_the_separators_in_it_arrives_whole() {
+    for word in ["a,b;c=d", "50% off\tnow", "-", "x-y\r\n"] {
+        assert_eq!(unescaped(&escaped(word)).as_deref(), Some(word));
+    }
+    assert_eq!(unescaped("a,b"), None);
+    assert_eq!(unescaped("%4"), None);
+    assert_eq!(
+        unescaped("%41"),
+        None,
+        "only a separator is written escaped"
+    );
 }
 
 /// **Only a language can be named as the language** — nothing that could be
@@ -83,11 +107,11 @@ fn what_is_not_a_message_is_refused() {
 #[test]
 fn only_a_language_is_taken_as_one() {
     for tag in ["de", "pt-PT", "ga_IE", "fil"] {
-        let line = format!(r#"{{"read": {{"on": true, "language": "{tag}"}}}}"#);
+        let line = format!("read\ton\t{}", escaped(tag));
         assert!(ToTheReader::read(&line).is_ok(), "{tag}");
     }
     for tag in ["", "d", "de\nLD_PRELOAD=x", "de-DE-x", "../de", "deutsch"] {
-        let line = json!({ "read": { "on": true, "language": tag } }).to_string();
+        let line = format!("read\ton\t{}", escaped(tag));
         assert_eq!(
             ToTheReader::read(&line),
             Err(NotUnderstood::NotAMessage),
@@ -101,12 +125,19 @@ fn only_a_language_is_taken_as_one() {
 /// longer than any screen draws, or more nodes than any screen has.
 #[test]
 fn a_screen_that_does_not_hang_together_is_refused() {
-    let sent: Value =
-        serde_json::from_str(&ToTheReader::TheScreen(the_first_screen()).written()).unwrap();
-    let changed = |change: &dyn Fn(&mut Value)| {
+    let written = ToTheReader::TheScreen(the_first_screen()).written();
+    // `screen`, what is in front, where, where the keyboard is, then nodes.
+    let sent: Vec<String> = written.trim_end().split('\t').map(str::to_owned).collect();
+    let changed = |change: &dyn Fn(&mut Vec<String>)| {
         let mut sent = sent.clone();
         change(&mut sent);
-        ToTheReader::read(&sent.to_string())
+        ToTheReader::read(&sent.join("\t"))
+    };
+    // One field of the second node, by its place among the node's eight.
+    let the_second_nodes = |sent: &mut Vec<String>, field: usize, to: &str| {
+        let mut parts: Vec<String> = sent[5].split(',').map(str::to_owned).collect();
+        parts[field] = to.to_owned();
+        sent[5] = parts.join(",");
     };
     let not_a_screen = |said: Result<ToTheReader, NotUnderstood>| {
         assert!(
@@ -114,26 +145,30 @@ fn a_screen_that_does_not_hang_together_is_refused() {
             "{said:?}"
         );
     };
-    not_a_screen(changed(&|sent: &mut Value| {
-        sent["screen"]["nodes"][1]["parent"] = json!(5);
+    not_a_screen(changed(&|sent: &mut Vec<String>| {
+        the_second_nodes(sent, 4, "5");
     }));
-    not_a_screen(changed(&|sent: &mut Value| {
-        sent["screen"]["in-front"]["keyboard"] = json!(100_000);
+    not_a_screen(changed(&|sent: &mut Vec<String>| {
+        sent[3] = "100000".to_owned();
     }));
-    not_a_screen(changed(&|sent: &mut Value| {
-        sent["screen"]["in-front"]["screen"] = json!("the desktop");
+    not_a_screen(changed(&|sent: &mut Vec<String>| {
+        sent[1] = "the desktop".to_owned();
     }));
-    not_a_screen(changed(&|sent: &mut Value| {
-        sent["screen"]["nodes"][1]["name"] = json!("a".repeat(THE_LONGEST_WORDS + 1));
+    not_a_screen(changed(&|sent: &mut Vec<String>| {
+        the_second_nodes(sent, 5, &"a".repeat(THE_LONGEST_WORDS + 1));
     }));
-    not_a_screen(changed(&|sent: &mut Value| {
-        sent["screen"]["nodes"][1]["states"] = json!([1]);
+    not_a_screen(changed(&|sent: &mut Vec<String>| {
+        the_second_nodes(sent, 1, "low");
     }));
-    not_a_screen(changed(&|sent: &mut Value| {
-        let one = sent["screen"]["nodes"][1].clone();
-        sent["screen"]["nodes"] = Value::Array(vec![one; THE_MOST_NODES + 1]);
+    not_a_screen(changed(&|sent: &mut Vec<String>| {
+        sent[5].push_str(",a ninth field");
     }));
-    not_a_screen(changed(&|sent: &mut Value| {
-        sent["screen"]["nodes"] = json!([]);
+    not_a_screen(changed(&|sent: &mut Vec<String>| {
+        let one = sent[5].clone();
+        sent.truncate(4);
+        sent.extend(std::iter::repeat_n(one, THE_MOST_NODES + 1));
+    }));
+    not_a_screen(changed(&|sent: &mut Vec<String>| {
+        sent.truncate(4);
     }));
 }

@@ -5,14 +5,25 @@
 //! capabilities, and never touches the sign-in login's buses. A relay of alo's
 //! own runs as that login (`alo-reading-the-sign-in-screen`) and is the only
 //! thing that puts the screen on its accessibility bus. Between the two is one
-//! Unix socket, and **this is everything that may cross it**: one line of JSON
-//! per message, each way.
+//! Unix socket, and **this is everything that may cross it**: one line per
+//! message, each way.
 //!
 //! - **To the reader**: the screen, whole, as `crate::the_screens_before_sign_in_as_read`
 //!   built it; whether to read it aloud, and in which language; and that a
 //!   person is signing in, so it steps aside.
 //! - **From the reader**: what starting or stopping the voice came to, and that
 //!   it has stepped aside.
+//!
+//! # The shape of a line
+//!
+//! Fields are separated by tabs; a node's own fields by commas, its attributes
+//! by semicolons and each attribute's key from its value by `=`. Those five
+//! characters, the newline, the carriage return and `%` itself are written as
+//! `%` and two hex digits wherever they appear in a word. **Not JSON, and on
+//! purpose**: the shipped shell is built with no serialiser at all
+//! (`tests/settings_source.rs`), so that no setting can be written except by
+//! the crate that owns it — and a screen sent over a socket is not worth
+//! weakening that for.
 //!
 //! # Data, never code, and nothing typed
 //!
@@ -30,8 +41,6 @@
 //! the largest screen alo draws — every region on the region sheet — is a few
 //! hundred nodes of a few dozen bytes each.
 
-use serde_json::{Map, Value, json};
-
 use crate::TheScreenReaderAnswered;
 use crate::access_nodes::{Node, ReadAloudTree};
 use crate::access_sheet_in_front::{ASheetInFront, TheSheet};
@@ -43,8 +52,11 @@ pub const THE_LONGEST_LINE: usize = 4 * 1024 * 1024;
 /// The most nodes a screen may have on the wire.
 pub const THE_MOST_NODES: usize = 4096;
 
-/// The longest name, description or attribute, in bytes.
+/// The longest name, description or attribute, in bytes, as it is read.
 pub const THE_LONGEST_WORDS: usize = 4096;
+
+/// What stands for *none* in a field that may hold nothing.
+const NONE: &str = "-";
 
 /// **What the sign-in screen tells its reader.**
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -77,10 +89,7 @@ pub enum NotUnderstood {
     /// It is longer than [`THE_LONGEST_LINE`].
     #[error("the line is longer than either side reads")]
     TooLong,
-    /// It is not JSON.
-    #[error("the line is not JSON")]
-    NotJson,
-    /// It is JSON and not one of the messages.
+    /// It is not one of the messages.
     #[error("the line is not a message the sign-in screen and its reader exchange")]
     NotAMessage,
     /// It is a screen that does not hang together, for this reason.
@@ -92,12 +101,16 @@ impl ToTheReader {
     /// One line, ending in a newline, holding no other.
     #[must_use]
     pub fn written(&self) -> String {
-        let value = match self {
-            Self::TheScreen(tree) => json!({ "screen": the_tree_written(tree) }),
-            Self::Read { on, language } => json!({ "read": { "on": on, "language": language } }),
-            Self::SomebodyIsSigningIn => json!({ "signing-in": true }),
+        let line = match self {
+            Self::TheScreen(tree) => the_tree_written(tree),
+            Self::Read { on, language } => format!(
+                "read\t{}\t{}",
+                if *on { "on" } else { "off" },
+                language.as_deref().map_or_else(|| NONE.to_owned(), escaped)
+            ),
+            Self::SomebodyIsSigningIn => "signing-in".to_owned(),
         };
-        format!("{value}\n")
+        format!("{line}\n")
     }
 
     /// The message on `line`.
@@ -105,26 +118,30 @@ impl ToTheReader {
     /// # Errors
     /// [`NotUnderstood`], and nothing of the line is used.
     pub fn read(line: &str) -> Result<Self, NotUnderstood> {
-        let object = an_object(line)?;
-        if let Some(screen) = object.get("screen") {
-            return the_tree_read(screen).map(Self::TheScreen);
+        let fields = the_fields_of(line)?;
+        match fields.as_slice() {
+            ["signing-in"] => Ok(Self::SomebodyIsSigningIn),
+            ["read", on, language] => {
+                let on = match *on {
+                    "on" => true,
+                    "off" => false,
+                    _ => return Err(NotUnderstood::NotAMessage),
+                };
+                let language = match *language {
+                    NONE => None,
+                    tag => {
+                        let tag = unescaped(tag).ok_or(NotUnderstood::NotAMessage)?;
+                        if !a_language_tag(&tag) {
+                            return Err(NotUnderstood::NotAMessage);
+                        }
+                        Some(tag)
+                    }
+                };
+                Ok(Self::Read { on, language })
+            }
+            ["screen", rest @ ..] => the_tree_read(rest).map(Self::TheScreen),
+            _ => Err(NotUnderstood::NotAMessage),
         }
-        if let Some(read) = object.get("read") {
-            let on = read
-                .get("on")
-                .and_then(Value::as_bool)
-                .ok_or(NotUnderstood::NotAMessage)?;
-            let language = match read.get("language") {
-                None | Some(Value::Null) => None,
-                Some(Value::String(tag)) if a_language_tag(tag) => Some(tag.clone()),
-                Some(_) => return Err(NotUnderstood::NotAMessage),
-            };
-            return Ok(Self::Read { on, language });
-        }
-        if object.get("signing-in") == Some(&Value::Bool(true)) {
-            return Ok(Self::SomebodyIsSigningIn);
-        }
-        Err(NotUnderstood::NotAMessage)
     }
 }
 
@@ -132,11 +149,10 @@ impl FromTheReader {
     /// One line, ending in a newline, holding no other.
     #[must_use]
     pub fn written(&self) -> String {
-        let value = match self {
-            Self::Answered(answered) => json!({ "answered": an_answers_word(*answered) }),
-            Self::SteppedAside => json!({ "stepped-aside": true }),
-        };
-        format!("{value}\n")
+        match self {
+            Self::Answered(answered) => format!("answered\t{}\n", an_answers_word(*answered)),
+            Self::SteppedAside => "stepped-aside\n".to_owned(),
+        }
     }
 
     /// The message on `line`.
@@ -144,29 +160,67 @@ impl FromTheReader {
     /// # Errors
     /// [`NotUnderstood`], and nothing of the line is used.
     pub fn read(line: &str) -> Result<Self, NotUnderstood> {
-        let object = an_object(line)?;
-        if let Some(word) = object.get("answered").and_then(Value::as_str) {
-            return the_answer_named(word)
+        match the_fields_of(line)?.as_slice() {
+            ["answered", word] => the_answer_named(word)
                 .map(Self::Answered)
-                .ok_or(NotUnderstood::NotAMessage);
+                .ok_or(NotUnderstood::NotAMessage),
+            ["stepped-aside"] => Ok(Self::SteppedAside),
+            _ => Err(NotUnderstood::NotAMessage),
         }
-        if object.get("stepped-aside") == Some(&Value::Bool(true)) {
-            return Ok(Self::SteppedAside);
-        }
-        Err(NotUnderstood::NotAMessage)
     }
 }
 
-/// The JSON object on `line`, or why there is none.
-fn an_object(line: &str) -> Result<Map<String, Value>, NotUnderstood> {
+/// The tab-separated fields of one line, its newline taken off.
+fn the_fields_of(line: &str) -> Result<Vec<&str>, NotUnderstood> {
     if line.len() > THE_LONGEST_LINE {
         return Err(NotUnderstood::TooLong);
     }
-    match serde_json::from_str::<Value>(line.trim_end()) {
-        Ok(Value::Object(object)) => Ok(object),
-        Ok(_) => Err(NotUnderstood::NotAMessage),
-        Err(_) => Err(NotUnderstood::NotJson),
+    let line = line.strip_suffix('\n').unwrap_or(line);
+    let line = line.strip_suffix('\r').unwrap_or(line);
+    if line.contains('\n') {
+        return Err(NotUnderstood::NotAMessage);
     }
+    Ok(line.split('\t').collect())
+}
+
+/// The characters a word may not hold as they are.
+const SPECIAL: [char; 8] = ['%', '\t', '\n', '\r', ',', ';', '=', '-'];
+
+/// A word, with every special character written as `%` and two hex digits.
+/// A word that is exactly [`NONE`] is escaped too, so it is never read as none.
+fn escaped(word: &str) -> String {
+    let mut out = String::with_capacity(word.len());
+    for letter in word.chars() {
+        if SPECIAL.contains(&letter) {
+            out.push_str(&format!("%{:02X}", u32::from(letter)));
+        } else {
+            out.push(letter);
+        }
+    }
+    out
+}
+
+/// A word as it was before [`escaped`], or [`None`] where it is not one.
+fn unescaped(word: &str) -> Option<String> {
+    let mut out = String::with_capacity(word.len());
+    let mut letters = word.chars();
+    while let Some(letter) = letters.next() {
+        if letter != '%' {
+            if SPECIAL.contains(&letter) {
+                return None;
+            }
+            out.push(letter);
+            continue;
+        }
+        let high = letters.next()?.to_digit(16)?;
+        let low = letters.next()?.to_digit(16)?;
+        let it = char::from_u32(high * 16 + low)?;
+        if !SPECIAL.contains(&it) {
+            return None;
+        }
+        out.push(it);
+    }
+    (out.len() <= THE_LONGEST_WORDS).then_some(out)
 }
 
 /// **Only a language tag**: letters, with a region after a hyphen or an
@@ -242,46 +296,57 @@ fn the_screen_named(word: &str) -> Option<ScreenBeforeSignIn> {
     .find(|screen| a_screens_word(*screen) == word)
 }
 
-/// The tree, as JSON: every node in order with what it hangs under, and the
-/// screen in front. Paths and children are not sent: both follow from the
-/// order, and a receiver that took them from the wire could be told two
-/// different shapes at once.
-fn the_tree_written(tree: &ReadAloudTree) -> Value {
-    let nodes: Vec<Value> = tree
-        .nodes()
-        .iter()
-        .map(|node| {
-            json!({
-                "role": node.role,
-                "name": node.name,
-                "description": node.description,
-                "states": node.states,
-                "announced": node.announced,
-                "parent": node.parent,
-                "attributes": node.attributes,
-            })
-        })
-        .collect();
+/// The tree, as a line: the screen in front (`-` for none), where it is and
+/// where the keyboard is, then every node in order with what it hangs under.
+/// Paths and children are not sent: both follow from the order, and a
+/// receiver that took them from the wire could be told two different shapes
+/// at once.
+fn the_tree_written(tree: &ReadAloudTree) -> String {
     let in_front = tree.in_front().and_then(|sheet| match sheet.which {
-        TheSheet::BeforeSignIn(screen) => Some(json!({
-            "screen": a_screens_word(screen),
-            "at": sheet.at,
-            "keyboard": sheet.keyboard,
-        })),
+        TheSheet::BeforeSignIn(screen) => Some(format!(
+            "{}\t{}\t{}",
+            a_screens_word(screen),
+            sheet.at,
+            sheet.keyboard
+        )),
         TheSheet::Password(_)
         | TheSheet::OpenWith(_)
         | TheSheet::GitHub(_)
         | TheSheet::Settings => None,
     });
-    json!({ "nodes": nodes, "in-front": in_front })
+    let mut line = format!(
+        "screen\t{}",
+        in_front.unwrap_or_else(|| format!("{NONE}\t{NONE}\t{NONE}"))
+    );
+    for node in tree.nodes() {
+        let attributes: Vec<String> = node
+            .attributes
+            .iter()
+            .map(|(key, value)| format!("{}={}", escaped(key), escaped(value)))
+            .collect();
+        let [low, high] = node.states;
+        line.push_str(&format!(
+            "\t{},{},{},{},{},{},{},{}",
+            node.role,
+            low,
+            high,
+            u8::from(node.announced),
+            node.parent,
+            escaped(&node.name),
+            escaped(&node.description),
+            attributes.join(";")
+        ));
+    }
+    line
 }
 
-/// A tree read off the wire, or why it is not one.
-fn the_tree_read(value: &Value) -> Result<ReadAloudTree, NotUnderstood> {
-    let nodes = value
-        .get("nodes")
-        .and_then(Value::as_array)
-        .ok_or(NotUnderstood::NotAScreen("it has no nodes"))?;
+/// A tree read off the wire — the fields after `screen` — or why it is not one.
+fn the_tree_read(fields: &[&str]) -> Result<ReadAloudTree, NotUnderstood> {
+    let &[front, at, keyboard, ref nodes @ ..] = fields else {
+        return Err(NotUnderstood::NotAScreen(
+            "it says nothing of what is in front",
+        ));
+    };
     if nodes.is_empty() {
         return Err(NotUnderstood::NotAScreen("it has no nodes"));
     }
@@ -291,9 +356,9 @@ fn the_tree_read(value: &Value) -> Result<ReadAloudTree, NotUnderstood> {
         ));
     }
     let mut tree = ReadAloudTree::with_nothing_on_it();
-    for (at, node) in nodes.iter().enumerate() {
+    for (place, node) in nodes.iter().enumerate() {
         let read = a_node_read(node)?;
-        if at == 0 {
+        if place == 0 {
             if let Some(root) = tree.node_mut(0) {
                 *root = Node {
                     path: root.path.clone(),
@@ -302,113 +367,90 @@ fn the_tree_read(value: &Value) -> Result<ReadAloudTree, NotUnderstood> {
             }
             continue;
         }
-        if read.parent >= at {
+        if read.parent >= place {
             return Err(NotUnderstood::NotAScreen(
                 "a node hangs under one that comes after it",
             ));
         }
         tree.push(read.parent, read);
     }
-    match value.get("in-front") {
-        None | Some(Value::Null) => {}
-        Some(in_front) => {
-            let screen = in_front
-                .get("screen")
-                .and_then(Value::as_str)
-                .and_then(the_screen_named)
-                .ok_or(NotUnderstood::NotAScreen("the screen in front has no name"))?;
-            let place = |key: &str| {
-                in_front
-                    .get(key)
-                    .and_then(Value::as_u64)
-                    .and_then(|it| usize::try_from(it).ok())
-                    .filter(|it| *it < nodes.len())
-                    .ok_or(NotUnderstood::NotAScreen(
-                        "the screen in front is not one of its nodes",
-                    ))
-            };
-            tree.put_in_front(ASheetInFront {
-                which: TheSheet::BeforeSignIn(screen),
-                at: place("at")?,
-                keyboard: place("keyboard")?,
-            });
-        }
+    if front != NONE {
+        let screen = the_screen_named(front)
+            .ok_or(NotUnderstood::NotAScreen("the screen in front has no name"))?;
+        let place = |field: &str| {
+            field
+                .parse::<usize>()
+                .ok()
+                .filter(|it| *it < nodes.len())
+                .ok_or(NotUnderstood::NotAScreen(
+                    "the screen in front is not one of its nodes",
+                ))
+        };
+        tree.put_in_front(ASheetInFront {
+            which: TheSheet::BeforeSignIn(screen),
+            at: place(at)?,
+            keyboard: place(keyboard)?,
+        });
     }
     Ok(tree)
 }
 
 /// One node read off the wire, with nothing under it yet.
-fn a_node_read(value: &Value) -> Result<Node, NotUnderstood> {
-    let number = |key: &str| {
-        value
-            .get(key)
-            .and_then(Value::as_u64)
-            .ok_or(NotUnderstood::NotAScreen("a node is missing a number"))
-    };
-    let words = |key: &str| {
-        value
-            .get(key)
-            .and_then(Value::as_str)
-            .filter(|it| it.len() <= THE_LONGEST_WORDS)
-            .map(str::to_owned)
-            .ok_or(NotUnderstood::NotAScreen(
-                "a node's words are missing or too long",
-            ))
-    };
-    let a_word = |it: u64| u32::try_from(it).ok();
-    let role = a_word(number("role")?).ok_or(NotUnderstood::NotAScreen("a role is too large"))?;
-    let states = match value
-        .get("states")
-        .and_then(Value::as_array)
-        .map(Vec::as_slice)
-    {
-        Some([low, high]) => [
-            low.as_u64().and_then(a_word),
-            high.as_u64().and_then(a_word),
-        ],
-        _ => [None, None],
-    };
-    let [Some(low), Some(high)] = states else {
-        return Err(NotUnderstood::NotAScreen(
-            "a node's states are not two words",
-        ));
-    };
-    let parent = usize::try_from(number("parent")?)
-        .map_err(|_| NotUnderstood::NotAScreen("a parent is too large"))?;
-    let announced =
-        value
-            .get("announced")
-            .and_then(Value::as_bool)
-            .ok_or(NotUnderstood::NotAScreen(
-                "a node does not say whether it is announced",
-            ))?;
-    let mut attributes = Vec::new();
-    for pair in value
-        .get("attributes")
-        .and_then(Value::as_array)
-        .ok_or(NotUnderstood::NotAScreen("a node has no attributes"))?
-    {
-        let (Some(key), Some(said)) = (
-            pair.get(0).and_then(Value::as_str),
-            pair.get(1).and_then(Value::as_str),
-        ) else {
-            return Err(NotUnderstood::NotAScreen(
-                "an attribute is not a key and a value",
-            ));
-        };
-        if key.len() > THE_LONGEST_WORDS || said.len() > THE_LONGEST_WORDS {
-            return Err(NotUnderstood::NotAScreen("an attribute is too long"));
-        }
-        attributes.push((key.to_owned(), said.to_owned()));
-    }
-    Ok(Node {
+fn a_node_read(field: &str) -> Result<Node, NotUnderstood> {
+    let parts: Vec<&str> = field.split(',').collect();
+    let &[
         role,
-        name: words("name")?,
-        description: words("description")?,
-        states: [low, high],
+        low,
+        high,
         announced,
         parent,
+        name,
+        description,
         attributes,
+    ] = parts.as_slice()
+    else {
+        return Err(NotUnderstood::NotAScreen("a node is not eight fields"));
+    };
+    let a_word = |it: &str| {
+        it.parse::<u32>()
+            .map_err(|_| NotUnderstood::NotAScreen("a node's number is not one"))
+    };
+    let words = |it: &str| {
+        unescaped(it).ok_or(NotUnderstood::NotAScreen(
+            "a node's words are not written as words, or are too long",
+        ))
+    };
+    let announced = match announced {
+        "0" => false,
+        "1" => true,
+        _ => {
+            return Err(NotUnderstood::NotAScreen(
+                "a node does not say whether it is announced",
+            ));
+        }
+    };
+    let parent = parent
+        .parse::<usize>()
+        .map_err(|_| NotUnderstood::NotAScreen("a parent is not a place"))?;
+    let mut read_attributes = Vec::new();
+    if !attributes.is_empty() {
+        for pair in attributes.split(';') {
+            let Some((key, value)) = pair.split_once('=') else {
+                return Err(NotUnderstood::NotAScreen(
+                    "an attribute is not a key and a value",
+                ));
+            };
+            read_attributes.push((words(key)?, words(value)?));
+        }
+    }
+    Ok(Node {
+        role: a_word(role)?,
+        name: words(name)?,
+        description: words(description)?,
+        states: [a_word(low)?, a_word(high)?],
+        announced,
+        parent,
+        attributes: read_attributes,
         ..Node::default()
     })
 }
@@ -416,6 +458,7 @@ fn a_node_read(value: &Value) -> Result<Node, NotUnderstood> {
 #[cfg(test)]
 #[expect(
     clippy::unwrap_used,
+    clippy::indexing_slicing,
     reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
 )]
 #[path = "the_sign_in_screen_on_the_wire_tests.rs"]
