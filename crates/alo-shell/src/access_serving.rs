@@ -87,6 +87,32 @@ impl TheReaderIsTold {
         })
     }
 
+    /// **A screen before sign-in, put on the accessibility bus of whoever runs
+    /// this** — the sign-in login, in `alo-reading-the-sign-in-screen`
+    /// ([ADR 0155](../../../docs/decisions/0155-the-screens-before-sign-in-speak.md)).
+    /// `tree` is one `ReadAloudTree::before_sign_in` built, as it arrived
+    /// from the compositor.
+    ///
+    /// # Errors
+    /// What [`Self::opened`] refuses with, for the same reasons.
+    pub fn before_sign_in(tree: ReadAloudTree) -> Result<Self, crate::NotRead> {
+        let bus = ReadAloudBus::where_the_reader_is(&tree)?;
+        bus.embedded()?;
+        let mut this = Self {
+            windows: Vec::new(),
+            published: tree.clone(),
+            keyboard: None,
+            bus,
+        };
+        // **The screen comes to the front as it is first served**, so a reader
+        // already running hears it; `following` says nothing for a tree it
+        // already published, so this is told directly.
+        let (told, keyboard) = crate::access_events::what_happened(None, &tree);
+        this.keyboard = keyboard;
+        this.bus.told(&told)?;
+        Ok(this)
+    }
+
     /// Follow what is on the screen now, and say whether anything was
     /// republished.
     ///
@@ -111,7 +137,7 @@ impl TheReaderIsTold {
     /// leaves a reader with less than it had rather than a mixture of two
     /// moments — see [`ReadAloudBus::now_showing`]. [`crate::NotRead::NotTold`]
     /// when the tree is on the bus and what happened could not be said.
-    pub(crate) fn following(&mut self, tree: &ReadAloudTree) -> Result<bool, crate::NotRead> {
+    pub fn following(&mut self, tree: &ReadAloudTree) -> Result<bool, crate::NotRead> {
         if tree.nodes() == self.published.nodes() {
             return Ok(false);
         }

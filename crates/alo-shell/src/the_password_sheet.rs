@@ -256,7 +256,8 @@ impl ThePasswordSheet {
             | SignInKey::FieldBefore
             | SignInKey::Earlier
             | SignInKey::Later
-            | SignInKey::Nothing => {}
+            | SignInKey::Nothing
+            | SignInKey::TheScreenReader => {}
         }
     }
 

@@ -422,7 +422,11 @@ impl TheFirstStart {
             },
             // There is nowhere further back than the first sheet a machine
             // shows, which is `alo_access::leaving`'s reason for Escape here.
-            SignInKey::Clear | SignInKey::Letter(_) | SignInKey::Erase | SignInKey::Nothing => {}
+            SignInKey::Clear
+            | SignInKey::Letter(_)
+            | SignInKey::Erase
+            | SignInKey::Nothing
+            | SignInKey::TheScreenReader => {}
         }
         Went::Stayed
     }
@@ -469,7 +473,10 @@ impl TheFirstStart {
                 self.languages = before;
                 return;
             }
-            SignInKey::Letter(_) | SignInKey::Erase | SignInKey::Nothing => {}
+            SignInKey::Letter(_)
+            | SignInKey::Erase
+            | SignInKey::Nothing
+            | SignInKey::TheScreenReader => {}
         }
         self.sheet = Sheet::Language(before);
     }
@@ -496,7 +503,10 @@ impl TheFirstStart {
                     return;
                 }
             }
-            SignInKey::Letter(_) | SignInKey::Erase | SignInKey::Nothing => {}
+            SignInKey::Letter(_)
+            | SignInKey::Erase
+            | SignInKey::Nothing
+            | SignInKey::TheScreenReader => {}
         }
         self.sheet = Sheet::Region(offered);
     }
@@ -534,7 +544,10 @@ impl TheFirstStart {
                 WhereTheRingIs::OnTheList => picker.choose(),
             },
             SignInKey::Clear => return,
-            SignInKey::Letter(_) | SignInKey::Erase | SignInKey::Nothing => {}
+            SignInKey::Letter(_)
+            | SignInKey::Erase
+            | SignInKey::Nothing
+            | SignInKey::TheScreenReader => {}
         }
         self.sheet = Sheet::Zone(picker);
     }
@@ -558,7 +571,7 @@ impl TheFirstStart {
             SignInKey::Letter(letter) => picker.typed_a(letter),
             SignInKey::Erase => picker.erased(),
             SignInKey::Clear => return,
-            SignInKey::Nothing => {}
+            SignInKey::Nothing | SignInKey::TheScreenReader => {}
         }
         self.sheet = Sheet::Keyboard(picker);
     }

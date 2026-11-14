@@ -95,9 +95,17 @@ fn the_sign_in_files() -> Vec<(String, Vec<(usize, String)>)> {
     // `sign_in_words` or `alo_access` already declares — and it is built from
     // `SignInShows`, which holds whether a secret is typed and never the
     // secret, so it has no road to a password at all.
+    // **21 since 2026-11-14**, the same change's second half:
+    // `the_sign_in_screen_on_the_wire.rs` is what crosses to the reader (that
+    // tree, a language tag, two answers), `the_sign_in_screens_reader.rs` is
+    // the door it crosses (a socket, the kernel's word for who connected), and
+    // `the_reader_at_the_sign_in_screen_kept.rs` keeps one switch in the
+    // machine's copy of `access.toml`. Each was read for this test's concerns:
+    // none declares a word, none reaches a password, the opener or the
+    // accounts.
     assert_eq!(
         files.len(),
-        18,
+        21,
         "a sign-in file was added or lost: {:?}",
         file_names(&files)
     );
