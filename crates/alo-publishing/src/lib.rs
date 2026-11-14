@@ -30,6 +30,7 @@
 //! | [`publish()`] | that command run once, while the indicator shows it |
 //! | [`what_the_person_is_told`] | the line afterwards, on every surface |
 //! | [`NotPublished`] | why not, in words a person can act on |
+//! | [`whose_site`] | the account it goes to: the one `gh` is signed in as, never a model's guess |
 
 mod account;
 mod not_published;
@@ -40,6 +41,7 @@ pub mod the_line;
 pub mod verbs;
 mod what_came_of_it;
 pub mod what_the_person_is_told;
+pub mod whose_site;
 pub mod words;
 
 pub use account::Account;
@@ -54,5 +56,8 @@ pub use verbs::{
 pub use what_came_of_it::what_came_of_it;
 pub use what_the_person_is_told::{
     WhatWasPublished, published_after_your_ok, published_without_asking,
+};
+pub use whose_site::{
+    the_account_the_model_gave, the_call_naming, what_the_model_must_give, who_is_signed_in,
 };
 pub use words::publishing_words;

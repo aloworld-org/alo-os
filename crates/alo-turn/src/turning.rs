@@ -287,7 +287,7 @@ impl<'a, 'm> Turning<'a, 'm> {
         now: SystemTime,
     ) -> Result<ProposalId, NotDone> {
         self.still_open()?;
-        let call = self.calling(verb, given, now)?;
+        let call = self.calling_a_change(verb, given, now)?;
         self.proposing_call(call, grants, standing, now)
     }
 
@@ -872,13 +872,21 @@ impl<'a, 'm> Turning<'a, 'm> {
     /// whatever a model was persuaded to send, and `alo_record` keeps none of
     /// them. `pub(crate)` for [`crate::Arriving`], which is the other thing
     /// that takes a name and some values, and takes them through here.
+    ///
+    /// **A publication's `account` is set aside first**: it is the machine's
+    /// to name, from `gh`, and is compared with what a model gave on the roads
+    /// that ask or act (`crate::whose_site_it_is`).
     pub(crate) fn calling(
         &mut self,
         verb: &str,
         given: &[(&str, Given)],
         now: SystemTime,
     ) -> Result<Call, NotDone> {
-        match self.machine.verbs().call(verb, given) {
+        match self
+            .machine
+            .verbs()
+            .call(verb, &alo_publishing::what_the_model_must_give(verb, given))
+        {
             Ok(call) => Ok(call),
             Err(why) => {
                 let said = why.said(self.machine.strings()).into_text();
