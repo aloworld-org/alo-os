@@ -106,7 +106,10 @@ impl Server {
         let windows = self.the_windows_the_dock_sees();
         let theirs: Vec<alo_dock::WindowId> = windows
             .each_as_opened()
-            .filter(|window| window.app() == Some(app) && !window.sits().was_put_aside())
+            .filter(|window| {
+                crate::typing_into_the_window_in_front::a_window_of(window.app(), app)
+                    && !window.sits().was_put_aside()
+            })
             .map(alo_dock::Window::id)
             .collect();
         theirs.into_iter().rev().find_map(|id| {
