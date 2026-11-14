@@ -1,0 +1,30 @@
+# The bases alo OS is built on, as alo keeps its own copy of each.
+#
+# ADR 0154, the owner's decision of 2026-11-13: *"alo's GitHub registry"*. A
+# base is copied, byte for byte, from where its maker publishes it into
+# `ghcr.io/aloworld-org`, and the recipe builds from the copy. The copy keeps
+# the maker's digest — `skopeo copy --all --preserve-digests` refuses to change
+# it — so the digest the recipe names still proves the bytes are Fedora's, and
+# Fedora deleting the manifest no longer stops a build.
+#
+# One base per line, on purpose: `.github/workflows/copying-a-base.yml` finds
+# the line naming the digest it was asked to copy and reads the rest of the line,
+# and it is not a TOML reader. `crates/alo-image` (`bases.rs`) refuses a file
+# whose entries span lines, so the two readers cannot disagree about it.
+#
+# - `copy` is alo's repository for it, always under `ghcr.io/aloworld-org/`;
+# - `tag` is what the copy is tagged, which is the maker's own version of that
+#   build — Quay has no tag of that name, so it is read off the image's own
+#   `org.opencontainers.image.version` annotation;
+# - `digest` is the maker's digest, which the copy keeps;
+# - `upstream` is where it was copied from, with the tag that named that digest
+#   on the day it was recorded;
+# - `recorded` is that day.
+#
+# Recording a base here does not copy it. Copying is
+# `copying-a-base.yml`, run by a person, with the digest; only once it has
+# succeeded may the recipe name the copy.
+
+bases = [
+  { copy = "ghcr.io/aloworld-org/fedora-bootc", tag = "44.20261113.0", digest = "sha256:5a3472162ba7781a01d249b9a56bc5a9b9fa01c08edae1f73c77dfa1e504e868", upstream = "quay.io/fedora/fedora-bootc:44", recorded = "2026-11-13" },
+]

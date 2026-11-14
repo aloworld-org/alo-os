@@ -142,6 +142,22 @@ jobs:
             exit 1
           fi
 
+      # ADR 0154: the recipe's base is alo's own copy of it. A build that cannot
+      # pull it stops here with a sentence a person can act on, instead of a
+      # registry's error partway through. No credentials, on purpose: a lane
+      # machine building a walk image pulls the same base without signing in.
+      - name: Refuse a base that cannot be pulled
+        run: |
+          base=$(sed -n 's/^ARG THE_BASE=//p' image/Containerfile)
+          if [ -z "$base" ]; then
+            echo "image/Containerfile names no base, so nothing is built" >&2
+            exit 1
+          fi
+          if ! skopeo inspect --raw --no-creds "docker://$base" > /dev/null; then
+            echo "image/Containerfile is built on $base, and nobody can pull it, so nothing is built. Where it is alo's copy, a person runs the Copying a base workflow with its digest; where it is not, the recipe should name alo's copy (ADR 0154)." >&2
+            exit 1
+          fi
+
       - name: Build
         run: |
           podman build -f image/Containerfile \
