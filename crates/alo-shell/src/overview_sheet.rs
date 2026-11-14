@@ -76,32 +76,8 @@ pub(crate) fn drawn(
     let window = in_sight(rows);
     drawn.controls =
         crate::a_press_on_a_setup_sheet::the_controls_of(&at, |which| window.first + which);
-    let language = first_start.the_language();
     for (row, card) in window.rows.iter().zip(at.choices.iter()) {
-        let (label, set_to) = match row {
-            Row::Language => (
-                say_it(say::ROW_LANGUAGE),
-                first_start.the_language_calls_itself().to_owned(),
-            ),
-            Row::Region => {
-                let region = first_start
-                    .the_region()
-                    .and_then(|it| alo_formats::region_names::the_name_in(it.code(), language))
-                    .unwrap_or_default();
-                // **The zone beside the region, where the region has several**
-                // — so a person can see which they chose. The design draws the
-                // region alone because its sample has one zone.
-                let set_to = match first_start.the_zone_named() {
-                    Some(zone) => format!("{region}  ·  {zone}"),
-                    None => region,
-                };
-                (say_it(say::ROW_REGION), set_to)
-            }
-            Row::Keyboard => (
-                say_it(say::ROW_KEYBOARD),
-                first_start.the_name_of(&first_start.the_keyboard()),
-            ),
-        };
+        let (label, set_to) = what_the_row_says(first_start, *row, words);
         let icon = match row {
             Row::Language => AFirstStartIcon::Language,
             Row::Region => AFirstStartIcon::Region,
@@ -117,6 +93,47 @@ pub(crate) fn drawn(
         );
     }
     Ok(drawn)
+}
+
+/// **What one of the overview's rows says**: its label, and what it is set to
+/// now — *Language* and *English*.
+///
+/// One answer for the drawing and for a screen reader
+/// (`crate::the_screens_before_sign_in_as_read`), so what is heard and what is
+/// seen are one sentence and cannot drift apart.
+pub(crate) fn what_the_row_says(
+    first_start: &TheFirstStart,
+    row: Row,
+    words: &alo_strings::Strings,
+) -> (String, String) {
+    let nothing = alo_strings::Filling::nothing();
+    let say_it = |word: alo_strings::Word| words.say(&word.key(), &nothing).into_text();
+    match row {
+        Row::Language => (
+            say_it(say::ROW_LANGUAGE),
+            first_start.the_language_calls_itself().to_owned(),
+        ),
+        Row::Region => {
+            let region = first_start
+                .the_region()
+                .and_then(|it| {
+                    alo_formats::region_names::the_name_in(it.code(), first_start.the_language())
+                })
+                .unwrap_or_default();
+            // **The zone beside the region, where the region has several**
+            // — so a person can see which they chose. The design draws the
+            // region alone because its sample has one zone.
+            let set_to = match first_start.the_zone_named() {
+                Some(zone) => format!("{region}  ·  {zone}"),
+                None => region,
+            };
+            (say_it(say::ROW_REGION), set_to)
+        }
+        Row::Keyboard => (
+            say_it(say::ROW_KEYBOARD),
+            first_start.the_name_of(&first_start.the_keyboard()),
+        ),
+    }
 }
 
 #[cfg(test)]

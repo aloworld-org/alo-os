@@ -88,9 +88,16 @@ fn the_sign_in_files() -> Vec<(String, Vec<(usize, String)>)> {
     // drawn in. Both were read for this test's concerns before it was raised:
     // neither holds a word, a password or a road to either — one is two
     // numbers in and a scale out, the other is rectangles.
+    // **18 since 2026-11-14**: `the_screens_before_sign_in_as_read.rs` tells a
+    // screen reader what the first start and the sign-in screen show
+    // (ADR 0155). Read for this test's concerns before it was raised: it
+    // declares no word — every name is a lookup of one `first_start_words`,
+    // `sign_in_words` or `alo_access` already declares — and it is built from
+    // `SignInShows`, which holds whether a secret is typed and never the
+    // secret, so it has no road to a password at all.
     assert_eq!(
         files.len(),
-        17,
+        18,
         "a sign-in file was added or lost: {:?}",
         file_names(&files)
     );

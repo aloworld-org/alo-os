@@ -26,6 +26,11 @@ pub(crate) enum TheSheet {
     /// (`crate::settings_as_read`). It needs no number: it is one window, and
     /// closing it takes it off the tree, so opening it again is heard as new.
     Settings,
+    /// One of the screens before anybody has signed in — a first-start sheet
+    /// or the sign-in screen (`crate::the_screens_before_sign_in_as_read`),
+    /// named by which, so going from one to the next is heard as a new screen
+    /// coming up rather than the keyboard moving on the old one.
+    BeforeSignIn(crate::the_screens_before_sign_in_as_read::ScreenBeforeSignIn),
 }
 
 /// The sheet in front, and where its keys go.

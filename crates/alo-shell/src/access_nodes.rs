@@ -169,6 +169,26 @@ impl ReadAloudTree {
         this
     }
 
+    /// **A tree with the shell's own node and nothing under it** — what a
+    /// screen with none of the desktop's surfaces starts from: the first
+    /// start and the sign-in screen (`crate::the_screens_before_sign_in_as_read`).
+    ///
+    /// Not [`Self::of`] with nothing showing: that still describes every
+    /// surface, off the screen, and before anybody has signed in there is no
+    /// Dock, no record and no Settings for a reader to be told about.
+    pub(crate) fn with_nothing_on_it() -> Self {
+        Self {
+            nodes: vec![Node {
+                path: ROOT.to_owned(),
+                role: APPLICATION,
+                states: access_roles::words_of(alo_access::State::ReadOnly, None),
+                ..Node::default()
+            }],
+            surfaces: Vec::new(),
+            in_front: None,
+        }
+    }
+
     /// Every node, the shell itself first.
     pub(crate) fn nodes(&self) -> &[Node] {
         &self.nodes
