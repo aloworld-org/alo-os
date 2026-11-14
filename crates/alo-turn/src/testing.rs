@@ -284,20 +284,40 @@ pub(crate) struct APublisher {
     pub(crate) answers: (Option<i32>, String),
     /// Every line it was handed.
     pub(crate) ran: Mutex<Vec<String>>,
+    /// Who it says is signed in to GitHub when asked
+    /// (`alo_publishing::whose_site`) — nobody where [`None`].
+    pub(crate) signed_in: Option<String>,
+    /// How often it was asked who is signed in, which is not a run of a
+    /// publication and is not counted in [`Self::ran`].
+    pub(crate) asked_who: Mutex<usize>,
 }
 
 impl APublisher {
-    /// One that answers every run as published.
+    /// One that answers every run as published, with `anna` signed in.
     pub(crate) fn that_publishes() -> Self {
         Self::answering(Some(0), "alo-made-the-repository\nalo-published\n")
     }
 
-    /// One that answers every run with `status` and `said`.
+    /// One that answers every run with `status` and `said`, with `anna`
+    /// signed in.
     pub(crate) fn answering(status: Option<i32>, said: &str) -> Self {
         Self {
             answers: (status, said.to_owned()),
             ran: Mutex::new(Vec::new()),
+            signed_in: Some("anna".to_owned()),
+            asked_who: Mutex::new(0),
         }
+    }
+
+    /// This one, saying `who` is signed in — nobody where [`None`].
+    pub(crate) fn signed_in_as(mut self, who: Option<&str>) -> Self {
+        self.signed_in = who.map(str::to_owned);
+        self
+    }
+
+    /// How often it was asked who is signed in.
+    pub(crate) fn asked_who(&self) -> usize {
+        *self.asked_who.lock().unwrap()
     }
 
     /// How many times it ran.
@@ -314,6 +334,20 @@ impl alo_publishing::Runs for APublisher {
     ) -> Result<alo_capability::WhatACommandDid, alo_capability::ItDidNotStart> {
         // Looked at once, as a real run is while it runs; nothing is started.
         around.looking();
+        // **Who is signed in** is asked by a line of its own before anybody is
+        // asked about a publication, and answered as `gh` would.
+        if line.text().contains("config get -h github.com user") {
+            *self.asked_who.lock().unwrap() += 1;
+            return Ok(alo_capability::WhatACommandDid::of(
+                Some(if self.signed_in.is_some() { 0 } else { 72 }),
+                self.signed_in.as_ref().map_or_else(
+                    || "To get started with GitHub CLI, please run:  gh auth login\n".to_owned(),
+                    |who| format!("{who}\n"),
+                ),
+                false,
+                false,
+            ));
+        }
         self.ran.lock().unwrap().push(line.text().to_owned());
         Ok(alo_capability::WhatACommandDid::of(
             self.answers.0,

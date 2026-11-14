@@ -1,7 +1,8 @@
 //! **A folder published through real `git`, on the road a machine runs it on**
 //! — `alo_running::run_as_the_person_around`, `/bin/sh -c`, nobody there to answer —
 //! to a repository on this disk, with a stand-in for GitHub's `gh` that answers
-//! the four questions the line asks it.
+//! the four questions the line asks it, and the one asked before it: who is
+//! signed in.
 //!
 //! What this proves, every build: one publication is one new version on the
 //! site and nothing else; nothing is written into the person's folder; a folder
@@ -27,7 +28,9 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 
 use alo_capability::{ACommand, AroundACommand, ItDidNotStart, NothingAround, WhatACommandDid};
-use alo_publishing::{Account, NotPublished, Publication, Published, Runs, Through, publish};
+use alo_publishing::{
+    Account, NotPublished, Publication, Published, Runs, Through, publish, who_is_signed_in,
+};
 use alo_strings::{Strings, Vocabulary};
 
 /// What a turn puts around a command, counting how often it started one — a
@@ -73,6 +76,11 @@ case "$1 $2" in
     if [ -f "$here/signed-out" ]; then
       echo 'To get started with GitHub CLI, please run:  gh auth login' >&2; exit 4
     fi
+    cat "$here/who"; exit 0;;
+  "config get")
+    # `gh`'s own record of who signed in: nothing when nobody has, or when
+    # `no-config` makes the line fall back to asking GitHub.
+    if [ -f "$here/signed-out" ] || [ -f "$here/no-config" ]; then exit 1; fi
     cat "$here/who"; exit 0;;
   "repo view")
     [ -d "$here/remotes/$3.git" ] || exit 1
@@ -315,4 +323,34 @@ fn somebody_else_signed_in_publishes_nothing() {
         })
     );
     assert!(!here.the_site().exists(), "a repository was made anyway");
+}
+
+/// Who `gh` says is signed in, asked through the real shell.
+fn who(here: &Here) -> Result<Account, NotPublished> {
+    let mut watching = Watching::default();
+    let who = who_is_signed_in(&here.through(), &AsThePerson, &mut watching);
+    assert_eq!(
+        watching.started, 1,
+        "asking who is signed in was not started through what counts it"
+    );
+    who
+}
+
+/// **The account comes from `gh`, not from a model**: `gh`'s own record
+/// first, GitHub where that is empty, and nobody signed in is said as that —
+/// the refusal that raises the sign-in sheet.
+#[test]
+fn the_account_is_the_one_gh_is_signed_in_as() {
+    let here = Here::signed_in_as("Anna");
+    assert_eq!(who(&here), Ok(Account::named("anna").unwrap()));
+
+    fs::write(here.root.join("no-config"), "").unwrap();
+    assert_eq!(
+        who(&here),
+        Ok(Account::named("anna").unwrap()),
+        "an empty configuration did not fall back to asking GitHub"
+    );
+
+    fs::write(here.root.join("signed-out"), "").unwrap();
+    assert_eq!(who(&here), Err(NotPublished::NotSignedIn));
 }

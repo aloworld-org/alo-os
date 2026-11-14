@@ -61,6 +61,23 @@ pub const SENTENCE: Word = Word::saying(
      Lower case at the start, because it is shown after other words.",
 );
 
+/// The sentence of the declaration a model is offered, which names no account
+/// because none has been looked up yet — said only where such a call is
+/// written down before `gh` was asked, at a level that refuses it.
+pub const OFFERED_SENTENCE: Word = Word::saying(
+    "publishing.verb.offered-sentence",
+    "publish the folder {folder} to the internet as the GitHub Pages site of the account you are \
+     signed in to GitHub with, in place of what is there — anybody can read it, and Put back \
+     can't recall it",
+)
+.noting(
+    "The same request as the sentence a person approves, written down before alo asked which \
+     GitHub account they are signed in with, so it names no account. {folder} is the folder's \
+     path and is not translated. 'Put back' is the button that undoes what alo did on this \
+     computer; use the words your translation uses for it. Lower case at the start, because it \
+     is shown after other words.",
+);
+
 /// What every publication changes, on the card under the sentence.
 pub const CHANGES: Word = Word::saying(
     "publishing.verb.changes",
@@ -315,12 +332,13 @@ pub const COULD_NOT_PUBLISH_HERE: Word = Word::saying(
 );
 
 /// Every word this crate says.
-pub const EVERY_WORD: [Word; 30] = [
+pub const EVERY_WORD: [Word; 31] = [
     IT_IS_NOT_KNOWN,
     PURPOSE,
     THE_FOLDER,
     THE_ACCOUNT,
     SENTENCE,
+    OFFERED_SENTENCE,
     CHANGES,
     LEAVES,
     PUBLISHED_WITHOUT_ASKING,
