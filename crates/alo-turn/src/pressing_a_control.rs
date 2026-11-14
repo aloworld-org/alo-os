@@ -100,7 +100,7 @@ pub(crate) fn pressing_a_control(
         authorised,
         machine.the_adapters(),
         grants,
-        machine.the_applications_installed(),
+        &machine.the_applications_installed_now(),
         strings,
     ) {
         Ok(activating) => activating,

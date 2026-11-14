@@ -87,6 +87,7 @@
 
 #![doc(html_root_url = "https://github.com/aloworld-org/alo-os")]
 
+pub mod answering_to;
 pub mod application;
 pub mod chosen;
 pub mod declared;
@@ -101,6 +102,7 @@ pub mod nothing_opens;
 pub mod opener;
 pub mod reaching;
 pub mod refusing;
+pub mod short_name;
 pub mod spelled;
 pub mod unkept;
 pub mod verbs;
@@ -111,6 +113,7 @@ pub mod words;
 #[cfg(test)]
 mod testing;
 
+pub use answering_to::AnsweringTo;
 pub use application::{Application, Called};
 pub use chosen::Chosen;
 pub use declared::Declared;
