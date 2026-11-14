@@ -403,6 +403,7 @@ fn a_request_says_whether_the_person_chose_full_access() {
             &WhatTheAgentMayReach {
                 folders: Vec::new(),
                 at_full_access,
+                applications: None,
             },
             None,
         );
@@ -415,6 +416,49 @@ fn a_request_says_whether_the_person_chose_full_access() {
                  alo-their-folders:\n{last}\n"
             ),
             "no folders line is sent at full access, and the level is the last line"
+        );
+        let _ = one_answer(&door);
+        let _ = std::fs::remove_dir_all(at.parent().unwrap());
+    }
+}
+
+/// **The applications installed travel on the line after full access**, by
+/// identifier and name and nothing else (the owner, 2026-11-14: *"Yes, send
+/// app names"*) — and a shell that knows none sends the marker alone.
+#[test]
+fn a_request_carries_the_applications_installed_by_name() {
+    let vscodium =
+        alo_instructing::TheApplicationsInstalled::of([("com.vscodium.codium", Some("VSCodium"))]);
+    for (applications, last) in [
+        (
+            Some(vscodium),
+            r#"alo-their-applications:{"com.vscodium.codium":"VSCodium"}"#,
+        ),
+        (None, "alo-their-applications:"),
+    ] {
+        let at = a_socket(if applications.is_some() {
+            "with-applications"
+        } else {
+            "with-no-applications"
+        });
+        let heard = an_agent_reading(&at, 6, "Opened.\n");
+        let door = TheAgentsDoor::at(&at);
+
+        door.ask(
+            WhoAsked::ATaskWindow(WhichTask::numbered(0)),
+            "open hello.txt in vscodium",
+            &WhatTheAgentMayReach::these(Vec::new()).with_these_applications(applications),
+            None,
+        );
+
+        let crossed = heard.recv().unwrap();
+        assert_eq!(
+            crossed,
+            format!(
+                "open hello.txt in vscodium\nalo-earlier:\nalo-this-window:\n\
+                 alo-their-folders:\nalo-full-access:\n{last}\n"
+            ),
+            "the applications are the seventh line"
         );
         let _ = one_answer(&door);
         let _ = std::fs::remove_dir_all(at.parent().unwrap());

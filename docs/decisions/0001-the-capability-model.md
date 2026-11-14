@@ -9,6 +9,9 @@ nothing watches unless the person switches it on, knowing what it costs. With
 every watcher off, §4 reads exactly as written.
 **Amended 2026-11-13 (below):** an argument can carry **text** — many lines, no
 maximum length, shown in full, never handed to an interpreter.
+**§4 amended 2026-11-14 (below):** the installed applications' names and
+identifiers are offered with each request the person sends — at invocation, for
+that turn, never as a verb and never in the background.
 **Date:** 2026-09-02
 **Context:** `alo-agentd`, the application adapters, `docs/contracts/`;
 carries forward the propose-then-approve and intent-layer decisions made in
@@ -296,3 +299,37 @@ choice says so.
 A very long text is also a long thing to read. The approval cannot make a
 person read it; it can only make sure that everything is there to be read, that
 the length is said before they start, and that anything hidden is marked.
+
+## Amended 2026-11-14 — the names of the installed applications are offered with the request
+
+*Decided by the owner on 2026-11-14.* Asked whether a model should be told the
+installed applications' names, after a walk where *open vscodium* was refused
+on a machine that had `com.vscodium.codium` and alo then installed something
+else from Flathub, the owner answered:
+
+> Yes, send app names
+
+**What is built.** When the person sends alo a request, their shell sends with
+it each installed application's **name and identifier** —
+`VSCodium (com.vscodium.codium)` — and nothing else: no file, no window, no
+document, no icon, nothing about use. It is the seventh line on the asking
+socket (`docs/contracts/asking-socket.md`), and the model is told it before the
+folders and the request (`alo_instructing::TheApplicationsInstalled`).
+
+**Why this is §4 kept, not §4 bent.** `alo-applications`' header says a verb
+that listed the running applications would be *a background reader*, and that
+stands: **this is not a verb**, and an agent cannot ask for it. It is read on
+the person's side **at the moment of invocation** — when they press Enter —
+from what their shell already holds to draw the Dock, and it travels with that
+one request, for that turn, exactly as the window offered and the person's
+folders do. With no invocation nothing is read and nothing is sent, so the
+test §4 names still holds as written.
+
+**What it costs, said plainly.** With an online provider the list leaves the
+machine inside the question, under the egress indicator, like every other part
+of the question. Which applications a person has says something about them
+(`alo_applications::Reaching`'s header calls it a fingerprint), and the owner
+chose to send it for the turn to work. **It allows nothing**: every
+application verb is still decided by `alo-agentd` against the grants and the
+installed list it reads itself, and a refusal still says nothing about what is
+installed.

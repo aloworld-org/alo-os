@@ -6,7 +6,10 @@ use std::os::fd::AsFd as _;
 use std::os::unix::net::UnixStream;
 use std::time::Instant;
 
-use alo_instructing::{AnEarlierTurn, TheConversationSoFar, ThePersonsFolders, TheWindowOffered};
+use alo_instructing::{
+    AnEarlierTurn, TheApplicationsInstalled, TheConversationSoFar, ThePersonsFolders,
+    TheWindowOffered,
+};
 
 use super::*;
 
@@ -50,7 +53,8 @@ fn a_follow_up_is_read_with_its_earlier_conversation() {
 fn a_first_request_carries_no_earlier_conversation_and_does_not_wait() {
     let started = Instant::now();
     let (read, _shell) = sent_on_a_socket(
-        "list my invoices\nalo-earlier:\nalo-this-window:\nalo-their-folders:\nalo-full-access:\n",
+        "list my invoices\nalo-earlier:\nalo-this-window:\nalo-their-folders:\nalo-full-access:\n\
+         alo-their-applications:\n",
     );
     let read = read.unwrap();
     assert_eq!(read.request, "list my invoices");
@@ -158,7 +162,8 @@ fn a_request_about_a_window_carries_it() {
     let window = TheWindowOffered::of("The next chapter", "org.gnome.TextEditor").unwrap();
     let started = Instant::now();
     let (read, _shell) = sent_on_a_socket(&format!(
-        "summarise this\nalo-earlier:\n{}\nalo-their-folders:\nalo-full-access:\n",
+        "summarise this\nalo-earlier:\n{}\nalo-their-folders:\nalo-full-access:\n\
+         alo-their-applications:\n",
         window.written()
     ));
     let read = read.unwrap();
@@ -217,7 +222,7 @@ fn a_request_carries_where_the_persons_folders_are() {
     let started = Instant::now();
     let (read, _shell) = sent_on_a_socket(&format!(
         "alo-may-reach:/var/home/alo/Documents\nmake a folder called demo in my Documents\n\
-         alo-earlier:\nalo-this-window:\n{}\nalo-full-access:\n",
+         alo-earlier:\nalo-this-window:\n{}\nalo-full-access:\nalo-their-applications:\n",
         home.written()
     ));
     let read = read.unwrap();
@@ -267,7 +272,7 @@ fn full_access_is_read_off_the_sixth_line_and_told() {
     let started = Instant::now();
     let (read, _shell) = sent_on_a_socket(
         "what folders are in this window\nalo-earlier:\nalo-this-window:\n\
-         alo-their-folders:\nalo-full-access:yes\n",
+         alo-their-folders:\nalo-full-access:yes\nalo-their-applications:\n",
     );
     let read = read.unwrap();
     assert!(
@@ -309,5 +314,64 @@ fn a_sixth_line_that_is_not_the_level_is_refused() {
         ));
         let refused = read.unwrap_err();
         assert!(refused.contains("full access"), "{sixth}: {refused}");
+    }
+}
+
+/// **The applications installed are read off the seventh line and told**, by
+/// name and identifier — the walk of 2026-11-14, where a model sent
+/// `vscodium` for `com.vscodium.codium` — and a current shell is not kept
+/// waiting for it.
+#[test]
+fn the_applications_installed_are_read_off_the_seventh_line_and_told() {
+    let installed = TheApplicationsInstalled::of([("com.vscodium.codium", Some("VSCodium"))]);
+    let started = Instant::now();
+    let (read, _shell) = sent_on_a_socket(&format!(
+        "open hello.txt in vscodium\nalo-earlier:\nalo-this-window:\nalo-their-folders:\n\
+         alo-full-access:\n{}\n",
+        installed.written()
+    ));
+    let read = read.unwrap();
+    assert!(
+        started.elapsed() < HOW_LONG_THE_THIRD_LINE_IS_WAITED_FOR,
+        "a current shell's applications waited for a line it had already sent"
+    );
+    assert_eq!(read.may_reach.applications(), Some(&installed));
+    let told = read.may_reach.told();
+    assert!(told.contains("VSCodium (com.vscodium.codium)"), "{told}");
+}
+
+/// **The marker alone, and a shell from before the seventh line, tell no
+/// applications**, and the model is told what it was told before.
+#[test]
+fn no_applications_are_said_by_the_marker_alone_or_by_a_shell_from_before() {
+    for sent in [
+        "list my invoices\nalo-earlier:\nalo-this-window:\nalo-their-folders:\nalo-full-access:\n\
+         alo-their-applications:\n",
+        "list my invoices\nalo-earlier:\nalo-this-window:\nalo-their-folders:\nalo-full-access:\n",
+    ] {
+        let (read, _shell) = sent_on_a_socket(sent);
+        let read = read.unwrap();
+        assert_eq!(read.may_reach.applications(), None, "{sent}");
+        assert!(
+            !read.may_reach.told().contains("applications installed"),
+            "{sent}"
+        );
+    }
+}
+
+/// **A seventh line a shell does not write is refused in words**, and nothing
+/// is driven.
+#[test]
+fn a_seventh_line_that_is_not_the_applications_is_refused() {
+    for seventh in [
+        "alo-their-applications:[\"com.vscodium.codium\"]",
+        "open everything",
+    ] {
+        let (read, _shell) = sent_on_a_socket(&format!(
+            "list my invoices\nalo-earlier:\nalo-this-window:\nalo-their-folders:\n\
+             alo-full-access:\n{seventh}\n"
+        ));
+        let refused = read.unwrap_err();
+        assert!(refused.contains("applications"), "{seventh}: {refused}");
     }
 }
