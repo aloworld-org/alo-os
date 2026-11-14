@@ -80,6 +80,7 @@ fn press_at(server: &mut Server, at: Point<i32, Physical>) {
     server
         .pointer_motion(f64::from(at.x), f64::from(at.y), 1)
         .expect("the pointer moved");
+    server.the_edges_were_told_where_the_pointer_is();
     let _ = server
         .pointer_button(0x110, ButtonState::Pressed, 2)
         .expect("the press was handled");

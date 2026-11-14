@@ -2973,6 +2973,14 @@ impl LoopInput for TheDesktopLane<'_> {
                 server.the_scale_an_edge_is_drawn_at(u32::from(frame.display_scale)),
             ),
         );
+        // **What those bands draw, said in the journal where it changed**, so
+        // a booted machine can be asked (`crate::the_bands_drawn_are_said`).
+        server.say_what_alos_bands_draw(crate::the_bands_drawn_are_said::TheseBands {
+            terminal: terminal_edge.as_ref(),
+            settings: settings_edge.as_ref(),
+            record: records_edge.as_ref(),
+            tasks: &task_edges,
+        });
         // **The frame is drawn through the per-display road, with one display
         // on it.** `more-than-one-display-plan.md` task 4. This desk builds one
         // target today; `discover_every_atomic_output` is what will make it

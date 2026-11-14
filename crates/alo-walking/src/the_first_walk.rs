@@ -25,6 +25,10 @@
 //!   the page on purpose; Space turns it over (`alo_shell::settings_window`,
 //!   `settings_page_accessibility`).
 //!
+//! - **The terminal at rest**: Escape closes Settings; Ctrl+Alt+T opens the
+//!   terminal (`alo_shortcuts`' defaults), and its band must draw no controls
+//!   while the pointer is elsewhere.
+//!
 //! **The provider section is unverified and switched off.** It types an AI
 //! provider's key from [`THE_PROVIDER_KEY`], and runs only when that is set.
 //! Its keys are the walk by hand's of 2026-11-14 (`w28-provider.sh`), which
@@ -139,8 +143,35 @@ pub fn the_first_walk() -> Walk {
             minutes(2),
         )
         .look("two-minutes-later", look);
+    let walk = then_the_terminal_at_rest(walk);
     then_the_provider(walk)
 }
+
+/// Then close Settings and open the terminal with the pointer nowhere near
+/// it, and check its band draws **no controls at rest**
+/// (`docs/design/the-window-controls.md`). The walk never moves the pointer,
+/// so a band that shows its controls here is showing them to nobody pointing.
+///
+/// Read from the line the shell says when a band over one of alo's windows
+/// changes what it draws (`alo_shell`'s `the_bands_drawn_are_said`), since
+/// the mark before the chord, so a terminal opened earlier cannot answer.
+fn then_the_terminal_at_rest(walk: Walk) -> Walk {
+    let look = Settling::UNDER_KVM;
+    walk.press(Chord::key("esc"))
+        .look("settings-closed", look)
+        .mark()
+        .press(Chord::with_two("ctrl", "alt", "t"))
+        .expect_line(
+            "the terminal's band draws no controls at rest",
+            THE_TERMINAL_AT_REST,
+            Since::Mark,
+            Duration::from_secs(60),
+        )
+        .look("the-terminal-at-rest", look)
+}
+
+/// What the shell says when the terminal's band draws no controls.
+pub const THE_TERMINAL_AT_REST: &str = "window band over the terminal: 0 controls drawn";
 
 /// Then add a provider, typing its key from [`THE_PROVIDER_KEY`] — and
 /// nothing at all without it.

@@ -48,6 +48,7 @@ the files), not remembered.
 | 7 | Super+I, End, Tab | Settings opens, on Accessibility, with the ring on *Screen reader* |
 | 8 | Space | the journal says `Started alo-screen-reader.service` within a minute of the press |
 | 9 | watches two minutes | **no** line since the press says *strange signature*, *Traceback*, `alo-screen-reader.service: Failed` or `…: Main process exited` |
+| 10 | Escape, then Ctrl+Alt+T, without moving the pointer | the journal says `window band over the terminal: 0 controls drawn` within a minute of the chord — **the terminal's band draws no Minimise and no Close at rest** (`docs/design/the-window-controls.md`) |
 
 A look **fails when the screen did not change** within its time, and the walk
 stops at its first failure: every check after it reads **NOT REACHED** rather
@@ -55,7 +56,7 @@ than being left out, so a short walk never reads as a walk that passed.
 
 ## The provider section, and the one secret it needs
 
-After the screen reader, the walk can add an AI provider in Settings, typing
+After the terminal, the walk can add an AI provider in Settings, typing
 its key. That section is **off**: it runs only when the person starting the
 workflow ticks *Also add an AI provider*, **and** the repository has the
 secret. Without both it is skipped and the report says why.
