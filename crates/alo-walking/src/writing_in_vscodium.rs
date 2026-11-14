@@ -110,8 +110,10 @@ pub fn at_full_access(walk: Walk) -> Walk {
         .type_text(&format!("touch ~/{THE_FILE}"))
         .press(ret.clone())
         .look("the-file-made", look)
+        // **No look between Super+A and the ask**: the alo bar takes the
+        // keyboard with only a caret, which the first run on GitHub
+        // (2026-11-14) measured as no change at all.
         .press(Chord::with("meta_l", "a"))
-        .look("asking-alo", look)
         .type_text(&the_ask())
         .look("the-ask-typed", look)
         .mark()
