@@ -116,6 +116,10 @@ mod the_kernels_counter;
 #[cfg(target_os = "linux")]
 mod alos_copies;
 
+/// alo's own copy of a code editor, set so what alo types is what lands (ADR 0153).
+#[cfg(target_os = "linux")]
+mod typing_left_as_it_is;
+
 /// What this process does on the machine alo OS is for.
 #[cfg(target_os = "linux")]
 mod running {
