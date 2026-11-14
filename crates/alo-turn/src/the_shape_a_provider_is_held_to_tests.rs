@@ -102,6 +102,7 @@ fn the_schema_sent_for_each_verb_lists_its_arguments() {
 /// that is not is refused by the provider outright, and every turn fails.
 #[test]
 fn every_object_is_closed_and_every_property_required() {
+    /// Every object under `at`, checked, with where it is for the message.
     fn walk(at: &Value, path: &str) {
         match at {
             Value::Object(object) => {
