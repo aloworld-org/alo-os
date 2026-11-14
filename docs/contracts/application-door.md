@@ -596,7 +596,7 @@ list and the file's real place have all answered.
   `open-file` that is not exactly an identifier and such a path is not a
   request and is closed with nothing written.
 - **Where it opens is read by the desktop, never sent.** At the person's
-  default (`alo-in-applications` in `how-code-runs-file.md`) it opens in alo's
+  default (`in-applications` in `how-code-runs-file.md`) it opens in alo's
   own copy: the copy is started with the file, or, already running, is handed
   it by a start over the copy's own profile. An application with no copy of its
   own is answered `no-copy-of-its-own`, and nothing is opened. Where the person
