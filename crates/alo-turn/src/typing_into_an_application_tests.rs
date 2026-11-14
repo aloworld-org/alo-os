@@ -176,6 +176,18 @@ impl TheDoorTheCompositorServes for ADoor {
             ToType::Save { .. } => Typed::AskedToSave,
         })
     }
+
+    /// Every file is opened in alo's own copy, and the line is kept in the
+    /// same list as the typing's, so their order can be read.
+    fn opening_a_file(
+        &mut self,
+        asked: &alo_acting::ToOpenAFile,
+    ) -> Result<alo_acting::Opened, NotAtTheDoor> {
+        self.asked
+            .borrow_mut()
+            .push(asked.written().unwrap_or_default());
+        Ok(alo_acting::Opened::InAlosCopy)
+    }
 }
 
 struct NoTool;
@@ -416,4 +428,129 @@ fn the_compositor_not_there_types_nothing() {
     let ran = typing_once(TheField::an_editor(), Typed::NoKeyboard, as_it_is, true);
     assert!(matches!(ran.answered, Err(NotDone::Refused(_))));
     assert_eq!(ran.asked.len(), 1);
+}
+
+/// **The whole road, as a person's request makes it: the file opened in alo's
+/// own copy, then the text typed into it, then saved — in that order, one
+/// record for each approved step.** At the default level, where each change
+/// waits for its one approval.
+///
+/// The executors, the turn, the grants and the record are real; the
+/// compositor's door and the accessibility tree are this file's, sharing the
+/// field so a typing changes what is read back. The door's real wire is
+/// `alo-agentd`'s `at_the_compositors_door`, held by its own tests; the
+/// shell's side of it by `alo-shell`'s door tests.
+///
+/// What would have to be true for this to pass while broken: the real door
+/// answering `may` before alo's copy has the keyboard, or the real tree
+/// naming VSCodium's editor something other than its file — neither of which a
+/// test without the application can see. The walk
+/// (`crates/alo-walking/src/writing_in_vscodium.rs`) is where they are.
+#[test]
+fn a_file_is_opened_then_typed_into_then_saved_with_one_record_each() {
+    let field = TheField::an_editor();
+    let strings = in_english();
+    let tool = NoTool;
+    let publisher = crate::testing::APublisher::that_publishes();
+    let asked = Rc::new(RefCell::new(Vec::new()));
+    let mut door = ADoor {
+        whose: Typed::MayType,
+        rewriting: as_it_is,
+        field: field.text.clone(),
+        asked: asked.clone(),
+    };
+    let mut windows = TheWindows(field.clone());
+    let mut indicator = Indicator::default();
+    let mut record = Record::default();
+    let mut bounding = crate::testing::NothingIsBounded;
+    let folder = crate::testing::a_folder_of_our_own("writing-in-an-editor");
+    let file = folder.join("index.html");
+    std::fs::write(&file, "").unwrap();
+    let elsewhere = crate::testing::a_folder_of_our_own("writing-offered").join("a-note.txt");
+    std::fs::write(&elsewhere, "anything").unwrap();
+    {
+        let mut machine = Machine::carrying_out_file_software_and_application_verbs(
+            &strings,
+            &OnThisMachine,
+            WhatASoftwareVerbNeeds {
+                tool: &tool,
+                bound: Bound::Nobodys,
+                publishing: crate::testing::publishing_through(&publisher),
+            },
+            WhatAnApplicationVerbNeeds {
+                installed: Installed::holding([Application::called(EDITOR, "VSCodium").unwrap()])
+                    .into(),
+                door: &mut door,
+                starting: &NothingStarts,
+                windows: &mut windows,
+            },
+            &mut bounding,
+            &mut indicator,
+            &mut record,
+        )
+        .unwrap();
+        let mut grants = Grants::default();
+        grants.grant(
+            Grant::checked(AGENT, Reach::Application(EDITOR.to_owned()), noon(), hour()).unwrap(),
+        );
+        grants.grant(Grant::checked(AGENT, Reach::Folder(folder.clone()), noon(), hour()).unwrap());
+        let mut turning = Turning::beginning(
+            offering(&elsewhere),
+            AGENT,
+            hour(),
+            &mut grants,
+            &mut machine,
+        )
+        .unwrap();
+        let opening = turning
+            .proposing(
+                alo_applications::OPEN_FILE_IN_APPLICATION,
+                &[
+                    ("application", Given::text(EDITOR)),
+                    ("path", Given::text(file.to_string_lossy().into_owned())),
+                ],
+                &grants,
+                hour(),
+                noon(),
+            )
+            .unwrap();
+        let opened = turning.approving(opening, &grants, noon()).unwrap();
+        assert!(
+            opened
+                .opened()
+                .is_some_and(crate::AFileOpened::in_alos_copy)
+        );
+        let typing = turning
+            .proposing(
+                TYPE_TEXT,
+                &[
+                    ("application", Given::text(EDITOR)),
+                    ("name", Given::text("index.html")),
+                    ("text", Given::text(THE_TEXT)),
+                ],
+                &grants,
+                hour(),
+                noon(),
+            )
+            .unwrap();
+        let typed = turning.approving(typing, &grants, noon()).unwrap();
+        assert!(typed.typed().is_some_and(crate::ATextTyped::saved));
+    }
+    let real = std::fs::canonicalize(&file).unwrap();
+    assert_eq!(
+        *asked.borrow(),
+        [
+            format!("open-file {EDITOR} {}", real.display()),
+            format!("may-type-into {EDITOR}"),
+            format!("type-into {EDITOR} {}", THE_TEXT.len()),
+            format!("save-in {EDITOR}"),
+        ],
+        "the road's steps were not asked once each, in order"
+    );
+    assert_eq!(field.text.borrow().as_str(), THE_TEXT);
+    assert_eq!(
+        record.answering(&Asking::anything()).count(),
+        2,
+        "one record for the opening and one for the typing"
+    );
 }
