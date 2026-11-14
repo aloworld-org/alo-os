@@ -321,6 +321,7 @@ mod the_screen_reader_switch;
 mod the_screens_before_sign_in_as_read;
 /// alo putting words of its own on the clipboard.
 mod the_shell_copies;
+mod the_spoken_hint;
 pub mod what_is_on_the_clipboard;
 mod where_a_travelling_window_lands;
 mod where_the_docks_surface_is;

@@ -72,6 +72,12 @@ pub enum ToTheReader {
     },
     /// A person is signing in: stop reading, and say when that is done.
     SomebodyIsSigningIn,
+    /// **Say, once, how to hear the screen**, in `language`, with the voice
+    /// alone and the screen reader left off (`crate::the_spoken_hint`).
+    SayHowToHearIt {
+        /// The language the screen is in, as a tag.
+        language: Option<String>,
+    },
 }
 
 /// **What the reader tells the sign-in screen.**
@@ -109,6 +115,10 @@ impl ToTheReader {
                 language.as_deref().map_or_else(|| NONE.to_owned(), escaped)
             ),
             Self::SomebodyIsSigningIn => "signing-in".to_owned(),
+            Self::SayHowToHearIt { language } => format!(
+                "hint\t{}",
+                language.as_deref().map_or_else(|| NONE.to_owned(), escaped)
+            ),
         };
         format!("{line}\n")
     }
@@ -127,18 +137,14 @@ impl ToTheReader {
                     "off" => false,
                     _ => return Err(NotUnderstood::NotAMessage),
                 };
-                let language = match *language {
-                    NONE => None,
-                    tag => {
-                        let tag = unescaped(tag).ok_or(NotUnderstood::NotAMessage)?;
-                        if !a_language_tag(&tag) {
-                            return Err(NotUnderstood::NotAMessage);
-                        }
-                        Some(tag)
-                    }
-                };
-                Ok(Self::Read { on, language })
+                Ok(Self::Read {
+                    on,
+                    language: a_language_read(language)?,
+                })
             }
+            ["hint", language] => Ok(Self::SayHowToHearIt {
+                language: a_language_read(language)?,
+            }),
             ["screen", rest @ ..] => the_tree_read(rest).map(Self::TheScreen),
             _ => Err(NotUnderstood::NotAMessage),
         }
@@ -221,6 +227,19 @@ fn unescaped(word: &str) -> Option<String> {
         out.push(it);
     }
     (out.len() <= THE_LONGEST_WORDS).then_some(out)
+}
+
+/// A language field: [`NONE`], or a tag and nothing else.
+fn a_language_read(field: &str) -> Result<Option<String>, NotUnderstood> {
+    if field == NONE {
+        return Ok(None);
+    }
+    let tag = unescaped(field).ok_or(NotUnderstood::NotAMessage)?;
+    if a_language_tag(&tag) {
+        Ok(Some(tag))
+    } else {
+        Err(NotUnderstood::NotAMessage)
+    }
 }
 
 /// **Only a language tag**: letters, with a region after a hyphen or an
