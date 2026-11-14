@@ -38,6 +38,16 @@ impl Chord {
         }
     }
 
+    /// One key with several modifiers held, in the order they go down —
+    /// `Chord::holding(&["ctrl", "alt"], "t")` is Ctrl+Alt+T.
+    #[must_use]
+    pub fn holding(modifiers: &[&'static str], key: &'static str) -> Self {
+        Self {
+            held: modifiers.to_vec(),
+            key,
+        }
+    }
+
     /// The modifiers, in the order they go down.
     #[must_use]
     pub fn held(&self) -> &[&'static str] {
