@@ -30,7 +30,7 @@
 //! api user --jq .login`, which asks GitHub. The second reaches the network,
 //! and the turn runs the line counted on the indicator as every command alo
 //! runs is, so it is never silent. **And the publication's own line asks GitHub
-//! again at the moment it acts** ([`crate::the_line`], step 73), so an account
+//! again at the moment it acts** ([`mod@crate::the_line`], step 73), so an account
 //! read here that GitHub no longer agrees with publishes nothing.
 
 use alo_capability::{
