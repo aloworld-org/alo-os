@@ -376,8 +376,7 @@ mod tests {
     #[test]
     fn a_waiting_typing_carries_its_whole_text_on_the_wire() {
         use alo_capability::{Approvals, Given, Grant, Grantee, Grants, Proposal, Reach};
-        let text = "Hello
-	café 🌍 ​end";
+        let text = "Hello\n\tcaf\u{e9} \u{1f30d} \u{200b}end";
         let mut grants = Grants::default();
         grants.grant(
             Grant::checked(
