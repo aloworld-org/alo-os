@@ -10,7 +10,8 @@
 //!   touched: the grants at this moment, the application installed, no
 //!   adapter of its own.
 //! - [`Typing::the_field`] looks for the field **then**, in the windows as they
-//!   are: exactly one showing field or document of the approved name — never a
+//!   are: exactly one showing field or document of the approved name (of several,
+//!   the one with the keyboard, where exactly one has it) — never a
 //!   password field, never a terminal — and says whether it has the keyboard
 //!   and whether it takes text through the tree.
 //! - [`Typing::put_in`] is the direct road: the text inserted at the field's
@@ -218,6 +219,21 @@ impl Typing {
                         .into_iter()
                         .map(|child| (child, depth + 1, window.clone())),
                 );
+            }
+        }
+        // **Of several, the one that has the keyboard**: with the person's own
+        // VSCodium open beside alo's copy, both show an editor of the same
+        // name, and the one alo may type into is the one the keyboard is in —
+        // which only one field can be. Two that both say so, or none of
+        // several, is still not guessed.
+        if found.len() > 1 {
+            let focused: Vec<_> = found
+                .iter()
+                .filter(|(_, _, states)| holds(states, FOCUSED))
+                .cloned()
+                .collect();
+            if focused.len() == 1 {
+                found = focused;
             }
         }
         let (at, role, states) = match found.len() {

@@ -230,6 +230,11 @@ pub struct Server {
     /// yet, oldest first. When it comes it is brought in front and given the
     /// keyboard: `crate::a_window_the_person_opened`.
     pub(crate) the_person_is_waiting_for: Vec<alo_dock::AppId>,
+    /// The applications alo was approved to open a file in, and until when
+    /// their window may still come: when a window alo may type into comes, it
+    /// is brought in front with the keyboard —
+    /// `crate::a_file_alo_opened_comes_in_front`.
+    pub(crate) alo_opened_a_file_in: Vec<(alo_dock::AppId, std::time::Instant)>,
     /// Which application this machine's terminal is, when something has told
     /// it.
     ///
@@ -930,6 +935,7 @@ impl Server {
             its_agent_asked_to_start: Vec::new(),
             asked_to_open_a_link: Vec::new(),
             the_person_is_waiting_for: Vec::new(),
+            alo_opened_a_file_in: Vec::new(),
             the_terminal: None,
             alos_own_terminal: None,
             where_the_terminal_is: None,
