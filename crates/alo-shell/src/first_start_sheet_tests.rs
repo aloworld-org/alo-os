@@ -46,7 +46,13 @@ fn a_fresh_machine() -> (tempfile::TempDir, SignInScreen<ADoor>) {
     alo_accounts::kept(&store, &Accounts::none().unwrap()).unwrap();
     let greeting = Greeting::at(&store, 1000, ADoor).expect("a fresh store reads");
     let words = crate::what_this_machine_can_say().unwrap();
-    (kept, SignInScreen::of(Ok(greeting), words))
+    // On a clock in Ireland, whose one time zone Continue sets without asking
+    // which (the owner, 2026-11-14).
+    (
+        kept,
+        SignInScreen::of(Ok(greeting), words)
+            .where_the_machine_is(alo_formats::RegionCode::named("IE").ok()),
+    )
 }
 
 /// A fresh machine, walked past the first-start overview to the name sheet.
