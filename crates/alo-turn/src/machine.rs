@@ -287,7 +287,8 @@ pub struct WhatAnApplicationVerbNeeds<'a> {
 /// # The accessibility fallback's two, and not the adapters' own
 ///
 /// Since 2026-11-12 the list ends with `accessible.read_window` and
-/// `accessible.activate_control` (`alo_adapters::fallback_verbs`), which this
+/// `accessible.activate_control`, and since 2026-11-13 `accessible.type_text`
+/// (`alo_adapters::fallback_verbs`), which this
 /// machine carries out through [`TheWindowsOnTheScreen`]. **An adapter's own
 /// verbs — `text_editor.open_document` — are not on it**: they are carried out
 /// over the application's own interface on the session bus, nothing here
@@ -297,7 +298,7 @@ pub struct WhatAnApplicationVerbNeeds<'a> {
 /// # Errors
 /// [`TheVerbsWouldNotDeclare`], naming the family that refused — including two
 /// families having declared one name, which is what this `Result` is really
-/// for. The fifteen as they are written cannot cause it.
+/// for. The sixteen as they are written cannot cause it.
 pub fn the_verbs_a_whole_machine_offers() -> Result<Verbs, TheVerbsWouldNotDeclare> {
     let mut verbs = file_verbs()?;
     alo_software::verbs::declare_into(&mut verbs)?;
@@ -884,7 +885,7 @@ mod tests {
     ///
     /// # Why the names and not a count
     ///
-    /// A count passes when one family replaces another. These are the fifteen
+    /// A count passes when one family replaces another. These are the sixteen
     /// in `docs/contracts/agent-verbs.md`, which is the published list a third
     /// party builds an adapter against: *a closed list; if a capability is not
     /// written here, `alo-agentd` does not have it.* So this is the contract
@@ -897,10 +898,10 @@ mod tests {
     /// verb with nothing behind it is worse than the capability missing.
     #[test]
     fn every_verb_this_machine_offers_is_named_here_and_no_other() {
-        let offered = the_verbs_a_whole_machine_offers().expect("the fifteen verbs declare");
+        let offered = the_verbs_a_whole_machine_offers().expect("the sixteen verbs declare");
         let told: Vec<&str> = offered.all().map(alo_capability::Verb::name).collect();
 
-        let the_fifteen = [
+        let the_sixteen = [
             // `alo-files`' six.
             "list_folder",
             "read_file",
@@ -922,10 +923,13 @@ mod tests {
             // answers inside the turn, and a press a person approves.
             "accessible.read_window",
             "accessible.activate_control",
+            // And typing, added 2026-11-13 (ADR 0153): one approved text into
+            // one field, read back before it is saved.
+            "accessible.type_text",
             // `alo-publishing`'s one, added 2026-11-13: Demo 2's second road.
             "publish_to_github_pages",
         ];
-        for name in the_fifteen {
+        for name in the_sixteen {
             assert!(
                 told.contains(&name),
                 "{name} is in docs/contracts/agent-verbs.md and this machine does not offer it, \
@@ -934,10 +938,10 @@ mod tests {
         }
         assert_eq!(
             told.len(),
-            the_fifteen.len(),
+            the_sixteen.len(),
             "this machine offers {} verbs and {} are named here: {told:?}",
             told.len(),
-            the_fifteen.len()
+            the_sixteen.len()
         );
         assert!(
             !told.contains(&"arrange_application"),

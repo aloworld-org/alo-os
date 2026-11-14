@@ -236,6 +236,24 @@ pub enum Done {
         /// not known.
         unanswered: bool,
     },
+    /// One approved text was typed into one field of an application, and
+    /// saved only if it read back exactly (`accessible.type_text`, ADR 0153).
+    ///
+    /// Added 2026-11-13, additively. **The text is not carried back**: the
+    /// person approved it whole, and the record keeps it.
+    Typed {
+        /// The application.
+        application: String,
+        /// The field or document, by its name.
+        name: String,
+        /// How many characters were typed.
+        characters: usize,
+        /// Whether it went in through the accessibility tree rather than as
+        /// key presses.
+        through_the_tree: bool,
+        /// Whether it read back exactly and was saved.
+        saved: bool,
+    },
     /// A folder was published to the person's GitHub Pages site
     /// (`publish_to_github_pages`, added 2026-11-13, additively).
     ///
@@ -548,6 +566,25 @@ impl Done {
         }
     }
 
+    /// What a typing answered, as it goes on the wire — taking its parts, for
+    /// [`Done::of_a_press`]'s reason.
+    #[must_use]
+    pub fn of_a_typing(
+        application: &str,
+        name: &str,
+        characters: usize,
+        through_the_tree: bool,
+        saved: bool,
+    ) -> Self {
+        Self::Typed {
+            application: application.to_owned(),
+            name: name.to_owned(),
+            characters,
+            through_the_tree,
+            saved,
+        }
+    }
+
     /// What one of the six file verbs answered, as it goes on the wire.
     #[must_use]
     pub fn of_a_file_verb(answer: &Answer) -> Self {
@@ -676,6 +713,9 @@ impl Done {
             // **A press the application did not answer** may or may not have
             // happened, and that is what a shell puts a caveat beside.
             Self::Pressed { unanswered, .. } => *unanswered,
+            // **A typing that was not saved** is the one a shell puts a caveat
+            // beside: the text is in the window and not on the disk.
+            Self::Typed { saved, .. } => !*saved,
             // **A publication leaves nothing out**: it names the folder and the
             // address, and what it cannot take back is said in its own line
             // ([`Done::put_back_can_recall_it`]), not as a caveat here.

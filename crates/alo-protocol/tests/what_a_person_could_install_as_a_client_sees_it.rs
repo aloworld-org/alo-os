@@ -80,6 +80,13 @@ fn as_a_client_sees_it(did: &alo_turn::WhatAVerbDid) -> Done {
             pressed.name(),
             pressed.unanswered(),
         ),
+        alo_turn::WhatAVerbDid::TextWasTyped(typed) => Done::of_a_typing(
+            typed.application(),
+            typed.name(),
+            typed.characters(),
+            typed.through_the_tree(),
+            typed.saved(),
+        ),
         // The seventh family, 2026-11-13: a folder published to GitHub Pages.
         alo_turn::WhatAVerbDid::AFolderWasPublished(published) => Done::of_a_publication(
             &published.folder().display().to_string(),

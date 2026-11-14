@@ -29,7 +29,7 @@
 //! sentence as a compositor that answered `could-not-ask`, because from the
 //! person's side they are the same fact: nothing was changed.
 
-use alo_acting::{Answer, Request};
+use alo_acting::{Answer, Request, ToType, Typed};
 
 /// Whatever can put one request to the compositor and read one answer.
 ///
@@ -46,6 +46,20 @@ pub trait TheDoorTheCompositorServes {
     /// before this was called, and a door that could answer it would be a
     /// second place deciding it.
     fn asking(&mut self, request: &Request) -> Result<Answer, NotAtTheDoor>;
+
+    /// Put one typing to the compositor — `type-into` with its text,
+    /// `save-in`, or `may-type-into` (ADR 0153) — and wait for its answer.
+    /// `text` is sent only for [`ToType::Text`].
+    ///
+    /// **No compositor by default**, so a door that does not know typing types
+    /// nothing.
+    ///
+    /// # Errors
+    /// [`NotAtTheDoor`], as for [`Self::asking`].
+    fn typing(&mut self, asked: &ToType, text: &str) -> Result<Typed, NotAtTheDoor> {
+        let _ = (asked, text);
+        Err(NotAtTheDoor::NoCompositor)
+    }
 }
 
 /// Why the compositor was not asked.
