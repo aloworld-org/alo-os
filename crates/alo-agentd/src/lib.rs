@@ -387,6 +387,8 @@ pub mod watchers;
 mod what_a_client_is_told_a_verb_did;
 pub mod what_is_advertised;
 #[cfg(target_os = "linux")]
+pub mod what_is_installed_here;
+#[cfg(target_os = "linux")]
 pub mod wire;
 #[cfg(target_os = "linux")]
 pub mod words;

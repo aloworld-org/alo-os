@@ -58,13 +58,48 @@ pub const SWITCH_PERSON: Word = Word::saying("shell.sign-in.switch-person", "Swi
          goes back to choosing which person is signing in.",
     );
 
-/// Every string this screen draws.
-pub const SIGN_IN_WORDS: [Word; 5] = [
+/// **The one sentence a new machine says while its screen reader is off**
+/// (ADR 0155; the owner, 2026-11-14: *"Off, with one spoken hint"*).
+pub const HEAR_THE_SCREEN: Word = Word::saying(
+    "shell.sign-in.hear-the-screen",
+    "Press Control, Alt and S to hear the screen read aloud.",
+)
+.noting(
+    "Spoken aloud, never shown: once, on the first screen of a new computer, after a pause in \
+     which nobody pressed anything, so that somebody who cannot see the screen knows how to \
+     turn the screen reader on. Name the three keys the way a person says them aloud in your \
+     language, in this order — Control, Alt, then the letter S — and keep it to one sentence.",
+);
+
+/// What the screen reader says as it is turned off before sign-in.
+pub const SCREEN_READER_OFF: Word =
+    Word::saying("shell.sign-in.screen-reader-off", "Screen reader off.").noting(
+        "Spoken aloud just before the screen reader stops, when somebody turns it off on the \
+     first-start screens or the sign-in screen, so they hear that it worked. Short.",
+    );
+
+/// What the screen says when the reader is on and there is no sound to play
+/// it through.
+pub const NO_SOUND_FOR_THE_READER: Word = Word::saying(
+    "shell.sign-in.no-sound-for-the-reader",
+    "The screen reader is on, and this computer has nothing to play it on.",
+)
+.noting(
+    "Shown on the first-start and sign-in screens, above Accessibility, when somebody turned \
+     the screen reader on and the computer has no speakers or headphones it can use. Says what \
+     happened, not what to do.",
+);
+
+/// Every string this screen draws or says.
+pub const SIGN_IN_WORDS: [Word; 8] = [
     GREETING,
     ENTER_YOUR_PIN,
     OTHER_WAYS,
     ACCESSIBILITY,
     SWITCH_PERSON,
+    HEAR_THE_SCREEN,
+    SCREEN_READER_OFF,
+    NO_SOUND_FOR_THE_READER,
 ];
 
 /// Invalid declaration or collision while registering this screen's wording.

@@ -102,6 +102,20 @@ impl crate::DirectSession {
                         region:
                             crate::the_region_a_person_chose::TheRegionAPersonChose::nothing_yet(),
                         zone: crate::the_zone_a_person_chose::TheZoneAPersonChose::nothing_yet(),
+                        // **Reading from the first frame where this machine's
+                        // sign-in screen was left reading** (ADR 0155 §6).
+                        reader: crate::the_sign_in_screens_reader::TheSignInScreensReader::at(
+                            std::path::Path::new(crate::the_sign_in_screens_reader::THE_READING_DOOR),
+                            crate::the_sign_in_screens_reader::THE_SIGN_IN_LOGIN,
+                        )
+                        .reading_from_the_start(
+                            crate::the_reader_at_the_sign_in_screen_kept::was_on(
+                                std::path::Path::new(alo_access::keeping::THE_MACHINES_FOLDER),
+                            ),
+                        ),
+                        hint: crate::the_spoken_hint::TheSpokenHint::from(
+                            std::time::Instant::now(),
+                        ),
                     },
                 ),
                 Err(error) => DirectLoopResult {
@@ -159,6 +173,32 @@ struct Greeter<'a, K: Knocking> {
     region: crate::the_region_a_person_chose::TheRegionAPersonChose,
     /// The time zone the region a person took sets, and whether it is set yet.
     zone: crate::the_zone_a_person_chose::TheZoneAPersonChose,
+    /// **The door to the reader that speaks this screen**, as the sign-in
+    /// login (ADR 0155): told the screen as it changes, told to read or stop
+    /// when the person turns it over, and asked to step aside at sign-in.
+    reader: crate::the_sign_in_screens_reader::TheSignInScreensReader,
+    /// **Whether the first screen is still to say how to hear it**, once,
+    /// after a pause with nothing pressed (`crate::the_spoken_hint`).
+    hint: crate::the_spoken_hint::TheSpokenHint,
+}
+
+/// **Turn the screen's reader over if the person just did**, keeping it for
+/// the next start, **and tell it the language the screen now speaks**, so it
+/// speaks it from the press that chose it (ADR 0155 §3, §4).
+fn the_reader_is_now<K: Knocking>(
+    reader: &mut crate::the_sign_in_screens_reader::TheSignInScreensReader,
+    screen: &mut Lane<'_, K>,
+) {
+    let language = screen.the_language_chosen().map(str::to_owned);
+    if screen.the_reader_was_turned_over() {
+        reader.turned_over(language);
+        crate::the_reader_at_the_sign_in_screen_kept::is_now(
+            std::path::Path::new(alo_access::keeping::THE_MACHINES_FOLDER),
+            reader.is_reading(),
+        );
+    } else {
+        reader.the_language_is(language);
+    }
 }
 
 /// Set the time zone the region a person took decided, if it just decided
@@ -327,6 +367,11 @@ pub(crate) struct Lane<'a, K: Knocking> {
     /// What the wheel has turned over a sheet's list that has not yet made a
     /// row (`crate::a_wheel_over_a_sheet`).
     wheel: crate::a_wheel_over_a_sheet::TheWheelOnASheet,
+    /// **Whether the person turned the screen reader over** since this was
+    /// last asked — `Ctrl`+`Alt`+`S`, or a press on *Accessibility* (ADR 0155
+    /// §3). Taken here, before any sheet sees the key, and handed to the door
+    /// to the reader by whoever holds it (`crate::the_sign_in_screens_reader`).
+    the_reader_turned_over: bool,
 }
 
 impl<'a, K: Knocking> Lane<'a, K> {
@@ -344,6 +389,46 @@ impl<'a, K: Knocking> Lane<'a, K> {
             drawn_at: None,
             controls: Vec::new(),
             wheel: crate::a_wheel_over_a_sheet::TheWheelOnASheet::default(),
+            the_reader_turned_over: false,
+        }
+    }
+
+    /// **Whether the person turned the screen reader over** since this was
+    /// last asked, and forget it — each turn is acted on once.
+    pub(crate) fn the_reader_was_turned_over(&mut self) -> bool {
+        std::mem::take(&mut self.the_reader_turned_over)
+    }
+
+    /// Whether the screen up is one of the first-start sheets — a machine with
+    /// no account yet — rather than the sign-in screen or a first account's.
+    pub(crate) fn is_the_first_start(&self) -> bool {
+        matches!(
+            self.signing.as_ref(),
+            Some(Signing::Still(screen)) if matches!(screen.shows(), crate::SignInShows::FirstStart(_))
+        )
+    }
+
+    /// The language the screen is drawn in, as a tag.
+    pub(crate) fn the_language_drawn(&self) -> Option<String> {
+        match self.signing.as_ref() {
+            Some(Signing::Still(screen)) => screen
+                .words()
+                .languages()
+                .next()
+                .map(|language| language.tag().to_owned()),
+            Some(Signing::HandedOver(_)) | None => None,
+        }
+    }
+
+    /// **The screen as a screen reader is told it**, or [`None`] once a
+    /// session has opened (`crate::the_screens_before_sign_in_as_read`).
+    pub(crate) fn as_read(&self) -> Option<crate::ReadAloudTree> {
+        match self.signing.as_ref() {
+            Some(Signing::Still(screen)) => Some(crate::ReadAloudTree::before_sign_in(
+                screen.words(),
+                screen.shows(),
+            )),
+            Some(Signing::HandedOver(_)) | None => None,
         }
     }
 
@@ -442,6 +527,12 @@ impl<'a, K: Knocking> Lane<'a, K> {
         };
         // What was drawn may no longer be what is up.
         self.controls.clear();
+        // **Accessibility turns the screen reader over** on every sheet, as
+        // `Ctrl`+`Alt`+`S` does; no sheet acts on it (ADR 0155 §3).
+        if on == crate::a_press_on_a_setup_sheet::OnASheet::Accessibility {
+            self.the_reader_turned_over = true;
+            return true;
+        }
         *self.signing = self.signing.take().map(|now| match now {
             Signing::Still(screen) => (*screen).pressed_on_a_sheet(on),
             handed_over @ Signing::HandedOver(_) => handed_over,
@@ -484,6 +575,12 @@ impl<'a, K: Knocking> Lane<'a, K> {
 
     /// Hand one key's meaning to the screen, and keep whatever it becomes.
     pub(crate) fn pressed(&mut self, meant: crate::SignInKey) {
+        // **The screen reader's chord is taken here**, before any sheet or
+        // field sees it, so it can never type or choose anything.
+        if meant == crate::SignInKey::TheScreenReader {
+            self.the_reader_turned_over = true;
+            return;
+        }
         // What was drawn may no longer be what is up.
         self.controls.clear();
         *self.signing = self.signing.take().map(|now| match now {
@@ -616,6 +713,8 @@ impl<K: Knocking> LoopInput for Greeter<'_, K> {
         let language = &mut self.language;
         let region = &mut self.region;
         let zone = &mut self.zone;
+        let reader = &mut self.reader;
+        let hint = &mut self.hint;
         self.owner.dispatch(
             || poll().map_err(io::Error::other),
             |update| {
@@ -627,6 +726,9 @@ impl<K: Knocking> LoopInput for Greeter<'_, K> {
                     Some(crate::DirectSeatEvent::Key(key, _)) => {
                         match server.sign_in_key(key.code, key.state, key.time) {
                             Ok(Some(meant)) => {
+                                // **Somebody is using the screen**, so it
+                                // never needs to tell them how to hear it.
+                                hint.something_was_pressed();
                                 screen.pressed(meant);
                                 // **The keyboard a person just chose, applied
                                 // before their next key.** This is the whole
@@ -641,6 +743,7 @@ impl<K: Knocking> LoopInput for Greeter<'_, K> {
                                 the_language_is_now(language, screen);
                                 the_region_is_now(region, screen);
                                 the_zone_is_now(zone, screen);
+                                the_reader_is_now(reader, screen);
                                 Ok(())
                             }
                             // A release, a repeat, and a key this keyboard has
@@ -662,10 +765,11 @@ impl<K: Knocking> LoopInput for Greeter<'_, K> {
                     }
                     Some(crate::DirectSeatEvent::Button { code, state, .. }) => {
                         // `BTN_LEFT`. Nothing else on this screen means anything.
-                        if code == 0x110
-                            && state == ButtonState::Pressed
-                            && screen.pressed_by_the_pointer()
-                        {
+                        let pressed = code == 0x110 && state == ButtonState::Pressed;
+                        if pressed {
+                            hint.something_was_pressed();
+                        }
+                        if pressed && screen.pressed_by_the_pointer() {
                             // **A click chooses as a key does**, so what it
                             // chose is applied as a key's choice is: a
                             // language clicked on is spoken, and a keyboard
@@ -674,6 +778,7 @@ impl<K: Knocking> LoopInput for Greeter<'_, K> {
                             the_language_is_now(language, screen);
                             the_region_is_now(region, screen);
                             the_zone_is_now(zone, screen);
+                            the_reader_is_now(reader, screen);
                         }
                         Ok(())
                     }
@@ -696,6 +801,29 @@ impl<K: Knocking> LoopInput for Greeter<'_, K> {
         target: &mut T,
         _time: u32,
     ) -> Result<(), DirectLoopError> {
+        // **The screen as a reader is told it**, sent to the sign-in login's
+        // reader when it changes — asked only while a reader is connected.
+        let screen = &self.screen;
+        self.reader.following(|| {
+            screen
+                .as_read()
+                .unwrap_or_else(crate::ReadAloudTree::with_nothing_on_it)
+        });
+        // **A new machine says, once, how to hear its screen**, after a pause
+        // with nothing pressed (`crate::the_spoken_hint`).
+        if self.hint.is_due(
+            std::time::Instant::now(),
+            self.screen.is_the_first_start(),
+            self.reader.is_reading(),
+        ) && self
+            .reader
+            .says_how_to_hear_it(self.screen.the_language_drawn())
+        {
+            self.hint.said();
+        }
+        while let Some(answered) = self.reader.answered() {
+            eprintln!("alo-compositor: the sign-in screen's reader answered: {answered:?}");
+        }
         self.screen.present(target)?;
         Ok(())
     }
@@ -705,7 +833,11 @@ impl<K: Knocking> LoopInput for Greeter<'_, K> {
         self.screen.finished()
     }
 
-    fn shutdown(self, server: &mut Server) -> Option<io::Result<()>> {
+    /// **The reader steps aside first** — asked, and waited for a moment, so
+    /// the person's own reader does not start over this one (ADR 0155 §6).
+    fn shutdown(mut self, server: &mut Server) -> Option<io::Result<()>> {
+        self.reader
+            .steps_aside(crate::the_sign_in_screens_reader::PATIENCE_AT_SIGN_IN);
         Some(self.owner.shutdown(|| server.clear_input()))
     }
 }

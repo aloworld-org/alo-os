@@ -50,13 +50,17 @@ pub(crate) fn what_a_press_does(on: OnTheSignInScreen) -> Option<SignInKey> {
         // Clears both fields and waits at the name again, which is what
         // *switching people* means on a screen that has already been typed in.
         OnTheSignInScreen::SwitchPerson => Some(SignInKey::Clear),
+        // **Turns the screen reader over, as `Ctrl`+`Alt`+`S` does** (ADR
+        // 0155 §3). The design draws a sheet behind it (`375:30435`) and that
+        // sheet is not built; until it is, the button does the one thing on
+        // it a blind person needs, rather than nothing.
+        OnTheSignInScreen::Accessibility => Some(SignInKey::TheScreenReader),
         // Each of these is recognised and does nothing. **An arm each rather
         // than one catch-all**, so that adding a control to
         // `OnTheSignInScreen` is a compile error here and not a press that
         // silently means nothing.
         OnTheSignInScreen::TheEntry
         | OnTheSignInScreen::Back
-        | OnTheSignInScreen::Accessibility
         | OnTheSignInScreen::OtherWays
         | OnTheSignInScreen::Power => None,
     }
@@ -84,6 +88,16 @@ mod tests {
         assert_eq!(
             what_a_press_does(OnTheSignInScreen::SwitchPerson),
             Some(SignInKey::Clear)
+        );
+    }
+
+    /// **Accessibility turns the screen reader over**, through the same key
+    /// `Ctrl`+`Alt`+`S` is.
+    #[test]
+    fn accessibility_turns_the_screen_reader_over() {
+        assert_eq!(
+            what_a_press_does(OnTheSignInScreen::Accessibility),
+            Some(SignInKey::TheScreenReader)
         );
     }
 

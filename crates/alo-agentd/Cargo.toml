@@ -78,8 +78,8 @@ alo-as-it-was = { path = "../alo-as-it-was" }
 # reaches a real socket; the trait is `alo-turn`'s.
 alo-acting = { path = "../alo-acting" }
 # The applications this machine has, read out of the desktop entries the
-# specification's own directories hold. Read once when the daemon starts, which
-# `starting::where_entries_are_here` argues — nothing here watches a directory.
+# specification's own directories hold, read each time a verb asks
+# (`crate::what_is_installed_here`) — nothing here watches a directory.
 alo-installed = { path = "../alo-installed" }
 # How an installed application starts — over the bus, or from its entry's own
 # `Exec` line — read off the same entries, so the record of an approved `open`

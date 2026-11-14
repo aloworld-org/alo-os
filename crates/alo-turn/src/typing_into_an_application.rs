@@ -133,7 +133,7 @@ pub(crate) fn typing_into_an_application(
         authorised,
         machine.the_adapters(),
         grants,
-        machine.the_applications_installed(),
+        &machine.the_applications_installed_now(),
         strings,
     ) {
         Ok(typing) => typing,

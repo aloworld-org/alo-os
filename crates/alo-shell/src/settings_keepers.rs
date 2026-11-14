@@ -107,11 +107,14 @@ impl Keeper for AccessKept {
     }
 
     fn at_sign_in(at: &Path) -> (alo_access::TurnedOn, Option<String>) {
-        // A file nobody has written yet reads as nothing turned on.
-        match alo_access::keeping::read(its_folder(at)) {
-            Ok(turned_on) => (turned_on, None),
-            Err(why) => (alo_access::TurnedOn::nothing(), Some(why.to_string())),
-        }
+        // **A person who has kept nothing of their own yet starts with what
+        // the sign-in screen turns on** (ADR 0155 §6), so a reader turned on
+        // at the first start is on here too; once they keep anything, theirs.
+        let (turned_on, why) = alo_access::keeping::for_this_person(
+            its_folder(at),
+            Path::new(alo_access::keeping::THE_MACHINES_FOLDER),
+        );
+        (turned_on, why.map(|why| why.to_string()))
     }
 
     fn keep(at: &Path, drawn: &alo_access::TurnedOn) -> Result<(), Self::NotWritten> {

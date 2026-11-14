@@ -739,9 +739,16 @@ mod running {
                 std::env::var_os("HOME").as_deref(),
             )
             .is_some_and(|folder| {
-                alo_access::keeping::at_sign_in(&folder)
-                    .0
-                    .has(alo_access::Setting::ScreenReader)
+                // **Or, for a person who has kept nothing of their own yet,
+                // what the sign-in screen turns on** (ADR 0155 §6): a reader
+                // turned on at the first start is still on in the account
+                // made there, from the first frame.
+                alo_access::keeping::for_this_person(
+                    &folder,
+                    std::path::Path::new(alo_access::keeping::THE_MACHINES_FOLDER),
+                )
+                .0
+                .has(alo_access::Setting::ScreenReader)
             });
             let (pointers_look, they_chose) =
                 crate::telling_applications_about_the_pointer::as_they_left_it(&appearance);

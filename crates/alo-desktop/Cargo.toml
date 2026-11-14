@@ -140,6 +140,14 @@ jiff = { version = "0.2", default-features = false, features = ["std", "tzdb-bun
 name = "alo-desktop"
 path = "src/main.rs"
 
+# **The first start and the sign-in screen, read aloud, as the sign-in login**
+# (ADR 0155). Here rather than in a package of its own because the voice is
+# the desktop's: it starts, stops and watches Orca with the same two files a
+# person's desktop does, and two copies of those would drift.
+[[bin]]
+name = "alo-reading-the-sign-in-screen"
+path = "src/reading_the_sign_in_screen.rs"
+
 [lints]
 workspace = true
 

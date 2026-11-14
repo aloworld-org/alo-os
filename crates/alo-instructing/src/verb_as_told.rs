@@ -78,7 +78,9 @@ fn takes(takes: &Takes) -> String {
     match takes {
         Takes::Path => "a full path, such as /home/anna/Documents/notes.txt".to_owned(),
         Takes::Application => {
-            "an installed application's identifier, such as org.gnome.TextEditor".to_owned()
+            "an application's identifier, such as org.gnome.TextEditor; an application this \
+             machine has may also be named by its name with the spaces left out, such as VSCodium"
+                .to_owned()
         }
         Takes::Name { longest } => format!("one name, at most {longest} characters"),
         Takes::Count { least, most } => format!("a whole number from {least} to {most}"),

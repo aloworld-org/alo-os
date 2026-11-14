@@ -62,10 +62,13 @@ gives its own `gdm` login.
   PipeWire and alo's own relay (below) — and GDM's login has the same reach
   through the seat. Restricting its PipeWire to playback is a configuration a
   later change can add; this one does not.
-- **Orca, Speech Dispatcher and eSpeak NG are ADR 0151's own**, unchanged.
-  The units that start them for this login carry `ConditionUser=alo-greeter`,
-  so no person's manager ever runs them, and the person's
-  `alo-screen-reader.service` carries nothing that would run in this one.
+- **Orca, Speech Dispatcher and eSpeak NG are ADR 0151's own**, unchanged, and
+  so is the unit that starts Orca: `alo-screen-reader.service` has no
+  `[Install]`, so it runs in whichever manager is asked to start it, and here
+  the relay below asks. The relay's own unit carries
+  `ConditionUser=alo-greeter`, so no person's manager runs it; and the two
+  person's units enabled in every manager — the keyring and the folders —
+  carry `ConditionUser=!alo-greeter`, so the sign-in login's runs neither.
 
 ### 2. The compositor never touches that login's buses — a relay does
 
@@ -154,17 +157,22 @@ for the reader carries it.
   voices never speak, and the person's PipeWire is not refused a device the
   sign-in login was holding.
 - **The person's own switch decides from there**, exactly as ADR 0151 §4 says.
-- **A reader turned on during first start becomes the new account's switch.**
-  When the first account is made with the reader on, the account's
-  `access.toml` is written with *Screen reader* on, by `alo-access` and nobody
-  else (ADR 0038). That is the design's *accessibility preferences survive
-  setup and carry into the account*. It is also kept machine-wide
-  (`alo_access::keeping::keep_for_this_machine`), so this machine's sign-in
-  screen speaks from then on — the machine's copy and the person's are already
-  two files for exactly this reason.
-- **Turning it on at the sign-in screen does not change a person's switch.**
-  The sign-in screen belongs to no account; what it changes is the machine's
-  copy.
+- **Turning it over at the sign-in screen is kept in the machine's copy** of
+  the accessibility settings (`alo_access::keeping::THE_MACHINES_FOLDER`,
+  written by `alo-access` and nobody else, ADR 0038), so this machine's
+  sign-in screen still reads after a restart. The machine's copy and the
+  person's are already two files for exactly this reason.
+- **A reader turned on during first start is on in the account made there.**
+  The compositor may not write in a person's home, so the account's file is
+  not written for them; instead **a person who has kept no accessibility
+  settings of their own starts with the machine's**
+  (`alo_access::keeping::for_this_person`), in their desktop and in Settings.
+  That is the design's *accessibility preferences survive setup and carry into
+  the account*.
+- **And a person's own choice is never overridden.** The moment they keep any
+  accessibility setting of their own, theirs is what is read — so turning the
+  reader on at the sign-in screen does not change the switch of anybody who
+  has set theirs.
 
 ### 7. When it cannot speak
 
@@ -185,6 +193,23 @@ where none does:
 **The choice stays as the person made it** (law 5): a reader that could not
 start is tried again the next time the screen comes up.
 
+## What is built, and what is not yet
+
+*Added as the stages landed; the decision above is unchanged by it.*
+
+- **Built** (2026-11-14, #1244 and the change after it): the screens' tree,
+  the door and what crosses it, the relay, `Ctrl`+`Alt`+`S` and the
+  *Accessibility* button turning the reader over, the language following the
+  first screen, the hand-over at sign-in, the machine's copy and the new
+  account starting from it, and the image's login, linger, home, sound group
+  and units.
+- **Not yet**: the sentences in §7 are said **on the journal only** — the
+  screen does not yet draw them beside the button, so a sighted helper sees
+  nothing when the reader fails; the *no sound device* case is not told apart
+  from *did not start*; turning the reader **off** is not said aloud before
+  the voice stops; a reader's own press (Orca's *activate*) does not reach the
+  screen; and the design's *Accessibility · Setup options* sheet is not built.
+
 ## The question for the owner
 
 **Is the reader on when a machine first starts?** Not decided here.
@@ -204,6 +229,25 @@ start is tried again the next time the screen comes up.
 The second is a new promise — a spoken sentence while the reader is off — so it
 is the owner's to make, and none of the three is built until it is answered.
 Until then the reader is off as a machine comes, which is what it already is.
+
+**Answered 2026-11-14 by the owner, relayed by the coordinator: *"Off, with
+one spoken hint"*.** On a new machine's first screen, after a short pause with
+no key pressed, the machine says once, in the first screen's language: *"Press
+Control, Alt and S to hear the screen read aloud."* As built
+(`crates/alo-shell/src/the_spoken_hint.rs`, the relay's `says_how_to_hear_it`):
+
+- the pause is **ten seconds**, a named constant (`THE_PAUSE`), with nothing
+  pressed — **a key or a click** cancels it for good;
+- **only on the first-start sheets**: a machine that already has an account
+  shows the sign-in screen and never says it;
+- **never while the reader is reading**, and **once a boot**: the relay that
+  says it runs for the whole boot and says it at most once, so a sign-in
+  screen started again does not repeat it;
+- it is said by **eSpeak NG alone**, as the sign-in login, in the voice for
+  the screen's language (English where eSpeak has none); **Orca is not
+  started** for it;
+- **a machine with nothing to play it on says nothing**: the voice program
+  fails, that is said on the journal, and nothing else changes.
 
 ## What this does not reach
 
