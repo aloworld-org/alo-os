@@ -55,7 +55,10 @@ fn a_fresh_machine_after(keys: &[SignInKey]) -> (tempfile::TempDir, SignInScreen
     alo_accounts::kept(&store, &Accounts::none().unwrap()).unwrap();
     let greeting = Greeting::at(&store, 1000, ADoor).unwrap();
     let words = crate::what_this_machine_can_say().unwrap();
-    let mut screen = SignInScreen::of(Ok(greeting), words);
+    // On a clock in Ireland, whose one time zone Continue sets without asking
+    // which (the owner, 2026-11-14), so Tab and Enter reach the name sheet.
+    let mut screen = SignInScreen::of(Ok(greeting), words)
+        .where_the_machine_is(alo_formats::RegionCode::named("IE").ok());
     for key in keys {
         screen = match screen.pressed(*key) {
             Signing::Still(screen) => *screen,

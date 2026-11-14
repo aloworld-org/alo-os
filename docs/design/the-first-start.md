@@ -76,6 +76,20 @@ that day:
 - **Accessibility is drawn as the design's control on every list and account
   sheet.** A press on it still opens nothing, as on the sign-in screen: the
   surface it opens does not exist yet, which is recorded rather than hidden.
+- **Continue on the overview accepts what it shows**: the language, the
+  keyboard, the region and — where the region has one — its time zone, as if
+  each row had been opened and used. Until 2026-11-13 it kept none of them, and
+  a walk that day typed `¬` for `~`.
+- **Continue asks once which time zone, where the region it accepts has
+  several** (the United States, Russia, Brazil) and none was chosen. The owner,
+  2026-11-14, choosing between this and a Region row that asks: *"Ask once
+  after Continue."* It opens ADR 0140's zone sheet — the one *Use this region*
+  already opens, which no frame draws — with nothing chosen. *Use this zone*
+  returns to the overview with the region row naming the zone, and the next
+  Continue goes on; Escape returns, sets no zone, and the next Continue goes on.
+  **Never trapped, and never asked twice in one pass**: it asks again only if
+  the region the overview names has changed since, and never for a region taken
+  on its own row, which asked already.
 - **Both buttons are 160**, where the design draws *Use password only* 172:
   its words fit in 160 at every size this was drawn at.
 - **The title stays at 32 / 44**, the size these sheets already draw it, where
