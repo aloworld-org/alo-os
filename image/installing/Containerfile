@@ -40,7 +40,7 @@
 # are the operating system's own — `crates/alo-image` fails a build of this
 # repository where any of the four differs from `image/Containerfile`, because an
 # environment on another base would be installing with a tool nobody pinned.
-ARG THE_BASE=quay.io/fedora/fedora-bootc:44@sha256:ea70c130d55794252b081c606603c6d4405561f28ae642a83fe43b1872f82663
+ARG THE_BASE=quay.io/fedora/fedora-bootc:44@sha256:5a3472162ba7781a01d249b9a56bc5a9b9fa01c08edae1f73c77dfa1e504e868
 ARG THE_BUILDER=docker.io/library/ubuntu:26.04@sha256:2260313b31c8c011cd2eebe728008efac1b3982be73eb71348ea2648d2c0e09b
 ARG THE_STABLE=1.97.0
 ARG THE_TARGET=x86_64-unknown-linux-musl
