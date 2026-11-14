@@ -255,7 +255,7 @@ fn typing_once(field: TheField, whose: Typed, rewriting: fn(&str) -> String, app
                 publishing: crate::testing::publishing_through(&publisher),
             },
             WhatAnApplicationVerbNeeds {
-                installed: Installed::holding([Application::identified(EDITOR).unwrap()]),
+                installed: Installed::holding([Application::identified(EDITOR).unwrap()]).into(),
                 door: &mut door,
                 starting: &NothingStarts,
                 windows: &mut windows,

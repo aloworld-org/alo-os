@@ -80,6 +80,26 @@ pub(crate) fn installing_an_application(
         }
     };
 
+    // Step 1½. **Not something this machine already has, by any name it goes
+    // by** — before anything is asked of the tool or reaches a network. The
+    // tool's own question (step 3) matches the identifier exactly, so until
+    // 2026-11-14 *install VSCodium* on a machine that has
+    // `com.vscodium.codium` went past it to Flathub (the walk of that day).
+    // Asked here, after the approval or at full access, where step 3 already
+    // answers the same question for an exact identifier: no refusal here says
+    // anything an approval would not have.
+    if let Some(here) = already_here_by_name(
+        &machine.the_applications_installed_now(),
+        wanted.application().identifier(),
+    ) {
+        return (
+            Entry::ran(&authorised, strings),
+            Err(NotDone::CouldNotInstall(
+                alo_software::NotDone::AlreadyInstalled { application: here },
+            )),
+        );
+    }
+
     // The tool, the organisation's rule and the indicator, handed over at once
     // for `Machine::bounding_and_indicator`'s reason: an installation needs all
     // three and asking one at a time would be three borrows of one machine.
@@ -121,6 +141,19 @@ pub(crate) fn installing_an_application(
         Err(Stopped::NotShown(not_shown)) => Err(NotDone::CouldNotInstallHere(not_shown.into())),
     };
     (Entry::ran(&authorised, strings), outcome)
+}
+
+/// The identifier of the installed application this name means, when this
+/// machine has one by it — or the name itself, when several installed
+/// applications answer to it, since every one of them is *already here*.
+fn already_here_by_name(installed: &alo_applications::Installed, said: &str) -> Option<String> {
+    match installed.answering_to(said) {
+        alo_applications::AnsweringTo::One(application) => {
+            Some(application.identifier().to_owned())
+        }
+        alo_applications::AnsweringTo::Several(_) => Some(said.to_owned()),
+        alo_applications::AnsweringTo::Nothing => None,
+    }
 }
 
 /// `alo-software` said no, in its own words.
@@ -215,6 +248,40 @@ mod tests {
 
         fn remove(&self, _: &Application) -> Result<(), Failed> {
             Ok(())
+        }
+    }
+
+    /// **An application this machine has is already here by every name it
+    /// goes by** — the walk of 2026-11-14, where *open VSCodium* became an
+    /// installation from Flathub on a machine that had `com.vscodium.codium`.
+    /// Every name refuses before the tool is asked anything, so nothing
+    /// leaves; and what is not here is not refused.
+    #[test]
+    fn an_installed_application_is_already_here_by_every_name_it_goes_by() {
+        let installed = alo_applications::Installed::holding([Application::called(
+            "com.vscodium.codium",
+            "VSCodium",
+        )
+        .unwrap()]);
+        for said in [
+            "com.vscodium.codium",
+            "com.vscodium.Codium",
+            "codium",
+            "VSCodium",
+            "vscodium",
+        ] {
+            assert_eq!(
+                super::already_here_by_name(&installed, said).as_deref(),
+                Some("com.vscodium.codium"),
+                "{said}"
+            );
+        }
+        for said in ["org.gnome.TextEditor", "texteditor", "vscode"] {
+            assert_eq!(
+                super::already_here_by_name(&installed, said),
+                None,
+                "{said}"
+            );
         }
     }
 

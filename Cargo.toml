@@ -12,6 +12,9 @@ members = [
   # one `unsafe` the workspace's `forbid` cannot allow, so it denies `unsafe`
   # and lifts it in one file. Its `main.rs` says why.
   "crates/alo-libatspi-walk",
+  # A test instrument too: it walks a booted machine in qemu from a runner
+  # (`.github/workflows/walk.yml`), and nothing in the image depends on it.
+  "crates/alo-walking",
   "crates/alo-terminal",
   "crates/alo-desktop",
   "tools/graphics-check",

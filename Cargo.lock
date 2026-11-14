@@ -1885,6 +1885,7 @@ dependencies = [
  "alo-keeping",
  "alo-keeping-up",
  "alo-keyboards",
+ "alo-launching",
  "alo-locking",
  "alo-measuring",
  "alo-models",
@@ -2141,6 +2142,14 @@ name = "alo-vector-shapes"
 version = "0.0.1"
 dependencies = [
  "zeno",
+]
+
+[[package]]
+name = "alo-walking"
+version = "0.0.1"
+dependencies = [
+ "serde_json",
+ "thiserror 2.0.20",
 ]
 
 [[package]]

@@ -181,3 +181,48 @@ fn a_machine_with_no_terminal_takes_the_chord_and_asks_for_nothing() {
         "a session with no terminal asked for one anyway"
     );
 }
+
+/// **A program typed in the terminal the chord opens finds alo's display**:
+/// its shell starts with `WAYLAND_DISPLAY` naming the very socket this session
+/// listens on, asked of the kernel.
+///
+/// Found on a booted machine on 2026-11-14: VSCodium typed into alo's terminal
+/// was handed no display, its launcher asked Chromium for X11, and Chromium
+/// stopped itself with a trap
+/// (`docs/quirks/vscodium-from-alos-terminal-asks-for-x11-and-traps.md`). The
+/// same application started from the Dock opened, because the desktop hands a
+/// start the display and nothing handed it to the terminal. This test is where
+/// those two ends meet: the path is the server's own, not one written here.
+#[test]
+fn the_terminal_the_chord_opens_tells_its_shell_where_alo_draws() {
+    let (_runtime, mut server) = a_session("a-terminal-display");
+    let shortcuts = Shortcuts::shipped();
+    assert!(server.a_chord_opens_a_terminal(&shortcuts, the_terminals_chord(&shortcuts)));
+    let shell = server
+        .alos_own_terminal_mut_for_tests()
+        .expect("the chord opened alo's own terminal")
+        .the_shells_process();
+
+    let started_with: Vec<String> = std::fs::read(format!("/proc/{shell}/environ"))
+        .expect("the kernel says what the shell started with")
+        .split(|byte| *byte == 0)
+        .map(|entry| String::from_utf8_lossy(entry).into_owned())
+        .collect();
+    let display = format!(
+        "WAYLAND_DISPLAY={}",
+        server
+            .socket_path()
+            .to_str()
+            .expect("a test's socket path is text")
+    );
+    assert!(
+        started_with.contains(&display),
+        "the terminal's shell was not told {display}, so a graphical program typed there finds \
+         no display; it started with {started_with:?}"
+    );
+    assert!(
+        started_with.contains(&"XDG_SESSION_TYPE=wayland".to_owned()),
+        "the terminal's shell was not told the session is Wayland, which VSCodium's launcher \
+         reads before it believes the display"
+    );
+}

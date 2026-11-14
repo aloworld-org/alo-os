@@ -441,7 +441,7 @@ fn when_the_command_finishes_there_is_nothing_waiting_again() {
 /// that a name is given at all and that it is shaped like one.
 #[test]
 fn a_shell_is_told_what_terminal_it_is_on() {
-    let told = super::what_the_child_is_told();
+    let told = super::what_the_child_is_told(&[]);
     let name = told
         .get("TERM")
         .expect("a shell is told what terminal it is on");
@@ -452,6 +452,77 @@ fn a_shell_is_told_what_terminal_it_is_on() {
     assert!(
         !name.chars().any(char::is_whitespace),
         "TERM is {name:?}, which is not a name a terminfo database can be asked for"
+    );
+}
+
+/// **What the session tells the terminal reaches its shell, and cannot change
+/// what the terminal is called.** An entry that is not `NAME=value` is left
+/// out rather than turned into a variable with no name.
+#[test]
+fn the_session_is_handed_on_and_term_stays_the_terminals() {
+    let told = super::what_the_child_is_told(&[
+        "WAYLAND_DISPLAY=/run/alo-desktop/session/wayland".to_owned(),
+        "XDG_SESSION_TYPE=wayland".to_owned(),
+        "TERM=dumb".to_owned(),
+        "not a variable".to_owned(),
+    ]);
+    assert_eq!(
+        told.get("WAYLAND_DISPLAY").map(String::as_str),
+        Some("/run/alo-desktop/session/wayland"),
+        "a program typed in the terminal is not told where alo draws"
+    );
+    assert_eq!(
+        told.get("XDG_SESSION_TYPE").map(String::as_str),
+        Some("wayland")
+    );
+    assert_eq!(
+        told.get("TERM").map(String::as_str),
+        Some(super::WHAT_THIS_TERMINAL_IS_CALLED),
+        "the session changed what the terminal claims to understand"
+    );
+    assert_eq!(told.len(), 3, "an entry with no `=` became a variable");
+}
+
+/// The environment a running process started with, as the kernel says.
+fn the_environment_of(process: u32) -> Vec<String> {
+    std::fs::read(format!("/proc/{process}/environ"))
+        .expect("the kernel says what it was started with")
+        .split(|byte| *byte == 0)
+        .map(|entry| String::from_utf8_lossy(entry).into_owned())
+        .collect()
+}
+
+/// **A real shell starts with the display the session named**, asked of the
+/// kernel rather than of the map above — the half the unit test cannot show,
+/// because it is the engine underneath that hands the map to the child.
+///
+/// The value is one no machine has, so a `WAYLAND_DISPLAY` the test runner
+/// happened to inherit cannot pass it; and the control is the second shell,
+/// told nothing, which must not have it.
+#[test]
+fn a_real_shell_starts_with_the_display_the_session_named() {
+    let home = tempfile::tempdir().expect("a folder to be a home");
+    let display = "WAYLAND_DISPLAY=/run/alo-desktop/a-terminal-test/wayland".to_owned();
+    let told = AShellOnAPseudoterminal::the_persons_own(
+        HowBig::of(80, 24, 100).expect("a terminal"),
+        Some(home.path().as_os_str()),
+        std::slice::from_ref(&display),
+    )
+    .expect("the person's own shell on a pseudoterminal");
+    let not_told = AShellOnAPseudoterminal::the_persons_own(
+        HowBig::of(80, 24, 100).expect("a terminal"),
+        Some(home.path().as_os_str()),
+        &[],
+    )
+    .expect("the person's own shell on a pseudoterminal");
+
+    assert!(
+        the_environment_of(told.the_shell_itself()).contains(&display),
+        "the shell did not start with the display it was handed"
+    );
+    assert!(
+        !the_environment_of(not_told.the_shell_itself()).contains(&display),
+        "a shell told nothing has the display anyway, so the test above proves nothing"
     );
 }
 
@@ -579,6 +650,7 @@ fn the_persons_shell_starts_in_their_home() {
     let shell = AShellOnAPseudoterminal::the_persons_own(
         HowBig::of(80, 24, 100).expect("a terminal"),
         Some(home.path().as_os_str()),
+        &[],
     )
     .expect("the person's own shell on a pseudoterminal");
 
@@ -604,6 +676,7 @@ fn a_home_that_does_not_exist_starts_the_shell_at_the_top_of_the_disk() {
     let shell = AShellOnAPseudoterminal::the_persons_own(
         HowBig::of(80, 24, 100).expect("a terminal"),
         Some(missing.as_os_str()),
+        &[],
     )
     .expect("a missing home does not stop the shell starting");
 

@@ -91,7 +91,7 @@ pub(crate) fn reading_an_applications_windows(
         authorised,
         machine.the_adapters(),
         grants,
-        machine.the_applications_installed(),
+        &machine.the_applications_installed_now(),
         strings,
     ) {
         Ok(reading) => reading,
