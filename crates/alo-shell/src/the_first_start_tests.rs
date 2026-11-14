@@ -295,3 +295,35 @@ fn escape_from_the_zone_sheet_sets_no_zone() {
         Some("RU")
     );
 }
+
+/// **Continue chooses the keyboard the overview names**, with no row touched
+/// — and a language chosen after still moves it, because what was accepted
+/// was the overview's answer and not one layout frozen at that moment.
+#[test]
+fn continue_chooses_the_keyboard_the_overview_names() {
+    let mut first_start = TheFirstStart::arriving(None);
+    assert_eq!(first_start.the_keyboard_chosen(), None);
+    assert_eq!(
+        walked(&mut first_start, &[SignInKey::OtherField, SignInKey::Enter]),
+        Went::Onward
+    );
+    assert_eq!(
+        first_start.the_keyboard_chosen(),
+        Some(Layout::named("us").unwrap()),
+        "Continue on English (US) chose no keyboard"
+    );
+    // Back at the overview (the name sheet's Back), choose German.
+    walked(
+        &mut first_start,
+        &[
+            SignInKey::OtherField,
+            SignInKey::Enter,
+            SignInKey::Earlier,
+            SignInKey::Earlier,
+            SignInKey::Enter,
+            SignInKey::Enter,
+        ],
+    );
+    assert_eq!(first_start.the_language_chosen(), Some("de"));
+    assert_eq!(first_start.the_keyboard_chosen(), Some(german()));
+}

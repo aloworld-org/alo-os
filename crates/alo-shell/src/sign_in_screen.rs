@@ -483,15 +483,22 @@ impl<K: Knocking> SignInScreen<K> {
     }
 
     /// **The keyboard to type on now**, for whoever keeps and applies it —
-    /// chosen on the keyboard sheet, or the chosen language's, and [`None`]
-    /// until either is chosen and on every other screen.
+    /// chosen on the keyboard sheet, or the chosen language's, or the one the
+    /// overview named when *Continue* was pressed; and [`None`] until one of
+    /// those, and on the sign-in screen itself.
+    ///
+    /// **The first account's sheets still answer**, from the first start they
+    /// carry. *Continue* is the press that lands on them and the compositor
+    /// asks after that press, so a screen that went quiet the moment it left
+    /// the overview would drop exactly the choice Continue made.
     #[must_use]
     pub fn the_keyboard_chosen(&self) -> Option<alo_keyboards::Layout> {
         match &self.stands {
-            WhatItStandsAt::FirstStart(first_start, _, _) => first_start.the_keyboard_chosen(),
-            WhatItStandsAt::SignIn(_)
-            | WhatItStandsAt::MakeAnAccount(..)
-            | WhatItStandsAt::Unreadable(_, _) => None,
+            WhatItStandsAt::FirstStart(first_start, _, _)
+            | WhatItStandsAt::MakeAnAccount(_, _, first_start, _) => {
+                first_start.the_keyboard_chosen()
+            }
+            WhatItStandsAt::SignIn(_) | WhatItStandsAt::Unreadable(_, _) => None,
         }
     }
 

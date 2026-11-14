@@ -98,6 +98,17 @@ pub struct TheFirstStart {
     region: Option<RegionCode>,
     /// The keyboard a person chose, where they chose one.
     keyboard: Option<Layout>,
+    /// Whether *Continue* has been pressed on the overview.
+    ///
+    /// **Continue chooses what the overview names**, the keyboard row
+    /// included. Until 2026-11-13 it did not: a person who read *Keyboard ·
+    /// English (US)* and pressed Continue had chosen nothing, so nothing was
+    /// kept and the machine went on typing through its unit file's `gb` — on
+    /// the walk of that day `~` typed `¬`. A flag rather than the default
+    /// written into [`Self::keyboard`], so a person who goes back and changes
+    /// language still gets that language's keyboard, as the overview would
+    /// then name it.
+    continued: bool,
     /// The time zone the region taken sets, by its database name, and what
     /// it is called in the person's language.
     zone: Option<alo_formats::zones::NamedZone>,
@@ -124,6 +135,7 @@ impl TheFirstStart {
             languages: TheLanguagesOffered::every_official(),
             region: None,
             keyboard: None,
+            continued: false,
             zone: None,
             one_of_several: false,
             where_the_machine_is,
@@ -207,11 +219,13 @@ impl TheFirstStart {
         self.languages.chosen().map(|it| it.tag)
     }
 
-    /// **The keyboard to type on now**: chosen, or the chosen language's —
-    /// and [`None`] while nobody has chosen either, so the machine keeps the
-    /// keyboard it booted with.
+    /// **The keyboard to type on now**: chosen, or the chosen language's, or
+    /// the one the overview named once *Continue* was pressed — and [`None`]
+    /// while none of those has happened, so the machine keeps the keyboard it
+    /// booted with.
     pub fn the_keyboard_chosen(&self) -> Option<Layout> {
-        let something_chosen = self.keyboard.is_some()
+        let something_chosen = self.continued
+            || self.keyboard.is_some()
             || self.languages.chosen().is_some()
             || matches!(&self.sheet, Sheet::Keyboard(picker) if picker.has_been_chosen());
         something_chosen.then(|| self.the_keyboard())
@@ -345,7 +359,10 @@ impl TheFirstStart {
                 };
             }
             SignInKey::Enter => match self.ring {
-                WhereTheRingIs::OnTheWayOn => return Went::Onward,
+                WhereTheRingIs::OnTheWayOn => {
+                    self.continued = true;
+                    return Went::Onward;
+                }
                 WhereTheRingIs::OnTheList => self.open(self.row()),
             },
             // There is nowhere further back than the first sheet a machine
