@@ -184,6 +184,11 @@ building the image**, which this change did not do.
   screen therefore still does nothing**; a switch there that turned on a reader
   which could not speak would tell a blind person something false at the one
   place they cannot check it.
+  **Decided 2026-11-14, by the owner's *"Build it"*:** [ADR
+  0155](0155-the-screens-before-sign-in-speak.md) is how the screens before
+  sign-in speak — the sign-in login `alo-greeter` with its own manager, buses
+  and sound, a relay of alo's own that serves the screen's tree there, and a
+  hand-over at sign-in. This bullet stands until what 0155 describes is built.
 - **Orca's own keyboard commands may not work over alo's surfaces.** Orca 48
   hears the keyboard through libatspi's `Atspi.Device`, which on Wayland needs
   the compositor to pass key presses to the accessibility bus. alo's compositor
