@@ -173,7 +173,7 @@ fn the_command_in_front_is_not_the_shell_running_it() {
     let mut shell = crate::AShellOnAPseudoterminal::the_persons_own(
         crate::HowBig::of(80, 24, 100).expect("a grid"),
         None,
-        &[],
+        &crate::TheSession::OnTopOfThisProcess(Vec::new()),
     )
     .expect("the person's own shell on a pseudoterminal");
     let itself = shell.the_shell_itself();
@@ -218,7 +218,7 @@ fn with_nothing_running_the_shell_itself_is_in_front() {
     let shell = crate::AShellOnAPseudoterminal::the_persons_own(
         crate::HowBig::of(80, 24, 100).expect("a grid"),
         None,
-        &[],
+        &crate::TheSession::OnTopOfThisProcess(Vec::new()),
     )
     .expect("the person's own shell on a pseudoterminal");
     let itself = shell.the_shell_itself();
